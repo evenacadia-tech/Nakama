@@ -392,9 +392,21 @@ bool leseZonen (const kanon::Wert& liste, std::vector<Schutzzone>& aus,
             grund = "bereich"; detail = wo + ".id";
             return false;
         }
+        // D8 (Codeaudit 10.09.2026): der BEREICH am double, VOR jeder
+        // Konvertierung. Eine ganze Zahl jenseits des int-Bereichs
+        // (2147483648, 9007199254740991) in einen int zu wandeln waere
+        // undefiniert; auf x64 ergibt sie INT_MIN, das `validiereZonen` nur
+        // zufaellig ebenfalls abweist. Konvertiert wird deshalb gar nicht: die
+        // id gilt genau dann, wenn sie einer der Slotnummern 0..7 GLEICHT.
+        // Jede andere wird -1, und `validiereZonen` meldet sie an ihrer Stelle
+        // der Pruefreihenfolge (nach der Anzahl, nakama-state-v2.md §4) als
+        // `bereich` - mit derselben Fundstelle wie bisher.
+        int ganzeId = -1;
+        for (int k = 0; k < kMaxZonen; ++k)
+            if (id->zahl == (double) k) { ganzeId = k; break; }
         Schutzzone z;
         z.enabled = enabled->b;
-        z.id      = (int) id->zahl;
+        z.id      = ganzeId;
         z.lowHz   = lowHz->zahl;
         z.highHz  = highHz->zahl;
         aus.push_back (z);

@@ -1,0 +1,54 @@
+SONDE-015 Audit-Nacharbeit D8 - Rotbeweis M-66 (DTO-Leser, gueltiger Rand)
+Stand:  2026-09-10 23:33:29
+Zusage: Der Riegel des DTO-Lesers laesst die gueltigen Rand-ids 0 und 7 exakt durch; verengt er den Bereich, faellt eine gueltige Zone (D8; M-66).
+Bein:   B2 EqCopStateMigrationTest
+Datei:  eq-copilot/plugin/state/NakamaParameter.cpp:405
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaParameter.cpp:405
+vorher:
+        for (int k = 0; k < kMaxZonen; ++k)
+            if (id->zahl == (double) k) { ganzeId = k; break; }
+        Schutzzone z;
+nachher:
+        for (int k = 0; k < kMaxZonen - 1; ++k)   // ROTBEWEIS M-66 (D8, Rand): die obere gueltige id 7 faellt aus dem Riegel
+            if (id->zahl == (double) k) { ganzeId = k; break; }
+        Schutzzone z;
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (9 s); Binary 23:33:38, mutierte Quelle 23:33:29, Binary juenger: ja
+Exitcode: 1 (1.5 s)
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 273 Pruefungen ok, 4 Fehler
+
+Gefallene Pruefungen (4):
+  FEHLER  gueltiges DTO abgelehnt: dto/gueltig/maxima.json  [bereich schutz_zonen[7].id]
+  FEHLER  gueltige DTOs: state_hash wie im Manifest  [6/7]
+  FEHLER  D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [bereich schutz_zonen[7].id]
+  FEHLER  == DTO: 6 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  FEHLER  gueltige DTOs: state_hash wie im Manifest  [6/7]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+
+Hinweis: Die Mutation verengt nur den Riegel des DTO-Lesers: id 7 wird -1 und faellt als bereich. Die ungueltigen ids bleiben ungueltig; es faellt die Zusage an den gueltigen Rand, dazu der gueltige Korpus, weil dto/gueltig/maxima.json die ids 0 bis 7 traegt. Der Preset-Leser traegt seinen eigenen Riegel und bleibt gruen.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaParameter.cpp bytegleich zurueckgespielt: ja (SHA-256 95C805F4436127FF90D51BE0B446545A3330DF0576969F58A570541099ADD1F2)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:33:44
+Bau: Exit 0 (5 s); Binary 23:33:44, zurueckgespielte Quelle 23:33:40, Binary juenger: ja
+Exitcode: 0 (1.4 s)
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

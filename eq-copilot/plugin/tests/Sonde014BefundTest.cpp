@@ -484,29 +484,61 @@ int main()
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // NAK-213 K-47 · fremder_fassung_4_rahmen_faellt_am_leser
+    // NAK-213 K-47 · rahmen_der_naechsten_fassung_faellt_am_leser
     // ═══════════════════════════════════════════════════════════════════
     //
     // 🔑 Der messende Rotbeweis fuer `kJsonSchemaMinor` (NB-3). Der Rahmen
-    // gibt die 4 UNABHAENGIG vor; bliebe die Konstante auf 3, faellt der
-    // Snapshot an der Fassungsobergrenze des Lesers - waehrend der
-    // Aufnahmehelfer ohne Fassungsparameter dieselbe Konstante auf BEIDEN
-    // Seiten einsetzte und die Abweichung nie sah.
+    // gibt seine Fassung UNABHAENGIG vor; bliebe die Konstante hinter dem
+    // Vertrag zurueck, faellt der Snapshot an der Fassungsobergrenze des
+    // Lesers - waehrend der Aufnahmehelfer ohne Fassungsparameter dieselbe
+    // Konstante auf BEIDEN Seiten einsetzte und die Abweichung nie sah.
+    //
+    // SONDE-015 N-12 (Manifest §10.7, §11): die unabhaengige Zahl stand hier
+    // als Literal 4 und riss am Fassungsschritt 4 -> 5 der Etappe 2. Sie kommt
+    // jetzt aus dem Vertrag selbst - `wire_envelope_schema_minor.aktuell` in
+    // reservierte-nachrichten-v1.json, dieselbe Zahl, an die A5 die Konstante
+    // bindet. Gemessen wird: die aktive Fassung passiert, die naechste hoehere
+    // faellt, und die C++-Konstante steht auf der aktiven. Kein Literal reisst
+    // mehr am naechsten Fassungsschritt.
     {
-        auto m = frischesModell();
-        juce::String f;
-        pruefe (uebernimm (*m, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
-                           f, 4)
-                    == Model::SnapshotErgebnis::uebernommen,
-                "K-47: ein Rahmen der Fassung 4 passiert den Leser", f);
-        auto n = frischesModell();
-        juce::String g;
-        pruefe (uebernimm (*n, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
-                           g, 5)
-                    == Model::SnapshotErgebnis::ungueltig,
-                "K-47 Gegenprobe nach oben: die Fassung 5 gibt es nicht", g);
-        pruefe (nakama::ipc::kJsonSchemaMinor == 4u,
-                "K-47: die C++-Fassungszahl steht auf 4 (Textriegel A5 haelt sie gegen das Register)");
+        const auto registerDatei = []
+        {
+            const juce::String relativ ("eq-copilot/schemas/v3/reservierte-nachrichten-v1.json");
+            auto datei = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+            auto ordner = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+            for (int i = 0; i < 10 && ! datei.existsAsFile() && ordner.exists(); ++i)
+            {
+                datei = ordner.getChildFile (relativ);
+                ordner = ordner.getParentDirectory();
+            }
+            return datei;
+        }();
+        const auto aktuell = juce::JSON::parse (registerDatei)["wire_envelope_schema_minor"]["aktuell"];
+        const bool gelesen = (aktuell.isInt() || aktuell.isInt64()) && (int) aktuell >= 1 && (int) aktuell < 255;
+        const int aktiv = gelesen ? (int) aktuell : -1;
+        pruefe (gelesen, "K-47: die aktive P1-Fassung steht im Register (wire_envelope_schema_minor.aktuell)",
+                registerDatei.getFullPathName() + " = " + juce::String (aktiv));
+        if (gelesen)
+        {
+            auto m = frischesModell();
+            juce::String f;
+            pruefe (uebernimm (*m, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
+                               f, (std::uint8_t) aktiv)
+                        == Model::SnapshotErgebnis::uebernommen,
+                    "K-47: ein Rahmen der aktiven Fassung passiert den Leser",
+                    "Fassung " + juce::String (aktiv) + (f.isEmpty() ? juce::String() : ": " + f));
+            auto n = frischesModell();
+            juce::String g;
+            pruefe (uebernimm (*n, snapshot ({ befundText (hex (0x900), "ready_to_send", "hoch") }),
+                               g, (std::uint8_t) (aktiv + 1))
+                        == Model::SnapshotErgebnis::ungueltig,
+                    "K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser",
+                    "Fassung " + juce::String (aktiv + 1) + (g.isEmpty() ? juce::String() : ": " + g));
+            pruefe ((int) nakama::ipc::kJsonSchemaMinor == aktiv,
+                    "K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)",
+                    "kJsonSchemaMinor = " + juce::String ((int) nakama::ipc::kJsonSchemaMinor)
+                        + ", Register = " + juce::String (aktiv));
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

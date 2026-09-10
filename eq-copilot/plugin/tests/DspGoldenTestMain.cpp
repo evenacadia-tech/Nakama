@@ -2,7 +2,9 @@
 
     Misst den aktiven DSP-Kern `eq-copilot/plugin/dsp/` gegen die Zusagen
     der Verhaltensmatrix §3.1 bis §3.6 und §3.13 von
-    `docs/beweise/SONDE-015.md`.
+    `docs/beweise/SONDE-015.md`, dazu aus §3.14 den Messwert des
+    Vier-Bank-Falls (M-118, Abschnitt N) und die Haelfte des Kerns von M-120
+    (Abschnitt O) - beides seit der Audit-Nacharbeit vom 10.09.2026.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -562,7 +564,7 @@ const char* typName (Filtertyp t)
 int main()
 {
     std::cout << "== Nakama SONDE-015 B6 - aktiver DSP-Kern: Goldens, Bypass, Baenke ==" << std::endl;
-    std::cout << "Gate: Entwurf §44.2/§44.5, Matrix §3.1-§3.6 und §3.13." << std::endl << std::endl;
+    std::cout << "Gate: Entwurf §44.2/§44.5, Matrix §3.1-§3.6, §3.13 und aus §3.14 M-118 und M-120 (Kern)." << std::endl << std::endl;
 
     const double sampleraten[] = { 44100.0, 48000.0, 96000.0, 192000.0 };
 
@@ -2846,24 +2848,38 @@ int main()
             auto s = machSatz (true);
             belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 6.0);
 
-            // Zwischen den Wechseln laeuft AUDIO - nur so wird eine Bank
-            // ueberhaupt `audioAktiv` und beim naechsten Wechsel
-            // `verblassend`. Ohne Audio verdraengt der zweite Wunsch den
-            // ersten, der nie gelaufen ist, und der Pool bleibt bei zwei
-            // Baenken.
+            // D10 (Codeaudit 10.09.2026): der Fall ist der GLEICHZEITIGE
+            // Topologiewechsel beider Pfade (§44.2). Bis dahin kamen die zwei
+            // Wechsel, waehrend beide Pfade noch aus der Ruhe einblendeten; nach
+            // E-17 warteten sie als `bereit`, und `freieSlots() == 0` zaehlte
+            // sie als "vier lebende Baenke", waehrend zwei rechneten (Manifest
+            // §11.7). Jetzt laufen beide Pfade zuerst eingeschwungen auf je
+            // einer Bank, dann liegen beide rampeninkompatiblen Wuensche vor
+            // DEMSELBEN Blockrand, und gemessen wird mitten im Crossfade.
             pruefe (k->uebernehmeZustand (s, Pfad::committed), "Committed nimmt eine Bank");
-            fahreStille (*k, 64, 64);                                 // Bank 1 wird audioAktiv
             pruefe (k->uebernehmeZustand (s, Pfad::candidate), "Candidate nimmt eine zweite Bank");
-            fahreStille (*k, 64, 64);                                 // Bank 2 wird audioAktiv
-            auto s2 = s; belege (s2, 1, Filtertyp::bell, 2000.0, 1.0, -6.0);
+            fahreStille (*k, kFadeSamples, 64);   // beide Einblendungen aus der Ruhe laufen zu Ende
+            k->pflege();
+            auto s2 = s; belege (s2, 1, Filtertyp::bell, 2000.0, 1.0, -6.0);   // ein Band mehr: rampeninkompatibel
+            auto s3 = s; belege (s3, 2, Filtertyp::notch, 500.0, 4.0, 0.0);
             pruefe (k->uebernehmeZustand (s2, Pfad::committed), "Committed wechselt (dritte Bank)");
-            fahreStille (*k, 64, 64);                                 // Bank 1 verblasst
-            auto s3 = s2; belege (s3, 2, Filtertyp::notch, 500.0, 4.0, 0.0);
             pruefe (k->uebernehmeZustand (s3, Pfad::candidate), "Candidate wechselt (vierte Bank)");
-            fahreStille (*k, 64, 64);                                 // Bank 2 verblasst
+            fahreStille (*k, 64, 64);             // beide Pfade mitten im Crossfade
 
-            pruefe (k->pool().freieSlots() == 0, "vier_baenke_im_schlimmsten_fall (M-46)",
-                    "beide Pfade mitten im Fade: vier lebende Baenke");
+            int ck = -1, cq = -1, kk = -1, kq = -1;
+            k->rechnendeSlots (Pfad::committed, ck, cq);
+            k->rechnendeSlots (Pfad::candidate, kk, kq);
+            const int ids[4] = { ck, cq, kk, kq };
+            bool vier = true;
+            for (int i = 0; i < 4; ++i)
+            {
+                vier = vier && ids[i] >= 0;
+                for (int j = i + 1; j < 4; ++j) vier = vier && ids[i] != ids[j];
+            }
+            pruefe (vier && k->pool().freieSlots() == 0, "vier_baenke_im_schlimmsten_fall (M-46)",
+                    "beide Pfade mitten im Crossfade: Committed rechnet " + std::to_string (ck) + " mit Quelle "
+                    + std::to_string (cq) + ", Candidate " + std::to_string (kk) + " mit Quelle " + std::to_string (kq)
+                    + ", freie Slots " + std::to_string (k->pool().freieSlots()));
             pruefe (! k->uebernehmeZustand (s, Pfad::committed),
                     "und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)");
 
@@ -4062,65 +4078,394 @@ int main()
     }
 
     //==========================================================================
-    std::cout << std::endl << "== N - Messwert des Vier-Bank-Falls (R15, kein erfundener Deckel) ==" << std::endl;
+    std::cout << std::endl << "== N - Messwert des Vier-Bank-Falls (M-118, R15, kein erfundener Deckel) ==" << std::endl;
     {
         // §49.3 nennt keine CPU-Zeile und §44.2 einen Golden ohne Zahl. Der
         // Test haelt deshalb fest, DASS der Vier-Bank-Fall laeuft und keine
         // Bank teilt; die gemessene Last steht als Zahl hier und im Manifest.
         // Ein erfundener Deckel waere auf einer schnelleren Maschine grundlos
         // gruen und auf einer langsameren grundlos rot.
+        //
+        // D10 (Codeaudit 10.09.2026): bis dahin aenderte das zweite Programm
+        // nur den Output-Trim - rampenkompatibel, also kein Crossfade und kein
+        // zweiter Bankdurchlauf -, `freieSlots() == 0` zaehlte bereite und
+        // ausgediente Baenke mit, und die Zeitmessung trug den Aufbau des
+        // Testsignals. Gemessen wurden durchgehend ZWEI rechnende Baenke.
+        // Jetzt gilt:
+        //  - ein ECHTER gleichzeitiger Topologiewechsel auf beiden Pfaden: jeder
+        //    Wechsel dreht den channel_mode aller acht dynamischen Baender weiter
+        //    (rampenINkompatibel), und beide Wuensche liegen vor demselben
+        //    Blockrand;
+        //  - Uebergang und stationaerer Zustand werden GETRENNT gemessen, je
+        //    Callback nur `verarbeite`: das Signal liegt vorher fertig im
+        //    Speicher, Publikation und Ernte des Workers liegen ausserhalb;
+        //  - dass vier Baenke RECHNEN, faellt an den Bankidentitaeten
+        //    (`rechnendeSlots`: je Pfad die klingende Bank und die Quelle des
+        //    Crossfades, vier verschiedene, keine Passthrough) und an den echten
+        //    Bankdurchlaeufen (`msStufenLaeufe`: bei width 1,3 rechnet jeder
+        //    Durchlauf die M/S-Stufe genau einmal).
         const double fs = 48000.0;
-        const int blockGroesse = 256, bloecke = 4000;
+        const int blockGroesse = 128;
+        // Die Wiederholungen kommen aus kFadeSamples und der Blockgroesse: ein
+        // Uebergang rechnet in genau so vielen Callbacks vier Baenke. Die
+        // Blockgroesse liegt unter kFadeSamples, damit der Crossfade ueber einen
+        // Callbackrand laeuft - nur dort sind die Bankidentitaeten von aussen
+        // lesbar.
+        const int uebergangsCallbacks = (kFadeSamples + blockGroesse - 1) / blockGroesse;
+        // Je Region wird dieselbe Audiozeit gewertet wie im bisherigen Messwert
+        // (4000 Callbacks zu 256 Samples): die Zahl bleibt vergleichbar, und
+        // p99 und Maximum stehen auf Tausenden Callbacks.
+        const int gewerteteSamples = 4000 * 256;
+        const int uebergaenge = (gewerteteSamples + uebergangsCallbacks * blockGroesse - 1)
+                              / (uebergangsCallbacks * blockGroesse);
+        const int callbacksJeRegion = uebergaenge * uebergangsCallbacks;
+        const double audioJeRegion = (double) (callbacksJeRegion * blockGroesse) / fs;
         auto kern = neuerKern (fs, blockGroesse);
 
-        auto voll = machSatz (true);
-        for (int slot = 0; slot < param::kSlots; ++slot)
+        const auto programm = [] (int modusVersatz, double gainVersatz)
         {
-            belege (voll, slot, Filtertyp::bell, 100.0 * std::pow (2.0, (double) slot), 2.0, 4.0,
-                    (Kanalmodus) (slot % 5));
-            machDynamisch (voll, slot, -6.0, -40.0, 5.0, 10.0, 80.0);
+            auto s = machSatz (true);
+            for (int slot = 0; slot < param::kSlots; ++slot)
+            {
+                belege (s, slot, Filtertyp::bell, 100.0 * std::pow (2.0, (double) slot), 2.0, 4.0 + gainVersatz,
+                        (Kanalmodus) ((slot + modusVersatz) % 5));
+                machDynamisch (s, slot, -6.0, -40.0, 5.0, 10.0, 80.0);
+            }
+            setzeGlobal (s, "v1.global.width", 1.3);
+            setzeGlobal (s, "v1.global.mono_bass_hz", 110.0);
+            setzeGlobal (s, "v2.global.mix", 0.8);
+            setzeGlobalBool (s, "v2.global.auto_gain", true);
+            return s;
+        };
+        // Committed wechselt zwischen [0] und [1], Candidate zwischen [2] und
+        // [3]: zwei Programme desselben Pfades unterscheiden sich im
+        // channel_mode JEDES Bandes.
+        const std::vector<param::DspSatz> programme { programm (0, 0.0), programm (1, 0.0),
+                                                      programm (2, -2.0), programm (3, -2.0) };
+
+        // Das Signal entsteht VOR der Messung.
+        const int vorlaufCallbacks = (2 * kFadeSamples + 4096) / blockGroesse;
+        const size_t signalLaenge = (size_t) ((vorlaufCallbacks + 2 * callbacksJeRegion) * blockGroesse);
+        std::vector<float> signalL (signalLaenge), signalR (signalLaenge);
+        for (size_t i = 0; i < signalLaenge; ++i)
+        {
+            const double x = 0.5 * std::sin (0.011 * (double) i);
+            signalL[i] = (float) x;
+            signalR[i] = (float) (x * 0.8);
         }
-        setzeGlobal (voll, "v1.global.width", 1.3);
-        setzeGlobal (voll, "v1.global.mono_bass_hz", 110.0);
-        setzeGlobal (voll, "v2.global.mix", 0.8);
-        setzeGlobalBool (voll, "v2.global.auto_gain", true);
-
-        kern->uebernehmeZustand (voll, Pfad::committed);
-        fahreStille (*kern, blockGroesse, blockGroesse);
-        kern->uebernehmeZustand (voll, Pfad::candidate);
-        fahreStille (*kern, blockGroesse, blockGroesse);
-        auto voll2 = voll;
-        setzeGlobal (voll2, "v1.global.output_trim_db", -2.0);
-        kern->uebernehmeZustand (voll2, Pfad::committed);
-        fahreStille (*kern, blockGroesse, blockGroesse);
-        kern->uebernehmeZustand (voll2, Pfad::candidate);
-
-        pruefe (kern->pool().freieSlots() == 0,
-                "der Messlauf faehrt wirklich vier Baenke (R15)",
-                "freie Slots " + std::to_string (kern->pool().freieSlots()));
-
         std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
         float* kan[2] = { a.data(), b.data() };
-        const auto beginn = std::chrono::steady_clock::now();
-        for (int blk = 0; blk < bloecke; ++blk)
+        size_t lesekopf = 0;
+        const auto ladeBlock = [&]
         {
-            for (int i = 0; i < blockGroesse; ++i)
-            { const double x = 0.5 * std::sin (0.011 * (double) (blk * blockGroesse + i));
-              a[(size_t) i] = (float) x; b[(size_t) i] = (float) (x * 0.8); }
+            std::memcpy (a.data(), signalL.data() + lesekopf, (size_t) blockGroesse * sizeof (float));
+            std::memcpy (b.data(), signalR.data() + lesekopf, (size_t) blockGroesse * sizeof (float));
+            lesekopf += (size_t) blockGroesse;
+        };
+        // Nur `verarbeite` liegt in der Messung.
+        const auto gemessenerCallback = [&]
+        {
+            ladeBlock();
+            const auto beginn = std::chrono::steady_clock::now();
+            kern->verarbeite (kan, 2, blockGroesse);
+            return std::chrono::duration<double> (std::chrono::steady_clock::now() - beginn).count();
+        };
+        std::vector<double> dauerUebergang, dauerStationaer;
+        dauerUebergang.reserve ((size_t) callbacksJeRegion);
+        dauerStationaer.reserve ((size_t) callbacksJeRegion);
+
+        // Vorlauf, nicht gewertet: beide Pfade blenden aus der Ruhe ein, die
+        // Huellkurven schwingen ein.
+        int abgewiesen = 0;
+        if (! kern->uebernehmeZustand (programme[0], Pfad::committed)) ++abgewiesen;
+        if (! kern->uebernehmeZustand (programme[2], Pfad::candidate)) ++abgewiesen;
+        for (int i = 0; i < vorlaufCallbacks; ++i)
+        {
+            ladeBlock();
             kern->verarbeite (kan, 2, blockGroesse);
         }
-        const auto dauer = std::chrono::duration<double> (std::chrono::steady_clock::now() - beginn).count();
-        const double audioZeit = (double) (bloecke * blockGroesse) / fs;
-        const double anteil = dauer / audioZeit * 100.0;
+        kern->pflege();
 
-        std::cout << "  MESSWERT Vier-Bank-Fall: " << zahl (dauer, 3) << " s fuer "
-                  << zahl (audioZeit, 3) << " s Audio bei " << zahl (fs, 0) << " Hz, Blockgroesse "
-                  << blockGroesse << " = " << zahl (anteil, 3) << " % Echtzeit "
-                  << "(acht dynamische Baender, Committed und Candidate, je im Fade)" << std::endl;
+        const auto& pool = kern->pool();
+        int vierRechnend = 0, durchlaeufeUebergang = 0, zweiRechnend = 0;
+        std::string bruchIdentitaet, bruchDurchlauf, bruchStationaer;
+        for (int u = 0; u < uebergaenge; ++u)
+        {
+            const size_t ziel = (size_t) ((u + 1) % 2);
+            if (! kern->uebernehmeZustand (programme[ziel], Pfad::committed))     ++abgewiesen;
+            if (! kern->uebernehmeZustand (programme[2 + ziel], Pfad::candidate)) ++abgewiesen;
 
-        pruefe (dauer > 0.0 && std::isfinite (anteil),
-                "der Vier-Bank-Fall wurde gemessen, nicht gedeckelt (R15)",
-                zahl (anteil, 3) + " % Echtzeit - der Wert steht im Manifest, kein Deckel im Test");
+            // Die Uebergangsregion: beide Pfade im Crossfade.
+            for (int c = 0; c < uebergangsCallbacks; ++c)
+            {
+                const auto laeufeVorher = kern->msStufenLaeufe();
+                dauerUebergang.push_back (gemessenerCallback());
+                const auto laeufe = kern->msStufenLaeufe() - laeufeVorher;
+                if (laeufe == 4) ++durchlaeufeUebergang;
+                else if (bruchDurchlauf.empty())
+                    bruchDurchlauf = "Uebergang " + std::to_string (u) + ", Callback " + std::to_string (c)
+                                   + ": " + std::to_string (laeufe) + " Bankdurchlaeufe";
+                if (c + 1 == uebergangsCallbacks) continue;
+
+                // Mitten im Crossfade: je Pfad zwei rechnende Baenke, vier verschiedene.
+                int ck = -1, cq = -1, kk = -1, kq = -1;
+                kern->rechnendeSlots (Pfad::committed, ck, cq);
+                kern->rechnendeSlots (Pfad::candidate, kk, kq);
+                const int ids[4] = { ck, cq, kk, kq };
+                bool vier = true;
+                for (int i = 0; i < 4; ++i)
+                {
+                    vier = vier && ids[i] >= 0;
+                    for (int j = i + 1; j < 4; ++j) vier = vier && ids[i] != ids[j];
+                }
+                vier = vier && pool.zustand (ck) == BankZustand::audioAktiv && pool.zustand (kk) == BankZustand::audioAktiv
+                            && pool.zustand (cq) == BankZustand::verblassend && pool.zustand (kq) == BankZustand::verblassend;
+                if (vier) ++vierRechnend;
+                else if (bruchIdentitaet.empty())
+                    bruchIdentitaet = "Uebergang " + std::to_string (u) + ": Committed rechnet " + std::to_string (ck)
+                                    + " mit Quelle " + std::to_string (cq) + ", Candidate " + std::to_string (kk)
+                                    + " mit Quelle " + std::to_string (kq);
+            }
+            kern->pflege();   // die zwei ausgedienten Quellbaenke kommen frei
+
+            // Die stationaere Region: gleich viele Callbacks, je Pfad eine Bank.
+            for (int c = 0; c < uebergangsCallbacks; ++c)
+            {
+                const auto laeufeVorher = kern->msStufenLaeufe();
+                dauerStationaer.push_back (gemessenerCallback());
+                const auto laeufe = kern->msStufenLaeufe() - laeufeVorher;
+                int ck = -1, cq = -1, kk = -1, kq = -1;
+                kern->rechnendeSlots (Pfad::committed, ck, cq);
+                kern->rechnendeSlots (Pfad::candidate, kk, kq);
+                if (laeufe == 2 && ck >= 0 && kk >= 0 && ck != kk && cq < 0 && kq < 0) ++zweiRechnend;
+                else if (bruchStationaer.empty())
+                    bruchStationaer = "Uebergang " + std::to_string (u) + ", Callback " + std::to_string (c) + ": "
+                                    + std::to_string (laeufe) + " Bankdurchlaeufe, Committed " + std::to_string (ck)
+                                    + "/" + std::to_string (cq) + ", Candidate " + std::to_string (kk) + "/" + std::to_string (kq);
+            }
+        }
+
+        // Anteil der Echtzeit je Callback: Dauer durch Blockgroesse/fs.
+        struct Last { double mittel = 0.0, p99 = 0.0, maximum = 0.0; };
+        const auto kennzahlen = [&] (std::vector<double> d)
+        {
+            Last l;
+            if (d.empty()) return l;
+            const double budget = (double) blockGroesse / fs;
+            double summe = 0.0;
+            for (const double x : d) summe += x;
+            std::sort (d.begin(), d.end());
+            const size_t p99 = (size_t) std::ceil (0.99 * (double) d.size()) - 1;
+            l.mittel  = summe / ((double) d.size() * budget) * 100.0;
+            l.p99     = d[p99] / budget * 100.0;
+            l.maximum = d.back() / budget * 100.0;
+            return l;
+        };
+        const Last lastUebergang = kennzahlen (dauerUebergang);
+        const Last lastStationaer = kennzahlen (dauerStationaer);
+
+        std::cout << "  MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): "
+                  << zahl (lastUebergang.mittel, 3) << " % Echtzeit im Mittel, p99 " << zahl (lastUebergang.p99, 3)
+                  << " %, Maximum " << zahl (lastUebergang.maximum, 3) << " % - " << callbacksJeRegion
+                  << " Callbacks zu " << blockGroesse << " Samples bei " << zahl (fs, 0) << " Hz ("
+                  << zahl (audioJeRegion, 3) << " s Audio; " << uebergaenge << " Uebergaenge zu je "
+                  << uebergangsCallbacks << " Callbacks)" << std::endl;
+        std::cout << "  MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): "
+                  << zahl (lastStationaer.mittel, 3) << " % Echtzeit im Mittel, p99 " << zahl (lastStationaer.p99, 3)
+                  << " %, Maximum " << zahl (lastStationaer.maximum, 3) << " % - " << callbacksJeRegion
+                  << " Callbacks zu " << blockGroesse << " Samples (" << zahl (audioJeRegion, 3) << " s Audio)"
+                  << std::endl;
+
+        pruefe (abgewiesen == 0, "jede Publikation des Messlaufs kam durch (kein busy_retry)",
+                std::to_string (abgewiesen) + " abgewiesen");
+        const int stichproben = uebergaenge * (uebergangsCallbacks - 1);
+        pruefe (stichproben > 0 && vierRechnend == stichproben,
+                "worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt",
+                std::to_string (vierRechnend) + "/" + std::to_string (stichproben) + " Stichproben"
+                    + (bruchIdentitaet.empty() ? std::string() : "; erster Bruch: " + bruchIdentitaet));
+        pruefe (durchlaeufeUebergang == callbacksJeRegion,
+                "jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)",
+                std::to_string (durchlaeufeUebergang) + "/" + std::to_string (callbacksJeRegion)
+                    + (bruchDurchlauf.empty() ? std::string() : "; erster Bruch: " + bruchDurchlauf));
+        pruefe (zweiRechnend == callbacksJeRegion,
+                "jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)",
+                std::to_string (zweiRechnend) + "/" + std::to_string (callbacksJeRegion)
+                    + (bruchStationaer.empty() ? std::string() : "; erster Bruch: " + bruchStationaer));
+        pruefe (lastUebergang.mittel > 0.0 && std::isfinite (lastUebergang.mittel) && std::isfinite (lastUebergang.maximum),
+                "die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)",
+                zahl (lastUebergang.mittel, 3) + " % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test");
+        pruefe (lastStationaer.mittel > 0.0 && std::isfinite (lastStationaer.mittel) && std::isfinite (lastStationaer.maximum),
+                "die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)",
+                zahl (lastStationaer.mittel, 3) + " % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test");
+    }
+
+    //==========================================================================
+    std::cout << std::endl << "== O - Realtime und Offline gleich (M-120, Haelfte des Kerns) ==" << std::endl;
+    {
+        // M-120: Realtime- und Offline-Render erzeugen bei gleichem Event- und
+        // Blockverlauf denselben Parameterverlauf und damit denselben Ausgang.
+        // Dass Offline den bestaetigten Zustand und nie eine Vorschau nutzt,
+        // misst B7 am Prozessor. Hier die Haelfte des Kerns: sein Verlauf
+        // haengt an SAMPLES, nie an der Wanduhr. Zwei frische Kerne fahren
+        // dieselbe Folge aus Bloecken wechselnder Groesse mit denselben
+        // Worker-Aufrufen an denselben Blockraendern - der eine im Takt der
+        // Wanduhr wie ein Host in Echtzeit, der andere ohne Takt wie ein
+        // Offline-Render. Die Toleranz ist 0: derselbe Build rechnet dieselben
+        // Samples, jede Abweichung waere eine Abhaengigkeit von der Zeit.
+        const double fs = 48000.0;
+        const int maxBlock = 512;
+        const int groessen[] = { 256, 128, 480, 64, 512, 1, 333, 256, 200, 17 };
+        const int bloecke = 180;
+
+        auto basis = machSatz (true);
+        belege (basis, 0, Filtertyp::bell, 250.0, 1.2, 5.0);
+        belege (basis, 3, Filtertyp::highShelf, 5000.0, 0.707, -3.0, Kanalmodus::mid);
+        // Das dynamische Band liegt auf dem Ton des Signals, und dessen Huellkurve
+        // laeuft durch Threshold und Knie: sein Verlauf bewegt sich wirklich
+        // (Wache unten) - ein Band unter dem Threshold staende exakt still (M-19),
+        // und ein Vergleich seiner Auslenkungen verglieche nur Nullen.
+        belege (basis, 5, Filtertyp::bell, 100.0, 1.0, 2.0);
+        machDynamisch (basis, 5, -6.0, -20.0, 5.0, 10.0, 80.0);
+        setzeGlobal (basis, "v1.global.width", 1.2);
+        setzeGlobal (basis, "v2.global.mix", 0.9);
+        setzeGlobalBool (basis, "v2.global.auto_gain", true);
+
+        auto rampe = basis;   // nur kontinuierliche Werte: Rampenuebergang und globale Rampen
+        setzeGlobal (rampe, "v1.global.output_trim_db", -4.0);
+        setzeGlobal (rampe, "v1.global.input_trim_db", 2.0);
+        setzeGlobal (rampe, "v2.global.mix", 0.6);
+        rampe.werte[(size_t) param::indexBandV1 (0, param::kGainDb)].zahl = -2.0;
+
+        auto topologie = rampe;   // ein Band mehr und ein anderer Kanalmodus: Crossfade
+        belege (topologie, 6, Filtertyp::notch, 3000.0, 4.0, 0.0);
+        topologie.werte[(size_t) param::indexBandV1 (3, param::kChannelMode)].enumIndex = (int) Kanalmodus::side;
+
+        auto kandidat = basis;
+        setzeGlobal (kandidat, "v1.global.output_trim_db", -1.5);
+        belege (kandidat, 2, Filtertyp::lowShelf, 150.0, 0.707, 4.0);
+
+        auto aus = topologie;
+        aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+
+        struct Lauf
+        {
+            std::vector<float>  ausgang;        ///< L und R je Sample verschraenkt
+            std::vector<double> auslenkungen;   ///< acht je Block
+            std::vector<double> autoGain;       ///< einer je Block
+            std::uint64_t uebernahmen = 0;
+            double sekunden = 0.0, audioSekunden = 0.0, groessteLuecke = 0.0;
+        };
+
+        const auto fahre = [&] (bool imTaktDerWanduhr)
+        {
+            Lauf l;
+            auto k = neuerKern (fs, maxBlock);
+            std::vector<float> a ((size_t) maxBlock), b ((size_t) maxBlock);
+            float* kan[2] = { a.data(), b.data() };
+            size_t n = 0;
+            const auto beginn = std::chrono::steady_clock::now();
+            auto letztesEnde = beginn;
+            for (int blk = 0; blk < bloecke; ++blk)
+            {
+                // Dieselben Worker-Aufrufe an denselben Blockraendern.
+                switch (blk)
+                {
+                    case 0:   k->uebernehmeZustand (basis); break;
+                    case 30:  k->uebernehmeZustand (rampe); break;
+                    case 50:  k->uebernehmeZustand (kandidat, Pfad::candidate); break;
+                    case 70:  k->setzeHoermatrix (Hoermatrix::candidate); break;
+                    case 90:  k->uebernehmeZustand (topologie); break;
+                    case 110: k->setzeHoermatrix (Hoermatrix::processed); break;
+                    case 125: k->beendeCandidate(); break;
+                    case 150: k->uebernehmeZustand (aus); break;
+                    default:  break;
+                }
+                const int m = groessen[blk % (int) std::size (groessen)];
+                for (int i = 0; i < m; ++i)
+                {
+                    // Ein Ton bei 99 Hz, dessen Amplitude langsam zwischen
+                    // 0,05 und 0,55 pendelt: die Huellkurve des Bandes laeuft
+                    // ueber Threshold und Knie hin und her.
+                    const double t = (double) (n + (size_t) i);
+                    const double x = (0.3 + 0.25 * std::sin (0.0021 * t)) * std::sin (0.013 * t);
+                    a[(size_t) i] = (float) x;
+                    b[(size_t) i] = (float) (0.7 * x);
+                }
+                // Wie ein Host in Echtzeit: der Block kommt erst, wenn die
+                // Wanduhr seine Audiozeit erreicht hat.
+                if (imTaktDerWanduhr)
+                    std::this_thread::sleep_until (beginn + std::chrono::duration<double> ((double) n / fs));
+                l.groessteLuecke = std::max (l.groessteLuecke,
+                                             std::chrono::duration<double> (std::chrono::steady_clock::now() - letztesEnde).count());
+                k->verarbeite (kan, 2, m);
+                letztesEnde = std::chrono::steady_clock::now();
+                for (int i = 0; i < m; ++i)
+                {
+                    l.ausgang.push_back (a[(size_t) i]);
+                    l.ausgang.push_back (b[(size_t) i]);
+                }
+                double acht[8] {};
+                k->auslenkungenDb (acht);
+                l.auslenkungen.insert (l.auslenkungen.end(), acht, acht + 8);
+                l.autoGain.push_back (k->autoGainDb());
+                k->pflege();
+                n += (size_t) m;
+            }
+            l.sekunden = std::chrono::duration<double> (std::chrono::steady_clock::now() - beginn).count();
+            l.audioSekunden = (double) n / fs;
+            l.uebernahmen = k->uebernahmen();
+            return l;
+        };
+
+        const Lauf realtime = fahre (true);
+        const Lauf offline  = fahre (false);
+
+        long long ersteAbweichung = -1;
+        const bool gleicheLaenge = realtime.ausgang.size() == offline.ausgang.size();
+        for (size_t i = 0; gleicheLaenge && i < realtime.ausgang.size(); ++i)
+            if (std::memcmp (&realtime.ausgang[i], &offline.ausgang[i], sizeof (float)) != 0)
+            {
+                ersteAbweichung = (long long) i;
+                break;
+            }
+        const bool verlaufGleich =
+               realtime.auslenkungen.size() == offline.auslenkungen.size()
+            && realtime.autoGain.size() == offline.autoGain.size()
+            && std::memcmp (realtime.auslenkungen.data(), offline.auslenkungen.data(),
+                            realtime.auslenkungen.size() * sizeof (double)) == 0
+            && std::memcmp (realtime.autoGain.data(), offline.autoGain.data(),
+                            realtime.autoGain.size() * sizeof (double)) == 0;
+
+        pruefe (realtime.sekunden + (double) maxBlock / fs >= realtime.audioSekunden && realtime.groessteLuecke > 0.001,
+                "der Realtime-Lauf folgte der Wanduhr (M-120)",
+                zahl (realtime.sekunden, 3) + " s fuer " + zahl (realtime.audioSekunden, 3)
+                    + " s Audio, groesste Luecke zwischen zwei Bloecken " + zahl (realtime.groessteLuecke * 1000.0, 2) + " ms");
+        pruefe (offline.sekunden < offline.audioSekunden,
+                "der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)",
+                zahl (offline.sekunden, 3) + " s fuer " + zahl (offline.audioSekunden, 3)
+                    + " s Audio, groesste Luecke " + zahl (offline.groessteLuecke * 1000.0, 3) + " ms");
+        pruefe (realtime.uebernahmen == offline.uebernahmen && realtime.uebernahmen == 6,
+                "beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)",
+                std::to_string (realtime.uebernahmen) + " und " + std::to_string (offline.uebernahmen));
+        pruefe (gleicheLaenge && ersteAbweichung < 0,
+                "realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber "
+                    + std::to_string (realtime.ausgang.size() / 2) + " Samples in " + std::to_string (bloecke) + " Bloecken",
+                ersteAbweichung < 0 ? std::string ("Toleranz 0")
+                                    : "erste Abweichung bei Sample " + std::to_string (ersteAbweichung / 2)
+                                          + (ersteAbweichung % 2 == 0 ? " links" : " rechts"));
+        // Wache: der Parameterverlauf muss sich bewegen, sonst verglichen die
+        // zwei Laeufe nur Nullen und die folgende Pruefung saehe nichts.
+        double auslenkungMin = 0.0, auslenkungMax = 0.0;
+        for (size_t blk = 0; blk * 8 + 5 < realtime.auslenkungen.size(); ++blk)
+        {
+            auslenkungMin = std::min (auslenkungMin, realtime.auslenkungen[blk * 8 + 5]);
+            auslenkungMax = std::max (auslenkungMax, realtime.auslenkungen[blk * 8 + 5]);
+        }
+        pruefe (auslenkungMax - auslenkungMin > 1.0,
+                "die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)",
+                "Slot 5 zwischen " + zahl (auslenkungMin, 2) + " und " + zahl (auslenkungMax, 2) + " dB");
+        pruefe (verlaufGleich,
+                "realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich");
     }
 
     //==========================================================================

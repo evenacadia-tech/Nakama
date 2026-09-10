@@ -1,0 +1,82 @@
+SONDE-015 Audit-Nacharbeit N-9 - Rotbeweis M-120 (B6 Abschnitt O, Haelfte des Kerns)
+Stand:  2026-09-10 23:42:18
+Zusage: Realtime- und Offline-Lauf erzeugen bei gleichem Event- und Blockverlauf denselben Ausgang; der Parameterverlauf haengt an Samples, nie an der Wanduhr (M-120, B6-Haelfte; N-9).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.h:67, eq-copilot/plugin/dsp/DspKern.h:300
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.h:67
+vorher:
+#include <atomic>
+#include <vector>
+nachher:
+#include <atomic>
+#include <chrono>   // ROTBEWEIS M-120
+#include <vector>
+eq-copilot/plugin/dsp/DspKern.h:300
+vorher:
+        double tick() noexcept
+        {
+            if (rest > 0)
+            {
+                aktuell += schritt;
+                // Das letzte Sample setzt BITGENAU das Ziel (M-02).
+                if (--rest == 0) aktuell = ziel;
+            }
+            return aktuell;
+        }
+nachher:
+        double tick() noexcept
+        {
+            if (rest > 0)
+            {
+                // ROTBEWEIS M-120: die Rampe laeuft an der Wanduhr - liegt seit dem
+                // letzten Tick mehr als eine Millisekunde, zaehlt der Tick doppelt.
+                static auto letzterTick = std::chrono::steady_clock::now();
+                const auto jetzt = std::chrono::steady_clock::now();
+                const int schritte = (jetzt - letzterTick > std::chrono::milliseconds (1) && rest > 1) ? 2 : 1;
+                letzterTick = jetzt;
+                for (int n = 0; n < schritte; ++n)
+                {
+                    aktuell += schritt;
+                    // Das letzte Sample setzt BITGENAU das Ziel (M-02).
+                    if (--rest == 0) aktuell = ziel;
+                }
+            }
+            return aktuell;
+        }
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (35 s); Binary 23:42:53, mutierte Quelle 23:42:18, Binary juenger: ja
+Exitcode: 1 (6 s)
+
+257 geprueft, 3 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.003887802]
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [erste Abweichung bei Sample 6741 links]
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: realtime_und_offline_gleich (M-120): derselbe Ausgang
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.844 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 12.26 ms]
+  ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.004 s fuer 0.843 s Audio, groesste Luecke 0.073 ms]
+  ok      beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [6 und 6]
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+Hinweis: Nur der Realtime-Lauf hat zwischen zwei Bloecken Luecken ueber einer Millisekunde; dort laufen die globalen Rampen (Input-Trim, Width, Auto-Gain, Mix, Output-Trim) unter der Mutation um ein Sample je Luecke schneller, und der Ausgang weicht vom Offline-Lauf ab.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.h bytegleich zurueckgespielt: ja (SHA-256 04FB8FADF8D1889421B49812493CED9DCB18C83D41621A26615626804D6C04F0)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:43:33
+Bau: Exit 0 (34 s); Binary 23:43:33, zurueckgespielte Quelle 23:42:59, Binary juenger: ja
+Exitcode: 0 (5.6 s)
+  ok      realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [Toleranz 0]
+257 geprueft, 0 Fehler
+DSP-GOLDEN OK
+Gruen nach Ruecknahme: JA

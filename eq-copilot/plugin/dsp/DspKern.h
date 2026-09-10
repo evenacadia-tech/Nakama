@@ -204,6 +204,24 @@ public:
         candidateQuelle = pfade[1].quelle;
     }
 
+    /** NUR fuer B6 (D10, Codeaudit 10.09.2026): die Baenke, die der
+        Audiothread in einem Pfad RECHNET - je -1, wenn keine. `klingend` ist
+        die Bank, deren Durchlauf den Pfad traegt (im Hoerhalt die endende),
+        `quelle` die Quellbank NUR in einem laufenden Crossfade: eine Rampe
+        liest ihre Quellbank bloss als Koeffizientenquelle der aktiven Bank,
+        und eine Passthrough-Bank rechnet nichts (`verarbeitePfad`).
+        `gefahreneSlots` meldet dagegen jede gehaltene Bank, und `freieSlots()`
+        zaehlt auch bereite und ausgediente - belegt heisst nicht rechnend.
+        Liest nur; aendert kein Produktverhalten. */
+    void rechnendeSlots (Pfad p, int& klingend, int& quelle) const noexcept
+    {
+        const auto& z = pfade[(size_t) p];
+        const int k = z.uebergang == Uebergang::hoerHalt ? z.quelle : z.aktiv;
+        klingend = (k >= 0 && ! istPassthrough (k)) ? k : -1;
+        quelle   = (z.uebergang == Uebergang::crossfade && z.rest > 0
+                    && z.quelle >= 0 && ! istPassthrough (z.quelle)) ? z.quelle : -1;
+    }
+
     //== Zaehler und abgeleitete Werte ======================================
 
     /** Nicht-endliche EINGANGSsamples im aktiven Pfad, verriegelt und

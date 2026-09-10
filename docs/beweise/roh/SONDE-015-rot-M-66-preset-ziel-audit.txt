@@ -1,0 +1,53 @@
+SONDE-015 Audit-Nacharbeit D8 - Rotbeweis M-66 (Preset-Leser, Ziel unveraendert)
+Stand:  2026-09-10 23:34:13
+Zusage: Ein an der Zonen-id abgelehntes Preset laesst das Ziel des Preset-Lesers unberuehrt (D8, schliessender Beweis des Audits: unveraenderter Zielzustand; M-66).
+Bein:   B2 EqCopStateMigrationTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:257
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:257
+vorher:
+    if (! parameter::validiereZonen (s.zonen, grund, wo))
+nachher:
+    ausInOut = s;   // ROTBEWEIS M-66 (D8, Ziel): das Ziel wird vor der Zonenpruefung beschrieben
+    if (! parameter::validiereZonen (s.zonen, grund, wo))
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (5 s); Binary 23:34:18, mutierte Quelle 23:34:13, Binary juenger: ja
+Exitcode: 1 (1.5 s)
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 271 Pruefungen ok, 5 Fehler
+
+Gefallene Pruefungen (5):
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  FEHLER  == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: D8 das Ziel bleibt unveraendert (M-66, Preset)
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+
+Hinweis: Wie im DTO-Leser eine Regressionswache mit eigenem Bruch: `lies` arbeitet auf einer Kopie und schreibt `ausInOut` erst nach allen Stufen. Die Mutation beschreibt das Ziel vor der Zonenpruefung.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 15AAC56B8BB3C26F8601B37B2CDE59B6C2ACB4F4360D207A223F0F83CEF911FB)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:34:24
+Bau: Exit 0 (5 s); Binary 23:34:24, zurueckgespielte Quelle 23:34:19, Binary juenger: ja
+Exitcode: 0 (1.5 s)
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

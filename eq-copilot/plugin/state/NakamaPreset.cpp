@@ -245,7 +245,14 @@ bool lies (const void* utf8, size_t laenge, parameter::DspSatz& ausInOut,
             grund = "bereich"; detail = woZone + ".id";
             return false;
         }
-        s.zonen.push_back ({ (int) id->zahl, lowHz->zahl, highHz->zahl, enabled->b });
+        // D8 (Codeaudit 10.09.2026): wie im DTO-Leser - der Bereich am double,
+        // ohne Konvertierung. Eine id ausserhalb 0..7 wird -1 und faellt in
+        // `validiereZonen` als `bereich` an derselben Stelle wie bisher; eine
+        // Zahl jenseits des int-Bereichs wird nie in einen int gewandelt.
+        int ganzeId = -1;
+        for (int k = 0; k < parameter::kMaxZonen; ++k)
+            if (id->zahl == (double) k) { ganzeId = k; break; }
+        s.zonen.push_back ({ ganzeId, lowHz->zahl, highHz->zahl, enabled->b });
     }
     if (! parameter::validiereZonen (s.zonen, grund, wo))
     {

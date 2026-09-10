@@ -1,0 +1,57 @@
+SONDE-015 Audit-Nacharbeit D8 - Rotbeweis M-66 (Preset-Leser)
+Stand:  2026-09-10 23:25:23
+Zusage: Der Preset-Leser weist eine Zonen-id ausserhalb 0..7 mit Grund bereich ab, ohne sie vorher in einen int zu konvertieren (D8; M-66 mit denselben Zonenregeln wie im DTO).
+Bein:   B2 EqCopStateMigrationTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:255
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:255
+vorher:
+        s.zonen.push_back ({ ganzeId, lowHz->zahl, highHz->zahl, enabled->b });
+nachher:
+        s.zonen.push_back ({ (int) id->zahl, lowHz->zahl, highHz->zahl, enabled->b });   // ROTBEWEIS M-66 (D8): der Bereich wird nicht vor der Konvertierung geprueft
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (4 s); Binary 23:25:27, mutierte Quelle 23:25:23, Binary juenger: ja
+Exitcode: 1 (1.5 s)
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 273 Pruefungen ok, 3 Fehler
+
+Gefallene Pruefungen (3):
+  FEHLER  D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [FE_INVALID gesetzt: die id wurde jenseits des int-Bereichs konvertiert]
+  FEHLER  D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [FE_INVALID gesetzt: die id wurde jenseits des int-Bereichs konvertiert]
+  FEHLER  == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648
+  erwartet: D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+
+Hinweis: Wie im DTO-Leser: der Grund bleibt unter der Mutation bereich, und der Presetkorpus faellt weiter mit seinem Manifestgrund, weil INT_MIN in validiereZonen zufaellig ebenfalls als bereich faellt. Die Zusage faellt am Invalid-Flag der Gleitkommaeinheit. Die DTO-Zeilen oben bleiben gruen: die Mutation liegt nur im Preset-Leser, jeder Leser traegt seinen eigenen Riegel.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 15AAC56B8BB3C26F8601B37B2CDE59B6C2ACB4F4360D207A223F0F83CEF911FB)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:25:33
+Bau: Exit 0 (4 s); Binary 23:25:33, zurueckgespielte Quelle 23:25:29, Binary juenger: ja
+Exitcode: 0 (1.5 s)
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

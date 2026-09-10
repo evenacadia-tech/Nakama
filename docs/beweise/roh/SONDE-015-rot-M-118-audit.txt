@@ -1,0 +1,50 @@
+SONDE-015 Audit-Nacharbeit D10 - Rotbeweis M-118 (B6 Abschnitt N)
+Stand:  2026-09-10 23:39:46
+Zusage: Der Messabschnitt N misst die Last des Vier-Bank-Falls: im gleichzeitigen Topologiewechsel beider Pfade rechnen vier verschiedene Baenke, zwei je Pfad, und jeder Uebergangscallback macht vier echte Bankdurchlaeufe (D10).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/tests/DspGoldenTestMain.cpp:4143
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/tests/DspGoldenTestMain.cpp:4143
+vorher:
+        const std::vector<param::DspSatz> programme { programm (0, 0.0), programm (1, 0.0),
+                                                      programm (2, -2.0), programm (3, -2.0) };
+nachher:
+        const std::vector<param::DspSatz> programme { programm (0, 0.0), programm (0, 1.5),     // ROTBEWEIS M-118: der Wechsel ist rampenkompatibel
+                                                      programm (2, -2.0), programm (2, -0.5) };
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (32 s); Binary 23:40:18, mutierte Quelle 23:39:46, Binary juenger: ja
+Exitcode: 1 (5.3 s)
+
+257 geprueft, 2 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [0/4000 Stichproben; erster Bruch: Uebergang 0: Committed rechnet 2 mit Quelle -1, Candidate 3 mit Quelle -1]
+  FEHLER  jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [0/8000; erster Bruch: Uebergang 0, Callback 0: 2 Bankdurchlaeufe]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: worst_case_vier_baenke_laeuft (M-118)
+  erwartet: jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 1.429 % Echtzeit im Mittel, p99 4.770 %, Maximum 21.484 % - 8000 Callbacks zu 128 Samples bei 48000 Hz (21.333 s Audio; 4000 Uebergaenge zu je 2 Callbacks)
+  MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.254 % Echtzeit im Mittel, p99 3.731 %, Maximum 20.242 % - 8000 Callbacks zu 128 Samples (21.333 s Audio)
+  ok      jede Publikation des Messlaufs kam durch (kein busy_retry)  [0 abgewiesen]
+  ok      jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)  [8000/8000]
+
+Hinweis: Mit dem rampenkompatiblen Wechsel (nur gain_db, derselbe channel_mode) wird keine Publikation abgewiesen, und jeder Pfad haelt waehrend der Rampe weiter zwei belegte Baenke - er rechnet aber nur eine: die Quelle einer Rampe ist nur Koeffizientenquelle der aktiven Bank. Genau diesen Unterschied zaehlte freieSlots() == 0 bis zur Nacharbeit nicht.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/tests/DspGoldenTestMain.cpp bytegleich zurueckgespielt: ja (SHA-256 079A75BDAD9D3EEDAC865B1B6DB585158E37E392DCBFE8CEA8689AB1F687827B)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:40:54
+Bau: Exit 0 (31 s); Binary 23:40:54, zurueckgespielte Quelle 23:40:23, Binary juenger: ja
+Exitcode: 0 (5.7 s)
+  ok      worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [4000/4000 Stichproben]
+  ok      jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [8000/8000]
+257 geprueft, 0 Fehler
+DSP-GOLDEN OK
+Gruen nach Ruecknahme: JA

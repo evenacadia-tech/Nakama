@@ -1,0 +1,42 @@
+SONDE-015 Audit-Nacharbeit D10 - Diagnose der bisherigen Pruefung vier_baenke_im_schlimmsten_fall (M-46, B6 Abschnitt I)
+Stand:     2026-09-10 23:14:50 (Lauf); Binary EqCopDspGoldenTest.exe 2026-09-10 23:13:32
+Basis-SHA: 07dfcb77c14f82ab3b3c77f7d277474458937520
+Zweck:     Belegt, was die bis dahin gueltige Pruefung an ihrer Pruefstelle wirklich vorfand. Hinter die
+           UNVERAENDERTE Pruefung wurde eine lesende Diagnosezeile gesetzt, die den neuen Testzugang
+           DspKern::rechnendeSlots (Manifest §11.1) und DspBankPool::zustand ausgibt. Die Zeile ist danach
+           entfernt worden und nie committet; die Pruefung misst seitdem die rechnenden Bankidentitaeten.
+
+--- DIAGNOSEZEILE (temporaer, direkt hinter der Pruefung) ---
+            { int ck, cq, kk, kq; k->rechnendeSlots (Pfad::committed, ck, cq); k->rechnendeSlots (Pfad::candidate, kk, kq);   // DIAGNOSE-AUDIT-M46, wird entfernt
+              std::cout << "  DIAGNOSE-AUDIT-M46 rechnend Committed " << ck << "/" << cq << ", Candidate " << kk << "/" << kq
+                        << ", Bankzustaende " << (int) k->pool().zustand (0) << (int) k->pool().zustand (1)
+                        << (int) k->pool().zustand (2) << (int) k->pool().zustand (3) << std::endl; }
+
+--- DER BISHERIGE ABLAUF (DspGoldenTestMain.cpp am Basis-SHA, Abschnitt I, M-46) ---
+Kern mit maxBlock 64. Committed s publiziert, 64 Samples; Candidate s publiziert, 64 Samples;
+Committed s2 publiziert, 64 Samples; Candidate s3 publiziert, 64 Samples; dann die Pruefung.
+
+--- LAUF ---
+Befehl:   eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe
+Exitcode: 0 (251 geprueft, 0 Fehler; DSP-GOLDEN OK)
+Auszug, Zeilen 209 bis 216 der Ausgabe:
+  ok      Committed nimmt eine Bank
+  ok      Candidate nimmt eine zweite Bank
+  ok      Committed wechselt (dritte Bank)
+  ok      Candidate wechselt (vierte Bank)
+  ok      vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Fade: vier lebende Baenke]
+  DIAGNOSE-AUDIT-M46 rechnend Committed 0/-1, Candidate 1/-1, Bankzustaende 3322
+  ok      und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  ok      candidate_endet_neutral (M-46)
+
+--- LESART ---
+"0/-1" heisst: klingende Bank 0, keine Crossfade-Quelle. Die Ziffern der Bankzustaende folgen
+BankZustand in eq-copilot/plugin/dsp/DspBankPool.h: 0 frei, 1 vorbereitend, 2 bereit, 3 audioAktiv,
+4 verblassend, 5 ausgedient.
+
+An der Pruefstelle rechneten ZWEI Baenke: Slot 0 (Committed) und Slot 1 (Candidate), beide audioAktiv
+und beide noch im Einblenden aus der Ruhe, also ohne Quellbank. Die Slots 2 und 3 waren bereit -
+publiziert, aber nach Entscheid E-17 nicht uebernommen, weil ein Wechsel waehrend eines laufenden
+Uebergangs dessen Ende abwartet. freieSlots() == 0 war wahr; "beide Pfade mitten im Fade: vier
+lebende Baenke" war es nicht. Dieselbe Klasse wie Befund D10 des Codeaudits vom 10.09.2026
+(freieSlots() zaehlt bereite und ausgediente Baenke mit).

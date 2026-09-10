@@ -824,6 +824,18 @@ def dto_ungueltige(v: dict) -> list[tuple[str, str, str]]:
         {"enabled": True, "high_hz": 200.0, "id": 8, "low_hz": 100.0}]
     faelle.append(("zone-id-8", text_mit(z_id8), "bereich"))
 
+    # D8 (Codeaudit 10.09.2026): die id-Grenze nach unten und JENSEITS des
+    # 32-Bit-int. 2147483648 = 2^31 passt in keinen int; 9007199254740991 =
+    # 2^53 - 1 ist die groesste Ganzzahl, die der Textriegel noch durchlaesst,
+    # und erreicht damit den Zonenleser. Der Grund ist in allen drei Sprachen
+    # `bereich`; dass C++ die Zahl dafuer nicht konvertiert, misst B2 am
+    # Invalid-Flag der Gleitkommaeinheit.
+    for name, zid in (("zone-id-minus-1", -1), ("zone-id-2147483648", 2147483648),
+                      ("zone-id-9007199254740991", 9007199254740991)):
+        def z_id(d, zid=zid): d["schutz_zonen"] = [
+            {"enabled": True, "high_hz": 200.0, "id": zid, "low_hz": 100.0}]
+        faelle.append((name, text_mit(z_id), "bereich"))
+
     def z_feld(d): d["schutz_zonen"] = [
         {"enabled": True, "high_hz": 200.0, "id": 0, "low_hz": 100.0, "extra": 1}]
     faelle.append(("zone-zusatzfeld", text_mit(z_feld), "struktur"))
@@ -983,6 +995,16 @@ def preset_ungueltige(v: dict) -> list[tuple[str, str, str, str]]:
         {"enabled": True, "high_hz": 400.0, "id": 1, "low_hz": 300.0}]
     faelle.append(("zone-unsortiert", mit(zone), "zone_sortierung",
                    "dieselben Zonenregeln wie im DTO"))
+
+    # D8 (Codeaudit 10.09.2026): dieselbe id-Grenze wie im DTO, einschliesslich
+    # der Zahlen jenseits des 32-Bit-int (Begruendung bei `dto_ungueltige`).
+    for name, zid in (("zone-id-minus-1", -1), ("zone-id-8", 8),
+                      ("zone-id-2147483648", 2147483648),
+                      ("zone-id-9007199254740991", 9007199254740991)):
+        def zone_id(d, zid=zid): d["schutz_zonen"] = [
+            {"enabled": True, "high_hz": 200.0, "id": zid, "low_hz": 100.0}]
+        faelle.append((name, mit(zone_id), "bereich",
+                       "D8: id ausserhalb 0..7 faellt, ohne jenseits des int-Bereichs konvertiert zu werden"))
 
     return faelle
 

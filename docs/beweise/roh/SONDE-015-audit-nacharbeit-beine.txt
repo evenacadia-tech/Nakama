@@ -1,0 +1,2301 @@
+SONDE-015 Audit-Nacharbeit D8/D10/N-12/N-9 - die Beine, einzeln gefahren (kein voller Kanon)
+Stand: 2026-09-10 23:44:42
+Basis-SHA: 07dfcb77c14f82ab3b3c77f7d277474458937520; HEAD beim Lauf: 07dfcb77c14f82ab3b3c77f7d277474458937520 (Arbeitsstand noch nicht committet)
+Gebaut aus pwsh (cmake liegt nicht im Bash-PATH; CLAUDE.md Maschinen-Landminen), alle Ziele in einem Aufruf:
+  cmake --build eq-copilot/build --config Release --target EqCopSonde014BefundTest EqCopDspGoldenTest EqCopStateMigrationTest EqCopSchemaTest EqCopNullTest EqCopProbeeqNullTest EqCopTransactionTest NakamaKern NakamaProbeeq NakamaProbeeq_VST3 EqCopilot EqCopilot_VST3
+Bau: Exit 0, 180 s
+Juengste geaenderte oder zurueckgespielte Quelle: 2026-09-10 23:43:51 (eq-copilot\plugin\dsp\DspKern.cpp)
+Gemessene Quellen (Arbeitsstand, neue Fixtures, SourcesModel.cpp aus dem Rotbeweis K-47):
+  eq-copilot/fixtures/state/dto/ungueltig/zone-id-2147483648.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/dto/ungueltig/zone-id-9007199254740991.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/dto/ungueltig/zone-id-minus-1.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/MANIFEST.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/preset/ungueltig/zone-id-2147483648.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/preset/ungueltig/zone-id-8.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/preset/ungueltig/zone-id-9007199254740991.json  2026-09-10 23:06:32
+  eq-copilot/fixtures/state/preset/ungueltig/zone-id-minus-1.json  2026-09-10 23:06:32
+  eq-copilot/plugin/core/ipc/WireEnvelope.h  2026-09-10 23:34:37
+  eq-copilot/plugin/dsp/DspKern.cpp  2026-09-10 23:43:51
+  eq-copilot/plugin/dsp/DspKern.h  2026-09-10 23:42:59
+  eq-copilot/plugin/src/SourcesModel.cpp  2026-09-10 23:25:42
+  eq-copilot/plugin/state/NakamaParameter.cpp  2026-09-10 23:34:06
+  eq-copilot/plugin/state/NakamaPreset.cpp  2026-09-10 23:34:19
+  eq-copilot/plugin/tests/DspGoldenTestMain.cpp  2026-09-10 23:41:37
+  eq-copilot/plugin/tests/Sonde014BefundTest.cpp  2026-09-10 23:06:56
+  eq-copilot/plugin/tests/StateMigrationTestMain.cpp  2026-09-10 23:14:50
+  tools/eq-copilot/erzeuge_state_fixtures.py  2026-09-10 23:05:10
+git status --short beim Lauf:
+   M docs/beweise/SONDE-015.md
+   M eq-copilot/fixtures/state/MANIFEST.json
+   M eq-copilot/plugin/dsp/DspKern.h
+   M eq-copilot/plugin/state/NakamaParameter.cpp
+   M eq-copilot/plugin/state/NakamaPreset.cpp
+   M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   M eq-copilot/plugin/tests/Sonde014BefundTest.cpp
+   M eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+   M tools/eq-copilot/erzeuge_state_fixtures.py
+  ?? docs/beweise/roh/SONDE-015-audit-nacharbeit-beinskript.ps1
+  ?? docs/beweise/roh/SONDE-015-audit-nacharbeit-m46-diagnose.txt
+  ?? docs/beweise/roh/SONDE-015-audit-nacharbeit-rotskript.ps1
+  ?? docs/beweise/roh/SONDE-015-rot-K-47-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-K-47-konstante-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-118-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-120-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-120-verlauf-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-46-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-dto-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-dto-rand-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-dto-ziel-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-preset-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-preset-rand-audit.txt
+  ?? docs/beweise/roh/SONDE-015-rot-M-66-preset-ziel-audit.txt
+  ?? eq-copilot/fixtures/state/dto/ungueltig/zone-id-2147483648.json
+  ?? eq-copilot/fixtures/state/dto/ungueltig/zone-id-9007199254740991.json
+  ?? eq-copilot/fixtures/state/dto/ungueltig/zone-id-minus-1.json
+  ?? eq-copilot/fixtures/state/preset/ungueltig/zone-id-2147483648.json
+  ?? eq-copilot/fixtures/state/preset/ungueltig/zone-id-8.json
+  ?? eq-copilot/fixtures/state/preset/ungueltig/zone-id-9007199254740991.json
+  ?? eq-copilot/fixtures/state/preset/ungueltig/zone-id-minus-1.json
+Arbeitsverzeichnis jedes Beins: die Repo-Wurzel (wie tools/beweise.ps1).
+
+== B28 EqCopSonde014BefundTest ==
+Befehl: eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe
+Binary: 2026-09-10 23:44:45 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 0.1 s
+SONDE-014 Etappe D - Befundzustaende (M-29 bis M-35)
+  ok      M-29: der Zustand kommt als Feld an  [ready_to_send ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [more_data ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: der Zustand kommt als Feld an  [stale ]
+  ok      M-29: und steht unveraendert im Modell
+  ok      M-29: ein VIERTER Zustand faellt am ganzen Snapshot  [session finding carries a value outside its closed set]
+  ok      M-29: und hinterlaesst keinen halben Befund
+  ok      M-30: SEND DRAFT haengt am Zustand  [ready_to_send]
+  ok      M-30: HOLD TO AUDITION ebenso  [ready_to_send]
+  ok      M-30: SEND DRAFT haengt am Zustand  [more_data]
+  ok      M-30: HOLD TO AUDITION ebenso  [more_data]
+  ok      M-30: SEND DRAFT haengt am Zustand  [stale]
+  ok      M-30: HOLD TO AUDITION ebenso  [stale]
+  ok      M-35: `confidence.class = hoch` macht einen `more_data`-Befund NICHT handelbar
+  ok      M-35: die Quellenzeile steht neben dem Befund
+  ok      M-35: und der Zustand kommt aus dem Befund, nicht aus der Zeile
+  ok      M-32: zwei Befunde, einer verweist auf den anderen
+  ok      M-32: beide stehen in der Liste
+  ok      M-32: die Alternative ist eine ID, kein Anhang
+  ok      M-32: und sie traegt einen EIGENEN Zustand
+  ok      M-32: ein Freitext in `alternatives` faellt  [session finding alternative is not a finding id]
+  ok      M-33: die Zone ist ein Bandintervall des eingefrorenen Gitters
+  ok      M-33: und sie nennt ihre Quelle
+  ok      M-33: ein Belegtextfeld faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-33: Band 0 ist ein gueltiger Index
+  ok      M-33: und 221 ein gueltiges `bis`
+  ok      M-33: ein LEERES Intervall faellt
+  ok      M-33: und eines ueber dem Gitterrand ebenso
+  ok      M-34: alle drei Zeilen stehen als eigene Felder
+  ok      M-34: SMALLEST TEST bildet `next_test` ab - der Wert reist mit
+  ok      M-34: eine VIERTE Zeile faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-34: eine leere Zeile faellt (minLength 1)  [session finding display line is not 1..200 codepoints]
+  ok      M-87: der Ausschluss kommt mit seinem Grund an
+  ok      M-87: ein NEUNTER Grund faellt am ganzen Snapshot  [session finding exclusion is invalid]
+  ok      K-46: screening_ueberboten faellt in Fassung 3  [session finding exclusion is invalid]
+  ok      K-46: screening_ueberboten gilt in Fassung 4 und kommt an
+  ok      K-46: master_duplikat faellt in Fassung 3  [session finding exclusion is invalid]
+  ok      K-46: master_duplikat gilt in Fassung 4 und kommt an
+  ok      K-46 Gegenprobe: ein bekannter Grund gilt in Fassung 3 weiter
+  ok      K-50: Fassung 3 nimmt 32 an (Altstand liest weiter)
+  ok      K-50: Fassung 3 weist 33 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+  ok      K-50: Fassung 4 nimmt 33 an
+  ok      K-50: Fassung 4 nimmt 64 an (SESSION_CLIENT_CAP)
+  ok      K-50: Fassung 4 weist 65 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+  ok      K-47: die aktive P1-Fassung steht im Register (wire_envelope_schema_minor.aktuell)  [C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\v3\reservierte-nachrichten-v1.json = 5]
+  ok      K-47: ein Rahmen der aktiven Fassung passiert den Leser  [Fassung 5]
+  ok      K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser  [Fassung 6]
+  ok      K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)  [kJsonSchemaMinor = 5, Register = 5]
+  ok      M-82: score 0 ist gueltig
+  ok      M-82: score 1 ebenso
+  ok      M-82: knapp darueber faellt
+  ok      M-82: knapp darunter ebenso
+  ok      M-82: und ein String ist keine Zahl
+  ok      Fassungsleiter: ein Leser der Fassung 2 lehnt `findings` ab  [session_snapshot has an unexpected or missing field]
+  ok      Abwesenheit heisst `diese Sitzung fuehrt keine Befunde`
+  ok      und die Liste bleibt leer, nicht null
+  ok      Vorbedingung: ein Befund liegt vor
+  ok      Sitzungswechsel: die Befunde der alten Sitzung sind fort - ihre Evidenz-IDs zeigten sonst ins Leere
+  ok      M-36: der Maskierungswert kommt am Befund an
+  ok      M-36: er benennt einen Frequenzbereich des bestehenden Gitters
+  ok      M-36: und die beiden Quellen, zwischen denen er gilt
+  ok      M-37: `gueltig` und `herabgesetzt` sind zwei eigene Bits
+  ok      M-36: Abwesenheit heisst `dieser Befund traegt keinen`
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+  ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding masking value is invalid]
+  ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+  ok      NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar
+  ok      NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt
+  ok      NAK-214 V-23: und nullt den Zaehler (R8)
+  ok      NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf
+  ok      NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen  [session member address does not match the subscribed session]
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 81/81 gruen
+
+== B6 EqCopDspGoldenTest ==
+Befehl: eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe
+Binary: 2026-09-10 23:43:55 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 5.61 s
+== Nakama SONDE-015 B6 - aktiver DSP-Kern: Goldens, Bypass, Baenke ==
+Gate: Entwurf §44.2/§44.5, Matrix §3.1-§3.6, §3.13 und aus §3.14 M-118 und M-120 (Kern).
+
+== A - Passthrough und Hard-Bypass (M-01, M-02, M-05, M-50) ==
+  ok      default_ist_bitidentisch bei 44100 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 44100 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 48000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 48000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 96000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 96000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 192000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 192000 (M-01, M-07, B-10)  [belegt=0]
+  ok      ausschalten_gibt_jede_bank_frei (M-07, B-10)  [eingeschaltet belegt=1, nach aus/Fade/Pflege belegt=0, audio_active=0]
+  ok      unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  ok      hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  ok      passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+  ok      passthrough zaehlt keinen nicht-endlichen Eingang (M-50)  [Zaehler=0]
+
+== B - Crossfades: engagieren, ausschalten, Bypasswechsel (M-03, M-04, M-06) ==
+  ok      engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.01821 gegen Eigensprung 0.01440]
+  ok      fade_ist_in_samples_gezaehlt_nicht_in_bloecken (M-03)  [Blockgroesse 1 gegen 2048: 0 Abweichungen]
+  ok      nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  ok      bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284123 gegen Fadeschritt 0.00284122]
+  ok      bypasswechsel_endet_bitgleich (M-06)
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + eq_enabled aus  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + eq_enabled aus  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.000000000 und 0.002130926 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.002529919 gegen hergeleitete Schranke 0.002956120]
+  ok      der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)  [Ende 0.423761 gegen 0.423761]
+  ok      ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000000000000]
+
+== C - Filtergoldens gegen die analytische RBJ-Antwort (M-10 bis M-13) ==
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 207.5 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 61.7 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 21.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 18245.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 23.1 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 806.3 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 1015.9 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 226.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 53.4 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 30.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 241 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.259 gegen -0.259 dB; 1000 Hz: -12.000 gegen -12.000 dB; 4000 Hz: -23.761 gegen -23.761 dB; ]
+  ok      nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+  ok      kappung_aendert_den_persistenten_wert_nicht (M-12)  [DTO traegt weiter 20000 Hz]
+  ok      bei_96_khz_greift_der_deckel_nicht (M-12)  [0,45 * 96000 = 43200 Hz liegt ueber 20000]
+  ok      koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+
+== D - Kaskade und Richtung (M-15) ==
+  ok      kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 12.0000 dB, Produkt 12.0000 dB]
+  ok      richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.000000000000]
+  ok      ein_rueckwaertslauf_wuerde_das_golden_reissen (M-15)  [Abweichung rueckwaerts 0.006948965 - die Probe trennt die Richtung]
+
+== E - Rampe und Zipper (M-17) ==
+  ok      zipperresiduen_unter_minus_100_dbfs (M-17)  [groesste Stufe 0.00388777 gegen Rampenschritt 0.00388774]
+  ok      die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.000000059]
+  ok      rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.995262265 gegen Ziel 1.995262315]
+  ok      bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+
+== F - Dynamische Baender (M-18 bis M-22, M-25 bis M-27) ==
+  ok      unter_threshold_steht_das_band_exakt_still (M-19)  [Auslenkung 0.000000000000000]
+  ok      range_null_rechnet_keinen_detektor (M-20)
+  ok      range_null_ergibt_exakt_null_auslenkung (M-20)  [0.000000000000000]
+  ok      sidechain_none_liefert_keine_auslenkung (M-22)
+  ok      priority_sidechain_wird_geklemmt_und_gemeldet (M-23)  [das Programm rechnet internal, die Klemmung steht im Bericht]
+  ok      der persistente Wert bleibt priority_sidechain (M-23)
+  ok      dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung -9.000000 gegen range -9.000000]
+  ok      auslenkung_bleibt_innerhalb_range (M-18)
+  ok      kennlinie_im_knie_wirkt_im_audiopfad (M-18, B-14)  [6 dB ueber Threshold: Auslenkung -4.5000 (soll -4.50), Wirkung -1.5000 dB (soll -1.50)]
+  ok      plateau_wirkt_zusaetzlich_zu_gain_db_im_audiopfad (M-18, B-14)  [24 dB ueber Threshold: Auslenkung -9.0000, Wirkung -6.0000 dB (soll -6.00)]
+  ok      detektor_ist_bandbegrenzt (M-21)  [1000 Hz -9.0000 dB, 60 Hz -1.3373 dB]
+  ok      detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: -12.000000 dB]
+  ok      dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.022388935 gegen 0.023443103 im ruhigen Lauf]
+  ok      auslenkung_ist_gemessen_nicht_gerechnet (M-27)  [bei Stille meldet auch das dynamische Band exakt 0]
+  ok      attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold 0.0000 dB, mit 400 ms Hold -6.8136 dB]
+  ok      attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)  [soll A 20 H 30 R 50 ms +/- 1 ms; 44.1 kHz: A 20.32 H 30.20 R 49.89 ms; 48.0 kHz: A 20.33 H 30.17 R 49.83 ms; 96.0 kHz: A 20.33 H 30.17 R 49.83 ms; 192.0 kHz: A 20.38 H 30.12 R 49.88 ms; ]
+  ok      dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)  [Spanne je Stufe ueber vier Raten <= 1 ms]
+  ok      huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000022502 von Pss, Auslenkung 0.000000046 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_hold_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000401 von Pss, Auslenkung 0.000000003 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_release_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000000 von Pss, Auslenkung 0.000000000 dB, Holdzaehler ungemessen (kein Anstieg); Leistung beim Wechsel 0.2697 Pss]
+  ok      range_minus_12_nach_0_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -11.953125 dB (Idealrampe -11.953125), groesstes Residuum 0.000000000000 dB; danach Detektor aus, Leistung 0.000000000]
+  ok      range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -0.046875 dB (Idealrampe -0.046875), groesstes Residuum 0.000000000000 dB; danach Detektor an, Leistung 0.406344790]
+  ok      ausschalten_aendert_nur_dynamic_enabled (M-24 im Kern)  [die fuenf Werte bleiben bitgleich]
+
+== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  ok      width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.000000000]
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+  ok      input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -3.0000 dB (soll -3)]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  ok      mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  ok      mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.50000000]
+  ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+
+== H - Auto-Gain (M-35 bis M-40) ==
+  ok      flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: 0.000000000000000]
+  ok      neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: 0.000000000000000]
+  ok      shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-5.9970 dB]
+  ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  ok      auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -5.9970 dB]
+  ok      der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.99435]
+  ok      dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 0.000000000]
+  ok      und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung -12.0000 dB]
+  ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
+  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+== I - Bankpool und Ownership (M-41 bis M-46) ==
+  ok      vier_baenke_vorallokiert (M-41)  [4]
+  ok      der ACK-Ring fasst mehr Eintraege als es Slots gibt (M-45)  [8 > 4]
+  ok      uebergang_frei_nach_vorbereitend (M-42)
+  ok      uebergang_vorbereitend_nach_bereit (M-42)
+  ok      uebergang_bereit_nach_audio_aktiv (M-42)
+  ok      uebergang_audio_aktiv_nach_verblassend (M-42)
+  ok      uebergang_verblassend_nach_ausgedient (M-42)
+  ok      uebergang_ausgedient_nach_frei_erst_nach_ack (M-42, M-43)
+  ok      ein_nicht_genannter_uebergang_scheitert (M-42)  [frei -> verblassend ist im Automaten nicht moeglich]
+  ok      uebernahme_nur_in_der_publizierten_generation (M-42, B-1)  [verdraengt 0, neu belegt 0, Uebernahme mit alter Beobachtung -1, Committed 1, Candidate 0]
+  ok      generation_waechst_ueber_den_neuanlauf (R9 Feinheit 2, B-12)  [vor dem Neuanlauf 1, danach 2]
+  ok      ack_einer_alten_generation_gibt_keine_bank_frei (B-12)  [alter ACK geerntet: 0 frei, eigener ACK: 1 frei]
+  ok      reclaim_erst_nach_ack (M-43)  [ohne ACK bleibt die Bank verblassend und wird nie frei]
+  ok      nach dem ACK wird sie frei (M-43)
+  ok      alle vier Baenke reservierbar (M-41)
+  ok      busy_retry_wenn_kein_slot_frei (M-44)  [der fuenfte Wunsch verdraengt keine aktive Bank]
+  ok      wiederholung_nach_bankfreigabe_gelingt (M-44)
+  ok      ueberlaeufe_und_verriegelungen_sind_gekoppelt (M-45)  [Ueberlaeufe=0, Verriegelungen=0]
+  ok      der Ring droppt bei regulaerem Betrieb nie (M-45)  [der Ring fasst 8 Eintraege bei 4 Slots]
+  ok      erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung (M-45, B-17)  [verriegelt=ja, geerntet=2, haelt=ja, bestaetigt=ja, danach frei=ja]
+  ok      bestaetigung_ohne_verriegelung_gibt_nichts_frei (M-45, E-23)  [der regulaere ACK gibt ihn frei]
+  ok      Committed nimmt eine Bank
+  ok      Candidate nimmt eine zweite Bank
+  ok      Committed wechselt (dritte Bank)
+  ok      Candidate wechselt (vierte Bank)
+  ok      vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle 0, Candidate 3 mit Quelle 1, freie Slots 0]
+  ok      und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  ok      candidate_endet_neutral (M-46)
+
+== J - Audiothread-Invarianten (M-47, M-48) ==
+  ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 71 Blockrand-Uebernahmen, 50 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  ok      sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)  [ausserhalb 0, im Audiopfad 1]
+  ok      keine_sperre_am_wrapper_vorbei_im_kern (M-47, B-13)  [9 Dateien unter C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp, kein Treffer]
+  ok      der_zaehler_trennt_worker_und_audiothread (M-47)  [Testzaehler 1, Kernzaehler 0]
+  ok      ueberlast_verwirft_analyse (M-48)  [Block 1024 > maxBlock 256: Tap verworfen und gezaehlt]
+  ok      der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+  ok      uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, Uebernahmen im Aufruf 0, groesste Abweichung im Block 0.000000000, naechster Aufruf endet bei 0.106444]
+  ok      denormale_filterzustaende_werden_am_blockrand_geriegelt (E-14)  [Riegel griff 2 mal]
+  ok      der_denormal_riegel_aendert_nichts_hoerbares (E-14)  [max 0.000000000000]
+
+== K - Nicht-Endlich-Riegel (M-49, M-113) ==
+  ok      nichtendlicher_eingang_wird_verriegelt_und_gezaehlt (M-49)  [Zaehler=3]
+  ok      kein_nan_vergiftet_den_filterzustand (M-49)
+  ok      der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+  ok      nichtendlicher_filterzustand_wird_am_blockrand_geheilt (M-49, B-20)  [geheilt +2, Eingangszaehler +0, Ausgang endlich: ja]
+  ok      im_regulaeren_betrieb_ist_jede_auslenkung_endlich (M-113)  [Riegel griff 0 mal]
+  ok      nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113, B-21)  [gemeldet 0.000000000000000, Zaehler +10 bei 10 Bloecken]
+
+== L - Hoermatrix und Taps (M-52 bis M-57, M-114) ==
+  ok      nach_dem_anlegen_immer_processed (M-52)
+  ok      hoermatrix_dry_ist_bitidentisch (M-53)
+  ok      delta_bei_gleichheit_ist_exakt_null (M-54)
+  ok      delta_ist_differenz_mit_festem_abgleich (M-54, B-23)  [Verhaeltnis bei 0,1 und 0,5: 3.962211 / 3.962211 gegen Soll 3.962211]
+  ok      hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00232899 gegen Fadeschritt 0.00231986]
+  ok      identische_zustaende_nullen_beim_wechsel (M-55)  [groesste Abweichung zum Eingang 0.000000014]
+  ok      hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)  [am Umschaltsample 0.000777543, max Sprung 0.002314270 gegen Fadeschritt 0.002314227, Fade zu Dry laeuft zu Ende: ja, Ende 0.792442 gegen Delta 0.792442]
+  ok      candidate_ohne_kandidat_faellt_sichtbar_zurueck (M-56)  [der Getter meldet den WIRKSAMEN Zustand]
+  ok      mit_kandidat_greift_die_auswahl (M-56)
+  ok      candidate_fuehrt_eigene_rampen (§3.0, B-6)  [Candidate 0.498816 gegen 0.498816, Committed 0.250000]
+  ok      candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)  [Candidate -5.9970 dB, Committed 0.0000 dB, Candidate-Tap bei DC 0.125340 gegen 0.125340]
+  ok      candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.000000000 (aus Dry waeren es 0.5455), andere Kurve 0.000000000 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.000719666 gegen 0.002531178, andere Kurve max 0.002529919 gegen 0.002956120]
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  ok      candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2304, Auswahl am Ende wirksam: ja]
+  ok      auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)  [Committed bei freiem Candidate-Slot -3.0000 dB; mit Candidate-Range -12: Committed -3.0000 dB, Candidate -12.0000 dB]
+  ok      hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 185.814748 gegen delta 185.814748]
+  ok      taps_sind_kohaerent (M-57)  [gleiches Zeitfenster, gleiche Laenge]
+  ok      feld_reist_nur_bei_vorhandener_dynamik (M-114)  [kein dynamisches Band: keine Meldung]
+  ok      mit dynamischem Band reist das Feld (M-114)
+  ok      bei ausgeschaltetem EQ reist es nicht (M-114)
+  ok      remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove 0.000000000000000]
+  ok      remove_mit_neubelegung_verwirft_die_alte_auslenkung (M-121)  [nachher 0.000000000000000]
+
+== M - Bankpool unter echter Parallelitaet (M-122) ==
+  ok      bankpool_parallel_ohne_rennen (M-122)  [5163 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+  ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2173]
+  ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+  ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+
+== N - Messwert des Vier-Bank-Falls (M-118, R15, kein erfundener Deckel) ==
+  MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 2.429 % Echtzeit im Mittel, p99 7.459 %, Maximum 41.617 % - 8000 Callbacks zu 128 Samples bei 48000 Hz (21.333 s Audio; 4000 Uebergaenge zu je 2 Callbacks)
+  MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.197 % Echtzeit im Mittel, p99 3.053 %, Maximum 30.086 % - 8000 Callbacks zu 128 Samples (21.333 s Audio)
+  ok      jede Publikation des Messlaufs kam durch (kein busy_retry)  [0 abgewiesen]
+  ok      worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [4000/4000 Stichproben]
+  ok      jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [8000/8000]
+  ok      jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)  [8000/8000]
+  ok      die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)  [2.429 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+  ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.197 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+
+== O - Realtime und Offline gleich (M-120, Haelfte des Kerns) ==
+  ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.844 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 11.94 ms]
+  ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.002 s fuer 0.843 s Audio, groesste Luecke 0.057 ms]
+  ok      beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [6 und 6]
+  ok      realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [Toleranz 0]
+  ok      die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)  [Slot 5 zwischen -6.00 und 0.00 dB]
+  ok      realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+257 geprueft, 0 Fehler
+DSP-GOLDEN OK
+
+== B2 EqCopStateMigrationTest ==
+Befehl: eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe
+Binary: 2026-09-10 23:45:09 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 1.89 s
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [d05694574b4c449a91495f502cf4a76d]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [a391d19779fb4b23b6d450b8c1fd27e2]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [7479116f03e04aedb49c7d4623c932e9]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+
+== B3c EqCopSchemaTest ==
+Befehl: eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
+Binary: 2026-09-10 23:45:15 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 2.87 s
+EqCopSchemaTest - v3-Vertrag (SONDE-005a)
+-----------------------------------------
+[ok]   Textriegel deckt die gemeinsame Falltabelle  [102 Faelle]
+[ok]   Falltabelle hat Substanz  [102 Faelle]
+[ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+[ok]   unbekanntes Schluesselwort bricht den Ladevorgang  [unbekanntes Schluesselwort #/multipleOf]
+[ok]   oneOf ohne Discriminator bricht den Ladevorgang  [falscher Werttyp fuer #/oneOf; oneOf ohne x-nakama-discriminator bei #]
+[ok]   additives Objekt ohne maxProperties bricht den Ladevorgang  [additives Objekt # ohne maxProperties]
+[ok]   unbekanntes Muster bricht den Ladevorgang  [unbekanntes Muster #: ^S-1-.*$]
+[ok]   nicht-lokale Referenz bricht den Ladevorgang  [nicht-lokale Referenz bei #: https://fremd/schema.json]
+[ok]   haengende Referenz bricht den Ladevorgang  [haengende Referenz bei #: #/$defs/gibtsnicht hat kein Ziel]
+[ok]   maxLength als Gleitkommazahl bricht den Ladevorgang  [falscher Werttyp fuer #/maxLength]
+[ok]   type als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/type]
+[ok]   required mit Nicht-String bricht den Ladevorgang  [falscher Werttyp fuer #/required]
+[ok]   Discriminator als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/x-nakama-discriminator]
+[ok]   integer akzeptiert 1.0 (draft 2020-12)
+[ok]   integer lehnt 1.5 ab
+[ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+[ok]   unbekannter Discriminator wird abgelehnt
+[ok]   discriminator_boolean_true_false
+[ok]   discriminator_boolean_falscher_typ
+[ok]   discriminator_boolean_fehlt
+[ok]   discriminator_json_pointer_boolean
+[ok]   discriminator_json_pointer_segment_fehlt
+[ok]   Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type
+[ok]   fehlendes Pflichtfeld zeigt auf das Elternobjekt
+[ok]   Laenge zaehlt Codepunkte, nicht Bytes
+[ok]   vier Codepunkte fallen bei maxLength 3
+[ok]   Verletzungen sind kanonisch sortiert und doppelfrei  [3]
+[ok]   objektwertiges const vergleicht reihenfolgeunabhaengig
+[ok]   objektwertiges const sieht einen Unterschied in der Tiefe
+[ok]   objektwertiges const sieht eine fehlende Eigenschaft
+[ok]   Binaerkorpus klassifiziert wie das Manifest (128 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [128 Fixtures]
+[ok]   Binaer-Manifestzahlen passen zur Fixtureliste
+[ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
+[ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
+[ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
+[ok]   JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json
+[ok]   band_stereo_featureframe_to_flatbuffer
+[ok]   nak29_encoder_project_samples_ohne_project_time_bit
+[ok]   nak29_encoder_local_monotonic_mit_project_sample_start
+[ok]   integration_samples_wird_von_beiden_lesern_klassifiziert  [gesetzt: der Leser gibt Bit UND Wert zurueck]
+[ok]   integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null  [abwesend: gueltig, aber ohne Bit â der Wert 0 ist hier NICHT die Aussage]
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ok]   N-18: die Byteinstanz liegt im Korpus
+[ok]   N-18: die Liste `angenommen` traegt Klassen  [14]
+[ok]   N-18: minus_null - wireZahl erzeugt GENAU den Text der Fixture  [0 gegen 0]
+[ok]   N-18: ein_zehntel - wireZahl erzeugt GENAU den Text der Fixture  [0.1 gegen 0.1]
+[ok]   N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.333333333333333]
+[ok]   N-18: kleinster_normaler_float - wireZahl erzeugt GENAU den Text der Fixture  [1.17549435082229e-38 gegen 1.17549435082229e-38]
+[ok]   N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: sichere_ganzzahl - wireZahl erzeugt GENAU den Text der Fixture  [9007199254740991 gegen 9007199254740991]
+[ok]   N-18: nyquist_gekappter_bandwert - wireZahl erzeugt GENAU den Text der Fixture  [18000 gegen 18000]
+[ok]   N-18: samplerate - wireZahl erzeugt GENAU den Text der Fixture  [48000 gegen 48000]
+[ok]   N-18: rangkomponente_2p7e_minus_11 - wireZahl erzeugt GENAU den Text der Fixture  [2.7e-11 gegen 2.7e-11]
+[ok]   N-18: rangkomponente_5p55e_minus_12 - wireZahl erzeugt GENAU den Text der Fixture  [5.55e-12 gegen 5.55e-12]
+[ok]   N-18: rangkomponente_lang - wireZahl erzeugt GENAU den Text der Fixture  [9.03808480367243e-11 gegen 9.03808480367243e-11]
+[ok]   N-18: float_minus_3p3 - wireZahl erzeugt GENAU den Text der Fixture  [-3.29999995231628 gegen -3.29999995231628]
+[ok]   N-18: null_komma_eins_plus_null_komma_zwei - wireZahl erzeugt GENAU den Text der Fixture  [0.3 gegen 0.3]
+[ok]   N-18: die Liste `verweigert` traegt Klassen  [6]
+[ok]   N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: zwei_hoch_53 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: groesster_normaler_float - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: nicht_endlich - wireZahl verweigert, wie die Fixture sagt
+[ok]   v3-Schema haelt die Engine-Teilmenge ein
+[ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+[ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+[ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (402 Fixtures)
+[ok]   Korpus hat Substanz  [402 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide  [ ]
+[ok]   fassung_4_leser_lehnt_state_report_dsp_ab
+[ok]   ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)
+[ok]   Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich
+[ok]   hash_stimmt_mit_der_zeichenkette  [ ]
+[ok]   q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck  [0.70710678118654757]
+[ok]   abweichender_hash_wird_abgewiesen  [state_hash SHA-256(dsp.jcs) = 583dd70cec8181fa632573c160cdb83e1e8fe5360b43109b3f2924d2bead7f0c, state_report.state_hash = 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+[ok]   das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   die mutierte Zeichenkette passiert den DTO-Weg: nur der Hash weist sie ab  [ ]
+[ok]   hash_stimmt_aber_dto_faellt: der Bericht wird GANZ abgewiesen  [struktur Wurzel braucht genau dsp_schema_version, parameters und schutz_zonen]
+[ok]   auch dieses Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert â NaN
+[ok]   N-18b: verweigert â +Inf
+[ok]   N-18b: verweigert â -Inf
+[ok]   N-18b: verweigert â 2^53 — eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert â 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert â groesster normaler float — Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert â 1e300 — Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert â -1e300
+[ok]   N-18b: verweigert â 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert â 9.99e-308 — dez = -308
+[ok]   N-18b: verweigert â 1e-308
+[ok]   N-18b: verweigert â 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+152 bestanden, 0 gescheitert
+
+== A1 EqCopNullTest ==
+Befehl: eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
+Binary: 2026-09-10 23:46:05 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 0.14 s
+  ok      Latenz ist 0 Samples
+  ok      Tail ist 0 s
+  ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  ok      kein falscher NaN-Alarm bei endlichem Signal
+  ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+
+== A16 EqCopProbeeqNullTest ==
+Befehl: eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe
+Binary: 2026-09-10 23:46:13 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 0.24 s
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+
+== B7 EqCopTransactionTest ==
+Befehl: eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe
+Binary: 2026-09-10 23:46:21 (juenger als die juengste Quelle: ja)
+Exitcode: 0
+Dauer: 0.38 s
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+Gate: Manifest SONDE-015 §5.11.4 (S0-S8, I1-I6, T1-T17), Matrix §3.1, §3.7-§3.11, §3.14.
+
+== A - Falltabelle §5.11.4 Teil 4, tabellengetrieben mit Wachen I1/I2/I4 (M-125, zugleich M-44, M-123, M-124) ==
+  ok        Wachen I1/I2/I4 nach T1 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T1 wiederholung_im_fenster_liefert_dasselbe_ergebnis  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T1  [belegt 3 soll 3, r=3 r0=0]
+  ok      T2 veraltete_base_revision_ist_konflikt_ohne_wirkung  [konflikt @S1 rev=1 nicht-memo, r danach 1, nicht im Register | soll konflikt @S1 r=1 nicht-memo]
+  ok      T2 der bestaetigte Zustand ist unberuehrt
+  ok        Wachen I1/I2/I4 nach T2  [belegt 1 soll 1, r=1 r0=0]
+  ok      T2 der Konflikt liegt nicht im Register: dieselbe tid mit aktueller base committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T2 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  ok      T3 der Grund kommt aus dem DTO-Vertrag  [bereich @ v1.band.0.gain_db]
+  ok        Wachen I1/I2/I4 nach T3  [belegt 1 soll 1, r=1 r0=0]
+  ok      T3 der Fehler ist nicht gemerkt: dieselbe tid mit gueltiger Nutzlast committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T3 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T4 zonenriegel_weist_ab_und_merkt_nichts  [user_schutz @S3 rev=1 nicht-memo, r danach 1, nicht im Register | soll user_schutz @S3 r=1 nicht-memo]
+  ok      T4 das Band bleibt ausserhalb der Zone
+  ok        Wachen I1/I2/I4 nach T4  [belegt 1 soll 1, r=1 r0=0]
+  ok      T5 busy_retry_wird_nicht_gemerkt  [busy_retry @S5 rev=1 nicht-memo, r danach 1, nicht im Register | soll busy_retry @S5 r=1 nicht-memo]
+  ok      T5 der Pool war wirklich voll  [frei 0]
+  ok        Wachen I1/I2/I4 nach T5  [belegt 1 soll 1, r=1 r0=0]
+  ok      T6 commit_erzeugt_genau_eine_revision_und_einen_eintrag  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok      T6 der Eintrag traegt (tid, e = r, Hash des neuen Zustands)  [e=2]
+  ok        Wachen I1/I2/I4 nach T6  [belegt 2 soll 2, r=2 r0=0]
+  ok      T7 Vorlauf: T endet in busy_retry (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      T7 ein Audio-ACK gibt eine Bank frei - ohne Revision  [frei 1, r=1]
+  ok      T7 wiederholung_nach_bankfreigabe_committet  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok        Wachen I1/I2/I4 nach T7  [belegt 2 soll 2, r=2 r0=0]
+  ok      T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=2 memo]
+  ok      T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt  [konflikt @S1 rev=2 nicht-memo, r danach 2, nicht im Register | soll konflikt @S1 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T8  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T9  [belegt 3 soll 3, r=3 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [busy_retry @S5 rev=2 nicht-memo, r danach 2, nicht im Register | soll busy_retry @S5 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T9 bankpflichtig bei vollem Pool  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok      T9 der Pool war im bankfreien Fall wirklich voll  [reserviert 4]
+  ok        Wachen I1/I2/I4 nach T9 bankfrei bei vollem Pool  [belegt 3 soll 3, r=3 r0=0]
+  ok        Wachen I1/I2/I4 nach T10 Vorlauf (33 Commits)  [belegt 32 soll 32, r=33 r0=0]
+  ok      T10 fensterrand_erste_transaktion_ist_draussen  [konflikt @S1 rev=33 nicht-memo, r danach 33, nicht im Register | soll konflikt @S1 r=33 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T10  [belegt 32 soll 32, r=33 r0=0]
+  ok      T11 fensterrand_zweite_transaktion_ist_drinnen  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  ok        Wachen I1/I2/I4 nach T11  [belegt 32 soll 32, r=33 r0=0]
+  ok      T12 Vorlauf: 31 Abweisungen wegen veralteter base_revision  [31]
+  ok        Wachen I1/I2/I4 nach T12 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T12 abweisungen_verdraengen_keinen_committeten_eintrag  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T12  [belegt 3 soll 3, r=3 r0=0]
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T13 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T13  [belegt 1 soll 1, r=1 r0=0]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+  ok      T14 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T14  [belegt 1 soll 1, r=1 r0=0]
+  ok      T15 fehler_in_S7_laesst_committed_und_hash_unveraendert  [fehler @S7 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S7 r=1 nicht-memo]
+  ok      T15 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T15  [belegt 1 soll 1, r=1 r0=0]
+  ok      T16 Vorlauf: Zone ueber dem Band (erlaubt) und Remove committen  [commit @S8 rev=2 memo / commit @S8 rev=3 memo]
+  ok      T16 undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung  [commit @S8 rev=4 memo, r danach 4, im Register | soll commit @S8 r=4 memo]
+  ok      T16 das Band liegt wieder da und gilt als verletzt (M-68)
+  ok        Wachen I1/I2/I4 nach T16  [belegt 4 soll 4, r=4 r0=0]
+  ok      T17 Ladestart: r0 = r = 33, das Register ist leer
+  ok        Wachen I1/I2/I4 nach T17 Ladestart  [belegt 0 soll 0, r=33 r0=33]
+  ok      T17 wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch  [commit @S8 rev=34 memo, r danach 34, im Register | soll commit @S8 r=34 memo]
+  ok        Wachen I1/I2/I4 nach T17  [belegt 1 soll 1, r=34 r0=33]
+  ok      falltabelle_vollstaendig_gefahren: jede Zeile T1 bis T17 genau einmal, in Tabellenreihenfolge  [17 Faelle]
+
+== B - Fehler in jeder fehlbaren Stufe S1 bis S7, je an ihrer Tabellenzeile (M-75) ==
+  ok      fehler_in_S1_laesst_committed_und_hash_unveraendert (T2)  [konflikt @S1 rev=1 nicht-memo]
+  ok      fehler_in_S2_laesst_committed_und_hash_unveraendert (T3)  [fehler @S2 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S3_laesst_committed_und_hash_unveraendert (T4)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      fehler_in_S4_laesst_committed_und_hash_unveraendert (T13)  [fehler @S4 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [fehler @S6 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  ok        Wachen I1/I2/I4 nach den sieben Einspritzungen  [belegt 1 soll 1, r=1 r0=0]
+  ok      fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [commit @S8 rev=2 memo]
+  ok      nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl (10.000 Nachschlaege)  [Allokationen 0, Treffer 10000]
+
+== C - Hinter dem Commit-Punkt wird nicht alloziert (§5.11.4 Teil 2) ==
+  ok      hinter_dem_commit_punkt_wird_nicht_alloziert  [Allokationen ab S8: 0 ueber 47 Commits (40 Apply mit Ringueberlauf und Registerverdraengung, Undo, Undo, Redo, Remove, Neutralisieren, Revert, Preset)]
+  ok        Wachen I1/I2/I4 nach den Commit-Messungen  [belegt 32 soll 32, r=47 r0=0]
+
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+  ok      apply_erzeugt_genau_eine_revision  [commit @S8 rev=2 memo, Ring 2, Register 2]
+  ok        Wachen I1/I2/I4 nach apply  [belegt 2 soll 2, r=2 r0=0]
+  ok      remove_erzeugt_genau_eine_revision  [commit @S8 rev=3 memo, Ring 3, Register 3]
+  ok        Wachen I1/I2/I4 nach remove  [belegt 3 soll 3, r=3 r0=0]
+  ok      undo_erzeugt_genau_eine_revision  [commit @S8 rev=4 memo, Ring 3, Register 4]
+  ok        Wachen I1/I2/I4 nach undo  [belegt 4 soll 4, r=4 r0=0]
+  ok      redo_erzeugt_genau_eine_revision  [commit @S8 rev=5 memo, Ring 3, Register 5]
+  ok        Wachen I1/I2/I4 nach redo  [belegt 5 soll 5, r=5 r0=0]
+  ok      neutralisieren_erzeugt_genau_eine_revision  [commit @S8 rev=6 memo, Ring 4, Register 6]
+  ok        Wachen I1/I2/I4 nach neutralisieren  [belegt 6 soll 6, r=6 r0=0]
+  ok      revert_erzeugt_genau_eine_revision  [commit @S8 rev=7 memo, Ring 5, Register 7]
+  ok        Wachen I1/I2/I4 nach revert  [belegt 7 soll 7, r=7 r0=0]
+  ok        revert fuehrt exakt auf den Zustand der referenzierten Revision 1
+  ok        das Preset dieses Laufs ist geschrieben
+  ok      preset_laden_erzeugt_genau_eine_revision  [commit @S8 rev=8 memo, Ring 6, Register 8]
+  ok        Wachen I1/I2/I4 nach preset_laden  [belegt 8 soll 8, r=8 r0=0]
+  ok      alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt  [Commit S0..S8 in Reihenfolge: ja, S8 ohne Commit erreicht: nie]
+
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  ok      zehntausend_transaktionen_erzeugen_hoechstens_eine_revision  [r0=7, r - r0 = 1; T1 9993, T2 6, T6 1, andere 0, Mischzustaende 0]
+  ok        Wachen I1/I2/I4 nach jeder der 10.000 Eingaben  [keine Verletzung]
+
+== F - Wiederholung unter einer Zone, Ladestart und Register (M-123, M-124) ==
+  ok      wiederholung_unter_einer_zone_bekommt_nicht_user_schutz  [gespeichertes_ergebnis @S0 rev=3 memo]
+  ok        Wachen I1/I2/I4 nach dem Zonenablauf  [belegt 4 soll 4, r=4 r0=0]
+  ok      ladestart_hat_leeres_register_und_haelt_die_revision (dieselbe Instanz, vorher 32 Registereintraege)  [r=34 r0=34 belegt 32 -> 0, Cursor 1]
+  ok      register_ist_nicht_teil_des_zustands: Speichern schreibt es nicht, der Ladestart leert es, Hash und Revision bleiben  [5745 Bytes]
+
+== G - Belegung, Remove und Undo als ein Objekt (M-58 bis M-62) ==
+  ok      ausschalten_gibt_keinen_slot_frei (M-59): Slot bleibt belegt, Werte bleiben, Einschalten nimmt dieselben
+  ok      remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  ok      remove_nummeriert_nicht_um (M-60): Slot 5 bleibt Slot 5
+  ok      undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  ok      acht_belegte_slots_ueberschreiben_nichts (M-62): eigener Fehler, kein Opfer  [fehler @S4 rev=9 nicht-memo grund=alle_slots_belegt]
+  ok      freier_slot_verarbeitet_nichts (M-58): Slot 2 frei mit +12 dB, Dynamik und Auto-Gain an - Ausgang bitgleich, Auto-Gain gleich, keine Auslenkung  [Auto-Gain -1.427212 / -1.427212 dB, Auslenkung Slot 2 0.000000 dB]
+
+== H - Schutz-Zonen (M-66 bis M-73, M-126) ==
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  ok      zone_laufzeitkappung_aendert_nichts_persistentes (M-66): bei 44,1 kHz auf 0,45 fs gekappt, persistent 19900-20000 Hz
+  ok      band_in_zone_ziehen_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      abweisung_laesst_hash_und_revision_unveraendert (M-67): keine halbe Anwendung
+  ok      einschalten_in_der_zone_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      von_zone_a_nach_zone_b_wird_abgewiesen (M-67, B-03): je Zone einzeln, kein Sammelzustand  [user_schutz @S3 rev=2 nicht-memo]
+  ok      zone_ueber_band_ist_erlaubt_und_meldet_verletzung (M-68): das Band klingt weiter und steht im Bericht  [commit @S8 rev=2 memo]
+  ok      verletztes_band_bleibt_bedienbar (M-69): Gain und Frequenz innerhalb seiner Zone  [commit @S8 rev=3 memo / commit @S8 rev=4 memo]
+  ok      automation_verletzt_und_meldet_denselben_zustand (M-70): vorbeigeschrieben, keine Revision, dieselbe Meldung
+  ok      zone_deaktivieren_ist_eine_transaktion (M-71): danach ist kein Band verletzt und der Weg hinein frei  [commit @S8 rev=5 memo]
+  ok      zone_entfernen_ist_eine_transaktion (M-71)  [commit @S8 rev=7 memo]
+  ok      zonen_sind_teil_von_hash_preset_bericht_und_state (M-72): eine Zonenliste, vier Orte
+  ok      neunte_zone_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_anzahl @ schutz_zonen]
+  ok      doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_doppelt @ schutz_zonen[1].id]
+  ok      preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=2 memo]
+  ok      redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=4 memo]
+
+== I - Undo-Ring: Tiefe, Redo-Zweig, Neutralisieren (M-78 bis M-80) ==
+  ok      undo_ring_haelt_tiefe_32 (M-78): beim 33. Eintrag faellt der aelteste heraus; der volle Ring reist durch Speichern und Laden  [Ring 32, aeltester rev 8, juengster rev 39, 36975 Bytes]
+  ok      neue_transaktion_schneidet_den_redo_zweig_ab (M-79): ein Cursor im selben Ring  [fehler @S4 rev=5 nicht-memo grund=redo_leer]
+  ok      neutralisieren_loescht_die_historie_nicht (M-80): alle Werte auf Default, Rollenschalter und Zonen bleiben, Undo fuehrt zurueck  [commit @S8 rev=2 memo]
+
+== J - AutomationOverlay und PreviewOverlay am Kern (M-81, M-83) ==
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      preview_wird_nie_serialisiert (M-83): Speichern waehrend der Vorschau ergibt dieselben Bytes
+
+== K - Validator, Kanalmodus, Dynamikwerte, Klemmliste, Auto-Gain und Hash (M-14, M-23, M-24, M-28, M-39, M-77) ==
+  ok      apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=nichtendlich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.q]
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich (M-24, ueber zwei Transaktionen)
+  ok      channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S2 rev=2 nicht-memo grund=enum @ v1.band.0.channel_mode]
+  ok      kein_slot_erbt_den_modus (M-28)  [commit @S8 rev=3 memo]
+  ok      klemmliste_erscheint_im_bericht (M-23, E2-7): geklemmt auf internal, persistent weiter priority_sidechain; ein Eintrag je Slot, obwohl die Frequenz zusaetzlich gekappt ist  [1 Klemmung(en)]
+  ok      auto_gain_ist_nicht_im_hash (M-39): derselbe Hash bei verschiedenem abgeleitetem Wert  [44,1 kHz -1.093124 dB, 96 kHz -0.815437 dB]
+  ok      hash_kommt_aus_dem_bestandskanon (M-77): der Kern hasht jedes gueltige DTO-Fixture wie MANIFEST.json  [7/7]
+
+== L - Preset (M-95 bis M-100) ==
+  ok      preset_traegt_zwei_getrennte_versionen (M-95): preset_schema_version 1 neben dsp_schema_version 2
+  ok      preset_hat_keine_identitaetsfelder (M-97): keines der sechs Felder existiert im geschriebenen Preset
+  ok      preset_traegt_den_klanginhalt_vollstaendig (M-96): 119 Werte und Zonen kommen an  [commit @S8 rev=2 memo]
+  ok      preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  ok      preset_laesst_eq_enabled_unberuehrt (M-100, R12): das Ziel bleibt engagiert, obwohl die Quelle des Presets es nicht war
+  ok      undo_nach_preset_stellt_alles_her (M-100)
+  ok      identitaetsfeld_wird_abgelehnt (M-97): je Feld ein Negativfixture, als Preset-Laden in S2 abgewiesen  [6/6]
+  ok      unbekanntes_preset_major_wird_abgelehnt (M-99): klarer Fehler preset_schema_version, keine read-only-Haltung
+  ok        jedes ungueltige Preset-Fixture faellt mit seinem Manifestgrund  [17/17]
+  ok      unbekanntes_top_level_feld_wird_ignoriert (M-98)  [commit @S8 rev=4 memo]
+
+== M - Prozessor: 112 Host-Parameter in Vertragsreihenfolge (M-64, M-87, M-88) ==
+  ok      apvts_fuehrt_112_parameter_in_vertragsreihenfolge (M-88): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [112 Parameter, Reihenfolge 112, Typ/Grenzen 112]
+  ok      v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  ok      occupied_ist_kein_hostparameter (M-64): nicht in der Hostliste, von aussen nicht automatisierbar
+  ok      jede_v2_kennung_erklaert_ihren_ort (M-87): host_parameter genau dann, wenn sie in der Hostliste steht  [11/11]
+
+== N - Prozessor: Host-Dirty, Kind Dsp, erster Block, Freigabe, Altstand und fremdes Major (M-08, M-09, M-85, M-89, M-90, M-92) ==
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+  ok      abgewiesene_meldet_nicht (M-85): die Abweisung am Zonenriegel und das Laden melden kein Dirty  [user_schutz @S3 rev=2 nicht-memo, Laden 0]
+  ok      prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [5895 Bytes]
+  ok      eq_enabled_ueberlebt_speichern_laden (M-08): im bestaetigten Zustand und im Hostparameter
+  ok      bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 0, nach 1]
+  ok      ohne_callback_bleibt_gespeichert_und_wird_nachgeholt (M-09): bestaetigt ohne Callback, uebernommen vom naechsten Block vor seiner Ausgabe  [Uebernahmen 1 -> 1 -> 2]
+  ok      freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  ok      altstand_v1_laedt_im_prozessor_verlustfrei (M-90, R5, Prozessorhaelfte): der migrierte Stand wird der bestaetigte Zustand, Revision 0, gespeichert als v2  [3458 Bytes v1 -> 3644 Bytes]
+  ok      fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt (M-92, Prozessorhaelfte): read-only mit Originalbytes, eq_enabled aus, keine Transaktion  [fehler @keine rev=0 nicht-memo grund=schreibgeschuetzt, 186 Bytes]
+
+== O - Prozessor: Automation, Gestus, Vorschau, Reload, Offline, nicht-endlicher Hostwert (M-52, M-63, M-81 bis M-84, M-119, M-120) ==
+  ok      automation_auf_freien_slot_aendert_werte_nicht_klang (M-63): der Parameter folgt; Belegung, Programm und Audio bleiben gleich  [51200 Samples verglichen, Programmuebernahmen 1 / 1]
+  ok      capability_entscheidet_den_automationspfad (M-119): sample_accurate_automation ist unsupported - Topologieautomation wirkt nicht, der Parameter folgt trotzdem
+  ok        Gegenprobe: kontinuierliche Automation (gain_db) wirkt blockweise
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      abgeschlossener_gestus_ist_eine_revision (M-82): zwei ueberlappende Gesten mit 25 Zwischenwerten, eine Revision, die Endwerte bestaetigt  [r 1 -> 2, gain -11.000000, freq 1680.000244]
+  ok      nichtendlicher_hostwert_erreicht_das_programm_nie (E4-10): NaN und +Inf ueber den Hostparameter lassen den wirksamen Zustand beim bestaetigten Wert, der Ausgang bleibt endlich  [gain 3.000000, freq 1000.000000]
+  ok      preview_wird_nie_serialisiert (M-83, Prozessor): getStateInformation waehrend der Vorschau liefert dieselben Bytes
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      nach_laden_immer_processed (M-52): die Auswahl ist transient und steht weder im State noch im DTO
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120): der Wechsel in den Offline-Betrieb beendet die Vorschau; der Render ist bitgleich zum Lauf ohne Vorschau
+
+167 geprueft, 0 Fehler
+TRANSAKTION OK
+
+== A12 erzeuge_state_fixtures.py ==
+Befehl: py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen
+Exitcode: 0
+Dauer: 1.65 s
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 29 ungueltige mit Grund
+Preset: 3 gueltige, 17 ungueltige mit Grund
+STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+== A4 broker ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never
+Exitcode: 0
+Dauer: 1238.64 s
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2908:9
+     |
+2908 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3893:9
+     |
+3893 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:3940:9
+     |
+3940 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:280:5
+    |
+277 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+280 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1907:4
+     |
+1907 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.18s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 250 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::hypothese::befund::tests::finding_id_ist_deterministisch_und_trennt ... ok
+test coordinator::hypothese::befund::tests::sechs_teile_sind_sechs_und_benannt ... ok
+test coordinator::hypothese::determinismus::tests::quantisierung_klemmt_rastet_und_ist_nan_ehrlich ... ok
+test coordinator::hypothese::eingang::tests::band_ohne_bit_traegt_keinen_wert ... ok
+test coordinator::hypothese::klassenwahl::tests::messgruende_sind_genau_die_fuenf_aus_r2 ... ok
+test coordinator::hypothese::messung::tests::alignment_misst_paarweise_ueberlappung ... ok
+test coordinator::hypothese::messung::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar ... ok
+test coordinator::hypothese::messung::tests::korrelation_ist_streng ... ok
+test coordinator::hypothese::messung::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster ... ok
+test coordinator::hypothese::messung::tests::spanne_saettigt_an_den_raendern ... ok
+test coordinator::hypothese::messung::tests::unabhaengige_fenster_verdichten_wiederholungen ... ok
+test coordinator::hypothese::rechnung::tests::einzelueberlebender_neben_passagenausschluss ... ok
+test coordinator::hypothese::rechnung::tests::ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht ... ok
+test coordinator::hypothese::screening::tests::bandraender_fallen_von_beiden_seiten ... ok
+test coordinator::hypothese::screening::tests::gate_faellt_in_der_zugesagten_reihenfolge ... ok
+test coordinator::hypothese::screening::tests::passagengates_trennen_verschoben_anders_und_zu_kurz ... ok
+test coordinator::hypothese::screening::tests::screeningrang_misst_auf_der_gruppe ... ok
+test coordinator::hypothese::screening::tests::screeningrang_traegt_die_koinzidenz ... ok
+test coordinator::hypothese::screening::tests::stufe_b_laeuft_hoechstens_fuenfmal ... ok
+test coordinator::hypothese::vertrag::tests::geschlossene_mengen_sind_rund ... ok
+test coordinator::hypothese::zusammenhang::tests::belegpraedikate_lesen_vorzeichen ... ok
+test coordinator::hypothese::zusammenhang::tests::bootstrap_einseitig_trennt_die_richtung ... ok
+test coordinator::hypothese::zusammenhang::tests::gemessene_null_trennt_vom_nicht_gemessenen ... ok
+test coordinator::hypothese::zusammenhang::tests::getrennt_verlangt_rang_und_zusammenhang ... ok
+test coordinator::hypothese::zusammenhang::tests::rang_ist_das_quantisierte_mittel_der_sechs ... ok
+test coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+test coordinator::maskierung::tests::bandpegel_summiert_leistung_statt_dezibel_zu_mitteln ... ok
+test coordinator::maskierung::tests::der_wert_traegt_keine_zeichenanweisung ... ok
+test coordinator::maskierung::tests::herabgesetzt_misst_die_luecke_und_nicht_den_seek ... ok
+test coordinator::maskierung::tests::ohne_fenster_gibt_es_kein_objekt ... ok
+test coordinator::maskierung::tests::ohne_messung_null_mit_gueltig_falsch ... ok
+test coordinator::maskierung::tests::wert_ist_die_differenz_und_benennt_den_bereich ... ok
+test coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund ... ok
+test coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen ... ok
+test aggregat::tests::alte_temp_restdatei_blockiert_snapshot_nicht ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3 ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_5_liste_deckt_sich_mit_dem_register ... ok
+test aggregat::tests::schreiben_erzeugt_haltbare_datei ... ok
+test bindung::tests::runde_laden_schreiben_laden ... ok
+test bindung::tests::fremde_temp_restdatei_wird_weder_benutzt_noch_ueberschrieben ... ok
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_kennt_state_report_dsp_nicht ... ok
+test coordinator::tests::hoermarkierung_vor_evidence_dispatch ... ok
+test coordinator::tests::hoermarkierung_v2_v3_gleicher_zustand ... ok
+test coordinator::tests::intervention_control_disconnect_setzt_sticky_unknown ... ok
+test coordinator::tests::hoermarkierung_tail_sperrt_bis_ende ... ok
+test coordinator::tests::intervention_neutral_resync_entsperrt ... ok
+test coordinator::tests::intervention_falsche_end_id_bleibt_gesperrt ... ok
+test coordinator::tests::instance_alias_gleiche_id_in_verschiedenen_sitzungsadressraeumen_kollidiert_nicht ... ok
+test coordinator::tests::intervention_sequenzluecke_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_overflow_setzt_sticky_unknown ... ok
+test coordinator::tests::heartbeat_ack_meldet_alias_quarantaene_fuer_beide_links ... ok
+test coordinator::tests::intervention_ueberlappung_bleibt_bis_alle_end ... ok
+test coordinator::tests::intervention_unbekanntes_erstes_end_setzt_sticky_unknown ... ok
+test dto::tests::as_f64_liefert_fuer_jede_number_einen_wert ... ok
+test coordinator::zustand::h21_tests::konfliktriegel_greift_auch_bei_anderer_sid_schreibweise ... ok
+test dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben ... ok
+test dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls ... ok
+test dto::tests::zonenleiter_meldet_denselben_ersten_grund_wie_die_anderen_beine ... ok
+test framing::tests::abbruch_mitten_im_frame ... ok
+test framing::tests::hin_und_zurueck ... ok
+test dto::tests::bestand_kommt_aus_dem_vertrag_und_hat_120_eintraege ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
+test framing::tests::laengengrenze_beidseitig ... ok
+test instance_alias::tests::instance_address_empty_uses_fresh_uuid ... ok
+test instance_alias::tests::instance_address_alias_vectors ... ok
+test instance_alias::tests::instance_alias_collision_abgeleitet_dann_native_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_collision_native_dann_abgeleitet_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_collision_zwei_ableitungen_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_target_recomputed_and_matched ... ok
+test coordinator::tests::subscription_cleanup_vor_weiterem_push ... ok
+test instance_alias::tests::instance_alias_unknown_fail_closed ... ok
+test paar::tests::paar_ausgerichtet_bei_deckungsgleichen_fenstern ... ok
+test paar::tests::paar_in_verschiedenen_prozessen_hoechstens_wahrscheinlich ... ok
+test paar::tests::paar_mit_v1_partner_bleibt_unklar_mit_klarem_grund ... ok
+test paar::tests::paar_ohne_partner_ist_unvollstaendig ... ok
+test paar::tests::paar_wird_bei_spruengen_herabgestuft ... ok
+test paar::tests::paar_wird_bei_teilueberdeckung_herabgestuft_und_ohne_ueberlappung_unklar ... ok
+test paar::tests::paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulaufen ... ok
+test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
+test protokoll::tests::fehlende_hoermarkierung_bleibt_fuer_alte_v2_sender_false ... ok
+test protokoll::tests::gemeinsame_floatbreiten_akzeptieren_maximum_aber_keinen_overflow ... ok
+test protokoll::tests::heartbeat_session_token_hat_dieselbe_codepunktgrenze_wie_das_schema ... ok
+test coordinator::tests::p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema ... ok
+test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
+test protokoll::tests::gemeinsame_integerbreiten_urteilen_an_den_wire_kanten_exakt ... ok
+test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
+test protokoll::tests::hello_enum_und_audiofelder_werden_semantisch_begrenzt ... ok
+test protokoll::tests::option_felder_akzeptieren_explizites_null_wie_das_schema ... ok
+test protokoll::tests::messstand_guard_prueft_minima_endlichkeit_und_textcap ... ok
+test protokoll::tests::hello_textfelder_haben_codepunktgenaue_harte_grenzen ... ok
+test protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz ... ok
+test protokoll::tests::unbekannte_felder_werden_auf_jeder_vertragsebene_abgelehnt ... ok
+test protokoll::tests::v1_hello_bleibt_angenommen_und_welcome_spiegelt_v1 ... ok
+test protokoll::tests::v2_hello_mit_nonce_wird_angenommen ... ok
+test protokoll::tests::version_3_bekommt_reject_mit_spanne ... ok
+test register::tests::konflikt_kommt_und_geht_mit_der_zweiten_verbindung ... ok
+test register::tests::hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false ... ok
+test register::tests::marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset ... ok
+test register::tests::owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her ... ok
+test register::tests::profilbindung_haelt_ueber_reconnect ... ok
+test register::tests::snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id ... ok
+test register::tests::sechzehn_sensoren_werden_korrekt_benannt ... ok
+test register::tests::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge ... ok
+test register::tests::v2_sensorpool_gibt_getrennte_ids_zurueck ... ok
+test register::tests::unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt ... ok
+test coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab ... ok
+test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
+test server::tests::falsche_protokollversion_bekommt_reject ... ok
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
+test server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht ... ok
+test server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen ... ok
+test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
+test aggregat::tests::gleicher_zeitstempel_ueberschreibt_keinen_snapshot ... ok
+test server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab ... ok
+test server::tests::produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel ... ok
+test bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand ... ok
+test server::tests::bye_braucht_exakt_das_ausgegebene_session_token ... ok
+test server::tests::user_sid_ist_wohlgeformt ... ok
+test bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand ... ok
+test server::tests::v2_abbau_flusht_die_letzte_antwort ... ok
+test aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten ... ok
+test server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung ... ok
+test server::tests::vorhandene_leere_instance_nonce_wird_nicht_als_uuid_umgedeutet ... ok
+test server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten ... ok
+test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
+test sitzung::tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
+test store::tests::konstante_trigger_haben_exakte_grenzen ... ok
+test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
+test store::tests::rusqlite_version_0_40_2_ist_exakt_gepinnt ... ok
+test store::tests::rust_version_boden_ist_exakt_gepinnt ... ok
+test server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch ... ok
+test transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt ... ok
+test transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser ... ok
+test transport::bootstrap::tests::hex32_riegel ... ok
+test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... ok
+test transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch ... ok
+test transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale ... ok
+test transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt ... ok
+test transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt ... ok
+test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... ok
+test transport::legacy_v2::tests::echtes_v2_json_geht_weiterhin_durch ... ok
+test transport::legacy_v2::tests::v2_json_ist_kein_gueltiger_v3_envelope ... ok
+test transport::legacy_v2::tests::v3_binaerframe_wird_nie_als_v2_json_gedeutet ... ok
+test transport::pipetoken::tests::base32_gegen_rfc_4648 ... ok
+test transport::pipetoken::tests::golden_aus_dem_entwurf ... ok
+test transport::pipetoken::tests::probe_namensraum_laesst_nur_probe_namen_durch ... ok
+test transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform ... ok
+test transport::pipetoken::tests::schreibweise_der_sid_ist_egal ... ok
+test transport::pipetoken::tests::tokenform_ist_stabil ... ok
+test transport::pipetoken::tests::verschiedene_sids_verschiedene_token ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen ... ok
+test server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben ... ok
+test server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz ... ok
+test store::writer::tests::group_commit_batchcap_hat_keinen_einzel_fsync_je_event ... ok
+test server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt ... ok
+test transport::server_v3::tests_fristen::bootstrap_und_senkenfrist_minus_eins_und_exakt_sind_inklusive ... ok
+test server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist ... ok
+test server::tests::ungelesenes_welcome_blockiert_connection_ende_nicht ... ok
+test transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender ... ok
+test transport::server_v3::tests_fristen::transportfassung_und_json_leser_stimmen_ueberein ... ok
+test transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... ok
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_fristen::p0_auf_der_telemetriepipe_wird_abgewiesen ... ok
+test transport::server_v3::tests_fristen::p2_auf_der_controlpipe_wird_abgewiesen ... ok
+test server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup ... ok
+test coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet ... ok
+test transport::server_v3::tests_kopplung::connect_callbacks_je_kopplung_genau_einmal ... ok
+test transport::server_v3::tests_lebenszyklus::beendete_verbindungen_werden_geerntet ... ok
+test store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten ... ok
+test transport::server_v3::tests_lebenszyklus::kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_je_callback_genau_einmal ... ok
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+test transport::server_v3::tests_rueckstau::geschlossener_eingang_liefert_nichts_mehr ... ok
+test transport::server_v3::tests_lebenszyklus::acceptor_ueberlebt_die_verbindungsgrenze ... ok
+test transport::server_v3::tests_kopplung::welcome_folgt_dem_abgeschlossenen_control_verbunden ... ok
+test transport::server_v3::win_handles::d11_tests::stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler ... ok
+test transport::v3::tests::crc32c_gegen_bekannte_vektoren ... ok
+test transport::server_v3::tests_rueckstau::blockierende_senke_haelt_den_leser_nicht_auf ... ok
+test transport::v3::tests::grenzen_des_rahmens ... ok
+test transport::v3::tests::jeder_regelname_ist_rueckuebersetzbar ... ok
+test transport::v3::tests::json_rundlauf ... ok
+test transport::v3::tests::p2_traegt_pflicht_crc ... ok
+test transport::v3::tests::ratengrenze_haelt_das_fenster ... ok
+test transport::v3::tests::stromleser_vertraegt_byteweise_zustellung ... ok
+test transport::v3::tests::stufe_drei_sammelt_und_sortiert ... ok
+test transport::v3::tests::u32_ueberlauf_wird_nicht_akzeptiert ... ok
+test transport::warteschlange::tests::ingress_droppt_p2_zuerst_und_trennt_bei_p0 ... ok
+test transport::warteschlange::tests::ingress_liefert_p0_getrennt_vom_rest ... ok
+test transport::warteschlange::tests::ingress_voll_ohne_p2_trennt_auch_bei_p1 ... ok
+test transport::warteschlange::tests::p0_verwirft_nie_und_meldet_ueberlauf ... ok
+test transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor ... ok
+test transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position ... ok
+test transport::warteschlange::tests::p1_neuzugang_ueberholt_keine_wiederholung ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_fliesst_ohne_reconnect_ab ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_haelt_den_schluessel ... ok
+test transport::warteschlange::tests::p2_ersetzt_den_aeltesten_ungesendeten ... ok
+test vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden ... ok
+test vertrag::tests::discriminator_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::discriminator_boolean_falscher_typ ... ok
+test vertrag::tests::discriminator_boolean_fehlt ... ok
+test vertrag::tests::discriminator_boolean_true_false ... ok
+test vertrag::tests::discriminator_json_pointer_boolean ... ok
+test transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus ... ok
+test vertrag::tests::discriminator_json_pointer_segment_fehlt ... ok
+test vertrag::tests::fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt ... ok
+test vertrag::tests::haengende_referenz_bricht_das_laden ... ok
+test vertrag::tests::integer_akzeptiert_1punkt0 ... ok
+test vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden ... ok
+test vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes ... ok
+test vertrag::tests::oneof_ohne_discriminator_bricht_das_laden ... ok
+test vertrag::tests::required_mit_nicht_string_bricht_das_laden ... ok
+test vertrag::tests::type_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::typfehler_erzeugt_keine_lawine ... ok
+test vertrag::tests::unbekannter_discriminator_wird_abgelehnt ... ok
+test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
+test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
+test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
+test vertrag::tests::textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python ... ok
+test transport::server_v3::tests_lebenszyklus::control_ende_beendet_die_telemetrie ... ok
+test transport::server_v3::tests_rueckstau::p0_wird_beantwortet_waehrend_p1_die_senke_blockiert ... ok
+test transport::server_v3::tests_rueckstau::p0_ueberlauf_trennt_die_verbindung ... ok
+test transport::server_v3::tests_lebenszyklus::stop_im_fenster_vor_der_bedienung_haengt_nicht ... ok
+test transport::server_v3::tests_kopplung::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_haelt_im_kopplungs_callback_fenster ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengender_senke ... ok
+
+test result: ok. 250 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.69s
+
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+
+running 5 tests
+test aktiver_fremdclient_verhindert_stop ... ok
+test client_resetet_idlefrist ... ok
+test geordneter_stopp_schliesst_den_store ... ok
+test letzter_client_idle_stop_an_grenze ... ok
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst has been running for over 60 seconds
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.59s
+
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+running 10 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test wirezahl_texte_halten_den_textriegel ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 51 tests
+test brokerneustart_behaelt_session_epoch ... ok
+test control_vor_welcome ... ok
+test brokerneustart_ohne_mainprojectstate_ingress ... ok
+test brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei ... ok
+test erstes_einziges_main_fuehrt_sonst_bestaetigung ... ok
+test fuehrung_exklusiv_und_reconnect_im_selben_lauf ... ok
+test fuehrung_exklusiv_und_uebergabe ... ok
+test fuehrung_stale_bis_eviction ... ok
+test heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht ... ok
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test eviction_loescht_intervention_unknown_nicht ... ok
+test eviction_haelt_dauerhaften_konfliktriegel ... ok
+test eviction_haelt_phase_a_riegel ... ok
+test abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen ... ok
+test join_nur_bei_eindeutigem_main ... ok
+test join_reconnect_disconnect_setzt_sticky_unknown_bis_resync ... ok
+test hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen ... ok
+test p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch ... ok
+test neue_nonce_verdraengt_alte_sofort ... ok
+test konfliktriegel_ueberlebt_eviction ... ok
+test liveness_nur_instant ... ok
+test p2_mutiert_erst_nach_flatbuffers_verifikation ... ok
+test probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag ... ok
+test probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed ... ok
+test schreiber_wartet_nicht_unbegrenzt_auf_den_peer ... ok
+test reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test session_faellt_mit_dem_letzten_client ... ok
+test global_session_cap_weist_am_cap_plus_eins_ab ... ok
+test p2_push_haelt_den_standlock_nicht ... ok
+test stale_konstanten_ableitung ... ok
+test senke_haelt_den_standlock_nicht_ueber_den_push ... ok
+test state_report_erreicht_liveness_ueber_produktive_p1_senke ... ok
+test stale_grenze_exklusiv_und_kontakt_setzt_zurueck ... ok
+test telemetrie_einmalig_gekoppelt ... ok
+test tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel ... ok
+test subnormale_samplerate_ergibt_kein_fenster ... ok
+test unverarbeitete_bytes_aendern_den_sessiongraphen_nicht ... ok
+test trennen_bereinigt_vor_join ... ok
+test verdraengte_nonce_report_sperrt_beide ... ok
+test verdraengung_flusht_den_snapshot_im_trennzyklus ... ok
+test zwei_projekte_bleiben_getrennt ... ok
+test vergifteter_stand_beendet_den_prozess_nicht ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test session_und_global_cap ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+test caps_stale_first_deterministisch ... ok
+test sichtgrenzen_und_wire_replay_null ... ok
+test kein_expect_mehr_auf_dem_standlock ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 23 tests
+test neustart_besetzt_name_vor_bereit ... ok
+test prozesskill_gibt_name_frei ... ok
+test accept_bewaffnet_nachfolger_vor_worker_uebergabe_bei_zwei_listenern ... ok
+test fremde_sid_revertiert_und_erreicht_keinen_coordinator ... ok
+test ersatzlistener_fehler_behaelt_besitz_und_meldet_nicht_bereit ... ok
+test start_belegter_name_scheitert_ohne_zweiten_broker ... ok
+test freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen ... ok
+test control_und_telemetry_durchlaufen_die_identische_sid_kette ... ok
+test nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext ... ok
+test gleiche_sid_wird_erst_nach_revert_angenommen ... ok
+test impersonation_fehlschlag_schliesst_ohne_serverkontext ... ok
+test startfehler_nach_erstem_handle_raeumt_handles_threads_und_namen_vor_publish ... ok
+test revert_fehlschlag_beendet_testbrokerprozess_fail_fast ... ok
+test start_freier_name_bewaffnet_zwei_listener_vor_veroeffentlichung ... ok
+test zwei_verschraenkte_freigaben_lassen_aktive_worker_auf_null ... ok
+test stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich ... ok
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... ok
+test tokenabfragefehler_revertiert_und_schliesst_ohne_senke ... ok
+test vollstaendiges_abzulehnendes_hello_impersoniert_prueft_sid_und_revertiert_vor_reject ... ok
+test jeder_unsafe_block_traegt_einen_safety_kommentar ... ok
+test zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz ... ok
+test verbindungsgriff_besitzt_handle_und_registereintrag ... ok
+test bootstrap_timeout_und_lesefehler_revertieren_jeweils_ohne_serverweiterlauf ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.52s
+
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+
+running 26 tests
+test every_loudness_contract_violation_is_removed_without_losing_the_rest ... ok
+test foreign_main_command_is_rejected ... ok
+test latest_per_source_no_cross_gap_interpolation ... ok
+test eviction_removes_volatile_measurement_projection ... ok
+test first_valid_p2_changes_only_measurement_axis ... ok
+test betrieb_suspended_and_offline_reach_snapshot ... ok
+test invalid_frame_keeps_last_valid_but_marks_measurement_invalid ... ok
+test bridge_pid_change_preserves_membership_but_never_old_control_address ... ok
+test missing_messpunkt_yields_member_without_descriptor ... ok
+test control_end_is_atomic_and_no_push_uses_old_link_after_unlock ... ok
+test join_is_connected_but_measurement_missing ... ok
+test nonfinite_loudness_counts_per_source_but_keeps_rest_of_frame ... ok
+test p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement ... ok
+test handover_snapshot_revokes_old_main_before_new_write ... ok
+test store_degraded_travels_only_as_true ... ok
+test restart_has_no_old_live_or_measurement_truth ... ok
+test loudness_pair_reaches_only_its_source ... ok
+test main_subscribe_pushes_absolute_snapshot_and_reconnect_resubscribes ... ok
+test p2_reject_reason_reaches_subscriber_and_keeps_last_valid_frame ... ok
+test json_minor_selects_runtime_contract_and_label_reaches_descriptor ... ok
+test runtime_block_sets_and_updates_descriptor ... ok
+test confirm_join_and_unbind_full_roundtrip ... ok
+test telemetry_silence_does_not_change_control_liveness ... ok
+test probe_control_end_disconnects_before_next_push ... ok
+test unbind_removes_confirmed_membership_from_next_absolute_snapshot ... ok
+test main_link_end_cleans_subscription_before_push ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+running 23 tests
+test four_axes_are_reported_separately ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test manual_external_begin_locks_baseline ... ok
+test block_bootstrap_weist_nichtendliches_ab ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test passage_carries_all_six_fields ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test offenes_experiment_liefert_seine_passage ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test zurueckgenommenes_experiment_liefert_keine_passage ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test unbekannte_vergleichbarkeit_liefert_keine_passage ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test unvergleichbar_ist_nicht_unbekannt ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+running 12 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test jaccard_rechnet_ueber_mengen_nicht_ueber_listen ... ok
+test suspend_counts_as_missing_coverage ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test messpunktklasse_wird_je_quelle_verglichen ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test nicht_endliche_abdeckung_ist_fail_closed ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+running 23 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test fehlender_teilfenster_lag_stuft_herab ... ok
+test jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test nicht_endliche_werte_ergeben_keine_stationaere_kette ... ok
+test feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg ... ok
+test identisches_paar_liefert_delta_und_gain_exakt_null ... ok
+test flaches_delta_mit_gain_traegt_den_wirkungsbeleg ... ok
+test noise_yields_unclear ... ok
+test leere_baender_erzeugen_kein_nan ... ok
+test paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg ... ok
+test peak_to_sidelobe_bleibt_endlich ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test each_downgrade_reason_falls_alone ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test feature_aligned_verlangt_den_presentation_nachweis ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test three_results_are_never_collapsed ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test retention_abort_also_closes_intervals ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 78 tests
+test bestaetigter_resync_loest_das_sticky_unknown ... ok
+test ergebnis_ohne_resultatmessung_wird_abgelehnt ... ok
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+test erste_intervention_nach_resync_wird_angenommen ... ok
+test erster_heartbeat_mit_false_loest_das_sticky_unknown ... ok
+test bandsatz_ohne_bit_ist_fail_closed ... ok
+test evidenz_faellt_mit_dem_client ... ok
+test experiment_begin_legt_passage_und_versuch_an ... ok
+test evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen ... ok
+test beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt ... ok
+test evidenz_historie_bleibt_und_ist_gedeckelt ... ok
+test drop_invalidiert_als_sequenzluecke ... ok
+test eviction_raeumt_das_paarurteil_und_bildet_neu ... ok
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+test fremdes_projekt_erreicht_den_versuch_nicht ... ok
+test evidenz_historie_haelt_ihren_deckel ... ok
+test invalidierung_aus_dem_produktpfad_haelt_den_vertrag ... ok
+test blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden ... ok
+test experimentbefehl_bleibt_in_seinem_projekt ... ok
+test invalidierung_bildet_das_paarurteil_neu ... ok
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+test invalidierung_schliesst_gespeicherte_evidenz_aus ... ok
+test halbe_snapshotdichte_stuft_herab ... ok
+test markerinvalidierung_ohne_projektzeit_ist_fail_closed ... ok
+test gleiche_dichte_stuft_nicht_herab ... ok
+test markerinvalidierung_trifft_genau_ihren_bereich ... ok
+test messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich ... ok
+test nachbericht_behaelt_die_sequenzbasis ... ok
+test nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung ... ok
+test nachlauf_laeuft_in_echtzeit_ab ... ok
+test nachlauf_rechnet_ab_seinem_start ... ok
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test export_traegt_seine_transitionen_auch_nach_dem_neustart ... ok
+test paare_bleiben_in_ihrer_sitzung ... ok
+test invalidierung_laesst_die_sessionprojektion_stehen ... ok
+test invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen ... ok
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+test genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat ... ok
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+test dekodierte_evidenz_findet_gain_mit_intervall ... ok
+test prepost_join_laeuft_im_produktpfad ... ok
+test evidenzreihenfolge_ueberdauert_den_neustart ... ok
+test r2_backlog_ohne_replay_end_zu_end ... ok
+test persistierter_retry_bleibt_idempotent ... ok
+test replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht ... ok
+test materialwechsel_invalidiert_aus_dem_fingerprintvergleich ... ok
+test prepost_filtert_ausschluss_und_rechnet_in_einer_konvention ... ok
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... ok
+test projektspanne_traegt_weiter_den_suchraum ... ok
+test sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt ... ok
+test retry_an_unbekanntes_ziel_wird_abgewiesen ... ok
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+test retry_an_fremde_sitzung_wird_abgewiesen ... ok
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+test sondenhello_aendert_den_taint_nicht ... ok
+test spaeteres_false_loest_das_sticky_unknown_nicht ... ok
+test taint_ist_sitzungsweit ... ok
+test taintmap_haelt_ihren_deckel ... ok
+test paarurteil_entsteht_beim_neustart_aus_der_evidenz ... ok
+test transportbruch_invalidiert_mit_seinem_grund ... ok
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+test sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel ... ok
+test preview_und_ruecknahme_liegen_in_einem_append ... ok
+test wire_experimentintervall_ohne_id_wird_abgelehnt ... ok
+test wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen ... ok
+test wire_intervention_traegt_art_und_experiment_bis_zum_terminal ... ok
+test passagenbelege_kommen_aus_den_vertretenen_quellen ... ok
+test sonde014_m74_zustellschuld_flieszt_ohne_reconnect ... ok
+test verdraengung_bekommt_ihr_eigenes_terminal ... ok
+test paarurteil_erreicht_gen_ueber_outbox_und_push ... ok
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+test sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen ... ok
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik ... ok
+test versuchsergebnis_erreicht_gen_ueber_outbox_und_push ... ok
+test der_snapshot_haelt_den_versuchsdeckel_des_vertrages ... ok
+
+test result: ok. 78 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.59s
+
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+
+running 7 tests
+test sicherheit_wird_auf_drei_zustaende_abgebildet ... ok
+test drei_zeilen_sind_datenfelder ... ok
+test hoehere_intent_revision_macht_den_befund_stale ... ok
+test beleg_ist_zone_und_kein_text ... ok
+test messqualitaet_und_befundsicherheit_sind_zwei_felder ... ok
+test nur_ready_to_send_erlaubt_audition_und_draft ... ok
+test alternative_ist_ein_eigener_befund_mit_eigenem_zustand ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 20 tests
+test eigen4_quelle_im_falschen_band ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test nak214_probables_paar_bleibt_klasse_eins ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test nak214_zwei_mains_erzeugen_keinen_vorschlag ... ok
+test nak214_juengste_passage_untauglich ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.64s
+
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+running 37 tests
+test causehypothesis_traegt_die_zehn_felder ... ok
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... ok
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... ok
+test enthaltung_ohne_ort_traegt_existente_evidenz_ids ... ok
+test gemessene_nullkoinzidenz_trennt_zwei_kandidaten ... ok
+test jedes_band_liegt_im_intervall_seiner_gruppe ... ok
+test gegenbeleg_schliesst_hoch_aus ... ok
+test gleichstand_zeigt_beide ... ok
+test keine_hypothese_vor_der_vollstaendigkeitsmarke ... ok
+test deckel_mit_abstand_erlaubt_weiter_hoch ... ok
+test koinzidenz_allein_traegt_den_zusammenhang ... ok
+test hoch_verlangt_einen_belegten_zusammenhang ... ok
+test intent_veto_ist_kein_messausschluss ... ok
+test mehr_daten_ist_ein_ergebnis ... ok
+test hoch_verlangt_energie_im_befundband ... ok
+test deckel_ohne_abstand_senkt_die_klasse ... ok
+test master_ohne_verwertbares_band_ergibt_enthaltung ... ok
+test keine_komponente_kompensiert_coverage_oder_alignment ... ok
+test parallele_telemetrie_bleibt_klasse_eins ... ok
+test messausschluss_wirkt_auf_jeden_befund ... ok
+test einzelueberlebender_neben_messausschluss ... ok
+test rollenaenderung_bewegt_die_intent_relevanz ... ok
+test parent_duplikat_erzeugt_keine_zwei_starken ... ok
+test sechs_teile_im_datenmodell ... ok
+test materialmenge_und_bandpassung_trennen_nicht ... ok
+test ruecknahme_invalidiert_abhaengige_hypothesen ... ok
+test ursachenklassen_sind_geschlossen_und_sieben ... ok
+test passage_zu_kurz_traegt_keine_starke_aussage ... ok
+test screening_bezieht_die_koinzidenz_ein ... ok
+test ausschluesse_bleiben_unter_dem_sitzungsdeckel ... ok
+test screening_reicht_hoechstens_fuenf_weiter ... ok
+test deckel_greift_vor_stufe_b ... ok
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+test enthaltung_ohne_ort_ist_deterministisch ... ok
+test ranking_ist_bytegleich_ueber_hundert_laeufe ... ok
+test screening_ist_deterministisch has been running for over 60 seconds
+test screening_ist_deterministisch ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 162.19s
+
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+running 5 tests
+test datenweg_traegt_keine_zeichenanweisung ... ok
+test maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich ... ok
+test maskierungswert_ist_hoechstens_ein_evidenzintervall_alt ... ok
+test zone_hat_keine_eigene_schwelle ... ok
+test rueckstau_setzt_das_kennzeichen_herabgesetzt ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+running 8 tests
+test intent_bestand_wird_versioniert_gespiegelt ... ok
+test experimentziel_ueberlebt_den_brokerneustart ... ok
+test passagengate_misst_auch_die_fenster_des_masters ... ok
+test user_verdict_wird_persistiert_und_bestaetigt ... ok
+test befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ... ok
+test der_flush_pfad_haelt_die_belege_ebenfalls_gegen_den_store ... ok
+test user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill ... ok
+test sechs_gate_felder_sind_pflicht_mit_passage ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.57s
+
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+
+running 4 tests
+test user_verdict_haelt_sich_an_die_gemeldete_revision ... ok
+test re_subscribe_haelt_die_belege_gegen_den_store ... ok
+test ohne_passage_entsteht_kein_proposal ... ok
+test verspaeteter_teilbericht_entwertet_abhaengige_befunde ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.93s
+
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+
+running 3 tests
+test die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel ... ok
+test wire_zahl_haelt_den_textriegel_ueber_drei_baender ... ok
+test ein_befund_kleiner_rangkomponenten_wird_ausgeliefert ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.76s
+
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.63s
+
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+running 21 tests
+test bandmitte_folgt_dem_eingefrorenen_gitter ... ok
+test keine_aenderung_und_mehr_daten_sind_vorschlaege ... ok
+test gate_riegel_greift_im_erzeuger ... ok
+test geschuetzte_eigenschaft_ist_harte_constraint ... ok
+test manueller_busvorschlag_ist_ein_proposal ... ok
+test kein_nicht_endlicher_wert_erreicht_die_leitung ... ok
+test hard_caps_und_engeres_userbudget_werden_nie_ueberschritten ... ok
+test ein_proposal_ohne_useraktion_bleibt_folgenlos ... ok
+test jede_zahl_hat_feld_evidenz_und_generatorversion ... ok
+test in_p5_ist_jede_aktion_manual ... ok
+test gate_riegel_faellt_je_feld ... ok
+test evidenz_ids_und_intent_revision_sind_pflicht ... ok
+test p5_bietet_weiterhin_keinen_draft_an ... ok
+test proposal_traegt_die_fuenfzehn_felder ... ok
+test stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar ... ok
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... ok
+test veraltet_ungueltig_capability_erreichen_keine_probe ... ok
+test text_entsteht_aus_bausteinen_und_erfindet_keine_zahl ... ok
+test rollenaenderung_macht_den_vorschlag_stale ... ok
+test zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta ... ok
+test derselbe_eingang_erzeugt_denselben_entwurf has been running for over 60 seconds
+test derselbe_eingang_erzeugt_denselben_entwurf ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 833.09s
+
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 57 tests
+test ausgeschlossenes_paar_setzt_keine_marke ... ok
+test besseres_paar_hebt_die_klasse ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test paar_ohne_gemessene_wirkung_bleibt_klasse_eins ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test paar_id_ohne_urteil_setzt_keine_marke ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test probables_paar_bleibt_klasse_eins ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test stale_quelle_deckelt_nicht ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... ok
+test kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal ... ok
+test main_rueckzug_zwischen_befund_und_vorschlag ... ok
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen ... ok
+test unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox ... ok
+test wirkungsbeleg_aus_ausgerichtetem_paar ... ok
+test wirkungsbeleg_wirkt_je_kandidat ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten ... ok
+test ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage ... ok
+test interventionsende_ohne_nachlauf_sperrt_nicht ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+test unknown_sperrt_das_material_nicht_die_passage ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund ... ok
+test resync_gibt_die_passage_frei ... ok
+test terminal_laesst_die_nachlaufzuordnung_stehen ... ok
+test vorschlaege_bleiben_ihren_befunden_zugeordnet ... ok
+test getaintetes_experiment_liefert_keine_passage ... ok
+
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.13s
+
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 89 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ignored, A4-SI: blockierter Storewriter gegen echten Coordinator-Ingress
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ignored, A4-SI: blockierende externe Pusharbeit haelt keine Coordinator-/Storelocks
+test busy_timeout_grenze ... ok
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test descriptor_setzen_weist_beitragsklasse_ab ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test commit_bei_fenster_oder_batch ... ok
+test degradierter_store_verweigert_annahme_und_tick_trennt_verursacher ... ok
+test disk_full_io_kaputt_neues_schema_degradieren_ohne_brokerstop ... ok
+test alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden ... ok
+test event_uuid_bleibt_aus_ack_und_session_snapshot_wire_fern ... ok
+test domainprojektionen_spalten_keys_und_rebuild ... ok
+test eviction_cleanup_vor_push ... ignored, A4-SI: Eviction und Snapshot-Senke in echter Reihenfolge
+test experiment_events_composite_key_und_fks ... ok
+test cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push ... ok
+test checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus ... ok
+test event_log_append_only_und_sequence_eindeutig ... ok
+test event_projection_snapshotschuld_command_id_atomare_transaktion ... ok
+test guard_aufloesung_raeumt_den_aliaseintrag ... ok
+test guard_aufloesung_wirkt_auch_ohne_lebende_links ... ok
+test brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion ... ok
+test command_id_mappt_intern_auf_eine_event_uuid ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test event_log_keys_und_append_only ... ok
+test command_id_mappt_intern_auf_genau_eine_event_uuid ... ok
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht ... ok
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test alter_store_ueberschreibt_plugin_state_nicht ... ok
+test group_commit_faehrt_echten_batch_bis_commitgrenze ... ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ignored, A4-SI: restaurierter Riegelindex, Coordinator und echter Store
+test guard_restore_vor_routing ... ok
+test guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex ... ok
+test guard_aufloesung_ohne_treffer_meldet_fehler ... ok
+test konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ignored, A4-SI: Nonce-Verdrängung bereinigt Subscription vor altem Report
+test migration_1_frisch_und_idempotent ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ignored, A4-SI: P1-Snapshotpfad ueber echten Store und kontrollierte Writesenke
+test passive_checkpoint_an_dualer_grenze ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test pfadwandlung_haelt_ein_ungepaartes_surrogat ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ignored, A4-SI: Produktgrenze des Snapshot-only-Abflusses
+test migration_1_spalten_und_schluessel_exakt ... ok
+test pragmas_exakt ... ok
+test eviction_bewahrt_domainzustand_und_konfliktriegel_bei_vollstaendigem_cleanup ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k07-19528-27c2ff1bb9ec40acaebbe925412b9a07\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k04-19528-d6a78e1c13074bd3b42342f9dae64056\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k06-19528-2289644b94094869a04e53b0eecedb87\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k09-19528-fef5304eecec42e48d5f37c31f2d20b2\nakama-broker.sqlite3
+test jeder_group_commit_bleibt_bei_hoechstens_64_events ... ok
+test outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt ... ok
+test leser_haelt_keine_transaktion_ueber_externe_arbeit ... ok
+test kill_nach_store_commit_vor_snapshot_push ... ok
+test kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung ... ok
+test kill_vor_snapshot_outbox_kompaktierung ... ok
+test projects_projection_rebuild_und_fk ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test recovery_unter_testgrenze ... ok
+test remote_volume_degradiert_ohne_db_oder_wal ... ok
+test quarantaene_deckel_weist_ab_statt_zu_wachsen ... ok
+test routing_bleibt_zu_bis_konfliktriegel_restauriert ... ok
+test projektionslesefehler_haelt_subscription_sichtbar_fail_closed ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ignored, A4-SI: Coordinator schreibt koaleszierte Snapshot-Schuld in echten Store
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test projektion_rebuild_ist_deterministisch_und_unter_testgrenze ... ok
+test session_subscription_hat_nur_snapshot_push ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_hat_keinen_event_uuid_wire_traeger ... ok
+test pruefsumme_entscheidet_vor_der_migration ... ok
+test kill_waehrend_migration_1 ... ok
+test schema_major_1_schreibt_und_major_plus_1_degradiert_read_only ... ok
+test projektion_rebuild_nach_neustart_unter_testgrenze ... ok
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... ok
+test store_pfad_nutzt_folderid_localappdata ... ok
+Verbindung erstellt für C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-19528-42970ff76de64182aeeeddcb7427aedf\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-19528-42970ff76de64182aeeeddcb7427aedf\echt
+test kill_waehrend_wal_replay ... ok
+test store_weist_reparse_punkt_im_pfad_ab ... ok
+test store_start_protokolliert_sqlite_version ... ok
+test sessions_projection_composite_key_ohne_fuehrungsrestore ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... ignored, A4-SI: Junction-Umhaengen unter einer offenen SQLite-Datenbank
+test produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries ... ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ignored, A4-SI: absoluter Empfaengerzustand wird real aus Snapshots gesetzt
+test store_kanal_cap_und_naechster_trennt ... ok
+test produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet ... ok
+test snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht ... ok
+test volumenklassifikation_faellt_am_geoeffneten_objekt ... ok
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+test subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent ... ok
+test store_writer_ist_alleiniger_write_connection_besitzer ... ok
+test resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert ... ok
+test truncate_nur_in_ruhelage ... ok
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... ok
+test snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton ... ok
+
+test result: ok. 67 passed; 0 failed; 22 ignored; 0 measured; 0 filtered out; finished in 1.64s
+
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+
+running 12 tests
+test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+test ingress_bytebudget_verwirft_p2_zuerst ... ok
+test ratengrenze_haelt_unter_flut ... ok
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test fragmentierung_aendert_das_ergebnis_nie ... ok
+test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+test panik_im_verbindungsthread_wird_gezaehlt ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+   Doc-tests eqcop_broker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== A14 pruefe_kern_identitaetsfrei.py ==
+Befehl: py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py
+Exitcode: 0
+Dauer: 12.31 s
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (3474364 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7733248 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 11.5s neu erzeugt (33 Dateien entfernt, 20 Uebersetzungseinheiten, 20 Objekte, Lib neu gelinkt)
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 20 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+25 ok, 0 Fehler
+
+== Uebersicht ==
+| Bein | Ziel | Exit | Binary juenger | Letzte Zeile |
+|---|---|---|---|---|
+| B28 | EqCopSonde014BefundTest | 0 | ja | SONDE-014 Befund und Maskierung: 81/81 gruen |
+| B6 | EqCopDspGoldenTest | 0 | ja | DSP-GOLDEN OK |
+| B2 | EqCopStateMigrationTest | 0 | ja | STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler |
+| B3c | EqCopSchemaTest | 0 | ja | 152 bestanden, 0 gescheitert |
+| A1 | EqCopNullTest | 0 | ja | NULLTEST OK |
+| A16 | EqCopProbeeqNullTest | 0 | ja | SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler |
+| B7 | EqCopTransactionTest | 0 | ja | TRANSAKTION OK |
+| A12 | erzeuge_state_fixtures.py | 0 | - | STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei) |
+| A4 | broker | 0 | - | test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s |
+| A14 | pruefe_kern_identitaetsfrei.py | 0 | - | 25 ok, 0 Fehler |

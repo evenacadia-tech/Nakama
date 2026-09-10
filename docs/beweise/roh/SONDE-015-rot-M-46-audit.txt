@@ -1,0 +1,44 @@
+SONDE-015 Audit-Nacharbeit D10 - Rotbeweis M-46 (B6 Abschnitt I, vier Baenke im schlimmsten Fall)
+Stand:  2026-09-10 23:41:00
+Zusage: Der gleichzeitige Topologiewechsel auf Committed und Candidate braucht vier Baenke; die Pruefung misst sie mitten im Crossfade als rechnende Baenke, nicht als belegte Slots (M-46; D10).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/tests/DspGoldenTestMain.cpp:2864
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/tests/DspGoldenTestMain.cpp:2864
+vorher:
+            auto s3 = s; belege (s3, 2, Filtertyp::notch, 500.0, 4.0, 0.0);
+nachher:
+            auto s3 = s; belege (s3, 0, Filtertyp::bell, 1000.0, 1.0, 3.0);   // ROTBEWEIS M-46: der Candidate-Wechsel ist rampenkompatibel
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (31 s); Binary 23:41:31, mutierte Quelle 23:41:00, Binary juenger: ja
+Exitcode: 1 (5.5 s)
+
+257 geprueft, 1 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle 0, Candidate 3 mit Quelle -1, freie Slots 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: vier_baenke_im_schlimmsten_fall (M-46)
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      Candidate wechselt (vierte Bank)
+  ok      und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  ok      candidate_endet_neutral (M-46)
+
+Hinweis: Unter der Mutation bekommt der fuenfte Wunsch weiter busy_retry: freieSlots() ist 0, weil der Candidate-Pfad waehrend seiner Rampe zwei Baenke haelt - er rechnet aber nur eine. Das ist der Unterschied, den die bisherige Pruefung (freieSlots() == 0) nicht sah.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/tests/DspGoldenTestMain.cpp bytegleich zurueckgespielt: ja (SHA-256 079A75BDAD9D3EEDAC865B1B6DB585158E37E392DCBFE8CEA8689AB1F687827B)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:42:12
+Bau: Exit 0 (35 s); Binary 23:42:12, zurueckgespielte Quelle 23:41:37, Binary juenger: ja
+Exitcode: 0 (5.9 s)
+  ok      vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle 0, Candidate 3 mit Quelle 1, freie Slots 0]
+257 geprueft, 0 Fehler
+DSP-GOLDEN OK
+Gruen nach Ruecknahme: JA

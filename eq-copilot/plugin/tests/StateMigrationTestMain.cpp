@@ -24,6 +24,8 @@
 #include "PluginProcessor.h"
 
 #include <algorithm>
+#include <cfenv>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -64,6 +66,18 @@ struct Abschnitt
         if (ok) ++bestanden; else ++fehler;
     }
 };
+
+/** D8 (Codeaudit 10.09.2026): setzt `lauf` das Invalid-Flag der
+    Gleitkommaeinheit? Eine Konvertierung eines double jenseits des
+    int-Bereichs setzt es auf x64 (`cvttsd2si`), und zwar auch dann, wenn das
+    Ergebnis INT_MIN danach zufaellig richtig abgewiesen wird. MSVC hat keinen
+    UBSan; dieses Flag ist hier die passende Sanitizerpruefung. */
+bool setztFeInvalid (const std::function<void()>& lauf)
+{
+    std::feclearexcept (FE_ALL_EXCEPT);
+    lauf();
+    return std::fetestexcept (FE_INVALID) != 0;
+}
 
 juce::File finde (const juce::String& relativ)
 {
@@ -722,6 +736,61 @@ int main (int argc, char* argv[])
         }
         pruefe (ungueltigGesamt > 0 && ungueltigOk == ungueltigGesamt, "ungueltige DTOs mit dem erwarteten Grund abgelehnt", juce::String (ungueltigOk) + "/" + juce::String (ungueltigGesamt));
 
+        /*  D8 (Codeaudit 10.09.2026, M-66): eine Zonen-id ausserhalb 0..7 faellt
+            mit `bereich` an ihrer Stelle der Pruefreihenfolge, OHNE dass der
+            Leser sie vorher in einen int konvertiert, und ohne das Ziel
+            anzutasten. Der Korpus oben sieht nur den Grund - und der stimmt
+            auch mit der undefinierten Konvertierung, weil INT_MIN danach
+            zufaellig ebenfalls als `bereich` faellt. Deshalb misst dieser
+            Block zusaetzlich das Invalid-Flag (`setztFeInvalid`); die
+            Gegenprobe zeigt, dass dieses Bein es wirklich sieht. */
+        {
+            volatile double minusEins = -1.0;
+            pruefe (setztFeInvalid ([&] { volatile double w = std::sqrt ((double) minusEins); (void) w; }),
+                    "D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)");
+
+            param::DspSatz ziel;
+            {
+                juce::MemoryBlock roh;
+                juce::String g, d;
+                const bool da = fixtureOrdner.getChildFile ("dto/gueltig/gemischt.json").loadFileAsData (roh);
+                pruefe (da && param::ausDtoText (roh.getData(), roh.getSize(), ziel, g, d) && ziel.zonen.size() == 2,
+                        "D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen", g + " " + d);
+            }
+            const auto vorher = ziel;
+            for (const char* name : { "zone-id-minus-1", "zone-id-8", "zone-id-2147483648", "zone-id-9007199254740991" })
+            {
+                juce::MemoryBlock roh;
+                const bool da = fixtureOrdner.getChildFile ("dto/ungueltig/" + juce::String (name) + ".json").loadFileAsData (roh);
+                juce::String grund, detail;
+                bool angenommen = true;
+                const bool invalid = setztFeInvalid ([&] {
+                    angenommen = param::ausDtoText (roh.getData(), roh.getSize(), ziel, grund, detail); });
+                pruefe (da && ! angenommen && grund == "bereich" && detail == "schutz_zonen[0].id",
+                        "D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): " + juce::String (name),
+                        angenommen ? juce::String ("ANGENOMMEN") : "Grund " + grund + " @ " + detail);
+                pruefe (da && ! invalid,
+                        "D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): " + juce::String (name),
+                        invalid ? "FE_INVALID gesetzt: die id wurde jenseits des int-Bereichs konvertiert" : "kein FE_INVALID");
+                pruefe (ziel == vorher, "D8 das Ziel bleibt unveraendert (M-66, DTO): " + juce::String (name));
+            }
+
+            // Die gueltigen Rand-ids 0 und 7 kommen exakt an - ebenfalls ohne Flag.
+            juce::MemoryBlock roh;
+            juce::String grund, detail;
+            param::DspSatz rand;
+            bool gelesen = false;
+            const bool da = fixtureOrdner.getChildFile ("dto/gueltig/maxima.json").loadFileAsData (roh);
+            const bool invalid = setztFeInvalid ([&] {
+                gelesen = param::ausDtoText (roh.getData(), roh.getSize(), rand, grund, detail); });
+            bool ids = da && gelesen && rand.zonen.size() == (size_t) param::kMaxZonen;
+            for (int i = 0; ids && i < param::kMaxZonen; ++i)
+                ids = rand.zonen[(size_t) i].id == i;
+            pruefe (ids && ! invalid,
+                    "D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)",
+                    grund + " " + detail);
+        }
+
         // Nichtendlich aus dem TYPISIERTEN Satz (nicht nur aus Text).
         {
             param::DspSatz s;
@@ -807,6 +876,56 @@ int main (int argc, char* argv[])
         pruefe (ungueltigGesamt > 0 && ungueltigOk == ungueltigGesamt,
                 "ungueltige Presets mit dem erwarteten Grund abgelehnt",
                 juce::String (ungueltigOk) + "/" + juce::String (ungueltigGesamt));
+
+        /*  D8 (Codeaudit 10.09.2026, M-66 im Preset-Leser): derselbe Riegel wie
+            im DTO-Abschnitt und mit derselben Begruendung - Grund `bereich`,
+            keine Konvertierung jenseits des int-Bereichs, das Ziel bleibt
+            unberuehrt. */
+        {
+            param::DspSatz ziel;
+            {
+                juce::MemoryBlock roh;
+                juce::String g, d;
+                const bool da = fixtureOrdner.getChildFile ("preset/gueltig/gemischt.json").loadFileAsData (roh);
+                pruefe (da && nakama::preset::lies (roh.getData(), roh.getSize(), ziel, g, d) && ! ziel.zonen.empty(),
+                        "D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen", g + " " + d);
+            }
+            const auto vorher = ziel;
+            for (const char* name : { "zone-id-minus-1", "zone-id-8", "zone-id-2147483648", "zone-id-9007199254740991" })
+            {
+                juce::MemoryBlock roh;
+                const bool da = fixtureOrdner.getChildFile ("preset/ungueltig/" + juce::String (name) + ".json").loadFileAsData (roh);
+                juce::String grund, detail;
+                bool angenommen = true;
+                const bool invalid = setztFeInvalid ([&] {
+                    angenommen = nakama::preset::lies (roh.getData(), roh.getSize(), ziel, grund, detail); });
+                pruefe (da && ! angenommen && grund == "bereich" && detail == "schutz_zonen[0].id",
+                        "D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): " + juce::String (name),
+                        angenommen ? juce::String ("ANGENOMMEN") : "Grund " + grund + " @ " + detail);
+                pruefe (da && ! invalid,
+                        "D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): " + juce::String (name),
+                        invalid ? "FE_INVALID gesetzt: die id wurde jenseits des int-Bereichs konvertiert" : "kein FE_INVALID");
+                pruefe (ziel == vorher, "D8 das Ziel bleibt unveraendert (M-66, Preset): " + juce::String (name));
+            }
+
+            // Die gueltigen Rand-ids: vom WRITER geschrieben (Pruefliste E), gelesen.
+            param::DspSatz rand;
+            for (int i = 0; i < param::kMaxZonen; ++i)
+                rand.zonen.push_back ({ i, 20.0, 20000.0, i % 2 == 0 });
+            juce::MemoryBlock text;
+            juce::String grund, detail;
+            const bool geschrieben = nakama::preset::schreibe (rand, text, grund);
+            param::DspSatz gelesen;
+            bool gelesenOk = false;
+            const bool invalid = setztFeInvalid ([&] {
+                gelesenOk = nakama::preset::lies (text.getData(), text.getSize(), gelesen, grund, detail); });
+            bool ids = geschrieben && gelesenOk && gelesen.zonen.size() == (size_t) param::kMaxZonen;
+            for (int i = 0; ids && i < param::kMaxZonen; ++i)
+                ids = gelesen.zonen[(size_t) i].id == i;
+            pruefe (ids && ! invalid,
+                    "D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)",
+                    grund + " " + detail);
+        }
 
         /*  M-95: der Writer erzeugt genau die Bytes des Fixtures. Ein
             Probe-Datensatz "in der Form des Writers" kommt vom Writer

@@ -1,0 +1,57 @@
+SONDE-015 Audit-Nacharbeit D8 - Rotbeweis M-66 (DTO-Leser, Ziel unveraendert)
+Stand:  2026-09-10 23:34:00
+Zusage: Eine an der Zonen-id abgelehnte Nutzlast laesst das Ziel des DTO-Lesers unberuehrt (D8, schliessender Beweis des Audits: unveraenderter Zielzustand; M-66).
+Bein:   B2 EqCopStateMigrationTest
+Datei:  eq-copilot/plugin/state/NakamaParameter.cpp:544
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaParameter.cpp:544
+vorher:
+    if (! leseZonen (*zonen, s.zonen, grund, detail))
+        return false;
+    if (! validiereZonen (s.zonen, grund, wo))
+nachher:
+    if (! leseZonen (*zonen, s.zonen, grund, detail))
+        return false;
+    aus = s;   // ROTBEWEIS M-66 (D8, Ziel): das Ziel wird vor der Zonenpruefung beschrieben
+    if (! validiereZonen (s.zonen, grund, wo))
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (5 s); Binary 23:34:04, mutierte Quelle 23:34:00, Binary juenger: ja
+Exitcode: 1 (1.5 s)
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 271 Pruefungen ok, 5 Fehler
+
+Gefallene Pruefungen (5):
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  FEHLER  D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  FEHLER  == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: D8 das Ziel bleibt unveraendert (M-66, DTO)
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+
+Hinweis: Die Leser hielten ihr Ziel schon vor D8 unberuehrt (ausDtoText schreibt `aus` erst nach allen Stufen); die Pruefung ist deshalb eine Regressionswache, hier mit eigenem Bruch. Die Mutation beschreibt das Ziel vor der Zonenpruefung; der Grund bleibt bereich, das Ziel traegt danach die abgelehnte Zone.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaParameter.cpp bytegleich zurueckgespielt: ja (SHA-256 95C805F4436127FF90D51BE0B446545A3330DF0576969F58A570541099ADD1F2)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:34:11
+Bau: Exit 0 (5 s); Binary 23:34:11, zurueckgespielte Quelle 23:34:06, Binary juenger: ja
+Exitcode: 0 (1.6 s)
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

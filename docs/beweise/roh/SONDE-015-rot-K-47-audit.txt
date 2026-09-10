@@ -1,0 +1,48 @@
+SONDE-015 Audit-Nacharbeit N-12 - Rotbeweis K-47 (B28, NAK-213)
+Stand:  2026-09-10 23:25:35
+Zusage: Ein Rahmen einer unbekannten hoeheren Fassung - aktive Registerfassung plus eins - wird am Leser abgewiesen; die aktive Fassung kommt aus dem Register, nicht aus einem Literal (NAK-213 K-47; SONDE-015 N-12).
+Bein:   B28 EqCopSonde014BefundTest
+Datei:  eq-copilot/plugin/src/SourcesModel.cpp:543
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/src/SourcesModel.cpp:543
+vorher:
+    if (schemaMinor > nakama::ipc::kJsonSchemaMinor)
+    {
+        fehler = "session_snapshot schema_minor is newer than this Main reader";
+nachher:
+    if (false && schemaMinor > nakama::ipc::kJsonSchemaMinor)   // ROTBEWEIS K-47: der Riegel gegen die hoehere Fassung ist entfernt
+    {
+        fehler = "session_snapshot schema_minor is newer than this Main reader";
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (7 s); Binary 23:25:42, mutierte Quelle 23:25:35, Binary juenger: ja
+Exitcode: 1 (0.1 s)
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 80/81 gruen
+
+Gefallene Pruefungen (1):
+  FEHLER  K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser  [Fassung 6]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      K-47: die aktive P1-Fassung steht im Register (wire_envelope_schema_minor.aktuell)  [C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\v3\reservierte-nachrichten-v1.json = 5]
+  ok      K-47: ein Rahmen der aktiven Fassung passiert den Leser  [Fassung 5]
+  ok      K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)  [kJsonSchemaMinor = 5, Register = 5]
+
+Hinweis: Die Mutation nimmt nur den Riegel des Snapshot-Lesers gegen eine neuere Fassung heraus. Die aktive Fassung passiert weiter, und die Konstante steht weiter auf der Registerfassung; es faellt genau die Gegenprobe nach oben.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/src/SourcesModel.cpp bytegleich zurueckgespielt: ja (SHA-256 77170C6B1FF2BA85931ED19E1645A605EE531F777E9762A0E5C53B26C8951BBD)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:25:49
+Bau: Exit 0 (7 s); Binary 23:25:49, zurueckgespielte Quelle 23:25:42, Binary juenger: ja
+Exitcode: 0 (0.1 s)
+  ok      K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser  [Fassung 6]
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 81/81 gruen
+Gruen nach Ruecknahme: JA

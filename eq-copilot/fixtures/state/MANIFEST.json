@@ -224,6 +224,18 @@
       "grund": "bereich"
     },
     {
+      "datei": "dto/ungueltig/zone-id-minus-1.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-id-2147483648.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/zone-id-9007199254740991.json",
+      "grund": "bereich"
+    },
+    {
       "datei": "dto/ungueltig/zone-zusatzfeld.json",
       "grund": "struktur"
     },
@@ -349,6 +361,26 @@
       "datei": "preset/ungueltig/zone-unsortiert.json",
       "grund": "zone_sortierung",
       "warum": "dieselben Zonenregeln wie im DTO"
+    },
+    {
+      "datei": "preset/ungueltig/zone-id-minus-1.json",
+      "grund": "bereich",
+      "warum": "D8: id ausserhalb 0..7 faellt, ohne jenseits des int-Bereichs konvertiert zu werden"
+    },
+    {
+      "datei": "preset/ungueltig/zone-id-8.json",
+      "grund": "bereich",
+      "warum": "D8: id ausserhalb 0..7 faellt, ohne jenseits des int-Bereichs konvertiert zu werden"
+    },
+    {
+      "datei": "preset/ungueltig/zone-id-2147483648.json",
+      "grund": "bereich",
+      "warum": "D8: id ausserhalb 0..7 faellt, ohne jenseits des int-Bereichs konvertiert zu werden"
+    },
+    {
+      "datei": "preset/ungueltig/zone-id-9007199254740991.json",
+      "grund": "bereich",
+      "warum": "D8: id ausserhalb 0..7 faellt, ohne jenseits des int-Bereichs konvertiert zu werden"
     }
   ],
   "schema2_goldens": [

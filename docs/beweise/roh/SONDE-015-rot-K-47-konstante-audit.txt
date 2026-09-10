@@ -1,0 +1,46 @@
+SONDE-015 Audit-Nacharbeit N-12 - Rotbeweis K-47 (B28, Konstante hinter dem Register)
+Stand:  2026-09-10 23:34:26
+Zusage: Der Test misst kJsonSchemaMinor gegen eine UNABHAENGIGE Fassungszahl (NB-3): steht die C++-Konstante hinter der aktiven Registerfassung, faellt ein Rahmen der aktiven Fassung am Leser, und der Gleichstand faellt (NAK-213 K-47; SONDE-015 N-12).
+Bein:   B28 EqCopSonde014BefundTest
+Datei:  eq-copilot/plugin/core/ipc/WireEnvelope.h:81
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/core/ipc/WireEnvelope.h:81
+vorher:
+inline constexpr std::uint8_t kJsonSchemaMinor = 5u;
+nachher:
+inline constexpr std::uint8_t kJsonSchemaMinor = 4u;   // ROTBEWEIS K-47 (Konstante): die C++-Fassung bleibt hinter dem Register zurueck
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (11 s); Binary 23:34:37, mutierte Quelle 23:34:26, Binary juenger: ja
+Exitcode: 1 (0.1 s)
+  ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 79/81 gruen
+
+Gefallene Pruefungen (2):
+  FEHLER  K-47: ein Rahmen der aktiven Fassung passiert den Leser  [Fassung 5]
+  FEHLER  K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)  [kJsonSchemaMinor = 4, Register = 5]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: K-47: ein Rahmen der aktiven Fassung passiert den Leser
+  erwartet: K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      K-47: die aktive P1-Fassung steht im Register (wire_envelope_schema_minor.aktuell)  [C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\v3\reservierte-nachrichten-v1.json = 5]
+  ok      K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser  [Fassung 6]
+
+Hinweis: Das ist der Fall aus NB-3. Naehme der Test die Fassung aus kJsonSchemaMinor selbst, liefen Rahmen und Leserobergrenze gemeinsam auf 4 und der Test bliebe gruen; mit der Registerzahl faellt die positive Haelfte und der Gleichstand. Die Gegenprobe nach oben (Fassung 6) bleibt dabei erfuellt.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/core/ipc/WireEnvelope.h bytegleich zurueckgespielt: ja (SHA-256 6D766F7F03A3D7414775687CBD09021A07286148CF4E200688C27A9890C38FAA)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:34:49
+Bau: Exit 0 (12 s); Binary 23:34:49, zurueckgespielte Quelle 23:34:37, Binary juenger: ja
+Exitcode: 0 (0.1 s)
+  ok      K-47: ein Rahmen der aktiven Fassung passiert den Leser  [Fassung 5]
+  ok      K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)  [kJsonSchemaMinor = 5, Register = 5]
+  ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+SONDE-014 Befund und Maskierung: 81/81 gruen
+Gruen nach Ruecknahme: JA

@@ -1,0 +1,57 @@
+SONDE-015 Audit-Nacharbeit N-9 - Rotbeweis M-120 (B6 Abschnitt O, Parameterverlauf)
+Stand:  2026-09-10 23:43:40
+Zusage: Realtime- und Offline-Lauf erzeugen bei gleichem Event- und Blockverlauf denselben Parameterverlauf: die Steuerrate der dynamischen Baender zaehlt Samples, nie die Wanduhr (M-120, B6-Haelfte; N-9).
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp:6, eq-copilot/plugin/dsp/DspKern.cpp:515
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/dsp/DspKern.cpp:6
+vorher:
+#include <utility>
+nachher:
+#include <utility>
+#include <chrono>   // ROTBEWEIS M-120 (Verlauf)
+eq-copilot/plugin/dsp/DspKern.cpp:515
+vorher:
+                z.schrittRest  = kDynamikSchritt;
+nachher:
+                {   // ROTBEWEIS M-120 (Verlauf): die Steuerrate laeuft an der Wanduhr
+                    static auto letzterSchritt = std::chrono::steady_clock::now();
+                    const auto jetzt = std::chrono::steady_clock::now();
+                    z.schrittRest = (jetzt - letzterSchritt > std::chrono::milliseconds (1)) ? kDynamikSchritt / 2 : kDynamikSchritt;
+                    letzterSchritt = jetzt;
+                }
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (5 s); Binary 23:43:45, mutierte Quelle 23:43:40, Binary juenger: ja
+Exitcode: 1 (5.7 s)
+
+257 geprueft, 2 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [erste Abweichung bei Sample 388 links]
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: realtime_und_offline_gleich (M-120): derselbe Parameterverlauf
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.844 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 11.99 ms]
+  ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.003 s fuer 0.843 s Audio, groesste Luecke 0.078 ms]
+  ok      die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)  [Slot 5 zwischen -6.00 und 0.00 dB]
+  FEHLER  realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [erste Abweichung bei Sample 388 links]
+
+Hinweis: Die Mutation legt die Steuerrate der dynamischen Baender an die Wanduhr: nach einer Luecke ueber einer Millisekunde wird die Kennlinie nach vier statt acht Samples neu gerechnet. Nur der Realtime-Lauf hat solche Luecken. Ein erster Lauf dieses Rotbeweises blieb gruen, weil das dynamische Band im damaligen Testsignal unter dem Threshold still stand; seitdem liegt es auf dem Ton des Signals, und die Wache zur bewegten Auslenkung haelt das fest (Manifest §11.7).
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich zurueckgespielt: ja (SHA-256 A3083DB5C1541AA75C92D01744C4FCC4D926BA8C9C491A9F35474D96002F6097)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:43:55
+Bau: Exit 0 (5 s); Binary 23:43:55, zurueckgespielte Quelle 23:43:51, Binary juenger: ja
+Exitcode: 0 (5.8 s)
+  ok      realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+257 geprueft, 0 Fehler
+DSP-GOLDEN OK
+Gruen nach Ruecknahme: JA

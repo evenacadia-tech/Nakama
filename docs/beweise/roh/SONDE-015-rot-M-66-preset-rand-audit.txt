@@ -1,0 +1,50 @@
+SONDE-015 Audit-Nacharbeit D8 - Rotbeweis M-66 (Preset-Leser, gueltiger Rand)
+Stand:  2026-09-10 23:33:46
+Zusage: Der Riegel des Preset-Lesers laesst die gueltigen Rand-ids 0 und 7 exakt durch; verengt er den Bereich, faellt eine gueltige Zone (D8; M-66).
+Bein:   B2 EqCopStateMigrationTest
+Datei:  eq-copilot/plugin/state/NakamaPreset.cpp:253
+
+--- MUTIERTE ZEILE(N) (die Zeile, die die Zusage traegt) ---
+eq-copilot/plugin/state/NakamaPreset.cpp:253
+vorher:
+        for (int k = 0; k < parameter::kMaxZonen; ++k)
+            if (id->zahl == (double) k) { ganzeId = k; break; }
+nachher:
+        for (int k = 0; k < parameter::kMaxZonen - 1; ++k)   // ROTBEWEIS M-66 (D8, Rand): die obere gueltige id 7 faellt aus dem Riegel
+            if (id->zahl == (double) k) { ganzeId = k; break; }
+
+--- LAUF UNTER MUTATION: ROT ---
+Bau: Exit 0 (4 s); Binary 23:33:51, mutierte Quelle 23:33:46, Binary juenger: ja
+Exitcode: 1 (1.7 s)
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 274 Pruefungen ok, 2 Fehler
+
+Gefallene Pruefungen (2):
+  FEHLER  D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [bereich schutz_zonen[7].id]
+  FEHLER  == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset
+
+Weitere Zeilen des roten Laufs (zur Einordnung):
+  ok      gueltige Presets angenommen  [3/3]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+
+Hinweis: Die Mutation verengt nur den Riegel des Preset-Lesers: id 7 wird -1 und faellt als bereich. Die gueltigen Preset-Fixtures tragen die ids 0 und 5 und bleiben gueltig; es faellt der vom Writer geschriebene Stand mit den ids 0 bis 7. Der DTO-Leser bleibt gruen.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/state/NakamaPreset.cpp bytegleich zurueckgespielt: ja (SHA-256 15AAC56B8BB3C26F8601B37B2CDE59B6C2ACB4F4360D207A223F0F83CEF911FB)
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Stand: 2026-09-10 23:33:58
+Bau: Exit 0 (5 s); Binary 23:33:58, zurueckgespielte Quelle 23:33:52, Binary juenger: ja
+Exitcode: 0 (1.5 s)
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+Gruen nach Ruecknahme: JA

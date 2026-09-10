@@ -1,0 +1,35 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-1 (M-05, REGEL B-3)
+Stand:  2026-09-10 15:26
+Zusage: Der Schreibverzicht beginnt exakt am Sample nach dem Fade-Ende, auch im Teilstueck, in dem der Fade endet.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+          if (passthroughUebergang && nachPass)
+nachher:
+          if (false && passthroughUebergang && nachPass)
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 4 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 3 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 3 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 3 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 3 von 256, Wachmarken an 256, 300 und 511]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: schreibverzicht_beginnt_exakt_am_fade_ende
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+
+Hinweis: Mutiert ist allein die Schreibgrenze: sie liegt wieder am Teilstueckende. Die alten B-3-Faelle setzen ihre Wachmarken erst in Folgebloecken und bleiben gruen - genau die Luecke aus W-1.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

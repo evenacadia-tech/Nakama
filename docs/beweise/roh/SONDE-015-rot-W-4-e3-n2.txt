@@ -1,0 +1,45 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-4 (M-03, M-06, REGEL B-5, REGEL B-7)
+Stand:  2026-09-10 15:26
+Zusage: Ein Crossfade beginnt am Umschaltsample beim zuletzt ausgegebenen Signal - kein Sprung ueber die Fadeschrittweite.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  const double t = 1.0 - (double) rest / (double) kFadeSamples;
+nachher:
+                  const double t = 1.0;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 17 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.72735319 gegen Fadeschritt 0.00284122]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + eq_enabled aus  [vorher 1.18866, max Sprung 0.8886632 gegen Fadeschritt 0.0034713, Fadeende 0.300000]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.8886632 gegen Fadeschritt 0.0034713, Fadeende 0.300000]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + eq_enabled aus  [vorher 0.84551, max Sprung 0.5455149 gegen Fadeschritt 0.0021309, Fadeende 0.300000]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.5455149 gegen Fadeschritt 0.0021309, Fadeende 0.300000]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.254805982 und 0.037974715 gegen Fadeschritt 0.002130918]
+  FEHLER  wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.318974286 gegen hergeleitete Schranke 0.002956120]
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.744343221 gegen 0.023443103 im ruhigen Lauf]
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.787360311 gegen 0.024111748 im ruhigen Lauf]
+  FEHLER  candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.416108012 (aus Dry waeren es 0.5455), andere Kurve 0.254805982 gegen Fadeschritt 0.002130918]
+  FEHLER  wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.416108012 gegen 0.002531178, andere Kurve max 0.318974286 gegen 0.002956120]
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.4842649 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002722710 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: zweiter_wechsel_im_laufenden_fade_springt_nicht
+  erwartet: candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank
+
+Hinweis: Der neue Fade startet bei t = 1 (sofort Zielbank). Jede Klickprobe eines Bank-Crossfades misst dieselbe Zusage und faellt mit; die beiden erwarteten sind die Umschaltsample-Pruefungen aus W-4.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

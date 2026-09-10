@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-3 (M-17, R8, REGEL B-4)
+Stand:  2026-09-10 15:26
+Zusage: Der Detektor laeuft, solange die interpolierte Range ungleich 0 ist; das Flag des Zielprogramms gilt erst nach der Rampe.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  const bool detektorAktiv = b.detektorLaeuft || (mitte && qb->detektorLaeuft);
+nachher:
+                  const bool detektorAktiv = b.detektorLaeuft;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  range_minus_12_nach_0_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt 0.000000 dB (Idealrampe -11.953125), groesstes Residuum 11.953125000000 dB; danach Detektor aus, Leistung 0.000000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: range_minus_12_nach_0_rampt_ueber_die_volle_rampe
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -0.046875 dB (Idealrampe -0.046875), groesstes Residuum 0.000000000000 dB; danach Detektor an, Leistung 0.406344790]
+  ok      range_null_rechnet_keinen_detektor (M-20)
+  ok      range_null_ergibt_exakt_null_auslenkung (M-20)  [0.000000000000000]
+
+Hinweis: Das Flag des neuen Programms wirkt sofort. In der Gegenrichtung 0 -> -12 laeuft der Detektor ohnehin nach dem Flag des Zielprogramms - dieser Fall bleibt deshalb gruen; M-20 bleibt als Ruhezusage gruen.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

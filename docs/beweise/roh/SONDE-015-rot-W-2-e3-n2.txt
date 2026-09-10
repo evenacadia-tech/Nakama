@@ -1,0 +1,32 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-2 (M-17, R8, REGEL B-4)
+Stand:  2026-09-10 15:26
+Zusage: attack_ms, hold_ms und release_ms laufen im Rampenuebergang ueber die Interpolation, ohne Zustandsreset.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                      const HuellkurveKoeffizienten h = mitte ? mische (qb->huelle, b.huelle, t) : b.huelle;
+nachher:
+                      const HuellkurveKoeffizienten h = b.huelle;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 3 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.584156363493 von Pss, Auslenkung 2.035725417 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  FEHLER  huellkurvenwert_hold_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000401 von Pss, Auslenkung 0.000000003 dB, Holdzaehler 14344 Samples; Leistung beim Wechsel 0.3292 Pss]
+  FEHLER  huellkurvenwert_release_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.079295127166 von Pss, Auslenkung 1.142847003 dB, Holdzaehler ungemessen (kein Anstieg); Leistung beim Wechsel 0.2697 Pss]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: huellkurvenwert_attack_ms_rampt_ohne_zustandsreset
+  erwartet: huellkurvenwert_hold_ms_rampt_ohne_zustandsreset
+  erwartet: huellkurvenwert_release_ms_rampt_ohne_zustandsreset
+
+Hinweis: Sofortuebernahme der neuen Huellkurvenkoeffizienten; Detektor, Kennlinie und Zustandsuebernahme bleiben unveraendert.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

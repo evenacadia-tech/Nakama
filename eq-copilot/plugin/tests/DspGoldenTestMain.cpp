@@ -473,6 +473,47 @@ double groessterSprung (double vorher, const std::vector<double>& x)
     return m;
 }
 
+/** W-4 (Entscheid E-31): die Rundungstoleranz einer Nachbarsample-Differenz
+    am float-Ausgang. Jeder Wert unter 1,0 liegt auf einem float-Raster von
+    hoechstens 2^-24; zwei gerundete Nachbarn verschieben ihre Differenz um
+    hoechstens zwei Rasterschritte, also 2^-23 = 1,19e-7 - vier
+    Groessenordnungen unter den Fadeschrittweiten dieser Proben (um 2e-3).
+    Die double-Rechnung davor liegt bei 1e-16. */
+constexpr double kRundungFloat = 1.0 / 8388608.0;
+
+/** W-4 (Entscheid E-31): die Schranke der WACHE ueber einen ganzen
+    Crossfade-Lauf, hergeleitet aus dem Einschwingen der KALT startenden
+    Zielbank. Die Quellbank steht eingeschwungen auf `quelle`; die Zielbank
+    startet mit Zustand 0 auf dem konstanten Eingang `x` und liefert y(n) -
+    gerechnet mit der eigenstaendigen RBJ-Referenz dieses Tests. Mit
+    t = n/K ist der Ausgang o(n) = quelle*(1 - t) + y(n)*t, also
+
+        o(n) - o(n-1) = (y(n-1) - quelle)/K + t*(y(n) - y(n-1))   fuer n <= K
+        o(n) - o(n-1) = y(n) - y(n-1)                             danach.
+
+    Die Schranke ist das Maximum des Betrags je Sample nach der
+    Dreiecksungleichung - kein Faktor. */
+double kaltSchranke (Filtertyp typ, double fs, double f0, double q, double gainDb, double quelle, double x)
+{
+    const auto c = refEntwurf (typ, fs, f0, q, gainDb);
+    const double K = (double) kFadeSamples;
+    double z1 = 0.0, z2 = 0.0, yVor = 0.0, m = 0.0;
+    for (int n = 0; n < 2 * kFadeSamples; ++n)
+    {
+        const double y = c.b0 * x + z1;
+        z1 = c.b1 * x - c.a1 * y + z2;
+        z2 = c.b2 * x - c.a2 * y;
+        if (n >= 1)
+        {
+            const double t      = n >= kFadeSamples ? 1.0 : (double) n / K;
+            const double schritt = n > kFadeSamples ? 0.0 : std::abs (yVor - quelle) / K;
+            m = std::max (m, schritt + t * std::abs (y - yVor));
+        }
+        yVor = y;
+    }
+    return m;
+}
+
 /** Faehrt DC durch den Kern und zeichnet den AUSGANG (float) auf. */
 std::vector<double> fahreDc (DspKern& k, double wert, int samples, int blockGroesse)
 {
@@ -946,6 +987,52 @@ int main()
             }
         }
 
+        // W-1 / B-3 / M-05: der Schreibverzicht beginnt EXAKT am Sample nach
+        // dem Fade-Ende - auch in dem Teilstueck, in dem der Fade endet. Ein
+        // 512-Sample-Block direkt nach dem Ausschalten: 0..255 tragen den Fade,
+        // ab 256 wird kein Sample geschrieben. Die Wachmarken (sNaN mit
+        // Nutzlast) liegen HINTER dem Fade-Ende im SELBEN Teilstueck; ein
+        // float->double->float-Ruecklauf machte sie ruhig.
+        {
+            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const char* namen[] = { "processed + eq_enabled aus", "processed + hard-bypass",
+                                    "delta + eq_enabled aus", "delta + hard-bypass" };
+            for (int fall = 0; fall < 4; ++fall)
+            {
+                const bool mitBypass = (fall % 2) == 1;
+                auto k = neuerKern (48000.0, 512);
+                auto ein = machSatz (true);
+                setzeGlobal (ein, "v1.global.output_trim_db", 6.0);
+                k->uebernehmeZustand (ein);
+                fahreStille (*k, kRampeSamples + 2048, 512);
+                k->setzeHoermatrix (fall < 2 ? Hoermatrix::processed : Hoermatrix::delta);
+                fahreDc (*k, 0.3, 2048, 512);
+                k->pflege();
+
+                auto aus = ein;
+                if (mitBypass) setzeGlobalBool (aus, "v1.global.bypass", true);
+                else           aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+                k->uebernehmeZustand (aus);
+
+                std::vector<float> wl (512, 0.3f), wr (512, 0.3f);
+                for (size_t i : { (size_t) 256, (size_t) 300, (size_t) 511 }) { wl[i] = wachmarke; wr[i] = wachmarke; }
+                const auto wlK = wl, wrK = wr;
+                float* wkan[2] = { wl.data(), wr.data() };
+                k->verarbeite (wkan, 2, 512);
+
+                int hintenGeschrieben = 0;
+                for (size_t i = 256; i < 512; ++i)
+                    if (std::memcmp (&wl[i], &wlK[i], sizeof (float)) != 0 || std::memcmp (&wr[i], &wrK[i], sizeof (float)) != 0)
+                        ++hintenGeschrieben;
+                const bool fadeGeschrieben = std::memcmp (&wl[0], &wlK[0], sizeof (float)) != 0;
+                pruefe (fadeGeschrieben && hintenGeschrieben == 0,
+                        std::string ("schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): ") + namen[fall],
+                        std::string ("der Fade schreibt Sample 0: ") + (fadeGeschrieben ? "ja" : "nein")
+                        + ", geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: "
+                        + std::to_string (hintenGeschrieben) + " von 256, Wachmarken an 256, 300 und 511");
+            }
+        }
+
         // B-5: ein zweiter Wechsel 64 Samples nach dem ersten, bei einem
         // 256-Sample-Fade und drei verschiedenen Kurven. Beide Wechsel sind
         // TOPOLOGISCH (Typ, dann Typ und Kanalmodus) und laufen deshalb als
@@ -972,10 +1059,26 @@ int main()
             const double B = 0.3;                                 // ein High-Shelf traegt DC mit 0 dB
             const double C = 0.3 * std::pow (10.0, 3.0 / 20.0);   // Low-Shelf +3 dB auf Mid, L = R
             const double stufe  = std::max (std::abs (B - A), std::abs (C - B)) / (double) kFadeSamples;
+            // W-4 (E-31): gemessen AM UMSCHALTSAMPLE, dem ersten Sample jedes
+            // neuen Fades - lauf[0] (A -> B) und lauf[kFadeSamples], wo der
+            // wartende Wechsel B -> C beginnt (E-17). Erlaubt ist die
+            // Fadeschrittweite plus die Rundung des float-Ausgangs.
+            const size_t zweiter   = (size_t) kFadeSamples;
+            const double amErsten  = std::abs (lauf[0] - A);
+            const double amZweiten = std::abs (lauf[zweiter] - lauf[zweiter - 1]);
+            pruefe (amErsten <= stufe + kRundungFloat && amZweiten <= stufe + kRundungFloat,
+                    "zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)",
+                    "am Umschaltsample " + zahl (amErsten, 9) + " und " + zahl (amZweiten, 9)
+                    + " gegen Fadeschritt " + zahl (stufe, 9));
+            // Die Wache ueber den ganzen Lauf traegt die aus dem Einschwingen
+            // der kalt startenden Zielbank hergeleitete Schranke (E-31).
+            const double x      = (double) 0.3f;
+            const double wache  = std::max (kaltSchranke (Filtertyp::highShelf, 48000.0, 8000.0, 0.707, 9.0, A, x),
+                                            kaltSchranke (Filtertyp::lowShelf,  48000.0, 8000.0, 0.707, 3.0, B, x));
             const double sprung = groessterSprung (A, lauf);
-            pruefe (sprung <= 4.0 * stufe + 1e-9,
-                    "zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5)",
-                    "max Sprung " + zahl (sprung, 7) + " gegen Fadeschritt " + zahl (stufe, 7));
+            pruefe (sprung <= wache + kRundungFloat,
+                    "wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)",
+                    "max Sprung " + zahl (sprung, 9) + " gegen hergeleitete Schranke " + zahl (wache, 9));
             pruefe (std::abs (lauf.back() - C) < 1e-4,
                     "der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)",
                     "Ende " + zahl (lauf.back(), 6) + " gegen " + zahl (C, 6));
@@ -1862,6 +1965,141 @@ int main()
                     "soll A 20 H 30 R 50 ms +/- 1 ms; " + detail);
             pruefe (gleich, "dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)",
                     "Spanne je Stufe ueber vier Raten <= 1 ms");
+        }
+
+        // W-2 / B-4 / M-17 / R8: attack_ms, hold_ms und release_ms tragen
+        // `wechsel = rampe`. Im Rampenuebergang laufen ihre Koeffizienten ueber
+        // kRampeSamples, der Huellkurvenzustand wandert mit (E-28). Gemessen
+        // wird Sample fuer Sample gegen die HIER ausgeschriebene Idealrampe:
+        // die Huellkurvenleistung (ihre einzigen Koeffizienten sind die zwei
+        // Pole), daraus die gemeldete Auslenkung an jedem Steuerschritt, und
+        // beim Hold der Holdzaehler, den jede steigende Probe mit der Haltezeit
+        // laedt. Ein Stereoton auf der Bandmitte haelt die Detektorleistung
+        // konstant auf amp^2/2 (E-25); Threshold -20 dB legt den Pegel ins Knie.
+        {
+            struct Fall { const char* name; int feld; double von, nach; bool ton; };
+            const Fall faelle[] = {
+                { "attack_ms",  param::kAttackMs,  500.0, 0.1,   true  },
+                { "hold_ms",    param::kHoldMs,    400.0, 100.0, true  },
+                { "release_ms", param::kReleaseMs, 500.0, 5.0,   false },
+            };
+            const double amp = 0.5, pss = amp * amp * 0.5, thresh = -20.0, range = -6.0;
+            const auto pol = [&] (double ms) { return std::exp (-1.0 / (fs * ms * 0.001)); };
+            const auto kennlinieRef = [&] (double leistung)
+            {
+                const double ueber = 10.0 * std::log10 (leistung) - thresh;
+                return ueber <= 0.0 ? 0.0 : range * std::min (1.0, ueber / 12.0);
+            };
+            for (const auto& f : faelle)
+            {
+                auto k = neuerKern (fs, 64);
+                auto sa = machSatz (true);
+                belege (sa, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+                machDynamisch (sa, 0, range, thresh, 500.0, 0.0, 500.0);
+                sa.werte[(size_t) param::indexBandV1 (0, f.feld)].zahl = f.von;
+                auto sb = sa;
+                sb.werte[(size_t) param::indexBandV1 (0, f.feld)].zahl = f.nach;
+                const auto wert = [] (const param::DspSatz& s, int feld)
+                { return s.werte[(size_t) param::indexBandV1 (0, feld)].zahl; };
+
+                k->uebernehmeZustand (sa);
+                long long n0 = 0;
+                fahreStereoTon (*k, fs, 1000.0, amp, n0, 9600, 64);                // 200 ms Ton: die Huellkurve steigt
+                if (! f.ton) fahreStereoTon (*k, fs, 1000.0, 0.0, n0, 4800, 64);  // 100 ms Stille: Release laeuft
+                k->pflege();
+
+                int cA = -1, cQ = -1, kA = -1, kQ = -1;
+                k->gefahreneSlots (cA, cQ, kA, kQ);
+                double lRef = k->pool().bank (cA).baender[0].huelle.leistung;
+                const double l0 = lRef;
+                k->uebernehmeZustand (sb);
+
+                const double hsVon  = (double) std::llround (wert (sa, param::kHoldMs) * 0.001 * fs);
+                const double hsNach = (double) std::llround (wert (sb, param::kHoldMs) * 0.001 * fs);
+                double maxResL = 0.0, maxResG = 0.0, maxResHold = 0.0, gRef = 0.0;
+                for (int m = 0; m < 2 * kRampeSamples; ++m)
+                {
+                    const long long n = n0;
+                    std::vector<double> aus;
+                    fahreStereoTon (*k, fs, 1000.0, f.ton ? amp : 0.0, n0, 1, 1, nullptr, &aus);
+                    k->gefahreneSlots (cA, cQ, kA, kQ);
+                    const auto& h = k->pool().bank (cA).baender[0].huelle;
+
+                    // Das erste Sample des Uebergangs traegt 1/256, ab dem 256. gilt das Ziel.
+                    const double w  = (m + 1 >= kRampeSamples) ? 1.0 : (double) (m + 1) / (double) kRampeSamples;
+                    const double pa = pol (wert (sa, param::kAttackMs))  + (pol (wert (sb, param::kAttackMs))  - pol (wert (sa, param::kAttackMs)))  * w;
+                    const double pr = pol (wert (sa, param::kReleaseMs)) + (pol (wert (sb, param::kReleaseMs)) - pol (wert (sa, param::kReleaseMs))) * w;
+                    lRef = f.ton ? pa * lRef + (1.0 - pa) * pss : pr * lRef;
+                    if (n % kDynamikSchritt == 0) gRef = kennlinieRef (lRef);
+
+                    maxResL = std::max (maxResL, std::abs (h.leistung - lRef) / pss);
+                    maxResG = std::max (maxResG, std::abs (aus[0] - gRef));
+                    if (f.ton)
+                        maxResHold = std::max (maxResHold, std::abs ((double) h.holdRest
+                                                                     - (double) std::llround (hsVon + (hsNach - hsVon) * w)));
+                }
+                pruefe (maxResL < 1e-6 && maxResG < 1e-4 && maxResHold <= 1.0,
+                        std::string ("huellkurvenwert_") + f.name + "_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)",
+                        "Residuum gegen die Idealrampe: Leistung " + zahl (maxResL, 12) + " von Pss, Auslenkung "
+                        + zahl (maxResG, 9) + " dB, Holdzaehler "
+                        + (f.ton ? zahl (maxResHold, 0) + " Samples" : std::string ("ungemessen (kein Anstieg)"))
+                        + "; Leistung beim Wechsel "
+                        + zahl (l0 / pss, 4) + " Pss");
+            }
+        }
+
+        // W-3 / B-4 / R8 / M-17: dynamic_range_db -12 -> 0 und 0 -> -12 an
+        // einem Stereoton weit ueber Threshold plus Knie. Im Plateau IST die
+        // Auslenkung die Range; sie folgt deshalb an jedem Steuerschritt der
+        // HIER ausgeschriebenen Idealrampe der Range (E-29). Residuum unter
+        // 1e-6 dB: als Gain 1,2e-7 des Signals, bei Vollaussteuerung -138 dBFS
+        // und damit unter -100 dBFS. Danach ist der Detektor aus (-12 -> 0,
+        // Leistung exakt 0) beziehungsweise laeuft (0 -> -12).
+        for (int richtung = 0; richtung < 2; ++richtung)
+        {
+            const double rVon = richtung == 0 ? -12.0 : 0.0, rNach = richtung == 0 ? 0.0 : -12.0;
+            auto k = neuerKern (fs, 64);
+            auto sa = machSatz (true);
+            belege (sa, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+            machDynamisch (sa, 0, rVon, -60.0, 0.1, 0.0, 100.0);
+            auto sb = sa;
+            sb.werte[(size_t) param::indexBandV1 (0, param::kDynamicRangeDb)].zahl = rNach;
+            k->uebernehmeZustand (sa);
+            long long n0 = 0;
+            fahreStereoTon (*k, fs, 1000.0, 0.9, n0, 4096, kDynamikSchritt);
+            k->pflege();
+            k->uebernehmeZustand (sb);
+
+            double maxRes = 0.0, amErsten = 0.0;
+            for (int j = 0; j < 48; ++j)
+            {
+                // Ein Block von kDynamikSchritt Samples: sein erstes Sample ist
+                // der Steuerschritt, der Bericht danach traegt dessen Wert.
+                std::vector<double> aus;
+                fahreStereoTon (*k, fs, 1000.0, 0.9, n0, kDynamikSchritt, kDynamikSchritt, nullptr, &aus);
+                const int m = j * kDynamikSchritt;
+                const double w = (m + 1 >= kRampeSamples) ? 1.0 : (double) (m + 1) / (double) kRampeSamples;
+                const double soll = w >= 1.0 ? rNach : rVon + (rNach - rVon) * w;
+                if (j == 0) amErsten = aus.back();
+                maxRes = std::max (maxRes, std::abs (aus.back() - soll));
+            }
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const double leistungNachRampe = k->pool().bank (cA).baender[0].huelle.leistung;
+            fahreStereoTon (*k, fs, 1000.0, 0.9, n0, 1024, 64);
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const auto& bn = k->pool().bank (cA);
+            const bool laeuft = bn.programm.baender[0].detektorLaeuft;
+            const double leistungSpaeter = bn.baender[0].huelle.leistung;
+            const bool danach = richtung == 0 ? (! laeuft && leistungNachRampe == 0.0 && leistungSpaeter == 0.0)
+                                              : (laeuft && leistungSpaeter > 0.0);
+            pruefe (maxRes < 1e-6 && danach,
+                    std::string ("range_") + (richtung == 0 ? "minus_12_nach_0" : "0_nach_minus_12")
+                    + "_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)",
+                    "erster Steuerschritt " + zahl (amErsten, 6) + " dB (Idealrampe "
+                    + zahl (rVon + (rNach - rVon) / (double) kRampeSamples, 6) + "), groesstes Residuum "
+                    + zahl (maxRes, 12) + " dB; danach Detektor " + (laeuft ? "an" : "aus") + ", Leistung "
+                    + zahl (leistungSpaeter, 9));
         }
 
         // M-24-nahe Zusage im Kern: `dynamic_enabled` aus laesst die fuenf
@@ -3194,6 +3432,39 @@ int main()
                     "groesste Abweichung zum Eingang " + zahl (maxAbw, 9));
         }
 
+        // E-30 / M-55: ein Wechsel zu einem DRITTEN Hoermatrix-Zustand waehrend
+        // eines laufenden Hoermatrix-Fades wartet dessen Ende ab. Processed
+        // (+6 dB) -> Dry laeuft 64 Samples, dann Delta: der Fade zu Dry endet
+        // bei Sample 256, erst dann blendet Delta ein - kein Sprung am
+        // Umschaltsample, keiner im ganzen Lauf ueber die Fadeschrittweite.
+        {
+            auto k = neuerKern (fs, 64);
+            auto laut = machSatz (true);
+            setzeGlobal (laut, "v1.global.output_trim_db", 6.0);
+            k->uebernehmeZustand (laut);
+            const auto vor = fahreDc (*k, 0.2, kRampeSamples + 4096, 64);
+            k->setzeHoermatrix (Hoermatrix::dry);
+            auto lauf = fahreDc (*k, 0.2, 64, 64);
+            k->setzeHoermatrix (Hoermatrix::delta);
+            const auto rest = fahreDc (*k, 0.2, 1024, 64);
+            lauf.insert (lauf.end(), rest.begin(), rest.end());
+
+            const double D  = (double) 0.2f;
+            const double P  = vor.back();                                  // Processed mit +6 dB
+            const double De = (P - D) * std::pow (10.0, kDeltaMakeupDb / 20.0);
+            const double stufe = std::max (std::abs (D - P), std::abs (De - D)) / (double) kFadeSamples;
+            const size_t k256 = (size_t) kFadeSamples;
+            const double amWechsel = std::abs (lauf[64] - lauf[63]);
+            const double sprung = groessterSprung (P, lauf);
+            const bool wartet = std::abs (lauf[k256 - 1] - (P + (D - P) * 255.0 / 256.0)) <= kRundungFloat;
+            pruefe (amWechsel <= stufe + kRundungFloat && sprung <= stufe + kRundungFloat && wartet
+                    && std::abs (lauf.back() - De) <= 1e-6,
+                    "hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)",
+                    "am Umschaltsample " + zahl (amWechsel, 9) + ", max Sprung " + zahl (sprung, 9)
+                    + " gegen Fadeschritt " + zahl (stufe, 9) + ", Fade zu Dry laeuft zu Ende: "
+                    + (wartet ? "ja" : "nein") + ", Ende " + zahl (lauf.back(), 6) + " gegen Delta " + zahl (De, 6));
+        }
+
         // M-56: Candidate ohne Kandidat faellt SICHTBAR zurueck.
         {
             auto k = neuerKern (fs, 512);
@@ -3279,7 +3550,6 @@ int main()
             belege (gleicheKurve, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0, Kanalmodus::mid);
             k->uebernehmeZustand (gleicheKurve, Pfad::candidate);
             const auto gleich = fahreDc (*k, 0.3, 1024, 64);
-            const double sprungGleich = groessterSprung (vor.back(), gleich);
             k->pflege();
 
             auto c2 = machSatz (true);
@@ -3288,12 +3558,31 @@ int main()
             const auto anders = fahreDc (*k, 0.3, 1024, 64);
             const double B = 0.3;   // ein High-Shelf traegt DC mit 0 dB
             const double stufe = std::abs (B - gleich.back()) / (double) kFadeSamples;
+
+            // W-4 (E-31): AM UMSCHALTSAMPLE gemessen, dem ersten Sample des
+            // neuen Fades. Dieselbe Kurve hat die Fadeschrittweite 0 - dort
+            // bleibt allein die Rundung des float-Ausgangs; aus Dry waere es der
+            // ganze Abstand zum Eingang.
+            const double amGleich  = std::abs (gleich[0] - vor.back());
+            const double amAnders  = std::abs (anders[0] - gleich.back());
+            pruefe (amGleich <= kRundungFloat && amAnders <= stufe + kRundungFloat && std::abs (anders.back() - B) < 1e-4,
+                    "candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)",
+                    "am Umschaltsample: dieselbe Kurve " + zahl (amGleich, 9) + " (aus Dry waeren es "
+                    + zahl (vor.back() - 0.3, 4) + "), andere Kurve " + zahl (amAnders, 9)
+                    + " gegen Fadeschritt " + zahl (stufe, 9));
+
+            // Die Wache ueber beide Laeufe: Schranke aus dem Einschwingen der
+            // kalt startenden Candidate-Bank (E-31). "Dieselbe Kurve" ist der
+            // Low-Shelf auf Mid - bei L = R rechnet er wie auf L.
+            const double x = (double) 0.3f;
+            const double wacheGleich  = kaltSchranke (Filtertyp::lowShelf,  fs, 8000.0, 0.707, 9.0, vor.back(), x);
+            const double wacheAnders  = kaltSchranke (Filtertyp::highShelf, fs, 8000.0, 0.707, 9.0, gleich.back(), x);
+            const double sprungGleich = groessterSprung (vor.back(), gleich);
             const double sprungAnders = groessterSprung (gleich.back(), anders);
-            pruefe (sprungGleich <= 0.01 && sprungAnders <= 4.0 * stufe + 1e-9 && std::abs (anders.back() - B) < 1e-4,
-                    "candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7)",
-                    "dieselbe Kurve: max Sprung " + zahl (sprungGleich, 7) + " (aus Dry waeren es "
-                    + zahl (vor.back() - 0.3, 4) + "); andere Kurve: " + zahl (sprungAnders, 7)
-                    + " gegen Fadeschritt " + zahl (stufe, 7));
+            pruefe (sprungGleich <= wacheGleich + kRundungFloat && sprungAnders <= wacheAnders + kRundungFloat,
+                    "wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)",
+                    "dieselbe Kurve max " + zahl (sprungGleich, 9) + " gegen " + zahl (wacheGleich, 9)
+                    + ", andere Kurve max " + zahl (sprungAnders, 9) + " gegen " + zahl (wacheAnders, 9));
         }
 
         // B-8 / M-46: Abbruch MITTEN im Candidate-Fade bei gewaehlter Hoermatrix
@@ -3342,6 +3631,44 @@ int main()
                     + ", Candidate-Slots " + std::to_string (kA) + "/" + std::to_string (kQ) + ", max Sprung "
                     + zahl (sprung, 7) + " gegen Fadeschritt " + zahl (stufe, 7) + ", danach gleich Processed: "
                     + (gleichProcessed ? "ja" : "nein"));
+        }
+
+        // W-5 / B-8 / M-46: Abbruch des Candidate WAEHREND des Hoermatrix-
+        // Fades. Committed neutral, Candidate (Low-Shelf +9 dB) publiziert und
+        // gewaehlt, 64 Samples, dann `beendeCandidate`: die Hoermatrix blendet
+        // vom aktuellen Mischstand zurueck (E-30). Am Abbruchsample kein Sprung
+        // ueber die Fadeschrittweite, danach ist die Candidate-Bank frei.
+        {
+            auto k = neuerKern (fs, 64);
+            k->uebernehmeZustand (machSatz (true));
+            const auto vor = fahreDc (*k, 0.3, 2048, 64);
+            k->pflege();
+
+            auto kand = machSatz (true);
+            belege (kand, 0, Filtertyp::lowShelf, 8000.0, 0.707, 9.0);
+            k->uebernehmeZustand (kand, Pfad::candidate);
+            k->setzeHoermatrix (Hoermatrix::candidate);
+            auto lauf = fahreDc (*k, 0.3, 64, 64);
+            k->beendeCandidate();
+            const auto rest = fahreDc (*k, 0.3, 2048, 64);
+            lauf.insert (lauf.end(), rest.begin(), rest.end());
+            const int geerntet = k->pflege();
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+
+            const double P = vor.back();                          // Committed neutral traegt den Eingang
+            const double C = P * std::pow (10.0, 9.0 / 20.0);     // Low-Shelf +9 dB bei DC
+            const double stufe = std::abs (C - P) / (double) kFadeSamples;
+            const double amAbbruch = std::abs (lauf[64] - lauf[63]);
+            const double sprung = groessterSprung (P, lauf);
+            pruefe (amAbbruch <= stufe + kRundungFloat && sprung <= stufe + kRundungFloat
+                    && geerntet == 1 && k->pool().belegteSlots() == 1 && kA == -1 && kQ == -1
+                    && std::abs (lauf.back() - P) <= kRundungFloat && ! k->candidateVorhanden(),
+                    "candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)",
+                    "am Abbruchsample " + zahl (amAbbruch, 9) + ", max Sprung " + zahl (sprung, 9)
+                    + " gegen Fadeschritt " + zahl (stufe, 9) + ", geerntet " + std::to_string (geerntet)
+                    + ", belegt " + std::to_string (k->pool().belegteSlots()) + ", Candidate-Slots "
+                    + std::to_string (kA) + "/" + std::to_string (kQ));
         }
 
         // B-9 / M-27 / R14: die Auslenkungen liegen JE PFAD. Ein Candidate mit

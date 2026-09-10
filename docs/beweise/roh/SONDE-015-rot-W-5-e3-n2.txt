@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-5 (M-46, REGEL B-8)
+Stand:  2026-09-10 15:27
+Zusage: Ein Candidate-Abbruch im laufenden Hoermatrix-Fade blendet vom aktuellen Mischstand zurueck.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+                  std::swap (hoerVorher, hoerLaufend);
+                  hoerFadeRest = std::max (0, kFadeSamples - hoerFadeRest - 1);
+nachher:
+                  hoerLaufend = wirksam;
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.033037543, max Sprung 0.033037543 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  ok      hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00232899 gegen Fadeschritt 0.00231986]
+
+Hinweis: Der alte Zweig: bei laufendem Fade wandert nur das Ziel auf processed, beide Seiten des Fades sind processed.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

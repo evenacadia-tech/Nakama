@@ -1,0 +1,33 @@
+SONDE-015 Etappe 3, Nacharbeit 2 - Rotbeweis W-5b (M-55, E-30)
+Stand:  2026-09-10 15:27
+Zusage: Ein Wechsel zu einem dritten Hoermatrix-Zustand waehrend eines laufenden Hoermatrix-Fades wartet dessen Ende ab.
+Bein:   B6 EqCopDspGoldenTest
+Datei:  eq-copilot/plugin/dsp/DspKern.cpp
+
+--- MUTIERTE ZEILE (die Zeile, die die Zusage traegt) ---
+vorher:
+              // Ein Wechsel zu einem DRITTEN Zustand wartet, bis der laufende Fade
+nachher:
+              else hoerLaufend = wirksam;   // Mutation W-5b: das Ziel wandert, der Zaehler laeuft weiter
+              // Ein Wechsel zu einem DRITTEN Zustand wartet, bis der laufende Fade
+
+--- LAUF UNTER MUTATION: ROT ---
+Exitcode: 1
+240 geprueft, 1 Fehler
+
+Gefallene Pruefungen:
+  FEHLER  hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)  [am Umschaltsample 0.147332996, max Sprung 0.147332996 gegen Fadeschritt 0.002314227, Fade zu Dry laeuft zu Ende: nein, Ende 0.792442 gegen Delta 0.792442]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000524402, max Sprung 0.001048803 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00232899 gegen Fadeschritt 0.00231986]
+
+Hinweis: Die Mutation fuegt den alten Zweig fuer den dritten Zustand wieder ein; der Rueckweg zur Quelle (W-5) bleibt unberuehrt und gruen.
+
+--- LAUF NACH RUECKNAHME: GRUEN ---
+Exitcode: 0
+240 geprueft, 0 Fehler
+DSP-GOLDEN OK

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <utility>
 
 namespace nakama::dsp
 {
@@ -47,6 +48,20 @@ Biquad mische (const Biquad& a, const Biquad& b, double t) noexcept
     c.b2 = a.b2 + (b.b2 - a.b2) * t;
     c.a1 = a.a1 + (b.a1 - a.a1) * t;
     c.a2 = a.a2 + (b.a2 - a.a2) * t;
+    return c;
+}
+
+/** Lineare Mischung zweier Huellkurvensaetze (W-2, Entscheid E-28): beide
+    Pole linear, die Haltezeit als gerundete lineare Mischung ihrer
+    Samplezahl. Ein Pol zwischen zwei Polen aus [0, 1) liegt selbst in
+    [0, 1) - die gemischte Huellkurve bleibt stabil. */
+HuellkurveKoeffizienten mische (const HuellkurveKoeffizienten& a, const HuellkurveKoeffizienten& b, double t) noexcept
+{
+    HuellkurveKoeffizienten c;
+    c.attackPol   = a.attackPol  + (b.attackPol  - a.attackPol)  * t;
+    c.releasePol  = a.releasePol + (b.releasePol - a.releasePol) * t;
+    c.holdSamples = (std::int64_t) ((double) a.holdSamples
+                                    + ((double) b.holdSamples - (double) a.holdSamples) * t + 0.5);
     return c;
 }
 
@@ -364,6 +379,7 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
     if (! b.nutztSvf && b.statischIstEinheit && (qb == nullptr || qb->statischIstEinheit) && zustandLeer) return;
 
     const bool zweiKomponenten = (b.modus == Kanalmodus::stereo);
+    bool detektorZuletzt = false;   ///< lief der Detektor am letzten Sample dieses Fensters?
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -390,11 +406,20 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
 
         if (b.nutztSvf)
         {
+            // W-3 (Entscheid E-29): im Rampenuebergang laeuft der Detektor,
+            // solange EINES der beiden Programme ihn laufen laesst - die
+            // interpolierte Range ist dann ungleich 0. Das Flag des
+            // Zielprogramms gilt erst nach dem Ende der Rampe; M-20 bleibt die
+            // Ruhezusage.
+            const bool detektorAktiv = b.detektorLaeuft || (mitte && qb->detektorLaeuft);
+            detektorZuletzt = detektorAktiv;
+
             // --- Detektor: hoert das bandgefilterte Signal VOR dem Band ---
-            if (b.detektorLaeuft)
+            if (detektorAktiv)
             {
-                const Biquad d = (mitte && qb->detektorLaeuft) ? mische (qb->detektor, b.detektor, t)
-                                                                : b.detektor;
+                // Beide Seiten tragen entworfene Koeffizienten, sobald das Band
+                // einen Detektor hat (E-29) - auch die Seite mit Range 0.
+                const Biquad d = mitte ? mische (qb->detektor, b.detektor, t) : b.detektor;
                 double leistungEin;
                 if (zweiKomponenten)
                 {
@@ -408,7 +433,11 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
                     const double d0 = z.detektor[0].tick (d, x0);
                     leistungEin = d0 * d0;
                 }
-                z.huelle.tick (b.huelle, leistungEin);
+                // W-2 (E-28): attack_ms, hold_ms und release_ms tragen im
+                // Vertrag `wechsel = rampe` - ihre Koeffizienten laufen mit den
+                // uebrigen Rampenwerten, der Huellkurvenzustand wandert mit.
+                const HuellkurveKoeffizienten h = mitte ? mische (qb->huelle, b.huelle, t) : b.huelle;
+                z.huelle.tick (h, leistungEin);
             }
 
             // --- Steuerrate: Kennlinie und Neuentwurf ---------------------
@@ -426,7 +455,7 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
                 }
 
                 double gDyn = 0.0;
-                if (b.detektorLaeuft)
+                if (detektorAktiv)
                     gDyn = dynamischeKennlinie (leistungInDb (z.huelle.leistung), thresholdDb, rangeDb);
                 z.auslenkungDb = gDyn;
                 z.svfVon       = z.svfNach;
@@ -457,6 +486,16 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
             case Kanalmodus::mid:    L[i] = y0 + s; R[i] = y0 - s; break;
             case Kanalmodus::side:   L[i] = m + y0; R[i] = m - y0; break;
         }
+    }
+
+    // W-3 (E-29): ein Detektor, der nicht mehr laeuft, haelt keinen Zustand.
+    // Nach einer Rampe der Range auf 0 ist er damit wirklich aus, und eine
+    // spaetere Rampe von 0 weg beginnt wie ein frischer Detektor bei 0 statt
+    // bei einem Pegel von damals.
+    if (b.nutztSvf && ! detektorZuletzt)
+    {
+        z.huelle.nullen();
+        for (auto& d : z.detektor) d.nullen();
     }
 
     // M-27: der zuletzt gerechnete Wert am Ende des Fensters - kein Mittel,
@@ -808,17 +847,28 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
 
     // --- Hoermatrix, HINTER allen drei Taps (§44.2 letzter Absatz) --------
     // M-55: der Wechsel ist KLICKFREI - ein eigener Uebergang.
-    if (wirksam != hoerLaufend && hoerFadeRest <= 0)
+    if (wirksam != hoerLaufend)
     {
-        hoerVorher   = hoerLaufend;
-        hoerLaufend  = wirksam;
-        hoerFadeRest = kFadeSamples;
-    }
-    else if (wirksam != hoerLaufend)
-    {
-        // Ein zweiter Wechsel waehrend eines laufenden Fades: das Ziel
-        // wandert, der Zaehler laeuft weiter.
-        hoerLaufend = wirksam;
+        if (hoerFadeRest <= 0)
+        {
+            hoerVorher   = hoerLaufend;
+            hoerLaufend  = wirksam;
+            hoerFadeRest = kFadeSamples;
+        }
+        else if (wirksam == hoerVorher)
+        {
+            // W-5 (Entscheid E-30): zurueck zur QUELLE des laufenden Fades -
+            // etwa ein Candidate-Abbruch mitten im Einblenden. Der Fade kehrt
+            // seine Richtung um und laeuft vom AKTUELLEN Mischstand zurueck:
+            // das Gewicht beider Seiten bleibt am Umschaltsample stehen und
+            // wandert von dort in Fadeschritten zurueck.
+            std::swap (hoerVorher, hoerLaufend);
+            hoerFadeRest = std::max (0, kFadeSamples - hoerFadeRest - 1);
+        }
+        // Ein Wechsel zu einem DRITTEN Zustand wartet, bis der laufende Fade
+        // endet (E-30, wie E-17 fuer die Baenke): ein Mischstand aus zwei
+        // Seiten laesst sich ohne dritten Puffer nur zu einer seiner beiden
+        // Seiten stetig fortsetzen.
     }
 
     const double makeup = dbInLinear (kDeltaMakeupDb);
@@ -864,7 +914,16 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
         hoerAus (h, cAusL[i], cAusR[i], i, l, r);
     };
 
-    for (size_t i = 0; i < n; ++i)
+    // W-1 (Entscheid E-32): blendet der Committed-Pfad in einen Passthrough,
+    // endet der Schreibzugriff EXAKT am Fade-Ende - auch mitten in diesem
+    // Stueck. Ab dem ersten Sample mit Gewicht 1 ist die Kette verlassen, und
+    // der Puffer bleibt unberuehrt: kein float->double->float-Ruecklauf, keine
+    // Kopie des Eingangs auf sich selbst (M-05, REGEL B-3).
+    size_t schreibBis = n;
+    if (passthroughUebergang && nachPass)
+        while (schreibBis > 0 && cGewicht[schreibBis - 1] >= 1.0) --schreibBis;
+
+    for (size_t i = 0; i < schreibBis; ++i)
     {
         double l = 0.0, r = 0.0;
         hoerWert (hoerLaufend, i, l, r);
@@ -882,6 +941,15 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
 
         kanaele[0][i] = (float) l;
         if (numKanaele > 1) kanaele[1][i] = (float) r;
+    }
+
+    if (schreibBis < n)
+    {
+        // Ab hier ruht der Pfad (W-1): die Hoermatrix hat nichts mehr zu
+        // blenden - dieselbe Ruhe wie im naechsten Stueck mit `committedRuht`.
+        hoerLaufend  = wirksam;
+        hoerVorher   = wirksam;
+        hoerFadeRest = 0;
     }
 }
 

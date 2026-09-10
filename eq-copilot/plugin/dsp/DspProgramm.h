@@ -102,7 +102,10 @@ struct BandProgramm
 
     /*  Der Detektor. `laeuft` ist false bei `sidechain_source` = none und
         bei `dynamic_range_db` = 0 - dann wird gar nichts gerechnet (M-20,
-        M-22), nicht nur multipliziert. */
+        M-22), nicht nur multipliziert. `detektor` und `huelle` sind trotzdem
+        entworfen, sobald das Band einen Detektor hat (Sidechain nicht
+        `none`): eine Rampe der Range ueber 0 braucht beide Seiten (W-3,
+        E-29). */
     bool        detektorLaeuft { false };
     Sidechain   quelle       { Sidechain::none };   ///< der persistente Vertragswert (topologisch)
     Biquad      detektor     {};

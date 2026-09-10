@@ -243,7 +243,14 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
         // gerechnet - nicht gerechnet und mit 0 multipliziert. Ein
         // ausdruecklich abgewaehlter Sidechain darf keine Rechenzeit kosten.
         b.detektorLaeuft = b.nutztSvf && detektorGewuenscht && b.rangeDb != 0.0;
-        if (b.detektorLaeuft)
+
+        // W-2, W-3 (E-29): ENTWORFEN werden Detektor und Huellkurve, sobald
+        // das Band einen Detektor HAT - auch bei Range 0. Eine Rampe der Range
+        // auf 0 oder von 0 weg interpoliert zwischen beiden Programmen und
+        // braucht auf beiden Seiten gueltige Koeffizienten. Gerechnet wird im
+        // Audiothread weiter nur, was `detektorLaeuft` oder die laufende Rampe
+        // verlangt; der Entwurf hier laeuft im Worker.
+        if (b.nutztSvf && detektorGewuenscht)
         {
             b.detektor = entwurfBandpass (samplerate, b.freqHzWirksam, b.q);
             b.huelle   = huellkurveEntwurf (bandZelle (w, slot, param::kAttackMs).zahl,

@@ -1,0 +1,1432 @@
+[
+  {
+    "file": "broker/src/aggregat.rs",
+    "lines": 379,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/bin/eqcop-broker-probe.rs",
+    "lines": 35,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/bin/eqcop-broker-sonde012-probe.rs",
+    "lines": 73,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/bin/eqcop-broker-v3probe.rs",
+    "lines": 144,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/bin/eqcop-store-crash-worker.rs",
+    "lines": 298,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/bindung.rs",
+    "lines": 156,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/assistent.rs",
+    "lines": 236,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/befehl.rs",
+    "lines": 1329,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/evidenz.rs",
+    "lines": 528,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/experiment.rs",
+    "lines": 1727,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/experiment_verdrahtung.rs",
+    "lines": 1892,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/flush.rs",
+    "lines": 251,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/befund.rs",
+    "lines": 484,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/determinismus.rs",
+    "lines": 120,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/eingang.rs",
+    "lines": 179,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/enthaltung.rs",
+    "lines": 203,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/klassenwahl.rs",
+    "lines": 240,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/messung.rs",
+    "lines": 556,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/mod.rs",
+    "lines": 72,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/rechnung.rs",
+    "lines": 523,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/screening.rs",
+    "lines": 813,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/testhilfe.rs",
+    "lines": 132,
+    "test_file": true
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/vertrag.rs",
+    "lines": 354,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese/zusammenhang.rs",
+    "lines": 630,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/hypothese_verdrahtung.rs",
+    "lines": 1077,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/intent.rs",
+    "lines": 921,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/intervention.rs",
+    "lines": 674,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/invalidierung.rs",
+    "lines": 285,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/invalidierung_verdrahtung.rs",
+    "lines": 755,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/link.rs",
+    "lines": 648,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/liveness.rs",
+    "lines": 911,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/maskierung.rs",
+    "lines": 334,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/mitgliedschaft.rs",
+    "lines": 269,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/mod.rs",
+    "lines": 662,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/prepost.rs",
+    "lines": 1248,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/prepost_verdrahtung.rs",
+    "lines": 382,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/proposal.rs",
+    "lines": 960,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/proposal_verdrahtung.rs",
+    "lines": 736,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/schema.rs",
+    "lines": 856,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/senke.rs",
+    "lines": 264,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/sicht.rs",
+    "lines": 662,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/subscription.rs",
+    "lines": 454,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/uhr.rs",
+    "lines": 54,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/vergleichbarkeit.rs",
+    "lines": 403,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/coordinator/zustand.rs",
+    "lines": 679,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/dto.rs",
+    "lines": 591,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/framing.rs",
+    "lines": 118,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/instance_alias.rs",
+    "lines": 539,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/lebenslauf.rs",
+    "lines": 398,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/lib.rs",
+    "lines": 58,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/main.rs",
+    "lines": 81,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/paar.rs",
+    "lines": 433,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/persistenz.rs",
+    "lines": 186,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/probe.rs",
+    "lines": 117,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/protokoll.rs",
+    "lines": 718,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/register.rs",
+    "lines": 996,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/server.rs",
+    "lines": 1841,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/sitzung.rs",
+    "lines": 71,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/store/handle.rs",
+    "lines": 509,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/store/migration.rs",
+    "lines": 384,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/store/mod.rs",
+    "lines": 414,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/store/pfad.rs",
+    "lines": 368,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/store/writer.rs",
+    "lines": 1020,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/telemetrie.rs",
+    "lines": 1096,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/testhilfe.rs",
+    "lines": 61,
+    "test_file": true
+  },
+  {
+    "file": "broker/src/transport/bootstrap.rs",
+    "lines": 704,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/legacy_v2.rs",
+    "lines": 93,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/mod.rs",
+    "lines": 24,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/pipetoken.rs",
+    "lines": 199,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/auth.rs",
+    "lines": 189,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/griff.rs",
+    "lines": 474,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/listener.rs",
+    "lines": 703,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/mod.rs",
+    "lines": 231,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/queues.rs",
+    "lines": 304,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/senke.rs",
+    "lines": 140,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_abonnement.rs",
+    "lines": 427,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_fristen.rs",
+    "lines": 179,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_hilfe.rs",
+    "lines": 454,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_kopplung.rs",
+    "lines": 498,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_lebenszyklus.rs",
+    "lines": 422,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/tests_rueckstau.rs",
+    "lines": 240,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/trennung.rs",
+    "lines": 192,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/verbindung.rs",
+    "lines": 890,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/server_v3/win_handles.rs",
+    "lines": 718,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/v3.rs",
+    "lines": 586,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/transport/warteschlange.rs",
+    "lines": 712,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/vertrag.rs",
+    "lines": 1250,
+    "test_file": false
+  },
+  {
+    "file": "broker/src/zeit.rs",
+    "lines": 41,
+    "test_file": false
+  },
+  {
+    "file": "broker/tests/broker_idle.rs",
+    "lines": 235,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/contract_cross_language.rs",
+    "lines": 811,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/coordinator_model.rs",
+    "lines": 1861,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/security_vectors.rs",
+    "lines": 1259,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde012_sources_slice.rs",
+    "lines": 1191,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde013_experiment.rs",
+    "lines": 1074,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde013_passage.rs",
+    "lines": 511,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde013_prepost.rs",
+    "lines": 1335,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde013_taint.rs",
+    "lines": 662,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde013_verdrahtung.rs",
+    "lines": 6082,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_befund.rs",
+    "lines": 495,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_gegenbeispiele.rs",
+    "lines": 2125,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_hypothese.rs",
+    "lines": 2622,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_maskierung.rs",
+    "lines": 389,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_nacharbeit1.rs",
+    "lines": 805,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_nacharbeit2.rs",
+    "lines": 760,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_nacharbeit3.rs",
+    "lines": 693,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_p5_korpus.rs",
+    "lines": 474,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_proposal.rs",
+    "lines": 1489,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/sonde014_verdrahtung.rs",
+    "lines": 4182,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/store_crash_matrix.rs",
+    "lines": 3867,
+    "test_file": true
+  },
+  {
+    "file": "broker/tests/transport_fuzz.rs",
+    "lines": 551,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/install/Install-Nakama.ps1",
+    "lines": 1249,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/install/NakamaOrdnerHash.ps1",
+    "lines": 125,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/StampedAudioQueue.h",
+    "lines": 826,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/BandGrid.h",
+    "lines": 259,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/BandGridZahlen.h",
+    "lines": 203,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/Blindvergleich.h",
+    "lines": 203,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+    "lines": 1314,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/Fft.h",
+    "lines": 143,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/KGewichtung.h",
+    "lines": 127,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+    "lines": 194,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/LoudnessAccumulator.h",
+    "lines": 460,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/Statistik.h",
+    "lines": 187,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/TruePeak.h",
+    "lines": 307,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/Vergleichspegel.h",
+    "lines": 404,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h",
+    "lines": 199,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Frame.h",
+    "lines": 668,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Lautheit.h",
+    "lines": 239,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Spektrum.h",
+    "lines": 650,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Stereo.h",
+    "lines": 318,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Vertrag.h",
+    "lines": 760,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/analysis/featureengine/Zeit.h",
+    "lines": 601,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp",
+    "lines": 951,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/BrokerLifecycle.h",
+    "lines": 155,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/ControlClient.cpp",
+    "lines": 247,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/ControlClient.h",
+    "lines": 677,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/InterventionsRing.h",
+    "lines": 232,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/IpcQueues.h",
+    "lines": 906,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp",
+    "lines": 587,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/IpcVerbindung.h",
+    "lines": 282,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/PipeToken.cpp",
+    "lines": 184,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/PipeToken.h",
+    "lines": 82,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/TelemetryClient.cpp",
+    "lines": 812,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/TelemetryClient.h",
+    "lines": 151,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/WireEnvelope.cpp",
+    "lines": 297,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/WireEnvelope.h",
+    "lines": 252,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/WireZahl.h",
+    "lines": 222,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/controlclient/Intern.h",
+    "lines": 467,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/controlclient/Laufzeit.h",
+    "lines": 225,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp",
+    "lines": 452,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp",
+    "lines": 1080,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp",
+    "lines": 312,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspBankPool.cpp",
+    "lines": 285,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspBankPool.h",
+    "lines": 309,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspFilter.h",
+    "lines": 369,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspKern.cpp",
+    "lines": 1003,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspKern.h",
+    "lines": 384,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspProgramm.cpp",
+    "lines": 272,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspProgramm.h",
+    "lines": 222,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspRtWache.h",
+    "lines": 157,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/dsp/DspSvf.h",
+    "lines": 166,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostbridge/NakamaHostBridge.h",
+    "lines": 486,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostprobe/HostProbeEditor.cpp",
+    "lines": 278,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostprobe/HostProbeEditor.h",
+    "lines": 86,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostprobe/HostProbeFactory.cpp",
+    "lines": 8,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp",
+    "lines": 645,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/hostprobe/HostProbeProcessor.h",
+    "lines": 268,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/probe/PipeProbeMain.cpp",
+    "lines": 187,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/sonde/SondeFactory.cpp",
+    "lines": 11,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/sonde/SondeProcessor.cpp",
+    "lines": 789,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/sonde/SondeProcessor.h",
+    "lines": 350,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/spike/AuxSpikeEditor.cpp",
+    "lines": 179,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/spike/AuxSpikeEditor.h",
+    "lines": 36,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/spike/AuxSpikeFactory.cpp",
+    "lines": 8,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/spike/AuxSpikeProcessor.cpp",
+    "lines": 313,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/spike/AuxSpikeProcessor.h",
+    "lines": 146,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/AnalyseEngine.cpp",
+    "lines": 1129,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/AnalyseEngine.h",
+    "lines": 369,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/Diagnose.cpp",
+    "lines": 520,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/Diagnose.h",
+    "lines": 83,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/EqCopilotAssetKit.h",
+    "lines": 477,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/EqCopilotIds.h",
+    "lines": 26,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/HoerMarkierung.h",
+    "lines": 693,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/LeitstandTokens.h",
+    "lines": 101,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PipeClient.cpp",
+    "lines": 824,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PipeClient.h",
+    "lines": 174,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PluginEditor.cpp",
+    "lines": 1665,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PluginEditor.h",
+    "lines": 183,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PluginFactory.cpp",
+    "lines": 8,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PluginProcessor.cpp",
+    "lines": 993,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/PluginProcessor.h",
+    "lines": 1524,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/SourcesModel.cpp",
+    "lines": 1864,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/SourcesModel.h",
+    "lines": 350,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/WorkerCadence.h",
+    "lines": 70,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/ZonenRegeln.h",
+    "lines": 37,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/prozessor/Analyse.cpp",
+    "lines": 1449,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/prozessor/Hostbruecke.cpp",
+    "lines": 187,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/prozessor/Intern.h",
+    "lines": 49,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/prozessor/Ipc.cpp",
+    "lines": 1386,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/src/prozessor/State.cpp",
+    "lines": 586,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaKanon.cpp",
+    "lines": 428,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaKanon.h",
+    "lines": 88,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaKernRiegel.h",
+    "lines": 122,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaLebenslauf.cpp",
+    "lines": 119,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaLebenslauf.h",
+    "lines": 148,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaParameter.cpp",
+    "lines": 689,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaParameter.h",
+    "lines": 233,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaPreset.cpp",
+    "lines": 262,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaPreset.h",
+    "lines": 74,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaState.cpp",
+    "lines": 2863,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/state/NakamaState.h",
+    "lines": 704,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp",
+    "lines": 2961,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/AuxSpikeTestMain.cpp",
+    "lines": 290,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/DspGoldenTestMain.cpp",
+    "lines": 4136,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/GoldenTestMain.cpp",
+    "lines": 883,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/HostContextTestMain.cpp",
+    "lines": 577,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/HostProbeTestMain.cpp",
+    "lines": 777,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/IdentityTestMain.cpp",
+    "lines": 848,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/IpcLastMain.cpp",
+    "lines": 337,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/IpcTestMain.cpp",
+    "lines": 7064,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
+    "lines": 778,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp",
+    "lines": 670,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/MarkierungTestMain.cpp",
+    "lines": 1656,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/NullTestMain.cpp",
+    "lines": 93,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/PaintBenchMain.cpp",
+    "lines": 103,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp",
+    "lines": 1431,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/QueueStressTestMain.cpp",
+    "lines": 1565,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/SchemaTestMain.cpp",
+    "lines": 1415,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/SessionSoakMain.cpp",
+    "lines": 1773,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/ShotTestMain.cpp",
+    "lines": 318,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp",
+    "lines": 531,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde012LoudnessSourceTest.cpp",
+    "lines": 334,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp",
+    "lines": 492,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp",
+    "lines": 356,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp",
+    "lines": 1138,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp",
+    "lines": 708,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013EventWireTest.cpp",
+    "lines": 1865,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013ExperimentGoldenTest.cpp",
+    "lines": 285,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013ExperimentUiTest.cpp",
+    "lines": 416,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp",
+    "lines": 356,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013InterventionRingTest.cpp",
+    "lines": 271,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp",
+    "lines": 3568,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp",
+    "lines": 569,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013QualityClassTest.cpp",
+    "lines": 317,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp",
+    "lines": 1329,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp",
+    "lines": 323,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde014AssistentTest.cpp",
+    "lines": 1121,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde014BefundTest.cpp",
+    "lines": 746,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/Sonde014IntentTest.cpp",
+    "lines": 1234,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/SondeNullTestMain.cpp",
+    "lines": 483,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/StateMigrationTestMain.cpp",
+    "lines": 2227,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/tests/V3TestServer.h",
+    "lines": 754,
+    "test_file": true
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaEvidenz.cpp",
+    "lines": 606,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaEvidenz.h",
+    "lines": 112,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp",
+    "lines": 757,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaTelemetrie.h",
+    "lines": 142,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaUtf8.h",
+    "lines": 74,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaVertrag.cpp",
+    "lines": 1187,
+    "test_file": false
+  },
+  {
+    "file": "eq-copilot/plugin/vertrag/NakamaVertrag.h",
+    "lines": 149,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_aux_spike_fixtures.py",
+    "lines": 76,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_bandgitter.py",
+    "lines": 338,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_bandgitter_header.py",
+    "lines": 220,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_envelope_fixtures.py",
+    "lines": 449,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_fb_fixtures.py",
+    "lines": 1328,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_fixtures.py",
+    "lines": 243,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_p4_korpus.py",
+    "lines": 386,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_p5_korpus.py",
+    "lines": 848,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_quantisierung.py",
+    "lines": 338,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_state_fixtures.py",
+    "lines": 1147,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_testsong.py",
+    "lines": 277,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/erzeuge_v3_fixtures.py",
+    "lines": 3933,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_fbs_feldids.py",
+    "lines": 452,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_flatc_drift.py",
+    "lines": 391,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_host_capabilities.py",
+    "lines": 312,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_installer_gegenpfad.py",
+    "lines": 747,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_installer_manifest.py",
+    "lines": 1710,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_ipc_last.py",
+    "lines": 207,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_kern_identitaetsfrei.py",
+    "lines": 770,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_p4_korpus.py",
+    "lines": 631,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_p5_korpus.py",
+    "lines": 1162,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_session_soak.py",
+    "lines": 1229,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_sonde012_sources_latency.py",
+    "lines": 94,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_v2_schemas.py",
+    "lines": 112,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/pruefe_v3_vertrag.py",
+    "lines": 2288,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/smf.py",
+    "lines": 144,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/verify_testsong.py",
+    "lines": 153,
+    "test_file": false
+  },
+  {
+    "file": "tools/eq-copilot/vorfuehrung_g1_vertrag.py",
+    "lines": 172,
+    "test_file": false
+  }
+]

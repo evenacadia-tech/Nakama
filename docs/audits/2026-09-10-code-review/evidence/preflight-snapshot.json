@@ -1,0 +1,125 @@
+{
+  "SchemaVersion": 1,
+  "ProjectRoot": "C:\\na-audit-20260910-844b9c1",
+  "Revision": "844b9c15935377e89d124ac33848e9cba1ecf4c2",
+  "Branch": "HEAD",
+  "Upstream": {
+    "Name": null,
+    "Ahead": null,
+    "Behind": null,
+    "Note": "Local tracking state only; preflight does not fetch."
+  },
+  "Scope": {
+    "BaseRef": "",
+    "BaseCommit": null,
+    "WorkingTreeDirty": false,
+    "Status": [],
+    "ChangedPaths": [],
+    "Tags": []
+  },
+  "Canonical": {
+    "ContextReady": true,
+    "CanonicalRunnerInvocable": true,
+    "Paths": [
+      {
+        "Role": "Instructions",
+        "RelativePath": "AGENTS.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:20.2837252Z"
+      },
+      {
+        "Role": "ProductContext",
+        "RelativePath": "CLAUDE.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:20.2847253Z"
+      },
+      {
+        "Role": "PlanStatus",
+        "RelativePath": "docs/PLAN-STAND.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:21.4461360Z"
+      },
+      {
+        "Role": "ProbePlan",
+        "RelativePath": "docs/FL-Nakama-Sonden-Design-Entwurf.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:21.4441267Z"
+      },
+      {
+        "Role": "Architecture",
+        "RelativePath": "docs/plugin-wissen.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:22.1457885Z"
+      },
+      {
+        "Role": "EvidenceRunner",
+        "RelativePath": "tools/beweise.ps1",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:22.9573785Z"
+      },
+      {
+        "Role": "KnowledgeIndex",
+        "RelativePath": "wissen/INDEX.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:23.0120421Z"
+      },
+      {
+        "Role": "SkillEntrypoint",
+        "RelativePath": ".agents/skills/nakama-plugin-quality/SKILL.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:20.2695702Z"
+      },
+      {
+        "Role": "QualityModel",
+        "RelativePath": ".agents/skills/nakama-plugin-quality/references/quality-model.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-10T17:28:20.2705757Z"
+      }
+    ]
+  },
+  "Tools": [
+    {
+      "Name": "git",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files\\Git\\cmd\\git.exe"
+    },
+    {
+      "Name": "py",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\WINDOWS\\py.exe"
+    },
+    {
+      "Name": "pwsh",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+    },
+    {
+      "Name": "cargo",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Users\\phili\\.cargo\\bin\\cargo.exe"
+    },
+    {
+      "Name": "python",
+      "Required": false,
+      "Available": true,
+      "Path": "C:\\Python314\\python.exe"
+    },
+    {
+      "Name": "cmake",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe"
+    }
+  ],
+  "Findings": [
+    {
+      "Severity": "info",
+      "Code": "no-local-scope",
+      "Message": "No working-tree or selected BaseRef changes were found; derive scope from the explicit user request."
+    }
+  ]
+}

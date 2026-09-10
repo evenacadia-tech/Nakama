@@ -1,0 +1,10 @@
+repro-vergleichspegel.cpp
+channels=1 elapsed_ms=199 counted_samples=9552 ready=0 frozen=0 expected=0 violation=0
+channels=1 elapsed_ms=200 counted_samples=9600 ready=0 frozen=0 expected=0 violation=0
+channels=1 elapsed_ms=399 counted_samples=19152 ready=0 frozen=0 expected=0 violation=0
+channels=1 elapsed_ms=400 counted_samples=19200 ready=1 frozen=1 expected=1 violation=0
+channels=2 elapsed_ms=199 counted_samples=19104 ready=0 frozen=0 expected=0 violation=0
+channels=2 elapsed_ms=200 counted_samples=19200 ready=1 frozen=1 expected=0 violation=1
+channels=2 elapsed_ms=399 counted_samples=38304 ready=1 frozen=1 expected=0 violation=1
+channels=2 elapsed_ms=400 counted_samples=38400 ready=1 frozen=1 expected=1 violation=0
+violations=2

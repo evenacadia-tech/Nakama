@@ -494,6 +494,21 @@ User-Fallback vom 31.08. weiter („falls Codex iwann an die Nutzungsgrenze
 stoßen sollte, mit Opus weitermachen"): stößt Codex als Prüfer an seine
 Grenze, prüft ein frischer Opus-Thread, nie der Bauer-Thread.
 
+## 3.7 Ultra-Review-Erinnerung (seit 10.09.2026)
+
+User-Wort 10.09.2026: „okay dann bau das in den plan ein, dass fable
+dirigent mich zum richtigen zeitpunkt automatisch daran erinnert".
+`/code-review ultra` ist die dritte, unabhängige Prüfspur (Claude-Cloud,
+mehrere Agenten, nur vom User startbar, nie über Bash). Der richtige
+Zeitpunkt ist an jedem Gate G6–G9 (Plan-Nachtrag) und nach dem Abschluss von
+NAK-246: Stand sauber, kanongrün, gepusht. Dann schreibt der Dirigent die
+Erinnerung als User-Handgriff in die Session UND als `PushNotification`,
+startet auf diesem Stand keinen Codex-Audit und keinen Worker und wartet.
+Das Ergebnis behandelt er wie einen externen Audit: Befunde durch einen
+lesenden Opus-Agenten am Snapshot validieren, als Defekt/Lücke/Härtung
+einordnen, Defekte als Ticket oder Nacharbeit, Rest datiert ins Register
+(Muster NAK-246, `docs/audits/`).
+
 ## 4. Haltgründe
 
 Ein Haltgrund stoppt nur das betroffene Ticket, nie den Lauf: Der Dirigent

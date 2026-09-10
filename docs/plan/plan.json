@@ -333,7 +333,7 @@
      "id": "G6",
      "leitungsname": "Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen",
      "ticket": "Gate",
-     "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad.",
+     "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. NACHTRAG 10.09.2026 (User-Wort: „okay dann bau das in den plan ein, dass fable dirigent mich zum richtigen zeitpunkt automatisch daran erinnert“ — Anlass: /code-review ultra als dritte, unabhängige Prüfspur neben Codex-Astra und dem lesenden Opus-Validierungsagenten): ERSTER SCHRITT DIESES GATES ist der User-Handgriff `/code-review ultra` (Multi-Agent-Review in der Claude-Cloud über den ganzen Branch; nur der User kann ihn starten). Der Dirigent erinnert daran automatisch, sobald das Gate „Als Nächstes“ ist und der Stand sauber und kanongrün liegt (Text in der Session plus Push-Benachrichtigung), startet solange keinen Codex-Gate-Audit und keinen Worker auf diesem Stand, wartet auf das Ergebnis, validiert jeden Befund am Snapshot durch einen lesenden Opus-Agenten, ordnet ihn als Defekt, Lücke oder Härtung ein und führt ihn im Gate-Manifest (Muster: unabhängiger Codeaudit vom 10.09.2026, Register NAK-246). Erst danach beginnt der Codex-Gate-Audit; ein Gate ohne diesen Lauf wird nicht abgenommen.",
      "beleg": "",
      "stufe": "T3"
     },
@@ -349,7 +349,7 @@
      "id": "G7",
      "leitungsname": "Fernsteuerung und Rückweg unter hoher Befehlslast prüfen",
      "ticket": "Gate",
-     "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress.",
+     "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress. NACHTRAG 10.09.2026 (User-Wort: „okay dann bau das in den plan ein, dass fable dirigent mich zum richtigen zeitpunkt automatisch daran erinnert“ — Anlass: /code-review ultra als dritte, unabhängige Prüfspur neben Codex-Astra und dem lesenden Opus-Validierungsagenten): ERSTER SCHRITT DIESES GATES ist der User-Handgriff `/code-review ultra` (Multi-Agent-Review in der Claude-Cloud über den ganzen Branch; nur der User kann ihn starten). Der Dirigent erinnert daran automatisch, sobald das Gate „Als Nächstes“ ist und der Stand sauber und kanongrün liegt (Text in der Session plus Push-Benachrichtigung), startet solange keinen Codex-Gate-Audit und keinen Worker auf diesem Stand, wartet auf das Ergebnis, validiert jeden Befund am Snapshot durch einen lesenden Opus-Agenten, ordnet ihn als Defekt, Lücke oder Härtung ein und führt ihn im Gate-Manifest (Muster: unabhängiger Codeaudit vom 10.09.2026, Register NAK-246). Erst danach beginnt der Codex-Gate-Audit; ein Gate ohne diesen Lauf wird nicht abgenommen.",
      "beleg": "",
      "stufe": "T3"
     },
@@ -388,7 +388,7 @@
      "id": "G8",
      "leitungsname": "Entmaskierung mit Hörmaterial und Gegenprüfung absichern",
      "ticket": "Gate",
-     "text": "C++-Review + Codex + Hör-/Stem-Korpus.",
+     "text": "C++-Review + Codex + Hör-/Stem-Korpus. NACHTRAG 10.09.2026 (User-Wort: „okay dann bau das in den plan ein, dass fable dirigent mich zum richtigen zeitpunkt automatisch daran erinnert“ — Anlass: /code-review ultra als dritte, unabhängige Prüfspur neben Codex-Astra und dem lesenden Opus-Validierungsagenten): ERSTER SCHRITT DIESES GATES ist der User-Handgriff `/code-review ultra` (Multi-Agent-Review in der Claude-Cloud über den ganzen Branch; nur der User kann ihn starten). Der Dirigent erinnert daran automatisch, sobald das Gate „Als Nächstes“ ist und der Stand sauber und kanongrün liegt (Text in der Session plus Push-Benachrichtigung), startet solange keinen Codex-Gate-Audit und keinen Worker auf diesem Stand, wartet auf das Ergebnis, validiert jeden Befund am Snapshot durch einen lesenden Opus-Agenten, ordnet ihn als Defekt, Lücke oder Härtung ein und führt ihn im Gate-Manifest (Muster: unabhängiger Codeaudit vom 10.09.2026, Register NAK-246). Erst danach beginnt der Codex-Gate-Audit; ein Gate ohne diesen Lauf wird nicht abgenommen.",
      "beleg": "",
      "stufe": "T3"
     },
@@ -404,7 +404,7 @@
      "id": "G9",
      "leitungsname": "Das gesamte System unter realistischer Höchstlast freigeben",
      "ticket": "Gate",
-     "text": "Alle acht harten Gates + pluginval Stufe 8 + 30 Minuten mit 32 Sonden.",
+     "text": "Alle acht harten Gates + pluginval Stufe 8 + 30 Minuten mit 32 Sonden. NACHTRAG 10.09.2026 (User-Wort: „okay dann bau das in den plan ein, dass fable dirigent mich zum richtigen zeitpunkt automatisch daran erinnert“ — Anlass: /code-review ultra als dritte, unabhängige Prüfspur neben Codex-Astra und dem lesenden Opus-Validierungsagenten): ERSTER SCHRITT DIESES GATES ist der User-Handgriff `/code-review ultra` (Multi-Agent-Review in der Claude-Cloud über den ganzen Branch; nur der User kann ihn starten). Der Dirigent erinnert daran automatisch, sobald das Gate „Als Nächstes“ ist und der Stand sauber und kanongrün liegt (Text in der Session plus Push-Benachrichtigung), startet solange keinen Codex-Gate-Audit und keinen Worker auf diesem Stand, wartet auf das Ergebnis, validiert jeden Befund am Snapshot durch einen lesenden Opus-Agenten, ordnet ihn als Defekt, Lücke oder Härtung ein und führt ihn im Gate-Manifest (Muster: unabhängiger Codeaudit vom 10.09.2026, Register NAK-246). Erst danach beginnt der Codex-Gate-Audit; ein Gate ohne diesen Lauf wird nicht abgenommen.",
      "beleg": "",
      "stufe": "T3"
     },

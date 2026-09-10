@@ -2673,6 +2673,20 @@ gegen T5, T7, T14 und T15 — der gebaute Kern bietet beides schon an (Punkt 2).
 
 ---
 
+### 7.11 Matrixprüfung 6 — NEEDS_WORK; vier von fünf NAK-245-Befunden geschlossen, ein Restdefekt (Dirigent, 2026-09-10)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Codex `gpt-6-astra`, Effort max, lesend; Thread `01a08bf0-57cd-7b03-9c03-0e9dac477a95`; Lauf 17:29–17:41 |
+| Prüfbereich | Wiederprüfung (Vorlage B) über `git diff 4d769e43...f8f74880 -- docs/beweise/SONDE-015.md`; HEAD während des Laufs `834d5ab9` (trägt nur den Prüfauftrag), vorher und nachher identisch |
+| Auftrag und Urteil | `docs/beweise/roh/SONDE-015-matrixpruefung-6-auftrag.txt`; Urteil wörtlich `docs/beweise/roh/SONDE-015-matrixpruefung-6-f8f7488.txt` |
+| Urteil | **NEEDS_WORK** — **D-245-1, D-245-2, D-245-4 und D-245-5 geschlossen** (M-75 zitiert T2/T3/T4/T13/T5/T14/T15; T4 auf Bedienänderung begrenzt, T16 committet mit Verletzungsmeldung; `r0` definiert, I1 `\|R\| = min(r − r0, 32)`, I2 `e > r0`, T10/T11 zählen diese Sitzung; M-76 mit einer logischen Transaktion, Tabellenlauf allein M-125; 126 Matrix-IDs, 17 T-IDs, neun MR bestätigt). **D-245-3 offen:** die E-18-Ausnahme (ein Zustand mit `eq_enabled = false` braucht keine Bank) steht in S5 und T5, aber nicht in S8, in der T9-Abgrenzung, in M-44 und in M-124 — bei vollem Pool verlangen diese `busy_retry` oder eine freie Bank auch für ein bankfreies Programm, während T6 Commit verlangt und der gebaute Kern eine ENDE-Marke ohne Bank publiziert (`eq-copilot/plugin/dsp/DspKern.cpp:170-177`, E-18); der gebaute Vertrag hat Vorrang |
+| Rundenbilanz | `4d769e43..f8f74880: Doku 1 Datei(en) +220/-63 → OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)` — Matrixrunde, strukturell null |
+| Quellencheck des Dirigenten | S5 (Teil 2) und T5 tragen die Ausnahme („braucht das Programm eine Bank“); S8 sagt „das Programm aus S5 in eine freie Bank legen und publizieren“ ohne Ausnahme; T9 setzt „S5, weil eine Bank frei ist“ voraus, und der Rotbeweis „T9 committet bei vollem Pool statt `busy_retry`“ träfe einen korrekten bankfreien Commit; M-44 („kein Slot ist `free`, ein Programm soll gebaut werden“) und M-124 („ist der Pool dann voll, ist der Ausgang T5“) nennen den vollen Pool ohne Ausnahme; ebenso der Absatz unter der Tabelle („bei vollem Pool gilt nach I6 T5“). Einordnung: **DEFEKT** — innerer Widerspruch zwischen S5/T5 und S8/T9/M-44/M-124, und ein Rotbeweis, der richtiges Verhalten als Fehler wertet |
+| Entscheid | **Nacharbeit 1 der NAK-245-Runde (Runde 1 von 3)** mit genau diesem Defekt. Regel des Dirigenten: „bankpflichtig“ (`eq_enabled = true`) wird als Begriff in Teil 2 definiert; S8 publiziert ein bankfreies Programm als ENDE-Marke ohne Bank (E-18); Vollpool-Abweisung und Bankbedingung in T5, T7, T9 (Zustand, Abgrenzung, Rotbeweis), M-44, M-124 und im Absatz unter der Tabelle werden auf bankpflichtige Programme begrenzt; der bankfreie Retry bei vollem Pool ist ein eigener B7-Fall mit Ausgang Commit. Auftrag `docs/beweise/roh/SONDE-015-nak245-nacharbeit-1-auftrag.txt`; danach Matrixprüfung 7 über den Fixdiff (Vorlage B) |
+
+---
+
 ## 8. Bauetappe 2 — Verträge in drei Sprachen (10.09.2026)
 
 | Merkmal | Wert |

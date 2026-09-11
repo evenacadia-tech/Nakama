@@ -935,7 +935,8 @@ int phaseBCommandClientMain (const std::string& pipeName,
         return control.snapshot().status == ControlClient::Status::verbunden;
     });
     const bool eingereiht = verbunden
-                         && control.sendePersistenzP0 (persistenzBefehl (commandId));
+                         && control.sendePersistenzP0 (persistenzBefehl (commandId))
+                                == PersistenzP0Ergebnis::eingereiht;
     const bool beantwortet = eingereiht && warteAuf (20000, [&] {
         const auto s = control.snapshot();
         std::lock_guard<std::mutex> l (ackMutex);
@@ -2942,6 +2943,262 @@ void nak246D2Schleuse (bool altVerdrahtung)
     abgeloester_callback_wird_nach_zerstoerung_abgewiesen (altVerdrahtung);
 }
 
+//==============================================================================
+// NAK-246 D4 · dreiwertige Persistenzannahme und Deckel des In-Flight-Registers
+// (Regel R-D4; Manifest docs/beweise/NAK-246.md Paragraph 3.4 M-15, M-17, M-18,
+// M-19; 5.4). M-15 mit `user_verdict` (WN-05) und der KR-01-Deckel stehen im
+// SONDE-014-Abschnitt des Normallaufs; hier die vier Faelle, die das Register
+// direkt messen. Rotlauf gegen den Basis-SHA: docs/beweise/roh/NAK-246-rot-M-15.txt,
+// -M-17.txt, -M-18.txt (Alt-Semantik: bool-Abbildung, kein Deckel); M-19 ist
+// eine Regressionswache (heute gruen, einmal absichtlich gebrochen).
+//==============================================================================
+
+/// Ein `confirm_join`-Auftrag wie ihn `sendeSourcesCommand` baut (Ipc.cpp).
+std::string confirmJoinBefehl (const std::string& commandId)
+{
+    return "{\"type\":\"session_command\",\"command\":\"confirm_join\",\"command_id\":\""
+         + commandId + "\",\"ziel\":" + adresseAlsJson (testAdresse (hex32 ('a')))
+         + ",\"session_epoch\":\"" + hex32 ('1') + "\"}";
+}
+
+/// 32 Hexzeichen, eindeutig je Zahl (die letzten acht Stellen tragen sie).
+std::string kennung (std::size_t i)
+{
+    std::string k (32, '0');
+    const char* hex = "0123456789abcdef";
+    for (int z = 0; z < 8; ++z)
+        k[24 + static_cast<std::size_t> (z)] = hex[(i >> ((7 - z) * 4)) & 0xf];
+    return k;
+}
+
+const char* ergebnisName (PersistenzP0Ergebnis e)
+{
+    switch (e)
+    {
+        case PersistenzP0Ergebnis::eingereiht:                return "eingereiht";
+        case PersistenzP0Ergebnis::zurWiederholungAngenommen: return "zurWiederholungAngenommen";
+        case PersistenzP0Ergebnis::endgueltigAbgewiesen:      return "endgueltigAbgewiesen";
+    }
+    return "?";
+}
+
+void nak246D4Dreiwert()
+{
+    abschnitt ("NAK-246 D4 · dreiwertige Persistenzannahme und Deckel (M-15, M-17, M-18, M-19)");
+
+    // ── M-15 mit confirm_join: volle Queue -> zurWiederholungAngenommen ->
+    //    Replay nach dem Reconnect unter derselben command_id -> ACK ──────────
+    {
+        TestServer server (testPipeName ("nak246-m15-join"));
+        server.commandAckArt.store (1);   // angewandt
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('a'));
+            return h;
+        }, server.pipeName());
+        std::atomic<int> verworfen { 0 };
+        control.setzeP0Rueckmeldung ([] (std::uint64_t, std::uint64_t) {},
+                                     [&] (std::uint64_t marke)
+                                     {
+                                         if (marke != 0)
+                                             verworfen.fetch_add (1);
+                                     });
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        const auto id = kennung (0x15);
+        const auto gefuellt = verbunden ? control.fuelleP0QueueFuerTest() : 0u;
+        const auto ergebnis = gefuellt > 0 ? control.sendePersistenzP0 (confirmJoinBefehl (id))
+                                           : PersistenzP0Ergebnis::endgueltigAbgewiesen;
+        pruefe (gefuellt > 0 && ergebnis == PersistenzP0Ergebnis::zurWiederholungAngenommen,
+                "M-15: confirm_join bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - "
+                "weder endgueltig abgewiesen noch ein bool false",
+                ergebnisName (ergebnis));
+        const auto sofort = control.snapshot();
+        pruefe (verworfen.load() >= 1 && sofort.inFlight >= 1 && sofort.p0Ueberlaeufe >= 1,
+                "M-15: Reihenfolge - Eintrag im Register, Queueversuch gescheitert, "
+                "`beiP0Verworfen` VOR der Rueckgabe, Ueberlauf gezaehlt",
+                std::to_string (verworfen.load()) + " verworfen, inFlight "
+                    + std::to_string (sofort.inFlight));
+        const bool bestaetigt = warteAuf (20000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg >= 1;
+        });
+        bool beimServer = false;
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            for (const auto& t : server.p0Texte)
+                beimServer = beimServer
+                          || t.find ("\"command_id\":\"" + id + "\"") != std::string::npos;
+        }
+        pruefe (bestaetigt && beimServer,
+                "M-15: nach dem Reconnect unter DERSELBEN command_id nachgespielt und vom "
+                "Server bestaetigt (inFlight 0, inFlightErfolg >= 1)",
+                std::to_string (control.snapshot().inFlightErfolg) + " Erfolg, "
+                    + std::to_string (control.snapshot().inFlightWiederholungen) + " Wiederholungen");
+        control.stop();
+        server.stoppen();
+    }
+
+    // ── M-17: das Register haelt kCapP0; der naechste wird endgueltig
+    //    abgewiesen und gezaehlt; alle 64 werden nachgespielt und bestaetigt ──
+    {
+        TestServer server (testPipeName ("nak246-m17"));
+        server.commandAckArt.store (0);   // KEINE Antworten: alle 64 bleiben ausstehend
+        server.starten();
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('b'));
+            return h;
+        }, server.pipeName());
+        control.start();
+        const bool verbunden = warteAuf (5000, [&] {
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        auto serverHat = [&] (const std::string& k)
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            for (const auto& t : server.p0Texte)
+                if (t.find ("\"command_id\":\"" + k + "\"") != std::string::npos)
+                    return true;
+            return false;
+        };
+        // Jeder Auftrag wird erst angeboten, wenn der vorige beim Server ist -
+        // so misst der Fall das REGISTER, nicht die Queue.
+        std::size_t angenommen = 0;
+        for (std::size_t i = 0; verbunden && i < kCapP0; ++i)
+        {
+            const auto k = kennung (0x170000 + i);
+            if (control.sendePersistenzP0 (persistenzBefehl (k)) != PersistenzP0Ergebnis::eingereiht)
+                break;
+            if (! warteAuf (5000, [&] { return serverHat (k); }))
+                break;
+            ++angenommen;
+        }
+        const auto voll = control.snapshot();
+        pruefe (angenommen == kCapP0 && voll.inFlight == kCapP0 && voll.inFlightRegisterVoll == 0,
+                "M-17: kCapP0 (64) Auftraege sind eingereiht, geschrieben und unbestaetigt - "
+                "das Register haelt genau 64, der Deckel hat noch nicht gegriffen",
+                std::to_string (angenommen) + " angenommen, inFlight "
+                    + std::to_string (voll.inFlight));
+        const auto k65 = kennung (0x170000 + kCapP0);
+        const auto r65 = control.sendePersistenzP0 (persistenzBefehl (k65));
+        const auto danach = control.snapshot();
+        pruefe (r65 == PersistenzP0Ergebnis::endgueltigAbgewiesen,
+                "M-17: inflight_register_deckelt_bei_kcapp0_und_verwirft_nichts_angenommenes - "
+                "der 65. Auftrag wird ENDGUELTIG abgewiesen (Deckel = kCapP0 aus IpcQueues.h)",
+                ergebnisName (r65));
+        pruefe (danach.inFlight == kCapP0 && danach.inFlightRegisterVoll == 1,
+                "M-17: gezaehlt (inFlightRegisterVoll == 1), das Register bleibt bei 64",
+                std::to_string (danach.inFlight) + " im Register, "
+                    + std::to_string (danach.inFlightRegisterVoll) + " am Deckel");
+        pruefe (danach.status == ControlClient::Status::verbunden
+                    && danach.p0Ueberlaeufe == voll.p0Ueberlaeufe,
+                "M-17: kein Queue-Ueberlauf, keine geschlossene Verbindung - der Deckel greift "
+                "am EINTRITT, nicht am Draht");
+        // Ein bekannter Auftrag zaehlt nicht gegen den Deckel (M-18 b).
+        const auto bekannt = control.sendePersistenzP0 (persistenzBefehl (kennung (0x170000)));
+        pruefe (bekannt == PersistenzP0Ergebnis::zurWiederholungAngenommen
+                    && control.snapshot().inFlight == kCapP0
+                    && control.snapshot().inFlightRegisterVoll == 1,
+                "M-17/M-18: ein bekannter, auf sein ACK wartender Auftrag zaehlt nicht gegen "
+                "den Deckel - zur Wiederholung angenommen, Register unveraendert",
+                ergebnisName (bekannt));
+        // Nichts Angenommenes wird verworfen: nach dem Reconnect wird JEDER der
+        // 64 unter seiner command_id nachgespielt, der Server bestaetigt alle.
+        server.commandAckArt.store (1);
+        control.reconnect();
+        const bool alle = warteAuf (30000, [&] {
+            const auto s = control.snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg == kCapP0;
+        });
+        const auto ende = control.snapshot();
+        pruefe (alle && ende.inFlightWiederholungen >= kCapP0,
+                "M-17: nach dem Reconnect ist JEDER der 64 nachgespielt und bestaetigt - "
+                "nichts Angenommenes wurde fuer den Deckel verworfen",
+                std::to_string (ende.inFlightErfolg) + " Erfolg, "
+                    + std::to_string (ende.inFlightWiederholungen) + " Wiederholungen, "
+                    + std::to_string (ende.inFlight) + " im Register");
+        pruefe (! serverHat (k65),
+                "M-17: der endgueltig abgewiesene 65. hat den Server nie erreicht - er war nie im Register");
+        pruefe (control.sendePersistenzP0 (persistenzBefehl (k65)) == PersistenzP0Ergebnis::eingereiht,
+                "M-17: nach dem Abschluss der 64 nimmt das Register wieder an");
+        control.stop();
+        server.stoppen();
+    }
+
+    // ── M-18: dieselbe command_id erneut - (a) in der Queue, (b) wartet auf
+    //    Replay, (c) anderer Inhalt; das Register waechst nie ──────────────────
+    {
+        // Nie gestartet: die Queue ist lokal, kein Draht laeuft sie ab.
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('c'));
+            return h;
+        }, testPipeName ("nak246-m18-ohne-server"));
+        const auto idA = kennung (0x180001);
+        const auto textA = persistenzBefehl (idA);
+        pruefe (control.sendePersistenzP0 (textA) == PersistenzP0Ergebnis::eingereiht
+                    && control.snapshot().inFlight == 1,
+                "M-18 Aufbau: der erste Auftrag ist eingereiht");
+        const auto a = control.sendePersistenzP0 (textA);
+        pruefe (a == PersistenzP0Ergebnis::eingereiht && control.snapshot().inFlight == 1,
+                "M-18 (a): gleiche_command_id_liefert_den_zustand_des_gehaltenen_eintrags - "
+                "gleicher Inhalt, Eintrag in der Queue -> eingereiht, kein zweiter Eintrag",
+                ergebnisName (a));
+        const auto c1 = control.sendePersistenzP0 (userVerdictBefehl (idA));
+        pruefe (c1 == PersistenzP0Ergebnis::endgueltigAbgewiesen && control.snapshot().inFlight == 1,
+                "M-18 (c): dieselbe command_id mit ANDEREM Inhalt -> endgueltig abgewiesen, "
+                "das Register waechst nicht",
+                ergebnisName (c1));
+        const auto voll = control.fuelleP0QueueFuerTest();
+        const auto idB = kennung (0x180002);
+        const auto textB = persistenzBefehl (idB);
+        const auto bAufbau = control.sendePersistenzP0 (textB);
+        pruefe (voll > 0 && bAufbau == PersistenzP0Ergebnis::zurWiederholungAngenommen
+                    && control.snapshot().inFlight == 2,
+                "M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen",
+                ergebnisName (bAufbau));
+        const auto b = control.sendePersistenzP0 (textB);
+        pruefe (b == PersistenzP0Ergebnis::zurWiederholungAngenommen && control.snapshot().inFlight == 2,
+                "M-18 (b): gleicher Inhalt, Eintrag wartet auf Replay -> zur Wiederholung "
+                "angenommen, kein zweiter Eintrag",
+                ergebnisName (b));
+        const auto c2 = control.sendePersistenzP0 (userVerdictBefehl (idB));
+        pruefe (c2 == PersistenzP0Ergebnis::endgueltigAbgewiesen && control.snapshot().inFlight == 2,
+                "M-18 (c): auch fuer den wartenden Eintrag gilt - anderer Inhalt wird endgueltig abgewiesen",
+                ergebnisName (c2));
+        control.leereP0QueueFuerTest();
+    }
+
+    // ── M-19 (Wache): strukturell ungueltig -> endgueltig abgewiesen, kein
+    //    Registereintrag ─────────────────────────────────────────────────────
+    {
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('d'));
+            return h;
+        }, testPipeName ("nak246-m19-ohne-server"));
+        const std::string riesig = "{\"type\":\"preview_begin\",\"kopf\":{\"command_id\":\""
+                                 + kennung (0x19) + "\"},\"fuellung\":\""
+                                 + std::string (kMaxPayloadBytes, 'x') + "\"}";
+        const auto zuGross = control.sendePersistenzP0 (riesig);
+        pruefe (zuGross == PersistenzP0Ergebnis::endgueltigAbgewiesen
+                    && control.snapshot().zuGross == 1 && control.snapshot().inFlight == 0,
+                "M-19: Nutzlast ueber kMaxPayloadBytes -> endgueltig abgewiesen, zuGross gezaehlt, "
+                "kein Registereintrag",
+                ergebnisName (zuGross));
+        const auto ohneId = control.sendePersistenzP0 ("{\"type\":\"preview_begin\",\"kopf\":{}}");
+        pruefe (ohneId == PersistenzP0Ergebnis::endgueltigAbgewiesen
+                    && control.snapshot().inFlight == 0
+                    && control.snapshot().letzterFehler.find ("command_id") != std::string::npos,
+                "M-19: ohne gueltige command_id -> endgueltig abgewiesen, letzterFehler gesetzt, "
+                "kein Registereintrag",
+                ergebnisName (ohneId));
+    }
+}
 } // namespace nak246
 } // namespace
 
@@ -2953,6 +3210,16 @@ int main (int argc, char** argv)
     if (argc == 2 && std::string (argv[1]) == "--nak246-alt")
     {
         nak246::nak246D2Schleuse (true);
+        std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
+                  << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+    // NAK-246 D4: nur der Dreiwert-Abschnitt (M-15 confirm_join, M-17, M-18,
+    // M-19) - fuer Rotlaeufe gegen die Alt-Semantik, damit die Rohausgabe den
+    // Fall traegt.
+    if (argc == 2 && std::string (argv[1]) == "--nak246-d4")
+    {
+        nak246::nak246D4Dreiwert();
         std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
                   << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -5196,6 +5463,10 @@ int main (int argc, char** argv)
 
     // NAK-246 D2: die Schleuse an der Besitzerattrappe (M-06, M-07, M-08).
     nak246::nak246D2Schleuse (false);
+    // NAK-246 D4: der Dreiwert und der Deckel des In-Flight-Registers
+    // (M-15 confirm_join, M-17, M-18, M-19); M-15 user_verdict und der
+    // KR-01-Deckel stehen im SONDE-014-Abschnitt.
+    nak246::nak246D4Dreiwert();
 
     abschnitt ("H · Bootstrapgrenze und JSON-Riegel");
     {
@@ -5266,7 +5537,8 @@ int main (int argc, char** argv)
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
             const bool angenommen = verbunden
-                && control.sendePersistenzP0 (persistenzBefehl (commandId));
+                && control.sendePersistenzP0 (persistenzBefehl (commandId))
+                       == PersistenzP0Ergebnis::eingereiht;
             const bool frei = angenommen && warteAuf (3000, [&] {
                 const auto s = control.snapshot();
                 return s.inFlight == 0 && s.inFlightErfolg == 1;
@@ -5296,7 +5568,8 @@ int main (int argc, char** argv)
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
             const bool gesendet = verbunden && control.sendePersistenzP0 (
-                persistenzBefehl (hex32 (static_cast<char> ('5' + art))));
+                persistenzBefehl (hex32 (static_cast<char> ('5' + art))))
+                    == PersistenzP0Ergebnis::eingereiht;
             const bool frei = gesendet && warteAuf (3000, [&] {
                 const auto s = control.snapshot();
                 return s.inFlight == 0 && s.inFlightErfolg == 0
@@ -5327,7 +5600,7 @@ int main (int argc, char** argv)
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
             const bool gesendet = verbunden && control.sendePersistenzP0 (
-                persistenzBefehl (hex32 ('9')));
+                persistenzBefehl (hex32 ('9'))) == PersistenzP0Ergebnis::eingereiht;
             const bool queueFreiSemantikOffen = gesendet && warteAuf (1000, [&] {
                 const auto s = control.snapshot();
                 return server.p0.load() >= 1 && s.p0Gesendet >= 1 && s.inFlight == 1;
@@ -5358,7 +5631,8 @@ int main (int argc, char** argv)
             const bool verbunden = warteAuf (5000, [&] {
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
-            const bool gesendet = verbunden && control.sendePersistenzP0 (befehl);
+            const bool gesendet = verbunden && control.sendePersistenzP0 (befehl)
+                                                   == PersistenzP0Ergebnis::eingereiht;
             const bool ersterVersuch = gesendet && warteAuf (3000, [&] {
                 return server1->p0.load() >= 1
                     && control.snapshot().status != ControlClient::Status::verbunden;
@@ -5401,7 +5675,7 @@ int main (int argc, char** argv)
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
             const bool gesendet = verbunden && control.sendePersistenzP0 (
-                persistenzBefehl (hex32 ('d')));
+                persistenzBefehl (hex32 ('d'))) == PersistenzP0Ergebnis::eingereiht;
             const bool ungueltigBleibt = gesendet && warteAuf (3000, [&] {
                 const auto s = control.snapshot();
                 return s.empfangen >= 1 && s.inFlight == 1 && s.inFlightErfolg == 0;
@@ -5457,7 +5731,8 @@ int main (int argc, char** argv)
                     return control.snapshot().status == ControlClient::Status::verbunden;
                 });
                 const bool gesendet = verbunden && control.sendePersistenzP0 (
-                    persistenzBefehl (hex32 (fall.commandZeichen)));
+                    persistenzBefehl (hex32 (fall.commandZeichen)))
+                        == PersistenzP0Ergebnis::eingereiht;
                 const bool bliebOffen = gesendet && warteAuf (3000, [&] {
                     const auto s = control.snapshot();
                     return s.empfangen >= 1 && s.inFlight == 1
@@ -5702,7 +5977,7 @@ int main (int argc, char** argv)
                 return control.snapshot().status == ControlClient::Status::verbunden;
             });
             const bool gesendet = verbunden && control.sendePersistenzP0 (
-                persistenzBefehl (hex32 ('c')));
+                persistenzBefehl (hex32 ('c'))) == PersistenzP0Ergebnis::eingereiht;
             const bool frei = gesendet && warteAuf (5000, [&] {
                 const auto s = control.snapshot();
                 return s.inFlight == 0 && s.inFlightErfolg == 0
@@ -6224,7 +6499,7 @@ int main (int argc, char** argv)
             return control.snapshot().status == ControlClient::Status::verbunden;
         });
         const bool angenommen = verbunden && control.sendePersistenzP0 (
-            experimentErgebnisBefehl (hex32 ('7')));
+            experimentErgebnisBefehl (hex32 ('7'))) == PersistenzP0Ergebnis::eingereiht;
         const bool frei = angenommen && warteAuf (3000, [&] {
             const auto s = control.snapshot();
             return s.inFlight == 0 && s.inFlightErfolg == 1;
@@ -6357,7 +6632,8 @@ int main (int argc, char** argv)
         // Er laeuft durch dasselbe In-Flight-Register wie jede andere
         // steuernde Nachricht — und koalesziert damit strukturell NICHT.
         const bool urteilAngenommen = verbunden
-            && control.sendePersistenzP0 (userVerdictBefehl (hex32 ('8')));
+            && control.sendePersistenzP0 (userVerdictBefehl (hex32 ('8')))
+                   == PersistenzP0Ergebnis::eingereiht;
         const bool urteilFrei = urteilAngenommen && warteAuf (3000, [&] {
             const auto s = control.snapshot();
             return s.inFlight == 0 && s.inFlightErfolg >= 1;
@@ -6397,13 +6673,34 @@ int main (int argc, char** argv)
         const bool verbunden = warteAuf (5000, [&] {
             return control.snapshot().status == ControlClient::Status::verbunden;
         });
-        // Die 64 Plaetze sind belegt: der naechste Auftrag wird ABGEWIESEN.
+        // Die 64 Plaetze sind belegt: der naechste Auftrag findet keinen Platz.
+        //
+        // 🔑 NAK-246 D4 (R-D4, Matrix M-15): die Antwort heisst seit dem
+        // Dreiwert `zurWiederholungAngenommen` - dieselbe Zusage (M-73),
+        // ehrlich benannt: nicht in der Queue, aber im Register, Replay nach
+        // dem Reconnect unter derselben `command_id`. Das fruehere `bool
+        // false` trug daneben die Lesart "nicht eingereiht, vergiss ihn", der
+        // der Sources-Aufrufer glaubte (Auditbefund D4).
         const auto gefuellt = verbunden ? control.fuelleP0QueueFuerTest() : 0u;
-        const bool abgewiesen = gefuellt > 0
-                             && ! control.sendePersistenzP0 (userVerdictBefehl (hex32 ('7')));
+        const auto ergebnis = gefuellt > 0
+                            ? control.sendePersistenzP0 (userVerdictBefehl (hex32 ('7')))
+                            : PersistenzP0Ergebnis::endgueltigAbgewiesen;
+        const bool zurWiederholung = ergebnis == PersistenzP0Ergebnis::zurWiederholungAngenommen;
+        pruefe (gefuellt > 0 && zurWiederholung,
+                "M-15: user_verdict bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - "
+                "weder endgueltig abgewiesen noch ein bool false",
+                ergebnis == PersistenzP0Ergebnis::eingereiht ? "eingereiht"
+                    : zurWiederholung ? "zurWiederholungAngenommen" : "endgueltigAbgewiesen");
+        // Reihenfolge (M-15): Eintrag ins Register -> Queueversuch scheitert ->
+        // `beiP0Verworfen (marke)` -> `ioAbbrechen` -> Rueckgabe. Die Meldung
+        // ist bei der Rueckkehr also schon da, und der Eintrag steht im Register.
+        pruefe (zurWiederholung && verworfen.load() >= 1 && control.snapshot().inFlight >= 1,
+                "M-15: `beiP0Verworfen` ist VOR der Rueckgabe gerufen, der Eintrag steht im Register",
+                std::to_string (verworfen.load()) + " verworfen, inFlight "
+                    + std::to_string (control.snapshot().inFlight));
         // M-73 woertlich: der Eintrag geht an `beiP0Verworfen` und bleibt im
         // Register - nie stillschweigend geloescht.
-        const bool gemeldet = abgewiesen && warteAuf (3000, [&] {
+        const bool gemeldet = zurWiederholung && warteAuf (3000, [&] {
             return verworfen.load() >= 1;
         });
         const bool gehalten = gemeldet && control.snapshot().inFlight >= 1;
@@ -6453,7 +6750,8 @@ int main (int argc, char** argv)
         const bool verbunden = warteAuf (5000, [&] {
             return control.snapshot().status == ControlClient::Status::verbunden;
         });
-        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id));
+        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id))
+                                               == PersistenzP0Ergebnis::eingereiht;
         // Der Hook faellt, der Auftrag wird ERNEUT gesendet - der Zaehler der
         // Wiederholungen steigt, und `inFlight` bleibt belegt.
         const bool wiederholt = gesendet && warteAuf (5000, [&] {
@@ -6521,7 +6819,9 @@ int main (int argc, char** argv)
         // ZWEI Urteile vor jedem ACK - genau die Lage aus WP2-1.
         const bool gesendet = verbunden
                            && control.sendePersistenzP0 (userVerdictBefehl (id1))
-                           && control.sendePersistenzP0 (userVerdictBefehl (id2));
+                                  == PersistenzP0Ergebnis::eingereiht
+                           && control.sendePersistenzP0 (userVerdictBefehl (id2))
+                                  == PersistenzP0Ergebnis::eingereiht;
         // Beide laufen aus: der erste ueber eine Wiederholung, der zweite
         // sofort endgueltig. Erst dann ist das Register leer.
         const bool ausgelaufen = gesendet && warteAuf (10000, [&] {
@@ -6574,7 +6874,8 @@ int main (int argc, char** argv)
         const bool verbunden = warteAuf (5000, [&] {
             return control.snapshot().status == ControlClient::Status::verbunden;
         });
-        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id));
+        const bool gesendet = verbunden && control.sendePersistenzP0 (userVerdictBefehl (id))
+                                               == PersistenzP0Ergebnis::eingereiht;
         const bool angewandt = gesendet && warteAuf (5000, [&] {
             const auto s = control.snapshot();
             return s.inFlight == 0 && s.inFlightErfolg >= 1;
@@ -6713,27 +7014,40 @@ int main (int argc, char** argv)
             return false;
         };
         // Der ERSTE zuerst - er ist der, dessen ACK am laengsten aussteht.
-        alleGesendet = alleGesendet && control.sendePersistenzP0 (userVerdictBefehl (id1))
+        alleGesendet = alleGesendet
+                    && control.sendePersistenzP0 (userVerdictBefehl (id1))
+                           == PersistenzP0Ergebnis::eingereiht
                     && warteAuf (5000, [&] { return serverHat (id1); });
-        for (std::size_t i = 1; alleGesendet && i <= nakama::ipc::kCapP0; ++i)
+        // 🔑 NAK-246 D4 (R-D4, Matrix M-17): das Register ist bei `kCapP0`
+        // GEDECKELT. Bis zu dieser Etappe standen hier `kCapP0 + 1` Auftraege
+        // gleichzeitig aus; seit dem Deckel nimmt das Register genau `kCapP0`
+        // an, der naechste wird am EINTRITT endgueltig abgewiesen und gezaehlt
+        // (`inFlightRegisterVoll`). Die KR-01-Zusage bleibt: nichts
+        // Angenommenes wird verdraengt, der erste bleibt wiederholbar.
+        for (std::size_t i = 1; alleGesendet && i < nakama::ipc::kCapP0; ++i)
         {
-            std::string kennung (32, '0');
-            const char* hex = "0123456789abcdef";
-            for (int z = 0; z < 6; ++z)
-                kennung[26 + static_cast<std::size_t> (z)] =
-                    hex[(i >> ((5 - z) * 4)) & 0xf];
+            const auto kennung = nak246::kennung (i);
             alleGesendet = control.sendePersistenzP0 (userVerdictBefehl (kennung))
+                               == PersistenzP0Ergebnis::eingereiht
                         && warteAuf (5000, [&] { return serverHat (kennung); });
         }
         const bool ausstehend = alleGesendet && warteAuf (10000, [&] {
-            return control.snapshot().inFlight == nakama::ipc::kCapP0 + 1;
+            return control.snapshot().inFlight == nakama::ipc::kCapP0;
         });
         pruefe (ausstehend,
-                "kr01_kcap_plus_eins_auftraege_stehen_gleichzeitig_aus",
+                "kr01_kcap_auftraege_stehen_gleichzeitig_aus",
                 std::to_string (control.snapshot().inFlight) + " im Register");
+        const auto amDeckel = control.sendePersistenzP0 (
+            userVerdictBefehl (nak246::kennung (nakama::ipc::kCapP0)));
+        pruefe (ausstehend && amDeckel == PersistenzP0Ergebnis::endgueltigAbgewiesen
+                    && control.snapshot().inFlight == nakama::ipc::kCapP0
+                    && control.snapshot().inFlightRegisterVoll == 1,
+                "kr01_der_naechste_auftrag_wird_am_deckel_endgueltig_abgewiesen_und_gezaehlt",
+                std::to_string (control.snapshot().inFlight) + " im Register, "
+                    + std::to_string (control.snapshot().inFlightRegisterVoll) + " am Deckel");
 
         // Jetzt erst das `konflikt` auf den ERSTEN - nachtraeglich, damit
-        // wirklich alle 65 ausstehen, wenn es kommt.
+        // wirklich alle 64 ausstehen, wenn es kommt.
         server.commandAckArt.store (3);   // konflikt
         server.ackNachtragen();
         const bool wiederholt = ausstehend && warteAuf (10000, [&] {
@@ -6765,7 +7079,7 @@ int main (int argc, char** argv)
         // Erst `angewandt` schliesst ab - und genau dann faellt der Eintrag.
         const bool abgeschlossenNachAngewandt = eigenerText && warteAuf (10000, [&] {
             const auto s = control.snapshot();
-            return s.inFlightErfolg >= 1 && s.inFlight == nakama::ipc::kCapP0;
+            return s.inFlightErfolg >= 1 && s.inFlight == nakama::ipc::kCapP0 - 1;
         });
         std::vector<std::string> gemeldet2;
         {
@@ -6777,10 +7091,10 @@ int main (int argc, char** argv)
                 "kr01_erst_angewandt_gibt_den_ersten_auftrag_frei",
                 std::to_string (gemeldet2.size()) + " gemeldet, "
                     + std::to_string (control.snapshot().inFlight) + " bleiben");
-        // Und die uebrigen 64 sind unberuehrt: keiner von ihnen ist gemeldet,
-        // und das Register haelt sie weiter.
+        // Und die uebrigen 63 sind unberuehrt: keiner von ihnen ist gemeldet,
+        // und das Register haelt sie weiter (kCapP0 - 1, NAK-246 M-17).
         pruefe (abgeschlossenNachAngewandt
-                    && control.snapshot().inFlight == nakama::ipc::kCapP0
+                    && control.snapshot().inFlight == nakama::ipc::kCapP0 - 1
                     && control.snapshot().inFlightEndgueltigOhneErfolg == 0,
                 "kr01_die_uebrigen_auftraege_bleiben_unberuehrt",
                 std::to_string (control.snapshot().inFlight) + " im Register, "

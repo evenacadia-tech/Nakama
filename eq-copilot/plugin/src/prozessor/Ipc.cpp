@@ -1319,7 +1319,14 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
             return false;
         ausstehendeSourcesCommands.emplace (auftrag.commandId, auftrag);
     }
-    if (controlV3.sendePersistenzP0 (auftrag.json))
+    // 🔑 NAK-246 D4 (R-D4, M-16, M-20; Paragraph 5.4 Feinheit 4): die
+    // Zuordnung bleibt bei BEIDEN angenommenen Zustaenden. Bis hierher loeschte
+    // ein `false` sie auch dann, wenn der Client den Auftrag hielt und nach
+    // dem Reconnect nachspielte - der ACK des angewandten Befehls fand die
+    // Zuordnung nicht mehr, und die brokerseitig angewandte Mitgliedschaft
+    // wurde lokal nie nachgefuehrt (Auditbefund D4). Geloescht wird nur bei
+    // `endgueltigAbgewiesen`: dann kommt nie ein ACK.
+    if (nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (auftrag.json)))
         return true;
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
     ausstehendeSourcesCommands.erase (auftrag.commandId);

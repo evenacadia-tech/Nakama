@@ -723,7 +723,11 @@ std::string EqCopilotProcessor::versuchKopfJson (const juce::String& commandId) 
 
 bool EqCopilotProcessor::sendeVersuchP0 (const std::string& json)
 {
-    if (! controlV3.sendePersistenzP0 (json))
+    // NAK-246 D4 (R-D4, M-20; Paragraph 5.4 Feinheit 4): beide angenommenen
+    // Zustaende gelten als gesendet - auch ein zur Wiederholung angenommener
+    // Auftrag reist nach dem Reconnect unter derselben `command_id`. Nur
+    // `endgueltigAbgewiesen` kehrt um.
+    if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
         return false;
     std::lock_guard<std::mutex> l (versuchWireMutex);
     letzterVersuchP0 = json;
@@ -1200,12 +1204,20 @@ bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis er
         // geloescht" ausschliesst (WP1-5).
         //
         // Seit WN-05 bleibt der abgewiesene Auftrag im In-Flight-Register und
-        // geht an `beiP0Verworfen`; hier faellt nur noch die ehrliche Antwort:
-        // eingereiht oder nicht.
+        // geht an `beiP0Verworfen`; hier faellt nur noch die ehrliche Antwort.
+        //
+        // 🔑 NAK-246 D4 (R-D4, M-20; Paragraph 5.4 Feinheit 4): "ehrlich"
+        // heisst seit dem Dreiwert: ANGENOMMEN oder nicht. Bei voller Queue
+        // ist das Urteil zur Wiederholung angenommen - es bleibt im Register
+        // und wird nach dem Reconnect unter derselben `command_id` bestaetigt;
+        // der Oberflaeche wird deshalb Erfolg gemeldet. Nur ein endgueltig
+        // abgewiesener Auftrag (zu gross, ohne Kennung, Register voll) kehrt
+        // um. Der `bool` zur Oberflaeche bleibt zweiwertig; der Dreiwert lebt
+        // an der Modulgrenze.
         const auto json = v3UserVerdictJson (*urteil, findingId, notiz);
         if (json.empty())
             return false;
-        if (! controlV3.sendePersistenzP0 (json))
+        if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
             return false;
     }
     return gemeldet;

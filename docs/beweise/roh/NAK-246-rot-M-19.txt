@@ -1,0 +1,25 @@
+NAK-246 Etappe 4 - Rotbeweis M-19 (Manifest docs/beweise/NAK-246.md §3.4, Regressionswache, absichtlich gebrochen): strukturell ungueltiger Auftrag -> endgueltigAbgewiesen, kein Registereintrag (B10)
+Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892.
+Muster: docs/beweise/roh/NAK-246-rot-M-08.txt (Regressionswache einmal absichtlich gebrochen, Prueflistenzeile E).
+
+WAS GEFAHREN WURDE
+  M-19 ist "Regressionswache (heute gruen)": zu gross oder ohne gueltige command_id war am Basis-SHA `false` und ohne Registereintrag
+  (Nachrichten.cpp:160-169). Die Matrix nennt "B10 bestehende Faelle fuer zuGross und fehlende command_id, auf den Dreiwert umgestellt";
+  am Basis-SHA gibt es solche Faelle fuer `sendePersistenzP0` NICHT (G15 misst `sendeP0`/`sendeP1`; `grep "braucht genau eine"` ueber
+  IpcTestMain.cpp ist leer) - die Wache ist deshalb als zwei neue Zeilen im Abschnitt NAK-246 D4 angelegt (Manifest §10.6).
+  Absichtlich gebrochen im selben Rotbau wie M-15 bis M-18 (Diff in NAK-246-rot-M-15.txt): der Ungueltig-Zweig liefert
+  `zurWiederholungAngenommen` statt `endgueltigAbgewiesen`. Ein Registereintrag entsteht auch im Bruch nicht (der Zweig steht vor dem
+  Register); die Zeile faellt an der Benennung - "die Rueckgabe ist ein angenommener Zustand".
+
+BAU UND LAUF
+  Rotbau wie M-15: Binary EqCopIpcTest.exe 06:03:29. `--nak246-d4` -> Exit 1, 36 s, 19/10. Ruecknahme 06:09:47.
+
+DIE FALLENDEN ZUSAGEN (M-19: "endgueltigAbgewiesen, kein Registereintrag, zuGross bzw. letzterFehler wie heute")
+  FEHLER  M-19: Nutzlast ueber kMaxPayloadBytes -> endgueltig abgewiesen, zuGross gezaehlt, kein Registereintrag  [zurWiederholungAngenommen]
+  FEHLER  M-19: ohne gueltige command_id -> endgueltig abgewiesen, letzterFehler gesetzt, kein Registereintrag  [zurWiederholungAngenommen]
+      -> beide fallen an "die Rueckgabe ist ein angenommener Zustand" (die zweite Haelfte der Rotbeweisspalte); `zuGross`, `letzterFehler`
+         und `inFlight == 0` sind auch im Bruch erfuellt.
+
+ROHAUSGABE: siehe NAK-246-rot-M-15.txt, Rohausgabe (1) vollstaendig (Zeilen "M-19 ...").
+
+GRUEN (Endstand, Binary 06:09:51): `--nak246-d4` 19/19 ok - beide Zeilen endgueltigAbgewiesen, zuGross 1, letzterFehler "command_id", inFlight 0.

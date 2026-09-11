@@ -55,7 +55,9 @@ struct ControlClient::Laufzeit
     bool abgeloest (std::uint64_t meinLauf) const noexcept
     { return lebenslauf.load() != meinLauf; }
     bool sendeP0 (const std::string& json, P0Klasse klasse, std::uint64_t marke);
-    bool sendePersistenzP0 (const std::string& json);
+    /// NAK-246 D4: dreiwertig (Vertrag in ControlClient.h); der Deckel des
+    /// Registers ist `kCapP0` aus IpcQueues.h.
+    PersistenzP0Ergebnis sendePersistenzP0 (const std::string& json);
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
     Snapshot snapshotIntern() const;
     bool kopplung (std::string& linkId, std::string& challenge) const;

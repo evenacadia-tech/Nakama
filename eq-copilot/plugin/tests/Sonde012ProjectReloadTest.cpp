@@ -1084,6 +1084,114 @@ void ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht()
             "M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an");
 }
 
+/// M-16 · die KETTE (D3 und D4 zusammen): volle Queue -> Quellen-Join ->
+/// Reconnect -> ACK -> Speichern ohne Tick -> Laden in neuer Instanz, am
+/// echten Prozessor mit Produkt-`controlV3` gegen den Testserver
+/// (Testkonstruktor aus Etappe 3, `fuelleP0QueueFuerTest`, Server mit
+/// `commandAckArt = angewandt`). Der Server geht vor dem Fuellen und kommt
+/// danach wieder: so laeuft die Queue deterministisch nirgends ab, und der
+/// Reconnect ist ein echter Neuaufbau mit Replay unter derselben command_id.
+void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
+{
+    std::cout << "== NAK-246 M-16 volle_queue_join_reconnect_ack_save_load_als_eine_kette ==\n";
+    const auto a = id ('a');
+    const auto pipe = testPipeName ("nak246-m16");
+    auto server1 = std::make_unique<TestServer> (pipe);
+    server1->commandAckArt.store (1);            // angewandt
+    pruefe (server1->starten(), "M-16: der Testserver steht");
+    // HEAP (NAK-175); Testkonstruktor mit Probe-Pipe und Servererwartung.
+    auto p = std::make_unique<eqcop::EqCopilotProcessor> (pipe, testExeErwartung());
+    pruefe (p->v3PipeNameFuerTest() == pipe,
+            "M-16: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor)");
+    p->setzeWorkerDrainFuerTest (false);         // das Speichern ist der Drain der Kette
+    p->prepareToPlay (nak246::kFs, nak246::kBlock);
+    p->setzeEditorOffen (true);
+    pruefe (p->setzeBindung ("hub", "Gen", ""), "M-16: der Prozessor ist ein Main mit Bindung");
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->v3StartFuerTest();
+    pruefe (warteAuf (8000, [&] {
+                return p->controlV3Snapshot().status == nakama::ipc::ControlClient::Status::verbunden;
+            }),
+            "M-16: der echte Client ist ueber die Probe-Pipe verbunden");
+
+    // Der Server geht: ab jetzt laeuft die Queue nirgends ab.
+    server1->stoppen();
+    server1.reset();
+    pruefe (warteAuf (8000, [&] {
+                return p->controlV3Snapshot().status != nakama::ipc::ControlClient::Status::verbunden;
+            }),
+            "M-16: die Verbindung ist weg");
+    // Die Quellensicht kommt ERST JETZT: der echte Link-Callback (auf/ab)
+    // setzt das Modell ueber `beginneSubscription`/`controlEnde` zurueck und
+    // wuerde eine frueher gesetzte Fixture loeschen - dann faende
+    // `sendeSourcesCommand` kein Hauptziel und kehrte vor dem Senden um.
+    std::this_thread::sleep_for (std::chrono::milliseconds (100));
+    p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
+    {
+        const auto s = p->sourcesSicht();
+        pruefe (s.mainDarfSchreiben && s.quellen.size() == 1 && s.quellen.front().hauptziel,
+                "M-16 Aufbau: die Quelle A ist Hauptziel, dieses Main darf schreiben");
+    }
+    const auto gefuellt = p->fuelleP0QueueFuerTest();
+    pruefe (gefuellt > 0, "M-16: die P0-Queue ist voll", juce::String ((int) gefuellt));
+    const auto vorJoin = p->controlV3Snapshot();
+
+    // Der Quellen-Join bei voller Queue.
+    const bool angenommen = p->bindeSourcesHauptziel (a);
+    const auto zuordnung = p->ausstehenderSourcesCommandFuerTest();
+    pruefe (angenommen && ! zuordnung.empty()
+                && zuordnung.find ("\"command\":\"confirm_join\"") != std::string::npos,
+            "M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei "
+            "voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die "
+            "command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)",
+            juce::String (angenommen ? "angenommen" : "abgewiesen") + ", Zuordnung "
+                + (zuordnung.empty() ? "leer" : "vorhanden"));
+    const auto nachJoin = p->controlV3Snapshot();
+    pruefe (nachJoin.inFlight >= 1 && nachJoin.p0Ueberlaeufe > vorJoin.p0Ueberlaeufe,
+            "M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)",
+            "inFlight " + juce::String ((juce::int64) nachJoin.inFlight));
+
+    // Die Testfuellung geht; der Server kommt wieder; der Client verbindet neu
+    // und spielt den Join unter derselben command_id nach; der Server wendet an.
+    p->leereP0QueueFuerTest();
+    auto server2 = std::make_unique<TestServer> (pipe);
+    server2->commandAckArt.store (1);
+    pruefe (server2->starten(), "M-16: der Testserver steht wieder (Reconnect)");
+    const bool bestaetigt = warteAuf (20000, [&] {
+        const auto s = p->controlV3Snapshot();
+        return s.inFlight == 0 && s.inFlightErfolg >= 1;
+    });
+    const auto nachAck = p->controlV3Snapshot();
+    pruefe (bestaetigt,
+            "M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)",
+            "inFlightErfolg " + juce::String ((juce::int64) nachAck.inFlightErfolg)
+                + ", Wiederholungen " + juce::String ((juce::int64) nachAck.inFlightWiederholungen));
+    pruefe (warteAuf (2000, [&] { return p->ausstehenderSourcesCommandFuerTest().empty(); }),
+            "M-16: der ACK hat die Zuordnung gefunden - der Befehl ist vorgemerkt, nicht mehr ausstehend");
+    pruefe (mitglieder (*p).empty() && dirty.nonParam == 0,
+            "M-16: kein Tick lief - nichts ist angewandt, kein Dirty");
+
+    // Speichern OHNE Tick: der Persistenzabschluss (M-10) fuehrt die
+    // Mitgliedschaft nach.
+    juce::MemoryBlock state;
+    p->getStateInformation (state);
+    pruefe (genau (mitglieder (*p), { a }) && dirty.nonParam == 1,
+            "M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal",
+            juce::String ((int) mitglieder (*p).size()) + " Mitglied(er), Dirty "
+                + juce::String (dirty.nonParam.load()));
+    p->removeListener (&dirty);
+    p.reset();                                   // stoppt die Clients vor dem Server
+    server2->stoppen();
+
+    auto nach = std::make_unique<eqcop::EqCopilotProcessor>();
+    nach->setStateInformation (state.getData(), (int) state.getSize());
+    const auto geladen = mitglieder (*nach);
+    pruefe (genau (geladen, { a }) && geladen.front().label == "Reported fallback",
+            "M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen",
+            juce::String ((int) geladen.size()) + " Mitglied(er)");
+}
+
 bool nak246d3Fall (const std::string& name)
 {
     if (name == "m10") { bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state(); return true; }
@@ -1091,6 +1199,7 @@ bool nak246d3Fall (const std::string& name)
     if (name == "m12") { dirty_und_revision_genau_einmal_je_bestaetigtem_befehl(); return true; }
     if (name == "m13") { ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht(); return true; }
     if (name == "m14") { gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand(); return true; }
+    if (name == "m16") { volle_queue_join_reconnect_ack_save_load_als_eine_kette(); return true; }
     return false;
 }
 } // namespace nak246d3
@@ -1103,7 +1212,7 @@ int main (int argc, char** argv)
     {
         if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2]))
         {
-            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14)\n";
+            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -1120,6 +1229,8 @@ int main (int argc, char** argv)
     nak246d3::bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt();
     nak246d3::dirty_und_revision_genau_einmal_je_bestaetigtem_befehl();
     nak246d3::ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht();
+    // NAK-246 D3 + D4: die Kette M-16 am echten Prozessor gegen den Testserver.
+    nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

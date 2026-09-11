@@ -1,0 +1,57 @@
+NAK-246 Etappe 4 - Rotbeweis M-16 (Manifest docs/beweise/NAK-246.md §3.4): volle_queue_join_reconnect_ack_save_load_als_eine_kette (B14)
+Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892 (Zwischenstand 1 38cd8d47 mit D3 davor committet).
+Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-16 allein (`--nur m16`), mit dem ENDGUELTIGEN Test
+  (Sonde012ProjectReloadTest.cpp, nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette) am ECHTEN Prozessor
+  (Testkonstruktor mit Probe-Pipe und Servererwartung, Produkt-controlV3, geteilter Testserver mit commandAckArt = angewandt)
+  gegen die ALT-SEMANTIK des Basis-SHA fuer D4 (Diff in NAK-246-rot-M-15.txt): Ueberlauf => `endgueltigAbgewiesen` (= bool false),
+  und der Sources-Aufrufer (Ipc.cpp) loescht seine `command_id`-Zuordnung bei allem ausser `eingereiht` (= `if (! bool)`).
+  Der D3-Anteil der Kette (Speicher-Drain, Zwischenstand 1) steht in diesem Lauf bereits - die Kette faellt damit genau am
+  D4-Glied: der ACK des nachgespielten Befehls findet keine Zuordnung, nichts wird vorgemerkt, das Speichern hat nichts anzuwenden.
+  Die Kette: verbinden -> Server geht (Queue laeuft nirgends ab) -> Queue voll -> Quellen-Join -> Server kommt wieder ->
+  Reconnect, Replay unter derselben command_id -> ACK (echter Produkt-Callback v3Antwort) -> Speichern OHNE Tick -> Laden in neuer Instanz.
+
+BAU UND LAUF
+  Derselbe Rotbau wie M-15 (Exit 0, 24 s): Quellen Nachrichten.cpp 06:02:49, Ipc.cpp 06:02:53, Analyse.cpp 06:02:58;
+  Binary EqCopSonde012ProjectReloadTest.exe 06:03:36 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m16
+        -> Exit 1, 1 s, 15 Pruefungen, 3 Fehler.
+  Ruecknahme: git checkout -- Nachrichten.cpp Ipc.cpp Analyse.cpp aus dem gestageten Endstand (06:09:47).
+
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-16: "Der Aufrufer behaelt die command_id-Zuordnung bei zur Wiederholung angenommen ... die neue Instanz laedt das Mitglied")
+  FEHLER  M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [abgewiesen, Zuordnung leer]
+      -> `bindeSourcesHauptziel` meldet false und die Zuordnung ist geloescht ("ROT am Basis-SHA: Ipc.cpp:1322-1324 loescht die Zuordnung bei false") -
+         die Zeile, die die Zusage traegt.
+  FEHLER  M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [0 Mitglied(er), Dirty 0]
+      -> der ACK fand keine Zuordnung, nichts war vorgemerkt.
+  FEHLER  M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [0 Mitglied(er)]
+      -> "Die neue Instanz laedt KEIN Mitglied, obwohl der Server angewandt hat" - der Persistenzbeweis am geladenen Zustand.
+  Gruen bleiben: "der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)" (inFlight 1) und "nach dem Reconnect ist der Join
+  nachgespielt und vom Server angewandt (ACK)" (inFlightErfolg 1, Wiederholungen 1): der Client haelt und spielt nach wie am
+  Basis-SHA (M-73) - der Server hat angewandt, und genau diese brokerseitig angewandte Mitgliedschaft fehlt lokal (Auditbefund D4,
+  Entwurf §57 :4273-4275). Auch "der ACK hat die Zuordnung gefunden - ausstehend leer" bleibt gruen, weil die Zuordnung schon vor
+  dem ACK geloescht war - die Zeile misst "leer", und leer ist sie in beiden Faellen; die Zusage traegt die erste FEHLER-Zeile.
+
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m16
+== NAK-246 M-16 volle_queue_join_reconnect_ack_save_load_als_eine_kette ==
+  ok      M-16: der Testserver steht
+  ok      M-16: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor)
+  ok      M-16: der Prozessor ist ein Main mit Bindung
+  ok      M-16: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-16: die Verbindung ist weg
+  ok      M-16 Aufbau: die Quelle A ist Hauptziel, dieses Main darf schreiben
+  ok      M-16: die P0-Queue ist voll  [64]
+  FEHLER  M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [abgewiesen, Zuordnung leer]
+  ok      M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)  [inFlight 1]
+  ok      M-16: der Testserver steht wieder (Reconnect)
+  ok      M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)  [inFlightErfolg 1, Wiederholungen 1]
+  ok      M-16: der ACK hat die Zuordnung gefunden - der Befehl ist vorgemerkt, nicht mehr ausstehend
+  ok      M-16: kein Tick lief - nichts ist angewandt, kein Dirty
+  FEHLER  M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [0 Mitglied(er), Dirty 0]
+  FEHLER  M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [0 Mitglied(er)]
+SONDE-012 ProjectReload (nur m16): 12/15 gruen
+
+GRUEN (Endstand, Binary 06:09:58, voller Lauf): alle 15 Zeilen ok - angenommen, Zuordnung vorhanden, inFlightErfolg 1, Wiederholungen 1,
+Speichern ohne Tick 1 Mitglied und Dirty 1, neue Instanz 1 Mitglied "Reported fallback"; B14 gesamt 107/107, Exit 0.

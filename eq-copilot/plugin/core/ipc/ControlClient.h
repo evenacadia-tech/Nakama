@@ -236,6 +236,47 @@ bool commandAckHaeltVertrag (const std::string&, GelesenesCommandAck&);
 std::string auftragMitBasisRevision (const std::string& auftragJson,
                                      std::uint64_t basisRevision);
 
+/** NAK-246 D4 (R-D4; docs/beweise/NAK-246.md Paragraph 3.4, 5.4): der
+    dreiwertige Ausgang von `sendePersistenzP0`.
+
+    Bis hierher war die Antwort ein `bool`, und `false` hiess ZWEIERLEI: "nicht
+    eingereiht, vergiss ihn" (zu gross, keine `command_id`, fremder Inhalt
+    unter bekannter Kennung) UND "nicht in der Queue, aber im Register - wird
+    nach dem Reconnect nachgespielt" (Ueberlauf, M-73). Der Sources-Aufrufer
+    glaubte der ersten Lesart und loeschte seine `command_id`-Zuordnung; der
+    ACK des nachgespielten Befehls fand sie nicht mehr, und die brokerseitig
+    angewandte Mitgliedschaft wurde lokal nie nachgefuehrt (Auditbefund D4).
+
+    Angenommen ist ein Auftrag in den ersten beiden Faellen; nur der dritte
+    ist ein Fehlschlag. Ein Aufrufer, der sich zur `command_id` etwas merkt,
+    behaelt es bei beiden angenommenen Zustaenden und loescht es nur bei
+    `endgueltigAbgewiesen`. */
+enum class PersistenzP0Ergebnis
+{
+    /// In der 64er-Queue; der Wire-Write folgt auf dieser Verbindung, der
+    /// ACK schliesst den Auftrag ab.
+    eingereiht,
+    /// Angenommen und im Register, aber nicht in der Queue: die Queue war
+    /// voll (M-73: der Eintrag geht an `beiP0Verworfen`, die Verbindung wird
+    /// geschlossen, `inFlightNachReconnect` reiht ihn unter DERSELBEN
+    /// `command_id` erneut ein) - oder derselbe Auftrag ist schon bekannt und
+    /// wartet auf Replay oder ACK.
+    zurWiederholungAngenommen,
+    /// Nicht angenommen und nie im Register: Nutzlast ueber
+    /// `kMaxPayloadBytes`, keine gueltige `command_id`, dieselbe
+    /// `command_id` mit anderem Inhalt, oder das Register haelt bereits
+    /// `kCapP0` Auftraege (`Snapshot::inFlightRegisterVoll`).
+    endgueltigAbgewiesen
+};
+
+/// Angenommen heisst: eingereiht ODER zur Wiederholung angenommen. Der
+/// `bool` an einer Oberflaeche bleibt zweiwertig; der Dreiwert lebt an der
+/// Modulgrenze (Paragraph 5.4 Feinheit 4).
+constexpr bool persistenzAngenommen (PersistenzP0Ergebnis ergebnis) noexcept
+{
+    return ergebnis != PersistenzP0Ergebnis::endgueltigAbgewiesen;
+}
+
 class ControlClient
 {
 public:
@@ -280,6 +321,11 @@ public:
         std::uint64_t inFlightErfolg = 0;
         std::uint64_t inFlightEndgueltigOhneErfolg = 0;
         std::uint64_t inFlightWiederholungen = 0;
+        /// NAK-246 D4 (R-D4, M-17): wie oft ein persistenzpflichtiger Auftrag
+        /// am EINTRITT endgueltig abgewiesen wurde, weil das Register bereits
+        /// `kCapP0` (64) Auftraege hielt - die einzige vertraglich genannte
+        /// Zahl (`IpcQueues.h`). Nichts Angenommenes wird dafuer verworfen.
+        std::uint64_t inFlightRegisterVoll = 0;
         std::uint64_t envelopeAbweisungen = 0;
         /// Frames einer auf DIESER Verbindung unzulaessigen Familie. Control
         /// traegt ausschliesslich P0/P1 (§33.1); ein P2-Frame darf hier nicht
@@ -591,7 +637,15 @@ public:
     /// frei; logisch erledigt ist er erst durch ein schemafestes
     /// `command_ack`. Bei Verbindungsverlust wird derselbe Text und damit
     /// dieselbe ID erneut eingereiht.
-    bool sendePersistenzP0 (const std::string& json);
+    ///
+    /// NAK-246 D4 (R-D4): die Antwort ist DREIWERTIG (`PersistenzP0Ergebnis`).
+    /// `eingereiht` und `zurWiederholungAngenommen` sind beide angenommen -
+    /// der Aufrufer behaelt seine `command_id`-Zuordnung; nur
+    /// `endgueltigAbgewiesen` ist ein Fehlschlag. Das Register `inFlight` ist
+    /// bei `kCapP0` gedeckelt: ein weiterer Auftrag wird am Eintritt
+    /// endgueltig abgewiesen und gezaehlt (`Snapshot::inFlightRegisterVoll`),
+    /// nichts Angenommenes wird dafuer verworfen (Matrix M-15 bis M-19).
+    PersistenzP0Ergebnis sendePersistenzP0 (const std::string& json);
 
     /** SONDE-014 WN-01 (Nacharbeit 2): die zuletzt AN DEN BROKER GEMELDETE
         State-Revision - die des zuletzt auf den Draht geschriebenen

@@ -3486,6 +3486,56 @@ int main()
         p->releaseResources();
     }
 
+    // 🔑 NAK-246 D4 (R-D4, Matrix M-20; Manifest docs/beweise/NAK-246.md
+    // Paragraph 3.4, 5.4 Feinheit 4): der VERSUCH-Aufrufer wertet den Dreiwert
+    // von `sendePersistenzP0` aus. Bei voller 64er-P0-Queue ist der
+    // Versuchsbefehl ZUR WIEDERHOLUNG angenommen (M-73: im Register, Replay
+    // nach dem Reconnect unter derselben command_id); `sendeVersuchP0` setzt
+    // `letzterVersuchP0` und `beginneVersuch` kehrt NICHT um. Bis NAK-246
+    // kehrte `sendeVersuchP0` bei `false` um, ohne den Text zu merken - der
+    // Versuch begann lokal nicht, obwohl der Client den Auftrag hielt und
+    // nachspielte. N-05 (oben) misst fehlendes Pegelmaterial, nicht diese
+    // Annahme. In diesem Bein laeuft kein Produktclient; die volle Queue
+    // laeuft nirgends ab, die Lage ist deterministisch.
+    abschnitt ("NAK-246 M-20  beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an");
+    {
+        auto p = mainProzessorMitBindung();
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->prepareToPlay (kFs, kBlock);
+        TestPlayHead kopf;
+        p->setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, kBlock);
+        fahre (*p, kopf, puffer, 20);
+        const auto a = hex32 (0xC4);
+        pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "M-20: Passage gemerkt");
+        pruefe (warte (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (a); }),
+                "M-20: die Engine fuehrt das Fenster");
+        pruefe (fahreBisPegel (*p, kopf, puffer), "M-20: genug Material");
+
+        const auto voll = p->fuelleP0QueueFuerTest();
+        pruefe (voll > 0, "M-20: die P0-Queue ist voll", juce::String ((int) voll));
+        const auto vorher = p->controlV3Snapshot();
+        pruefe (p->beginneVersuch (a),
+                "M-20: beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an - "
+                "`beginneVersuch` kehrt NICHT um: der Befehl ist zur Wiederholung "
+                "angenommen (Basis-SHA: false)");
+        const auto gesendet = p->letzterVersuchP0FuerTest();
+        pruefe (! gesendet.empty()
+                    && gesendet.find ("\"type\":\"experiment_begin\"") != std::string::npos,
+                "M-20: `letzterVersuchP0` traegt den Befehl - auch bei Wiederholung",
+                juce::String ((int) gesendet.size()) + " Bytes");
+        pruefe (! p->laufenderVersuch().isEmpty(), "M-20: der Versuch ist offen");
+        const auto nachher = p->controlV3Snapshot();
+        pruefe (nachher.inFlight >= 1 && nachher.p0Ueberlaeufe > vorher.p0Ueberlaeufe,
+                "M-20: der Auftrag steht im Register, der Ueberlauf ist gezaehlt (M-73)",
+                juce::String ("inFlight ") + juce::String ((juce::int64) nachher.inFlight)
+                    + ", Ueberlaeufe " + juce::String ((juce::int64) nachher.p0Ueberlaeufe));
+        p->leereP0QueueFuerTest();
+
+        p->setPlayHead (nullptr);
+        p->releaseResources();
+    }
+
     abschnitt ("NAK-181 N-13/N-14  nurlesen_reload_leert_den_vergleich_und_bleibt_verlustfrei");
     {
         auto p = mainProzessorMitBindung();

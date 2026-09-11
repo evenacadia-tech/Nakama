@@ -103,7 +103,7 @@ void ControlClient::interventionsZug (
     }
 }
 
-bool ControlClient::sendePersistenzP0 (const std::string& json)
+PersistenzP0Ergebnis ControlClient::sendePersistenzP0 (const std::string& json)
 {
     return k->sendePersistenzP0 (json);
 }
@@ -154,8 +154,12 @@ bool ControlClient::Laufzeit::sendeP0 (const std::string& json,
     return true;
 }
 
-bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
+PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
 {
+    // 🔑 NAK-246 D4 (R-D4, Manifest Paragraph 3.4 M-15 bis M-19, 5.4): die
+    // Antwort ist DREIWERTIG. Bis hierher trug ein `bool` zwei gegensaetzliche
+    // Bedeutungen - "nicht eingereiht" (M-19) und "wird nachgespielt" (M-73) -,
+    // und der Sources-Aufrufer glaubte der falschen (Auditbefund D4).
     std::string commandId;
     if (json.size() > kMaxPayloadBytes || ! commandIdAusAuftrag (json, commandId))
     {
@@ -165,7 +169,7 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
         else
             zustand.letzterFehler =
                 "Persistenzauftrag braucht genau eine gueltige command_id";
-        return false;
+        return PersistenzP0Ergebnis::endgueltigAbgewiesen;   // M-19: kein Registereintrag
     }
 
     bool ueberlauf = false;
@@ -179,7 +183,28 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
             // Derselbe logische Auftrag darf vom Aufrufer erneut angeboten
             // werden, aber dieselbe ID darf nie zwei verschiedene Inhalte
             // bedeuten. Die bereits gehaltene Fassung bleibt die Wahrheit.
-            return bekannt->json == json;
+            //
+            // M-18: gleicher Inhalt liefert den ZUSTAND des gehaltenen
+            // Eintrags - in der Queue: eingereiht; sonst (wartet auf Replay
+            // oder ACK): zur Wiederholung angenommen. Ein bekannter Auftrag
+            // zaehlt nicht gegen den Deckel; das Register waechst nicht.
+            if (bekannt->json != json)
+                return PersistenzP0Ergebnis::endgueltigAbgewiesen;
+            return bekannt->inQueue ? PersistenzP0Ergebnis::eingereiht
+                                    : PersistenzP0Ergebnis::zurWiederholungAngenommen;
+        }
+        // 🔑 M-17, Deckel = `kCapP0` (Paragraph 5.4 Feinheit 2): das Register
+        // haelt Auftraege, die in der Queue stehen, auf dem Draht auf ihr ACK
+        // warten oder auf Replay warten. Die Drahtqueue fasst 64; mehr als eine
+        // volle Queue unbestaetigter Persistenzauftraege ist fuer Handgriffe
+        // des Users kein Lastfall, sondern ein Fehlerbild. Der Deckel greift
+        // NUR am Eintritt - nichts bereits Angenommenes wird dafuer verworfen
+        // (Feinheit 3); `inFlightNachReconnect` und `inFlightAck` bleiben.
+        if (inFlight.size() >= kCapP0)
+        {
+            std::lock_guard<std::mutex> z (zustandMutex);
+            ++zustand.inFlightRegisterVoll;
+            return PersistenzP0Ergebnis::endgueltigAbgewiesen;
         }
         inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
         // Persistenzpflichtige Befehle sind EREIGNISSE: sie ueberleben jeden
@@ -223,9 +248,11 @@ bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
         if (beiP0Verworfen && verworfeneMarke != 0)
             beiP0Verworfen (verworfeneMarke);
         aktuelleVerbindung()->ioAbbrechen();
-        return false;
+        // M-15: das ist M-73 woertlich, ehrlich benannt - angenommen, im
+        // Register, Replay nach dem Reconnect unter derselben `command_id`.
+        return PersistenzP0Ergebnis::zurWiederholungAngenommen;
     }
-    return true;
+    return PersistenzP0Ergebnis::eingereiht;
 }
 
 void ControlClient::Laufzeit::inFlightNachReconnect (std::uint64_t generation)

@@ -30,23 +30,54 @@
 
 #include "NakamaState.h"
 #include "PluginProcessor.h"
+// NAK-246 D4 (M-20, WN-05): der geteilte v3-Probe-Server - WN-05 misst die
+// Annahmesemantik am ECHTEN Draht (Ueberlauf, Reconnect, Replay, ACK).
+#include "IpcVerbindung.h"
+#include "PipeToken.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <initializer_list>
 #include <iostream>
 #include <string_view>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
+
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+ #define NOMINMAX
+#endif
+#include <windows.h>
 
 using namespace eqcop;
 namespace state = nakama::state;
 
 namespace
 {
+// Der Probe-Server spricht den v3-Bootstrap unqualifiziert (wie in B10/B14/B23).
+using namespace nakama::ipc;
+#include "V3TestServer.h"
+
 int bestanden = 0;
 int fehler    = 0;
+
+template <typename Bedingung>
+bool warteAuf (int millisekunden, Bedingung&& bedingung)
+{
+    for (int i = 0; i < millisekunden / 5; ++i)
+    {
+        if (bedingung())
+            return true;
+        std::this_thread::sleep_for (std::chrono::milliseconds (5));
+    }
+    return bedingung();
+}
 
 void pruefe (bool ok, const juce::String& was)
 {
@@ -919,37 +950,99 @@ int main()
     }
 
     // ===================================================================
-    // NACHARBEIT 2 - WN-05: eine abgewiesene Einreihung meldet FALSE
+    // NACHARBEIT 2 - WN-05, seit NAK-246 D4 (R-D4, M-20): die ANNAHMESEMANTIK
     // ===================================================================
     //
-    // Bei voller 64er-P0-Queue liefert `sendePersistenzP0` false und die
-    // Verbindung wird verworfen (M-73). `assistentAntwort` ignorierte den
-    // Rueckgabewert und meldete weiter Erfolg - das Urteil war weder
-    // persistiert noch wiederholt (WP1-5).
-    abschnitt ("WN-05: der Rueckgabewert der Queue-Politik wird ausgewertet");
+    // Bei voller 64er-P0-Queue ist das Urteil ZUR WIEDERHOLUNG ANGENOMMEN
+    // (M-73: es bleibt im Register, die Verbindung wird verworfen, der
+    // naechste Link spielt es unter derselben `command_id` nach).
+    // `assistentAntwort` meldet der Oberflaeche deshalb ERFOLG - und der
+    // Server bestaetigt den Auftrag nach dem Reconnect. Bis NAK-246 forderte
+    // diese Zeile `false` ("eingereiht oder nicht", WP1-5); der Dreiwert
+    // macht daraus "angenommen oder nicht" (Manifest docs/beweise/NAK-246.md
+    // Paragraph 3.4 M-20, 5.4 Feinheit 4; Ticketpfad L-M1-3). Der Rotbeweis
+    // faellt am Basis-SHA genau hier: `assistentAntwort` kehrte bei `false` um.
+    //
+    // Gemessen am ECHTEN Draht: Probe-Server, `v3StartFuerTest`, Handschlag,
+    // dann geht der Server, die Queue laeuft nirgends mehr ab (deterministisch
+    // voll), Ueberlauf, Server wieder da, Reconnect, Replay, ACK.
+    abschnitt ("WN-05 / NAK-246 M-20: bei voller Queue meldet `assistentAntwort` Erfolg, "
+               "und der Auftrag wird nach dem Reconnect bestaetigt");
     {
+        const auto pipe = testPipeName ("sonde014-wn05-m20");
+        auto server1 = std::make_unique<TestServer> (pipe);
+        server1->commandAckArt.store (1);   // angewandt
+        pruefe (server1->starten(), "M-20: der Probe-Server steht");
         auto p = prozessorAmDraht();
+        p->prepareToPlay (48000.0, 512);    // gueltige Audiolage fuer das Hello
+        pruefe (p->v3ProbeGegenstelleFuerTest (pipe, testExeErwartung()),
+                "M-20: der echte ControlClient zeigt auf den Probe-Server");
+        p->v3StartFuerTest();
+        pruefe (warteAuf (8000, [&] {
+                    return p->controlV3Snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "M-20: Control ist verbunden");
         const auto schrittId = juce::String ("00000000000000000000000000000e01");
         const auto findingId = juce::String ("00000000000000000000000000000e0f");
         pruefe (p->assistentStarten (schrittId), "WN-05: ein Schritt laeuft");
         const auto urteil = state::Userurteil::angenommen;
 
         // Die GEGENPROBE zuerst: mit Platz in der Queue meldet die Methode
-        // Erfolg. Ohne sie waere das `false` unten nicht von "hier geht
-        // ohnehin nichts" zu unterscheiden.
-        p->leereP0QueueFuerTest();
+        // Erfolg, und der Server bestaetigt das Urteil.
         pruefe (p->assistentAntwort (state::Assistentenergebnis::schritt,
                                      &urteil, findingId),
                 "WN-05: mit Platz in der Queue meldet `assistentAntwort` Erfolg");
+        pruefe (warteAuf (8000, [&] {
+                    const auto s = p->controlV3Snapshot();
+                    return s.inFlight == 0 && s.inFlightErfolg >= 1;
+                }),
+                "WN-05: und der Server hat das Urteil bestaetigt (inFlightErfolg 1)");
 
-        // Und jetzt voll: die Einreihung wird abgewiesen, und die Methode
-        // sagt es.
+        // Der Server geht: ab jetzt laeuft die Queue nirgends ab.
+        server1->stoppen();
+        server1.reset();
+        pruefe (warteAuf (8000, [&] {
+                    return p->controlV3Snapshot().status != ControlClient::Status::verbunden;
+                }),
+                "M-20: die Verbindung ist weg - die Queue kann nur noch volllaufen");
+        const auto vorher = p->controlV3Snapshot();
         const auto gefuellt = p->fuelleP0QueueFuerTest();
         pruefe (gefuellt > 0, "WN-05: die P0-Queue ist wirklich voll");
-        pruefe (! p->assistentAntwort (state::Assistentenergebnis::passageMessen,
-                                       &urteil, findingId),
-                "WN-05: bei voller Queue meldet `assistentAntwort` KEINEN Erfolg");
+
+        // Und jetzt voll: die Einreihung scheitert, der Auftrag ist ZUR
+        // WIEDERHOLUNG angenommen - die Methode meldet Erfolg.
+        const bool angenommen = p->assistentAntwort (state::Assistentenergebnis::passageMessen,
+                                                     &urteil, findingId);
+        pruefe (angenommen,
+                "M-20: bei voller Queue meldet `assistentAntwort` ERFOLG - der Auftrag ist zur "
+                "Wiederholung angenommen (Basis-SHA: false)");
+        const auto danach = p->controlV3Snapshot();
+        pruefe (danach.inFlight >= 1 && danach.p0Ueberlaeufe > vorher.p0Ueberlaeufe,
+                juce::String ("M-20: der Auftrag steht im Register und der Ueberlauf ist gezaehlt "
+                              "(M-73) - inFlight ")
+                    + juce::String ((juce::int64) danach.inFlight) + ", Ueberlaeufe "
+                    + juce::String ((juce::int64) danach.p0Ueberlaeufe));
+
+        // Die Testfuellung geht (sie ist kein Auftrag); der Server kommt wieder,
+        // der Client verbindet neu und spielt das Urteil unter derselben
+        // command_id nach.
         p->leereP0QueueFuerTest();
+        auto server2 = std::make_unique<TestServer> (pipe);
+        server2->commandAckArt.store (1);
+        pruefe (server2->starten(), "M-20: der Probe-Server steht wieder");
+        const bool nachgespielt = warteAuf (20000, [&] {
+            const auto s = p->controlV3Snapshot();
+            return s.inFlight == 0 && s.inFlightErfolg >= 2;
+        });
+        const auto ende = p->controlV3Snapshot();
+        pruefe (nachgespielt,
+                juce::String ("M-20: nach dem Reconnect ist das Urteil nachgespielt und bestaetigt - "
+                              "inFlight ")
+                    + juce::String ((juce::int64) ende.inFlight) + ", inFlightErfolg "
+                    + juce::String ((juce::int64) ende.inFlightErfolg) + ", Wiederholungen "
+                    + juce::String ((juce::int64) ende.inFlightWiederholungen));
+        p->v3StopFuerTest();
+        server2->stoppen();
     }
 
     // ===================================================================

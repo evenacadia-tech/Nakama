@@ -365,7 +365,7 @@
      "id": "S31c",
      "leitungsname": "Codebase-Pflege nach dem aktiven Kern",
      "ticket": "NAK-226",
-     "text": "ANGELEGT 08.09.2026 (fester Pflegeschritt je Phase, Register NAK-226). INHALT entsteht aus dem Befund von `tools/plan/gesundheit.py` (S25b) beim Erreichen dieses Schritts: jede gerissene Schwelle wird als verhaltensneutrales Teilstück geschlossen, Beweis wie S25c/S25d. Ein leerer Befund ist ein gültiges Ergebnis; dann trägt das Manifest nur den Messlauf. Dazu der volle Kontexthygiene-Lauf nach docs/context-hygiene-playbook.md.",
+     "text": "ANGELEGT 08.09.2026 (fester Pflegeschritt je Phase, Register NAK-226). INHALT entsteht aus dem Befund von `tools/plan/gesundheit.py` (S25b) beim Erreichen dieses Schritts: jede gerissene Schwelle wird als verhaltensneutrales Teilstück geschlossen, Beweis wie S25c/S25d. Ein leerer Befund ist ein gültiges Ergebnis; dann trägt das Manifest nur den Messlauf. Dazu der volle Kontexthygiene-Lauf nach docs/context-hygiene-playbook.md. NACHTRAG 12.09.2026 (Prüfsystem-Konzept abgenommen, docs/gesundheit/KONZEPT.md §6.7): Der Schritt verbraucht zusätzlich den Prüfgang, die angesammelten Zeilen [Werkzeug · Prüfsystem] (Detektoren mit Rotbeweis, Kanon vorher und nachher), die Abdeckungskarte (nachziehen, Totes-Element-Regel) und ein Spezialaudit seiner Wahl; ein leerer Befund bleibt gültig. Die Kontextfläche (CLAUDE.md, Dirigenten-Skill, MEMORY.md) ist seit 12.09.2026 kein Teil dieses Schritts mehr: ihre Risse werden im jeweiligen Abschlussfenster sofort behoben (User-Wort 12.09.2026, Register NAK-255 Nachtrag).",
      "beleg": "docs/beweise/NAK-226.md",
      "stufe": "T2"
     }
@@ -412,7 +412,7 @@
      "id": "S35b",
      "leitungsname": "Codebase-Pflege vor der Auslieferung",
      "ticket": "NAK-227",
-     "text": "ANGELEGT 08.09.2026 (fester Pflegeschritt je Phase, Register NAK-227). Wie S31c: Befund von `tools/plan/gesundheit.py`, verhaltensneutral schließen, Kanon vorher = nachher, Kontexthygiene-Volllauf. Liegt vor Release R4, damit der Sondenkern in gepflegtem Zustand ausgeliefert wird.",
+     "text": "ANGELEGT 08.09.2026 (fester Pflegeschritt je Phase, Register NAK-227). Wie S31c: Befund von `tools/plan/gesundheit.py`, verhaltensneutral schließen, Kanon vorher = nachher, Kontexthygiene-Volllauf. Liegt vor Release R4, damit der Sondenkern in gepflegtem Zustand ausgeliefert wird. NACHTRAG 12.09.2026 (Prüfsystem-Konzept abgenommen, docs/gesundheit/KONZEPT.md §6.7): Der Schritt verbraucht zusätzlich den Prüfgang, die angesammelten Zeilen [Werkzeug · Prüfsystem] (Detektoren mit Rotbeweis, Kanon vorher und nachher), die Abdeckungskarte (nachziehen, Totes-Element-Regel) und ein Spezialaudit seiner Wahl; ein leerer Befund bleibt gültig.",
      "beleg": "docs/beweise/NAK-227.md",
      "stufe": "T2"
     }

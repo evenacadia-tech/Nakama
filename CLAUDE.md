@@ -1,184 +1,142 @@
 # NAKAMA
 
 Plugin-Familie für FL Studio unter Windows 11 (JUCE 8/C++20, CMake) mit
-eigenständigem Rust-Broker über Named Pipes. Seit 23.08.2026 besteht Nakama aus
-zwei Apps mit einer Design-Identität: **Nakama Gen** hat zwei Oberflächen;
-„Overview" und „EQ-Zentrale" sind dafür nur Arbeits- und Platzhalternamen.
-**Nakama Probeeq** vereint die frühere Suna- und Probeeq-Rolle: Sie misst auf
-dem Bus passiv und beliefert Gen; bei zugeschaltetem EQ führt dieselbe Instanz
-Gens Fernsteuerung auf ihrem Bus aus. Suna ist als App-Name durch Probeeq
-ersetzt. Der Bundle-Name lautet **Nakama Studio**. Legacy-Bezeichner wie
-`EQ-Copilot`, `EqCop*` und `Eqcp` bleiben bis zum eigenen Identitäts-Ticket
-NAK-30 bestehen.
+eigenständigem Rust-Broker über Named Pipes. Seit 23.08.2026 zwei Apps mit
+einer Design-Identität: **Nakama Gen** (zwei Oberflächen; „Overview" und
+„EQ-Zentrale" sind Arbeitsnamen) und **Nakama Probeeq** (frühere Suna- und
+Probeeq-Rolle: misst passiv auf dem Bus und beliefert Gen; mit zugeschaltetem
+EQ führt dieselbe Instanz Gens Fernsteuerung auf ihrem Bus aus). Bundle-Name
+**Nakama Studio**. Legacy-Bezeichner `EQ-Copilot`, `EqCop*`, `Eqcp` bleiben
+bis NAK-30.
 
-Das Repo ist eigenständig und privat. `design/` gehört seit 22.08.2026 zum
-selben Repo. Parallele Sessions sind normal: fremde uncommittete Änderungen nie
-anfassen, eigene Commits nur mit explizitem Pathspec, nie `git add -A` und nie
-`--amend`. Vor neuer Arbeit nur bei sicherem Worktree pullen. Committen und
-Pushen sind für dieses Projekt ausdrücklich autorisiert; eigene logische
-Commits gehen ohne Rückfrage raus.
+Repo eigenständig und privat; `design/` gehört seit 22.08.2026 dazu.
+Parallele Sessions sind normal: fremde uncommittete Änderungen nie anfassen,
+Commits nur mit explizitem Pathspec, nie `git add -A`, nie `--amend`. Pullen
+nur bei sicherem Worktree. Committen und Pushen sind autorisiert; eigene
+logische Commits gehen ohne Rückfrage raus.
 
-<!-- WAHRHEITSKERN:ANFANG — einzige kompakte Kopie; der Primer liest diesen
-     Block ausschließlich nach einer Context-Compaction. -->
 ## Wahrheitskern
 
-- **Produkt:** Gen hat zwei Oberflächen. Die erste zeigt Quellen, Befunde und
-  Advisor; die zweite bedient die Probeeq-Instanzen zentral und enthält den
-  vollwertigen Master-EQ. „Overview" und „EQ-Zentrale" sind nur Arbeitsnamen,
-  keine festgelegten Produktnamen. Die Sonden werden direkt auf der zweiten
-  Oberfläche durchgeschaltet; zwei EQ-Spuren liegen farblich unterscheidbar im
-  selben Graph. Beide Gen-Oberflächen arbeiten auf genau einer logischen
-  Standardgröße von 950×538. Eine zusätzliche Compact-Fassung und ein
-  größenabhängiges Layout sind bis nach Fertigstellung dieser Oberfläche
-  vertagt. Die davon getrennte UI-Skalierung vergrößert dieselbe Geometrie,
-  erzeugt aber keine zweite Layoutfassung. Probeeq misst auf den
-  Bussen passiv und beliefert Gen. Wird ihr EQ zugeschaltet, führt dieselbe
-  Instanz die von Gen ferngesteuerten Eingriffe auf ihrem Bus aus; Messsonde
-  und EQ-Ausführer sind keine alternativen Produktrollen. Die vollständige
-  EQ-Bedienung existiert nur in Gen; Probeeq erhält lokal keinen vollständigen
-  EQ-Editor, sondern eine kompakte Status- und Rückfallfläche.
-- **Grundgesetz: nichts Ungefragtes.** Verarbeitung findet nur statt, wenn der
-  User sie einschaltet. Ausgeschaltet ist der Pfad im Nulltest bitidentisch;
-  sonst ist der Passthrough sampleidentisch, ohne Latenz oder Tail. Der Advisor
-  schlägt nur vor. Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder
-  Netz-Zugriffe und kein Logging; Überlast verwirft Analyseframes, nie Audio.
-- **Keine KI-Erklärschicht** im Produkt. Der Advisor ist regelbasiert.
-- **Funktionsneustart der UI:** Seit dem ausdrücklichen User-Auftrag vom
-  31.08.2026 wird die grundlegende UI-Architektur designneutral aus
-  `design/docs/funktions-und-bedien-blueprint.md` und den neuen datierten
-  Abnahmen abgeleitet. Frühere Figma-Nodes, Exporte und die drei Rework-Bilder
-  vom 25.08. sind dafür Verlauf und liefern weder Raster noch Farben, Material
-  oder Positionen. Eine neue visuelle Richtung entsteht erst in einem eigenen
-  User-Schritt; sie wird dann in Figma entwickelt, sobald das Fundament aus
-  Layout und Skizze steht (User-Wort 02.09.2026, Fünferblock 03). **Dieser
-  Schritt ist am 02.09.2026 erfolgt:** Die visuelle Phase läuft in der
-  Figma-Datei `fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`, Seite „01 — Nakama
-  950×538 · Skizze in Materialsprache"), in der Materialsprache der Entwürfe
-  vom 20. bis 22.08.2026 (Unibody, Glas, Kinn, Apertur, Geist, Wein, Cyan nur
-  als Saum) und mit der Wortmarke im rot-blauen Verlauf auf beiden Apps. Die
-  Skizze bleibt Layout-Wahrheit, Figma ist die visuelle Wahrheit; ein
-  Figma-Stand ist ein Vorschlag bis zur datierten Abnahme
-  (`design/abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`, Leseblatt
-  `design/visuell/LIES-MICH.md`). Produktsprache
-  Englisch; Docs, Commits und Gespräch Deutsch.
-- **Aktueller UI-Arbeitsmodus:** Pro User-Schritt genau eine echte offene
-  Architekturfrage. Technische Grenzen vorher selbst aus Code, Tests und
-  Verträgen ableiten. Antworten werden in festen Fünferblöcken gesammelt;
-  nach der fünften werden Skizze, Abnahmen und Blueprint gemeinsam
-  aktualisiert und sichtbar geprüft. Der Wortlaut und aktuelle Stand stehen in
-  `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`.
-  Die technische Skizze liegt ausschließlich in `design/skizze/` und ist der
-  derzeitige Stand, nicht der finale: Design ist ein laufender Prozess wie
-  die Implementierung (User-Wort 02.09.2026). Skizze und Blueprint werden
-  nie als fertig oder abgenommen bezeichnet; bindend sind nur die datierten
-  Abnahmen.
-- **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff
-  aus oder meldet ehrlich einen Zustand.
-- **Tasten sind Material.** User-Gesetz 25.08.2026: „ein button ist ein
-  material das niemals einfach die breite verändert". Zustände wie hover,
-  pressed, selected oder disabled wechseln Fläche, Schatten, Farbe oder
-  Transform, nie die Maße; Beweis am gemessenen Layoutrechteck (bei
-  skalierter Bühne `offsetWidth`/`offsetHeight`, nicht das transformierte
+- **Produkt:** Gens erste Oberfläche zeigt Quellen, Befunde und Advisor; die
+  zweite bedient die Probeeq-Instanzen zentral und enthält den vollwertigen
+  Master-EQ; Sonden werden dort direkt durchgeschaltet, zwei EQ-Spuren liegen
+  farblich unterscheidbar im selben Graph. Beide Oberflächen haben genau eine
+  logische Standardgröße 950×538; Compact-Fassung und größenabhängiges Layout
+  sind vertagt; UI-Skalierung vergrößert dieselbe Geometrie. Probeeq misst
+  passiv und beliefert Gen; Messsonde und EQ-Ausführer sind keine
+  alternativen Rollen. Die vollständige EQ-Bedienung existiert nur in Gen;
+  Probeeq hat lokal nur eine kompakte Status- und Rückfallfläche.
+- **Grundgesetz: nichts Ungefragtes.** Verarbeitung nur, wenn der User sie
+  einschaltet. Ausgeschaltet ist der Pfad im Nulltest bitidentisch; sonst
+  Passthrough sampleidentisch, ohne Latenz oder Tail. Der Advisor schlägt nur
+  vor. Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder
+  Netzzugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio.
+- **Keine KI-Erklärschicht** im Produkt; der Advisor ist regelbasiert.
+- **UI-Funktionsneustart (User 31.08.2026):** Die UI-Architektur wird
+  designneutral aus `design/docs/funktions-und-bedien-blueprint.md` und den
+  datierten Abnahmen abgeleitet; frühere Figma-Nodes, Exporte und die drei
+  Rework-Bilder vom 25.08. sind Verlauf. Die visuelle Phase läuft seit
+  02.09.2026 in der Figma-Datei `fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`,
+  Seite „01 — Nakama 950×538 · Skizze in Materialsprache") in der
+  Materialsprache der Entwürfe vom 20.–22.08.2026 (Unibody, Glas, Kinn,
+  Apertur, Geist, Wein, Cyan nur als Saum) mit der Wortmarke im rot-blauen
+  Verlauf. Skizze ist Layout-Wahrheit, Figma visuelle Wahrheit; ein
+  Figma-Stand ist Vorschlag bis zur datierten Abnahme
+  (`design/abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`,
+  `design/visuell/LIES-MICH.md`). Produktsprache Englisch; Docs, Commits,
+  Gespräch Deutsch.
+- **UI-Arbeitsmodus:** pro User-Schritt genau eine offene Architekturfrage;
+  technische Grenzen vorher aus Code, Tests und Verträgen ableiten; Antworten
+  in Fünferblöcken, nach der fünften Skizze, Abnahmen und Blueprint gemeinsam
+  aktualisieren und sichtbar prüfen
+  (`design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`).
+  Die technische Skizze liegt nur in `design/skizze/` und ist laufender
+  Stand; Skizze und Blueprint heißen nie fertig oder abgenommen — bindend
+  sind nur datierte Abnahmen.
+- **Keine toten UI-Elemente** (User 24.08.2026): jedes sichtbare Element
+  führt einen Handgriff aus oder meldet ehrlich einen Zustand.
+- **Tasten sind Material** (User 25.08.2026): Zustände wechseln Fläche,
+  Schatten, Farbe oder Transform, nie die Maße; Beweis am gemessenen
+  Layoutrechteck (bei skalierter Bühne `offsetWidth`/`offsetHeight`, nicht
   `getBoundingClientRect`).
-- **Geparkt:** Material-Kit-Front ist ein nie abgenommenes Provisorium. Prisma,
-  Hörkompass, Glas/Licht, Tiefenfeld, Bauplan 2.0, Kunstwerk und Feld-Alphabet
-  sind Archiv oder Studie, nicht Produktvorgabe; nie ungefragt reaktivieren.
+- **Geparkt:** Material-Kit-Front ist ein nie abgenommenes Provisorium.
+  Prisma, Hörkompass, Glas/Licht, Tiefenfeld, Bauplan 2.0, Kunstwerk und
+  Feld-Alphabet sind Archiv oder Studie; nie ungefragt reaktivieren.
 - **Entscheide:** Nur Datum plus User-Zitat in `design/abnahmen/` oder einem
-  ausdrücklich bezeichneten Register machen eine Entscheidung verbindlich.
-  Alles andere heißt Vorschlag, Annahme oder Studie.
-- **Plan:** Es gibt **zwei** lebende Spezifikationen, seit PR2 (02.09.2026)
-  mit fester Rangfolge. `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5)
-  bindet **Technik, Verträge, Phasen und Falsifikation**;
-  `design/docs/funktions-und-bedien-blueprint.md` bindet die **Funktions- und
-  Bedienarchitektur beider Apps**. **Über beiden stehen der aktuelle Vertrag und
-  der Code** — widerspricht eine Spezifikation dem gebauten Vertrag, gilt der
-  Vertrag. Ein Widerspruch zwischen beiden wird als Zeile in
-  `docs/offene-punkte.md` geführt, nie kaschiert. Der aktuelle, aus dem Repo
-  gerechnete Stand und die nächste Arbeit liegen in `docs/PLAN-STAND.md`.
-  Danach werden nur Gate-Text, Fachquellen und Manifest des konkreten Tickets
-  gelesen. Die frühere Briefing-Seite ist abgeschafft; `docs/NEXT-SESSION.md`
-  ist seit 08.09.2026 nur ein Zeiger auf Planstand und Manifeste.
-<!-- WAHRHEITSKERN:ENDE -->
+  ausdrücklich bezeichneten Register macht eine Entscheidung verbindlich;
+  alles andere ist Vorschlag, Annahme oder Studie.
+- **Plan:** Zwei lebende Spezifikationen mit Rangfolge (seit PR2,
+  02.09.2026): `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5) bindet
+  Technik, Verträge, Phasen und Falsifikation;
+  `design/docs/funktions-und-bedien-blueprint.md` bindet die Funktions- und
+  Bedienarchitektur beider Apps. Über beiden stehen aktueller Vertrag und
+  Code. Widersprüche werden als Zeile in `docs/offene-punkte.md` geführt, nie
+  kaschiert. Der gerechnete Stand und die nächste Arbeit stehen in
+  `docs/PLAN-STAND.md`; danach nur Gate-Text, Fachquellen und Manifest des
+  Tickets. `docs/NEXT-SESSION.md` ist seit 08.09.2026 nur ein Zeiger.
 
 ## Arbeitsregeln
 
-- Code und laufende Beweise sind die Wahrheit. Vor einer Änderung die
-  betroffene Quelle lesen; Doku, Memory und Audits sind Hinweise.
-- Zu Sessionbeginn und nach jedem abgeschlossenen Ticket
-  `py -3.13 tools/plan/planstand.py` laufen lassen; kein Hook tut das
-  automatisch. Ändert sich `docs/PLAN-STAND.md` aus bereits committeten
-  Quellen, wird nur diese Datei mit Pathspec committet und gepusht
-  (`docs/plan/LIES-MICH.md`). Plandokumente — Register, Plan, Abnahmen,
-  Blueprint, Leseblätter, diese Datei — laufen vor dem Commit durch
-  `py -3.13 tools/plan/dokuriegel.py <datei>` (Tabellen- und Verweisriegel,
-  seit PR2 02.09.2026); ein Verweis ins Leere ist ein Befund, kein Stil.
-- Beziehungen mitprüfen: speichern↔laden, starten↔stoppen,
-  öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen und
-  installieren↔Rückweg gehören jeweils in denselben Änderungssatz.
-- Keine Neben-Refactors und keine Legacy-Umbenennung nebenbei. Fixbare Fehler
-  im beauftragten Bereich werden behoben und geprüft, nicht nur aufgelistet.
-- **Codebase-Gesundheit ist Planbestandteil** (User-Wort 08.09.2026: „das
-  projekt muss nachhaltig funktionieren und wartbar bleiben. das geht nur wenn
-  die codebase regelmäßig in perfektem shape bleibt. nicht immer nur dann wenn
-  hart an der grenze ist … ich will nicht dass das eine kleine nebentätigkeit
-  ist, sondern bestandteil vom plan"; vollständig in Register NAK-223). Je
-  Phase steht ein eigener Pflegeschritt im Plan (S25b–S25d, S31c, S35b), dazu
-  Schwellen, die sofort ein Pflegeticket auslösen, gemessen mit
-  `py -3.13 tools/plan/gesundheit.py` (NAK-223, abgenommen 09.09.2026; Exit 4 =
-  Schwelle gerissen, Exit 2 = Werkzeugfehler; im Kanon Bein A32, nicht
-  blockierend). Pflege läuft nie im
-  Feature-Ticket, sondern als eigenes verhaltensneutrales Ticket mit vollem
-  Kanon vorher und nachher als Beweis (Muster S19b).
-- **Kontexthygiene ist Teil jedes Ticketabschlusses.** Der Dirigent misst im
-  Abschlussfenster die Always-on-Fläche (diese Datei, Dirigenten-Skill,
-  `MEMORY.md`) und fährt bei Phasengates den vollen `/freshen`-Lauf nach
-  `docs/context-hygiene-playbook.md`; die Grenzen stehen dort. Übergaben
-  stehen im Manifest, im Planstand und im Register, nie in einem
-  Sessionprotokoll; `docs/NEXT-SESSION.md` ist seit 08.09.2026 nur ein Zeiger.
-- Fortschritt erst nach einem Beleg aus der laufenden Session behaupten.
-  Danach Diff adversarial gegen Zahlenränder, NaN/Inf, stale Closures,
-  Save/Load-Symmetrie und irreführende UI-Texte lesen.
-- Volatile Zahlen wie Test-, Fixture-, IPC- oder Capability-Anzahlen nie hier
-  festschreiben. Aus Code, Manifest oder dem jüngsten Beweis lesen.
-- Große technische Schritte ziehen `docs/plugin-wissen.md` nach. Offene
-  außerhalb des Auftrags liegende Produktpunkte gehen datiert nach
+- Code und laufende Beweise sind die Wahrheit; vor einer Änderung die Quelle
+  lesen. Doku, Memory und Audits sind Hinweise.
+- Zu Sessionbeginn und nach jedem Ticket `py -3.13 tools/plan/planstand.py`;
+  ändert sich `docs/PLAN-STAND.md` aus committeten Quellen, nur diese Datei
+  mit Pathspec committen und pushen (`docs/plan/LIES-MICH.md`). Plandokumente
+  (Register, Plan, Abnahmen, Blueprint, Leseblätter, diese Datei) laufen vor
+  dem Commit durch `py -3.13 tools/plan/dokuriegel.py <datei>`; ein Verweis
+  ins Leere ist ein Befund.
+- Beziehungen mitprüfen: speichern↔laden, starten↔stoppen, öffnen↔schließen,
+  verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg gehören in
+  denselben Änderungssatz.
+- Keine Neben-Refactors, keine Legacy-Umbenennung nebenbei. Fixbare Fehler im
+  beauftragten Bereich werden behoben und geprüft.
+- **Codebase-Gesundheit ist Planbestandteil** (User 08.09.2026, Register
+  NAK-223): je Phase ein Pflegeschritt (S25b–S25d, S31c, S35b) und Schwellen,
+  gemessen mit `py -3.13 tools/plan/gesundheit.py` (Exit 4 = gerissen, Exit 2
+  = Werkzeugfehler; Kanon-Bein A32, nicht blockierend). Codebase-Pflege läuft
+  als eigenes verhaltensneutrales Ticket mit vollem Kanon vorher und nachher
+  (Muster S19b). Die Always-on-Kontextfläche (diese Datei, Dirigenten-Skill,
+  `MEMORY.md`) wird in jedem Abschlussfenster gemessen und ein Riss sofort
+  behoben, nicht registriert (User 12.09.2026; Grenzen in
+  `docs/context-hygiene-playbook.md`): für Claude optimiert, Logik unverändert,
+  keine Zitate außer als Entscheidquelle.
+- Kontexthygiene gehört zu jedem Ticketabschluss; bei Phasengates der volle
+  `/freshen`-Lauf nach `docs/context-hygiene-playbook.md`. Übergaben stehen
+  im Manifest, Planstand und Register, nie in einem Sessionprotokoll.
+- Fortschritt erst nach Beleg aus der laufenden Session behaupten; danach den
+  Diff adversarial lesen: Zahlenränder, NaN/Inf, stale Closures,
+  Save/Load-Symmetrie, irreführende UI-Texte.
+- Volatile Zahlen (Test-, Fixture-, IPC-, Capability-Anzahlen) nie hier
+  festschreiben; aus Code, Manifest oder jüngstem Beweis lesen.
+- Große technische Schritte ziehen `docs/plugin-wissen.md` nach; offene
+  Produktpunkte außerhalb des Auftrags gehen datiert nach
   `docs/offene-punkte.md`.
 - Im Dirigentenbetrieb schreibt genau ein Hintergrundworker im sichtbaren
-  Checkout. `worktree.bgIsolation = "none"` ist nur zusammen mit dieser
-  Ein-Schreiber-Regel zulässig; Fable bleibt währenddessen bei Repo-Dateien
-  lesend. Muss eine zweite Session währenddessen Repo-Dateien ändern
-  (Design, Doku), arbeitet sie in einer eigenen lokalen Arbeitskopie
+  Checkout (`worktree.bgIsolation = "none"` nur mit dieser Regel); Fable
+  bleibt währenddessen an Repo-Dateien lesend. Eine zweite Session, die
+  parallel Repo-Dateien ändern muss, arbeitet in einer eigenen Arbeitskopie
   (`git clone --local -c core.longpaths=true` an einen kurzen Pfad, kein
-  `git worktree`, das Cockpit meldet Worktrees als Störung), committet dort
-  mit Pathspec und pusht nach origin; der sichtbare Checkout holt den Stand
-  beim nächsten Pull des Dirigenten. Screenshots und andere temporäre
-  Dateien nie in den Repo-Root legen.
-- **Keine Berechtigungsfragen** (User-Wort 11.09.2026: „garkeine permissions
-  mehr … wenn um halb 2 morgens eine permission anfrage kommt, dann steht
-  alles still"): `.claude/settings.json` hält `defaultMode: dontAsk`, `allow`
-  für alles Nötige und `deny` statt `ask` für Destruktives (Vorlage
-  `tools/dirigent/settings.dontask.json`; die Datei selbst kann nur der User
-  ändern, der Klassifikator blockt Claude dort); Dirigent und Worker starten
-  mit `--permission-mode dontAsk`. Eine `ask`-Regel oder ein Prompt ist ein
-  Befund gegen die Einstellungen.
+  `git worktree`), committet mit Pathspec und pusht. Screenshots und
+  Temporäres nie in den Repo-Root.
+- **Keine Berechtigungsfragen** (User 11.09.2026): `.claude/settings.json`
+  hält `defaultMode: dontAsk`, `allow` für alles Nötige und `deny` statt
+  `ask` für Destruktives (Vorlage `tools/dirigent/settings.dontask.json`; die
+  Datei ändert nur der User). Dirigent und Worker starten mit
+  `--permission-mode dontAsk`; eine `ask`-Regel oder ein Prompt ist ein
+  Befund.
 - Sicherheitsarbeit (Reviews, Audits, Härtung an Pipes, Impersonation,
-  Signaturen) wird nie im Gesprächs- oder Dirigentenkontext selbst
-  ausgeführt, sondern an Worker, Codex oder Review-Skills delegiert
-  (User-Wort 01.09.2026).
-- Der User ist Projektleiter und Musiker, kein Programmierer. Technische
-  Wege (Crates, Schemas, Tests, Pfade, Werkzeuge) entscheidet Claude selbst
-  und legt sie nie als Menü vor; dem User werden nur Produktwirkung sowie
-  Design- und Produktfragen vorgelegt.
-- Rechnerwechsel: Der User arbeitet an PC und Laptop. Memory und die
-  globale `~/.claude/CLAUDE.md` sind rechnerlokal. Alles, was eine Session
-  auf dem anderen Rechner braucht, steht in dieser Datei, im Skill oder in
-  einer Repo-Datei und ist gepusht. Ein Artefakt, das nur in einem
-  Werkzeugordner liegt (`~/.codex/visualizations/`, `.playwright-mcp/`,
-  Scratchpad), gilt nicht als geliefert. Beide Rechner committen parallel
-  auf `master` (am 02.09.2026 lief PR2 auf dem PC, während der Laptop die
-  Design-Dokumente nachzog): Sessionstart mit `git pull --ff-only`, vor
-  jedem Push bei sauberem Worktree `git pull --rebase`; kein Hook pusht
-  automatisch, der Push ist ein eigener Schritt.
+  Signaturen) wird an Worker, Codex oder Review-Skills delegiert, nie im
+  Gesprächs- oder Dirigentenkontext ausgeführt (User 01.09.2026).
+- Der User ist Projektleiter und Musiker, kein Programmierer. Technische Wege
+  entscheidet Claude selbst und legt sie nie als Menü vor; vorgelegt werden
+  nur Produktwirkung sowie Design- und Produktfragen.
+- Rechnerwechsel: PC und Laptop committen parallel auf `master`; Memory und
+  `~/.claude/CLAUDE.md` sind rechnerlokal. Alles, was die andere Seite
+  braucht, steht in dieser Datei, im Skill oder einer Repo-Datei und ist
+  gepusht; ein Artefakt nur in einem Werkzeugordner
+  (`~/.codex/visualizations/`, `.playwright-mcp/`, Scratchpad) ist nicht
+  geliefert. Sessionstart `git pull --ff-only`, vor jedem Push bei sauberem
+  Worktree `git pull --rebase`; der Push ist ein eigener Schritt.
 
 ## Lesen vor der Arbeit
 
@@ -187,41 +145,38 @@ Commits gehen ohne Rückfrage raus.
 | Nächster Schritt | `docs/PLAN-STAND.md`, danach die konkrete Ticketquelle |
 | Planstand / offene Fragen | `docs/PLAN-STAND.md`, `docs/plan/plan.json`, `docs/plan/fragen.json`, `docs/plan/LIES-MICH.md` |
 | Plugin heute | `docs/plugin-wissen.md` |
-| Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5 — bindet Technik, Verträge, Phasen, Falsifikation), `docs/bauaufteilung-sonden.md` |
+| Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5), `docs/bauaufteilung-sonden.md` |
 | Verträge v3 | `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/v3/flatbuffers/README.md` |
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` (bindet Funktions- und Bedienarchitektur beider Apps), `design/skizze/LIES-MICH.md` (laufende technische Skizze), `design/visuell/LIES-MICH.md` (visuelle Phase in Figma seit 02.09.2026) und die jüngste passende Datei in `design/abnahmen/` |
-| Widerspruch Entwurf ↔ Blueprint | über beiden stehen aktueller Vertrag und Code; der Widerspruch wird als Zeile in `docs/offene-punkte.md` geführt, nie kaschiert (PR2, 02.09.2026) |
+| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md`, `design/visuell/LIES-MICH.md`, jüngste passende Datei in `design/abnahmen/` |
+| Widerspruch Entwurf ↔ Blueprint | Vertrag und Code stehen über beiden; Widerspruch als Zeile in `docs/offene-punkte.md` |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
-Die vollständige frühere Daueranweisung liegt als historischer Snapshot in
-`docs/archiv/CLAUDE-kontext-vor-bereinigung-2026-08-24.md`. Sie dient nur zur
-Spurensuche; aktuelle Source, Beweise und die oben verlinkten Fachdateien gehen
-vor.
+Die frühere Daueranweisung liegt als Snapshot in
+`docs/archiv/CLAUDE-kontext-vor-bereinigung-2026-08-24.md` (nur Spurensuche).
 
 ## Repo-Karte
 
-- `eq-copilot/plugin/`: JUCE-Produktcode, Hostbrücke, Tests und Werkzeuge.
-- `eq-copilot/schemas/`: heutige v2-Verträge; `schemas/v3/`: Sondenfamilie.
+- `eq-copilot/plugin/`: JUCE-Produktcode, Hostbrücke, Tests, Werkzeuge.
+- `eq-copilot/schemas/`: v2-Verträge; `schemas/v3/`: Sondenfamilie.
 - `eq-copilot/identity/`: eingefrorene Identität und Host-Capabilities.
 - `eq-copilot/install/`: manifestgetriebener Installer und Rückweg.
-- `broker/`: eigenständiger Rust-Broker `eqcop-broker.exe`.
+- `broker/`: Rust-Broker `eqcop-broker.exe`.
 - `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
-- `design/`: Übersetzung der aktuellen User-Vorgabe, laufende technische
-  Skizze (`skizze/`), visuelle Phase in Figma (`visuell/`), Abnahmen,
-  Designregeln und der historische Web-Prototyp
-  (`prototyp/`, Verlauf).
-- `wissen/`: eingeordnetes externes Wissen und visuelle Belege; keine
-  parallelen Produktentscheide und keine Roh-PDFs.
+- `design/`: Übersetzung der User-Vorgabe, Skizze (`skizze/`), visuelle Phase
+  (`visuell/`), Abnahmen, Designregeln, historischer Web-Prototyp
+  (`prototyp/`).
+- `wissen/`: eingeordnetes externes Wissen; keine Produktentscheide, keine
+  Roh-PDFs.
 - `docs/beweise/`: rohe, ticketspezifische Belegmanifeste.
 
 ## Tragende technische Invarianten
 
 - **Schemas sind Verträge.** Neue persistente Felder zuerst versionieren;
-  Altstände laden; unbekannte Felder dürfen alte Consumer nicht zerstören.
+  Altstände laden; unbekannte Felder dürfen alte Consumer nicht zerstören;
   Save und Load gemeinsam testen. Für v3 sind Discriminator, Zieladresse,
   Revision und Capability nicht additiv erweiterbar.
 - **Engine kennt keine Optik.** Sie liefert kohärente Mess-Snapshots; der
@@ -232,140 +187,102 @@ vor.
 - **Zeit ist aktive Musikzeit.** Zonen-Ticks sind deterministisch und durch
   Goldens beweisbar.
 - **NaN-Ehrlichkeit.** Nicht-endliche Werte werden verriegelt und gezählt;
-  Nyquist wird gekappt; ohne genügend endliche Nachbarn gibt es keine
-  Basislinie.
+  Nyquist gekappt; ohne genügend endliche Nachbarn keine Basislinie.
 - **Begriffe nicht vermischen:** Probe-Pipe ist nie Produktions-Pipe;
   `ltasReferenzDb` ist keine globale Sollkurve; Paint-FPS ist nicht
   Datenkadenz; Demo-Daten sind keine Plugin-Daten; FL zeigt MIDI 60 als C5.
 - **State bleibt verlustfrei.** Unbekannte Major-Versionen oder unzulässige
-  Matrizen werden read-only mit Originalbytes gehalten. Jede persistente
+  Matrizen werden read-only mit Originalbytes gehalten; jede persistente
   Änderung meldet dem Host Dirty-State.
-- **Identität bleibt eingefroren**, bis NAK-30 sie bewusst migriert.
-  Class-IDs, Hersteller-/Plugin-Codes oder Replace-V2-Verhalten nie beiläufig
-  ändern.
+- **Identität bleibt eingefroren** bis NAK-30: Class-IDs, Hersteller-/
+  Plugin-Codes und Replace-V2-Verhalten nie beiläufig ändern.
 
 ## Bauen und beweisen
 
-Der kanonische Komplettlauf vom Workspace-Root ist:
+Kanonischer Komplettlauf vom Workspace-Root:
 
 ```powershell
 pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -Titel 'SONDE-0NN'
 ```
 
-Der Runner baut die benötigten Ziele, fährt die deklarierten Beine, speichert
-rohe Ausgabe und verweigert eine Beglaubigung, wenn Prüfbinaries älter als ihre
-Quellen sind. Die Rohausgaben liegen seit NAK-96 unter `docs/beweise/roh/`; das
-Manifest trägt nur Kopf, Urteilszeile und Übersicht mit Verweis dorthin.
-Einzelbefehle und aktuelle Zielnamen stehen im Skript; nicht aus
-dieser Datei rekonstruieren. Editor-Sichtprüfung ohne FL läuft über
-`EqCopShot.exe`. Installation ist ein bewusster Admin-Schritt des Users und
-nicht Teil eines normalen Beweislaufs.
-
-Broker-Ende-zu-Ende immer über den Probe-Pipenamen testen. Nie gleichzeitig
-einen Testbroker auf der Produktions-Pipe starten. Vor einer Installation den
-State-Migrationsstand und den letzten Installationsbeweis prüfen.
+Der Runner baut, fährt die deklarierten Beine, legt Rohausgaben unter
+`docs/beweise/roh/` ab (Manifest trägt Kopf, Urteilszeile, Übersicht) und
+verweigert die Beglaubigung, wenn Prüfbinaries älter sind als ihre Quellen.
+Einzelbefehle und Zielnamen stehen im Skript. Editor-Sichtprüfung ohne FL
+über `EqCopShot.exe`. Installation ist ein bewusster Admin-Schritt des Users.
+Broker-Ende-zu-Ende immer über den Probe-Pipenamen; nie ein Testbroker auf
+der Produktions-Pipe. Vor einer Installation State-Migrationsstand und
+letzten Installationsbeweis prüfen.
 
 ## Design-Arbeitsmodell
 
-1. Für die laufende Funktionsarchitektur den Blueprint und
-   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`
-   lesen. Frühere visuelle Entwürfe sind in dieser Phase keine Vorgabe.
-2. Pro Oberfläche genau eine noch offene Frage zu Aufbau, Hierarchie,
-   Sichtbarkeit, Objektbesitz oder Disclosure stellen. Funktionsumfang und
-   technische Grenzen vorher selbst aus aktuellen Quellen klären.
-3. Antworten in einem laufenden Fünferblock sammeln und den User-Wortlaut in
-   dessen Entscheidungsprotokoll sichern. Das Protokoll des nächsten Blocks
-   (`design/abnahmen/<datum>-technische-ui-architektur-fuenferblock-NN.md`)
-   entsteht mit der ersten beantworteten Frage, nie leer vorab. Liegt die
-   Frage bereits als Karte in `docs/plan/fragen.json`, wird sie mit
-   `/fragen` gestellt; der Wortlaut geht dann zusätzlich in das
-   Blockprotokoll. Nach der fünften Antwort die
-   technische Skizze (`design/skizze/nakama-ui-technical-sketch.html`, im
-   Repo, nie nur in einem Werkzeugordner), die betroffenen Abnahmen und den
-   Blueprint gemeinsam aktualisieren, sichtbar prüfen (Screenshot nach
-   `design/skizze/belege/`) und committen; bereits Geschlossenes nicht
-   erneut öffnen.
-4. Farben, Material, Typografie und visuelle Feinheiten entstehen seit dem
-   ausdrücklichen Wechsel vom 02.09.2026 in Figma (`fable-dummy`, Leseblatt
-   `design/visuell/LIES-MICH.md`); jeder Figma-Stand wird per Export unter
-   `design/visuell/belege/` belegt und bleibt Vorschlag. Erst eine
-   dokumentierte Abnahme erlaubt die Spiegelung in `eq-copilot/`.
+1. Blueprint und der Arbeitsmodus vom 31.08.2026 sind die Grundlage; frühere
+   visuelle Entwürfe sind keine Vorgabe.
+2. Pro Oberfläche genau eine offene Frage zu Aufbau, Hierarchie,
+   Sichtbarkeit, Objektbesitz oder Disclosure; Funktionsumfang und
+   technische Grenzen vorher selbst klären.
+3. Antworten im Fünferblock sammeln, User-Wortlaut im Blockprotokoll
+   `design/abnahmen/<datum>-technische-ui-architektur-fuenferblock-NN.md`
+   (entsteht mit der ersten Antwort, nie leer vorab); liegt die Frage als
+   Karte in `docs/plan/fragen.json`, wird sie mit `/fragen` gestellt. Nach
+   der fünften Antwort Skizze (`design/skizze/nakama-ui-technical-sketch.html`),
+   Abnahmen und Blueprint gemeinsam aktualisieren, Screenshot nach
+   `design/skizze/belege/`, committen; Geschlossenes nicht erneut öffnen.
+4. Farben, Material, Typografie entstehen in Figma (`fable-dummy`); jeder
+   Stand wird unter `design/visuell/belege/` belegt und bleibt Vorschlag;
+   erst eine dokumentierte Abnahme erlaubt die Spiegelung in `eq-copilot/`.
 5. `eq-copilot/design/`, frühere Figma-Stände und die drei Rework-Bilder sind
-   Verlauf/Studie. Sie dürfen zur Spurensuche dienen, aber die neue
-   Funktionsarchitektur nicht still ergänzen.
+   Verlauf; sie ergänzen die Funktionsarchitektur nicht still.
 
 ## Maschinen-Landminen
 
 - PowerShell `Start-Process -ArgumentList` quotiert Argumente mit Leerzeichen
-  nicht automatisch. Doppelte Anführungszeichen im Befehlstext eines
-  `-Command`-Arguments schluckt die Windows-Argumentzerlegung:
-  `Add-Content $log ("EXIT=" + $LASTEXITCODE)` wird zum Aufruf eines
-  Kommandos `EXIT=`, der Rest läuft, die Marke fehlt still und ein Monitor
-  auf `EXIT=` wartet ewig (NAK-214-Abschlusskanon, 08.09.2026). Zeichenketten
-  im Befehlstext einfach quotieren, wie im Dirigenten-Skill §3.5.
-- Bash-Heredocs können Backslashes in Windows-Pfaden verändern; Pipes können
-  Exitcodes verdecken.
-- Bytegleich geprüfte Fixtures und Patches brauchen passende
-  `.gitattributes`-Regeln.
-- Keine GPU-Batch-Render-Loops auf der Arc A770; Renderprüfung einzeln oder per
-  CPU/Software.
+  nicht; doppelte Anführungszeichen in einem `-Command`-Text schluckt die
+  Argumentzerlegung (`Add-Content $log ("EXIT=" + …)` wird zum Kommando
+  `EXIT=`, die Marke fehlt still). Zeichenketten im Befehlstext einfach
+  quotieren.
+- Bash-Heredocs können Backslashes in Windows-Pfaden verändern; Pipes
+  verdecken Exitcodes.
+- Bytegleiche Fixtures und Patches brauchen passende `.gitattributes`-Regeln.
+  `eq-copilot/schemas/**` und `eq-copilot/fixtures/**` sind `-text`, der Baum
+  darunter ist gemischt (LF und CRLF): vor dem Schreiben `git ls-files --eol
+  <datei>` lesen und dieselben Zeilenenden zurückschreiben.
+- Keine GPU-Batch-Render-Loops auf der Arc A770; Renderprüfung einzeln oder
+  per CPU.
 - Playwright-MCP lädt keine `file://`-Adressen und legt relative
   Screenshot-Pfade im Repo-Root ab: lokalen HTTP-Server im Zielordner
-  starten (`py -3.13 -m http.server <port> --bind 127.0.0.1`), Bilder sofort
-  in den Zielordner verschieben, danach `git status --short` lesen.
-- Codex legt Visualisierungen unter `~/.codex/visualizations/` ab, nicht im
-  Repo. Nach Codex-Design-Arbeit prüfen, dass jedes in Abnahmen referenzierte
-  Artefakt committet ist (`grep -rn "codex.visualizations\|127.0.0.1" design/`).
-- Ein `git clone` dieses Repos braucht `-c core.longpaths=true` und einen
-  kurzen Zielpfad, sonst bricht der Checkout unter `tools/codex-plugins/` mit
-  „Filename too long" ab.
-- Der MSVC-Standardstack ist 1 MiB: Testfunktionen, die `FeatureEngine`-Objekte
-  (rund 0,5 MB) oder ganze Prozessoren im Rahmen anlegen, reißen ihn — in
-  SONDE-013 dreimal, jedes Mal an einem neuen Feld unter 2 KiB. Engines in
-  Tests auf den Heap (`std::unique_ptr`); der Fund zeigt sich erst im vollen
-  Kanon, das betroffene Bein allein läuft grün (Register NAK-175).
-- `cmake` liegt nicht im Bash-`PATH` dieses Rechners: ein `cmake --build` aus Bash
-  endet still in `command not found`, und ein danach gefahrenes Bein misst ein
-  altes Binary. C++-Beine aus pwsh bauen und den Zeitstempel des Binaries gegen
-  den Fix prüfen (SONDE-014 §7.11 N-29). Der Runner `tools/beweise.ps1` sucht
-  cmake selbst.
-- In einem Bash-Befehlstext werden Backticks als Kommandosubstitution
-  ausgewertet — auch in einer `git commit -m`-Nachricht. Am 08.09.2026
-  verschluckte das in NAK-213 fünf Bezeichner aus einer Commitnachricht
-  (`aufnahmen_sammeln`, `parent`, `ids`, `ist_parent`, `main`), und `--amend`
-  ist hier verboten. Mehrzeilige Commitnachrichten mit Bezeichnern gehen über
-  `git commit -F <datei>`, nie über `-m` mit Backticks.
-- Typografische Anführungszeichen in Rust-Strings: `„…"` schließt mit einem
-  ASCII-`"` den String vorzeitig. In Rust-Quelltext gehört das schließende
-  Zeichen als `“` (U+201C) geschrieben; in Kommentaren ist beides harmlos.
-  Der Compiler meldet dann „unknown start of token" an einer ganz anderen
-  Zeile (NAK-213, 08.09.2026, dreimal).
-- Im PowerShell-Werkzeug der Session geht in einem Befehlstext alles verloren,
-  was in einer Zeichenkettenverkettung hinter einem Backtick-n-Umbruch steht
-  (SONDE-014-Abschluss 07.09.2026: drei Manifestzeilen fehlten still).
-  Mehrzeilige Einfügungen zeilenweise über `List[string].Insert` oder aus einer
-  Datei, nie per Backtick-Umbruch im Befehl. Ebenso blockt der Sandbox-Filter
-  jeden Befehl, dessen TEXT den Namen des PowerShell-Lösch-Cmdlets enthält —
-  auch in einem Prompt, der nur an einen Worker durchgereicht wird.
-- Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen „Voraussetzung
-  fehlt" enden, weil die Bauartefakte noch nicht sichtbar sind; der
-  Wiederholungslauf auf demselben Stand war grün. Vor einem Befund gegen den
-  Runner einmal wiederholen (SONDE-014, 07.09.2026).
-- Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt
-  `tools/plan/dokuriegel.py`; Zellinhalte mit `|` umschreiben, bevor der Riegel
-  läuft (NAK-181, 06.09.2026).
-- `.gitattributes` hält `eq-copilot/schemas/**` und `eq-copilot/fixtures/**`
-  als `-text` bytegleich — der Baum darunter ist aber **gemischt**:
-  `nakama-parameter-v1.json`, `nakama_telemetry_v1.fbs`,
-  `reservierte-nachrichten-v1.json` und der ganze Fixture-Korpus liegen mit LF
-  im Index, `nakama-state-v2.md`, `eq-ipc-v3.schema.json` und `FELD-IDS.json`
-  mit CRLF. Ein Werkzeug, das mit LF-Zeilenende schreibt, schreibt die drei
-  vollständig um; am 10.09.2026 zeigte der Diff 4739 statt 51 geänderten Zeilen
-  an `eq-ipc-v3.schema.json` (SONDE-015 Etappe 2, Nebenbefund N-5). Vor dem
-  Schreiben einer dieser Dateien `git ls-files --eol <datei>` lesen und
-  dieselben Zeilenenden zurückschreiben.
-- `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelldatei kann
-  ÄLTER sein als ihr Objektfile, MSBuild übersetzt dann nicht neu, meldet
-  Exit 0, und der Lauf misst das alte Binary (NAK-230, 09.09.2026: fünf
-  Fehler als „grüner Lauf“). Vor dem Neubau `(Get-Item <datei>).LastWriteTime
-  = Get-Date` setzen und den Zeitstempel des Binaries gegen die Quelle prüfen.
+  (`py -3.13 -m http.server <port> --bind 127.0.0.1`), Bilder sofort
+  verschieben, `git status --short` lesen.
+- Codex legt Visualisierungen unter `~/.codex/visualizations/` ab; nach
+  Codex-Design-Arbeit prüfen, dass jedes referenzierte Artefakt committet ist
+  (`grep -rn "codex.visualizations\|127.0.0.1" design/`).
+- `git clone` braucht `-c core.longpaths=true` und einen kurzen Zielpfad,
+  sonst „Filename too long" unter `tools/codex-plugins/`.
+- MSVC-Standardstack 1 MiB: `FeatureEngine`-Objekte (~0,5 MB) und Prozessoren
+  in Tests auf den Heap (`std::unique_ptr`); der Riss zeigt sich erst im
+  vollen Kanon (NAK-175).
+- `cmake` liegt nicht im Bash-`PATH`: C++-Beine aus pwsh bauen und den
+  Binary-Zeitstempel gegen die Quelle prüfen; `tools/beweise.ps1` sucht cmake
+  selbst.
+- Backticks in einem Bash-Befehlstext werden ausgewertet, auch in `git commit
+  -m`; mehrzeilige Commitnachrichten mit Bezeichnern über `git commit -F`.
+- Typografische Anführungszeichen in Rust-Strings: `„…"` schließt mit dem
+  ASCII-`"` den String; im Quelltext `“` (U+201C) schreiben; der Compiler
+  meldet „unknown start of token" an anderer Zeile.
+- Im PowerShell-Werkzeug der Session geht in einer Zeichenkettenverkettung
+  alles hinter einem Backtick-n-Umbruch verloren; mehrzeilige Einfügungen
+  zeilenweise oder aus einer Datei. Der Sandbox-Filter blockt jeden Befehl,
+  dessen Text den Namen des PowerShell-Lösch-Cmdlets enthält, auch in einem
+  Worker-Prompt.
+- Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen
+  „Voraussetzung fehlt" enden; vor einem Befund gegen den Runner einmal
+  wiederholen.
+- Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt `dokuriegel.py`;
+  als `\|` schreiben, Zeilenbereiche mit ASCII-Bindestrich.
+- `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelle kann
+  älter sein als ihr Objektfile, MSBuild baut dann nicht neu und meldet Exit 0
+  (NAK-230). Vor dem Neubau `(Get-Item <datei>).LastWriteTime = Get-Date`
+  setzen und den Binary-Zeitstempel prüfen.
+- Ein laufender Dirigenten-Starterprozess lädt sein Skript beim
+  Marker-Neustart nicht neu (NAK-257); Skriptänderungen greifen erst nach
+  Fensterneustart.

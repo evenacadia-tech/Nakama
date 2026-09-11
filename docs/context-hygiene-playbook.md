@@ -38,12 +38,14 @@ Die Einzelkommandos unten bleiben als Gegenprobe gültig.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (~23 KB am 09.09.2026, Ziel ≤ 24 KB — von Claude gepflegt, Drift
-wird hier GEFIXT, Wachstum wird gemeldet) + `MEMORY.md` (Hebel). Dazu die
-Dirigenten-Fläche, die jeder `/dirigent`-Aufruf lädt:
-`.claude/skills/dirigent/SKILL.md` (~35,7 KB am 09.09.2026, Grenze ≤ 36 KB) mit
+auto-editieren) + Repo-`CLAUDE.md` (17,3 KB am 12.09.2026, **Grenze ≤ 20 KB** —
+von Claude gepflegt; ein Riss wird im selben Abschlussfenster behoben, User
+12.09.2026) + `MEMORY.md` (Hebel). Dazu die Dirigenten-Fläche, die jeder
+`/dirigent`-Aufruf lädt: `.claude/skills/dirigent/SKILL.md` (~23 KB am
+12.09.2026, **Grenze ≤ 24 KB**; am 12.09. von 38,4 KB gekürzt: Vorgeschichten,
+Wiederholungen und Zitatwortlaute raus, Logik und Kommandos unverändert) mit
 `tools/dirigent/pruefliste.md` und `pruefauftrag-vorlage.md`. Jede Runde neu
-messen und im Report nennen.
+messen und im Report nennen; `gesundheit.py` trägt dieselben Grenzen.
 
 **Der Korpus** (die Memory-*Dateien* auf Platte) ist die dritte Fläche —
 Recall-Qualität, nicht Kontextkosten. Stand 08.09.2026: 17 Dateien

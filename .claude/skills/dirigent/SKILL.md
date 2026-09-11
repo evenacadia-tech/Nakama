@@ -1,114 +1,84 @@
----
-name: dirigent
-description: Führt den Nakama-Bauplan Ticket für Ticket als echte Fable-Session aus — startet je Ticket einen frischen Opus-Worker als nativen Hintergrundagenten im sichtbaren Checkout, misst das Ergebnis am Repo, lässt Codex frisch prüfen und gezielt nacharbeiten, und fährt fort, bis der Plan leer ist, ein Gate kommt oder nur der User entscheiden kann. Der Dirigent baut selbst nie. Aufruf ohne Argument (nächstes offenes Ticket) oder mit Ticketnummer.
----
-
 # /dirigent — den Plan durchfahren
 
 ## 0. Start und Cockpit
 
-Der Dirigent ist eine echte interaktive Fable-Session:
+Der Dirigent ist eine interaktive Fable-Session:
 
 ```powershell
 pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 ```
 
-Der Starter öffnet das lokale Windows-Terminal-Profil
-`Nakama · Champagne Night`, zeigt `tools/dirigent/logo.ps1` und ruft Claude mit
-Fable 5.1/xhigh, Auto-Modus und `/dirigent` auf. Das Modell steht als voller
-Name `claude-fable-5-1[1m]` im Starter und in jedem Aufruf unten, nicht als
-Alias `fable`: User-Wort 01.09.2026 „dirigent soll fable 5.1 nicht fable 5
-sein". Ein Alias würde bei einem neueren Fable still wechseln; der volle Name hält
-die Entscheidung fest. Das Suffix `[1m]` hält das 1M-Kontextfenster, auf
-dem die 600k-Grenze aus §5 beruht. Fehlt das Profil oder scheitert die
-Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Endet
-Claude, bleibt das Fenster der Ort der Fortsetzung (seit 01.09.2026): liegt die
-Markerdatei `nakama-dirigent-neustart.marker` im Temp-Ordner
-(`[IO.Path]::GetTempPath()`), startet der Starter sofort eine frische Session
-in demselben Fenster; ohne Marker meldet er Exitcode und Laufzeit und wartet
-auf Enter (neue Session) oder Esc (Fenster schließen). Remote
-Control ist seit 30.08.2026 Teil jedes Starts (User-Wort: „remote immer mit
-neuer Dirigentensession automatisch starten"): der Starter übergibt
-`--remote-control nakama-dirigent`, damit der User die Sitzung von claude.ai/code
-oder dem Handy aus sieht. Ein Text an den User bleibt trotzdem die Ausnahme
-(§5: nur eine Design-/Produktfrage). Der direkte Ersatzaufruf lautet:
+Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, zeigt
+`tools/dirigent/logo.ps1` und ruft Claude mit `claude-fable-5-1[1m]`, `xhigh`,
+`--permission-mode auto`, `--remote-control nakama-dirigent` (User 30.08.2026)
+und `/dirigent` auf. Der volle Modellname statt Alias `fable` hält die
+Entscheidung „Fable 5.1" fest (User 01.09.2026); `[1m]` trägt das
+1M-Fenster, auf dem §5 beruht. Endet Claude, bleibt das Fenster: liegt
+`nakama-dirigent-neustart.marker` im Temp-Ordner (`[IO.Path]::GetTempPath()`),
+startet der Starter sofort eine frische Session im selben Fenster; sonst
+wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne Starter:
 
 ```powershell
 claude --remote-control nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
 ```
 
-Die projektweite native `statusLine` startet
-`tools/dirigent/cockpit.ps1 -StatusLine`. Vor dem ersten Worker müssen dort
-Fable/xhigh, das echte Kontextfenster, Claude- und Codex-Kontingente sowie der
-frische Planstand ehrlich lesbar sein. `nicht verfügbar`, ein unbekannter
-Arbeitsanker oder ein zusätzliches Worktree wird nie grün dargestellt.
+Die native `statusLine` startet `tools/dirigent/cockpit.ps1 -StatusLine`. Vor
+dem ersten Worker müssen dort Fable/xhigh, echtes Kontextfenster, Claude- und
+Codex-Kontingente und frischer Planstand lesbar sein; `nicht verfügbar`, ein
+unbekannter Anker oder ein zusätzliches Worktree ist nie grün.
 
-**Plan-Tab und STAND (NAK-256, User-Entscheid 11.09.2026 „gesamtplan stand
-dauerhaft im zweiten tab + statuszeile"):** Bei jedem Start öffnet der Starter
-im selben Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, rein
-lesend), nie einen zweiten; er schließt mit dem Fenster, und
-`tools/dirigent/start-dirigent.ps1 -NurPlanTab` öffnet ihn neu. Statuszeile
-und Tab zeigen `STAND` aus „Als Nächstes" oder dem Ticketanker: bei
-Ticketbeginn `pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket
-<NAK-nnn>`, beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt dafür
-die Zeile „Etappe" mit „Etappe n von m" und dem laufenden Schritt als letztem
-Fettsatz (Klartext, höchstens 70 Zeichen).
+**Plan-Tab und STAND (NAK-256, User 11.09.2026):** Der Starter öffnet im
+selben Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, lesend);
+`start-dirigent.ps1 -NurPlanTab` öffnet ihn neu. Statuszeile und Tab zeigen
+`STAND` aus „Als Nächstes" oder dem Ticketanker: bei Ticketbeginn
+`pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket <NAK-nnn>`,
+beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt die Zeile „Etappe"
+mit „Etappe n von m" und dem laufenden Schritt als letztem Fettsatz (≤ 70
+Zeichen). Ein laufender Starterprozess lädt sein Skript beim Marker-Neustart
+nicht neu (NAK-257): Skriptänderungen greifen erst nach Fensterneustart.
 
-`/dirigent stand` bedeutet:
-
-```powershell
-pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
-pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep <Schritt-ID> # während eines Tickets
-```
-
-Die Ansicht muss dieselben Fertig-/Offen-Zahlen wie `docs/PLAN-STAND.md`
-zeigen. Ein voller Ticketlauf beginnt nicht, wenn eine dafür nötige native
-Fähigkeit ungeprüft ist. Ein einzelner ungültiger CLI-Aufruf ist aber noch kein
-Halt: lokale Hilfe, aktuelle offizielle Doku und die kleinste semantisch
-gleiche Konstruktion werden zuerst geprüft.
+`/dirigent stand`: `cockpit.ps1 -Plan` (im Ticket `-Plan -CurrentStep <ID>`);
+die Zahlen müssen `docs/PLAN-STAND.md` entsprechen. Kein Ticketlauf beginnt
+mit ungeprüfter nativer Fähigkeit; ein einzelner CLI-Fehler ist kein Halt —
+erst Hilfe, offizielle Doku und die kleinste gleichwertige Konstruktion
+prüfen.
 
 ## 1. Rolle
 
-- **Keine Berechtigungsfragen** (User-Wort 11.09.2026: „garkeine permissions
-  mehr … dann steht alles still"): Dirigent und Worker laufen mit
+- Keine Berechtigungsfragen (User 11.09.2026): Dirigent und Worker laufen mit
   `--permission-mode dontAsk`; `.claude/settings.json` erlaubt alles Nötige
   und lehnt Destruktives per `deny` ab (Vorlage
-  `tools/dirigent/settings.dontask.json`) — nie `ask`, nie `bypassPermissions`.
-- Der Dirigent entscheidet und misst. Er baut **nie**; solange ein Worker
-  läuft, bleibt er auch bei Repo-Dateien strikt lesend.
-- Technische Wege innerhalb von Ticket, Produktinvarianten und freigegebener
-  Designrichtung entscheidet Fable selbst und begründet Abweichungen im
-  vorhandenen Manifest. Produktwirkung, Bedienlogik, sichtbare Priorität und
-  kreative Richtung entscheidet der User.
-- Genau **ein** schreibender Worker zur Zeit. Kein eigener Prozessmanager,
-  keine Zustands- oder Protokolldatei: Repo, Ticketmanifest und gerechneter
-  Planstand **sind** der Zustand.
+  `tools/dirigent/settings.dontask.json`); nie `ask`, nie
+  `bypassPermissions`. Eine `ask`-Regel oder ein Prompt ist ein Befund.
+- Der Dirigent entscheidet und misst, baut nie; bei laufendem Worker bleibt
+  er an Repo-Dateien lesend.
+- Technik innerhalb von Ticket, Invarianten und Designrichtung entscheidet
+  Fable (Abweichungen im Manifest begründet); Produktwirkung, Bedienlogik,
+  Priorität und Richtung entscheidet der User.
+- Genau ein schreibender Worker. Kein eigener Prozessmanager, keine Zustands-
+  oder Protokolldatei: Repo, Manifest und Planstand sind der Zustand.
 
-Für jede Arbeitsphase setzt Fable eine Aufsichtsstufe. Wichtige Ereignisse
-melden sich unabhängig davon sofort:
+Aufsichtsstufe je Phase; wichtige Ereignisse melden sich unabhängig davon:
 
 | Aufsicht | Kontrolle | Einsatz |
 |---|---:|---|
-| `LOCKER` | 30 Minuten | klein, lokal, leicht rücknehmbar |
-| `NORMAL` | 15 Minuten | normales Ticket oder mehrere gekoppelte Dateien |
-| `ENG` | 5 Minuten | Audio, State, Vertrag, Nebenläufigkeit, Sicherheit, Gate oder Nacharbeit |
+| `LOCKER` | 30 min | klein, lokal, leicht rücknehmbar |
+| `NORMAL` | 15 min | normales Ticket, gekoppelte Dateien |
+| `ENG` | 5 min | Audio, State, Vertrag, Nebenläufigkeit, Sicherheit, Gate, Nacharbeit |
 
-Hochstufen gilt sofort; herabstufen erst nach einer erfolgreichen Kontrolle.
-Beim Wechsel wird der alte Loop zuerst gelöscht und sein Fehlen geprüft, erst
-dann entsteht genau ein neuer.
+Hochstufen sofort, herabstufen nach einer erfolgreichen Kontrolle. Beim
+Wechsel alten Loop löschen, Fehlen prüfen, dann genau einen neuen setzen.
 
 ## 2. Quellen
 
-1. `py -3.13 tools/plan/planstand.py` rechnen, dann `docs/PLAN-STAND.md`
-   lesen — die Zeile „Als Nächstes" gewinnt. Das Blatt nur bei sauberem
-   Quellstand und mit explizitem Pathspec committen und direkt pushen; sonst
-   anhalten. Es gibt keinen Hook, der das nachholt.
-2. Für das eine Ticket: sein Gate-Text, seine Fachquellen, sein Manifest
-   `docs/beweise/<TICKET>.md`.
-3. Offene User-Fragen: `docs/plan/fragen.json` — stellen über `/fragen`.
+1. `py -3.13 tools/plan/planstand.py`, dann `docs/PLAN-STAND.md` — „Als
+   Nächstes" gewinnt. Blatt nur bei sauberem Quellstand mit Pathspec
+   committen und pushen; kein Hook tut das.
+2. Für das Ticket: Gate-Text, Fachquellen, Manifest `docs/beweise/<TICKET>.md`.
+3. Offene User-Fragen: `docs/plan/fragen.json` über `/fragen`.
 
-Widersprechen sich Quellen: `CLAUDE.md`, dann das Manifest, dann das jüngste
-Datum. Kein Selbstbericht einer Session ist eine Quelle.
+Widerspruch: `CLAUDE.md`, dann Manifest, dann jüngstes Datum. Kein
+Selbstbericht einer Session ist Quelle.
 
 ## 3. Zyklus je Ticket
 
@@ -122,311 +92,195 @@ py -3.13 tools/plan/planstand.py
 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
 ```
 
-Nur aktive Agentenzustände (arbeitend, eingabebedürftig) blockieren; alte
-abgeschlossene Zeilen nicht. Fremde Änderungen benennen und **nie** anfassen;
-läuft ein fremder Schreiber, warten. Den vollständigen Basis-SHA merken — er
-steckt zusätzlich im Workernamen. Gate-Text, Fachquellen und Manifest nur für
-das konkrete Paket lesen; historische Übergaben und Protokolle sind keine
-Arbeitsquellen mehr.
+Nur aktive Agenten (arbeitend, eingabebedürftig) blockieren. Fremde
+Änderungen benennen, nie anfassen; fremder Schreiber → warten. Basis-SHA
+merken (steht auch im Workernamen). Nur Gate, Fachquellen und Manifest des
+Pakets lesen; alte Übergaben und Protokolle sind keine Arbeitsquelle.
 
-**Liegengebliebener Ticketstand (seit 01.09.2026).** Liegt ein uncommitteter
-Stand im Worktree, dessen Schreiber nicht mehr läuft (`claude agents --json`,
-kein Codex-Thread) und den das Ticketmanifest als eigenen Bau ausweist, ist er
-kein fremder Schreiber, sondern liegengebliebene Ticketarbeit: Der Dirigent
-committet ihn **vor** dem Workerstart mit explizitem Pathspec als benannten
-Zwischenstand (Betreff „<TICKET> Zwischenstand: <Bauer>, nicht kompiliert,
-Tests NOT RUN") und trägt das als datierten Nachtrag ins Manifest; der Worker
-baut auf diesem Commit weiter. Ein Zwischenstand-Commit ist kein
-Fortschrittsanspruch — der Kanon-Riegel und die Urteilsmarke bleiben die
-einzigen Belege. Ohne Manifestzuordnung bleibt der Stand fremd → Halt (§4).
-Anlass: der NAK-123-Bau vom 01.09. lag fünf Stunden ungenutzt im Worktree,
-weil kein Worker ihn anfassen durfte.
+**Liegengebliebener Ticketstand:** uncommitteter Stand ohne laufenden
+Schreiber, den das Manifest als eigenen Bau ausweist, wird vor dem
+Workerstart mit Pathspec committet (Betreff „<TICKET> Zwischenstand:
+<Bauer>, nicht kompiliert, Tests NOT RUN"), im Manifest datiert
+nachgetragen; der Worker baut darauf weiter. Ohne Manifestzuordnung bleibt
+er fremd → Halt (§4).
 
 ### 3.2 Bauen
 
-Der Worker ist ein frischer Opus-Hintergrundprozess im **sichtbaren** Checkout:
+Worker = frischer Opus-Hintergrundprozess im sichtbaren Checkout; der
+Auftrag steht als **erstes Positionsargument**, weil `--allowed-tools`
+variadisch ist (ein Auftrag dahinter wird Werkzeugeintrag, der Worker startet
+„idle"):
 
 ```powershell
-claude --model opus --effort max --permission-mode dontAsk `
-  --name "nakama-<ticket>-<basis-kurz>-bau" `
-  --bg "<selbsttragender Ticketauftrag>"
+claude "<selbsttragender Ticketauftrag>" --model opus --effort max --permission-mode dontAsk `
+  --name "nakama-<ticket>-<basis-kurz>-bau" --allowed-tools <liste, keine Wildcard> --bg
 ```
 
-Der Auftrag nennt nur: Ticketgrenze, verbindliche Quellen, Manifestpfad,
-Beweislauf und die Git-Regeln (nie `git add -A`, nie `--amend`, fremde
-uncommittete Dateien nie anfassen). Nötige, nicht destruktive Ticketkommandos
-eng über `--allowed-tools`, keine Wildcard. **`--allowed-tools` ist
-variadisch** (Landmine 02.09.2026, G3): ein Auftrag, der danach steht, wird
-zum Werkzeugeintrag, und der Worker startet ohne Auftrag („idle — send a
-prompt to start"). Der Auftrag steht deshalb als **erstes Positionsargument**
-(`claude "<Auftrag>" --model opus … --allowed-tools <liste> --bg`); direkt nach
-dem Start belegt `claude agents --json` den Zustand `working`, `idle/blocked`
-heißt „kein Auftrag angekommen". Eine `ask`-Regel oder ein Prompt ist ein
-Befund gegen die Einstellungen, nie ein Grund zu warten.
-Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
-und `claude attach` bei Bedarf den Verlauf.
+Der Auftrag nennt Ticketgrenze, verbindliche Quellen, Manifestpfad,
+Beweislauf, Git-Regeln (nie `git add -A`, nie `--amend`, fremde uncommittete
+Dateien nie anfassen) und `tools/dirigent/pruefliste.md`. Direkt nach dem
+Start muss `claude agents --json` `working` zeigen. Kein eigenes
+Konsolenfenster: `claude agents`, `claude logs`, `claude attach`.
 
-**Spezifikation vor Code (seit 29.08.2026).** Berührt das Ticket
-Nebenläufigkeit, Verträge, Lebenszyklen oder Rückstau, schreibt der Worker
-zuerst eine **Verhaltensmatrix** ins Ticketmanifest — Zustände × Ereignisse ×
-Zusage, Callback-Reihenfolge, Fristen, je Zeile der Test, der sie misst — und
-ein lesender Codex-Thread (Astra, max, §3.4) prüft nur diese Matrix gegen
-Entwurf und Gate-Text. Erst danach wird gebaut; die Matrix ist ab dann die
-Referenz für
-Worker und Prüfer. Der Auftrag verweist außerdem auf
-`tools/dirigent/pruefliste.md`; der Worker hakt sie vor jedem Commit ab und
-nennt im Manifest, wo er jede Zeile gemessen hat. Je Zeile fällt der Rotbeweis
-an der Zeile, die die Zusage trägt, nicht an einem Nebeneffekt; dieser Satz
-steht wörtlich in jedem Matrix-, Bau- und Nacharbeitsauftrag. Der Ticketauftrag darf den
-Worker nicht auf Punktkorrekturen beschränken, wenn die Befunde eine
-gemeinsame Ursache haben; dann ist die Ursache der Auftrag.
+**Spezifikation vor Code:** berührt das Ticket Nebenläufigkeit, Verträge,
+Lebenszyklen oder Rückstau, schreibt der Worker zuerst eine Verhaltensmatrix
+ins Manifest (Zustände × Ereignisse × Zusage, Callback-Reihenfolge, Fristen,
+je Zeile der Test); ein lesender Codex-Thread (§3.4) prüft nur die Matrix
+gegen Entwurf und Gate; erst dann wird gebaut. Jeder Matrix-, Bau- und
+Nacharbeitsauftrag trägt wörtlich: „Je Matrixzeile fällt der Rotbeweis an
+der Zeile, die die Zusage trägt, nicht an einem Nebeneffekt." Haben Befunde
+eine gemeinsame Ursache, ist die Ursache der Auftrag, nicht die
+Punktkorrektur.
 
-Direkt nach dem Start den Zustandsbeobachter als Hintergrundkommando derselben
-Fable-Sitzung starten und mit Claudes nativem `Monitor` beobachten:
+Beobachter als Hintergrundkommando derselben Session, mit `Monitor`
+(`persistent: true`):
 
 ```powershell
 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
-  -WorkerId <worker-id> -BaseSha <basis-sha> -Aufsicht <LOCKER|NORMAL|ENG> `
+  -WorkerId <id> -BaseSha <sha> -Aufsicht <LOCKER|NORMAL|ENG> `
   -StartModel Opus -StartEffort max -DirigentSessionId <session-id>
 ```
 
-Der Helfer meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und eine alte
-oder kritische Telemetriequelle; er schreibt kein Log und keine Projektdatei
-und endet mit dem Worker. Der Monitor läuft mit `persistent: true` (kein
-Stundenlimit). Eine einmalige Meldung „Statusquelle unbekannt" unter Bau- oder
-Kanonlast ist ein bekannter Fehlalarm ohne Folgebefund; endet der Beobachter
-durch Speichermangel eines parallelen MSVC-Builds, wird er neu gesetzt — ein
-toter Beobachter ist kein toter Worker. Zusätzlich genau einen nativen Kontrollloop im
-Intervall der Aufsicht setzen und die Task-ID im Sitzungskontext merken:
+Er meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und alte oder
+kritische Telemetrie und endet mit dem Worker. „Statusquelle unbekannt"
+einmalig unter Last ist Fehlalarm; stirbt er durch Speichermangel eines
+Builds, neu setzen. Dazu genau ein Cron-Loop; solange ein Monitor scharf
+ist, läuft er stündlich, sonst im Aufsichtsintervall; ein Tick ohne Befund
+wird mit einem Wort beantwortet:
 
 ```text
-/loop <30m|15m|5m> Prüfe den laufenden Nakama-Worker und seinen Ereignisbeobachter.
-Wenn beides gesund arbeitet, bestätige nur die Spurlage und warte weiter. Wenn der
-Worker fertig, fehlgeschlagen, blockiert oder der Beobachter ausgefallen ist, beende
-diesen Loop und führe den passenden Mess-, Nacharbeits- oder Haltpfad aus.
+/loop <1h> Prüfe den laufenden Nakama-Worker <id> und seinen Ereignisbeobachter.
+Gesund: Spurlage mit einem Wort bestätigen. Fertig, fehlgeschlagen, blockiert
+oder Beobachter tot: Loop beenden, Mess-, Nacharbeits- oder Haltpfad fahren.
 ```
 
-Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz: solange ein Monitor auf dem Beobachter scharf ist, laeuft der Loop unabhaengig von der Aufsichtsstufe nur stuendlich, und ein Tick ohne Befund wird mit einem Wort beantwortet — die Aufsichtsintervalle gelten nur, wenn kein Monitor moeglich ist (User 30.08.2026: alle 5 Minuten dasselbe zu schreiben ist absurde Tokenverschwendung). Bei
-Worker-Ende oder Halt: Beobachter beenden, `CronDelete` auf genau diese Task
-und mit `CronList` belegen, dass beides weg ist.
+Bei Worker-Ende oder Halt: Beobachter beenden, `CronDelete`, mit `CronList`
+belegen.
 
-Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Der Dump
-ist oft über 200 KB; nur die letzten wenigen KB nach Bereinigung der
-Escape-Sequenzen lesen. Der User
-wird nicht gefragt — es gibt keine Berechtigungsfragen, außer es geht
-technisch nicht anders (User-Wort 30.08.2026: „keine berechtigungsfragen
-generell ebenfalls, außer es geht nicht anders. notfalls werden andere
-Aufgaben vorgezogen. voranschreiten ist das wichtigste"). Eine erwartete,
-nicht destruktive Ticketaktion gibt der Dirigent selbst frei: Worker stoppen,
-volle Session-ID aus `claude agents --json --all` lesen und mit Zusatzauftrag
-fortsetzen (`claude "<Zusatz>" --resume <session-id> --model opus --effort max
---permission-mode dontAsk --name <gleicher Name> --allowed-tools … --bg`); die
-`deny`-Regel in `.claude/settings.json` bleibt, der Zusatz nennt den zulässigen
-Ersatzweg (z. B. `[System.IO.File]::Delete` auf exakte, selbst angelegte
-Pfade). Ein Produktentscheid → Frage an den User stellen und sofort ein
-anderes Ticket ohne Haltgrund vorziehen. Destruktives, Ticketfremdes oder
-Unerklärliches → Worker stoppen, Ersatzworker mit engerer Grenze.
+`needs input`: `claude logs <id>` (nur die letzten KB, Escape-Sequenzen
+bereinigt). Der User wird nicht gefragt. Eine erwartete, nicht destruktive
+Aktion gibt der Dirigent frei: Worker stoppen, Session-ID aus `claude agents
+--json --all`, fortsetzen mit `claude "<Zusatz>" --resume <session-id>
+--model opus --effort max --permission-mode dontAsk --name <gleicher Name>
+--allowed-tools … --bg`; die `deny`-Regel bleibt, der Zusatz nennt den
+zulässigen Ersatzweg. Produktentscheid → Frage an den User, sofort anderes
+Ticket. Destruktiv, ticketfremd, unerklärlich → stoppen, Ersatzworker mit
+engerer Grenze.
 
 ### 3.3 Messen
 
-Kein Selbstbericht zählt; gemessen wird am Repo:
+Kein Selbstbericht zählt:
 
-- Diff vom Basis-SHA bis HEAD (zuerst `--stat`, dann nur relevante Hunks),
-- das Ticketmanifest, die gezielten Tests, unberührte fremde Pfade,
-- die Messabdeckung: jede Matrixzeile mit Test und Rotbeweis ist gelaufen. Ein
-  Bauer meldet „fertig" auch mit ungemessenen Zeilen (SONDE-014: 16 von 37);
-  fehlt Abdeckung, erzwingt ein Fortsetzungsauftrag den Messlauf vor der
-  Erstprüfung,
-- die **Rundenbilanz** (seit 30.08.2026): `py -3.13
-  tools/dirigent/rundenbilanz.py <vorher>..HEAD` je Runde und
-  `--runden <basis> <r1> <r2> …` kumuliert. Sie zählt Produkt-, Test-,
-  Prüfwerkzeug- und Doku-Zeilen getrennt. Ihre Ausgabezeile steht in jedem
-  Dirigentenstand. Zwei Runden in Folge **ohne Produktfortschritt**
-  (Produkt + Tests = 0 Zeilen) lösen den Konvergenzentscheid aus (§3.4) —
-  auch vor dem Rundenbudget. S8 hatte zwölf solche Runden in Folge, und
-  niemand hat sie gezählt. Das gilt für Bau- und Nacharbeitsrunden;
-  Matrixrunden vor dem Bau zählen strukturell null und lösen nichts aus.
+- Diff Basis-SHA..HEAD (`--stat`, dann relevante Hunks), Manifest, gezielte
+  Tests, unberührte fremde Pfade.
+- Messabdeckung: jede Matrixzeile mit Test und Rotbeweis ist gelaufen; fehlt
+  sie, erzwingt ein Fortsetzungsauftrag den Messlauf vor der Erstprüfung.
+- Rundenbilanz je Runde `py -3.13 tools/dirigent/rundenbilanz.py
+  <vorher>..HEAD`, kumuliert `--runden <basis> <r1> <r2> …`; ihre Zeile
+  steht in jedem Stand. Zwei Bau- oder Nacharbeitsrunden in Folge ohne
+  Produkt- und Testzeilen → Konvergenzentscheid (§3.4); Matrixrunden zählen
+  null.
 
-Beendet heißt: Arbeitsbaum sauber, Basis-SHA ist Vorfahr des gemessenen HEAD,
-und genau dieser HEAD liegt auf `origin/master`. Fremde Commits → Halt.
-Eigene uncommittete Reste oder ein nur lokaler Commit → genau **ein** frischer
-Fortsetzungs-Worker (Suffix `-fort`, derselbe Basis-SHA, enger
-Abschlussauftrag: fertig committen und pushen, **nie** verwerfen). Gelingt auch
-das nicht → Halt. Ein Worker-Thread wird nach rund drei Stunden oder ~30
-Kompaktierungen fehleranfällig; Restarbeit geht in enge Einzelaufträge statt in
-einen langen Thread. Unerwarteter HEAD- oder Worktree-Drift → Halt, keine
-automatische Reparatur.
+Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
+`origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler
+Commit → genau ein Fortsetzungs-Worker (`-fort`, gleicher Basis-SHA,
+Auftrag: fertig committen und pushen, nie verwerfen); scheitert auch das →
+Halt. Nach rund drei Stunden oder ~30 Kompaktierungen wird ein Thread
+fehleranfällig: Rest in enge Einzelaufträge. Unerwarteter Drift → Halt.
 
 ### 3.4 Prüfen und nacharbeiten (Codex)
 
-Frischer Codex-Thread, lesend, über den **vollständigen** Ticketbereich.
-Pipelines laufen in `pwsh` (PowerShell 5.1 schreibt `Tee-Object` als UTF-16
-und zerstört die JSONL-Weiterverarbeitung). Temp nur unter `$env:TEMP`.
+Frischer, lesender Codex-Thread über den vollständigen Ticketbereich;
+Pipelines in `pwsh` (5.1 schreibt `Tee-Object` als UTF-16), Temp unter
+`$env:TEMP`:
 
 ```powershell
-$baseSha = '<Stand vor dem Ticket>'
-$headSha = git rev-parse HEAD
-$pruefModell = 'gpt-6-astra' # immer Astra, kein Sol mehr (User-Wort 10.09.2026, Regel unten)
-$pruefEffort = 'max'         # nie 'ultra'
+$baseSha = '<Stand vor dem Ticket>'; $headSha = git rev-parse HEAD
+$pruefModell = 'gpt-6-astra'; $pruefEffort = 'max'   # nie 'ultra', nie Sol
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
-$reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
-
-# $reviewPrompt ist das einzige Review-Ziel. Er entsteht aus
-# tools/dirigent/pruefauftrag-vorlage.md (Variante A für Erst-/Abschluss-
-# prüfung, Variante B für Wiederprüfungen) mit ausgefüllten Platzhaltern:
-# Basis- und Ziel-SHA, die Ticketpfade (nie `.`), Gate-Text wörtlich,
-# Matrix, Ausschlüsse. Freie Prompts sind nicht zulässig.
+$reviewLast  = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
+# $reviewPrompt nur aus tools/dirigent/pruefauftrag-vorlage.md (A: Erst-/
+# Abschlussprüfung, B: Wiederprüfung), Platzhalter gefüllt: SHAs, Ticketpfade
+# (nie `.`), Gate wörtlich, Matrix, Ausschlüsse. Freie Prompts sind unzulässig.
 $reviewPrompt | codex -a never exec --ignore-user-config `
   -m $pruefModell -c "model_reasoning_effort=`"$pruefEffort`"" `
   -c 'windows.sandbox="elevated"' `
-  -C . -s read-only review --json -o $reviewLast - |
-  Tee-Object -FilePath $reviewJsonl
+  -C . -s read-only review --json -o $reviewLast - | Tee-Object -FilePath $reviewJsonl
 ```
 
-Ein eigener Review-Prompt und `--base` sind in Codex gegenseitig exklusiv.
-Deshalb muss der Prompt Codex ausdrücklich auf
-`git diff $baseSha...$headSha`, Gate und Manifest begrenzen; `--base` darf in
-dieser Form nicht ergänzt werden. Die explizite Windows-Sandbox-Auswahl ist
-nötig, weil `--ignore-user-config` sonst auf diesem Rechner bereits lesende
-Git-Prozesse blockiert.
+Eigener Prompt und `--base` schließen sich aus: der Prompt begrenzt Codex auf
+`git diff $baseSha...$headSha`, Gate und Manifest. Die Sandbox-Auswahl ist
+nötig, weil `--ignore-user-config` sonst lesende Git-Prozesse blockiert. HEAD
+vor und nach dem Lauf gleich, sonst ungültig. Thread-ID aus dem JSONL, fehlt
+sie → `BLOCKED`. Urteil `PASS`, `NEEDS_WORK`, `BLOCKED` mit geprüft / nicht
+geprüft; fehlt die Urteilszeile und der Kopf sagt „bleiben offen" →
+`NEEDS_WORK`. Läufe über zehn Minuten nie als Session-Hintergrundbefehl,
+sondern `tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <datei> -HeadSha
+<sha>` mit Monitor auf der `-start.log` bis `EXIT=`.
 
-Vor und nach dem Lauf muss HEAD `$headSha` sein, sonst ist das Urteil ungültig.
-Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
-`NEEDS_WORK` oder `BLOCKED` und nennt, was geprüft und was nicht geprüft wurde.
-Fehlt die `URTEIL:`-Zeile, aber der Kopf sagt „bleiben offen", ist das
-`NEEDS_WORK`, nicht `BLOCKED`.
+**Modell:** jede Codex-Aufgabe `gpt-6-astra`, Effort `max` oder `xhigh`
+(User 10.09.2026); `ultra` delegiert an Unteragenten und ist ausgeschlossen,
+`gpt-5.6-sol` wird nicht mehr verwendet. Codex-CLI ≥ 0.153.4, sonst `codex
+update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer
+Astra-Thread; wiederholte Kapazitäts-/API-Fehler → frischer Opus-Thread prüft
+(nie der Bauer). Nacharbeit behält Modell und Effort; Wiederprüfung senkt nie
+ab. Modell und Effort stehen bei Review-Beginn im Manifest.
 
-**Prüfmodell und Effort** (bei Review-Beginn im Manifest vermerken, seit
-10.09.2026): **Jede** Codex-Aufgabe — Erst-, Wieder- und Abschlussprüfung,
-Matrixprüfung, Gate-Falsifikation, Gegenprobe, Codex als Bauer-Fallback —
-läuft mit `gpt-6-astra` und Effort `max` oder `xhigh`; `ultra` bleibt
-ausgeschlossen (delegiert automatisch an Unteragenten, für eine lesende
-Prüfung ungeeignet). `gpt-5.6-sol` wird **nicht mehr** verwendet, auch nicht
-als Gegenprüfer oder Fallback. User-Wort 10.09.2026: „codex immer astra mit
-xhigh oder max effort. kein Sol mehr. ich habe das codex nutzungsfenster die
-letzten tage beobachtet und es reicht locker aus. astra is wesentlich besser
-als Sol, kein grund nicht immer astra bei codex aufgaben zu nutzen" (löst die
-Arbeitsteilung vom 05.09.2026 „astra für alle prüfungen, sol nur
-gegenprüfer" ab). Bricht ein Lauf an der Kapazität ab, geht zuerst `resume`
-desselben Threads (Worktree und Threadkontext bleiben), dann ein neuer
-Astra-Thread; antwortet Codex wiederholt mit Kapazitäts- oder API-Fehlern,
-prüft ein frischer Opus-Thread (§3.6, User-Fallback 31.08.), nie Sol.
-Voraussetzung ist Codex-CLI ≥ 0.153.4; 0.149.1 antwortete „The 'gpt-6-astra'
-model requires a newer version of Codex" → `codex update`. Nacharbeit behält
-Modell und Effort; eine Wiederprüfung senkt nie ab. Läufe über zehn Minuten
-laufen nie als Session-Hintergrundbefehl, sondern abgekoppelt über
-`tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <auftragsdatei> -HeadSha
-<sha> [-Model gpt-6-astra] [-Effort max]` mit Monitor auf der `-start.log`
-bis `EXIT=`; Urteil in `-last.txt`, Thread-ID im JSONL.
+**Befunde:** reproduzierbar und abnahmerelevant (critical: Daten-/State-
+Verlust, Sicherheitsbruch, Audio-/Nulltest; high: Vertrag/Gate/Normalpfad;
+medium: konkreter Funktionsfehler). Kosmetik, Stil, optionale Härtung,
+theoretische Randfälle ohne Zusage, Ticketfremdes: nein. Jeden Befund
+validiert ein lesender Opus-Agent an der Quelle (Zitat, Matrixzeile); die
+Einordnung bleibt Dirigentensache:
 
-**Zulässige Befunde** müssen reproduzierbar sein und die Ticketabnahme
-berühren (critical: Daten-/State-Verlust, Sicherheitsbruch, Audio-/Nulltest;
-high: Vertrag/Gate/normaler Pfad gebrochen; medium: konkreter Funktionsfehler,
-der die Abnahme verhindert). Kosmetik, Stil, optionale Härtung, theoretische
-Randfälle und Ticketfremdes: nein. Jeden Befund an der Quelle validieren. Dafür je Runde ein lesender
-Opus-Agent (general-purpose): er liefert je Befund Quellzeilen mit Zitat,
-Matrixzeile und Einordnung; das spart dem Dirigenten über 100k Kontext je
-Runde, die Einordnung bleibt Dirigentensache.
+- **Defekt** — verletzt Matrix, Gate, Entwurf oder `CLAUDE.md`-Invariante →
+  Nacharbeit.
+- **Lücke** — Matrix und Entwurf schweigen → Dirigent entscheidet die Regel
+  (Technik) in derselben Runde, trägt sie in Matrix und Manifest ein; erst die
+  Regel darf Nacharbeit auslösen.
+- **Härtung** — von keiner Zusage verlangt → datiert ins Register.
 
-**Befundklassen (seit 29.08.2026).** Der Prüfer ordnet jeden Befund ein und
-der Dirigent prüft die Einordnung an der Quelle:
+Ein Lauf ohne Defekt ist `PASS`. Der Prüfauftrag nennt die drei Klassen und
+die Matrix, zitiert das Gate wörtlich, schließt `docs/**` aus, nennt
+Register-Härtungen als Ausschluss und stellt klar: `pruefliste.md` ist
+Arbeitsliste, keine Anforderung; §2.4 von `sondenplan-audit` gilt nur für
+Gate-Audits. Ein Befund gegen Prüfskript, Riegel oder Runner, der Sabotage
+in repo-eigenen Quellen voraussetzt, ist Härtung; geprüft wird gegen den
+wörtlichen Gate-Satz, nicht die zitierte Paragraphennummer.
 
-- **Defekt** — verletzt Verhaltensmatrix, Gate-Text, Entwurf oder eine
-  Invariante aus `CLAUDE.md`: geht in die Nacharbeit.
-- **Lücke** — Matrix und Entwurf sagen zu dem Fall nichts: der Dirigent
-  entscheidet die Regel in derselben Runde (Technik), trägt sie in Matrix
-  und Manifest ein; erst die entschiedene Regel darf Nacharbeit auslösen.
-- **Härtung** — wünschenswert, aber von keiner Zusage verlangt: datiert ins
-  Register, keine Nacharbeit.
+**Nacharbeit:** Der Auftrag enthält nur die bestätigten Defekte wörtlich, je
+Defekt die schließende Regel und die Prüfliste — keine Dirigentenwünsche,
+keine Deckel ohne Quelle. Codex stagt, committet und pusht nie und fährt
+weder Bau noch Kanon; Defekte behebt ein frischer Opus-Worker. Nacharbeit
+fährt nur betroffene Beine; voller Kanon beim ersten Bau und beim Abschluss.
+Fable prüft den engen Fixdiff, committet nur diese Pfade, pusht; dann prüft
+ein neuer Thread. Keine Freigabefrage an den User (User 29.08.2026).
 
-Der Prüfer erfindet keine Anforderung: was in Matrix, Gate, Entwurf und
-Invarianten nicht steht, ist Lücke, nicht Defekt. Ein Lauf ohne Defekt ist
-`PASS`, auch mit Lücken und Härtungen im Register. Der Review-Prompt nennt
-diese drei Klassen und die Matrix ausdrücklich, zitiert den Gate-Text
-**wörtlich**, schließt `docs/**` als Befundfläche aus, nennt die im Register
-datierten Härtungen als erklärten Ausschluss und stellt klar, dass
-`tools/dirigent/pruefliste.md` eine Arbeitsliste des Workers ist, keine
-Anforderungsquelle, und dass §2.4 des Codex-Skills `sondenplan-audit`
-(„Wiederholung bis lückenlos") für Gate-Audits gilt, nicht für Ticketreviews.
+**Prüfbereich schrumpft, wächst nie:** Erst- und Abschlussprüfung gehen über
+`basis...HEAD`; jede Wiederprüfung sieht nur `stand-vor-der-runde...HEAD`,
+die Befundliste und das Gate und urteilt nur: geschlossen, und nichts
+gebrochen.
 
-**Der Nacharbeitsauftrag enthält nur die Defekte.** Der Dirigent gibt dem
-Worker die bestätigten Defekte wörtlich, je Defekt die Regel, die ihn
-schließt, und die Prüfliste — sonst nichts. Er erweitert keinen Befund um
-eigene Wünsche (Inventare, Klassifizierer, zusätzliche Wachen, Muster,
-Trefferzahlen) — genau solche „Regeln des Dirigenten" erzeugten in S8 die
-nächste Runde, ebenso eine Regel mit unbelegter technischer Annahme (SONDE-014:
-Deckel „64 P0-Plätze"); Deckel und Grenzen kommen nur aus der Quelle. Was der Prüfer nicht als Defekt
-erhoben hat, kommt nicht in den Auftrag; Ideen des Dirigenten gehen datiert
-ins Register.
+**Manifeste sind kein Prüfgegenstand:** `docs/**` gehört nicht zur
+Befundfläche; Textinkonsistenzen zieht der Abschluss nach, nie als
+`NEEDS_WORK`. Ein Manifest hat genau einen lebenden Kopf (Urteilsmarken,
+Gate, Riegelkarte oder Matrix, Rundentabelle, jüngster Kanon); darunter
+append-only.
 
-Codex stagt, committet und pusht **nie**. Die Codex-Sandbox fährt auf diesem
-Rechner weder Bau noch Kanon (Präzedenz S8/S9/S9b/S14–15); bestätigte
-Defekte behebt deshalb ein **frischer Opus-Worker** mit der Befundliste, der
-Matrix und der Prüfliste — der Codex-Thread bleibt Prüfer. Nacharbeitsrunden
-fahren nur die betroffenen Beine; der volle Kanon läuft beim ersten Bau und
-beim Abschluss des Tickets. Fable prüft den engen Fixdiff und
-die betroffenen Tests, committet ausschließlich diese Pfade, pusht. Danach
-prüft ein **neuer** frischer Thread — mit dem Prüfbereich der Wiederprüfung,
-nicht dem ganzen Ticket (unten). Es gibt keine Freigabefrage an den User
-(User-Wort 29.08.2026: „offene technische probleme MÜSSEN gelöst werden und
-da gibt es keine notwendigkeit mich zu fragen. du musst die beste
-möglichtkeit finden WIE wir diese probleme lösen").
-
-**Prüfbereich schrumpft, er wächst nie (seit 30.08.2026, Lehre aus S8
-Runde 1–19).** Nur die **Erstprüfung** und die **Abschlussprüfung** gehen
-über den ganzen Ticketbereich `basis...HEAD`. Jede **Wiederprüfung**
-dazwischen sieht ausschließlich den Fixdiff der Runde
-(`stand-vor-der-runde...HEAD`), die Befundliste, die sie schließen soll, und
-den Gate-Text; sie urteilt, ob die Befunde geschlossen sind und ob der Fix
-etwas gebrochen hat — nichts sonst.
-
-**Manifeste sind kein Prüfgegenstand.** `docs/**` gehört nicht zur
-Befundfläche; der Review-Prompt schließt es ausdrücklich aus. Der Prüfer
-liest Manifeste als Kontext (Matrix, Gate, Urteilsmarken), erhebt aber keine
-Befunde über Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände oder
-Historie. Textinkonsistenzen, die dem Dirigenten auffallen, zieht der
-Abschluss-Worker im Abschluss-Commit nach — ohne Prüfrunde, nie als
-`NEEDS_WORK`. Ein Manifest hat genau **einen lebenden Kopf** (Urteilsmarken,
-Gate-Text, Riegelkarte oder Matrix, Kurztabelle der Runden, jüngster Kanon);
-alles darunter ist append-only Verlauf und wird nie umgeschrieben.
-
-**Rundenbudget und Konvergenz.** Drei Nacharbeitsrunden je Ticket sind das
-Budget. Endet die dritte Wiederprüfung ohne `PASS`, startet keine vierte
-Runde, sondern der **Konvergenzentscheid** des Dirigenten in derselben
-Sitzung: jeder offene Befund wird an der Quelle und am **wörtlichen**
-Gate-Text eingeordnet — **Defekt** nur, wenn ein Test, die Verhaltensmatrix
-oder ein Satz des Gate-Textes bricht; alles andere ist Lücke oder Härtung und
-geht datiert ins Register. Verbleibende Defekte bekommen genau **eine**
-weitere Runde mit der Ursache als Auftrag (Wegwechsel: Matrix als
-Spezifikation mit Tests, Implementierung in allen betroffenen Sprachen,
-frischer Prüfer), nicht mit Punktkorrekturen. Bleibt danach ein Defekt, wird
-seine Ursache als eigener Registerpunkt mit Matrix ausgegliedert, das Ticket
-bleibt `gebaut`, und der Dirigent zieht das nächste Ticket vor (User-Wort
-30.08.2026: „voranschreiten ist das wichtigste"). Ein Ticket wird nie durch
-Wegdeklarieren eines echten Defekts abgenommen.
-
-**Befunde gegen ein Prüfwerkzeug.** Ein Befund, der sich gegen ein
-Prüfskript, einen Riegel oder den Runner richtet und ein Szenario
-voraussetzt, das absichtliche Sabotage in repo-eigenen Quellen erfordert
-(Präprozessor-Tricks, exotische Kodierungen, verschleierte Direktiven), ist
-**Härtung**, nie Defekt — das Bedrohungsmodell der Riegel ist die
-versehentliche Regression, nicht der Angreifer mit Schreibrecht. Der Dirigent
-prüft jede Einordnung gegen den **wörtlichen** Gate-Text, nicht gegen die vom
-Prüfer zitierte Paragraphennummer: was der Satz nicht verlangt, ist keine
-Verletzung des Paragraphen.
-
-**Ein Ticket je Worker.** Nacharbeiten zweier Tickets laufen nie gekoppelt in
-einem Worker oder einem gemeinsamen Kanon; jedes Ticket konvergiert für
-sich.
+**Rundenbudget:** drei Nacharbeitsrunden. Endet die dritte Wiederprüfung
+ohne `PASS` → Konvergenzentscheid in derselben Sitzung: jeder offene Befund
+wird am Gate-Wortlaut eingeordnet; Defekt nur, wenn Test, Matrix oder
+Gate-Satz bricht, sonst Lücke/Härtung ins Register. Verbleibende Defekte
+bekommen genau eine weitere Runde mit der Ursache als Auftrag (Wegwechsel:
+Matrix als Spezifikation mit Tests, alle betroffenen Sprachen, frischer
+Prüfer). Bleibt ein Defekt → eigener Registerpunkt mit Matrix, Ticket bleibt
+`gebaut`, nächstes Ticket. Nie durch Wegdeklarieren abnehmen. Ein Ticket je
+Worker; nie zwei Nacharbeiten gekoppelt.
 
 ### 3.5 Abschluss
 
-Kanon auf dem End-Stand. Der Kanon läuft **nie** als sitzungsgebundener
-Hintergrundbefehl der Dirigenten-Session: endet die Session, stirbt er mit
-(01.09.2026: Lauf 3 zu NAK-123 nach 33 von 42 Beinen ohne Manifest verloren).
-Während er läuft, kommt nichts in den Worktree — der Runner vermerkt einen
-unsauberen Baum als „beweist NICHT allein den Commit". Er wird abgekoppelt
-gestartet und über seine Logdatei gelesen:
+Kanon auf dem End-Stand, abgekoppelt, nie als Session-Hintergrundbefehl;
+währenddessen kommt nichts in den Worktree:
 
 ```powershell
 $log = Join-Path $env:TEMP 'nakama-<ticket>-kanon.log'
@@ -434,222 +288,154 @@ $befehl = "pwsh -NoProfile -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/<TI
 Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList '-NoProfile', '-Command', $befehl
 ```
 
-Fertig ist der Lauf, wenn die letzte Logzeile mit `EXIT=` beginnt; bis dahin
-höchstens alle 15 Minuten `Get-Content $log -Tail 3` lesen. Ein hängendes
-Bein beendet der Runner selbst nach 60 Minuten (`-BeinZeitlimitMinuten`,
-Exit 124 mit `[Zeitlimit]`-Zeile) - ein Lauf ohne `EXIT=`-Zeile nach mehr
-als drei Stunden ist ein Befund gegen den Runner, kein Grund zu warten.
-Rohausgaben von Kanonläufen gehören nicht in den
-Lesetext des Manifests: sie liegen unter `docs/beweise/roh/<TICKET>-<sha>.md`,
-im Manifest steht die Kopfzeile mit Verweis (Runner-Umbau NAK-96; bis dahin
-nur der Abschlusslauf angehängt, keine Zwischenläufe). Beim Abschluss wird
-der lebende Kopf des Manifests nachgezogen (Prüfstufen-Zeile, Kurztabelle
-der Runden, Riegelkarte oder Matrix); übersteigt der Lesetext rund 3 000
-Zeilen, wandert der Rundenverlauf unverändert nach
-`docs/beweise/<TICKET>-verlauf.md` (append-only, kein Prüfgegenstand), der
-jüngste Kanon-Abschnitt bleibt im Manifest, weil `planstand.py` seine
-Bilanz dort liest.
-Urteil, Modell, Effort, Basis- und End-SHA, die kumulierte Rundenbilanz
-(`rundenbilanz.py --runden …`) sowie die tatsächlich gelaufenen
-Beweise ins **vorhandene** Manifest; Planstand neu rechnen; die geänderten
-Plandokumente durch `py -3.13 tools/plan/dokuriegel.py <dateien>` fahren
-(Tabellen- und Verweisriegel, seit PR2 02.09.2026; ein Befund wird vor dem
-Commit behoben); nur diese
-Abschlussdateien mit explizitem Pathspec committen und pushen.
+Fertig, wenn die letzte Logzeile mit `EXIT=` beginnt; bis dahin höchstens
+alle 15 Minuten `Get-Content $log -Tail 3`. Ein hängendes Bein beendet der
+Runner nach 60 Minuten (Exit 124); kein `EXIT=` nach drei Stunden ist ein
+Befund gegen den Runner. Rohausgaben unter `docs/beweise/roh/<TICKET>-<sha>.md`,
+im Manifest nur die Kopfzeile. Beim Abschluss den lebenden Kopf nachziehen;
+über ~3 000 Zeilen wandert der Rundenverlauf unverändert nach
+`docs/beweise/<TICKET>-verlauf.md`, der jüngste Kanon-Abschnitt bleibt
+(`planstand.py` liest ihn). Urteil, Modell, Effort, Basis- und End-SHA,
+kumulierte Rundenbilanz und gelaufene Beweise ins Manifest; Planstand
+rechnen; Plandokumente durch `py -3.13 tools/plan/dokuriegel.py <dateien>`
+(Befund vor dem Commit beheben); nur Abschlussdateien mit Pathspec committen
+und pushen.
 
-**Kontext- und Codebase-Hygiene (seit 08.09.2026; User-Wort: Pflege ist
-Planbestandteil, keine Nebentätigkeit — Register NAK-223).** Im selben
-Abschlussfenster misst der Dirigent per Kommando, nie aus dem Gedächtnis:
-(a) Bytes von `MEMORY.md` (≤ 22 KB), Root-`CLAUDE.md` (≤ 24 KB) und dieses
-Skills (≤ 36 KB), Index-Zeilen über 250 Zeichen, Memory-Dateien ohne
-Index-Link, `dokuriegel.py` auf CLAUDE.md und Skill; (b) alles davon plus
-die Codebase-Schwellen in EINEM Lauf mit
-`py -3.13 tools/plan/gesundheit.py` (Exit 4 = Schwelle gerissen; im Kanon
-dasselbe Werkzeug als nicht blockierendes Bein A32; `--clippy` baut).
-Ein gerissener Wert wird ein datierter Registerpunkt der Klasse
-[Planarbeit · <Pflegeschritt>] oder [Werkzeug], nie stilles Nachbessern. Bei
-jedem Phasengate läuft zusätzlich der volle `/freshen`-Lauf nach
-`docs/context-hygiene-playbook.md`: Drift in Memory, CLAUDE.md, Skill und
-Playbook wird mechanisch gefixt, User-Zitate bleiben wörtlich. Übergaben
-gehören ins Manifest, in Planstand und Register; `docs/NEXT-SESSION.md` ist
-nur ein Zeiger und wird nicht fortgeschrieben.
+**Hygiene in jedem Abschlussfenster** (auch nach Etappen und
+Nacharbeitsrunden; User 08.09. und 12.09.2026), gemessen per Kommando, nie
+aus dem Gedächtnis: Bytes von `MEMORY.md`, Root-`CLAUDE.md` und diesem
+Skill gegen die Grenzen in `docs/context-hygiene-playbook.md`, Indexzeilen
+über 250 Zeichen, Memory-Dateien ohne Indexlink, `dokuriegel.py` auf
+CLAUDE.md und Skill, dazu `py -3.13 tools/plan/gesundheit.py` (Exit 4 =
+Schwelle gerissen; im Kanon Bein A32, nicht blockierend). Ein Riss der
+Kontextfläche (Bytes, Redundanz, Prosa, entbehrliche Zitate) wird im selben
+Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids
+nur als Datum, Wortlaut bleibt in Abnahmen und Register. Ein Riss der
+Codebase wird datierter Registerpunkt [Planarbeit · Pflegeschritt] oder
+[Werkzeug], nie stilles Nachbessern. Bei Phasengates zusätzlich der volle
+`/freshen`-Lauf nach dem Playbook. Übergaben stehen im Manifest, Planstand
+und Register; `docs/NEXT-SESSION.md` ist nur ein Zeiger.
 
-Dann: temporäre
-Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
-`$env:TEMP\nakama-dirigent-<session-id>-*.json`-Caches löschen,
-`claude rm <worker-id>`, und mit beendetem Beobachter, `CronList` plus
-`claude agents --json` belegen, dass weder Loop noch Worker übrig sind. Weiter
-mit 3.1.
+Dann: temporäre Codex-Dateien und `$env:TEMP\nakama-dirigent-<session-id>-*.json`
+löschen, `claude rm <worker-id>`, mit beendetem Beobachter, `CronList` und
+`claude agents --json` belegen, dass nichts übrig ist. Weiter mit 3.1.
 
-## 3.6 Bauer und Prüfer — Opus baut, Codex prüft (seit 01.09.2026)
+### 3.6 Bauer und Prüfer
 
-User-Wort 01.09.2026 spät, nach Fables Einschätzung des liegengebliebenen
-NAK-123-Zwischenstands: „opus wieder bauer und codex prüfer . so wie am
-anfang, habe genug wochen kontigent". Damit gilt wieder die Grundform aus
-§3.2 und §3.4:
+Opus baut, Codex prüft (User 01.09.2026): Der Bauer ist ein frischer
+Opus-Worker (max), kompiliert, fährt Tests und Kanon selbst (§3.5,
+abgekoppelt) und übergibt nie `NOT RUN`. Der Prüfer ist ein frischer
+Codex-Thread (§3.4); Bauer und Prüfer sind nie derselbe Thread. Codex als
+Bauer (`workspace-write`, Astra max) nur als Fallback ab 85 % Claude-
+Wochennutzung; der Dirigent committet dessen Stand nach eigenem Kanonlauf
+als Zwischenstand (§3.1). Stößt Codex als Prüfer an seine Grenze, prüft ein
+frischer Opus-Thread.
 
-- Der Bauer ist ein frischer Opus-Worker (max) im sichtbaren Checkout. Er
-  kompiliert, fährt die Tests seines Tickets und den Kanon selbst (§3.5,
-  abgekoppelt) und übergibt keinen Stand mit Laufstatus `NOT RUN`.
-- Der Prüfer ist ein frischer, lesender Codex-Thread (`gpt-6-astra`, Effort
-  max oder xhigh — User-Wort 10.09.2026 „codex immer astra … kein Sol mehr";
-  davor 05.09. Astra mit Sol als Gegenprüfer, davor Sol max nach User-Wort
-  30.08. «Sol auf max»); Bauer- und Prüfer-Thread sind nie derselbe (§6).
-- Grund neben dem Kontingent: Ein Bauer ohne Compiler übergibt ungelaufenen
-  Code. NAK-123 lieferte am 01.09. rund 2 800 Zeilen Sicherheitscode mit
-  `NOT RUN` in den Worktree, und der externe Kanonlauf dazu ging verloren.
+### 3.7 Ultra-Review-Erinnerung
 
-Codex als Bauer (`workspace-write`, Astra max) ist seit dem 01.09. nur noch
-**Fallback**, wenn die Claude-Wochennutzung die 85-%-Warnschwelle aus §5
-erreicht hat. Dann gelten die Verlaufsregeln unten, und der Dirigent
-committet den Codex-Stand nach eigenem Kanonlauf als benannten Zwischenstand
-(§3.1), bevor irgendein anderer Schritt beginnt. Umgekehrt gilt der
-User-Fallback vom 31.08. weiter („falls Codex iwann an die Nutzungsgrenze
-stoßen sollte, mit Opus weitermachen"): stößt Codex als Prüfer an seine
-Grenze, prüft ein frischer Opus-Thread, nie der Bauer-Thread.
-
-## 3.7 Ultra-Review-Erinnerung (seit 10.09.2026)
-
-User-Wort 10.09.2026: „okay dann bau das in den plan ein, dass fable
-dirigent mich zum richtigen zeitpunkt automatisch daran erinnert".
-`/code-review ultra` ist die dritte, unabhängige Prüfspur (Claude-Cloud,
-nur vom User startbar). Zeitpunkt: jedes Gate G6–G9 und der Abschluss von
+`/code-review ultra` ist die dritte Prüfspur (Claude-Cloud, nur vom User
+startbar; User 10.09.2026). Zeitpunkt: jedes Gate G6–G9 und der Abschluss von
 NAK-246, jeweils sauber, kanongrün, gepusht. Dann schreibt der Dirigent die
-Erinnerung als User-Handgriff in die Session UND als `PushNotification`,
+Erinnerung als User-Handgriff in die Session und als `PushNotification`,
 startet auf diesem Stand keinen Codex-Audit und keinen Worker und wartet.
-Das Ergebnis behandelt er wie einen externen Audit (Muster NAK-246,
+Das Ergebnis wird wie ein externer Audit behandelt (Muster NAK-246,
 `docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
 
 ## 4. Haltgründe
 
-Ein Haltgrund stoppt nur das betroffene Ticket, nie den Lauf: Der Dirigent
-stellt die Frage (ausschließlich bei Design-/Produktfragen oder einem
-User-Handgriff) und zieht sofort das nächste Ticket ohne Haltgrund vor
-(User-Wort 30.08.2026: „notfalls werden andere Aufgaben vorgezogen.
-voranschreiten ist das wichtigste"). Erst wenn kein Ticket ohne Haltgrund
-übrig ist, wartet die Sitzung.
+Ein Haltgrund stoppt nur das Ticket: Frage stellen (nur Design-/Produktfrage
+oder User-Handgriff) und sofort das nächste Ticket ohne Haltgrund vorziehen;
+erst ohne solches Ticket wartet die Sitzung.
 
-- ein User-, Figma-, FL- oder Installationsschritt,
-- ein Produktentscheid (Technik entscheidet der Dirigent, Produkt der User),
+- User-, Figma-, FL- oder Installationsschritt,
+- Produktentscheid,
 - überlappende fremde Änderungen,
-- ein Befund, der nur durch einen Produktentscheid oder einen User-Handgriff
-  zu schließen ist (technische Befunde sind nie Haltgrund, User-Wort 29.08.),
-- eine fehlende native Fähigkeit, deren Ersatz neue Infrastruktur erfordert,
+- Befund, der nur durch Produktentscheid oder User-Handgriff schließbar ist
+  (technische Befunde sind nie Haltgrund),
+- fehlende native Fähigkeit, deren Ersatz neue Infrastruktur bräuchte (ein
+  CLI-Parse- oder Versionsfehler ist keine; erst Hilfe, Doku und kleinste
+  Alternative mit gleichem Ziel, Sandbox, Modell, JSONL- und Thread-Vertrag),
 - erschöpftes Kontingent oder wiederholte API-Fehler bei Fable, Opus oder
-  Codex — Worker stoppen, Loop löschen, dann Halt statt blindem Wiederholen,
-- Kontextdruck der eigenen Sitzung (§5),
-- ein Phasengate oder leerer Plan.
+  Codex (Worker stoppen, Loop löschen, dann Halt),
+- Kontextdruck (§5),
+- Phasengate oder leerer Plan.
 
-Ein einzelner CLI-Parse- oder Versionsfehler ist noch keine fehlende native
-Fähigkeit. Vor dem Halt prüft Fable lokale Unterbefehlshilfe, aktuelle
-offizielle Werkzeugdokumentation und die kleinste Alternative, die Ziel,
-Sandbox, Modell/Effort, JSONL- und Thread-Vertrag unverändert erhält. Nur wenn
-keine solche Variante funktioniert, greift der Halt; neue Infrastruktur bleibt
-verboten.
-
-Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
-endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so
-erreicht er den User im lokalen Terminal und über Remote Control unterwegs.
-
-**Zeitfenster für Fragen (User-Wort 11.09.2026, 00:50: „produktfragen immer
-nur zwischen 9:00 und 23:00 Uhr weil ich dann antworten kann. aber meine
-uhrzeit auf dem pc nicht Amerikanische zeit").** Maß ist `Get-Date` auf
-diesem Rechner. Außerhalb des Fensters wird die Frage fertig formuliert, ein
-One-Shot-Cron auf kurz nach 9:00 stellt sie, und der Lauf zieht sofort das
-nächste Ticket ohne Haltgrund vor.
+Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand im Manifest; der Halt
+endet als wartende Frage oder Statusmeldung in der Sitzung. **Zeitfenster:**
+Produktfragen und Handgriffe nur 9:00–23:00 PC-Lokalzeit (`Get-Date`; User
+11.09.2026); außerhalb Frage fertig formulieren, One-Shot-Cron kurz nach
+9:00, nächstes Ticket vorziehen.
 
 ## 5. Kontexthaushalt
 
-Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
-ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
-
-- Die Grenze ist absolut: bei **600k Kontext-Tokens** startet der Dirigent
-  eine frische Session (User-Wort 30.08.2026: „achte darauf bei 600k context
-  einen frischen Dirigenten Session zu starten"). Ab 500k kein neues Ticket
-  und keine neue Prüfrunde; im nächsten sauberen Abschlussfenster (Worker
-  beendet, Urteil im Manifest, Planstand gepusht, Loop/Beobachter/Worker
-  abgeräumt) die Markerdatei `nakama-dirigent-neustart.marker` im Temp-Ordner
-  anlegen (`New-Item -ItemType File (Join-Path ([IO.Path]::GetTempPath())
-  'nakama-dirigent-neustart.marker') -Force`) und danach die eigene PID
-  beenden (`claude agents --json` nennt sie in der Zeile mit dem Namen
-  `nakama-dirigent`; `Stop-Process -Id <pid>`). Der Starter sieht den Marker
-  und startet sofort eine frische Session in demselben Terminalfenster; ein
-  abgekoppelter zweiter Starter, ein zweites Fenster und die Prüfung über
-  `claude agents --json` entfallen (seit 01.09.2026). Läuft die Session ohne
-  Starter (direkter Ersatzaufruf), stattdessen
-  `tools/dirigent/start-dirigent.ps1` abgekoppelt starten und die eigene PID
-  erst beenden, wenn `claude agents --json` die neue Session zeigt.
-  Eigene Hintergrundbefehle sterben mit der PID - deshalb gilt das Fenster nur
-  als sauber, wenn kein Kanon und kein Worker mehr läuft. **Messung
-  ausschließlich über die native Statuszeile**
-  (`cockpit.ps1 -StatusLine`, Feld `context_window.used_percentage`) oder die
-  vom User genannte Zahl. Der `<total_tokens>`-Restwert im Kontext ist ein
-  Sitzungsbudget und kein Kontextmaß; die Größe des Session-Transkripts ist es
-  ebenso wenig (30.08.2026: Fable meldete „rund 70k“, real waren es 385k).
-  Liegt keine Messung vor, heißt die Antwort „nicht gemessen“, nie eine Schätzung. Ist die
-  Statuszeile nicht abrufbar, trägt der Cockpit-Cache unter `$env:TEMP`
-  (`nakama-dirigent-<session-id>-telemetry.json`, Feld `ContextPercent`)
-  dieselbe Messung.
-  Nach einer Compaction bleibt der Arbeitsanker unbestätigt, bis Planstand,
-  Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
-- Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue
-  Arbeitsphase beginnen. Ein bereits laufender sicherer Abschluss darf nur
-  ohne Qualitätsverlust bis zur sauberen Grenze geführt werden. **Ausnahme
-  bei absehbarem Wochenreset** (User-Wort 11.09.2026: „doch bei 95 einfach
-  weitermachen … schlimmstenfalls bricht es eben ab und wir müssen nach dem
-  reset weitermachen wo wir aufgehört haben"): dann laufen Worker und
-  Prüfrunden weiter; ein Kontingentabbruch hinterlässt einen
-  liegengebliebenen Ticketstand nach §3.1. Der Fable-Bauer vom 10./11.09. war
-  eine einmalige Ausnahme; Regelfall bleibt §3.2/§3.6.
-
-- Gezielt lesen statt vollständig: Diffs erst `--stat`, dann relevante Hunks;
-  vom Codex-JSONL nur Thread-ID und Schlussurteil; vom Worker-Log nur den
-  Blockadegrund. Rohausgaben bleiben in ihren Temp-Dateien. Ein Loop-Tick ohne
-  Befund bleibt ein Einzeiler.
-- Keine Meldungen an den User (User-Wort 29.08.2026: „ich brauch keine
-  meldungen, ich will dass du kontext sparst. wenn du keine designfrage hast
-  dann interessiert mich die meldung nicht. das betrifft auch künftige
-  dirigenten sessions"): keine Spurlage-, Fortschritts-, Runden- oder
+- Bei **600k Kontext-Tokens** frische Session (User 30.08.2026); ab 500k kein
+  neues Ticket und keine neue Prüfrunde. Im nächsten sauberen Abschlussfenster
+  (kein Worker, kein Kanon, Urteil im Manifest, Planstand gepusht, Loop und
+  Beobachter weg) Marker anlegen — `New-Item -ItemType File (Join-Path
+  ([IO.Path]::GetTempPath()) 'nakama-dirigent-neustart.marker') -Force` — und
+  die eigene PID beenden (`claude agents --json`, Zeile `nakama-dirigent`;
+  `Stop-Process -Id <pid>`). Ohne Starter stattdessen `start-dirigent.ps1`
+  abgekoppelt starten und die PID erst beenden, wenn `claude agents --json`
+  die neue Session zeigt.
+- Messung nur über die Statuszeile (`cockpit.ps1 -StatusLine`, Feld
+  `context_window.used_percentage`), den Cache
+  `$env:TEMP\nakama-dirigent-<session-id>-telemetry.json` (`ContextPercent`)
+  oder die vom User genannte Zahl. `<total_tokens>` und Transkriptgröße sind
+  keine Kontextmaße; ohne Messung heißt es „nicht gemessen". Nach einer
+  Compaction bleibt der Anker unbestätigt, bis Planstand, Ticketquelle und
+  HEAD neu abgeglichen sind.
+- Kontingente: ab 85 % warnen, ab 95 % keine neue Arbeitsphase; laufender
+  Abschluss nur ohne Qualitätsverlust. Ausnahme bei absehbarem Wochenreset
+  (User 11.09.2026): Worker und Prüfrunden laufen weiter, ein Abbruch
+  hinterlässt einen Ticketstand nach §3.1.
+- Gezielt lesen: Diffs erst `--stat`; vom JSONL nur Thread-ID und Urteil; vom
+  Worker-Log nur den Blockadegrund; Rohausgaben bleiben in Temp-Dateien.
+- Keine Meldungen an den User (User 29.08.2026): keine Spurlage-, Runden- oder
   Abschlusstexte; Loop-Ticks und Beobachter-Ereignisse mit höchstens einer
-  Zeile beantworten; der einzige Text an den User ist eine
-  Design-/Produktfrage oder die Bitte um einen User-Handgriff.
-- Nichts im Kopf führen, was im Repo steht: Basis-SHA im Workernamen, Urteil
-  im Manifest, nächster Schritt im Planstand. Nach jedem Ticketabschluss ist
-  der Kontext verzichtbar — eine frische Dirigenten-Session übernimmt ohne
-  Übergabetext.
-- Bei Kontextdruck (Compaction gelaufen, Tragendes nur noch aus
-  Zusammenfassungen zitierbar): laufendes Ticket bis zur sauberen Grenze
-  fahren, Worker, Beobachter und Loop abräumen, Abschluss ins Manifest, Lauf beenden mit
-  dem Hinweis, eine frische Dirigenten-Session zu starten. Mit angeschlagenem
-  Kontext beginnt kein neues Ticket.
+  Zeile; der einzige Text ist eine Design-/Produktfrage oder ein
+  User-Handgriff.
+- Nichts im Kopf führen, was im Repo steht; nach jedem Ticketabschluss ist
+  der Kontext verzichtbar.
+- Kontextdruck (Compaction gelaufen, Tragendes nur aus Zusammenfassungen):
+  Ticket bis zur sauberen Grenze fahren, abräumen, Abschluss ins Manifest,
+  frische Session; mit angeschlagenem Kontext beginnt kein neues Ticket.
 
-Nach Absturz oder Neustart: Fortsetzung über den Picker oder deterministisch
-über die Session-ID; beide Wege setzen den Rollenvertrag erneut ausdrücklich:
+Nach Absturz oder Neustart:
 
 ```powershell
 claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
 claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
 ```
 
-Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,
-`git status` und dem Vergleich Basis-SHA zu HEAD. Läuft der bekannte Worker
-ohne Beobachter oder Loop → genau je einen neuen setzen. Fehlt der Worker →
-verbliebenen Beobachter beenden und Loop löschen. Nie Zustand raten, nie eine
-Recovery-Datei bauen.
+Die Sitzung beginnt mit `claude agents --json`, `CronList`, `git status` und
+dem Vergleich Basis-SHA zu HEAD. Bekannter Worker ohne Beobachter oder Loop →
+je einen neuen setzen; fehlender Worker → Beobachter beenden, Loop löschen.
+Nie Zustand raten, nie eine Recovery-Datei bauen.
 
 ## 6. Was der Dirigent nie tut
 
-- Selbst bauen — auch nicht „nur schnell" — oder bei laufendem Worker
-  schreiben.
-- Einen Selbstbericht, Exit-Code oder Commit allein als fertig nehmen.
-- Prüfen lassen, was derselbe Thread gebaut hat: die Wiederprüfung ist immer
-  ein frischer Thread.
+- Selbst bauen oder bei laufendem Worker schreiben.
+- Selbstbericht, Exit-Code oder Commit allein als fertig nehmen.
+- Prüfen lassen, was derselbe Thread gebaut hat.
 - `git add -A`, `--amend`, fremde uncommittete Dateien anfassen.
 - `bypassPermissions` oder `ask`-Regeln nutzen, einen Moduswechsel hinnehmen.
 - Ein zweites Protokoll, eine Statusdatei oder einen Ersatzkanal bauen.
 - Ein Manifest zum Prüfgegenstand machen, eine Wiederprüfung über den ganzen
-  Ticketbereich fahren oder eine vierte Nacharbeitsrunde ohne
-  Konvergenzentscheid starten.
-- Einen Prüfauftrag frei formulieren statt aus der Vorlage, eine Runde ohne
-  Rundenbilanz abschließen oder einem Worker mehr auftragen, als der Prüfer
-  als Defekt erhoben hat.
+  Ticketbereich fahren, eine vierte Runde ohne Konvergenzentscheid starten.
+- Einen Prüfauftrag frei formulieren, eine Runde ohne Rundenbilanz
+  abschließen, einem Worker mehr auftragen als der Prüfer als Defekt erhob.
+
+## 7. Prüfsystem und Kanal
+
+Die Prüfspur neben Kanon und Codex-Review steht in
+`docs/gesundheit/KONZEPT.md` (User-Abnahme 12.09.2026, Register NAK-259) und
+bindet, sobald der jeweilige Aufbauschritt (§10 dort) gebaut ist: §3.1
+(Prüfgang vor dem Ticket), §3.2 (Wächter im Auftrag), §3.4 (Klassen-Kennung
+K1–K8 je Befund), §3.5 (Zweitbefund-Prüfung, fällige Prüfsession) und den
+Pflegebetrieb nach dem Plan. Der Dirigent auditiert nie selbst: Audits laufen
+als Prüfsession zwischen zwei Tickets, er liest nur Kopf und Befundliste.
+Nachrichten anderer Sessions (`SendMessage`, Absender `nakama-*`) tragen
+Zeiger und Entscheid, nie Inhalt; der Dirigent antwortet mit Entscheidung und
+Ort im Repo, verarbeitet sie im Abschlussfenster, nimmt sie nie als Haltgrund
+oder Anforderungsquelle für Worker und bittet keine Session um Geblocktes
+(KONZEPT.md §5.1).

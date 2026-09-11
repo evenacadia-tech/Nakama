@@ -139,8 +139,8 @@ Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
 WAS GEMESSEN WIRD — KONTEXT
 ---------------------------
 Bytes von `MEMORY.md` (Ziel 22 KB, Grenze 24,4 KB — darueber schneidet der
-Harness still ab), Root-`CLAUDE.md` (Grenze 24 KB) und
-`.claude/skills/dirigent/SKILL.md` (Grenze 36 KB); Index-Zeilen in MEMORY.md
+Harness still ab), Root-`CLAUDE.md` (Grenze 20 KB) und
+`.claude/skills/dirigent/SKILL.md` (Grenze 24 KB); Index-Zeilen in MEMORY.md
 ueber 250 Zeichen; Memory-Dateien ohne Link im Index. Alle Werte woertlich aus
 `docs/context-hygiene-playbook.md` und Dirigenten-Skill Paragraph 3.5.
 
@@ -220,8 +220,8 @@ KOMMENTAR_ZIEL = 0
 # Woertlich aus docs/context-hygiene-playbook.md und Dirigenten-Skill 3.5.
 MEMORY_ZIEL = 22528       # 22 KB Arbeitsziel
 MEMORY_GRENZE = 24986     # 24,4 KB — darueber schneidet der Harness still ab
-CLAUDEMD_GRENZE = 24576   # 24 KB
-SKILL_GRENZE = 36864      # 36 KB
+CLAUDEMD_GRENZE = 20480   # 20 KB (seit 12.09.2026; vorher 24 KB)
+SKILL_GRENZE = 24576      # 24 KB (seit 12.09.2026; vorher 36 KB)
 INDEXZEILE_GRENZE = 250
 SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 

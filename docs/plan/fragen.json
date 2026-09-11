@@ -180,6 +180,17 @@
    "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
    "seit": "07.09.",
    "status": "offen"
+  },
+  {
+   "id": "U38",
+   "dringlichkeit": "wenn du dazu kommst (ab 9:00)",
+   "art": "Planentscheid (Prüfsystem, Zeitpunkt)",
+   "titel": "Wann soll das Bedienehrlichkeits-Audit laufen: jetzt auf der Skizze oder nach S26–28 auf der gebauten Oberfläche?",
+   "was": "Das Bedienehrlichkeits-Audit prüft die zwei UI-Gesetze (keine toten Elemente; Tasten ändern nie ihre Maße). Soll es jetzt auf der technischen Skizze laufen, damit Verstöße vor dem JUCE-Bau auffallen, oder erst nach S26–28 auf der gebauten Oberfläche, wo das echte Layoutrechteck messbar ist? Zwei Wege: „Jetzt auf der Skizze\" oder „Nach S26–28 auf der Oberfläche\".",
+   "warum": "docs/gesundheit/KONZEPT.md §11 Punkt 2 und §10 Schritt 9 (Prüfsystem-Konzept, abgenommen 12.09.2026): der Zeitpunkt entscheidet, ob das Audit die Skizze oder die Oberfläche misst; die Folge steht im Aufbauplan.",
+   "wo": "docs/gesundheit/KONZEPT.md §4.3, §10 Schritt 9, §11, Anhang A.5; Register NAK-259",
+   "seit": "12.09.",
+   "status": "offen"
   }
  ],
  "beantwortet": {

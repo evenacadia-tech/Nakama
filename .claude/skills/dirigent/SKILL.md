@@ -540,6 +540,13 @@ Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
 endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so
 erreicht er den User im lokalen Terminal und über Remote Control unterwegs.
 
+**Zeitfenster für Fragen (User-Wort 11.09.2026, 00:50: „produktfragen immer
+nur zwischen 9:00 und 23:00 Uhr weil ich dann antworten kann. aber meine
+uhrzeit auf dem pc nicht Amerikanische zeit").** Maß ist `Get-Date` auf
+diesem Rechner. Außerhalb des Fensters wird die Frage fertig formuliert, ein
+One-Shot-Cron auf kurz nach 9:00 stellt sie, und der Lauf zieht sofort das
+nächste Ticket ohne Haltgrund vor.
+
 ## 5. Kontexthaushalt
 
 Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
@@ -576,7 +583,13 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
 - Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue
   Arbeitsphase beginnen. Ein bereits laufender sicherer Abschluss darf nur
-  ohne Qualitätsverlust bis zur sauberen Grenze geführt werden.
+  ohne Qualitätsverlust bis zur sauberen Grenze geführt werden. **Ausnahme
+  bei absehbarem Wochenreset** (User-Wort 11.09.2026: „doch bei 95 einfach
+  weitermachen … schlimmstenfalls bricht es eben ab und wir müssen nach dem
+  reset weitermachen wo wir aufgehört haben"): dann laufen Worker und
+  Prüfrunden weiter; ein Kontingentabbruch hinterlässt einen
+  liegengebliebenen Ticketstand nach §3.1. Der Fable-Bauer vom 10./11.09. war
+  eine einmalige Ausnahme; Regelfall bleibt §3.2/§3.6.
 
 - Gezielt lesen statt vollständig: Diffs erst `--stat`, dann relevante Hunks;
   vom Codex-JSONL nur Thread-ID und Schlussurteil; vom Worker-Log nur den

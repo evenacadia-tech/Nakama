@@ -1,0 +1,16 @@
+URTEIL: NEEDS_WORK — drei Synchronisationsdefekte in den Tests, insbesondere der nicht deterministisch erzwungene Pflicht-Rotbeweis M-12.
+
+Geprüft: vollständiger Scoped-Diff, Produkt-Aufrufketten und Sperrenordnung, M-10 bis M-20 sowie Rot- und Beinbelege; HEAD blieb ccf425d7613d369eeec768699e346b549704acc6, der Worktree unverändert.
+
+Nicht geprüft: eigene Build-, Test-, Produkt- oder Hostläufe; die Gegenabläufe wurden statisch hergeleitet, vorhandene Laufresultate ausschließlich gelesen.
+
+Full review comments:
+
+- [P2] Erzwinge das M-12-Interleaving im Mutationslauf — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp:981-984
+  DEFEKT gegen [M-12](docs/beweise/NAK-246.md#L614): A wird nach 300 ms unabhängig davon freigegeben, ob B überhaupt gelaufen ist; `!bFertig` beweist keinen blockierten Drain. Reproduktion mit `EqCopSonde012ProjectReloadTest.exe --nur m12` im vorgesehenen Rotbau ohne `sourcesDrainMutex`: B vor `sourcesTick()` bis nach der Join-Anwendung zurückhalten. Der Unbind läuft anschließend zuletzt, und sämtliche Prüfungen können trotz entferntem Riegel grün werden. Der zugesagte Ablauf „Haken A hält, bis B fertig ist“ benötigt im Mutationslauf eine explizite Synchronisation statt des Schlafintervalls.
+
+- [P2] Synchronisiere den Dirty-Abschluss im bestehenden B14-Fall — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp:1322-1324
+  DEFEKT gegen den bestehenden Test `confirmed_join_ack_and_name_each_mark_host_dirty`: Der jetzt aktive Worker kann den Join anwenden und `sourcesDrainMutex` freigeben, bevor seine Dirty-Meldung erfolgt. Reproduktion im Normallauf von `EqCopSonde012ProjectReloadTest.exe`: den Worker vor `Ipc.cpp:1431` nach der Join-Anwendung anhalten und den Hauptfaden bis zu dieser Prüfung weiterlaufen lassen. Dessen `sourcesTick()` findet eine leere Liste; nach dem Umbenennen beträgt Dirty deshalb erst 1 statt 2, obwohl die Produktimplementierung korrekt nachmeldet. Der synchrone Altfall muss den Worker-Drain abschalten oder den vollständigen Nachlauf abwarten; ein atomarer Zähler allein genügt nicht.
+
+- [P2] Beende die ursprüngliche Verbindung vor der ACK-Freigabe — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/IpcTestMain.cpp:3111-3112
+  DEFEKT im [M-17-Beweis](docs/beweise/NAK-246.md#L624): `serverHat()` bestätigt lediglich die Protokollierung; der Testserver liest `commandAckArt` erst danach (`V3TestServer.h:622–663`). Reproduktion mit `EqCopIpcTest.exe --nak246-d4`: den Server beim 64. Auftrag nach der Protokollierung anhalten, nach `commandAckArt.store(1)` dessen ACK noch auf der alten Verbindung bis zum Client durchlaufen lassen und erst anschließend reconnecten. Dann werden alle 64 Aufträge erfolgreich abgeschlossen, aber nur 63 nachgespielt; die Prüfung bei Zeile 3118 fällt trotz korrektem Client. Die ursprüngliche Verbindung muss vollständig beendet sein, bevor ACKs für die Replay-Phase freigegeben werden.

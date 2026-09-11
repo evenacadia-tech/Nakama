@@ -1,0 +1,643 @@
+NAK-246 Etappe 4 (D3 + D4 in derselben Save/Load-Kette, M-10 bis M-20) - die Beine dieser Etappe, einzeln gefahren (kein voller Kanon, §4.6)
+Basis-SHA: 9174d272e927279bdc8d71ac7ae64dc455853892 (git status --short beim Start leer).
+Gebaut aus pwsh (cmake liegt nicht im Bash-PATH; CLAUDE.md Maschinen-Landminen), VS-2022-BuildTools-cmake:
+  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+Arbeitsverzeichnis jedes Beins: die Repo-Wurzel (wie tools/beweise.ps1). Kuerzel und Behauptungen aus tools/beweise.ps1.
+Landmine NAK-230 (Copy-Item/LastWriteTime) greift nicht: keine Datei kam per Copy-Item zurueck; die Rotstaende wurden per
+`git checkout -- <datei>` aus dem gestageten Endstand zurueckgenommen (frischer LastWriteTime), die Endfassungen aus dem Editor.
+
+=====================================================================================================================
+ZWISCHENSTAND 1 - D3 (Speicher-Drain, Worker-Drain, Riegel; M-10 bis M-14), Stand 2026-09-11 05:34-05:37 (PC-Lokalzeit)
+=====================================================================================================================
+Bau: cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest EqCopStateMigrationTest EqCopLebenslaufTest EqCopNullTest EqCopProbeeqNullTest EqCopilot_VST3
+     -> Exit 0, 78 s, 0 Fehler. 37 Zeilen "warning C", drei eindeutige, alle vorbestehend und ausserhalb der Ticketpfade:
+        Stereo.h(70,26) C4458 (wie §8.7 N-E2-2 / §9.7 N-E3-2); StateMigrationTestMain.cpp(1348,28) C4456 "zurueck" und (1636,28) C4456 "z"
+        (Datei in dieser Etappe unberuehrt; beide Deklarationen stehen am Basis-SHA an denselben Zeilen). EqCopilot_VST3: 0 neue Warnungen.
+     (Zwei Vorbauten davor endeten mit Fehlern in PluginProcessor.h - der oeffentliche `SourcesCommandArt` stand zuerst im
+      Testblock `#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)` und fehlte dem Produktbau; dann ein verwaistes `#endif`.
+      Beide behoben, Endbau wie oben.)
+Zeitstempel der Quellen (Endstand D3): PluginProcessor.h 05:35:03, Ipc.cpp 05:31:24, State.cpp 05:32:53, Analyse.cpp 05:30:10,
+  Sonde012ProjectReloadTest.cpp 05:42:21 (alle 2026-09-11; die Testdatei bekam nach dem Sechs-Ziele-Bau noch die Lebensdauerordnung
+  von Schranke und Zaehler im Fall M-12 - Selbstaudit §10.8 -, danach B14 allein neu gebaut und vollstaendig neu gefahren).
+Zeitstempel der Binaries (jedes juenger als jede Quelle, die es uebersetzt: ja):
+  EqCopSonde012ProjectReloadTest.exe 05:42:42   (B14; Quellen bis 05:42:21; Bau Exit 0, 7 s, 0 Fehler, 1 Zeile warning C = Stereo.h C4458)
+  EqCopStateMigrationTest.exe        05:35:38   (B2)
+  EqCopLebenslaufTest.exe            05:35:47   (B8)
+  EqCopNullTest.exe                  05:35:56   (A1)
+  EqCopProbeeqNullTest.exe           04:41:53   (A16; unveraendert seit Etappe 3 - das Ziel uebersetzt den Sondenprozessor, keine
+                                                 Quelle dieses Ziels ist in dieser Etappe beruehrt; MSBuild hat es als aktuell gelassen)
+  EQ-Copilot.vst3 (EqCopilot_VST3)   05:36:29
+  A12 ist ein Python-Skript (py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen), kein Binary.
+
+UEBERSICHT D3
+B14 EqCopSonde012ProjectReloadTest: Exit 0, 6,83 s, 92/92 gruen (Basis-SHA: 55/55; +37 in den Faellen M-10 bis M-14 und den D3-Aufbauzeilen)
+    (M-10: Save wendet Join A und Unbind B ohne Tick an, Dirty +2, Revision +2, neue Instanz laedt genau A; M-11: 5 ms von ACK bis Anwendung
+     durch den Workerzug, Dirty 1, Revision +1; M-12: Editor-Tick wartete 300 ms auf den gehaltenen Workerzug, 0 Mitglieder, Dirty 2, Revision +2;
+     M-13: fremde Bindung und fremde Epoche werden im Speicher-Drain nie angewandt, Gegenprobe angewandt; M-14: Save ohne Tick 250 Bytes, Dirty 0)
+B2  EqCopStateMigrationTest: Exit 0, 1,46 s, letzte Zeile: STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+B8  EqCopLebenslaufTest: Exit 0, 0,30 s, letzte Zeile: LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler
+A1  EqCopNullTest: Exit 0, 0,19 s, letzte Zeile: NULLTEST OK
+A16 EqCopProbeeqNullTest: Exit 0, 0,16 s, letzte Zeile: SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+A12 erzeuge_state_fixtures.py --pruefen: Exit 0, 1,33 s, letzte Zeile: STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+EqCopilot_VST3: Bau Exit 0, 0 neue Warnungen (siehe oben)
+
+Rotlaeufe D3 (eigene Dateien): NAK-246-rot-M-10.txt und -M-11.txt (Rotbau 05:29:51, `--nur m10` Exit 1 9/14, `--nur m11` Exit 1 2/6),
+-M-12.txt (Rotbau 05:30:39, `--nur m12` Exit 1 4/8), -M-13.txt (Rotbau 05:31:24, `--nur m13` Exit 1 6/8),
+-M-14.txt (Rotbau 05:32:52, `--nur m14` Exit 1 0/2; ein erster Bruchlauf mit Binary 05:31:24 blieb 2/2 gruen, Ursache und Korrektur der
+Bezugsgroesse im Test stehen in der Rotdatei).
+
+== B14 EqCopSonde012ProjectReloadTest (D3) ==
+Befehl: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe
+Rohausgabe:
+  ok      M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat  [250 Bytes, Dirty 0, Revision 1]
+  ok      gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand
+== NAK-246 M-07 prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende ==
+  ok      M-07: der Testserver steht
+  ok      M-07: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.4524.0.nak246-m07]
+  ok      M-07: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-07: der Prozessor ist ein Main mit Bindung
+  ok      M-07: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-07: der Produkt-Callback `v3Antwort` steht im Haken - im Zug der Schleuse, vor dem ersten Zustandszugriff
+  ok      M-07: die Schleuse fuehrt ihn als laufend  [1 aktiv]
+  M-07: Destruktor beginnt; Freigabe nach 2500 ms
+  M-07: Destruktor zurueck nach 2501 ms, Muster gelegt, 300 ms warten
+  ok      M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest  [2501 ms Destruktor, Frist 2000 ms, Freigabe nach 2500 ms]
+  ok      M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=499]
+  ok      M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [0 ms nach der Freigabe]
+  ok      M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte unveraendert - der Zustandszugriff des Callbacks lag VOR der Zerstoerung  [0 von 101384 Bytes veraendert]
+  ok      M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu  [aktiv=0 betreten=6 abgewiesen=0]
+== NAK-246 M-06 abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht ==
+  ok      M-06: der Testserver steht
+  ok      M-06: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.4524.1.nak246-m06]
+  ok      M-06: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-06: der Prozessor ist ein Main mit Bindung
+  ok      M-06: der Sender ist bestaetigt angehalten
+  ok      M-06: der Ring nimmt Ereignisse auf  [32]
+  ok      M-06: die Ereignisse liegen als P0 in der Queue (Generation 0)
+  ok      M-06: der Aufbauzug des Testlinks hat die Zustellpruefung gefahren (Ruf 1)
+  ok      M-06: ein Aufbau-Heartbeat mit Marke liegt in der Queue (Generation 1)
+  ok      M-06: der echte Aufbauzug (Generation 2) ruft `hookReplayBegin`, und der Produkt-Callback steht im Haken - im Zug, unter sendeMutex, vor dem Zustandszugriff
+  M-06: Destruktor beginnt; Freigabe nach 2500 ms
+  M-06: Destruktor zurueck nach 2501 ms, Muster gelegt, 600 ms warten (der abgeloeste Thread laeuft seinen Aufbauzug zu Ende)
+  ok      M-06: stop() hat die volle Frist gewartet und den Clientthread abgeloest (B-CC-12) - der gehaltene Callback lebte ueber die Frist hinaus  [2501 ms Destruktor bei Frist 2000 ms]
+  ok      M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet  [gewartetMs=501]
+  ok      M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - `beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert  [0 von 101384 Bytes veraendert]
+  ok      M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1  [abgewiesen=3 betreten=4 aktiv=0]
+== NAK-246 M-09 alle_produkt_callbacks_laufen_durch_die_schleuse ==
+  ok      M-09: der Testserver steht
+  ok      M-09: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.4524.2.nak246-m09]
+  ok      M-09: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-09: der Prozessor ist ein Main mit Bindung
+  ok      M-09: der Sender ist bestaetigt angehalten
+  ok      M-09: Interventionsereignisse der Generation 0 liegen als P0 in der Queue - der Aufbauzug faehrt damit die Zustellpruefung, und jeder Wire-Commit ruft `beiP0Zugestellt`  [32]
+  ok      M-09: Control ist verbunden (Hello, Welcome, Link auf)
+  ok      M-09: Telemetrie ist gekoppelt und verbunden (Telemetrie-Hello)
+  ok      M-09: mindestens ein P2-Frame hat `beiFrame` erreicht  [64]
+  ok      M-09: mindestens ein heartbeat_ack hat `v3Antwort` erreicht  [1]
+  ok      M-09: mindestens ein P0-Wire-Commit hat `beiP0Zugestellt` erreicht  [32]
+  ok      M-09: der Server hat einen Heartbeat empfangen (`v3Status`)
+  ok      M-09: der Server hat das Control-Hello empfangen (`v3Hello`)
+  ok      M-09: die Zustellpruefung hat `hookReplayBegin` gerufen  [1]
+  ok      M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein Callback umgeht die Schleuse  [betreten=115 Summe=8 (vor der Zerstoerung 114)]
+  ok      M-09: der negative Link-Callback aus stop() lief synchron durch die noch OFFENE Schleuse - kein Selbstblock (Abweichung 1, Paragraph 5.10)  [1 Eintritte im Destruktor]
+  ok      M-09: ohne gehaltenen Callback blockiert der Destruktor nicht - keine Frist, kein Warten, kein abgewiesener Callback  [3 ms, gewartetMs=0, abgewiesen=0]
+== NAK-246 M-10 bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-10 Aufbau: Join B gesendet
+  ok      M-10 Aufbau: B ist Mitglied (ein Tick, ein Dirty)
+  ok      M-10: Join A gesendet
+  ok      M-10: B wird Hauptziel
+  ok      M-10: Unbind B gesendet (Wire, mit Runtime-Nonce)
+  ok      M-10: zwei Befehle, zwei Kennungen
+  ok      M-10: vor dem Speichern ist nichts angewandt - kein Tick lief
+  ok      M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr
+  ok      M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)  [3]
+  ok      M-10: die Revision ist je Befehl um 1 gestiegen (+2)  [2]
+  ok      M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt
+  ok      M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste  [1 Mitglied(er)]
+  ok      M-10: das Laden meldet kein Dirty
+== NAK-246 M-11 bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-11: Join A gesendet
+  ok      M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug spaetestens alle 50 ms)  [5 ms von ACK bis Anwendung]
+  ok      M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen  [Dirty 1, Revision +1]
+  ok      M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision
+  ok      M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt
+== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
+  ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [0 Mitglied(er)]
+  ok      M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [2]
+  ok      M-12: Revision-Delta == 2  [2]
+  ok      M-12: der zweite Drain wartete auf den ersten - `sourcesDrainMutex` klammert Swap UND Anwendung  [300 ms Editor-Tick]
+  ok      M-12: beide Swaps liefen durch den Haken  [2]
+== NAK-246 M-13 ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-13: ein zweites Projekt
+  ok      M-13: Join A gesendet (alter Lauf)
+  ok      M-13: das Projekt ist gewechselt (andere project_binding_id)
+  ok      M-13: der ACK des alten Laufs findet nach dem Reload keine Zuordnung - Speichern ohne Tick aendert nichts
+  ok      M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)
+  ok      M-13: eine neue Instanz laedt kein Mitglied des alten Laufs
+  ok      M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an
+  ok      main_project_is_explicitly_initialised
+  ok      confirmed_join_ack_and_name_each_mark_host_dirty  [2]
+  ok      save_is_not_a_persistent_mutation
+  ok      same_instance_reload_discards_transient_snapshot_and_measurement
+  ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+  ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+  ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+  ok      nonleading_main_disables_label_and_reports_failed_write
+  ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+  ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 92/92 gruen
+
+== B2 EqCopStateMigrationTest (D3) ==
+Befehl: eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe
+Rohausgabe:
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [9779ae0dcb2a4bf694f811de08754edb]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [0e49b2220a624c3197ad5c9c854f3885]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [85cb81cbf3904d338798f6a82743faf2]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+
+== B8 EqCopLebenslaufTest (D3) ==
+Befehl: eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe
+Rohausgabe:
+LEBENSLAUF-TEST — §53.5 Lifecycle-Klassifikation
+
+[1] Der Automat (nakama::state::Lebenslauf)
+  ok      frisch: unclassified  [unclassified]
+  ok      frisch: neutral
+  ok      frisch: keine Audio-Ausnahme (audio-neutral)
+  ok      frisch: kein Brokerstart
+  ok      Schema-1 'sensor' -> legacy  [legacy]
+  ok      Schema-1 'sensor': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'pre' -> legacy  [legacy]
+  ok      Schema-1 'pre': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'post' -> legacy  [legacy]
+  ok      Schema-1 'post': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'hub' -> main  [main]
+  ok      Schema-1 'hub': Audio-Ausnahme moeglich
+  ok      Schema-2 main (Kind-Matrix bestaetigt) -> main
+  ok      Schema-2 legacy -> legacy
+  ok      Vorbereitung: erst main
+  ok      unbekanntes Major danach -> zurueck auf unclassified
+  ok      Muell (ignoriert) aendert nichts - main bleibt main
+  ok      Muell auf einen frischen Automaten klassifiziert nicht
+  ok      explizite Initialisierung OHNE Editor: abgelehnt
+  ok      ... und der Automat bleibt neutral
+  ok      der geoeffnete Editor allein klassifiziert NICHT
+  ok      Editor offen + explizite Initialisierung: angenommen
+  ok      ... -> main
+  ok      main + offener Editor darf den Broker starten
+  ok      Editor zu: die Klassifikation bleibt (der Stand hat sich nicht geaendert)
+  ok      main OHNE offenen Editor darf NICHT starten
+  ok      Rueckweg: derselbe Akt fuehrt von main zurueck
+  ok      ... -> legacy
+  ok      legacy darf nie starten - auch mit Editor nicht
+  ok      legacy ist wieder audio-neutral
+  ok      Sonde (NkPr) frisch: neutral trotz fester Produktklasse
+  ok      Sonde (NkPr): gueltiger eigener Stand -> passive_probe
+  ok      Sonde (NkPr): kein Brokerstart
+  ok      Sonde (NkPr): auch mit offenem Editor kein Brokerstart
+  ok      Sonde (NkPr): kein Akt macht sie zum Main
+  ok      Sonde (NkAc): gueltiger eigener Stand -> active_probe
+  ok      Sonde (NkAc): ein fremder Main-Stand faellt auf neutral, nie auf main
+
+[2] Verdrahtet: EqCopilotProcessor (Gen)
+  ok      produkt_v3_hello_bindet_originalidentitaet_rolle_und_host
+  ok      Gen-ControlClient traegt den produktiven Heartbeat-/State-Report-Provider
+  ok      Scannerlauf: klassifiziert NICHT (53.5)  [unclassified]
+  ok      Scannerlauf: kein Brokerstart
+  ok      Scannerlauf: unclassified bleibt audio-neutral (kein Sample gefaerbt)
+  ok      Scannerlauf: Markierung meldet sich nicht hoerbar
+  ok      Altprojekt 'sensor' -> legacy  [legacy]
+  ok      legacy mit offenem Editor: kein Brokerstart
+  ok      legacy ist 'immer passiv' - kein Sample gefaerbt
+  ok      Altprojekt 'hub' -> main  [main]
+  ok      Schema-1-Migration erfindet keine Projektbindung
+  ok      main, aber Editor zu: noch kein Brokerstart
+  ok      main + offener Editor: Brokerstart erlaubt
+  ok      expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung
+  ok      Projektbindung reist im bestehenden Host-State verlustfrei
+  ok      main: DIESELBE Markierung faerbt jetzt (der Riegel kann fallen)
+  ok      Vorbereitung: Rollenwahl aendert den Stand
+  ok      frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit
+  ok      Rollenwahl OHNE offenen Editor klassifiziert nicht (53.5)  [unclassified]
+  ok      der geoeffnete Editor allein holt es auch nicht nach
+  ok      Vorbereitung: der User waehlt die Rolle im offenen Editor
+  ok      frische Instanz: Editor offen + Rollenwahl 'hub' -> main
+  ok      frische Instanz als main: faerbt
+  ok      Rueckweg: 'sensor' klassifiziert zurueck auf legacy
+  ok      Rueckweg/M-34: nach dem Ausfade greift neutral - und bleibt es ueber 80 Bloecke
+  ok      Vorbereitung: main
+  ok      der fremde Stand kommt read-only zurueck
+  ok      read-only -> zurueck auf unclassified
+  ok      read-only: kein Brokerstart
+  ok      read-only: wieder audio-neutral
+
+[3] Phase B — Broker-Lifecycle-Gate und Audiothread-Nulltest
+  ok      brokerstart_gate_alle_negativzustaende
+  ok      launcher_bleibt_vor_gate_unberuehrt
+  ok      broker_lifecycle_aufrufe_im_audiothread_null
+  ok      brokerstop_nie_im_processblock
+  ok      broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre
+  ok      processblock_quellschnitt_dateioperationen_null
+  ok      processblock_quellschnitt_pipeoperationen_null
+  ok      processblock_quellschnitt_prozessoperationen_null
+  ok      processblock_quellschnitt_logoperationen_null
+  ok      processblock_quellschnitt_store_wait_null
+  ok      NAK-180 N-20: die feindliche Pipe steht
+  ok      NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage  [0 ms]
+
+LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler
+
+== A1 EqCopNullTest (D3) ==
+Befehl: eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
+Rohausgabe:
+  ok      Latenz ist 0 Samples
+  ok      Tail ist 0 s
+  ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  ok      kein falscher NaN-Alarm bei endlichem Signal
+  ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+
+== A16 EqCopProbeeqNullTest (D3) ==
+Befehl: eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe
+Rohausgabe:
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+
+== A12 erzeuge_state_fixtures.py --pruefen (D3) ==
+Befehl: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Rohausgabe:
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 29 ungueltige mit Grund
+Preset: 3 gueltige, 17 ungueltige mit Grund
+STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)

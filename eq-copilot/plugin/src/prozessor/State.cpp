@@ -62,8 +62,32 @@ bool EqCopilotProcessor::neueSensorId()
 
 void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
 {
-    std::lock_guard<std::mutex> l (bindungMutex);
-    nakama::state::speichere (zustand, ziel);
+    // 🔑 NAK-246 D3 (R-D3; Manifest Paragraph 3.3 M-10, 5.3 Feinheit 1a,
+    // Abweichung 2 in 5.10): das Speichern ist selbst ein Drain der
+    // bestaetigten Sources-Befehle - "spaetestens beim Speichern".
+    //
+    // Bis hierher serialisierte diese Methode `zustand`, wie er war; ein vom
+    // Broker bestaetigter Join oder Unbind, den noch kein Editor-Tick
+    // angewandt hatte, fehlte im gespeicherten Projekt, und der Reload leerte
+    // die Warteliste (Auditbefund D3). Jetzt: `sourcesDrainMutex` nehmen,
+    // die bestaetigten Befehle abholen, unter `bindungMutex` anwenden und
+    // UNTER DERSELBEN Sperre serialisieren - die Bytes tragen damit genau den
+    // Stand nach den bestaetigten Befehlen. Modell, Host-Dirty und Revision
+    // folgen je geaendertem Befehl genau einmal NACH der Freigabe: ein
+    // Hostaufruf unter einer eigenen Sperre ist eine Sperrenordnung, die
+    // dieses Projekt nirgends fuehrt (unten, Etappe A).
+    std::size_t geaendert = 0;
+    {
+        std::lock_guard<std::mutex> drain (sourcesDrainMutex);
+        const auto befehle = bestaetigteSourcesCommandsAbholen();
+        std::lock_guard<std::mutex> l (bindungMutex);
+        for (const auto& befehl : befehle)
+            if (wendeSourcesCommandAnUnterBindung (befehl))
+                ++geaendert;
+        nakama::state::speichere (zustand, ziel);
+    }
+    for (std::size_t i = 0; i < geaendert; ++i)
+        meldeSourcesMitgliederNachBefehl();
 }
 
 void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)

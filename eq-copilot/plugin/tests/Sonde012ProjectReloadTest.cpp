@@ -68,7 +68,9 @@ bool warteAuf (int millisekunden, Bedingung&& bedingung)
 
 struct DirtyZaehler final : juce::AudioProcessorListener
 {
-    int nonParam = 0;
+    /// NAK-246 D3: seit dem Worker-Drain meldet auch der Analyse-Workerzug
+    /// Host-Dirty (M-11) - der Zaehler wird von zwei Threads geschrieben.
+    std::atomic<int> nonParam { 0 };
     void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
     void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
     {
@@ -150,19 +152,27 @@ void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projekt
     // haengt statt dessen in `ConnectNamedPipe`.
     processor.prepareToPlay (48000.0, 512);
     processor.setzeEditorOffen (true);
+    // NAK-246 D3 (M-14): das Speichern unten ist der EINZIGE Drain - die
+    // Zeile misst, dass er nur anwendet, was ein echter Produkt-Callback
+    // bestaetigt hat, nicht den Takt des Workers.
+    processor.setzeWorkerDrainFuerTest (false);
     const bool initialisiert = processor.setzeBindung ("hub", "Gen", "");
     processor.setzeSourcesFixtureFuerTest (lebendeQuelle (quelle));
     DirtyZaehler dirty;
     processor.addListener (&dirty);
-    const bool eingereiht = processor.bindeSourcesHauptziel (quelle);
-    const auto ausstehendVorher = processor.ausstehenderSourcesCommandFuerTest();
-    const auto command = commandId (ausstehendVorher);
-
+    // Die Bezugsgroessen VOR dem Senden des Befehls (NAK-246 D3, M-14): ein
+    // nur ausstehender, nie bestaetigter Befehl darf weder das Speichern noch
+    // den Tick veraendern. Stuende die Bezugsgroesse erst hinter dem Senden,
+    // saehe ein Speicher-Drain, der auch Unbestaetigtes anwendet, in beiden
+    // Saves dasselbe - und die Wache bliebe gruen.
     juce::MemoryBlock stateVorher;
     processor.getStateInformation (stateVorher);
     const auto mitgliederVorher = processor.holeZustandKopie().mainProjectMitglieder;
-    const auto dirtyVorher = dirty.nonParam;
+    const auto dirtyVorher = dirty.nonParam.load();
     const auto revisionVorher = processor.v3StateRevisionFuerTest();
+    const bool eingereiht = processor.bindeSourcesHauptziel (quelle);
+    const auto ausstehendVorher = processor.ausstehenderSourcesCommandFuerTest();
+    const auto command = commandId (ausstehendVorher);
 
     const std::string pipe = std::string ("\\\\.\\pipe\\evenacadia.eq-copilot.probe.nak123.c10.")
                            + std::to_string (GetCurrentProcessId());
@@ -250,6 +260,29 @@ void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projekt
             CloseHandle (weck);
     }
     peer.join();
+
+    // 🔑 NAK-246 D3 (M-14, Regressionswache): ein Speichern OHNE Tick. Der
+    // Speicher-Drain (`getStateInformation`) wendet nur an, was ein echter
+    // Produkt-Callback bestaetigt hat - das gefaelschte ACK hat keinen
+    // erreicht. State-Bytes, Mitglieder, Dirty und Revision sind vor und
+    // nach dem Speichern identisch.
+    juce::MemoryBlock stateOhneTick;
+    processor.getStateInformation (stateOhneTick);
+    const bool ohneTickBytesGleich = stateVorher.getSize() == stateOhneTick.getSize()
+        && (stateVorher.getSize() == 0
+            || std::memcmp (stateVorher.getData(), stateOhneTick.getData(),
+                            stateVorher.getSize()) == 0);
+    const bool ohneTickUnveraendert = ohneTickBytesGleich
+        && processor.holeZustandKopie().mainProjectMitglieder == mitgliederVorher
+        && dirty.nonParam == dirtyVorher
+        && processor.v3StateRevisionFuerTest() == revisionVorher;
+    pruefe (ohneTickUnveraendert,
+            "M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick "
+            "laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der "
+            "Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat",
+            juce::String ((juce::int64) stateOhneTick.getSize()) + " Bytes, Dirty "
+                + juce::String (dirty.nonParam.load()) + ", Revision "
+                + juce::String ((juce::int64) processor.v3StateRevisionFuerTest()));
 
     processor.setzeControlTransportFuerTest (authZustand);
     processor.sourcesTick();
@@ -712,6 +745,355 @@ bool nak246Fall (const std::string& name)
     return false;
 }
 } // namespace nak246
+
+//==============================================================================
+// NAK-246 D3 · editorunabhaengiger Persistenzabschluss (Regel R-D3; Manifest
+// docs/beweise/NAK-246.md Paragraph 3.3 M-10 bis M-13; 5.3)
+//==============================================================================
+//
+// Der Editor-Timer war der EINZIGE Drain der vom Broker bestaetigten
+// Sources-Befehle: ohne offenen Editor wurde ein bestaetigter Join oder
+// Unbind nie in den State uebernommen, und das Speichern nahm ihn nicht mit
+// (Auditbefund D3). Die vier Faelle messen die drei Drains und ihren Riegel:
+//   M-10  das Speichern wendet an, bevor es serialisiert (neue Instanz laedt
+//         das gejointe Mitglied und nicht mehr das geloeste; kein Tick);
+//   M-11  der Analyse-Workerzug wendet ohne Editor an (Latenz gemessen);
+//   M-12  zwei bestaetigte Befehle desselben Mitglieds, zwei Drains, ein
+//         Testhaken zwischen Swap und Anwendung: genau einmal je Befehl, in
+//         ACK-Reihenfolge - der Riegel `sourcesDrainMutex` klammert beides;
+//   M-13  der Reload-Riegel gilt auch im Speicher-Drain (Wache).
+// M-14 (Wache) steht oben im Fall `gefaelschtes_command_ack_vor_serverauth`.
+// Rotlauf gegen den Basis-SHA: docs/beweise/roh/NAK-246-rot-M-10.txt bis -M-14.txt.
+
+namespace nak246d3
+{
+using nak246::Schranke;
+using nak246::Uhr;
+using nak246::msSeit;
+
+std::vector<nakama::state::MainProjectMitglied> mitglieder (const eqcop::EqCopilotProcessor& p)
+{
+    return p.holeZustandKopie().mainProjectMitglieder;
+}
+
+bool genau (const std::vector<nakama::state::MainProjectMitglied>& m,
+            std::initializer_list<std::string> ids)
+{
+    if (m.size() != ids.size())
+        return false;
+    std::size_t i = 0;
+    for (const auto& erwartet : ids)
+        if (m[i++].instanceId != juce::String (erwartet))
+            return false;
+    return true;
+}
+
+/// Ein Main mit Bindung; `editorOffen` nur fuer die explizite Initialisierung
+/// (Paragraph 53.5), danach wie vom Fall gewuenscht.
+std::unique_ptr<eqcop::EqCopilotProcessor> mainAnlegen (bool workerDrain, bool editorBleibtOffen)
+{
+    // HEAP, nicht Rahmen (NAK-175).
+    auto p = std::make_unique<eqcop::EqCopilotProcessor>();
+    p->setzeWorkerDrainFuerTest (workerDrain);
+    p->setzeEditorOffen (true);
+    pruefe (p->setzeBindung ("hub", "Gen", ""), "NAK-246 D3: der Prozessor ist ein Main mit Bindung");
+    if (! editorBleibtOffen)
+        p->setzeEditorOffen (false);
+    return p;
+}
+
+/// M-10 · Join A bestaetigt, danach Unbind B bestaetigt, KEIN Tick; der Host
+/// speichert; eine neue Instanz laedt genau A. Der Worker-Drain ist fuer
+/// diesen Fall abgeschaltet, damit die Zeile am SPEICHERN faellt.
+void bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state()
+{
+    std::cout << "== NAK-246 M-10 bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    auto vor = mainAnlegen (false, true);
+    DirtyZaehler dirty;
+    vor->addListener (&dirty);
+
+    // Aufbau MIT Tick: B ist Mitglied - der Zustand, den ein Wire-Unbind
+    // voraussetzt (`sendeSourcesCommand` verlangt `hat`).
+    vor->setzeSourcesFixtureFuerTest (lebendeQuelle (b));
+    pruefe (vor->bindeSourcesHauptziel (b), "M-10 Aufbau: Join B gesendet");
+    vor->v3AntwortFuerTest (ack (commandId (vor->ausstehenderSourcesCommandFuerTest()), true));
+    vor->sourcesTick();
+    pruefe (genau (mitglieder (*vor), { b }) && dirty.nonParam == 1,
+            "M-10 Aufbau: B ist Mitglied (ein Tick, ein Dirty)");
+
+    // Ab hier KEIN Tick mehr. A ist Hauptziel und unklassifiziert; B steht als
+    // bestaetigtes Mitglied mit Runtime-Nonce in der Sicht (Wire-Unbind).
+    auto sicht = lebendeQuelle (a);
+    auto zeileB = lebendeQuelle (b).quellen.front();
+    zeileB.mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    zeileB.hauptziel = false;
+    zeileB.runtimeNonce = id ('d');
+    sicht.quellen.push_back (zeileB);
+    vor->setzeSourcesFixtureFuerTest (std::move (sicht));
+    pruefe (vor->bindeSourcesHauptziel (a), "M-10: Join A gesendet");
+    const auto joinId = commandId (vor->ausstehenderSourcesCommandFuerTest());
+    vor->v3AntwortFuerTest (ack (joinId, true));
+    pruefe (vor->waehleSourcesHauptziel (b), "M-10: B wird Hauptziel");
+    pruefe (vor->entferneSourcesHauptziel (b), "M-10: Unbind B gesendet (Wire, mit Runtime-Nonce)");
+    const auto unbindId = commandId (vor->ausstehenderSourcesCommandFuerTest());
+    pruefe (! joinId.empty() && ! unbindId.empty() && joinId != unbindId,
+            "M-10: zwei Befehle, zwei Kennungen");
+    vor->v3AntwortFuerTest (ack (unbindId, true));
+
+    // Kein Tick: der State traegt noch den alten Stand, nichts ist gemeldet.
+    pruefe (genau (mitglieder (*vor), { b }) && dirty.nonParam == 1,
+            "M-10: vor dem Speichern ist nichts angewandt - kein Tick lief");
+    const auto revisionVor = vor->v3StateRevisionFuerTest();
+    const auto dirtyVor = dirty.nonParam.load();
+
+    juce::MemoryBlock state;
+    vor->getStateInformation (state);
+
+    pruefe (genau (mitglieder (*vor), { a }),
+            "M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr");
+    pruefe (dirty.nonParam == dirtyVor + 2,
+            "M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)",
+            juce::String (dirty.nonParam.load()));
+    pruefe (vor->v3StateRevisionFuerTest() == revisionVor + 2,
+            "M-10: die Revision ist je Befehl um 1 gestiegen (+2)",
+            juce::String ((juce::int64) (vor->v3StateRevisionFuerTest() - revisionVor)));
+    {
+        const auto s = vor->sourcesSicht();
+        bool aBestaetigt = false;
+        for (const auto& q : s.quellen)
+            if (q.instanceId == a)
+                aBestaetigt = q.mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+        pruefe (aBestaetigt, "M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt");
+    }
+    vor->removeListener (&dirty);
+
+    auto nach = std::make_unique<eqcop::EqCopilotProcessor>();
+    DirtyZaehler dirtyNach;
+    nach->addListener (&dirtyNach);
+    nach->setStateInformation (state.getData(), (int) state.getSize());
+    const auto geladen = mitglieder (*nach);
+    pruefe (genau (geladen, { a })
+                && geladen.front().label == "Reported fallback",
+            "M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - "
+            "die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste",
+            juce::String ((int) geladen.size()) + " Mitglied(er)");
+    pruefe (dirtyNach.nonParam == 0, "M-10: das Laden meldet kein Dirty");
+    nach->removeListener (&dirtyNach);
+}
+
+/// M-11 · Join bestaetigt, KEIN Tick, KEIN Speichern, Editor geschlossen: der
+/// prozessoreigene Takt (Analyse-Workerzug) wendet an. Latenz gemessen.
+void bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt()
+{
+    std::cout << "== NAK-246 M-11 bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt ==\n";
+    const auto a = id ('a');
+    auto p = mainAnlegen (true, false);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
+    pruefe (p->bindeSourcesHauptziel (a), "M-11: Join A gesendet");
+    const auto joinId = commandId (p->ausstehenderSourcesCommandFuerTest());
+    const auto revisionVor = p->v3StateRevisionFuerTest();
+
+    const auto t0 = Uhr::now();
+    p->v3AntwortFuerTest (ack (joinId, true));
+    const bool angewandt = warteAuf (2000, [&] { return genau (mitglieder (*p), { a }); });
+    const auto latenzMs = msSeit (t0);
+    pruefe (angewandt,
+            "M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne "
+            "Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug "
+            "spaetestens alle 50 ms)",
+            juce::String ((juce::int64) latenzMs) + " ms von ACK bis Anwendung");
+    const bool gemeldet = warteAuf (1000, [&] {
+        return dirty.nonParam.load() == 1 && p->v3StateRevisionFuerTest() == revisionVor + 1;
+    });
+    pruefe (gemeldet, "M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen",
+            "Dirty " + juce::String (dirty.nonParam.load()) + ", Revision +"
+                + juce::String ((juce::int64) (p->v3StateRevisionFuerTest() - revisionVor)));
+    // Und GENAU einmal: weitere Zuege melden nichts nach.
+    std::this_thread::sleep_for (std::chrono::milliseconds (150));
+    pruefe (dirty.nonParam == 1 && p->v3StateRevisionFuerTest() == revisionVor + 1,
+            "M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision");
+    {
+        const auto s = p->sourcesSicht();
+        bool aBestaetigt = false;
+        for (const auto& q : s.quellen)
+            if (q.instanceId == a)
+                aBestaetigt = q.mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+        pruefe (aBestaetigt, "M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt");
+    }
+    p->removeListener (&dirty);
+}
+
+/// M-12 · zwei bestaetigte Befehle desselben Mitglieds in ACK-Reihenfolge
+/// (confirm_join, dann unbind_probe); Drain A (Workerzug) haelt am Haken
+/// zwischen Swap und Anwendung, Drain B (Editor-Tick) laeuft aus einem
+/// eigenen Faden. Mit `sourcesDrainMutex` wartet B, bis A fertig ist; ohne
+/// ihn ueberholt B (No-op auf ein Mitglied, das noch nicht da ist), und A
+/// wendet danach den Join an - das Mitglied bleibt, obwohl es fort sein muss.
+void dirty_und_revision_genau_einmal_je_bestaetigtem_befehl()
+{
+    std::cout << "== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==\n";
+    const auto a = id ('a');
+    // Schranke und Zaehler VOR dem Prozessor: der Haken lebt im Prozessor und
+    // kann bis zu dessen Destruktor aus dem Workerzug gerufen werden - was er
+    // faengt, muss ihn ueberleben.
+    Schranke gate;
+    std::atomic<int> hakenRufe { 0 };
+    auto p = mainAnlegen (true, true);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    const auto revisionVor = p->v3StateRevisionFuerTest();
+
+    p->setzeSourcesDrainHakenFuerTest ([&gate, &hakenRufe] (std::size_t)
+    {
+        if (hakenRufe.fetch_add (1) == 0)
+            gate.halten();
+    });
+
+    // Befehl 1 (eingeschleust, dann ECHTER ACK-Weg): confirm_join A.
+    const auto joinId = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a);
+    p->v3AntwortFuerTest (ack (joinId, true));
+    pruefe (gate.warteBisErreicht (2000),
+            "M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung");
+    pruefe (mitglieder (*p).empty() && dirty.nonParam == 0,
+            "M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet");
+
+    // Befehl 2: unbind_probe A, bestaetigt - er liegt jetzt in der Liste, die
+    // A NICHT mitgenommen hat.
+    const auto unbindId = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::unbindProbe, a);
+    p->v3AntwortFuerTest (ack (unbindId, true));
+
+    // Drain B: der Editor-Tick aus einem eigenen Faden.
+    std::atomic<bool> bFertig { false };
+    std::atomic<long long> bDauerMs { 0 };
+    std::thread tickB ([&]
+    {
+        const auto t = Uhr::now();
+        p->sourcesTick();
+        bDauerMs.store (msSeit (t));
+        bFertig.store (true);
+    });
+    std::this_thread::sleep_for (std::chrono::milliseconds (300));
+    const bool bWartete = ! bFertig.load();
+    const auto waehrend = mitglieder (*p);
+    gate.freigeben();
+    tickB.join();
+    // Ruhe: beide Drains sind durch.
+    (void) warteAuf (2000, [&] { return dirty.nonParam.load() >= 2; });
+    std::this_thread::sleep_for (std::chrono::milliseconds (100));
+
+    pruefe (mitglieder (*p).empty(),
+            "M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann "
+            "Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied",
+            juce::String ((int) mitglieder (*p).size()) + " Mitglied(er)");
+    pruefe (dirty.nonParam == 2,
+            "M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)",
+            juce::String (dirty.nonParam.load()));
+    pruefe (p->v3StateRevisionFuerTest() == revisionVor + 2,
+            "M-12: Revision-Delta == 2",
+            juce::String ((juce::int64) (p->v3StateRevisionFuerTest() - revisionVor)));
+    pruefe (bWartete && waehrend.empty(),
+            "M-12: der zweite Drain wartete auf den ersten - `sourcesDrainMutex` klammert "
+            "Swap UND Anwendung",
+            juce::String ((juce::int64) bDauerMs.load()) + " ms Editor-Tick");
+    pruefe (hakenRufe.load() >= 2,
+            "M-12: beide Swaps liefen durch den Haken",
+            juce::String (hakenRufe.load()));
+    // Der Haken bleibt bis zum Destruktor gesetzt (kein Umsetzen, waehrend der
+    // Workerzug ihn lesen koennte); Schranke und Zaehler ueberleben ihn.
+    p->removeListener (&dirty);
+}
+
+/// M-13 · Wache: der Reload-Riegel gilt auch fuer den Speicher-Drain.
+/// (1) Produktweg: ein ACK nach dem Reload findet keine Zuordnung mehr;
+/// (2) Riegel: ein bestaetigter Befehl mit fremder Bindung oder fremder
+///     Epoche in der Liste wird vom Speicher-Drain nie angewandt.
+void ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht()
+{
+    std::cout << "== NAK-246 M-13 ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht ==\n";
+    const auto a = id ('a');
+    auto p = mainAnlegen (false, true);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    const auto alteBindung = p->holeZustandKopie().common.projectBindingId.toStdString();
+
+    // Ein anderes Projekt, dessen State geladen wird.
+    juce::MemoryBlock fremdState;
+    {
+        auto fremd = std::make_unique<eqcop::EqCopilotProcessor>();
+        fremd->setzeEditorOffen (true);
+        pruefe (fremd->setzeBindung ("hub", "Anderes", ""), "M-13: ein zweites Projekt");
+        fremd->getStateInformation (fremdState);
+    }
+
+    // (1) Join A gesendet, dann Reload, dann der ACK des alten Laufs.
+    p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
+    pruefe (p->bindeSourcesHauptziel (a), "M-13: Join A gesendet (alter Lauf)");
+    const auto joinId = commandId (p->ausstehenderSourcesCommandFuerTest());
+    p->setStateInformation (fremdState.getData(), (int) fremdState.getSize());
+    const auto neueBindung = p->holeZustandKopie().common.projectBindingId.toStdString();
+    pruefe (! neueBindung.empty() && neueBindung != alteBindung,
+            "M-13: das Projekt ist gewechselt (andere project_binding_id)");
+    const auto dirtyNachReload = dirty.nonParam.load();
+    const auto revisionNachReload = p->v3StateRevisionFuerTest();
+    p->v3AntwortFuerTest (ack (joinId, true));
+    juce::MemoryBlock state1;
+    p->getStateInformation (state1);
+    pruefe (mitglieder (*p).empty() && dirty.nonParam == dirtyNachReload
+                && p->v3StateRevisionFuerTest() == revisionNachReload,
+            "M-13: der ACK des alten Laufs findet nach dem Reload keine Zuordnung - "
+            "Speichern ohne Tick aendert nichts");
+
+    // (2) Der Riegel im Speicher-Drain selbst: bestaetigte Befehle mit fremder
+    // Bindung bzw. fremder Epoche liegen in der Liste.
+    const auto fremdeBindung = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a, alteBindung);
+    p->v3AntwortFuerTest (ack (fremdeBindung, true));
+    const auto fremdeEpoche = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a, {}, id ('9'));
+    p->v3AntwortFuerTest (ack (fremdeEpoche, true));
+    juce::MemoryBlock state2;
+    p->getStateInformation (state2);
+    const bool bytesGleich = state1.getSize() == state2.getSize()
+        && std::memcmp (state1.getData(), state2.getData(), state1.getSize()) == 0;
+    pruefe (mitglieder (*p).empty() && bytesGleich && dirty.nonParam == dirtyNachReload
+                && p->v3StateRevisionFuerTest() == revisionNachReload,
+            "M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - "
+            "bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain "
+            "nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)");
+    p->removeListener (&dirty);
+
+    auto nach = std::make_unique<eqcop::EqCopilotProcessor>();
+    nach->setStateInformation (state2.getData(), (int) state2.getSize());
+    pruefe (mitglieder (*nach).empty(),
+            "M-13: eine neue Instanz laedt kein Mitglied des alten Laufs");
+
+    // Gegenprobe: derselbe Befehl mit der AKTUELLEN Bindung und Epoche wird
+    // vom Speicher-Drain angewandt - der Riegel ist selektiv, nicht blind.
+    const auto passend = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a);
+    p->v3AntwortFuerTest (ack (passend, true));
+    juce::MemoryBlock state3;
+    p->getStateInformation (state3);
+    pruefe (genau (mitglieder (*p), { a }),
+            "M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an");
+}
+
+bool nak246d3Fall (const std::string& name)
+{
+    if (name == "m10") { bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state(); return true; }
+    if (name == "m11") { bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt(); return true; }
+    if (name == "m12") { dirty_und_revision_genau_einmal_je_bestaetigtem_befehl(); return true; }
+    if (name == "m13") { ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht(); return true; }
+    if (name == "m14") { gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand(); return true; }
+    return false;
+}
+} // namespace nak246d3
 } // namespace
 
 int main (int argc, char** argv)
@@ -719,9 +1101,9 @@ int main (int argc, char** argv)
     juce::ScopedJuceInitialiser_GUI gui;
     if (argc == 3 && std::string (argv[1]) == "--nur")
     {
-        if (! nak246::nak246Fall (argv[2]))
+        if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2]))
         {
-            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09)\n";
+            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -733,6 +1115,11 @@ int main (int argc, char** argv)
     nak246::prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende();
     nak246::abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht();
     nak246::alle_produkt_callbacks_laufen_durch_die_schleuse();
+    // NAK-246 D3: der editorunabhaengige Persistenzabschluss (M-10 bis M-13).
+    nak246d3::bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state();
+    nak246d3::bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt();
+    nak246d3::dirty_und_revision_genau_einmal_je_bestaetigtem_befehl();
+    nak246d3::ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;
@@ -772,7 +1159,7 @@ int main (int argc, char** argv)
                 != std::string::npos && ! bindId.empty() && vorAckNichtPersistiert
             && berichtetesLabelPersistiert && benannt && noOp && dirtyVor.nonParam == 2,
             "confirmed_join_ack_and_name_each_mark_host_dirty",
-            juce::String (dirtyVor.nonParam));
+            juce::String (dirtyVor.nonParam.load()));
 
     juce::MemoryBlock state;
     vor.getStateInformation (state);
@@ -811,7 +1198,7 @@ int main (int argc, char** argv)
         && q->runtimeNonce.empty();
     pruefe (stateWahr && keineLiveWahrheit && dirtyNach.nonParam == 0,
             "reload_preserves_identity_label_membership_but_not_live_truth",
-            juce::String (dirtyNach.nonParam));
+            juce::String (dirtyNach.nonParam.load()));
 
     const auto subscribe = nach.v3SubscribeFuerTest();
     pruefe (subscribe.find ("\"type\":\"subscribe_session\"") != std::string::npos
@@ -868,7 +1255,7 @@ int main (int argc, char** argv)
     pruefe (istNurPersistent && entferntLokal && keineWireBehauptung
             && entferntSichtbar && zweitesNoOp && dirtyNach.nonParam == 1,
             "persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once",
-            juce::String (dirtyNach.nonParam));
+            juce::String (dirtyNach.nonParam.load()));
     nach.removeListener (&dirtyNach);
 
     /*  ── SONDE-014 M-13 und M-09: der Intent im selben Recall-Pfad ─────────
@@ -887,7 +1274,7 @@ int main (int argc, char** argv)
         DirtyZaehler dirtyIntent;
         intentMain.addListener (&dirtyIntent);
         const bool alsMain = intentMain.setzeBindung ("hub", "Gen", "");
-        const auto dirtyNachBindung = dirtyIntent.nonParam;
+        const auto dirtyNachBindung = dirtyIntent.nonParam.load();
 
         const auto qa = juce::String (id ('a'));
         const auto qb = juce::String (id ('b'));
@@ -913,7 +1300,7 @@ int main (int argc, char** argv)
                 && abgewiesen && abweisungSchweigt && zweiterScope && schutz && kante
                 && vierWeitereMeldungen,
                 "intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent",
-                juce::String (dirtyIntent.nonParam));
+                juce::String (dirtyIntent.nonParam.load()));
 
         juce::MemoryBlock intentState;
         intentMain.getStateInformation (intentState);
@@ -941,7 +1328,7 @@ int main (int argc, char** argv)
                 && passageGewinnt && globalBleibt && bytegleich
                 && dirtyRecall.nonParam == 0,
                 "intent_survives_project_recall_and_load_marks_no_dirty",
-                juce::String (dirtyRecall.nonParam));
+                juce::String (dirtyRecall.nonParam.load()));
         intentRecall.removeListener (&dirtyRecall);
     }
 

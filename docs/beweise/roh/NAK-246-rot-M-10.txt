@@ -1,0 +1,98 @@
+NAK-246 Etappe 4 - Rotbeweis M-10 (Manifest docs/beweise/NAK-246.md §3.3): bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state (B14)
+Stand: 2026-09-11 05:29 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-10 allein (`--nur m10`), mit dem ENDGUELTIGEN Test
+  (Sonde012ProjectReloadTest.cpp, nak246d3::bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state)
+  gegen den ALTEN STAND des Persistenzabschlusses: `getStateInformation` serialisiert ohne Drain (State.cpp,
+  Rumpf des Basis-SHA), und der Analyse-Workerzug ruft keinen Drain (Analyse.cpp). Testhaken, Riegel und
+  Signaturen der Endfassung bleiben, damit der endgueltige Test kompiliert (Diff unten). Der einzige Drain ist
+  damit - wie am Basis-SHA - der Editor-Tick, und der Fall ruft ihn nicht.
+
+BAU UND LAUF
+  cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest (pwsh, VS-2022-BuildTools-cmake): Exit 0, 7 s.
+  Quellen (Rotstand) State.cpp 2026-09-11 05:29:23, Analyse.cpp 05:29:25; Binary EqCopSonde012ProjectReloadTest.exe 05:29:51 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m10
+        -> Exit 1, < 1 s, 14 Pruefungen, 5 Fehler.
+  Ruecknahme: git checkout -- eq-copilot/plugin/src/prozessor/State.cpp eq-copilot/plugin/src/prozessor/Analyse.cpp aus dem
+  gestageten Endstand (frischer LastWriteTime 05:30:10; Landmine NAK-230 greift nicht, kein Copy-Item).
+
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-10: "Speichern wendet die bestaetigten Befehle an, bevor es serialisiert")
+  FEHLER  M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr
+      -> der State traegt nach dem Speichern weiter B und nicht A: `getStateInformation` serialisiert ohne Drain
+         (Zusage §3.3 M-10 "unter bindungMutex, vor speichere"; "ROT am Basis-SHA: getStateInformation serialisiert ohne Drain").
+  FEHLER  M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste  [1 Mitglied(er)]
+      -> die neue Instanz laedt die Mitgliedschaft VOR dem ACK (B statt A) - die Zeile, die die Zusage traegt
+         ("eine neue Instanz laedt genau das"; Persistenzbeweis am GELADENEN Zustand, §3 Einleitung).
+  FEHLER  M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)  [1]
+      -> Dirty bleibt bei 1 (dem Aufbau-Tick); die zwei bestaetigten Befehle melden nichts ("oder Dirty bleibt 0").
+  FEHLER  M-10: die Revision ist je Befehl um 1 gestiegen (+2)  [0]
+  FEHLER  M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt
+      -> Folgezeilen derselben Ursache.
+  Gruen bleiben: alle Aufbauzeilen (Join B mit Tick, Join A gesendet, Unbind B gesendet, zwei Kennungen,
+  "vor dem Speichern ist nichts angewandt") und "das Laden meldet kein Dirty".
+
+DIFF DES ROTSTANDS (git diff -- State.cpp Analyse.cpp, Rotlaufstand gegen den gestageten Endstand)
+diff --git a/eq-copilot/plugin/src/prozessor/Analyse.cpp b/eq-copilot/plugin/src/prozessor/Analyse.cpp
+index 0b8be719..c589add8 100644
+--- a/eq-copilot/plugin/src/prozessor/Analyse.cpp
++++ b/eq-copilot/plugin/src/prozessor/Analyse.cpp
+@@ -343,8 +343,9 @@ void EqCopilotProcessor::workerLauf()
+         // `ComponentRestarter` leitet auf den Message-Thread). Der Schalter
+         // ist ein Testhaken (M-10/M-13/M-14 messen den Speicher-Drain allein);
+         // im Produkt steht er nie.
+-        if (! workerDrainAusFuerTest.load (std::memory_order_relaxed))
+-            wendeBestaetigteSourcesCommandsAn();
++        // ROTLAUF NAK-246 M-11 (alter Stand des Basis-SHA): kein Drain im Workerzug.
++        // if (! workerDrainAusFuerTest.load (std::memory_order_relaxed))
++        //     wendeBestaetigteSourcesCommandsAn();
+
+         if (queueHatRest)
+         {
+diff --git a/eq-copilot/plugin/src/prozessor/State.cpp b/eq-copilot/plugin/src/prozessor/State.cpp
+index d6932a1b..86991b89 100644
+--- a/eq-copilot/plugin/src/prozessor/State.cpp
++++ b/eq-copilot/plugin/src/prozessor/State.cpp
+@@ -76,18 +76,9 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
+     // folgen je geaendertem Befehl genau einmal NACH der Freigabe: ein
+     // Hostaufruf unter einer eigenen Sperre ist eine Sperrenordnung, die
+     // dieses Projekt nirgends fuehrt (unten, Etappe A).
+-    std::size_t geaendert = 0;
+-    {
+-        std::lock_guard<std::mutex> drain (sourcesDrainMutex);
+-        const auto befehle = bestaetigteSourcesCommandsAbholen();
+-        std::lock_guard<std::mutex> l (bindungMutex);
+-        for (const auto& befehl : befehle)
+-            if (wendeSourcesCommandAnUnterBindung (befehl))
+-                ++geaendert;
+-        nakama::state::speichere (zustand, ziel);
+-    }
+-    for (std::size_t i = 0; i < geaendert; ++i)
+-        meldeSourcesMitgliederNachBefehl();
++    // ROTLAUF NAK-246 M-10 (alter Stand des Basis-SHA): kein Drain, nur serialisieren.
++    std::lock_guard<std::mutex> l (bindungMutex);
++    nakama::state::speichere (zustand, ziel);
+ }
+
+ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
+
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m10
+== NAK-246 M-10 bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-10 Aufbau: Join B gesendet
+  ok      M-10 Aufbau: B ist Mitglied (ein Tick, ein Dirty)
+  ok      M-10: Join A gesendet
+  ok      M-10: B wird Hauptziel
+  ok      M-10: Unbind B gesendet (Wire, mit Runtime-Nonce)
+  ok      M-10: zwei Befehle, zwei Kennungen
+  ok      M-10: vor dem Speichern ist nichts angewandt - kein Tick lief
+  FEHLER  M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr
+  FEHLER  M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)  [1]
+  FEHLER  M-10: die Revision ist je Befehl um 1 gestiegen (+2)  [0]
+  FEHLER  M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt
+  FEHLER  M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste  [1 Mitglied(er)]
+  ok      M-10: das Laden meldet kein Dirty
+SONDE-012 ProjectReload (nur m10): 9/14 gruen
+
+GRUEN (Endstand, Binary 05:42:42, voller Lauf ohne `--nur`): alle 14 Zeilen ok, B14 gesamt 92/92, Exit 0 (docs/beweise/roh/NAK-246-etappe4-beine.txt).

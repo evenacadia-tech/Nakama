@@ -519,6 +519,11 @@ public:
         Wirezustand mit. */
     juce::uint64 versuchNichtEndlicheSamples() const;
 
+    /// Die Art eines Sources-Befehls (Join oder Unbind). Oeffentlich seit
+    /// NAK-246 D3, weil ein Bein sie `merkeSourcesCommandFuerTest` nennt;
+    /// der Befehl selbst (`SourcesCommand`) bleibt privat.
+    enum class SourcesCommandArt { confirmJoin, unbindProbe };
+
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
@@ -803,6 +808,31 @@ public:
         const nakama::ipc::ControlClient::Snapshot& transport)
     { sourcesModel.setzeControlTransport (transport); }
     std::string ausstehenderSourcesCommandFuerTest() const;
+    /** NAK-246 D3 (M-12, M-13): einen Sources-Befehl OHNE die Vorpruefungen
+        von `sendeSourcesCommand` und ohne Draht als ausstehend eintragen -
+        so, wie er nach dem Senden im Register steht. Der ACK kommt dann ueber
+        `v3AntwortFuerTest` wie im Produkt. Leere Bindung/Epoche = die
+        aktuellen; eine fremde Bindung baut den Fall "ACK eines alten Laufs".
+        Rueckgabe: die `command_id`. Nur so sind zwei bestaetigte Befehle
+        DESSELBEN Mitglieds gleichzeitig herstellbar - die Vorpruefungen des
+        Produkts (`Ipc.cpp`, `hat`/ausstehend je Instanz) lassen das ueber
+        die API nicht zu; der Riegel muss trotzdem unabhaengig davon halten. */
+    std::string merkeSourcesCommandFuerTest (SourcesCommandArt art,
+                                             const std::string& instanceId,
+                                             const std::string& projectBindingId = {},
+                                             const std::string& sessionEpoch = {});
+    /** NAK-246 D3 (M-12): Haken im RAHMEN des Persistenzabschlusses, nach
+        dem Swap und VOR der Anwendung, innerhalb von `sourcesDrainMutex`;
+        gerufen nur, wenn der Swap Befehle traegt (Parameter: ihre Zahl). Ein
+        Bein haelt hier den ersten Drain an und laesst einen zweiten laufen.
+        Im Produkt leer. Nie im Audiothread. Vor dem ersten Drain gesetzt. */
+    void setzeSourcesDrainHakenFuerTest (std::function<void (std::size_t)> haken)
+    { sourcesDrainHakenFuerTest = std::move (haken); }
+    /** NAK-246 D3 (M-10, M-13, M-14): den Drain im Workerzug fuer ein Bein
+        abschalten, damit das Speichern der EINZIGE Drain ist und die Zeile
+        an ihm faellt, nicht am Takt. Im Produkt nie gesetzt. */
+    void setzeWorkerDrainFuerTest (bool an)
+    { workerDrainAusFuerTest.store (! an); }
     /** Nur Tests (SONDE-013 M-39): schreibt in den ECHTEN RT-Control-Ring,
         bis er voll ist. Das Sticky-Bit setzt dabei der Ring selbst, nicht
         dieser Aufruf — gemessen wird der Weg von dort nach `v3Status()`.
@@ -1038,7 +1068,7 @@ private:
     void v3ControlLink (bool verbunden);
     void v3Antwort (const std::string& json, std::uint8_t schemaMinor);
     void v3Frame (const std::uint8_t*, std::size_t, std::uint8_t schemaMinor);
-    enum class SourcesCommandArt { confirmJoin, unbindProbe };
+    // `SourcesCommandArt` steht oeffentlich bei den Testzugaengen (NAK-246 D3).
     struct SourcesCommand
     {
         SourcesCommandArt art = SourcesCommandArt::confirmJoin;
@@ -1046,7 +1076,33 @@ private:
         juce::String label;
     };
     bool sendeSourcesCommand (SourcesCommandArt, const std::string& erwarteteInstanceId);
+    /** NAK-246 D3 (R-D3; docs/beweise/NAK-246.md Paragraph 3.3 und 5.3): der
+        Persistenzabschluss der bestaetigten Sources-Befehle - der RAHMEN.
+
+        Drei Drains rufen ihn: der Editor-Tick (`sourcesTick`), der
+        Analyse-Workerzug (prozessoreigener Takt, `prozessor/Analyse.cpp`) und
+        das Speichern (`getStateInformation`, dort in der Speicherform mit
+        `bindungMutex` ueber Mutation UND `speichere`). Der Rahmen nimmt
+        `sourcesDrainMutex` ueber Swap und Anwendung, holt die bestaetigten
+        Befehle unter `sourcesCommandMutex` ab und wendet sie in
+        ACK-Reihenfolge je Befehl unter `bindungMutex` an. Modell, Host-Dirty
+        und Revision werden je GEAENDERTEM Befehl genau einmal nachgezogen -
+        NACH der Freigabe beider Sperren (Abweichung 2, Paragraph 5.10: kein
+        Hostaufruf unter einer eigenen Sperre). Nie im Audiothread. */
     void wendeBestaetigteSourcesCommandsAn();
+    /// Der Swap unter `sourcesCommandMutex`. Aufrufer haelt `sourcesDrainMutex`.
+    std::vector<SourcesCommand> bestaetigteSourcesCommandsAbholen();
+    /** Der INNERE Teil: EIN bestaetigter Befehl gegen `zustand`. Aufrufer
+        haelt `bindungMutex`. Reload-Riegel (Klasse, Bindung, Epoche) wie
+        bisher: ein ACK eines vor dem Reload gueltigen Laufs mutiert den
+        neuen State nie. Rueckgabe: hat sich `mainProjectMitglieder`
+        geaendert? */
+    bool wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl);
+    /** Die Nachfuehrung je geaendertem Befehl: `setzePersistenteMitglieder`
+        mit dem AKTUELLEN Stand (unter `bindungMutex` gelesen, damit zwei
+        Drains einander keinen aelteren Stand nachreichen), Host-Dirty,
+        Revision + 1. Laeuft ohne gehaltene Sperre des Prozessors. */
+    void meldeSourcesMitgliederNachBefehl();
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -1060,6 +1116,20 @@ private:
     mutable std::mutex sourcesCommandMutex;
     std::map<std::string, SourcesCommand> ausstehendeSourcesCommands;
     std::vector<SourcesCommand> bestaetigteSourcesCommands;
+    /** NAK-246 D3 (R-D3, Paragraph 5.3 Feinheiten 2 und 3): die EINZIGE
+        Klammer ueber Swap UND Anwendung der bestaetigten Befehle. Ohne sie
+        koennten zwei Drains (Editor-Tick, Workerzug, Speichern) je einen
+        disjunkten Swap holen und in vertauschter Reihenfolge anwenden -
+        `bindungMutex` deckt nur die Mutation je Befehl, nicht den Swap
+        (M-12: Join, dann Unbind desselben Mitglieds).
+
+        Sperrenordnung: `sourcesDrainMutex` -> `sourcesCommandMutex` (nur der
+        Swap) -> je Befehl `bindungMutex` (nur die State-Mutation; im
+        Speicher-Drain zusaetzlich ueber `speichere`). `SourcesModel::mutex`
+        und der Hostaufruf (`meldeHostDirty`) liegen NACH der Freigabe beider.
+        Nie auf dem Audiothread; ein Drain wartet auf den anderen hoechstens
+        die Dauer einer Anwendung. */
+    mutable std::mutex sourcesDrainMutex;
     // §53.5-Automat. Er wird ausschliesslich unter `bindungMutex` gefuehrt
     // (Nachrichten-/Hostthread); der Audiothread liest nie ihn, sondern die
     // Atomic-Spiegelung `istMainKlassifiziert` darunter.
@@ -1564,6 +1634,11 @@ private:
     /// vor dem ersten Zustandszugriff. Im Produkt leer. Nie im Audiothread.
     std::function<void (const std::string&)> v3AntwortHakenFuerTest;
     std::function<void (std::uint64_t, std::uint64_t)> replayBeginHakenFuerTest;
+    /// NAK-246 D3: Haken im Rahmen des Persistenzabschlusses (M-12) und der
+    /// Schalter fuer den Drain im Workerzug (M-10/M-13/M-14). Im Produkt leer
+    /// bzw. `false`. Nie im Audiothread.
+    std::function<void (std::size_t)> sourcesDrainHakenFuerTest;
+    std::atomic<bool> workerDrainAusFuerTest { false };
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den

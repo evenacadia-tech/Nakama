@@ -1,0 +1,65 @@
+NAK-246 Etappe 4 - Rotbeweis M-14 (Manifest docs/beweise/NAK-246.md §3.3, Regressionswache, absichtlich gebrochen): gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand, erweitert um ein Speichern OHNE Tick (B14)
+Stand: 2026-09-11 05:31-05:33 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-08.txt (Regressionswache einmal absichtlich gebrochen, Prueflistenzeile E).
+
+WAS GEFAHREN WURDE
+  M-14 (Wache, NAK-123 C-10): "Der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat.
+  State-Bytes, Mitglieder, Dirty und Revision vor und nach dem Speichern identisch - auch ohne sourcesTick."
+  Der bestehende B14-Fall ist um genau dieses Speichern OHNE Tick erweitert (neue Zeile "M-14: ..."). Gebrochen
+  wurde die Wache an der Zusage selbst: der Speicher-Drain in `getStateInformation` (State.cpp) wendet im Rotstand
+  auch UNBESTAETIGTE (nur ausstehende) Befehle an - also den Join, dessen gefaelschter ACK die Serverpruefung nie
+  passiert hat (`callbacks == 0` bleibt).
+  Bein B14, Fall M-14 allein (`--nur m14`), endgueltiger Test.
+
+ZWEI LAEUFE - WARUM DER ERSTE NICHT FIEL
+  Lauf 1 (Binary 05:31:24, derselbe Rotbau wie M-13): 2/2 gruen, Exit 0 - die Wache fiel NICHT. Ursache im Test,
+  nicht im Bruch: die Bezugsgroessen (`stateVorher`, `mitgliederVorher`, `dirtyVorher`, `revisionVorher`) wurden
+  bis dahin ERST NACH `bindeSourcesHauptziel` gezogen, und `stateVorher` ist selbst ein `getStateInformation`.
+  Ein Speicher-Drain, der Unbestaetigtes anwendet, wandte den ausstehenden Join damit schon im Bezugs-Save an;
+  der zweite Save sah dasselbe, die Bytes waren gleich, und die Wache mass sich selbst. Der Test zieht die
+  Bezugsgroessen seither VOR dem Senden des Befehls (ein nur ausstehender Befehl darf weder Save noch Tick
+  veraendern; SONDE-012 "save_is_not_a_persistent_mutation"). Am korrekten Produkt aendert das nichts (die Bytes
+  vor dem Senden sind dieselben wie danach); am gebrochenen faellt die Wache jetzt.
+  Lauf 2 (Rotbau erneut mit dem geaenderten Test): Exit 1, 0/2.
+
+BAU UND LAUF (Lauf 2)
+  cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest: Exit 0, 8 s.
+  Quellen (Rotstand) State.cpp 2026-09-11 05:32:31, Sonde012ProjectReloadTest.cpp 05:32:27; Binary 05:32:52 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m14
+        -> Exit 1, < 1 s, 2 Pruefungen, 2 Fehler.
+  Ruecknahme: git checkout -- eq-copilot/plugin/src/prozessor/State.cpp aus dem gestageten Endstand (05:32:53).
+
+DIE FALLENDEN ZUSAGEN (M-14: "State-Bytes aendern sich")
+  FEHLER  M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat  [333 Bytes, Dirty 1, Revision 2]
+      -> der Save ohne Tick hat den unbestaetigten Join angewandt: 333 statt 250 Bytes, Dirty 1, Revision +1.
+  FEHLER  gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand
+      -> die C-10-Zeile faellt mit (State nach dem Tick ungleich dem Bezug).
+
+DIFF DES ROTSTANDS (git diff -- State.cpp, Rotlaufstand gegen den gestageten Endstand)
+diff --git a/eq-copilot/plugin/src/prozessor/State.cpp b/eq-copilot/plugin/src/prozessor/State.cpp
+index d6932a1b..521185a9 100644
+--- a/eq-copilot/plugin/src/prozessor/State.cpp
++++ b/eq-copilot/plugin/src/prozessor/State.cpp
+@@ -79,7 +79,14 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
+     std::size_t geaendert = 0;
+     {
+         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
+-        const auto befehle = bestaetigteSourcesCommandsAbholen();
++        auto befehle = bestaetigteSourcesCommandsAbholen();
++        // ROTLAUF NAK-246 M-14 (Wache absichtlich gebrochen): der Speicher-Drain
++        // wendet auch UNBESTAETIGTE (nur ausstehende) Befehle an.
++        {
++            std::lock_guard<std::mutex> c (sourcesCommandMutex);
++            for (const auto& paar : ausstehendeSourcesCommands)
++                befehle.push_back (paar.second);
++        }
+         std::lock_guard<std::mutex> l (bindungMutex);
+         for (const auto& befehl : befehle)
+             if (wendeSourcesCommandAnUnterBindung (befehl))
+
+VOLLSTAENDIGE ROHAUSGABE (Lauf 2): EqCopSonde012ProjectReloadTest.exe --nur m14
+  FEHLER  M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat  [333 Bytes, Dirty 1, Revision 2]
+  FEHLER  gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand
+SONDE-012 ProjectReload (nur m14): 0/2 gruen
+
+GRUEN (Endstand, Binary 05:42:42, voller Lauf): beide Zeilen ok (250 Bytes, Dirty 0, Revision 1); B14 gesamt 92/92, Exit 0.

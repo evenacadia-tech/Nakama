@@ -1,0 +1,38 @@
+NAK-246 Etappe 4 - Rotbeweis M-11 (Manifest docs/beweise/NAK-246.md §3.3): bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt (B14)
+Stand: 2026-09-11 05:29 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-11 allein (`--nur m11`), mit dem ENDGUELTIGEN Test
+  (Sonde012ProjectReloadTest.cpp, nak246d3::bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt)
+  gegen den ALTEN STAND: derselbe Rotstand wie M-10 (docs/beweise/roh/NAK-246-rot-M-10.txt, Diff dort) - der
+  Analyse-Workerzug ruft keinen Drain, `getStateInformation` serialisiert ohne Drain; einziger Drain ist der
+  Editor-Tick (PluginEditor.cpp:247), und der Fall haelt den Editor geschlossen und ruft keinen Tick.
+
+BAU UND LAUF
+  Derselbe Rotbau wie M-10: Quellen State.cpp 05:29:23, Analyse.cpp 05:29:25; Binary 05:29:51 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m11
+        -> Exit 1, 4 s, 6 Pruefungen, 4 Fehler.
+
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-11: "Der prozessoreigene Takt wendet an ... spaetestens nach einem Workerzug, Frist 2000 ms")
+  FEHLER  M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug spaetestens alle 50 ms)  [2295 ms von ACK bis Anwendung]
+      -> nach 2000 ms Frist fehlt das Mitglied (die Zeile, die die Zusage traegt; "ROT am Basis-SHA: einziger Drain ist PluginEditor.cpp:247").
+         Die 2295 ms sind die abgelaufene Frist plus Polling, keine Anwendung.
+  FEHLER  M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen  [Dirty 0, Revision +0]
+      -> "oder Dirty == 0".
+  FEHLER  M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision
+  FEHLER  M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt
+      -> Folgezeilen derselben Ursache.
+  Gruen bleiben: Aufbau (Main mit Bindung, Join A gesendet).
+
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m11
+== NAK-246 M-11 bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-11: Join A gesendet
+  FEHLER  M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug spaetestens alle 50 ms)  [2295 ms von ACK bis Anwendung]
+  FEHLER  M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen  [Dirty 0, Revision +0]
+  FEHLER  M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision
+  FEHLER  M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt
+SONDE-012 ProjectReload (nur m11): 2/6 gruen
+
+GRUEN (Endstand, Binary 05:42:42, voller Lauf): alle 6 Zeilen ok, Latenz von ACK bis Anwendung 5 ms, Dirty 1, Revision +1; B14 gesamt 92/92, Exit 0.

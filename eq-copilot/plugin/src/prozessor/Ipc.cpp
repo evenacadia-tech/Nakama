@@ -17,7 +17,9 @@
 //                        Der Messstand, den Heartbeat und Probe mitnehmen.
 //   sourcesTick, reconnectSources, bindeSourcesHauptziel,
 //   benenneSourcesHauptziel, entferneSourcesHauptziel, sendeSourcesCommand,
-//   wendeBestaetigteSourcesCommandsAn, ausstehenderSourcesCommandFuerTest
+//   wendeBestaetigteSourcesCommandsAn (Rahmen), bestaetigteSourcesCommandsAbholen,
+//   wendeSourcesCommandAnUnterBindung, meldeSourcesMitgliederNachBefehl,
+//   ausstehenderSourcesCommandFuerTest, merkeSourcesCommandFuerTest
 //                        Die Quellenbefehle und ihr Rueckweg.
 //
 // Die Invariante dieser Datei (CLAUDE.md, tragende technische Invarianten):
@@ -1324,49 +1326,101 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
     return false;
 }
 
-void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
+// ── NAK-246 D3 (R-D3): der Persistenzabschluss mit editorunabhaengigem Besitzer ──
+//
+// Bis hierher war der Editor-Timer (`PluginEditor.cpp`, `sourcesTick`) der
+// EINZIGE Drain der bestaetigten Befehle: ohne offenen Editor wurde ein vom
+// Broker bestaetigter Join oder Unbind nie in `zustand.mainProjectMitglieder`
+// uebernommen, `getStateInformation` serialisierte den alten Stand, und
+// `setStateInformation` leerte die Warteliste (Auditbefund D3; Entwurf
+// Paragraph 57 "Save/Reload ... erhalten richtige Mitgliedschaft"; CLAUDE.md
+// "State bleibt verlustfrei ... Jede persistente Aenderung meldet dem Host
+// Dirty-State").
+//
+// Seit dieser Etappe gibt es DREI Drains auf EINE Funktion:
+//   (a) das Speichern (`State.cpp`, `getStateInformation`): spaetestens dort,
+//       unter `bindungMutex` und VOR `speichere`;
+//   (b) der Analyse-Workerzug (`Analyse.cpp`, `workerLauf`): regelmaessig,
+//       spaetestens alle 50 ms, ohne Editor;
+//   (c) der Editor-Tick (`sourcesTick`): wie bisher, zusaetzlich.
+// Alle drei serialisieren sich ueber `sourcesDrainMutex` - die einzige
+// Klammer ueber Swap UND Anwendung (Manifest Paragraph 5.3 Feinheit 3, M-12).
+// `bindungMutex` deckt je Befehl nur die Mutation; Modell, Host-Dirty und
+// Revision folgen je geaendertem Befehl genau einmal, NACH der Freigabe.
+
+std::vector<EqCopilotProcessor::SourcesCommand>
+EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
 {
     std::vector<SourcesCommand> befehle;
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    befehle.swap (bestaetigteSourcesCommands);
+    return befehle;
+}
+
+bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl)
+{
+    // Aufrufer haelt `bindungMutex`.
+    if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
+        || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
+        || v3SessionEpoch != befehl.sessionEpoch)
+        return false; // ACK eines vor Reload gueltigen Laufs mutiert den neuen State nie.
+    auto gefunden = std::find_if (
+        zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+        [&] (const auto& m) { return m.instanceId.toStdString() == befehl.instanceId; });
+    if (befehl.art == SourcesCommandArt::confirmJoin
+        && gefunden == zustand.mainProjectMitglieder.end()
+        && zustand.mainProjectMitglieder.size()
+            < static_cast<std::size_t> (nakama::state::maxMainProjectMitglieder))
     {
-        std::lock_guard<std::mutex> l (sourcesCommandMutex);
-        befehle.swap (bestaetigteSourcesCommands);
+        zustand.mainProjectMitglieder.push_back (
+            { juce::String (befehl.instanceId), befehl.label });
+        return true;
     }
-    for (const auto& befehl : befehle)
+    if (befehl.art == SourcesCommandArt::unbindProbe
+        && gefunden != zustand.mainProjectMitglieder.end())
     {
-        std::vector<nakama::state::MainProjectMitglied> kopie;
-        bool geaendert = false;
+        zustand.mainProjectMitglieder.erase (gefunden);
+        return true;
+    }
+    return false;
+}
+
+void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl()
+{
+    // Der AKTUELLE Stand, nicht eine beim Anwenden gezogene Kopie: zwei
+    // Drains, die ihre Nachfuehrung nacheinander fahren, reichen dem Modell
+    // so nie einen aelteren Stand als den zuletzt angewandten nach.
+    std::vector<nakama::state::MainProjectMitglied> kopie;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        kopie = zustand.mainProjectMitglieder;
+    }
+    sourcesModel.setzePersistenteMitglieder (kopie);
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+}
+
+void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
+{
+    std::size_t geaendert = 0;
+    {
+        std::lock_guard<std::mutex> drain (sourcesDrainMutex);
+        const auto befehle = bestaetigteSourcesCommandsAbholen();
+        if (befehle.empty())
+            return;
+        // NAK-246 D3 (M-12): der Testhaken zwischen Swap und Anwendung,
+        // innerhalb der Klammer. Im Produkt leer.
+        if (sourcesDrainHakenFuerTest)
+            sourcesDrainHakenFuerTest (befehle.size());
+        for (const auto& befehl : befehle)
         {
             std::lock_guard<std::mutex> l (bindungMutex);
-            if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
-                || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
-                || v3SessionEpoch != befehl.sessionEpoch)
-                continue; // ACK eines vor Reload gueltigen Laufs mutiert den neuen State nie.
-            auto gefunden = std::find_if (
-                zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
-                [&] (const auto& m) { return m.instanceId.toStdString() == befehl.instanceId; });
-            if (befehl.art == SourcesCommandArt::confirmJoin
-                && gefunden == zustand.mainProjectMitglieder.end()
-                && zustand.mainProjectMitglieder.size()
-                    < static_cast<std::size_t> (nakama::state::maxMainProjectMitglieder))
-            {
-                zustand.mainProjectMitglieder.push_back (
-                    { juce::String (befehl.instanceId), befehl.label });
-                geaendert = true;
-            }
-            else if (befehl.art == SourcesCommandArt::unbindProbe
-                     && gefunden != zustand.mainProjectMitglieder.end())
-            {
-                zustand.mainProjectMitglieder.erase (gefunden);
-                geaendert = true;
-            }
-            kopie = zustand.mainProjectMitglieder;
+            if (wendeSourcesCommandAnUnterBindung (befehl))
+                ++geaendert;
         }
-        if (! geaendert)
-            continue;
-        sourcesModel.setzePersistenteMitglieder (kopie);
-        meldeHostDirty();
-        v3StateRevision.fetch_add (1);
     }
+    for (std::size_t i = 0; i < geaendert; ++i)
+        meldeSourcesMitgliederNachBefehl();
 }
 
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
@@ -1376,6 +1430,31 @@ std::string EqCopilotProcessor::ausstehenderSourcesCommandFuerTest() const
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
     return ausstehendeSourcesCommands.empty()
              ? std::string() : ausstehendeSourcesCommands.begin()->second.json;
+}
+
+std::string EqCopilotProcessor::merkeSourcesCommandFuerTest (SourcesCommandArt art,
+                                                             const std::string& instanceId,
+                                                             const std::string& projectBindingId,
+                                                             const std::string& sessionEpoch)
+{
+    SourcesCommand auftrag;
+    auftrag.art = art;
+    auftrag.commandId = uuidHex32();
+    auftrag.instanceId = instanceId;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        auftrag.projectBindingId = projectBindingId.empty()
+                                     ? zustand.common.projectBindingId.toStdString()
+                                     : projectBindingId;
+    }
+    auftrag.sessionEpoch = sessionEpoch.empty() ? v3SessionEpoch : sessionEpoch;
+    auftrag.label = "Eingeschleust";
+    auftrag.json = std::string ("{\"type\":\"session_command\",\"command\":\"")
+                 + (art == SourcesCommandArt::confirmJoin ? "confirm_join" : "unbind_probe")
+                 + "\",\"command_id\":\"" + auftrag.commandId + "\"}";
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    ausstehendeSourcesCommands.emplace (auftrag.commandId, auftrag);
+    return auftrag.commandId;
 }
 #endif
 

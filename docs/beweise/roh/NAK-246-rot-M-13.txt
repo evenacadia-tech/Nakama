@@ -1,0 +1,85 @@
+NAK-246 Etappe 4 - Rotbeweis M-13 (Manifest docs/beweise/NAK-246.md §3.3, Regressionswache, absichtlich gebrochen): ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht (B14)
+Stand: 2026-09-11 05:31 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-08.txt (Regressionswache einmal absichtlich gebrochen, Prueflistenzeile E).
+
+WAS GEFAHREN WURDE
+  M-13 ist "Regressionswache (heute gruen) fuer den Reload-Teil; ROT nur, wenn der Speicher-Drain den Riegel
+  uebergeht" (§3.3). Die Wache wurde deshalb GENAU dort gebrochen: der Reload-Riegel gegen fremde
+  `project_binding_id` und fremde `session_epoch` im inneren Teil `wendeSourcesCommandAnUnterBindung`
+  (Ipc.cpp) ist entfernt - alle drei Drains, also auch der Speicher-Drain, wenden dann ACKs eines alten Laufs an.
+  Bein B14, Fall M-13 allein (`--nur m13`), endgueltiger Test
+  (Sonde012ProjectReloadTest.cpp, nak246d3::ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht).
+  Der Fall hat zwei Teile: (1) Produktweg - Join gesendet, Reload eines anderen Projekts, ACK des alten Laufs
+  danach: keine Zuordnung mehr (State.cpp leert beide Listen), bleibt auch im Rotstand gruen; (2) der Riegel -
+  bestaetigte Befehle mit fremder Bindung bzw. fremder Epoche liegen in der Liste (eingeschleust ueber
+  `merkeSourcesCommandFuerTest`, ACK ueber `v3AntwortFuerTest`), Speichern ohne Tick.
+
+BAU UND LAUF
+  cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest: Exit 0, 7 s (zusammen mit dem M-14-Bruch, Diff unten).
+  Quellen (Rotstand) Ipc.cpp 2026-09-11 05:30:58, State.cpp 05:31:02; Binary 05:31:24 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m13
+        -> Exit 1, < 1 s, 8 Pruefungen, 2 Fehler.
+  Ruecknahme: git checkout -- Ipc.cpp State.cpp aus dem gestageten Endstand (05:31:24).
+
+DIE FALLENDEN ZUSAGEN (M-13: "Der Reload-Riegel gilt auch fuer den Speicher-Drain")
+  FEHLER  M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)
+      -> ohne Riegel wendet der Speicher-Drain den Befehl des alten Laufs an: Mitglied im State, Dirty, Revision, andere Bytes.
+  FEHLER  M-13: eine neue Instanz laedt kein Mitglied des alten Laufs
+      -> "Ein Mitglied des alten Laufs steht im gespeicherten neuen State" - die Zeile, die die Zusage traegt.
+  Gruen bleiben: Teil (1), der Produktweg (das Leeren der Listen beim Reload ist unveraendert), und die Gegenprobe
+  (passende Bindung und Epoche werden angewandt).
+
+DIFF DES ROTSTANDS (git diff -- Ipc.cpp State.cpp; der State.cpp-Teil gehoert zum M-14-Bruch, NAK-246-rot-M-14.txt)
+diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+index 42914f95..75012e62 100644
+--- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
++++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+@@ -1360,10 +1360,10 @@ EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
+ bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl)
+ {
+     // Aufrufer haelt `bindungMutex`.
+-    if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
+-        || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
+-        || v3SessionEpoch != befehl.sessionEpoch)
+-        return false; // ACK eines vor Reload gueltigen Laufs mutiert den neuen State nie.
++    // ROTLAUF NAK-246 M-13 (Wache absichtlich gebrochen): der Reload-Riegel gegen
++    // fremde Bindung und fremde Epoche ist entfernt.
++    if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
++        return false;
+     auto gefunden = std::find_if (
+         zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+         [&] (const auto& m) { return m.instanceId.toStdString() == befehl.instanceId; });
+diff --git a/eq-copilot/plugin/src/prozessor/State.cpp b/eq-copilot/plugin/src/prozessor/State.cpp
+index d6932a1b..521185a9 100644
+--- a/eq-copilot/plugin/src/prozessor/State.cpp
++++ b/eq-copilot/plugin/src/prozessor/State.cpp
+@@ -79,7 +79,14 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
+     std::size_t geaendert = 0;
+     {
+         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
+-        const auto befehle = bestaetigteSourcesCommandsAbholen();
++        auto befehle = bestaetigteSourcesCommandsAbholen();
++        // ROTLAUF NAK-246 M-14 (Wache absichtlich gebrochen): der Speicher-Drain
++        // wendet auch UNBESTAETIGTE (nur ausstehende) Befehle an.
++        {
++            std::lock_guard<std::mutex> c (sourcesCommandMutex);
++            for (const auto& paar : ausstehendeSourcesCommands)
++                befehle.push_back (paar.second);
++        }
+         std::lock_guard<std::mutex> l (bindungMutex);
+         for (const auto& befehl : befehle)
+             if (wendeSourcesCommandAnUnterBindung (befehl))
+
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m13
+== NAK-246 M-13 ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-13: ein zweites Projekt
+  ok      M-13: Join A gesendet (alter Lauf)
+  ok      M-13: das Projekt ist gewechselt (andere project_binding_id)
+  ok      M-13: der ACK des alten Laufs findet nach dem Reload keine Zuordnung - Speichern ohne Tick aendert nichts
+  FEHLER  M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)
+  FEHLER  M-13: eine neue Instanz laedt kein Mitglied des alten Laufs
+  ok      M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an
+SONDE-012 ProjectReload (nur m13): 6/8 gruen
+
+GRUEN (Endstand, Binary 05:42:42, voller Lauf): alle 8 Zeilen ok; B14 gesamt 92/92, Exit 0.

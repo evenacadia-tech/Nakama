@@ -328,6 +328,24 @@ void EqCopilotProcessor::workerLauf()
             // also nicht.
             senderPauseQuittungFuerTest.fetch_add (1, std::memory_order_release);
 
+        // 🔑 NAK-246 D3 (R-D3; Manifest Paragraph 3.3 M-11, 5.3 Feinheit 1b):
+        // der PROZESSOREIGENE Takt des Persistenzabschlusses.
+        //
+        // Der Editor-Timer war bis hierher der einzige Drain der vom Broker
+        // bestaetigten Sources-Befehle; ohne offenen Editor blieb ein
+        // bestaetigter Join oder Unbind fuer immer vorgemerkt (Auditbefund
+        // D3). Dieser Zug laeuft ab dem Konstruktor bis zum Destruktor,
+        // spaetestens alle 50 ms, bei Rueckstau sofort - und steht HIER, vor
+        // `if (queueHatRest)`, damit er auch unter Rueckstau laeuft, und
+        // ausserhalb von `analyseSteuerMutex`. Er kostet im Leerfall einen
+        // Mutex und einen Swap eines leeren Vektors; keine Allokation. Das
+        // Host-Dirty aus diesem Thread ist zulaessig (VST3-Wrapper:
+        // `ComponentRestarter` leitet auf den Message-Thread). Der Schalter
+        // ist ein Testhaken (M-10/M-13/M-14 messen den Speicher-Drain allein);
+        // im Produkt steht er nie.
+        if (! workerDrainAusFuerTest.load (std::memory_order_relaxed))
+            wendeBestaetigteSourcesCommandsAn();
+
         if (queueHatRest)
         {
             std::this_thread::yield();

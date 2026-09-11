@@ -1,0 +1,5 @@
+URTEIL: PASS — kein neu eingeführter DEFEKT.
+
+Geprüft: vollständiger Zehn-Dateien-Diff, M-29 bis M-37, Reset-/Sperrreihenfolge, Framezählung, Ganzblock-Einfrieren, Echtzeitpfad und L-M1-2 anhand von Code und Rotbelegen; HEAD vorher/nachher identisch f3f4db843e91ccde3ce5249a1793e1cdf2e5b3a3, Prüfpfade unverändert.
+
+Nicht geprüft: keine Builds, Tests oder Produktprozesse ausgeführt; Kanon 64/64, Nulltests A1/A16 und State-/Regressionsnachweise ausschließlich aus vorhandenen Rohdateien gelesen, nichts geschrieben.

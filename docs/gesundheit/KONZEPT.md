@@ -136,15 +136,18 @@ und geschlossene Zeilen: 47-mal [Härtung/Struktur], 35-mal [Werkzeug]).
 |---|---|---|---|---|
 | **K1 Rückstau und Ordnung** | Politik bei voll je P0/P1/P2, Abfluss ohne Reconnect, Schlüssel überleben Puffer, Lesepfad nie hinter „erst alles senden" | Prüfliste A; D5 (Zustellung nach Commit ungeordnet), D9 (Rücknahme teilt Schlüssel mit Vollsnapshot); NAK-165 | QueueStressTest, `pruefe_ipc_last.py`; Prosa | ◐ Beispiel |
 | **K2 Lebenslauf und Besitz** | Reihenfolge verbinden/trennen, Join-Fristen, Close-Flag vor Inhalt, Callback-Besitz, Registrierung im Stopp-Fenster | Prüfliste B; D1 (Slotbesitz), D2 (IPC-Laufzeit überlebt Besitzer), D3 (ACK am Editor-Timer); NAK-184 | LebenslaufTest, PipeClientLifecycleTest, `lebenslauf.rs`; Prosa | ◐ Beispiel |
-| **K3 Vertrag und Zahlenränder** | Längen im Leser, exakte Feldmenge beidseitig, Discriminator vor Inhalt, NaN/Inf an jeder Zahl über den Draht, Bereichsprüfung vor Konvertierung | Prüfliste C; D7 (Stereokanäle als Messdauer, schließt NAK-159 mit), D8 (Bereich nach Konvertierung); SONDE-013 P4 | SchemaTest, `contract_cross_language.rs`, `pruefe_v3_vertrag.py` (Metaschema, Engine-Teilmenge, Fassungsschritt), flatc-Drift | ◐ Beispiel |
-| **K4 Zustand und Paarung** | Save↔Load, Migration je Version, unbekannte Major read-only mit Originalbytes, Dirty-State an Host, Beziehungspaare im selben Änderungssatz | `CLAUDE.md` State-Invariante, Prüfliste F; D6 (Reload leert Sitzungszustand nicht) | StateMigrationTest, Fixtures unter `eq-copilot/fixtures/state/`, ProjectReloadTest, TransactionTest; Prosa | ◐ Beispiel |
+| **K3 Vertrag und Zahlenränder** | Längen im Leser, exakte Feldmenge beidseitig, Discriminator vor Inhalt, NaN/Inf an jeder Zahl über den Draht, Bereichsprüfung vor Konvertierung | Prüfliste C; D7 (Stereokanäle als Messdauer, schließt NAK-159 mit), D8 (Bereich nach Konvertierung); SONDE-013 P4 | Broker: generische Schema-Engine für alle Grenzen (`broker/src/vertrag.rs`); Plugin: geschlossene Feldmengen und Enums, Zahlengrenzen handgeschrieben je Leser; SchemaTest, `contract_cross_language.rs`, `pruefe_v3_vertrag.py` (Metaschema, Fixture-Deckung, Fassungsschritt), flatc-Drift | Rust ✔ · C++ ◐ |
+| **K4 Zustand und Paarung** | Save↔Load, Migration je Version, unbekannte Major read-only mit Originalbytes, Dirty-State an Host, Beziehungspaare im selben Änderungssatz | `CLAUDE.md` State-Invariante, Prüfliste F; D6 (Reload leert Sitzungszustand nicht) | StateMigrationTest (133 von 136 Feldern mit eingefrorenem Fixture, unbekannte Major read-only mit Test), Fixtures unter `eq-copilot/fixtures/state/`, ProjectReloadTest, TransactionTest; Dirty-State an allen Rufstellen belegt; alle fünf Paare beidseitig mit Test | ◐ dicht |
 | **K5 Behauptung ≤ Messung, Werkzeug-Ehrlichkeit** | Runner bezeugt nur, was er baut; Frische der Eingaben; jede Prüfung einmal gebrochen; Zahlen gemessen, nicht abgeschrieben; grüner Lauf auf altem Binary | Prüfliste D und E; D4 (false und spätere Ausführung), D10 (vier Slots kein Vier-Bank-Beweis); NAK-93, NAK-94, NAK-230 (fünf Fehler als grüner Lauf), N-29 (cmake fehlt in Bash); 35 Registerzeilen [Werkzeug] | Frischeprüfung im Runner, Stillgelegt-Marke; Prosa | ◐ Beispiel |
-| **K6 Echtzeit** | keine Sperre, Allokation, Datei, Pipe, Netz, kein Logging auf dem Audio-Thread; Überlast verwirft Frames, nie Audio | `CLAUDE.md` Grundgesetz; kein bestätigter Befund bisher | Nulltest (misst Bitgleichheit, nicht Abwesenheit), QueueStress; Erinnerungs-Hook | ○ Prosa; Invariante |
+| **K6 Echtzeit** | keine Sperre, Allokation, Datei, Pipe, Netz, kein Logging auf dem Audio-Thread; Überlast verwirft Frames, nie Audio | `CLAUDE.md` Grundgesetz; kein bestätigter Befund bisher | `RtWache` am EQ-Kern (Sperren, Allokation, Wanduhr je Callback; `eq-copilot/plugin/dsp/DspRtWache.h`, gemessen in DspGoldenTest); Allokationszähler in QueueStress für `processBlock`; Nulltest (Bitgleichheit); kein statischer Blick, Messpfad ohne Wache | ◐ (EQ-Kern ✔) |
 | **K7 Größe und Kontext** | Dateien über 2 000 Zeilen, Funktionen über 200, Clippy-Fundstellen, tote Helfer, Kommentar-Bezeichner, Always-on-Bytes | NAK-223, NAK-235, NAK-236, NAK-255; Skill-Riss 12.09.2026 ohne Zeile | `gesundheit.py` | ✔ Detektor |
 | **K8 Bedienehrlichkeit** | keine toten Elemente (User-Gesetz 24.08.2026), Tasten sind Material (25.08.2026), Zustand ehrlich gemeldet | Skizzenbelege; Oberfläche im Funktionsneustart, noch kein Befund | Belege in `design/skizze/belege/`; Gesetze | ○ Prosa |
 
 Lesart der Stärke: ✔ Detektor misst die nächste Instanz · ◐ Beispieltests
-und Prosa fangen die bekannten · ○ nur Prosa.
+und Prosa fangen die bekannten · ○ nur Prosa. Verifiziert am 12.09.2026 in
+`docs/gesundheit/abdeckungskarte.md` (fünf Leser, drei Skeptiker, 11 von 19
+gemeldeten Lücken widerlegt); die Karte ist ab jetzt die Wahrheit dieser
+Tabelle, die Tabelle nur ihre Zusammenfassung.
 
 Die vier Klassen mit belegter Rückfallquote sind K1 bis K4. Acht der zehn
 Audit-Befunde vom 10.09.2026 fallen in genau diese vier, obwohl die Prüfliste
@@ -203,12 +206,13 @@ Dirigentensession in §3.1).
 den Stand vor dem Fix seines Anlasses und ist dort rot; die Rohausgabe steht
 im Manifest des Pflegetickets. Ein Tor ohne Rotbeweis wird nicht aufgenommen.
 
-### 4.2 Abdeckungskarte (`abdeckungskarte.md` unter `docs/gesundheit/`) — Stufe 2, einmalig, dann Stufe 0
+### 4.2 Abdeckungskarte `docs/gesundheit/abdeckungskarte.md` — Stufe 2, einmalig, dann Stufe 0
 
 **Frage:** Welche Zusage hat einen Detektor, welche nur Prosa, welche
 niemanden?
 
-Die Tabelle aus §3, verifiziert und fortgeschrieben: je Zusage die Besitzer
+Erste Fassung am 12.09.2026 als Prüfsession in `nakama-d8` erstellt
+(Schritt 1 erledigt). Die Tabelle aus §3, verifiziert und fortgeschrieben: je Zusage die Besitzer
 aus Kanon, Tests, Hooks, Riegeln und Prosa, mit `Datei:Zeile` oder Beinname;
 je Klasse die Befund-IDs und ihr Zähler. Erstellung als Prüfsession (§5):
 Leseagenten sammeln die Besitzer je Zeile, Skeptiker versuchen jede Zeile
@@ -574,7 +578,7 @@ neue persistente und vertragliche Felder bringt.
 | # | Ticket | Inhalt | Beweis | Voraussetzung | User |
 |---|---|---|---|---|---|
 | 0 | Konzept abnehmen, Plan und Register nachziehen | datiertes User-Zitat im Register; Registerzeilen [Werkzeug · Prüfsystem] für die Schritte 1–8; Wortlaut von S31c/S35b ergänzt; Absatz im Dirigenten-Skill (§6.8) | `dokuriegel.py` auf Register, Plan, Skill | dieses Dokument | Entscheid §11 |
-| 1 | Abdeckungskarte | Prüfsession nach §4.2; Karte committen; erste Zähler je Klasse aus Register und Audit D1–D10 | Scope-Beweis im Bericht; Karte durch `dokuriegel.py` | 0 | nichts |
+| 1 | Abdeckungskarte — **erledigt 12.09.2026** | Prüfsession nach §4.2; Karte committen; erste Zähler je Klasse aus Register und Audit D1–D10; Befunde A-1 bis A-7 in der Karte | Scope-Beweis im Bericht; Karte durch `dokuriegel.py` | 0 | nichts |
 | 2 | Prüfgang, erste Fassung | Verzeichnis `pruefung/` unter `tools/` mit Läufer und den Toren aus §4.1, jedes mit Selbsttest und Rotbeweis; Kanon-Bein; §3.1-Aufruf; nächtliche Aufgabe | Kanon vorher = nachher, plus Rohausgabe jedes Rotbeweises | 1 | nichts |
 | 3 | Lebenslauf-Audit | Auftragsvorlage, Prüfsession, Bericht, Registerzeilen; Defekte werden Tickets | Scope-Beweis; Zähler K1/K2 in der Karte | 1 | nichts |
 | 4 | Zustandstreue und Vertragstreue | wie 3, für K4 und K3; vor S26–28 | wie 3 | 1 | nichts |
@@ -690,5 +694,6 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | §3: K3 geteilt (Rust ✔, C++ ◐), K4 „dicht", K6 auf ◐ (RtWache am EQ-Kern) nach Verifikation; §4.2 und §10 Schritt 1 als erledigt | Abdeckungskarte, erste Fassung (5 Leser, 3 Skeptiker) |
 | 12.09.2026 | Status auf abgenommen; §5.1 Kanal zwischen Sessions; §11 Punkt 1 entschieden, Punkt 2 als Karte; Anhang A mit Wortlaut für Register, Plan, Skill und Karte | User-Abnahme 12.09.2026 (Wortlaut im Kopf); Kanaltest 00:37 |
 | 12.09.2026 | Erste Fassung als Vorschlag | User-Auftrag 11./12.09.2026 (Wortlaut oben); Messungen an HEAD `818673cd`; Sonifold-System gelesen (`check`, `aftercheck`, `code-health`, `compositor-scan`, `compositor-ui`, `freshen`, `save-fidelity`, `logic-audit`, `deep-audit`, `dev-recorder-loop`, Coverage-Map, Agenten, Hooks) |

@@ -185,7 +185,7 @@ liest nur die roten Zeilen und ordnet sie ein.
 | Supply-Chain | GRENZE | `cargo deny check`, `osv-scanner --lockfile broker/Cargo.lock` | K5, Werkzeuge installiert und ungenutzt |
 | Geheimnisse und Tippfehler | GRENZE / HINWEIS | `gitleaks protect --staged`, `typos` mit Ausnahmeliste | Steam-/Signatur-Lehre aus Sonifold |
 | Vakuum-Wachen | GRENZE | Fixture-Ordner nicht leer, Golden-Zähler über Boden, jedes `EqCop*`-CMake-Ziel ist Bein oder stillgelegt, jeder `broker/tests/*.rs` läuft in einem Bein, Fuzz-Korpus nicht leer | K5 (NAK-93: „Was der Kanon nicht baut, darf er nicht bezeugen") |
-| W-Riss | GRENZE | jeder aktuelle GRENZE-Riss von `gesundheit.py` hat eine Registerzeile, die das Maß nennt | §1.2 (Skill-Riss ohne Zeile, 12.09.2026) |
+| W-Riss | GRENZE | jeder aktuelle GRENZE-Riss der Codebase-Maße von `gesundheit.py` hat eine Registerzeile, die das Maß nennt; ein Riss der Kontextfläche (`MEMORY.md`, `CLAUDE.md`, Dirigenten-Skill) wird nicht registriert, sondern im Abschlussfenster sofort behoben (User 12.09.2026, `CLAUDE.md` Arbeitsregeln) und gilt bis dahin als offener Riss | §1.2 (Skill-Riss 12.09.2026) |
 | Volatile Zahlen | GRENZE | `CLAUDE.md` enthält keine Zahl vor „Tests", „Beine", „Fixtures", „Capabilities" (Regel aus `CLAUDE.md` „Arbeitsregeln", bisher ohne Riegel) | Kontexthygiene-Playbook Phase B |
 | Beziehungspaare im Diff | HINWEIS | `git diff <basis>...HEAD`: berührt eine Seite eines Paares (speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg) ohne die andere Seite im selben Satz | K4, Prüfliste F, D6 |
 | NaN-Wachen | HINWEIS | Parse-Stellen von Gleitkommazahlen an Pipe- und Schemagrenzen ohne Endlichkeitsprüfung in Sichtweite | K3, D8 |
@@ -193,9 +193,12 @@ liest nur die roten Zeilen und ordnet sie ein.
 | Duplikate | ZIEL | `jscpd` über Rust und C++, Schwelle aus der ersten Messung | K7 |
 
 **Wohin.** Die Datei `pruefung.md` unter `docs/gesundheit/`, kanonischer
-Name, bei jedem Lauf überschrieben; Git-Historie ist das Archiv. Jeder GRENZE-Riss wird eine
-datierte Registerzeile [Werkzeug] oder [Planarbeit · Pflegeschritt], wie es
-NAK-223 für `gesundheit.py` festlegt; die Wache W-Riss prüft, dass sie steht.
+Name, bei jedem Lauf überschrieben; Git-Historie ist das Archiv. Jeder
+GRENZE-Riss eines Codebase-Maßes wird eine datierte Registerzeile
+[Werkzeug] oder [Planarbeit · Pflegeschritt], wie es NAK-223 für
+`gesundheit.py` festlegt; die Wache W-Riss prüft, dass sie steht. Ein Riss
+der Kontextfläche wird nicht registriert, sondern sofort behoben (User
+12.09.2026).
 
 **Wann.** Dirigent §3.1 vor jedem Ticket (Minuten, kein Kanon); als nicht
 blockierendes Kanon-Bein neben A32; nächtlich durch die Windows-Aufgabenplanung
@@ -474,11 +477,12 @@ auslösen").
 
 ### 6.8 Was im Dirigenten-Skill steht
 
-Der Skill liegt mit 38 448 Bytes über seiner Grenze von 36 864 (gemessen
-12.09.2026). Das Konzept wird deshalb **nicht** als Prosa in den Skill
-geschrieben, sondern als ein kurzer Absatz mit Verweis; die Kürzung des
-Skills unter die Grenze ist ein eigener Pflegepunkt. Vorgeschlagener Wortlaut
-für einen Abschnitt „7. Prüfsystem":
+Der Skill lag am 12.09.2026 mit 38 448 Bytes über seiner Grenze von 36 864;
+im Abschlussfenster desselben Tages hat der Dirigent ihn auf 23,3 KB und die
+`CLAUDE.md` auf 17,7 KB gekürzt und die Grenzen auf 24 KB und 20 KB gesetzt
+(Commit `fdeef23c`). Das Konzept steht deshalb **nicht** als Prosa im
+Skill, sondern als Abschnitt „7. Prüfsystem und Kanal" mit Verweis,
+eingepflegt mit `fdeef23c` nach dem Wortlaut in Anhang A.4:
 
 > Die Prüfspur neben Kanon und Codex-Review steht in
 > `docs/gesundheit/KONZEPT.md` und ist bindend für §3.1 (Prüfgang vor dem
@@ -580,7 +584,7 @@ neue persistente und vertragliche Felder bringt.
 | 0 | Konzept abnehmen, Plan und Register nachziehen | datiertes User-Zitat im Register; Registerzeilen [Werkzeug · Prüfsystem] für die Schritte 1–8; Wortlaut von S31c/S35b ergänzt; Absatz im Dirigenten-Skill (§6.8) | `dokuriegel.py` auf Register, Plan, Skill | dieses Dokument | Entscheid §11 |
 | 1 | Abdeckungskarte — **erledigt 12.09.2026** | Prüfsession nach §4.2; Karte committen; erste Zähler je Klasse aus Register und Audit D1–D10; Befunde A-1 bis A-7 in der Karte | Scope-Beweis im Bericht; Karte durch `dokuriegel.py` | 0 | nichts |
 | 2 | Prüfgang, erste Fassung | Verzeichnis `pruefung/` unter `tools/` mit Läufer und den Toren aus §4.1, jedes mit Selbsttest und Rotbeweis; Kanon-Bein; §3.1-Aufruf; nächtliche Aufgabe | Kanon vorher = nachher, plus Rohausgabe jedes Rotbeweises | 1 | nichts |
-| 3 | Lebenslauf-Audit | Auftragsvorlage, Prüfsession, Bericht, Registerzeilen; Defekte werden Tickets | Scope-Beweis; Zähler K1/K2 in der Karte | 1 | nichts |
+| 3 | Lebenslauf-Audit — **erster Lauf erledigt 12.09.2026** (`tools/pruefung/auftrag-lebenslauf-audit.md`, Bericht `docs/gesundheit/lebenslauf-audit.md`, Befunde B-1 bis B-8, kein Defekt) | Auftragsvorlage, Prüfsession, Bericht, Registerzeilen; Defekte werden Tickets | Scope-Beweis; Zähler K1/K2 in der Karte | 1 | nichts |
 | 4 | Zustandstreue und Vertragstreue | wie 3, für K4 und K3; vor S26–28 | wie 3 | 1 | nichts |
 | 5 | Mutanten im Broker | Ratsche setzen, Diff-Modus als Bein, Überlebende klassifizieren | Baseline-Dateien, Kanon | 2 | nichts |
 | 6 | Wächter | vier Agentendateien, Satz im Ticketauftrag, Hook nennt den Wächter | ein Probelauf je Wächter gegen einen historischen Befund | 1 | nichts |
@@ -612,9 +616,9 @@ Zwei Punkte sind Produkt:
    Skizze (findet Verstöße gegen die Gesetze, bevor sie in JUCE gebaut
    werden) oder erst nach S26–28 auf der gebauten Oberfläche (misst das
    echte Layoutrechteck). Beides ist möglich; die Wahl bestimmt, was der
-   nächste UI-Bauer als Auftrag bekommt. **Offen.** Die Frage geht als Karte
-   nach `docs/plan/fragen.json` und wird über `/fragen` im Zeitfenster
-   9:00–23:00 gestellt (Anhang A.5); bis zur Antwort läuft Schritt 9 nicht.
+   nächste UI-Bauer als Auftrag bekommt. **Offen.** Karte U38 in
+   `docs/plan/fragen.json` (eingetragen 12.09.2026, `fdeef23c`), gestellt
+   über `/fragen` ab 9:00; bis zur Antwort läuft Schritt 9 nicht.
 
 Offene technische Punkte, die Claude später an der Quelle entscheidet und
 die hier stehen, damit sie nicht verloren gehen: Tragfähigkeit der
@@ -629,7 +633,13 @@ Dirigenten-Skills unter 36 KB.
 
 Die Texte sind so formuliert, dass der Dirigent sie im Abschlussfenster
 übernimmt; Nummern vergibt er (nächste freie NAK-Nummer). Die Nachricht an
-ihn trägt nur den Zeiger auf diesen Anhang.
+ihn trägt nur den Zeiger auf diesen Anhang. **Eingepflegt am 12.09.2026 mit
+Commit `fdeef23c`:** Register NAK-259 (Abnahme mit Zitat), NAK-260 bis
+NAK-266 (Schritte 2 bis 8), NAK-267 (Abdeckungskarte A-1 bis A-5 als
+Härtung; A-2 kein Defekt, weil der Gate-Text von S14–15 die Hüllenprüfung
+verlangt, nicht die Verdrahtung im Produkt-Client); Nachtrag in `plan.json`
+S31c/S35b; Karte U38 in `fragen.json`; Dirigenten-Skill §7. Der Anhang
+bleibt als Wortlautquelle stehen.
 
 ### A.1 Registerzeile Abnahme
 
@@ -694,6 +704,7 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | Schritt 3 erster Lauf (Auftragsvorlage, Bericht B-1 bis B-8); §4.1 W-Riss unterscheidet Codebase-Maße (Registerzeile) und Kontextfläche (sofort beheben, User 12.09.2026); §6.8, Anhang A und §11 auf Schritt 0 nachgezogen (`fdeef23c`: NAK-259 bis NAK-267, U38, Skill §7, Skill 23,3 KB / CLAUDE.md 17,7 KB) | Dirigenten-Meldung 12.09.2026; Lebenslauf-Audit |
 | 12.09.2026 | §3: K3 geteilt (Rust ✔, C++ ◐), K4 „dicht", K6 auf ◐ (RtWache am EQ-Kern) nach Verifikation; §4.2 und §10 Schritt 1 als erledigt | Abdeckungskarte, erste Fassung (5 Leser, 3 Skeptiker) |
 | 12.09.2026 | Status auf abgenommen; §5.1 Kanal zwischen Sessions; §11 Punkt 1 entschieden, Punkt 2 als Karte; Anhang A mit Wortlaut für Register, Plan, Skill und Karte | User-Abnahme 12.09.2026 (Wortlaut im Kopf); Kanaltest 00:37 |
 | 12.09.2026 | Erste Fassung als Vorschlag | User-Auftrag 11./12.09.2026 (Wortlaut oben); Messungen an HEAD `818673cd`; Sonifold-System gelesen (`check`, `aftercheck`, `code-health`, `compositor-scan`, `compositor-ui`, `freshen`, `save-fidelity`, `logic-audit`, `deep-audit`, `dev-recorder-loop`, Coverage-Map, Agenten, Hooks) |

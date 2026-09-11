@@ -25,14 +25,15 @@ Schema-Engine. Klassen-Detektoren fehlen dort, wo eine **neue** Instanz
 ohne Grenze, neues CMake-Ziel ohne Bein) still durchliefe. Genau diese vier
 Stellen beschreiben die Aufbauschritte 2 bis 4 des Konzepts.
 
-**Befunde zur Weitergabe** (Klasse nach Dirigent §3.4; Registerzeile durch
-den Dirigenten; kein Befund bricht eine messbare Zusage, deshalb keine
-Defekte, eine Zeile mit Prüfauftrag an den Gate-Text):
+**Befunde zur Weitergabe** (Klasse nach Dirigent §3.4; kein Befund bricht
+eine messbare Zusage, deshalb keine Defekte. A-1 bis A-5 stehen seit
+12.09.2026 als NAK-267 im Register, Commit `fdeef23c`; A-6 und A-7 sind
+Inhalt von Aufbauschritt 2, NAK-260):
 
 | Nr | K | Befund | Beleg | Klasse |
 |---|---|---|---|---|
 | A-1 | K1 | Verdrängung in `session_command_reihenfolge` (Kappe als Konstante ohne Absichtskommentar; Idempotenz nur aus der flüchtigen Map, kein Store-Rückfall) hat weder Test noch Kommentar noch Registerzeile | `broker/src/coordinator/befehl.rs` (Konstante in `broker/src/coordinator/mod.rs`, `session_command` in `befehl.rs`) | [Härtung/Struktur] |
-| A-2 | K3 | Die C++-Generalprüfung `Schema::pruefe` (alle Schemagrenzen) ist Produktionscode in `NakamaKern`, wird aber nur in `SchemaTestMain` instanziiert; ihr Kopf verspricht „Ab SONDE-010 ist das die Eingangspruefung des C++-IPC-Clients" | `eq-copilot/plugin/vertrag/NakamaVertrag.h` Kopf, `eq-copilot/plugin/vertrag/NakamaVertrag.cpp` (`pruefeWert`), `eq-copilot/plugin/tests/SchemaTestMain.cpp` | [Härtung/Struktur]; der Dirigent prüft den Gate-Text von SONDE-010: verlangt er die Verdrahtung, ist es ein Defekt |
+| A-2 | K3 | Die C++-Generalprüfung `Schema::pruefe` (alle Schemagrenzen) ist Produktionscode in `NakamaKern`, wird aber nur in `SchemaTestMain` instanziiert; ihr Kopf verspricht „Ab SONDE-010 ist das die Eingangspruefung des C++-IPC-Clients" | `eq-copilot/plugin/vertrag/NakamaVertrag.h` Kopf, `eq-copilot/plugin/vertrag/NakamaVertrag.cpp` (`pruefeWert`), `eq-copilot/plugin/tests/SchemaTestMain.cpp` | [Härtung/Struktur]; Dirigent 12.09.2026: kein Defekt, der Gate-Text von S14–15 verlangt die Hüllenprüfung, nicht die Verdrahtung von `Schema::pruefe` im Produkt-Client; der Kopfkommentar wird mit NAK-262 berichtigt oder eingelöst |
 | A-3 | K4 | Drei MainProject-Felder (`confirmed_members_v1`, `manual_passages_v1`, `assistant_step_v1`) haben Kanon-Roundtrips, aber kein eingefrorenes Fixture und keinen Feldmengen-Test | `tools/eq-copilot/erzeuge_state_fixtures.py` (Kommentar zu `main-intent-v1.bin`), `eq-copilot/fixtures/state/MANIFEST.json` | [Härtung · Test] |
 | A-4 | K6 | Die Laufzeit-Wache des EQ-Kerns (`RtWache`: Sperren, Allokationen, Wanduhr je Callback) liegt nicht am Messpfad `processBlock` des Prozessors | `eq-copilot/plugin/dsp/DspRtWache.h`, Eintritt in `eq-copilot/plugin/dsp/DspKern.cpp`; `eq-copilot/plugin/src/PluginProcessor.cpp` (`processBlock`) ohne Wache | [Härtung/Struktur] |
 | A-5 | K6 | Der Allokationszähler der Tests fängt nur `operator new`; `malloc`, `calloc`, `realloc` und `juce::HeapBlock` bleiben unsichtbar, ohne Kommentar oder Riegel | `eq-copilot/plugin/tests/QueueStressTestMain.cpp` (Zähler), Zwilling in `eq-copilot/plugin/tests/DspGoldenTestMain.cpp` | [Härtung · Test] |

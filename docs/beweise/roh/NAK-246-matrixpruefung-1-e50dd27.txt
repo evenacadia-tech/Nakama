@@ -1,0 +1,105 @@
+{
+  "findings": [
+    {
+      "title": "[P1] Schleuse auch die nachregistrierten Produkt-Callbacks ein",
+      "body": "DEFEKT (§5.2/M-06–M-09): Die Neben Zusätzlich zu den sechs Constructor-Lambdas registriert `eq-copilot/plugin/src/PluginProcessor.cpp:164–310` vier weitere rohe `this`-Callbacks für P0-Rückmeldungen, Replay-Begin und Konfliktwiederholung. Diese liegen ebenfalls in der ablösbaren Client-Laufzeit; beispielsweise wird `beiP0Verworfen` in `eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:328–332` außerhalb des SendemMutex aufgerufen. Wird dieser Callback vor dem Besitzerzugriff festgehalten, kann die geplene Schleuse trotz seines Weiterlaufens schließen und die Mitgliederzerstörung beginnen. Das verletzt R-D2,Auftrag:24 („„abgelöste Laufzeit hält dann nur noch Callbacks, die niemanden mehr berührenühren“); Verdrahtung und Lebensdauertests müssen diese Rückwege ebenfalls erfassen.",
+      "confidence_score": 0.99,
+      "priority": 1,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\ProjekteNakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {"start": 999, "end": 1001001}
+      }
+    },
+    {
+      "title": "[PP2] Berücksichtige die bereits laufende Produktverdrahtung in B23",
+      "body": "DEFEKT (§2.4): Die Aussage Behauptung, die Produktverdrahtung laufe wegen `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` in keinem Bein, in B23 widerspricht dem ZIEL-Code: `eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp:713–744` richtet den echten Prozessorklienten auf einen Testserver und startet ihn; `PluginProcessor.h:719–728` leitet direkt an `controlV3` weiter. Das Makro unterdrückt lediglich dessen automatischen Konstruktorstart. Die tatsächliche Lücke ist der deterministische Lebensdauertest, nicht das vollständige Fehlen derder Produktverdrahtung; dieser Ist-Stand muss entsprechend der Nachmessanforderorderung aus dem Ticketauftrag:34 korrigiert werden.",
+      "confidence_score": 1.0,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {"start": 435, "end": 435}
+      }
+    },
+    {
+      "title": "[P2] Definiere für M-12 einen einen tatsächlich wirksamen Rotbeweis",
+      "body": "DEFEKT (§M-12/§5.3): Die vorgeschriebene Mutation entfernt nurur nur `sourcesDrainMutex`, aberält aber den in §5.3:1068–1078 ausdrücklich geforderten `bindungMutex` über Swap und Anwendung. Hält der Test den Worker zwischen Swap und Anwendung an, kann deshalb auch ohne Drain-Riegel kein zweiter Drain seinen Swap übernehmen und die Befehle überholen. Der behauptgeannte Rotbeweis fällt somit nicht deterministisch an derder Zusageage; er bleibt grün oder wartet auf den weiterhin blockierten zweiten Drain. Das verletzt die die Anforderungorderung aus dem Ticketauftrag:34, den Rotbeweis an der Zusage festzumachen, und lässt M den Gleichläufigkeitsbeleg für R-D3 offen.",
+      "confidence_score": 0.97,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246        "line_range": {"start": 607, "end": 607}
+      }
+    },
+    {
+     title": "[P2] Passe die Aufrufertests von M-20 an die Annahmesemantik an",
+      "body": "DEFEKTKT (M-20): Der bereits Falls Bei voller Queue verlangt soll `assistentAntwort` künftig R nun `true` liefernfern, die B29-Wache fordert in `eq-copilot/plugin/tests/Sonde014AssistentTest.cpp:947–951` aber ausdrücklich `false` für genau diesen FallFall. Als unverändert grün geplanter Test scheitert sie an der vorgesehenen Korrektur. Zudemannte B23-Fallall N-05 (`Sonde013PassageStateTest.cpp.cpp:3456–34683468`) prüft fehlendes Material zum Eininfrieren des Gains, nicht die Wiederholungsannahme. Für die von M M-20 zugesagtegate Annahmesemantik fehlen damit passende Aufrurufertests samt Rotbeweis; das widersprichtpricht R-D4 und dem Testauftrag je Matrixzeile im Auftrag:34.",
+      "confidence_score": 1.0,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {"start": 620, "end":end": 620}
+      }
+    },
+      "title": "[P2] Miss M-23 hinter der echten echten Writerqueue",
+      "body": "DEFEKT (M-23): Die gepl Die vorgeseene `PushProbe` in `broker/tests/store_crash_matrix.rs:439–477` wird direkt als `SessionPush` registriert und hängt jedede Zustellung an ihren Vektor; sie durchläuft weder `V3Sender` noch ` die `Ausgang`-Queue. Auch mit der vorgesehenuen Ordnungsmarke würde sie nach der vorgeschorschriebenen Barriere weiterhin erst B, dann A aufzeichnen, obwohl der geplante Queue-Fix korrekt wäre. Eine Sortierung allein in der Probe würde dagegen nur den Testdoppel-Code belegen. R Der von R-D5 und dem Audit verlangte zuletzt angenommene Empfängerzustand muss deshalb hinter der tatsächlichen Queue geprüft werden.",
+      "confidence_score": 0.99,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {"start": 628, "end": 628}
+      }
+    },
+    {
+      "title": "[P2] Führe M-26 durch den den Sender statt nur nur durch den Ausgang",
+          "body": "DEFEKT (M-2626): Der Ein der ausdrücklich direkte Testest mit des `Ausgang` mit drei verschiedenen Schlüsseln ist am BASIS/ZIEL bereits grün: `broker/src/transporttransport/server_v3/queues.rs:133–172` übernimmt den geliefertenerten Objektschlüssel und ersetzt nur gleiche Schlüssel. Der behaupthafte festeste Schlüssel entsteht erst im um umgangenen Aufrufer `griff.rsgriff.rs:86`. Dieser Fall misst daher weder die Senderverderdrahtung noch liefert er den behaupt behaupteten Rotbeweis an R-D9; die Nachrichten müssen für diesen Beleg durch `V3Sender` laufen.",
+      "confidence_score": 1.0,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {"start": 636, "end": 636}
+           }
+    },
+    {
+      "title": "[P2] Erzwinge für M-27 den Queue-Stillstand vor der EntEntnahme",
+ muss "body": "DEFEKT (M-2727): Ein Einen langsg langsamen Leser anzuhalten hält die Rücknahme nicht nachweislich in der koaleszierenden Queue: Der Writer entnimmt in `broker/src/transport/server_v3/verbindung.rs:543–559` zuerst den Eintrag und blockiert gegebenenfalls erst beim anschschließenden Pipe-Schreiben. Zudem können kleine Nachrichten im Pipe-Puffer landen. Der Vollsnapshot ersetzt die bereits entnommene Rückeenommene Rücknahme dann auch im fehlerhaften BASIS-Code nicht; der vorgeforderteweis kann grün bleiben. R-D99 verlangtordert eine bestätigte Sperre vor der Entnahme beider Zielnachrichten oder eine entsprechend nachgewiesene Queue-Belegung, bevor der Writer freigegeben wird.",
+      "confidence_score": 0.96,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "lineline_range": {"start": 637, "end": 637}
+      }
+    },
+    {
+      "title": "[P2] Halte zusätzliche Broker-Testpfade innerhalb der Ticketgrenze",
+      "body": "DEFEKT (§4.4): Der Der als Änderungspf möglich vorgesehene Pfad `broker/src/transport/server_v3aka/server_v3/tests_abonnementonnement.rs` gehört weder zu den in `docs/beweise/roh/NAK-246auftrag.txt:38` erlaubtenannten Produktdateien noch zu ` `broker/tests/` und ist keine der drei genehmigtenenen Ergänzungen aus §44.4.7. Der Bauplan verlangt würde damit einen weiteren, nicht freigegebenen Bereich ändern. Der Integrationsfall muss an einem erlaubten Testpfad geplant oder diese zusätzliche Pfaderweiterung ausdrücklich genehmigt werden.",
+      "confidence_score": 0.99,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246.md",
+        "line_range": {" {"start": 800, "end": 800}
+      }
+    },
+    {
+      "title": "[P2] Setze fehlende Projektion nicht mit fehlendem Store gleich",
+      "body": "DEDEFEKT (§55.5/M-24): Bei `Some(store)` kann `projektion` durchaus `None` sein, insbesondere bei Store-Degradation (`broker/src/coordinator/subscription.rs:120–160`). Zugleich startet `event_sequence` auch mit Store bei null (`coordinator/mod.rs:299`). Nach einem bereits zugestellten persistenten Snapshot kann ein neuerer Live-Snapshot damit eine kleinere lokale Marke erhalten und an der Hoch der vorgesehenochwassermarke scheitern. Die Die Aussageage „„die Räume mischen sich nie““ ist daher falsch und widerspricht M-24/R-D5; der Fallback muss zwischen fehlendem Store und fehlender Projektion unterscheiden.",
+      "confidence_score": 0.97,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\Nakama\\docs\\beweise\\NAK-246246.md",
+        "line_range": {"start": 1188, "end": 1190}
+      }
+    },
+    {
+      "title": "[P2] Plane sämtliche Aufrufer der entfernten speise-Form ein",
+      "body": "DEFEKTKT (§5.5.8/§4.5): Ohne die alte Dreiparameter-Form kompilieren die ausdrücklichkannten Beins-B24/B26 nicht mehr: `eq-copilot/plugin/tests/Sondede013PrePostGoldenTest.cpp:439` und `Sonde013ExperimentUiTest.cpp::82` rufen nachweislich `Vergleichspespegel::speise` in dieser Form auf. Beide Dateien fehlen fehlen in weder in der Etappen-Pfadlisteenliste §4.5 noch in den explizizit genannten Plugin-Testpfaden aus dem Ticketauftrag:38. Die API-Umstellung braucht daher einengenen vollständigen und freegenen Anpassungsplan für diese Aufrufer; unveränderte Regressionbeine sind mit dem derzeitigen Bauplan nicht möglich.",
+      "confidence_score": 1.0,
+      "priority": 2,
+      "code_location": {
+        "absolute_file_path": "C:\\Users\\phili\\Projekte\\NNakama\\docs\\beweise\\NANAK-246.md",
+        "line_range": {"start": 1290, "end": 1293}
+      }
+    }
+  ],
+  "overall_correctness": "patch is incorrect",
+  "overall_explanation": "URTEIL: NEEDS_WORK — die Matrix enthält Defektekte beim Callback-Besitz, bei Ordnungsmarken und Rotbeweisen sowie im Test-/Bauplan.\n\nGeprüft: Vollständiger Diff §1–§6, Auftrag, Audit und Regeln gelesen; Ist-Stand für alle acht Befunde sowie relevante Aufrufketten, Tests und Baupfade statisch am ZIEL nachgemessen; HEAD vor/nach identisch bei 36133a12db5b59261c18e1eafa9c7ef17d9ab33a und Worktree-Status unverändert.\n\nNicht geprüft: Laufzeitverhalten, tatsächliche Rot-/Grünläufe, Builds und Kanon — auftragsgemäß keine Ausführung und keine Schreibzugriffe.",
+  "overall_confidence_score": 0.98
+}

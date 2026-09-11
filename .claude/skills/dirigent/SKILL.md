@@ -43,6 +43,17 @@ Fable/xhigh, das echte Kontextfenster, Claude- und Codex-Kontingente sowie der
 frische Planstand ehrlich lesbar sein. `nicht verfügbar`, ein unbekannter
 Arbeitsanker oder ein zusätzliches Worktree wird nie grün dargestellt.
 
+**Plan-Tab und STAND (NAK-256, User-Entscheid 11.09.2026 „gesamtplan stand
+dauerhaft im zweiten tab + statuszeile"):** Bei jedem Start öffnet der Starter
+im selben Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, rein
+lesend), nie einen zweiten; er schließt mit dem Fenster, und
+`tools/dirigent/start-dirigent.ps1 -NurPlanTab` öffnet ihn neu. Statuszeile
+und Tab zeigen `STAND` aus „Als Nächstes" oder dem Ticketanker: bei
+Ticketbeginn `pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket
+<NAK-nnn>`, beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt dafür
+die Zeile „Etappe" mit „Etappe n von m" und dem laufenden Schritt als letztem
+Fettsatz (Klartext, höchstens 70 Zeichen).
+
 `/dirigent stand` bedeutet:
 
 ```powershell

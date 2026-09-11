@@ -1,0 +1,592 @@
+NAK-256 - Beine (a) bis (e), einzeln gefahren
+Stand: 2026-09-11 18:42:49
+Basis-SHA: bb260a2a54088a20cb25c5ccbfa3a1ca8aff3ad7; HEAD beim Lauf: bb260a2a54088a20cb25c5ccbfa3a1ca8aff3ad7
+Skript: docs/beweise/roh/NAK-256-beine.ps1; Klon: C:\Users\phili\.claude\jobs\274520ac\tmp\k; pwsh 7.6.6; Windows Terminal 1.24.11911.0
+Gemessene Dateien (git hash-object):
+  18092c2bf75fda4624e32fdcd96b15d6b565efed  tools/dirigent/cockpit.ps1
+  29703f856756e43cd3c2968f42228e04ebe45c7b  tools/dirigent/start-dirigent.ps1
+  4bcdc4da23d31b4fbae7169ee1d311f4238fe7ad  tools/dirigent/plan-tab.ps1
+Arbeitsbaum der Ticketpfade (git status --short):
+   M tools/dirigent/cockpit.ps1
+   M tools/dirigent/start-dirigent.ps1
+  ?? docs/beweise/NAK-256.md
+  ?? docs/beweise/roh/NAK-256-beine.ps1
+  ?? docs/beweise/roh/NAK-256-beine.txt
+  ?? docs/beweise/roh/NAK-256-ersatz-claude.ps1
+  ?? docs/beweise/roh/NAK-256-statuszeile-beispiel.json
+  ?? tools/dirigent/plan-tab.ps1
+
+=== Bein (b) - cockpit.ps1 -Plan vor und nach dem Umbau bytegleich
+Ort: Klon am Basis-SHA. Vorher = tools/dirigent/cockpit.ps1 aus bb260a2a54088a20cb25c5ccbfa3a1ca8aff3ad7, nachher = dieselbe Datei aus dem Arbeitsbaum, beide an derselben Stelle.
+
+--- b1 Planquellen nicht frisch (docs/PLAN-STAND.md des Basis-SHA) - vorher (Basis-SHA)
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+Exit 4 · 0,9 s · stdout 71 Bytes · sha256 0c15dc9961a4466ff22658bf35fa398b1117faae7c2381bec29fa12a17388b4b
+! PLANQUELLEN NICHT FRISCH · erst tools/plan/planstand.py ausführen
+
+--- b1 Planquellen nicht frisch (docs/PLAN-STAND.md des Basis-SHA) - nachher (Arbeitsbaum); Text wie vorher, wenn bytegleich
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+Exit 4 · 1,1 s · stdout 71 Bytes · sha256 0c15dc9961a4466ff22658bf35fa398b1117faae7c2381bec29fa12a17388b4b
+
+PRUEFUNG (b) b1 Planquellen nicht frisch (docs/PLAN-STAND.md des Basis-SHA): stdout und Exitcode bytegleich: ja
+Klon: py -3.13 tools/plan/planstand.py -> geschrieben: docs\PLAN-STAND.md (33 abgenommen, 0 gebaut, 45 gesamt, aus bb260a2a)
+
+--- b2 frisch gerechneter Planstand - vorher (Basis-SHA)
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+Exit 0 · 0,9 s · stdout 3436 Bytes · sha256 ed1af9f683999ffc940490c7aa48a8a44cf6992a91a2345390437412c3b6de8a
+NAKAMA PLAN · 33 / 45 fertig · 12 offen
+
+BEWEISEN STATT BEHAUPTEN
+✓ Einen vollständigen, wiederholbaren Beweislauf schaffen
+
+BESTAND EINFRIEREN, HOSTGRENZEN BEWEISEN
+✓ Nebenwege und Latenzausgleich im Musikprogramm messbar machen
+✓ Nebenwege und Latenzausgleich im Musikprogramm praktisch bestätigen
+✓ Plugin-Identitäten für alte Projekte dauerhaft festschreiben
+✓ Zeit, Latenz und Automation des Musikprogramms sichtbar machen
+✓ Zeitsprünge, Rendern und Automation im Musikprogramm aufzeichnen
+✓ Hostzeit und Automation im Musikprogramm praktisch bestätigen
+✓ Gemessene Fähigkeiten des Musikprogramms verbindlich festhalten
+✓ Die eingefrorenen Hostgrenzen unabhängig und adversarial prüfen
+
+VERTRÄGE, GESPEICHERTER ZUSTAND, NEUTRALE HÜLLEN
+✓ Nachrichten zwischen allen Programmteilen eindeutig festschreiben
+✓ Messdaten in allen beteiligten Sprachen gleich lesbar machen
+✓ Gespeicherte Projekte verlustfrei und zukunftssicher laden
+✓ Einen identitätsneutralen Kern für alle Plugins schaffen
+✓ Drei getrennte Plugins samt sicherer Auslieferung bereitstellen
+✓ Das aufgegangene dritte Plugin sauber aus Bau und Auslieferung nehmen
+✓ Verträge, Zustand und Plugin-Hüllen unabhängig prüfen
+
+MESSKERN, NACHRICHTENWEG, SPEICHER
+✓ Audiomessung ohne Blockieren und mit begrenztem Speicher absichern
+✓ Messwerte bei Sprüngen und Lücken zeitlich ehrlich halten
+✓ Plugins und Vermittler über den Nachrichtenweg verbinden
+✓ Implementierung anhalten und den Gesamtplan gegen Entscheide und Marktstandard prüfen
+✓ Messdaten verteilen, speichern und zuverlässig ausgeben
+✓ Den vollständigen Messweg unabhängig und sicherheitsnah prüfen
+
+PASSIVE LANDKARTE
+✓ Alle Quellen mit Messpunkt, Frische und Fehlerzustand zeigen
+✓ Quellen zusammenführen, Design-Entscheide in den Bauplan holen, Register bereinigen
+✓ Die passive Quellenübersicht im Dauerlauf unabhängig prüfen
+✓ Broker-Dateien verhaltensneutral in Module aufteilen und die G2-Härtungen einarbeiten
+
+VERGLEICHSEVIDENZ UND URSACHEN
+✓ Vergleiche, Passagen und manuelle Hörversuche auswertbar machen
+✓ Klangberechnung und Vergleichslogik unabhängig prüfen
+✓ Aus Messungen belegte Befunde und kleinste Tests ableiten
+✓ Zu starke Ursachenbehauptungen gezielt provozieren und abweisen
+✓ Gesundheitsmaß für Codebase und Kontext mit Schwellen bauen
+✓ Ursachenkern des Brokers verhaltensneutral aufteilen
+✓ Plugin-Kern verhaltensneutral aufteilen
+
+AKTIVER KERN: EQ IN SONDE UND GEN
+○ Die Klangregelung in der Sonde sicher und speicherbar machen
+○ Dieselbe Klangregelung im Hauptprogramm bereitstellen
+○ Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+○ Hauptprogramm und Sonden sicher koppeln und gemeinsam bedienen
+○ Fernsteuerung und Rückweg unter hoher Befehlslast prüfen
+○ Die zentrale Klangregelungsseite und Sonden-Rückfallfläche bauen
+○ Codebase-Pflege nach dem aktiven Kern
+
+ENTMASKIERUNG UND HÄRTUNG
+○ Überlagerte Signale über einen Nebenweg gezielt entmaskieren
+○ Entmaskierung mit Hörmaterial und Gegenprüfung absichern
+○ Auslieferung, Migration, Datenschutz und Rückweg abschließen
+○ Das gesamte System unter realistischer Höchstlast freigeben
+○ Codebase-Pflege vor der Auslieferung
+
+Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen.
+
+--- b2 frisch gerechneter Planstand - nachher (Arbeitsbaum); Text wie vorher, wenn bytegleich
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+Exit 0 · 0,6 s · stdout 3436 Bytes · sha256 ed1af9f683999ffc940490c7aa48a8a44cf6992a91a2345390437412c3b6de8a
+
+PRUEFUNG (b) b2 frisch gerechneter Planstand: stdout und Exitcode bytegleich: ja
+PRUEFUNG (b) b2: der frische Lauf zeigt den Gesamtplan (NAKAMA PLAN, Exit 0): ja
+--- b3 mit Arbeitsanker - vorher (Basis-SHA)
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep S26–28
+Exit 0 · 0,6 s · stdout 3436 Bytes · sha256 0eafdd1d84bba46399dcf55742599e335824319227fcef2068a3ceabdbca26da
+NAKAMA PLAN · 33 / 45 fertig · 12 offen
+
+BEWEISEN STATT BEHAUPTEN
+✓ Einen vollständigen, wiederholbaren Beweislauf schaffen
+
+BESTAND EINFRIEREN, HOSTGRENZEN BEWEISEN
+✓ Nebenwege und Latenzausgleich im Musikprogramm messbar machen
+✓ Nebenwege und Latenzausgleich im Musikprogramm praktisch bestätigen
+✓ Plugin-Identitäten für alte Projekte dauerhaft festschreiben
+✓ Zeit, Latenz und Automation des Musikprogramms sichtbar machen
+✓ Zeitsprünge, Rendern und Automation im Musikprogramm aufzeichnen
+✓ Hostzeit und Automation im Musikprogramm praktisch bestätigen
+✓ Gemessene Fähigkeiten des Musikprogramms verbindlich festhalten
+✓ Die eingefrorenen Hostgrenzen unabhängig und adversarial prüfen
+
+VERTRÄGE, GESPEICHERTER ZUSTAND, NEUTRALE HÜLLEN
+✓ Nachrichten zwischen allen Programmteilen eindeutig festschreiben
+✓ Messdaten in allen beteiligten Sprachen gleich lesbar machen
+✓ Gespeicherte Projekte verlustfrei und zukunftssicher laden
+✓ Einen identitätsneutralen Kern für alle Plugins schaffen
+✓ Drei getrennte Plugins samt sicherer Auslieferung bereitstellen
+✓ Das aufgegangene dritte Plugin sauber aus Bau und Auslieferung nehmen
+✓ Verträge, Zustand und Plugin-Hüllen unabhängig prüfen
+
+MESSKERN, NACHRICHTENWEG, SPEICHER
+✓ Audiomessung ohne Blockieren und mit begrenztem Speicher absichern
+✓ Messwerte bei Sprüngen und Lücken zeitlich ehrlich halten
+✓ Plugins und Vermittler über den Nachrichtenweg verbinden
+✓ Implementierung anhalten und den Gesamtplan gegen Entscheide und Marktstandard prüfen
+✓ Messdaten verteilen, speichern und zuverlässig ausgeben
+✓ Den vollständigen Messweg unabhängig und sicherheitsnah prüfen
+
+PASSIVE LANDKARTE
+✓ Alle Quellen mit Messpunkt, Frische und Fehlerzustand zeigen
+✓ Quellen zusammenführen, Design-Entscheide in den Bauplan holen, Register bereinigen
+✓ Die passive Quellenübersicht im Dauerlauf unabhängig prüfen
+✓ Broker-Dateien verhaltensneutral in Module aufteilen und die G2-Härtungen einarbeiten
+
+VERGLEICHSEVIDENZ UND URSACHEN
+✓ Vergleiche, Passagen und manuelle Hörversuche auswertbar machen
+✓ Klangberechnung und Vergleichslogik unabhängig prüfen
+✓ Aus Messungen belegte Befunde und kleinste Tests ableiten
+✓ Zu starke Ursachenbehauptungen gezielt provozieren und abweisen
+✓ Gesundheitsmaß für Codebase und Kontext mit Schwellen bauen
+✓ Ursachenkern des Brokers verhaltensneutral aufteilen
+✓ Plugin-Kern verhaltensneutral aufteilen
+
+AKTIVER KERN: EQ IN SONDE UND GEN
+→ Die Klangregelung in der Sonde sicher und speicherbar machen
+○ Dieselbe Klangregelung im Hauptprogramm bereitstellen
+○ Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+○ Hauptprogramm und Sonden sicher koppeln und gemeinsam bedienen
+○ Fernsteuerung und Rückweg unter hoher Befehlslast prüfen
+○ Die zentrale Klangregelungsseite und Sonden-Rückfallfläche bauen
+○ Codebase-Pflege nach dem aktiven Kern
+
+ENTMASKIERUNG UND HÄRTUNG
+○ Überlagerte Signale über einen Nebenweg gezielt entmaskieren
+○ Entmaskierung mit Hörmaterial und Gegenprüfung absichern
+○ Auslieferung, Migration, Datenschutz und Rückweg abschließen
+○ Das gesamte System unter realistischer Höchstlast freigeben
+○ Codebase-Pflege vor der Auslieferung
+
+Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen.
+
+--- b3 mit Arbeitsanker - nachher (Arbeitsbaum); Text wie vorher, wenn bytegleich
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep S26–28
+Exit 0 · 0,8 s · stdout 3436 Bytes · sha256 0eafdd1d84bba46399dcf55742599e335824319227fcef2068a3ceabdbca26da
+
+PRUEFUNG (b) b3 mit Arbeitsanker: stdout und Exitcode bytegleich: ja
+--- b4 unbekannter Arbeitsanker - vorher (Basis-SHA)
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep S99
+Exit 5 · 0,8 s · stdout 35 Bytes · sha256 ec73566d3f8fd61a1026170109fb6fb9e5ea374987b7e0601d093c1c068fb098
+! UNBEKANNTES ARBEITSPAKET · S99
+
+--- b4 unbekannter Arbeitsanker - nachher (Arbeitsbaum); Text wie vorher, wenn bytegleich
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep S99
+Exit 5 · 0,8 s · stdout 35 Bytes · sha256 ec73566d3f8fd61a1026170109fb6fb9e5ea374987b7e0601d093c1c068fb098
+
+PRUEFUNG (b) b4 unbekannter Arbeitsanker: stdout und Exitcode bytegleich: ja
+=== Bein (a) - Statuszeile mit Beispiel-JSON
+Eingabe: docs/beweise/roh/NAK-256-statuszeile-beispiel.json (Felder nach code.claude.com/docs/en/statusline; session_name nakama-dirigent, session_id nak256-probe)
+
+--- a0 Rotbeweis: Basis-SHA im Klon
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine < NAK-256-statuszeile-beispiel.json
+Exit 0 · 3,2 s · stdout 680 Bytes · sha256 d9a22e1943df52348cca2fa958683ac1fd5a27190cc5c53ebd30c8418c5d0a29
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 2 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 2 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Arbeitsanker nicht bestätigt
+
+PRUEFUNG (a) a0 Rot: am Basis-SHA traegt die Statuszeile keine Zeile STAND: ja
+--- a0 Gegenstueck: Arbeitsbaum-Fassung im Klon, -Ticket NAK-246
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine -Ticket NAK-246 < NAK-256-statuszeile-beispiel.json
+Exit 0 · 1 s · stdout 919 Bytes · sha256 b904827714206131ebe8d1a670ddcbc0398dc4c1e5b1369420a05b6485020f36
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 3 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 3 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+STAND           läuft: NAK-246 Audit-Nacharbeit 10.09.2026 · Etappe 4 von 6 · Wiederprüfung 1 steht aus · danach: Die Klangregelung in der Sonde sicher und speicherbar machen → Dieselbe Klangregelung im Hauptprogramm bereitstellen
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Arbeitsanker nicht bestätigt
+
+Zeilenmarken vorher: NAKAMA|AUFSICHT||Fable||FABLE-KONTEXT|CLAUDE|CODEX|PLAN|FRAGE|HINWEIS|
+Zeilenmarken nachher ohne STAND: NAKAMA|AUFSICHT||Fable||FABLE-KONTEXT|CLAUDE|CODEX|PLAN|FRAGE|HINWEIS|
+PRUEFUNG (a) a0: alle bisherigen Zeilen bleiben in derselben Reihenfolge, STAND steht zwischen PLAN und FRAGE: ja
+--- a1 Arbeitsbaum, -Ticket NAK-246, ohne COLUMNS
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine -Ticket NAK-246 < NAK-256-statuszeile-beispiel.json
+Exit 0 · 1,1 s · stdout 916 Bytes · sha256 53c65224efa931780b1132ac69660c013a25c78c3146b202677b98e07c551578
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 4 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 4 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+STAND           läuft: NAK-246 Audit-Nacharbeit 10.09.2026 · Etappe 4 von 6 · Wiederprüfung 1 steht aus · danach: Die Klangregelung in der Sonde sicher und speicherbar machen → Dieselbe Klangregelung im Hauptprogramm bereitstellen
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Planstand ist nicht frisch
+
+PRUEFUNG (a) a1: genau eine Zeile STAND, Exit 0: ja
+PRUEFUNG (a) a1: STAND zeigt „läuft: NAK-246", „Etappe 4 von 6", „Wiederprüfung 1 steht aus": ja
+PRUEFUNG (a) a1: STAND nennt die zwei naechsten offenen Planschritte: ja
+--- a2 Arbeitsbaum, -Ticket NAK-246, COLUMNS=120
+Befehl: COLUMNS=120 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine -Ticket NAK-246 < NAK-256-statuszeile-beispiel.json
+Exit 0 · 1,1 s · stdout 977 Bytes · sha256 5b0eab049ecb9e55e291d0d5f2083f5678cae94f6234d5c76e640e37f14e5eb8
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+Claude      Bauer · Start ?/? · arbeitet  Kontext ? Startbeleg
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 5 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 5 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+STAND           läuft: NAK-246 Audit-Nacharbeit 10.09.2026 · Etappe 4 von 6 · Wiederprüfung 1 steht aus
+DANACH          Die Klangregelung in der Sonde sicher und speicherbar machen → Dieselbe Klangregelung im Hauptprogramm…
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Planstand ist nicht frisch
+
+PRUEFUNG (a) a2: bei 120 Spalten zwei Zeilen STAND und DANACH, jede kuerzer als 120 Zeichen: ja
+--- a3 Ticketanker setzen
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket NAK-246   (NAKAMA_DIRIGENT_ANKER = Proben-Anker)
+Exit 0 · 0,3 s · stdout 96 Bytes · sha256 4b078d88de71fd01ceef06e4a4d310f3c21f8ca3f29257c81d8e4e7019bede42
+ANKER · NAK-246 gesetzt · STAND zeigt es als laufend, bis -Anker ohne Ticket den Anker löst
+
+Proben-Anker: {"Ticket":"NAK-246","At":1789144983}
+PRUEFUNG (a) a3: -Anker -Ticket NAK-246 setzt den Anker (Exit 0): ja
+--- a3 Statuszeile ohne -Ticket liest den Anker
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine < NAK-256-statuszeile-beispiel.json
+Exit 0 · 1,2 s · stdout 982 Bytes · sha256 b76c4559b0ac778d03ed33a487a8034fe4414374de9aa8b0848672371e27d5cc
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+Claude      Bauer · Start ?/? · arbeitet  Kontext ? Startbeleg
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 6 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 6 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+STAND           läuft: NAK-246 Audit-Nacharbeit 10.09.2026 · Etappe 4 von 6 · Wiederprüfung 1 steht aus · danach: Die Klangregelung in der Sonde sicher und speicherbar machen → Dieselbe Klangregelung im Hauptprogramm bereitstellen
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Planstand ist nicht frisch
+
+PRUEFUNG (a) a3: STAND aus dem Anker gleicht a1: ja
+--- a4 unbekanntes Ticket
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket NAK-999
+Exit 5 · 0,4 s · stdout 85 Bytes · sha256 5649ee9c5ef76d2310aa69df3e4634b9916bc13090166ddce309ee696656b750
+! UNBEKANNTES TICKET · NAK-999 (kein Beleg, kein Planschritt, keine Registerzeile)
+
+PRUEFUNG (a) a4: ein unbekanntes Ticket wird abgewiesen (Exit 5), der Anker bleibt NAK-246: ja
+--- a5 Ticketanker loesen
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker
+Exit 0 · 0,3 s · stdout 81 Bytes · sha256 c4b15f0c64c777552de03397085a47521c7ff5d17eda93b9fced67c06ffff01b
+ANKER · gelöst · STAND folgt wieder „Als Nächstes" aus docs/PLAN-STAND.md
+
+PRUEFUNG (a) a5: -Anker ohne Ticket loest den Anker (Exit 0, Datei weg): ja
+--- a5 Statuszeile ohne Anker
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -StatusLine < NAK-256-statuszeile-beispiel.json
+Exit 0 · 0,9 s · stdout 1031 Bytes · sha256 8c65cf58cbdc3b68df90972941928dba3c966ee7dc1efc22edb940cc18d83828
+NAKAMA DIRIGENT                              ! EINGRIFF NÖTIG
+AUFSICHT — · keine laufende Arbeitsphase · wichtige Events sofort
+
+Fable       Dirigent · Fable 5.1/xhigh · aktiv  Kontext ? Arbeitsanker
+Claude      Bauer · Start ?/? · arbeitet  Kontext ? Startbeleg
+
+FABLE-KONTEXT  512k / 1.000k  [█████░░░░░] 51 %
+CLAUDE          5 Stunden 41 % · Reset 11.09. 21:00 · Woche 64 % · Reset 14.09. 09:00 · vor 8 s
+CODEX           Woche 72 % · Reset 15.09. 03:23 · vor 8 s
+PLAN            33 / 45 fertig · 12 offen  [███████░░░]
+STAND           als Nächstes: SONDE-015 Die Klangregelung in der Sonde sicher und speicherbar machen · Etappe nicht lesbar · Schritt nicht lesbar · danach: Dieselbe Klangregelung im Hauptprogramm bereitstellen → Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+FRAGE           Termin A2: Nebenwege einmal MIT Verzögerung messen · /fragen          Plan: /dirigent stand
+HINWEIS         Planstand ist nicht frisch
+
+PRUEFUNG (a) a5: ohne Anker folgt STAND „Als Nächstes" (SONDE-015) und behauptet kein laufendes Ticket: ja
+PRUEFUNG (a) a5: die Kopfzeile von SONDE-015 folgt der Konvention nicht; STAND sagt „Schritt nicht lesbar" statt Pruefprosa mit SHA: ja
+--- a6 beschaedigter Anker: STAND           nicht lesbar · Ticketanker nicht lesbar (C:\Users\phili\AppData\Local\Temp\nak256-probe-31856\anker.json)
+PRUEFUNG (a) a6: ein beschaedigter Anker heisst „nicht lesbar", nie eine Erfindung: ja
+--- a7 Konvention am eigenen Manifest (docs/beweise/NAK-256.md, Kopfzeile „Etappe"): pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Uebersicht -Ticket NAK-256
+STAND           läuft: NAK-256 Gesamtplan im zweiten Tab und STAND-Zeile · Etappe 1 von 1 · Prüfung durch den Dirigenten steht aus · danach: Die Klangregelung in der Sonde sicher und speicherbar machen → Dieselbe Klangregelung im Hauptprogramm bereitstellen
+PRUEFUNG (a) a7: der Kopf dieses Manifests liest sich als „Etappe 1 von 1" mit dem laufenden Schritt: ja
+
+Aufgeraeumt: nakama-dirigent-nak256-probe-agents.json
+Aufgeraeumt: nakama-dirigent-nak256-probe-claude.json
+Aufgeraeumt: nakama-dirigent-nak256-probe-codex.json
+Aufgeraeumt: nakama-dirigent-nak256-probe-telemetry.json
+
+=== Bein (c) - plan-tab.ps1 -Einmal
+--- c0 Vergleich: -Plan im Arbeitsbaum zur selben Zeit
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+Exit 4 · 0,6 s · stdout 71 Bytes · sha256 0c15dc9961a4466ff22658bf35fa398b1117faae7c2381bec29fa12a17388b4b
+! PLANQUELLEN NICHT FRISCH · erst tools/plan/planstand.py ausführen
+
+--- c1 plan-tab.ps1 -Einmal im Arbeitsbaum
+Befehl: pwsh -NoProfile -File tools/dirigent/plan-tab.ps1 -Einmal
+Exit 0 · 1,2 s · stdout 3944 Bytes · sha256 12b19a7a8e28238e762db58cf0dfb5b1c3a638f71c5a7a9566397ff8e4dbbb3a
+STAND           als Nächstes: SONDE-015 Die Klangregelung in der Sonde sicher und speicherbar machen · Etappe nicht lesbar · Schritt nicht lesbar · danach: Dieselbe Klangregelung im Hauptprogramm bereitstellen → Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+
+NAKAMA PLAN · 33 / 45 fertig · 12 offen
+Planrechnung vom 11.09.2026 · neuere Belege und Planänderungen sind noch nicht eingerechnet
+
+BEWEISEN STATT BEHAUPTEN
+✓ Einen vollständigen, wiederholbaren Beweislauf schaffen
+
+BESTAND EINFRIEREN, HOSTGRENZEN BEWEISEN
+✓ Nebenwege und Latenzausgleich im Musikprogramm messbar machen
+✓ Nebenwege und Latenzausgleich im Musikprogramm praktisch bestätigen
+✓ Plugin-Identitäten für alte Projekte dauerhaft festschreiben
+✓ Zeit, Latenz und Automation des Musikprogramms sichtbar machen
+✓ Zeitsprünge, Rendern und Automation im Musikprogramm aufzeichnen
+✓ Hostzeit und Automation im Musikprogramm praktisch bestätigen
+✓ Gemessene Fähigkeiten des Musikprogramms verbindlich festhalten
+✓ Die eingefrorenen Hostgrenzen unabhängig und adversarial prüfen
+
+VERTRÄGE, GESPEICHERTER ZUSTAND, NEUTRALE HÜLLEN
+✓ Nachrichten zwischen allen Programmteilen eindeutig festschreiben
+✓ Messdaten in allen beteiligten Sprachen gleich lesbar machen
+✓ Gespeicherte Projekte verlustfrei und zukunftssicher laden
+✓ Einen identitätsneutralen Kern für alle Plugins schaffen
+✓ Drei getrennte Plugins samt sicherer Auslieferung bereitstellen
+✓ Das aufgegangene dritte Plugin sauber aus Bau und Auslieferung nehmen
+✓ Verträge, Zustand und Plugin-Hüllen unabhängig prüfen
+
+MESSKERN, NACHRICHTENWEG, SPEICHER
+✓ Audiomessung ohne Blockieren und mit begrenztem Speicher absichern
+✓ Messwerte bei Sprüngen und Lücken zeitlich ehrlich halten
+✓ Plugins und Vermittler über den Nachrichtenweg verbinden
+✓ Implementierung anhalten und den Gesamtplan gegen Entscheide und Marktstandard prüfen
+✓ Messdaten verteilen, speichern und zuverlässig ausgeben
+✓ Den vollständigen Messweg unabhängig und sicherheitsnah prüfen
+
+PASSIVE LANDKARTE
+✓ Alle Quellen mit Messpunkt, Frische und Fehlerzustand zeigen
+✓ Quellen zusammenführen, Design-Entscheide in den Bauplan holen, Register bereinigen
+✓ Die passive Quellenübersicht im Dauerlauf unabhängig prüfen
+✓ Broker-Dateien verhaltensneutral in Module aufteilen und die G2-Härtungen einarbeiten
+
+VERGLEICHSEVIDENZ UND URSACHEN
+✓ Vergleiche, Passagen und manuelle Hörversuche auswertbar machen
+✓ Klangberechnung und Vergleichslogik unabhängig prüfen
+✓ Aus Messungen belegte Befunde und kleinste Tests ableiten
+✓ Zu starke Ursachenbehauptungen gezielt provozieren und abweisen
+✓ Gesundheitsmaß für Codebase und Kontext mit Schwellen bauen
+✓ Ursachenkern des Brokers verhaltensneutral aufteilen
+✓ Plugin-Kern verhaltensneutral aufteilen
+
+AKTIVER KERN: EQ IN SONDE UND GEN
+→ Die Klangregelung in der Sonde sicher und speicherbar machen
+○ Dieselbe Klangregelung im Hauptprogramm bereitstellen
+○ Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+○ Hauptprogramm und Sonden sicher koppeln und gemeinsam bedienen
+○ Fernsteuerung und Rückweg unter hoher Befehlslast prüfen
+○ Die zentrale Klangregelungsseite und Sonden-Rückfallfläche bauen
+○ Codebase-Pflege nach dem aktiven Kern
+
+ENTMASKIERUNG UND HÄRTUNG
+○ Überlagerte Signale über einen Nebenweg gezielt entmaskieren
+○ Entmaskierung mit Hörmaterial und Gegenprüfung absichern
+○ Auslieferung, Migration, Datenschutz und Rückweg abschließen
+○ Das gesamte System unter realistischer Höchstlast freigeben
+○ Codebase-Pflege vor der Auslieferung
+
+Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen.
+
+aktualisiert 18:43:10 · Dirigent-Kontext 55 % · Claude 5 Std. 15 %, Woche 3 % · Codex Woche 72 % · gemessen vor 4 s
+
+PRUEFUNG (c) c1: Exit 0: ja
+PRUEFUNG (c) c1: oben STAND, darunter der Gesamtplan mit Phasen und Schritten, unten „aktualisiert HH:mm:ss": ja
+PRUEFUNG (c) c1: auch wenn -Plan „nicht frisch" meldet (c0 Exit 4), zeigt der Tab die letzte Planrechnung mit Hinweis: ja
+--- c2 Uebersicht fuer ein Fenster mit 30 Zeilen und 120 Spalten
+Befehl: COLUMNS=120 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Uebersicht -Hoehe 30
+Exit 0 · 1,8 s · stdout 1641 Bytes · sha256 619e1d1bf3690f53bf7a8dd2e7e133947ba7e38cd9c25f3c166ecf08fafc27e8
+STAND           als Nächstes: SONDE-015 Die Klangregelung in der Sonde sicher und speicherbar machen · Etappe nicht le…
+DANACH          Dieselbe Klangregelung im Hauptprogramm bereitstellen → Aktive Klangpfade unter Last und Nebenläufigke…
+
+NAKAMA PLAN · 33 / 45 fertig · 12 offen
+Planrechnung vom 11.09.2026 · neuere Belege und Planänderungen sind noch nicht eingerechnet
+
+✓ BEWEISEN STATT BEHAUPTEN · 1 von 1 fertig
+✓ BESTAND EINFRIEREN, HOSTGRENZEN BEWEISEN · 8 von 8 fertig
+✓ VERTRÄGE, GESPEICHERTER ZUSTAND, NEUTRALE HÜLLEN · 7 von 7 fertig
+✓ MESSKERN, NACHRICHTENWEG, SPEICHER · 6 von 6 fertig
+✓ PASSIVE LANDKARTE · 4 von 4 fertig
+✓ VERGLEICHSEVIDENZ UND URSACHEN · 7 von 7 fertig
+
+AKTIVER KERN: EQ IN SONDE UND GEN
+→ Die Klangregelung in der Sonde sicher und speicherbar machen
+○ Dieselbe Klangregelung im Hauptprogramm bereitstellen
+○ Aktive Klangpfade unter Last und Nebenläufigkeit härtesten prüfen
+○ Hauptprogramm und Sonden sicher koppeln und gemeinsam bedienen
+○ Fernsteuerung und Rückweg unter hoher Befehlslast prüfen
+○ Die zentrale Klangregelungsseite und Sonden-Rückfallfläche bauen
+○ Codebase-Pflege nach dem aktiven Kern
+
+ENTMASKIERUNG UND HÄRTUNG
+○ Überlagerte Signale über einen Nebenweg gezielt entmaskieren
+○ Entmaskierung mit Hörmaterial und Gegenprüfung absichern
+○ Auslieferung, Migration, Datenschutz und Rückweg abschließen
+○ Das gesamte System unter realistischer Höchstlast freigeben
+○ Codebase-Pflege vor der Auslieferung
+
+Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen.
+
+PRUEFUNG (c) c2: hoechstens 30 Zeilen, jede kuerzer als 120 Zeichen, fertige Phasen gefaltet: ja
+PRUEFUNG (c) Rot: am Basis-SHA gibt es tools/dirigent/plan-tab.ps1 nicht: ja
+
+=== Bein (d) - Starter oeffnet genau einen Plan-Tab
+PRUEFUNG (d) Voraussetzung: vor dem Bein laeuft kein Plan-Tab: ja
+PRUEFUNG (d) Voraussetzung: kein Neustart-Marker liegt (sonst wuerde die Probe einen echten Neustart verschlucken): ja
+--- d0 Rotbeweis: Starter des Basis-SHA
+Befehl: pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1 -NurPlanTab
+Exit 1 · 0,3 s · stdout 0 Bytes · sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+stderr: start-dirigent.ps1: Es wurde kein Parameter gefunden, der dem Parameternamen "NurPlanTab" entspricht.
+
+PRUEFUNG (d) d0 Rot: der Starter des Basis-SHA kennt -NurPlanTab nicht: ja
+--- d0 Rotbeweis: Starter des Basis-SHA im Terminalmodus, Ersatz-Claude mit Marker-Neustart
+Befehl: NAKAMA_DIRIGENT_CLAUDE=docs/beweise/roh/NAK-256-ersatz-claude.ps1 pwsh -NoLogo -NoProfile -File tools/dirigent/start-dirigent.ps1 -InsideTerminal
+  0,1 s  Plan-Tab-Prozesse 0 
+ 14,6 s  Starter beendet, Exit 0, Starter-PID 6428
+ 14,7 s  danach Plan-Tab-Prozesse 0
+Runden des Ersatz-Claude: 2
+
+PRUEFUNG (d) d0 Rot: am Basis-SHA oeffnet der Starter ueber zwei Runden keinen Plan-Tab: ja
+--- d1 Trockenlauf mit Windows Terminal, erster Aufruf
+Befehl: pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1 -NurPlanTab -PlanTabFenster nak256-probe -PlanTabBindung 34448   (Platzhalterprozess)
+Exit 0 · 1,3 s · stdout 81 Bytes · sha256 7df17ae959fcf33e34abeedb7f32d91b2b021819f72925814d59d01b3e01157a
+PLAN-TAB · geöffnet · PID 12576 · Windows Terminal · gebunden an PID 34448
+
+Plan-Tab-Prozesse nach dem ersten Aufruf: 1
+  PID 12576 · Elternprozess WindowsTerminal.exe (11920) · "C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -File C:\Users\phili\Projekte\Nakama\tools\dirigent\plan-tab.ps1 -BindenAn 34448
+--- d1 Trockenlauf mit Windows Terminal, zweiter Aufruf
+Befehl: derselbe Befehl
+Exit 0 · 0,4 s · stdout 71 Bytes · sha256 6883b177e246fd84c2bcb16430e50ee1ca8564d91162c13abcac6d636a03dea6
+PLAN-TAB · läuft schon · PID 12576 · — · gebunden an PID 34448
+
+Plan-Tab-Prozesse nach dem zweiten Aufruf: 1
+  PID 12576 · Elternprozess WindowsTerminal.exe (11920) · "C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -File C:\Users\phili\Projekte\Nakama\tools\dirigent\plan-tab.ps1 -BindenAn 34448
+PRUEFUNG (d) d1: der erste Aufruf oeffnet den Plan-Tab als Tab in Windows Terminal: ja
+PRUEFUNG (d) d1: der zweite Aufruf oeffnet keinen zweiten Tab: ja
+Platzhalter beendet; Plan-Tab-Prozesse nach 1.3 s: 0
+PRUEFUNG (d) d1: endet der gebundene Prozess, endet der Plan-Tab von selbst: ja
+
+--- d2 ohne Windows Terminal (LOCALAPPDATA ohne Terminal-Einstellungen), erster Aufruf
+Befehl: LOCALAPPDATA=<leer> pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1 -NurPlanTab -PlanTabBindung 16576
+Exit 0 · 0,5 s · stdout 79 Bytes · sha256 2673aad89a977321a99a5cae79bd6032c558387871791f7e7804376270c6c47e
+PLAN-TAB · geöffnet · PID 5256 · eigenes Fenster · gebunden an PID 16576
+
+Plan-Tab-Prozesse nach dem ersten Aufruf: 1
+  PID 5256 · Elternprozess (beendet) (22676) · "C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -File C:\Users\phili\Projekte\Nakama\tools\dirigent\plan-tab.ps1 -BindenAn 16576
+--- d2 ohne Windows Terminal, zweiter Aufruf
+Befehl: derselbe Befehl
+Exit 0 · 0,4 s · stdout 70 Bytes · sha256 3b242fad3c5fc7792c946c0e78103ade899b0651e0fd2e06199b88467b76632e
+PLAN-TAB · läuft schon · PID 5256 · — · gebunden an PID 16576
+
+Plan-Tab-Prozesse nach dem zweiten Aufruf: 1
+  PID 5256 · Elternprozess (beendet) (22676) · "C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -File C:\Users\phili\Projekte\Nakama\tools\dirigent\plan-tab.ps1 -BindenAn 16576
+PRUEFUNG (d) d2: ohne Windows Terminal oeffnet der Starter ein eigenes Fenster: ja
+PRUEFUNG (d) d2: der zweite Aufruf oeffnet kein zweites Fenster: ja
+Platzhalter beendet; Plan-Tab-Prozesse nach 1.6 s: 0
+PRUEFUNG (d) d2: endet der gebundene Prozess, schliesst das Fenster: ja
+
+--- d3 Starter im Terminalmodus, Ersatz-Claude mit Marker-Neustart
+Befehl: NAKAMA_DIRIGENT_CLAUDE=docs/beweise/roh/NAK-256-ersatz-claude.ps1 pwsh -NoLogo -NoProfile -File tools/dirigent/start-dirigent.ps1 -InsideTerminal -PlanTabFenster nak256-probe
+  0,1 s  Plan-Tab-Prozesse 0 
+  1,2 s  Plan-Tab-Prozesse 1 PID 13984 (gebunden an 34216)
+ 15,6 s  Starter beendet, Exit 0, Starter-PID 34216
+ 16,5 s  danach Plan-Tab-Prozesse 0
+Runden des Ersatz-Claude: 2; verschiedene Plan-Tab-PIDs: 1; hoechstens gleichzeitig: 1
+Ausgabe des Starters (ohne Logo):
+  Gesamtplan im zweiten Tab geöffnet.
+  ERSATZ-CLAUDE Runde 1
+  Neustart angefordert · Session 1 lief 0 min · frische Dirigenten-Session in diesem Fenster ...
+  Gesamtplan läuft bereits.
+  ERSATZ-CLAUDE Runde 2
+  Dirigent beendet · Session 2 lief 0 min.
+  Enter = neue Dirigenten-Session in diesem Fenster · Esc = Fenster schliessen
+
+PRUEFUNG (d) d3: Start oeffnet den Plan-Tab, der Marker-Neustart oeffnet keinen zweiten: ja
+PRUEFUNG (d) d3: endet das Dirigentenfenster (Starter), endet der Plan-Tab: ja
+PRUEFUNG (d) d3: die Probe hinterlaesst keinen Neustart-Marker: ja
+
+=== Bein (e) - Beobachter mit Fable-Werten
+--- e0 Rotbeweis: Basis-SHA im Klon
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker -WorkerId nak256-nicht-da -BaseSha bb260a2a54088a20cb25c5ccbfa3a1ca8aff3ad7 -Aufsicht NORMAL -StartModel Fable -StartEffort xhigh -DirigentSessionId nak256-probe -TimeoutSeconds 60
+Exit 1 · 0,6 s · stdout 0 Bytes · sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+stderr: cockpit.ps1: Das Argument für den Parameter "StartModel" kann nicht überprüft werden. Das Argument "Fable" gehört nicht zu dem vom ValidateSet-Attribut angegebenen Satz "Opus". Geben Sie ein Argument an, das sich im Satz befindet, und wiederholen Sie dann den Befehl.
+
+PRUEFUNG (e) e0 Rot: am Basis-SHA scheitert -StartModel Fable an der Parameterpruefung: ja
+--- e1 Arbeitsbaum, Worker-ID existiert nicht
+Befehl: pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker -WorkerId nak256-nicht-da -BaseSha bb260a2a54088a20cb25c5ccbfa3a1ca8aff3ad7 -Aufsicht NORMAL -StartModel Fable -StartEffort xhigh -DirigentSessionId nak256-probe -TimeoutSeconds 60
+Exit 6 · 0,7 s · stdout 51 Bytes · sha256 560a79c0daaa36d09fe36280188544694721a1dcede31acf24294e72f7eac93c
+WORKER nak256-nicht-da · unerwartet verschwunden
+
+PRUEFUNG (e) e1: der Beobachter startet ohne Validierungsfehler und meldet als erstes den fehlenden Worker (Exit 6): ja
+--- e2 Zeilenumbruch im Modellwert
+Befehl: pwsh -NoProfile -Command "& 'tools/dirigent/cockpit.ps1' -WatchWorker ... -StartModel ('Fable' + [char]10 + 'x') ..."
+Exit 1 · 0,4 s · stdout 0 Bytes · sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+stderr: cockpit.ps1: Das Argument für den Parameter "StartModel" kann nicht überprüft werden. Das Argument "Fable
+x" stimmt nicht mit dem Muster "^[^\r\n]{1,64}\z" überein. Geben Sie ein Argument an, das "^[^\r\n]{1,64}\z" entspricht, und führen Sie den Befehl dann erneut aus.
+
+PRUEFUNG (e) e2: ein Zeilenumbruch im Anzeigewert bleibt gesperrt (eine Ausgabezeile = ein Monitor-Ereignis): ja
+
+=== BILANZ: 40 von 40 Pruefungen erfuellt
+  (b) ja   - b1 Planquellen nicht frisch (docs/PLAN-STAND.md des Basis-SHA): stdout und Exitcode bytegleich
+  (b) ja   - b2 frisch gerechneter Planstand: stdout und Exitcode bytegleich
+  (b) ja   - b2: der frische Lauf zeigt den Gesamtplan (NAKAMA PLAN, Exit 0)
+  (b) ja   - b3 mit Arbeitsanker: stdout und Exitcode bytegleich
+  (b) ja   - b4 unbekannter Arbeitsanker: stdout und Exitcode bytegleich
+  (a) ja   - a0 Rot: am Basis-SHA traegt die Statuszeile keine Zeile STAND
+  (a) ja   - a0: alle bisherigen Zeilen bleiben in derselben Reihenfolge, STAND steht zwischen PLAN und FRAGE
+  (a) ja   - a1: genau eine Zeile STAND, Exit 0
+  (a) ja   - a1: STAND zeigt „läuft: NAK-246", „Etappe 4 von 6", „Wiederprüfung 1 steht aus"
+  (a) ja   - a1: STAND nennt die zwei naechsten offenen Planschritte
+  (a) ja   - a2: bei 120 Spalten zwei Zeilen STAND und DANACH, jede kuerzer als 120 Zeichen
+  (a) ja   - a3: -Anker -Ticket NAK-246 setzt den Anker (Exit 0)
+  (a) ja   - a3: STAND aus dem Anker gleicht a1
+  (a) ja   - a4: ein unbekanntes Ticket wird abgewiesen (Exit 5), der Anker bleibt NAK-246
+  (a) ja   - a5: -Anker ohne Ticket loest den Anker (Exit 0, Datei weg)
+  (a) ja   - a5: ohne Anker folgt STAND „Als Nächstes" (SONDE-015) und behauptet kein laufendes Ticket
+  (a) ja   - a5: die Kopfzeile von SONDE-015 folgt der Konvention nicht; STAND sagt „Schritt nicht lesbar" statt Pruefprosa mit SHA
+  (a) ja   - a6: ein beschaedigter Anker heisst „nicht lesbar", nie eine Erfindung
+  (a) ja   - a7: der Kopf dieses Manifests liest sich als „Etappe 1 von 1" mit dem laufenden Schritt
+  (c) ja   - c1: Exit 0
+  (c) ja   - c1: oben STAND, darunter der Gesamtplan mit Phasen und Schritten, unten „aktualisiert HH:mm:ss"
+  (c) ja   - c1: auch wenn -Plan „nicht frisch" meldet (c0 Exit 4), zeigt der Tab die letzte Planrechnung mit Hinweis
+  (c) ja   - c2: hoechstens 30 Zeilen, jede kuerzer als 120 Zeichen, fertige Phasen gefaltet
+  (c) ja   - Rot: am Basis-SHA gibt es tools/dirigent/plan-tab.ps1 nicht
+  (d) ja   - Voraussetzung: vor dem Bein laeuft kein Plan-Tab
+  (d) ja   - Voraussetzung: kein Neustart-Marker liegt (sonst wuerde die Probe einen echten Neustart verschlucken)
+  (d) ja   - d0 Rot: der Starter des Basis-SHA kennt -NurPlanTab nicht
+  (d) ja   - d0 Rot: am Basis-SHA oeffnet der Starter ueber zwei Runden keinen Plan-Tab
+  (d) ja   - d1: der erste Aufruf oeffnet den Plan-Tab als Tab in Windows Terminal
+  (d) ja   - d1: der zweite Aufruf oeffnet keinen zweiten Tab
+  (d) ja   - d1: endet der gebundene Prozess, endet der Plan-Tab von selbst
+  (d) ja   - d2: ohne Windows Terminal oeffnet der Starter ein eigenes Fenster
+  (d) ja   - d2: der zweite Aufruf oeffnet kein zweites Fenster
+  (d) ja   - d2: endet der gebundene Prozess, schliesst das Fenster
+  (d) ja   - d3: Start oeffnet den Plan-Tab, der Marker-Neustart oeffnet keinen zweiten
+  (d) ja   - d3: endet das Dirigentenfenster (Starter), endet der Plan-Tab
+  (d) ja   - d3: die Probe hinterlaesst keinen Neustart-Marker
+  (e) ja   - e0 Rot: am Basis-SHA scheitert -StartModel Fable an der Parameterpruefung
+  (e) ja   - e1: der Beobachter startet ohne Validierungsfehler und meldet als erstes den fehlenden Worker (Exit 6)
+  (e) ja   - e2: ein Zeilenumbruch im Anzeigewert bleibt gesperrt (eine Ausgabezeile = ein Monitor-Ereignis)

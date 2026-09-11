@@ -1,0 +1,59 @@
+{
+  "cwd": "C:\\Users\\phili\\Projekte\\Nakama",
+  "session_id": "nak256-probe",
+  "session_name": "nakama-dirigent",
+  "transcript_path": "C:\\Users\\phili\\AppData\\Local\\Temp\\nak256-probe-ohne-transkript.jsonl",
+  "model": {
+    "id": "claude-fable-5-1[1m]",
+    "display_name": "Fable 5.1"
+  },
+  "workspace": {
+    "current_dir": "C:\\Users\\phili\\Projekte\\Nakama",
+    "project_dir": "C:\\Users\\phili\\Projekte\\Nakama",
+    "added_dirs": [
+      "C:\\Users\\phili\\FL-Studio"
+    ]
+  },
+  "version": "2.1.268",
+  "output_style": {
+    "name": "Sachlich"
+  },
+  "cost": {
+    "total_cost_usd": 0,
+    "total_duration_ms": 5400000,
+    "total_api_duration_ms": 1900000,
+    "total_lines_added": 0,
+    "total_lines_removed": 0
+  },
+  "context_window": {
+    "total_input_tokens": 512340,
+    "total_output_tokens": 2210,
+    "context_window_size": 1000000,
+    "used_percentage": 51,
+    "remaining_percentage": 49,
+    "current_usage": {
+      "input_tokens": 1840,
+      "output_tokens": 2210,
+      "cache_creation_input_tokens": 6500,
+      "cache_read_input_tokens": 504000
+    }
+  },
+  "exceeds_200k_tokens": true,
+  "fast_mode": false,
+  "effort": {
+    "level": "xhigh"
+  },
+  "thinking": {
+    "enabled": true
+  },
+  "rate_limits": {
+    "five_hour": {
+      "used_percentage": 41.0,
+      "resets_at": 1789153200
+    },
+    "seven_day": {
+      "used_percentage": 63.5,
+      "resets_at": 1789369200
+    }
+  }
+}

@@ -4,7 +4,17 @@
 param(
     [switch]$InsideTerminal,
     [switch]$PreviewOnly,
-    [switch]$ValidateOnly
+    [switch]$ValidateOnly,
+    # Nur den Plan-Tab oeffnen, kein Claude (Trockenlauf und Wiederoeffnen, NAK-256).
+    [switch]$NurPlanTab,
+    # Zielfenster des Plan-Tabs in Windows Terminal: 0 = zuletzt benutztes Fenster,
+    # also das eben gestartete Dirigentenfenster. Ein Fenstername dient Proben.
+    [ValidatePattern('^[A-Za-z0-9_-]{1,40}\z')]
+    [string]$PlanTabFenster = '0',
+    # Prozess, mit dessen Ende der Plan-Tab schliesst. 0 = beim Trockenlauf das
+    # laufende Dirigentenfenster, falls genau eines laeuft, sonst ungebunden.
+    [ValidateRange(0, 2147483647)]
+    [int]$PlanTabBindung = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +27,10 @@ $terminalSettingsPath = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsT
 $claudePath = Join-Path $env:USERPROFILE '.local\bin\claude.exe'
 # Markerdatei fuer den Neustart in demselben Fenster (siehe -InsideTerminal).
 $restartMarker = Join-Path ([IO.Path]::GetTempPath()) 'nakama-dirigent-neustart.marker'
+# Plan-Tab (NAK-256): Gesamtplan mit STAND dauerhaft im zweiten Tab desselben
+# Fensters (User-Entscheid 11.09.2026: „gesamtplan stand dauerhaft im zweiten tab + statuszeile").
+$planTabPath = Join-Path $PSScriptRoot 'plan-tab.ps1'
+$planTabTitle = 'Nakama · Plan'
 # Prüfhaken: NAKAMA_DIRIGENT_CLAUDE zeigt auf einen Ersatz fuer claude.exe,
 # damit sich die Neustartschleife ohne echte Claude-Session messen laesst.
 if ($env:NAKAMA_DIRIGENT_CLAUDE) {
@@ -68,7 +82,7 @@ function Quote-WindowsArgument {
     return '"' + ($Value -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
 }
 
-function Open-TerminalProfile {
+function Initialize-TerminalActivation {
     $activationSource = @'
 using System;
 using System.Runtime.InteropServices;
@@ -128,6 +142,10 @@ namespace NakamaDirigentLauncher
     if (-not ('NakamaDirigentLauncher.Activation' -as [type])) {
         Add-Type -TypeDefinition $activationSource
     }
+}
+
+function Open-TerminalProfile {
+    Initialize-TerminalActivation
 
     $terminalTitle = if ($PreviewOnly) { 'Nakama · Dirigent Vorschau' } else { 'Nakama Dirigent' }
     $terminalArguments = @(
@@ -168,7 +186,149 @@ function Open-PowerShellFallback {
     return [Diagnostics.Process]::Start($start).Id
 }
 
+function Get-PlanTabProcesses {
+    # Laufende Plan-Tabs (Schleife, nicht -Einmal), erkannt am Befehlstext: pwsh
+    # mit `-File ...\plan-tab.ps1`. Ein Prozess, der den Namen nur im Text eines
+    # -Command traegt, zaehlt nicht. Ist die Prozessliste nicht lesbar, gilt keiner
+    # als laufend; einen zweiten Start faengt plan-tab.ps1 selbst ueber seinen Mutex ab.
+    try {
+        return @(Get-CimInstance Win32_Process -Filter "Name = 'pwsh.exe'" -ErrorAction Stop | Where-Object {
+            $_.CommandLine -match '(?i)^(?:"[^"]*"|\S+)\s+(?:-\S+\s+)*-File\s+(?:"[^"]*[\\/]plan-tab\.ps1"|[^"\s]*[\\/]plan-tab\.ps1)(?:\s|$)' -and
+                $_.CommandLine -notmatch '(?i)\s-Einmal(?:\s|$)'
+        })
+    }
+    catch {
+        return @()
+    }
+}
+
+function Find-DirigentStarterPid {
+    # Das laufende Dirigentenfenster: genau ein Starter mit -InsideTerminal ohne
+    # -PreviewOnly. Sonst 0, der Plan-Tab bleibt dann ungebunden.
+    try {
+        $starter = @(Get-CimInstance Win32_Process -Filter "Name = 'pwsh.exe'" -ErrorAction Stop | Where-Object {
+            $_.ProcessId -ne $PID -and
+                $_.CommandLine -match '(?i)^(?:"[^"]*"|\S+)\s+(?:-\S+\s+)*-File\s+(?:"[^"]*[\\/]start-dirigent\.ps1"|[^"\s]*[\\/]start-dirigent\.ps1)\s' -and
+                $_.CommandLine -match '(?i)\s-InsideTerminal(?:\s|$)' -and
+                $_.CommandLine -notmatch '(?i)\s-PreviewOnly(?:\s|$)'
+        })
+        if ($starter.Count -eq 1) { return [int]$starter[0].ProcessId }
+    }
+    catch { }
+    return 0
+}
+
+function Open-PlanTab {
+    <# Oeffnet den Plan-Tab, wenn keiner laeuft: mit Windows Terminal als Tab im
+       Fenster -PlanTabFenster und danach zurueck auf den ersten Tab (der Dirigent
+       bleibt vorn, der Plan liegt im zweiten Tab); ohne Windows Terminal als
+       eigenes Fenster. Wartet, bis der Prozess sichtbar ist. Wirft nie: der
+       Dirigent startet auch ohne Plan-Tab. #>
+    param([int]$Bindung)
+
+    $ergebnis = [pscustomobject]@{ Status = 'Fehler'; Pid = 0; Weg = ''; Hinweis = '' }
+    try {
+        $laufend = @(Get-PlanTabProcesses)
+        if ($laufend.Count) {
+            $ergebnis.Status = 'läuft schon'
+            $ergebnis.Pid = [int]$laufend[0].ProcessId
+            return $ergebnis
+        }
+        if (-not (Test-Path -LiteralPath $planTabPath -PathType Leaf)) {
+            $ergebnis.Status = 'fehlt'
+            $ergebnis.Hinweis = $planTabPath
+            return $ergebnis
+        }
+        $tabArguments = @('-NoLogo', '-NoProfile', '-File', $planTabPath)
+        if ($Bindung -gt 0) {
+            $tabArguments += @('-BindenAn', [string]$Bindung)
+        }
+
+        if ($null -ne $profile) {
+            try {
+                Initialize-TerminalActivation
+                $terminalArguments = @(
+                    '--window', $PlanTabFenster,
+                    'new-tab',
+                    '--profile', $terminalProfile,
+                    '--startingDirectory', $repoRoot,
+                    '--title', $planTabTitle,
+                    '--suppressApplicationTitle',
+                    $powerShellPath
+                ) + $tabArguments + @(';', 'focus-tab', '--target', '0')
+                $argumentLine = ($terminalArguments | ForEach-Object { Quote-WindowsArgument $_ }) -join ' '
+                [void][NakamaDirigentLauncher.Activation]::Open('Microsoft.WindowsTerminal_8wekyb3d8bbwe!App', $argumentLine)
+                $ergebnis.Weg = 'Windows Terminal'
+            }
+            catch {
+                $ergebnis.Hinweis = "Windows Terminal: $($_.Exception.Message)"
+            }
+        }
+        if (-not $ergebnis.Weg) {
+            $start = [Diagnostics.ProcessStartInfo]::new()
+            $start.FileName = $powerShellPath
+            $start.UseShellExecute = $true
+            foreach ($argument in $tabArguments) {
+                [void]$start.ArgumentList.Add($argument)
+            }
+            $prozess = [Diagnostics.Process]::Start($start)
+            if ($null -ne $prozess) { $prozess.Dispose() }
+            $ergebnis.Weg = 'eigenes Fenster'
+        }
+
+        $frist = (Get-Date).AddSeconds(8)
+        while ((Get-Date) -lt $frist) {
+            $gesehen = @(Get-PlanTabProcesses)
+            if ($gesehen.Count) {
+                $ergebnis.Status = 'geöffnet'
+                $ergebnis.Pid = [int]$gesehen[0].ProcessId
+                return $ergebnis
+            }
+            Start-Sleep -Milliseconds 250
+        }
+        $ergebnis.Status = 'nicht sichtbar'
+        return $ergebnis
+    }
+    catch {
+        $ergebnis.Status = 'Fehler'
+        $ergebnis.Hinweis = $_.Exception.Message
+        return $ergebnis
+    }
+}
+
+function Format-PlanTabMeldung {
+    param([object]$Ergebnis)
+
+    switch ($Ergebnis.Status) {
+        'geöffnet' {
+            if ($Ergebnis.Weg -eq 'eigenes Fenster') { return 'Gesamtplan in einem eigenen Fenster geöffnet.' }
+            return 'Gesamtplan im zweiten Tab geöffnet.'
+        }
+        'läuft schon' { return 'Gesamtplan läuft bereits.' }
+        'fehlt' { return "Gesamtplan nicht geöffnet: $($Ergebnis.Hinweis) fehlt." }
+        'nicht sichtbar' { return 'Gesamtplan angefordert, aber nach 8 Sekunden nicht sichtbar.' }
+        default { return "Gesamtplan nicht geöffnet: $($Ergebnis.Hinweis)" }
+    }
+}
+
 $profile = Get-TerminalProfile
+
+if ($NurPlanTab) {
+    # Die Meldung wird meist mitgeschnitten (Werkzeugaufruf des Dirigenten): UTF-8 statt Konsolen-Codepage.
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    $bindung = if ($PlanTabBindung -gt 0) { $PlanTabBindung } else { Find-DirigentStarterPid }
+    $planTab = Open-PlanTab -Bindung $bindung
+    $gebunden = if ($bindung -gt 0) { "gebunden an PID $bindung" } else { 'ungebunden' }
+    $weg = if ($planTab.Weg) { $planTab.Weg } else { '—' }
+    [Console]::WriteLine("PLAN-TAB · $($planTab.Status) · PID $($planTab.Pid) · $weg · $gebunden")
+    if ($planTab.Hinweis) {
+        [Console]::WriteLine("HINWEIS · $($planTab.Hinweis)")
+    }
+    if ($planTab.Status -notin @('geöffnet', 'läuft schon')) {
+        exit 1
+    }
+    return
+}
 
 if ($ValidateOnly) {
     $validation = [ordered]@{
@@ -213,6 +373,10 @@ if ($InsideTerminal) {
     while ($true) {
         $runde++
         if (Test-Path -LiteralPath $restartMarker) { [IO.File]::Delete($restartMarker) }
+        # Plan-Tab (NAK-256): bei jedem Start genau einer. Der Marker-Neustart findet
+        # den laufenden Tab und oeffnet keinen zweiten; an diesen Prozess gebunden,
+        # schliesst der Tab mit dem Dirigentenfenster.
+        [Console]::WriteLine((Format-PlanTabMeldung (Open-PlanTab -Bindung $PID)))
         $beginn = Get-Date
         & $claudePath @claudeArguments
         $exit = $LASTEXITCODE

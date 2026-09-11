@@ -6,8 +6,29 @@ param(
     [Parameter(Mandatory = $true, ParameterSetName = 'Plan')]
     [switch]$Plan,
 
+    # Gesamtplan mit STAND fuer den Plan-Tab (tools/dirigent/plan-tab.ps1, NAK-256).
+    [Parameter(Mandatory = $true, ParameterSetName = 'Uebersicht')]
+    [switch]$Uebersicht,
+
+    # Ticketanker setzen (mit -Ticket) oder loesen (ohne -Ticket), NAK-256.
+    [Parameter(Mandatory = $true, ParameterSetName = 'Anker')]
+    [switch]$Anker,
+
     [Parameter(ParameterSetName = 'Plan')]
+    [Parameter(ParameterSetName = 'Uebersicht')]
     [string]$CurrentStep = '',
+
+    # Laufendes Ticket fuer STAND; geht dem Ticketanker vor.
+    [Parameter(ParameterSetName = 'StatusLine')]
+    [Parameter(ParameterSetName = 'Uebersicht')]
+    [Parameter(ParameterSetName = 'Anker')]
+    [ValidatePattern('^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*\z')]
+    [string]$Ticket = '',
+
+    # Hoechstzahl Zeilen der Uebersicht (Fensterhoehe des Plan-Tabs); 0 = ohne Grenze.
+    [Parameter(ParameterSetName = 'Uebersicht')]
+    [ValidateRange(0, 1000)]
+    [int]$Hoehe = 0,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'WatchWorker')]
     [switch]$WatchWorker,
@@ -24,12 +45,17 @@ param(
     [ValidateSet('LOCKER', 'NORMAL', 'ENG')]
     [string]$Aufsicht = 'NORMAL',
 
+    # Reine Anzeige in der Meldezeile, deshalb frei statt ValidateSet (NAK-256):
+    # ein Fable-Beobachter meldete sonst „Start Opus/max". `claude agents --json`
+    # traegt kein Modellfeld (gemessen 11.09.2026: cwd, id, kind, name, pid,
+    # sessionId, startedAt, state, status). Gesperrt ist nur der Zeilenumbruch,
+    # weil jede Ausgabezeile ein Monitor-Ereignis ist.
     [Parameter(ParameterSetName = 'WatchWorker')]
-    [ValidateSet('Opus')]
+    [ValidatePattern('^[^\r\n]{1,64}\z')]
     [string]$StartModel = 'Opus',
 
     [Parameter(ParameterSetName = 'WatchWorker')]
-    [ValidateSet('max')]
+    [ValidatePattern('^[^\r\n]{1,64}\z')]
     [string]$StartEffort = 'max',
 
     [Parameter(Mandatory = $true, ParameterSetName = 'WatchWorker')]
@@ -54,6 +80,13 @@ $script:RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $script:PlanJson = Join-Path $script:RepoRoot 'docs\plan\plan.json'
 $script:PlanStand = Join-Path $script:RepoRoot 'docs\PLAN-STAND.md'
 $script:FragenJson = Join-Path $script:RepoRoot 'docs\plan\fragen.json'
+$script:BeweisDir = Join-Path $script:RepoRoot 'docs\beweise'
+$script:RegisterMd = Join-Path $script:RepoRoot 'docs\offene-punkte.md'
+$script:TicketMuster = '^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*\z'
+# Ticketanker (NAK-256): eine Temp-Datei ausserhalb des Repos. Der Dirigent setzt
+# ihn mit `-Anker -Ticket <id>` und loest ihn mit `-Anker`; er gilt ueber
+# Dirigenten-Neustarts hinweg. NAKAMA_DIRIGENT_ANKER lenkt ihn fuer Proben um.
+$script:AnkerPfad = if ($env:NAKAMA_DIRIGENT_ANKER) { $env:NAKAMA_DIRIGENT_ANKER } else { Join-Path ([IO.Path]::GetTempPath()) 'nakama-dirigent-anker.json' }
 
 function Get-PropertyValue {
     param([object]$Object, [string]$Name)
@@ -204,6 +237,7 @@ function Get-PlanSnapshot {
         QuestionsAvailable = $false
         QuestionText = ''
         Next = ''
+        RechenDatum = ''
         StatusById = @{}
         Plan = $null
     }
@@ -218,6 +252,7 @@ function Get-PlanSnapshot {
         $result.Built = [int]$Matches[3]
         $result.Open = $result.Total - $result.Accepted
         if ($text -match '<!-- quellstand: ([0-9a-fA-F]+) -->') { $result.SourceSha = $Matches[1] }
+        if ($text -match '\*\*Stand:\*\*\s*(\d{4})-(\d{2})-(\d{2})') { $result.RechenDatum = "$($Matches[3]).$($Matches[2]).$($Matches[1])" }
         if ($text -match '\*\*Als Nächstes:\*\*\s*(.+)') { $result.Next = $Matches[1].Trim() }
 
         foreach ($line in ($text -split "`r?`n")) {
@@ -294,6 +329,8 @@ function Remove-StaleCockpitFiles {
         if ((Test-Path -LiteralPath $marker) -and ($now - (Get-Item -LiteralPath $marker).LastWriteTimeUtc).TotalMinutes -lt 10) { return }
         [IO.File]::WriteAllText($marker, $now.ToString('o'))
         foreach ($file in @(Get-ChildItem -LiteralPath $temp -Filter 'nakama-dirigent-*' -File -ErrorAction SilentlyContinue)) {
+            # Der Ticketanker (NAK-256) lebt, bis der Dirigent ihn loest - auch ueber Tage.
+            if ($file.Name -eq 'nakama-dirigent-anker.json') { continue }
             $age = $now - $file.LastWriteTimeUtc
             $stale = ($file.Extension -eq '.tmp' -and $age.TotalMinutes -gt 10) -or
                 ($file.Extension -eq '.json' -and $age.TotalDays -gt 2)
@@ -725,6 +762,310 @@ function Get-AgentLabel {
     }
 }
 
+function Get-TerminalWidth {
+    # Claude Code setzt COLUMNS vor jedem Statuszeilenlauf (Doku „Customize your
+    # status line", Abschnitt „Sizing output to the terminal"); der Plan-Tab setzt
+    # es fuer die Uebersicht selbst. 0 = ohne Grenze.
+    $columns = 0
+    if ([int]::TryParse([string]$env:COLUMNS, [ref]$columns) -and $columns -gt 0) { return $columns }
+    return 0
+}
+
+function Limit-Line {
+    # Kuerzt auf hoechstens Width-1 Zeichen mit „…", damit das Terminal nicht umbricht.
+    param([string]$Text, [int]$Width)
+    if ($Width -lt 2 -or $Text.Length -lt $Width) { return $Text }
+    return $Text.Substring(0, $Width - 2).TrimEnd() + '…'
+}
+
+function Read-Anker {
+    if (-not [IO.File]::Exists($script:AnkerPfad)) { return [pscustomobject]@{ Ticket = ''; Fehler = '' } }
+    $ticket = [string](Get-PropertyValue (Read-JsonFile $script:AnkerPfad) 'Ticket')
+    if ($ticket -cmatch $script:TicketMuster) { return [pscustomobject]@{ Ticket = $ticket; Fehler = '' } }
+    return [pscustomobject]@{ Ticket = ''; Fehler = "Ticketanker nicht lesbar ($($script:AnkerPfad))" }
+}
+
+function Read-ManifestKopf {
+    <# Titel (erste H1) und Kopfzeile „Etappe" eines Beweismanifests. Gelesen wird
+       nur der Kopf bis zur ersten Trennlinie, hoechstens 80 Zeilen: die Statuszeile
+       laeuft alle 5 s, und Manifeste wachsen append-only weit ueber 100 KB. #>
+    param([string]$Path)
+    $kopf = [pscustomobject]@{ Titel = ''; Etappe = $null }
+    if (-not $Path -or -not [IO.File]::Exists($Path)) { return $kopf }
+    $stream = $null
+    $reader = $null
+    try {
+        $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        $reader = New-Object System.IO.StreamReader($stream, [Text.Encoding]::UTF8, $true)
+        for ($i = 0; $i -lt 80; $i++) {
+            $line = $reader.ReadLine()
+            if ($null -eq $line -or $line -eq '---') { break }
+            if (-not $kopf.Titel -and $line -match '^#\s+(.+?)\s*$') { $kopf.Titel = $Matches[1] }
+            if ($null -eq $kopf.Etappe -and $line -match '^\|\s*Etappe\s*\|(.*)\|\s*$') { $kopf.Etappe = $Matches[1].Trim() }
+        }
+    }
+    catch { }
+    finally {
+        if ($null -ne $reader) { $reader.Dispose() }
+        elseif ($null -ne $stream) { $stream.Dispose() }
+    }
+    return $kopf
+}
+
+function Get-LetztesFettSegment {
+    <# Letzte innerste Fettspanne (**...**) nach den Flankenregeln von CommonMark.
+       Verschachtelt wie in NAK-246 („**... Nacharbeit 1 gebaut; **Wiederprüfung 1
+       steht aus** — ...**") liefert sie den inneren Satz. Sternchen in Codespannen
+       zaehlen nicht. $null, wenn die Zeile keine Fettspanne traegt. #>
+    param([string]$Text)
+    $masked = [regex]::Replace($Text, '`[^`]*`', { param($m) 'x' * $m.Length })
+    $spans = New-Object System.Collections.Generic.List[object]
+    $openers = New-Object 'System.Collections.Generic.Stack[int]'
+    $i = $masked.IndexOf([char]'*')
+    while ($i -ge 0) {
+        $j = $i
+        while ($j -lt $masked.Length -and $masked[$j] -eq [char]'*') { $j++ }
+        if ($j - $i -eq 2) {
+            $before = if ($i -gt 0) { $masked[$i - 1] } else { [char]' ' }
+            $after = if ($j -lt $masked.Length) { $masked[$j] } else { [char]' ' }
+            $beforeSpace = [char]::IsWhiteSpace($before)
+            $afterSpace = [char]::IsWhiteSpace($after)
+            $beforePunct = [char]::IsPunctuation($before) -or [char]::IsSymbol($before)
+            $afterPunct = [char]::IsPunctuation($after) -or [char]::IsSymbol($after)
+            $canOpen = -not $afterSpace -and (-not $afterPunct -or $beforeSpace -or $beforePunct)
+            $canClose = -not $beforeSpace -and (-not $beforePunct -or $afterSpace -or $afterPunct)
+            if ($canClose -and $openers.Count) {
+                $spans.Add([pscustomobject]@{ Start = $openers.Pop() + 2; Ende = $i })
+            }
+            elseif ($canOpen) {
+                $openers.Push($i)
+            }
+        }
+        $i = if ($j -lt $masked.Length) { $masked.IndexOf([char]'*', $j) } else { -1 }
+    }
+    $innermost = @($spans | Where-Object {
+        $outer = $_
+        -not @($spans | Where-Object { -not [object]::ReferenceEquals($_, $outer) -and $_.Start -ge $outer.Start -and $_.Ende -le $outer.Ende }).Count
+    })
+    if (-not $innermost.Count) { return $null }
+    $last = $innermost | Sort-Object Ende | Select-Object -Last 1
+    $segment = (($Text.Substring($last.Start, $last.Ende - $last.Start) -replace '`', '') -replace '\s+', ' ').Trim().TrimEnd('.', ':', ';', ',', ' ')
+    if (-not $segment) { return $null }
+    return $segment
+}
+
+function Read-EtappenStand {
+    <# Konvention der Manifest-Kopfzeile „Etappe" (NAK-256, docs/beweise/NAK-256.md §2):
+       Etappe  = „Etappe <n> von <m>"; ersatzweise die letzte Stelle „Etappe <n> ... läuft"
+                 ohne Satzgrenze (Punkt, Semikolon) dazwischen, zusammen mit
+                 „Etappen <a> bis <m>".
+       Schritt = die letzte innerste Fettspanne der Zeile als kurzer Klartextsatz. Ist
+                 sie laenger als 70 Zeichen, folgt die Zeile der Konvention nicht, und
+                 der Schritt gilt als nicht lesbar - sonst stuende Pruefprosa mit SHAs
+                 in der Anzeige des Users. #>
+    param([string]$Zeile)
+    $text = ($Zeile -replace '`', '') -replace '\s+', ' '
+    $nummer = ''
+    $gesamt = 0
+    $direkt = [regex]::Match($text, '\bEtappe (\d{1,3}[a-z]?) von (\d{1,3})\b')
+    if ($direkt.Success) {
+        $nummer = $direkt.Groups[1].Value
+        $gesamt = [int]$direkt.Groups[2].Value
+    }
+    else {
+        $laeuft = [regex]::Matches($text, '\bEtappe (\d{1,3}[a-z]?)\b[^;.]*?\bl(?:ä|ae)uft\b')
+        $bis = [regex]::Match($text, '\bEtappen \d{1,3}[a-z]? bis (\d{1,3})\b')
+        if ($laeuft.Count -and $bis.Success) {
+            $nummer = $laeuft[$laeuft.Count - 1].Groups[1].Value
+            $gesamt = [int]$bis.Groups[1].Value
+        }
+    }
+    $etappe = $null
+    if ($nummer -and $gesamt -gt 0 -and [int]($nummer -replace '[a-z]$', '') -le $gesamt) {
+        $etappe = "Etappe $nummer von $gesamt"
+    }
+    $schritt = Get-LetztesFettSegment $Zeile
+    if ($schritt -and $schritt.Length -gt 70) { $schritt = $null }
+    return [pscustomobject]@{ Etappe = $etappe; Schritt = $schritt }
+}
+
+function Find-StepIndex {
+    param([System.Collections.Generic.List[object]]$Steps, [string]$Id)
+    for ($k = 0; $k -lt $Steps.Count; $k++) {
+        if ($Steps[$k].Id -eq $Id) { return $k }
+    }
+    return -1
+}
+
+function Get-StandInfo {
+    <# STAND (NAK-256): was laeuft, welche Etappe, welcher Schritt, was danach kommt.
+       Das laufende Ticket kommt aus -Ticket oder dem Ticketanker; ohne beides steht
+       der Planschritt aus -CurrentStep oder aus „Als Nächstes" (docs/PLAN-STAND.md).
+       Ist das Ticket genau einem Planschritt zugeordnet, zaehlt „danach" ab dem
+       Schritt dahinter; ein Registerticket (etwa NAK-246) laeuft vor dem Planschritt
+       aus „Als Nächstes", „danach" beginnt dann bei diesem. Fehlt eine Quelle, bleibt
+       das Feld leer, und die Anzeige sagt „nicht lesbar". #>
+    param([object]$Snapshot, [string]$TicketId, [string]$StepId)
+
+    $info = [pscustomobject]@{
+        Ok = $false; Fehler = ''; Laufend = $false
+        Ticket = ''; Name = ''; SchrittId = ''
+        Etappe = $null; Schritt = $null; Danach = $null
+    }
+    try {
+        if ($null -eq $Snapshot -or $null -eq $Snapshot.Plan) { throw 'Plan nicht lesbar' }
+        $steps = New-Object System.Collections.Generic.List[object]
+        foreach ($phase in @($Snapshot.Plan.phasen)) {
+            foreach ($item in @($phase.schritte)) {
+                $steps.Add([pscustomobject]@{
+                    Id = [string]$item.id
+                    Name = [string]$item.leitungsname
+                    Ticket = [string](Get-PropertyValue $item 'ticket')
+                    Beleg = [string](Get-PropertyValue $item 'beleg')
+                    Status = [string]$Snapshot.StatusById[[string]$item.id]
+                })
+            }
+        }
+
+        $planIndex = -1
+        if ($StepId) {
+            $planIndex = Find-StepIndex $steps $StepId
+            if ($planIndex -lt 0) { throw "unbekanntes Arbeitspaket $StepId" }
+            $info.Laufend = $true
+        }
+        elseif ($Snapshot.Next -match '^\*\*(.+?)\*\*') {
+            $planIndex = Find-StepIndex $steps $Matches[1].Trim()
+        }
+
+        $runIndex = $planIndex
+        $afterIndex = if ($planIndex -ge 0) { $planIndex + 1 } else { -1 }
+        if ($TicketId) {
+            $info.Laufend = $true
+            $info.Ticket = $TicketId
+            $owners = @(for ($k = 0; $k -lt $steps.Count; $k++) { if ($steps[$k].Ticket -eq $TicketId) { $k } })
+            if ($owners.Count -eq 1) {
+                $runIndex = $owners[0]
+                $afterIndex = $runIndex + 1
+            }
+            else {
+                $runIndex = -1
+                $afterIndex = $planIndex
+            }
+        }
+        elseif ($planIndex -lt 0) {
+            throw '„Als Nächstes" in docs/PLAN-STAND.md nicht lesbar'
+        }
+        else {
+            $info.Ticket = $steps[$planIndex].Ticket
+        }
+
+        $manifest = ''
+        if ($runIndex -ge 0) {
+            $info.Name = $steps[$runIndex].Name
+            $info.SchrittId = $steps[$runIndex].Id
+            if ($steps[$runIndex].Beleg) { $manifest = Join-Path $script:RepoRoot $steps[$runIndex].Beleg }
+        }
+        elseif ($planIndex -ge 0) {
+            $info.SchrittId = $steps[$planIndex].Id
+        }
+        if (-not $manifest -and $info.Ticket -cmatch $script:TicketMuster) {
+            $manifest = Join-Path $script:BeweisDir "$($info.Ticket).md"
+        }
+
+        $kopf = Read-ManifestKopf $manifest
+        if ($runIndex -lt 0) {
+            # Registerticket: Name aus der Ueberschrift „# NAK-246 — Titel: Zusatz".
+            $title = [string]$kopf.Titel
+            if ($title -match '^\S+\s+—\s+(.+)$') { $title = $Matches[1] }
+            $head = ($title -split ':\s', 2)[0].Trim()
+            if ($head.Length -ge 20) { $title = $head }
+            $info.Name = Limit-Line $title.Trim() 61
+        }
+        if ($null -ne $kopf.Etappe) {
+            $stand = Read-EtappenStand $kopf.Etappe
+            $info.Etappe = $stand.Etappe
+            $info.Schritt = $stand.Schritt
+        }
+
+        if ($afterIndex -ge 0) {
+            $next = New-Object System.Collections.Generic.List[string]
+            for ($k = $afterIndex; $k -lt $steps.Count -and $next.Count -lt 2; $k++) {
+                if ($steps[$k].Status -ne 'abgenommen') { $next.Add($steps[$k].Name) }
+            }
+            $info.Danach = $next.ToArray()
+        }
+        $info.Ok = $true
+    }
+    catch {
+        $info.Fehler = $_.Exception.Message
+    }
+    return $info
+}
+
+function Get-StandFuerAnzeige {
+    param([object]$Snapshot, [string]$StepId)
+    if ($Ticket) { return Get-StandInfo $Snapshot $Ticket $StepId }
+    $anker = Read-Anker
+    if ($anker.Fehler) { return [pscustomobject]@{ Ok = $false; Fehler = $anker.Fehler; SchrittId = '' } }
+    return Get-StandInfo $Snapshot $anker.Ticket $StepId
+}
+
+function Format-StandLines {
+    # Eine Zeile STAND; reicht die Breite nicht, zwei Zeilen STAND und DANACH.
+    param([object]$Info, [int]$Width)
+    $label = 'STAND'.PadRight(16)
+    if (-not $Info.Ok) { return @(Limit-Line "$($label)nicht lesbar · $($Info.Fehler)" $Width) }
+    $wer = if ($Info.Laufend) { 'läuft' } else { 'als Nächstes' }
+    $titel = (@($Info.Ticket, $Info.Name) | Where-Object { $_ }) -join ' '
+    if (-not $titel) { $titel = 'Ticket nicht lesbar' }
+    $etappe = if ($Info.Etappe) { $Info.Etappe } else { 'Etappe nicht lesbar' }
+    $schritt = if ($Info.Schritt) { $Info.Schritt } else { 'Schritt nicht lesbar' }
+    $danach = 'kein offener Planschritt mehr'
+    if ($null -eq $Info.Danach) { $danach = 'nicht lesbar' }
+    elseif (@($Info.Danach).Count) { $danach = @($Info.Danach) -join ' → ' }
+    $vorn = "$($label)$($wer): $titel · $etappe · $schritt"
+    $eineZeile = "$vorn · danach: $danach"
+    if ($Width -lt 2 -or $eineZeile.Length -lt $Width) { return @($eineZeile) }
+    return @((Limit-Line $vorn $Width), (Limit-Line ('DANACH'.PadRight(16) + $danach) $Width))
+}
+
+function Get-PlanLines {
+    <# Die Zeilen der Planansicht. -Falten fasst eine Phase, deren Schritte alle
+       abgenommen sind, in eine Zeile; das nutzt nur die Uebersicht bei kleinem Fenster. #>
+    param([object]$Snapshot, [string]$Step, [switch]$Falten)
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("NAKAMA PLAN · $($Snapshot.Accepted) / $($Snapshot.Total) fertig · $($Snapshot.Open) offen")
+    $folded = $false
+    foreach ($phase in @($Snapshot.Plan.phasen)) {
+        $phaseSteps = @($phase.schritte)
+        $title = ([string]$phase.titel).ToUpperInvariant()
+        $done = @($phaseSteps | Where-Object { [string]$Snapshot.StatusById[[string]$_.id] -eq 'abgenommen' }).Count
+        if ($Falten -and $phaseSteps.Count -and $done -eq $phaseSteps.Count) {
+            if (-not $folded) { $lines.Add('') }
+            $folded = $true
+            $lines.Add("✓ $title · $done von $($phaseSteps.Count) fertig")
+            continue
+        }
+        $folded = $false
+        $lines.Add('')
+        $lines.Add($title)
+        foreach ($item in $phaseSteps) {
+            $status = [string]$Snapshot.StatusById[[string]$item.id]
+            $symbol = switch ($status) {
+                'abgenommen' { '✓' }
+                'gebaut' { '◐' }
+                default { '○' }
+            }
+            if ($Step -and $Step -eq [string]$item.id -and $status -ne 'abgenommen') { $symbol = '→' }
+            $suffix = if ($status -eq 'gebaut') { ' — abschließende Prüfung fehlt' } else { '' }
+            $lines.Add("$symbol $($item.leitungsname)$suffix")
+        }
+    }
+    $lines.Add('')
+    $lines.Add('Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen.')
+    return ,$lines
+}
+
 function Show-Plan {
     $snapshot = Get-PlanSnapshot
     if (-not $snapshot.Ok) {
@@ -740,24 +1081,88 @@ function Show-Plan {
         Write-Output "! UNBEKANNTES ARBEITSPAKET · $CurrentStep"
         exit 5
     }
-    Write-Output "NAKAMA PLAN · $($snapshot.Accepted) / $($snapshot.Total) fertig · $($snapshot.Open) offen"
-    foreach ($phase in @($snapshot.Plan.phasen)) {
-        Write-Output ''
-        Write-Output ([string]$phase.titel).ToUpperInvariant()
-        foreach ($step in @($phase.schritte)) {
-            $status = [string]$snapshot.StatusById[[string]$step.id]
-            $symbol = switch ($status) {
-                'abgenommen' { '✓' }
-                'gebaut' { '◐' }
-                default { '○' }
-            }
-            if ($CurrentStep -and $CurrentStep -eq [string]$step.id -and $status -ne 'abgenommen') { $symbol = '→' }
-            $suffix = if ($status -eq 'gebaut') { ' — abschließende Prüfung fehlt' } else { '' }
-            Write-Output "$symbol $($step.leitungsname)$suffix"
-        }
+    foreach ($line in (Get-PlanLines $snapshot $CurrentStep)) { Write-Output $line }
+}
+
+function Show-Uebersicht {
+    <# Plan-Tab (NAK-256): STAND, darunter die Planansicht wie -Plan. Anders als -Plan
+       zeigt sie die letzte Planrechnung auch dann, wenn neuere Belege noch nicht
+       eingerechnet sind - mit Hinweiszeile statt Abbruch -, markiert den Schritt aus
+       STAND und faltet fertige Phasen, wenn -Hoehe sonst nicht reicht. Schreibt nichts. #>
+    $snapshot = Get-PlanSnapshot
+    $width = Get-TerminalWidth
+    $lines = New-Object System.Collections.Generic.List[string]
+    $info = Get-StandFuerAnzeige $snapshot $CurrentStep
+    try {
+        foreach ($line in @(Format-StandLines $info $width)) { $lines.Add($line) }
     }
-    Write-Output ''
-    Write-Output "Fertig bedeutet: umgesetzt, aktuell belegt und auf der geforderten Stufe abgenommen."
+    catch {
+        $lines.Add('STAND'.PadRight(16) + "nicht lesbar · $($_.Exception.Message)")
+    }
+    $lines.Add('')
+    if (-not $snapshot.Ok) {
+        $lines.Add("! PLAN NICHT LESBAR · $($snapshot.Error)")
+    }
+    else {
+        $mark = if ($CurrentStep) { $CurrentStep } elseif ($info.Ok) { [string]$info.SchrittId } else { '' }
+        $stale = $snapshot.DirtySources -or $snapshot.SourceSha -ne $snapshot.CurrentSourceSha
+        $datum = if ($snapshot.RechenDatum) { "vom $($snapshot.RechenDatum)" } else { 'ohne Datum' }
+        $note = "Planrechnung $datum · neuere Belege und Planänderungen sind noch nicht eingerechnet"
+        $planLines = Get-PlanLines $snapshot $mark
+        if ($stale) { $planLines.Insert(1, $note) }
+        if ($Hoehe -gt 0 -and $lines.Count + $planLines.Count -gt $Hoehe) {
+            $planLines = Get-PlanLines $snapshot $mark -Falten
+            if ($stale) { $planLines.Insert(1, $note) }
+        }
+        $lines.AddRange($planLines)
+    }
+    if ($Hoehe -gt 0 -and $lines.Count -gt $Hoehe) {
+        $hidden = $lines.Count - ($Hoehe - 1)
+        $lines = $lines.GetRange(0, $Hoehe - 1)
+        $lines.Add("… $hidden weitere Zeilen passen nicht ins Fenster")
+    }
+    foreach ($line in $lines) { Write-Output (Limit-Line $line $width) }
+}
+
+function Set-Anker {
+    <# Ticketanker (NAK-256) setzen oder loesen. Gesetzt wird nur ein bekanntes Ticket:
+       ein Beweismanifest docs/beweise/<id>.md, genau ein Planschritt mit diesem
+       Ticket oder eine Registerzeile in docs/offene-punkte.md. #>
+    if (-not $Ticket) {
+        try {
+            if ([IO.File]::Exists($script:AnkerPfad)) { [IO.File]::Delete($script:AnkerPfad) }
+        }
+        catch {
+            Write-Output "! ANKER NICHT GELÖST · $($_.Exception.Message)"
+            exit 3
+        }
+        Write-Output 'ANKER · gelöst · STAND folgt wieder „Als Nächstes" aus docs/PLAN-STAND.md'
+        return
+    }
+    $known = [IO.File]::Exists((Join-Path $script:BeweisDir "$Ticket.md"))
+    if (-not $known) {
+        try {
+            $planData = [IO.File]::ReadAllText($script:PlanJson, [Text.Encoding]::UTF8) | ConvertFrom-Json
+            $known = @($planData.phasen | ForEach-Object { @($_.schritte) } | Where-Object { [string](Get-PropertyValue $_ 'ticket') -eq $Ticket }).Count -eq 1
+        }
+        catch { }
+    }
+    if (-not $known) {
+        try {
+            $known = [bool](Select-String -LiteralPath $script:RegisterMd -Pattern ('^\|\s*' + [regex]::Escape($Ticket) + '\s*\|') -Quiet)
+        }
+        catch { }
+    }
+    if (-not $known) {
+        Write-Output "! UNBEKANNTES TICKET · $Ticket (kein Beleg, kein Planschritt, keine Registerzeile)"
+        exit 5
+    }
+    Write-JsonFileAtomic $script:AnkerPfad ([pscustomobject]@{ Ticket = $Ticket; At = (Get-UnixNow) })
+    if ((Read-Anker).Ticket -cne $Ticket) {
+        Write-Output "! ANKER NICHT GESETZT · $($script:AnkerPfad) nicht schreibbar"
+        exit 3
+    }
+    Write-Output "ANKER · $Ticket gesetzt · STAND zeigt es als laufend, bis -Anker ohne Ticket den Anker löst"
 }
 
 function Show-StatusLine {
@@ -942,6 +1347,13 @@ function Show-StatusLine {
         } else {
             Write-Output 'PLAN            nicht verfügbar'
         }
+        # STAND (NAK-256): laufendes Ticket, Etappe, Schritt, die naechsten zwei Planschritte.
+        try {
+            foreach ($standLine in @(Format-StandLines (Get-StandFuerAnzeige $planSnapshot '') (Get-TerminalWidth))) { Write-Output $standLine }
+        }
+        catch {
+            Write-Output ('STAND'.PadRight(16) + "nicht lesbar · $($_.Exception.Message)")
+        }
         $questionText = if ($questionWaiting) {
             'Antwort in dieser Sitzung erwartet'
         } elseif (-not $planSnapshot.QuestionsAvailable) {
@@ -1067,6 +1479,8 @@ function Watch-WorkerState {
 switch ($PSCmdlet.ParameterSetName) {
     'StatusLine' { Show-StatusLine; break }
     'Plan' { Show-Plan; break }
+    'Uebersicht' { Show-Uebersicht; break }
+    'Anker' { Set-Anker; break }
     'WatchWorker' { Watch-WorkerState; break }
-    default { throw 'Genau einen Modus wählen: -StatusLine, -WatchWorker oder -Plan.' }
+    default { throw 'Genau einen Modus wählen: -StatusLine, -WatchWorker, -Plan, -Uebersicht oder -Anker.' }
 }

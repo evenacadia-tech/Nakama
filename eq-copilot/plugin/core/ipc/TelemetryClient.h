@@ -123,7 +123,17 @@ public:
     /// rueckstauend mit blockierendem P2-Write. Aus dem `helloProvider` heraus
     /// ohne Self-Join, von aussen mit der Frist `kStopFristMs`; laeuft sie ab,
     /// wird der Thread abgeloest und `Snapshot::stopFristUeberschritten`
-    /// waechst. Danach wird kein Callback mehr gerufen.
+    /// waechst. Danach wird kein Callback mehr GESTARTET (`sollAbbrechen` vor
+    /// jedem Aufruf); ein beim Abloesen laufender `helloProvider` oder
+    /// `beiFrame` laeuft auf dem abgeloesten Thread zu Ende.
+    ///
+    /// BESITZ des Empfaengers (NAK-246 D2, R-D2; `controlclient/Schleuse.h`):
+    /// wie beim `ControlClient` betreten die Callbacks eine
+    /// `CallbackSchleuse`, die der Empfaenger mit ihnen teilt und in seinem
+    /// Destruktor NACH diesem `stop()` schliesst - ein danach beginnender
+    /// Callback wird abgewiesen und gezaehlt, ein laufender zu Ende gewartet.
+    /// Erst damit beruehrt kein Callback den Empfaenger nach dessen
+    /// Zerstoerung (`docs/beweise/NAK-246.md` Paragraph 3.2, M-06 bis M-09).
     void stop();
     void reconnect();
 

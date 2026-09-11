@@ -84,12 +84,53 @@ nakama::ipc::ServerErwartung brokerServerErwartung()
 }
 } // namespace
 
+// ── NAK-246 D2 (Paragraph 5.2, Feinheit 5): EIN Konstruktor, zwei Zugaenge ──
+//
+// Der Produktkonstruktor und der Testkonstruktor delegieren beide an den
+// privaten Konstruktor mit `V3Verdrahtung`. Der Produktpfad ist unveraendert:
+// SID, `pipeNameV3 (SID)` und die Installbindung wie bisher; nur der Ort, an
+// dem sie entstehen, ist `produktVerdrahtung()`.
+
+EqCopilotProcessor::V3Verdrahtung EqCopilotProcessor::produktVerdrahtung()
+{
+    V3Verdrahtung v;
+    v.logonSid = nakama::ipc::aktuelleLogonSid();
+    v.pipeName = nakama::ipc::pipeNameV3 (v.logonSid);
+    v.erwartung = brokerServerErwartung();
+    return v;
+}
+
 EqCopilotProcessor::EqCopilotProcessor()
+    : EqCopilotProcessor (produktVerdrahtung())
+{
+}
+
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+EqCopilotProcessor::EqCopilotProcessor (const std::string& probePipename,
+                                        nakama::ipc::ServerErwartung erwartung)
+    : EqCopilotProcessor ([&]
+      {
+          V3Verdrahtung v;
+          v.logonSid = nakama::ipc::aktuelleLogonSid();
+          // Fail-closed (Paragraph 48.3): nur der Probe-Namensraum. Ein
+          // anderer Name wird nicht "repariert", sondern LEER - damit oeffnet
+          // sich nie eine Pipe, und ein Bein sieht es an
+          // `v3PipeNameFuerTest()`.
+          v.pipeName = nakama::ipc::istProbePipename (probePipename) ? probePipename
+                                                                      : std::string();
+          v.erwartung = std::move (erwartung);
+          return v;
+      }())
+{
+}
+#endif
+
+EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
     : juce::AudioProcessor (BusesProperties()
           .withInput ("Eingang", juce::AudioChannelSet::stereo(), true)
           .withOutput ("Ausgang", juce::AudioChannelSet::stereo(), true)),
-      v3LogonSid (nakama::ipc::aktuelleLogonSid()),
-      v3PipeName (nakama::ipc::pipeNameV3 (v3LogonSid)),
+      v3LogonSid (std::move (verdrahtung.logonSid)),
+      v3PipeName (std::move (verdrahtung.pipeName)),
       v3SessionEpoch (uuidHex32()),
       pipe ([this] {
                 HelloInfo h;
@@ -109,16 +150,63 @@ EqCopilotProcessor::EqCopilotProcessor()
             [this] { return statsSnapshot(); },
             [this] { return messKompakt(); }, {},
             std::chrono::milliseconds { 5000 }, brokerServerErwartung()),
-      controlV3 ([this] { return v3Hello(); }, v3PipeName,
+      // 🔑 NAK-246 D2 (R-D2, Paragraph 5.2 Feinheiten 2 und 4): die sechs
+      // Konstruktor-Lambdas der beiden v3-Clients fangen `this` UND die
+      // Schleuse und rufen den Prozessor nur innerhalb eines Zugs. Nach dem
+      // Schliessen liefert jeder Provider seinen neutralen Wert (Hello mit
+      // leerer Adresse - `adresseGueltig` faellt, der Client sendet nichts;
+      // Status-Default; Telemetrie-Hello ohne Kopplung), jeder Konsument
+      // kehrt sofort zurueck. Vier weitere Lambdas registriert der Rumpf
+      // unten (`setzeP0Rueckmeldung`, `setzeReplayBeginHook`,
+      // `setzeKonfliktWiederholungHook`) - zusammen die zehn aus M-06.
+      callbackSchleuse (std::make_shared<nakama::ipc::CallbackSchleuse>()),
+      controlV3 ([this, s = callbackSchleuse]
+                 {
+                     if (auto zug = s->betreten())
+                         return v3Hello();
+                     return nakama::ipc::ControlHello {};
+                 },
+                 v3PipeName,
                  {},
-                 [this] { return v3Status(); },
-                  [this] (bool verbunden) { v3ControlLink (verbunden); },
-                  [this] (const std::string& json, std::uint8_t schemaMinor)
-                  { v3Antwort (json, schemaMinor); }, brokerServerErwartung()),
-      telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName,
-                   [this] (const std::uint8_t* daten, std::size_t laenge,
-                            std::uint8_t minor)
-                   { v3Frame (daten, laenge, minor); }, brokerServerErwartung()),
+                 [this, s = callbackSchleuse]
+                 {
+                     if (auto zug = s->betreten())
+                         return v3Status();
+                     return nakama::ipc::ControlStatus {};
+                 },
+                 [this, s = callbackSchleuse] (bool verbunden)
+                 {
+                     if (auto zug = s->betreten())
+                         v3ControlLink (verbunden);
+                 },
+                 [this, s = callbackSchleuse] (const std::string& json,
+                                                std::uint8_t schemaMinor)
+                 {
+                     if (auto zug = s->betreten())
+                     {
+                         // Paragraph 5.2 Feinheit 7: der Haken liegt VOR dem
+                         // ersten Zustandszugriff und INNERHALB des Zugs.
+                         if (v3AntwortHakenFuerTest)
+                             v3AntwortHakenFuerTest (json);
+                         v3Antwort (json, schemaMinor);
+                     }
+                 },
+                 verdrahtung.erwartung),
+      telemetryV3 ([this, s = callbackSchleuse]
+                   {
+                       if (auto zug = s->betreten())
+                           return v3TelemetryHello();
+                       return nakama::ipc::TelemetryHello {};
+                   },
+                   v3PipeName,
+                   [this, s = callbackSchleuse] (const std::uint8_t* daten,
+                                                  std::size_t laenge,
+                                                  std::uint8_t minor)
+                   {
+                       if (auto zug = s->betreten())
+                           v3Frame (daten, laenge, minor);
+                   },
+                   verdrahtung.erwartung),
       brokerLifecycle (nakama::ipc::BrokerLifecycleHooks {
           [this] {
               return controlV3.snapshot().status
@@ -161,9 +249,22 @@ EqCopilotProcessor::EqCopilotProcessor()
     // Alle drei laufen unter `sendeMutex` des ControlClients. Sie duerfen den
     // Sendezustand nehmen (Ordnung: sendeMutex VOR sendeZustandMutex), aber
     // NIE erneut senden — das waere Rekursion auf derselben Sperre.
+    //
+    // 🔑 NAK-246 D2 (R-D2, Paragraph 5.2 Feinheit 2): auch diese vier
+    // nachregistrierten Lambdas laufen aus der ABLOESBAREN Client-Laufzeit
+    // (`aufbauZug`, Sendezug-Commit und -Reconnect, `inFlightAck`) und gehen
+    // deshalb durch dieselbe Schleuse wie die sechs Konstruktor-Lambdas.
+    // `beiP0Verworfen` ist zusaetzlich synchron vom Aufruferthread erreichbar
+    // (`sendePersistenzP0`); `betreten()` wartet nie, also blockt er dort
+    // nicht. Nach dem Schliessen kehren beide Konsumenten sofort zurueck, die
+    // beiden Textbildner liefern einen leeren Text ("kein Replay" bzw. "nicht
+    // wiederholen").
     controlV3.setzeP0Rueckmeldung (
-        [this] (std::uint64_t marke, std::uint64_t generation)
+        [this, s = callbackSchleuse] (std::uint64_t marke, std::uint64_t generation)
         {
+            const auto zug = s->betreten();
+            if (! zug)
+                return;
             // Wire-Commit: erst JETZT ist das Begin beim Broker. Die
             // Generation, auf der das geschah, entscheidet spaeter, ob ein
             // Replay noetig ist — ein Vergleich statt einer Umschreibung beim
@@ -209,8 +310,11 @@ EqCopilotProcessor::EqCopilotProcessor()
             // nicht beim Einreihen. „Gesendet" heisst Draht.
             mitschnittZustellen (marke);
         },
-        [this] (std::uint64_t marke)
+        [this, s = callbackSchleuse] (std::uint64_t marke)
         {
+            const auto zug = s->betreten();
+            if (! zug)
+                return;
             // Verworfen: das Begin ist NICHT beim Broker und liegt auch nicht
             // mehr in der Queue. Es faellt auf "nicht eingereiht" zurueck,
             // und der naechste Zug replayt es (R8).
@@ -223,8 +327,16 @@ EqCopilotProcessor::EqCopilotProcessor()
             mitschnittVerwerfen (marke);
         });
     controlV3.setzeReplayBeginHook (
-        [this] (std::uint64_t generation, std::uint64_t marke) -> std::string
+        [this, s = callbackSchleuse] (std::uint64_t generation, std::uint64_t marke)
+            -> std::string
         {
+            const auto zug = s->betreten();
+            if (! zug)
+                return {};
+            // NAK-246 D2: der Testhaken VOR `sendeZustandMutex` und innerhalb
+            // des Zugs (M-06 haelt den Aufbauzug hier fest).
+            if (replayBeginHakenFuerTest)
+                replayBeginHakenFuerTest (generation, marke);
             // 🔑 R12, Zustellpruefung. Der Aufbauzug hat ein EREIGNIS aelterer
             // Generation in der Queue gefunden; darunter kann ein `end` sein,
             // dessen Begin auf dem alten Link zugestellt wurde. Dann geht das
@@ -302,9 +414,13 @@ EqCopilotProcessor::EqCopilotProcessor()
     // Beides ist mit E-15 fort: der ControlClient haelt den Auftrag, also
     // haelt er auch den Wiederholungsinhalt.
     controlV3.setzeKonfliktWiederholungHook (
-        [this] (const std::string& commandId, const std::string& auftragJson,
-                std::uint64_t brokerRevision) -> std::string
+        [this, s = callbackSchleuse] (const std::string& commandId,
+                                       const std::string& auftragJson,
+                                       std::uint64_t brokerRevision) -> std::string
         {
+            const auto zug = s->betreten();
+            if (! zug)
+                return {};
             return urteilMitFrischemKopf (juce::String (commandId), auftragJson,
                                           brokerRevision);
         });
@@ -326,6 +442,16 @@ EqCopilotProcessor::~EqCopilotProcessor()
     brokerLifecycle.stop();
     telemetryV3.stop();
     controlV3.stop();
+    // 🔑 NAK-246 D2 (R-D2; Paragraph 5.2 Feinheit 3, Abweichung 1 in 5.10):
+    // die Schleuse schliesst NACH den drei `stop()` und VOR der Zerstoerung
+    // der Mitglieder. Der negative Link-Callback laeuft synchron auf diesem
+    // Thread aus `controlV3.stop()` heraus und geht noch durch die offene
+    // Schleuse - auf lebenden Zustand. Hat `stop()` einen Thread nach
+    // `kStopFristMs` abgeloest, wartet DIESER Aufruf den dort noch laufenden
+    // Callback zu Ende (gemessen in `gewartetMs`); jeder Callback, der ab
+    // hier beginnt, wird abgewiesen und gezaehlt. Erst danach duerfen
+    // `sourcesModel`, `zustand` und die Mutexe sterben.
+    callbackSchleuse->schliessen();
     pipe.stop();
     workerLaeuft.store (false);
     {

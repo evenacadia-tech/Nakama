@@ -330,7 +330,20 @@ public:
     ///   * von aussen mit der Frist `kStopFristMs` auf einen laufenden
     ///     Callback; laeuft sie ab, wird der Thread ABGELOEST statt gejoint
     ///     und `Snapshot::stopFristUeberschritten` waechst;
-    ///   * nach der Rueckkehr wird kein Callback mehr gerufen.
+    ///   * nach der Rueckkehr wird kein Callback mehr GESTARTET - das
+    ///     entscheidet `sollAbbrechen` vor jedem Aufruf. Ein Callback, der
+    ///     beim Abloesen bereits laeuft, laeuft auf dem abgeloesten Thread zu
+    ///     Ende; dieser Client holt ihn nicht zurueck und kann es nicht.
+    ///
+    /// BESITZ des Empfaengers (NAK-246 D2, R-D2; `controlclient/Schleuse.h`):
+    /// die Callbacks halten ihren Empfaenger nicht als rohes `this`, sondern
+    /// betreten eine `CallbackSchleuse`, die der Empfaenger als `shared_ptr`
+    /// mit ihnen teilt. Der Empfaenger schliesst sie in seinem Destruktor
+    /// NACH diesem `stop()`: ein Callback, der danach beginnt, wird abgewiesen
+    /// und gezaehlt; einen beim Schliessen laufenden wartet der Empfaenger zu
+    /// Ende (Wartezeit gemessen). Erst damit gilt: kein Callback beruehrt den
+    /// Empfaenger nach dessen Zerstoerung - auch nicht aus einem abgeloesten
+    /// Thread (`docs/beweise/NAK-246.md` Paragraph 3.2, M-06 bis M-09).
     void stop();
     /// Trennt die aktuelle Verbindung; die naechste Runde sendet ein frisches
     /// Hello. Kehrt sofort zurueck.

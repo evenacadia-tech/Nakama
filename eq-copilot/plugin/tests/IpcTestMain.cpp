@@ -23,6 +23,9 @@
 // interne Kopf des ControlClient ist seit NAK-225 ein benannter Namensraum
 // mit lauter `inline`-Helfern; er kostet dem Test nichts als diese Zeile.
 #include "controlclient/Intern.h"
+// NAK-246 D2: die Callback-Schleuse wird hier OHNE Prozessor gemessen - an
+// einer Besitzerattrappe mit derselben Verdrahtung (Matrix M-06 bis M-08).
+#include "controlclient/Schleuse.h"
 #include "../core/analysis/FeatureEngine.h"
 #include "../vertrag/NakamaVertrag.h"
 
@@ -2491,11 +2494,469 @@ int phaseBBinaryVerifyMain (const std::string& pfadUtf8,
               << " signer=" << bericht.signerThumbprint << std::endl;
     return ok ? 0 : 22;
 }
+
+//==============================================================================
+// NAK-246 D2 · Besitz laufender Callbacks (Regel R-D2; Manifest
+// docs/beweise/NAK-246.md Paragraph 3.2 M-06, M-07, M-08; Paragraph 5.2)
+//==============================================================================
+//
+// Die Schleuse (`controlclient/Schleuse.h`) wird hier an einer
+// BESITZERATTRAPPE gemessen, die ihre Callbacks genau so verdrahtet wie der
+// Prozessor: `this` UND die Schleuse als `shared_ptr` im Lambda, Eintritt vor
+// dem ersten Zustandszugriff, Schliessen im Destruktor vor der Zerstoerung der
+// Mitglieder. Der Besitzer liegt per Placement-new in einem eigenen Bytepuffer;
+// nach seiner Zerstoerung legt das Bein ein Muster ueber den Puffer und prueft
+// nach der Freigabe des Callbacks jedes Byte (Paragraph 5.2 Feinheit 6,
+// "Kanarienvogel statt ASan").
+//
+// ROTLAUF: `EqCopIpcTest --nak246-alt` faehrt DIESELBEN Faelle in der
+// Alt-Verdrahtung des Basis-SHA - rohes `this`, kein Eintritt, kein Warten.
+// Dort schreibt der freigegebene Callback in das Muster, und die Zaehler
+// bleiben 0. Das ist der Rotbeweis an der Zusage, nicht an einem Nebeneffekt.
+
+namespace nak246
+{
+
+/// Eine Kondvar-Schranke (Muster `PushProbe`, `HakenSchleuse` in A3): der
+/// Callback bleibt in `halten()` stehen, bis das Bein `freigeben()` ruft.
+/// Sie lebt im Bein und ueberlebt jeden Besitzer.
+struct Schranke
+{
+    std::mutex m;
+    std::condition_variable cv;
+    bool erreicht = false;
+    bool frei = false;
+
+    void halten()
+    {
+        std::unique_lock<std::mutex> l (m);
+        erreicht = true;
+        cv.notify_all();
+        cv.wait (l, [this] { return frei; });
+    }
+    bool warteBisErreicht (int fristMs)
+    {
+        std::unique_lock<std::mutex> l (m);
+        return cv.wait_for (l, std::chrono::milliseconds (fristMs),
+                            [this] { return erreicht; });
+    }
+    void freigeben()
+    {
+        {
+            std::lock_guard<std::mutex> l (m);
+            frei = true;
+        }
+        cv.notify_all();
+    }
+};
+
+/// Wo der Callback festgehalten wird: VOR dem Eintritt (M-06: er beginnt
+/// erst nach dem Schliessen) oder IM Zug (M-07: er laeuft beim Schliessen).
+enum class Haltepunkt { vorEintritt, imZug };
+
+/// Die Besitzerattrappe. `zustand` ist der Besitzerzustand, den ein Callback
+/// nach der Zerstoerung nie mehr anfassen darf.
+struct Besitzer
+{
+    Besitzer (bool altVerdrahtungIn, Schranke& schranke)
+        : altVerdrahtung (altVerdrahtungIn),
+          schleuse (std::make_shared<CallbackSchleuse>())
+    {
+        // Genau die Form der zehn Prozessor-Lambdas: `this` und die Schleuse.
+        // Die Schranke reist als Zeiger mit - sie gehoert dem Bein, nicht dem
+        // Besitzer; ein Zugriff ueber `this` nach der Zerstoerung waere
+        // selbst schon der Fehler, den die Zeile misst.
+        callback = [this, s = schleuse, alt = altVerdrahtung, gate = &schranke]
+                   (Haltepunkt wo)
+        {
+            if (wo == Haltepunkt::vorEintritt)
+                gate->halten();
+            // Der Zug lebt bis zum Ende des Callbacks - wie im Prozessor. (Ein
+            // Zug im Block eines `if` stirbt an dessen Ende; genau so fiel der
+            // erste Lauf dieses Falls: `aktiv` war 0, bevor der Haken stand.)
+            CallbackSchleuse::Zug zug;
+            if (! alt)
+            {
+                zug = s->betreten();
+                if (! zug)
+                    return;                     // abgewiesen: nichts anfassen
+            }
+            if (wo == Haltepunkt::imZug)
+                gate->halten();
+            beruehre();                         // der Besitzerzugriff
+        };
+    }
+    ~Besitzer()
+    {
+        // Die Reihenfolge des Prozessors: (stop der Clients -) Schleuse
+        // schliessen - Mitglieder. In Alt-Verdrahtung wartet niemand.
+        if (! altVerdrahtung)
+            schleuse->schliessen();
+    }
+    void beruehre() { zustand += 0x0101010101010101ULL; }
+
+    const bool altVerdrahtung;
+    std::shared_ptr<CallbackSchleuse> schleuse;
+    std::function<void (Haltepunkt)> callback;
+    std::uint64_t zustand = 0;
+};
+
+/// Der Bytepuffer, in dem ein Besitzer per Placement-new lebt. `new[]` liefert
+/// die Standardausrichtung (16), mehr verlangt keiner der Besitzer hier.
+template <typename T>
+struct Puffer
+{
+    std::unique_ptr<std::uint8_t[]> bytes { new std::uint8_t[sizeof (T)] };
+    static constexpr std::uint8_t kMuster = 0xA5;
+
+    template <typename... Args>
+    T* anlegen (Args&&... args)
+    {
+        static_assert (alignof (T) <= 16, "Puffer: Ausrichtung ueber 16 nicht abgedeckt");
+        return new (bytes.get()) T (std::forward<Args> (args)...);
+    }
+    void zerstoere (T* t) { t->~T(); }
+    void musterLegen() { std::memset (bytes.get(), kMuster, sizeof (T)); }
+    /// Wie viele Bytes vom Muster abweichen - 0 heisst: niemand hat den
+    /// zerstoerten Besitzer angefasst.
+    std::size_t abweichendeBytes() const
+    {
+        std::size_t n = 0;
+        for (std::size_t i = 0; i < sizeof (T); ++i)
+            if (bytes[i] != kMuster)
+                ++n;
+        return n;
+    }
+};
+
+using Uhr = std::chrono::steady_clock;
+long long msSeit (Uhr::time_point t) noexcept
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds> (Uhr::now() - t).count();
+}
+
+/// M-06 an der Attrappe: der Callback beginnt NACH dem Schliessen.
+void schleuse_weist_callback_nach_dem_schliessen_ab (bool alt)
+{
+    Schranke gate;
+    Puffer<Besitzer> puffer;
+    auto* b = puffer.anlegen (alt, gate);
+    // Der "abgeloeste Thread" haelt seine EIGENE Kopie der std::function -
+    // wie die Laufzeit des Clients. Den Besitzer beruehrt er nur ueber das
+    // Lambda.
+    auto fn = b->callback;
+    auto s = b->schleuse;
+    std::thread abgeloest ([fn] { fn (Haltepunkt::vorEintritt); });
+    pruefe (gate.warteBisErreicht (5000),
+            "M-06: der Callback steht VOR dem Eintritt in die Schleuse");
+
+    puffer.zerstoere (b);                       // schliesst (mit Schleuse) und stirbt
+    const auto nachZerstoerung = s->stand();
+    puffer.musterLegen();
+    gate.freigeben();
+    abgeloest.join();
+    const auto stand = s->stand();
+    const auto abweichend = puffer.abweichendeBytes();
+
+    pruefe (nachZerstoerung.geschlossen && nachZerstoerung.aktiv == 0
+                && nachZerstoerung.gewartetMs == 0,
+            "M-06: nach dem Destruktor ist die Schleuse geschlossen, nichts laeuft, "
+            "und es wurde nicht gewartet - kein Callback stand im Zug",
+            std::string ("geschlossen=") + (nachZerstoerung.geschlossen ? "1" : "0")
+                + " aktiv=" + std::to_string (nachZerstoerung.aktiv)
+                + " gewartetMs=" + std::to_string (nachZerstoerung.gewartetMs));
+    pruefe (abweichend == 0,
+            "M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene "
+            "Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber "
+            "seinem Speicher ist in jedem Byte unveraendert",
+            std::to_string (abweichend) + " von " + std::to_string (sizeof (Besitzer))
+                + " Bytes veraendert");
+    pruefe (stand.abgewiesen == 1,
+            "M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1",
+            std::to_string (stand.abgewiesen));
+    pruefe (stand.betreten == 0,
+            "M-06: kein Callback hat die Schleuse je betreten",
+            std::to_string (stand.betreten));
+}
+
+/// M-07 an der Attrappe: der Callback LAEUFT beim Schliessen; der Destruktor
+/// wartet ihn zu Ende und misst.
+void schleuse_wartet_laufenden_callback_zu_ende_und_misst (bool alt)
+{
+    constexpr int kFreigabeNachMs = 300;        // Testinfrastruktur, keine Produktzahl
+    Schranke gate;
+    Puffer<Besitzer> puffer;
+    auto* b = puffer.anlegen (alt, gate);
+    auto fn = b->callback;
+    auto s = b->schleuse;
+    std::thread laufend ([fn] { fn (Haltepunkt::imZug); });
+    pruefe (gate.warteBisErreicht (5000),
+            "M-07: der Callback steht IM Zug, vor dem Besitzerzugriff");
+    const auto imZug = s->stand();
+    pruefe (imZug.aktiv == 1 && imZug.betreten == 1,
+            "M-07: die Schleuse fuehrt ihn als laufend",
+            "aktiv=" + std::to_string (imZug.aktiv));
+
+    std::atomic<long long> freigabeNs { 0 };
+    const auto t0 = Uhr::now();
+    std::thread dritter ([&]
+    {
+        std::this_thread::sleep_for (std::chrono::milliseconds (kFreigabeNachMs));
+        freigabeNs.store (std::chrono::duration_cast<std::chrono::nanoseconds> (
+                              Uhr::now().time_since_epoch()).count());
+        gate.freigeben();
+    });
+    puffer.zerstoere (b);                       // wartet (mit Schleuse) - oder nicht (alt)
+    const auto endeNs = std::chrono::duration_cast<std::chrono::nanoseconds> (
+                            Uhr::now().time_since_epoch()).count();
+    const auto dauerMs = msSeit (t0);
+    puffer.musterLegen();
+    dritter.join();
+    laufend.join();
+    const auto stand = s->stand();
+    const auto abweichend = puffer.abweichendeBytes();
+    const auto nachFreigabeMs = (endeNs - freigabeNs.load()) / 1000000LL;
+
+    pruefe (dauerMs >= kFreigabeNachMs,
+            "M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor "
+            "kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde",
+            std::to_string (dauerMs) + " ms Destruktor, Freigabe nach "
+                + std::to_string (kFreigabeNachMs) + " ms");
+    pruefe (stand.gewartetMs > 0 && stand.gewartetMs <= static_cast<std::uint64_t> (dauerMs) + 1,
+            "M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 und nicht groesser als "
+            "der Destruktor selbst",
+            "gewartetMs=" + std::to_string (stand.gewartetMs));
+    pruefe (nachFreigabeMs >= 0 && nachFreigabeMs <= 100,
+            "M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor "
+            "endet binnen 100 ms nach der Freigabe",
+            std::to_string (nachFreigabeMs) + " ms nach der Freigabe");
+    pruefe (abweichend == 0,
+            "M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert - der "
+            "Besitzerzugriff lag VOR der Zerstoerung, nicht danach",
+            std::to_string (abweichend) + " Bytes veraendert");
+    pruefe (stand.abgewiesen == 0 && stand.aktiv == 0,
+            "M-07: kein zweiter Callback begann waehrend des Wartens; nach dem "
+            "Destruktor laeuft nichts mehr",
+            "abgewiesen=" + std::to_string (stand.abgewiesen)
+                + " aktiv=" + std::to_string (stand.aktiv));
+}
+
+/// M-06/M-08 mit einem ECHTEN ControlClient an der Attrappe: Abloesung nach
+/// `kStopFristMs`, Zerstoerung des Besitzers, Freigabe - und die Callbacks,
+/// die der abgeloeste Thread DANACH noch ruft, werden abgewiesen.
+///
+/// Der gehaltene Callback ist `hookReplayBegin` (einer der vier
+/// nachregistrierten): der Aufbauzug ruft ihn, weil vor dem Start ein
+/// Interventionsereignis der Generation 0 in der P0-Queue liegt. Nach der
+/// Freigabe folgen im selben Aufbauzug `beiP0Verworfen` fuer den vorab
+/// eingereihten Bericht der Generation 0 (Marke 7) und danach
+/// `beiLinkStatus (true)` sowie am Ende des Laufs `beiLinkStatus (false)` -
+/// alle drei beginnen nach dem Schliessen.
+struct BesitzerMitClient
+{
+    BesitzerMitClient (bool altVerdrahtungIn, Schranke& schranke, const std::string& pipe)
+        : altVerdrahtung (altVerdrahtungIn),
+          schleuse (std::make_shared<CallbackSchleuse>()),
+          client ([this, s = schleuse, alt = altVerdrahtung]
+                  {
+                      CallbackSchleuse::Zug zug;   // lebt bis zum Ende des Callbacks
+                      if (! alt)
+                      {
+                          zug = s->betreten();
+                          if (! zug)
+                              return ControlHello {};
+                      }
+                      beruehre();
+                      ControlHello h;
+                      h.adresse = testAdresse (hex32 ('c'));
+                      return h;
+                  },
+                  pipe,
+                  {},
+                  {},
+                  [this, s = schleuse, alt = altVerdrahtung] (bool)
+                  {
+                      CallbackSchleuse::Zug zug;
+                      if (! alt)
+                      {
+                          zug = s->betreten();
+                          if (! zug)
+                              return;
+                      }
+                      beruehre();
+                  },
+                  [this, s = schleuse, alt = altVerdrahtung] (const std::string&, std::uint8_t)
+                  {
+                      CallbackSchleuse::Zug zug;
+                      if (! alt)
+                      {
+                          zug = s->betreten();
+                          if (! zug)
+                              return;
+                      }
+                      beruehre();
+                  })
+    {
+        client.setzeP0Rueckmeldung (
+            [this, s = schleuse, alt = altVerdrahtung] (std::uint64_t, std::uint64_t)
+            {
+                CallbackSchleuse::Zug zug;
+                if (! alt)
+                {
+                    zug = s->betreten();
+                    if (! zug)
+                        return;
+                }
+                beruehre();
+            },
+            [this, s = schleuse, alt = altVerdrahtung] (std::uint64_t)
+            {
+                CallbackSchleuse::Zug zug;
+                if (! alt)
+                {
+                    zug = s->betreten();
+                    if (! zug)
+                        return;
+                }
+                beruehre();
+            });
+        client.setzeReplayBeginHook (
+            [this, s = schleuse, alt = altVerdrahtung, gate = &schranke]
+            (std::uint64_t, std::uint64_t) -> std::string
+            {
+                CallbackSchleuse::Zug zug;
+                if (! alt)
+                {
+                    zug = s->betreten();
+                    if (! zug)
+                        return {};
+                }
+                gate->halten();                 // hier steht der Aufbauzug - im Zug
+                beruehre();
+                return {};
+            });
+        client.setzeKonfliktWiederholungHook (
+            [this, s = schleuse, alt = altVerdrahtung]
+            (const std::string&, const std::string&, std::uint64_t) -> std::string
+            {
+                CallbackSchleuse::Zug zug;
+                if (! alt)
+                {
+                    zug = s->betreten();
+                    if (! zug)
+                        return {};
+                }
+                beruehre();
+                return {};
+            });
+    }
+    ~BesitzerMitClient()
+    {
+        // Die Reihenfolge des Prozessor-Destruktors: stop() - schliessen -
+        // Mitglieder (der Client stirbt nach diesem Rumpf).
+        client.stop();
+        if (! altVerdrahtung)
+            schleuse->schliessen();
+    }
+    void beruehre() { zustand += 0x0101010101010101ULL; }
+
+    const bool altVerdrahtung;
+    std::shared_ptr<CallbackSchleuse> schleuse;
+    ControlClient client;
+    std::uint64_t zustand = 0;
+};
+
+void abgeloester_callback_wird_nach_zerstoerung_abgewiesen (bool alt)
+{
+    TestServer server (testPipeName ("nak246-abgeloest"));
+    pruefe (server.starten(), "M-08: der Testserver steht");
+    Schranke gate;
+    Puffer<BesitzerMitClient> puffer;
+    auto* b = puffer.anlegen (alt, gate, server.pipeName());
+    auto s = b->schleuse;
+
+    // Vor dem Start: ein Interventionsereignis (Generation 0) - damit der
+    // Aufbauzug die Zustellpruefung faehrt und `hookReplayBegin` ruft - und
+    // ein Bericht mit Marke 7 (Generation 0), den der Aufbaufilter der
+    // Generation 1 verwirft und ueber `beiP0Verworfen` meldet.
+    pruefe (b->client.sendeP0 ("{\"type\":\"audible_intervention_end\",\"nak246\":1}",
+                               P0Klasse::intervention, 0),
+            "M-08: ein Interventionsereignis der Generation 0 liegt in der Queue");
+    pruefe (b->client.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}",
+                               P0Klasse::bericht, 7),
+            "M-08: ein Bericht mit Marke 7 der Generation 0 liegt in der Queue");
+    b->client.start();
+    pruefe (gate.warteBisErreicht (8000),
+            "M-08: der Aufbauzug ruft `hookReplayBegin`, und der Callback steht "
+            "im Zug - unter `sendeMutex`, vor dem Besitzerzugriff");
+
+    // Freigabe erst NACH der Stoppfrist: stop() muss abloesen, nicht joinen.
+    constexpr int kNachFristMs = 500;
+    constexpr int kStopFristMs = controlclient_intern::kStopFristMs;
+    const auto t0 = Uhr::now();
+    std::thread dritter ([&]
+    {
+        std::this_thread::sleep_until (t0 + std::chrono::milliseconds (kStopFristMs + kNachFristMs));
+        gate.freigeben();
+    });
+    puffer.zerstoere (b);           // stop() -> Frist -> Abloesung -> Schliessen (wartet) -> Mitglieder
+    const auto dauerMs = msSeit (t0);
+    puffer.musterLegen();
+    dritter.join();
+    // Der abgeloeste Thread laeuft seinen Aufbauzug zu Ende: Verwurfmeldung,
+    // positiver Link-Callback, Schleifenende, negativer Link-Callback.
+    std::this_thread::sleep_for (std::chrono::milliseconds (600));
+    const auto stand = s->stand();
+    const auto abweichend = puffer.abweichendeBytes();
+
+    pruefe (dauerMs >= kStopFristMs,
+            "M-08: stop() hat die volle Frist gewartet und den Thread abgeloest "
+            "(B-CC-12) - der gehaltene Callback endete erst danach",
+            std::to_string (dauerMs) + " ms Destruktor bei Frist "
+                + std::to_string (kStopFristMs) + " ms");
+    pruefe (dauerMs >= kStopFristMs + kNachFristMs && stand.gewartetMs > 0,
+            "M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende "
+            "gewartet - gewartetMs > 0",
+            "gewartetMs=" + std::to_string (stand.gewartetMs));
+    pruefe (abweichend == 0,
+            "M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - kein "
+            "Callback des abgeloesten Threads beruehrt den zerstoerten Besitzer: das "
+            "Muster ist in jedem Byte unveraendert",
+            std::to_string (abweichend) + " von " + std::to_string (sizeof (BesitzerMitClient))
+                + " Bytes veraendert");
+    pruefe (stand.abgewiesen >= 1,
+            "M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein "
+            "Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)",
+            "abgewiesen=" + std::to_string (stand.abgewiesen)
+                + " betreten=" + std::to_string (stand.betreten));
+    server.stoppen();
+}
+
+void nak246D2Schleuse (bool altVerdrahtung)
+{
+    abschnitt (altVerdrahtung
+                   ? "NAK-246 D2 · Besitz laufender Callbacks - ROTLAUF in Alt-Verdrahtung (rohes this, kein Warten)"
+                   : "NAK-246 D2 · Besitz laufender Callbacks (Schleuse, M-06 bis M-08)");
+    schleuse_weist_callback_nach_dem_schliessen_ab (altVerdrahtung);
+    schleuse_wartet_laufenden_callback_zu_ende_und_misst (altVerdrahtung);
+    abgeloester_callback_wird_nach_zerstoerung_abgewiesen (altVerdrahtung);
+}
+
+} // namespace nak246
 } // namespace
 
 //==============================================================================
 int main (int argc, char** argv)
 {
+    // NAK-246 D2, Rotlauf: dieselben Faelle in der Alt-Verdrahtung des
+    // Basis-SHA. Nur der Abschnitt, damit die Rohausgabe den Fall traegt.
+    if (argc == 2 && std::string (argv[1]) == "--nak246-alt")
+    {
+        nak246::nak246D2Schleuse (true);
+        std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
+                  << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
     if (argc == 3 && std::string (argv[1]) == "--nak123-test-server")
         return nak123TestServerMain (argv[2]);
     if (argc == 6 && std::string (argv[1]) == "--phase-b-command-client")
@@ -4732,6 +5193,9 @@ int main (int argc, char** argv)
         tele.stop();
         server.reset();
     }
+
+    // NAK-246 D2: die Schleuse an der Besitzerattrappe (M-06, M-07, M-08).
+    nak246::nak246D2Schleuse (false);
 
     abschnitt ("H · Bootstrapgrenze und JSON-Riegel");
     {

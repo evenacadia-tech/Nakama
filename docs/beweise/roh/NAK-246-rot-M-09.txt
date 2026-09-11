@@ -1,0 +1,57 @@
+NAK-246 Etappe 3 - Rotbeweis M-09 (Manifest docs/beweise/NAK-246.md §3.2): alle_produkt_callbacks_laufen_durch_die_schleuse
+Stand: 2026-09-11 04:41 (PC-Lokalzeit); Basis-SHA 96c258c90c1e5806e4bc7a4055cca630c60a41e0; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-01.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-09 allein (`--nur m09`), mit dem ENDGUELTIGEN Test
+  (Sonde012ProjectReloadTest.cpp, nak246::alle_produkt_callbacks_laufen_durch_die_schleuse) gegen die
+  ALT-VERDRAHTUNG des Prozessors: jedes der zehn Lambdas in PluginProcessor.cpp faengt statt der Schleuse des
+  Prozessors eine PRIVATE, nie geschlossene Schleuse (Wirkung = rohes `this`: kein Eintritt zaehlt, nichts wird
+  abgewiesen), und der Destruktor schliesst nicht (Diff unten). Testkonstruktor, Testhaken und Schleusenzugang
+  bleiben, damit der endgueltige Test kompiliert - sie aendern kein Verhalten des Basis-SHA.
+  Kein Verhalten der Clients oder des Servers ist veraendert.
+
+BAU UND LAUF
+  cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest  (pwsh, VS-2022-BuildTools-cmake)
+  Bau: Exit 0, 6 s (nur PluginProcessor.cpp neu uebersetzt, Link); keine neue Warnung.
+  Quelle PluginProcessor.cpp (Rotstand): 2026-09-11 04:40:08; Binary EqCopSonde012ProjectReloadTest.exe: 2026-09-11 04:40:25 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m09
+  Exit 1, 0 s. 17 Pruefungen, 2 Fehler.
+
+DIE FALLENDE ZUSAGE DIESER ZEILE (M-09)
+  FEHLER  M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein Callback umgeht die Schleuse  [betreten=0 Summe=8 (vor der Zerstoerung 0)]
+      -> alle acht Ereignisse sind vom Server bzw. vom Bein deterministisch ausgeloest und beobachtet (Hello, Heartbeat/Status,
+         Link auf + ab, heartbeat_ack, 64 P2-Frames, 32 Wire-Commits, 1 Zustellpruefung), aber KEIN Callback hat die Schleuse
+         des Prozessors betreten: `betreten` = 0 < 8 (Zusage §3.2 M-09 Satz 1).
+  FEHLER  M-09: der negative Link-Callback aus stop() lief synchron durch die noch OFFENE Schleuse - kein Selbstblock  [0 Eintritte im Destruktor]
+      -> Folgezeile: auch der synchrone Link-Callback aus stop() umgeht die Schleuse (Abweichung 1, §5.10).
+  Gruen bleibt "ohne gehaltenen Callback blockiert der Destruktor nicht" (4 ms, gewartetMs=0, abgewiesen=0) - die Zeile
+  ist eine Regressionswache gegen einen Selbstblock und faellt in Alt-Verdrahtung nicht.
+
+DIFF DER ALT-VERDRAHTUNG (git diff -- eq-copilot/plugin/src/PluginProcessor.cpp, Rotlaufstand gegen den gestageten Endstand)
+  10x  [this, s = callbackSchleuse]  ->  [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */]
+       (sechs Konstruktor-Lambdas: Hello, Status, Link, Antwort, Telemetrie-Hello, Frame; vier nachregistrierte:
+        beiP0Zugestellt, beiP0Verworfen, hookReplayBegin, hookKonfliktWiederholung)
+   1x  ~EqCopilotProcessor: `callbackSchleuse->schliessen();`  ->  `// ROTLAUF NAK-246 (Alt-Verdrahtung, kein Warten): callbackSchleuse->schliessen();`
+  Der vollstaendige Diff (97 Zeilen) ist derselbe wie in NAK-246-rot-M-06.txt, Abschnitt "DIFF DER ALT-VERDRAHTUNG".
+
+VOLLSTAENDIGE ROHAUSGABE DES LAUFS
+== NAK-246 M-09 alle_produkt_callbacks_laufen_durch_die_schleuse ==
+  ok      M-09: der Testserver steht
+  ok      M-09: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.10044.0.nak246-m09]
+  ok      M-09: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-09: der Prozessor ist ein Main mit Bindung
+  ok      M-09: der Sender ist bestaetigt angehalten
+  ok      M-09: Interventionsereignisse der Generation 0 liegen als P0 in der Queue - der Aufbauzug faehrt damit die Zustellpruefung, und jeder Wire-Commit ruft `beiP0Zugestellt`  [32]
+  ok      M-09: Control ist verbunden (Hello, Welcome, Link auf)
+  ok      M-09: Telemetrie ist gekoppelt und verbunden (Telemetrie-Hello)
+  ok      M-09: mindestens ein P2-Frame hat `beiFrame` erreicht  [64]
+  ok      M-09: mindestens ein heartbeat_ack hat `v3Antwort` erreicht  [1]
+  ok      M-09: mindestens ein P0-Wire-Commit hat `beiP0Zugestellt` erreicht  [32]
+  ok      M-09: der Server hat einen Heartbeat empfangen (`v3Status`)
+  ok      M-09: der Server hat das Control-Hello empfangen (`v3Hello`)
+  ok      M-09: die Zustellpruefung hat `hookReplayBegin` gerufen  [1]
+  FEHLER  M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein Callback umgeht die Schleuse  [betreten=0 Summe=8 (vor der Zerstoerung 0)]
+  FEHLER  M-09: der negative Link-Callback aus stop() lief synchron durch die noch OFFENE Schleuse - kein Selbstblock (Abweichung 1, Paragraph 5.10)  [0 Eintritte im Destruktor]
+  ok      M-09: ohne gehaltenen Callback blockiert der Destruktor nicht - keine Frist, kein Warten, kein abgewiesener Callback  [4 ms, gewartetMs=0, abgewiesen=0]
+SONDE-012 ProjectReload (nur m09): 15/17 gruen

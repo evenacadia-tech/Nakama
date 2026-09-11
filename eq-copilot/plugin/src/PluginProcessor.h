@@ -33,6 +33,9 @@
 #include <optional>
 #include <thread>
 #include "ControlClient.h"
+// NAK-246 D2 (R-D2): der Besitzvertrag der zehn Produkt-Callbacks. Kein
+// Callback der beiden v3-Clients faengt den Prozessor mehr als rohes `this`.
+#include "controlclient/Schleuse.h"
 // NAK-180 Nacharbeit 2 (WN-08): DER Riegel des Probe-Namensraums steht im
 // Prozessor, nicht im Kern - `PipeToken.h` bleibt ausserhalb von NakamaKern.
 #include "PipeToken.h"
@@ -74,6 +77,27 @@ class EqCopilotProcessor : public juce::AudioProcessor,
 public:
     EqCopilotProcessor();
     ~EqCopilotProcessor() override;
+
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    /** NAK-246 D2 (Manifest Paragraph 5.2, Feinheit 5): der Testkonstruktor
+        mit Probe-Pipe und Servererwartung.
+
+        Beide v3-Clients (`controlV3`, `telemetryV3`) bekommen den Pipenamen
+        und die Erwartung bei der Konstruktion - der `TelemetryClient` hat
+        keinen nachtraeglichen Probe-Setter, und ein Bein, das den Frame-
+        Callback der Telemetrie am echten Prozessor messen will, braucht ihn
+        vor dem ersten `start()`. Der Produktkonstruktor delegiert an denselben
+        privaten Konstruktor und reicht `pipeNameV3 (v3LogonSid)` und die
+        Installbindung durch; der Produktpfad aendert sich damit nicht.
+
+        Fail-closed: liegt `probePipename` nicht im Probe-Namensraum
+        (`istProbePipename`), bekommen beide Clients einen LEEREN Pipenamen,
+        mit dem sich nie eine Verbindung oeffnen laesst - die Produktionspipe
+        wird aus einem Bein heraus nie zum Ziel. `v3PipeNameFuerTest()` zeigt,
+        was uebernommen wurde. */
+    EqCopilotProcessor (const std::string& probePipename,
+                        nakama::ipc::ServerErwartung erwartung);
+#endif
 
     /** Audiothread, unmittelbar VOR `processBlock` (gepatchter VST3-Wrapper).
         Nimmt nur die sechs Felder ab, die der Zeitstempel braucht - eine Kopie
@@ -726,6 +750,38 @@ public:
     void v3ReconnectFuerTest() { controlV3.reconnect(); }
     void v3StopFuerTest() { controlV3.stop(); }
     void v3StartFuerTest() { controlV3.start(); }
+    /// NAK-246 D2 (M-09): die Telemetrie am echten Prozessor starten. Sie
+    /// koppelt erst, wenn `controlV3` sein `welcome` hat - wie im Produkt.
+    void v3TelemetrieStartFuerTest() { telemetryV3.start(); }
+    nakama::ipc::TelemetryClient::Snapshot telemetryV3Snapshot() const
+    { return telemetryV3.snapshot(); }
+    /// Der Pipename, den beide v3-Clients bei der Konstruktion bekommen
+    /// haben (Testkonstruktor: der Probe-Name; sonst der Produktname).
+    const std::string& v3PipeNameFuerTest() const noexcept { return v3PipeName; }
+
+    /** NAK-246 D2 (Paragraph 5.2, Feinheit 7): der Haken IM Produkt-Callback
+        `v3Antwort`, VOR seinem ersten Zustandszugriff und INNERHALB des Zugs
+        der Schleuse - der Callback zaehlt waehrend des Haltens als laufend.
+        Ein Bein haelt hier fest, baut den Prozessor ueber die Stoppfrist ab
+        und gibt dann frei (M-07). Im Produkt leer. Vor dem ersten `start()`
+        gesetzt, danach unveraendert. Nicht auf dem Audiothread. */
+    void setzeV3AntwortHakenFuerTest (std::function<void (const std::string& json)> haken)
+    { v3AntwortHakenFuerTest = std::move (haken); }
+
+    /** Dasselbe im nachregistrierten Callback `hookReplayBegin` (Zustell-
+        pruefung des Aufbauzugs), VOR `sendeZustandMutex` und innerhalb des
+        Zugs. Laeuft unter `sendeMutex` des ControlClients: wer hier wartet,
+        blockiert jeden Sendezug - genau das misst M-06 (der Aufbauzug wird
+        festgehalten, waehrend der Prozessor zerstoert wird). */
+    void setzeReplayBeginHakenFuerTest (
+        std::function<void (std::uint64_t generation, std::uint64_t marke)> haken)
+    { replayBeginHakenFuerTest = std::move (haken); }
+
+    /** Die Schleuse selbst - als `shared_ptr`, damit ein Bein ihre Zaehler
+        NACH der Zerstoerung des Prozessors lesen kann (`abgewiesen`,
+        `gewartetMs`, `betreten`; M-06 bis M-09). */
+    std::shared_ptr<const nakama::ipc::CallbackSchleuse> callbackSchleuseFuerTest() const
+    { return callbackSchleuse; }
 
     void v3LinkFuerTest (bool verbunden)
     {
@@ -909,6 +965,19 @@ public:
     bool schreibeSnapshotDatei (juce::String& pfadOderFehler);
 
 private:
+    /** NAK-246 D2 (Paragraph 5.2, Feinheit 5): was die beiden v3-Clients bei
+        der Konstruktion bekommen. Das Produkt liefert SID, `pipeNameV3 (SID)`
+        und die Installbindung; ein Bein einen Probe-Pipenamen und seine
+        eigene Servererwartung. */
+    struct V3Verdrahtung
+    {
+        std::string logonSid;
+        std::string pipeName;
+        nakama::ipc::ServerErwartung erwartung;
+    };
+    static V3Verdrahtung produktVerdrahtung();
+    explicit EqCopilotProcessor (V3Verdrahtung verdrahtung);
+
     void workerLauf();
     nakama::ipc::ControlHello v3Hello() const;
     /// SONDE-013 M-37/M-38: leert den Interventionsring und sendet jedes
@@ -1490,6 +1559,11 @@ private:
     /// halten dabei keine Sperre des Sendezustands.
     std::function<void (std::uint64_t)> linkAufbauHakenFuerTest;
     std::function<void (std::uint64_t)> linkEndeHakenFuerTest;
+    /// NAK-246 D2: Test-Einhaengepunkte in `v3Antwort` (M-07) und im
+    /// Replay-Begin-Hook (M-06), jeweils innerhalb des Zugs der Schleuse und
+    /// vor dem ersten Zustandszugriff. Im Produkt leer. Nie im Audiothread.
+    std::function<void (const std::string&)> v3AntwortHakenFuerTest;
+    std::function<void (std::uint64_t, std::uint64_t)> replayBeginHakenFuerTest;
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den
@@ -1514,6 +1588,21 @@ private:
     const std::string v3PipeName;
     const std::string v3SessionEpoch;
     PipeClient pipe;
+    /** NAK-246 D2 (R-D2, Paragraph 5.2): die Schleuse, durch die ALLE zehn
+        Produkt-Callbacks der beiden v3-Clients laufen - die sechs Lambdas der
+        Konstruktion (Hello, Status, Link, Antwort, Telemetrie-Hello, Frame)
+        und die vier nachregistrierten (`beiP0Zugestellt`, `beiP0Verworfen`,
+        `hookReplayBegin`, `hookKonfliktWiederholung`). Jedes Lambda faengt
+        `this` UND diesen `shared_ptr` und ruft den Prozessor nur innerhalb
+        eines Zugs. Der Destruktor schliesst sie NACH den drei `stop()` und
+        VOR der Zerstoerung der Mitglieder; ein Callback, der danach beginnt,
+        wird abgewiesen, ein laufender zu Ende gewartet. Die abgeloeste
+        Laufzeit haelt danach ueber ihre `std::function` nur noch eine
+        geschlossene Schleuse.
+
+        Steht VOR `controlV3` und `telemetryV3`, weil deren Lambdas den
+        Zeiger bei der Konstruktion kopieren. */
+    std::shared_ptr<nakama::ipc::CallbackSchleuse> callbackSchleuse;
     nakama::ipc::ControlClient controlV3;
     nakama::ipc::TelemetryClient telemetryV3;
     nakama::ipc::BrokerLifecycle brokerLifecycle;

@@ -8,13 +8,27 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "WireEnvelope.h"
+// NAK-246 D2 (M-06, M-07, M-09): der geteilte v3-Probe-Server und die
+// Stoppfrist des ControlClients - die Lebensdauerfaelle fahren den ECHTEN
+// Prozessor mit seiner Produktverdrahtung gegen einen Testserver.
+#include "IpcVerbindung.h"
+#include "PipeToken.h"
+#include "controlclient/Intern.h"
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
 #include <cstring>
+#include <functional>
 #include <iostream>
+#include <memory>
+#include <mutex>
+#include <new>
+#include <string>
 #include <thread>
+#include <vector>
 
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
@@ -24,6 +38,10 @@
 
 namespace
 {
+// Der Probe-Server spricht den v3-Bootstrap unqualifiziert (wie in B10/B23).
+using namespace nakama::ipc;
+#include "V3TestServer.h"
+
 int fehler = 0;
 int bestanden = 0;
 
@@ -268,12 +286,453 @@ void gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projekt
                 && authFiel && ehrlich && unveraendert,
             "gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand");
 }
+
+//==============================================================================
+// NAK-246 D2 · Besitz laufender Callbacks am ECHTEN Prozessor (Regel R-D2;
+// Manifest docs/beweise/NAK-246.md Paragraph 3.2 M-06, M-07, M-09; 5.2)
+//==============================================================================
+//
+// Die drei Faelle fahren den Prozessor mit seiner PRODUKTVERDRAHTUNG - den
+// zehn Lambdas aus PluginProcessor.cpp - gegen den geteilten Testserver
+// (Aufbau wie B23 `r01Resync`: Probe-Pipe, `v3StartFuerTest`, Handschlag,
+// Heartbeat, P0-Wire-Commit). Neu ist der Lebensdauertest: ein
+// Produkt-Callback wird an einem Testhaken festgehalten, der Prozessor wird
+// ueber die Stoppfrist hinaus zerstoert, der Callback freigegeben. Der
+// Prozessor liegt dafuer per Placement-new in einem eigenen, ausgerichteten
+// Heap-Puffer; nach der Zerstoerung legt das Bein ein Bytemuster darueber und
+// prueft jedes Byte (Paragraph 5.2 Feinheit 6, "Kanarienvogel statt ASan").
+//
+// Rotlauf gegen den Basis-SHA: dieselben Faelle mit der Alt-Verdrahtung
+// (rohes `this`, kein Schliessen) enden mit veraendertem Muster oder einer
+// Zugriffsverletzung; die Rohdatei nennt, welches von beiden
+// (docs/beweise/roh/NAK-246-rot-M-06.txt, -M-07.txt, -M-09.txt).
+
+namespace nak246
+{
+using Uhr = std::chrono::steady_clock;
+constexpr int kStopFristMs = nakama::ipc::controlclient_intern::kStopFristMs;
+/// Freigabe des gehaltenen Callbacks NACH Ablauf der Stoppfrist (Matrix
+/// M-07: "Freigabe aus einem dritten Thread nach 500 ms" - gerechnet ab dem
+/// Ablauf der Frist, damit `stop()` abloest statt joint).
+constexpr int kFreigabeNachFristMs = 500;
+constexpr double kFs = 48000.0;
+constexpr int kBlock = 512;
+
+long long msSeit (Uhr::time_point t) noexcept
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds> (Uhr::now() - t).count();
+}
+long long jetztNs() noexcept
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds> (
+        Uhr::now().time_since_epoch()).count();
+}
+
+/// Eine Kondvar-Schranke (Muster `PushProbe`, `HakenSchleuse` in A3, B10).
+struct Schranke
+{
+    std::mutex m;
+    std::condition_variable cv;
+    bool erreicht = false;
+    bool frei = false;
+
+    void halten()
+    {
+        std::unique_lock<std::mutex> l (m);
+        erreicht = true;
+        cv.notify_all();
+        cv.wait (l, [this] { return frei; });
+    }
+    bool warteBisErreicht (int fristMs)
+    {
+        std::unique_lock<std::mutex> l (m);
+        return cv.wait_for (l, std::chrono::milliseconds (fristMs),
+                            [this] { return erreicht; });
+    }
+    void freigeben()
+    {
+        {
+            std::lock_guard<std::mutex> l (m);
+            frei = true;
+        }
+        cv.notify_all();
+    }
+};
+
+/// Der Prozessor in einem eigenen Bytepuffer. Der Speicher bleibt nach der
+/// Zerstoerung reserviert und traegt das Muster - ein Callback, der ihn noch
+/// anfasst, hinterlaesst Spuren, statt zufaellig in frischen Speicher zu
+/// schreiben. Groesse und Ausrichtung kommen vom Typ selbst.
+struct ProzessorPuffer
+{
+    static constexpr std::uint8_t kMuster = 0xA5;
+    static constexpr std::size_t kGroesse = sizeof (eqcop::EqCopilotProcessor);
+    static constexpr std::align_val_t kAusrichtung { alignof (eqcop::EqCopilotProcessor) };
+
+    void* roh = ::operator new (kGroesse, kAusrichtung);
+    eqcop::EqCopilotProcessor* p = nullptr;
+
+    ~ProzessorPuffer()
+    {
+        if (p != nullptr)
+            zerstoere();
+        ::operator delete (roh, kAusrichtung);
+    }
+    eqcop::EqCopilotProcessor* anlegen (const std::string& pipe,
+                                        nakama::ipc::ServerErwartung erwartung)
+    {
+        p = new (roh) eqcop::EqCopilotProcessor (pipe, std::move (erwartung));
+        return p;
+    }
+    void zerstoere()
+    {
+        p->~EqCopilotProcessor();
+        p = nullptr;
+    }
+    void musterLegen() { std::memset (roh, kMuster, kGroesse); }
+    std::size_t abweichendeBytes() const
+    {
+        const auto* b = static_cast<const std::uint8_t*> (roh);
+        std::size_t n = 0;
+        for (std::size_t i = 0; i < kGroesse; ++i)
+            if (b[i] != kMuster)
+                ++n;
+        return n;
+    }
+};
+
+/// Ein Main mit Bindung und Audiolage - sonst weist der Client sein eigenes
+/// Hello ab ("Audiolage haelt den v3-Vertrag nicht"), und der Sender baut
+/// ohne gueltige Adresse keinen Wiretext.
+eqcop::EqCopilotProcessor* mainAnlegen (ProzessorPuffer& puffer, const std::string& pipe,
+                                        const char* fall)
+{
+    pruefe (nakama::ipc::istProbePipename (pipe),
+            (std::string (fall) + ": der Testserver liegt im PROBE-Namensraum").c_str(),
+            juce::String (pipe));
+    auto* p = puffer.anlegen (pipe, testExeErwartung());
+    pruefe (p->v3PipeNameFuerTest() == pipe,
+            (std::string (fall) + ": beide v3-Clients zeigen auf die Probe-Pipe "
+             "(Testkonstruktor, Paragraph 5.2 Feinheit 5)").c_str());
+    p->prepareToPlay (kFs, kBlock);
+    pruefe (p->setzeBindung ("hub", "Gen", ""),
+            (std::string (fall) + ": der Prozessor ist ein Main mit Bindung").c_str());
+    return p;
+}
+
+/// M-07 · `v3Antwort` wird im Haken gehalten, der Prozessor ueber die
+/// Stoppfrist hinaus zerstoert, der Callback aus einem dritten Thread
+/// freigegeben. Der Destruktor muss den Callback zu Ende warten und die
+/// Wartezeit messen.
+void prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende()
+{
+    std::cout << "== NAK-246 M-07 prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende ==\n";
+    TestServer server (testPipeName ("nak246-m07"));
+    pruefe (server.starten(), "M-07: der Testserver steht");
+    ProzessorPuffer puffer;
+    auto* p = mainAnlegen (puffer, server.pipeName(), "M-07");
+    auto schleuse = p->callbackSchleuseFuerTest();
+
+    Schranke gate;
+    std::atomic<int> antworten { 0 };
+    // Die ERSTE Antwort (heartbeat_ack des Servers) wird gehalten; die
+    // Schranke gehoert dem Bein und ueberlebt den Prozessor.
+    p->setzeV3AntwortHakenFuerTest ([&gate, &antworten] (const std::string&)
+    {
+        if (antworten.fetch_add (1) == 0)
+            gate.halten();
+    });
+    p->v3StartFuerTest();
+    pruefe (warteAuf (8000, [&] {
+                return p->controlV3Snapshot().status
+                       == nakama::ipc::ControlClient::Status::verbunden;
+            }),
+            "M-07: der echte Client ist ueber die Probe-Pipe verbunden");
+    pruefe (gate.warteBisErreicht (8000),
+            "M-07: der Produkt-Callback `v3Antwort` steht im Haken - im Zug der "
+            "Schleuse, vor dem ersten Zustandszugriff");
+    const auto imZug = schleuse->stand();
+    pruefe (imZug.aktiv >= 1 && ! imZug.geschlossen,
+            "M-07: die Schleuse fuehrt ihn als laufend",
+            juce::String ((int) imZug.aktiv) + " aktiv");
+
+    std::atomic<long long> freigabeNs { 0 };
+    const auto t0 = Uhr::now();
+    std::thread dritter ([&]
+    {
+        std::this_thread::sleep_until (
+            t0 + std::chrono::milliseconds (kStopFristMs + kFreigabeNachFristMs));
+        freigabeNs.store (jetztNs());
+        gate.freigeben();
+    });
+    std::cout << "  M-07: Destruktor beginnt; Freigabe nach "
+              << (kStopFristMs + kFreigabeNachFristMs) << " ms\n";
+    puffer.zerstoere();                 // stop() -> Frist -> Abloesung -> Schliessen wartet
+    const auto endeNs = jetztNs();
+    const auto dauerMs = msSeit (t0);
+    puffer.musterLegen();
+    dritter.join();
+    std::cout << "  M-07: Destruktor zurueck nach " << dauerMs
+              << " ms, Muster gelegt, 300 ms warten\n";
+    std::this_thread::sleep_for (std::chrono::milliseconds (300));
+    const auto stand = schleuse->stand();
+    const auto abweichend = puffer.abweichendeBytes();
+    const auto nachFreigabeMs = (endeNs - freigabeNs.load()) / 1000000LL;
+
+    pruefe (dauerMs >= kStopFristMs + kFreigabeNachFristMs,
+            "M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - "
+            "der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback "
+            "freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest",
+            juce::String ((juce::int64) dauerMs) + " ms Destruktor, Frist "
+                + juce::String (kStopFristMs) + " ms, Freigabe nach "
+                + juce::String (kStopFristMs + kFreigabeNachFristMs) + " ms");
+    pruefe (stand.gewartetMs > 0
+                && stand.gewartetMs <= static_cast<std::uint64_t> (dauerMs) + 1,
+            "M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 und "
+            "nicht groesser als der Destruktor selbst",
+            "gewartetMs=" + juce::String ((juce::int64) stand.gewartetMs));
+    pruefe (nachFreigabeMs >= 0 && nachFreigabeMs <= 100,
+            "M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor "
+            "endet binnen 100 ms nach der Freigabe",
+            juce::String ((juce::int64) nachFreigabeMs) + " ms nach der Freigabe");
+    pruefe (abweichend == 0,
+            "M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte "
+            "unveraendert - der Zustandszugriff des Callbacks lag VOR der Zerstoerung",
+            juce::String ((juce::int64) abweichend) + " von "
+                + juce::String ((juce::int64) ProzessorPuffer::kGroesse) + " Bytes veraendert");
+    pruefe (stand.aktiv == 0 && stand.geschlossen,
+            "M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu",
+            "aktiv=" + juce::String ((int) stand.aktiv)
+                + " betreten=" + juce::String ((juce::int64) stand.betreten)
+                + " abgewiesen=" + juce::String ((juce::int64) stand.abgewiesen));
+    server.stoppen();
+}
+
+/// M-06 · ein nachregistrierter Callback (`hookReplayBegin`) wird im
+/// Aufbauzug des echten Verbindungsaufbaus gehalten; nach Zerstoerung und
+/// Freigabe ruft der abgeloeste Thread im selben Zug `beiP0Verworfen` (fuer
+/// den verworfenen Aufbau-Heartbeat) und danach `beiLinkStatus` - alle
+/// beginnen NACH dem Schliessen und muessen abgewiesen werden.
+void abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht()
+{
+    std::cout << "== NAK-246 M-06 abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht ==\n";
+    TestServer server (testPipeName ("nak246-m06"));
+    pruefe (server.starten(), "M-06: der Testserver steht");
+    ProzessorPuffer puffer;
+    auto* p = mainAnlegen (puffer, server.pipeName(), "M-06");
+    auto schleuse = p->callbackSchleuseFuerTest();
+
+    // Der Sender wird BESTAETIGT angehalten (WA-04), dann laufen die
+    // Ringereignisse SYNCHRON als P0-Interventionsereignisse der Generation 0
+    // in die Queue - genau die Lage, in der der Aufbauzug des ersten Links die
+    // Zustellpruefung faehrt und `hookReplayBegin` ruft.
+    p->senderAnhaltenFuerTest (true);
+    pruefe (p->warteAufSenderPauseFuerTest(), "M-06: der Sender ist bestaetigt angehalten");
+    const int imRing = p->interventionsRingFuellenFuerTest();
+    pruefe (imRing > 0, "M-06: der Ring nimmt Ereignisse auf", juce::String (imRing));
+    p->interventionenSendenFuerTest();
+    pruefe (p->interventionsRingFuellstandFuerTest() == 0,
+            "M-06: die Ereignisse liegen als P0 in der Queue (Generation 0)");
+
+    // Der zweite Ruf des Hooks - der aus dem ECHTEN Aufbauzug - wird gehalten.
+    Schranke gate;
+    std::atomic<int> replayRufe { 0 };
+    p->setzeReplayBeginHakenFuerTest ([&gate, &replayRufe] (std::uint64_t, std::uint64_t)
+    {
+        if (replayRufe.fetch_add (1) == 1)
+            gate.halten();
+    });
+    // Ein Testlink (Generation 1): sein Aufbauzug faehrt die Zustellpruefung
+    // (Ruf 1) und der positive Link-Callback hinterlegt die Aufbau-Aussage
+    // dieser Generation. Der Heartbeat-Schritt verbraucht sie und reiht einen
+    // Bericht MIT Marke ein - den verwirft der echte Aufbauzug (Generation 2)
+    // und meldet die Marke ueber `beiP0Verworfen`.
+    p->v3LinkFuerTest (true);
+    pruefe (replayRufe.load() == 1,
+            "M-06: der Aufbauzug des Testlinks hat die Zustellpruefung gefahren (Ruf 1)");
+    std::string heartbeat;
+    pruefe (p->v3HeartbeatSchrittFuerTest (heartbeat, 1) && ! heartbeat.empty(),
+            "M-06: ein Aufbau-Heartbeat mit Marke liegt in der Queue (Generation 1)");
+
+    p->v3StartFuerTest();
+    pruefe (gate.warteBisErreicht (8000),
+            "M-06: der echte Aufbauzug (Generation 2) ruft `hookReplayBegin`, und der "
+            "Produkt-Callback steht im Haken - im Zug, unter sendeMutex, vor dem "
+            "Zustandszugriff");
+
+    const auto t0 = Uhr::now();
+    std::thread dritter ([&]
+    {
+        std::this_thread::sleep_until (
+            t0 + std::chrono::milliseconds (kStopFristMs + kFreigabeNachFristMs));
+        gate.freigeben();
+    });
+    std::cout << "  M-06: Destruktor beginnt; Freigabe nach "
+              << (kStopFristMs + kFreigabeNachFristMs) << " ms\n";
+    puffer.zerstoere();                 // stop() -> Frist -> Abloesung -> Schliessen wartet
+    const auto dauerMs = msSeit (t0);
+    puffer.musterLegen();
+    dritter.join();
+    std::cout << "  M-06: Destruktor zurueck nach " << dauerMs
+              << " ms, Muster gelegt, 600 ms warten (der abgeloeste Thread laeuft "
+                 "seinen Aufbauzug zu Ende)\n";
+    std::this_thread::sleep_for (std::chrono::milliseconds (600));
+    const auto stand = schleuse->stand();
+    const auto abweichend = puffer.abweichendeBytes();
+
+    pruefe (dauerMs >= kStopFristMs,
+            "M-06: stop() hat die volle Frist gewartet und den Clientthread abgeloest "
+            "(B-CC-12) - der gehaltene Callback lebte ueber die Frist hinaus",
+            juce::String ((juce::int64) dauerMs) + " ms Destruktor bei Frist "
+                + juce::String (kStopFristMs) + " ms");
+    pruefe (stand.gewartetMs > 0,
+            "M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet",
+            "gewartetMs=" + juce::String ((juce::int64) stand.gewartetMs));
+    pruefe (abweichend == 0,
+            "M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - "
+            "`beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren "
+            "den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert",
+            juce::String ((juce::int64) abweichend) + " von "
+                + juce::String ((juce::int64) ProzessorPuffer::kGroesse) + " Bytes veraendert");
+    pruefe (stand.abgewiesen >= 1,
+            "M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1",
+            "abgewiesen=" + juce::String ((juce::int64) stand.abgewiesen)
+                + " betreten=" + juce::String ((juce::int64) stand.betreten)
+                + " aktiv=" + juce::String ((int) stand.aktiv));
+    server.stoppen();
+}
+
+/// M-09 · Live-Verbindung: Hello, Status-Heartbeat, Link auf/ab, Antwort,
+/// Telemetrie-Frame, P0-Wire-Commit (`beiP0Zugestellt`) und Zustellpruefung
+/// (`hookReplayBegin`) laufen ALLE durch die Schleuse - `betreten` ist nach
+/// dem Lauf mindestens die Summe der deterministisch ausgeloesten Ereignisse.
+void alle_produkt_callbacks_laufen_durch_die_schleuse()
+{
+    std::cout << "== NAK-246 M-09 alle_produkt_callbacks_laufen_durch_die_schleuse ==\n";
+    TestServer server (testPipeName ("nak246-m09"));
+    // Nach dem Telemetrie-Welcome schickt der Server einen Schwung
+    // vertragsgemaesser P2-Frames - jeder erreicht `beiFrame`.
+    server.frameFlutTelemetrieP2.store (1);
+    pruefe (server.starten(), "M-09: der Testserver steht");
+    ProzessorPuffer puffer;
+    auto* p = mainAnlegen (puffer, server.pipeName(), "M-09");
+    auto schleuse = p->callbackSchleuseFuerTest();
+
+    p->senderAnhaltenFuerTest (true);
+    pruefe (p->warteAufSenderPauseFuerTest(), "M-09: der Sender ist bestaetigt angehalten");
+    const int imRing = p->interventionsRingFuellenFuerTest();
+    p->interventionenSendenFuerTest();
+    pruefe (imRing > 0 && p->interventionsRingFuellstandFuerTest() == 0,
+            "M-09: Interventionsereignisse der Generation 0 liegen als P0 in der Queue - "
+            "der Aufbauzug faehrt damit die Zustellpruefung, und jeder Wire-Commit "
+            "ruft `beiP0Zugestellt`",
+            juce::String (imRing));
+
+    std::atomic<int> replayRufe { 0 };
+    std::atomic<int> antworten { 0 };
+    p->setzeReplayBeginHakenFuerTest ([&replayRufe] (std::uint64_t, std::uint64_t)
+                                      { ++replayRufe; });
+    p->setzeV3AntwortHakenFuerTest ([&antworten] (const std::string&) { ++antworten; });
+
+    p->v3StartFuerTest();
+    p->v3TelemetrieStartFuerTest();
+    const bool verbunden = warteAuf (8000, [&] {
+        return p->controlV3Snapshot().status == nakama::ipc::ControlClient::Status::verbunden;
+    });
+    pruefe (verbunden, "M-09: Control ist verbunden (Hello, Welcome, Link auf)");
+    const bool teleVerbunden = warteAuf (8000, [&] {
+        return p->telemetryV3Snapshot().status == nakama::ipc::TelemetryClient::Status::verbunden;
+    });
+    pruefe (teleVerbunden, "M-09: Telemetrie ist gekoppelt und verbunden (Telemetrie-Hello)");
+    const bool frameKam = warteAuf (8000, [&] { return p->telemetryV3Snapshot().empfangen >= 1; });
+    pruefe (frameKam, "M-09: mindestens ein P2-Frame hat `beiFrame` erreicht",
+            juce::String ((juce::int64) p->telemetryV3Snapshot().empfangen));
+    const bool antwortKam = warteAuf (8000, [&] { return antworten.load() >= 1; });
+    pruefe (antwortKam, "M-09: mindestens ein heartbeat_ack hat `v3Antwort` erreicht",
+            juce::String (antworten.load()));
+    const bool zugestellt = warteAuf (8000, [&] { return p->interventionenGesendetFuerTest() >= 1; });
+    pruefe (zugestellt, "M-09: mindestens ein P0-Wire-Commit hat `beiP0Zugestellt` erreicht",
+            juce::String ((juce::int64) p->interventionenGesendetFuerTest()));
+    bool heartbeatBeimServer = false;
+    {
+        std::lock_guard<std::mutex> l (server.textMutex);
+        for (const auto& t : server.p0Texte)
+            heartbeatBeimServer = heartbeatBeimServer
+                || t.find ("\"type\":\"heartbeat\"") != std::string::npos;
+    }
+    pruefe (heartbeatBeimServer, "M-09: der Server hat einen Heartbeat empfangen (`v3Status`)");
+    bool helloBeimServer = false;
+    {
+        std::lock_guard<std::mutex> l (server.textMutex);
+        helloBeimServer = ! server.letztesControlHello.empty();
+    }
+    pruefe (helloBeimServer, "M-09: der Server hat das Control-Hello empfangen (`v3Hello`)");
+    pruefe (replayRufe.load() >= 1, "M-09: die Zustellpruefung hat `hookReplayBegin` gerufen",
+            juce::String (replayRufe.load()));
+
+    const auto vorZerstoerung = schleuse->stand();
+    const auto t0 = Uhr::now();
+    puffer.zerstoere();                 // Link ab laeuft synchron VOR dem Schliessen
+    const auto dauerMs = msSeit (t0);
+    const auto stand = schleuse->stand();
+
+    // Die untere Schranke aus M-09: Hello >= 1, Status >= 1, Link >= 2 (auf und
+    // ab), Antwort >= 1, Frame >= 1, beiP0Zugestellt >= 1, hookReplayBegin >= 1.
+    const std::uint64_t summe = (helloBeimServer ? 1u : 0u) + (heartbeatBeimServer ? 1u : 0u)
+                              + (verbunden ? 2u : 0u) + (antwortKam ? 1u : 0u)
+                              + (frameKam ? 1u : 0u) + (zugestellt ? 1u : 0u)
+                              + (replayRufe.load() >= 1 ? 1u : 0u);
+    pruefe (summe == 8 && stand.betreten >= summe,
+            "M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist "
+            "mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein "
+            "Callback umgeht die Schleuse",
+            "betreten=" + juce::String ((juce::int64) stand.betreten)
+                + " Summe=" + juce::String ((juce::int64) summe)
+                + " (vor der Zerstoerung " + juce::String ((juce::int64) vorZerstoerung.betreten) + ")");
+    pruefe (stand.betreten > vorZerstoerung.betreten,
+            "M-09: der negative Link-Callback aus stop() lief synchron durch die noch "
+            "OFFENE Schleuse - kein Selbstblock (Abweichung 1, Paragraph 5.10)",
+            juce::String ((juce::int64) (stand.betreten - vorZerstoerung.betreten)) + " Eintritte im Destruktor");
+    pruefe (dauerMs < kStopFristMs && stand.gewartetMs == 0 && stand.abgewiesen == 0,
+            "M-09: ohne gehaltenen Callback blockiert der Destruktor nicht - keine Frist, "
+            "kein Warten, kein abgewiesener Callback",
+            juce::String ((juce::int64) dauerMs) + " ms, gewartetMs="
+                + juce::String ((juce::int64) stand.gewartetMs) + ", abgewiesen="
+                + juce::String ((juce::int64) stand.abgewiesen));
+    server.stoppen();
+}
+
+/// `--nur <name>` faehrt genau einen der drei Faelle (Rotlaeufe, deren
+/// Ausgang der Prozess nicht ueberlebt).
+bool nak246Fall (const std::string& name)
+{
+    if (name == "m06") { abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht(); return true; }
+    if (name == "m07") { prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende(); return true; }
+    if (name == "m09") { alle_produkt_callbacks_laufen_durch_die_schleuse(); return true; }
+    return false;
+}
+} // namespace nak246
 } // namespace
 
-int main()
+int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc == 3 && std::string (argv[1]) == "--nur")
+    {
+        if (! nak246::nak246Fall (argv[2]))
+        {
+            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09)\n";
+            return 2;
+        }
+        std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
+                  << (bestanden + fehler) << " gruen\n";
+        return fehler == 0 ? 0 : 1;
+    }
     gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand();
+    // NAK-246 D2: die Lebensdauerfaelle am echten Prozessor (M-06, M-07, M-09).
+    nak246::prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende();
+    nak246::abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht();
+    nak246::alle_produkt_callbacks_laufen_durch_die_schleuse();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

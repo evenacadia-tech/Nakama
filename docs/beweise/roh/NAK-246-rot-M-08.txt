@@ -1,0 +1,61 @@
+NAK-246 Etappe 3 - Rotbeweis M-08 (Manifest docs/beweise/NAK-246.md §3.2): Frist und Abloesung bleiben; nach Abloesung + Zerstoerung + Freigabe ist abgewiesen >= 1 (Regressionswache, absichtlich gebrochen)
+Stand: 2026-09-11 04:44 (PC-Lokalzeit); Basis-SHA 96c258c90c1e5806e4bc7a4055cca630c60a41e0; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-03.txt (Regressionswache, einmal absichtlich gebrochen; Pruefliste E).
+
+WAS M-08 MISST UND WAS DAVON GRUEN BLEIBT
+  Die bestehenden B10-Faelle 2, 2b, 2c (G17, IpcTestMain.cpp: "stop() kehrt trotz blockierendem Callback binnen Frist
+  zurueck", "Fristueberschreitung sichtbar gezaehlt", Neustart nach Abloesung, alter Lauf beruehrt die neue Verbindung
+  nicht) sind Regressionswachen und im Gruenlauf der Etappe unveraendert gruen (docs/beweise/roh/NAK-246-etappe3-beine.txt,
+  Bein B10). Sie brauchen keinen Rotlauf: der Basis-SHA hielt sie bereits.
+  NEU misst M-08 an der Attrappe mit ECHTEM ControlClient (B10, nak246::abgeloester_callback_wird_nach_zerstoerung_abgewiesen):
+    - stop() wartet die volle Frist und loest ab (Destruktor >= kStopFristMs) - Frist und Abloesung bleiben (R-D2);
+    - nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback des abgeloesten Threads abgewiesen und gezaehlt.
+  Absichtlich gebrochen wird die zweite Zeile mit dem Schalter `--nak246-alt` (Alt-Verdrahtung der Attrappe: rohes `this`,
+  kein Eintritt, kein Schliessen) - dieselbe Rohausgabe wie in NAK-246-rot-M-06.txt (1).
+
+WAS GEFAHREN WURDE
+  Bein B10 EqCopIpcTest `--nak246-alt`; Bau und Zeitstempel wie NAK-246-rot-M-06.txt (1): Exit 1, 3 s, 20 Pruefungen, 11 Fehler.
+  Aufbau des Falls: vor `start()` liegen ein Interventionsereignis (Generation 0) und ein Bericht mit Marke 7 (Generation 0)
+  in der P0-Queue. Der Aufbauzug der Generation 1 verwirft den Bericht (`berichteAelterAls`) und ruft wegen des
+  Interventionsereignisses `hookReplayBegin` - dort haelt die Attrappe den Callback (im Zug, unter sendeMutex). Der
+  Destruktor laeuft aus dem Testthread (stop() -> Frist -> Abloesung -> Schliessen -> Mitglieder); die Freigabe kommt aus
+  einem dritten Thread bei kStopFristMs + 500 ms. Nach der Freigabe ruft der abgeloeste Thread im selben Aufbauzug
+  `beiP0Verworfen (7)`, danach `beiLinkStatus (true)` (Aufbau) und am Schleifenende `beiLinkStatus (false)`.
+
+DIE FALLENDEN ZEILEN (M-08, absichtlich gebrochen)
+  FEHLER  M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)  [abgewiesen=0 betreten=0]
+      -> in Alt-Verdrahtung zaehlt niemand: die drei Callbacks nach der Freigabe laufen mit rohem `this`
+         (Zusage M-08 "Die abgeloeste Laufzeit haelt nur noch Callbacks, die durch die geschlossene Schleuse abgewiesen werden").
+  FEHLER  M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - ... das Muster ist in jedem Byte unveraendert  [8 von 144 Bytes veraendert]
+      -> sie schreiben `zustand` in den zerstoerten Besitzer.
+  FEHLER  M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende gewartet - gewartetMs > 0  [gewartetMs=0]
+  Gruen bleibt "M-08: stop() hat die volle Frist gewartet und den Thread abgeloest (B-CC-12)" [2001 ms Destruktor bei
+  Frist 2000 ms] - genau die Zusage, die M-08 unveraendert laesst: Frist und Abloesung sind vom Fix nicht beruehrt.
+  Im Gruenlauf (Schleuse): abgewiesen=3, betreten=2 (Hello und der gehaltene Replay-Hook), Muster unveraendert,
+  Destruktor >= 2500 ms mit gewartetMs > 0 (siehe NAK-246-etappe3-beine.txt, Bein B10, Abschnitt "NAK-246 D2").
+
+VOLLSTAENDIGE ROHAUSGABE B10: EqCopIpcTest.exe --nak246-alt (dieselbe wie in NAK-246-rot-M-06.txt)
+
+== NAK-246 D2 · Besitz laufender Callbacks - ROTLAUF in Alt-Verdrahtung (rohes this, kein Warten) ==
+  ok      M-06: der Callback steht VOR dem Eintritt in die Schleuse
+  FEHLER  M-06: nach dem Destruktor ist die Schleuse geschlossen, nichts laeuft, und es wurde nicht gewartet - kein Callback stand im Zug  [geschlossen=0 aktiv=0 gewartetMs=0]
+  FEHLER  M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber seinem Speicher ist in jedem Byte unveraendert  [8 von 96 Bytes veraendert]
+  FEHLER  M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1  [0]
+  ok      M-06: kein Callback hat die Schleuse je betreten  [0]
+  ok      M-07: der Callback steht IM Zug, vor dem Besitzerzugriff
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [aktiv=0]
+  FEHLER  M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde  [0 ms Destruktor, Freigabe nach 300 ms]
+  FEHLER  M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=0]
+  FEHLER  M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [-300 ms nach der Freigabe]
+  FEHLER  M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert - der Besitzerzugriff lag VOR der Zerstoerung, nicht danach  [8 Bytes veraendert]
+  ok      M-07: kein zweiter Callback begann waehrend des Wartens; nach dem Destruktor laeuft nichts mehr  [abgewiesen=0 aktiv=0]
+  ok      M-08: der Testserver steht
+  ok      M-08: ein Interventionsereignis der Generation 0 liegt in der Queue
+  ok      M-08: ein Bericht mit Marke 7 der Generation 0 liegt in der Queue
+  ok      M-08: der Aufbauzug ruft `hookReplayBegin`, und der Callback steht im Zug - unter `sendeMutex`, vor dem Besitzerzugriff
+  ok      M-08: stop() hat die volle Frist gewartet und den Thread abgeloest (B-CC-12) - der gehaltene Callback endete erst danach  [2001 ms Destruktor bei Frist 2000 ms]
+  FEHLER  M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende gewartet - gewartetMs > 0  [gewartetMs=0]
+  FEHLER  M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - kein Callback des abgeloesten Threads beruehrt den zerstoerten Besitzer: das Muster ist in jedem Byte unveraendert  [8 von 144 Bytes veraendert]
+  FEHLER  M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)  [abgewiesen=0 betreten=0]
+
+FEHLER — 20 Pruefungen, 11 Fehler

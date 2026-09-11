@@ -1,0 +1,90 @@
+NAK-246 Etappe 3 - Rotbeweis M-07 (Manifest docs/beweise/NAK-246.md §3.2): schleuse_wartet_laufenden_callback_zu_ende_und_misst (B10) und prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende (B14)
+Stand: 2026-09-11 04:41-04:45 (PC-Lokalzeit); Basis-SHA 96c258c90c1e5806e4bc7a4055cca630c60a41e0; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-01.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  (1) Bein B10 EqCopIpcTest `--nak246-alt` - die Besitzerattrappe in Alt-Verdrahtung (rohes `this`, kein Eintritt, kein
+      Warten im Destruktor); Beschreibung, Bau und vollstaendige Rohausgabe in NAK-246-rot-M-06.txt. Der Fall M-07 haelt
+      den Callback IM Zug (nach dem Eintritt, vor dem Besitzerzugriff), zerstoert den Besitzer aus dem Testthread und gibt
+      aus einem dritten Thread nach 300 ms frei (Testinfrastruktur; keine Produktzahl).
+  (2) Bein B14 EqCopSonde012ProjectReloadTest, Fall M-07 allein (`--nur m07`), mit dem ENDGUELTIGEN Test
+      (nak246::prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende) gegen die Alt-Verdrahtung des
+      Prozessors (Diff in NAK-246-rot-M-06.txt): `v3Antwort` wird ueber `setzeV3AntwortHakenFuerTest` beim ersten
+      heartbeat_ack festgehalten (im Zug, vor dem Zustandszugriff), der Prozessor liegt auf dem Heap (eigener
+      Bytepuffer), der Destruktor laeuft aus dem Testthread, die Freigabe kommt aus einem dritten Thread bei
+      kStopFristMs + 500 ms = 2500 ms nach Destruktorbeginn.
+
+BAU UND LAUF
+  (1) wie NAK-246-rot-M-06.txt (1): Exit 1, 3 s, 20 Pruefungen, 11 Fehler.
+  (2) wie NAK-246-rot-M-06.txt (2), Lauf: ...\EqCopSonde012ProjectReloadTest.exe --nur m07  -> Exit 1, 3 s, 12 Pruefungen, 6 Fehler. Kein Absturz.
+
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-07)
+  B10, Attrappe:
+  FEHLER  M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde  [0 ms Destruktor, Freigabe nach 300 ms]
+      -> der Destruktor kehrt SOFORT zurueck, waehrend der Callback noch gehalten wird (Zusage §3.2 M-07 Satz 1 "Der Destruktor wartet den laufenden Callback zu Ende").
+  FEHLER  M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 ...  [gewartetMs=0]
+      -> "gewartetMs == 0 bei gehaltenem Callback" (Rotspalte M-07).
+  FEHLER  M-07: ... der Destruktor endet binnen 100 ms nach der Freigabe  [-300 ms nach der Freigabe]
+      -> er endete 300 ms VOR der Freigabe.
+  FEHLER  M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert ...  [8 Bytes veraendert]
+      -> "Kanarienvogel danach veraendert": der freigegebene Callback schreibt `zustand` in den zerstoerten Besitzer.
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [aktiv=0]
+      -> Folgezeile: ohne Eintritt zaehlt nichts.
+  B14, echter Prozessor:
+  FEHLER  M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest  [2001 ms Destruktor, Frist 2000 ms, Freigabe nach 2500 ms]
+      -> `~EqCopilotProcessor` kehrt nach der Stoppfrist (2001 ms) zurueck, waehrend `v3Antwort` noch gehalten wird - "wartet auf nichts" (Rotspalte M-07, `:324-337` am Basis-SHA).
+  FEHLER  M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 ...  [gewartetMs=0]
+  FEHLER  M-07: ... der Destruktor endet binnen 100 ms nach der Freigabe  [-498 ms nach der Freigabe]
+  FEHLER  M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte unveraendert ...  [8 von 101240 Bytes veraendert]
+      -> nach der Freigabe laeuft `v3Antwort` mit rohem `this` in den ueberschriebenen Prozessor (`sourcesCommandMutex` /
+         SourcesModel-Sperre): 8 Bytes des Musters (ein Sperrwort) sind veraendert, sonst nichts - der abgeloeste Thread kam
+         nicht ueber die Sperre hinaus und endete mit dem Prozess. Kein Absturz - die Rohdatei nennt das veraenderte Muster
+         (§5.2 Feinheit 6).
+  FEHLER  M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu  [aktiv=0 betreten=0 abgewiesen=0]
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [0 aktiv]
+      -> Folgezeilen: die Schleuse des Prozessors sieht in Alt-Verdrahtung nichts.
+  Gruen bleiben die Aufbauzeilen (Server, Probe-Pipe, Main, verbunden, Callback im Haken).
+
+VOLLSTAENDIGE ROHAUSGABE (2) B14: EqCopSonde012ProjectReloadTest.exe --nur m07
+== NAK-246 M-07 prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende ==
+  ok      M-07: der Testserver steht
+  ok      M-07: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.31008.0.nak246-m07]
+  ok      M-07: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-07: der Prozessor ist ein Main mit Bindung
+  ok      M-07: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-07: der Produkt-Callback `v3Antwort` steht im Haken - im Zug der Schleuse, vor dem ersten Zustandszugriff
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [0 aktiv]
+  M-07: Destruktor beginnt; Freigabe nach 2500 ms
+  M-07: Destruktor zurueck nach 2001 ms, Muster gelegt, 300 ms warten
+  FEHLER  M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest  [2001 ms Destruktor, Frist 2000 ms, Freigabe nach 2500 ms]
+  FEHLER  M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=0]
+  FEHLER  M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [-498 ms nach der Freigabe]
+  FEHLER  M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte unveraendert - der Zustandszugriff des Callbacks lag VOR der Zerstoerung  [8 von 101240 Bytes veraendert]
+  FEHLER  M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu  [aktiv=0 betreten=0 abgewiesen=0]
+SONDE-012 ProjectReload (nur m07): 6/12 gruen
+
+VOLLSTAENDIGE ROHAUSGABE (1) B10: EqCopIpcTest.exe --nak246-alt (dieselbe wie in NAK-246-rot-M-06.txt)
+
+== NAK-246 D2 · Besitz laufender Callbacks - ROTLAUF in Alt-Verdrahtung (rohes this, kein Warten) ==
+  ok      M-06: der Callback steht VOR dem Eintritt in die Schleuse
+  FEHLER  M-06: nach dem Destruktor ist die Schleuse geschlossen, nichts laeuft, und es wurde nicht gewartet - kein Callback stand im Zug  [geschlossen=0 aktiv=0 gewartetMs=0]
+  FEHLER  M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber seinem Speicher ist in jedem Byte unveraendert  [8 von 96 Bytes veraendert]
+  FEHLER  M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1  [0]
+  ok      M-06: kein Callback hat die Schleuse je betreten  [0]
+  ok      M-07: der Callback steht IM Zug, vor dem Besitzerzugriff
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [aktiv=0]
+  FEHLER  M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde  [0 ms Destruktor, Freigabe nach 300 ms]
+  FEHLER  M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=0]
+  FEHLER  M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [-300 ms nach der Freigabe]
+  FEHLER  M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert - der Besitzerzugriff lag VOR der Zerstoerung, nicht danach  [8 Bytes veraendert]
+  ok      M-07: kein zweiter Callback begann waehrend des Wartens; nach dem Destruktor laeuft nichts mehr  [abgewiesen=0 aktiv=0]
+  ok      M-08: der Testserver steht
+  ok      M-08: ein Interventionsereignis der Generation 0 liegt in der Queue
+  ok      M-08: ein Bericht mit Marke 7 der Generation 0 liegt in der Queue
+  ok      M-08: der Aufbauzug ruft `hookReplayBegin`, und der Callback steht im Zug - unter `sendeMutex`, vor dem Besitzerzugriff
+  ok      M-08: stop() hat die volle Frist gewartet und den Thread abgeloest (B-CC-12) - der gehaltene Callback endete erst danach  [2001 ms Destruktor bei Frist 2000 ms]
+  FEHLER  M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende gewartet - gewartetMs > 0  [gewartetMs=0]
+  FEHLER  M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - kein Callback des abgeloesten Threads beruehrt den zerstoerten Besitzer: das Muster ist in jedem Byte unveraendert  [8 von 144 Bytes veraendert]
+  FEHLER  M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)  [abgewiesen=0 betreten=0]
+
+FEHLER — 20 Pruefungen, 11 Fehler

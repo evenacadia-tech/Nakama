@@ -1,0 +1,193 @@
+NAK-246 Etappe 3 - Rotbeweis M-06 (Manifest docs/beweise/NAK-246.md §3.2): schleuse_weist_callback_nach_dem_schliessen_ab (B10) und abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht (B14)
+Stand: 2026-09-11 04:41-04:45 (PC-Lokalzeit); Basis-SHA 96c258c90c1e5806e4bc7a4055cca630c60a41e0; git status vor der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-01.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+
+WAS GEFAHREN WURDE
+  (1) Bein B10 EqCopIpcTest mit dem Schalter `--nak246-alt`: die ENDGUELTIGEN Faelle des Abschnitts "NAK-246 D2"
+      (IpcTestMain.cpp, nak246::nak246D2Schleuse) an der Besitzerattrappe in ALT-VERDRAHTUNG - rohes `this`, kein Eintritt
+      in die Schleuse, kein Schliessen im Destruktor (§5.2 Feinheit 6: "Alt-Verdrahtung (rohes self): der Callback schreibt
+      in das Muster - rot"). Der Schalter ist Teil des Tests; das Produkt kennt ihn nicht. Der Abschnitt traegt drei Faelle:
+      M-06 (Callback beginnt nach dem Schliessen), M-07 (Callback laeuft beim Schliessen) und M-06/M-08 mit einem ECHTEN
+      ControlClient an der Attrappe (Abloesung nach kStopFristMs, Zerstoerung, Freigabe). Rohausgabe des Laufs unten;
+      M-07 und M-08 werten dieselbe Ausgabe in NAK-246-rot-M-07.txt und NAK-246-rot-M-08.txt aus.
+  (2) Bein B14 EqCopSonde012ProjectReloadTest, Fall M-06 allein (`--nur m06`), mit dem ENDGUELTIGEN Test
+      (Sonde012ProjectReloadTest.cpp, nak246::abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht)
+      gegen die ALT-VERDRAHTUNG des Prozessors: jedes der zehn Lambdas in PluginProcessor.cpp faengt statt der Schleuse
+      des Prozessors eine PRIVATE, nie geschlossene Schleuse (Wirkung = rohes `this`), und der Destruktor schliesst nicht
+      (Diff unten). Testkonstruktor, Testhaken und Schleusenzugang bleiben, damit der endgueltige Test kompiliert.
+
+BAU UND LAUF
+  (1) cmake --build eq-copilot/build --config Release --target EqCopIpcTest (pwsh, VS-2022-BuildTools-cmake): Exit 0, 59 s.
+      Quelle IpcTestMain.cpp 2026-09-11 04:43:09; Binary EqCopIpcTest.exe 2026-09-11 04:44:32 (juenger: ja).
+      Lauf: eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe --nak246-alt  -> Exit 1, 3 s, 20 Pruefungen, 11 Fehler.
+  (2) cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest: Exit 0, 6 s (PluginProcessor.cpp, Link).
+      Quelle PluginProcessor.cpp (Rotstand) 2026-09-11 04:40:08; Binary EqCopSonde012ProjectReloadTest.exe 2026-09-11 04:40:25 (juenger: ja).
+      Lauf: ...\EqCopSonde012ProjectReloadTest.exe --nur m06  -> Exit 1, 3 s, 14 Pruefungen, 3 Fehler. Kein Absturz.
+
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-06)
+  B10, Attrappe (Callback beginnt NACH dem Schliessen, Haltepunkt vor dem Eintritt):
+  FEHLER  M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber seinem Speicher ist in jedem Byte unveraendert  [8 von 96 Bytes veraendert]
+      -> der freigegebene Callback schreibt `zustand` (8 Bytes) in den Speicher des zerstoerten Besitzers (Zusage §3.2 M-06 "beruehrt keinen Besitzerzustand").
+  FEHLER  M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1  [0]
+      -> kein Zaehler steigt (Zusage "wird abgewiesen und gezaehlt"; "ROT am Basis-SHA: kein Zaehler").
+  FEHLER  M-06: nach dem Destruktor ist die Schleuse geschlossen ...  [geschlossen=0 ...]
+      -> Folgezeile: in Alt-Verdrahtung schliesst niemand.
+  B14, echter Prozessor (gehalten: `hookReplayBegin` im Aufbauzug der Generation 2; nach der Freigabe rufen dieselbe
+  abgeloeste Laufzeit `beiP0Verworfen` (verworfener Aufbau-Heartbeat, Marke aus Generation 1) und `beiLinkStatus (true/false)`):
+  FEHLER  M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - `beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert  [8 von 101240 Bytes veraendert]
+      -> nach Zerstoerung (Destruktor zurueck nach 2002 ms, Frist 2000 ms, kein Warten) und Freigabe (2500 ms) laeuft der
+         abgeloeste Thread mit rohem `this` weiter: `beiP0Verworfen` nimmt `sendeZustandMutex` im ueberschriebenen Speicher -
+         8 Bytes des Musters (ein Sperrwort) sind veraendert, sonst nichts - der Thread kam nicht ueber die Sperre hinaus
+         und endete mit dem Prozess. Der Lauf endet OHNE Zugriffsverletzung; die Rohdatei nennt also das veraenderte
+         Muster, nicht einen Absturz (§5.2 Feinheit 6: "beides ist rot, und die Rohdatei nennt, welches von beiden").
+  FEHLER  M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1  [abgewiesen=0 betreten=0 aktiv=0]
+      -> kein Zaehler (Zusage "abgewiesen waechst je Versuch"; "ROT am Basis-SHA: kein Zaehler").
+  FEHLER  M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet  [gewartetMs=0]
+      -> Folgezeile (M-07-Anteil der Destruktorreihenfolge).
+  Gruen bleiben: "stop() hat die volle Frist gewartet und den Clientthread abgeloest (B-CC-12)" (2002 ms) - Frist und
+  Abloesung sind unveraendert (M-08, R-D2 "Die 2000-ms-Stoppfrist ... bleiben"); und alle Aufbauzeilen des Falls.
+
+DIFF DER ALT-VERDRAHTUNG DES PROZESSORS (git diff -- eq-copilot/plugin/src/PluginProcessor.cpp, Rotlaufstand gegen den gestageten Endstand)
+diff --git a/eq-copilot/plugin/src/PluginProcessor.cpp b/eq-copilot/plugin/src/PluginProcessor.cpp
+index f1631002..3c8b95cc 100644
+--- a/eq-copilot/plugin/src/PluginProcessor.cpp
++++ b/eq-copilot/plugin/src/PluginProcessor.cpp
+@@ -160,7 +160,7 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+       // unten (`setzeP0Rueckmeldung`, `setzeReplayBeginHook`,
+       // `setzeKonfliktWiederholungHook`) - zusammen die zehn aus M-06.
+       callbackSchleuse (std::make_shared<nakama::ipc::CallbackSchleuse>()),
+-      controlV3 ([this, s = callbackSchleuse]
++      controlV3 ([this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */]
+                  {
+                      if (auto zug = s->betreten())
+                          return v3Hello();
+@@ -168,18 +168,18 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+                  },
+                  v3PipeName,
+                  {},
+-                 [this, s = callbackSchleuse]
++                 [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */]
+                  {
+                      if (auto zug = s->betreten())
+                          return v3Status();
+                      return nakama::ipc::ControlStatus {};
+                  },
+-                 [this, s = callbackSchleuse] (bool verbunden)
++                 [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (bool verbunden)
+                  {
+                      if (auto zug = s->betreten())
+                          v3ControlLink (verbunden);
+                  },
+-                 [this, s = callbackSchleuse] (const std::string& json,
++                 [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (const std::string& json,
+                                                 std::uint8_t schemaMinor)
+                  {
+                      if (auto zug = s->betreten())
+@@ -192,14 +192,14 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+                      }
+                  },
+                  verdrahtung.erwartung),
+-      telemetryV3 ([this, s = callbackSchleuse]
++      telemetryV3 ([this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */]
+                    {
+                        if (auto zug = s->betreten())
+                            return v3TelemetryHello();
+                        return nakama::ipc::TelemetryHello {};
+                    },
+                    v3PipeName,
+-                   [this, s = callbackSchleuse] (const std::uint8_t* daten,
++                   [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (const std::uint8_t* daten,
+                                                   std::size_t laenge,
+                                                   std::uint8_t minor)
+                    {
+@@ -260,7 +260,7 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+     // beiden Textbildner liefern einen leeren Text ("kein Replay" bzw. "nicht
+     // wiederholen").
+     controlV3.setzeP0Rueckmeldung (
+-        [this, s = callbackSchleuse] (std::uint64_t marke, std::uint64_t generation)
++        [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (std::uint64_t marke, std::uint64_t generation)
+         {
+             const auto zug = s->betreten();
+             if (! zug)
+@@ -310,7 +310,7 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+             // nicht beim Einreihen. „Gesendet" heisst Draht.
+             mitschnittZustellen (marke);
+         },
+-        [this, s = callbackSchleuse] (std::uint64_t marke)
++        [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (std::uint64_t marke)
+         {
+             const auto zug = s->betreten();
+             if (! zug)
+@@ -327,7 +327,7 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+             mitschnittVerwerfen (marke);
+         });
+     controlV3.setzeReplayBeginHook (
+-        [this, s = callbackSchleuse] (std::uint64_t generation, std::uint64_t marke)
++        [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (std::uint64_t generation, std::uint64_t marke)
+             -> std::string
+         {
+             const auto zug = s->betreten();
+@@ -414,7 +414,7 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
+     // Beides ist mit E-15 fort: der ControlClient haelt den Auftrag, also
+     // haelt er auch den Wiederholungsinhalt.
+     controlV3.setzeKonfliktWiederholungHook (
+-        [this, s = callbackSchleuse] (const std::string& commandId,
++        [this, s = std::make_shared<nakama::ipc::CallbackSchleuse>() /* ROTLAUF NAK-246: private, nie geschlossene Schleuse = rohes this */] (const std::string& commandId,
+                                        const std::string& auftragJson,
+                                        std::uint64_t brokerRevision) -> std::string
+         {
+@@ -451,7 +451,7 @@ EqCopilotProcessor::~EqCopilotProcessor()
+     // Callback zu Ende (gemessen in `gewartetMs`); jeder Callback, der ab
+     // hier beginnt, wird abgewiesen und gezaehlt. Erst danach duerfen
+     // `sourcesModel`, `zustand` und die Mutexe sterben.
+-    callbackSchleuse->schliessen();
++    // ROTLAUF NAK-246 (Alt-Verdrahtung, kein Warten): callbackSchleuse->schliessen();
+     pipe.stop();
+     workerLaeuft.store (false);
+     {
+
+VOLLSTAENDIGE ROHAUSGABE (1) B10: EqCopIpcTest.exe --nak246-alt
+
+== NAK-246 D2 · Besitz laufender Callbacks - ROTLAUF in Alt-Verdrahtung (rohes this, kein Warten) ==
+  ok      M-06: der Callback steht VOR dem Eintritt in die Schleuse
+  FEHLER  M-06: nach dem Destruktor ist die Schleuse geschlossen, nichts laeuft, und es wurde nicht gewartet - kein Callback stand im Zug  [geschlossen=0 aktiv=0 gewartetMs=0]
+  FEHLER  M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber seinem Speicher ist in jedem Byte unveraendert  [8 von 96 Bytes veraendert]
+  FEHLER  M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1  [0]
+  ok      M-06: kein Callback hat die Schleuse je betreten  [0]
+  ok      M-07: der Callback steht IM Zug, vor dem Besitzerzugriff
+  FEHLER  M-07: die Schleuse fuehrt ihn als laufend  [aktiv=0]
+  FEHLER  M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde  [0 ms Destruktor, Freigabe nach 300 ms]
+  FEHLER  M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=0]
+  FEHLER  M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [-300 ms nach der Freigabe]
+  FEHLER  M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert - der Besitzerzugriff lag VOR der Zerstoerung, nicht danach  [8 Bytes veraendert]
+  ok      M-07: kein zweiter Callback begann waehrend des Wartens; nach dem Destruktor laeuft nichts mehr  [abgewiesen=0 aktiv=0]
+  ok      M-08: der Testserver steht
+  ok      M-08: ein Interventionsereignis der Generation 0 liegt in der Queue
+  ok      M-08: ein Bericht mit Marke 7 der Generation 0 liegt in der Queue
+  ok      M-08: der Aufbauzug ruft `hookReplayBegin`, und der Callback steht im Zug - unter `sendeMutex`, vor dem Besitzerzugriff
+  ok      M-08: stop() hat die volle Frist gewartet und den Thread abgeloest (B-CC-12) - der gehaltene Callback endete erst danach  [2001 ms Destruktor bei Frist 2000 ms]
+  FEHLER  M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende gewartet - gewartetMs > 0  [gewartetMs=0]
+  FEHLER  M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - kein Callback des abgeloesten Threads beruehrt den zerstoerten Besitzer: das Muster ist in jedem Byte unveraendert  [8 von 144 Bytes veraendert]
+  FEHLER  M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)  [abgewiesen=0 betreten=0]
+
+FEHLER — 20 Pruefungen, 11 Fehler
+
+VOLLSTAENDIGE ROHAUSGABE (2) B14: EqCopSonde012ProjectReloadTest.exe --nur m06
+== NAK-246 M-06 abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht ==
+  ok      M-06: der Testserver steht
+  ok      M-06: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.380.0.nak246-m06]
+  ok      M-06: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-06: der Prozessor ist ein Main mit Bindung
+  ok      M-06: der Sender ist bestaetigt angehalten
+  ok      M-06: der Ring nimmt Ereignisse auf  [32]
+  ok      M-06: die Ereignisse liegen als P0 in der Queue (Generation 0)
+  ok      M-06: der Aufbauzug des Testlinks hat die Zustellpruefung gefahren (Ruf 1)
+  ok      M-06: ein Aufbau-Heartbeat mit Marke liegt in der Queue (Generation 1)
+  ok      M-06: der echte Aufbauzug (Generation 2) ruft `hookReplayBegin`, und der Produkt-Callback steht im Haken - im Zug, unter sendeMutex, vor dem Zustandszugriff
+  M-06: Destruktor beginnt; Freigabe nach 2500 ms
+  M-06: Destruktor zurueck nach 2002 ms, Muster gelegt, 600 ms warten (der abgeloeste Thread laeuft seinen Aufbauzug zu Ende)
+  ok      M-06: stop() hat die volle Frist gewartet und den Clientthread abgeloest (B-CC-12) - der gehaltene Callback lebte ueber die Frist hinaus  [2002 ms Destruktor bei Frist 2000 ms]
+  FEHLER  M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet  [gewartetMs=0]
+  FEHLER  M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - `beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert  [8 von 101240 Bytes veraendert]
+  FEHLER  M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1  [abgewiesen=0 betreten=0 aktiv=0]
+SONDE-012 ProjectReload (nur m06): 11/14 gruen

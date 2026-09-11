@@ -20,12 +20,13 @@ Self-Join-Pfade und zwei Stoppfenster, die weder bewacht noch zugesagt noch
 gemessen sind. Das ist die Klasse, die Prüfliste B seit dem 30.08.2026
 nennt und die kein Detektor trägt.
 
-**Befunde** (alle Härtungen; K-Kennung nach `KONZEPT.md` §3; Registerzeilen
-durch den Dirigenten im Abschlussfenster):
+**Befunde** (alle Härtungen; K-Kennung nach `KONZEPT.md` §3; seit
+12.09.2026 als NAK-268 im Register, Commit `40e09edc`, B-6 mit Querverweis
+NAK-192):
 
 | Nr | K | Befund | Beleg | Klasse |
 |---|---|---|---|---|
-| B-1 | K2 | Der Join des Tickthreads in `BrokerSupervisor::drop` ist fristlos; der Tickkörper wartet in `flush_session` auf den Store ohne Frist. In der Praxis begrenzt (Writer leert stets, SQLite `busy_timeout`, Sender-Drop ⇒ `Beendet`, Stoppreihenfolge Supervisor vor Store). | `broker/src/lebenslauf.rs`, `broker/src/coordinator/liveness.rs`, `broker/src/store/handle.rs`; Zusage **H-06** in `docs/beweise/NAK-121.md` („jeder Join hat eine Frist", dort ausdrücklich halb umgesetzt und offen) | bekannt offen: Querverweis auf NAK-121 H-06, keine neue Zeile; der Dirigent prüft, ob H-06 eine Registerzeile trägt |
+| B-1 | K2 | Der Join des Tickthreads in `BrokerSupervisor::drop` ist fristlos; der Tickkörper wartet in `flush_session` auf den Store ohne Frist. In der Praxis begrenzt (Writer leert stets, SQLite `busy_timeout`, Sender-Drop ⇒ `Beendet`, Stoppreihenfolge Supervisor vor Store). | `broker/src/lebenslauf.rs`, `broker/src/coordinator/liveness.rs`, `broker/src/store/handle.rs`; Zusage **H-06** in `docs/beweise/NAK-121.md` („jeder Join hat eine Frist", dort ausdrücklich halb umgesetzt und offen) | [Härtung · Lebenslauf-Audit] unter NAK-268 mit Querverweis NAK-121/NAK-149; der Join-Frist-Teil von H-06 hatte bisher keine eigene Zeile (Dirigent, 12.09.2026) |
 | B-2 | K2 | Kein Test misst, dass `StoreWriter::stoppen`/Drop und der Tickthread-Stopp terminieren, auch nicht indirekt: der Probeprozess in `broker_idle.rs` (70-s-Frist) startet nur den v3-Listener, `store_crash_matrix.rs` wendet seine 30-s-Frist nur auf den C++-Client an. | `broker/tests/broker_idle.rs`, `broker/src/bin/eqcop-broker-v3probe.rs`, `broker/tests/store_crash_matrix.rs` | [Härtung · Test] |
 | B-3 | K1 | `Ausgang::entnehmen` liest den Inhalt vor dem Schließflag. Strukturell dicht, weil `schliessen` unter demselben Mutex leert und `einreihen_eintrag` das Flag zuerst prüft; die Matrixzeile A-P0-09 („Schließflag VOR dem Inhalt") und ihr Test gelten aber nur dem Eingang. | `broker/src/transport/server_v3/queues.rs`; Matrix `docs/beweise/SONDE-010.md` A-P0-09; Test `tests_rueckstau.rs` (`geschlossener_eingang_liefert_nichts_mehr`) | [Härtung · Test]: Spiegeltest für den Ausgang |
 | B-4 | K2 | `control_schliesst` läuft beim V3-Stopp fristlos auf dem gejointen Thread. Begrenzt (nur Standlock, Mapoperationen, kein Flush), aber ohne blockierende Probe unter Stopp, wie sie `tests_kopplung.rs` für `telemetrie_getrennt`, `telemetrie_gekoppelt` und `control_verbunden` hat. | `broker/src/coordinator/senke.rs`, `broker/src/coordinator/link.rs`, `broker/src/transport/server_v3/griff.rs`, `broker/src/transport/server_v3/tests_kopplung.rs` | [Härtung · Test] |

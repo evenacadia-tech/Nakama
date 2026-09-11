@@ -1,0 +1,140 @@
+NAK-246 Etappe 5 - Rotbeweis M-22 (Manifest docs/beweise/NAK-246.md §3.5): hochwassermarke_ueberlebt_die_entnahme und gleiche_marke_ist_kein_nachzuegler (A4)
+Stand: 2026-09-11 20:14 und 20:19 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim
+Start leer).
+
+ZUSAGE (M-22, §5.5 Feinheit 2, R-M2-1): Die Ordnung ueberlebt die Entnahme; Gleichheit ist kein Nachzuegler. Der Ausgang merkt sich je
+Schluessel die hoechste angenommene Marke; 10 (marke < hochwasser) wird auch in die leere Queue nicht aufgenommen (false, gezaehlt). 12
+(marke == hochwasser) wird in die leere Queue aufgenommen und geschrieben, nachzuegler_verworfen bleibt bei 1.
+
+WAS DIE TESTS MESSEN
+  queues.rs:441 hochwassermarke_ueberlebt_die_entnahme - 12 eingereiht, entnommen, geschrieben (Queue leer); dann 10: nicht aufgenommen,
+      gezaehlt (1), Hochwasser bleibt 12.
+  queues.rs:469 gleiche_marke_ist_kein_nachzuegler - 12 geschrieben; 10 abgewiesen (Zaehler 1); dann 12: angenommen, entnommen,
+      geschrieben (true), Zaehler unveraendert 1.
+
+WAS GEFAHREN WURDE
+  Bein A4 (cargo test --lib, Filter transport::server_v3::queues und transport::server_v3::tests_abonnement, --nocapture) mit den
+  ENDGUELTIGEN Tests gegen zwei Rotstaende, je einer an der Zeile, die die Zusage traegt:
+    Rotbau A - Annahmeregel entfernt (queues.rs:209 `if false && ...`), der Ausgang kennt wie am Basis-SHA keine Marke (queues.rs:161-173
+               am Basis-SHA). Am Basis-SHA selbst kompilieren die Tests nicht (keine Marke in der Signatur).
+    Rotbau B - Mutation `marke < hochwasser` -> `marke <= hochwasser` (§4.8): die gewaehlte Regel gegen "Gleichheit ist Duplikat".
+  Gruenstand vorher gestaged; Ruecknahme je per git checkout -- queues.rs, danach git diff leer.
+
+ERSTER FALL - hochwassermarke_ueberlebt_die_entnahme
+  ROTBAU A (Quelle 20:13:58, Testbinary 20:14:15; Exit 101): FAELLT an queues.rs:451 "M-22: 10 nach dem geschriebenen 12 wird auch in die
+  leere Queue nicht aufgenommen (false)" - ohne Marke wird 10 in die leere Queue aufgenommen ("ROT am Basis-SHA").
+  ROTBAU B (Quelle 20:18:52, Testbinary 20:19:46): gruen - der Fall haengt an `<`, nicht an `==`.
+ZWEITER FALL - gleiche_marke_ist_kein_nachzuegler
+  ROTBAU B: FAELLT an queues.rs:483 "M-22: gleiche Marke 12 nach dem geschriebenen 12 wird angenommen - Gleichheit ist kein Nachzuegler" -
+  die Mutation `<=` verwirft den Stand gleicher Marke; die gewaehlte Regel ist gruen (Endstand).
+  ROTBAU A: faellt schon an der Vorbereitung queues.rs:476 (der Nachzuegler 10 wird ohne Marke aufgenommen) - kein Beleg fuer die
+  Gleichheit, nur die Bestaetigung, dass die Vorbedingung "10 ist abgewiesen" an der Annahmeregel haengt.
+
+GRUEN (Endstand): A4 in der Beinedatei docs/beweise/roh/NAK-246-etappe5-beine.txt.
+
+ROHAUSGABE ROTBAU A UND ROTBAU B (Auszuege: Kopf, Diff des Rotstands, Befehl und Zeiten, die Testzeilen der Queue, Paniken mit Meldung, Ergebnis)
+ROTBAU A: Annahmeregel entfernt (queues.rs vergleicht nur den Schluessel, Verhalten des Basis-SHA)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:13:58
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..a7f0ae8e 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -206,7 +206,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA nur den Schluessel
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-A ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:14:13
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.34s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+thread 'transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler' (34400) panicked at src\transport\server_v3\queues.rs:476:9:
+assertion failed: ausgang.snapshot_einreihen_mit_antwort("session_snapshot", 10,
+        b"zehn".to_vec()).is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (28116) panicked at src\transport\server_v3\queues.rs:386:9:
+M-21: der aeltere Nachzuegler (Marke 10) wird nicht aufgenommen und bekommt false
+
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (25264) panicked at src\transport\server_v3\queues.rs:534:9:
+das Hochwasser ist nicht gesunken: 11 bleibt ein Nachzuegler
+
+thread 'transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme' (34104) panicked at src\transport\server_v3\queues.rs:451:9:
+M-22: 10 nach dem geschriebenen 12 wird auch in die leere Queue nicht aufgenommen (false)
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... FAILED
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... FAILED
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=0
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test result: FAILED. 12 passed; 7 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.49s
+Ende: 2026-09-11 20:14:18 Dauer_s: 5.2
+EXIT A4-Rotbau-A=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:14:15
+
+ROHAUSGABE ROTBAU B
+ROTBAU B: Mutation marke < hochwasser -> marke <= hochwasser (queues.rs)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:18:52
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..40dee66f 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -206,7 +206,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if hochwasser.is_some_and(|hoch| eintrag.marke <= hoch) { // ROTLAUF NAK-246 Rotbau B: Mutation marke < hochwasser -> marke <= hochwasser (Gleichheit als Duplikat)
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-B ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:19:44
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.25s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (18084) panicked at src\transport\server_v3\queues.rs:521:9:
+M-24: der Livestand ohne Ordinal wird nach dem geschriebenen 12 angenommen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+thread 'transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler' (27920) panicked at src\transport\server_v3\queues.rs:483:9:
+M-22: gleiche Marke 12 nach dem geschriebenen 12 wird angenommen - Gleichheit ist kein Nachzuegler
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (16792) panicked at src\transport\server_v3\queues.rs:405:14:
+M-21: gleiche Marke 12 wird angenommen
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... FAILED
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 241 filtered out; finished in 7.47s
+Ende: 2026-09-11 20:19:54 Dauer_s: 10.1
+EXIT A4-Rotbau-B=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:19:46

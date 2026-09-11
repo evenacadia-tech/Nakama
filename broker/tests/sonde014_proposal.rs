@@ -1042,7 +1042,13 @@ struct Pushprobe {
 }
 
 impl eqcop_broker::coordinator::SessionPush for Pushprobe {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
         let wert: Value = serde_json::from_slice(payload).unwrap_or(Value::Null);
         self.geschrieben
             .lock()

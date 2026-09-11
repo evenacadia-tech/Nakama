@@ -1,0 +1,76 @@
+NAK-246 Etappe 5 - Rotbeweis M-28 (Manifest docs/beweise/NAK-246.md §3.6): Koaleszierung innerhalb eines Schluessels - Regressionswache
+Stand: 2026-09-11 20:15 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim Start leer).
+
+ZUSAGE (M-28, R-D9 "sonst bleibt die Koaleszierungsregel"): Zwei Ruecknahmen bzw. zwei Vollsnapshots desselben Links koaleszieren weiter;
+innerhalb eines Schluessels ersetzt die juengere Marke die aeltere (M-21). Belegklasse: Regressionswache (am Basis-SHA gruen).
+
+WAS MISST
+  A4: broker/src/transport/server_v3/queues.rs:351 writerqueue_snapshot_koalesziert_nach_objektschluessel - der bestehende Fall
+      (am Basis-SHA queues.rs:254-270), in dieser Etappe auf die Marke gezogen (alt 1, neu 2) und auf BEIDE Schluessel erweitert, die
+      M-28 nennt: "session_snapshot" (zwei Vollsnapshots) und "evidence_invalidate" (zwei Ruecknahmen). Je Schluessel: der aeltere
+      Aufrufer bekommt false, der Writer entnimmt genau den neueren, dessen Aufrufer true bekommt.
+  A4-SI: die bestehenden Schuld- und Nachspielfaelle (store_crash_matrix.rs, u. a. session_snapshot_koalesziert_nach_objektschluessel,
+      wiederholter_snapshot_letzter_gewinnt_idempotent, p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot)
+      bleiben unveraendert gruen - Laufzeilen im Bein A4-SI der Beinedatei docs/beweise/roh/NAK-246-etappe5-beine.txt.
+
+WIE DIE WACHE EINMAL ABSICHTLICH GEBROCHEN WURDE (Pruefliste E, Manifest §4.8)
+  Rotbau F: der Ausgang findet nie einen Eintrag gleichen Schluessels (queues.rs, `false && matches!(...)` in der Positionssuche) -
+  Snapshots koaleszieren nicht mehr, zwei Eintraege desselben Schluessels stehen nebeneinander.
+  Gruenstand vorher gestaged; Ruecknahme per git checkout -- queues.rs, danach git diff leer.
+
+ROTBAU F - FAELLT
+  queues.rs:360:63 im ersten Durchlauf (Schluessel "session_snapshot"): `alt.recv_timeout(1 s).unwrap()` endet mit Timeout - der aeltere
+  Eintrag wird nicht ersetzt und bekommt deshalb nie false; genau das ist "zwei Eintraege desselben Schluessels stehen nebeneinander".
+  Mit ihm faellt M-21 an queues.rs:407 (die gleiche Marke 12 ersetzt nicht mehr an Ort und Stelle). Exit 101 (17 bestanden, 2 gescheitert).
+  Die Ordnungsfaelle (M-22, M-23, M-24) bleiben gruen - sie haengen an der Marke, nicht an der Ersetzung.
+
+GRUEN (Endstand): A4 und A4-SI in der Beinedatei.
+
+ROHAUSGABE ROTBAU F (Auszug aus dem Lauf: Kopf, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede Panik mit Meldung, Ergebnis)
+ROTBAU F: Snapshots koaleszieren nie (queues.rs findet keinen Eintrag gleichen Schluessels) - Bruch der Regressionswache M-28
+Quelle queues.rs LastWriteTime: 2026-09-11 20:15:09
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..cd39f1b2 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -210,7 +210,7 @@ impl Ausgang {
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+-                    matches!(&alt.art, Ausgangsart::Snapshot(alt_schluessel)
++                    false && matches!(&alt.art, Ausgangsart::Snapshot(alt_schluessel) // ROTLAUF NAK-246 Rotbau F: Snapshots koaleszieren nie
+                         if *alt_schluessel == schluessel)
+                 }) {
+                     g.2.insert(schluessel, eintrag.marke);
+== A4-Rotbau-F ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:15:36
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.71s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+thread 'transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel' (22796) panicked at src\transport\server_v3\queues.rs:360:63:
+called `Result::unwrap()` on an `Err` value: Timeout
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... FAILED
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (25336) panicked at src\transport\server_v3\queues.rs:407:58:
+called `Result::unwrap()` on an `Err` value: Timeout
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.53s
+Ende: 2026-09-11 20:15:41 Dauer_s: 5.6
+EXIT A4-Rotbau-F=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:15:38

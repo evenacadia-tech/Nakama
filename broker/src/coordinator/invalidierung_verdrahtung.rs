@@ -397,10 +397,15 @@ impl Coordinator {
             let Some(link_id) = self.link_des_abonnenten(ziel) else {
                 continue;
             };
+            // 🔑 NAK-246 D9 (R-D9): der Schluessel der Ruecknahme
+            // (`evidence_invalidate`, aus dem Ziel) und ihr Ordinal reisen bis
+            // in die Writerqueue. Bis hierher machte der Sender daraus
+            // `session_snapshot`, und ein spaeterer Vollsnapshot verdraengte
+            // die Ruecknahme dort.
             let geschrieben = self.push_ziel_noch_gueltig(&link_id, ziel)
-                && push
-                    .as_ref()
-                    .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
+                && push.as_ref().is_some_and(|push| {
+                    push.snapshot_schreiben(&link_id, &ziel.object_key, event_ord, &payload)
+                });
             if geschrieben {
                 let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), event_ord);
             }

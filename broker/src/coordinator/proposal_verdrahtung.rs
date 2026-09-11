@@ -271,10 +271,15 @@ impl Coordinator {
                 offen += 1;
                 continue;
             };
+            // 🔑 NAK-246 D5/D9: Schluessel `proposal:<id>` (aus dem Ziel) und
+            // Marke. Ohne Ablage - kein Store, Append verweigert - gibt es kein
+            // Ordinal; der Empfaenger gibt dem Angebot dann das Hochwasser
+            // seines Schluessels.
+            let marke = event_ord.unwrap_or(super::flush::MARKE_OHNE_ORDINAL);
             let geschrieben = self.push_ziel_noch_gueltig(&link_id, ziel)
-                && push
-                    .as_ref()
-                    .is_some_and(|p| p.snapshot_schreiben(&link_id, &payload));
+                && push.as_ref().is_some_and(|p| {
+                    p.snapshot_schreiben(&link_id, &ziel.object_key, marke, &payload)
+                });
             if geschrieben {
                 zugestellt += 1;
                 if let (Some(store), Some(ord)) = (self.store.as_ref(), event_ord) {

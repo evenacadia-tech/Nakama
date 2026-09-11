@@ -82,7 +82,7 @@ impl Coordinator {
         // (WP1-3). Hier steht deshalb dieselbe Abfrage - VOR dem Standlock,
         // weil sie ihn selbst nimmt und der Store ausserhalb liest.
         self.befunde_gegen_store_haerten(session);
-        let (live_payload, ziel) = {
+        let (live_payload, ziel, live_sequence) = {
             let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             let Some(sub) = stand.subscriptions.get(link_id) else {
                 return;
@@ -101,14 +101,26 @@ impl Coordinator {
             {
                 return;
             }
+            let live_payload = self.snapshot_locked(&stand, session);
+            // 🔑 NAK-246 D5 (§5.5 Feinheit 1, kein Store): die Marke des
+            // Livestands entsteht im selben Zug wie seine Erfassung - unter dem
+            // Standlock, wie im Flush (`flush.rs`). Das Flush-Schloss nimmt der
+            // Subscribe NICHT: er darf nie auf einen haltenden Flush warten
+            // (`store_crash_matrix.rs`, Live-Joinbedarf vor dem Store-Flush).
+            // Mit Store zieht er keine Zahl; seine Marke kommt aus der Projektion.
+            let live_sequence = self
+                .store
+                .is_none()
+                .then(|| self.event_sequence.fetch_add(1, Ordering::SeqCst));
             (
-                self.snapshot_locked(&stand, session),
+                live_payload,
                 SnapshotZiel {
                     project_binding_id: session.project_binding_id.clone(),
                     session_epoch: session.session_epoch.clone(),
                     instance_id: sub.adresse.instance_id.clone(),
                     object_key: "session_snapshot".into(),
                 },
+                live_sequence,
             )
         };
 
@@ -117,7 +129,8 @@ impl Coordinator {
         // weder als neues Event persistieren noch ueber die bereits
         // committed Projektion schreiben: der letzte Projektionsschnitt ist
         // genau der haltbare absolute Resync-Stand aus L-10/K-04/K-07.
-        let projektion = if self.store_degradiert() {
+        let degradiert = self.store_degradiert();
+        let projektion = if degradiert {
             None
         } else {
             match &self.store {
@@ -133,7 +146,7 @@ impl Coordinator {
                 None => None,
             }
         };
-        let (gedeckt_bis, payload) = match projektion {
+        let (gedeckt_bis, marke, payload) = match projektion {
             Some((ord, gespeichert)) => {
                 let Some(wert) = v3_nachricht_lesen(&gespeichert, "session_snapshot") else {
                     self.routing_fail_closed("Sessionprojektion verletzt v3-Vertrag");
@@ -152,12 +165,37 @@ impl Coordinator {
                         self.routing_fail_closed("Sessionprojektion konnte nicht auf den aktuellen Lauf abgebildet werden");
                         return;
                     };
-                    (Some(ord), aktualisiert)
+                    (Some(ord), ord, aktualisiert)
                 } else {
-                    (Some(ord), gespeichert)
+                    (Some(ord), ord, gespeichert)
                 }
             }
-            None => (None, live_payload),
+            // 🔑 NAK-246 D5 (§5.5 Feinheit 1): die Faelle ohne Projektion.
+            None => {
+                let marke = match live_sequence {
+                    // Kein Store: die unter dem Standlock gezogene Sequenz.
+                    Some(sequence) => sequence.min(i64::MAX as u64) as i64,
+                    // Degradierter Store: der Livestand ist der aktuelle Stand
+                    // und nie ein Nachzuegler. Er hat kein eigenes Ordinal und
+                    // uebernimmt beim Empfaenger das Hochwasser seines
+                    // Schluessels - ohne weiteren Commit genau die Marke des
+                    // zuletzt zugestellten Snapshots (R-M2-1). Nach der
+                    // Degradation committet kein Flush mehr (`flush.rs`, der
+                    // Append scheitert); ein groesseres Ordinal traegt nur noch
+                    // ein Flush, der VOR ihr committet und noch nicht
+                    // eingereiht hat.
+                    None if degradiert => super::flush::MARKE_OHNE_ORDINAL,
+                    // Gesunder Store ohne Zeile: diese Sitzung hat nie einen
+                    // Snapshot committet - die Projektion entsteht im selben
+                    // Commit (`writer.rs`). Zugestellt ist kein Ordinal; jeder
+                    // spaetere Commit traegt ein groesseres. Die Marke des
+                    // Hochwassers bekaeme er hier NICHT: sie liesse diesen
+                    // Stand einen danach erfassten ersten Commit gleicher Marke
+                    // in der Queue ersetzen.
+                    None => 0,
+                };
+                (None, marke, live_payload)
+            }
         };
         if v3_nachricht_lesen(&payload, "session_snapshot").is_none() {
             // Eine beschaedigte Projektion darf nie als scheinbar gueltiger
@@ -181,9 +219,9 @@ impl Coordinator {
         }
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
         let geschrieben = self.push_ziel_noch_gueltig(link_id, &ziel)
-            && push
-                .as_ref()
-                .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
+            && push.as_ref().is_some_and(|push| {
+                push.snapshot_schreiben(link_id, &ziel.object_key, marke, &payload)
+            });
         if geschrieben {
             if let (Some(store), Some(ord)) = (&self.store, gedeckt_bis) {
                 let _ = store.snapshot_schuld_kompaktieren(ziel.clone(), ord);
@@ -243,9 +281,11 @@ impl Coordinator {
             if !self.push_ziel_noch_gueltig(link_id, &schuld) {
                 return;
             }
-            let geschrieben = push
-                .as_ref()
-                .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
+            // 🔑 NAK-246 D5/D9: der Schluessel der Schuld und ihr Ordinal - beim
+            // Nachspiel dieselbe Marke wie bei der Erstzustellung.
+            let geschrieben = push.as_ref().is_some_and(|push| {
+                push.snapshot_schreiben(link_id, &schuld.object_key, ord, &payload)
+            });
             if !geschrieben {
                 // Der Empfaenger nimmt gerade nichts mehr an. Der Rest bleibt
                 // Schuld und kommt beim naechsten Subscribe wieder.

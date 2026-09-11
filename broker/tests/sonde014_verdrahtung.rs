@@ -2012,7 +2012,13 @@ impl PushProbe {
 }
 
 impl eqcop_broker::coordinator::SessionPush for PushProbe {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
         let wert: Value = serde_json::from_slice(payload).expect("der Push ist JSON");
         if wert["type"] == json!("evidence_invalidate") {
             if let Ok(outbox) = self.store.outbox_lesen() {

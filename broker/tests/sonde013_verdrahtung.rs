@@ -260,7 +260,13 @@ impl PushProbe {
 }
 
 impl eqcop_broker::coordinator::SessionPush for PushProbe {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
         if self.lehnt_ab.load(std::sync::atomic::Ordering::SeqCst) {
             return false;
         }

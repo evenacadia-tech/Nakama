@@ -312,7 +312,13 @@ impl PushProbe {
 }
 
 impl SessionPush for PushProbe {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
         let wert = serde_json::from_slice(payload).expect("Snapshot ist JSON");
         self.snapshots.lock().unwrap().push((link_id.into(), wert));
         true

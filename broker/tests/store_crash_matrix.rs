@@ -395,6 +395,11 @@ fn si_subscribe(coordinator: &Coordinator, link: &str, adresse: &Adresse) -> boo
 #[derive(Default)]
 struct PushProbe {
     snapshots: Mutex<Vec<(String, Value)>>,
+    /// NAK-246 §5.5 Feinheit 6: Link, Objektschluessel und Ordnungsmarke je
+    /// Zustellversuch, in Aufrufreihenfolge. Die Probe misst damit, was der
+    /// Coordinator uebergibt - nicht, was eine Writerqueue daraus macht; das
+    /// misst allein der echte Ausgang (R-M1-5).
+    marken: Mutex<Vec<(String, String, i64)>>,
     erfolgreich: AtomicBool,
     blockieren: AtomicBool,
     betreten: (Mutex<bool>, Condvar),
@@ -413,6 +418,10 @@ impl PushProbe {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clone()
+    }
+
+    fn marken(&self) -> Vec<(String, String, i64)> {
+        self.marken.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     fn blockieren(&self) {
@@ -437,7 +446,17 @@ impl PushProbe {
 }
 
 impl SessionPush for PushProbe {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        object_key: &str,
+        ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
+        self.marken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push((link_id.into(), object_key.into(), ordnung));
         if self.blockieren.swap(false, Ordering::SeqCst) {
             {
                 let (schloss, signal) = &self.betreten;
@@ -1203,6 +1222,101 @@ fn snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton() {
     assert_eq!(
         payload["mitglieder"][0]["probe_descriptor"]["label"],
         "neu-committed"
+    );
+}
+
+/// NAK-246 M-24 (R-D5, R-D9; §5.5 Feinheit 1, zweiter Fall; Feinheit 6): mit
+/// Store kommen Schluessel und Marke jedes Pushs aus der Quelle. Der Subscribe
+/// traegt das Ordinal der Projektion, der Flush die `event_ord` seines Commits
+/// (danach dieselbe Zahl in der Projektion), die Ruecknahme die `event_ord`
+/// ihres eigenen Ereignisses unter `evidence_invalidate` - und ihr Nachspiel
+/// beim naechsten Subscribe dieselbe Marke unter demselben Schluessel. Keine
+/// neue Zahl. Die Probe misst die Uebergabe des Coordinators an die Senke,
+/// nicht die Writerqueue; die misst A4 hinter dem echten Ausgang.
+#[test]
+#[ignore = "A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration"]
+fn snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel() {
+    let (ordner, writer, coordinator, _clock, push) =
+        si_coordinator_mit_store("nak246-marken", true);
+    let main = si_hello(10, 100, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("main", &main)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+    let projektion_ord = || {
+        writer
+            .handle()
+            .session_state_lesen(&si_hex(1), &si_hex(2))
+            .unwrap()
+            .unwrap()
+            .0
+    };
+    let letzte_ord = |typ: &str| {
+        scalar_i64(
+            &ordner.db(),
+            &format!("SELECT MAX(event_ord) FROM event_log WHERE event_type='{typ}'"),
+        )
+    };
+    let letzte_marke = || push.marken().last().cloned().expect("mindestens ein Push");
+    let marke = |schluessel: &str, ord: i64| ("main".to_owned(), schluessel.to_owned(), ord);
+
+    assert_eq!(
+        letzte_marke(),
+        marke("session_snapshot", projektion_ord()),
+        "M-24: der Subscribe traegt das Ordinal der Projektion"
+    );
+
+    let basis: Value = serde_json::from_slice(
+        &coordinator.session_snapshot_json(&si_hex(1), &si_hex(2)),
+    )
+    .unwrap();
+    let mut descriptor = basis["mitglieder"][0]["probe_descriptor"].clone();
+    descriptor["label"] = json!("nak246-marke");
+    assert!(coordinator.descriptor_setzen("main", descriptor));
+    let flush_ord = letzte_ord("session");
+    assert_eq!(
+        letzte_marke(),
+        marke("session_snapshot", flush_ord),
+        "M-24: der Flush traegt die event_ord seines Commits"
+    );
+    assert_eq!(projektion_ord(), flush_ord, "dieselbe Zahl steht danach in der Projektion");
+
+    // Die Ruecknahme wird committet, ihr Push scheitert: die Schuld bleibt.
+    push.erfolgreich.store(false, Ordering::SeqCst);
+    coordinator.invalidierung_wegen_messpunkt_fuer_link("main", "insert", "post");
+    let ruecknahme_ord = letzte_ord("evidence_invalidate");
+    assert!(ruecknahme_ord > flush_ord, "{ruecknahme_ord} > {flush_ord}");
+    assert_eq!(
+        letzte_marke(),
+        marke("evidence_invalidate", ruecknahme_ord),
+        "M-24/M-26: die Ruecknahme traegt ihr eigenes Ordinal unter ihrem eigenen Schluessel"
+    );
+
+    push.erfolgreich.store(true, Ordering::SeqCst);
+    let vorher = push.marken().len();
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+    let nachspiel = push.marken()[vorher..].to_vec();
+    assert_eq!(
+        nachspiel,
+        vec![
+            marke("session_snapshot", flush_ord),
+            marke("evidence_invalidate", ruecknahme_ord),
+        ],
+        "M-24: der Resubscribe traegt das Ordinal der Projektion, das Nachspiel der Schuld dieselbe Marke wie die Erstzustellung"
+    );
+    let offen: Vec<_> = writer
+        .handle()
+        .outbox_lesen()
+        .unwrap()
+        .into_iter()
+        .filter(|(ziel, _, _)| ziel.object_key == "evidence_invalidate")
+        .collect();
+    assert!(
+        offen.is_empty(),
+        "das Nachspiel hat die Schuld der Ruecknahme kompaktiert [{offen:?}]"
     );
 }
 

@@ -6,6 +6,14 @@
 
 use super::*;
 
+/// NAK-246 D5 (R-D5, Manifest §5.5 Feinheit 1): die Marke eines Pushs ohne
+/// eigenes Ordinal - der Livestand bei degradiertem Store und ein Angebot,
+/// dessen Ablage scheiterte. Der Empfaenger gibt ihm die hoechste bereits
+/// angenommene Marke seines Schluessels (`SessionPush::snapshot_schreiben`);
+/// er ist damit nie ein Nachzuegler. Keine neue Zahl: gezogen wird nichts,
+/// die Marke ist das Hochwasser.
+pub(super) const MARKE_OHNE_ORDINAL: i64 = i64::MIN;
+
 impl Coordinator {
     pub(super) fn store_degradiert(&self) -> bool {
         self.store
@@ -50,7 +58,7 @@ impl Coordinator {
         // Normalfall bei 1 bis 4 Hz kostet damit keine Leserunde.
         self.befunde_gegen_store_haerten(session);
 
-        let (payload, ziele) = {
+        let (payload, ziele, sequence) = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             // D12-Naht (H-04): scharf gestellt panisiert der Flush hier, UNTER
             // dem Standlock - genau das vergiftet ihn. Einmalig, damit die
@@ -66,6 +74,15 @@ impl Coordinator {
                 return;
             }
             let payload = self.snapshot_locked(&stand, session);
+            // 🔑 NAK-246 D5 (§5.5 Feinheit 1, kein Store): die `event_sequence`
+            // wird HIER gezogen - unter dem Standlock, im selben Zug wie die
+            // Erfassung und vor dem Store-Zweig. `resubscribe_snapshot_push`
+            // zieht seine unter demselben Lock; so folgt die Marke ohne Store
+            // der Reihenfolge der Erfassung, und ein frueher erfasster Flush,
+            // der spaeter zustellt, traegt die kleinere. Mit Store ist die Marke
+            // das Ordinal des Commits, und die Zahl reist wie bisher nur als
+            // `sequence` des Ereignisses.
+            let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
             let ziele = stand
                 .subscriptions
                 .iter()
@@ -95,7 +112,7 @@ impl Coordinator {
                     )
                 })
                 .collect::<Vec<_>>();
-            (payload, ziele)
+            (payload, ziele, sequence)
         };
 
         let test_haken = self
@@ -109,7 +126,6 @@ impl Coordinator {
 
         let mut event_ord = None;
         if let Some(store) = &self.store {
-            let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
             let mut event = StoreEvent::session_snapshot(
                 &session.project_binding_id,
                 &session.session_epoch,
@@ -134,17 +150,48 @@ impl Coordinator {
             }
         }
 
+        // 🔑 NAK-246 D5 (R-D5): die Ordnungsmarke dieses Flushs - das
+        // Store-Ordinal seines Commits, ohne Store die oben gezogene
+        // `event_sequence`. Keine neue Zahl. Die Commit-Reihenfolge ist unter
+        // dem Schloss serialisiert; die Marke traegt sie ueber das Schloss
+        // hinaus bis in die Writerqueue, wo die Zustellung sonst ungeordnet
+        // waere.
+        let marke = match (&self.store, event_ord) {
+            (Some(_), Some(ord)) => ord,
+            // Ein Commit ohne Ausgang kommt nicht vor (je Ereignis ein
+            // `AppendAusgang`); traete er auf, gaebe es kein Ordinal.
+            (Some(_), None) => MARKE_OHNE_ORDINAL,
+            (None, _) => sequence.min(i64::MAX as u64) as i64,
+        };
+
         // Die Reihenfolge ist bis einschliesslich Store-/Outbox-Commit
         // serialisiert. Externe Pipe-Arbeit laeuft danach ohne dieses Schloss;
         // eine Senke darf den Coordinator reentrant beobachten, ohne dieselbe
         // Session zu deadlocken.
         drop(_flush_guard);
+
+        // 🔑 NAK-246 D5 (§5.5 Feinheit 6): der ZWEITE Haken - nach der Freigabe
+        // des Schlosses, vor der Zustellung. Er macht die Szene des Audits
+        // deterministisch: dieser Flush hat committet und steht; ein spaeterer
+        // derselben Sitzung committet und stellt zu, was nur geht, weil das
+        // Schloss hier frei ist; danach reiht dieser seinen aelteren Stand ein.
+        // Er nutzt denselben Platz wie der erste Haken: wer ihn setzt, waehrend
+        // dieser Flush am ersten steht, trifft ihn hier. Produktion setzt ihn nie.
+        let zustell_haken = self
+            .flush_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        if let Some(haken) = zustell_haken {
+            haken.erreichen();
+        }
+
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
         for (link_id, ziel) in ziele {
             let geschrieben = self.push_ziel_noch_gueltig(&link_id, &ziel)
-                && push
-                    .as_ref()
-                    .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
+                && push.as_ref().is_some_and(|push| {
+                    push.snapshot_schreiben(&link_id, &ziel.object_key, marke, &payload)
+                });
             if geschrieben {
                 if let (Some(store), Some(ord)) = (&self.store, event_ord) {
                     let _ = store.snapshot_schuld_kompaktieren(ziel, ord);

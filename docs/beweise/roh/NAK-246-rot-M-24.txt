@@ -1,0 +1,478 @@
+NAK-246 Etappe 5 - Rotbeweis M-24 (Manifest docs/beweise/NAK-246.md §3.5): Marken aus genau einem Raum; kein neuerer Zustand mit kleinerer Marke
+Stand: 2026-09-11 20:14 bis 20:21 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim
+Start leer).
+
+ZUSAGE (M-24, R-D5, §5.5 Feinheit 1, R-M1-8, R-M2-1): Je Prozess kommt die Ordnungsmarke aus genau einem Raum, und ein neuerer Zustand traegt
+nie eine kleinere Marke als ein bereits zugestellter aelterer (drei Faelle: kein Store; Store mit Projektion; Store ohne Projektion oder
+degradiert). Ein Subscribe-Snapshot, der wirklich aelter ist als ein bereits eingereihter Flush-Snapshot, wird verworfen; seine Schuld ist
+durch den neueren gedeckt. Ein absoluter Resubscribe-Snapshot bei Projektion None ist der aktuelle Livestand, traegt das Hochwasser - ohne
+weiteren Commit dieselbe Marke wie der zugestellte Snapshot - und wird nie als Nachzuegler verworfen. Die Trait-Aufrufer kompilieren nur mit
+Marke (Kompilierfehler als Riegel).
+
+DIE FAELLE, DIE DIE ZEILE MESSEN
+  A4    broker/src/transport/server_v3/tests_abonnement.rs:1087 subscribe_snapshot_ueberholt_keinen_neueren_flush (zweiter Fall, Projektion Some)
+  A4    tests_abonnement.rs:1157 live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen (dritter Fall, degradiert)
+  A4    tests_abonnement.rs:1239 ohne_store_folgt_die_marke_der_erfassung (erster Fall, kein Store; Barriere tests_abonnement.rs:750-842)
+  A4    broker/src/transport/server_v3/queues.rs:505 snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels (Mechanik des dritten Falls)
+  A4-SI broker/tests/store_crash_matrix.rs:1238 snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel (Marken und Schluessel am Trait)
+  Riegel: jeder der fuenf Aufrufer (flush.rs:193, subscription.rs:223 und :287, invalidierung_verdrahtung.rs:407,
+  proposal_verdrahtung.rs:281) und jede der neun Attrappen unter broker/tests folgt der einen Signatur (mod.rs:147); am Basis-SHA
+  kompiliert keiner der Faelle - die Signatur kennt dort weder Schluessel noch Marke (mod.rs:134).
+
+WAS GEFAHREN WURDE
+  Bein A4 (cargo test --lib, Filter transport::server_v3::queues und transport::server_v3::tests_abonnement, --nocapture) und fuer den
+  A4-SI-Fall cargo test --test store_crash_matrix -- --ignored --test-threads=1 <Fall>, jeweils mit den ENDGUELTIGEN Tests gegen einen
+  Rotstand. Gruenstand vorher gestaged (git add mit Pfadangabe); Ruecknahme je per git checkout -- <datei>, danach git diff leer.
+    Rotbau A - Annahmeregel entfernt (queues.rs:209 `if false && ...`): der Ausgang vergleicht wie am Basis-SHA nur den Schluessel.
+    Rotbau B - Mutation `marke < hochwasser` -> `marke <= hochwasser`: Gleichheit gilt als Duplikat.
+    Rotbau D - der Livestand bei degradiertem Store traegt die naive Marke 0 (subscription.rs:187); am Basis-SHA trug er gar keine.
+    Rotbau E - ohne Store zieht der Flush seine Marke erst nach dem ersten Haken statt im selben Zug wie die Erfassung (flush.rs:164).
+    Rotbau H - die Marke ohne Ordinal (i64::MIN) wird im Ausgang nicht durch das Hochwasser ersetzt (queues.rs:204).
+    Rotbau I - mit Store traegt der Flush die event_sequence statt des Store-Ordinals seines Commits (flush.rs:160): eine zweite Zahl.
+
+ZWEITER FALL - subscribe_snapshot_ueberholt_keinen_neueren_flush
+  ROTBAU A (Quelle queues.rs 20:13:58, Testbinary 20:14:15; Exit 101): FAELLT an tests_abonnement.rs:1132 "M-24: der aeltere
+  Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht" - links Some("vorher"), rechts Some("neu");
+  gemessen: Zustellfolge [("session_snapshot", 2, "vorher")], nachzuegler_verworfen 0, offene Schuld session_snapshot [3] (der verdraengte
+  neuere Flush bekam false und kompaktierte nicht).
+  ROTBAU I (Quelle flush.rs 20:16:04, Testbinary 20:16:38): FAELLT an derselben Zeile - der Flush traegt die Sequenz 2, der Resubscribe das
+  Projektionsordinal 2; zwei Raeume, gleiche Zahl, und der aeltere Stand ersetzt den neueren. Genau das verbietet "aus genau einem Raum".
+
+DRITTER FALL - live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen
+  ROTBAU D (Quelle subscription.rs 20:20:12, Testbinary 20:21:08; Exit 101, 18 bestanden, 1 gescheitert): FAELLT an tests_abonnement.rs:1204
+  "M-24: der Livestand bei Projektion None kommt an - er ist nie ein Nachzuegler [nachzuegler_verworfen=1]" - die naive Marke 0 ist kleiner
+  als die des zugestellten Flush (2) und wird am Hochwasser verworfen ("ROT am Basis-SHA: die naive Marke None/0 des degradierten
+  Resubscribe ist kleiner als die des Flush").
+  ROTBAU B (Quelle queues.rs 20:18:52, Testbinary 20:19:46): FAELLT an derselben Zeile [nachzuegler_verworfen=1] - der Livestand traegt die
+  gleiche Marke 2 und wird als Duplikat verworfen (R-M2-1: nur marke < hochwasser ist ein Nachzuegler).
+  ROTBAU H (Quelle queues.rs 20:16:54, Testbinary 20:17:20): FAELLT an derselben Zeile [nachzuegler_verworfen=1] - i64::MIN ohne Aufloesung
+  ist kleiner als jedes Hochwasser.
+  In Rotbau A bleibt der Fall gruen (ohne Annahmeregel wird nichts verworfen) - er misst die Annahme, nicht die Ersetzung.
+
+ERSTER FALL - ohne_store_folgt_die_marke_der_erfassung
+  ROTBAU E (Quelle flush.rs 20:14:28, Testbinary 20:14:47; Exit 101, 18 bestanden, 1 gescheitert): FAELLT an tests_abonnement.rs:1290
+  "M-24 (kein Store): nach dem geschriebenen neuen Livestand wird kein frueher erfasster alter Stand zugestellt" - Zustellfolge
+  [("session_snapshot", 4, "neu-live"), ("session_snapshot", 5, "alt-erfasst"), ("session_snapshot", 7, "neu-live")]: der frueher erfasste
+  Flush zog seine Marke nach dem Resubscribe, trug die groessere und wurde nach dem neuen Stand geschrieben.
+  ROTBAU A: FAELLT an derselben Zeile - Zustellfolge [(3, "neu-live"), (2, "alt-erfasst"), (4, "neu-live")].
+  (Ein erster Lauf des Rotbaus E um 20:10 fiel nur an der Zaehlerzeile "A ist als Nachzuegler verworfen": der nachfolgende Flush N ersetzte
+  den durchgelassenen alten Stand in der Queue, bevor der Consumer ihn sah - die Zusage-Zeile war nicht deterministisch erreichbar. Der Fall
+  haelt N seitdem an einer Barriere vor dem echten Sender, die nur die Nutzlast mit dem neuen Stand zurueckhaelt, bis das Einreihen von A
+  entschieden ist; die Laeufe unten stammen aus dieser Fassung.)
+
+MECHANIK DES DRITTEN FALLS - snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels
+  ROTBAU H: FAELLT an queues.rs:510 "ohne Hochwasser traegt er 0" (links i64::MIN). ROTBAU B: FAELLT an queues.rs:521 "M-24: der Livestand
+  ohne Ordinal wird nach dem geschriebenen 12 angenommen". ROTBAU A: FAELLT an queues.rs:534 "das Hochwasser ist nicht gesunken: 11 bleibt
+  ein Nachzuegler".
+
+MARKEN AM TRAIT (A4-SI) - snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel
+  ROTBAU I (Testbinary store_crash_matrix 20:16:35; Exit 101): FAELLT an store_crash_matrix.rs:1280 "M-24: der Flush traegt die event_ord
+  seines Commits" - links ("main", "session_snapshot", 1), rechts ("main", "session_snapshot", 2). Im selben Rotstand fallen im Bein A4
+  ausserdem M-23 (tests_abonnement.rs:997, Marke nicht das Store-Ordinal), der dritte Fall (:1170) und die Ordinalzeile von M-27 (:1049).
+
+GRUEN (Endstand): alle fuenf Faelle - A4 und A4-SI in der Beinedatei docs/beweise/roh/NAK-246-etappe5-beine.txt; die Messzeilen
+(Zustellfolgen, nachzuegler_verworfen, Marken) im Lauf mit --nocapture dort.
+
+ROHAUSGABEN (Auszuege je Rotbau: Kopf, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede Panik mit Meldung, Ergebnis)
+
+--- ROTBAU A ---
+ROTBAU A: Annahmeregel entfernt (queues.rs vergleicht nur den Schluessel, Verhalten des Basis-SHA)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:13:58
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..a7f0ae8e 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -206,7 +206,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA nur den Schluessel
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-A ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:14:13
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.34s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+thread 'transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler' (34400) panicked at src\transport\server_v3\queues.rs:476:9:
+assertion failed: ausgang.snapshot_einreihen_mit_antwort("session_snapshot", 10,
+        b"zehn".to_vec()).is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (28116) panicked at src\transport\server_v3\queues.rs:386:9:
+M-21: der aeltere Nachzuegler (Marke 10) wird nicht aufgenommen und bekommt false
+
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (25264) panicked at src\transport\server_v3\queues.rs:534:9:
+das Hochwasser ist nicht gesunken: 11 bleibt ein Nachzuegler
+
+thread 'transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme' (34104) panicked at src\transport\server_v3\queues.rs:451:9:
+M-22: 10 nach dem geschriebenen 12 wird auch in die leere Queue nicht aufgenommen (false)
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... FAILED
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... FAILED
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (31528) panicked at src\transport\server_v3\tests_abonnement.rs:987:5:
+assertion `left == right` failed: M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue [Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]]
+  left: Some("alt-erfasst")
+ right: Some("neu-committed")
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (11576) panicked at src\transport\server_v3\tests_abonnement.rs:1132:5:
+assertion `left == right` failed: M-24: der aeltere Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht [[("session_snapshot", 2, Some("vorher"))]]
+  left: Some("vorher")
+ right: Some("neu")
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=0
+thread 'transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung' (9316) panicked at src\transport\server_v3\tests_abonnement.rs:1290:5:
+M-24 (kein Store): nach dem geschriebenen neuen Livestand wird kein frueher erfasster alter Stand zugestellt [[("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]]
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... FAILED
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... ok
+test result: FAILED. 12 passed; 7 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.49s
+Ende: 2026-09-11 20:14:18 Dauer_s: 5.2
+EXIT A4-Rotbau-A=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:14:15
+
+--- ROTBAU B ---
+ROTBAU B: Mutation marke < hochwasser -> marke <= hochwasser (queues.rs)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:18:52
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..40dee66f 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -206,7 +206,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if hochwasser.is_some_and(|hoch| eintrag.marke <= hoch) { // ROTLAUF NAK-246 Rotbau B: Mutation marke < hochwasser -> marke <= hochwasser (Gleichheit als Duplikat)
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-B ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:19:44
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.25s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (18084) panicked at src\transport\server_v3\queues.rs:521:9:
+M-24: der Livestand ohne Ordinal wird nach dem geschriebenen 12 angenommen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+thread 'transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler' (27920) panicked at src\transport\server_v3\queues.rs:483:9:
+M-22: gleiche Marke 12 nach dem geschriebenen 12 wird angenommen - Gleichheit ist kein Nachzuegler
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (16792) panicked at src\transport\server_v3\queues.rs:405:14:
+M-21: gleiche Marke 12 wird angenommen
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... FAILED
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+thread 'transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen' (12988) panicked at src\transport\server_v3\tests_abonnement.rs:1204:9:
+M-24: der Livestand bei Projektion None kommt an - er ist nie ein Nachzuegler [nachzuegler_verworfen=1]
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... FAILED
+test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 241 filtered out; finished in 7.47s
+Ende: 2026-09-11 20:19:54 Dauer_s: 10.1
+EXIT A4-Rotbau-B=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:19:46
+
+--- ROTBAU D ---
+ROTBAU D: naive Marke 0 fuer den Livestand bei degradiertem Store (subscription.rs; am Basis-SHA trug der Push gar keine Marke)
+Quelle subscription.rs LastWriteTime: 2026-09-11 20:20:12
+DIFF DES ROTSTANDS (git diff -- subscription.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/coordinator/subscription.rs b/broker/src/coordinator/subscription.rs
+index 2c4e5f57..b3fd1b1c 100644
+--- a/broker/src/coordinator/subscription.rs
++++ b/broker/src/coordinator/subscription.rs
+@@ -184,7 +184,7 @@ impl Coordinator {
+                     // Append scheitert); ein groesseres Ordinal traegt nur noch
+                     // ein Flush, der VOR ihr committet und noch nicht
+                     // eingereiht hat.
+-                    None if degradiert => super::flush::MARKE_OHNE_ORDINAL,
++                    None if degradiert => 0, // ROTLAUF NAK-246 Rotbau D: naive Marke 0 fuer den Livestand wie am Basis-SHA (dort gar keine)
+                     // Gesunder Store ohne Zeile: diese Sitzung hat nie einen
+                     // Snapshot committet - die Projektion entsteht im selben
+                     // Commit (`writer.rs`). Zugestellt ist kein Ordinal; jeder
+== A4-Rotbau-D ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:21:05
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.41s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+thread 'transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen' (34320) panicked at src\transport\server_v3\tests_abonnement.rs:1204:9:
+M-24: der Livestand bei Projektion None kommt an - er ist nie ein Nachzuegler [nachzuegler_verworfen=1]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... FAILED
+test result: FAILED. 18 passed; 1 failed; 0 ignored; 0 measured; 241 filtered out; finished in 7.47s
+Ende: 2026-09-11 20:21:16 Dauer_s: 10.3
+EXIT A4-Rotbau-D=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:21:08
+
+--- ROTBAU E ---
+ROTBAU E: ohne Store wird die Marke des Flushs erst nach dem ersten Haken gezogen statt mit der Erfassung (flush.rs)
+Quelle flush.rs LastWriteTime: 2026-09-11 20:14:28
+DIFF DES ROTSTANDS (git diff -- flush.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/coordinator/flush.rs b/broker/src/coordinator/flush.rs
+index 7cef4ca5..29255690 100644
+--- a/broker/src/coordinator/flush.rs
++++ b/broker/src/coordinator/flush.rs
+@@ -161,7 +161,7 @@ impl Coordinator {
+             // Ein Commit ohne Ausgang kommt nicht vor (je Ereignis ein
+             // `AppendAusgang`); traete er auf, gaebe es kein Ordinal.
+             (Some(_), None) => MARKE_OHNE_ORDINAL,
+-            (None, _) => sequence.min(i64::MAX as u64) as i64,
++            (None, _) => self.event_sequence.fetch_add(1, Ordering::SeqCst).min(i64::MAX as u64) as i64, // ROTLAUF NAK-246 Rotbau E: Marke erst nach dem ersten Haken gezogen, nicht mit der Erfassung
+         };
+ 
+         // Die Reihenfolge ist bis einschliesslich Store-/Outbox-Commit
+== A4-Rotbau-E ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:14:45
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.42s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 4, Some("neu-live")), ("session_snapshot", 5, Some("alt-erfasst")), ("session_snapshot", 7, Some("neu-live"))]; nachzuegler_verworfen=0
+thread 'transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung' (4376) panicked at src\transport\server_v3\tests_abonnement.rs:1290:5:
+M-24 (kein Store): nach dem geschriebenen neuen Livestand wird kein frueher erfasster alter Stand zugestellt [[("session_snapshot", 4, Some("neu-live")), ("session_snapshot", 5, Some("alt-erfasst")), ("session_snapshot", 7, Some("neu-live"))]]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... FAILED
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... ok
+test result: FAILED. 18 passed; 1 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.46s
+Ende: 2026-09-11 20:14:50 Dauer_s: 5.3
+EXIT A4-Rotbau-E=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:14:47
+
+--- ROTBAU H ---
+ROTBAU H: die Marke ohne Ordinal (i64::MIN) wird im Ausgang nicht durch das Hochwasser ersetzt (queues.rs)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:16:54
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..f2ad99fd 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -201,7 +201,7 @@ impl Ausgang {
+                 // Marke.
+                 let schluessel = objekt_schluessel.clone();
+                 let hochwasser = g.2.get(&schluessel).copied();
+-                if eintrag.marke == MARKE_OHNE_ORDINAL {
++                if false && eintrag.marke == MARKE_OHNE_ORDINAL { // ROTLAUF NAK-246 Rotbau H: Marke ohne Ordinal wird nicht aufgeloest
+                     // Kein eigenes Ordinal: der Snapshot traegt das Hochwasser
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+== A4-Rotbau-H ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:17:17
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.62s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (34552) panicked at src\transport\server_v3\queues.rs:510:9:
+assertion `left == right` failed: ohne Hochwasser traegt er 0
+  left: (-9223372036854775808, [108, 105, 118, 101, 45, 108, 101, 101, 114])
+ right: (0, [108, 105, 118, 101, 45, 108, 101, 101, 114])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+thread 'transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen' (34052) panicked at src\transport\server_v3\tests_abonnement.rs:1204:9:
+M-24: der Livestand bei Projektion None kommt an - er ist nie ein Nachzuegler [nachzuegler_verworfen=1]
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... FAILED
+test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 241 filtered out; finished in 7.47s
+Ende: 2026-09-11 20:17:28 Dauer_s: 10.5
+EXIT A4-Rotbau-H=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:17:20
+
+--- ROTBAU I ---
+ROTBAU I: mit Store traegt der Flush die event_sequence statt des Store-Ordinals seines Commits (flush.rs) - eine neue Zahl
+Quelle flush.rs LastWriteTime: 2026-09-11 20:16:04
+DIFF DES ROTSTANDS (git diff -- flush.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/coordinator/flush.rs b/broker/src/coordinator/flush.rs
+index 7cef4ca5..10229dd3 100644
+--- a/broker/src/coordinator/flush.rs
++++ b/broker/src/coordinator/flush.rs
+@@ -157,7 +157,7 @@ impl Coordinator {
+         // hinaus bis in die Writerqueue, wo die Zustellung sonst ungeordnet
+         // waere.
+         let marke = match (&self.store, event_ord) {
+-            (Some(_), Some(ord)) => ord,
++            (Some(_), Some(_ord)) => sequence.min(i64::MAX as u64) as i64, // ROTLAUF NAK-246 Rotbau I: Marke = event_sequence statt Store-Ordinal (eine neue Zahl)
+             // Ein Commit ohne Ausgang kommt nicht vor (je Ereignis ein
+             // `AppendAusgang`); traete er auf, gaebe es kein Ordinal.
+             (Some(_), None) => MARKE_OHNE_ORDINAL,
+== A4-SI-Rotbau-I ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1 snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel
+Start: 2026-09-11 20:16:32
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.40s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+running 1 test
+test snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel ... FAILED
+thread 'snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel' (30260) panicked at tests\store_crash_matrix.rs:1280:5:
+assertion `left == right` failed: M-24: der Flush traegt die event_ord seines Commits
+  left: ("main", "session_snapshot", 1)
+ right: ("main", "session_snapshot", 2)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 89 filtered out; finished in 0.19s
+Ende: 2026-09-11 20:16:36 Dauer_s: 4.1
+EXIT A4-SI-Rotbau-I=101
+== A4-Rotbau-I ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:16:36
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.51s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+thread 'transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen' (30732) panicked at src\transport\server_v3\tests_abonnement.rs:1170:5:
+assertion `left == right` failed: die Marke des persistenten Snapshots ist das Ordinal seines Commits
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... FAILED
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 2)]
+thread 'transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue' (26000) panicked at src\transport\server_v3\tests_abonnement.rs:1049:5:
+die Store-Ordinale folgen der Einreihreihenfolge [[("evidence_invalidate", 2), ("session_snapshot", 2)]]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... FAILED
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 2, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[]
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (29420) panicked at src\transport\server_v3\tests_abonnement.rs:997:5:
+assertion `left == right` failed: M-23: die Marke ist das Store-Ordinal des Commits von B - keine neue Zahl
+  left: Some(2)
+ right: Some(3)
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (29612) panicked at src\transport\server_v3\tests_abonnement.rs:1132:5:
+assertion `left == right` failed: M-24: der aeltere Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht [[("session_snapshot", 2, Some("vorher"))]]
+  left: Some("vorher")
+ right: Some("neu")
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 241 filtered out; finished in 1.03s
+Ende: 2026-09-11 20:16:40 Dauer_s: 4
+EXIT A4-Rotbau-I=101
+Testbinary store_crash_matrix-4ebee0ee77644d63.exe LastWriteTime: 2026-09-11 20:16:35
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:16:38

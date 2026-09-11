@@ -1,0 +1,72 @@
+NAK-246 Etappe 5 - Rotbeweis M-27 (Manifest docs/beweise/NAK-246.md §3.6): ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue (A4)
+Stand: 2026-09-11 20:18 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim Start leer).
+
+ZUSAGE (M-27, R-D9, §1.11 schliessender Beweis): Die Belegung wird vor der Entnahme nachgewiesen, die Ruecknahmewirkung kommt eigenstaendig
+an. Vor der Freigabe traegt der Ausgang zwei Eintraege mit zwei Schluesseln (evidence_invalidate, session_snapshot); nach der Freigabe
+erhaelt der Empfaenger beide in Einreihreihenfolge; die Schuld der Ruecknahme ist kompaktiert, nicht stehengeblieben. Die Wirkung im
+Modell (evidenzRuecknahmen == 1, Messachse invalid, Befunde stale) misst B13 (bestehend).
+
+WAS DER TEST ERZWINGT (broker/src/transport/server_v3/tests_abonnement.rs:1019, Buehne :485)
+  Coordinator mit echtem Store, Senke ist der echte V3Sender, der Ausgang des Links "main" wird vom Test entnommen - die Writerqueue ist
+  angehalten, BEVOR der Writer entnimmt (kein langsamer Leser, R-M1-7).
+    1. Ein Messpunktwechsel nimmt die ganze Sitzung zurueck (invalidierung_wegen_messpunkt_fuer_link): committet, ueber den Sender mit
+       Schluessel evidence_invalidate eingereiht; der Aufruf wartet auf den Writer.
+    2. Ein Flush derselben Sitzung (descriptor_setzen) committet den Vollsnapshot und reiht ihn ein. Eingereiht ist er, sobald die Queue
+       waechst - oder, falls er die Ruecknahme verdraengt hat, sobald diese mit false zurueck ist.
+    3. Belegung der angehaltenen Queue lesen; dann Freigabe: Entnahme, jeder Eintrag als geschrieben gemeldet; Schuld im Store lesen.
+
+WAS GEFAHREN WURDE
+  Bein A4 (cargo test --lib, Filter transport::server_v3::queues und transport::server_v3::tests_abonnement, --nocapture) mit dem
+  ENDGUELTIGEN Test gegen Rotbau C: fester Queue-Schluessel "session_snapshot" im V3Sender wie am Basis-SHA (griff.rs:86). Gruenstand vorher
+  gestaged, Ruecknahme per git checkout -- griff.rs, danach git diff leer.
+
+ROTBAU C - FAELLT AN DER ZEILE, DIE DIE ZUSAGE TRAEGT
+  tests_abonnement.rs:1044 "M-27: vor der Freigabe liegen zwei Eintraege mit zwei Schluesseln - der Vollsnapshot hat die Ruecknahme nicht
+  verdraengt": links ["session_snapshot"], rechts ["evidence_invalidate", "session_snapshot"]; Belegung [("session_snapshot", 3)] - der
+  Vollsnapshot (Ordinal 3) hat die Ruecknahme (Ordinal 2) unter dem gemeinsamen Schluessel ersetzt, die Ruecknahme bekam false und
+  kompaktierte nicht. Exit 101 (17 bestanden, 2 gescheitert; der zweite rote Fall ist M-26).
+  Ein langsamer Leser ist hier kein Rotbeweis (er entnimmt zuerst, verbindung.rs:543) - der Test haelt die Queue selbst an.
+
+GRUEN (Endstand): Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]; Zustellfolge
+["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate [] - Laufzeilen im
+Bein A4 der Beinedatei docs/beweise/roh/NAK-246-etappe5-beine.txt.
+
+ROHAUSGABE ROTBAU C (Auszug aus dem Lauf: Kopf, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede Panik mit Meldung, Ergebnis)
+ROTBAU C: fester Queue-Schluessel session_snapshot im V3Sender (griff.rs, Verhalten des Basis-SHA griff.rs:86)
+Quelle griff.rs LastWriteTime: 2026-09-11 20:18:15
+DIFF DES ROTSTANDS (git diff -- griff.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/griff.rs b/broker/src/transport/server_v3/griff.rs
+index 5286bbba..56df1951 100644
+--- a/broker/src/transport/server_v3/griff.rs
++++ b/broker/src/transport/server_v3/griff.rs
+@@ -98,7 +98,7 @@ impl V3Sender {
+         let Some(ausgang) = ausgang else {
+             return false;
+         };
+-        let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort(object_key, ordnung, frame)
++        let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort({ let _ = object_key; "session_snapshot" }, ordnung, frame) // ROTLAUF NAK-246 Rotbau C: fester Queue-Schluessel wie am Basis-SHA (griff.rs:86)
+         else {
+             return false;
+         };
+== A4-Rotbau-C ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:18:35
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.26s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("session_snapshot", 23)]
+NAK-246 M-27: Belegung vor der Freigabe [("session_snapshot", 3)]
+thread 'transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue' (33784) panicked at src\transport\server_v3\tests_abonnement.rs:1044:5:
+assertion `left == right` failed: M-27: vor der Freigabe liegen zwei Eintraege mit zwei Schluesseln - der Vollsnapshot hat die Ruecknahme nicht verdraengt [[("session_snapshot", 3)]]
+  left: ["session_snapshot"]
+ right: ["evidence_invalidate", "session_snapshot"]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... FAILED
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=1; offene Schuld session_snapshot=[]
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.51s
+Ende: 2026-09-11 20:18:41 Dauer_s: 5.2
+EXIT A4-Rotbau-C=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:18:38

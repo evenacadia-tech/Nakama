@@ -131,7 +131,26 @@ const SESSION_COMMAND_REGISTER_MAX: usize = SESSION_CLIENT_CAP * SESSION_CLIENT_
 pub trait SessionPush: Send + Sync {
     /// `true` bedeutet ausschliesslich: der volle Snapshot wurde auf die Pipe
     /// geschrieben. Es ist keine Empfängerwirkung und kein Wire-ACK.
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool;
+    ///
+    /// NAK-246 D5/D9 (R-D5, R-D9): `object_key` ist der Objektschluessel des
+    /// Ziels (`SnapshotZiel::object_key`: `session_snapshot`,
+    /// `evidence_invalidate`, `proposal:<id>`); nach ihm koalesziert der
+    /// Empfaenger, nie ueber zwei Objekte hinweg. `ordnung` ist die monotone
+    /// Ordnungsmarke vom Commit an: das Store-Ordinal des Commits, ohne Store
+    /// die `event_sequence` der Erfassung. Ein Push mit kleinerer Marke als
+    /// eine bereits angenommene seines Schluessels ist ein Nachzuegler und
+    /// wird nicht geschrieben (`false`); gleiche Marke ist keiner. `i64::MIN`
+    /// heisst: dieser Push hat kein eigenes Ordinal (Livestand bei
+    /// degradiertem Store, Angebot ohne Ablage) und uebernimmt die hoechste
+    /// bereits angenommene Marke seines Schluessels. Schluessel und Marke
+    /// reisen nie im Frame; die Wire-Form ist unberuehrt.
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        object_key: &str,
+        ordnung: i64,
+        payload: &[u8],
+    ) -> bool;
 
     /// Nichtblockierender, begrenzter P2-Push. `false` bedeutet, dass der
     /// Subscriber keine gekoppelte Telemetrieausgabe besitzt oder deren

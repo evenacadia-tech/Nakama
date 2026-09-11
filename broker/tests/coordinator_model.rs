@@ -1244,7 +1244,13 @@ impl ReentranteSenke {
 }
 
 impl eqcop_broker::coordinator::SessionPush for ReentranteSenke {
-    fn snapshot_schreiben(&self, _link_id: &str, _payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        _link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        _payload: &[u8],
+    ) -> bool {
         self.reentrant_versuchen();
         true
     }
@@ -1641,7 +1647,13 @@ struct ZaehlPush {
 }
 
 impl eqcop_broker::coordinator::SessionPush for ZaehlPush {
-    fn snapshot_schreiben(&self, link_id: &str, _payload: &[u8]) -> bool {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        _object_key: &str,
+        _ordnung: i64,
+        _payload: &[u8],
+    ) -> bool {
         self.snapshots.fetch_add(1, Ordering::SeqCst);
         self.ziele
             .lock()

@@ -69,7 +69,22 @@ impl V3Sender {
         }
     }
 
-    pub fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+    /// Reiht einen Snapshot mit Objektschluessel und Ordnungsmarke in die
+    /// Writerqueue des Links ein und wartet auf das Schreiben
+    /// (`SessionPush::snapshot_schreiben`).
+    ///
+    /// 🔑 NAK-246 D9 (R-D9): der Queue-Schluessel IST der Objektschluessel des
+    /// Ziels. Bis hierher stand an dieser Stelle fest `"session_snapshot"`: eine
+    /// `evidence_invalidate` und jedes `draft_offer` teilten den Schluessel des
+    /// Vollsnapshots, und der spaeter eingereihte verdraengte den frueheren.
+    /// Die Marke (R-D5) geht in den Eintrag, nie in den Frame.
+    pub fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        object_key: &str,
+        ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
         let frame = match envelope_schreiben(Familie::P1, P1_SCHEMA_MINOR, payload) {
             Ok(frame) => frame,
             Err(_) => return false,
@@ -83,7 +98,7 @@ impl V3Sender {
         let Some(ausgang) = ausgang else {
             return false;
         };
-        let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort("session_snapshot", frame)
+        let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort(object_key, ordnung, frame)
         else {
             return false;
         };
@@ -106,8 +121,14 @@ impl V3Sender {
 }
 
 impl crate::coordinator::SessionPush for V3Sender {
-    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
-        V3Sender::snapshot_schreiben(self, link_id, payload)
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        object_key: &str,
+        ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
+        V3Sender::snapshot_schreiben(self, link_id, object_key, ordnung, payload)
     }
 
     fn messframe_schreiben(&self, link_id: &str, instance_id: &str, payload: &[u8]) -> bool {

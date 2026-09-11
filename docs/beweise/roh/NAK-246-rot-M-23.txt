@@ -1,0 +1,81 @@
+NAK-246 Etappe 5 - Rotbeweis M-23 (Manifest docs/beweise/NAK-246.md §3.5): aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht (A4)
+Stand: 2026-09-11 20:14 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim Start leer).
+
+ZUSAGE (M-23, §1.8 schliessender Beweis, R-D5): Der zuletzt angenommene Zustand am Empfaenger - hinter dem echten V3Sender und der echten
+Ausgang-Queue - ist der neue. Die Zustellfolge traegt Marken in monotoner Folge oder den aelteren gar nicht; der letzte session_snapshot
+traegt "neu-committed". Der Flush-Lock bleibt vor der Zustellung frei (flush.rs:171).
+
+WAS DER TEST ERZWINGT (broker/src/transport/server_v3/tests_abonnement.rs:934, Buehne :485)
+  Coordinator mit echtem Store; Senke ist der echte V3Sender (session_push_setzen), dessen Ausgang fuer den Link "main" der Test selbst
+  entnimmt - der Consumer ist bis zur Freigabe angehalten, kein Schlafintervall entscheidet.
+    1. Flush A erfasst "alt-erfasst" und steht am ERSTEN CoordinatorFlushTestHaken (unter dem Schloss, vor dem Append).
+    2. Der ZWEITE Haken wird gesetzt; A wird freigegeben, committet und steht am zweiten Haken - NACH drop(_flush_guard), vor der
+       Zustellschleife (flush.rs:180-187, §5.5 Feinheit 6).
+    3. Flush B committet "neu-committed" und reiht ein, WAEHREND A steht. Dass B das Schloss bekommt, ist die Messung "Flush-Lock vor der
+       Zustellung frei" (die Zeile faellt, wenn A das Schloss bis zur Zustellung hielte: B kaeme nicht in die Queue).
+    4. A wird freigegeben und reiht seinen aelteren Stand ein. Erst wenn das entschieden ist (A zurueck oder B mit false zurueck), entnimmt
+       der Consumer die Zustellfolge aus dem Ausgang und meldet jeden Eintrag als geschrieben.
+
+WAS GEFAHREN WURDE
+  Bein A4 (cargo test --lib, Filter transport::server_v3::queues und transport::server_v3::tests_abonnement, --nocapture) mit dem
+  ENDGUELTIGEN Test gegen Rotbau A: die Annahmeregel ist entfernt (queues.rs:209, `if false && ...`) - der Ausgang vergleicht wie am
+  Basis-SHA nur den Schluessel (queues.rs:161-167 am Basis-SHA). Am Basis-SHA selbst kompiliert der Test nicht (die Trait-Signatur traegt
+  dort weder Schluessel noch Marke, mod.rs:134); Rotbau A ist das alte Annahmeverhalten in der neuen Signatur (Muster NAK-230 Runde 1).
+  Vor dem Rotbau war der Gruenstand gestaged (git add mit Pfadangabe); Ruecknahme per git checkout -- queues.rs, danach git diff leer.
+
+ROTBAU A - FAELLT AN DER ZEILE, DIE DIE ZUSAGE TRAEGT
+  tests_abonnement.rs:987 "M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue": links Some("alt-erfasst"), rechts
+  Some("neu-committed"). Gemessen: Commit-Ordinal A=2, B=3; Zustellfolge [("session_snapshot", 2, "alt-erfasst")]; A hat B in der Queue
+  ersetzt (queues.rs:161-167 am Basis-SHA), B bekam false und kompaktierte nicht - offene Schuld session_snapshot [3],
+  nachzuegler_verworfen 0, Hochwasser 2. Exit 101 (12 bestanden, 7 gescheitert; die uebrigen sechs roten Faelle gehoeren M-21, M-22, M-24).
+  Die Zeile "der Flush-Lock ist vor der Zustellung frei" bleibt gruen: B hat committet und eingereiht, waehrend A stand.
+
+ZWEITER BRUCH (Rotbau I, gehoert zu M-24 "keine neue Zahl")
+  Traegt der Flush mit Store die event_sequence statt des Store-Ordinals (flush.rs:160), bleibt die Ordnung dieses Laufs zufaellig
+  richtig, aber tests_abonnement.rs:997 "M-23: die Marke ist das Store-Ordinal des Commits von B - keine neue Zahl" faellt (links Some(2),
+  rechts Some(3)). Rohausgabe in docs/beweise/roh/NAK-246-rot-M-24.txt.
+
+GRUEN (Endstand, dieselbe Pruefung): Commit-Ordinal A=2, B=3; Zustellfolge [("session_snapshot", 3, "neu-committed")];
+nachzuegler_verworfen 1; Hochwasser session_snapshot 3; offene Schuld session_snapshot [] - Laufzeilen im Bein A4 der Beinedatei
+docs/beweise/roh/NAK-246-etappe5-beine.txt.
+
+ROHAUSGABE ROTBAU A (Auszug aus dem Lauf: Kopf, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede Panik mit Meldung, Ergebnis)
+ROTBAU A: Annahmeregel entfernt (queues.rs vergleicht nur den Schluessel, Verhalten des Basis-SHA)
+Quelle queues.rs LastWriteTime: 2026-09-11 20:13:58
+DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index ae7ba976..a7f0ae8e 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -206,7 +206,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA nur den Schluessel
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-A ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Start: 2026-09-11 20:14:13
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.34s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+running 19 tests
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (31528) panicked at src\transport\server_v3\tests_abonnement.rs:987:5:
+assertion `left == right` failed: M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue [Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]]
+  left: Some("alt-erfasst")
+ right: Some("neu-committed")
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=0
+NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
+test result: FAILED. 12 passed; 7 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.49s
+Ende: 2026-09-11 20:14:18 Dauer_s: 5.2
+EXIT A4-Rotbau-A=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:14:15

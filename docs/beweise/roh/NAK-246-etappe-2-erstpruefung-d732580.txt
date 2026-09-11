@@ -1,0 +1,5 @@
+URTEIL: PASS — kein DEFEKT.
+
+Geprüft: vollständiger gebundener Zweidateien-Diff, Publisher-Aufrufer, Besitzübergabe, Speicherordnung, Zahlenränder, Zählung und produktiv ungesetzte Testhaken; M-01 erzwingt das Interleaving und fällt im gesicherten alten Ring an den richtigen Zusagen, M-02 prüft jüngsten Auftrag und Zähler, M-03 prüft Rückkehr bei gehaltenem Publisher sowie Leserallokationen; M-04 bleibt unverändert, M-05 wurde selbst per git grep bestätigt; HEAD blieb vor/nach identisch bei 8847c70f1dcc91333bc753e7b15af8c1e80ffd3f, ebenso der Worktree-Status.
+
+Nicht geprüft: keine Builds, Produktstarts oder Testwiederholungen gemäß Leseauftrag; die erfolgreichen A3/B21/A1/A16-Läufe und die Rotläufe wurden ausschließlich anhand der gesicherten Rohdateien nachvollzogen, nicht als eigener Laufzeitbeweis bestätigt.

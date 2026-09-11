@@ -693,6 +693,18 @@ fn belegung_lesen(ausgang: &Ausgang) -> Vec<(String, i64)> {
         .collect()
 }
 
+/// Wie viele Einreihentscheidungen der Ausgang bisher getroffen hat (R-E5-1).
+fn einreihentscheidungen(ausgang: &Ausgang) -> u64 {
+    ausgang.einreihentscheidungen.load(Ordering::SeqCst)
+}
+
+/// Wartet, bis der Ausgang seit `vorher` mindestens `anzahl` weitere
+/// Einreihentscheidungen getroffen hat. Das Ereignis ist die Entscheidung
+/// selbst, gleich wie sie lautet; die Frist trennt nur Rot von Haenger.
+fn einreihentscheidungen_abwarten(ausgang: &Ausgang, vorher: u64, anzahl: u64) -> bool {
+    warte_auf(NAK246_FRIST_MS, || einreihentscheidungen(ausgang) >= vorher + anzahl)
+}
+
 /// Entnimmt EINEN Eintrag - mit Frist. `Ausgang::entnehmen` wartet ohne
 /// Frist; ein Haenger waere kein Rot.
 fn eintrag_abholen(ausgang: &Ausgang, frist_ms: u64) -> Option<AusgangEintrag> {
@@ -928,8 +940,8 @@ fn sender_vergibt_je_objekt_einen_queue_schluessel() {
 /// A erfasst und committet den aelteren Stand und haelt NACH der Freigabe des
 /// Flush-Schlosses vor dem Einreihen (zweiter Haken, §5.5 Feinheit 6); B
 /// committet und reiht ein, waehrend A haelt; dann wird A freigegeben. Der
-/// Consumer entnimmt erst danach: der zuletzt angenommene Zustand am
-/// Empfaenger ist der neue.
+/// Consumer entnimmt erst, wenn der Ausgang ueber B und A entschieden hat
+/// (R-E5-1): der zuletzt angenommene Zustand am Empfaenger ist der neue.
 #[test]
 fn aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht() {
     let buehne = Zustellbuehne::aufbauen("m23", true);
@@ -955,6 +967,7 @@ fn aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht() {
         "A hat committet und steht vor dem Einreihen"
     );
 
+    let entscheidungen_vorher = einreihentscheidungen(&buehne.ausgang);
     let flush_b = buehne.descriptor_setzen_starten(neu);
     assert!(
         warte_auf(NAK246_FRIST_MS, || ausgang_laenge(&buehne.ausgang) == 1),
@@ -962,16 +975,19 @@ fn aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht() {
     );
 
     zustellung.freigeben();
-    // A reiht seinen aelteren Stand ein: verworfen (A ist zurueck) oder er
-    // verdraengt B (B ist mit false zurueck). Erst danach entnimmt der
-    // Consumer - ohne weiteren Zwischenschritt, denn B wartet auf den Writer.
+    // A reiht seinen aelteren Stand ein. Entnommen wird erst, wenn der Ausgang
+    // auch darueber entschieden hat - gleich, ob A verworfen wird oder B
+    // verdraengt (R-E5-1). Die Rueckkehr eines Flushs belegt das nicht: B kehrt
+    // nach `SENKE_FRIST` auch zurueck, ohne dass A eingereiht hat.
     assert!(
-        warte_auf(NAK246_FRIST_MS, || flush_a.is_finished() || flush_b.is_finished()),
-        "A hat eingereiht"
+        einreihentscheidungen_abwarten(&buehne.ausgang, entscheidungen_vorher, 2),
+        "M-23: der Ausgang hat ueber B und A entschieden [{} Entscheidungen]",
+        einreihentscheidungen(&buehne.ausgang) - entscheidungen_vorher
     );
     let zustellfolge = zustellfolge_abholen(&buehne.ausgang);
     assert!(flush_a.join().unwrap());
     assert!(flush_b.join().unwrap());
+    let entscheidungen = einreihentscheidungen(&buehne.ausgang) - entscheidungen_vorher;
     let (ord_b, label_b) = buehne.projektion();
     assert_eq!(label_b.as_deref(), Some("neu-committed"));
     assert!(ord_b > ord_a, "die Commit-Reihenfolge ist A vor B [{ord_a} < {ord_b}]");
@@ -980,9 +996,13 @@ fn aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht() {
     let hochwasser = buehne.ausgang.hochwasser("session_snapshot");
     let schuld = buehne.schuld("session_snapshot");
     println!(
-        "NAK-246 M-23: Commit-Ordinal A={ord_a} B={ord_b}; Zustellfolge {folge:?}; nachzuegler_verworfen={verworfen}; Hochwasser session_snapshot={hochwasser:?}; offene Schuld session_snapshot={schuld:?}"
+        "NAK-246 M-23: Commit-Ordinal A={ord_a} B={ord_b}; Einreihentscheidungen B und A={entscheidungen}; Zustellfolge {folge:?}; nachzuegler_verworfen={verworfen}; Hochwasser session_snapshot={hochwasser:?}; offene Schuld session_snapshot={schuld:?}"
     );
 
+    assert_eq!(
+        entscheidungen, 2,
+        "M-23: ausser B und A hat in der Szene nichts eingereiht - die gezaehlten Entscheidungen sind ihre"
+    );
     let letzter = folge.iter().rev().find(|(schluessel, _, _)| schluessel == "session_snapshot");
     assert_eq!(
         letzter.and_then(|(_, _, label)| label.as_deref()),
@@ -1082,7 +1102,8 @@ fn ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue() {
 /// Der Resubscribe bildet seinen absoluten Snapshot aus der Projektion (Marke =
 /// ihr Ordinal) und haelt vor dem echten Sender - an einer Barriere, die
 /// unveraendert weiterreicht. Waehrend er haelt, committet ein Flush den
-/// neueren Stand und reiht ihn ein. Dann reiht der Resubscribe ein.
+/// neueren Stand und reiht ihn ein. Dann reiht der Resubscribe ein; entnommen
+/// wird erst, wenn der Ausgang ueber beide entschieden hat (R-E5-1).
 #[test]
 fn subscribe_snapshot_ueberholt_keinen_neueren_flush() {
     let buehne = Zustellbuehne::aufbauen("m24-subscribe", true);
@@ -1103,6 +1124,7 @@ fn subscribe_snapshot_ueberholt_keinen_neueren_flush() {
         "M-24: der Resubscribe hat seinen Snapshot aus der Projektion gebildet und steht vor dem Sender"
     );
 
+    let entscheidungen_vorher = einreihentscheidungen(&buehne.ausgang);
     let flush = buehne.descriptor_setzen_starten(buehne.descriptor_mit_label("neu"));
     assert!(
         warte_auf(NAK246_FRIST_MS, || ausgang_laenge(&buehne.ausgang) == 1),
@@ -1110,15 +1132,20 @@ fn subscribe_snapshot_ueberholt_keinen_neueren_flush() {
     );
 
     sperre.freigeben();
-    // Erst reiht der Resubscribe ein, dann entnimmt der Consumer - ohne
-    // weiteren Zwischenschritt, denn der Flush wartet auf den Writer.
+    // Der Resubscribe reiht ein. Entnommen wird erst, wenn der Ausgang auch
+    // darueber entschieden hat - gleich, ob der Resubscribe verworfen wird oder
+    // den Flush verdraengt (R-E5-1). Die Rueckkehr des Flushs belegt das nicht:
+    // er kehrt nach `SENKE_FRIST` auch zurueck, ohne dass der Resubscribe
+    // eingereiht hat.
     assert!(
-        warte_auf(NAK246_FRIST_MS, || resubscribe.is_finished() || flush.is_finished()),
-        "der Resubscribe hat eingereiht"
+        einreihentscheidungen_abwarten(&buehne.ausgang, entscheidungen_vorher, 2),
+        "M-24: der Ausgang hat ueber den Flush und den Resubscribe entschieden [{} Entscheidungen]",
+        einreihentscheidungen(&buehne.ausgang) - entscheidungen_vorher
     );
     let zustellfolge = zustellfolge_abholen(&buehne.ausgang);
     assert!(resubscribe.join().unwrap());
     assert!(flush.join().unwrap());
+    let entscheidungen = einreihentscheidungen(&buehne.ausgang) - entscheidungen_vorher;
     let (ord_neu, label_neu) = buehne.projektion();
     assert_eq!(label_neu.as_deref(), Some("neu"));
     assert!(ord_neu > ord_vorher, "{ord_neu} > {ord_vorher}");
@@ -1126,7 +1153,11 @@ fn subscribe_snapshot_ueberholt_keinen_neueren_flush() {
     let verworfen = buehne.ausgang.nachzuegler_verworfen.load(Ordering::SeqCst);
     let schuld = buehne.schuld("session_snapshot");
     println!(
-        "NAK-246 M-24 Subscribe: Projektion vorher={ord_vorher}, Flush neu={ord_neu}; Zustellfolge {folge:?}; nachzuegler_verworfen={verworfen}; offene Schuld session_snapshot={schuld:?}"
+        "NAK-246 M-24 Subscribe: Projektion vorher={ord_vorher}, Flush neu={ord_neu}; Einreihentscheidungen Flush und Resubscribe={entscheidungen}; Zustellfolge {folge:?}; nachzuegler_verworfen={verworfen}; offene Schuld session_snapshot={schuld:?}"
+    );
+    assert_eq!(
+        entscheidungen, 2,
+        "M-24: ausser dem Flush und dem Resubscribe hat in der Szene nichts eingereiht - die gezaehlten Entscheidungen sind ihre"
     );
     let letzter = folge.iter().rev().find(|(schluessel, _, _)| schluessel == "session_snapshot");
     assert_eq!(
@@ -1299,4 +1330,238 @@ fn ohne_store_folgt_die_marke_der_erfassung() {
         "M-24: die Marken der Zustellfolge sind monoton [{folge:?}]"
     );
     assert_eq!(verworfen, 1, "M-24: A ist als Nachzuegler verworfen");
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// NAK-246 R-E5-2 - M-24 am Zahlenrand der Sequenz ohne Store. Jede Zugstelle,
+// die die `event_sequence` ohne Store zieht, faehrt zwei Zuege ab `u64::MAX`:
+// dort liefert ein ungesaettigter Zug den Vorwert und speichert 0.
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Zeichnet je Snapshot-Push die Marke auf, die der Coordinator uebergibt, und
+/// reicht UNVERAENDERT an den echten `V3Sender` weiter. Er stellt nichts selbst
+/// zu - ueber Annahme entscheidet der echte Ausgang dahinter.
+struct MarkenProtokoll {
+    sender: V3Sender,
+    marken: Mutex<Vec<i64>>,
+}
+
+impl MarkenProtokoll {
+    fn neu(sender: V3Sender) -> Self {
+        Self {
+            sender,
+            marken: Mutex::new(Vec::new()),
+        }
+    }
+
+    fn marken(&self) -> Vec<i64> {
+        self.marken.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+}
+
+impl SessionPush for MarkenProtokoll {
+    fn snapshot_schreiben(
+        &self,
+        link_id: &str,
+        object_key: &str,
+        ordnung: i64,
+        payload: &[u8],
+    ) -> bool {
+        self.marken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(ordnung);
+        self.sender
+            .snapshot_schreiben(link_id, object_key, ordnung, payload)
+    }
+
+    fn messframe_schreiben(&self, link_id: &str, instance_id: &str, payload: &[u8]) -> bool {
+        self.sender.messframe_schreiben(link_id, instance_id, payload)
+    }
+}
+
+/// Eine aktive Sonde in der Sitzung des Main (Zugstelle Sessionbefehl).
+fn nak246_sonde_hello() -> HelloControl {
+    let mut hello = nak246_main_hello();
+    hello.plugin_kind = "active_probe".into();
+    hello.adresse.instance_id = nak246_hex(11);
+    hello.adresse.runtime_nonce = nak246_hex(101);
+    hello
+}
+
+/// Was ein Zug hinterlaesst: die Marke, die der Coordinator dem Sender
+/// uebergab, und - nur wenn der Ausgang den Push annahm - Schluessel und Marke
+/// des entnommenen Eintrags.
+struct Zugergebnis {
+    uebergeben: i64,
+    angenommen: Option<(String, i64)>,
+}
+
+/// Faehrt einen Zug im eigenen Faden und entnimmt erst, wenn der Ausgang ueber
+/// dessen Push entschieden hat (R-E5-1). Danach liegt genau dann ein Eintrag,
+/// wenn der Ausgang ihn angenommen hat; er wird entnommen und als geschrieben
+/// gemeldet.
+fn zug_am_ausgang(
+    buehne: &Zustellbuehne,
+    protokoll: &MarkenProtokoll,
+    zug: &str,
+    starten: impl FnOnce() -> std::thread::JoinHandle<bool>,
+) -> Zugergebnis {
+    let entscheidungen_vorher = einreihentscheidungen(&buehne.ausgang);
+    let marken_vorher = protokoll.marken().len();
+    let aufruf = starten();
+    assert!(
+        einreihentscheidungen_abwarten(&buehne.ausgang, entscheidungen_vorher, 1),
+        "{zug}: der Ausgang hat ueber den Push entschieden"
+    );
+    let angenommen = (ausgang_laenge(&buehne.ausgang) > 0).then(|| {
+        let eintrag = buehne
+            .ausgang
+            .entnehmen()
+            .expect("ein angenommener Eintrag liegt in der Queue");
+        let gelesen = (schluessel_von(&eintrag), eintrag.marke);
+        bestaetigen(eintrag, true);
+        gelesen
+    });
+    assert!(aufruf.join().unwrap(), "{zug}: der Aufruf ist angenommen");
+    assert_eq!(
+        einreihentscheidungen(&buehne.ausgang),
+        entscheidungen_vorher + 1,
+        "{zug}: genau ein Push hat eingereiht"
+    );
+    let marken = protokoll.marken();
+    assert_eq!(marken.len(), marken_vorher + 1, "{zug}: genau eine Marke uebergeben");
+    Zugergebnis {
+        uebergeben: marken[marken_vorher],
+        angenommen,
+    }
+}
+
+/// Die Zusage von M-24 an zwei Zuegen am Rand: der erste traegt die Klammer
+/// `i64::MAX` und wird angenommen; der zweite wird am echten Ausgang
+/// angenommen und traegt keine kleinere Marke als der erste.
+fn zahlenrand_pruefen(
+    buehne: &Zustellbuehne,
+    zugstelle: &str,
+    erster: &Zugergebnis,
+    zweiter: &Zugergebnis,
+) {
+    let verworfen = buehne.ausgang.nachzuegler_verworfen.load(Ordering::SeqCst);
+    let hochwasser = buehne.ausgang.hochwasser("session_snapshot");
+    println!(
+        "NAK-246 M-24 Zahlenrand {zugstelle}: uebergebene Marken {} und {}; am Ausgang angenommen {:?} und {:?}; nachzuegler_verworfen={verworfen}; Hochwasser session_snapshot={hochwasser:?}",
+        erster.uebergeben, zweiter.uebergeben, erster.angenommen, zweiter.angenommen
+    );
+    assert_eq!(
+        erster.angenommen,
+        Some(("session_snapshot".to_owned(), i64::MAX)),
+        "{zugstelle}: der erste Zug am Rand traegt die Klammer i64::MAX und wird angenommen"
+    );
+    let Some((_, zweite_marke)) = &zweiter.angenommen else {
+        panic!(
+            "M-24 (kein Store, Zahlenrand {zugstelle}): der zweite Zug wird am Ausgang angenommen - ein neuerer Zustand traegt nie eine kleinere Marke als ein bereits zugestellter [uebergeben {}, Hochwasser {hochwasser:?}, nachzuegler_verworfen={verworfen}]",
+            zweiter.uebergeben
+        );
+    };
+    assert!(
+        zweiter.uebergeben >= erster.uebergeben && *zweite_marke >= erster.uebergeben,
+        "M-24 (kein Store, Zahlenrand {zugstelle}): der zweite Zug traegt keine kleinere Marke als der erste [{} nach {}]",
+        zweiter.uebergeben,
+        erster.uebergeben
+    );
+    assert_eq!(
+        verworfen, 0,
+        "M-24 (Zahlenrand {zugstelle}): kein Zug ist als Nachzuegler verworfen"
+    );
+}
+
+/// NAK-246 M-24 (R-D5, R-E5-2; §5.5 Feinheit 1, erster Fall): ohne Store laeuft
+/// die Ordnungsmarke am Rand der Sequenz nicht um - Zugstelle Flush.
+///
+/// Die `event_sequence` steht per Testzugang auf `u64::MAX`. Zwei Flushes ohne
+/// Store: der erste traegt die Klammer `i64::MAX`, der zweite wird am echten
+/// Ausgang angenommen und traegt keine kleinere Marke. Ungesaettigt truege er 0
+/// und waere als Nachzuegler verworfen.
+#[test]
+fn ohne_store_laeuft_die_flush_marke_am_zahlenrand_nicht_um() {
+    let buehne = Zustellbuehne::aufbauen("m24-rand-flush", false);
+    let protokoll = Arc::new(MarkenProtokoll::neu(buehne.sender.clone()));
+    buehne.coordinator.session_push_setzen(protokoll.clone());
+    let stand_1 = buehne.descriptor_mit_label("rand-1");
+    let stand_2 = buehne.descriptor_mit_label("rand-2");
+
+    buehne.coordinator.event_sequence_setzen(u64::MAX);
+    let erster = zug_am_ausgang(&buehne, &protokoll, "erster Flush", || {
+        buehne.descriptor_setzen_starten(stand_1)
+    });
+    let zweiter = zug_am_ausgang(&buehne, &protokoll, "zweiter Flush", || {
+        buehne.descriptor_setzen_starten(stand_2)
+    });
+    zahlenrand_pruefen(&buehne, "Flush", &erster, &zweiter);
+}
+
+/// NAK-246 M-24 (R-D5, R-E5-2; §5.5 Feinheit 1, erster Fall): ohne Store laeuft
+/// die Ordnungsmarke am Rand der Sequenz nicht um - Zugstelle Subscribe.
+///
+/// Wie am Flush, mit zwei Resubscribes: ihr Livestand zieht die Sequenz im Zug
+/// seiner Erfassung (`subscription.rs`).
+#[test]
+fn ohne_store_laeuft_die_subscribe_marke_am_zahlenrand_nicht_um() {
+    let buehne = Zustellbuehne::aufbauen("m24-rand-subscribe", false);
+    let protokoll = Arc::new(MarkenProtokoll::neu(buehne.sender.clone()));
+    buehne.coordinator.session_push_setzen(protokoll.clone());
+
+    buehne.coordinator.event_sequence_setzen(u64::MAX);
+    let erster = zug_am_ausgang(&buehne, &protokoll, "erster Resubscribe", || {
+        buehne.resubscribe_starten()
+    });
+    let zweiter = zug_am_ausgang(&buehne, &protokoll, "zweiter Resubscribe", || {
+        buehne.resubscribe_starten()
+    });
+    zahlenrand_pruefen(&buehne, "Subscribe", &erster, &zweiter);
+}
+
+/// NAK-246 M-24 (R-D5, R-E5-2; §5.5 Feinheit 1, erster Fall): ohne Store laeuft
+/// die Ordnungsmarke am Rand der Sequenz nicht um - Zugstelle Sessionbefehl.
+///
+/// `confirm_join` zieht dieselbe Sequenz auch ohne Store fuer seine Revision
+/// (`befehl.rs`) und flusht danach. Der erste Zug ist ein Flush mit der Klammer
+/// `i64::MAX`; im zweiten zieht erst der Befehl, dann sein Flush. Liefe die
+/// Sequenz im Befehl um, truege dieser Flush die Marke 0.
+#[test]
+fn ohne_store_laeuft_die_befehlssequenz_am_zahlenrand_nicht_um() {
+    let buehne = Zustellbuehne::aufbauen("m24-rand-befehl", false);
+    let stand_1 = buehne.descriptor_mit_label("rand-1");
+    let sonde = nak246_sonde_hello();
+    assert!(
+        buehne
+            .coordinator
+            .control_hello_registrieren("sonde", &sonde)
+            .angenommen,
+        "die Sonde ist in der Sitzung des Main angemeldet"
+    );
+    let protokoll = Arc::new(MarkenProtokoll::neu(buehne.sender.clone()));
+    buehne.coordinator.session_push_setzen(protokoll.clone());
+    let befehl = serde_json::to_vec(&json!({
+        "type": "session_command",
+        "command": "confirm_join",
+        "command_id": nak246_hex(900),
+        "ziel": sonde.adresse,
+        "session_epoch": sonde.adresse.session_epoch,
+    }))
+    .unwrap();
+
+    buehne.coordinator.event_sequence_setzen(u64::MAX);
+    let erster = zug_am_ausgang(&buehne, &protokoll, "Flush vor dem Befehl", || {
+        buehne.descriptor_setzen_starten(stand_1)
+    });
+    let zweiter = zug_am_ausgang(&buehne, &protokoll, "confirm_join", || {
+        let coordinator = buehne.coordinator.clone();
+        std::thread::spawn(move || {
+            Senke::p0(&*coordinator, "main", &befehl)
+                .and_then(|ack| serde_json::from_slice::<Value>(&ack).ok())
+                .is_some_and(|ack| ack["ergebnis"] == "angewandt")
+        })
+    });
+    zahlenrand_pruefen(&buehne, "Sessionbefehl", &erster, &zweiter);
 }

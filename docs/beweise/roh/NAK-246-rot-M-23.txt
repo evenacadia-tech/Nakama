@@ -1,81 +1,436 @@
 NAK-246 Etappe 5 - Rotbeweis M-23 (Manifest docs/beweise/NAK-246.md §3.5): aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht (A4)
-Stand: 2026-09-11 20:14 (PC-Lokalzeit), Worker Opus 5 (Basis-SHA b7c5ff1c2534b0457e47bacb4bfb335da43ab955, git status --short beim Start leer).
+Stand: Nacharbeit 1, 2026-09-11 21:39 bis 21:43 und 22:06 (PC-Lokalzeit), Worker Opus 5 (Start-HEAD 94357ae5395627cdfac5fa720482a92667db5f03,
+git status --short beim Start leer).
+Diese Datei ERSETZT den Rotbeweis der Etappe 5 (Stand 20:14). Die Erstpruefung fand dort den Befund D-E5-1 "[P2] Warte auf eine eindeutige
+Einreihentscheidung von A": die Wartebedingung vor dem Entnehmen belegte keine Einreihentscheidung von A. Die ersetzte Fassung liegt im Verlauf
+(git show 94357ae5:docs/beweise/roh/NAK-246-rot-M-23.txt).
 
 ZUSAGE (M-23, §1.8 schliessender Beweis, R-D5): Der zuletzt angenommene Zustand am Empfaenger - hinter dem echten V3Sender und der echten
 Ausgang-Queue - ist der neue. Die Zustellfolge traegt Marken in monotoner Folge oder den aelteren gar nicht; der letzte session_snapshot
-traegt "neu-committed". Der Flush-Lock bleibt vor der Zustellung frei (flush.rs:171).
+traegt "neu-committed". Der Flush-Lock bleibt vor der Zustellung frei.
 
-WAS DER TEST ERZWINGT (broker/src/transport/server_v3/tests_abonnement.rs:934, Buehne :485)
-  Coordinator mit echtem Store; Senke ist der echte V3Sender (session_push_setzen), dessen Ausgang fuer den Link "main" der Test selbst
-  entnimmt - der Consumer ist bis zur Freigabe angehalten, kein Schlafintervall entscheidet.
+WAS DER TEST ERZWINGT (broker/src/transport/server_v3/tests_abonnement.rs:946; Regel R-E5-1)
+  Coordinator mit echtem Store; Senke ist der echte V3Sender, dessen Ausgang fuer den Link "main" der Test selbst entnimmt.
     1. Flush A erfasst "alt-erfasst" und steht am ERSTEN CoordinatorFlushTestHaken (unter dem Schloss, vor dem Append).
-    2. Der ZWEITE Haken wird gesetzt; A wird freigegeben, committet und steht am zweiten Haken - NACH drop(_flush_guard), vor der
-       Zustellschleife (flush.rs:180-187, §5.5 Feinheit 6).
-    3. Flush B committet "neu-committed" und reiht ein, WAEHREND A steht. Dass B das Schloss bekommt, ist die Messung "Flush-Lock vor der
-       Zustellung frei" (die Zeile faellt, wenn A das Schloss bis zur Zustellung hielte: B kaeme nicht in die Queue).
-    4. A wird freigegeben und reiht seinen aelteren Stand ein. Erst wenn das entschieden ist (A zurueck oder B mit false zurueck), entnimmt
-       der Consumer die Zustellfolge aus dem Ausgang und meldet jeden Eintrag als geschrieben.
+    2. Der ZWEITE Haken wird gesetzt; A wird freigegeben, committet und steht am zweiten Haken - nach drop(_flush_guard), vor der Zustellung.
+    3. Der Test liest den Entscheidungszaehler des Ausgangs (:970). Flush B committet "neu-committed" und reiht ein, WAEHREND A steht; Ereignis
+       ist die Queue mit einem Eintrag (:972-975) - das misst "Flush-Lock vor der Zustellung frei".
+    4. A wird freigegeben. Entnommen wird erst, wenn der Ausgang ZWEI weitere Einreihentscheidungen gezaehlt hat - die von B und die von A,
+       gleich ob A verworfen wird oder B verdraengt (:982-986). Der Zaehler steht in queues.rs (einreihentscheidungen, je Aufruf von
+       einreihen_eintrag um eins am Ende des Aufrufs, nur im Testbau). Die Rueckkehr eines Flushs belegt keine Einreihung mehr: B kehrt nach
+       SENKE_FRIST (2000 ms) auch zurueck, ohne dass A eingereiht hat. Die Frist des Wartens (NAK246_FRIST_MS, 5000 ms) trennt nur Rot von
+       Haenger.
+    5. Nach dem Entnehmen die Vorbedingungszeile :1002 "ausser B und A hat in der Szene nichts eingereiht" (genau zwei Entscheidungen), dann die
+       Zusagezeile :1007 "der zuletzt angenommene Zustand am Empfaenger ist der neue", Monotonie, Laenge, Marke, Zaehler, Hochwasser, Schuld.
 
-WAS GEFAHREN WURDE
-  Bein A4 (cargo test --lib, Filter transport::server_v3::queues und transport::server_v3::tests_abonnement, --nocapture) mit dem
-  ENDGUELTIGEN Test gegen Rotbau A: die Annahmeregel ist entfernt (queues.rs:209, `if false && ...`) - der Ausgang vergleicht wie am
-  Basis-SHA nur den Schluessel (queues.rs:161-167 am Basis-SHA). Am Basis-SHA selbst kompiliert der Test nicht (die Trait-Signatur traegt
-  dort weder Schluessel noch Marke, mod.rs:134); Rotbau A ist das alte Annahmeverhalten in der neuen Signatur (Muster NAK-230 Runde 1).
-  Vor dem Rotbau war der Gruenstand gestaged (git add mit Pfadangabe); Ruecknahme per git checkout -- queues.rs, danach git diff leer.
+WAS GEFAHREN WURDE (Bein A4, cargo test --lib aus pwsh, --nocapture, je mit dem ENDGUELTIGEN Test gegen einen Rotstand im gestageten
+Gruenstand; Ruecknahme per git checkout -- <datei>, danach git diff --stat leer; Rotbau-Diff je in der Rohausgabe unten)
+  Rotbau A            - die Annahmeregel ist entfernt (queues.rs:220 `if false && ...`): der Ausgang vergleicht wie am Basis-SHA der Etappe nur den
+                        Schluessel. Filter transport::server_v3::queues und transport::server_v3::tests_abonnement.
+  Rotbau A, Stoerung S - dazu haelt der Push von A zwischen Freigabe und Einreihen 3000 ms (griff.rs, nur fuer Nutzlasten mit "alt-erfasst" oder
+                        "vorher") - laenger als SENKE_FRIST plus NAK246_RUHE_MS (500 ms). Das ist die Szene des Urteils ("mit A zwischen Freigabe
+                        und Enqueue bis nach dem Drain pausiert"). Die Stoerung ist ein Schlaf im ROTSTAND, nicht im Test: sie prueft, dass der Test
+                        auch bei spaet eingeplantem A an der Zusagezeile faellt. Filter M-23 und M-24 Subscribe.
+  Reproduktion        - Rotbau A mit Stoerung S und der ALTEN Testfassung (tests_abonnement.rs im Arbeitsbaum = HEAD 94357ae5, Blob 3ce6efbb,
+                        Wartebedingung flush_a.is_finished() || flush_b.is_finished()): belegt den Befund an der Quelle.
+  Rotbau I            - mit Store traegt der Flush die event_sequence statt des Store-Ordinals seines Commits (flush.rs:180): eine zweite Zahl.
 
-ROTBAU A - FAELLT AN DER ZEILE, DIE DIE ZUSAGE TRAEGT
-  tests_abonnement.rs:987 "M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue": links Some("alt-erfasst"), rechts
-  Some("neu-committed"). Gemessen: Commit-Ordinal A=2, B=3; Zustellfolge [("session_snapshot", 2, "alt-erfasst")]; A hat B in der Queue
-  ersetzt (queues.rs:161-167 am Basis-SHA), B bekam false und kompaktierte nicht - offene Schuld session_snapshot [3],
-  nachzuegler_verworfen 0, Hochwasser 2. Exit 101 (12 bestanden, 7 gescheitert; die uebrigen sechs roten Faelle gehoeren M-21, M-22, M-24).
-  Die Zeile "der Flush-Lock ist vor der Zustellung frei" bleibt gruen: B hat committet und eingereiht, waehrend A stand.
+ROTBAU A - FAELLT AN DER ZEILE, DIE DIE ZUSAGE TRAEGT (Quelle queues.rs 21:39:15, Testbinary 21:39:27, Start 21:39:25; Exit 101, 15 bestanden,
+7 gescheitert)
+  tests_abonnement.rs:1007 "M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue": links Some("alt-erfasst"), rechts
+  Some("neu-committed"). Gemessen: Commit-Ordinal A=2, B=3; Einreihentscheidungen B und A=2 (die Vorbedingungszeile :1002 bleibt gruen);
+  Zustellfolge [("session_snapshot", 2, "alt-erfasst")]; A hat B in der Queue ersetzt, B kompaktierte nicht - offene Schuld session_snapshot [3],
+  nachzuegler_verworfen 0, Hochwasser 2. Die uebrigen sechs roten Faelle gehoeren M-21, M-22 und M-24.
 
-ZWEITER BRUCH (Rotbau I, gehoert zu M-24 "keine neue Zahl")
-  Traegt der Flush mit Store die event_sequence statt des Store-Ordinals (flush.rs:160), bleibt die Ordnung dieses Laufs zufaellig
-  richtig, aber tests_abonnement.rs:997 "M-23: die Marke ist das Store-Ordinal des Commits von B - keine neue Zahl" faellt (links Some(2),
-  rechts Some(3)). Rohausgabe in docs/beweise/roh/NAK-246-rot-M-24.txt.
+ROTBAU A MIT STOERUNG S - DIESELBE ZEILE (Quellen queues.rs 21:40:07, griff.rs 21:40:11, Testbinary 21:40:25, Start 21:40:22; Exit 101,
+0 bestanden, 2 gescheitert, 6,78 s)
+  A reiht erst 3000 ms nach seiner Freigabe ein, B ist nach 2000 ms per Frist zurueck. Der Test wartet, bis der Ausgang auch ueber A entschieden
+  hat, und faellt an :1007 [Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 2, "alt-erfasst")]; offene Schuld [3]].
 
-GRUEN (Endstand, dieselbe Pruefung): Commit-Ordinal A=2, B=3; Zustellfolge [("session_snapshot", 3, "neu-committed")];
-nachzuegler_verworfen 1; Hochwasser session_snapshot 3; offene Schuld session_snapshot [] - Laufzeilen im Bein A4 der Beinedatei
-docs/beweise/roh/NAK-246-etappe5-beine.txt.
+REPRODUKTION DES BEFUNDS - ALTE TESTFASSUNG MIT STOERUNG S (Quellen 21:40:43 bis 21:40:50, Testbinary 21:41:12, Start 21:41:08; Exit 101,
+0 bestanden, 2 gescheitert, 8,29 s)
+  Die alte Wartebedingung war nach 2000 ms durch die Rueckkehr von B erfuellt; der Consumer entnahm B und beendete seine Aufzeichnung nach
+  500 ms leerer Queue, bevor A einreihte. Die Zusagezeile blieb GRUEN [Zustellfolge [("session_snapshot", 3, "neu-committed")]]; es fiel nur der
+  Zaehler, Zeile 1002 der ALTEN Fassung "M-23: A ist als Nachzuegler verworfen und gezaehlt" (links 0, rechts 1) - genau wie im Urteil
+  beschrieben. Einzige Bauwarnung: `event_sequence_setzen` ungenutzt (die alte Testfassung ruft ihn nicht).
 
-ROHAUSGABE ROTBAU A (Auszug aus dem Lauf: Kopf, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede Panik mit Meldung, Ergebnis)
-ROTBAU A: Annahmeregel entfernt (queues.rs vergleicht nur den Schluessel, Verhalten des Basis-SHA)
-Quelle queues.rs LastWriteTime: 2026-09-11 20:13:58
-DIFF DES ROTSTANDS (git diff -- queues.rs gegen den gestageten Gruenstand):
+ROTBAU I - DIE MARKE IST DAS STORE-ORDINAL, KEINE NEUE ZAHL (Quelle flush.rs 22:06:07, Testbinary 22:06:10, Start 22:06:07; Exit 101,
+18 bestanden, 4 gescheitert)
+  Die Ordnung dieses Laufs bleibt richtig (A traegt die kleinere Sequenz und wird verworfen), aber tests_abonnement.rs:1017 "M-23: die Marke
+  ist das Store-Ordinal des Commits von B - keine neue Zahl" faellt (links Some(2), rechts Some(3)) [Einreihentscheidungen B und A=2;
+  Zustellfolge [("session_snapshot", 2, "neu-committed")]; nachzuegler_verworfen 1; Hochwasser 2; offene Schuld []]. Im selben Rotstand
+  fallen der Subscribe-Fall von M-24 (:1163), der Livestand von M-24 (:1201) und die Ordinalzeile von M-27 (:1069).
+
+GRUEN (gestagter Endstand, dreimal hintereinander 21:43:41 bis 21:43:51, Testbinary 21:43:43; je Exit 0, je 22 bestanden, 0 gescheitert)
+  Lauf 1, 2 und 3 je: Commit-Ordinal A=2, B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 3, "neu-committed")];
+  nachzuegler_verworfen 1; Hochwasser session_snapshot 3; offene Schuld []. Die Zeilen der drei Laeufe stehen unten; die vollstaendige
+  Rohausgabe steht in docs/beweise/roh/NAK-246-etappe5-beine.txt, Teil 4. Dazu der volle A4-Lauf dort.
+
+ROHAUSGABEN (je Lauf vollstaendig aus dem Protokoll der Nacharbeit: Titel, Quellzeiten, Diff des Rotstands, Befehl und Zeiten, jede Testzeile, jede
+Panik mit Meldung, Ergebnis, Testbinary, Ruecknahme)
+
+--- ROTBAU A (Nacharbeit 1) ---
+ROTBAU A (Nacharbeit 1): Annahmeregel entfernt - queues.rs vergleicht wie am Basis-SHA der Etappe nur den Schluessel; die ENDGUELTIGEN Tests mit Entscheidungszaehler
+Quelle broker/src/transport/server_v3/queues.rs LastWriteTime: 2026-09-11 21:39:15
+DIFF DES ROTSTANDS (git diff -- <dateien>, Arbeitsbaum gegen den gestageten Gruenstand):
 diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
-index ae7ba976..a7f0ae8e 100644
+index 004efe34..7ff66f06 100644
 --- a/broker/src/transport/server_v3/queues.rs
 +++ b/broker/src/transport/server_v3/queues.rs
-@@ -206,7 +206,7 @@ impl Ausgang {
+@@ -217,7 +217,7 @@ impl Ausgang {
                      // seines Schluessels und ist damit nie ein Nachzuegler.
                      eintrag.marke = hochwasser.unwrap_or(0);
                  }
 -                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
-+                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA nur den Schluessel
++                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Nacharbeit 1 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA der Etappe nur den Schluessel
                      self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
                      false
                  } else if let Some(position) = g.0.iter().position(|alt| {
-== A4-Rotbau-A ==
+== A4-Rotbau-A-N1 ==
 Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
-Start: 2026-09-11 20:14:13
+Arbeitsverzeichnis: C:\Users\phili\Projekte\Nakama
+Start: 2026-09-11 21:39:25
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.34s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.38s
      Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
-running 19 tests
+
+running 22 tests
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (6196) panicked at src\transport\server_v3\queues.rs:401:9:
+M-21: der aeltere Nachzuegler (Marke 10) wird nicht aufgenommen und bekommt false
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler' (15104) panicked at src\transport\server_v3\queues.rs:491:9:
+assertion failed: ausgang.snapshot_einreihen_mit_antwort("session_snapshot", 10,
+        b"zehn".to_vec()).is_none()
+
+thread 'transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme' (30384) panicked at src\transport\server_v3\queues.rs:466:9:
+M-22: 10 nach dem geschriebenen 12 wird auch in die leere Queue nicht aufgenommen (false)
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+
+thread 'transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels' (19896) panicked at src\transport\server_v3\queues.rs:549:9:
+das Hochwasser ist nicht gesunken: 11 bleibt ein Nachzuegler
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... FAILED
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... FAILED
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... FAILED
 NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+NAK-246 M-24 Zahlenrand Subscribe: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+NAK-246 M-24 Zahlenrand Flush: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_subscribe_marke_am_zahlenrand_nicht_um ... ok
+NAK-246 M-24 Zahlenrand Sessionbefehl: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_flush_marke_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_befehlssequenz_am_zahlenrand_nicht_um ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-live-29328-e2f3f3c7fd4345d4b27f19dd10bc227d\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m27-29328-dacfdc4ebd234ed59f71edaf4cc8cd98\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-subscribe-29328-7da43702aa7a4e8c83d75cc77b5bb3be\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m23-29328-32e3c88c8e7842118353c8f5542a8004\nakama-broker.sqlite3
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
 NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 3)]
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
 NAK-246 M-27: Zustellfolge ["evidence_invalidate:evidence_invalidate", "session_snapshot:session_snapshot"]; offene Schuld evidence_invalidate=[]
-NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
-thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (31528) panicked at src\transport\server_v3\tests_abonnement.rs:987:5:
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (28916) panicked at src\transport\server_v3\tests_abonnement.rs:1007:5:
 assertion `left == right` failed: M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue [Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]]
   left: Some("alt-erfasst")
  right: Some("neu-committed")
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Einreihentscheidungen Flush und Resubscribe=2; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (6696) panicked at src\transport\server_v3\tests_abonnement.rs:1163:5:
+assertion `left == right` failed: M-24: der aeltere Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht [[("session_snapshot", 2, Some("vorher"))]]
+  left: Some("vorher")
+ right: Some("neu")
 test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
-NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
 NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=0
+
+thread 'transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung' (4216) panicked at src\transport\server_v3\tests_abonnement.rs:1321:5:
+M-24 (kein Store): nach dem geschriebenen neuen Livestand wird kein frueher erfasster alter Stand zugestellt [[("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 2, Some("alt-erfasst")), ("session_snapshot", 4, Some("neu-live"))]]
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... FAILED
 NAK-246 M-24 Livestand: persistente Marke 2, Marke des Livestands 2, store_degraded true, nachzuegler_verworfen 0
-test result: FAILED. 12 passed; 7 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.49s
-Ende: 2026-09-11 20:14:18 Dauer_s: 5.2
-EXIT A4-Rotbau-A=101
-Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 20:14:15
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... ok
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot
+    transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler
+    transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme
+    transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels
+    transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht
+    transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung
+    transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush
+
+test result: FAILED. 15 passed; 7 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.48s
+
+error: test failed, to rerun pass `--lib`
+Ende: 2026-09-11 21:39:30 Dauer_s: 5.2
+EXIT A4-Rotbau-A-N1=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:39:27
+Ruecknahme: git checkout -- broker/src/transport/server_v3/queues.rs; git diff --stat danach: []
+
+--- ROTBAU A + STOERUNG S (Nacharbeit 1) ---
+ROTBAU A + STOERUNG S (Nacharbeit 1): Annahmeregel entfernt, dazu haelt der nachzueglerverdaechtige Push (M-23 A, M-24 Resubscribe) vor dem Einreihen 3000 ms (griff.rs) - die Szene des Urteils; die ENDGUELTIGEN Tests mit Entscheidungszaehler
+Quelle broker/src/transport/server_v3/queues.rs LastWriteTime: 2026-09-11 21:40:07
+Quelle broker/src/transport/server_v3/griff.rs LastWriteTime: 2026-09-11 21:40:11
+DIFF DES ROTSTANDS (git diff -- <dateien>, Arbeitsbaum gegen den gestageten Gruenstand):
+diff --git a/broker/src/transport/server_v3/griff.rs b/broker/src/transport/server_v3/griff.rs
+index 5286bbba..5adb35e3 100644
+--- a/broker/src/transport/server_v3/griff.rs
++++ b/broker/src/transport/server_v3/griff.rs
+@@ -98,6 +98,7 @@ impl V3Sender {
+         let Some(ausgang) = ausgang else {
+             return false;
+         };
++        if [&b"alt-erfasst"[..], &b"\"vorher\""[..]].iter().any(|m| payload.windows(m.len()).any(|f| f == *m)) { std::thread::sleep(Duration::from_millis(3000)); } // ROTLAUF NAK-246 Nacharbeit 1 Stoerung S: der nachzueglerverdaechtige Push (M-23 A, M-24 Resubscribe) haelt zwischen Freigabe und Einreihen 3000 ms - laenger als SENKE_FRIST (2000 ms) plus NAK246_RUHE_MS (500 ms)
+         let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort(object_key, ordnung, frame)
+         else {
+             return false;
+diff --git a/broker/src/transport/server_v3/queues.rs b/broker/src/transport/server_v3/queues.rs
+index 004efe34..7ff66f06 100644
+--- a/broker/src/transport/server_v3/queues.rs
++++ b/broker/src/transport/server_v3/queues.rs
+@@ -217,7 +217,7 @@ impl Ausgang {
+                     // seines Schluessels und ist damit nie ein Nachzuegler.
+                     eintrag.marke = hochwasser.unwrap_or(0);
+                 }
+-                if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                if false && hochwasser.is_some_and(|hoch| eintrag.marke < hoch) { // ROTLAUF NAK-246 Nacharbeit 1 Rotbau A: Annahmeregel entfernt, der Ausgang vergleicht wie am Basis-SHA der Etappe nur den Schluessel
+                     self.nachzuegler_verworfen.fetch_add(1, Ordering::SeqCst);
+                     false
+                 } else if let Some(position) = g.0.iter().position(|alt| {
+== A4-Rotbau-A-Stoerung-S-N1 ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht subscribe_snapshot_ueberholt_keinen_neueren_flush --nocapture
+Arbeitsverzeichnis: C:\Users\phili\Projekte\Nakama
+Start: 2026-09-11 21:40:22
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.03s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 2 tests
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-subscribe-19656-eaee51b201064aeeb180b3b35a715a5f\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m23-19656-a7fe647600544beda7bcdc183e9fbc83\nakama-broker.sqlite3
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (33812) panicked at src\transport\server_v3\tests_abonnement.rs:1007:5:
+assertion `left == right` failed: M-23: der zuletzt angenommene Zustand am Empfaenger ist der neue [Zustellfolge [("session_snapshot", 2, Some("alt-erfasst"))]]
+  left: Some("alt-erfasst")
+ right: Some("neu-committed")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Einreihentscheidungen Flush und Resubscribe=2; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (20704) panicked at src\transport\server_v3\tests_abonnement.rs:1163:5:
+assertion `left == right` failed: M-24: der aeltere Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht [[("session_snapshot", 2, Some("vorher"))]]
+  left: Some("vorher")
+ right: Some("neu")
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht
+    transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 261 filtered out; finished in 6.78s
+
+error: test failed, to rerun pass `--lib`
+Ende: 2026-09-11 21:40:32 Dauer_s: 10.2
+EXIT A4-Rotbau-A-Stoerung-S-N1=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:40:25
+Ruecknahme: git checkout -- broker/src/transport/server_v3/queues.rs broker/src/transport/server_v3/griff.rs; git diff --stat danach: []
+
+--- ROTBAU A + STOERUNG S MIT DER ALTEN TESTFASSUNG ---
+ROTBAU A + STOERUNG S MIT DER ALTEN TESTFASSUNG (Nacharbeit 1, Reproduktion des Befunds D-E5-1): queues.rs und griff.rs wie im Lauf davor (Diff dort vollstaendig), tests_abonnement.rs im Arbeitsbaum = HEAD 94357ae5 (Blob 3ce6efbb, Wartebedingung is_finished) - erwartet: die Zusagezeile bleibt gruen, nur der Zaehler faellt
+Quelle broker/src/transport/server_v3/queues.rs LastWriteTime: 2026-09-11 21:40:43
+Quelle broker/src/transport/server_v3/griff.rs LastWriteTime: 2026-09-11 21:40:47
+Quelle broker/src/transport/server_v3/tests_abonnement.rs LastWriteTime: 2026-09-11 21:40:50
+DIFF DES ROTSTANDS (git diff -- <dateien>, Arbeitsbaum gegen den gestageten Gruenstand):
+warning: in the working copy of 'broker/src/transport/server_v3/tests_abonnement.rs', LF will be replaced by CRLF the next time Git touches it
+ broker/src/transport/server_v3/griff.rs            |   1 +
+ broker/src/transport/server_v3/queues.rs           |   2 +-
+ broker/src/transport/server_v3/tests_abonnement.rs | 293 +--------------------
+ 3 files changed, 16 insertions(+), 280 deletions(-)
+== A4-Rotbau-A-Stoerung-S-alte-Tests-N1 ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht subscribe_snapshot_ueberholt_keinen_neueren_flush --nocapture
+Arbeitsverzeichnis: C:\Users\phili\Projekte\Nakama
+Start: 2026-09-11 21:41:08
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `event_sequence_setzen` is never used
+   --> src\coordinator\mod.rs:398:19
+    |
+265 | impl Coordinator {
+    | ---------------- method in this implementation
+...
+398 |     pub(crate) fn event_sequence_setzen(&self, wert: u64) {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 2 tests
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m23-24520-18246c33228141ae83f4de9ea9d4bb52\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-subscribe-24520-76adb85edec04e3da58d818bcf15485d\nakama-broker.sqlite3
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (7872) panicked at src\transport\server_v3\tests_abonnement.rs:1002:5:
+assertion `left == right` failed: M-23: A ist als Nachzuegler verworfen und gezaehlt
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Zustellfolge [("session_snapshot", 3, Some("neu"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (29608) panicked at src\transport\server_v3\tests_abonnement.rs:1138:5:
+assertion `left == right` failed: M-24: er ist als Nachzuegler verworfen und gezaehlt
+  left: 0
+ right: 1
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht
+    transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 258 filtered out; finished in 8.29s
+
+error: test failed, to rerun pass `--lib`
+Ende: 2026-09-11 21:41:20 Dauer_s: 12.9
+EXIT A4-Rotbau-A-Stoerung-S-alte-Tests-N1=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:41:12
+Ruecknahme: git checkout -- broker/src/transport/server_v3/queues.rs broker/src/transport/server_v3/griff.rs broker/src/transport/server_v3/tests_abonnement.rs; git diff --stat danach: []
+
+--- ROTBAU I (Nacharbeit 1) ---
+ROTBAU I (Nacharbeit 1): mit Store traegt der Flush die event_sequence statt des Store-Ordinals seines Commits (flush.rs) - Rotbau I der Etappe, erneut gegen die endgueltigen Tests
+Quelle broker/src/coordinator/flush.rs LastWriteTime: 2026-09-11 22:06:07
+DIFF DES ROTSTANDS (git diff -- <dateien>, Arbeitsbaum gegen den gestageten Gruenstand):
+diff --git a/broker/src/coordinator/flush.rs b/broker/src/coordinator/flush.rs
+index e29a8cb2..49a67ec0 100644
+--- a/broker/src/coordinator/flush.rs
++++ b/broker/src/coordinator/flush.rs
+@@ -177,7 +177,7 @@ impl Coordinator {
+         // hinaus bis in die Writerqueue, wo die Zustellung sonst ungeordnet
+         // waere.
+         let marke = match (&self.store, event_ord) {
+-            (Some(_), Some(ord)) => ord,
++            (Some(_), Some(_ord)) => sequence.min(i64::MAX as u64) as i64, // ROTLAUF NAK-246 Nacharbeit 1 Rotbau I: Marke = event_sequence statt Store-Ordinal (eine zweite Zahl)
+             // Ein Commit ohne Ausgang kommt nicht vor (je Ereignis ein
+             // `AppendAusgang`); traete er auf, gaebe es kein Ordinal.
+             (Some(_), None) => MARKE_OHNE_ORDINAL,
+== A4-Rotbau-I-N1 ==
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- transport::server_v3::queues transport::server_v3::tests_abonnement --nocapture
+Arbeitsverzeichnis: C:\Users\phili\Projekte\Nakama
+Start: 2026-09-11 22:06:07
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.80s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 22 tests
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+NAK-246 M-26: Belegung nach dem dritten snapshot_schreiben [("evidence_invalidate", 21), ("session_snapshot", 22), ("proposal:m26", 23)]
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+NAK-246 M-24 Zahlenrand Flush: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+NAK-246 M-24 Zahlenrand Subscribe: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_flush_marke_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_subscribe_marke_am_zahlenrand_nicht_um ... ok
+NAK-246 M-24 Zahlenrand Sessionbefehl: uebergebene Marken 9223372036854775807 und 9223372036854775807; am Ausgang angenommen Some(("session_snapshot", 9223372036854775807)) und Some(("session_snapshot", 9223372036854775807)); nachzuegler_verworfen=0; Hochwasser session_snapshot=Some(9223372036854775807)
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_befehlssequenz_am_zahlenrand_nicht_um ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m27-23632-963f8105d81e43d19c8b5afe75501613\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m23-23632-ec091585bc094f8fb3a3a4c1bf22d12d\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-subscribe-23632-e0f25fa887de44039ccf8f959613b13a\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak246-m24-live-23632-456845cf66e24eb9a53f03878bd0cee3\nakama-broker.sqlite3
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+
+thread 'transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen' (19356) panicked at src\transport\server_v3\tests_abonnement.rs:1201:5:
+assertion `left == right` failed: die Marke des persistenten Snapshots ist das Ordinal seines Commits
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... FAILED
+NAK-246 M-27: Belegung vor der Freigabe [("evidence_invalidate", 2), ("session_snapshot", 2)]
+
+thread 'transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue' (6084) panicked at src\transport\server_v3\tests_abonnement.rs:1069:5:
+die Store-Ordinale folgen der Einreihreihenfolge [[("evidence_invalidate", 2), ("session_snapshot", 2)]]
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... FAILED
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 2, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(2); offene Schuld session_snapshot=[]
+
+thread 'transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht' (13008) panicked at src\transport\server_v3\tests_abonnement.rs:1017:5:
+assertion `left == right` failed: M-23: die Marke ist das Store-Ordinal des Commits von B - keine neue Zahl
+  left: Some(2)
+ right: Some(3)
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... FAILED
+NAK-246 M-24 Subscribe: Projektion vorher=2, Flush neu=3; Einreihentscheidungen Flush und Resubscribe=2; Zustellfolge [("session_snapshot", 2, Some("vorher"))]; nachzuegler_verworfen=0; offene Schuld session_snapshot=[3]
+
+thread 'transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush' (35440) panicked at src\transport\server_v3\tests_abonnement.rs:1163:5:
+assertion `left == right` failed: M-24: der aeltere Subscribe-Snapshot (Marke 2) ueberholt den bereits eingereihten neueren Flush (Marke 3) nicht [[("session_snapshot", 2, Some("vorher"))]]
+  left: Some("vorher")
+ right: Some("neu")
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... FAILED
+NAK-246 M-24 ohne Store: Zustellfolge [("session_snapshot", 3, Some("neu-live")), ("session_snapshot", 4, Some("neu-live"))]; nachzuegler_verworfen=1
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+
+failures:
+
+failures:
+    transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht
+    transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen
+    transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue
+    transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush
+
+test result: FAILED. 18 passed; 4 failed; 0 ignored; 0 measured; 241 filtered out; finished in 1.04s
+
+error: test failed, to rerun pass `--lib`
+Ende: 2026-09-11 22:06:11 Dauer_s: 4.6
+EXIT A4-Rotbau-I-N1=101
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 22:06:10
+Ruecknahme: git checkout -- broker/src/coordinator/flush.rs; git diff --stat -- broker danach: []
+
+--- GRUEN, dreimal hintereinander (Auszug: Kopf, Zeilen von M-23, Ergebnis, Ende, Exit, Testbinary je Lauf) ---
+== A4-Gruen-N1-Lauf-1 ==
+Start: 2026-09-11 21:43:41
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.47s
+Ende: 2026-09-11 21:43:46 Dauer_s: 5
+EXIT A4-Gruen-N1-Lauf-1=0
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:43:43
+== A4-Gruen-N1-Lauf-2 ==
+Start: 2026-09-11 21:43:46
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.50s
+Ende: 2026-09-11 21:43:49 Dauer_s: 2.8
+EXIT A4-Gruen-N1-Lauf-2=0
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:43:43
+== A4-Gruen-N1-Lauf-3 ==
+Start: 2026-09-11 21:43:49
+NAK-246 M-23: Commit-Ordinal A=2 B=3; Einreihentscheidungen B und A=2; Zustellfolge [("session_snapshot", 3, Some("neu-committed"))]; nachzuegler_verworfen=1; Hochwasser session_snapshot=Some(3); offene Schuld session_snapshot=[]
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 241 filtered out; finished in 2.50s
+Ende: 2026-09-11 21:43:51 Dauer_s: 2.6
+EXIT A4-Gruen-N1-Lauf-3=0
+Testbinary eqcop_broker-143b14e85e30b6d6.exe LastWriteTime: 2026-09-11 21:43:43

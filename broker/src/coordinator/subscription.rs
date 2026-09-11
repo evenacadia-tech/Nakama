@@ -108,10 +108,11 @@ impl Coordinator {
             // Subscribe NICHT: er darf nie auf einen haltenden Flush warten
             // (`store_crash_matrix.rs`, Live-Joinbedarf vor dem Store-Flush).
             // Mit Store zieht er keine Zahl; seine Marke kommt aus der Projektion.
+            // Gezogen wird gesaettigt wie im Flush (R-E5-2).
             let live_sequence = self
                 .store
                 .is_none()
-                .then(|| self.event_sequence.fetch_add(1, Ordering::SeqCst));
+                .then(|| self.event_sequence_ziehen());
             (
                 live_payload,
                 SnapshotZiel {

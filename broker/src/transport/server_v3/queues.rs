@@ -111,6 +111,15 @@ pub(super) struct Ausgang {
     /// Nachzuegler verworfen wurden (`marke < hochwasser`). Gezaehlt unter dem
     /// Mutex, lesbar ohne ihn.
     pub(super) nachzuegler_verworfen: AtomicU64,
+    /// NAK-246 R-E5-1: wie viele Einreihentscheidungen dieser Ausgang getroffen
+    /// hat - je Aufruf von `einreihen_eintrag` eine, gleich ob angenommen,
+    /// ersetzt, als Nachzuegler verworfen oder abgewiesen. Ein Test wartet auf
+    /// diese Zahl, bevor er entnimmt; die Rueckkehr eines Aufrufers belegt keine
+    /// Einreihung (`V3Sender::snapshot_schreiben` kehrt auch nach `SENKE_FRIST`
+    /// zurueck). Testinfrastruktur, nur im Testbau: im Produkt gibt es weder
+    /// das Feld noch seine Erhoehung.
+    #[cfg(test)]
+    pub(super) einreihentscheidungen: AtomicU64,
 }
 
 /// Die Marke eines Snapshots ohne eigenes Ordinal. Dieselbe Zahl nennt der
@@ -143,6 +152,8 @@ impl Ausgang {
             inhalt: Mutex::new((VecDeque::with_capacity(16), false, HashMap::new())),
             signal: Condvar::new(),
             nachzuegler_verworfen: AtomicU64::new(0),
+            #[cfg(test)]
+            einreihentscheidungen: AtomicU64::new(0),
         }
     }
 
@@ -254,6 +265,10 @@ impl Ausgang {
         if ok {
             self.signal.notify_one();
         }
+        // NAK-246 R-E5-1: gezaehlt am Ende des Aufrufs - die Entscheidung steht
+        // in der Queue, und ein ersetzter Aufrufer hat sein `false`.
+        #[cfg(test)]
+        self.einreihentscheidungen.fetch_add(1, Ordering::SeqCst);
         ok
     }
 

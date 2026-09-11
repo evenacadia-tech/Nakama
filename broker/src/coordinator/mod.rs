@@ -389,6 +389,16 @@ impl Coordinator {
             .unwrap_or_else(|e| e.into_inner()) = Some(haken);
     }
 
+    /// NAK-246 R-E5-2 (M-24, Zahlenrand): setzt die `event_sequence`, damit ein
+    /// Test ihren Rand erreicht, ohne 2^64 Zuege zu fahren. Nur im Testbau: der
+    /// Aufrufer ist ein Test der Bibliothek (`tests_abonnement.rs`), der den
+    /// echten `Ausgang` braucht - und der ist von diesem Modul aus nicht
+    /// erreichbar.
+    #[cfg(test)]
+    pub(crate) fn event_sequence_setzen(&self, wert: u64) {
+        self.event_sequence.store(wert, Ordering::SeqCst);
+    }
+
     /// H-04, D12: ist der Standlock vergiftet? Ohne diese Frage waere die
     /// Vergiftung von aussen unbeobachtbar und der Test koennte nur behaupten,
     /// sie herbeigefuehrt zu haben.

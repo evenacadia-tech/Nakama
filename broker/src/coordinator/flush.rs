@@ -36,6 +36,25 @@ impl Coordinator {
         }
     }
 
+    /// 🔑 NAK-246 R-E5-2 (M-24, Zahlenrand): zieht die `event_sequence`
+    /// gesaettigt. Jede Stelle, die sie ohne Store zieht, zieht hier: der
+    /// Flush, der Subscribe (`subscription.rs`) und der Sessionbefehl
+    /// (`befehl.rs`).
+    ///
+    /// `fetch_add` lief bei `u64::MAX` auf 0 um; der naechste Zustand trug dann
+    /// eine kleinere Marke als ein bereits zugestellter und wurde als
+    /// Nachzuegler verworfen. Die Saettigung liegt bei `i64::MAX`, dem Wert, an
+    /// dem die Klammer der Marke ohnehin greift - keine neue Schwelle: ab dort
+    /// liefert jeder Zug denselben Wert, und gleiche Marke ist kein Nachzuegler
+    /// (R-M2-1). Geliefert wird wie bei `fetch_add` der Vorwert.
+    pub(super) fn event_sequence_ziehen(&self) -> u64 {
+        self.event_sequence
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |alt| {
+                alt.checked_add(1).filter(|neu| *neu <= i64::MAX as u64)
+            })
+            .unwrap_or_else(|gesaettigt| gesaettigt)
+    }
+
     pub(super) fn flush_session(&self, session: &SessionKey, verursacher_link: Option<&str>) {
         let shard = self.session_flush_shard(session);
         let _flush_guard = self.session_flush_schloesser
@@ -79,10 +98,11 @@ impl Coordinator {
             // Erfassung und vor dem Store-Zweig. `resubscribe_snapshot_push`
             // zieht seine unter demselben Lock; so folgt die Marke ohne Store
             // der Reihenfolge der Erfassung, und ein frueher erfasster Flush,
-            // der spaeter zustellt, traegt die kleinere. Mit Store ist die Marke
-            // das Ordinal des Commits, und die Zahl reist wie bisher nur als
-            // `sequence` des Ereignisses.
-            let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
+            // der spaeter zustellt, traegt die kleinere - ab der Saettigung bei
+            // `i64::MAX` dieselbe (R-E5-2, `event_sequence_ziehen`). Mit Store
+            // ist die Marke das Ordinal des Commits, und die Zahl reist wie
+            // bisher nur als `sequence` des Ereignisses.
+            let sequence = self.event_sequence_ziehen();
             let ziele = stand
                 .subscriptions
                 .iter()

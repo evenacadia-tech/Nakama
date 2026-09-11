@@ -582,9 +582,12 @@ impl Coordinator {
             let snapshot_wert: Value = serde_json::from_slice(&snapshot).ok()?;
             let snapshot_jcs = serde_json_canonicalizer::to_vec(&snapshot_wert).ok()?;
             let hash = format!("{:x}", Sha256::digest(&snapshot_jcs));
+            // 🔑 NAK-246 R-E5-2: dieselbe Sequenz, aus der ohne Store die Marke
+            // entsteht - und dieser Befehl zieht sie auch ohne Store. Gesaettigt
+            // wie Flush und Subscribe; ungesaettigt liefe sie hier um, und der
+            // Flush unten truege die Marke 0.
             let revision = self
-                .event_sequence
-                .fetch_add(1, Ordering::SeqCst)
+                .event_sequence_ziehen()
                 .saturating_add(1)
                 .min(9_007_199_254_740_991);
             while stand.session_command_reihenfolge.len() >= SESSION_COMMAND_REGISTER_MAX {

@@ -1,0 +1,596 @@
+# Nakama Prüfsystem — Konzept
+
+**Status: Vorschlag.** Bindend wird dieses Konzept erst durch ein datiertes
+User-Zitat im Register (`docs/offene-punkte.md`), wie jede Entscheidung in
+Nakama. Bis dahin ist es ein ausgearbeiteter Entwurf mit gemessener
+Grundlage. Erarbeitet am 11./12.09.2026 lesend, parallel zum laufenden Bau
+(NAK-246 Etappe 6, SONDE-015 D8); kein Produkt-, Test- oder Werkzeugcode ist
+berührt.
+
+Über diesem Konzept stehen `CLAUDE.md` und der Dirigenten-Skill; über beiden
+stehen Code und laufende Beweise. Das Konzept bindet nur die Prüfspur: was
+geprüft wird, wann, von wem, wohin die Befunde gehen und wie die Prüfspur
+selbst wächst. Es ist ein lebendes Dokument mit Änderungsprotokoll (§12);
+jede Änderung trägt Datum und Anlass.
+
+## Auftrag (User-Wortlaut)
+
+11.09.2026: „DER BAU ist gerade voll im gange, ich würde gerne mit dir
+parallel an der wartbarkeit arbeiten, verschiedene möglichkeiten wie wir
+nakama durch skills und agenten abgesehen vom standard verfahren durch den
+plan und dirigent überprüfen können. im sonifold projekt hab ich damals einen
+check skill nach und nach erweitert, es gab verschiedene agentenskills um
+spezifische probleme abzudecken."
+
+12.09.2026: „ich möchte das nicht mal eben so nebenbei nach einem schnellen
+durchgang blind einbauen. ich möchte dass du ein vollständiges konzept
+ausarbeitest, das während des baues von nakama zum einsatz kommt, sich
+konstant weiterentwickelt, verbessert, anpasst und fester teil des
+dirigentenkonzeptes wird. ich bin kein coder, daher muss ich meine umgebung
+so bauen und den dirigenten so ermächtigen um maximale qualität aus dem
+nakama projekt rauszuholen. es soll nicht überladen werden mit zeremonie und
+dadurch mehr token verbrennen als nutzen haben. es soll gezielt da nutzen wo
+sonst fehler auftreten. wenn der implement plan in zukunft fertig ist, dürfen
+wir nicht nackt darstehen sondern müssen auf hilfsmittel zurückgreifen können
+die sich mit uns mit entwickelt haben im prozess."
+
+Vier Forderungen daraus, gegen die jeder Absatz unten geprüft ist:
+
+| Forderung | Was sie im Konzept erzwingt |
+|---|---|
+| während des Baus im Einsatz | jeder Baustein hat einen Platz im Dirigentenzyklus (§6), keiner wartet auf „nach dem Plan" |
+| entwickelt sich mit, verbessert, passt sich an | Detektoren entstehen nur aus Befunden, tragen ihren Anlass und werden stillgelegt, wenn sie nie mehr rot werden (§2) |
+| keine Zeremonie, kein Tokenverbrennen | vier Kostenstufen (§8); mechanische Tore laufen ohne Modell; ein Modell liest nur Rot; Audits laufen nie im Dirigentenkontext |
+| nach dem Plan nicht nackt | der Pflegebetrieb als zweiter Betriebsmodus des Dirigenten mit derselben Mechanik (§7, §10) |
+
+---
+
+## 1. Was Nakama heute prüft, und was nicht
+
+Gemessen am 11./12.09.2026 auf dem sichtbaren Checkout (HEAD `818673cd`).
+Größe mit `scc` über `broker/`, `eq-copilot/plugin/`, `tools/`: rund
+70 000 Codezeilen Rust, 62 000 C++ plus 13 000 in Headern, 17 600 Python
+(Werkzeuge), 3 500 PowerShell. Das ist die Größenordnung von Sonifold, aber
+anders geschnitten: zwei Sprachen, zwei Prozesse, ein Audio-Thread mit
+Nulltest-Pflicht.
+
+### 1.1 Vorhanden
+
+| Fläche | Werkzeug | Was es fängt |
+|---|---|---|
+| Verhaltensbeweis je Ticket | `tools/beweise.ps1` (Kanon): 64 Namenseinträge, darunter 41 C++-Testprogramme, 22 Broker-Integrationstests, Python-Riegel, flatc-Drift, Sichtprüfung `EqCopShot` | die Instanzen, für die ein Test geschrieben wurde; baut selbst, verweigert Beglaubigung bei veralteten Binaries |
+| Codebase- und Kontextmaße | `tools/plan/gesundheit.py` (Bein A32, Exit 4 bei Riss) | Zeilen je Datei, Funktionen über 200, Clippy-Ratsche, aufruferlose Helfer, Kommentar-Bezeichner, Bytes der Always-on-Fläche |
+| Plandokumente | `tools/plan/dokuriegel.py`, `planstand.py`, `rundenbilanz.py` | zerrissene Tabellen, Verweise ins Leere, Status als Messwert, Produktfortschritt je Runde |
+| Ticketprüfung | Dirigent §3.4: Codex `gpt-6-astra` lesend, gebundene Vorlage, Validator-Agent je Befund, Verhaltensmatrix, drei Runden, Konvergenzentscheid | Defekte gegen Gate-Text, Matrix und Invarianten, im Ticketbereich |
+| Befundklassen als Prosa | `tools/dirigent/pruefliste.md` A–F (40 bestätigte Befunde aus S8–S15) | nur, wenn der Bauer sie liest und der Prüfer sie kennt |
+| Riegel und Erinnerungen | `tools/hooks/`: Git-Riegel, Kreativschleuse, Fremdmodell-Riegel, Erinnerung für Plugin- und Schema-Pfade, Planstand-Hook | Destruktives, ungefragte Designartefakte, vergessene Realtime-Regeln |
+| Dritte Spur | externer Codex-Audit (`docs/audits/`, Muster NAK-246), Ultra-Review an Gates (Dirigent §3.7) | was Ticketprüfung und Kanon gemeinsam übersehen |
+
+### 1.2 Nicht vorhanden
+
+- **Kein Clippy im Kanon.** `broker/Cargo.toml` sagt es selbst: „tools/beweise.ps1 faehrt in keinem Bein Clippy". Nur `gesundheit.py --clippy` zählt Fundstellen als Ratsche.
+- **Keine Supply-Chain-Prüfung** des Brokers (`cargo deny`, `cargo audit`, `osv-scanner`), kein Geheimnis-Scan, kein Tippfehler-Scan. Alle vier Werkzeuge sind auf diesem Rechner installiert und ungenutzt.
+- **Keine Mutationstests, keine Abdeckungsmessung** in keiner Sprache. Ob ein Golden eine Änderung im Messkern bemerkt, ist ungemessen.
+- **Kein Klassen-Detektor** für die Klassen, die am häufigsten wiederkamen (§3). Sie leben als Prosa.
+- **Kein statischer Blick auf den Audio-Thread.** Der Nulltest beweist Bitgleichheit; eine Sperre oder Allokation, die Samples nicht verändert, besteht ihn.
+- **Kein Rundgang über den ganzen Baum.** Geprüft wird, was ein Ticket berührt; Drift außerhalb des Ticketbereichs findet nur ein externer Audit.
+- **Keine Karte**, welche Zusage welchen Detektor besitzt. Ohne sie entsteht das nächste Prüfwerkzeug aus einem Gefühl.
+- **Ein Riss ohne Zeile.** `gesundheit.py` meldete am 12.09.2026 drei gerissene Grenzen (Funktionen über 200 Zeilen, Kommentar-Bezeichner 32 von 30, Dirigenten-Skill 38 448 von 36 864 Bytes). Für die ersten beiden stehen NAK-235, NAK-236 und NAK-255 im Register; eine Zeile, die den Skill-Riss nennt, fand `grep` nicht. Der Kreis „Riss → Registerzeile" schließt sich also nur, wenn jemand daran denkt. Genau das schließt der Prüfgang (§4.1, Wache W-Riss).
+
+---
+
+## 2. Grundsatz: Detektoren wachsen aus Befunden, nirgends sonst
+
+Sonifolds Lehre in einem Satz: Ein Test beweist die Instanz, für die er
+geschrieben wurde; ein **Klassen-Detektor** misst die *nächste* Instanz, die
+eine künftige Änderung einführt. Sonifold hat zuletzt für die Klassen mit
+belegter Wiederkehr Detektoren gebaut und die Klassen ohne Besitzer in einer
+Karte sichtbar gehalten, samt der ehrlichen Restliste ohne Besitzer. Diese
+Idee wird übernommen. Die Träger werden geändert (§9), weil Sonifolds Träger
+zur größten Wartungslast des Systems wurden.
+
+Fünf Regeln, die verhindern, dass daraus Zeremonie wird:
+
+1. **Zweitbefund-Regel.** Ein Detektor entsteht, wenn dieselbe Befundklasse
+   zum zweiten Mal bestätigt ist: durch ein Codex-Urteil, einen externen
+   Audit, ein rotes Bein oder einen Riss. Der erste Befund wird behoben und
+   klassifiziert (§6.4), sonst nichts. Ausnahme: die tragenden Invarianten
+   aus `CLAUDE.md` (Grundgesetz Nulltest, Audio echtzeitfest, Identität
+   eingefroren, State verlustfrei, Schemas als Verträge, Musikzeit
+   deterministisch, NaN-Ehrlichkeit) dürfen eine Wache ohne Zweitbefund
+   bekommen, weil ihr Bruch Produkt oder Daten zerstört.
+2. **Anlass und Rotbeweis.** Jeder Detektor trägt im Kopf die Befund-IDs,
+   die ihn verlangt haben, und wurde einmal absichtlich gebrochen: am
+   historischen Stand vor dem Fix des auslösenden Befunds muss er rot sein
+   (`git archive <sha>` in ein Temp-Verzeichnis, Detektor darauf fahren).
+   Ein Detektor, der auch ohne den Fix grün wäre, ist kein Detektor.
+3. **Totes-Element-Regel.** Ein Detektor, der über zwei Pflegeschritte hinweg
+   nie rot war und dessen Klasse nicht wiederkam, wird im Änderungsprotokoll
+   stillgelegt (nicht gelöscht). Ein neuer Befund seiner Klasse belebt ihn.
+   Dieselbe Regel, die `gesundheit.py` für seine Maße hat: „Ein Maass, das
+   immer gruen ist, waere ein totes Element."
+4. **Ein Ledger.** Befunde landen im Register `docs/offene-punkte.md` mit den
+   bestehenden Klassen. Es gibt keine zweite Befundbasis mit eigener
+   Punktwertung. Berichte der Audits sind Beweisdateien, keine Ledger.
+5. **Ohne Modell, wo es geht.** Mechanische Tore sind Python ohne
+   Abhängigkeiten und laufen ohne Claude. Ein Modell liest nur, was rot ist.
+   Audits, die Urteil brauchen, laufen als eigene Prüfsession (§5), nie im
+   Dirigentenkontext.
+
+---
+
+## 3. Wo Fehler bisher auftraten
+
+Die Befundklassen K1 bis K8 sind das Klassenregister dieses Konzepts. Sie
+sind nicht erfunden, sondern aus drei Quellen gerechnet: der Prüfliste A–F
+(40 bestätigte Befunde aus S8, S9, S9b, S14–15), den zehn Befunden des
+externen Audits vom 10.09.2026 (`docs/audits/2026-09-10-code-review/AUDIT.md`,
+D1–D10) und den Klassenmarken des Registers (gezählt 11.09.2026 über offene
+und geschlossene Zeilen: 47-mal [Härtung/Struktur], 35-mal [Werkzeug]).
+
+| Klasse | Inhalt | Belege | Detektor heute | Stärke |
+|---|---|---|---|---|
+| **K1 Rückstau und Ordnung** | Politik bei voll je P0/P1/P2, Abfluss ohne Reconnect, Schlüssel überleben Puffer, Lesepfad nie hinter „erst alles senden" | Prüfliste A; D5 (Zustellung nach Commit ungeordnet), D9 (Rücknahme teilt Schlüssel mit Vollsnapshot); NAK-165 | QueueStressTest, `pruefe_ipc_last.py`; Prosa | ◐ Beispiel |
+| **K2 Lebenslauf und Besitz** | Reihenfolge verbinden/trennen, Join-Fristen, Close-Flag vor Inhalt, Callback-Besitz, Registrierung im Stopp-Fenster | Prüfliste B; D1 (Slotbesitz), D2 (IPC-Laufzeit überlebt Besitzer), D3 (ACK am Editor-Timer); NAK-184 | LebenslaufTest, PipeClientLifecycleTest, `lebenslauf.rs`; Prosa | ◐ Beispiel |
+| **K3 Vertrag und Zahlenränder** | Längen im Leser, exakte Feldmenge beidseitig, Discriminator vor Inhalt, NaN/Inf an jeder Zahl über den Draht, Bereichsprüfung vor Konvertierung | Prüfliste C; D7 (Stereokanäle als Messdauer, schließt NAK-159 mit), D8 (Bereich nach Konvertierung); SONDE-013 P4 | SchemaTest, `contract_cross_language.rs`, `pruefe_v3_vertrag.py` (Metaschema, Engine-Teilmenge, Fassungsschritt), flatc-Drift | ◐ Beispiel |
+| **K4 Zustand und Paarung** | Save↔Load, Migration je Version, unbekannte Major read-only mit Originalbytes, Dirty-State an Host, Beziehungspaare im selben Änderungssatz | `CLAUDE.md` State-Invariante, Prüfliste F; D6 (Reload leert Sitzungszustand nicht) | StateMigrationTest, Fixtures unter `eq-copilot/fixtures/state/`, ProjectReloadTest, TransactionTest; Prosa | ◐ Beispiel |
+| **K5 Behauptung ≤ Messung, Werkzeug-Ehrlichkeit** | Runner bezeugt nur, was er baut; Frische der Eingaben; jede Prüfung einmal gebrochen; Zahlen gemessen, nicht abgeschrieben; grüner Lauf auf altem Binary | Prüfliste D und E; D4 (false und spätere Ausführung), D10 (vier Slots kein Vier-Bank-Beweis); NAK-93, NAK-94, NAK-230 (fünf Fehler als grüner Lauf), N-29 (cmake fehlt in Bash); 35 Registerzeilen [Werkzeug] | Frischeprüfung im Runner, Stillgelegt-Marke; Prosa | ◐ Beispiel |
+| **K6 Echtzeit** | keine Sperre, Allokation, Datei, Pipe, Netz, kein Logging auf dem Audio-Thread; Überlast verwirft Frames, nie Audio | `CLAUDE.md` Grundgesetz; kein bestätigter Befund bisher | Nulltest (misst Bitgleichheit, nicht Abwesenheit), QueueStress; Erinnerungs-Hook | ○ Prosa; Invariante |
+| **K7 Größe und Kontext** | Dateien über 2 000 Zeilen, Funktionen über 200, Clippy-Fundstellen, tote Helfer, Kommentar-Bezeichner, Always-on-Bytes | NAK-223, NAK-235, NAK-236, NAK-255; Skill-Riss 12.09.2026 ohne Zeile | `gesundheit.py` | ✔ Detektor |
+| **K8 Bedienehrlichkeit** | keine toten Elemente (User-Gesetz 24.08.2026), Tasten sind Material (25.08.2026), Zustand ehrlich gemeldet | Skizzenbelege; Oberfläche im Funktionsneustart, noch kein Befund | Belege in `design/skizze/belege/`; Gesetze | ○ Prosa |
+
+Lesart der Stärke: ✔ Detektor misst die nächste Instanz · ◐ Beispieltests
+und Prosa fangen die bekannten · ○ nur Prosa.
+
+Die vier Klassen mit belegter Rückfallquote sind K1 bis K4. Acht der zehn
+Audit-Befunde vom 10.09.2026 fallen in genau diese vier, obwohl die Prüfliste
+sie seit dem 30.08.2026 als Klassen nennt. Prosa allein hat sie nicht
+gehalten. Das ist die Evidenz, aus der dieses Konzept seine Reihenfolge zieht
+(§10): zuerst Detektoren für K1 bis K4, alles andere danach oder nie.
+
+---
+
+## 4. Bausteine
+
+Jeder Baustein beantwortet eine Frage, schreibt an einen festen Ort, läuft zu
+einem festen Anlass und hat eine Kostenstufe (§8). Kein Baustein ändert
+Produktcode; Änderungen entstehen nur über Tickets im Dirigenten.
+
+### 4.1 Prüfgang `/pruefen` — Stufe 0
+
+**Frage:** Was ist am Baum falsch, ohne dass ein Ticket es berührt hat?
+
+**Träger.** Ein neues Verzeichnis `pruefung/` unter `tools/` mit einem Modul
+je Tor, nur Standardbibliothek, nach dem Muster von `gesundheit.py`: jedes Tor hat
+`--selbsttest`, einen Kopf mit Anlass (Befund-IDs) und Rotbeweis (SHA, an dem
+es rot war), und eine Klasse **GRENZE** (reißt, Exit 4), **ZIEL** (wird
+genannt, Exit 0) oder **HINWEIS** (Liste zur Sichtung). Ein Läufer
+`pruefgang.py` fährt alle Tore, sammelt alles, bricht nie beim ersten Rot ab
+und schreibt eine Tabelle. Das Skill `/pruefen` ist dünn: es ruft den Läufer,
+liest nur die roten Zeilen und ordnet sie ein.
+
+**Tore der ersten Fassung** (alle ohne Urteilsbedarf; Anlass in Klammern):
+
+| Tor | Klasse | Misst | Anlass |
+|---|---|---|---|
+| `gesundheit.py` | GRENZE | wie heute; wird erstes Tor, bleibt Bein A32 | NAK-223 |
+| Bau und Clippy | GRENZE | `cargo clippy --all-targets` im Broker mit `-D warnings` auf der Ratsche aus `gesundheit.py`; CMake-Konfiguration des Plugins ohne Bau | `broker/Cargo.toml` (Clippy nie im Kanon) |
+| Supply-Chain | GRENZE | `cargo deny check`, `osv-scanner --lockfile broker/Cargo.lock` | K5, Werkzeuge installiert und ungenutzt |
+| Geheimnisse und Tippfehler | GRENZE / HINWEIS | `gitleaks protect --staged`, `typos` mit Ausnahmeliste | Steam-/Signatur-Lehre aus Sonifold |
+| Vakuum-Wachen | GRENZE | Fixture-Ordner nicht leer, Golden-Zähler über Boden, jedes `EqCop*`-CMake-Ziel ist Bein oder stillgelegt, jeder `broker/tests/*.rs` läuft in einem Bein, Fuzz-Korpus nicht leer | K5 (NAK-93: „Was der Kanon nicht baut, darf er nicht bezeugen") |
+| W-Riss | GRENZE | jeder aktuelle GRENZE-Riss von `gesundheit.py` hat eine Registerzeile, die das Maß nennt | §1.2 (Skill-Riss ohne Zeile, 12.09.2026) |
+| Volatile Zahlen | GRENZE | `CLAUDE.md` enthält keine Zahl vor „Tests", „Beine", „Fixtures", „Capabilities" (Regel aus `CLAUDE.md` „Arbeitsregeln", bisher ohne Riegel) | Kontexthygiene-Playbook Phase B |
+| Beziehungspaare im Diff | HINWEIS | `git diff <basis>...HEAD`: berührt eine Seite eines Paares (speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg) ohne die andere Seite im selben Satz | K4, Prüfliste F, D6 |
+| NaN-Wachen | HINWEIS | Parse-Stellen von Gleitkommazahlen an Pipe- und Schemagrenzen ohne Endlichkeitsprüfung in Sichtweite | K3, D8 |
+| Echtzeit-Hygiene | HINWEIS | verbotene Symbole (Sperren, `new`/`malloc`, Datei-, Pipe-, Netz-, Log-Aufrufe) in den Quelldateien des Audio-Pfads; Kalibrierung durch das Echtzeit-Audit (§4.3), danach GRENZE | K6, Invariante |
+| Duplikate | ZIEL | `jscpd` über Rust und C++, Schwelle aus der ersten Messung | K7 |
+
+**Wohin.** Die Datei `pruefung.md` unter `docs/gesundheit/`, kanonischer
+Name, bei jedem Lauf überschrieben; Git-Historie ist das Archiv. Jeder GRENZE-Riss wird eine
+datierte Registerzeile [Werkzeug] oder [Planarbeit · Pflegeschritt], wie es
+NAK-223 für `gesundheit.py` festlegt; die Wache W-Riss prüft, dass sie steht.
+
+**Wann.** Dirigent §3.1 vor jedem Ticket (Minuten, kein Kanon); als nicht
+blockierendes Kanon-Bein neben A32; nächtlich durch die Windows-Aufgabenplanung
+ohne Claude (der Läufer schreibt nur die Datei; ein Rot liest die nächste
+Dirigentensession in §3.1).
+
+**Rotbeweis je Tor.** Vor der Aufnahme in den Läufer läuft jedes Tor gegen
+den Stand vor dem Fix seines Anlasses und ist dort rot; die Rohausgabe steht
+im Manifest des Pflegetickets. Ein Tor ohne Rotbeweis wird nicht aufgenommen.
+
+### 4.2 Abdeckungskarte (`abdeckungskarte.md` unter `docs/gesundheit/`) — Stufe 2, einmalig, dann Stufe 0
+
+**Frage:** Welche Zusage hat einen Detektor, welche nur Prosa, welche
+niemanden?
+
+Die Tabelle aus §3, verifiziert und fortgeschrieben: je Zusage die Besitzer
+aus Kanon, Tests, Hooks, Riegeln und Prosa, mit `Datei:Zeile` oder Beinname;
+je Klasse die Befund-IDs und ihr Zähler. Erstellung als Prüfsession (§5):
+Leseagenten sammeln die Besitzer je Zeile, Skeptiker versuchen jede Zeile
+„kein Besitzer" zu widerlegen (den Test finden, der es doch fängt), das
+Urteil fällt im Hauptlauf der Session. Danach ist die Karte Stufe 0: sie
+ändert sich nur, wenn ein Detektor dazukommt oder stillgelegt wird, und das
+trägt der Dirigent im Abschlussfenster nach (§6.5).
+
+Sonifold hat diese Karte erst am 05.06.2026 gebaut, nachdem alle anderen
+Werkzeuge standen, und daraus das nächste Audit abgeleitet. Nakama beginnt
+mit ihr, weil sie entscheidet, was gebaut wird, und weil sie die
+Prosa-Klassen sichtbar macht, bevor der nächste externe Audit sie findet.
+
+### 4.3 Spezialaudits — Stufe 2
+
+**Frage, immer dieselbe:** Würde die nächste Änderung diese Zusage still
+brechen?
+
+Gemeinsame Mechanik, übernommen aus `/save-fidelity` und `/logic-audit`,
+weil sie Prozessregeln sind und keine Modellkrücken:
+
+- **Audit-only.** Die Session ändert keinen Code. Ergebnis ist ein Bericht
+  und Registerzeilen.
+- **Population, nicht Stichprobe.** Agenten zählen die ganze Population
+  eines Musters (jede Queue, jedes Feld, jeden Aufruf) und liefern
+  `Datei:Zeile`; „ein paar Beispiele" ist kein Bericht. Jeder Bericht endet
+  mit einem Scope-Beweis: was gelesen wurde, was nicht, ob Pfade fehlten.
+- **Urteil im Hauptlauf.** Agenten sammeln mechanisch; die Einordnung fällt
+  im Hauptlauf der Prüfsession, nie in einem Agenten.
+- **Skeptiker je Befund.** Ein zweiter Agent sucht den Test, den Riegel, die
+  Registerzeile, die den Befund doch abdeckt. Nur Überlebende werden
+  Zeilen. Sonifold maß rund ein Viertel falsche Befunde; ohne diesen Pass
+  wären sie Arbeit geworden.
+- **Klassen wie im Dirigenten.** Ein Befund gegen Gate-Text, Matrix, Test
+  oder `CLAUDE.md`-Invariante ist **Defekt** und wird ein Ticket nach dem
+  Muster NAK-246 (Quellvalidierung, Matrix, Etappen). Alles andere ist
+  **Härtung** und wird Registerzeile [Härtung/Struktur] mit K-Kennung.
+  Produktfragen, die dabei entstehen, werden Karten in
+  `docs/plan/fragen.json`, nie direkte Fragen.
+- **Bericht.** `docs/gesundheit/<audit>.md`, kanonisch, überschrieben; Kopf
+  mit Urteil, Befundliste und Klassenzählern; darunter die Populationen mit
+  Evidenz, damit der nächste Lauf gegen den vorigen diffen kann.
+
+Die Audits, in der Reihenfolge ihres Bedarfs (§3):
+
+| Audit | Klasse | Was es enumeriert | Wann |
+|---|---|---|---|
+| `/lebenslauf-audit` | K1, K2 | jede Queue, jeden Kanal, jeden Thread, jeden Join, jeden Callback in `broker/src/`, `eq-copilot/plugin/core/ipc/`, `PipeClient`; je Objekt die Matrix aus Prüfliste A und B: Politik bei voll, Abfluss ohne Reconnect, Close-Flag vor Inhalt, Join-Frist, Besitz des Callbacks, Test in beiden Sprachen. Eine leere Zelle ist der Befund. | erster Lauf nach der Karte; danach nach jedem Ticket, das Transport, Queues oder Lebenslauf berührt |
+| `/zustandstreue` | K4 | vier Gänge nach `/save-fidelity`: Parität (jedes persistente Feld ↔ Schreiber ↔ Leser ↔ Migration ↔ Fixture), Signal (jede persistente Änderung meldet Dirty-State), Migration (jede Version hat ein eingefrorenes Fixture; unbekannte Major bleibt read-only mit Originalbytes), Lebenszyklus (Schreiben unter Abbruch; Broker hat `store_crash_matrix.rs`, Plugin-Seite zu prüfen) | vor S26–28, weil Layout v2, Preset-Objekt und `state_report.dsp` neue Felder bringen; danach nach jedem Ticket, das `eq-copilot/plugin/state/` oder `eq-copilot/schemas/state/` berührt |
+| `/vertragstreue` | K3 | jedes Feld der v3-Schemas: C++-Leser und Rust-Leser mit derselben Grenze, Negativfixture je Feld, Discriminator und Familie vor Inhalt, DTO ↔ Schema, flatc-Stand, Bereichsprüfung vor Konvertierung. `pruefe_v3_vertrag.py` prüft heute das Schema und den Fassungsschritt; das Audit prüft die Leser. | mit `/zustandstreue`; danach nach jedem Ticket, das `eq-copilot/schemas/` berührt |
+| `/echtzeit-audit` | K6 | statischer Aufrufgraph ab `processBlock` und den Analyse-Einstiegen: Sperren, Allokationen, Datei-, Pipe- und Netzzugriffe, Logging; Ergebnis kalibriert das Tor Echtzeit-Hygiene (Ausnahmeliste, dann GRENZE). Der Codebase-Graph (`codebase-memory`, für Nakama indiziert) dient der Erkundung; das Tor selbst braucht einen eigenen deterministischen Läufer ohne MCP. | nach dem Prüfgang; danach nach jedem Ticket unter `eq-copilot/plugin/src/prozessor/` oder `core/analysis/` |
+| `/zwecktreue` | Produktmodell | nach `/logic-audit`: jede v3-Nachricht, jedes persistente Feld, jeder Parameter, jede Capability gegen Wahrheitskern, Blueprint und Entwurf 0.5; Klassen vestigial, verwaist, Modellwiderspruch, Duplikat, unehrliche Fläche. Erklärt außer Frage: Legacy-Bezeichner bis NAK-30, geparkte Studien. Empfiehlt Rückbau, entscheidet nie. | einmal vor S29–31 (Fernsteuerung), danach je Phasengate |
+| `/bedienehrlichkeit` | K8 | nach `/compositor-ui` auf die zwei User-Gesetze: jedes sichtbare Element führt einen Handgriff aus oder meldet einen Zustand; kein Zustand ändert Maße (gemessen am Layoutrechteck, `offsetWidth`/`offsetHeight`); dazu stille Pipe-Fehler ohne Anzeige, veraltete Anzeige, Aktion ohne Rücknahme. Belege mit `EqCopShot` beziehungsweise Playwright auf der Skizze. | Zeitpunkt ist Produktentscheid (§11): jetzt auf der Skizze oder nach S26–28 auf der gebauten Oberfläche |
+| `/tiefenaudit` | alle | nach `/deep-audit`, selten: acht Linsen (Grenze Plugin/Broker, Korrektheit und Zahlenränder, Audio-Pfad Bus → Sonde → Broker → Gen, Vertrag, Zustand, Echtzeit und Latenz, Bedienung gegen den Blueprint, Beinlücken: „welcher Bug käme an allen Beinen vorbei?"). Ausgabe: fünf bis zehn Einsichten und ein Planvorschlag, kein Code. | je Phasengate, am selben Tag wie die Ultra-Review-Erinnerung (Dirigent §3.7) |
+
+### 4.4 Mutanten `/mutanten` — Stufe 0 (Rechenzeit), Stufe 1 (Lesen)
+
+**Frage:** Merken die Tests, wenn der Code sich ändert?
+
+`cargo-mutants` (installiert) über den Broker. Ratsche je Crate in einem
+Unterordner `mutanten/` unter `docs/gesundheit/` mit Tötungsrate,
+Überlebenden-Hash und Hochzieh-Protokoll, nach dem Muster von `/aftercheck`: sinkt die Rate, ist der
+Lauf rot; steigt sie, wird die Marke in einem eigenen Schritt hochgezogen;
+ändert sich der Hash bei gleicher Rate, ist eine andere Lücke entstanden.
+Diff-Modus (`--in-diff`) je Ticket als Kanon-Bein mit Zeitlimit; Vollmodus je
+Pflegeschritt, abgekoppelt, wie der Kanon (`--in-place` unter Windows, weil
+NTFS keine Reflinks kann und die Kopie je Mutant sonst dominiert).
+
+**C++.** Für MSVC gibt es kein reifes Werkzeug; `mull` braucht clang. Vorschlag
+als **Experiment mit ehrlichem Ergebnis**: ein eigener Operator-Mutator (Python)
+auf `eq-copilot/plugin/core/analysis/`, Richter sind die Golden-Beine. Das
+Manifest darf „nicht tragfähig" heißen; dann bleibt es bei Rust.
+
+Überlebende, die kein dokumentiertes Äquivalent sind, werden Registerzeilen
+[Härtung · Test] mit Klasse; ein Überlebender in einem Pfad mit Invariante
+(Nulltest, State, Identität) ist ein Defekt.
+
+### 4.5 Wächter (neue Agentendateien unter `.claude/`, Ordner `agents/`) — Stufe 1
+
+**Frage:** Hat diese Änderung die heikle Grenze sauber gehalten?
+
+Vier kleine lesende Agenten auf Sonnet, mechanisch, mit fester Checkliste je
+Klasse und dem Berichtsformat „Tabelle Objekt · Zusage · gemessen an":
+
+| Agent | Klasse | Pfade, bei denen er fällig ist | Prüft |
+|---|---|---|---|
+| `vertrags-waechter` | K3 | `eq-copilot/schemas/`, `broker/src/dto.rs`, `broker/src/vertrag.rs`, `core/ipc/` | Feld beidseitig, Länge im Leser, Discriminator vor Inhalt, Negativfixture, flatc frisch |
+| `echtzeit-waechter` | K6 | `eq-copilot/plugin/src/prozessor/`, `core/analysis/`, `PluginProcessor.*` | verbotene Aufrufe im Audio-Pfad, Allokation in `processBlock`-Reichweite, Logging |
+| `zustands-waechter` | K4 | `eq-copilot/plugin/state/`, `eq-copilot/schemas/state/`, `fixtures/state/` | Schreiber ↔ Leser ↔ Migration ↔ Fixture ↔ Dirty-State im selben Satz |
+| `beziehungs-waechter` | K1, K2, K4 | jeder Änderungssatz mit Lebenslauf-, Queue- oder Paar-Berührung | die Paare aus `CLAUDE.md`, Prüfliste A und B als Zeilenliste |
+
+Der bestehende Hook `tools/hooks/agent-reminder-nakama.sh` nennt bei Treffer
+den fälligen Wächter (eine Zeile, nicht blockierend). Der Ticketauftrag des
+Dirigenten (§3.2) verlangt: vor dem Commit den fälligen Wächter dispatchen und
+sein Ergebnis im Manifest unter „eigene Ticketproben" nennen.
+
+**Regel, damit daraus keine Zeremonie wird.** Wächterbefunde sind Selbstaudit
+des Bauers, keine Anforderungsquelle. Dirigent §3.4 bleibt unverändert:
+Nacharbeit nur aus bestätigten Defekten des Prüfers. Der Prüfer liest den
+Wächterbericht als Kontext, wie die Prüfliste.
+
+### 4.6 Laufzeit-Arm `/fl-probe` — Stufe 2
+
+**Frage:** Kommt das, was die Sonde misst, wirklich in Gen an?
+
+Fährt FL Studio über den vorhandenen MCP-Server (Transport, Parameter,
+Routing), liest Broker-Telemetrie über den Probe-Pipenamen (nie die
+Produktions-Pipe), holt Bilder über `EqCopShot`, vergleicht gegen eine
+Erwartungsdatei je Szenario (`docs/gesundheit/szenarien/*.json`: Aktion,
+erwartete Telemetrie, erwartete Sicht). Rohdaten nach `docs/beweise/roh/`,
+Befunde ins Register. Der MCP-Server war am 12.09.2026 erreichbar; ob FL
+läuft und die Plugins installiert sind, ist damit nicht bewiesen. Die
+Installation bleibt ein bewusster Admin-Handgriff des Users; der Arm ist der
+Nachfolger der Handmessungen aus Termin A und B.
+
+---
+
+## 5. Prüfsessions: wie Audits laufen, ohne den Dirigenten zu belasten
+
+Der Dirigent baut nie selbst; analog **auditiert er nie selbst**. Ein Audit
+ist eine eigene Session, die der Dirigent wie einen Worker startet und deren
+Ergebnis er am Repo liest:
+
+```powershell
+claude "<Prüfauftrag aus tools/pruefung/auftrag-<audit>.md, Platzhalter gefüllt>" `
+  --model opus --effort max --permission-mode dontAsk `
+  --name "nakama-pruef-<audit>-<basis-kurz>" `
+  --allowed-tools "<eng: Read, Grep, Glob, Bash(lesende Kommandos), Agent, Write(docs/gesundheit/**)>" `
+  --bg
+```
+
+- **Auftrag aus Vorlage**, nie frei formuliert: je Audit eine Datei
+  `tools/pruefung/auftrag-<audit>.md` mit Scope, Population, Berichtsformat,
+  Skeptikerpass, Ausschlüssen (Register-Härtungen, NAK-30, geparkte Studien)
+  und dem Satz, dass die Session keinen Code ändert.
+- **Ein Schreiber.** Die Prüfsession schreibt nur unter `docs/gesundheit/`
+  und nur, wenn kein Worker läuft. Sie läuft deshalb zwischen zwei Tickets:
+  nach dem Abschlussfenster (§3.5), vor dem nächsten §3.1. Läuft ein Worker,
+  wartet das Audit; es wird nie parallel gestartet.
+- **Hauptlauf Opus, Fan-out Sonnet.** Das Urteil fällt im Hauptlauf; die
+  Populationen sammeln Sonnet-Agenten über das Workflow-Werkzeug (Fan-out
+  plus Skeptikerpass als Pipeline). Sonifold maß im Juni 2026, dass mehr als
+  sechs parallele Opus-Agenten den Ratenbegrenzer reißen; die Fan-out-Ebene
+  bleibt deshalb Sonnet.
+- **Der Dirigent liest nur den Kopf**: Urteil, Befundliste mit K-Kennung,
+  Klassenzähler. Die Populationen unter dem Kopf liest er nicht. Aus dem
+  Kopf macht er Registerzeilen und, bei Defekten, ein Ticket. Damit kostet
+  ein Audit den Dirigentenkontext wenige tausend Token.
+- **Beweis für die Session selbst.** Jeder Bericht endet mit dem
+  Scope-Beweis (gelesene Pfade, Zahl der Objekte, fehlende Pfade). Fehlt er
+  oder ist er unvollständig, gilt der Bericht als nicht gelaufen; der
+  Dirigent startet die Session neu mit engerem Auftrag, wie er einen
+  abgebrochenen Worker neu startet.
+
+---
+
+## 6. Einbau in den Dirigentenzyklus
+
+Der Zyklus aus dem Dirigenten-Skill §3 bleibt; die Prüfspur hängt sich an
+vier Stellen ein. Jede Stelle nennt ihre Kosten, damit sichtbar bleibt, dass
+sie sich lohnt.
+
+### 6.1 §3.1 Vorher: Prüfgang
+
+Vor dem Workerstart läuft `/pruefen` (Stufe 0, Minuten). Ein GRENZE-Riss
+außerhalb des Ticketbereichs wird Registerzeile und, wenn ein Pflegeschritt
+ihn schon kennt, dort Nachtrag; das Ticket startet trotzdem. Liegt der Riss
+im Ticketbereich, geht er als Satz in den Ticketauftrag, nicht als
+Punktkorrektur nach dem Bau. Rote Tore werden gelesen, grüne nicht.
+
+### 6.2 §3.2 Bauen: Wächter im Auftrag
+
+Der Ticketauftrag erhält einen Satz: „Vor jedem Commit den fälligen Wächter
+aus `docs/gesundheit/KONZEPT.md` §4.5 dispatchen und sein Ergebnis im
+Manifest unter den eigenen Ticketproben nennen." Kosten: ein Sonnet-Aufruf je
+Commit mit Pfadtreffer, sonst keiner.
+
+### 6.3 §3.3 Messen: Diff-Tore
+
+Zur Rundenbilanz kommt der Prüfgang auf dem HEAD, beschränkt auf die
+Diff-Tore (Beziehungspaare, NaN-Wachen, Vakuum). Ein Treffer ist ein Satz im
+Dirigentenstand, keine Nacharbeitsrunde; er geht in den Erstprüfungsauftrag
+als Prüffrage.
+
+### 6.4 §3.4 Prüfen: eine Kennung je Befund
+
+Jeder bestätigte Befund (Defekt, Lücke oder Härtung) bekommt zusätzlich die
+Klassen-Kennung K1 bis K8 aus §3, oder „K-neu: <Vorschlag>", wenn keine
+passt. Das ist ein Wort in der Manifestzeile, die der Dirigent ohnehin
+schreibt. Ohne diese Kennung gibt es keine Zweitbefund-Regel; mit ihr kostet
+sie nichts.
+
+### 6.5 §3.5 Abschluss: Zweitbefund-Prüfung
+
+Im Abschlussfenster, wo heute `gesundheit.py` läuft:
+
+1. `/pruefen` voll (statt nur `gesundheit.py`); Risse wie in §6.1.
+2. **Zweitbefund-Prüfung.** Für jede K-Kennung der Befunde dieses Tickets
+   in der Abdeckungskarte nachsehen: Hat die Klasse einen Detektor, der
+   diese Instanz gefangen hätte? Nein, und der Zähler der Klasse steht nach
+   diesem Ticket auf zwei oder mehr: Registerzeile [Werkzeug · Prüfsystem]
+   „Detektor für Kn" mit den Befund-IDs. Der Detektor wird im nächsten
+   Pflegeschritt gebaut, nie im Feature-Ticket (NAK-223-Regel). Zähler und
+   Zeile trägt der Dirigent in die Karte.
+3. **Fällige Audits.** Hat das Ticket Pfade berührt, für die ein Audit
+   „danach" fällig ist (§4.3, Spalte Wann), startet der Dirigent die
+   Prüfsession jetzt, zwischen den Tickets, und liest ihren Kopf, bevor das
+   nächste Ticket beginnt. Höchstens eine Prüfsession je Ticketabschluss.
+4. Karte nachziehen nur, wenn ein Detektor dazukam, stillgelegt oder ein
+   Zähler geändert wurde. Sonst nicht anfassen.
+
+Die Kontext- und Codebase-Hygiene aus §3.5 (Bytes, Index-Zeilen, `/freshen`
+an Gates) bleibt unverändert; `/pruefen` schließt sie ein.
+
+### 6.6 Phasengates
+
+Am Gate laufen, an demselben Tag wie die Ultra-Review-Erinnerung:
+`/tiefenaudit`, die bis dahin fälligen Spezialaudits, der Mutanten-Vollmodus,
+der volle `/freshen`-Lauf. Ergebnisse werden wie ein externer Audit behandelt
+(Muster NAK-246). Ein Gate ohne diese Läufe ist nicht sauber.
+
+### 6.7 Pflegeschritte S31c und S35b
+
+Die Pflegeschritte verbrauchen künftig nicht nur den Befund von
+`gesundheit.py`, sondern: den Prüfgang, die in §6.5 angesammelten
+Detektor-Zeilen (bauen, mit Rotbeweis, Kanon vorher und nachher), die
+Abdeckungskarte (nachziehen, Totes-Element-Regel anwenden), den
+Mutanten-Vollmodus und ein Spezialaudit ihrer Wahl. Der Wortlaut in
+`docs/plan/plan.json` S31c und S35b wird entsprechend ergänzt (§10, Schritt
+0). Der Dirigent zieht einen Pflegeschritt vor, sobald eine GRENZE reißt,
+ohne zu fragen (`CLAUDE.md`: „Schwellen, die sofort ein Pflegeticket
+auslösen").
+
+### 6.8 Was im Dirigenten-Skill steht
+
+Der Skill liegt mit 38 448 Bytes über seiner Grenze von 36 864 (gemessen
+12.09.2026). Das Konzept wird deshalb **nicht** als Prosa in den Skill
+geschrieben, sondern als ein kurzer Absatz mit Verweis; die Kürzung des
+Skills unter die Grenze ist ein eigener Pflegepunkt. Vorgeschlagener Wortlaut
+für einen Abschnitt „7. Prüfsystem":
+
+> Die Prüfspur neben Kanon und Codex-Review steht in
+> `docs/gesundheit/KONZEPT.md` und ist bindend für §3.1 (Prüfgang vor dem
+> Ticket), §3.2 (Wächter im Auftrag), §3.4 (Klassen-Kennung je Befund), §3.5
+> (Zweitbefund-Prüfung, fällige Prüfsession) und für den Pflegebetrieb nach
+> dem Plan. Der Dirigent auditiert nie selbst: Audits laufen als Prüfsession
+> zwischen zwei Tickets, er liest nur Kopf und Befundliste.
+
+Damit ist der Skill die Regel, das Konzept die Ausführung, und beides wird
+von `gesundheit.py` gemessen.
+
+---
+
+## 7. Pflegebetrieb: der zweite Betriebsmodus des Dirigenten
+
+Heute ist der Plan die einzige Ticketquelle. Ist `docs/plan/plan.json` leer
+(nach R4), endet der Dirigent nicht, sondern wechselt in den Pflegebetrieb.
+Mechanik und Rollen bleiben dieselben (Opus baut, Codex prüft, Kanon
+beweist, Register führt); nur die Quelle der Tickets ändert sich:
+
+| Quelle | Wird Ticket, wenn | Prüfstufe |
+|---|---|---|
+| Prüfgang | eine GRENZE reißt | T2 |
+| Prüfsession | ein Defekt gegen eine Invariante steht | T2, Muster NAK-246 |
+| Zweitbefund-Zeilen | ein Detektor aussteht | T2, Rotbeweis Pflicht |
+| Mutanten | Überlebender in einem Invariantenpfad | T2 |
+| Laufzeit-Arm | ein Szenario verfehlt seine Erwartung | T2 |
+| Register [Härtung/Struktur] | nach Klassenzähler und Datum, älteste zuerst | T2 |
+| Zwecktreue-Empfehlung | der User den Rückbau entschieden hat (Karte in `fragen.json`) | T2 |
+
+Kadenz im Pflegebetrieb, ereignisgetrieben, nicht kalendarisch: Prüfgang
+nächtlich (Stufe 0); Prüfsessions, wenn ein Ticket ihre Pfade berührt hat;
+Tiefenaudit und Mutanten-Vollmodus je abgeschlossenem Pflegeblock von fünf
+Tickets; `/freshen` wie im Playbook. Neue Produktarbeit entsteht aus
+Tiefenaudit-Einsichten und User-Entscheiden und wird als neue Planphase
+eingetragen; dann gilt wieder der Bauplan-Modus, mit denselben Werkzeugen.
+
+Das ist die Antwort auf „nicht nackt dastehen": Am Tag, an dem der Plan
+leer ist, gibt es einen Prüfgang, der jede Nacht läuft, eine Karte, die sagt,
+was gedeckt ist, Audits, die auf Knopfdruck wiederholbar sind, Ratschen, die
+nur steigen, Wächter an den vier heiklen Grenzen und einen Laufzeit-Arm
+gegen FL Studio. Alles davon ist aus den Befunden des Baus gewachsen und hat
+jeden seiner Anlässe im Kopf stehen.
+
+---
+
+## 8. Kostenstufen und Sparsamkeitsregeln
+
+| Stufe | Was | Modell | Wann | Grenze |
+|---|---|---|---|---|
+| 0 | Tore, Ratschen, Karte lesen, nächtlicher Läufer | keines | jederzeit | keine; kostet nur Rechenzeit |
+| 1 | Wächter, Mutanten-Diff lesen | Sonnet | nur bei Pfadtreffer | ein Aufruf je Commit |
+| 2 | Prüfsession (Spezialaudit, Karte, Laufzeit-Arm) | Opus-Hauptlauf, Sonnet-Fan-out | ereignisgetrieben zwischen Tickets | höchstens eine je Ticketabschluss |
+| 3 | Tiefenaudit, Mutanten-Vollmodus | Opus, Sonnet | je Phasengate, je Pflegeblock | nie zwischen Tickets |
+
+Regeln:
+
+- **Rot lesen, grün nicht.** Kein Modell liest eine grüne Tabelle.
+- **Ein Audit, das zweimal in Folge ohne Befund endet, wechselt auf
+  „nur auf Anforderung"**; ein neuer Befund seiner Klasse holt es zurück.
+  Vermerk im Änderungsprotokoll.
+- **Kein Detektor ohne Rotbeweis, kein Befund ohne Klasse, kein zweiter
+  Ledger.**
+- **Keine Meldungen.** Die Regel aus dem Dirigenten-Skill §5 gilt auch für
+  die Prüfspur: der einzige Text an den User ist eine Produktfrage oder ein
+  Handgriff. Ein Prüfgang-Rot ist eine Registerzeile, kein Text.
+- **Die Prüfspur misst sich selbst** mit denselben Maßen wie der Rest: die
+  Bytes der Auftragsvorlagen und Wächterdateien fallen unter K7; ein
+  Prüfwerkzeug, das nie rot war, ist ein totes Element (§2, Regel 3).
+
+---
+
+## 9. Was von Sonifold bewusst nicht übernommen wird
+
+| Sonifold | Grund |
+|---|---|
+| Tore als Shell in einer 1 929-Zeilen-Skill-Datei | wurde zur größten Wartungslast: ein SessionStart-Hook und ein eigenes Tor nur, um das Tor-Skript gegen Drift zu prüfen. Tore werden Code mit Selbsttest; Drift zeigt sich als roter Selbsttest. |
+| 36 handgepflegte Agentenaufträge (111 KB) mit Zeilenbereich-Slices und Wortbudgets | Kontextnot der Werkzeuge von damals; die Topologie eines Audits wird aus dem Baum gerechnet (Dateien, Fachbereich, Zeilen), nicht als Prosa gepflegt. |
+| eigene Befundbasis mit Punktwertung Impact × Aufwand | Nakama hat das Register mit Klassen und Datum. Ein Ledger. |
+| SonarQube, WCAG-Gate, Bundle-Größe | Docker-gebunden und auf ein TypeScript-Frontend zugeschnitten; Nakama hat keins. |
+| Monatskadenz | ersetzt durch Ereignisse (berührte Pfade, Gates, Risse). Ein Kalender läuft auch, wenn nichts passiert ist. |
+
+Was bleibt, weil es Prozessregeln sind: Scope-Beweis je Bericht, Quelle vor
+Urteil, Skeptikerpass, keine festgeschriebenen Zahlen, Audit ändert nichts,
+das Urteil bleibt im Hauptlauf, die Datei ist der Zustand.
+
+---
+
+## 10. Aufbauplan
+
+Jeder Schritt ist ein eigenes, verhaltensneutrales Pflegeticket im Dirigenten
+mit vollem Kanon vorher und nachher (Muster S19b, NAK-223) und Prüfstufe T2.
+Der User tut nichts, außer wo es steht. Die Reihenfolge folgt der Evidenz aus
+§3 und dem Plan: die Detektoren für K3 und K4 müssen stehen, bevor S26–28
+neue persistente und vertragliche Felder bringt.
+
+| # | Ticket | Inhalt | Beweis | Voraussetzung | User |
+|---|---|---|---|---|---|
+| 0 | Konzept abnehmen, Plan und Register nachziehen | datiertes User-Zitat im Register; Registerzeilen [Werkzeug · Prüfsystem] für die Schritte 1–8; Wortlaut von S31c/S35b ergänzt; Absatz im Dirigenten-Skill (§6.8) | `dokuriegel.py` auf Register, Plan, Skill | dieses Dokument | Entscheid §11 |
+| 1 | Abdeckungskarte | Prüfsession nach §4.2; Karte committen; erste Zähler je Klasse aus Register und Audit D1–D10 | Scope-Beweis im Bericht; Karte durch `dokuriegel.py` | 0 | nichts |
+| 2 | Prüfgang, erste Fassung | Verzeichnis `pruefung/` unter `tools/` mit Läufer und den Toren aus §4.1, jedes mit Selbsttest und Rotbeweis; Kanon-Bein; §3.1-Aufruf; nächtliche Aufgabe | Kanon vorher = nachher, plus Rohausgabe jedes Rotbeweises | 1 | nichts |
+| 3 | Lebenslauf-Audit | Auftragsvorlage, Prüfsession, Bericht, Registerzeilen; Defekte werden Tickets | Scope-Beweis; Zähler K1/K2 in der Karte | 1 | nichts |
+| 4 | Zustandstreue und Vertragstreue | wie 3, für K4 und K3; vor S26–28 | wie 3 | 1 | nichts |
+| 5 | Mutanten im Broker | Ratsche setzen, Diff-Modus als Bein, Überlebende klassifizieren | Baseline-Dateien, Kanon | 2 | nichts |
+| 6 | Wächter | vier Agentendateien, Satz im Ticketauftrag, Hook nennt den Wächter | ein Probelauf je Wächter gegen einen historischen Befund | 1 | nichts |
+| 7 | Echtzeit-Audit und Kalibrierung des Tors | Aufrufgraph, Ausnahmeliste, Tor von HINWEIS auf GRENZE | Rotbeweis mit absichtlicher Sperre in `processBlock` | 2 | nichts |
+| 8 | Zwecktreue | Prüfsession, Empfehlungen als Karten in `fragen.json` | Scope-Beweis | 1 | Entscheid je Rückbau |
+| 9 | Bedienehrlichkeit, Laufzeit-Arm, Tiefenaudit | nach Entscheid §11; Laufzeit-Arm nach Installation; Tiefenaudit am Gate G6 | Belege, Szenarien, Bericht | 2, Installation | Installationshandgriff |
+
+Schritte 1 bis 4 sind die Substanz; ohne sie läuft der Rest ins Leere.
+Schritt 0 ist Dirigentenarbeit im nächsten Abschlussfenster, kein Worker.
+
+**Definition „eingebaut".** Das Konzept gilt als im Dirigenten angekommen,
+wenn der Absatz aus §6.8 im Skill steht, `/pruefen` in §3.1 läuft, die Karte
+existiert, die Klassen-Kennung in mindestens einem Ticketmanifest vergeben
+wurde und ein Spezialaudit einmal als Prüfsession gelaufen ist. Bis dahin ist
+es ein Plan.
+
+---
+
+## 11. Was der User entscheidet
+
+Alles Technische in diesem Konzept (Werkzeugwahl, Pfade, Schwellen, Reihenfolge
+innerhalb der Evidenz, Modellwahl) entscheidet Claude und begründet es hier.
+Zwei Punkte sind Produkt:
+
+1. **Ob diese Prüfspur als Ganzes gewollt ist** und Pflegeschritte künftig
+   Prüfgang, Karte und Audits verbrauchen statt nur die Größenmaße. Die
+   Abnahme ist ein datiertes Zitat im Register.
+2. **Wann das Bedienehrlichkeits-Audit läuft**: jetzt auf der technischen
+   Skizze (findet Verstöße gegen die Gesetze, bevor sie in JUCE gebaut
+   werden) oder erst nach S26–28 auf der gebauten Oberfläche (misst das
+   echte Layoutrechteck). Beides ist möglich; die Wahl bestimmt, was der
+   nächste UI-Bauer als Auftrag bekommt.
+
+Offene technische Punkte, die Claude später an der Quelle entscheidet und
+die hier stehen, damit sie nicht verloren gehen: Tragfähigkeit der
+C++-Mutation (§4.4); Präzision des Aufrufgraphen ohne clang (§4.3); ob der
+nächtliche Läufer über die Windows-Aufgabenplanung oder einen Cron der
+Dirigentensession startet; Zeitlimit des Mutanten-Diff-Beins; Kürzung des
+Dirigenten-Skills unter 36 KB.
+
+---
+
+## 12. Änderungsprotokoll
+
+| Datum | Änderung | Anlass |
+|---|---|---|
+| 12.09.2026 | Erste Fassung als Vorschlag | User-Auftrag 11./12.09.2026 (Wortlaut oben); Messungen an HEAD `818673cd`; Sonifold-System gelesen (`check`, `aftercheck`, `code-health`, `compositor-scan`, `compositor-ui`, `freshen`, `save-fidelity`, `logic-audit`, `deep-audit`, `dev-recorder-loop`, Coverage-Map, Agenten, Hooks) |

@@ -1,0 +1,16 @@
+URTEIL: NEEDS_WORK — drei DEFEKTE.
+
+Geprüft: vollständiger gebundener Diff, Marken-/Schlüsselwege, Sperrenketten und M-21–M-28 einschließlich Rotbelegen; Schema-Diff leer, HEAD vor und nach dem Review identisch bei ccf1f2b87e142cd16784ab3e18e689e05bdbbe1e.
+
+Nicht geprüft: keine Builds, Testausführungen oder Produktprozesse gestartet; Ergebnisse von A4, A4-SI, A21, A5, A8, B3c, B13 und A22 ausschließlich aus Quellen und vorhandenen Rohdateien nachvollzogen.
+
+Full review comments:
+
+- [P2] Begrenze den zweiten Flush-Testhaken auf den Testbau — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/flush.rs:180-184
+  Auch im Produktbau nimmt jeder erfolgreiche Flush hier zusätzlich den globalen `flush_test_haken`-Mutex. Der Block ist nicht durch `#[cfg(test)]` begrenzt; ein leerer Haken verhindert lediglich `erreichen()`, nicht die Sperrenkosten. Das verletzt die ausdrückliche Vorgabe „Testhaken … im Produktbau [ohne] Verhalten oder Kosten“ im [Prüfauftrag](docs/beweise/roh/NAK-246-etappe-5-erstpruefung-auftrag.txt#L18). Lesender Beleg: `git show 8a4bb01e:broker/src/coordinator/flush.rs`. Der neue zweite Zugriff muss aus dem Produktbau ausgeschlossen werden; der bestehende erste Haken ist nicht Gegenstand dieses Befunds.
+
+- [P2] Warte auf eine eindeutige Einreihentscheidung von A — C:/Users/phili/Projekte/Nakama/broker/src/transport/server_v3/tests_abonnement.rs:968-972
+  Wird A nach der Freigabe länger als 2000 ms nicht eingeplant, kann B allein durch `recv_timeout(SENKE_FRIST)` zurückkehren; `flush_b.is_finished()` belegt dann keine Ersetzung durch A. Der Consumer beginnt trotzdem und beendet seine Aufzeichnung nach 500 ms leerer Queue. Läuft A erst anschließend weiter, fehlt dessen alter Snapshot im protokollierten Rotbau A: Die Empfängerzusage bleibt grün, erst der Zähler fällt. Das verletzt M-23 und die geforderte deterministische Synchronisation gemäß [E-13](docs/beweise/NAK-246.md#L3691-L3694), nicht das unveränderte Senderlimit. Quellreproduktion: `git show 8a4bb01e:broker/src/transport/server_v3/tests_abonnement.rs`, mit A zwischen Freigabe und Enqueue bis nach dem Drain pausiert. Dasselbe Muster steht im M-24-Fall bei Zeile 1116; erforderlich ist ein eindeutiges Ereignis für die Einreihentscheidung.
+
+- [P3] Verhindere den Umlauf der No-Store-Ordnungssequenz — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/flush.rs:85-85
+  Am ausdrücklich mitzuprüfenden Zahlenrand `event_sequence == u64::MAX` läuft `fetch_add` auf 0 über. Die spätere Begrenzung mit `min(i64::MAX as u64)` betrifft nur den zurückgegebenen Wert: Zwei aufeinanderfolgende Captures erhalten dadurch die Marken `i64::MAX` und 0, sodass die Queue den neueren Zustand als Nachzügler verwirft. Das verletzt [M-24](docs/beweise/NAK-246.md#L636): „ein neuerer Zustand trägt nie eine kleinere Marke“. Lesender Reproduktionspfad: `git show 8a4bb01e:broker/src/coordinator/flush.rs`, ausgehend vom genannten Atomic-Wert und zwei schmutzigen Flushes ohne Store; der Subscribe-Zug hat dieselbe Überlaufsemantik. Die Sequenz selbst benötigt eine Überlaufregel, nicht nur ihre Konvertierung.

@@ -1,0 +1,246 @@
+NAK-246 Etappe 6 - Rotbeweis M-35 (Manifest docs/beweise/NAK-246.md §3.8): blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht (B23)
+Stand: 2026-09-11 23:10 (Rotlauf), 23:13 und 23:20 (gruen); PC-Lokalzeit. Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50.
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3c, Teil 2b, Teil 2c.
+
+DER FALL
+  3 Sampleraten (44,1 / 48 / 96 kHz) x Mono und Stereo x 6 Blockfolgen (1, 7, 64, 512, 4096 und gemischt 512-1-4096-7-64-333-2048-3)
+  = 36 Messungen. Geprobt wird `bereit()` nach jedem Block; die Blockgrenze liegt genau vor und auf der Schwelle
+  floor (kMindestSekunden * fs) = 17 640 / 19 200 / 38 400 Frames, alle Bloecke davor folgen der Folge. Gemessen und je Zeile
+  ausgegeben: der Bereitschaftsframe (erster Frame mit bereit), die gezaehlten Frames und die Zahl der Aufrufe.
+  Zusage je Zeile: Bereitschaftsframe == Schwelle und gezaehlte Frames == Schwelle.
+
+ROTLAUF - AUFRUFTOPOLOGIE DES ALTEN KERNS
+  Baustand wie rot-M-33 Fassung 1 (Header und Prozessor auf ab19ac75, `speiseBlock` je Kanal). Bau 23:09:53 bis 23:10:03,
+  Binary 23:10:03.
+  `--nur m35` -> Exit 1, 18 bestanden (alle Mono), 18 gescheitert (alle Stereo). Gemessene Bereitschaftsframes Stereo:
+    44,1 kHz: Folge 1 -> 8820, 7 -> 8820, 64 -> 8832, 512 -> 9216, 4096 -> 12288, gemischt -> 11673   (Schwelle 17640)
+    48 kHz:   Folge 1 -> 9600, 7 -> 9604, 64 -> 9600, 512 -> 9728, 4096 -> 12288, gemischt -> 11673   (Schwelle 19200)
+    96 kHz:   Folge 1 -> 19200, 7 -> 19201, 64 -> 19200, 512 -> 19456, 4096 -> 20480, gemischt -> 21189 (Schwelle 38400)
+  -> Stereo ist in jeder Blockfolge etwa bei der halben Schwelle bereit, und der Bereitschaftsframe haengt ausserdem an der
+     Blockteilung (1 gegen 4096: 8 820 gegen 12 288). Beides verbietet die Zusage "Blockteilung, Samplerate und Kanalzahl
+     verschieben den Bereitschaftszeitpunkt nicht". Mono ist in allen 18 Faellen genau an der Schwelle bereit.
+
+GRUEN - NEUE SIGNATUR
+  Gruenstand D7 (Binary 23:13:09): `--nur m35` Exit 0, 36/36. Endstand (Binary 23:19:36, voller B23 Exit 0, 409 bestanden) -
+  Bereitschaftsframe je Blockfolge und Samplerate (Manifest §4.6), Mono und Stereo gleich:
+    44,1 kHz: alle sechs Folgen -> 17640 (Aufrufe 17640 / 2521 / 277 / 36 / 6 / 20)
+    48 kHz:   alle sechs Folgen -> 19200 (Aufrufe 19200 / 2744 / 301 / 39 / 6 / 24)
+    96 kHz:   alle sechs Folgen -> 38400 (Aufrufe 38400 / 5487 / 601 / 76 / 11 / 44)
+  Gezaehlte Frames je Zeile == Bereitschaftsframe.
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Alte Aufruftopologie: Rotstand-Diff und Bau  [Zeilen 1-65 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D7 (alte Aufruftopologie): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h unveraendert am Basis-SHA ab19ac75; B23 im Endstand bis auf die drei Ruempfe der Aufruftopologie (git diff gegen den gestageten Endstand):
+diff --git a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+index a2a4e9b3..2995d67e 100644
+--- a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
++++ b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+@@ -2888,13 +2888,15 @@ std::uint64_t mindestFrames (double fs)
+ void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                   const float* const* nass, int kanaele, int n)
+ {
+-    p.speise (trocken, nass, kanaele, n);
++    // ROTSTAND: die Kanalschleife des Basis-SHA (PluginProcessor.cpp, je Kanal ein Aufruf).
++    for (int c = 0; c < kanaele; ++c)
++        p.speise (trocken[c], nass[c], n);
+ }
+ 
+ /// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+ std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+ {
+-    return p.gezaehlteFrames();
++    return p.gezaehlteSamples();   // ROTSTAND: der Name des Basis-SHA
+ }
+ 
+ /// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+@@ -2941,23 +2943,12 @@ void steuerzugWartetHaken (void* kontext)
+ bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                      const float* const* nass, int n, Halteprotokoll& h)
+ {
+-    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+-    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+-    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+-    {
+-        std::unique_lock<std::mutex> l (h.m);
+-        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+-            h.fristAbgelaufen = true;
+-    }
++    // ROTSTAND: die Aufruftopologie des Basis-SHA ohne Thread, wie NAK-159 sie
++    // beschreibt - speise (Kanal 0) → friereEin → speise (Kanal 1).
++    p.speise (trocken[0], nass[0], n);
+     const bool eingefroren = p.friereEin();
+-    {
+-        std::lock_guard<std::mutex> l (h.m);
+-        h.eingefrorenZurueck = true;
+-        h.cv.notify_all();
+-    }
+-    audio.join();
+-    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+-    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
++    p.speise (trocken[1], nass[1], n);
++    juce::ignoreUnused (h, blockmitteHaken, steuerzugWartetHaken);
+     return eingefroren;
+ }
+ 
+git diff --stat ab19ac75 -- eq-copilot/plugin/core/analysis/Vergleichspegel.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h (leer = Basisstand):
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU D7-alt
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:09:53
+Ende: 2026-09-11 23:10:03 Dauer: 11 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:10:03
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-07 04:41:30
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 04:41:15
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:09:35
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Alte Aufruftopologie: B23 --nur m35  [Zeilen 122-169 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m35
+Binary: 2026-09-11 23:10:03
+Start: 2026-09-11 23:10:04
+
+== NAK-246 M-35  blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht ==
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 17640]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 2521]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 277]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 36]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 6]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 20]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 8820, gezaehlte Frames 17640, Aufrufe 8820]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 8820, gezaehlte Frames 17640, Aufrufe 1260]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 8832, gezaehlte Frames 17664, Aufrufe 138]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 9216, gezaehlte Frames 18432, Aufrufe 18]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 12288, gezaehlte Frames 24576, Aufrufe 3]
+[ROT]  M-35: 44.1 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 11673, gezaehlte Frames 23346, Aufrufe 11]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 19200]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 2744]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 301]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 39]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 6]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 24]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 9600, gezaehlte Frames 19200, Aufrufe 9600]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 9604, gezaehlte Frames 19208, Aufrufe 1372]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 9600, gezaehlte Frames 19200, Aufrufe 150]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 9728, gezaehlte Frames 19456, Aufrufe 19]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 12288, gezaehlte Frames 24576, Aufrufe 3]
+[ROT]  M-35: 48.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 11673, gezaehlte Frames 23346, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 38400]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 5487]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 601]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 76]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 44]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 19200, gezaehlte Frames 38400, Aufrufe 19200]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 19201, gezaehlte Frames 38402, Aufrufe 2743]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 19200, gezaehlte Frames 38400, Aufrufe 300]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 19456, gezaehlte Frames 38912, Aufrufe 38]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 20480, gezaehlte Frames 40960, Aufrufe 5]
+[ROT]  M-35: 96.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 21189, gezaehlte Frames 42378, Aufrufe 23]
+
+18 bestanden, 18 gescheitert
+Ende: 2026-09-11 23:10:04 Dauer: 0.03 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2b - Gruenstand D7: B23 --nur m35  [Zeilen 75-122 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m35
+Binary: 2026-09-11 23:13:09
+Start: 2026-09-11 23:13:16
+
+== NAK-246 M-35  blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht ==
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 17640]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 2521]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 277]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 36]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 6]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 20]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 17640]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 2521]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 277]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 36]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 6]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 20]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 19200]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 2744]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 301]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 39]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 6]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 24]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 19200]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 2744]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 301]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 39]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 6]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 24]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 38400]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 5487]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 601]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 76]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 44]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 38400]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 5487]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 601]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 76]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 44]
+
+36 bestanden, 0 gescheitert
+Ende: 2026-09-11 23:13:16 Dauer: 0.03 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: M-35 (Bereitschaftsframe je Blockfolge und Samplerate)  [Zeilen 919-956 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-35  blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht ==
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 17640]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 2521]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 277]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 36]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 6]
+[ok]   M-35: 44.1 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 20]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 17640]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 2521]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 277]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 36]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 6]
+[ok]   M-35: 44.1 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 17640  [Bereitschaftsframe 17640, gezaehlte Frames 17640, Aufrufe 20]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 19200]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 2744]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 301]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 39]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 6]
+[ok]   M-35: 48.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 24]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 19200]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 2744]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 301]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 39]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 6]
+[ok]   M-35: 48.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 19200  [Bereitschaftsframe 19200, gezaehlte Frames 19200, Aufrufe 24]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 38400]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 5487]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 601]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 76]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Mono, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 44]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 1 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 38400]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 7 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 5487]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 64 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 601]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 512 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 76]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge 4096 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 11]
+[ok]   M-35: 96.0 kHz, Stereo, Blockfolge gemischt 512-1-4096-7-64-333-2048-3 - bereit genau ab Frame 38400  [Bereitschaftsframe 38400, gezaehlte Frames 38400, Aufrufe 44]
+

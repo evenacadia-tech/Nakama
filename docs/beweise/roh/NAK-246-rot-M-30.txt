@@ -1,0 +1,380 @@
+NAK-246 Etappe 6 - Rotbeweis M-30 (Manifest docs/beweise/NAK-246.md §3.7): reload_und_subscription_leeren_dieselbe_sitzungsmenge (B13)
+Stand: 2026-09-11 22:50 (PC-Lokalzeit); Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50; git status beim Start der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-10.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3a (Rotstand), Teil 3b (Basischeck), Teil 2a, Teil 2c.
+
+WAS GEFAHREN WURDE
+  Bein B13 EqCopSonde012SourcesModelTest (voller Lauf, das Bein hat keine Fallauswahl) mit dem ENDGUELTIGEN Fall
+  NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge (Sonde012SourcesModelTest.cpp) gegen den UNVERAENDERTEN
+  Produktcode des Basis-SHA (SourcesModel.h 2026-09-08 15:17:21, SourcesModel.cpp 2026-09-10 23:25:42). Zwei gleich vorbelegte
+  Modelle - beginneSubscription, Korpusfixture session-snapshot-mit-experimenten-und-paaren.json mit `findings` aus
+  session-snapshot-mit-findings.json (deklarierter Mutant, eine Abweichung), invalidate-ganze-sitzung.json, derselbe Snapshot -;
+  das eine faehrt projektReload ({ Mitglied 3333... }), das andere beginneSubscription (...). Verglichen wird jede Sitzungsgroesse
+  der Sicht mit einem frischen Modell (sitzungsfelderWieFrisch, Feld fuer Feld).
+
+BAU UND LAUF (Rotstand)
+  Derselbe Bau wie rot-M-29 (Exit 0, 22:50:06 bis 22:50:19). Quelle Sonde012SourcesModelTest.cpp 22:49:36;
+  Binary EqCopSonde012SourcesModelTest.exe 22:50:12 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe
+        -> Exit 1, 0,14 s, 86/87 gruen.
+
+DIE FALLENDE ZUSAGE DIESER ZEILE (M-30: "Beide rufen dieselbe Reset-Funktion ... dieselben Werte wie ein frisches Modell")
+  FEHLER  NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge
+          [projektReload: experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt;
+           ruecknahmeUmfang ganze_sitzung / beginneSubscription: keine (1 Zeile(n))]
+      -> zwei Feldmengen: beginneSubscription leert alle sieben, projektReload keine davon ("ROT am Basis-SHA: zwei Feldmengen
+         (:401-437 gegen :439-470)", §3.7). Die Vorbedingungszeile (beide Modelle tragen alle sieben Groessen) ist gruen.
+
+ZWEITER BASISLAUF (nach der Modellwache M-31, 22:56)
+  Derselbe Fall mit dem endgueltigen B13 (inklusive der Wache NAK246_M31_...) gegen SourcesModel.h/.cpp aus dem Basis-SHA
+  (`git restore --source=ab19ac75`, danach `git checkout` aus dem Index zurueck): Bau 22:56:12 bis 22:56:17, Binary 22:56:17 ->
+  Exit 1, 87/88; M-30 faellt erneut an derselben Zeile, die Wache M-31 ist am Basis-SHA gruen.
+
+GRUEN
+  Gruenstand D6: B13 Exit 0, 87/87 (22:51:34), mit der Modellwache 88/88 (22:55:32). Endstand (Binary 23:19:12): Exit 0, 88/88
+  (Basis-SHA 85/85) [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))].
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3a - Rotstand D6: Bau  [Zeilen 1-15 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D6: endgueltige Tests M-29 (B14) und M-30 (B13), Produktcode SourcesModel.h/.cpp unveraendert am Basis-SHA
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
+Start: 2026-09-11 22:50:06
+Ende: 2026-09-11 22:50:19 Dauer: 13 s  Exit 0
+Zeilen "warning C"/"error": 1, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde012SourcesModelTest.exe 2026-09-11 22:50:12
+  Binary EqCopSonde012ProjectReloadTest.exe 2026-09-11 22:50:19
+  Quelle eq-copilot/plugin/src/SourcesModel.cpp 2026-09-10 23:25:42
+  Quelle eq-copilot/plugin/src/SourcesModel.h 2026-09-08 15:17:21
+  Quelle eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp 2026-09-11 22:49:00
+  Quelle eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp 2026-09-11 22:49:36
+
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3a - Rotstand D6: B13 (Basis-SHA-Produktcode)  [Zeilen 41-136 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B13 EqCopSonde012SourcesModelTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe 
+Binary: 2026-09-11 22:50:12
+Start: 2026-09-11 22:50:26
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.73 / 1.46 ms p95]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  FEHLER  NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt; ruecknahmeUmfang ganze_sitzung / beginneSubscription: keine (1 Zeile(n))]
+SONDE-012 SourcesModel: 86/87 gruen
+Ende: 2026-09-11 22:50:26 Dauer: 0.14 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3b - Basischeck: SourcesModel.h/.cpp aus dem Basis-SHA, B13 im Endstand  [Zeilen 840-958 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+#####################################################################################################################
+WACHE AM BASIS-SHA: SourcesModel.h/.cpp per git restore --source=ab19ac75 (Basis-SHA) im Arbeitsbaum, B13-Test im Endstand
+ eq-copilot/plugin/src/SourcesModel.cpp | 31 ++++++++-----------------------
+ eq-copilot/plugin/src/SourcesModel.h   | 13 -------------
+ 2 files changed, 8 insertions(+), 36 deletions(-)
+
+---------------------------------------------------------------------------------------------------------------------
+BASISSTAND SourcesModel + endgueltiger B13
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012SourcesModelTest
+Start: 2026-09-11 22:56:12
+Ende: 2026-09-11 22:56:17 Dauer: 5 s  Exit 0
+Zeilen "warning C"/"error": 0, eindeutig: 0
+  Binary EqCopSonde012SourcesModelTest.exe 2026-09-11 22:56:17
+  Quelle eq-copilot/plugin/src/SourcesModel.cpp 2026-09-11 22:56:12
+  Quelle eq-copilot/plugin/src/SourcesModel.h 2026-09-11 22:56:12
+  Quelle eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp 2026-09-11 22:54:42
+
+#####################################################################################################################
+LAUF B13 am Basis-Produktcode
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B13 EqCopSonde012SourcesModelTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe 
+Binary: 2026-09-11 22:56:17
+Start: 2026-09-11 22:56:17
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.54 / 1.32 ms p95]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  FEHLER  NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt; ruecknahmeUmfang ganze_sitzung / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 87/88 gruen
+Ende: 2026-09-11 22:56:17 Dauer: 0.13 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: B13  [Zeilen 50-146 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B13 EqCopSonde012SourcesModelTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe 
+Binary: 2026-09-11 23:19:12
+Start: 2026-09-11 23:20:32
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.63 / 1.17 ms p95]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 88/88 gruen
+Ende: 2026-09-11 23:20:32 Dauer: 0.15 s
+EXIT=0

@@ -1,0 +1,246 @@
+NAK-246 Etappe 6 - Rotbeweis M-34 (Manifest docs/beweise/NAK-246.md §3.8): friere_ein_sieht_nie_einen_halben_stereoblock (B23, schliesst NAK-159)
+Stand: 2026-09-11 23:10 (alte Topologie), 23:15 (Rotbau an der neuen Signatur), 23:13 und 23:20 (gruen); PC-Lokalzeit.
+Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50.
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3c, Teil 3d, Teil 2b, Teil 2c.
+
+DER FALL
+  Vorlauf: 38 Stereobloecke a 512 Frames mit 0,01 trocken und nass auf beiden Kanaelen - der Pegel ist VOR dem letzten Block bereit
+  (19 456 >= 19 200 Frames). Letzter Block: Kanal 0 mit 0,1/0,1, Kanal 1 mit 0,1 trocken und 0,9 nass. Referenzwerte an eigenen
+  Pegeln ohne Nebenlaeufigkeit: Ganzblockwert 14,7691 dB; Halbblock nur Kanal 0 (der Halbblock aus NAK-159) 0,0000 dB; Blockmitte
+  (erste 256 Frames beider Kanaele) 13,7525 dB. Zusagezeile: der eingefrorene Gain ist der Ganzblockwert (Toleranz 1e-9 dB).
+  Gruene Form: der letzte Block laeuft im Audiothread; der Blockmittehaken haelt ihn MIT dem Tor an, bis der Wartehaken des
+  Einfrierens meldet, dass der Torzug von `friereEin` am gehaltenen Tor gescheitert ist (oder bis `friereEin` schon zurueck ist);
+  jeder Warteschritt wartet auf ein Ereignis mit 5 s Frist.
+
+ROTLAUF 1 - AUFRUFTOPOLOGIE DES ALTEN KERNS (§4.8: "wo der alte Code die Testform nicht traegt (M-34), steht die alte
+Aufruftopologie als eigener Rotlauf")
+  Baustand wie rot-M-33 Fassung 1 (Vergleichspegel.h, PluginProcessor.cpp/.h auf ab19ac75; B23 mit den drei Rotstand-Ruempfen);
+  `friereWaehrendDesLetztenBlocks` ist speise (Kanal 0) -> friereEin -> speise (Kanal 1), ohne Thread - der alte Typ laesst es per
+  Konstruktion zu. Bau 23:09:53 bis 23:10:03, Binary 23:10:03.
+  `--nur m34` -> Exit 1, 1 bestanden, 2 gescheitert:
+    [ok]   M-34 Vorbedingung: ... [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+    [ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert
+           [0.000000 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+    [ROT]  M-34: der Steuerthread wartete nachweislich am Tor ...  [Blockmitte erreicht 0, Steuerzug wartet 0, Frist abgelaufen 0]
+  -> die Zusagezeile faellt deterministisch mit dem halben Stereoblock (Kanal 0) - NAK-159 an der Quelle reproduziert. Die zweite
+     Zeile faellt als Folge der threadlosen Rotform (kein Haken existiert im alten Typ).
+
+ROTLAUF 2 - ROTBAU AN DER NEUEN SIGNATUR (die gruene Hakenform einmal gebrochen)
+  Diff gegen den gestageten Gruenstand: `speise` gibt das Tor nach der ersten Blockhaelfte frei und nimmt es nach dem Haken wieder
+  (die Luecke der Kanalaufrufform, an der neuen Signatur nachgebaut). Bau 23:15:12 bis 23:15:22, Exit 0; Quelle Vergleichspegel.h
+  23:14:59, Binary 23:15:22 (juenger: ja).
+  `--nur m34` dreimal -> je Exit 1, 1 bestanden, 2 gescheitert, je dieselben Zahlen:
+    [ROT]  M-34: der Steuerthread wartete nachweislich am Tor ...  [Blockmitte erreicht 1, Steuerzug wartet 0, Frist abgelaufen 0]
+    [ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock ...  [13.752478 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+  -> `friereEin` nimmt das freie Tor in der Blockmitte und friert den Blockmittewert ein; der Haken sieht `friereEin` zurueck statt
+     wartend. Ruecknahme per `git checkout` aus dem Index, `git diff` danach leer.
+
+GRUEN
+  Gruenstand D7 (Bau 23:13:00 bis 23:13:15, Binary 23:13:09): `--nur m34` Exit 0, 3/3. Endstand (Binary 23:19:36):
+    [ok]   M-34 Vorbedingung ... [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+    [ok]   M-34: der Steuerthread wartete nachweislich am Tor ... [Blockmitte erreicht 1, Steuerzug wartet 1, Frist abgelaufen 0]
+    [ok]   M-34: friere_ein_sieht_nie_einen_halben_stereoblock ... [14.769114 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Alte Aufruftopologie: Rotstand-Diff und Bau  [Zeilen 1-65 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D7 (alte Aufruftopologie): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h unveraendert am Basis-SHA ab19ac75; B23 im Endstand bis auf die drei Ruempfe der Aufruftopologie (git diff gegen den gestageten Endstand):
+diff --git a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+index a2a4e9b3..2995d67e 100644
+--- a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
++++ b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+@@ -2888,13 +2888,15 @@ std::uint64_t mindestFrames (double fs)
+ void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                   const float* const* nass, int kanaele, int n)
+ {
+-    p.speise (trocken, nass, kanaele, n);
++    // ROTSTAND: die Kanalschleife des Basis-SHA (PluginProcessor.cpp, je Kanal ein Aufruf).
++    for (int c = 0; c < kanaele; ++c)
++        p.speise (trocken[c], nass[c], n);
+ }
+ 
+ /// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+ std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+ {
+-    return p.gezaehlteFrames();
++    return p.gezaehlteSamples();   // ROTSTAND: der Name des Basis-SHA
+ }
+ 
+ /// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+@@ -2941,23 +2943,12 @@ void steuerzugWartetHaken (void* kontext)
+ bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                      const float* const* nass, int n, Halteprotokoll& h)
+ {
+-    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+-    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+-    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+-    {
+-        std::unique_lock<std::mutex> l (h.m);
+-        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+-            h.fristAbgelaufen = true;
+-    }
++    // ROTSTAND: die Aufruftopologie des Basis-SHA ohne Thread, wie NAK-159 sie
++    // beschreibt - speise (Kanal 0) → friereEin → speise (Kanal 1).
++    p.speise (trocken[0], nass[0], n);
+     const bool eingefroren = p.friereEin();
+-    {
+-        std::lock_guard<std::mutex> l (h.m);
+-        h.eingefrorenZurueck = true;
+-        h.cv.notify_all();
+-    }
+-    audio.join();
+-    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+-    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
++    p.speise (trocken[1], nass[1], n);
++    juce::ignoreUnused (h, blockmitteHaken, steuerzugWartetHaken);
+     return eingefroren;
+ }
+ 
+git diff --stat ab19ac75 -- eq-copilot/plugin/core/analysis/Vergleichspegel.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h (leer = Basisstand):
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU D7-alt
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:09:53
+Ende: 2026-09-11 23:10:03 Dauer: 11 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:10:03
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-07 04:41:30
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 04:41:15
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:09:35
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Alte Aufruftopologie: B23 --nur m34  [Zeilen 106-120 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m34
+Binary: 2026-09-11 23:10:03
+Start: 2026-09-11 23:10:04
+
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ROT]  M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 0, Steuerzug wartet 0, Frist abgelaufen 0]
+[ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [0.000000 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+1 bestanden, 2 gescheitert
+Ende: 2026-09-11 23:10:04 Dauer: 0.02 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3d - Rotbau M-34 an der neuen Signatur: Diff, Bau, dreimal --nur m34, Ruecknahme  [Zeilen 67-148 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+#####################################################################################################################
+ROTBAU M-34 (neue Signatur, Haken gesetzt): speise gibt das Tor in der Blockmitte frei und nimmt es nach dem Haken wieder - die Aufruftopologie je Kanal, an der neuen Signatur nachgebaut (git diff gegen den gestageten Gruenstand)
+diff --git a/eq-copilot/plugin/core/analysis/Vergleichspegel.h b/eq-copilot/plugin/core/analysis/Vergleichspegel.h
+index 28a869ce..40793083 100644
+--- a/eq-copilot/plugin/core/analysis/Vergleichspegel.h
++++ b/eq-copilot/plugin/core/analysis/Vergleichspegel.h
+@@ -126,8 +126,11 @@ public:
+             // derselben Reihenfolge wie ohne sie.
+             const int mitte = n / 2;
+             nimmFrames (trocken, nass, kanaele, 0, mitte);
++            audioZugGeben();                         // ROTBAU M-34: das Tor ist in der Blockmitte frei
+             if (blockmitteHaken != nullptr)          // Testhaken M-34; im Produkt nullptr
+                 blockmitteHaken (blockmitteHakenKontext);
++            while (! audioZugNehmen())               // ROTBAU M-34: danach wieder genommen
++                std::this_thread::yield();
+             nimmFrames (trocken, nass, kanaele, mitte, n);
+             ++bloeckeAufgenommen;
+         }
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU M-34
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:15:12
+Ende: 2026-09-11 23:15:22 Dauer: 9 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:15:22
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-11 23:14:59
+
+#####################################################################################################################
+ROTLAUF M-34 (dreimal)
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m34
+Binary: 2026-09-11 23:15:22
+Start: 2026-09-11 23:15:22
+
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ROT]  M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 1, Steuerzug wartet 0, Frist abgelaufen 0]
+[ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [13.752478 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+1 bestanden, 2 gescheitert
+Ende: 2026-09-11 23:15:22 Dauer: 0.11 s
+EXIT=1
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m34
+Binary: 2026-09-11 23:15:22
+Start: 2026-09-11 23:15:22
+
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ROT]  M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 1, Steuerzug wartet 0, Frist abgelaufen 0]
+[ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [13.752478 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+1 bestanden, 2 gescheitert
+Ende: 2026-09-11 23:15:22 Dauer: 0.02 s
+EXIT=1
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m34
+Binary: 2026-09-11 23:15:22
+Start: 2026-09-11 23:15:22
+
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ROT]  M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 1, Steuerzug wartet 0, Frist abgelaufen 0]
+[ROT]  M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [13.752478 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+1 bestanden, 2 gescheitert
+Ende: 2026-09-11 23:15:22 Dauer: 0.02 s
+EXIT=1
+Ruecknahme: git checkout -- eq-copilot/plugin/core/analysis/Vergleichspegel.h, git diff danach: []
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2b - Gruenstand D7: B23 --nur m34  [Zeilen 59-73 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m34
+Binary: 2026-09-11 23:13:09
+Start: 2026-09-11 23:13:15
+
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ok]   M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 1, Steuerzug wartet 1, Frist abgelaufen 0]
+[ok]   M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [14.769114 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+
+3 bestanden, 0 gescheitert
+Ende: 2026-09-11 23:13:15 Dauer: 0.02 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: M-34  [Zeilen 914-918 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock ==
+[ok]   M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide Halbblockwerte weichen messbar vom Ganzblockwert ab  [ganz 14.7691 dB, nur Kanal 0 0.0000 dB, Blockmitte 13.7525 dB]
+[ok]   M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread in der Blockmitte stand  [Blockmitte erreicht 1, Steuerzug wartet 1, Frist abgelaufen 0]
+[ok]   M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain ist der Ganzblockwert  [14.769114 dB gegen ganz 14.769114 dB (nur Kanal 0 0.000000 dB)]
+

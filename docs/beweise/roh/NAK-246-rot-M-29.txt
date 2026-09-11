@@ -1,0 +1,159 @@
+NAK-246 Etappe 6 - Rotbeweis M-29 (Manifest docs/beweise/NAK-246.md §3.7): projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen (B14)
+Stand: 2026-09-11 22:50 (PC-Lokalzeit); Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50; git status beim Start der Etappe leer.
+Muster: docs/beweise/roh/NAK-246-rot-M-10.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3a (Rotstand), Teil 2a (Gruenstand), Teil 2c (Endstand).
+
+WAS GEFAHREN WURDE
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-29 allein (`--nur m29`), mit dem ENDGUELTIGEN Test
+  (Sonde012ProjectReloadTest.cpp, nak246d6::projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen) gegen den
+  UNVERAENDERTEN Produktcode des Basis-SHA: SourcesModel.h (Zeitstempel 2026-09-08 15:17:21) und SourcesModel.cpp
+  (2026-09-10 23:25:42) stehen auf ab19ac75, `projektReload` leert die Sitzungsmenge nicht. Der Test braucht keine neue
+  Produkt-API und kompiliert gegen den Basis-SHA ohne Rotbau.
+  Aufbau je Variante, ueber den Produktweg: Main mit Bindung; Link auf (`v3LinkFuerTest (true)` -> `beginneSubscription`);
+  Sessionsnapshot = Korpusfixture gueltig/session-snapshot-mit-experimenten-und-paaren.json als deklarierter Mutant (Adressen
+  dieses Prozessors; `findings` aus gueltig/session-snapshot-mit-findings.json, der Befund zeigt auf das Mitglied 3333...);
+  evidence_invalidate = gueltig/invalidate-ganze-sitzung.json; derselbe Snapshot noch einmal. Danach laedt der Prozessor
+    Variante 1: einen read-only State (Writer-Stand dieses Prozessors mit Common.plugin_kind = sensor),
+    Variante 2: einen ungebundenen Main-State (Writer-Stand ohne Common.project_binding_id, mit dem vorher bestaetigten Mitglied).
+  Broker offline, kein Subscribe.
+
+BAU UND LAUF (Rotstand)
+  cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
+  (pwsh, VS-2022-BuildTools-cmake): Exit 0, 13 s (22:50:06 bis 22:50:19); eine eindeutige Zeile "warning C" (Stereo.h(70,26) C4458,
+  vorbestehend). Quelle Sonde012ProjectReloadTest.cpp 22:49:00; Binary EqCopSonde012ProjectReloadTest.exe 22:50:19 (juenger: ja).
+  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m29
+        -> Exit 1, 0,13 s, 9 Pruefungen, 2 Fehler (7/9 gruen).
+  Kein Copy-Item (Landmine NAK-230 greift nicht): der Produktcode war unberuehrt, der Fix entstand erst danach.
+
+DIE FALLENDE ZUSAGE DIESER ZEILE (M-29: "Die Sicht ist sofort frei von alten Sitzungsobjekten")
+  FEHLER  M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States ...
+          [experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt; ruecknahmeUmfang ganze_sitzung]
+  FEHLER  M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States ...
+          [dieselben sechs Groessen]
+      -> in beiden Varianten laesst `projektReload` (SourcesModel.cpp:401-437 am Basis-SHA) Experimente, Paare, Befunde und die
+         Ruecknahme stehen - genau "ROT am Basis-SHA: projektReload (:401-437) laesst sie stehen" (§3.7). `findingsOffen` faellt am
+         Basis-SHA nicht mit: projektReload baut die Zeilen neu, und eine neue Zeile traegt 0; die Zeile misst es trotzdem je Zeile.
+  Gruen bleiben: beide Aufbauzeilen (alle sieben Groessen belegt: 1 Versuch, 2 Paare, 1 Befund, findingsOffen 1, 1 Ruecknahme
+  routing_unbekannt/ganze_sitzung), beide Vorbedingungen (read-only; ungebunden ohne gueltige Adresse) und die zwei Wachzeilen M-31.
+
+GRUEN
+  Gruenstand D6 (sitzungszustandLeeren): Bau 22:51:14 bis 22:51:33, Binary B14 22:51:29 juenger als SourcesModel.cpp 22:51:02;
+  `--nur m29` Exit 0, 9/9 [read-only: "alle sieben leer, 0 Zeile(n)"; ungebunden: "alle sieben leer, 1 Zeile(n)"].
+  Endstand (gestageter Etappenstand, Binary 23:19:20): voller B14 Exit 0, 120/120 (Basis-SHA 111/111).
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3a - Rotstand D6: Bau und B14 --nur m29 (Basis-SHA-Produktcode)  [Zeilen 1-39 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D6: endgueltige Tests M-29 (B14) und M-30 (B13), Produktcode SourcesModel.h/.cpp unveraendert am Basis-SHA
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
+Start: 2026-09-11 22:50:06
+Ende: 2026-09-11 22:50:19 Dauer: 13 s  Exit 0
+Zeilen "warning C"/"error": 1, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde012SourcesModelTest.exe 2026-09-11 22:50:12
+  Binary EqCopSonde012ProjectReloadTest.exe 2026-09-11 22:50:19
+  Quelle eq-copilot/plugin/src/SourcesModel.cpp 2026-09-10 23:25:42
+  Quelle eq-copilot/plugin/src/SourcesModel.h 2026-09-08 15:17:21
+  Quelle eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp 2026-09-11 22:49:00
+  Quelle eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp 2026-09-11 22:49:36
+
+#####################################################################################################################
+ROTLAUF D6 gegen den Basis-SHA-Produktcode
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B14 EqCopSonde012ProjectReloadTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m29
+Binary: 2026-09-11 22:50:19
+Start: 2026-09-11 22:50:26
+== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==
+  ok      M-29 Aufbau (read-only): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 read-only: der geladene State ist read-only (Vorbedingung)
+  FEHLER  M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt; ruecknahmeUmfang ganze_sitzung]
+  ok      M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff
+  ok      M-29 Aufbau (ungebunden): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung steht unveraendert (Vorbedingung)  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen Subscribe (Vorbedingung)
+  FEHLER  M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [experimente 1; paare 2; befunde 1; evidenzRuecknahmen 1; ruecknahmeGrund routing_unbekannt; ruecknahmeUmfang ganze_sitzung]
+  ok      M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff
+SONDE-012 ProjectReload (nur m29): 7/9 gruen
+Ende: 2026-09-11 22:50:26 Dauer: 0.13 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2a - Gruenstand D6: Bau und B14 --nur m29  [Zeilen 1-40 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+GRUENSTAND D6: sitzungszustandLeeren in SourcesModel.h/.cpp, beide Aufrufer
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest EqCopSonde014BefundTest
+Start: 2026-09-11 22:51:14
+Ende: 2026-09-11 22:51:33 Dauer: 19 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde012SourcesModelTest.exe 2026-09-11 22:51:19
+  Binary EqCopSonde012ProjectReloadTest.exe 2026-09-11 22:51:29
+  Binary EqCopSonde014BefundTest.exe 2026-09-11 22:51:33
+  Quelle eq-copilot/plugin/src/SourcesModel.cpp 2026-09-11 22:51:02
+  Quelle eq-copilot/plugin/src/SourcesModel.h 2026-09-11 22:50:41
+  Quelle eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp 2026-09-11 22:49:00
+  Quelle eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp 2026-09-11 22:49:36
+
+#####################################################################################################################
+GRUENLAUF D6
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B14 EqCopSonde012ProjectReloadTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m29
+Binary: 2026-09-11 22:51:29
+Start: 2026-09-11 22:51:33
+== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==
+  ok      M-29 Aufbau (read-only): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 read-only: der geladene State ist read-only (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 0 Zeile(n)]
+  ok      M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff
+  ok      M-29 Aufbau (ungebunden): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung steht unveraendert (Vorbedingung)  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen Subscribe (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 1 Zeile(n)]
+  ok      M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff
+SONDE-012 ProjectReload (nur m29): 9/9 gruen
+Ende: 2026-09-11 22:51:34 Dauer: 0.12 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: B14 ab dem Abschnitt M-29 bis zum Ende des Laufs  [Zeilen 266-289 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==
+  ok      M-29 Aufbau (read-only): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 read-only: der geladene State ist read-only (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 0 Zeile(n)]
+  ok      M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff
+  ok      M-29 Aufbau (ungebunden): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung steht unveraendert (Vorbedingung)  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen Subscribe (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 1 Zeile(n)]
+  ok      M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff
+  ok      main_project_is_explicitly_initialised
+  ok      confirmed_join_ack_and_name_each_mark_host_dirty  [2]
+  ok      save_is_not_a_persistent_mutation
+  ok      same_instance_reload_discards_transient_snapshot_and_measurement
+  ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+  ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+  ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+  ok      nonleading_main_disables_label_and_reports_failed_write
+  ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+  ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 120/120 gruen
+Ende: 2026-09-11 23:20:39 Dauer: 7.12 s
+EXIT=0

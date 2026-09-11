@@ -1,0 +1,201 @@
+NAK-246 Etappe 6 - Regressionswache M-32 (Manifest docs/beweise/NAK-246.md §3.8): vergleichspegel_mono_bereit_genau_ab_400_ms (B23)
+Stand: 2026-09-11 23:10 und 23:14 (PC-Lokalzeit); Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50.
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3c (alte Aufruftopologie), Teil 3d (Rotbauten an der
+neuen Signatur), Teil 2b und 2c (gruen).
+
+DIE WACHE
+  M-32: Mono, 48 kHz, 199/200/399/400 ms -> nicht bereit bei 9 552, 9 600 und 19 152 Frames, bereit und eingefroren bei 19 200
+  (Schwelle floor (kMindestSekunden * fs) aus der Quelle). Die vier Monofaelle des Audit-Harness
+  (docs/audits/2026-09-10-code-review/evidence/repro-vergleichspegel.cpp) - "Regressionswache (heute gruen)".
+
+LAUF IN DER ALTEN AUFRUFTOPOLOGIE (Wache heute gruen)
+  Eigener Baustand (§5.8 Feinheit 4): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h auf ab19ac75
+  (`git diff --stat ab19ac75` ueber die drei Dateien leer; Vergleichspegel.h 2026-09-07 04:41:30); B23 im Endstand bis auf die drei
+  Ruempfe der Aufruftopologie (`speiseBlock` als Kanalschleife, `gezaehlteFrames` -> `gezaehlteSamples`,
+  `friereWaehrendDesLetztenBlocks` als speise (Kanal 0) -> friereEin -> speise (Kanal 1)). Bau 23:09:53 bis 23:10:03, Exit 0;
+  Quelle Sonde013PassageStateTest.cpp 23:09:35, Binary 23:10:03 (juenger: ja).
+  `--nur m32` -> Exit 0, 4/4 gruen - der alte Kern ist bei Mono richtig.
+
+ROTBAU M-32 - einmal absichtlich gebrochen (neue Signatur)
+  Diff gegen den gestageten Gruenstand: bereitIntern verlangt `gesehen > mindestFrames` statt `>=`. Bau 23:14:18 bis 23:14:28, Exit 0;
+  Quelle Vergleichspegel.h 23:14:06, Binary 23:14:28 (juenger: ja).
+  `--nur m32` -> Exit 1, 3 bestanden, 1 gescheitert:
+    [ROT]  M-32: Mono 400 ms (19200 Frames) - bereit und eingefroren  [bereit 0, eingefroren 0, gezaehlt 19200, Schwelle 19200]
+  (dieselbe Zeile faellt fuer Stereo in `--nur m33`). Ruecknahme: `git checkout -- eq-copilot/plugin/core/analysis/Vergleichspegel.h`,
+  `git diff` danach leer.
+
+GRUEN (Endstand, Binary 23:19:36)
+  [ok] Mono 199 ms (9552 Frames) nicht bereit/nicht eingefroren; 200 ms (9600) ebenso; 399 ms (19152) ebenso;
+  400 ms (19200 Frames) bereit und eingefroren [gezaehlt 19200, Schwelle 19200]. B23 voll Exit 0, 409 bestanden.
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Alte Aufruftopologie: Rotstand-Diff, Bau, B23 --nur m32 (Wache gruen)  [Zeilen 1-87 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D7 (alte Aufruftopologie): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h unveraendert am Basis-SHA ab19ac75; B23 im Endstand bis auf die drei Ruempfe der Aufruftopologie (git diff gegen den gestageten Endstand):
+diff --git a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+index a2a4e9b3..2995d67e 100644
+--- a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
++++ b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+@@ -2888,13 +2888,15 @@ std::uint64_t mindestFrames (double fs)
+ void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                   const float* const* nass, int kanaele, int n)
+ {
+-    p.speise (trocken, nass, kanaele, n);
++    // ROTSTAND: die Kanalschleife des Basis-SHA (PluginProcessor.cpp, je Kanal ein Aufruf).
++    for (int c = 0; c < kanaele; ++c)
++        p.speise (trocken[c], nass[c], n);
+ }
+ 
+ /// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+ std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+ {
+-    return p.gezaehlteFrames();
++    return p.gezaehlteSamples();   // ROTSTAND: der Name des Basis-SHA
+ }
+ 
+ /// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+@@ -2941,23 +2943,12 @@ void steuerzugWartetHaken (void* kontext)
+ bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                      const float* const* nass, int n, Halteprotokoll& h)
+ {
+-    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+-    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+-    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+-    {
+-        std::unique_lock<std::mutex> l (h.m);
+-        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+-            h.fristAbgelaufen = true;
+-    }
++    // ROTSTAND: die Aufruftopologie des Basis-SHA ohne Thread, wie NAK-159 sie
++    // beschreibt - speise (Kanal 0) → friereEin → speise (Kanal 1).
++    p.speise (trocken[0], nass[0], n);
+     const bool eingefroren = p.friereEin();
+-    {
+-        std::lock_guard<std::mutex> l (h.m);
+-        h.eingefrorenZurueck = true;
+-        h.cv.notify_all();
+-    }
+-    audio.join();
+-    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+-    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
++    p.speise (trocken[1], nass[1], n);
++    juce::ignoreUnused (h, blockmitteHaken, steuerzugWartetHaken);
+     return eingefroren;
+ }
+ 
+git diff --stat ab19ac75 -- eq-copilot/plugin/core/analysis/Vergleichspegel.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h (leer = Basisstand):
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU D7-alt
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:09:53
+Ende: 2026-09-11 23:10:03 Dauer: 11 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:10:03
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-07 04:41:30
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 04:41:15
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:09:35
+
+#####################################################################################################################
+ROTLAEUFE D7 in der alten Aufruftopologie
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m32
+Binary: 2026-09-11 23:10:03
+Start: 2026-09-11 23:10:04
+
+== NAK-246 M-32  vergleichspegel_mono_bereit_genau_ab_400_ms ==
+[ok]   M-32: Mono 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-32: Mono 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-32: Mono 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ok]   M-32: Mono 400 ms (19200 Frames) - bereit und eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+
+4 bestanden, 0 gescheitert
+Ende: 2026-09-11 23:10:04 Dauer: 0.11 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3d - Rotbau M-32 an der neuen Signatur: Diff, Bau, --nur m32 und m33, Ruecknahme  [Zeilen 1-65 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+#####################################################################################################################
+ROTBAU M-32 (Wache einmal gebrochen): bereitIntern verlangt gesehen > mindestFrames statt >= (git diff gegen den gestageten Gruenstand)
+diff --git a/eq-copilot/plugin/core/analysis/Vergleichspegel.h b/eq-copilot/plugin/core/analysis/Vergleichspegel.h
+index 28a869ce..57cae7f5 100644
+--- a/eq-copilot/plugin/core/analysis/Vergleichspegel.h
++++ b/eq-copilot/plugin/core/analysis/Vergleichspegel.h
+@@ -417,7 +417,7 @@ private:
+         // ist nicht mehr messbar, und eine Zahl ohne diesen Vorbehalt waere
+         // genau die unsichtbare Beschoenigung, gegen die M-07 steht.
+         return nichtEndlich == 0
+-            && gesehen >= mindestFrames && summeA > 0.0 && summeB > 0.0;
++            && gesehen > mindestFrames && summeA > 0.0 && summeB > 0.0;   // ROTBAU M-32: erst NACH der Schwelle bereit
+     }
+ 
+     void leerenIntern() noexcept
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU M-32
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:14:18
+Ende: 2026-09-11 23:14:28 Dauer: 10 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:14:28
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-11 23:14:06
+
+#####################################################################################################################
+ROTLAUF M-32
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m32
+Binary: 2026-09-11 23:14:28
+Start: 2026-09-11 23:14:28
+
+== NAK-246 M-32  vergleichspegel_mono_bereit_genau_ab_400_ms ==
+[ok]   M-32: Mono 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-32: Mono 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-32: Mono 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ROT]  M-32: Mono 400 ms (19200 Frames) - bereit und eingefroren  [bereit 0, eingefroren 0, gezaehlt 19200, Schwelle 19200]
+
+3 bestanden, 1 gescheitert
+Ende: 2026-09-11 23:14:28 Dauer: 0.12 s
+EXIT=1
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m33
+Binary: 2026-09-11 23:14:28
+Start: 2026-09-11 23:14:29
+
+== NAK-246 M-33  vergleichspegel_stereo_bereit_genau_ab_400_ms ==
+[ok]   M-33: Stereo 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-33: Stereo 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-33: Stereo 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ROT]  M-33: Stereo 400 ms (19200 Frames) - bereit und eingefroren  [bereit 0, eingefroren 0, gezaehlt 19200, Schwelle 19200]
+
+3 bestanden, 1 gescheitert
+Ende: 2026-09-11 23:14:29 Dauer: 0.02 s
+EXIT=1
+Ruecknahme: git checkout -- eq-copilot/plugin/core/analysis/Vergleichspegel.h, git diff danach: []
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: M-32  [Zeilen 902-907 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-32  vergleichspegel_mono_bereit_genau_ab_400_ms ==
+[ok]   M-32: Mono 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-32: Mono 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-32: Mono 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ok]   M-32: Mono 400 ms (19200 Frames) - bereit und eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+

@@ -79,7 +79,8 @@ Vergleichspegel eingefrorenerPegel (double faktor = 2.0)
             a[(std::size_t) k] = (float) x;
             b[(std::size_t) k] = (float) (x * faktor);
         }
-        p.speise (a.data(), b.data(), block);
+        const float* seiteA = a.data(), * seiteB = b.data();
+        p.speise (&seiteA, &seiteB, 1, block);
     }
     p.friereEin();
     return p;
@@ -295,7 +296,8 @@ void nacharbeit1B10B11()
                 a[7]  = std::numeric_limits<float>::quiet_NaN();
                 b[19] = std::numeric_limits<float>::infinity();
             }
-            p.speise (a.data(), b.data(), block);
+            const float* seiteA = a.data(), * seiteB = b.data();
+            p.speise (&seiteA, &seiteB, 1, block);
         }
         pruefe (p.nichtEndlicheSamples() == 2,
                 "B10: beide nicht-endlichen Samples sind GEZAEHLT",
@@ -363,7 +365,8 @@ void c6UebergabeAnDerBlockgrenze()
     {
         while (laeuft.load (std::memory_order_relaxed))
         {
-            p.speise (a.data(), b.data(), n);
+            const float* seiteA = a.data(), * seiteB = b.data();
+            p.speise (&seiteA, &seiteB, 1, n);
             gespeist.fetch_add (1, std::memory_order_relaxed);
         }
     });

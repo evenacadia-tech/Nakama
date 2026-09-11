@@ -1,0 +1,212 @@
+NAK-246 Etappe 6 - Rotbeweis M-36 (Manifest docs/beweise/NAK-246.md §3.8): prozessorpfad_stereo_bereit_nach_400_ms_musikzeit (B23)
+Stand: 2026-09-11 23:10 (Basis-SHA-Verhalten), 23:15 (Rotbau am Aufrufer), 23:13 und 23:20 (gruen); PC-Lokalzeit.
+Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50.
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3c, Teil 3d, Teil 2b, Teil 2c.
+
+DER FALL
+  Echter Prozessor (Heap, NAK-175) mit Bindung und Quellenfixture, prepareToPlay (48 kHz, 512), Stereopuffer, gespielter Transport;
+  Passage [0, 4 800 000) gemerkt. Nach JEDEM `processBlock` werden `vergleichspegelZaehlerstand` (Bloecke, Frames) gelesen: ein
+  Hostblock, nach dem die Zaehler steigen, ist ein aufgenommener Hostblock - so ist auch der erste gesehen, der faellt, sobald der
+  Worker das Speisungstor oeffnet. Bereitschaftsprobe ist der Produktweg `beginneVersuch`, der einfriert, sobald der Pegel bereit ist,
+  und sonst weiter speisen laesst (NAK-181 R2). Zusagen: je aufgenommenem Hostblock +1 Block und +512 Frames;
+  `versuchAufgenommeneBloecke` == Zahl der aufgenommenen Hostbloecke; bereit nach genau ceil (19 200 / 512) = 38 Hostbloecken.
+  Der Fall nutzt nur Prozessor-APIs, die es am Basis-SHA gibt, und kompiliert dort unveraendert.
+
+ROTLAUF 1 - VERHALTEN DES BASIS-SHA
+  Baustand wie rot-M-33 Fassung 1: PluginProcessor.cpp (Kanalschleife, 2026-09-11 04:41:15), PluginProcessor.h und Vergleichspegel.h auf
+  ab19ac75; der Fall selbst ist unveraendert. Bau 23:09:53 bis 23:10:03, Binary 23:10:03.
+  `--nur m36` -> Exit 1, 1 bestanden, 3 gescheitert:
+    [ROT]  M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke ... [erster aufgenommener Hostblock: 2 Block, 1024 Frames; 38 Bloecke nach 19 Hostbloecken]
+    [ROT]  M-36: vergleichspegelZaehlerstand zaehlt Frames ...     [19456 Frames nach 19 Hostbloecken]
+    [ROT]  M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil (19200 / 512) = 38 Hostbloecken, nicht nach der Haelfte
+           [bereit nach 19 Hostbloecken]
+  -> "ROT am Basis-SHA: PluginProcessor.cpp:777-783 ruft je Kanal" (§3.8): bereit nach der halben Blockzahl.
+
+ROTLAUF 2 - ROTBAU AM AUFRUFER (neuer Kern, alte Aufrufform)
+  Diff gegen den gestageten Gruenstand: PluginProcessor.cpp ruft `vergleichspegel.speise (&trocken[c], &nass[c], 1, n)` je Kanal.
+  Bau 23:15:47 bis 23:15:57, Exit 0; Quelle PluginProcessor.cpp 23:15:34, Binary 23:15:56 (juenger: ja).
+  `--nur m36` -> Exit 1, 1 bestanden, 3 gescheitert, dieselben drei Zeilen mit denselben Zahlen (2 Bloecke/1024 Frames je Hostblock,
+  bereit nach 19). -> Der Framezaehler im Kern allein traegt die Zusage nicht; sie haengt am EINEN Aufruf je Hostblock.
+  Ruecknahme per `git checkout -- eq-copilot/plugin/src/PluginProcessor.cpp`, `git diff` danach leer.
+
+GRUEN
+  Gruenstand D7 (Binary 23:13:09): `--nur m36` Exit 0, 4/4. Endstand (Binary 23:19:36):
+    [ok]   M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke ... [erster aufgenommener Hostblock: 1 Block, 512 Frames; 38 Bloecke nach 38 Hostbloecken]
+    [ok]   M-36: vergleichspegelZaehlerstand zaehlt Frames ...     [19456 Frames nach 38 Hostbloecken]
+    [ok]   M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit ... [bereit nach 38 Hostbloecken]
+  Helfer nachgezogen (§5.8 Feinheit 5): fahreBisPegel zaehlt Hostbloecke (60 = 30 720 Frames); N-05 misst die Vorbedingung in Frames
+  aus dem Zaehlerstand [0 Frames in 0 Hostbloecken].
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Basis-SHA-Verhalten: Rotstand-Diff (nur Testruempfe) und Bau  [Zeilen 1-65 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D7 (alte Aufruftopologie): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h unveraendert am Basis-SHA ab19ac75; B23 im Endstand bis auf die drei Ruempfe der Aufruftopologie (git diff gegen den gestageten Endstand):
+diff --git a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+index a2a4e9b3..2995d67e 100644
+--- a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
++++ b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+@@ -2888,13 +2888,15 @@ std::uint64_t mindestFrames (double fs)
+ void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                   const float* const* nass, int kanaele, int n)
+ {
+-    p.speise (trocken, nass, kanaele, n);
++    // ROTSTAND: die Kanalschleife des Basis-SHA (PluginProcessor.cpp, je Kanal ein Aufruf).
++    for (int c = 0; c < kanaele; ++c)
++        p.speise (trocken[c], nass[c], n);
+ }
+ 
+ /// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+ std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+ {
+-    return p.gezaehlteFrames();
++    return p.gezaehlteSamples();   // ROTSTAND: der Name des Basis-SHA
+ }
+ 
+ /// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+@@ -2941,23 +2943,12 @@ void steuerzugWartetHaken (void* kontext)
+ bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                      const float* const* nass, int n, Halteprotokoll& h)
+ {
+-    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+-    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+-    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+-    {
+-        std::unique_lock<std::mutex> l (h.m);
+-        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+-            h.fristAbgelaufen = true;
+-    }
++    // ROTSTAND: die Aufruftopologie des Basis-SHA ohne Thread, wie NAK-159 sie
++    // beschreibt - speise (Kanal 0) → friereEin → speise (Kanal 1).
++    p.speise (trocken[0], nass[0], n);
+     const bool eingefroren = p.friereEin();
+-    {
+-        std::lock_guard<std::mutex> l (h.m);
+-        h.eingefrorenZurueck = true;
+-        h.cv.notify_all();
+-    }
+-    audio.join();
+-    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+-    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
++    p.speise (trocken[1], nass[1], n);
++    juce::ignoreUnused (h, blockmitteHaken, steuerzugWartetHaken);
+     return eingefroren;
+ }
+ 
+git diff --stat ab19ac75 -- eq-copilot/plugin/core/analysis/Vergleichspegel.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h (leer = Basisstand):
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU D7-alt
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:09:53
+Ende: 2026-09-11 23:10:03 Dauer: 11 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:10:03
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-07 04:41:30
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 04:41:15
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:09:35
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Basis-SHA-Verhalten: B23 --nur m36  [Zeilen 171-186 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m36
+Binary: 2026-09-11 23:10:03
+Start: 2026-09-11 23:10:04
+
+== NAK-246 M-36  prozessorpfad_stereo_bereit_nach_400_ms_musikzeit ==
+[ok]   M-36: Passage gemerkt
+[ROT]  M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke - einen je processBlock  [erster aufgenommener Hostblock: 2 Block, 1024 Frames; 38 Bloecke nach 19 Hostbloecken]
+[ROT]  M-36: vergleichspegelZaehlerstand zaehlt Frames - kBlock je Hostblock, alle Kanaele zusammen  [19456 Frames nach 19 Hostbloecken]
+[ROT]  M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil (19200 / 512) = 38 Hostbloecken, nicht nach der Haelfte  [bereit nach 19 Hostbloecken]
+
+1 bestanden, 3 gescheitert
+Ende: 2026-09-11 23:10:04 Dauer: 0.08 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3d - Rotbau M-36 am Aufrufer: Diff, Bau, --nur m36, Ruecknahme  [Zeilen 150-198 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+#####################################################################################################################
+ROTBAU M-36 (neue Signatur): PluginProcessor.cpp ruft speise wieder je Kanal (kanaele = 1 je Aufruf) - die Aufruftopologie des Basis-SHA am neuen Kern (git diff gegen den gestageten Gruenstand)
+diff --git a/eq-copilot/plugin/src/PluginProcessor.cpp b/eq-copilot/plugin/src/PluginProcessor.cpp
+index 6c0f8e5d..b876d427 100644
+--- a/eq-copilot/plugin/src/PluginProcessor.cpp
++++ b/eq-copilot/plugin/src/PluginProcessor.cpp
+@@ -920,7 +920,8 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
+                        + (std::size_t) pegelVon;
+             nass[c] = buffer.getReadPointer (c) + pegelVon;
+         }
+-        vergleichspegel.speise (trocken, nass, pegelKanaele, pegelBis - pegelVon);
++        for (int c = 0; c < pegelKanaele; ++c)   // ROTBAU M-36: je Kanal ein Aufruf, an der neuen Signatur
++            vergleichspegel.speise (&trocken[c], &nass[c], 1, pegelBis - pegelVon);
+     }
+ 
+     // SONDE-013 M-37/M-38: die zwei Uebergaenge gehen SOFORT in den
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU M-36
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:15:47
+Ende: 2026-09-11 23:15:57 Dauer: 10 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:15:56
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 23:15:34
+
+#####################################################################################################################
+ROTLAUF M-36
+HEAD: ab19ac7514a80e5b7392408e547e7522a5f40f50
+#####################################################################################################################
+
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m36
+Binary: 2026-09-11 23:15:56
+Start: 2026-09-11 23:15:57
+
+== NAK-246 M-36  prozessorpfad_stereo_bereit_nach_400_ms_musikzeit ==
+[ok]   M-36: Passage gemerkt
+[ROT]  M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke - einen je processBlock  [erster aufgenommener Hostblock: 2 Block, 1024 Frames; 38 Bloecke nach 19 Hostbloecken]
+[ROT]  M-36: vergleichspegelZaehlerstand zaehlt Frames - kBlock je Hostblock, alle Kanaele zusammen  [19456 Frames nach 19 Hostbloecken]
+[ROT]  M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil (19200 / 512) = 38 Hostbloecken, nicht nach der Haelfte  [bereit nach 19 Hostbloecken]
+
+1 bestanden, 3 gescheitert
+Ende: 2026-09-11 23:15:57 Dauer: 0.16 s
+EXIT=1
+Ruecknahme: git checkout -- eq-copilot/plugin/src/PluginProcessor.cpp, git diff danach: []
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2b - Gruenstand D7: B23 --nur m36  [Zeilen 124-139 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m36
+Binary: 2026-09-11 23:13:09
+Start: 2026-09-11 23:13:16
+
+== NAK-246 M-36  prozessorpfad_stereo_bereit_nach_400_ms_musikzeit ==
+[ok]   M-36: Passage gemerkt
+[ok]   M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke - einen je processBlock  [erster aufgenommener Hostblock: 1 Block, 512 Frames; 38 Bloecke nach 38 Hostbloecken]
+[ok]   M-36: vergleichspegelZaehlerstand zaehlt Frames - kBlock je Hostblock, alle Kanaele zusammen  [19456 Frames nach 38 Hostbloecken]
+[ok]   M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil (19200 / 512) = 38 Hostbloecken, nicht nach der Haelfte  [bereit nach 38 Hostbloecken]
+
+4 bestanden, 0 gescheitert
+Ende: 2026-09-11 23:13:16 Dauer: 0.08 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: M-36  [Zeilen 957-962 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-36  prozessorpfad_stereo_bereit_nach_400_ms_musikzeit ==
+[ok]   M-36: Passage gemerkt
+[ok]   M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke - einen je processBlock  [erster aufgenommener Hostblock: 1 Block, 512 Frames; 38 Bloecke nach 38 Hostbloecken]
+[ok]   M-36: vergleichspegelZaehlerstand zaehlt Frames - kBlock je Hostblock, alle Kanaele zusammen  [19456 Frames nach 38 Hostbloecken]
+[ok]   M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil (19200 / 512) = 38 Hostbloecken, nicht nach der Haelfte  [bereit nach 38 Hostbloecken]
+

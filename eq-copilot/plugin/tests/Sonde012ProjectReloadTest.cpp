@@ -1283,6 +1283,258 @@ bool nak246d3Fall (const std::string& name)
     return false;
 }
 } // namespace nak246d3
+
+//==============================================================================
+// NAK-246 D6 · eine Reset-Funktion fuer den Sitzungszustand (Regel R-D6;
+// Manifest docs/beweise/NAK-246.md Paragraph 3.7 M-29 und M-31, 5.7)
+//==============================================================================
+//
+// `projektReload` leerte Quellen und Verbindungsdaten, liess aber Experimente,
+// Paare, Befunde, `findingsOffen` und die Ruecknahme stehen - nur
+// `beginneSubscription` raeumte sie ab (Auditbefund D6). Ein read-only oder
+// ungebunden geladener State baut keine Subscription auf; die alte Sitzung
+// blieb dann in der Sicht des neuen Projekts. M-29 misst die Sicht DIREKT nach
+// `setStateInformation`, Broker offline, ohne Subscribe - in beiden Varianten
+// der Matrixzeile. M-31 (Wache) misst in denselben Laeufen, was der Reload
+// behaelt: das persistente Mitglied als `bestaetigt · getrennt · missing`,
+// keine Subscription und `brokerUnavailable` mit Handgriff.
+// Rotlauf gegen den Basis-SHA: docs/beweise/roh/NAK-246-rot-M-29.txt.
+
+namespace nak246d6
+{
+using Sm = eqcop::SourcesModel;
+
+/// Der v3-Korpus - dieselben Dateien wie B13, A5 und der Broker.
+std::string korpus (const char* relativ)
+{
+    auto d = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    for (int i = 0; i < 12 && ! d.getChildFile ("eq-copilot").isDirectory(); ++i)
+        d = d.getParentDirectory();
+    return d.getChildFile ("eq-copilot/fixtures/v3").getChildFile (relativ)
+            .loadFileAsString().toStdString();
+}
+
+/// Ein deklarierter Mutant eines WRITER-Standes (Pruefliste E): die Bytes, die
+/// dieser Prozessor selbst gespeichert hat, mit genau der einen Abweichung.
+juce::MemoryBlock mutant (const juce::MemoryBlock& writer,
+                          const std::function<void (juce::ValueTree&)>& abweichung)
+{
+    auto baum = juce::ValueTree::readFromData (writer.getData(), writer.getSize());
+    abweichung (baum);
+    juce::MemoryBlock aus;
+    {
+        juce::MemoryOutputStream strom (aus, false);
+        baum.writeToStream (strom);
+    }
+    return aus;
+}
+
+/// Der Sessionsnapshot der Vorbelegung: das Korpusfixture
+/// `gueltig/session-snapshot-mit-experimenten-und-paaren.json` als deklarierter
+/// Mutant mit genau zwei Abweichungen - (1) Bindung, Sitzung und fuehrendes
+/// Main sind die DIESES Prozessors, sonst nimmt das Modell den Snapshot nicht
+/// an; (2) `findings` ist die Befundliste aus
+/// `gueltig/session-snapshot-mit-findings.json`, ihr Befund zeigt auf das
+/// Mitglied `3333...` dieses Snapshots, sonst gaebe es kein `findingsOffen`.
+std::string sitzungsSnapshot (const nakama::ipc::ControlHello& hello)
+{
+    const auto wire = nakama::ipc::wireAdresseAusState (hello.adresse);
+    auto baum = juce::JSON::parse (juce::String (
+        korpus ("gueltig/session-snapshot-mit-experimenten-und-paaren.json")));
+    auto befunde = juce::JSON::parse (juce::String (
+        korpus ("gueltig/session-snapshot-mit-findings.json"))).getProperty ("findings", {});
+    auto* wurzel = baum.getDynamicObject();
+    if (wurzel == nullptr)
+        return {};
+    wurzel->setProperty ("session_epoch", juce::String (wire.sessionEpoch));
+    wurzel->setProperty ("fuehrendes_main", juce::String (wire.instanceId));
+    if (auto* mitglieder = wurzel->getProperty ("mitglieder").getArray())
+        for (auto& m : *mitglieder)
+            for (auto adresse : { m.getProperty ("adresse", {}),
+                                  m.getProperty ("probe_descriptor", {}).getProperty ("adresse", {}) })
+                if (auto* a = adresse.getDynamicObject())
+                {
+                    a->setProperty ("project_binding_id", juce::String (wire.projectBindingId));
+                    a->setProperty ("session_epoch", juce::String (wire.sessionEpoch));
+                }
+    if (auto* liste = befunde.getArray())
+        for (auto& b : *liste)
+            if (auto* o = b.getDynamicObject())
+                o->setProperty ("candidate_source", juce::String (id ('3')));
+    wurzel->setProperty ("findings", befunde);
+    return juce::JSON::toString (baum, true).toStdString();
+}
+
+const Sm::Zeile* zeileVon (const Sm::Sicht& s, const std::string& instanceId)
+{
+    for (const auto& q : s.quellen)
+        if (q.instanceId == instanceId)
+            return &q;
+    return nullptr;
+}
+
+/// Die sieben Sitzungsgroessen so, wie die Vorbelegung sie setzt.
+bool sitzungVoll (const Sm::Sicht& s, juce::String& beleg)
+{
+    const auto* z = zeileVon (s, id ('3'));
+    beleg = juce::String ((int) s.experimente.size()) + " Versuch(e), "
+          + juce::String ((int) s.paare.size()) + " Paar(e), "
+          + juce::String ((int) s.befunde.size()) + " Befund(e), findingsOffen "
+          + juce::String (z != nullptr ? z->findingsOffen : -1) + ", Ruecknahmen "
+          + juce::String ((juce::int64) s.evidenzRuecknahmen) + " ("
+          + juce::String (s.ruecknahmeGrund) + ", " + juce::String (s.ruecknahmeUmfang) + ")";
+    return s.experimente.size() == 1 && s.paare.size() == 2 && s.befunde.size() == 1
+        && z != nullptr && z->findingsOffen == 1 && s.evidenzRuecknahmen == 1
+        && s.ruecknahmeGrund == "routing_unbekannt" && s.ruecknahmeUmfang == "ganze_sitzung";
+}
+
+/// Frei von alten Sitzungsobjekten: jede der sieben Groessen leer. `rest`
+/// nennt jede, die es nicht ist.
+bool sitzungLeer (const Sm::Sicht& s, juce::String& rest)
+{
+    juce::StringArray felder;
+    if (! s.experimente.empty())
+        felder.add ("experimente " + juce::String ((int) s.experimente.size()));
+    if (! s.paare.empty())
+        felder.add ("paare " + juce::String ((int) s.paare.size()));
+    if (! s.befunde.empty())
+        felder.add ("befunde " + juce::String ((int) s.befunde.size()));
+    if (s.evidenzRuecknahmen != 0)
+        felder.add ("evidenzRuecknahmen " + juce::String ((juce::int64) s.evidenzRuecknahmen));
+    if (! s.ruecknahmeGrund.empty())
+        felder.add ("ruecknahmeGrund " + juce::String (s.ruecknahmeGrund));
+    if (! s.ruecknahmeUmfang.empty())
+        felder.add ("ruecknahmeUmfang " + juce::String (s.ruecknahmeUmfang));
+    for (const auto& q : s.quellen)
+        if (q.findingsOffen != 0)
+            felder.add ("findingsOffen " + juce::String (q.findingsOffen));
+    rest = felder.isEmpty()
+        ? "alle sieben leer, " + juce::String ((int) s.quellen.size()) + " Zeile(n)"
+        : felder.joinIntoString ("; ");
+    return felder.isEmpty();
+}
+
+/// Ein Main mit Bindung, dessen Sicht alle sieben Sitzungsgroessen traegt -
+/// ueber den Produktweg: Link auf (`beginneSubscription`), Snapshot,
+/// Ruecknahme (jeder Befund wird `stale`, `findingsOffen` damit 0), derselbe
+/// Snapshot noch einmal (der Befund kommt zurueck, die Ruecknahme bleibt
+/// gezaehlt). Der Worker-Drain ist aus: das Speichern ist der einzige Drain,
+/// und kein zweiter Thread fuehrt das Modell nach dem Laden noch nach.
+std::unique_ptr<eqcop::EqCopilotProcessor> mainMitSitzung (const char* variante)
+{
+    // HEAP, nicht Rahmen (NAK-175).
+    auto p = std::make_unique<eqcop::EqCopilotProcessor>();
+    p->setzeWorkerDrainFuerTest (false);
+    p->setzeEditorOffen (true);
+    const bool gebunden = p->setzeBindung ("hub", "Gen", "");
+    p->setzeEditorOffen (false);
+    const auto snapshot = sitzungsSnapshot (p->v3HelloFuerTest());
+    p->v3LinkFuerTest (true);
+    p->v3AntwortFuerTest (snapshot);
+    p->v3AntwortFuerTest (korpus ("gueltig/invalidate-ganze-sitzung.json"));
+    p->v3AntwortFuerTest (snapshot);
+    juce::String beleg;
+    const bool voll = sitzungVoll (p->sourcesSicht(), beleg);
+    pruefe (gebunden && voll,
+            (juce::String ("M-29 Aufbau (") + variante
+                + "): ein Main mit Bindung traegt alle sieben Sitzungsgroessen").toRawUTF8(),
+            beleg);
+    return p;
+}
+
+/// M-29 · Projektwechsel in einen read-only State und in einen ungebundenen
+/// Main-State, Broker offline, kein Subscribe: die Sicht ist SOFORT frei von
+/// den Sitzungsobjekten des alten Projekts.
+void projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen()
+{
+    std::cout << "== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==\n";
+
+    // Variante 1 - read-only. Der Writer-Stand dieses Prozessors mit EINER
+    // Abweichung: `Common.plugin_kind` traegt die Schema-1-Rolle `sensor`, die
+    // ein Schema-2-Leser nicht interpretieren darf (dieselbe Abweichung wie
+    // N-13 in B23).
+    {
+        auto p = mainMitSitzung ("read-only");
+        juce::MemoryBlock eigen;
+        p->getStateInformation (eigen);
+        const auto nurLesen = mutant (eigen, [] (juce::ValueTree& v)
+            { v.getChildWithName ("Common").setProperty ("plugin_kind", "sensor", nullptr); });
+        p->setStateInformation (nurLesen.getData(), (int) nurLesen.getSize());
+        pruefe (p->stateNurLesen(), "M-29 read-only: der geladene State ist read-only (Vorbedingung)");
+
+        const auto s = p->sourcesSicht();
+        juce::String rest;
+        pruefe (sitzungLeer (s, rest),
+                "M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem "
+                "Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, "
+                "Befunde, Ruecknahmen und kein findingsOffen mehr",
+                rest);
+        pruefe (! s.subscriptionAktiv && s.diagnose == Sm::Diagnose::brokerUnavailable
+                    && s.diagnoseHatHandgriff,
+                "M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff");
+    }
+
+    // Variante 2 - ein ungebundener Main-State. Das Snapshot-Mitglied wird
+    // vorher ueber den Produktweg bestaetigt (bestaetigter Join, Speicher-
+    // Drain wie M-10), der Writer-Stand traegt es. EINE Abweichung:
+    // `Common.project_binding_id` fehlt. Ohne Bindung gibt es keine gueltige
+    // v3-Adresse und damit keinen Subscribe (`Ipc.cpp`, der Riegel vor
+    // `beginneSubscription`).
+    {
+        auto p = mainMitSitzung ("ungebunden");
+        const auto joinId = p->merkeSourcesCommandFuerTest (
+            eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, id ('3'));
+        p->v3AntwortFuerTest (ack (joinId, true));
+        juce::MemoryBlock eigen;
+        p->getStateInformation (eigen);
+        juce::String beleg;
+        const bool nochVoll = sitzungVoll (p->sourcesSicht(), beleg);
+        const auto gespeichert = p->holeZustandKopie().mainProjectMitglieder;
+        pruefe (nochVoll && gespeichert.size() == 1
+                    && gespeichert.front().instanceId == juce::String (id ('3')),
+                "M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung "
+                "steht unveraendert (Vorbedingung)",
+                beleg);
+
+        const auto ungebunden = mutant (eigen, [] (juce::ValueTree& v)
+            { v.getChildWithName ("Common").removeProperty ("project_binding_id", nullptr); });
+        p->setStateInformation (ungebunden.getData(), (int) ungebunden.getSize());
+        const auto z = p->holeZustandKopie();
+        const auto adresse = nakama::ipc::wireAdresseAusState (p->v3HelloFuerTest().adresse);
+        pruefe (! p->stateNurLesen() && z.common.klasse == nakama::state::Klasse::main
+                    && z.common.projectBindingId.isEmpty()
+                    && z.mainProjectMitglieder.size() == 1
+                    && z.mainProjectMitglieder.front().instanceId == juce::String (id ('3'))
+                    && ! nakama::ipc::adresseGueltig (adresse),
+                "M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten "
+                "Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen "
+                "Subscribe (Vorbedingung)");
+
+        const auto s = p->sourcesSicht();
+        juce::String rest;
+        pruefe (sitzungLeer (s, rest),
+                "M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem "
+                "Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, "
+                "Paare, Befunde, Ruecknahmen und kein findingsOffen mehr",
+                rest);
+        const auto* q = zeileVon (s, id ('3'));
+        pruefe (q != nullptr && s.quellen.size() == 1
+                    && q->mitgliedschaft == Sm::Mitgliedschaft::bestaetigt
+                    && q->control == Sm::Control::getrennt
+                    && q->messung == Sm::Messung::missing
+                    && ! s.subscriptionAktiv
+                    && s.diagnose == Sm::Diagnose::brokerUnavailable && s.diagnoseHatHandgriff,
+                "M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, "
+                "getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff");
+    }
+}
+
+bool nak246d6Fall (const std::string& name)
+{
+    if (name == "m29") { projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen(); return true; }
+    return false;
+}
+} // namespace nak246d6
 } // namespace
 
 int main (int argc, char** argv)
@@ -1290,9 +1542,10 @@ int main (int argc, char** argv)
     juce::ScopedJuceInitialiser_GUI gui;
     if (argc == 3 && std::string (argv[1]) == "--nur")
     {
-        if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2]))
+        if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2])
+            && ! nak246d6::nak246d6Fall (argv[2]))
         {
-            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16)\n";
+            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -1311,6 +1564,8 @@ int main (int argc, char** argv)
     nak246d3::ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht();
     // NAK-246 D3 + D4: die Kette M-16 am echten Prozessor gegen den Testserver.
     nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette();
+    // NAK-246 D6: der Projektwechsel leert den Sitzungszustand (M-29, M-31).
+    nak246d6::projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

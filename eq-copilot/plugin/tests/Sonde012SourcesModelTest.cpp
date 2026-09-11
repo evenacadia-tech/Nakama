@@ -288,6 +288,38 @@ Model::Zeile sichtZeile (std::string id, juce::String name,
     return q;
 }
 
+/// NAK-246 D6 (M-30): die Sitzungsfelder einer Sicht gegen die eines frischen
+/// Modells, Feld fuer Feld. Das ist die EINE Stelle dieses Beins, die die
+/// Sitzungsmenge nennt; ein spaeter ergaenztes Sitzungsfeld gehoert hierher
+/// (Manifest docs/beweise/NAK-246.md Paragraph 5.7 Feinheit 4). Ein frisches
+/// Modell fuehrt keine Versuche, Paare oder Befunde - Groessengleichheit ist
+/// dort Inhaltsgleichheit. `abweichung` nennt jedes Feld, das abweicht.
+bool sitzungsfelderWieFrisch (const Model::Sicht& s, const Model::Sicht& frisch,
+                              juce::String& abweichung)
+{
+    juce::StringArray felder;
+    if (s.experimente.size() != frisch.experimente.size())
+        felder.add ("experimente " + juce::String ((int) s.experimente.size()));
+    if (s.paare.size() != frisch.paare.size())
+        felder.add ("paare " + juce::String ((int) s.paare.size()));
+    if (s.befunde.size() != frisch.befunde.size())
+        felder.add ("befunde " + juce::String ((int) s.befunde.size()));
+    if (s.evidenzRuecknahmen != frisch.evidenzRuecknahmen)
+        felder.add ("evidenzRuecknahmen " + juce::String ((juce::int64) s.evidenzRuecknahmen));
+    if (s.ruecknahmeGrund != frisch.ruecknahmeGrund)
+        felder.add ("ruecknahmeGrund " + juce::String (s.ruecknahmeGrund));
+    if (s.ruecknahmeUmfang != frisch.ruecknahmeUmfang)
+        felder.add ("ruecknahmeUmfang " + juce::String (s.ruecknahmeUmfang));
+    const Model::Zeile frischeZeile;
+    for (const auto& q : s.quellen)
+        if (q.findingsOffen != frischeZeile.findingsOffen)
+            felder.add ("findingsOffen " + juce::String (q.findingsOffen));
+    abweichung = felder.isEmpty()
+        ? "keine (" + juce::String ((int) s.quellen.size()) + " Zeile(n))"
+        : felder.joinIntoString ("; ");
+    return felder.isEmpty();
+}
+
 } // namespace
 
 int main()
@@ -1131,6 +1163,113 @@ int main()
                     "N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel "
                     "trifft die geschlossenen Enums, nicht jedes `null`");
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-246 D6 · M-30 reload_und_subscription_leeren_dieselbe_sitzungsmenge
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Regel R-D6: `projektReload` und `beginneSubscription` teilen sich EINE
+    // Reset-Funktion fuer den Sitzungszustand. Bis dahin leerte nur
+    // `beginneSubscription` Experimente, Paare, Befunde, `findingsOffen` und
+    // die Ruecknahme; `projektReload` liess sie stehen (Auditbefund D6). Der
+    // Fall misst die MENGE: zwei gleich vorbelegte Modelle, das eine laedt ein
+    // Projekt, das andere beginnt eine Subscription - danach traegt jedes in
+    // jedem Sitzungsfeld denselben Wert wie ein frisches Modell (Manifest
+    // docs/beweise/NAK-246.md Paragraph 3.7 M-30, 5.7 Feinheit 4).
+    // Rotlauf gegen den Basis-SHA: docs/beweise/roh/NAK-246-rot-M-30.txt.
+    {
+        // Die Adressen der Korpusfixtures; das Mitglied `3333...` traegt den
+        // Befund und damit `findingsOffen`.
+        const std::string binding (32, '1'), session (32, '2'), mitglied (32, '3');
+        // Deklarierter Mutant des Korpusfixtures mit genau einer Abweichung:
+        // `findings` ist die Befundliste aus `session-snapshot-mit-findings.json`,
+        // deren Befund auf das Mitglied dieses Snapshots zeigt.
+        const std::string vollerSnapshot = [&]
+        {
+            auto baum = juce::JSON::parse (juce::String (
+                fixture ("gueltig/session-snapshot-mit-experimenten-und-paaren.json")));
+            auto befunde = juce::JSON::parse (juce::String (
+                fixture ("gueltig/session-snapshot-mit-findings.json"))).getProperty ("findings", {});
+            if (auto* liste = befunde.getArray())
+                for (auto& b : *liste)
+                    if (auto* o = b.getDynamicObject())
+                        o->setProperty ("candidate_source", juce::String (mitglied));
+            if (auto* o = baum.getDynamicObject())
+                o->setProperty ("findings", befunde);
+            return juce::JSON::toString (baum, true).toStdString();
+        }();
+        const auto ruecknahme = fixture ("gueltig/invalidate-ganze-sitzung.json");
+        // Alle sieben Groessen ueber die Produktleser: Snapshot, Ruecknahme (sie
+        // macht jeden Befund `stale` und `findingsOffen` damit 0), derselbe
+        // Snapshot (der Befund kommt zurueck, die Ruecknahme bleibt gezaehlt).
+        auto vorbelegen = [&] (Model& m, juce::String& beleg) -> bool
+        {
+            m.beginneSubscription (binding, session, mitglied);
+            juce::String grund;
+            const bool a = m.uebernehmeSessionSnapshot (vollerSnapshot, t0, grund)
+                           == Model::SnapshotErgebnis::uebernommen;
+            const bool b = m.uebernehmeEvidenzruecknahme (ruecknahme, grund)
+                           == Model::RuecknahmeErgebnis::uebernommen;
+            const bool c = m.uebernehmeSessionSnapshot (vollerSnapshot, t0, grund)
+                           == Model::SnapshotErgebnis::uebernommen;
+            const auto s = m.sicht();
+            int offen = -1;
+            for (const auto& q : s.quellen)
+                if (q.instanceId == mitglied)
+                    offen = q.findingsOffen;
+            beleg = juce::String ((int) s.experimente.size()) + " Versuch(e), "
+                  + juce::String ((int) s.paare.size()) + " Paar(e), "
+                  + juce::String ((int) s.befunde.size()) + " Befund(e), findingsOffen "
+                  + juce::String (offen) + ", Ruecknahmen "
+                  + juce::String ((juce::int64) s.evidenzRuecknahmen) + " ("
+                  + juce::String (s.ruecknahmeGrund) + ", "
+                  + juce::String (s.ruecknahmeUmfang) + ")" + grund;
+            return a && b && c && s.experimente.size() == 1 && s.paare.size() == 2
+                && s.befunde.size() == 1 && offen == 1 && s.evidenzRuecknahmen == 1
+                && s.ruecknahmeGrund == "routing_unbekannt"
+                && s.ruecknahmeUmfang == "ganze_sitzung";
+        };
+        Model ueberReload, ueberSubscription;
+        juce::String belegReload, belegSubscription;
+        const bool belegtReload = vorbelegen (ueberReload, belegReload);
+        const bool belegtSubscription = vorbelegen (ueberSubscription, belegSubscription);
+        pruefe (belegtReload && belegtSubscription,
+                "NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen",
+                belegReload + " / " + belegSubscription);
+
+        // Die zwei Wege. Der Reload behaelt das Mitglied als persistentes -
+        // so hat auch dieser Weg eine Zeile, deren `findingsOffen` zaehlt.
+        ueberReload.projektReload ({ { juce::String (mitglied), "Klavier-Bus" } });
+        ueberSubscription.beginneSubscription (binding, session, mitglied);
+
+        const Model frisch;
+        const auto referenz = frisch.sicht();
+        juce::String restReload, restSubscription;
+        const bool reloadWieFrisch =
+            sitzungsfelderWieFrisch (ueberReload.sicht(), referenz, restReload);
+        const bool subscriptionWieFrisch =
+            sitzungsfelderWieFrisch (ueberSubscription.sicht(), referenz, restSubscription);
+        pruefe (reloadWieFrisch && subscriptionWieFrisch,
+                "NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge",
+                "projektReload: " + restReload + " / beginneSubscription: " + restSubscription);
+
+        // M-31 (Wache) am Modell selbst: was die zwei Wege NICHT teilen. Der
+        // Reload meldet `brokerUnavailable` mit Handgriff, der Subscribe
+        // `authenticating` ohne - die Diagnose gehoert nicht zur Sitzungsmenge
+        // (Paragraph 5.7 Feinheit 2). Am Prozessor (B14, M-29/M-31) setzt der
+        // Reconnect nach dem Laden dieselbe Diagnose ueber `controlEnde` noch
+        // einmal; die Zeile dort haengt deshalb nicht an `projektReload` allein.
+        const auto nachReload = ueberReload.sicht();
+        const auto nachSubscription = ueberSubscription.sicht();
+        pruefe (nachReload.diagnose == Model::Diagnose::brokerUnavailable
+                    && nachReload.diagnoseHatHandgriff
+                    && nachSubscription.diagnose == Model::Diagnose::authenticating
+                    && ! nachSubscription.diagnoseHatHandgriff,
+                "NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating",
+                juce::String (wort (nachReload.diagnose)) + (nachReload.diagnoseHatHandgriff ? " +Handgriff" : "")
+                    + " / " + wort (nachSubscription.diagnose)
+                    + (nachSubscription.diagnoseHatHandgriff ? " +Handgriff" : ""));
     }
     std::cout << "SONDE-012 SourcesModel: " << bestanden << "/"
               << (bestanden + fehler) << " gruen\n";

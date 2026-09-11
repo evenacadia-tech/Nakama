@@ -296,6 +296,19 @@ private:
     /// ⚠️ Der Aufrufer haelt den `mutex` bereits, wie bei
     /// `zaehleOffeneFindings()` auch.
     void setzeAlleBefundeStale();
+    /// NAK-246 D6 (R-D6): die EINE Reset-Funktion fuer den Sitzungszustand.
+    ///
+    /// Sie leert genau die sieben Groessen einer Sitzung: `experimente`,
+    /// `paare`, `befunde`, `findingsOffen` je Zeile, `evidenzRuecknahmen`,
+    /// `ruecknahmeGrund` und `ruecknahmeUmfang`. Beide Wege, auf denen eine
+    /// Sitzung endet, rufen sie - `beginneSubscription` (eine neue Sitzung)
+    /// und `projektReload` (ein anderes Projekt). Bis NAK-246 leerte nur der
+    /// erste diese Menge; ein read-only oder ungebunden geladener State baut
+    /// keine Subscription auf, und die alte Sitzung blieb in der Sicht des
+    /// neuen Projekts stehen (Auditbefund D6, SONDE-013 M-50).
+    ///
+    /// ⚠️ Der Aufrufer haelt den `mutex` bereits.
+    void sitzungszustandLeeren();
     /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der zuletzt empfangene Stand
     /// der Versuche und Paarurteile dieser Sitzung.
     std::vector<Versuch> experimente;

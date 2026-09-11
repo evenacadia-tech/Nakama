@@ -33,7 +33,12 @@ class Vergleichspegel
 {
 public:
     /** Wie viel Material der Pegel mindestens braucht, bevor er einfrierbar
-        ist: 400 ms. Kürzer misst man einen Transienten und nennt ihn Pegel. */
+        ist: 400 ms. Kürzer misst man einen Transienten und nennt ihn Pegel.
+
+        🔑 NAK-246 D7 (R-D7): 400 ms MUSIKZEIT, gezählt in Frames — ein Frame
+        ist ein Zeitpunkt über alle Kanäle. Bis NAK-246 zählte der Typ Samples
+        je Kanal, und der Prozessor rief ihn je Kanal: Stereo war nach 200 ms
+        bereit (Auditbefund D7). */
     static constexpr double kMindestSekunden = 0.4;
 
     /** Der Typ bleibt kopierbar, OBWOHL er seit Befund C6 ein Atomic haelt.
@@ -42,7 +47,9 @@ public:
         Abzug der Zahlen, und der entsteht unter dem Zug der Quelle — nie
         halb. Die Kopie startet mit freiem Tor. Ohne diese beiden Zeilen waere
         der Typ still unbeweglich geworden, und jede Funktion, die einen Pegel
-        ZURUECKGIBT, haette aufgehoert zu uebersetzen. */
+        ZURUECKGIBT, haette aufgehoert zu uebersetzen. Die Testhaken (M-34)
+        gehoeren wie das Tor zur Instanz: eine Kopie startet ohne Haken, und
+        eine Zuweisung laesst die Haken des Ziels stehen. */
     Vergleichspegel() = default;
     Vergleichspegel (const Vergleichspegel& andere) noexcept
     {
@@ -67,12 +74,25 @@ public:
     {
         Steuerzug zug (tor);
         fs = abtastrate > 0.0 ? abtastrate : 48000.0;
-        mindestSamples = (std::uint64_t) (kMindestSekunden * fs);
+        mindestFrames = (std::uint64_t) (kMindestSekunden * fs);
         leerenIntern();
     }
 
-    /** Nimmt Material auf. Nach dem Einfrieren ohne Wirkung — das IST die
-        Zusage, nicht eine Bequemlichkeit.
+    /** Nimmt EINEN Block auf — alle Kanäle in einem Aufruf. Nach dem
+        Einfrieren ohne Wirkung — das IST die Zusage, nicht eine Bequemlichkeit.
+
+        🔑 NAK-246 D7 (R-D7, §5.8 Feinheiten 1 bis 3): `trocken[c]` und
+        `nass[c]` zeigen je auf `n` Samples des Kanals `c`, für jedes
+        `kanaele >= 1`. Gezählt wird in FRAMES: ein Frame, in dem alle Kanäle
+        endlich sind, geht mit allen Kanalenergien in `summeA`/`summeB` ein
+        und erhöht `gesehen` um 1; ein Frame mit einem nicht-endlichen Sample
+        geht GANZ nicht ein. `bloeckeAufgenommen` zählt je Aufruf. Die frühere
+        Zweizeigerform `speise (a, b, n)` zählte je Kanal und wurde je Kanal
+        gerufen: Stereo erreichte die 400 ms nach 200 ms, und das Tor war
+        zwischen Kanal 0 und Kanal 1 eines Hostblocks frei, sodass
+        `friereEin` einen halben Stereoblock einfrieren konnte (NAK-159). Sie
+        ist ohne Überladung entfallen, damit der Übersetzer jeden Aufrufer
+        findet.
 
         🔑 SONDE-013 Nacharbeit 3 (Befund C6, CLAUDE.md „Audio bleibt
         echtzeitfest"): Diese Methode laeuft im AUDIOthread, `vorbereiten`,
@@ -84,42 +104,31 @@ public:
         kein Genauigkeitsproblem.
 
         Der Ausschluss liegt jetzt IM Typ und heisst `tor`. Der Audiothread
-        VERSUCHT ihn zu nehmen und laesst den Block aus, wenn gerade der
-        Nachrichtenthread darin steht — er wartet NIE, allokiert nicht und
-        loggt nicht. Ein ausgelassener Block ist ein nicht gezaehltes Sample,
+        VERSUCHT ihn EINMAL je Aufruf zu nehmen — der Zug deckt alle Kanäle
+        des Blocks — und laesst den Block aus, wenn gerade der
+        Nachrichtenthread darin steht. Er wartet NIE, allokiert nicht und
+        loggt nicht. Ein ausgelassener Block ist ein nicht gezaehlter Block,
         keine falsche Zahl; die 400-ms-Schwelle wird dadurch spaeter, nie
         falsch erreicht. */
-    void speise (const float* a, const float* b, int n) noexcept
+    void speise (const float* const* trocken, const float* const* nass,
+                 int kanaele, int n) noexcept
     {
-        if (a == nullptr || b == nullptr || n <= 0)
+        if (trocken == nullptr || nass == nullptr || kanaele <= 0 || n <= 0)
             return;
+        for (int c = 0; c < kanaele; ++c)
+            if (trocken[c] == nullptr || nass[c] == nullptr)
+                return;
         if (! audioZugNehmen())
             return;                    // Der Steuerthread ist drin: Block auslassen.
         if (! istEingefroren)
         {
-            for (int i = 0; i < n; ++i)
-            {
-                const double x = (double) a[i];
-                const double y = (double) b[i];
-                // 🔑 SONDE-013 M-07: nicht-endliche Werte werden GEZAEHLT und
-                // VERRIEGELN den Pegel.
-                //
-                // Vorher wurden sie nur uebersprungen. Eine Passage mit
-                // beschaedigten Samples lieferte danach denselben gueltigen
-                // eingefrorenen Gain wie eine kuerzere saubere — der Fehler war
-                // hinterher unsichtbar, obwohl CLAUDE.md ausdruecklich
-                // „verriegelt und gezaehlt" verlangt. Jetzt merkt der Typ sich
-                // den Fall: `friereEin()` liefert danach KEINEN Wert, und
-                // `nichtEndlicheSamples()` sagt, wie viele es waren.
-                if (! std::isfinite (x) || ! std::isfinite (y))
-                {
-                    ++nichtEndlich;
-                    continue;
-                }
-                summeA += x * x;
-                summeB += y * y;
-                ++gesehen;
-            }
+            // Die Blockmitte teilt nur die Schleife: die Frames laufen in
+            // derselben Reihenfolge wie ohne sie.
+            const int mitte = n / 2;
+            nimmFrames (trocken, nass, kanaele, 0, mitte);
+            if (blockmitteHaken != nullptr)          // Testhaken M-34; im Produkt nullptr
+                blockmitteHaken (blockmitteHakenKontext);
+            nimmFrames (trocken, nass, kanaele, mitte, n);
             ++bloeckeAufgenommen;
         }
         audioZugGeben();
@@ -132,14 +141,17 @@ public:
     }
 
     /** Wie viele nicht-endliche Samples der Pegel gesehen hat. 0 heisst
-        nachweislich keines, nicht „nicht gemessen". */
+        nachweislich keines, nicht „nicht gemessen". Gezählt wird je
+        Kanalpaar (trocken, nass) eines Frames eines — dieselbe Zahl, die die
+        frühere Kanalaufrufform ergab (NAK-246 D7, §5.8 Feinheit 2). */
     std::uint64_t nichtEndlicheSamples() const noexcept
     {
         Steuerzug zug (tor);
         return nichtEndlich;
     }
 
-    /** Wie viele Bloecke der Pegel wirklich AUFGENOMMEN hat.
+    /** Wie viele Bloecke der Pegel wirklich AUFGENOMMEN hat — einer je Aufruf
+        von `speise`, im Prozessor also einer je Hostblock (NAK-246 D7).
 
         Die Gegenzahl zu „gespeist": ein Block, den das Passagenfenster oder
         das Tor aussortiert, erscheint hier nicht. Ein Bein misst damit, dass
@@ -152,13 +164,14 @@ public:
         return bloeckeAufgenommen;
     }
 
-    /** Wie viele ENDLICHE Samples in die Summen eingegangen sind.
+    /** Wie viele FRAMES — alle Kanäle endlich — in die Summen eingegangen
+        sind (NAK-246 D7).
 
         Die Gegenprobe zu `aufgenommeneBloecke()`: beide Zahlen entstehen im
         selben Zug, also muss ihr Verhaeltnis fuer gleich grosse Bloecke exakt
         aufgehen. Ein Leser, der einen halb aufgenommenen Block sieht, sieht
         genau hier einen Rest (Befund C6). */
-    std::uint64_t gezaehlteSamples() const noexcept
+    std::uint64_t gezaehlteFrames() const noexcept
     {
         Steuerzug zug (tor);
         return gesehen;
@@ -166,13 +179,14 @@ public:
 
     /** Alle drei Zaehler in EINEM Zug — die Form, in der ihre Konsistenz
         ueberhaupt pruefbar ist. Drei Einzelaufrufe koennten drei Staende
-        sehen und faenden den Riss nie. */
-    void zaehlerstand (std::uint64_t& bloecke, std::uint64_t& endliche,
+        sehen und faenden den Riss nie. `frames` sind Frames, nicht Samples
+        je Kanal (NAK-246 D7). */
+    void zaehlerstand (std::uint64_t& bloecke, std::uint64_t& frames,
                        std::uint64_t& nichtEndliche) const noexcept
     {
         Steuerzug zug (tor);
         bloecke = bloeckeAufgenommen;
-        endliche = gesehen;
+        frames = gesehen;
         nichtEndliche = nichtEndlich;
     }
 
@@ -183,10 +197,17 @@ public:
         Audiocallback, der gerade schreibt, haelt es; dieser Aufruf wartet
         darauf und sieht danach einen VOLLSTAENDIGEN Block, nie einen halb
         aufgenommenen. Gewartet wird ausschliesslich HIER, im
-        Nachrichtenthread. */
+        Nachrichtenthread. Seit NAK-246 D7 ist dieser Block der ganze Block
+        mit allen Kanälen: `speise` nimmt sie unter EINEM Torzug, also kann
+        das Einfrieren nicht mehr zwischen zwei Kanälen landen (NAK-159,
+        M-34).
+
+        Der Gain ist `20 · log10 (rmsB / rmsA)` mit `rms = sqrt (summe /
+        gesehen)`, also `10 · log10 (summeB / summeA)`: die Framezahl kürzt
+        sich, und beide Kanalenergien stehen in den Summen (M-37). */
     bool friereEin() noexcept
     {
-        Steuerzug zug (tor);
+        Steuerzug zug (tor, einfrierWartetHaken, einfrierWartetHakenKontext);
         if (istEingefroren)
             return gehaltenGesetzt;
         if (nichtEndlich > 0)
@@ -229,6 +250,29 @@ public:
         leerenIntern();
     }
 
+    /** Testhaken (NAK-246 M-34, §5.8 Feinheit 3): Funktionszeiger mit
+        Kontext, im Produkt nullptr.
+
+        Der Blockmittehaken laeuft in `speise` MIT dem Audiozug, zwischen der
+        ersten und der zweiten Blockhaelfte - der Audiothread zahlt dafuer
+        einen vorhersagbaren Zweig je Aufruf, nicht je Frame. Der Wartehaken
+        laeuft in `friereEin`, sobald dessen Torzug zum ersten Mal an einem
+        GEHALTENEN Tor scheitert; er laeuft nie im Audiothread. Ein Bein haelt
+        damit den Audiothread in der Blockmitte an und weist nach, dass der
+        Steuerthread dort wartet. Setzen VOR dem ersten nebenlaeufigen
+        Aufruf; die Zeiger sind nicht atomar und reisen mit keiner Kopie. */
+    using TestHaken = void (*) (void* kontext);
+    void setzeBlockmitteHakenFuerTest (TestHaken fn, void* kontext) noexcept
+    {
+        blockmitteHaken = fn;
+        blockmitteHakenKontext = kontext;
+    }
+    void setzeEinfrierWartetHakenFuerTest (TestHaken fn, void* kontext) noexcept
+    {
+        einfrierWartetHaken = fn;
+        einfrierWartetHakenKontext = kontext;
+    }
+
 private:
     //== Das Tor (Befund C6) =================================================
     //
@@ -251,10 +295,16 @@ private:
         tor.store (torFrei, std::memory_order_release);
     }
 
-    /** RAII-Zug des Nachrichtenthreads. Er wartet — und nur er darf das. */
+    /** RAII-Zug des Nachrichtenthreads. Er wartet — und nur er darf das.
+
+        `wartet` ist der Wartehaken aus `friereEin` (M-34): er laeuft einmal,
+        sobald der Zug an einem GEHALTENEN Tor scheitert. Ein nur scheinbar
+        gescheiterter `compare_exchange_weak` an einem freien Tor zaehlt
+        nicht. Im Produkt nullptr. */
     struct Steuerzug
     {
-        explicit Steuerzug (std::atomic<int>& t) noexcept : tor (t)
+        explicit Steuerzug (std::atomic<int>& t, TestHaken wartet = nullptr,
+                            void* kontext = nullptr) noexcept : tor (t)
         {
             for (;;)
             {
@@ -263,6 +313,11 @@ private:
                                                std::memory_order_acquire,
                                                std::memory_order_relaxed))
                     return;
+                if (wartet != nullptr && erwartet != torFrei)
+                {
+                    wartet (kontext);
+                    wartet = nullptr;
+                }
                 std::this_thread::yield();
             }
         }
@@ -276,7 +331,7 @@ private:
     struct Abzug
     {
         double fs { 48000.0 };
-        std::uint64_t mindestSamples { 19200 };
+        std::uint64_t mindestFrames { 19200 };
         double summeA { 0.0 }, summeB { 0.0 };
         std::uint64_t gesehen { 0 };
         std::uint64_t nichtEndlich { 0 };
@@ -289,14 +344,14 @@ private:
     Abzug abzug() const noexcept
     {
         Steuerzug zug (tor);
-        return Abzug { fs, mindestSamples, summeA, summeB, gesehen, nichtEndlich,
+        return Abzug { fs, mindestFrames, summeA, summeB, gesehen, nichtEndlich,
                        bloeckeAufgenommen, istEingefroren, gehalten, gehaltenGesetzt };
     }
 
     void uebernehmenIntern (const Abzug& a) noexcept
     {
         fs = a.fs;
-        mindestSamples = a.mindestSamples;
+        mindestFrames = a.mindestFrames;
         summeA = a.summeA;
         summeB = a.summeB;
         gesehen = a.gesehen;
@@ -311,13 +366,58 @@ private:
         also braucht es keinen eigenen Zug. */
     void uebernehmen (const Abzug& a) noexcept { uebernehmenIntern (a); }
 
+    /** Nimmt die Frames `[von, bis)` eines Blocks auf (NAK-246 D7, §5.8
+        Feinheit 2). Nur aus `speise`, mit dem Audiozug. */
+    void nimmFrames (const float* const* trocken, const float* const* nass,
+                     int kanaele, int von, int bis) noexcept
+    {
+        for (int i = von; i < bis; ++i)
+        {
+            double energieA = 0.0, energieB = 0.0;
+            bool endlich = true;
+            for (int c = 0; c < kanaele; ++c)
+            {
+                const double x = (double) trocken[c][i];
+                const double y = (double) nass[c][i];
+                // 🔑 SONDE-013 M-07: nicht-endliche Werte werden GEZAEHLT und
+                // VERRIEGELN den Pegel.
+                //
+                // Vorher wurden sie nur uebersprungen. Eine Passage mit
+                // beschaedigten Samples lieferte danach denselben gueltigen
+                // eingefrorenen Gain wie eine kuerzere saubere — der Fehler war
+                // hinterher unsichtbar, obwohl CLAUDE.md ausdruecklich
+                // „verriegelt und gezaehlt" verlangt. Jetzt merkt der Typ sich
+                // den Fall: `friereEin()` liefert danach KEINEN Wert, und
+                // `nichtEndlicheSamples()` sagt, wie viele es waren.
+                //
+                // NAK-246 D7: gezaehlt wird je Kanalpaar, wie in der frueheren
+                // Kanalaufrufform; der Frame geht dann GANZ nicht ein - sonst
+                // stuende in `gesehen` ein Zeitpunkt, dessen Energie nur einen
+                // Teil der Kanaele traegt.
+                if (! std::isfinite (x) || ! std::isfinite (y))
+                {
+                    ++nichtEndlich;
+                    endlich = false;
+                    continue;
+                }
+                energieA += x * x;
+                energieB += y * y;
+            }
+            if (! endlich)
+                continue;
+            summeA += energieA;
+            summeB += energieB;
+            ++gesehen;
+        }
+    }
+
     bool bereitIntern() const noexcept
     {
         // Ein einziges nicht-endliches Sample sperrt: der Pegel dieser Passage
         // ist nicht mehr messbar, und eine Zahl ohne diesen Vorbehalt waere
         // genau die unsichtbare Beschoenigung, gegen die M-07 steht.
         return nichtEndlich == 0
-            && gesehen >= mindestSamples && summeA > 0.0 && summeB > 0.0;
+            && gesehen >= mindestFrames && summeA > 0.0 && summeB > 0.0;
     }
 
     void leerenIntern() noexcept
@@ -333,8 +433,10 @@ private:
 
     mutable std::atomic<int> tor { torFrei };
     double fs { 48000.0 };
-    std::uint64_t mindestSamples { 19200 };
+    /// NAK-246 D7: die Schwelle in FRAMES, `floor (kMindestSekunden · fs)`.
+    std::uint64_t mindestFrames { 19200 };
     double summeA { 0.0 }, summeB { 0.0 };
+    /// NAK-246 D7: gezaehlte FRAMES, deren Kanaele alle endlich waren.
     std::uint64_t gesehen { 0 };
     /// M-07: gezaehlte nicht-endliche Eingangssamples. Sie verriegeln.
     std::uint64_t nichtEndlich { 0 };
@@ -343,6 +445,12 @@ private:
     bool istEingefroren { false };
     double gehalten { 0.0 };
     bool gehaltenGesetzt { false };
+    /// Testhaken M-34 (im Produkt nullptr). Sie gehoeren zur Instanz, nicht
+    /// zum Messwert, und reisen mit keiner Kopie.
+    TestHaken blockmitteHaken = nullptr;
+    void* blockmitteHakenKontext = nullptr;
+    TestHaken einfrierWartetHaken = nullptr;
+    void* einfrierWartetHakenKontext = nullptr;
 };
 
 /** Warum hörbares Delta gesperrt ist — oder dass es frei ist (M-24). */

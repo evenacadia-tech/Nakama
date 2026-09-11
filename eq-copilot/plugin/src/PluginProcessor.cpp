@@ -901,12 +901,27 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     const auto schritt = markierung.verarbeite (buffer, kanaele, erlaubt);
 
     if (pegelSpeist)
-        for (int c = 0; c < kanaele; ++c)
-            vergleichspegel.speise (
-                versuchTrocken.data() + (std::size_t) c * (std::size_t) buffer.getNumSamples()
-                    + (std::size_t) pegelVon,
-                buffer.getReadPointer (c) + pegelVon,
-                pegelBis - pegelVon);
+    {
+        // 🔑 NAK-246 D7 (R-D7, Manifest §5.8 Feinheit 1): EIN Aufruf je
+        // Hostblock, alle Kanaele unter EINEM Torzug des Pegels. Bis NAK-246
+        // rief diese Stelle `speise` je Kanal: der Pegel zaehlte Samples je
+        // Kanal - Stereo war nach 200 statt 400 ms bereit (Auditbefund D7) -,
+        // und `friereEin` konnte zwischen Kanal 0 und Kanal 1 landen
+        // (NAK-159). Die Zeigerpaare liegen auf dem Stack, kein Heap im
+        // Audiothread; `kanaele` ist oben auf zwei begrenzt, und
+        // `versuchTrocken` fasst `maxBlock · 2`.
+        const float* trocken[2] { nullptr, nullptr };
+        const float* nass[2] { nullptr, nullptr };
+        const int pegelKanaele = juce::jmin (kanaele, juce::numElementsInArray (trocken));
+        for (int c = 0; c < pegelKanaele; ++c)
+        {
+            trocken[c] = versuchTrocken.data()
+                       + (std::size_t) c * (std::size_t) buffer.getNumSamples()
+                       + (std::size_t) pegelVon;
+            nass[c] = buffer.getReadPointer (c) + pegelVon;
+        }
+        vergleichspegel.speise (trocken, nass, pegelKanaele, pegelBis - pegelVon);
+    }
 
     // SONDE-013 M-37/M-38: die zwei Uebergaenge gehen SOFORT in den
     // vorallokierten RT→Control-Ring. Der Audiothread beruehrt die Pipe nie —

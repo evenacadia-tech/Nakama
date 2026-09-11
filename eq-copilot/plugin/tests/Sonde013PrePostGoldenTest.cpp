@@ -436,7 +436,8 @@ void m20()
     for (int i = 0; i < 48; ++i, n += (std::uint64_t) block)
     {
         fuelle (2.0, n);
-        p.speise (a.data(), b.data(), block);
+        const float* seiteA = a.data(), * seiteB = b.data();
+        p.speise (&seiteA, &seiteB, 1, block);
     }
     pruefe (p.bereit(), "nach 0,5 s ist genug Material da");
     pruefe (p.friereEin() && p.eingefroren(), "der Pegel friert ein");
@@ -448,7 +449,8 @@ void m20()
     for (int i = 0; i < 600; ++i, n += (std::uint64_t) block)
     {
         fuelle (8.0, n);                    // +18 dB, sechseinhalb Sekunden lang
-        p.speise (a.data(), b.data(), block);
+        const float* seiteA = a.data(), * seiteB = b.data();
+        p.speise (&seiteA, &seiteB, 1, block);
     }
     pruefe (p.gainDb() == eingefroren,
             "sechs Sekunden mit +18 dB aendern ihn um kein Tausendstel - eine "
@@ -460,7 +462,10 @@ void m20()
     for (auto& v : a) v = 0.0f;
     for (auto& v : b) v = 0.0f;
     for (int i = 0; i < 200; ++i)
-        p.speise (a.data(), b.data(), block);
+    {
+        const float* seiteA = a.data(), * seiteB = b.data();
+        p.speise (&seiteA, &seiteB, 1, block);
+    }
     pruefe (p.gainDb() == eingefroren, "und zwei Sekunden Stille auch nicht");
 
     // Ein Passagenwechsel loescht ihn bewusst - ein Pegel gehoert zu GENAU
@@ -482,7 +487,8 @@ void m20()
         fuelle (2.0, n);
         a[0] = std::numeric_limits<float>::quiet_NaN();
         b[1] = std::numeric_limits<float>::infinity();
-        q.speise (a.data(), b.data(), block);
+        const float* seiteA = a.data(), * seiteB = b.data();
+        q.speise (&seiteA, &seiteB, 1, block);
     }
     // ⚠️ `friereEin()` steht bewusst VOR dem `pruefe`-Aufruf. Es hat einen
     // Seiteneffekt, und C++ legt die Auswertungsreihenfolge von

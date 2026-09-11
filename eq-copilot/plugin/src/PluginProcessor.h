@@ -402,7 +402,8 @@ public:
         daran hing der Fehler. */
     bool passagenfensterFuehrt (const juce::String& passageId) const;
 
-    /** Wie viele Bloecke der Vergleichspegel wirklich aufgenommen hat.
+    /** Wie viele Bloecke der Vergleichspegel wirklich aufgenommen hat - einen
+        je Hostblock, alle Kanaele in einem Aufruf (NAK-246 D7).
 
         Befund C4: die Zahl unterscheidet „ausserhalb der Passage gespielt,
         also nichts aufgenommen" von „aufgenommen und zufaellig gleich laut".
@@ -463,7 +464,10 @@ public:
     /** Der eingefrorene Match-Gain in dB. Nur mit `versuchLautheitAbgeglichen`. */
     double versuchMatchGainDb() const;
 
-    /** Die drei Zaehler des LEBENDEN Vergleichspegels in einem Zug.
+    /** Die drei Zaehler des LEBENDEN Vergleichspegels in einem Zug:
+        aufgenommene Hostbloecke, endliche FRAMES und nicht-endliche Samples.
+        NAK-246 D7: ein Frame ist ein Zeitpunkt ueber alle Kanaele, nicht ein
+        Sample je Kanal - `endliche` zaehlt Musikzeit.
 
         🔑 NAK-181 R1a: `versuchNichtEndlicheSamples()` daneben liest das
         eingefrorene Atomic — den Stand vom letzten Binden oder Beginnversuch.

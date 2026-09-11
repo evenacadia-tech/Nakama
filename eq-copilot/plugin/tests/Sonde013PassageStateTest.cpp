@@ -57,7 +57,10 @@
  #include <windows.h>
 #endif
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <thread>
@@ -295,8 +298,14 @@ bool warte (EqCopilotProcessor& p, TestPlayHead& kopf,
 
     Eine feste Blockzahl waere eine Zeitannahme: der Analyseworker setzt das
     Fenster asynchron, und bis dahin nimmt der Audiothread nichts auf. Gemessen
-    wird deshalb die Zahl, um die es geht — 400 ms bei 512 Samples sind
-    37,5 Bloecke, und 60 lassen Luft, ohne eine Uhr zu befragen. */
+    wird deshalb die Zahl, um die es geht.
+
+    🔑 NAK-246 D7 (§5.8 Feinheit 5): die Zahl zaehlt HOSTBLOECKE - einen je
+    `processBlock`, alle Kanaele in einem Aufruf - und der Pegel zaehlt Frames.
+    400 ms bei 48 kHz sind 19 200 Frames, bei 512 Frames je Hostblock also
+    37,5 Bloecke; 60 Hostbloecke sind 30 720 Frames und lassen Luft, ohne eine
+    Uhr zu befragen. Bis NAK-246 zaehlte der Pegel je Kanal: 60 hiessen bei
+    Stereo 30 Hostbloecke und 15 360 Frames - unter 400 ms. */
 bool fahreBisPegel (EqCopilotProcessor& p, TestPlayHead& kopf,
                     juce::AudioBuffer<float>& puffer, juce::uint64 mindestens = 60)
 {
@@ -2842,10 +2851,538 @@ void c1Sequenzhandschlag()
     p->releaseResources();
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-246 D7 · Frames statt Samples je Kanal (Regel R-D7; Manifest
+// docs/beweise/NAK-246.md Paragraph 3.8 M-32 bis M-37, 5.8)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// `Vergleichspegel` verlangt 400 ms Material (`kMindestSekunden`). Er zaehlte
+// Samples JE KANAL, und `processBlock` rief ihn je Kanal: Stereo war nach
+// 200 ms bereit, `bloeckeAufgenommen` zaehlte zwei je Hostblock, und
+// `friereEin` konnte zwischen Kanal 0 und Kanal 1 eines Hostblocks landen
+// (Auditbefund D7, NAK-159). Die Faelle messen den Kern direkt (M-32 bis
+// M-35, M-37, Feinheit 2) und den Prozessorpfad (M-36); jeder Zeitbeweis
+// faellt am exakten Frame.
+//
+// Die Aufruftopologie des Kerns steht in genau drei Funktionen
+// (`speiseBlock`, `gezaehlteFrames`, `friereWaehrendDesLetztenBlocks`). Der
+// Rotlauf gegen den alten Kern ersetzt nur deren Ruempfe - durch die
+// Kanalschleife des Basis-SHA, `gezaehlteSamples` und die Folge speise
+// (Kanal 0) → friereEin → speise (Kanal 1); jede Zusagezeile bleibt derselbe
+// Text (docs/beweise/roh/NAK-246-rot-M-33.txt bis -M-37.txt).
+namespace nak246d7
+{
+using nakama::analyse::Vergleichspegel;
+
+constexpr double kZweiPi = 6.283185307179586476925286766559;
+
+/// Die Schwelle aus der Quelle: `floor (kMindestSekunden · fs)` Frames.
+std::uint64_t mindestFrames (double fs)
+{
+    return (std::uint64_t) std::floor (Vergleichspegel::kMindestSekunden * fs);
+}
+
+// ── Die Aufruftopologie des Kerns ─────────────────────────────────────────
+
+/// EIN Block, ALLE Kanaele, EIN Aufruf (§5.8 Feinheit 1).
+void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                  const float* const* nass, int kanaele, int n)
+{
+    p.speise (trocken, nass, kanaele, n);
+}
+
+/// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+{
+    return p.gezaehlteFrames();
+}
+
+/// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+/// Ereignisse mit Frist - eine abgelaufene Frist macht die Zeilen rot, nie
+/// gruen, und nichts haengt.
+struct Halteprotokoll
+{
+    std::mutex m;
+    std::condition_variable cv;
+    bool blockmitteErreicht = false;
+    bool steuerzugWartet = false;
+    bool eingefrorenZurueck = false;
+    bool freigabeBeiWartendemSteuerzug = false;
+    bool fristAbgelaufen = false;
+};
+
+/// Blockmittehaken: laeuft im Audiothread, MIT dem Tor. Er haelt den Block
+/// an, bis der Steuerzug nachweislich am Tor wartet - oder bis `friereEin`
+/// schon zurueck ist; dann hat das Tor den Steuerzug nicht aufgehalten.
+void blockmitteHaken (void* kontext)
+{
+    auto& h = *static_cast<Halteprotokoll*> (kontext);
+    std::unique_lock<std::mutex> l (h.m);
+    h.blockmitteErreicht = true;
+    h.cv.notify_all();
+    if (! h.cv.wait_for (l, std::chrono::seconds (5),
+                         [&h] { return h.steuerzugWartet || h.eingefrorenZurueck; }))
+        h.fristAbgelaufen = true;
+    h.freigabeBeiWartendemSteuerzug = h.steuerzugWartet && ! h.eingefrorenZurueck;
+}
+
+/// Wartehaken des Einfrierens: laeuft im Steuerthread, sobald sein Torzug am
+/// gehaltenen Tor scheitert.
+void steuerzugWartetHaken (void* kontext)
+{
+    auto& h = *static_cast<Halteprotokoll*> (kontext);
+    std::lock_guard<std::mutex> l (h.m);
+    h.steuerzugWartet = true;
+    h.cv.notify_all();
+}
+
+/// Speist den letzten Stereoblock im Audiothread und friert im Steuerthread
+/// ein, WAEHREND der Audiothread in der Blockmitte steht (§5.8 Feinheit 3).
+bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                     const float* const* nass, int n, Halteprotokoll& h)
+{
+    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+    {
+        std::unique_lock<std::mutex> l (h.m);
+        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+            h.fristAbgelaufen = true;
+    }
+    const bool eingefroren = p.friereEin();
+    {
+        std::lock_guard<std::mutex> l (h.m);
+        h.eingefrorenZurueck = true;
+        h.cv.notify_all();
+    }
+    audio.join();
+    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
+    return eingefroren;
+}
+
+// ── Material ──────────────────────────────────────────────────────────────
+
+/// Konstantes Material fuer zwei Kanaele, je Kanal ein trockener und ein
+/// nasser Pegel. Fuer die Zeitbeweise genuegt es: die Bereitschaft haengt an
+/// Framezahl, Endlichkeit und Energie > 0, nicht an der Wellenform.
+struct Kanalmaterial
+{
+    std::vector<float> trocken[2], nass[2];
+    const float* t[2] { nullptr, nullptr };
+    const float* s[2] { nullptr, nullptr };
+
+    Kanalmaterial (int frames, float tL, float sL, float tR, float sR)
+    {
+        trocken[0].assign ((std::size_t) frames, tL);
+        nass[0].assign ((std::size_t) frames, sL);
+        trocken[1].assign ((std::size_t) frames, tR);
+        nass[1].assign ((std::size_t) frames, sR);
+        for (int c = 0; c < 2; ++c)
+        {
+            t[c] = trocken[c].data();
+            s[c] = nass[c].data();
+        }
+    }
+    Kanalmaterial (const Kanalmaterial&) = delete;
+    Kanalmaterial& operator= (const Kanalmaterial&) = delete;
+};
+
+// ── M-32 / M-33 ───────────────────────────────────────────────────────────
+
+/// Die acht Faelle des Audit-Harness
+/// (`docs/audits/2026-09-10-code-review/evidence/repro-vergleichspegel.cpp`):
+/// 48 kHz, 0,25 trocken und 0,125 nass, EIN Block je Fall mit 199, 200, 399
+/// und 400 ms. Bereit und eingefroren genau dann, wenn die Framezahl die
+/// Schwelle aus der Quelle erreicht.
+void harnessfaelle (int kanaele, const char* zeile)
+{
+    constexpr double fs = 48000.0;
+    const auto schwelle = mindestFrames (fs);
+    for (int ms : { 199, 200, 399, 400 })
+    {
+        const int frames = ms * (int) (fs / 1000.0);
+        Kanalmaterial m (frames, 0.25f, 0.125f, 0.25f, 0.125f);
+        Vergleichspegel p;
+        p.vorbereiten (fs);
+        speiseBlock (p, m.t, m.s, kanaele, frames);
+        const bool bereit = p.bereit();
+        const bool eingefroren = p.friereEin();
+        const bool erwartet = (std::uint64_t) frames >= schwelle;
+        pruefe (bereit == erwartet && eingefroren == erwartet,
+                juce::String (zeile) + ": " + (kanaele == 1 ? "Mono " : "Stereo ")
+                    + juce::String (ms) + " ms (" + juce::String (frames) + " Frames) - "
+                    + (erwartet ? "bereit und eingefroren" : "nicht bereit und nicht eingefroren"),
+                "bereit " + juce::String ((int) bereit) + ", eingefroren "
+                    + juce::String ((int) eingefroren) + ", gezaehlt "
+                    + juce::String ((juce::int64) gezaehlteFrames (p)) + ", Schwelle "
+                    + juce::String ((juce::int64) schwelle));
+    }
+}
+
+void vergleichspegel_mono_bereit_genau_ab_400_ms()
+{
+    abschnitt ("NAK-246 M-32  vergleichspegel_mono_bereit_genau_ab_400_ms");
+    harnessfaelle (1, "M-32");
+}
+
+void vergleichspegel_stereo_bereit_genau_ab_400_ms()
+{
+    abschnitt ("NAK-246 M-33  vergleichspegel_stereo_bereit_genau_ab_400_ms");
+    harnessfaelle (2, "M-33");
+}
+
+// ── M-34 ──────────────────────────────────────────────────────────────────
+
+void friere_ein_sieht_nie_einen_halben_stereoblock()
+{
+    abschnitt ("NAK-246 M-34  friere_ein_sieht_nie_einen_halben_stereoblock");
+    constexpr double fs = 48000.0;
+    constexpr int n = 512;
+    // Vorlauf: leises, gleiches Material auf beiden Kanaelen bis ueber die
+    // Schwelle. Der Pegel ist damit VOR dem letzten Block bereit - ein
+    // Einfrieren mitten im letzten Block waere moeglich und lieferte einen Wert.
+    const int vorlaufBloecke = (int) ((mindestFrames (fs) + (std::uint64_t) n - 1) / (std::uint64_t) n);
+    Kanalmaterial vorlauf (n, 0.01f, 0.01f, 0.01f, 0.01f);
+    // Der letzte Block: Kanal 0 leise und ohne Verhaeltnis, Kanal 1 laut im
+    // nassen Signal.
+    Kanalmaterial letzter (n, 0.1f, 0.1f, 0.1f, 0.9f);
+    auto mitVorlauf = [&] (Vergleichspegel& q)
+    {
+        q.vorbereiten (fs);
+        for (int i = 0; i < vorlaufBloecke; ++i)
+            speiseBlock (q, vorlauf.t, vorlauf.s, 2, n);
+    };
+
+    // Die Referenzwerte, je an einem eigenen Pegel ohne Nebenlaeufigkeit.
+    Vergleichspegel bereitProbe;
+    mitVorlauf (bereitProbe);
+    const bool vorlaufBereit = bereitProbe.bereit();
+
+    Vergleichspegel ganz;
+    mitVorlauf (ganz);
+    speiseBlock (ganz, letzter.t, letzter.s, 2, n);
+    const bool ganzGesetzt = ganz.friereEin();
+    const double ganzblockwert = ganz.gainDb();
+
+    Vergleichspegel kanal0;                          // der Halbblock aus NAK-159
+    mitVorlauf (kanal0);
+    speiseBlock (kanal0, letzter.t, letzter.s, 1, n);
+    const bool kanal0Gesetzt = kanal0.friereEin();
+    const double halbblockKanal0 = kanal0.gainDb();
+
+    Vergleichspegel mitte;                           // der Stand am Blockmittehaken
+    mitVorlauf (mitte);
+    speiseBlock (mitte, letzter.t, letzter.s, 2, n / 2);
+    const bool mitteGesetzt = mitte.friereEin();
+    const double halbblockMitte = mitte.gainDb();
+
+    pruefe (vorlaufBereit && ganzGesetzt && kanal0Gesetzt && mitteGesetzt
+                && std::abs (ganzblockwert - halbblockKanal0) > 1.0
+                && std::abs (ganzblockwert - halbblockMitte) > 0.5,
+            "M-34 Vorbedingung: der Pegel ist vor dem letzten Block bereit, und beide "
+            "Halbblockwerte weichen messbar vom Ganzblockwert ab",
+            "ganz " + juce::String (ganzblockwert, 4) + " dB, nur Kanal 0 "
+                + juce::String (halbblockKanal0, 4) + " dB, Blockmitte "
+                + juce::String (halbblockMitte, 4) + " dB");
+
+    // Der Prueffall: derselbe Vorlauf, der letzte Block im Audiothread, das
+    // Einfrieren im Steuerthread, waehrend der Audiothread in der Blockmitte
+    // steht.
+    Vergleichspegel p;
+    mitVorlauf (p);
+    Halteprotokoll h;
+    const bool eingefroren = friereWaehrendDesLetztenBlocks (p, letzter.t, letzter.s, n, h);
+    const double wert = p.gainDb();
+    pruefe (h.freigabeBeiWartendemSteuerzug && ! h.fristAbgelaufen,
+            "M-34: der Steuerthread wartete nachweislich am Tor, waehrend der Audiothread "
+            "in der Blockmitte stand",
+            "Blockmitte erreicht " + juce::String ((int) h.blockmitteErreicht) + ", Steuerzug wartet "
+                + juce::String ((int) h.steuerzugWartet) + ", Frist abgelaufen "
+                + juce::String ((int) h.fristAbgelaufen));
+    pruefe (eingefroren && std::abs (wert - ganzblockwert) < 1e-9,
+            "M-34: friere_ein_sieht_nie_einen_halben_stereoblock - der eingefrorene Gain "
+            "ist der Ganzblockwert",
+            juce::String (wert, 6) + " dB gegen ganz " + juce::String (ganzblockwert, 6)
+                + " dB (nur Kanal 0 " + juce::String (halbblockKanal0, 6) + " dB)");
+}
+
+// ── M-35 ──────────────────────────────────────────────────────────────────
+
+/// Speist in Bloecken der Folge `folge` und liefert den Frame, an dem
+/// `bereit()` zum ersten Mal wahr ist. Geprobt wird nach jedem Block; die
+/// Blockgrenze wird genau vor und auf die Schwelle gelegt, sonst laege der
+/// Frame zwischen zwei Proben. Alle Bloecke davor folgen der Folge.
+std::uint64_t bereitschaftsframe (double fs, int kanaele, const std::vector<int>& folge,
+                                  std::uint64_t& aufrufe, std::uint64_t& gezaehlt)
+{
+    const auto schwelle = mindestFrames (fs);
+    const int groesster = *std::max_element (folge.begin(), folge.end());
+    Kanalmaterial m (groesster, 0.25f, 0.125f, 0.5f, 0.2f);
+    Vergleichspegel p;
+    p.vorbereiten (fs);
+    std::uint64_t gefuettert = 0, bereitAb = 0;
+    aufrufe = 0;
+    for (std::size_t k = 0; bereitAb == 0 && gefuettert < schwelle; ++k)
+    {
+        auto n = (std::uint64_t) folge[k % folge.size()];
+        if (gefuettert < schwelle - 1 && gefuettert + n > schwelle - 1)
+            n = schwelle - 1 - gefuettert;
+        else if (gefuettert == schwelle - 1)
+            n = 1;
+        speiseBlock (p, m.t, m.s, kanaele, (int) n);
+        gefuettert += n;
+        ++aufrufe;
+        if (p.bereit())
+            bereitAb = gefuettert;
+    }
+    gezaehlt = gezaehlteFrames (p);
+    return bereitAb;
+}
+
+void blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht()
+{
+    abschnitt ("NAK-246 M-35  blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht");
+    const std::vector<std::pair<juce::String, std::vector<int>>> folgen {
+        { "1", { 1 } }, { "7", { 7 } }, { "64", { 64 } }, { "512", { 512 } }, { "4096", { 4096 } },
+        { "gemischt 512-1-4096-7-64-333-2048-3", { 512, 1, 4096, 7, 64, 333, 2048, 3 } } };
+    for (double fs : { 44100.0, 48000.0, 96000.0 })
+        for (int kanaele : { 1, 2 })
+            for (const auto& [name, folge] : folgen)
+            {
+                std::uint64_t aufrufe = 0, gezaehlt = 0;
+                const auto ab = bereitschaftsframe (fs, kanaele, folge, aufrufe, gezaehlt);
+                const auto schwelle = mindestFrames (fs);
+                pruefe (ab == schwelle && gezaehlt == schwelle,
+                        "M-35: " + juce::String (fs / 1000.0, 1) + " kHz, "
+                            + (kanaele == 1 ? "Mono" : "Stereo") + ", Blockfolge " + name
+                            + " - bereit genau ab Frame " + juce::String ((juce::int64) schwelle),
+                        "Bereitschaftsframe " + juce::String ((juce::int64) ab)
+                            + ", gezaehlte Frames " + juce::String ((juce::int64) gezaehlt)
+                            + ", Aufrufe " + juce::String ((juce::int64) aufrufe));
+            }
+}
+
+// ── M-36 ──────────────────────────────────────────────────────────────────
+
+/// Der Prozessorpfad: `processBlock` mit gebundener Passage, Stereo, `kBlock`
+/// Frames je Hostblock. Nach JEDEM Hostblock werden die Zaehler gelesen - so
+/// ist jeder aufgenommene Hostblock einzeln gesehen, auch der erste, der
+/// faellt, sobald der Worker das Speisungstor oeffnet. Die Bereitschaftsprobe
+/// ist der Produktweg: `beginneVersuch` friert ein, sobald der Pegel bereit
+/// ist, und laesst ihn sonst weiter speisen (NAK-181 R2).
+void prozessorpfad_stereo_bereit_nach_400_ms_musikzeit()
+{
+    abschnitt ("NAK-246 M-36  prozessorpfad_stereo_bereit_nach_400_ms_musikzeit");
+    auto p = mainProzessorMitBindung();                  // HEAP (NAK-175)
+    p->setzeSourcesFixtureFuerTest (eineQuelle());
+    p->prepareToPlay (kFs, kBlock);
+    TestPlayHead kopf;
+    p->setPlayHead (&kopf);
+    juce::AudioBuffer<float> puffer (2, kBlock);
+    fahre (*p, kopf, puffer, 20);
+    const auto a = hex32 (0xD7);
+    pruefe (p->merkeManuellePassage (a, "Refrain", 0, 4800000), "M-36: Passage gemerkt");
+
+    const auto schwelle = mindestFrames (kFs);
+    const auto erwartet = (schwelle + (std::uint64_t) kBlock - 1) / (std::uint64_t) kBlock;
+    juce::uint64 bVor = 0, fVor = 0;
+    std::uint64_t hostbloecke = 0, bereitNach = 0;
+    bool einBlockJeHostblock = true, kBlockFramesJeHostblock = true;
+    juce::String ersterHostblock;
+    for (int i = 0; i < 1200 && bereitNach == 0; ++i)
+    {
+        fahre (*p, kopf, puffer, 1);
+        juce::uint64 b = 0, f = 0, ne = 0;
+        p->vergleichspegelZaehlerstand (b, f, ne);
+        if (b == bVor && f == fVor)
+        {
+            // Nichts aufgenommen: das Tor ist noch zu. Dem Worker Zeit geben,
+            // wie `warte` es tut - keine Ordnung haengt daran.
+            if (hostbloecke == 0)
+                std::this_thread::sleep_for (std::chrono::milliseconds (2));
+            continue;
+        }
+        ++hostbloecke;
+        if (hostbloecke == 1)
+            ersterHostblock = juce::String ((juce::int64) (b - bVor)) + " Block, "
+                            + juce::String ((juce::int64) (f - fVor)) + " Frames";
+        if (b - bVor != 1)
+            einBlockJeHostblock = false;
+        if (f - fVor != (juce::uint64) kBlock)
+            kBlockFramesJeHostblock = false;
+        bVor = b;
+        fVor = f;
+        if (p->beginneVersuch (a))
+            bereitNach = hostbloecke;
+    }
+    const auto aufgenommen = p->versuchAufgenommeneBloecke();
+    pruefe (hostbloecke > 0 && einBlockJeHostblock && aufgenommen == hostbloecke,
+            "M-36: versuchAufgenommeneBloecke zaehlt Hostbloecke - einen je processBlock",
+            "erster aufgenommener Hostblock: " + ersterHostblock + "; "
+                + juce::String ((juce::int64) aufgenommen) + " Bloecke nach "
+                + juce::String ((juce::int64) hostbloecke) + " Hostbloecken");
+    pruefe (hostbloecke > 0 && kBlockFramesJeHostblock
+                && fVor == hostbloecke * (juce::uint64) kBlock,
+            "M-36: vergleichspegelZaehlerstand zaehlt Frames - kBlock je Hostblock, alle "
+            "Kanaele zusammen",
+            juce::String ((juce::int64) fVor) + " Frames nach "
+                + juce::String ((juce::int64) hostbloecke) + " Hostbloecken");
+    pruefe (bereitNach == erwartet,
+            "M-36: prozessorpfad_stereo_bereit_nach_400_ms_musikzeit - bereit nach genau ceil ("
+                + juce::String ((juce::int64) schwelle) + " / " + juce::String (kBlock) + ") = "
+                + juce::String ((juce::int64) erwartet) + " Hostbloecken, nicht nach der Haelfte",
+            "bereit nach " + juce::String ((juce::int64) bereitNach) + " Hostbloecken");
+    p->setPlayHead (nullptr);
+    p->releaseResources();
+}
+
+// ── M-37 ──────────────────────────────────────────────────────────────────
+
+void beide_kanalenergien_gehen_in_den_pegel_ein()
+{
+    abschnitt ("NAK-246 M-37  beide_kanalenergien_gehen_in_den_pegel_ein");
+    constexpr double fs = 48000.0;
+    constexpr int n = 512;
+    constexpr int bloecke = 48;                          // 24 576 Frames, ueber der Schwelle
+    std::vector<float> tL ((std::size_t) n), sL ((std::size_t) n),
+                       tR ((std::size_t) n), sR ((std::size_t) n);
+    double summeAL = 0.0, summeBL = 0.0, summeAR = 0.0, summeBR = 0.0;
+    Vergleichspegel mono, gleich, verschieden;
+    mono.vorbereiten (fs);
+    gleich.vorbereiten (fs);
+    verschieden.vorbereiten (fs);
+    for (int i = 0; i < bloecke; ++i)
+    {
+        for (int k = 0; k < n; ++k)
+        {
+            const double t = (double) (i * n + k) / fs;
+            const auto j = (std::size_t) k;
+            tL[j] = (float) (0.3 * std::sin (kZweiPi * 220.0 * t));
+            sL[j] = (float) (0.6 * std::sin (kZweiPi * 220.0 * t));      // links +6 dB
+            tR[j] = (float) (0.2 * std::sin (kZweiPi * 330.0 * t));
+            sR[j] = (float) (0.05 * std::sin (kZweiPi * 330.0 * t));     // rechts -12 dB
+            summeAL += (double) tL[j] * (double) tL[j];
+            summeBL += (double) sL[j] * (double) sL[j];
+            summeAR += (double) tR[j] * (double) tR[j];
+            summeBR += (double) sR[j] * (double) sR[j];
+        }
+        const float* monoT[] { tL.data() };
+        const float* monoS[] { sL.data() };
+        speiseBlock (mono, monoT, monoS, 1, n);
+        const float* gleichT[] { tL.data(), tL.data() };
+        const float* gleichS[] { sL.data(), sL.data() };
+        speiseBlock (gleich, gleichT, gleichS, 2, n);
+        const float* verschiedenT[] { tL.data(), tR.data() };
+        const float* verschiedenS[] { sL.data(), sR.data() };
+        speiseBlock (verschieden, verschiedenT, verschiedenS, 2, n);
+    }
+    const bool monoGesetzt = mono.friereEin();
+    const bool gleichGesetzt = gleich.friereEin();
+    const bool verschiedenGesetzt = verschieden.friereEin();
+    const double gainMono = mono.gainDb();
+    const double gainGleich = gleich.gainDb();
+    const double gainVerschieden = verschieden.gainDb();
+    const double erwartet = 10.0 * std::log10 ((summeBL + summeBR) / (summeAL + summeAR));
+    const double nurKanal0 = 10.0 * std::log10 (summeBL / summeAL);
+
+    pruefe (monoGesetzt && gleichGesetzt && std::abs (gainGleich - gainMono) < 1e-9,
+            "M-37: Stereo mit identischem Inhalt je Kanal liefert denselben Gain wie Mono",
+            juce::String (gainGleich, 6) + " dB gegen Mono " + juce::String (gainMono, 6) + " dB");
+    pruefe (verschiedenGesetzt && std::abs (nurKanal0 - erwartet) > 1.0
+                && std::abs (gainVerschieden - erwartet) < 1e-9,
+            "M-37: beide_kanalenergien_gehen_in_den_pegel_ein - Stereo mit L != R liefert "
+            "10 log10 ((SB_L + SB_R) / (SA_L + SA_R))",
+            juce::String (gainVerschieden, 6) + " dB gegen erwartet " + juce::String (erwartet, 6)
+                + " dB (nur Kanal 0 waeren " + juce::String (nurKanal0, 6) + " dB)");
+
+    std::uint64_t b = 0, f = 0, ne = 0;
+    verschieden.zaehlerstand (b, f, ne);
+    pruefe (b > 0 && f == b * (std::uint64_t) n && ne == 0 && gezaehlteFrames (verschieden) == f,
+            "M-37: die Konsistenz bloeckeAufgenommen * n == gezaehlteFrames (C6) haelt in Frames",
+            juce::String ((juce::int64) b) + " Bloecke, " + juce::String ((juce::int64) f)
+                + " Frames, " + juce::String ((juce::int64) ne) + " nicht-endliche");
+}
+
+// ── §5.8 Feinheit 2 (Zusatzfall) ──────────────────────────────────────────
+
+/// Ein Frame geht ganz oder gar nicht in die Summen ein, und jedes
+/// nicht-endliche Sample zaehlt wie in der Kanalaufrufform: je Kanalpaar
+/// (trocken, nass) eines Frames einmal.
+void ein_frame_mit_nicht_endlichem_sample_geht_ganz_nicht_ein()
+{
+    abschnitt ("NAK-246 5.8/2  ein_frame_mit_nicht_endlichem_sample_geht_ganz_nicht_ein");
+    constexpr double fs = 48000.0;
+    constexpr int n = 256;
+    constexpr int bloecke = 4;
+    struct Stoerung { int kanal; bool nass; int frame; };
+    auto pruefFall = [&] (const char* name, std::vector<Stoerung> stoerungen,
+                     std::uint64_t framesJeBlock, std::uint64_t nichtEndlichJeBlock)
+    {
+        Kanalmaterial m (n, 0.25f, 0.125f, 0.5f, 0.2f);
+        for (const auto& s : stoerungen)
+        {
+            auto& spur = s.nass ? m.nass[s.kanal] : m.trocken[s.kanal];
+            spur[(std::size_t) s.frame] = s.nass ? std::numeric_limits<float>::infinity()
+                                                 : std::numeric_limits<float>::quiet_NaN();
+        }
+        Vergleichspegel p;
+        p.vorbereiten (fs);
+        for (int i = 0; i < bloecke; ++i)
+            speiseBlock (p, m.t, m.s, 2, n);
+        std::uint64_t b = 0, f = 0, ne = 0;
+        p.zaehlerstand (b, f, ne);
+        const auto framesErwartet = (std::uint64_t) bloecke * framesJeBlock;
+        const auto nichtEndlichErwartet = (std::uint64_t) bloecke * nichtEndlichJeBlock;
+        pruefe (f == framesErwartet && ne == nichtEndlichErwartet,
+                juce::String ("Feinheit 2: ") + name,
+                juce::String ((juce::int64) f) + " Frames (erwartet "
+                    + juce::String ((juce::int64) framesErwartet) + "), "
+                    + juce::String ((juce::int64) ne) + " nicht-endliche (erwartet "
+                    + juce::String ((juce::int64) nichtEndlichErwartet) + "), "
+                    + juce::String ((juce::int64) b) + " Bloecke");
+    };
+    pruefFall ("Stereo, nur Kanal 1 nass Inf in Frame 0 - der ganze Frame faellt, ein Sample gezaehlt",
+          { { 1, true, 0 } }, n - 1, 1);
+    pruefFall ("Stereo, Kanal 0 trocken NaN und Kanal 1 nass Inf in Frame 0 - ein Frame faellt, "
+          "zwei gezaehlt", { { 0, false, 0 }, { 1, true, 0 } }, n - 1, 2);
+    pruefFall ("Stereo, Kanal 0 trocken NaN und nass Inf in Frame 0 - ein Frame faellt, das "
+          "Kanalpaar zaehlt einmal wie in der Kanalaufrufform",
+          { { 0, false, 0 }, { 0, true, 0 } }, n - 1, 1);
+    pruefFall ("Stereo, Kanal 0 trocken NaN in Frame 0 und Kanal 1 nass Inf in Frame 1 - zwei "
+          "Frames fallen, zwei gezaehlt", { { 0, false, 0 }, { 1, true, 1 } }, n - 2, 2);
+}
+
+bool fall (const std::string& name)
+{
+    if (name == "m32") { vergleichspegel_mono_bereit_genau_ab_400_ms(); return true; }
+    if (name == "m33") { vergleichspegel_stereo_bereit_genau_ab_400_ms(); return true; }
+    if (name == "m34") { friere_ein_sieht_nie_einen_halben_stereoblock(); return true; }
+    if (name == "m35") { blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht(); return true; }
+    if (name == "m36") { prozessorpfad_stereo_bereit_nach_400_ms_musikzeit(); return true; }
+    if (name == "m37") { beide_kanalenergien_gehen_in_den_pegel_ein(); return true; }
+    if (name == "nan") { ein_frame_mit_nicht_endlichem_sample_geht_ganz_nicht_ein(); return true; }
+    return false;
+}
+} // namespace nak246d7
+
 } // namespace
 
-int main()
+int main (int argc, char** argv)
 {
+    // NAK-246 D7: einzelne Faelle fuer die Rotlaeufe (`--nur m32` bis `--nur m37`, `--nur nan`).
+    if (argc == 3 && std::string (argv[1]) == "--nur")
+    {
+        if (! nak246d7::fall (argv[2]))
+        {
+            std::cout << "unbekannter Fall: " << argv[2] << " (m32 | m33 | m34 | m35 | m36 | m37 | nan)"
+                      << std::endl;
+            return 2;
+        }
+        std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
+                  << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
     std::cout << "== Nakama SONDE-013 - manuelle Passage als Projektintent (§33.5) =="
               << std::endl;
     m25();
@@ -3453,13 +3990,19 @@ int main()
         // brauchte dafuer nur wenige Bloecke. Die Zeile prueft trotzdem gegen
         // die Schwelle und nicht gegen 0: sie soll die Zusage tragen, nicht
         // den Zufall des Zeitpunkts.
-        const auto bloeckeVorBeginn = p->versuchAufgenommeneBloecke();
-        pruefe ((double) bloeckeVorBeginn * (double) kBlock
+        //
+        // NAK-246 D7 (§5.8 Feinheit 5): gemessen in FRAMES aus dem
+        // Zaehlerstand des lebenden Pegels, nicht aus Bloecken mal Blockgroesse
+        // gerechnet - bis NAK-246 zaehlte der Pegel je Kanal, und die Rechnung
+        // aus Bloecken stimmte nur, weil sie denselben Fehler machte.
+        juce::uint64 bloeckeVorBeginn = 0, framesVorBeginn = 0, nichtEndlicheVorBeginn = 0;
+        p->vergleichspegelZaehlerstand (bloeckeVorBeginn, framesVorBeginn, nichtEndlicheVorBeginn);
+        pruefe ((double) framesVorBeginn
                     < nakama::analyse::Vergleichspegel::kMindestSekunden * kFs,
                 "N-05 Vorbedingung: der lebende Pegel hat noch nicht genug "
                 "Material, um einen Gain einzufrieren",
-                juce::String ((juce::int64) bloeckeVorBeginn) + " Bloecke a "
-                + juce::String (kBlock));
+                juce::String ((juce::int64) framesVorBeginn) + " Frames in "
+                + juce::String ((juce::int64) bloeckeVorBeginn) + " Hostbloecken");
         pruefe (! p->versuchLautheitAbgeglichenLebendFuerTest(),
                 "N-05 Vorbedingung: und er traegt folglich keinen Gain");
         pruefe (! p->beginneVersuch (a),
@@ -3612,6 +4155,16 @@ int main()
         p->setPlayHead (nullptr);
         p->releaseResources();
     }
+
+    // NAK-246 D7 (M-32 bis M-37, §5.8 Feinheit 2).
+    nak246d7::vergleichspegel_mono_bereit_genau_ab_400_ms();
+    nak246d7::vergleichspegel_stereo_bereit_genau_ab_400_ms();
+    nak246d7::friere_ein_sieht_nie_einen_halben_stereoblock();
+    nak246d7::blockteilung_samplerate_und_kanalzahl_verschieben_die_bereitschaft_nicht();
+    nak246d7::prozessorpfad_stereo_bereit_nach_400_ms_musikzeit();
+    nak246d7::beide_kanalenergien_gehen_in_den_pegel_ein();
+    nak246d7::ein_frame_mit_nicht_endlichem_sample_geht_ganz_nicht_ein();
+
     std::cout << std::endl << bestanden << " bestanden, " << fehler << " gescheitert"
               << std::endl;
     return fehler == 0 ? 0 : 1;

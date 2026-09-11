@@ -1,0 +1,171 @@
+NAK-246 Etappe 6 - Rotbeweis M-33 (Manifest docs/beweise/NAK-246.md §3.8): vergleichspegel_stereo_bereit_genau_ab_400_ms (B23)
+Stand: 2026-09-11 23:10 (Rotlauf) und 23:13 (Gruenlauf), PC-Lokalzeit; Basis-SHA ab19ac7514a80e5b7392408e547e7522a5f40f50.
+Form nach §5.8 Feinheit 4: die Fallliste (Mono/Stereo x 199/200/399/400 ms) laeuft zuerst in der Aufruftopologie des alten Kerns
+(je Kanal, wie docs/audits/2026-09-10-code-review/evidence/repro-vergleichspegel.cpp) gegen den unveraenderten Header - rot bei
+Stereo 200 und 399 ms -, danach dieselbe Liste ueber die neue Signatur - gruen. Der alte Header uebersetzt gegen die neue Signatur
+nicht; der Rotlauf ist deshalb ein eigener Baustand.
+Vollstaendige Rohausgaben: docs/beweise/roh/NAK-246-etappe6-beine.txt, Teil 3c (alte Topologie), Teil 2b und 2c (gruen).
+
+FASSUNG 1 - ALTE AUFRUFTOPOLOGIE, UNVERAENDERTER HEADER (rot)
+  Baustand: Vergleichspegel.h, PluginProcessor.cpp, PluginProcessor.h auf ab19ac75 (`git diff --stat ab19ac75` ueber die drei
+  Dateien leer; Vergleichspegel.h 2026-09-07 04:41:30, PluginProcessor.cpp 2026-09-11 04:41:15). B23 im gestageten Endstand bis auf
+  die drei Ruempfe der Aufruftopologie (Diff unten): `speiseBlock` ruft `p.speise (trocken[c], nass[c], n)` je Kanal,
+  `gezaehlteFrames` liest `gezaehlteSamples`. Kein Copy-Item: der Header wurde nie veraendert, der Test per Editor umgestellt und
+  danach per `git checkout` aus dem Index zurueckgenommen.
+  Bau 23:09:53 bis 23:10:03, Exit 0; Binary EqCopSonde013PassageStateTest.exe 23:10:03 juenger als seine Quellen.
+  `--nur m33` -> Exit 1, 2 bestanden, 2 gescheitert:
+    [ROT]  M-33: Stereo 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+    [ROT]  M-33: Stereo 399 ms (19152 Frames) - nicht bereit und nicht eingefroren [bereit 1, eingefroren 1, gezaehlt 38304, Schwelle 19200]
+  -> genau der Auditbefund (repro-vergleichspegel.txt: "channels=2 elapsed_ms=200 ... ready=1 frozen=1 ... violation=1" und 399 ms):
+     der alte Kern zaehlt je Kanal, zwei Aufrufe verdoppeln die Zahl. 199 und 400 ms bleiben gruen.
+  (Mono in derselben Fassung, `--nur m32`: Exit 0, 4/4 - rot-M-32.)
+
+FASSUNG 2 - NEUE SIGNATUR (gruen)
+  Vergleichspegel::speise (trocken, nass, kanaele, n), ein Aufruf je Block, Zaehlung in Frames. Bau 23:13:00 bis 23:13:15, Exit 0;
+  Quellen Vergleichspegel.h 23:12:13, Sonde013PassageStateTest.cpp 23:10:44; Binary 23:13:09.
+  `--nur m33` -> Exit 0, 4/4:
+    [ok] Stereo 199 ms (9552) nicht bereit; 200 ms (9600) nicht bereit; 399 ms (19152) nicht bereit; 400 ms (19200) bereit und eingefroren.
+  Endstand (Binary 23:19:36): dieselben vier Zeilen im vollen B23-Lauf, Exit 0, 409 bestanden.
+
+AUSZUEGE DER ROHAUSGABE
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Fassung 1: Rotstand-Diff und Bau (Header und Prozessor am Basis-SHA)  [Zeilen 1-65 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+ROTSTAND D7 (alte Aufruftopologie): Vergleichspegel.h, PluginProcessor.cpp und PluginProcessor.h unveraendert am Basis-SHA ab19ac75; B23 im Endstand bis auf die drei Ruempfe der Aufruftopologie (git diff gegen den gestageten Endstand):
+diff --git a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+index a2a4e9b3..2995d67e 100644
+--- a/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
++++ b/eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp
+@@ -2888,13 +2888,15 @@ std::uint64_t mindestFrames (double fs)
+ void speiseBlock (Vergleichspegel& p, const float* const* trocken,
+                   const float* const* nass, int kanaele, int n)
+ {
+-    p.speise (trocken, nass, kanaele, n);
++    // ROTSTAND: die Kanalschleife des Basis-SHA (PluginProcessor.cpp, je Kanal ein Aufruf).
++    for (int c = 0; c < kanaele; ++c)
++        p.speise (trocken[c], nass[c], n);
+ }
+ 
+ /// Die in die Summen eingegangenen Frames (§5.8 Feinheit 2).
+ std::uint64_t gezaehlteFrames (const Vergleichspegel& p)
+ {
+-    return p.gezaehlteFrames();
++    return p.gezaehlteSamples();   // ROTSTAND: der Name des Basis-SHA
+ }
+ 
+ /// Das Protokoll des erzwungenen Interleavings (M-34). Gewartet wird auf
+@@ -2941,23 +2943,12 @@ void steuerzugWartetHaken (void* kontext)
+ bool friereWaehrendDesLetztenBlocks (Vergleichspegel& p, const float* const* trocken,
+                                      const float* const* nass, int n, Halteprotokoll& h)
+ {
+-    p.setzeBlockmitteHakenFuerTest (&blockmitteHaken, &h);
+-    p.setzeEinfrierWartetHakenFuerTest (&steuerzugWartetHaken, &h);
+-    std::thread audio ([&] { speiseBlock (p, trocken, nass, 2, n); });
+-    {
+-        std::unique_lock<std::mutex> l (h.m);
+-        if (! h.cv.wait_for (l, std::chrono::seconds (5), [&h] { return h.blockmitteErreicht; }))
+-            h.fristAbgelaufen = true;
+-    }
++    // ROTSTAND: die Aufruftopologie des Basis-SHA ohne Thread, wie NAK-159 sie
++    // beschreibt - speise (Kanal 0) → friereEin → speise (Kanal 1).
++    p.speise (trocken[0], nass[0], n);
+     const bool eingefroren = p.friereEin();
+-    {
+-        std::lock_guard<std::mutex> l (h.m);
+-        h.eingefrorenZurueck = true;
+-        h.cv.notify_all();
+-    }
+-    audio.join();
+-    p.setzeBlockmitteHakenFuerTest (nullptr, nullptr);
+-    p.setzeEinfrierWartetHakenFuerTest (nullptr, nullptr);
++    p.speise (trocken[1], nass[1], n);
++    juce::ignoreUnused (h, blockmitteHaken, steuerzugWartetHaken);
+     return eingefroren;
+ }
+ 
+git diff --stat ab19ac75 -- eq-copilot/plugin/core/analysis/Vergleichspegel.h eq-copilot/plugin/src/PluginProcessor.cpp eq-copilot/plugin/src/PluginProcessor.h (leer = Basisstand):
+
+---------------------------------------------------------------------------------------------------------------------
+ROTBAU D7-alt
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest
+Start: 2026-09-11 23:09:53
+Ende: 2026-09-11 23:10:03 Dauer: 11 s  Exit 0
+Zeilen "warning C"/"error": 7, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:10:03
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-07 04:41:30
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 04:41:15
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:09:35
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 3c - Fassung 1: B23 --nur m33  [Zeilen 89-104 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m33
+Binary: 2026-09-11 23:10:03
+Start: 2026-09-11 23:10:04
+
+== NAK-246 M-33  vergleichspegel_stereo_bereit_genau_ab_400_ms ==
+[ok]   M-33: Stereo 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19104, Schwelle 19200]
+[ROT]  M-33: Stereo 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+[ROT]  M-33: Stereo 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 1, eingefroren 1, gezaehlt 38304, Schwelle 19200]
+[ok]   M-33: Stereo 400 ms (19200 Frames) - bereit und eingefroren  [bereit 1, eingefroren 1, gezaehlt 38400, Schwelle 19200]
+
+2 bestanden, 2 gescheitert
+Ende: 2026-09-11 23:10:04 Dauer: 0.02 s
+EXIT=1
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2b - Fassung 2: Bau an der neuen Signatur  [Zeilen 1-18 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+GRUENSTAND D7: Vergleichspegel.h (Frames, Ganzblock-speise, Haken), PluginProcessor.cpp/.h, sieben Testaufrufer, B23-Faelle
+Bau: cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde013PassageStateTest EqCopSonde013PrePostGoldenTest EqCopSonde013ExperimentUiTest EqCopSonde013ExperimentGoldenTest
+Start: 2026-09-11 23:13:00
+Ende: 2026-09-11 23:13:15 Dauer: 15 s  Exit 0
+Zeilen "warning C"/"error": 8, eindeutig: 1
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+  Binary EqCopSonde013PassageStateTest.exe 2026-09-11 23:13:09
+  Binary EqCopSonde013PrePostGoldenTest.exe 2026-09-11 23:13:12
+  Binary EqCopSonde013ExperimentUiTest.exe 2026-09-11 23:13:14
+  Binary EqCopSonde013ExperimentGoldenTest.exe 2026-09-11 22:41:47
+  Quelle eq-copilot/plugin/core/analysis/Vergleichspegel.h 2026-09-11 23:12:13
+  Quelle eq-copilot/plugin/src/PluginProcessor.cpp 2026-09-11 23:12:21
+  Quelle eq-copilot/plugin/src/PluginProcessor.h 2026-09-11 23:12:27
+  Quelle eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp 2026-09-11 23:10:44
+  Quelle eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp 2026-09-11 23:12:36
+  Quelle eq-copilot/plugin/tests/Sonde013ExperimentUiTest.cpp 2026-09-11 23:12:43
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2b - Fassung 2: B23 --nur m33  [Zeilen 42-57 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+=====================================================================================================================
+B23 EqCopSonde013PassageStateTest
+=====================================================================================================================
+Befehl: eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe --nur m33
+Binary: 2026-09-11 23:13:09
+Start: 2026-09-11 23:13:15
+
+== NAK-246 M-33  vergleichspegel_stereo_bereit_genau_ab_400_ms ==
+[ok]   M-33: Stereo 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-33: Stereo 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-33: Stereo 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ok]   M-33: Stereo 400 ms (19200 Frames) - bereit und eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+
+4 bestanden, 0 gescheitert
+Ende: 2026-09-11 23:13:15 Dauer: 0.02 s
+EXIT=0
+
+---------------------------------------------------------------------------------------------------------------------
+Teil 2c - Endstand: M-33  [Zeilen 908-913 des Teilprotokolls]
+---------------------------------------------------------------------------------------------------------------------
+== NAK-246 M-33  vergleichspegel_stereo_bereit_genau_ab_400_ms ==
+[ok]   M-33: Stereo 199 ms (9552 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9552, Schwelle 19200]
+[ok]   M-33: Stereo 200 ms (9600 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 9600, Schwelle 19200]
+[ok]   M-33: Stereo 399 ms (19152 Frames) - nicht bereit und nicht eingefroren  [bereit 0, eingefroren 0, gezaehlt 19152, Schwelle 19200]
+[ok]   M-33: Stereo 400 ms (19200 Frames) - bereit und eingefroren  [bereit 1, eingefroren 1, gezaehlt 19200, Schwelle 19200]
+

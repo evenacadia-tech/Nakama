@@ -432,18 +432,20 @@ void SourcesModel::projektReload (
     diagnose = Diagnose::brokerUnavailable;
     diagnoseHatHandgriff = true;
     sichtZeit = {};
+    // 🔑 NAK-246 D6 (R-D6, SONDE-013 M-50): ein anderes Projekt setzt keine
+    // Sitzung fort. Bis hierher leerte dieser Weg nur Quellen und
+    // Verbindungsdaten; ein read-only oder ungebunden geladener State baut
+    // keine Subscription auf, und Experimente, Paare, Befunde und Ruecknahme
+    // des alten Projekts blieben in der Sicht. Dieselbe Funktion wie in
+    // `beginneSubscription` - nach dem Neuaufbau der Eintraege, damit auch
+    // `findingsOffen` jeder neuen Zeile gilt.
+    sitzungszustandLeeren();
     stelleZielSicher();
     revidiere();
 }
 
-void SourcesModel::beginneSubscription (std::string binding, std::string session,
-                                        std::string eigeneMainInstanceId)
+void SourcesModel::sitzungszustandLeeren()
 {
-    std::lock_guard<std::mutex> l (mutex);
-    erwarteteBindung = std::move (binding);
-    erwarteteSession = std::move (session);
-    eigeneMainId = std::move (eigeneMainInstanceId);
-    subscriptionAktiv = false;
     // Eine neue Sitzung erbt die Versuche der alten NICHT. Sie stehen unter
     // der Sitzungsepoche, und ein stehengebliebener Versuch waere eine
     // Falschaussage ueber die neue.
@@ -464,6 +466,19 @@ void SourcesModel::beginneSubscription (std::string binding, std::string session
     evidenzRuecknahmen = 0;
     ruecknahmeGrund.clear();
     ruecknahmeUmfang.clear();
+}
+
+void SourcesModel::beginneSubscription (std::string binding, std::string session,
+                                        std::string eigeneMainInstanceId)
+{
+    std::lock_guard<std::mutex> l (mutex);
+    erwarteteBindung = std::move (binding);
+    erwarteteSession = std::move (session);
+    eigeneMainId = std::move (eigeneMainInstanceId);
+    subscriptionAktiv = false;
+    // Die Sitzungsmenge faellt ueber DIESELBE Funktion wie beim
+    // Projektwechsel (NAK-246 D6, R-D6).
+    sitzungszustandLeeren();
     diagnose = Diagnose::authenticating;
     diagnoseHatHandgriff = false;
     revidiere();
@@ -1633,7 +1648,7 @@ void SourcesModel::setzeAlleBefundeStale()
     for (auto& b : befunde)
         b.zustand = "stale";
     // Die abgeleitete Zahl faellt MIT ihrer Quelle (M-84, dieselbe Kopplung
-    // wie in `uebernehmeSnapshot` und `beginneSubscription`). Ohne diesen
+    // wie in `uebernehmeSnapshot` und `sitzungszustandLeeren`). Ohne diesen
     // Aufruf zeigte `PluginEditor` weiter „Findings: N open", waehrend jeder
     // Befund `stale` ist - dasselbe tote Element in der Gegenrichtung: nicht
     // „zeigt immer 0", sondern „behauptet Arbeit, die es nicht gibt".

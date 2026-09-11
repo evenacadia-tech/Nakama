@@ -19,7 +19,8 @@
 //   benenneSourcesHauptziel, entferneSourcesHauptziel, sendeSourcesCommand,
 //   wendeBestaetigteSourcesCommandsAn (Rahmen), bestaetigteSourcesCommandsAbholen,
 //   wendeSourcesCommandAnUnterBindung, meldeSourcesMitgliederNachBefehl,
-//   ausstehenderSourcesCommandFuerTest, merkeSourcesCommandFuerTest
+//   ausstehenderSourcesCommandFuerTest, bestaetigteSourcesCommandsFuerTest,
+//   merkeSourcesCommandFuerTest
 //                        Die Quellenbefehle und ihr Rueckweg.
 //
 // Die Invariante dieser Datei (CLAUDE.md, tragende technische Invarianten):
@@ -1437,6 +1438,12 @@ std::string EqCopilotProcessor::ausstehenderSourcesCommandFuerTest() const
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
     return ausstehendeSourcesCommands.empty()
              ? std::string() : ausstehendeSourcesCommands.begin()->second.json;
+}
+
+std::size_t EqCopilotProcessor::bestaetigteSourcesCommandsFuerTest() const
+{
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    return bestaetigteSourcesCommands.size();
 }
 
 std::string EqCopilotProcessor::merkeSourcesCommandFuerTest (SourcesCommandArt art,

@@ -1,45 +1,47 @@
 NAK-246 Etappe 4 - Rotbeweis M-20 (Manifest docs/beweise/NAK-246.md §3.4): die drei Produkt-Aufrufer werten den Dreiwert aus - Urteil (B29, WN-05 umgeschrieben, L-M1-3), Versuch (B23, neu), Sources (B14 M-16, NAK-246-rot-M-16.txt)
-Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892.
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Stand: 2026-09-11 15:26-15:29 (PC-Lokalzeit), Fortsetzung (Opus-Worker, Start-HEAD 13e057bbb97683c4f1f312f6a7fad445ed88fd4b); Basis-SHA der Etappe 9174d272.
+Ersetzt die Fassung des Zwischenstands 2 (e0e8d41b), deren Rotbau zusaetzlich die M-19-Wache gebrochen hatte. Muster: docs/beweise/roh/NAK-246-rot-M-06.txt
+(endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
 
 WAS GEFAHREN WURDE
-  Derselbe Rotbau wie M-15 (Diff in NAK-246-rot-M-15.txt): die drei Aufrufer werten nur `eingereiht` als angenommen, der Ueberlauf
-  liefert `endgueltigAbgewiesen` - die Wirkung von `if (! sendePersistenzP0 (...)) return false;` am Basis-SHA
-  (Analyse.cpp:708-709 Versuch, :1190-1191 Urteil, Ipc.cpp:1320-1324 Sources).
-  (1) Bein B29 EqCopSonde014AssistentTest, Normallauf: WN-05 ist auf die Annahmesemantik umgeschrieben (Sonde014AssistentTest.cpp,
-      Abschnitt "WN-05 / NAK-246 M-20") und faehrt am ECHTEN Draht: Probe-Server, `v3ProbeGegenstelleFuerTest`, `v3StartFuerTest`,
-      Gegenprobe mit Platz (Erfolg, Server bestaetigt), Server geht (Queue laeuft nirgends ab), Queue voll, `assistentAntwort` mit Urteil,
-      Server kommt wieder, Reconnect, Replay, ACK.
-  (2) Bein B23 EqCopSonde013PassageStateTest, Normallauf: neuer Fall "NAK-246 M-20 beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an"
-      (Sonde013PassageStateTest.cpp, hinter N-05): Passage gemerkt, Fenster gefuehrt, genug Material, Queue voll (kein Produktclient in
-      diesem Bein - deterministisch), `beginneVersuch`.
+  Rotbau 1 (Diff in NAK-246-rot-M-16.txt): die drei Aufrufer werten nur `eingereiht` als angenommen, der Ueberlauf liefert `endgueltigAbgewiesen` - die
+  Wirkung von `if (! controlV3.sendePersistenzP0 (...)) return false;` am Basis-SHA (Analyse.cpp:708-709 Versuch, :1190-1191 Urteil, Ipc.cpp:1320-1324
+  Sources). Die M-19-Wache ist in diesem Rotbau nicht gebrochen.
+  (1) Bein B29 EqCopSonde014AssistentTest, Normallauf: WN-05 ist auf die Annahmesemantik umgeschrieben (Sonde014AssistentTest.cpp:952-1047) und faehrt am
+      ECHTEN Draht: Probe-Server, v3ProbeGegenstelleFuerTest, v3StartFuerTest, Gegenprobe mit Platz (Erfolg, Server bestaetigt), Server geht (die Queue
+      laeuft nirgends mehr ab), Queue voll, assistentAntwort mit Urteil, Server kommt wieder, Reconnect, Replay, ACK.
+  (2) Bein B23 EqCopSonde013PassageStateTest, Normallauf: Fall "NAK-246 M-20 beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an"
+      (Sonde013PassageStateTest.cpp:3489-3537): Passage gemerkt, Fenster gefuehrt, genug Material, Queue voll (in diesem Bein laeuft kein Produktclient -
+      die volle Queue laeuft nirgends ab, deterministisch), beginneVersuch.
   (3) Der Sources-Aufrufer ist M-16 (NAK-246-rot-M-16.txt).
 
 BAU UND LAUF
-  Rotbau wie M-15 (Exit 0, 24 s): Binaries EqCopSonde014AssistentTest.exe 06:03:42, EqCopSonde013PassageStateTest.exe 06:03:49
-  (Quellen 06:02:49-06:02:58; juenger: ja).
-  (1) eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe -> Exit 1, 1 s, 192/193 gruen.
-  (2) eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe -> Exit 1, 12 s, 348 bestanden, 3 gescheitert.
-  Ruecknahme 06:09:47.
+  Rotbau 1 (Exit 0, 31 s, 0 Fehlerzeilen): Quellen Ipc.cpp 15:26:16, Nachrichten.cpp 15:26:27, Analyse.cpp 15:26:29; Binaries
+  EqCopSonde014AssistentTest.exe 15:27:20, EqCopSonde013PassageStateTest.exe 15:27:28 (juenger als jede Quelle: ja).
+  (1) eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe      -> Exit 1, 0,85 s, 192/193 gruen.
+  (2) eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe -> Exit 1, 11,62 s, 348 bestanden, 3 gescheitert.
+  Ruecknahme 15:34:07 (git checkout aus dem gestageten Endstand; git diff danach leer, git grep ROTBAU leer).
 
-DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-20: "Beide angenommenen Zustaende gelten dem Aufrufer als angenommen ... das Urteil meldet der Oberflaeche true ... Versuch setzt letzterVersuchP0 auch bei Wiederholung")
-  (1) B29 - die Zeile, an der der Rotbeweis laut Matrix faellt (Sonde014AssistentTest.cpp, ehemals :949-951, "fordert heute false"):
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-20: "Beide angenommenen Zustaende gelten dem Aufrufer als angenommen ... das Urteil meldet der Oberflaeche true ... Versuch setzt letzterVersuchP0 auch bei Wiederholung und kehrt nicht um")
+  (1) B29 - die Zeile, an der der Rotbeweis laut Matrix faellt (ehemals Sonde014AssistentTest.cpp:949-951, "fordert heute false"):
   FEHLER  M-20: bei voller Queue meldet `assistentAntwort` ERFOLG - der Auftrag ist zur Wiederholung angenommen (Basis-SHA: false)
-      -> `assistentAntwort` kehrt bei "false" um (Analyse.cpp:1190-1191 am Basis-SHA).
-  Gruen bleiben in (1): "der Auftrag steht im Register und der Ueberlauf ist gezaehlt (M-73) - inFlight 1, Ueberlaeufe 2" und "nach dem
-  Reconnect ist das Urteil nachgespielt und bestaetigt - inFlight 0, inFlightErfolg 2, Wiederholungen 1": der Client haelt und spielt nach
-  (M-73) - waehrend die Oberflaeche "kein Erfolg" hoerte. Genau dieser Widerspruch ist D4.
+      -> assistentAntwort kehrt bei "false" um (Analyse.cpp:1190-1191 am Basis-SHA). Es ist die einzige FEHLER-Zeile des ganzen Beins.
+  Gruen bleiben in (1): "der Auftrag steht im Register und der Ueberlauf ist gezaehlt (M-73) - inFlight 1, Ueberlaeufe 2" und "nach dem Reconnect ist das
+  Urteil nachgespielt und bestaetigt - inFlight 0, inFlightErfolg 2, Wiederholungen 1": der Client haelt und spielt nach (M-73), waehrend die Oberflaeche
+  "kein Erfolg" hoerte. Genau dieser Widerspruch ist D4.
   (2) B23:
   [ROT]  M-20: beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an - `beginneVersuch` kehrt NICHT um: der Befehl ist zur Wiederholung angenommen (Basis-SHA: false)
-      -> `sendeVersuchP0` kehrt bei "false" um (Analyse.cpp:708-709 am Basis-SHA).
+      -> sendeVersuchP0 kehrt bei "false" um (Analyse.cpp:708-709 am Basis-SHA) - die Zeile, die die Zusage traegt.
   [ROT]  M-20: `letzterVersuchP0` traegt den Befehl - auch bei Wiederholung  [0 Bytes]
-      -> `letzterVersuchP0` bleibt leer ("setzt letzterVersuchP0 bei false nicht").
+      -> "setzt letzterVersuchP0 bei false nicht".
   [ROT]  M-20: der Versuch ist offen
-      -> kein Versuch begonnen, obwohl der Client den Auftrag haelt.
-  Gruen bleibt in (2): "der Auftrag steht im Register, der Ueberlauf ist gezaehlt (M-73)" (inFlight 1, Ueberlaeufe 2) - der Auftrag
-  reist nach dem naechsten Verbindungsaufbau, aber lokal begann kein Versuch.
+      -> Folge: lokal beginnt kein Versuch, obwohl der Client den Auftrag haelt.
+  Gruen bleibt in (2): "der Auftrag steht im Register, der Ueberlauf ist gezaehlt (M-73)" [inFlight 1, Ueberlaeufe 2]. Die drei [ROT]-Zeilen sind die
+  einzigen des Beins.
+  (3) Sources: NAK-246-rot-M-16.txt - "der Aufrufer BEHAELT die command_id-Zuordnung" faellt [abgewiesen, Zuordnung leer].
 
-ROHAUSGABE (1), Abschnitt WN-05 / NAK-246 M-20 (B29, Rotlauf):
+DIFF DES ROTSTANDS: derselbe Rotbau 1, vollstaendig in NAK-246-rot-M-16.txt.
+ROHAUSGABE (1), Abschnitt WN-05 / NAK-246 M-20 (B29, Rotbau 1; die uebrigen 181 Zeilen des Beins ok):
 == WN-05 / NAK-246 M-20: bei voller Queue meldet `assistentAntwort` Erfolg, und der Auftrag wird nach dem Reconnect bestaetigt ==
   ok      M-20: der Probe-Server steht
   ok      M-20: der echte ControlClient zeigt auf den Probe-Server
@@ -55,7 +57,7 @@ ROHAUSGABE (1), Abschnitt WN-05 / NAK-246 M-20 (B29, Rotlauf):
   ok      M-20: nach dem Reconnect ist das Urteil nachgespielt und bestaetigt - inFlight 0, inFlightErfolg 2, Wiederholungen 1
 SONDE-014 AssistantStep: 192/193 gruen
 
-ROHAUSGABE (2), Abschnitt NAK-246 M-20 (B23, Rotlauf):
+ROHAUSGABE (2), Abschnitt NAK-246 M-20 (B23, Rotbau 1; die uebrigen Faelle des Beins ok):
 == NAK-246 M-20  beginne_versuch_bei_voller_queue_nimmt_zur_wiederholung_an ==
 [ok]   M-20: Passage gemerkt
 [ok]   M-20: die Engine fuehrt das Fenster
@@ -65,8 +67,9 @@ ROHAUSGABE (2), Abschnitt NAK-246 M-20 (B23, Rotlauf):
 [ROT]  M-20: `letzterVersuchP0` traegt den Befehl - auch bei Wiederholung  [0 Bytes]
 [ROT]  M-20: der Versuch ist offen
 [ok]   M-20: der Auftrag steht im Register, der Ueberlauf ist gezaehlt (M-73)  [inFlight 1, Ueberlaeufe 2]
+
 348 bestanden, 3 gescheitert
 
-GRUEN (Endstand): B29 Binary 06:10:11, 193/193, Exit 0 - Erfolg bei voller Queue, inFlight 1, Ueberlaeufe 2, nach dem Reconnect inFlightErfolg 2 und
-1 Wiederholung; B23 Binary 06:10:18, 351 bestanden, 0 gescheitert - `beginneVersuch` true, letzterVersuchP0 1637 Bytes experiment_begin, Versuch offen,
-inFlight 1, Ueberlaeufe 2 (docs/beweise/roh/NAK-246-etappe4-beine.txt).
+GRUEN (Endstand: Bau 15:35:44-15:37:29 Exit 0): B29 Binary 15:36:53, 193/193, Exit 0 - Erfolg bei voller Queue, inFlight 1, Ueberlaeufe 2, nach dem
+Reconnect inFlightErfolg 2 und 1 Wiederholung; B23 Binary 15:37:01, 351 bestanden, 0 gescheitert, Exit 0 - beginneVersuch true, letzterVersuchP0 1637 Bytes
+experiment_begin, Versuch offen, inFlight 1, Ueberlaeufe 2; Sources ueber M-16: B14 110/110, Exit 0 (docs/beweise/roh/NAK-246-etappe4-beine.txt).

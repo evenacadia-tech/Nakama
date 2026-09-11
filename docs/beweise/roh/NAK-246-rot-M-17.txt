@@ -1,40 +1,43 @@
 NAK-246 Etappe 4 - Rotbeweis M-17 (Manifest docs/beweise/NAK-246.md §3.4): inflight_register_deckelt_bei_kcapp0_und_verwirft_nichts_angenommenes (B10) und der KR-01-Deckel
-Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892.
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Stand: 2026-09-11 15:26-15:33 (PC-Lokalzeit), Fortsetzung (Opus-Worker, Start-HEAD 13e057bbb97683c4f1f312f6a7fad445ed88fd4b); Basis-SHA der Etappe 9174d272.
+Ersetzt die Fassung des Zwischenstands 2 (e0e8d41b), deren Rotbau zusaetzlich die M-19-Wache gebrochen hatte. Muster: docs/beweise/roh/NAK-246-rot-M-06.txt.
 
 WAS GEFAHREN WURDE
-  Dieselben zwei Laeufe wie in NAK-246-rot-M-15.txt (Diff dort): B10 `--nak246-d4` (Abschnitt NAK-246 D4) und der B10-Normallauf.
-  Der Rotstand hat KEINEN Deckel (Laufzeit.h:212 am Basis-SHA: `std::vector<InFlightEintrag> inFlight` ohne Grenze; die
-  Deckelpruefung in Nachrichten.cpp ist auskommentiert). Der Fall M-17 (IpcTestMain.cpp, nak246D4Dreiwert) reiht 64 Auftraege ein
-  und wartet nach jedem, bis der Server ihn gesehen hat (Server ohne ACK: alle bleiben ausstehend), bietet den 65. an, misst Register
-  und Zaehler, laesst nach `reconnect()` alle nachspielen und bestaetigen (Server ACK = angewandt). KR-01 (SONDE-014-Abschnitt) misst
-  denselben Deckel am user_verdict-Weg (`kr01_der_naechste_auftrag_wird_am_deckel_endgueltig_abgewiesen_und_gezaehlt`).
+  Dieselben zwei Laeufe wie in NAK-246-rot-M-15.txt (Rotbau 1, Diff in NAK-246-rot-M-16.txt): B10 `--nak246-d4` und der B10-Normallauf. Der Rotstand hat
+  KEINEN Deckel (am Basis-SHA Laufzeit.h:212 `std::vector<InFlightEintrag> inFlight` ohne Grenze; im Rotbau ist die Deckelpruefung in Nachrichten.cpp
+  entfernt). Der Fall M-17 (IpcTestMain.cpp:3045-3130) reiht 64 Auftraege ein und wartet nach jedem, bis der Server ihn gesehen hat (Server ohne ACK: alle
+  bleiben ausstehend), bietet den 65. an, misst Register und Zaehler und laesst nach `reconnect()` alle nachspielen und bestaetigen (Server ACK = angewandt).
+  KR-01 (IpcTestMain.cpp:6946-7107) misst denselben Deckel am user_verdict-Weg.
 
 BAU UND LAUF
-  Rotbau wie M-15: Binary EqCopIpcTest.exe 06:03:29 (Quellen 06:02:49-06:02:58; juenger: ja).
-  `--nak246-d4` -> Exit 1, 36 s, 19/10; Normallauf -> Exit 1, 265 s, 431/16. Ruecknahme 06:09:47.
+  Rotbau 1: Binary EqCopIpcTest.exe 15:27:02 (Quellen 15:26:16-15:26:29; juenger: ja). `--nak246-d4` -> Exit 1, 35,71 s, 19/8; Normallauf -> Exit 1,
+  265,67 s, 431/14. Ruecknahme 15:34:07.
 
-DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-17: "Endgueltig abgewiesen, gezaehlt, nichts Angenommenes verworfen ... Deckel ist kCapP0")
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-17: "Endgueltig abgewiesen, gezaehlt, nichts Angenommenes verworfen ... Der Deckel ist kCapP0 aus IpcQueues.h:34")
   FEHLER  M-17: inflight_register_deckelt_bei_kcapp0_und_verwirft_nichts_angenommenes - der 65. Auftrag wird ENDGUELTIG abgewiesen (Deckel = kCapP0 aus IpcQueues.h)  [eingereiht]
       -> "Der 65. wird angenommen (inFlight == 65)" - die Zeile, die die Zusage traegt ("ROT am Basis-SHA: Laufzeit.h:212 ohne Deckel").
   FEHLER  M-17: gezaehlt (inFlightRegisterVoll == 1), das Register bleibt bei 64  [65 im Register, 0 am Deckel]
-  FEHLER  M-17/M-18: ein bekannter, auf sein ACK wartender Auftrag zaehlt nicht gegen den Deckel - zur Wiederholung angenommen, Register unveraendert  [eingereiht]
-      -> Alt-Semantik: bekannt + gleicher Inhalt = true = `eingereiht`, kein dritter Wert (M-18 b).
   FEHLER  M-17: nach dem Reconnect ist JEDER der 64 nachgespielt und bestaetigt - nichts Angenommenes wurde fuer den Deckel verworfen  [65 Erfolg, 64 Wiederholungen, 0 im Register]
       -> 65 statt 64 Erfolge: der 65. war im Register und wurde mitbestaetigt; die Zeile ist an "genau 64" gebunden.
   FEHLER  M-17: der endgueltig abgewiesene 65. hat den Server nie erreicht - er war nie im Register
       -> er war im Register und beim Server.
+  FEHLER  M-17/M-18: ein bekannter, auf sein ACK wartender Auftrag zaehlt nicht gegen den Deckel - zur Wiederholung angenommen, Register unveraendert  [eingereiht]
+      -> diese Zeile faellt an der M-18-Semantik des Rotstands (bekannt und gleicher Inhalt = true = eingereiht), nicht am fehlenden Deckel; sie zaehlt
+         fuer M-17 nicht als Beleg.
   KR-01 (Normallauf):
   FEHLER  kr01_der_naechste_auftrag_wird_am_deckel_endgueltig_abgewiesen_und_gezaehlt  [65 im Register, 0 am Deckel]
   FEHLER  kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [1 gemeldet, 64 bleiben]
   FEHLER  kr01_die_uebrigen_auftraege_bleiben_unberuehrt  [64 im Register, 0 endgueltig ohne Erfolg]
-      -> Folgezeilen: ohne Deckel bleiben nach dem Abschluss des ersten 64 statt 63 im Register.
-  Gruen bleiben: "kCapP0 (64) Auftraege sind eingereiht, geschrieben und unbestaetigt" (64/64), "kein Queue-Ueberlauf, keine geschlossene
-  Verbindung" und "nach dem Abschluss der 64 nimmt das Register wieder an" - die M-73-Mechanik (Register, Replay, ACK) ist am Basis-SHA
+      -> die erste ist die Deckelzeile am user_verdict-Weg; die zwei weiteren sind Folgezeilen (ohne Deckel bleiben nach dem Abschluss des ersten 64 statt
+         63 im Register). Die KR-01-Kernzusage bleibt auch im Rotstand gruen: "kr01_kcap_auftraege_stehen_gleichzeitig_aus" [64 im Register] und
+         "kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt" [Text steht].
+  Gruen bleiben im Abschnitt: "kCapP0 (64) Auftraege sind eingereiht, geschrieben und unbestaetigt" [64 angenommen, inFlight 64], "kein Queue-Ueberlauf,
+  keine geschlossene Verbindung" und "nach dem Abschluss der 64 nimmt das Register wieder an" - die M-73-Mechanik (Register, Replay, ACK) ist am Basis-SHA
   unveraendert erfuellt; was fehlt, ist die Grenze.
 
-ROHAUSGABE: siehe NAK-246-rot-M-15.txt, Rohausgabe (1) vollstaendig und (2) die 16 fallenden Zeilen.
+ROHAUSGABE: NAK-246-rot-M-15.txt, Rohausgabe (1) vollstaendig und (2) die 14 fallenden Zeilen des Normallaufs.
 
-GRUEN (Endstand, Binary 06:09:51): `--nak246-d4` 19/19 ok - 64 angenommen, der 65. endgueltigAbgewiesen, 64 im Register, 1 am Deckel, Verbindung steht,
-bekannter Auftrag zurWiederholungAngenommen, nach dem Reconnect 64 Erfolg / 64 Wiederholungen / 0 im Register, der 65. nie beim Server, danach wieder eingereiht;
-Normallauf 431/431, KR-01: 64 im Register, der naechste am Deckel endgueltig abgewiesen und gezaehlt, nach angewandt 63 bleiben.
+GRUEN (Endstand: Binary EqCopIpcTest.exe 15:36:31; Normallauf Exit 0, 431/431): Abschnitt NAK-246 D4 19/19 ok - 64 angenommen, der 65. endgueltigAbgewiesen,
+64 im Register und 1 am Deckel, Verbindung steht, der bekannte Auftrag zurWiederholungAngenommen, nach dem Reconnect 64 Erfolg / 64 Wiederholungen / 0 im
+Register, der 65. nie beim Server, danach wieder eingereiht; KR-01: 64 im Register, der naechste am Deckel endgueltig abgewiesen und gezaehlt (64 im Register,
+1 am Deckel), nach angewandt 63 bleiben (docs/beweise/roh/NAK-246-etappe4-beine.txt).

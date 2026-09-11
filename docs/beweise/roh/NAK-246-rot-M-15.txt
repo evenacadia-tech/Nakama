@@ -1,138 +1,47 @@
-NAK-246 Etappe 4 - Rotbeweis M-15 (Manifest docs/beweise/NAK-246.md §3.4): user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt (WN-05, umgeschrieben auf den Dreiwert) und dieselbe Kette mit confirm_join (B10)
-Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892 (Zwischenstand 1 38cd8d47 davor committet); git status vor der Etappe leer.
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+NAK-246 Etappe 4 - Rotbeweis M-15 (Manifest docs/beweise/NAK-246.md §3.4): user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt (WN-05, auf den Dreiwert umgeschrieben) und dieselbe Kette mit confirm_join (B10)
+Stand: 2026-09-11 15:26-15:33 (PC-Lokalzeit), Fortsetzung (Opus-Worker, Start-HEAD 13e057bbb97683c4f1f312f6a7fad445ed88fd4b); Basis-SHA der Etappe 9174d272.
+Ersetzt die Fassung des Zwischenstands 2 (e0e8d41b). Deren Rotbau hatte zusaetzlich die M-19-Wache gebrochen (dort 10 statt 8 Fehler im Abschnitt, 16 statt
+14 im Normallauf) und lief damit nicht gegen das Verhalten des Basis-SHA. Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das
+Verhalten des Basis-SHA, §4.8).
 
 WAS GEFAHREN WURDE
-  Bein B10 EqCopIpcTest mit den ENDGUELTIGEN Tests gegen die ALT-SEMANTIK des Basis-SHA, als temporaerer Diff vom gestageten
-  Endstand (unten): die Rueckgabe traegt nur noch die zwei Werte des frueheren `bool` - Ueberlauf => `endgueltigAbgewiesen`
-  (= false), bekannte Kennung: gleicher Inhalt `eingereiht` (= true), anderer `endgueltigAbgewiesen` (= false); kein
-  Deckel; die drei Aufrufer (Ipc.cpp, Analyse.cpp x2) werten nur `eingereiht` als angenommen (= `if (! bool)`). Der Enum
-  selbst bleibt, damit die endgueltigen Tests kompilieren; die Wirkung ist die des `bool` am Basis-SHA.
-  (1) `EqCopIpcTest.exe --nak246-d4`: nur der Abschnitt "NAK-246 D4" (M-15 mit confirm_join, M-17, M-18, M-19).
-  (2) `EqCopIpcTest.exe` (Normallauf): darin WN-05 (M-15 mit user_verdict) und KR-01 (M-17-Deckel) im SONDE-014-Abschnitt.
-  M-17, M-18, M-19 werten dieselben Laeufe in NAK-246-rot-M-17.txt, -M-18.txt, -M-19.txt aus.
+  Bein B10 EqCopIpcTest mit den ENDGUELTIGEN Tests gegen ROTBAU 1 = das Verhalten des Basis-SHA fuer D4, als temporaerer Diff vom gestageten Endstand
+  (vollstaendig in NAK-246-rot-M-16.txt): der Ueberlauf liefert `endgueltigAbgewiesen` (= false), eine bekannte Kennung `eingereiht` (gleicher Inhalt,
+  = true) oder `endgueltigAbgewiesen` (anderer, = false); kein Deckel; die drei Aufrufer werten nur `eingereiht` als angenommen. Der Enum bleibt, damit die
+  endgueltigen Tests kompilieren; die Wirkung ist die des `bool` am Basis-SHA. Die M-19-Wache ist in diesem Rotbau nicht gebrochen.
+  (1) `EqCopIpcTest.exe --nak246-d4`: nur der Abschnitt "NAK-246 D4" (M-15 mit confirm_join, M-17, M-18, M-19), IpcTestMain.cpp:2985-3201.
+  (2) `EqCopIpcTest.exe` (Normallauf): darin WN-05 (M-15 mit user_verdict, IpcTestMain.cpp:6656-6718) und KR-01 (M-17-Deckel, :6946-7107) im
+      SONDE-014-Abschnitt.
+  M-17 und M-18 werten dieselben Laeufe in NAK-246-rot-M-17.txt und -M-18.txt aus; M-19 steht mit einem eigenen Rotbau 2 in NAK-246-rot-M-19.txt.
 
 BAU UND LAUF
-  cmake --build eq-copilot/build --config Release --target EqCopIpcTest EqCopSonde012ProjectReloadTest EqCopSonde014AssistentTest EqCopSonde013PassageStateTest
-  (pwsh, VS-2022-BuildTools-cmake): Exit 0, 24 s, 0 Fehler.
-  Quellen (Rotstand) Nachrichten.cpp 2026-09-11 06:02:49, Ipc.cpp 06:02:53, Analyse.cpp 06:02:58; Binary EqCopIpcTest.exe 06:03:29 (juenger: ja).
-  Lauf (1): eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe --nak246-d4  -> Exit 1, 36 s, 19 Pruefungen, 10 Fehler.
-  Lauf (2): eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe             -> Exit 1, 265 s, 431 Pruefungen, 16 Fehler
-            (die 10 aus dem Abschnitt, dazu 3 in WN-05 und 3 in KR-01; alle 16 Zeilen sind NAK-246-D4-Zeilen, kein bestehender Fall faellt).
-  Ruecknahme: git checkout -- Nachrichten.cpp Ipc.cpp Analyse.cpp aus dem gestageten Endstand (06:09:47; Landmine NAK-230 greift nicht, kein Copy-Item).
+  Rotbau 1: cmake --build eq-copilot/build --config Release --parallel --target EqCopIpcTest EqCopSonde012ProjectReloadTest EqCopSonde014AssistentTest
+  EqCopSonde013PassageStateTest (pwsh, VS-2022-BuildTools-cmake) -> Exit 0, 31 s, 0 Fehlerzeilen.
+  Quellen (Rotstand) Ipc.cpp 15:26:16, Nachrichten.cpp 15:26:27, Analyse.cpp 15:26:29; Binary EqCopIpcTest.exe 15:27:02 (juenger: ja).
+  Lauf (1): eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe --nak246-d4  -> Exit 1, 35,71 s, 19 Pruefungen, 8 Fehler.
+  Lauf (2): eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe             -> Exit 1, 265,67 s, 431 Pruefungen, 14 Fehler
+            (die 8 aus dem Abschnitt, dazu 3 in WN-05 und 3 in KR-01; alle 14 fallenden Zeilen sind NAK-246-D4-Zeilen, kein Bestandsfall faellt).
+  Ruecknahme: git checkout -- Nachrichten.cpp Ipc.cpp Analyse.cpp aus dem gestageten Endstand (15:34:07); danach git diff leer, git grep ROTBAU leer.
+  Landmine NAK-230 greift nicht (kein Copy-Item).
 
 DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-15: "zurWiederholungAngenommen ... Nach dem Reconnect reiht der Client ihn unter derselben command_id erneut ein")
-  Lauf (2), WN-05 mit user_verdict (IpcTestMain.cpp, SONDE-014-Abschnitt):
-  FEHLER  M-15: user_verdict bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
-      -> die Rueckgabe ist der Ueberlauf-"false" des Basis-SHA ("ROT am Basis-SHA: die Rueckgabe ist bool, Nachrichten.cpp:226").
-  FEHLER  M-15: `beiP0Verworfen` ist VOR der Rueckgabe gerufen, der Eintrag steht im Register  [1 verworfen, inFlight 1]
-      -> die Reihenfolge SELBST stimmt auch im Alt-Stand (1 verworfen, inFlight 1); die Zeile faellt, weil sie an `zurWiederholung`
-         gebunden ist - die Benennung ist die Zusage, nicht die Mechanik (M-73 ist unveraendert).
-  FEHLER  user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt
-      -> Folgezeile: die Kette ist an `zurWiederholung` gebunden.
   Lauf (1), M-15 mit confirm_join (Abschnitt NAK-246 D4):
   FEHLER  M-15: confirm_join bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
-  Gruen bleiben in Lauf (1): "Reihenfolge - Eintrag im Register, Queueversuch gescheitert, beiP0Verworfen VOR der Rueckgabe, Ueberlauf gezaehlt"
-  (1 verworfen, inFlight 1) und "nach dem Reconnect unter DERSELBEN command_id nachgespielt und vom Server bestaetigt" (1 Erfolg, 1 Wiederholungen):
+      -> die Zeile, die die Zusage traegt: die Rueckgabe ist der Ueberlauf-"false" des Basis-SHA ("ROT am Basis-SHA: die Rueckgabe ist bool,
+         Nachrichten.cpp:226").
+  Gruen bleiben in (1): "Reihenfolge - Eintrag im Register, Queueversuch gescheitert, `beiP0Verworfen` VOR der Rueckgabe, Ueberlauf gezaehlt"
+  [1 verworfen, inFlight 1] und "nach dem Reconnect unter DERSELBEN command_id nachgespielt und vom Server bestaetigt" [1 Erfolg, 1 Wiederholungen]:
   M-73 - Register, Verwurfmeldung, Replay - ist am Basis-SHA erfuellt; was fehlt, ist der ehrliche Name, und genau an ihm faellt die Zeile.
+  Lauf (2), WN-05 mit user_verdict (SONDE-014-Abschnitt):
+  FEHLER  M-15: user_verdict bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
+  FEHLER  M-15: `beiP0Verworfen` ist VOR der Rueckgabe gerufen, der Eintrag steht im Register  [1 verworfen, inFlight 1]
+      -> die Reihenfolge SELBST stimmt auch im Rotstand (1 verworfen, inFlight 1); die Zeile faellt, weil sie im Test an `zurWiederholung` gebunden ist -
+         keine eigene Aussage des Rotlaufs. Die Benennung ist die Zusage, die Mechanik (M-73) ist unveraendert.
+  FEHLER  user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt
+      -> Folgezeile: die Kette ist im Test an `zurWiederholung` gebunden.
 
-DIFF DES ROTSTANDS (git diff -- Nachrichten.cpp Analyse.cpp Ipc.cpp, Rotlaufstand gegen den gestageten Endstand; derselbe Diff fuer M-16 bis M-20)
-diff --git a/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp b/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
-index 4b0ff1ac..9f9cdeb7 100644
---- a/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
-+++ b/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
-@@ -169,7 +169,8 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
-         else
-             zustand.letzterFehler =
-                 "Persistenzauftrag braucht genau eine gueltige command_id";
--        return PersistenzP0Ergebnis::endgueltigAbgewiesen;   // M-19: kein Registereintrag
-+        // ROTLAUF NAK-246 M-19 (Wache absichtlich gebrochen): Ungueltiges gilt als angenommen.
-+        return PersistenzP0Ergebnis::zurWiederholungAngenommen;
-     }
+VOLLSTAENDIGE ROHAUSGABE (1): EqCopIpcTest.exe --nak246-d4 (Rotbau 1, Binary 15:27:02)
 
-     bool ueberlauf = false;
-@@ -188,10 +189,10 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
-             // Eintrags - in der Queue: eingereiht; sonst (wartet auf Replay
-             // oder ACK): zur Wiederholung angenommen. Ein bekannter Auftrag
-             // zaehlt nicht gegen den Deckel; das Register waechst nicht.
--            if (bekannt->json != json)
--                return PersistenzP0Ergebnis::endgueltigAbgewiesen;
--            return bekannt->inQueue ? PersistenzP0Ergebnis::eingereiht
--                                    : PersistenzP0Ergebnis::zurWiederholungAngenommen;
-+            // ROTLAUF NAK-246 M-18 (Alt-Semantik des Basis-SHA: bool): gleicher Inhalt = true,
-+            // anderer = false - kein dritter Wert.
-+            return bekannt->json == json ? PersistenzP0Ergebnis::eingereiht
-+                                         : PersistenzP0Ergebnis::endgueltigAbgewiesen;
-         }
-         // 🔑 M-17, Deckel = `kCapP0` (Paragraph 5.4 Feinheit 2): das Register
-         // haelt Auftraege, die in der Queue stehen, auf dem Draht auf ihr ACK
-@@ -200,12 +201,8 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
-         // des Users kein Lastfall, sondern ein Fehlerbild. Der Deckel greift
-         // NUR am Eintritt - nichts bereits Angenommenes wird dafuer verworfen
-         // (Feinheit 3); `inFlightNachReconnect` und `inFlightAck` bleiben.
--        if (inFlight.size() >= kCapP0)
--        {
--            std::lock_guard<std::mutex> z (zustandMutex);
--            ++zustand.inFlightRegisterVoll;
--            return PersistenzP0Ergebnis::endgueltigAbgewiesen;
--        }
-+        // ROTLAUF NAK-246 M-17 (Alt-Stand des Basis-SHA): kein Deckel.
-+        // if (inFlight.size() >= kCapP0) { ... }
-         inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
-         // Persistenzpflichtige Befehle sind EREIGNISSE: sie ueberleben jeden
-         // Linkwechsel und werden nie verworfen (§53.9).
-@@ -248,9 +245,8 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
-         if (beiP0Verworfen && verworfeneMarke != 0)
-             beiP0Verworfen (verworfeneMarke);
-         aktuelleVerbindung()->ioAbbrechen();
--        // M-15: das ist M-73 woertlich, ehrlich benannt - angenommen, im
--        // Register, Replay nach dem Reconnect unter derselben `command_id`.
--        return PersistenzP0Ergebnis::zurWiederholungAngenommen;
-+        // ROTLAUF NAK-246 M-15 (Alt-Semantik des Basis-SHA: bool false beim Ueberlauf).
-+        return PersistenzP0Ergebnis::endgueltigAbgewiesen;
-     }
-     return PersistenzP0Ergebnis::eingereiht;
- }
-diff --git a/eq-copilot/plugin/src/prozessor/Analyse.cpp b/eq-copilot/plugin/src/prozessor/Analyse.cpp
-index db03b00d..467ffff8 100644
---- a/eq-copilot/plugin/src/prozessor/Analyse.cpp
-+++ b/eq-copilot/plugin/src/prozessor/Analyse.cpp
-@@ -727,7 +727,8 @@ bool EqCopilotProcessor::sendeVersuchP0 (const std::string& json)
-     // Zustaende gelten als gesendet - auch ein zur Wiederholung angenommener
-     // Auftrag reist nach dem Reconnect unter derselben `command_id`. Nur
-     // `endgueltigAbgewiesen` kehrt um.
--    if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
-+    // ROTLAUF NAK-246 M-20 (Alt-Semantik des Basis-SHA): nur `eingereiht` ist true.
-+    if (controlV3.sendePersistenzP0 (json) != nakama::ipc::PersistenzP0Ergebnis::eingereiht)
-         return false;
-     std::lock_guard<std::mutex> l (versuchWireMutex);
-     letzterVersuchP0 = json;
-@@ -1217,7 +1218,8 @@ bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis er
-         const auto json = v3UserVerdictJson (*urteil, findingId, notiz);
-         if (json.empty())
-             return false;
--        if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
-+        // ROTLAUF NAK-246 M-20 (Alt-Semantik des Basis-SHA): nur `eingereiht` ist true.
-+        if (controlV3.sendePersistenzP0 (json) != nakama::ipc::PersistenzP0Ergebnis::eingereiht)
-             return false;
-     }
-     return gemeldet;
-diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
-index abb9b818..5cf38ff9 100644
---- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
-+++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
-@@ -1326,7 +1326,8 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
-     // Zuordnung nicht mehr, und die brokerseitig angewandte Mitgliedschaft
-     // wurde lokal nie nachgefuehrt (Auditbefund D4). Geloescht wird nur bei
-     // `endgueltigAbgewiesen`: dann kommt nie ein ACK.
--    if (nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (auftrag.json)))
-+    // ROTLAUF NAK-246 M-16/M-20 (Alt-Semantik des Basis-SHA): nur `eingereiht` ist true.
-+    if (controlV3.sendePersistenzP0 (auftrag.json) == nakama::ipc::PersistenzP0Ergebnis::eingereiht)
-         return true;
-     std::lock_guard<std::mutex> l (sourcesCommandMutex);
-     ausstehendeSourcesCommands.erase (auftrag.commandId);
-
-VOLLSTAENDIGE ROHAUSGABE (1): EqCopIpcTest.exe --nak246-d4
 == NAK-246 D4 · dreiwertige Persistenzannahme und Deckel (M-15, M-17, M-18, M-19) ==
   FEHLER  M-15: confirm_join bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
   ok      M-15: Reihenfolge - Eintrag im Register, Queueversuch gescheitert, `beiP0Verworfen` VOR der Rueckgabe, Ueberlauf gezaehlt  [1 verworfen, inFlight 1]
@@ -151,19 +60,29 @@ VOLLSTAENDIGE ROHAUSGABE (1): EqCopIpcTest.exe --nak246-d4
   FEHLER  M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen  [endgueltigAbgewiesen]
   FEHLER  M-18 (b): gleicher Inhalt, Eintrag wartet auf Replay -> zur Wiederholung angenommen, kein zweiter Eintrag  [eingereiht]
   ok      M-18 (c): auch fuer den wartenden Eintrag gilt - anderer Inhalt wird endgueltig abgewiesen  [endgueltigAbgewiesen]
-  FEHLER  M-19: Nutzlast ueber kMaxPayloadBytes -> endgueltig abgewiesen, zuGross gezaehlt, kein Registereintrag  [zurWiederholungAngenommen]
-  FEHLER  M-19: ohne gueltige command_id -> endgueltig abgewiesen, letzterFehler gesetzt, kein Registereintrag  [zurWiederholungAngenommen]
+  ok      M-19: Nutzlast ueber kMaxPayloadBytes -> endgueltig abgewiesen, zuGross gezaehlt, kein Registereintrag  [endgueltigAbgewiesen]
+  ok      M-19: ohne gueltige command_id -> endgueltig abgewiesen, letzterFehler gesetzt, kein Registereintrag  [endgueltigAbgewiesen]
 
-FEHLER — 19 Pruefungen, 10 Fehler
+FEHLER — 19 Pruefungen, 8 Fehler
 
-ROHAUSGABE (2), die 16 fallenden Zeilen des Normallaufs (EqCopIpcTest.exe, Exit 1, 431 Pruefungen, 16 Fehler; die uebrigen 415 Zeilen ok):
-  (die zehn Zeilen aus (1), dazu:)
+ROHAUSGABE (2), die 14 fallenden Zeilen des Normallaufs (EqCopIpcTest.exe, Rotbau 1, Exit 1, 431 Pruefungen, 14 Fehler; die uebrigen 417 Zeilen ok):
+  FEHLER  M-15: confirm_join bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
+  FEHLER  M-17: inflight_register_deckelt_bei_kcapp0_und_verwirft_nichts_angenommenes - der 65. Auftrag wird ENDGUELTIG abgewiesen (Deckel = kCapP0 aus IpcQueues.h)  [eingereiht]
+  FEHLER  M-17: gezaehlt (inFlightRegisterVoll == 1), das Register bleibt bei 64  [65 im Register, 0 am Deckel]
+  FEHLER  M-17/M-18: ein bekannter, auf sein ACK wartender Auftrag zaehlt nicht gegen den Deckel - zur Wiederholung angenommen, Register unveraendert  [eingereiht]
+  FEHLER  M-17: nach dem Reconnect ist JEDER der 64 nachgespielt und bestaetigt - nichts Angenommenes wurde fuer den Deckel verworfen  [65 Erfolg, 64 Wiederholungen, 0 im Register]
+  FEHLER  M-17: der endgueltig abgewiesene 65. hat den Server nie erreicht - er war nie im Register
+  FEHLER  M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen  [endgueltigAbgewiesen]
+  FEHLER  M-18 (b): gleicher Inhalt, Eintrag wartet auf Replay -> zur Wiederholung angenommen, kein zweiter Eintrag  [eingereiht]
   FEHLER  M-15: user_verdict bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [endgueltigAbgewiesen]
   FEHLER  M-15: `beiP0Verworfen` ist VOR der Rueckgabe gerufen, der Eintrag steht im Register  [1 verworfen, inFlight 1]
   FEHLER  user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt
   FEHLER  kr01_der_naechste_auftrag_wird_am_deckel_endgueltig_abgewiesen_und_gezaehlt  [65 im Register, 0 am Deckel]
   FEHLER  kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [1 gemeldet, 64 bleiben]
   FEHLER  kr01_die_uebrigen_auftraege_bleiben_unberuehrt  [64 im Register, 0 endgueltig ohne Erfolg]
+FEHLER — 431 Pruefungen, 14 Fehler
 
-GRUEN (Endstand, Binary EqCopIpcTest.exe 06:09:51, Normallauf): Exit 0, 431 Pruefungen, 0 Fehler, 221,71 s (Basis-SHA: 409; docs/beweise/roh/NAK-246-etappe4-beine.txt);
-`--nak246-d4` Exit 0, 19 Pruefungen, 0 Fehler.
+GRUEN (Endstand: Bau 15:35:44-15:37:29 Exit 0; Binary EqCopIpcTest.exe 15:36:31; Normallauf ab 15:37:52, Exit 0, 220,91 s): ALLE PRUEFUNGEN GRUEN -
+431 Pruefungen, 0 Fehler. M-15 mit confirm_join: zurWiederholungAngenommen; 1 verworfen, inFlight 1; nach dem Reconnect 1 Erfolg, 1 Wiederholung.
+M-15 mit user_verdict (WN-05): zurWiederholungAngenommen; 1 verworfen, inFlight 1; user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt
+ok (docs/beweise/roh/NAK-246-etappe4-beine.txt).

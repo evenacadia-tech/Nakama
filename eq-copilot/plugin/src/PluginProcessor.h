@@ -808,6 +808,10 @@ public:
         const nakama::ipc::ControlClient::Snapshot& transport)
     { sourcesModel.setzeControlTransport (transport); }
     std::string ausstehenderSourcesCommandFuerTest() const;
+    /** NAK-246 D4 (M-16): wie viele BESTAETIGTE Sources-Befehle auf den
+        Persistenzabschluss warten - der Zeuge, dass ein ACK seine Zuordnung
+        gefunden hat, bevor ein Drain sie anwendet. Nur Tests. */
+    std::size_t bestaetigteSourcesCommandsFuerTest() const;
     /** NAK-246 D3 (M-12, M-13): einen Sources-Befehl OHNE die Vorpruefungen
         von `sendeSourcesCommand` und ohne Draht als ausstehend eintragen -
         so, wie er nach dem Senden im Register steht. Der ACK kommt dann ueber

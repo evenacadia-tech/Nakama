@@ -1114,6 +1114,16 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
                 return p->controlV3Snapshot().status == nakama::ipc::ControlClient::Status::verbunden;
             }),
             "M-16: der echte Client ist ueber die Probe-Pipe verbunden");
+    // Schranke 1: der Aufbau-Callback hat das Modell uebernommen. `verbunden`
+    // steht im Client VOR `meldeLinkStatus (true)` (`Verbindung.cpp`); erst der
+    // Callback ruft `beginneSubscription` und setzt `authenticating` (dieser
+    // Testserver sendet keinen `session_snapshot`, der es aendern koennte).
+    // Die Schranke macht die Voraussetzung von Schranke 2 gemessen statt
+    // angenommen.
+    pruefe (warteAuf (8000, [&] {
+                return p->sourcesSicht().diagnose == eqcop::SourcesModel::Diagnose::authenticating;
+            }),
+            "M-16: der Link-Aufbau-Callback ist durch - das Modell meldet authenticating");
 
     // Der Server geht: ab jetzt laeuft die Queue nirgends ab.
     server1->stoppen();
@@ -1122,11 +1132,19 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
                 return p->controlV3Snapshot().status != nakama::ipc::ControlClient::Status::verbunden;
             }),
             "M-16: die Verbindung ist weg");
-    // Die Quellensicht kommt ERST JETZT: der echte Link-Callback (auf/ab)
-    // setzt das Modell ueber `beginneSubscription`/`controlEnde` zurueck und
-    // wuerde eine frueher gesetzte Fixture loeschen - dann faende
-    // `sendeSourcesCommand` kein Hauptziel und kehrte vor dem Senden um.
-    std::this_thread::sleep_for (std::chrono::milliseconds (100));
+    // Schranke 2: die Quellensicht kommt erst, wenn der Ende-Callback DURCH
+    // ist. Der Client setzt `getrennt` VOR `meldeLinkStatus (false)`; der
+    // Callback nimmt dem Modell ueber `controlEnde` die Subscription - eine
+    // frueher gesetzte Fixture verloere `mainDarfSchreiben`, und
+    // `sendeSourcesCommand` kehrte vor dem Senden um. Nach Schranke 1 setzt in
+    // diesem Fall nur noch `controlEnde` `brokerUnavailable` (kein Editor-Tick,
+    // kein Reload); ein zweiter Ende-Callback kommt vor dem naechsten Aufbau
+    // nicht (`exchange` in `meldeLinkStatus`). Kein Schlaf als
+    // Reihenfolgegarantie.
+    pruefe (warteAuf (8000, [&] {
+                return p->sourcesSicht().diagnose == eqcop::SourcesModel::Diagnose::brokerUnavailable;
+            }),
+            "M-16: der Link-Ende-Callback ist durch - das Modell meldet brokerUnavailable");
     p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
     {
         const auto s = p->sourcesSicht();
@@ -1147,6 +1165,9 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
             "command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)",
             juce::String (angenommen ? "angenommen" : "abgewiesen") + ", Zuordnung "
                 + (zuordnung.empty() ? "leer" : "vorhanden"));
+    // Die Kennung, die der Aufrufer zum Join haelt (leer, wenn er die
+    // Zuordnung geloescht hat).
+    const auto joinId = commandId (zuordnung);
     const auto nachJoin = p->controlV3Snapshot();
     pruefe (nachJoin.inFlight >= 1 && nachJoin.p0Ueberlaeufe > vorJoin.p0Ueberlaeufe,
             "M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)",
@@ -1167,8 +1188,38 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
             "M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)",
             "inFlightErfolg " + juce::String ((juce::int64) nachAck.inFlightErfolg)
                 + ", Wiederholungen " + juce::String ((juce::int64) nachAck.inFlightWiederholungen));
-    pruefe (warteAuf (2000, [&] { return p->ausstehenderSourcesCommandFuerTest().empty(); }),
-            "M-16: der ACK hat die Zuordnung gefunden - der Befehl ist vorgemerkt, nicht mehr ausstehend");
+    // Was der zweite Server empfangen hat, UNABHAENGIG von der Zuordnung des
+    // Aufrufers: die command_id jedes confirm_join. Das Register spielt nach,
+    // auch wenn der Aufrufer die Zuordnung verloren hat (M-73).
+    std::vector<std::string> replayKennungen;
+    {
+        std::lock_guard<std::mutex> l (server2->textMutex);
+        for (const auto& t : server2->p0Texte)
+            if (t.find ("\"command\":\"confirm_join\"") != std::string::npos)
+                replayKennungen.push_back (commandId (t));
+    }
+    pruefe (! replayKennungen.empty(),
+            "M-16: der zweite Server hat den Join empfangen (Replay nach dem Reconnect, M-73)",
+            juce::String ((int) replayKennungen.size()) + " confirm_join"
+                + (replayKennungen.empty() ? juce::String()
+                                           : ", " + juce::String (replayKennungen.front())));
+    // Die Zuordnung gefunden heisst: jeder Replay traegt DIE Kennung, die der
+    // Aufrufer haelt, und der ACK hat den Befehl aus den ausstehenden in die
+    // bestaetigten gelegt (`v3Antwort`). Am Basis-SHA war die Zuordnung vor
+    // dem ACK geloescht - "nicht mehr ausstehend" gilt dann auch, bestaetigt
+    // ist aber nichts.
+    const bool vorgemerkt = warteAuf (2000, [&] {
+        return p->ausstehenderSourcesCommandFuerTest().empty()
+            && p->bestaetigteSourcesCommandsFuerTest() == 1;
+    });
+    const bool dieselbeKennung = ! joinId.empty() && ! replayKennungen.empty()
+        && std::all_of (replayKennungen.begin(), replayKennungen.end(),
+                        [&] (const std::string& k) { return k == joinId; });
+    pruefe (vorgemerkt && dieselbeKennung,
+            "M-16: der ACK hat die Zuordnung gefunden - der Replay traegt DIESELBE command_id, die der "
+            "Aufrufer haelt, und der Befehl ist bestaetigt vorgemerkt",
+            juce::String ((int) p->bestaetigteSourcesCommandsFuerTest()) + " bestaetigt, Aufrufer "
+                + (joinId.empty() ? juce::String ("ohne Kennung") : juce::String (joinId)));
     pruefe (mitglieder (*p).empty() && dirty.nonParam == 0,
             "M-16: kein Tick lief - nichts ist angewandt, kein Dirty");
 

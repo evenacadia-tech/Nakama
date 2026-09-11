@@ -6957,9 +6957,11 @@ int main (int argc, char** argv)
         //
         // E-15: es gibt genau EIN Register, und der Wiederholungstext kommt
         // aus dem Auftrag, den es haelt. Dieser Fall misst das am echten
-        // Draht: `kCapP0 + 1` Auftraege stehen aus, der ERSTE bekommt sein
-        // `konflikt`, wird mit frischem Kopf wiederholt, und erst `angewandt`
-        // gibt ihn frei. Die uebrigen 64 bleiben unberuehrt.
+        // Draht: `kCapP0` Auftraege stehen aus (seit NAK-246 M-17 ist das
+        // Register dort gedeckelt, der naechste wird am Eintritt endgueltig
+        // abgewiesen), der ERSTE bekommt sein `konflikt`, wird mit frischem
+        // Kopf wiederholt, und erst `angewandt` gibt ihn frei. Die uebrigen 63
+        // bleiben unberuehrt.
         TestServer server (testPipeName ("sonde014-kr01"));
         server.commandAckArt.store (0);   // zunaechst KEINE Antwort
         const auto id1 = hex32 ('4');

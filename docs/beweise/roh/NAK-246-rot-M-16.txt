@@ -1,57 +1,167 @@
 NAK-246 Etappe 4 - Rotbeweis M-16 (Manifest docs/beweise/NAK-246.md §3.4): volle_queue_join_reconnect_ack_save_load_als_eine_kette (B14)
-Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892 (Zwischenstand 1 38cd8d47 mit D3 davor committet).
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Stand: 2026-09-11 15:26-15:34 (PC-Lokalzeit), Fortsetzung (Opus-Worker, Start-HEAD 13e057bbb97683c4f1f312f6a7fad445ed88fd4b); Basis-SHA der Etappe 9174d272.
+Ersetzt die Fassung des Zwischenstands 2 (e0e8d41b). Deren Rotlauf lief (a) in einem Rotbau, der zusaetzlich die M-19-Wache gebrochen hatte, und (b) gegen
+die fruehere Testfassung von M-16: ein Schlaf von 100 ms als Reihenfolgegarantie vor der Fixture, und die Zeile "der ACK hat die Zuordnung gefunden" blieb
+im Rotlauf gruen, weil sie nur "nicht mehr ausstehend" mass - am Basis-SHA gilt das ebenso. Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige
+Tests gegen das Verhalten des Basis-SHA, §4.8).
 
 WAS GEFAHREN WURDE
-  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-16 allein (`--nur m16`), mit dem ENDGUELTIGEN Test
-  (Sonde012ProjectReloadTest.cpp, nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette) am ECHTEN Prozessor
-  (Testkonstruktor mit Probe-Pipe und Servererwartung, Produkt-controlV3, geteilter Testserver mit commandAckArt = angewandt)
-  gegen die ALT-SEMANTIK des Basis-SHA fuer D4 (Diff in NAK-246-rot-M-15.txt): Ueberlauf => `endgueltigAbgewiesen` (= bool false),
-  und der Sources-Aufrufer (Ipc.cpp) loescht seine `command_id`-Zuordnung bei allem ausser `eingereiht` (= `if (! bool)`).
-  Der D3-Anteil der Kette (Speicher-Drain, Zwischenstand 1) steht in diesem Lauf bereits - die Kette faellt damit genau am
-  D4-Glied: der ACK des nachgespielten Befehls findet keine Zuordnung, nichts wird vorgemerkt, das Speichern hat nichts anzuwenden.
-  Die Kette: verbinden -> Server geht (Queue laeuft nirgends ab) -> Queue voll -> Quellen-Join -> Server kommt wieder ->
-  Reconnect, Replay unter derselben command_id -> ACK (echter Produkt-Callback v3Antwort) -> Speichern OHNE Tick -> Laden in neuer Instanz.
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-16 allein (`--nur m16`), mit dem ENDGUELTIGEN Test (Sonde012ProjectReloadTest.cpp:1087-1244,
+  nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette) am ECHTEN Prozessor (Testkonstruktor mit Probe-Pipe und Servererwartung,
+  Produkt-controlV3, geteilter Testserver mit commandAckArt = angewandt), gegen ROTBAU 1 = das Verhalten des Basis-SHA fuer D4, als temporaerer Diff
+  vom gestageten Endstand (unten):
+    - der Ueberlauf liefert `endgueltigAbgewiesen` (am Basis-SHA `return false;`, Nachrichten.cpp:226),
+    - eine bekannte Kennung liefert `eingereiht` (gleicher Inhalt) oder `endgueltigAbgewiesen` (anderer) - kein dritter Wert,
+    - kein Deckel am Register,
+    - die drei Aufrufer werten nur `eingereiht` als angenommen (am Basis-SHA `if (controlV3.sendePersistenzP0 (...))`); der Sources-Aufrufer loescht
+      seine command_id-Zuordnung bei allem anderen (Ipc.cpp:1322-1324 am Basis-SHA).
+  Der Enum bleibt, damit die endgueltigen Tests kompilieren; die Wirkung ist die des `bool` am Basis-SHA. Die M-19-Wache ist in diesem Rotbau NICHT
+  gebrochen (sie steht als eigener Rotbau 2 in NAK-246-rot-M-19.txt). Der D3-Anteil der Kette (Speicher-Drain, Zwischenstand 1) steht im Rotbau - die
+  Kette faellt damit genau am D4-Glied.
+  Die Kette: verbinden -> Schranke 1 (Modell authenticating) -> Server geht -> getrennt -> Schranke 2 (Modell brokerUnavailable) -> Fixture -> Queue voll
+  -> Quellen-Join -> Server kommt wieder -> Reconnect, Replay -> ACK (echter Produkt-Callback v3Antwort) -> Speichern OHNE Tick -> Laden in neuer Instanz.
 
 BAU UND LAUF
-  Derselbe Rotbau wie M-15 (Exit 0, 24 s): Quellen Nachrichten.cpp 06:02:49, Ipc.cpp 06:02:53, Analyse.cpp 06:02:58;
-  Binary EqCopSonde012ProjectReloadTest.exe 06:03:36 (juenger: ja).
+  Rotbau 1 (pwsh, VS-2022-BuildTools-cmake): cmake --build eq-copilot/build --config Release --parallel --target EqCopIpcTest
+    EqCopSonde012ProjectReloadTest EqCopSonde014AssistentTest EqCopSonde013PassageStateTest -> Exit 0, 31 s, 0 Fehlerzeilen.
+    Quellen des Rotstands: Ipc.cpp 15:26:16, Nachrichten.cpp 15:26:27, Analyse.cpp 15:26:29.
+  Ein erster Lauf in Rotbau 1 (Binary 15:27:11) fuhr eine Zwischenfassung des Tests, die die Replay-Kennung beim zweiten Server aus der Zuordnung des
+    Aufrufers las: er fiel zusaetzlich an "der zweite Server hat den Join unter DERSELBEN command_id empfangen" - an einem Nebeneffekt, denn die Kennung
+    fehlte nur, weil die Zuordnung geloescht war, waehrend der Server den Join sehr wohl bekam. Die Endfassung zaehlt den Replay unabhaengig von der
+    Zuordnung und vergleicht die Kennung erst in der Zeile "Zuordnung gefunden". Nur die Endfassung gilt:
+  Rotbau 1b (dieselben drei Produktdateien im Rotstand, die Endfassung von M-16): cmake --build ... --target EqCopSonde012ProjectReloadTest -> Exit 0, 9 s,
+    0 Fehlerzeilen; Testquelle Sonde012ProjectReloadTest.cpp 15:31:02; Binary EqCopSonde012ProjectReloadTest.exe 15:33:44 (juenger als jede Quelle: ja).
   Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m16
-        -> Exit 1, 1 s, 15 Pruefungen, 3 Fehler.
-  Ruecknahme: git checkout -- Nachrichten.cpp Ipc.cpp Analyse.cpp aus dem gestageten Endstand (06:09:47).
+        -> Exit 1, 18 Pruefungen, 4 Fehler (14/18 gruen).
+  Ruecknahme: git checkout -- Nachrichten.cpp Ipc.cpp Analyse.cpp aus dem gestageten Endstand (15:34:07); danach git diff leer, git grep ROTBAU leer.
+  Landmine NAK-230 greift nicht: kein Copy-Item, git checkout schreibt einen frischen LastWriteTime.
 
 DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-16: "Der Aufrufer behaelt die command_id-Zuordnung bei zur Wiederholung angenommen ... die neue Instanz laedt das Mitglied")
   FEHLER  M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [abgewiesen, Zuordnung leer]
-      -> `bindeSourcesHauptziel` meldet false und die Zuordnung ist geloescht ("ROT am Basis-SHA: Ipc.cpp:1322-1324 loescht die Zuordnung bei false") -
-         die Zeile, die die Zusage traegt.
+      -> die Zeile, die die Zusage traegt: `bindeSourcesHauptziel` meldet false, die Zuordnung ist geloescht ("ROT am Basis-SHA: Ipc.cpp:1322-1324 loescht
+         die Zuordnung bei false").
+  FEHLER  M-16: der ACK hat die Zuordnung gefunden - der Replay traegt DIESELBE command_id, die der Aufrufer haelt, und der Befehl ist bestaetigt vorgemerkt  [0 bestaetigt, Aufrufer ohne Kennung]
+      -> Folge: der ACK des nachgespielten Joins findet keine Zuordnung, v3Antwort merkt nichts als bestaetigt vor.
   FEHLER  M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [0 Mitglied(er), Dirty 0]
-      -> der ACK fand keine Zuordnung, nichts war vorgemerkt.
   FEHLER  M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [0 Mitglied(er)]
-      -> "Die neue Instanz laedt KEIN Mitglied, obwohl der Server angewandt hat" - der Persistenzbeweis am geladenen Zustand.
-  Gruen bleiben: "der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)" (inFlight 1) und "nach dem Reconnect ist der Join
-  nachgespielt und vom Server angewandt (ACK)" (inFlightErfolg 1, Wiederholungen 1): der Client haelt und spielt nach wie am
-  Basis-SHA (M-73) - der Server hat angewandt, und genau diese brokerseitig angewandte Mitgliedschaft fehlt lokal (Auditbefund D4,
-  Entwurf §57 :4273-4275). Auch "der ACK hat die Zuordnung gefunden - ausstehend leer" bleibt gruen, weil die Zuordnung schon vor
-  dem ACK geloescht war - die Zeile misst "leer", und leer ist sie in beiden Faellen; die Zusage traegt die erste FEHLER-Zeile.
+      -> "Die neue Instanz laedt KEIN Mitglied, obwohl der Server angewandt hat" - der Persistenzbeweis am geladenen Zustand (§3 Einleitung).
+  Gruen bleiben - und muessen es: "der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)" [inFlight 1], "nach dem Reconnect ist der Join nachgespielt
+  und vom Server angewandt (ACK)" [inFlightErfolg 1, Wiederholungen 1] und "der zweite Server hat den Join empfangen" [1 confirm_join]: der Client haelt und
+  spielt nach wie am Basis-SHA (M-73), der Server hat angewandt - und genau diese brokerseitig angewandte Mitgliedschaft fehlt lokal (Auditbefund D4, Entwurf
+  §57 :4273-4275). Aufbau, Schranke 1 und Schranke 2 bleiben gruen: die Kette faellt nicht am Aufbau.
 
-VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m16
+DIFF DES ROTSTANDS (git diff -- Nachrichten.cpp Analyse.cpp Ipc.cpp, Rotbau 1 gegen den gestageten Endstand; derselbe Diff fuer M-15, M-17, M-18 und M-20)
+diff --git a/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp b/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
+index 4b0ff1ac..3335fc5c 100644
+--- a/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
++++ b/eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp
+@@ -188,24 +188,13 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
+             // Eintrags - in der Queue: eingereiht; sonst (wartet auf Replay
+             // oder ACK): zur Wiederholung angenommen. Ein bekannter Auftrag
+             // zaehlt nicht gegen den Deckel; das Register waechst nicht.
+-            if (bekannt->json != json)
+-                return PersistenzP0Ergebnis::endgueltigAbgewiesen;
+-            return bekannt->inQueue ? PersistenzP0Ergebnis::eingereiht
+-                                    : PersistenzP0Ergebnis::zurWiederholungAngenommen;
+-        }
+-        // 🔑 M-17, Deckel = `kCapP0` (Paragraph 5.4 Feinheit 2): das Register
+-        // haelt Auftraege, die in der Queue stehen, auf dem Draht auf ihr ACK
+-        // warten oder auf Replay warten. Die Drahtqueue fasst 64; mehr als eine
+-        // volle Queue unbestaetigter Persistenzauftraege ist fuer Handgriffe
+-        // des Users kein Lastfall, sondern ein Fehlerbild. Der Deckel greift
+-        // NUR am Eintritt - nichts bereits Angenommenes wird dafuer verworfen
+-        // (Feinheit 3); `inFlightNachReconnect` und `inFlightAck` bleiben.
+-        if (inFlight.size() >= kCapP0)
+-        {
+-            std::lock_guard<std::mutex> z (zustandMutex);
+-            ++zustand.inFlightRegisterVoll;
+-            return PersistenzP0Ergebnis::endgueltigAbgewiesen;
++            // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-18): `return bekannt->json == json;`
++            // - gleicher Inhalt = true = eingereiht, anderer = false; kein dritter Wert.
++            return bekannt->json == json ? PersistenzP0Ergebnis::eingereiht
++                                         : PersistenzP0Ergebnis::endgueltigAbgewiesen;
+         }
++        // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-17): kein Deckel -
++        // `Laufzeit.h` hielt `inFlight` ohne Grenze.
+         inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
+         // Persistenzpflichtige Befehle sind EREIGNISSE: sie ueberleben jeden
+         // Linkwechsel und werden nie verworfen (§53.9).
+@@ -248,9 +237,8 @@ PersistenzP0Ergebnis ControlClient::Laufzeit::sendePersistenzP0 (const std::stri
+         if (beiP0Verworfen && verworfeneMarke != 0)
+             beiP0Verworfen (verworfeneMarke);
+         aktuelleVerbindung()->ioAbbrechen();
+-        // M-15: das ist M-73 woertlich, ehrlich benannt - angenommen, im
+-        // Register, Replay nach dem Reconnect unter derselben `command_id`.
+-        return PersistenzP0Ergebnis::zurWiederholungAngenommen;
++        // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-15): der Ueberlauf war `return false;`.
++        return PersistenzP0Ergebnis::endgueltigAbgewiesen;
+     }
+     return PersistenzP0Ergebnis::eingereiht;
+ }
+diff --git a/eq-copilot/plugin/src/prozessor/Analyse.cpp b/eq-copilot/plugin/src/prozessor/Analyse.cpp
+index db03b00d..4e8ea120 100644
+--- a/eq-copilot/plugin/src/prozessor/Analyse.cpp
++++ b/eq-copilot/plugin/src/prozessor/Analyse.cpp
+@@ -727,7 +727,8 @@ bool EqCopilotProcessor::sendeVersuchP0 (const std::string& json)
+     // Zustaende gelten als gesendet - auch ein zur Wiederholung angenommener
+     // Auftrag reist nach dem Reconnect unter derselben `command_id`. Nur
+     // `endgueltigAbgewiesen` kehrt um.
+-    if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
++    // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-20 Versuch): `if (! controlV3.sendePersistenzP0 (json))`.
++    if (controlV3.sendePersistenzP0 (json) != nakama::ipc::PersistenzP0Ergebnis::eingereiht)
+         return false;
+     std::lock_guard<std::mutex> l (versuchWireMutex);
+     letzterVersuchP0 = json;
+@@ -1217,7 +1218,8 @@ bool EqCopilotProcessor::assistentAntwort (nakama::state::Assistentenergebnis er
+         const auto json = v3UserVerdictJson (*urteil, findingId, notiz);
+         if (json.empty())
+             return false;
+-        if (! nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (json)))
++        // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-20 Urteil): `if (! controlV3.sendePersistenzP0 (json))`.
++        if (controlV3.sendePersistenzP0 (json) != nakama::ipc::PersistenzP0Ergebnis::eingereiht)
+             return false;
+     }
+     return gemeldet;
+diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+index 21cf6468..157d558b 100644
+--- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
++++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+@@ -1327,7 +1327,9 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
+     // Zuordnung nicht mehr, und die brokerseitig angewandte Mitgliedschaft
+     // wurde lokal nie nachgefuehrt (Auditbefund D4). Geloescht wird nur bei
+     // `endgueltigAbgewiesen`: dann kommt nie ein ACK.
+-    if (nakama::ipc::persistenzAngenommen (controlV3.sendePersistenzP0 (auftrag.json)))
++    // ROTBAU 1 NAK-246 (Verhalten des Basis-SHA, M-16/M-20): `if (controlV3.sendePersistenzP0 (...)) return true;`
++    // - nur true = eingereiht behaelt die Zuordnung, jedes false loescht sie.
++    if (controlV3.sendePersistenzP0 (auftrag.json) == nakama::ipc::PersistenzP0Ergebnis::eingereiht)
+         return true;
+     std::lock_guard<std::mutex> l (sourcesCommandMutex);
+     ausstehendeSourcesCommands.erase (auftrag.commandId);
+
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m16 (Rotbau 1b, Binary 15:33:44)
 == NAK-246 M-16 volle_queue_join_reconnect_ack_save_load_als_eine_kette ==
   ok      M-16: der Testserver steht
   ok      M-16: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor)
   ok      M-16: der Prozessor ist ein Main mit Bindung
   ok      M-16: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-16: der Link-Aufbau-Callback ist durch - das Modell meldet authenticating
   ok      M-16: die Verbindung ist weg
+  ok      M-16: der Link-Ende-Callback ist durch - das Modell meldet brokerUnavailable
   ok      M-16 Aufbau: die Quelle A ist Hauptziel, dieses Main darf schreiben
   ok      M-16: die P0-Queue ist voll  [64]
   FEHLER  M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [abgewiesen, Zuordnung leer]
   ok      M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)  [inFlight 1]
   ok      M-16: der Testserver steht wieder (Reconnect)
   ok      M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)  [inFlightErfolg 1, Wiederholungen 1]
-  ok      M-16: der ACK hat die Zuordnung gefunden - der Befehl ist vorgemerkt, nicht mehr ausstehend
+  ok      M-16: der zweite Server hat den Join empfangen (Replay nach dem Reconnect, M-73)  [1 confirm_join, 31c44f91db314fcdbe53b08e7ea5def5]
+  FEHLER  M-16: der ACK hat die Zuordnung gefunden - der Replay traegt DIESELBE command_id, die der Aufrufer haelt, und der Befehl ist bestaetigt vorgemerkt  [0 bestaetigt, Aufrufer ohne Kennung]
   ok      M-16: kein Tick lief - nichts ist angewandt, kein Dirty
   FEHLER  M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [0 Mitglied(er), Dirty 0]
   FEHLER  M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [0 Mitglied(er)]
-SONDE-012 ProjectReload (nur m16): 12/15 gruen
+SONDE-012 ProjectReload (nur m16): 14/18 gruen
 
-GRUEN (Endstand, Binary 06:09:58, voller Lauf): alle 15 Zeilen ok - angenommen, Zuordnung vorhanden, inFlightErfolg 1, Wiederholungen 1,
-Speichern ohne Tick 1 Mitglied und Dirty 1, neue Instanz 1 Mitglied "Reported fallback"; B14 gesamt 107/107, Exit 0.
+GRUEN (Endstand: Bau 15:35:44-15:37:29 Exit 0; Binary EqCopSonde012ProjectReloadTest.exe 15:36:41; voller Lauf ab 15:37:29, Exit 0, 110/110): alle 18
+M-16-Zeilen ok - Schranke 1 authenticating, Schranke 2 brokerUnavailable, angenommen und Zuordnung vorhanden, inFlight 1, inFlightErfolg 1 und
+Wiederholungen 1, 1 confirm_join beim zweiten Server mit derselben Kennung wie die Zuordnung (5a1862dbcd3f4feaa1b52c9e5efc52a2), 1 bestaetigt vorgemerkt,
+kein Tick und kein Dirty, Speichern ohne Tick 1 Mitglied und Dirty 1, neue Instanz 1 Mitglied mit Label "Reported fallback"
+(docs/beweise/roh/NAK-246-etappe4-beine.txt).

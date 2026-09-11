@@ -1,26 +1,29 @@
 NAK-246 Etappe 4 - Rotbeweis M-18 (Manifest docs/beweise/NAK-246.md §3.4): gleiche_command_id_liefert_den_zustand_des_gehaltenen_eintrags (B10)
-Stand: 2026-09-11 06:02-06:09 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892.
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen das Verhalten des Basis-SHA, §4.8).
+Stand: 2026-09-11 15:27 (PC-Lokalzeit), Fortsetzung (Opus-Worker, Start-HEAD 13e057bbb97683c4f1f312f6a7fad445ed88fd4b); Basis-SHA der Etappe 9174d272.
+Ersetzt die Fassung des Zwischenstands 2 (e0e8d41b), deren Rotbau zusaetzlich die M-19-Wache gebrochen hatte. Muster: docs/beweise/roh/NAK-246-rot-M-06.txt.
 
 WAS GEFAHREN WURDE
-  Derselbe Lauf wie in NAK-246-rot-M-15.txt (Diff dort): B10 `--nak246-d4`, Rotstand = Alt-Semantik des Basis-SHA - bekannte Kennung mit
-  gleichem Inhalt liefert `eingereiht` (= true), mit anderem Inhalt `endgueltigAbgewiesen` (= false); Ueberlauf `endgueltigAbgewiesen`.
-  Der Fall M-18 (IpcTestMain.cpp, nak246D4Dreiwert, ohne Server - die Queue ist lokal): (a) gleicher Inhalt, Eintrag in der Queue;
-  (b) gleicher Inhalt, Eintrag wartet auf Replay (nach Ueberlauf); (c) anderer Inhalt; das Register waechst in keinem Fall.
+  Derselbe Lauf wie in NAK-246-rot-M-15.txt: B10 `--nak246-d4` gegen Rotbau 1 (Diff in NAK-246-rot-M-16.txt) - eine bekannte Kennung mit gleichem Inhalt
+  liefert `eingereiht` (= true), mit anderem `endgueltigAbgewiesen` (= false); der Ueberlauf `endgueltigAbgewiesen`. Der Fall M-18
+  (IpcTestMain.cpp:3132-3174, ohne Server - die Queue ist lokal): (a) gleicher Inhalt, Eintrag in der Queue; (b) gleicher Inhalt, Eintrag wartet auf Replay
+  (nach Ueberlauf); (c) anderer Inhalt; das Register waechst in keinem Fall.
 
 BAU UND LAUF
-  Rotbau wie M-15: Binary EqCopIpcTest.exe 06:03:29. `--nak246-d4` -> Exit 1, 36 s, 19/10. Ruecknahme 06:09:47.
+  Rotbau 1: Binary EqCopIpcTest.exe 15:27:02 (Quellen 15:26:16-15:26:29; juenger: ja). `--nak246-d4` -> Exit 1, 35,71 s, 19/8. Ruecknahme 15:34:07.
 
-DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-18: "(a) eingereiht, (b) zurWiederholungAngenommen, (c) endgueltigAbgewiesen; das Register waechst nicht")
-  FEHLER  M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen  [endgueltigAbgewiesen]
-      -> der Aufbau von (b) faellt schon an M-15 (Ueberlauf ist "false").
+DIE FALLENDEN ZUSAGEN DIESER ZEILE (M-18: "(a) eingereiht, (b) zurWiederholungAngenommen, (c) endgueltigAbgewiesen; das Register waechst in keinem der drei Faelle")
   FEHLER  M-18 (b): gleicher Inhalt, Eintrag wartet auf Replay -> zur Wiederholung angenommen, kein zweiter Eintrag  [eingereiht]
-      -> "(b) meldet eingereiht" - die Zeile, die die Zusage traegt ("ROT am Basis-SHA fuer die Benennung (heute bool)"): der Alt-Stand
-         kennt fuer einen bekannten Auftrag nur true/false und nennt einen wartenden Eintrag "eingereiht".
-  Gruen bleiben: (a) eingereiht und (c) endgueltig abgewiesen - beide sind am Basis-SHA als true/false schon richtig; das Register bleibt
-  bei 1 bzw. 2 (die Regel "dieselbe ID darf nie zwei verschiedene Inhalte bedeuten", Nachrichten.cpp:179-182 am Basis-SHA, ist unveraendert).
+      -> "(b) meldet eingereiht" - die Zeile, die die Zusage traegt ("ROT am Basis-SHA fuer die Benennung (heute bool)"): der Rotstand kennt fuer einen
+         bekannten Auftrag nur true/false und nennt einen wartenden Eintrag "eingereiht".
+  FEHLER  M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen  [endgueltigAbgewiesen]
+      -> der Aufbau von (b) faellt an der M-15-Semantik des Rotstands (Ueberlauf = false); der Eintrag steht trotzdem im Register (M-73) und ist der, den
+         (b) erneut anbietet - das zeigt die gruene Zeile (c) fuer den wartenden Eintrag, die inFlight == 2 verlangt.
+  Gruen bleiben: (a) eingereiht [inFlight 1] und (c) endgueltig abgewiesen, fuer den eingereihten [inFlight 1] wie fuer den wartenden Eintrag [inFlight 2] -
+  beide Faelle sind am Basis-SHA als true/false schon richtig; die Regel "dieselbe ID darf nie zwei verschiedene Inhalte bedeuten" (Nachrichten.cpp:179-182
+  am Basis-SHA) ist unveraendert.
 
-ROHAUSGABE: siehe NAK-246-rot-M-15.txt, Rohausgabe (1) vollstaendig (Zeilen "M-18 ...").
+ROHAUSGABE: NAK-246-rot-M-15.txt, Rohausgabe (1) vollstaendig (Zeilen "M-18 ...").
 
-GRUEN (Endstand, Binary 06:09:51): `--nak246-d4` 19/19 ok - (a) eingereiht bei inFlight 1, (c) endgueltigAbgewiesen bei inFlight 1,
-Aufbau (b) zurWiederholungAngenommen bei inFlight 2, (b) zurWiederholungAngenommen bei inFlight 2, (c) auch fuer den wartenden Eintrag endgueltigAbgewiesen.
+GRUEN (Endstand: Binary EqCopIpcTest.exe 15:36:31; Normallauf Exit 0, 431/431): (a) eingereiht bei inFlight 1, (c) endgueltigAbgewiesen bei inFlight 1,
+Aufbau (b) zurWiederholungAngenommen bei inFlight 2, (b) zurWiederholungAngenommen bei inFlight 2, (c) auch fuer den wartenden Eintrag endgueltigAbgewiesen
+(docs/beweise/roh/NAK-246-etappe4-beine.txt).

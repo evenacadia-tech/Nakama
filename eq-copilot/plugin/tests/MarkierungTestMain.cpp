@@ -13,16 +13,50 @@
 #include "HoerMarkierung.h"
 
 #include <pluginterfaces/vst/ivstprocesscontext.h>
+#include <atomic>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <new>
 #include <thread>
 
 using namespace eqcop;
 using VstKontext = Steinberg::Vst::ProcessContext;
+
+//==============================================================================
+// ALLOKATIONSZAEHLER (NAK-246 D1, M-03): thread_local wie in
+// QueueStressTestMain.cpp - der Prozessor haelt einen Workerthread, der
+// allozieren darf; nur der Thread, der `verarbeite` ruft, wird gezaehlt.
+namespace
+{
+    thread_local bool          zaehleAllokationen = false;
+    thread_local std::uint64_t allokationen       = 0;
+}
+
+void* operator new (std::size_t groesse)
+{
+    if (zaehleAllokationen) ++allokationen;
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete (void* p) noexcept { std::free (p); }
+void operator delete (void* p, std::size_t) noexcept { std::free (p); }
+void* operator new[] (std::size_t groesse)
+{
+    if (zaehleAllokationen) ++allokationen;
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete[] (void* p) noexcept { std::free (p); }
+void operator delete[] (void* p, std::size_t) noexcept { std::free (p); }
 
 static juce::uint32 lcg = 0x2545f491u;
 static float zufall()
@@ -1000,6 +1034,314 @@ static void sonde013Nacharbeit1 (const Pruefer& pruefe, double fs, int bs)
     }
 }
 
+//==============================================================================
+// NAK-246 D1 (Manifest docs/beweise/NAK-246.md §3.1, M-01 bis M-03; R-D1):
+// Besitz im Markierungsring. Jeder Nebenlaeufigkeitsfall erzwingt sein
+// Interleaving ueber einen Testhaken mit Condvar (§4.8) - ein Fall, der
+// "meistens" faellt, waere kein Rotbeweis.
+//
+// Die Auftragsnummer steht in JEDEM Feld des Auftrags (fs, sektionen, alle
+// Koeffizienten, jede der 2048 Stufen, die drei Sample-Zaehler): ein Riss
+// zeigt sich als Feld mit fremder Nummer, ein Fremdauftrag als andere Nummer
+// in allen Feldern. `fs` traegt die Nummer (1..9) und ist damit nie gleich
+// `fsAktuell`: der Auftrag klingt nicht, und `verarbeite` beruehrt nach der
+// Uebernahme weder `sektionen` noch die Koeffizienten (Ziel 0, Fade 0).
+
+static MarkierungsAuftrag auftragMitNummer (std::uint32_t n)
+{
+    MarkierungsAuftrag a;
+    const double d = (double) n;
+    a.modus = MarkierungsModus::solo;
+    a.fs = d;
+    a.sektionen = (int) n;
+    for (auto& k : a.statisch)    k = BiquadKoeff { d, d, d, d, d };
+    for (auto& k : a.puls)        k = BiquadKoeff { d, d, d, d, d };
+    for (auto& s : a.stufenFolge) s = (std::uint8_t) n;
+    a.pulsAnstiegSamples = (int) n;
+    a.pulsRuheSamples    = (int) n;
+    a.fadeSamples        = (int) n;
+    return a;
+}
+
+/** true, wenn JEDES Feld dieselbe Nummer traegt; sie steht dann in `n`. */
+static bool auftragTraegtGenauEineNummer (const MarkierungsAuftrag& a, std::uint32_t& n)
+{
+    if (a.modus != MarkierungsModus::solo || ! (a.fs >= 1.0) || a.fs != std::floor (a.fs))
+        return false;
+    n = (std::uint32_t) a.fs;
+    const double d = (double) n;
+    auto koeff = [d] (const BiquadKoeff& k)
+    { return k.b0 == d && k.b1 == d && k.b2 == d && k.a1 == d && k.a2 == d; };
+    if (a.sektionen != (int) n || a.pulsAnstiegSamples != (int) n
+        || a.pulsRuheSamples != (int) n || a.fadeSamples != (int) n)
+        return false;
+    for (const auto& k : a.statisch)   if (! koeff (k)) return false;
+    for (const auto& k : a.puls)       if (! koeff (k)) return false;
+    for (const auto s : a.stufenFolge) if (s != (std::uint8_t) n) return false;
+    return true;
+}
+
+/** Haken mit Condvar (Muster `PushProbe` in broker/tests/store_crash_matrix.rs):
+    der gehakte Thread meldet `betreten` und wartet auf `freigegeben`. */
+struct HakenSchleuse
+{
+    std::mutex m;
+    std::condition_variable cv;
+    bool betreten = false;
+    bool freigegeben = false;
+
+    static void haken (void* kontext)
+    {
+        auto* s = static_cast<HakenSchleuse*> (kontext);
+        std::unique_lock<std::mutex> l (s->m);
+        s->betreten = true;
+        s->cv.notify_all();
+        s->cv.wait (l, [s] { return s->freigegeben; });
+    }
+    bool warteAufBetreten (int ms)
+    {
+        std::unique_lock<std::mutex> l (m);
+        return cv.wait_for (l, std::chrono::milliseconds (ms), [this] { return betreten; });
+    }
+    void freigeben()
+    {
+        { std::lock_guard<std::mutex> l (m); freigegeben = true; }
+        cv.notify_all();
+    }
+};
+
+static void nak246D1Besitz (const Pruefer& pruefe, double fs, int bs)
+{
+    std::cout << "== NAK-246 D1: Besitz im Markierungsring (M-01 bis M-03, R-D1) ==" << std::endl;
+    // Frist, bis ein Thread den Haken erreicht haben muss (nur Testinfrastruktur).
+    constexpr int kHakenFristMs = 5000;
+    // M-03: so lange darf `verarbeite` hoechstens brauchen, waehrend der
+    // Publisher gehalten wird. Ein Leser, der auf ihn wartet, reisst sie.
+    constexpr int kLeserFristMs = 2000;
+
+    // ── M-01: der Leser haelt, der Publisher laeuft einmal um ─────────────
+    {
+        auto dsp = std::make_unique<HoerMarkierungDsp>();   // Heap (NAK-175)
+        dsp->setzeSamplerate (fs);
+        dsp->vorbereiten (bs);
+        auto schleuse = std::make_unique<HakenSchleuse>();
+        dsp->setzeLeserHakenFuerTest (&HakenSchleuse::haken, schleuse.get());
+        dsp->reicheEin (auftragMitNummer (1));
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        puffer.clear();
+        std::thread leser ([&] { dsp->verarbeite (puffer, 2, true); });
+
+        const bool imHaken = schleuse->warteAufBetreten (kHakenFristMs);
+        pruefe (imHaken, "M-01: der Leser steht im Haken zwischen Uebernahme und Kopie");
+
+        bool gehaltenIst1 = false, unberuehrt = false;
+        std::uint32_t genommenVorher = 0;
+        auto schnappschuss = std::make_unique<MarkierungsAuftrag>();
+        if (imHaken)
+        {
+            const auto& gehalten = dsp->gehaltenerPufferFuerTest();
+            std::memcpy (schnappschuss.get(), &gehalten, sizeof (MarkierungsAuftrag));
+            gehaltenIst1 = auftragTraegtGenauEineNummer (*schnappschuss, genommenVorher)
+                           && genommenVorher == 1;
+
+            // Acht Publikationen: der fruehere Ring aus vier Slots laeuft
+            // zweimal um; die Nummern 2..9 stehen in jedem Feld.
+            for (std::uint32_t n = 2; n <= 9; ++n)
+                dsp->reicheEin (auftragMitNummer (n));
+
+            unberuehrt = std::memcmp (schnappschuss.get(), &gehalten,
+                                      sizeof (MarkierungsAuftrag)) == 0;
+        }
+        pruefe (gehaltenIst1, "M-01: der Leser hat Auftrag 1 genommen",
+                juce::String ((int) genommenVorher));
+        pruefe (unberuehrt,
+                "M-01: leser_haelt_besitz_ueber_einen_ringumlauf - der Speicher, den der "
+                "Leser haelt, wird vom Publisher NIE beschrieben: byteweise identisch vor "
+                "und nach acht Publikationen waehrend des Haltens");
+
+        schleuse->freigeben();
+        leser.join();
+        dsp->setzeLeserHakenFuerTest (nullptr, nullptr);
+
+        const auto stand = dsp->leserstandFuerTest();
+        std::uint32_t lokalNr = 0;
+        const bool genauEine = auftragTraegtGenauEineNummer (*stand.lokal, lokalNr);
+        pruefe (genauEine,
+                "M-01: nach der Freigabe ist `lokal` in jedem Byte genau EIN publizierter "
+                "Auftrag - kein Zwischenzustand",
+                juce::String ("lokal=") + juce::String ((int) lokalNr));
+        pruefe (genauEine && lokalNr == stand.nr && stand.nr == 1,
+                "M-01: und es ist der Auftrag, den der Leser genommen hat - nicht Auftrag "
+                "n+4 oder n+8 aus dem Umlauf",
+                juce::String ("lokal=") + juce::String ((int) lokalNr)
+                    + ", genommen=" + juce::String ((int) stand.nr));
+
+        // Der naechste Block holt den juengsten Auftrag (9), ohne Haken.
+        dsp->verarbeite (puffer, 2, true);
+        // Die Nummer VOR dem Aufruf bestimmen: MSVC wertet Argumente rechts nach
+        // links aus, sonst zeigte der Zusatz den Wert vor der Pruefung.
+        const auto danach = dsp->leserstandFuerTest();
+        std::uint32_t danachNr = 0;
+        const bool danachEine = auftragTraegtGenauEineNummer (*danach.lokal, danachNr);
+        pruefe (danachEine && danachNr == 9 && danach.nr == 9,
+                "M-01: der naechste Block uebernimmt den juengsten Auftrag vollstaendig",
+                juce::String ("lokal=") + juce::String ((int) danachNr));
+    }
+
+    // ── M-02: der juengste gewinnt, uebersprungene werden gezaehlt ────────
+    {
+        auto dsp = std::make_unique<HoerMarkierungDsp>();
+        dsp->setzeSamplerate (fs);
+        dsp->vorbereiten (bs);
+        for (std::uint32_t n = 1; n <= 8; ++n)
+            dsp->reicheEin (auftragMitNummer (n));
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        puffer.clear();
+        dsp->verarbeite (puffer, 2, true);
+
+        const auto stand = dsp->leserstandFuerTest();
+        std::uint32_t lokalNr = 0;
+        const bool genauEine = auftragTraegtGenauEineNummer (*stand.lokal, lokalNr);
+        pruefe (genauEine && lokalNr == 8 && stand.nr == 8,
+                "M-02: juengster_auftrag_gewinnt - der Leser uebernimmt genau den zuletzt "
+                "publizierten Auftrag (8 von 8)",
+                juce::String ("lokal=") + juce::String ((int) lokalNr));
+        pruefe (dsp->uebersprungenePublikationen() == 7,
+                "M-02: ueberlauf_wird_gezaehlt - sieben Publikationen hat kein Leser je "
+                "gesehen, und der Zaehler sagt es",
+                juce::String ((juce::int64) dsp->uebersprungenePublikationen()));
+
+        dsp->reicheEin (auftragMitNummer (9));
+        dsp->verarbeite (puffer, 2, true);
+        pruefe (dsp->uebersprungenePublikationen() == 7,
+                "M-02: eine gelesene Publikation zaehlt NICHT als uebersprungen",
+                juce::String ((juce::int64) dsp->uebersprungenePublikationen()));
+    }
+
+    // ── M-03: der Audiothread wartet nie ─────────────────────────────────
+    //
+    // Regressionswache (heute gruen): der Preis des Fixes, nicht der Defekt.
+    // Ein Leser, der auf die Publisher-Freigabe spinnt, liesse `verarbeite`
+    // ueber die Frist laufen - der Rotlauf docs/beweise/roh/NAK-246-rot-M-03.txt
+    // fuehrt genau diesen Leser vor.
+    {
+        auto dsp = std::make_unique<HoerMarkierungDsp>();
+        dsp->setzeSamplerate (fs);
+        dsp->vorbereiten (bs);
+        juce::AudioBuffer<float> puffer (2, bs);
+        puffer.clear();
+        dsp->reicheEin (auftragMitNummer (1));
+        dsp->verarbeite (puffer, 2, true);
+
+        auto schleuse = std::make_unique<HakenSchleuse>();
+        dsp->setzePublisherHakenFuerTest (&HakenSchleuse::haken, schleuse.get());
+        std::thread publisher ([&] { dsp->reicheEin (auftragMitNummer (2)); });
+        pruefe (schleuse->warteAufBetreten (kHakenFristMs),
+                "M-03: der Publisher steht im Haken zwischen Schreiben und Veroeffentlichen");
+
+        std::mutex m;
+        std::condition_variable cv;
+        bool leserFertig = false;
+        double dauerMs = -1.0;
+        std::uint64_t allokationenImLeser = 0;
+        std::thread leser ([&]
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            allokationen = 0;
+            zaehleAllokationen = true;
+            dsp->verarbeite (puffer, 2, true);
+            zaehleAllokationen = false;
+            const auto t1 = std::chrono::steady_clock::now();
+            std::lock_guard<std::mutex> l (m);
+            allokationenImLeser = allokationen;
+            dauerMs = std::chrono::duration<double, std::milli> (t1 - t0).count();
+            leserFertig = true;
+            cv.notify_all();
+        });
+        bool fertigWaehrendGehalten = false;
+        {
+            std::unique_lock<std::mutex> l (m);
+            fertigWaehrendGehalten = cv.wait_for (l, std::chrono::milliseconds (kLeserFristMs),
+                                                  [&] { return leserFertig; });
+        }
+        pruefe (fertigWaehrendGehalten,
+                "M-03: leser_wartet_nie_auf_den_publisher - `verarbeite` kehrt zurueck, "
+                "WAEHREND der Publisher noch gehalten wird (kein Spin, keine Sperre)",
+                fertigWaehrendGehalten
+                    ? juce::String (dauerMs, 3) + " ms"
+                    : juce::String ("Frist ") + juce::String (kLeserFristMs) + " ms ueberschritten");
+        schleuse->freigeben();
+        publisher.join();
+        leser.join();
+        dsp->setzePublisherHakenFuerTest (nullptr, nullptr);
+
+        pruefe (allokationenImLeser == 0,
+                "M-03: 0 Allokationen im Leser auf dem neuen Pfad (thread_local gezaehlt)",
+                juce::String ((juce::int64) allokationenImLeser));
+        {
+            const auto stand = dsp->leserstandFuerTest();
+            std::uint32_t n = 0;
+            const bool eine = auftragTraegtGenauEineNummer (*stand.lokal, n);
+            pruefe (eine && n == 1 && stand.nr == 1,
+                    "M-03: der Leser sah den ALTEN Auftrag vollstaendig, nie einen halben neuen",
+                    juce::String ("lokal=") + juce::String ((int) n));
+        }
+        dsp->verarbeite (puffer, 2, true);
+        {
+            const auto stand = dsp->leserstandFuerTest();
+            std::uint32_t n = 0;
+            const bool eine = auftragTraegtGenauEineNummer (*stand.lokal, n);
+            pruefe (eine && n == 2 && stand.nr == 2,
+                    "M-03: nach der Freigabe uebernimmt der naechste Block den vollstaendig "
+                    "neuen Auftrag",
+                    juce::String ("lokal=") + juce::String ((int) n));
+        }
+    }
+
+    // ── Allokationsprobe auf dem neuen Pfad (M-03, zweite Haelfte) ───────
+    //
+    // 200 Runden Publizieren und Uebernehmen mit klingendem Auftrag (fs passt,
+    // Fade laeuft): der Leser alloziert nie. Gegenprobe: derselbe Zaehler
+    // sieht eine echte Allokation - sonst waere die Null wertlos.
+    {
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        const bool gebaut = baueMarkierungsAuftrag (auftrag, w);
+        auto dsp = std::make_unique<HoerMarkierungDsp>();
+        dsp->setzeSamplerate (fs);
+        dsp->vorbereiten (bs);
+        juce::AudioBuffer<float> puffer (2, bs);
+        std::uint64_t summe = 0;
+        for (int runde = 0; runde < 200; ++runde)
+        {
+            if (runde % 2 == 0) dsp->reicheEin (auftrag); else dsp->reicheAus();
+            for (int k = 0; k < 2; ++k)
+                for (int i = 0; i < bs; ++i)
+                    puffer.setSample (k, i, 0.3f * zufall());
+            allokationen = 0;
+            zaehleAllokationen = true;
+            dsp->verarbeite (puffer, 2, true);
+            zaehleAllokationen = false;
+            summe += allokationen;
+        }
+        pruefe (gebaut && summe == 0,
+                "M-03: 200 Runden Publizieren und Uebernehmen mit klingendem Auftrag: "
+                "0 Allokationen im Leser",
+                juce::String ((juce::int64) summe));
+        allokationen = 0;
+        zaehleAllokationen = true;
+        { auto probe = std::make_unique<int> (1); (void) probe; }
+        zaehleAllokationen = false;
+        pruefe (allokationen == 1,
+                "M-03: Gegenprobe - derselbe Zaehler sieht eine echte Allokation",
+                juce::String ((juce::int64) allokationen));
+    }
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -1158,6 +1500,7 @@ int main()
     sonde013M36 (pruefer, fs, bs);
     nak180WetRiegel (pruefer, fs, bs);
     sonde013Nacharbeit1 (pruefer, fs, bs);
+    nak246D1Besitz (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {

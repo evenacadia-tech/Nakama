@@ -7,15 +7,24 @@
 // schneidet bei Wegfall der Erlaubnis HART auf den Originalpfad (keine
 // Fade-Reste in einem Render).
 //
-// Threading-Vertrag:
+// Threading-Vertrag (NAK-246 D1, R-D1 — ein Besitzvertrag, keine
+// Wahrscheinlichkeitsaussage):
 //  · Message-Thread: baueMarkierungsAuftrag() (alle Transzendenten) +
-//    reicheEin()/reicheAus() — Ring aus 4 Slots, Publikationszähler.
-//  · Audiothread: verarbeite() — kopiert höchstens einen Slot (POD), keine
-//    Allokation, keine Sperre, keine Transzendente (B7: Puls-Hüllkurve liegt
-//    als Stufenfolge je 32-Sample-Chunk vorberechnet im Auftrag).
-//  · Ein Slot-Riss wäre nur möglich, wenn der Editor während EINER
-//    Blockkopie vier Aufträge publiziert — menschlich unerreichbar; der
-//    Zähler macht jede neue Publikation trotzdem sichtbar.
+//    reicheEin()/reicheAus() — schreibt in SEINEN Puffer und veröffentlicht
+//    ihn mit EINEM atomaren Tausch in den Briefkasten.
+//  · Audiothread: verarbeite() — übernimmt mit EINEM atomaren Tausch den
+//    Puffer aus dem Briefkasten, besitzt ihn bis zum nächsten Tausch und
+//    kopiert ihn nach `lokal` (POD); keine Allokation, keine Sperre, keine
+//    wartende Schleife, keine Transzendente (B7: Puls-Hüllkurve liegt als
+//    Stufenfolge je 32-Sample-Chunk vorberechnet im Auftrag).
+//  · Besitz: drei vorallokierte Puffer — je einer beim Publisher, im
+//    Briefkasten und beim Leser. Die drei Indizes sind zu jeder Zeit
+//    paarweise verschieden, weil jede Seite ihren Index nur durch einen
+//    Tausch mit dem Briefkasten wechselt; deshalb schreibt der Publisher nie
+//    in einen Puffer, den der Leser hält. Der jüngste Auftrag gewinnt;
+//    Publikationen, die kein Leser gesehen hat, zählt `uebersprungen`. Der
+//    Leser wartet nie auf den Publisher: er sieht den alten oder den
+//    vollständig neuen Auftrag, nie einen halben.
 //
 // DSP: TDF2-Biquads, double-Koeffizienten + double-Zustände (Tieffrequenz-
 // Robustheit, Mulm-Kante 120 Hz). RBJ-Cookbook-Parametrik mit Bandbreite in
@@ -310,14 +319,94 @@ public:
         return uebergang;
     }
 
-    // Message-Thread: neuen Auftrag publizieren (Ring aus 4, s. Kopfkommentar).
+    // ── Übergabe Message-Thread → Audiothread (NAK-246 D1, R-D1) ──────────
+    //
+    // Drei vorallokierte Aufträge und ein atomarer Briefkasten. Der
+    // Briefkasten trägt in zwei Bits den Index des Puffers, der gerade in
+    // ihm liegt, und im dritten Bit (`kNeu`), ob er seit dem letzten Tausch
+    // neu gefüllt wurde. Der Publisher besitzt `auftraege[schreibIndex]`,
+    // der Leser `auftraege[leseIndex]`, der Briefkasten den dritten Puffer.
+    // Jede Seite wechselt ihren Index nur durch EINEN `exchange` mit dem
+    // Briefkasten — ein Tausch erhält die Permutation, also sind die drei
+    // Indizes zu jeder Zeit paarweise verschieden. Das IST der Besitz: der
+    // Publisher kann den Puffer des Lesers nicht erreichen, und keine Seite
+    // wartet auf die andere (kein Spin, keine Sperre, kein Heap).
+    //
+    // Speicherordnung (§5.1 Feinheit 6): der Publisher schreibt den Puffer,
+    // dann `exchange` mit acq_rel (release: die Bytes des Auftrags; acquire:
+    // der zurückerhaltene Puffer ist vom Leser fertig gelesen). Der Leser
+    // liest den Briefkasten mit acquire und tauscht mit acq_rel (release:
+    // der zurückgegebene Puffer ist fertig gelesen; acquire: die Bytes des
+    // neuen). Keine weiteren Fences.
+    static constexpr std::uint32_t kIndexMaske = 0x3u;
+    static constexpr std::uint32_t kNeu        = 0x4u;
+
+    // Message-Thread: neuen Auftrag publizieren.
     void reicheEin (const MarkierungsAuftrag& a)
     {
-        const std::uint32_t nr = veroeffentlicht.load (std::memory_order_relaxed) + 1;
-        ring[nr % ring.size()] = a;
-        veroeffentlicht.store (nr, std::memory_order_release);
+        // Laufende Auftragsnummer; 0 heißt beim Leser „nie übernommen“
+        // (`gelesenNr != 0`) und wird deshalb beim Wrap übersprungen.
+        std::uint32_t nr = veroeffentlicht.load (std::memory_order_relaxed) + 1;
+        if (nr == 0)
+            nr = 1;
+        auftraege[schreibIndex] = a;
+        auftragNr[schreibIndex] = nr;
+        if (publisherHaken != nullptr)          // Testhaken M-03; im Produkt nullptr
+            publisherHaken (publisherHakenKontext);
+        // EIN Tausch veröffentlicht: der eigene Puffer geht in den
+        // Briefkasten, der bisherige Briefkasteninhalt wird der nächste
+        // Schreibpuffer. Stand das Neu-Bit noch, hat kein Leser den vorigen
+        // Auftrag je gesehen — das ist der zählbare Überlauf (R-D1).
+        const std::uint32_t vorher = briefkasten.exchange (schreibIndex | kNeu,
+                                                           std::memory_order_acq_rel);
+        if ((vorher & kNeu) != 0)
+            uebersprungen.fetch_add (1, std::memory_order_relaxed);
+        schreibIndex = vorher & kIndexMaske;
+        veroeffentlicht.store (nr, std::memory_order_relaxed);
         zielGesetztAtomic.store (a.modus != MarkierungsModus::aus,
                                  std::memory_order_relaxed);
+    }
+
+    /** Publikationen, die kein Leser je gesehen hat (der jüngste Auftrag
+        gewinnt). Kumulativ über die Lebenszeit; lesbar vom Message-Thread. */
+    std::uint64_t uebersprungenePublikationen() const
+    {
+        return uebersprungen.load (std::memory_order_relaxed);
+    }
+
+    /** Testhaken (§5.1 Feinheit 4): ein Funktionszeiger mit Kontext, im
+        Produkt nullptr — der Audiothread zahlt einen vorhersagbaren Zweig.
+        Setzen VOR dem ersten nebenläufigen Aufruf; die Zeiger sind nicht
+        atomar. Der Leserhaken läuft zwischen Tausch und Kopie, der
+        Publisherhaken zwischen Schreiben und Tausch. */
+    using TestHaken = void (*) (void* kontext);
+    void setzeLeserHakenFuerTest (TestHaken fn, void* kontext)
+    {
+        leserHaken = fn;
+        leserHakenKontext = kontext;
+    }
+    void setzePublisherHakenFuerTest (TestHaken fn, void* kontext)
+    {
+        publisherHaken = fn;
+        publisherHakenKontext = kontext;
+    }
+    /** Der Puffer, den der Leser gerade besitzt. Nur aus dem Leserhaken
+        heraus lesen — der Audiothread steht dann, und der Haken hat
+        `leseIndex` vor dem Anhalten geschrieben. */
+    const MarkierungsAuftrag& gehaltenerPufferFuerTest() const
+    {
+        return auftraege[leseIndex];
+    }
+    /** `lokal` und die übernommene Auftragsnummer als Paar (§5.1
+        Feinheit 5). Nur lesen, wenn kein `verarbeite` läuft. */
+    struct Leserstand
+    {
+        const MarkierungsAuftrag* lokal;
+        std::uint32_t nr;
+    };
+    Leserstand leserstandFuerTest() const
+    {
+        return { &lokal, gelesenNr };
     }
     void reicheAus()
     {
@@ -374,21 +463,32 @@ public:
         // wirklich rechnen kann. Bei einem Oversizeblock sind das die ersten
         // `wetKapazitaet`; der Rest bleibt woertlich der Eingang.
         const int nutzbar = oversize ? wetKapazitaet : n;
-        const auto nr = veroeffentlicht.load (std::memory_order_acquire);
-        if (nr != gelesenNr)
+        // Übernahme mit EINEM Zug (R-D1): steht das Neu-Bit, tauscht der
+        // Leser seinen fertig gelesenen Puffer gegen den Briefkasten. Ab dem
+        // Tausch gehört `auftraege[leseIndex]` dem Leser, bis er ihn beim
+        // nächsten Tausch zurückgibt; der Publisher kann ihn in dieser Zeit
+        // nicht erreichen. Steht das Bit nicht, gibt es nichts zu holen —
+        // der Leser wartet nie und schaut auch nicht zweimal.
+        if ((briefkasten.load (std::memory_order_acquire) & kNeu) != 0)
         {
+            const std::uint32_t geholt = briefkasten.exchange (leseIndex,
+                                                               std::memory_order_acq_rel);
+            leseIndex = geholt & kIndexMaske;
+            gelesenNr = auftragNr[leseIndex];
+            if (leserHaken != nullptr)          // Testhaken M-01; im Produkt nullptr
+                leserHaken (leserHakenKontext);
+            const MarkierungsAuftrag& neu = auftraege[leseIndex];
             // Aus-Wunsch überschreibt lokal NICHT: die Filterkonfiguration
             // bleibt für den weichen Fade-out stehen (sonst spränge das
             // Wet-Signal sofort auf trocken = harter Schnitt statt Blende).
-            if (ring[nr % ring.size()].modus == MarkierungsModus::aus)
+            if (neu.modus == MarkierungsModus::aus)
                 ausGewuenscht = true;
             else
             {
-                lokal = ring[nr % ring.size()];
+                lokal = neu;                      // Kopie aus eigenem Speicher (§5.1 Feinheit 2)
                 ausGewuenscht = false;
                 pulsPos = 0;                      // frischer Auftrag beginnt am Hüllkurven-Anfang
             }
-            gelesenNr = nr;
         }
         const bool zielAn = ! ausGewuenscht
                          && gelesenNr != 0
@@ -656,15 +756,30 @@ private:
         resetZustaende();
     }
 
-    // Publikation (Message-Thread → Audiothread)
-    std::array<MarkierungsAuftrag, 4> ring {};
+    // Übergabe (Message-Thread → Audiothread), NAK-246 D1 — s. Kommentar an
+    // `reicheEin`. Anfangsstand: Puffer 0 beim Publisher, Puffer 1 im
+    // Briefkasten (ohne Neu-Bit), Puffer 2 beim Leser.
+    std::array<MarkierungsAuftrag, 3> auftraege {};
+    std::array<std::uint32_t, 3> auftragNr {};
+    std::atomic<std::uint32_t> briefkasten { 1 };
+    std::atomic<std::uint64_t> uebersprungen { 0 };
+    // Laufende Auftragsnummer; nur der Publisher schreibt sie, die Nummer
+    // reist im Puffer (`auftragNr`) zum Leser.
     std::atomic<std::uint32_t> veroeffentlicht { 0 };
     std::atomic<bool> zielGesetztAtomic { false };
+    // Nur Message-Thread
+    std::uint32_t schreibIndex = 0;
+    // Testhaken (im Produkt nullptr)
+    TestHaken leserHaken = nullptr;
+    void* leserHakenKontext = nullptr;
+    TestHaken publisherHaken = nullptr;
+    void* publisherHakenKontext = nullptr;
 
     // Nur Audiothread
+    std::uint32_t leseIndex = 2;
     MarkierungsAuftrag lokal {};
     bool ausGewuenscht = false;      // Aus-Auftrag: Ziel 0, Konfiguration bleibt für den Fade
-    std::uint32_t gelesenNr = 0;
+    std::uint32_t gelesenNr = 0;     // Nummer des zuletzt übernommenen Auftrags; 0 = nie
     Zust zust[2][kMarkierungMaxSektionen] {};
     Zust pulsZust[2] {};
     double fade = 0.0;

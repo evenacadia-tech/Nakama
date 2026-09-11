@@ -1,0 +1,17 @@
+NAK-246 Etappe 2 - Rotbeweis M-05 (Manifest docs/beweise/NAK-246.md §3.1): die Aussage "menschlich unerreichbar" faellt
+Stand: 2026-09-11 03:47 (PC-Lokalzeit); Basis-SHA b78fa4c4ef9ba25e8ec4d4733ac081e3ed19173e.
+Riegel, kein Laufzeittest (§3.1 M-05): git grep -n "menschlich unerreichbar" eq-copilot/plugin/src/ muss leer sein.
+
+VORHER (am Basis-SHA, Befehl: git grep -n "menschlich unerreichbar" b78fa4c4 -- eq-copilot/plugin/src/)
+b78fa4c4:eq-copilot/plugin/src/HoerMarkierung.h:17://    Blockkopie vier Aufträge publiziert — menschlich unerreichbar; der
+git-grep-Exit: 0 (ein Treffer) -> ROT am Basis-SHA: der Satz steht.
+
+NACHHER (Arbeitskopie mit dem Fix, Befehl: git grep -n "menschlich unerreichbar" -- eq-copilot/plugin/src/)
+(keine Ausgabe)
+git-grep-Exit: 1 (kein Treffer) -> GRUEN: an seiner Stelle steht der Besitzvertrag (HoerMarkierung.h, Kopfkommentar
+"Threading-Vertrag (NAK-246 D1, R-D1 ...)": wer wann welchen Puffer besitzt, dass der Publisher nie in einen gehaltenen
+Puffer schreibt, dass uebersprungene Publikationen gezaehlt werden und dass der Leser nie wartet).
+
+Prueflisten-Zeile E "geaenderte Zusage - drei Stellen": Runnerkopf tools/beweise.ps1 (A3-Behauptung) nennt den Ring nicht
+und bleibt; Skriptkopf = dieser Kopfkommentar; lebender Manifestkopf = NAK-246.md Kopfzeilen "Basis-SHA"/"Kanon nachher"
+(Etappe 2). git grep -n "Slot-Riss\|Ring aus 4" eq-copilot/plugin/src/ ist nach dem Fix ebenfalls leer.

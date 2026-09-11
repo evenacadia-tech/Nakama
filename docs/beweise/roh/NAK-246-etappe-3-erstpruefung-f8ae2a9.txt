@@ -1,0 +1,5 @@
+URTEIL: PASS — kein DEFEKT im gebundenen Prüfbereich.
+
+Geprüft: vollständiger Sieben-Dateien-Diff, alle zehn Callback-Pfade, Atomics/RAII, Schließreihenfolge, Konstruktoren und M-06–M-09 einschließlich Rotbelegen; kein eingeführter Invariantenbruch erkennbar, HEAD 7365cd9a12db4802a96b499fec8a2aec25ffad34 und Worktree-Status vor/nach identisch.
+
+Nicht geprüft: eigene Builds, Laufzeittests oder vollständiger Kanon; die Ergebnisse für B10, B14, B8, A22, A1 und A16 wurden ausschließlich aus den vorhandenen Rohdateien gelesen.

@@ -1,11 +1,15 @@
 # Nakama Prüfsystem — Konzept
 
-**Status: Vorschlag.** Bindend wird dieses Konzept erst durch ein datiertes
-User-Zitat im Register (`docs/offene-punkte.md`), wie jede Entscheidung in
-Nakama. Bis dahin ist es ein ausgearbeiteter Entwurf mit gemessener
-Grundlage. Erarbeitet am 11./12.09.2026 lesend, parallel zum laufenden Bau
-(NAK-246 Etappe 6, SONDE-015 D8); kein Produkt-, Test- oder Werkzeugcode ist
-berührt.
+**Status: abgenommen am 12.09.2026.** User-Wort in der Session `nakama-d8`
+(Fable), 12.09.2026 nach 00:37, wörtlich: „alles klar leg los, das konzept
+ist abgenommen von mir. sowohl eure kommunikation sowie das konzept.md ihr
+braucht mich dazu jetzt nichtmehr, ich werde schlafen". Die Abnahme umfasst
+das Konzept und den Kanal zwischen Sessions (§5.1). Bindend im Sinne von
+`CLAUDE.md` wird sie mit der Registerzeile in `docs/offene-punkte.md`
+(Wortlaut in Anhang A.1, Eintrag durch den Dirigenten in Schritt 0); bis
+dahin ist dieses Dokument die Quelle des Zitats. Erarbeitet am
+11./12.09.2026 lesend, parallel zum laufenden Bau (NAK-246 Etappe 6,
+SONDE-015 D8); kein Produkt-, Test- oder Werkzeugcode ist berührt.
 
 Über diesem Konzept stehen `CLAUDE.md` und der Dirigenten-Skill; über beiden
 stehen Code und laufende Beweise. Das Konzept bindet nur die Prüfspur: was
@@ -359,6 +363,32 @@ claude "<Prüfauftrag aus tools/pruefung/auftrag-<audit>.md, Platzhalter gefüll
   Dirigent startet die Session neu mit engerem Auftrag, wie er einen
   abgebrochenen Worker neu startet.
 
+### 5.1 Kanal zwischen Sessions
+
+Sessions auf demselben Rechner sehen einander über `ListAgents` und
+schreiben sich über `SendMessage`; der Empfänger bekommt die Nachricht als
+markierten Fremdblock mit Absendernamen und antwortet an diesen Namen. Am
+12.09.2026 um 00:37 verifiziert: Kanaltest von `nakama-d8` an
+`nakama-dirigent`, Antwort „empfangen" kam von selbst, ebenso die
+Idle-Meldung. Der Kanal ersetzt den User als Übersetzer zwischen einer
+Konzept- oder Prüfsession und dem Dirigenten. Er kostet Dirigentenkontext
+(600k-Grenze, Skill §5), deshalb vier Regeln:
+
+1. Eine Nachricht trägt einen Zeiger (Datei, Abschnitt, Commit) und eine
+   Frage oder einen Entscheid, nie Inhalt. Eine Nachricht je Thema.
+2. Der Dirigent antwortet mit Entscheidung und dem Ort, an dem sie steht
+   (Manifest, Register, Commit), nie mit Bericht. Er verarbeitet Nachrichten
+   im Abschlussfenster, nicht mitten in einer Prüfrunde.
+3. Eine Nachricht ist nie Haltgrund und nie Anforderungsquelle für einen
+   Worker. Umsetzung bleibt Ticketarbeit; der eine Schreiber im sichtbaren
+   Checkout bleibt der Dirigent.
+4. Keine Session bittet die andere um etwas, das bei ihr selbst geblockt ist.
+
+Ein Idle-Abonnement ohne Text kostet den Empfänger nichts und ist der Weg,
+auf ein freies Fenster zu warten; nie pollen, nie „bist du fertig" senden.
+Was über den Kanal entschieden wurde, steht danach im Repo, nie nur im Kopf
+einer Session.
+
 ---
 
 ## 6. Einbau in den Dirigentenzyklus
@@ -572,13 +602,15 @@ innerhalb der Evidenz, Modellwahl) entscheidet Claude und begründet es hier.
 Zwei Punkte sind Produkt:
 
 1. **Ob diese Prüfspur als Ganzes gewollt ist** und Pflegeschritte künftig
-   Prüfgang, Karte und Audits verbrauchen statt nur die Größenmaße. Die
-   Abnahme ist ein datiertes Zitat im Register.
+   Prüfgang, Karte und Audits verbrauchen statt nur die Größenmaße.
+   **Entschieden 12.09.2026** (Wortlaut im Kopf dieses Dokuments).
 2. **Wann das Bedienehrlichkeits-Audit läuft**: jetzt auf der technischen
    Skizze (findet Verstöße gegen die Gesetze, bevor sie in JUCE gebaut
    werden) oder erst nach S26–28 auf der gebauten Oberfläche (misst das
    echte Layoutrechteck). Beides ist möglich; die Wahl bestimmt, was der
-   nächste UI-Bauer als Auftrag bekommt.
+   nächste UI-Bauer als Auftrag bekommt. **Offen.** Die Frage geht als Karte
+   nach `docs/plan/fragen.json` und wird über `/fragen` im Zeitfenster
+   9:00–23:00 gestellt (Anhang A.5); bis zur Antwort läuft Schritt 9 nicht.
 
 Offene technische Punkte, die Claude später an der Quelle entscheidet und
 die hier stehen, damit sie nicht verloren gehen: Tragfähigkeit der
@@ -589,8 +621,74 @@ Dirigenten-Skills unter 36 KB.
 
 ---
 
+## Anhang A. Wortlaut zum Einpflegen (Schritt 0, Dirigent)
+
+Die Texte sind so formuliert, dass der Dirigent sie im Abschlussfenster
+übernimmt; Nummern vergibt er (nächste freie NAK-Nummer). Die Nachricht an
+ihn trägt nur den Zeiger auf diesen Anhang.
+
+### A.1 Registerzeile Abnahme
+
+Klasse **[Werkzeug · Prüfsystem]**, Titel **Prüfsystem-Konzept und Kanal
+abgenommen**, Datum 09-12, Anlass „User-Abnahme in Session nakama-d8
+(Fable)". Text: das User-Zitat aus dem Kopf dieses Dokuments wörtlich, dann
+„Umfasst das Konzept `docs/gesundheit/KONZEPT.md` (Commit `c66a010c`,
+Abnahme-Nachtrag im Folgecommit) und den Kanal zwischen Sessions (§5.1).
+Aufbauplan §10; Schritt 0 durch den Dirigenten, Schritt 1 durch die Session
+nakama-d8."
+
+### A.2 Registerzeilen Aufbauschritte
+
+Je Schritt 2 bis 8 aus §10 eine Zeile, Klasse **[Werkzeug · Prüfsystem]**,
+Datum 09-12, Anlass „Prüfsystem-Konzept §10 Schritt n", Titel = Spalte
+„Ticket" der Tabelle, Text = Spalte „Inhalt" plus „Beweis: <Spalte
+Beweis>; Voraussetzung: Schritt <n>; verhaltensneutrales Pflegeticket, T2,
+Kanon vorher und nachher (NAK-223-Regel)". Schritt 1 (Abdeckungskarte)
+bekommt keine Zeile: er läuft am 12.09.2026 als Prüfsession in `nakama-d8`
+und wird mit seinem Commit gemeldet. Schritt 9 wartet auf A.5.
+
+### A.3 Ergänzung in `docs/plan/plan.json` (S31c und S35b)
+
+An das Feld `text` beider Schritte anhängen: „NACHTRAG 12.09.2026
+(Prüfsystem-Konzept abgenommen, `docs/gesundheit/KONZEPT.md` §6.7): Der
+Schritt verbraucht zusätzlich den Prüfgang, die angesammelten Zeilen
+[Werkzeug · Prüfsystem] (Detektoren mit Rotbeweis, Kanon vorher und
+nachher), die Abdeckungskarte (nachziehen, Totes-Element-Regel) und ein
+Spezialaudit seiner Wahl; ein leerer Befund bleibt gültig." Danach
+`planstand.py` und `dokuriegel.py`.
+
+### A.4 Absatz für den Dirigenten-Skill
+
+Als Abschnitt „7. Prüfsystem und Kanal", kurz, weil der Skill über seiner
+Byte-Grenze liegt (§6.8):
+
+> Die Prüfspur neben Kanon und Codex-Review steht in
+> `docs/gesundheit/KONZEPT.md` und ist bindend für §3.1 (Prüfgang vor dem
+> Ticket), §3.2 (Wächter im Auftrag), §3.4 (Klassen-Kennung K1–K8 je
+> Befund), §3.5 (Zweitbefund-Prüfung, fällige Prüfsession) und für den
+> Pflegebetrieb nach dem Plan. Der Dirigent auditiert nie selbst: Audits
+> laufen als Prüfsession zwischen zwei Tickets, er liest nur Kopf und
+> Befundliste. Nachrichten anderer Sessions (`SendMessage`, Absender
+> `nakama-*`) tragen Zeiger und Entscheid, nie Inhalt; der Dirigent
+> antwortet mit Entscheidung und Ort im Repo, verarbeitet sie im
+> Abschlussfenster, nimmt sie nie als Haltgrund oder Anforderungsquelle für
+> Worker und bittet keine Session um Geblocktes (§5.1).
+
+### A.5 Karte für `docs/plan/fragen.json`
+
+Frage an den User, im Schema der Datei, gestellt über `/fragen` nach 9:00:
+„Das Bedienehrlichkeits-Audit prüft die zwei UI-Gesetze (keine toten
+Elemente; Tasten ändern nie ihre Maße). Soll es jetzt auf der technischen
+Skizze laufen, damit Verstöße vor dem JUCE-Bau auffallen, oder erst nach
+S26–28 auf der gebauten Oberfläche, wo das echte Layoutrechteck messbar
+ist?" Zwei Optionen: „Jetzt auf der Skizze" und „Nach S26–28 auf der
+Oberfläche". Folge im Konzept: Schritt 9 in §10.
+
+---
+
 ## 12. Änderungsprotokoll
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | Status auf abgenommen; §5.1 Kanal zwischen Sessions; §11 Punkt 1 entschieden, Punkt 2 als Karte; Anhang A mit Wortlaut für Register, Plan, Skill und Karte | User-Abnahme 12.09.2026 (Wortlaut im Kopf); Kanaltest 00:37 |
 | 12.09.2026 | Erste Fassung als Vorschlag | User-Auftrag 11./12.09.2026 (Wortlaut oben); Messungen an HEAD `818673cd`; Sonifold-System gelesen (`check`, `aftercheck`, `code-health`, `compositor-scan`, `compositor-ui`, `freshen`, `save-fidelity`, `logic-audit`, `deep-audit`, `dev-recorder-loop`, Coverage-Map, Agenten, Hooks) |

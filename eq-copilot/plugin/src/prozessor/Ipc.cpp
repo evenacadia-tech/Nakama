@@ -20,7 +20,7 @@
 //   wendeBestaetigteSourcesCommandsAn (Rahmen), bestaetigteSourcesCommandsAbholen,
 //   wendeSourcesCommandAnUnterBindung, meldeSourcesMitgliederNachBefehl,
 //   ausstehenderSourcesCommandFuerTest, bestaetigteSourcesCommandsFuerTest,
-//   merkeSourcesCommandFuerTest
+//   merkeSourcesCommandFuerTest, sourcesDrainRiegelGehaltenFuerTest
 //                        Die Quellenbefehle und ihr Rueckweg.
 //
 // Die Invariante dieser Datei (CLAUDE.md, tragende technische Invarianten):
@@ -1411,6 +1411,12 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl()
 void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
 {
     std::size_t geaendert = 0;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    // NAK-246 Etappe 4 Nacharbeit 1 (M-12, R-E4-1): der Eintritt in den
+    // Rahmen, gezaehlt VOR dem Riegel - ein Bein erzwingt das Interleaving
+    // zweier Drains damit ueber Ereignisse statt ueber Zeit. Nur im Testbau.
+    sourcesDrainEintritteZaehlerFuerTest.fetch_add (1);
+#endif
     {
         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
         const auto befehle = bestaetigteSourcesCommandsAbholen();
@@ -1444,6 +1450,15 @@ std::size_t EqCopilotProcessor::bestaetigteSourcesCommandsFuerTest() const
 {
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
     return bestaetigteSourcesCommands.size();
+}
+
+bool EqCopilotProcessor::sourcesDrainRiegelGehaltenFuerTest() const
+{
+    // NAK-246 Etappe 4 Nacharbeit 1 (M-12): der Riegel selbst gibt Auskunft.
+    // Gehalten heisst: ein Drain hat ihn genommen und noch nicht freigegeben -
+    // ein zweiter, der den Rahmen betreten hat, kommt nicht an ihm vorbei.
+    std::unique_lock<std::mutex> probe (sourcesDrainMutex, std::try_to_lock);
+    return ! probe.owns_lock();
 }
 
 std::string EqCopilotProcessor::merkeSourcesCommandFuerTest (SourcesCommandArt art,

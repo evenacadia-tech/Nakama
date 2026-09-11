@@ -1,46 +1,58 @@
 NAK-246 Etappe 4 - Rotbeweis M-12 (Manifest docs/beweise/NAK-246.md §3.3): dirty_und_revision_genau_einmal_je_bestaetigtem_befehl (B14)
-Stand: 2026-09-11 05:30 (PC-Lokalzeit); Basis-SHA 9174d272e927279bdc8d71ac7ae64dc455853892; git status vor der Etappe leer.
-Muster: docs/beweise/roh/NAK-246-rot-M-06.txt (endgueltige Tests gegen die Fixfassung ohne den Riegel, §3.3 M-12 und §5.3 Feinheit 3).
+Stand: 2026-09-11 16:53 (PC-Lokalzeit), Nacharbeit 1 (Opus-Worker; Basis-SHA 6ca97ba927554aeb1e53d07186115e9ed6823b51, git status --short beim Start leer).
+Ersetzt die Fassung des Zwischenstands 1 (05:30). Deren Test gab Drain A nach einem Schlaf von 300 ms frei, gleich ob Drain B den Rahmen schon betreten
+hatte; `! bFertig` unterschied "B steht am Riegel" nicht von "B hat noch nicht begonnen" - der Kipp war beobachtet, nicht erzwungen (Erstpruefung,
+Befund 1; Manifest §10.10; Regel R-E4-1). Muster: docs/beweise/roh/NAK-246-rot-M-06.txt.
 
 WAS GEFAHREN WURDE
-  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-12 allein (`--nur m12`), mit dem ENDGUELTIGEN Test
-  (Sonde012ProjectReloadTest.cpp, nak246d3::dirty_und_revision_genau_einmal_je_bestaetigtem_befehl) gegen
-  GENAU die Mutation, die §5.3 Feinheit 3 und M-12 festlegen: `sourcesDrainMutex` - die einzige Klammer ueber
-  Swap UND Anwendung - ist im Rahmen `wendeBestaetigteSourcesCommandsAn` entfernt (Ipc.cpp, Diff unten).
-  Interleaving per Haken, deterministisch: Drain A (Workerzug) haelt am Testhaken zwischen Swap [confirm_join]
-  und Anwendung; der Test legt danach [unbind_probe] bestaetigt in die Liste und laesst Drain B (Editor-Tick,
-  eigener Faden) laufen; nach 300 ms wird A freigegeben.
-  Am Basis-SHA ist die Zeile nicht messbar (ein einziger Drain ueberholt sich nicht, §3.3); der Rotbeweis faellt
-  an der Zusage "in ACK-Reihenfolge" gegen die Fixfassung ohne den Riegel.
+  Bein B14 EqCopSonde012ProjectReloadTest, Fall M-12 allein (`--nur m12`), mit dem ENDGUELTIGEN Test der Nacharbeit 1
+  (Sonde012ProjectReloadTest.cpp, nak246d3::dirty_und_revision_genau_einmal_je_bestaetigtem_befehl) gegen GENAU die Mutation aus §5.3 Feinheit 3 und
+  M-12: `sourcesDrainMutex` - die einzige Klammer ueber Swap UND Anwendung - ist im Rahmen `wendeBestaetigteSourcesCommandsAn` entfernt (Diff unten).
+  Die Ordnung haengt an Ereignissen, nie an einem Schlafintervall; derselbe Test erzwingt sie im Gruen- und im Rotstand:
+    1. Drain A (Workerzug) haelt am Testhaken zwischen Swap [confirm_join] und Anwendung (Schranke erreicht).
+    2. [unbind_probe] wird bestaetigt. Waehrend A haelt, betritt kein anderer Drain den Rahmen (der Workerzug IST A, kein Speichern, kein Editor).
+    3. Drain B (Editor-Tick) startet aus einem eigenen Faden. Ereignis 1: der Eintrittszaehler des Rahmens, erhoeht VOR dem Riegel, ist gestiegen.
+    4. Ereignis 2, vom Riegel selbst (`try_lock`): haelt ein Drain `sourcesDrainMutex`, steht B an ihm, und A wird freigegeben (Gruenstand). Haelt ihn
+       keiner (Rotstand), wartet der Test auf das Ereignis "B ist zurueck" - B ist bis nach seiner Anwendung durchgelaufen - und gibt A ERST DANN frei.
+    5. Ruhe: B ist zurueck (join); der naechste Eintritt des Workerzugs in den Rahmen beweist, dass A samt Nachfuehrung (Dirty, Revision) zurueck ist.
+  Am Basis-SHA ist die Zeile nicht messbar (ein einziger Drain ueberholt sich nicht, §3.3); der Rotbeweis faellt an der Zusage "in ACK-Reihenfolge"
+  gegen die Fixfassung ohne den Riegel.
 
 BAU UND LAUF
-  cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest: Exit 0, 7 s.
-  Quelle (Rotstand) Ipc.cpp 2026-09-11 05:30:20; Binary EqCopSonde012ProjectReloadTest.exe 05:30:39 (juenger: ja).
-  Lauf: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m12
-        -> Exit 1, 3 s, 8 Pruefungen, 4 Fehler.
-  Ruecknahme: git checkout -- eq-copilot/plugin/src/prozessor/Ipc.cpp aus dem gestageten Endstand (05:30:42).
+  Vor dem Rotbau war der Gruenstand der Nacharbeit gestaged (git add mit Pfadangabe: PluginProcessor.h, prozessor/Ipc.cpp, IpcTestMain.cpp,
+  Sonde012ProjectReloadTest.cpp, V3TestServer.h).
+  Landmine NAK-230: LastWriteTime von Ipc.cpp vor dem Bau auf 16:53:04 gesetzt.
+  cmake --build eq-copilot/build --config Release --parallel --target EqCopSonde012ProjectReloadTest (pwsh, VS-2022-BuildTools-cmake): Exit 0, 7 s,
+    0 Fehlerzeilen. Quelle (Rotstand) Ipc.cpp 16:53:04; Binary EqCopSonde012ProjectReloadTest.exe 16:53:11 (juenger: ja).
+  Laeufe: eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe --nur m12, dreimal hintereinander:
+    Lauf 1 Exit 1, 0,18 s, 5/9 | Lauf 2 Exit 1, 0,09 s, 5/9 | Lauf 3 Exit 1, 0,09 s, 5/9 - in allen drei dieselben vier fallenden Zeilen mit denselben Werten.
+  Ruecknahme 16:53:53: git checkout -- eq-copilot/plugin/src/prozessor/Ipc.cpp aus dem gestageten Gruenstand; danach git diff -- Ipc.cpp leer; git grep
+    "ROTLAUF" -- eq-copilot trifft nur die zwei vorbestehenden Stellen des D2-Altlaufs (IpcTestMain.cpp:2513, :2939).
 
 DER KIPP (M-12: "Genau einmal je Befehl, in ACK-Reihenfolge")
-  Ohne Riegel swappt B [unbind_probe] und wendet ihn an, waehrend A noch haelt - ein No-op, das Mitglied ist noch
-  nicht da. Danach wendet A [confirm_join] an: das Mitglied steht im State, obwohl die ACK-Reihenfolge
-  Join -> Unbind es entfernen muesste. Deterministisch, weil der Haken A haelt, bis B fertig ist (B: 0 ms).
+  Ohne Riegel steht B an keinem: der Test findet `sourcesDrainMutex` frei ("Riegel gehalten: nein") und laesst B vor der Freigabe von A durchlaufen ("B vor
+  der Freigabe von A durchgelaufen: ja"). B swappt [unbind_probe] und wendet ihn an - ein No-op, das Mitglied ist noch nicht da. Erst danach wird A
+  freigegeben und wendet [confirm_join] an: das Mitglied steht im State, obwohl die ACK-Reihenfolge Join -> Unbind es entfernen muesste. Erzwungen, weil A
+  erst auf das Ereignis "B ist zurueck" freikommt - kein Zeitfenster entscheidet, wer zuerst anwendet.
   FEHLER  M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [1 Mitglied(er)]
       -> die Zeile, die die Zusage traegt.
   FEHLER  M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [1]
       -> nur der Join aenderte den State; der Unbind war ein No-op.
   FEHLER  M-12: Revision-Delta == 2  [1]
-  FEHLER  M-12: der zweite Drain wartete auf den ersten - `sourcesDrainMutex` klammert Swap UND Anwendung  [0 ms Editor-Tick]
-      -> B lief in 0 ms durch, statt auf A zu warten.
-  Gruen bleiben: A steht am Haken; waehrend A haelt ist nichts angewandt; beide Swaps liefen durch den Haken (2).
+  FEHLER  M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: nein, B vor der Freigabe von A durchgelaufen: ja, 0 Mitglied(er) waehrend A hielt]
+      -> kein Riegel hielt B auf; B lief durch, waehrend A am Haken stand.
+  Gruen bleiben - und muessen es: der Aufbau (Main mit Bindung), "Drain A steht am Haken", "waehrend A haelt, ist nichts angewandt", "Drain B hat den
+  Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten" [1 -> 2 -> 3 Eintritte] - die Ordnung ist in allen drei Laeufen
+  hergestellt, die Zeilen fallen nicht am Aufbau -, und "beide Swaps liefen durch den Haken" [2].
 
-DIFF DES ROTSTANDS (git diff -- Ipc.cpp, Rotlaufstand gegen den gestageten Endstand)
+DIFF DES ROTSTANDS (git diff -- Ipc.cpp, Rotlaufstand gegen den gestageten Gruenstand)
 diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
-index 42914f95..fed5639b 100644
+index cbf5f008..eb78a37f 100644
 --- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
 +++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
-@@ -1404,7 +1404,9 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
- {
-     std::size_t geaendert = 0;
+@@ -1418,7 +1418,9 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
+     sourcesDrainEintritteZaehlerFuerTest.fetch_add (1);
+ #endif
      {
 -        std::lock_guard<std::mutex> drain (sourcesDrainMutex);
 +        // ROTLAUF NAK-246 M-12 (Mutation nach Paragraph 5.3/M-12): die einzige Klammer
@@ -50,16 +62,45 @@ index 42914f95..fed5639b 100644
          if (befehle.empty())
              return;
 
-VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m12
+VOLLSTAENDIGE ROHAUSGABE: EqCopSonde012ProjectReloadTest.exe --nur m12 (Rotstand, Binary 16:53:11), drei Laeufe hintereinander
+--- Lauf 1 (Start 16:53:11, Exit 1, 0,18 s)
 == NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
   ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
   ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
   ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten - beide Drains sind samt Nachfuehrung zurueck  [1 -> 2 -> 3 Eintritte]
   FEHLER  M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [1 Mitglied(er)]
   FEHLER  M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [1]
   FEHLER  M-12: Revision-Delta == 2  [1]
-  FEHLER  M-12: der zweite Drain wartete auf den ersten - `sourcesDrainMutex` klammert Swap UND Anwendung  [0 ms Editor-Tick]
+  FEHLER  M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: nein, B vor der Freigabe von A durchgelaufen: ja, 0 Mitglied(er) waehrend A hielt]
   ok      M-12: beide Swaps liefen durch den Haken  [2]
-SONDE-012 ProjectReload (nur m12): 4/8 gruen
+SONDE-012 ProjectReload (nur m12): 5/9 gruen
+--- Lauf 2 (Start 16:53:11, Exit 1, 0,09 s)
+== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
+  ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten - beide Drains sind samt Nachfuehrung zurueck  [1 -> 2 -> 3 Eintritte]
+  FEHLER  M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [1 Mitglied(er)]
+  FEHLER  M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [1]
+  FEHLER  M-12: Revision-Delta == 2  [1]
+  FEHLER  M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: nein, B vor der Freigabe von A durchgelaufen: ja, 0 Mitglied(er) waehrend A hielt]
+  ok      M-12: beide Swaps liefen durch den Haken  [2]
+SONDE-012 ProjectReload (nur m12): 5/9 gruen
+--- Lauf 3 (Start 16:53:11, Exit 1, 0,09 s)
+== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
+  ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten - beide Drains sind samt Nachfuehrung zurueck  [1 -> 2 -> 3 Eintritte]
+  FEHLER  M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [1 Mitglied(er)]
+  FEHLER  M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [1]
+  FEHLER  M-12: Revision-Delta == 2  [1]
+  FEHLER  M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: nein, B vor der Freigabe von A durchgelaufen: ja, 0 Mitglied(er) waehrend A hielt]
+  ok      M-12: beide Swaps liefen durch den Haken  [2]
+SONDE-012 ProjectReload (nur m12): 5/9 gruen
 
-GRUEN (Endstand, Binary 05:42:42, voller Lauf): alle 8 Zeilen ok - 0 Mitglieder, Dirty 2, Revision +2, Editor-Tick wartete 300 ms; B14 gesamt 92/92, Exit 0.
+GRUEN (Endstand: Endbau 17:02:47-17:05:18 Exit 0, Quellen 17:02:46; Binary EqCopSonde012ProjectReloadTest.exe 17:03:00): `--nur m12` dreimal ab 17:07:34,
+je Exit 0 und 9/9 - [1 -> 2 -> 3 Eintritte], 0 Mitglieder, Dirty 2, Revision +2, "Riegel gehalten: ja, B vor der Freigabe von A durchgelaufen: nein,
+0 Mitglied(er) waehrend A hielt", beide Swaps durch den Haken; B14 Normallauf Exit 0, 111/111, 7,05 s (docs/beweise/roh/NAK-246-etappe4-beine.txt,
+Abschnitt "NACHARBEIT 1").

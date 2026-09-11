@@ -100,6 +100,14 @@ public:
     /// 1..5 entsprechen der schemafesten Reihenfolge angewandt, abgelehnt,
     /// konflikt, abgelaufen, idempotent_wiederholt.
     std::atomic<int> commandAckArt { 0 };
+    /// NAK-246 Etappe 4 Nacharbeit 1 (M-17, R-E4-3): wie viele Befehlsframes
+    /// (P0 mit `command_id`) ihre ACK-Entscheidung hinter sich haben - erhoeht
+    /// erst NACH dem Lesen von `commandAckArt` und nach dem ACK, falls einer
+    /// ging. `p0Texte` belegt nur das Protokollieren, das davor liegt: wer
+    /// `commandAckArt` umstellt, wartet vorher hierauf - sonst beantwortet ein
+    /// verdraengter Verbindungsfaden einen schon protokollierten Auftrag noch
+    /// mit dem NEUEN Wert.
+    std::atomic<int> commandAckEntschieden { 0 };
     /// SONDE-014 KR-01: nur DIESE `command_id` bekommt eine Antwort; leer =
     /// alle. Der Saettigungsfall braucht viele ausstehende Auftraege - und
     /// „ausstehend" heisst genau: ohne ACK. Ohne diesen Filter quittiert der
@@ -695,6 +703,7 @@ private:
                                 return;
                             }
                         }
+                        ++commandAckEntschieden;
                     }
                 }
                 else if (e.kopf.familie == Familie::p1)

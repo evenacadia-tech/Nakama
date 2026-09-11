@@ -3108,6 +3108,24 @@ void nak246D4Dreiwert()
                 ergebnisName (bekannt));
         // Nichts Angenommenes wird verworfen: nach dem Reconnect wird JEDER der
         // 64 unter seiner command_id nachgespielt, der Server bestaetigt alle.
+        //
+        // Nacharbeit 1 (R-E4-3): VOR der ACK-Freigabe hat jeder auf die
+        // Altverbindung geschriebene Auftrag beim Server seine ACK-Entscheidung
+        // hinter sich - ohne ACK. `serverHat` belegt nur das Protokollieren;
+        // `commandAckArt` liest der Server erst danach, und ein verdraengter
+        // Verbindungsfaden beantwortete den 64. sonst noch ueber die
+        // Altverbindung - dann spielte der Client nur 63 nach. Ein eingereihter
+        // 65. (nur ohne Deckel) liegt ebenfalls auf der Altverbindung.
+        const auto geschrieben = angenommen
+            + (r65 == PersistenzP0Ergebnis::eingereiht ? std::size_t { 1 } : std::size_t { 0 });
+        const bool entschieden = warteAuf (5000, [&] {
+            return server.commandAckEntschieden.load() >= static_cast<int> (geschrieben);
+        });
+        pruefe (entschieden,
+                "M-17: vor der ACK-Freigabe hat jeder geschriebene Auftrag beim Server seine "
+                "ACK-Entscheidung hinter sich (ohne ACK) - die Altverbindung bestaetigt keinen mehr",
+                std::to_string (server.commandAckEntschieden.load()) + " entschieden, "
+                    + std::to_string (geschrieben) + " geschrieben");
         server.commandAckArt.store (1);
         control.reconnect();
         const bool alle = warteAuf (30000, [&] {

@@ -933,6 +933,10 @@ void bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt()
 /// eigenen Faden. Mit `sourcesDrainMutex` wartet B, bis A fertig ist; ohne
 /// ihn ueberholt B (No-op auf ein Mitglied, das noch nicht da ist), und A
 /// wendet danach den Join an - das Mitglied bleibt, obwohl es fort sein muss.
+/// Die Ordnung haengt an Ereignissen, nicht an Zeit (Nacharbeit 1, R-E4-1):
+/// A haelt am Haken -> B hat den Rahmen betreten (Zaehler vor dem Riegel) ->
+/// A wird freigegeben, sobald B am gehaltenen Riegel steht oder - ohne
+/// Riegel - bis nach seiner Anwendung durchgelaufen ist.
 void dirty_und_revision_genau_einmal_je_bestaetigtem_befehl()
 {
     std::cout << "== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==\n";
@@ -968,24 +972,47 @@ void dirty_und_revision_genau_einmal_je_bestaetigtem_befehl()
         eqcop::EqCopilotProcessor::SourcesCommandArt::unbindProbe, a);
     p->v3AntwortFuerTest (ack (unbindId, true));
 
+    // Nacharbeit 1 (R-E4-1): die Ordnung haengt an EREIGNISSEN, nie an einem
+    // Schlafintervall. Waehrend A haelt, betritt kein anderer Drain den
+    // Rahmen - der Workerzug IST A, gespeichert wird nicht, einen Editor gibt
+    // es nicht -, jeder weitere Eintritt ist also B.
+    const auto eintritteVorB = p->sourcesDrainEintritteFuerTest();
+
     // Drain B: der Editor-Tick aus einem eigenen Faden.
     std::atomic<bool> bFertig { false };
-    std::atomic<long long> bDauerMs { 0 };
     std::thread tickB ([&]
     {
-        const auto t = Uhr::now();
         p->sourcesTick();
-        bDauerMs.store (msSeit (t));
         bFertig.store (true);
     });
-    std::this_thread::sleep_for (std::chrono::milliseconds (300));
-    const bool bWartete = ! bFertig.load();
+    // Ereignis 1: B hat den Rahmen betreten - gezaehlt VOR dem Riegel.
+    const bool bEingetreten = warteAuf (5000, [&] {
+        return p->sourcesDrainEintritteFuerTest() > eintritteVorB;
+    });
+    // Ereignis 2: haelt A den Riegel, steht B an ihm - vorbei kommt er erst,
+    // wenn A freigibt -, und A wird JETZT freigegeben. Haelt kein Drain einen
+    // Riegel (Rotbau ohne `sourcesDrainMutex`), laeuft B bis nach seiner
+    // Anwendung durch, BEVOR A freigegeben wird: dieselbe Ordnung, kein Rennen.
+    const bool riegelGehalten = bEingetreten && p->sourcesDrainRiegelGehaltenFuerTest();
+    const bool bAmRiegel = riegelGehalten && ! bFertig.load();
+    const bool bVorAFertig = ! riegelGehalten && warteAuf (5000, [&] { return bFertig.load(); });
     const auto waehrend = mitglieder (*p);
     gate.freigeben();
     tickB.join();
-    // Ruhe: beide Drains sind durch.
-    (void) warteAuf (2000, [&] { return dirty.nonParam.load() >= 2; });
-    std::this_thread::sleep_for (std::chrono::milliseconds (100));
+    // Ruhe, ebenfalls als Ereignis: B ist zurueck (join); der NAECHSTE
+    // Eintritt des Workerzugs beweist, dass A samt Nachfuehrung (Dirty,
+    // Revision) zurueck ist - der Zug betritt den Rahmen erst wieder, nachdem
+    // sein voriger Aufruf zurueckgekehrt ist.
+    const auto eintritteNachB = p->sourcesDrainEintritteFuerTest();
+    const bool ruhe = warteAuf (5000, [&] {
+        return p->sourcesDrainEintritteFuerTest() > eintritteNachB;
+    });
+    pruefe (bEingetreten && ruhe,
+            "M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe "
+            "erneut betreten - beide Drains sind samt Nachfuehrung zurueck",
+            juce::String ((juce::int64) eintritteVorB) + " -> "
+                + juce::String ((juce::int64) eintritteNachB) + " -> "
+                + juce::String ((juce::int64) p->sourcesDrainEintritteFuerTest()) + " Eintritte");
 
     pruefe (mitglieder (*p).empty(),
             "M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann "
@@ -997,10 +1024,12 @@ void dirty_und_revision_genau_einmal_je_bestaetigtem_befehl()
     pruefe (p->v3StateRevisionFuerTest() == revisionVor + 2,
             "M-12: Revision-Delta == 2",
             juce::String ((juce::int64) (p->v3StateRevisionFuerTest() - revisionVor)));
-    pruefe (bWartete && waehrend.empty(),
-            "M-12: der zweite Drain wartete auf den ersten - `sourcesDrainMutex` klammert "
-            "Swap UND Anwendung",
-            juce::String ((juce::int64) bDauerMs.load()) + " ms Editor-Tick");
+    pruefe (bAmRiegel && waehrend.empty(),
+            "M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - "
+            "`sourcesDrainMutex` klammert Swap UND Anwendung",
+            juce::String ("Riegel gehalten: ") + (riegelGehalten ? "ja" : "nein")
+                + ", B vor der Freigabe von A durchgelaufen: " + (bVorAFertig ? "ja" : "nein")
+                + ", " + juce::String ((int) waehrend.size()) + " Mitglied(er) waehrend A hielt");
     pruefe (hakenRufe.load() >= 2,
             "M-12: beide Swaps liefen durch den Haken",
             juce::String (hakenRufe.load()));
@@ -1316,6 +1345,17 @@ int main (int argc, char** argv)
         && nachBind.mainProjectMitglieder.front().label == "Reported fallback";
     const bool benannt = vor.benenneSourcesHauptziel (quelle, "Stored Piano");
     const bool noOp = ! vor.benenneSourcesHauptziel (quelle, "Stored Piano");
+    // NAK-246 Etappe 4 Nacharbeit 1 (R-E4-2): seit D3 drainiert hier auch der
+    // Analyse-Workerzug. Wendet ER den Join an, gibt er den Riegel frei, BEVOR
+    // er Dirty meldet (`wendeBestaetigteSourcesCommandsAn`): der Tick oben
+    // findet dann eine leere Liste - das Mitglied steht schon im State, der
+    // Riegel garantiert es -, die Dirty-Meldung kann aber noch ausstehen.
+    // Gemessen wird deshalb nach dem VOLLSTAENDIGEN Nachlauf; die Zusage
+    // bleibt: Join und Name melden je genau einmal Dirty.
+    (void) warteAuf (2000, [&] {
+        return dirtyVor.nonParam.load() == 2
+            && vor.holeZustandKopie().mainProjectMitglieder.size() == 1;
+    });
     pruefe (fremdEingereiht && fremdAbgelehnt && gebundenEingereiht
             && bindCommand.find ("\"command\":\"confirm_join\"")
                 != std::string::npos && ! bindId.empty() && vorAckNichtPersistiert

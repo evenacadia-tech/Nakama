@@ -837,6 +837,20 @@ public:
         an ihm faellt, nicht am Takt. Im Produkt nie gesetzt. */
     void setzeWorkerDrainFuerTest (bool an)
     { workerDrainAusFuerTest.store (! an); }
+    /** NAK-246 Etappe 4 Nacharbeit 1 (M-12, R-E4-1): wie oft ein Drain den
+        RAHMEN `wendeBestaetigteSourcesCommandsAn` betreten hat - gezaehlt beim
+        Eintritt, VOR `sourcesDrainMutex` (das Speichern nimmt den Riegel
+        selbst und zaehlt hier nicht). Ein Bein weist damit Ereignisse nach,
+        statt sie abzuwarten: ein zweiter Drain steht am Riegel; der naechste
+        Eintritt des Workerzugs heisst, sein voriger Aufruf ist samt
+        Nachfuehrung zurueck. Nur Tests. */
+    std::uint64_t sourcesDrainEintritteFuerTest() const
+    { return sourcesDrainEintritteZaehlerFuerTest.load(); }
+    /** NAK-246 Etappe 4 Nacharbeit 1 (M-12, R-E4-1): haelt in diesem
+        Augenblick ein Drain `sourcesDrainMutex`? `try_lock` und sofort wieder
+        frei. Nur Tests; nie aus einem Drain heraus (der Riegel ist nicht
+        rekursiv). */
+    bool sourcesDrainRiegelGehaltenFuerTest() const;
     /** Nur Tests (SONDE-013 M-39): schreibt in den ECHTEN RT-Control-Ring,
         bis er voll ist. Das Sticky-Bit setzt dabei der Ring selbst, nicht
         dieser Aufruf — gemessen wird der Weg von dort nach `v3Status()`.
@@ -1643,6 +1657,9 @@ private:
     /// bzw. `false`. Nie im Audiothread.
     std::function<void (std::size_t)> sourcesDrainHakenFuerTest;
     std::atomic<bool> workerDrainAusFuerTest { false };
+    /// NAK-246 Etappe 4 Nacharbeit 1 (M-12): der Eintrittszaehler des Rahmens,
+    /// erhoeht VOR dem Riegel und nur im Testbau (`Ipc.cpp`). Nie im Audiothread.
+    std::atomic<std::uint64_t> sourcesDrainEintritteZaehlerFuerTest { 0 };
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
     // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den

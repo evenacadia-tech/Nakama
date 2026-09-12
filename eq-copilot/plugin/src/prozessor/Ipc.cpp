@@ -1375,24 +1375,38 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
 // `bindungMutex` deckt die Mutation des Batches; Modell, Host-Dirty und
 // Revision folgen je geaendertem Befehl genau einmal, NACH der Freigabe.
 //
-// Gegen den VIERTEN Schreiber - `setStateInformation` - serialisiert kein
-// Mutex: es nimmt `sourcesDrainMutex` nie (Sperrenordnung Paragraph 10.2
-// Punkt 1). Diese Luecke schliesst die `reloadGeneration` (R-A1, M-38/M-39):
-// jeder Drain merkt sich beim Abholen die Generation und verwirft seinen Batch
-// GANZ, wenn zwischen Abholen und Anwendung ein Reload lag. Die Publikation ans
-// Modell weist das MODELL selbst ab - es fuehrt die Generation mit und
-// vergleicht sie unter seinem eigenen `mutex`, also atomar zur Uebernahme
-// (R-A1 Punkt 4', Paragraph 13.4/13.5). Nach einem Reload ist der geladene
-// State die Wahrheit; der Abgleich mit dem Broker laeuft ueber den frischen
-// `subscribe_session`.
+// Gegen den VIERTEN Schreiber - `setStateInformation` - schuetzt
+// `sourcesDrainMutex` nicht: der Reload nimmt ihn nie (Sperrenordnung
+// Paragraph 10.2 Punkt 1). Die Klammer ueber diesen Fall ist ein ANDERER Mutex,
+// `sourcesCommandMutex` (R-A1 Punkt 2', Paragraph 13.6/13.7): er ordnet die
+// drei Operationen an den geteilten Listen TOTAL - den ACK-Push (oben,
+// `v3Antwort`), das Leeren + Erhoehen der Generation im Reload (`State.cpp`)
+// und den Swap + die Generationslesung hier. Damit traegt jeder Batch die
+// Generation ZUM ZEITPUNKT seines Swaps; enthaelt er einen vor dem Leeren
+// gelisteten Befehl, ist sie kleiner als die nach dem Reload, und der Drain
+// verwirft ihn GANZ. Die Publikation ans Modell weist das MODELL selbst ab -
+// es fuehrt die Generation mit und vergleicht sie unter seinem eigenen
+// `mutex`, also atomar zur Uebernahme (R-A1 Punkt 4', Paragraph 13.4/13.5).
+// Nach einem Reload ist der geladene State die Wahrheit; der Abgleich mit dem
+// Broker laeuft ueber den frischen `subscribe_session`.
+//
+// Die Fassung davor las die Generation erst NACH dem Swap, ausserhalb der
+// Sperre: dazwischen passte ein vollstaendiger Reload, der alte Batch bekam
+// die neue Generation und mutierte den frisch geladenen State (P1 der
+// Wiederpruefung 1). Die Lesung gehoert deshalb in denselben Block wie der
+// Swap - nicht nur "unmittelbar danach".
 
-std::vector<EqCopilotProcessor::SourcesCommand>
+EqCopilotProcessor::AbgeholterSourcesBatch
 EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
 {
-    std::vector<SourcesCommand> befehle;
+    AbgeholterSourcesBatch abgeholt;
     std::lock_guard<std::mutex> l (sourcesCommandMutex);
-    befehle.swap (bestaetigteSourcesCommands);
-    return befehle;
+    abgeholt.befehle.swap (bestaetigteSourcesCommands);
+    // R-A1 Punkt 2' (2): IN diesem Block, nicht dahinter. Das Leeren im Reload
+    // und die Erhoehung der Generation laufen unter derselben Sperre - also
+    // kann zwischen Swap und Lesung kein Reload liegen.
+    abgeholt.generation = reloadGeneration.load();
+    return abgeholt;
 }
 
 bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl)
@@ -1482,15 +1496,17 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
 #endif
     {
         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
-        const auto befehle = bestaetigteSourcesCommandsAbholen();
+        // NAK-246 Abschluss Nacharbeit 2 (R-A1 Punkt 2'): Batch UND die
+        // Generation, fuer die er gilt - beide aus DEMSELBEN
+        // `sourcesCommandMutex`-Block. Ab hier liegt der Batch nur noch lokal;
+        // `setStateInformation` leert die geteilten Listen und erreicht ihn
+        // nicht mehr (State.cpp) - aber es erhoeht die Generation unter
+        // derselben Sperre, und genau daran faellt er gleich.
+        const auto abgeholt = bestaetigteSourcesCommandsAbholen();
+        const auto& befehle = abgeholt.befehle;
         if (befehle.empty())
             return;
-        // NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 2): die Generation, fuer
-        // die dieser Batch gilt - gelesen INNERHALB von `sourcesDrainMutex`,
-        // unmittelbar nach dem Swap. Ab hier liegt der Batch nur noch lokal;
-        // `setStateInformation` leert die geteilten Listen und erreicht ihn
-        // nicht mehr (State.cpp).
-        generationBeimAbholen = reloadGeneration.load();
+        generationBeimAbholen = abgeholt.generation;
         // NAK-246 D3 (M-12): der Testhaken zwischen Swap und Anwendung,
         // innerhalb der Klammer, VOR `bindungMutex` - ein Bein faehrt hier
         // einen Reload aus einem anderen Faden (M-38); unter `bindungMutex`

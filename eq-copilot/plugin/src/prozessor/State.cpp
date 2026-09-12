@@ -5,6 +5,12 @@
 //   getStateInformation / setStateInformation
 //                        Der Vertrag mit dem Host. setStateInformation traegt
 //                        die Migration und den Read-only-Rueckweg.
+//   sourcesListenLeerenUndGenerationErhoehen
+//                        Private Hilfe des Reloads (NAK-246 R-A1 Punkt 2'):
+//                        beide geteilten Sources-Listen leeren und die
+//                        Reload-Generation erhoehen, unter EINEM
+//                        `sourcesCommandMutex`-Block im `bindungMutex`-Block
+//                        des Tauschs. Nur setStateInformation ruft sie.
 //   holeSensorId, holeRolle, holeLabel, holePaarId, holeZustandKopie,
 //   holeStateHerkunft, holeStateGrund, holeStateFremdesMajor, stateNurLesen,
 //   holeKlassifikation, spiegleKlassifikation, darfBrokerStarten
@@ -80,14 +86,17 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
     std::uint64_t generationBeimAbholen = 0;
     {
         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
-        const auto befehle = bestaetigteSourcesCommandsAbholen();
-        // NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 2 und 3): derselbe
-        // Generationsvergleich wie im Rahmen (`Ipc.cpp`). Hier ist er trivial
-        // erfuellt - Speichern und Laden ruft der Host auf DEMSELBEN
-        // Message-Thread, zwischen Abholen und Anwendung kann kein Reload
-        // liegen. Er wird trotzdem gefahren, damit kein Drain die Regel
-        // umgeht; `speichere` laeuft in jedem Fall.
-        generationBeimAbholen = reloadGeneration.load();
+        // NAK-246 Abschluss Nacharbeit 2 (R-A1 Punkt 2', Auflage 2): der
+        // Speicher-Drain zieht mit - die Generation kommt aus DEMSELBEN
+        // `sourcesCommandMutex`-Block wie der Swap, nicht aus einer eigenen
+        // Lesung dahinter. Die alte Sonderbegruendung ("trivial erfuellt, weil
+        // Speichern und Laden derselbe Message-Thread sind") entfaellt damit:
+        // die Ordnung traegt hier aus demselben Grund wie im Rahmen, nicht aus
+        // einer Threadeigenschaft. Der Vergleich unten wird trotzdem gefahren,
+        // damit kein Drain die Regel umgeht; `speichere` laeuft in jedem Fall.
+        const auto abgeholt = bestaetigteSourcesCommandsAbholen();
+        const auto& befehle = abgeholt.befehle;
+        generationBeimAbholen = abgeholt.generation;
         std::lock_guard<std::mutex> l (bindungMutex);
         if (reloadGeneration.load() == generationBeimAbholen)
         {
@@ -103,6 +112,31 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
         meldeSourcesMitgliederNachBefehl (generationBeimAbholen);
 }
 
+std::uint64_t EqCopilotProcessor::sourcesListenLeerenUndGenerationErhoehen()
+{
+    // 🔑 NAK-246 Abschluss Nacharbeit 2 (R-A1 Punkt 2' (1), Paragraph 13.6/13.7).
+    // Aufrufer haelt `bindungMutex` und hat `zustand` eben getauscht.
+    //
+    // Die beiden Zuege gehoeren in EINEN `sourcesCommandMutex`-Block, weil
+    // derselbe Mutex den ACK-Push (`Ipc.cpp` `v3Antwort`) und den Swap samt
+    // Generationslesung (`bestaetigteSourcesCommandsAbholen`) ordnet. Erst
+    // dadurch gilt: ein Batch, der einen vor dem Leeren gelisteten Befehl
+    // traegt, hat immer die Generation VOR dem Reload und faellt am Vergleich -
+    // und ein Batch mit der neuen Generation enthaelt nur Befehle, die nach dem
+    // Leeren kamen. Bis zur Nacharbeit 2 lag das Leeren VOR beiden
+    // `bindungMutex`-Bloecken und die Erhoehung darin; zwischen beiden konnte
+    // ein Drain seinen Batch abholen und seine Generation spaeter lesen (P1).
+    //
+    // Warum die Erhoehung im `bindungMutex`-Block des Tauschs bleiben MUSS
+    // (Auflage 1 der Quellvalidierung): nur so heisst "Generation alt" auch
+    // "`zustand` noch alt". Laege sie ausserhalb hinter dem Tausch, mutierte ein
+    // Drain mit alter Generation den bereits getauschten `zustand`.
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    ausstehendeSourcesCommands.clear();
+    bestaetigteSourcesCommands.clear();
+    return reloadGeneration.fetch_add (1) + 1;
+}
+
 void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
 {
     if (daten == nullptr || groesse <= 0)
@@ -112,11 +146,13 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     const auto ergebnis = nakama::state::lade (daten, (size_t) groesse, bundleVertrag(), geladen);
     if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
         return;   // fremder Baumtyp / Muell: Zustand bleibt (wie seit 0.1)
-    {
-        std::lock_guard<std::mutex> l (sourcesCommandMutex);
-        ausstehendeSourcesCommands.clear();
-        bestaetigteSourcesCommands.clear();
-    }
+    // Die geteilten Sources-Listen werden NICHT hier geleert, sondern erst im
+    // `bindungMutex`-Block des Tauschs, zusammen mit der Erhoehung der
+    // Generation (`sourcesListenLeerenUndGenerationErhoehen`, R-A1 Punkt 2').
+    // Ein ACK, der bis dahin noch einlaeuft, wird gleich darauf mitgeleert; ein
+    // Drain, der bis dahin swappt, liest die ALTE Generation und faellt am
+    // Vergleich - also genau richtig.
+    //
     // 🔑 NAK-181 R3 (G4-Befund V03, M-50): der Projektwechsel beendet den
     // Vergleichszustand — VOR dem Tausch von `zustand`.
     //
@@ -141,14 +177,15 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             zustand = geladen;
-            // 🔑 NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 1, M-38/M-39): die
-            // Reload-Generation wechselt im SELBEN Block wie `zustand` - ein
-            // Drain, der seinen Batch oder seine Kopie vorher abgeholt hat,
-            // sieht danach eine andere Generation und faellt ganz aus. Der
-            // read-only-Zweig ist genauso ein Projektwechsel wie der
-            // Vollrestore (dieselbe Begruendung wie `vergleichszustandLeeren`);
-            // seit R-A1 Punkt 1' ist er eigens rot belegt (M-39, Lauf `m39ro`).
-            generation = reloadGeneration.fetch_add (1) + 1;
+            // 🔑 NAK-246 Abschluss Nacharbeit 1 und 2 (R-A1 Punkt 1 und 2',
+            // M-38/M-39): Leeren der geteilten Listen UND Wechsel der
+            // Reload-Generation im SELBEN Block wie `zustand` - ein Drain, der
+            // seinen Batch oder seine Kopie vorher abgeholt hat, sieht danach
+            // eine andere Generation und faellt ganz aus. Der read-only-Zweig
+            // ist genauso ein Projektwechsel wie der Vollrestore (dieselbe
+            // Begruendung wie `vergleichszustandLeeren`); seit R-A1 Punkt 1'
+            // ist er eigens rot belegt (M-39, Lauf `m39ro`).
+            generation = sourcesListenLeerenUndGenerationErhoehen();
             // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck
             // auf neutral - auch aus einer frueheren positiven Klassifikation.
             lebenslauf.stateRestauriert (ergebnis, geladen);
@@ -167,9 +204,10 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         zustand = geladen;
-        // R-A1 Punkt 1, zweiter Zweig (M-38/M-39); der Wert NACH `fetch_add` ist
-        // die Generation, die `projektReload` dem Modell mitgibt (Punkt 4' (c)).
-        generation = reloadGeneration.fetch_add (1) + 1;
+        // R-A1 Punkt 1 und 2', zweiter Zweig (M-38/M-39); der Rueckgabewert ist
+        // die NEUE Generation, die `projektReload` dem Modell mitgibt
+        // (Punkt 4' (c)).
+        generation = sourcesListenLeerenUndGenerationErhoehen();
         // §53.5: JETZT, nach vollstaendigem Restore, darf klassifiziert
         // werden - Schema-1 `sensor|pre|post` ist zu `legacy` migriert,
         // Schema-1 `hub` und ein bestaetigter Schema-2-Main-State zu `main`.

@@ -1124,14 +1124,46 @@ private:
         das Speichern (`getStateInformation`, dort in der Speicherform mit
         `bindungMutex` ueber Mutation UND `speichere`). Der Rahmen nimmt
         `sourcesDrainMutex` ueber Swap und Anwendung, holt die bestaetigten
-        Befehle unter `sourcesCommandMutex` ab und wendet sie in
+        Befehle SAMT ihrer Reload-Generation unter `sourcesCommandMutex` ab
+        (R-A1 Punkt 2', Paragraph 13.6/13.7) und wendet sie in
         ACK-Reihenfolge je Befehl unter `bindungMutex` an. Modell, Host-Dirty
         und Revision werden je GEAENDERTEM Befehl genau einmal nachgezogen -
         NACH der Freigabe beider Sperren (Abweichung 2, Paragraph 5.10: kein
         Hostaufruf unter einer eigenen Sperre). Nie im Audiothread. */
     void wendeBestaetigteSourcesCommandsAn();
-    /// Der Swap unter `sourcesCommandMutex`. Aufrufer haelt `sourcesDrainMutex`.
-    std::vector<SourcesCommand> bestaetigteSourcesCommandsAbholen();
+    /** NAK-246 Abschluss Nacharbeit 2 (R-A1 Punkt 2'): der Batch UND die
+        Generation, fuer die er gilt. Beide gehoeren zusammen, deshalb kommen
+        sie zusammen zurueck - getrennt gelesen waeren sie genau das Fenster,
+        das P1 ausmachte. */
+    struct AbgeholterSourcesBatch
+    {
+        std::vector<SourcesCommand> befehle;
+        std::uint64_t generation = 0;
+    };
+    /** Swap UND Generationslesung in EINEM `sourcesCommandMutex`-Block.
+        Aufrufer haelt `sourcesDrainMutex`.
+
+        Warum zusammen (R-A1 Punkt 2', Paragraph 13.6/13.7): `setStateInformation`
+        leert die geteilten Listen und erhoeht `reloadGeneration` unter
+        DERSELBEN Sperre. Wird die Generation erst NACH dem Swap gelesen, passt
+        dazwischen ein vollstaendiger Reload - `setStateInformation` nimmt
+        `sourcesDrainMutex` nie, also klammert den Abstand nichts. Der alte
+        Batch traegt dann die neue Generation, passiert jeden Vergleich und
+        mutiert den frisch geladenen State (P1 der Wiederpruefung 1). Innerhalb
+        der Sperre gelesen ist die Generation der Wert ZUM ZEITPUNKT des Swaps:
+        enthaelt ein Batch einen vor dem Leeren gelisteten Befehl, traegt er
+        immer die Generation VOR dem Reload. */
+    AbgeholterSourcesBatch bestaetigteSourcesCommandsAbholen();
+    /** Das Gegenstueck im Reload (R-A1 Punkt 2' (1)): beide geteilten Listen
+        leeren und `reloadGeneration` erhoehen, in EINEM
+        `sourcesCommandMutex`-Block. Rueckgabe: die neue Generation - sie geht
+        an `projektReload` (Punkt 4' (c)).
+
+        Der Aufrufer haelt `bindungMutex` und hat `zustand` eben getauscht;
+        genau dort muss der Block liegen, damit "Generation alt" gleichbedeutend
+        bleibt mit "`zustand` alt". Nur `setStateInformation` ruft sie, in
+        BEIDEN Zweigen (read-only und Vollrestore). Nie im Audiothread. */
+    std::uint64_t sourcesListenLeerenUndGenerationErhoehen();
     /** Der INNERE Teil: EIN bestaetigter Befehl gegen `zustand`. Aufrufer
         haelt `bindungMutex`. Der Riegel hier prueft Klasse, Bindung und
         Epoche - er trennt FREMDE Laeufe ab (andere Bindung, andere Instanz).
@@ -1166,11 +1198,9 @@ private:
     // Eqcp darf die Klassen main und legacy laden.
     mutable std::mutex bindungMutex;
     nakama::state::Zustand zustand;
-    /** NAK-246 Abschluss Nacharbeit 1 (R-A1; Manifest Paragraph 13.3, M-38 und
-        M-39): die INTERNE Reload-Generation. `setStateInformation` erhoeht sie
-        unter `bindungMutex` im selben Block wie den Tausch von `zustand`, in
-        BEIDEN Zweigen (read-only und Vollrestore). Kein Wire-, Schema- oder
-        Vertragswert - `v3SessionEpoch` bleibt `const` und unberuehrt, die
+    /** NAK-246 Abschluss Nacharbeit 1 und 2 (R-A1; Manifest Paragraph 13.3 und
+        13.7, M-38 und M-39): die INTERNE Reload-Generation. Kein Wire-, Schema-
+        oder Vertragswert - `v3SessionEpoch` bleibt `const` und unberuehrt, die
         v3-Zieladresse aendert sich nicht.
 
         Wozu: `v3SessionEpoch` ist ueber die Lebenszeit des Prozessors konstant
@@ -1178,7 +1208,18 @@ private:
         Jeder Nachlaufschritt eines Drains - die Anwendung des abgeholten
         Batches und die Publikation der gezogenen Kopie - gilt nur fuer die
         Generation, in der er abgeholt wurde; weicht sie ab, faellt er GANZ
-        aus. Nie im Audiothread gelesen oder geschrieben. */
+        aus. Nie im Audiothread gelesen oder geschrieben.
+
+        Wo sie sich aendert, und warum dort (R-A1 Punkt 2', Paragraph 13.6):
+        `setStateInformation` erhoeht sie in
+        `sourcesListenLeerenUndGenerationErhoehen` - unter `sourcesCommandMutex`
+        im selben Block wie das Leeren der geteilten Listen, und dieser Block
+        liegt im `bindungMutex`-Block, der `zustand` tauscht, in BEIDEN Zweigen.
+        Zwei Klammern, zwei Aussagen: `sourcesCommandMutex` ordnet sie total
+        gegen ACK-Push und Swap + Lesung, `bindungMutex` haelt "Generation alt"
+        gleichbedeutend mit "`zustand` alt". Atomar allein reicht nicht - die
+        alte Fassung war es und liess das Fenster P1 offen, weil der Drain
+        seine Lesung ausserhalb jeder gemeinsamen Sperre nahm. */
     std::atomic<std::uint64_t> reloadGeneration { 0 };
     /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-38): wie oft ein Drain einen
         bereits abgeholten Batch verworfen hat, weil zwischen Abholen und
@@ -1206,12 +1247,26 @@ private:
         `bindungMutex` deckt nur die Mutation je Befehl, nicht den Swap
         (M-12: Join, dann Unbind desselben Mitglieds).
 
-        Sperrenordnung: `sourcesDrainMutex` -> `sourcesCommandMutex` (nur der
-        Swap) -> je Befehl `bindungMutex` (nur die State-Mutation; im
-        Speicher-Drain zusaetzlich ueber `speichere`). `SourcesModel::mutex`
+        Sperrenordnung: `sourcesDrainMutex` -> `sourcesCommandMutex` (Swap UND
+        Generationslesung) -> je Befehl `bindungMutex` (nur die State-Mutation;
+        im Speicher-Drain zusaetzlich ueber `speichere`). `SourcesModel::mutex`
         und der Hostaufruf (`meldeHostDirty`) liegen NACH der Freigabe beider.
         Nie auf dem Audiothread; ein Drain wartet auf den anderen hoechstens
-        die Dauer einer Anwendung. */
+        die Dauer einer Anwendung.
+
+        Seit NAK-246 Abschluss Nacharbeit 2 (R-A1 Punkt 2' (4), Paragraph 13.6)
+        gibt es EINE zweite Kante: `bindungMutex` -> `sourcesCommandMutex` im
+        Reload (`sourcesListenLeerenUndGenerationErhoehen`). Die Gesamtordnung
+        ist damit `sourcesDrainMutex` < `bindungMutex` < `sourcesCommandMutex`,
+        daneben `bindungMutex` < `SourcesModel::mutex` (nur lesend,
+        `Ipc.cpp` `istAktuellesHauptziel`). Zyklenfrei, weil
+        `sourcesCommandMutex` ein BLATT bleibt: keine der Stellen, die ihn
+        haelt, nimmt danach eine weitere Sperre - unter ihm laufen nur
+        `clear`, `swap`, ein `find`/`erase`, ein `fetch_add` und eine
+        Atomic-Lesung, kein Host- und kein Modellaufruf (Paragraph 10.2
+        Punkt 1 bleibt gewahrt). Dass der
+        Drain ihn zeitlich vor `bindungMutex` nimmt, ist keine Kante - er gibt
+        ihn vorher frei. */
     mutable std::mutex sourcesDrainMutex;
     // §53.5-Automat. Er wird ausschliesslich unter `bindungMutex` gefuehrt
     // (Nachrichten-/Hostthread); der Audiothread liest nie ihn, sondern die

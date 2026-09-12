@@ -1296,13 +1296,29 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
 // faellt der Generationsvergleich der Publikation im MODELL, unter dessen
 // eigenem `mutex` - damit ist er atomar zur Uebernahme; die Fassung davor
 // verglich im Prozessor davor und liess wenige Befehle offen (N-A1-2).
+//
+// Seit der Nacharbeit 2 (R-A1 Punkt 2', Paragraph 13.6/13.7) misst M-38 eine
+// SCHAERFERE Zusage: nicht nur "der Drain vergleicht vor der Anwendung",
+// sondern "Abholen des Batches und Zuordnung seiner Generation sind gegen den
+// Reload GEORDNET". Der Unterschied ist der Fall P1: die Fassung davor las die
+// Generation nach dem Swap ausserhalb jeder gemeinsamen Sperre, der alte Batch
+// bekam die neue Generation und passierte den Vergleich. Beide Lesungen liegen
+// jetzt in einem `sourcesCommandMutex`-Block, denselben, unter dem der Reload
+// leert und erhoeht (`State.cpp` `sourcesListenLeerenUndGenerationErhoehen`).
+// Der Haken bleibt deshalb bewusst AUSSERHALB dieser Sperre (nach dem Abholen,
+// vor `bindungMutex`): innerhalb waere er ein harter Deadlock mit
+// `setStateInformation` auf dem Testthread.
 
 /// M-38 · ein vor dem Reload abgeholter, bestaetigter Befehl mutiert den
-/// GELADENEN State nicht. Der Workerzug haelt am Haken zwischen Swap und
-/// Anwendung - der Batch liegt lokal -, waehrenddessen laedt derselbe
-/// Prozessor dieselben Bytes (gleiche Bindung, gleiche Epoche: alle drei
-/// Pruefungen des Reload-Riegels passieren). Zusage: der GANZE Batch wird
-/// verworfen, das geladene Mitglied bleibt, kein Dirty, keine Revision.
+/// GELADENEN State nicht. Der Workerzug haelt am Haken zwischen Abholen und
+/// Anwendung - Batch und Generation liegen lokal -, waehrenddessen laedt
+/// derselbe Prozessor dieselben Bytes (gleiche Bindung, gleiche Epoche: alle
+/// drei Pruefungen des Reload-Riegels passieren). Zusage (R-A1 Punkt 2'):
+/// Abholen und Generationszuordnung sind gegen den Reload geordnet - ein Batch,
+/// der einen vor dem Leeren gelisteten Befehl traegt, hat immer die Generation
+/// VOR dem Reload und wird GANZ verworfen; das geladene Mitglied bleibt
+/// Mitglied des `zustand` UND des Modells, Verwerfzaehler 1, kein Dirty, keine
+/// Revision.
 void abgeholter_batch_ueberlebt_den_reload_nicht()
 {
     std::cout << "== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==\n";

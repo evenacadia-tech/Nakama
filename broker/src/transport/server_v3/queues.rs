@@ -120,6 +120,16 @@ pub(super) struct Ausgang {
     /// das Feld noch seine Erhoehung.
     #[cfg(test)]
     pub(super) einreihentscheidungen: AtomicU64,
+    /// NAK-283 M-20 (Haelfte 2): ein einmaliger Testhaken DIREKT NACH der
+    /// Ersetzung eines Snapshots. In der Fixfassung ist die Ersetzung EINE
+    /// Operation unter einer Sperre — Entfernen und Anhaengen sind fuer andere
+    /// Faeden nie getrennt sichtbar; der Haken markiert den fruehesten Punkt,
+    /// an dem ein konkurrierendes Einreihen ueberhaupt etwas sehen kann, und
+    /// laeuft ohne gehaltene Sperre. Erst eine Fassung, die Entfernen und
+    /// Anhaengen in zwei Sperrabschnitte trennt und den Haken dazwischen
+    /// feuert, oeffnet das Fenster ohne Schluessel. Nur im Testbau.
+    #[cfg(test)]
+    pub(super) ersetzungshaken: Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 
 /// Die Marke eines Snapshots ohne eigenes Ordinal. Dieselbe Zahl nennt der
@@ -154,6 +164,8 @@ impl Ausgang {
             nachzuegler_verworfen: AtomicU64::new(0),
             #[cfg(test)]
             einreihentscheidungen: AtomicU64::new(0),
+            #[cfg(test)]
+            ersetzungshaken: Mutex::new(None),
         }
     }
 
@@ -207,9 +219,11 @@ impl Ausgang {
                 // Schluessels - auch in eine leere Queue nicht; der Aufrufer
                 // bekommt `false`, der Zaehler waechst. Gleiche Marke ist derselbe
                 // Commit-Stand und kein Nachzuegler: sie ersetzt wie eine groessere
-                // den Eintrag gleichen Schluessels an Ort und Stelle oder wird
-                // aufgenommen. Das Hochwasser steigt nur mit einer ANGENOMMENEN
-                // Marke.
+                // den Eintrag gleichen Schluessels oder wird aufgenommen. Das
+                // Hochwasser steigt nur mit einer ANGENOMMENEN Marke. Diese
+                // Pruefung bleibt die ERSTE Entscheidung - vor der Frage, ob
+                // ersetzt wird (NAK-283 Feinheit 3): ein Nachzuegler verschiebt
+                // so nie die Position eines gueltigen Eintrags.
                 let schluessel = objekt_schluessel.clone();
                 let hochwasser = g.2.get(&schluessel).copied();
                 if eintrag.marke == MARKE_OHNE_ORDINAL {
@@ -225,7 +239,17 @@ impl Ausgang {
                         if *alt_schluessel == schluessel)
                 }) {
                     g.2.insert(schluessel, eintrag.marke);
-                    ersetzt = Some(std::mem::replace(&mut g.0[position], eintrag));
+                    // 🔑 NAK-283 R-283-2 (M-17, M-20): die Ersetzung wandert ans
+                    // ENDE der Deque. An der alten Position erbte ein spaeter
+                    // eingereihter Snapshot den Platz eines frueheren und
+                    // ueberholte jeden dazwischen eingereihten Eintrag eines
+                    // ANDEREN Schluessels - Vollsnapshot und Ruecknahme kamen
+                    // vertauscht an (F03). Die Reihenfolge ist jetzt die Zeit der
+                    // juengsten Marke. Entfernen und Anhaengen sind EINE Operation
+                    // unter derselben Sperre: kein Faden sieht den Schluessel
+                    // dazwischen fehlen, und die Deque waechst nicht.
+                    ersetzt = g.0.remove(position);
+                    g.0.push_back(eintrag);
                     true
                 } else if g.0.len() >= CAP_WRITER {
                     false
@@ -254,6 +278,12 @@ impl Ausgang {
                 true
             }
         };
+        // NAK-283 M-20 (Haelfte 2): der Ersetzungshaken - NACH der Sperre, weil
+        // die Ersetzung darunter eine einzige Operation ist. Nur im Testbau.
+        #[cfg(test)]
+        if ersetzt.is_some() {
+            self.ersetzungshaken_ausloesen();
+        }
         if let Some(alt) = ersetzt {
             // Der alte Snapshot ist absichtlich NICHT geschrieben. Seine
             // Store-Schuld bleibt bestehen, bis der neuere absolute Stand
@@ -307,6 +337,21 @@ impl Ausgang {
             }
         }
         self.signal.notify_all();
+    }
+
+    /// Zieht den Ersetzungshaken (NAK-283 M-20), falls einer scharf ist — und
+    /// entschaerft ihn dabei: erst herausnehmen, dann laufen lassen. Er feuert
+    /// genau einmal und nie unter der Sperre des Ausgangs.
+    #[cfg(test)]
+    pub(super) fn ersetzungshaken_ausloesen(&self) {
+        let haken = self
+            .ersetzungshaken
+            .lock()
+            .unwrap_or_else(|x| x.into_inner())
+            .take();
+        if let Some(f) = haken {
+            f();
+        }
     }
 
     /// Die Hochwassermarke eines Objektschluessels (NAK-246 M-22 bis M-24).
@@ -383,7 +428,13 @@ mod tests {
     /// NAK-246 M-21 (R-D5): ein aelterer Nachzuegler ersetzt keinen neueren
     /// Snapshot. Er wird verworfen, gezaehlt und bekommt `false`; der Eintrag
     /// mit Marke 12 bleibt an seiner Position. Gleiche Marke 12 und groessere
-    /// Marke 13 ersetzen ihn an Ort und Stelle, der Ersetzte bekommt `false`.
+    /// Marke 13 ersetzen ihn, der Ersetzte bekommt `false`.
+    ///
+    /// NAK-283 M-19 (Regressionswache): die Verwerfung des Nachzueglers bleibt
+    /// die erste Entscheidung. Seit R-283-2 wandert eine Ersetzung ans ENDE
+    /// der Deque (M-17) - die Positionserwartungen der beiden Ersetzungen und
+    /// die Schreibreihenfolge sind deshalb nachgezogen; die Nachzueglerzusage
+    /// ist unveraendert.
     #[test]
     fn aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot() {
         let ausgang = Ausgang::neu();
@@ -414,7 +465,8 @@ mod tests {
         assert_eq!(verworfen(&ausgang), 1, "M-21: der Nachzuegler ist gezaehlt");
         assert!(zwoelf.try_recv().is_err(), "M-21: 12 ist nicht verdraengt");
 
-        // Gleiche Marke ist kein Nachzuegler (R-M2-1): sie ersetzt 12 an Ort und Stelle.
+        // Gleiche Marke ist kein Nachzuegler (R-M2-1): sie ersetzt 12 und
+        // wandert ans Ende (R-283-2).
         let zwoelf_gleich = ausgang
             .snapshot_einreihen_mit_antwort("session_snapshot", 12, b"zwoelf-gleich".to_vec())
             .expect("M-21: gleiche Marke 12 wird angenommen");
@@ -422,7 +474,7 @@ mod tests {
             !zwoelf.recv_timeout(Duration::from_secs(1)).unwrap(),
             "M-21: der ersetzte Eintrag mit 12 bekommt false"
         );
-        // Die groessere Marke 13 ersetzt ebenso an Ort und Stelle.
+        // Die groessere Marke 13 ersetzt ebenso und steht danach am Ende.
         let dreizehn = ausgang
             .snapshot_einreihen_mit_antwort("session_snapshot", 13, b"dreizehn".to_vec())
             .expect("M-21: Marke 13 wird angenommen");
@@ -434,16 +486,16 @@ mod tests {
             belegung(&ausgang),
             vec![
                 eintrag("evidence_invalidate", 5, b"ruecknahme"),
-                eintrag("session_snapshot", 13, b"dreizehn"),
                 eintrag("proposal:m21", 7, b"angebot"),
+                eintrag("session_snapshot", 13, b"dreizehn"),
             ],
-            "M-21: 12 und 13 ersetzen an Ort und Stelle"
+            "M-21: 12 und 13 ersetzen - die juengste Marke steht am Ende (NAK-283 R-283-2)"
         );
         assert_eq!(verworfen(&ausgang), 1, "M-21: Gleichheit und groessere Marke zaehlen nicht");
         assert_eq!(ausgang.hochwasser("session_snapshot"), Some(13));
 
         // Der Writer entnimmt in Einreihreihenfolge; jeder angenommene Aufrufer bekommt true.
-        for antwort in [&ruecknahme, &dreizehn, &angebot] {
+        for antwort in [&ruecknahme, &angebot, &dreizehn] {
             schreiben(&ausgang);
             assert!(antwort.recv_timeout(Duration::from_secs(1)).unwrap());
         }
@@ -595,5 +647,185 @@ mod tests {
             assert!(ausgang.einreihen(vec![(i & 0xff) as u8]));
         }
         assert!(!ausgang.einreihen(b"cap-plus-eins".to_vec()));
+    }
+
+    /// **NAK-283 M-17 (R-283-2, F03): die Koaleszierung erhaelt die
+    /// Entstehungsreihenfolge ueber Schluessel.**
+    ///
+    /// Im Ausgang liegen ein `session_snapshot` mit Marke 1 und danach eine
+    /// Ruecknahme mit Marke 2; der Consumer ist angehalten. Ein Snapshot mit
+    /// Marke 3 koalesziert mit dem ersten. Nach der Freigabe entnimmt der
+    /// Consumer die Ruecknahme 2 und DANACH den Snapshot 3: die Ersetzung ist
+    /// ans Ende gewandert, die Reihenfolge ist die Zeit der juengsten Marke.
+    ///
+    /// Rotbeweis `NAK-283-rot-M-17-etappe-3.txt`.
+    #[test]
+    fn koaleszierung_erhaelt_die_ordnung_ueber_schluessel() {
+        let ausgang = Ausgang::neu();
+        let alt = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", 1, b"snapshot-1".to_vec())
+            .unwrap();
+        let ruecknahme = ausgang
+            .snapshot_einreihen_mit_antwort("evidence_invalidate", 2, b"ruecknahme-2".to_vec())
+            .unwrap();
+        let neu = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", 3, b"snapshot-3".to_vec())
+            .unwrap();
+        assert!(
+            !alt.recv_timeout(Duration::from_secs(1)).unwrap(),
+            "der ersetzte Snapshot 1 bekommt false"
+        );
+        // Der Consumer war angehalten; erst jetzt entnimmt er.
+        let zuerst = schreiben(&ausgang);
+        let danach = schreiben(&ausgang);
+        assert_eq!(
+            (zuerst, danach),
+            ((2, b"ruecknahme-2".to_vec()), (3, b"snapshot-3".to_vec())),
+            "M-17: koaleszierung_erhaelt_die_ordnung_ueber_schluessel - der Consumer entnimmt \
+             Invalidierung 2, dann Snapshot 3"
+        );
+        assert!(ruecknahme.recv_timeout(Duration::from_secs(1)).unwrap());
+        assert!(neu.recv_timeout(Duration::from_secs(1)).unwrap());
+    }
+
+    /// **NAK-283 M-20, Haelfte 1 (Regressionswache, Zahlenrand): die Ersetzung
+    /// ans Ende laesst die Queue nicht wachsen.**
+    ///
+    /// Drei Objektschluessel liegen in der Deque (`VecDeque::with_capacity(16)`),
+    /// je Schluessel folgen 100 Ersetzungen. Danach traegt die Deque genau drei
+    /// Eintraege - einen je Schluessel, mit der juengsten Marke - und die
+    /// Hochwasserkarte genau drei. Kein Verdienst von R-283-2: die Ersetzung an
+    /// alter Position hielt die Deque ebenso klein. Gebrochen mit einer Fassung,
+    /// die statt zu ersetzen anhaengt (Rotbeweis `NAK-283-rot-M-20a-etappe-3.txt`).
+    #[test]
+    fn ersetzung_ans_ende_laesst_die_queue_nicht_wachsen() {
+        let ausgang = Ausgang::neu();
+        let schluessel = ["session_snapshot", "evidence_invalidate", "proposal:m20"];
+        let mut antworten = Vec::new();
+        for (i, s) in schluessel.iter().enumerate() {
+            antworten.push(
+                ausgang
+                    .snapshot_einreihen_mit_antwort(s, i as i64, b"start".to_vec())
+                    .unwrap(),
+            );
+        }
+        for runde in 1..=100i64 {
+            for (i, s) in schluessel.iter().enumerate() {
+                antworten.push(
+                    ausgang
+                        .snapshot_einreihen_mit_antwort(
+                            s,
+                            runde * 10 + i as i64,
+                            format!("{s}-{runde}").into_bytes(),
+                        )
+                        .expect("jede Ersetzung wird angenommen"),
+                );
+            }
+        }
+        let g = ausgang.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+        assert_eq!(
+            g.0.len(),
+            3,
+            "M-20 Haelfte 1: ersetzung_ans_ende_laesst_die_queue_nicht_wachsen - die Deque \
+             traegt genau drei Eintraege"
+        );
+        assert_eq!(
+            g.2.len(),
+            3,
+            "M-20 Haelfte 1: die Hochwasserkarte traegt genau drei Schluessel"
+        );
+        let je_schluessel: Vec<(String, i64)> = g
+            .0
+            .iter()
+            .map(|e| match &e.art {
+                Ausgangsart::Snapshot(s) => (s.clone(), e.marke),
+                _ => (String::new(), e.marke),
+            })
+            .collect();
+        assert_eq!(
+            je_schluessel,
+            vec![
+                ("session_snapshot".to_owned(), 1000),
+                ("evidence_invalidate".to_owned(), 1001),
+                ("proposal:m20".to_owned(), 1002),
+            ],
+            "M-20 Haelfte 1: je Schluessel die juengste Marke, in der Reihenfolge ihrer Entstehung"
+        );
+    }
+
+    /// **NAK-283 M-20, Haelfte 2 (Regressionswache): ein konkurrierendes
+    /// Einreihen findet kein Fenster ohne Schluessel.**
+    ///
+    /// Drei Schluessel liegen in der Deque. Faden 1 ersetzt `session_snapshot`
+    /// und haelt am Ersetzungshaken an; erst dann reiht ein ZWEITER Faden einen
+    /// Eintrag desselben Schluessels ein - erzwungen ueber das Rendezvous, ohne
+    /// Schlaf. In der Fixfassung ist die Ersetzung EINE Operation unter einer
+    /// Sperre: der zweite Faden findet den Schluessel und ersetzt ihn, statt
+    /// einen zweiten Eintrag anzulegen. Gebrochen mit einer Fassung, die
+    /// Entfernen und Anhaengen in zwei Sperrabschnitte trennt und den Haken
+    /// dazwischen feuert (Rotbeweis `NAK-283-rot-M-20b-etappe-3.txt`, dreimal rot).
+    #[test]
+    fn konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel() {
+        let ausgang = Ausgang::neu();
+        let _s1 = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", 1, b"s1".to_vec())
+            .unwrap();
+        let _i2 = ausgang
+            .snapshot_einreihen_mit_antwort("evidence_invalidate", 2, b"i2".to_vec())
+            .unwrap();
+        let _p3 = ausgang
+            .snapshot_einreihen_mit_antwort("proposal:m20", 3, b"p3".to_vec())
+            .unwrap();
+
+        let (erreicht_tx, erreicht_rx) = std::sync::mpsc::channel::<()>();
+        let (frei_tx, frei_rx) = std::sync::mpsc::channel::<()>();
+        *ausgang
+            .ersetzungshaken
+            .lock()
+            .unwrap_or_else(|x| x.into_inner()) = Some(Box::new(move || {
+            let _ = erreicht_tx.send(());
+            let _ = frei_rx.recv();
+        }));
+        std::thread::scope(|umfang| {
+            let erster = umfang.spawn(|| {
+                ausgang
+                    .snapshot_einreihen_mit_antwort("session_snapshot", 4, b"s4".to_vec())
+                    .is_some()
+            });
+            erreicht_rx
+                .recv()
+                .expect("Faden 1 erreicht den Ersetzungshaken");
+            let zweiter = umfang.spawn(|| {
+                ausgang
+                    .snapshot_einreihen_mit_antwort("session_snapshot", 5, b"s5".to_vec())
+                    .is_some()
+            });
+            assert!(
+                zweiter.join().expect("Faden 2 endet"),
+                "das konkurrierende Einreihen wird angenommen"
+            );
+            frei_tx.send(()).expect("Faden 1 wird freigegeben");
+            assert!(
+                erster.join().expect("Faden 1 endet"),
+                "die Ersetzung von Faden 1 wird angenommen"
+            );
+        });
+        let belegung = belegung(&ausgang);
+        let snapshots = belegung
+            .iter()
+            .filter(|(s, _, _)| s == "session_snapshot")
+            .count();
+        assert_eq!(
+            snapshots,
+            1,
+            "M-20 Haelfte 2: konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel - \
+             genau EIN Eintrag des Schluessels: {:?}",
+            belegung.iter().map(|(s, m, _)| (s.clone(), *m)).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            belegung.len(),
+            3,
+            "M-20 Haelfte 2: die Deque traegt genau drei Eintraege"
+        );
     }
 }

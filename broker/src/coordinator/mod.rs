@@ -242,6 +242,26 @@ pub struct Coordinator {
     /// heraus, bevor er laeuft, damit die Neurechnung, die er ausloest, ihn
     /// nicht erneut zieht.
     rechen_test_haken: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
+    /// **NAK-283 M-13, Fenster 2 (R-283-1): die Naht zwischen Cache-Eintrag und
+    /// Persistenzlauf.**
+    ///
+    /// `befunde_eintragen` gibt den Standlock nach dem Eintrag frei und
+    /// persistiert danach je Befund; genau in dieser Luecke kann eine juengere
+    /// Rechnung vollstaendig durchlaufen. Muster `rechen_test_haken`: der Haken
+    /// nimmt sich vor dem Lauf selbst heraus und laeuft auf dem Faden der
+    /// Rechnung OHNE gehaltenen Standlock. Im Produkt ist er nie gesetzt.
+    persistenz_test_haken: Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
+    /// **NAK-283 M-75, Fenster 3 (R-283-1): die Naht unmittelbar vor der
+    /// Store-Annahme, am GEHALTENEN Standlock.**
+    ///
+    /// Rendezvous nach dem Muster `flush_test_haken` — anders als dieser wartet
+    /// er UNTER dem Guard. `befund_persistieren` nimmt ihn deshalb VOR dem
+    /// `lock()` per `take()` heraus: unter dem Standlock nimmt so kein zweiter
+    /// Coordinator-Mutex (dieselbe Bedingung wie bei
+    /// `test_panik_unter_standlock`). Freigeben darf nur ein Faden, der den
+    /// Standlock nie nimmt; ein Freigeber, der den Stand braucht, waere
+    /// zirkulaeres Warten. Im Produkt ist er nie gesetzt.
+    annahme_test_haken: Mutex<Option<CoordinatorFlushTestHaken>>,
     /// Monotone ANKUNFTSREIHENFOLGE angenommener Evidenzsnapshots.
     ///
     /// 🔑 SONDE-013 Nacharbeit 2 (Befund R17): sie ist die einzige Groesse, an
@@ -280,6 +300,8 @@ impl Coordinator {
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
             rechen_test_haken: Mutex::new(None),
+            persistenz_test_haken: Mutex::new(None),
+            annahme_test_haken: Mutex::new(None),
             evidenz_folge: AtomicU64::new(0),
         }
     }
@@ -324,6 +346,8 @@ impl Coordinator {
             test_panik_unter_standlock: AtomicBool::new(false),
             fenster_nicht_endlich: AtomicU64::new(0),
             rechen_test_haken: Mutex::new(None),
+            persistenz_test_haken: Mutex::new(None),
+            annahme_test_haken: Mutex::new(None),
             evidenz_folge: AtomicU64::new(evidenz_folge_start),
         };
         // 🔑 Nacharbeit 3 (Befund B19, M-13/M-22): die Paarurteile ENTSTEHEN
@@ -385,6 +409,28 @@ impl Coordinator {
         );
         *self
             .flush_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(haken);
+    }
+
+    /// **NAK-283 M-13, Fenster 2:** stellt den Haken scharf, der GENAU EINMAL
+    /// zwischen dem Cache-Eintrag der Befunde und ihrem Persistenzlauf laeuft.
+    #[doc(hidden)]
+    pub fn persistenz_test_haken_setzen(&self, haken: Box<dyn Fn() + Send + Sync>) {
+        *self
+            .persistenz_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(haken);
+    }
+
+    /// **NAK-283 M-75, Fenster 3:** stellt das Rendezvous scharf, das GENAU
+    /// EINMAL unmittelbar vor `StoreHandle::append_einreihen` am gehaltenen
+    /// Standlock erreicht wird. Freigeben darf nur ein Faden, der den Standlock
+    /// nie nimmt.
+    #[doc(hidden)]
+    pub fn annahme_test_haken_setzen(&self, haken: CoordinatorFlushTestHaken) {
+        *self
+            .annahme_test_haken
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = Some(haken);
     }

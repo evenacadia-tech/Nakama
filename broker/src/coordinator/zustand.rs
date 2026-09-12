@@ -392,6 +392,11 @@ pub(super) struct Stand {
     pub(super) taint_verworfen: u64,
     pub(super) cap_abweisungen: u64,
     pub(super) store_verweigerungen: u64,
+    /// NAK-283 R-283-1 (M-13 Fenster 2): wie oft ein Befund NICHT persistiert
+    /// wurde, weil sein Rechenergebnis beim Wiedervergleich unter dem Standlock
+    /// nicht mehr der Standeintrag seiner Sitzung war. Gezaehlt am gehaltenen
+    /// Guard, je Befund ein unterlassener Schreibversuch.
+    pub(super) befund_schreibversuche_unterlassen: u64,
     pub(super) p2_live_frames: u64,
     pub(super) messframes: HashMap<ClientKey, LiveMessframe>,
     pub(super) messfehler: HashMap<ClientKey, Messfehler>,
@@ -606,6 +611,7 @@ impl Default for Stand {
             evidenz: HashMap::new(),
             cap_abweisungen: 0,
             store_verweigerungen: 0,
+            befund_schreibversuche_unterlassen: 0,
             p2_live_frames: 0,
             messframes: HashMap::new(),
             messfehler: HashMap::new(),

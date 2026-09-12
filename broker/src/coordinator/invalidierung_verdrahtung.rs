@@ -39,8 +39,16 @@ pub(super) struct Invalidierungswirkung {
     pub(super) betroffen: usize,
     pub(super) ziele: Vec<SnapshotZiel>,
     pub(super) nachricht: Value,
-    /// Genau die Eintraege, die DIESE Invalidierung markiert hat.
-    zurueck: Vec<(ClientKey, usize)>,
+    /// Genau die Eintraege, die DIESE Invalidierung markiert hat - benannt
+    /// ueber ihre STABILE `evidence_id`, nie ueber ihre Position.
+    ///
+    /// 🔑 NAK-283 F14 (NAK-163, SONDE-013 §14): hier stand der Deque-Index.
+    /// Zwischen Vorbereitung und Ruecknahme liegt eine Lock-Luecke (der
+    /// Append), und in ihr kann die Retention (`pop_front()`, `evidenz.rs`)
+    /// jede Position verschieben. Der Rollback loeschte dann den Ausschluss
+    /// eines FREMDEN Belegs und liess den eigenen stehen; Cache und Projektion
+    /// liefen auseinander. Die Luecke darf bleiben - die Zuordnung ueberlebt sie.
+    zurueck: Vec<(ClientKey, String)>,
 }
 
 impl Coordinator {
@@ -136,7 +144,7 @@ impl Coordinator {
             return None;
         }
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        let mut zurueck: Vec<(ClientKey, usize)> = Vec::new();
+        let mut zurueck: Vec<(ClientKey, String)> = Vec::new();
         // 🔑 SONDE-014 M-24: die Menge der markierten Evidenz-IDs.
         //
         // Sie ist ein `BTreeSet` und kein `Vec`, weil M-24 „deterministisch"
@@ -155,7 +163,7 @@ impl Coordinator {
             let Some(historie) = stand.evidenz.get_mut(&key) else {
                 continue;
             };
-            for (index, eintrag) in historie.iter_mut().enumerate() {
+            for eintrag in historie.iter_mut() {
                 if eintrag.ausschlussgrund.is_some() {
                     // Schon ausgeschlossen: der ERSTE Grund bleibt stehen.
                     // Ihn zu ueberschreiben hiesse, die Geschichte des
@@ -170,7 +178,8 @@ impl Coordinator {
                 {
                     eintrag.ausschlussgrund = Some(invalidierung.grund.wort().to_string());
                     genommene_ids.insert(eintrag.evidence_id.clone());
-                    zurueck.push((key.clone(), index));
+                    // NAK-283 F14: die stabile ID, nicht die Position.
+                    zurueck.push((key.clone(), eintrag.evidence_id.clone()));
                 }
             }
         }
@@ -232,14 +241,26 @@ impl Coordinator {
     /// Zurueckgesetzt wird GENAU, was diese Invalidierung markiert hat — nicht
     /// jeder Ausschluss der Sitzung. Ein aelterer Grund gehoert einer anderen
     /// Ruecknahme und bleibt stehen.
+    ///
+    /// 🔑 NAK-283 F14 (M-21 bis M-23): gesucht wird ueber die stabile
+    /// `evidence_id`. Zwischen Vorbereitung und diesem Aufruf liegt die
+    /// Lock-Luecke des Appends; in ihr kann die Retention Belege entfernen und
+    /// alle Positionen verschieben. Ein Beleg, den sie entfernt hat, wird
+    /// uebersprungen, statt an einem Nachbarn zu wirken.
     pub(super) fn invalidierung_ruecknehmen(&self, wirkung: Invalidierungswirkung) {
         let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-        for (key, index) in &wirkung.zurueck {
-            if let Some(historie) = stand.evidenz.get_mut(key) {
-                if let Some(eintrag) = historie.get_mut(*index) {
-                    eintrag.ausschlussgrund = None;
-                }
-            }
+        for (key, evidence_id) in &wirkung.zurueck {
+            let Some(historie) = stand.evidenz.get_mut(key) else {
+                continue;
+            };
+            let Some(eintrag) = historie
+                .iter_mut()
+                .find(|eintrag| eintrag.evidence_id == *evidence_id)
+            else {
+                // Von der Retention entfernt: uebersprungen.
+                continue;
+            };
+            eintrag.ausschlussgrund = None;
         }
         // Der Merker faellt mit: die Aenderung, die ihn setzte, gibt es nicht
         // mehr. Ein stehengebliebener Merker triebe eine Neubildung ohne Anlass.

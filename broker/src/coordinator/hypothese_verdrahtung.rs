@@ -57,6 +57,34 @@ use super::hypothese::{
 use super::*;
 use std::collections::BTreeMap;
 
+/// Das Urteil des Riegels beim Rueckschreiben (NR-03, NAK-283 R-283-1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Rueckschreibung {
+    /// Der Stand traegt das Ergebnis noch, und seine Eingangsmenge ist die
+    /// aktuelle.
+    Gueltig,
+    /// NR-03: die Intentgeneration ist gestiegen oder eine VERWENDETE
+    /// `evidence_id` wurde zurueckgenommen. Verworfen; neu gerechnet wird mit
+    /// dem naechsten Material (M-14, M-15 — unveraendert).
+    Veraltet,
+    /// NAK-283 R-283-1: die Eingangsmenge ist nicht mehr die des Stands —
+    /// Evidenz ist hinzugekommen oder verworfen, ohne dass eine verwendete ID
+    /// fiel. Verworfen und SOFORT neu gerechnet (M-13, M-16).
+    Ueberholt,
+}
+
+/// Was `befunde_eintragen` mit einem Rechenergebnis getan hat.
+#[derive(Debug, Clone, Copy)]
+struct Eintragung {
+    /// Der Stand hat sich geaendert.
+    geaendert: bool,
+    /// NAK-283 R-283-1: ein Ergebnis oder einer seiner Befunde ist verworfen
+    /// worden, weil sein Eingangsstand beim Rueckschreiben ueberholt war — vor
+    /// dem Cache-Eintrag (Fenster 1) oder vor der Persistenz (Fenster 2). Nur
+    /// dann steht ein Heilungstakt aus.
+    ueberholt: bool,
+}
+
 impl Coordinator {
     // ═════════════════════════════════════════════════════════════════════
     // Auslöser
@@ -69,15 +97,36 @@ impl Coordinator {
     /// **einsammeln unter dem Lock → rechnen ohne Lock → eintragen,
     /// persistieren, zustellen**. Wer mittendrin das Lock hielte, hielte den
     /// Sessiongraphen für die Dauer von 400 Bootstrapziehungen an.
+    ///
+    /// 🔑 **NAK-283 R-283-1 (M-13 Frist, M-16): der Verwurf loest SOFORT einen
+    /// Heilungstakt aus.** Ein Ergebnis, dessen Eingangsstand beim
+    /// Rueckschreiben ueberholt war, wird verworfen und neu gerechnet — nie
+    /// ueber ein juengeres Ergebnis geschrieben und nie bis zum naechsten
+    /// Material liegen gelassen. Der Takt ist derselbe, den die Invalidierung
+    /// nach einem Storefehler faehrt (`hypothesen_bei_bedarf_bilden`).
     pub(super) fn hypothesen_bilden(&self) {
+        if self.hypothesen_rechnen() {
+            self.hypothesen_bei_bedarf_bilden();
+        }
+    }
+
+    /// Ein Rechenlauf ueber alle Sitzungen.
+    ///
+    /// Rueckgabe: ob ein Ergebnis oder einer seiner Befunde verworfen wurde,
+    /// weil sein Eingangsstand beim Rueckschreiben ueberholt war (R-283-1).
+    /// Ein Verwurf nach NR-03 (Generation, zurueckgenommene verwendete ID)
+    /// zaehlt hier ausdruecklich NICHT: dort rechnet erst das naechste
+    /// Material neu (M-14, M-15).
+    fn hypothesen_rechnen(&self) -> bool {
         let aufnahmen = self.aufnahmen_sammeln();
         if aufnahmen.is_empty() {
-            return;
+            return false;
         }
-        let mut ergebnisse: Vec<(SessionKey, Vec<CauseHypothesis>)> = Vec::new();
-        for (session, aufnahme) in aufnahmen {
+        let mut ergebnisse: Vec<(SessionKey, Vec<CauseHypothesis>, BTreeSet<String>)> =
+            Vec::new();
+        for (session, aufnahme, eingangsmenge) in aufnahmen {
             let ergebnis = hypothesen(&aufnahme);
-            ergebnisse.push((session, ergebnis.befunde));
+            ergebnisse.push((session, ergebnis.befunde, eingangsmenge));
         }
         // 🔑 NR-03 (Nacharbeit 1, 07.09.2026): der Testhaken sitzt GENAU
         // hier — zwischen der Rechnung ohne Lock und der Eintragung unter
@@ -89,8 +138,10 @@ impl Coordinator {
         // Threads mit Barriere maessen dasselbe, aber nicht reproduzierbar —
         // und eine Zusage, deren Beweis flackert, ist keine.
         self.rechen_test_haken_ausloesen();
-        for (session, befunde) in ergebnisse {
-            let geaendert = self.befunde_eintragen(&session, befunde);
+        let mut ueberholt = false;
+        for (session, befunde, eingangsmenge) in ergebnisse {
+            let eintragung = self.befunde_eintragen(&session, befunde, &eingangsmenge);
+            ueberholt |= eintragung.ueberholt;
             // 🔑 SONDE-014 Etappe F: der Vorschlag entsteht MIT seinem Befund.
             //
             // Er haengt hier und nicht an einem eigenen Ausloeser: §42.1 bindet
@@ -99,20 +150,31 @@ impl Coordinator {
             // Die Reihenfolge ist zwingend — erst der Befund im Stand, dann
             // der Vorschlag darauf.
             let vorschlaege_neu = self.vorschlaege_bilden(&session);
-            if geaendert || vorschlaege_neu {
+            if eintragung.geaendert || vorschlaege_neu {
                 self.befunde_zustellen(&session);
             }
         }
+        ueberholt
     }
 
     /// Wie `paare_bei_bedarf_bilden`: nur rechnen, wenn eine Änderung ansteht.
+    ///
+    /// 🔑 **NAK-283 (M-16): eine Schleife, keine Rekursion.** Jeder Durchlauf
+    /// loest den Merker ein und rechnet genau einmal. Verwirft DIESE Rechnung
+    /// ihrerseits ein ueberholtes Ergebnis, hat ihr Verwurf den Merker wieder
+    /// gesetzt, und der naechste Durchlauf ist die eine Neurechnung, die er
+    /// nach sich zieht. Jede Wiederholung braucht eine echte Aenderung des
+    /// Stands zwischen Sammeln und Rueckschreiben; eine Rekursion liesse bei
+    /// dichtem Evidenzstrom den Stack mitwachsen.
     pub(super) fn hypothesen_bei_bedarf_bilden(&self) {
-        let noetig = {
-            let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            std::mem::take(&mut stand.befunde_neu_bilden)
-        };
-        if noetig {
-            self.hypothesen_bilden();
+        loop {
+            let noetig = {
+                let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                std::mem::take(&mut stand.befunde_neu_bilden)
+            };
+            if !noetig || !self.hypothesen_rechnen() {
+                return;
+            }
         }
     }
 
@@ -127,8 +189,19 @@ impl Coordinator {
     /// misst laut Vertrag ausschließlich am Insert (`liveness.rs`). Eine
     /// Sitzung ohne Main hat keinen Master und rechnet gar nicht — das ist
     /// kein Fehler, sondern der normale Zustand einer Sondenrunde ohne Gen.
-    fn aufnahmen_sammeln(&self) -> Vec<(SessionKey, Aufnahme)> {
-        let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+    ///
+    /// Neben jeder Aufnahme steht ihre **Eingangsmenge** (NAK-283 R-283-1): die
+    /// stabilen Evidence-IDs, auf denen die Rechnung steht.
+    fn aufnahmen_sammeln(&self) -> Vec<(SessionKey, Aufnahme, BTreeSet<String>)> {
+        let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+        // 🔑 NAK-283 R-283-1 (M-16): wer sammelt, loest den Merker ein - unter
+        // DEMSELBEN Standlock wie die Aufnahme. Die Rechnung steht auf dem
+        // Stand dieses Augenblicks; jede spaetere Aenderung setzt ihn neu. Ohne
+        // diese Zeile blieb der Merker der Vollstaendigkeitsmarke
+        // (`intent.rs`:626) ueber jede Rechnung hinweg stehen, und der
+        // Heilungstakt nach einem Verwurf loeste ihn ein, auch wenn der Verwurf
+        // selbst keinen gesetzt hatte.
+        stand.befunde_neu_bilden = false;
         // Feste Ordnung: eine `HashMap` hat keine, und zwei Läufe über
         // denselben Stand müssten sonst nicht dieselbe Reihenfolge ergeben
         // (M-25).
@@ -136,7 +209,7 @@ impl Coordinator {
         for key in stand.evidenz.keys() {
             sitzungen.insert((key.project_binding_id.clone(), key.session_epoch.clone()));
         }
-        let mut aus: Vec<(SessionKey, Aufnahme)> = Vec::new();
+        let mut aus: Vec<(SessionKey, Aufnahme, BTreeSet<String>)> = Vec::new();
         for (projekt, epoche) in sitzungen {
             let session = SessionKey {
                 project_binding_id: projekt,
@@ -371,6 +444,14 @@ impl Coordinator {
             let passage = stand
                 .experimente
                 .juengste_passage_im_projekt(&session.project_binding_id, &getaintet);
+            // 🔑 NAK-283 R-283-1 (M-13 Fenster 1, Feinheit 1): die
+            // EINGANGSMENGE dieser Rechnung — die stabilen Evidence-IDs der
+            // Sitzung, die beim Sammeln gueltig und nicht ausgeschlossen sind.
+            // Sie entsteht UNTER DEMSELBEN Standlock wie die Aufnahme und aus
+            // derselben Funktion, mit der `ergebnis_ist_noch_gueltig` den Stand
+            // beim Rueckschreiben liest. Eine Bildung ausserhalb des Locks waere
+            // derselbe Fehler in neuem Gewand.
+            let eingangsmenge = Self::gueltige_evidenz_ids_locked(&stand, &session);
             aus.push((
                 session.clone(),
                 Aufnahme {
@@ -387,6 +468,7 @@ impl Coordinator {
                     metrics_version: super::vergleichbarkeit::METRICS_VERSION,
                     session_epoch: session.session_epoch.clone(),
                 },
+                eingangsmenge,
             ));
         }
         aus
@@ -434,13 +516,19 @@ impl Coordinator {
     // Eintragen, persistieren, zustellen
     // ═════════════════════════════════════════════════════════════════════
 
-    /// Trägt die neuen Befunde ein. Rückgabe: ob sich etwas geändert hat.
+    /// Trägt die neuen Befunde ein. Rückgabe: ob sich etwas geändert hat und ob
+    /// ein Ergebnis wegen eines ueberholten Eingangsstands verworfen wurde.
     ///
     /// Ein unveränderter Stand erzeugt **keinen** Store-Event und **keinen**
     /// Push. Bei 1 bis 4 Hz Evidenz wäre das sonst ein Dauerstrom identischer
     /// Snapshots — dieselbe Regel, die `heartbeat` und `session_snapshot`
     /// bereits tragen.
-    fn befunde_eintragen(&self, session: &SessionKey, befunde: Vec<CauseHypothesis>) -> bool {
+    fn befunde_eintragen(
+        &self,
+        session: &SessionKey,
+        befunde: Vec<CauseHypothesis>,
+        eingangsmenge: &BTreeSet<String>,
+    ) -> Eintragung {
         let neue: Vec<CauseHypothesis> = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             // 🔑 NR-03 (Nacharbeit 1, 07.09.2026): das Ergebnis wird UNTER
@@ -460,13 +548,33 @@ impl Coordinator {
             // Verworfen heisst NICHT verloren: die Sitzung bleibt dirty und
             // wird neu gerechnet. Ein halb uebernommenes Ergebnis gibt es
             // nicht — entweder alle Befunde oder keiner.
-            if !Self::ergebnis_ist_noch_gueltig(&stand, session, &befunde) {
-                stand.befunde_neu_bilden = true;
-                return false;
+            match Self::ergebnis_ist_noch_gueltig(&stand, session, &befunde, eingangsmenge) {
+                Rueckschreibung::Gueltig => {}
+                Rueckschreibung::Veraltet => {
+                    stand.befunde_neu_bilden = true;
+                    return Eintragung {
+                        geaendert: false,
+                        ueberholt: false,
+                    };
+                }
+                Rueckschreibung::Ueberholt => {
+                    // 🔑 NAK-283 R-283-1 (M-13 Fenster 1): die Eingangsmenge ist
+                    // ueberholt — hinzugekommen ODER verworfen. Das Ergebnis
+                    // faellt, der Merker steht, und `hypothesen_bilden` loest
+                    // ihn im Heilungstakt sofort ein (M-16).
+                    stand.befunde_neu_bilden = true;
+                    return Eintragung {
+                        geaendert: false,
+                        ueberholt: true,
+                    };
+                }
             }
             let alt = stand.befunde.get(session);
             if alt.map(Vec::as_slice) == Some(befunde.as_slice()) {
-                return false;
+                return Eintragung {
+                    geaendert: false,
+                    ueberholt: false,
+                };
             }
             if befunde.is_empty() {
                 stand.befunde.remove(session);
@@ -476,13 +584,26 @@ impl Coordinator {
                 befunde
             }
         };
-        for befund in &neue {
-            self.befund_persistieren(session, befund);
+        // 🔑 NAK-283 M-13, Fenster 2: der ERSTE Haken dieser Etappe — zwischen
+        // dem Cache-Eintrag oben und dem Persistenzlauf unten, ohne gehaltenen
+        // Standlock. Im Produkt leer; Muster `rechen_test_haken_ausloesen`.
+        self.persistenz_test_haken_ausloesen();
+        // Die Wireform des eingetragenen Ergebnisses, EINMAL und ohne Lock:
+        // gegen sie haelt der Persistenzlauf den Standeintrag (M-13 Fenster 2).
+        let eingetragen: Vec<Value> = neue.iter().map(Self::befund_json).collect();
+        let mut ueberholt = false;
+        for payload in &eingetragen {
+            if !self.befund_persistieren(session, payload, &eingetragen) {
+                ueberholt = true;
+            }
         }
         // 🔑 NR-04: „beim Eintragen eines Befunds" — die zweite der beiden
         // Stellen, an denen M-28 die Existenz gegen den Store haelt.
         self.befunde_gegen_store_haerten(session);
-        true
+        Eintragung {
+            geaendert: true,
+            ueberholt,
+        }
     }
 
     /// Legt EINEN Befund als `event_type = "finding"` ab.
@@ -491,13 +612,36 @@ impl Coordinator {
     /// und hatte bis hier keinen Produzenten (§2.11 L3). Der Payload trägt die
     /// `finding_id` als Projektionsschlüssel — ohne sie weist der Writer den
     /// Event zurück.
-    fn befund_persistieren(&self, session: &SessionKey, befund: &CauseHypothesis) {
+    ///
+    /// Rückgabe `false` heisst: der Befund wurde NICHT geschrieben, weil sein
+    /// Ergebnis beim Wiedervergleich nicht mehr der Standeintrag war
+    /// (NAK-283 R-283-1). Ohne Store und bei einem Annahme- oder Commitfehler
+    /// ist die Rückgabe `true` — dort wurde nichts verworfen.
+    ///
+    /// 🔑 **NAK-283 R-283-1 (M-13 Fenster 2, M-75): Vergleich und Store-Annahme
+    /// unter DEMSELBEN Standlock, das Warten auf den Commit ausserhalb.**
+    ///
+    /// Die Annahme vergibt die Ordnung: EIN Writer-Thread liest den FIFO und
+    /// schreibt in Annahmereihenfolge, `last_event_ord` ist die `rowid` des
+    /// Anhängens, und die Projektion behält die höhere (`writer.rs`). Wer den
+    /// Vergleich unter dem Guard besteht und unter demselben Guard einreiht,
+    /// reiht vor jedem ein, der den Vergleich später besteht. Die Annahme
+    /// blockiert nie (`try_send`, bei vollem Kanal sofort `KanalVoll`), und
+    /// kein Pfad unter `store/` nimmt den Standlock — die Sperre über die
+    /// Annahme kann nicht verklemmen. Das `recv` dagegen wartet auf die Platte;
+    /// es steht hinter der Freigabe, sonst hielte der Standlock den ganzen Takt
+    /// hinter SQLite fest und der Fehlerzweig nähme ihn ein zweites Mal.
+    fn befund_persistieren(
+        &self,
+        session: &SessionKey,
+        payload: &Value,
+        eingetragen: &[Value],
+    ) -> bool {
         let Some(store) = self.store.as_ref() else {
-            return;
+            return true;
         };
-        let payload = Self::befund_json(befund);
-        let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(&payload) else {
-            return;
+        let Ok(payload_jcs) = serde_json_canonicalizer::to_vec(payload) else {
+            return true;
         };
         let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
         let mut event = StoreEvent::session_snapshot(
@@ -508,10 +652,79 @@ impl Coordinator {
             payload_jcs,
         );
         event.event_type = "finding".into();
-        if store.append(vec![event]).is_err() {
+        // Der Annahmehaken (M-75) wird VOR dem `lock()` herausgenommen: unter
+        // dem Standlock nimmt kein zweiter Coordinator-Mutex.
+        let annahme_haken = self
+            .annahme_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        let empfang = {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
-            stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+            // Der Wiedervergleich: ist das eingetragene Ergebnis noch GENAU
+            // der Standeintrag der Sitzung? Wenn nicht, hat ein Juengerer oder
+            // eine Ruecknahme ihn ersetzt - dann wird nicht geschrieben,
+            // sondern gezaehlt und neu gerechnet.
+            if !Self::standeintrag_ist_noch(&stand, session, eingetragen) {
+                stand.befund_schreibversuche_unterlassen =
+                    stand.befund_schreibversuche_unterlassen.saturating_add(1);
+                stand.befunde_neu_bilden = true;
+                return false;
+            }
+            // Unmittelbar vor der Annahme, am gehaltenen Guard (M-75).
+            if let Some(haken) = annahme_haken.as_ref() {
+                haken.erreichen();
+            }
+            match store.append_einreihen(vec![event]) {
+                Ok(empfang) => Some(empfang),
+                // Ein Annahmefehler wird am gehaltenen Guard gezaehlt, nicht
+                // ueber ein zweites `lock()`.
+                Err(_) => {
+                    stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+                    None
+                }
+            }
+        };
+        if let Some(empfang) = empfang {
+            if !matches!(empfang.recv(), Ok(Ok(_))) {
+                let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
+                stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+            }
         }
+        true
+    }
+
+    /// Zieht den Persistenzhaken (NAK-283 M-13 Fenster 2), falls einer scharf
+    /// ist — und entschaerft ihn dabei. Dieselbe Reihenfolge wie
+    /// `rechen_test_haken_ausloesen`: erst herausnehmen, dann laufen lassen.
+    fn persistenz_test_haken_ausloesen(&self) {
+        let haken = self
+            .persistenz_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        if let Some(f) = haken {
+            f();
+        }
+    }
+
+    /// Traegt der Stand fuer die Sitzung noch GENAU das eingetragene Ergebnis
+    /// (NAK-283 M-13 Fenster 2)? Aufruf nur unter dem Standlock.
+    ///
+    /// Verglichen wird die WIREFORM (`befund_json`) - dieselbe Form, die
+    /// persistiert wird, in derselben Reihenfolge. Die Rechenstruktur taugt
+    /// dafuer nicht: ein nicht-endlicher Wert (NaN != NaN) machte sie mit sich
+    /// selbst ungleich, jeder Schreibversuch unterbliebe, und jeder Verwurf
+    /// zoege einen Heilungstakt nach sich, der wieder verwirft. `befund_json`
+    /// macht aus Nicht-Endlichem die Vertragszahl 0 (`zahl`).
+    fn standeintrag_ist_noch(stand: &Stand, session: &SessionKey, eingetragen: &[Value]) -> bool {
+        stand.befunde.get(session).is_some_and(|liste| {
+            liste.len() == eingetragen.len()
+                && liste
+                    .iter()
+                    .zip(eingetragen)
+                    .all(|(befund, wire)| Self::befund_json(befund) == *wire)
+        })
     }
 
     /// Stoesst den Snapshot-Push an, damit Gen die Befunde sieht.
@@ -956,44 +1169,74 @@ impl Coordinator {
     ///     Rechnung zurueckgenommene ID darf nie wieder sichtbar werden
     ///     (M-24, M-28).
     ///
-    /// Ein LEERES Ergebnis ist immer gueltig: es behauptet nichts, und es
-    /// ist der Weg, auf dem eine Ruecknahme ihre Befunde raeumt.
+    /// Ein LEERES Ergebnis besteht (a) und (b) immer: es behauptet nichts, und
+    /// es ist der Weg, auf dem eine Ruecknahme ihre Befunde raeumt.
+    ///
+    /// (c) **Eingangsmenge (NAK-283 R-283-1, Feinheiten 1 und 2).** Die Menge
+    ///     der stabilen Evidence-IDs, auf denen die Rechnung stand, ist noch
+    ///     die des Stands. Ist Evidenz hinzugekommen oder verworfen, faellt
+    ///     das Ergebnis — AUCH ein leeres: sonst raeumte eine aeltere Rechnung
+    ///     ohne Befund den Bestand einer juengeren. Verglichen wird die MENGE,
+    ///     nicht ihre Anzahl; ein Austausch laesst die Anzahl gleich. Die
+    ///     Pruefung steht nach (a) und (b): faellt schon eine verwendete ID
+    ///     oder die Generation, bleibt es beim Verwurf aus NR-03 (M-14, M-15).
     fn ergebnis_ist_noch_gueltig(
         stand: &Stand,
         session: &SessionKey,
         befunde: &[CauseHypothesis],
-    ) -> bool {
-        if befunde.is_empty() {
-            return true;
+        eingangsmenge: &BTreeSet<String>,
+    ) -> Rueckschreibung {
+        // Die gueltigen Belege DIESER Sitzung, aus derselben Historie und
+        // derselben Bildung, aus der `aufnahmen_sammeln` die Eingangsmenge
+        // genommen hat.
+        let gueltig = Self::gueltige_evidenz_ids_locked(stand, session);
+        if !befunde.is_empty() {
+            let aktuelle_generation = stand
+                .intent
+                .get(session)
+                .map(|b| b.generation)
+                .unwrap_or_default();
+            if befunde
+                .iter()
+                .any(|b| b.intent_generation != aktuelle_generation)
+            {
+                return Rueckschreibung::Veraltet;
+            }
+            if !befunde
+                .iter()
+                .flat_map(|b| b.evidence_ids.iter())
+                .all(|id| gueltig.contains(id))
+            {
+                return Rueckschreibung::Veraltet;
+            }
         }
-        let aktuelle_generation = stand
-            .intent
-            .get(session)
-            .map(|b| b.generation)
-            .unwrap_or_default();
-        if befunde
-            .iter()
-            .any(|b| b.intent_generation != aktuelle_generation)
-        {
-            return false;
+        if gueltig != *eingangsmenge {
+            return Rueckschreibung::Ueberholt;
         }
-        // Die gueltigen Belege DIESER Sitzung, aus derselben Historie, aus
-        // der `aufnahmen_sammeln` sie genommen hat.
-        let mut gueltig: BTreeSet<&str> = BTreeSet::new();
+        Rueckschreibung::Gueltig
+    }
+
+    /// Die stabilen Evidence-IDs einer Sitzung, die im Stand gueltig und nicht
+    /// ausgeschlossen sind (NAK-283 R-283-1, Feinheit 1).
+    ///
+    /// Die EINE Bildung fuer beide Seiten des Riegels: `aufnahmen_sammeln`
+    /// haelt damit unter dem Standlock fest, worauf gerechnet wird;
+    /// `ergebnis_ist_noch_gueltig` liest damit unter dem Standlock den Stand
+    /// beim Rueckschreiben. Zwei verschiedene Bildungen koennten sich schon
+    /// ohne jede Aenderung unterscheiden.
+    fn gueltige_evidenz_ids_locked(stand: &Stand, session: &SessionKey) -> BTreeSet<String> {
+        let mut gueltig: BTreeSet<String> = BTreeSet::new();
         for (key, historie) in stand.evidenz.iter() {
             if key.session() != *session {
                 continue;
             }
             for eintrag in historie.iter() {
                 if eintrag.ausschlussgrund.is_none() {
-                    gueltig.insert(eintrag.evidence_id.as_str());
+                    gueltig.insert(eintrag.evidence_id.clone());
                 }
             }
         }
-        befunde
-            .iter()
-            .flat_map(|b| b.evidence_ids.iter())
-            .all(|id| gueltig.contains(id.as_str()))
+        gueltig
     }
 
     ///
@@ -1035,6 +1278,16 @@ impl Coordinator {
         };
         let stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
         stand.befunde.get(&session).cloned().unwrap_or_default()
+    }
+
+    /// Wie oft ein Befund NICHT persistiert wurde, weil sein Ergebnis beim
+    /// Wiedervergleich unter dem Standlock nicht mehr der Standeintrag seiner
+    /// Sitzung war (NAK-283 M-13 Fenster 2).
+    pub fn befund_schreibversuche_unterlassen_zaehler(&self) -> u64 {
+        self.stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .befund_schreibversuche_unterlassen
     }
 }
 

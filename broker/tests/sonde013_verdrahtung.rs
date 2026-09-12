@@ -3217,11 +3217,20 @@ fn preview_und_ruecknahme_liegen_in_einem_append() {
     };
     anmelden(&h.c, "sonde2", &zweite);
     report(&h.c, "sonde2", &zweite.adresse);
-    for nr in 0..3 {
+    // NAK-283 M-24: eigene Projektpositionen, damit eine fruehere Ruecknahme
+    // genau EINEN der drei Belege treffen kann.
+    for nr in 10..13usize {
         assert!(h
             .c
-            .evidence_snapshot_json("sonde2", &evidenz_payload(&zweite.adresse, nr, |_| {})));
+            .evidence_snapshot_json("sonde2", &f14_beleg(&zweite.adresse, nr, nr as i64)));
     }
+    // NAK-283 M-24: der VORBESTEHENDE Ausschluss - eine fruehere, erfolgreiche
+    // Ruecknahme trifft den Beleg 11.
+    assert_eq!(
+        h.c.invalidierung_wegen_intervention_fuer_link("sonde2", f14_von(11), f14_von(11) + 1),
+        1,
+        "die fruehere Ruecknahme trifft genau den Beleg 11"
+    );
     let nach_zwei = invalidierungen();
     h.naht(true);
     assert!(
@@ -3234,12 +3243,28 @@ fn preview_und_ruecknahme_liegen_in_einem_append() {
         nach_zwei,
         "und es kommt KEINE Invalidierung ins Log"
     );
-    assert!(
+    // B16, seit NAK-283 M-24 gegen die Projektion gemessen: ein `all` ueber
+    // `ausschlussgrund.is_none()` wuerde vom Defekt F14 BESTAETIGT - ein
+    // fremder Ausschluss, den der Rollback loescht, saehe dort aus wie „kein
+    // lokaler Ausschluss". Gemessen wird deshalb je Beleg der Vergleich mit
+    // der Projektion.
+    for eintrag in h.c.evidenz_historie(&hex(0x22)) {
+        assert_eq!(
+            eintrag.ausschlussgrund,
+            f14_ausschluss_im_store(&h, &eintrag.evidence_id),
+            "B16: und AUCH KEIN lokaler Ausschluss - der fluechtige Stand bleibt \
+             gleich dem persistierten ({})",
+            eintrag.evidence_id
+        );
+    }
+    assert_eq!(
         h.c.evidenz_historie(&hex(0x22))
             .iter()
-            .all(|e| e.ausschlussgrund.is_none()),
-        "B16: und AUCH KEIN lokaler Ausschluss - der fluechtige Stand bleibt \
-         gleich dem persistierten"
+            .find(|e| e.evidence_id == hex(0x1000 + 11))
+            .and_then(|e| e.ausschlussgrund.clone())
+            .as_deref(),
+        Some("intervention"),
+        "B16 (NAK-283 M-24): der vorbestehende Ausschluss bleibt stehen"
     );
 }
 
@@ -3308,6 +3333,468 @@ fn gescheiterter_append_laesst_keinen_ausschluss_stehen() {
         h.c.invalidierung_wegen_messpunkt_fuer_link("sonde", "pre", "post") > 0,
         "derselbe Wechsel mit gesundem Store nimmt zurueck - der Riegel sperrt \
          die richtige Haelfte, nicht alles"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-283 Etappe 3 · F14 (NAK-163): der Rollback ueber stabile Evidence-IDs
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Luecke zwischen `invalidierung_vorbereiten` (Standlock frei) und
+// `invalidierung_ruecknehmen` wird NICHT ueber Zeit getroffen, sondern ueber
+// zwei bestehende Nähte: der Flush-Haken haelt einen Flush derselben Sitzung
+// fest und mit ihm das Sessionschloss (`flush.rs`); die Vorschau
+// (`preview_begin`) schliesst ihre Evidenz vorlaeufig aus und wartet danach in
+// `persistenz_p0_intern` an GENAU diesem Schloss. Waehrenddessen nimmt der
+// Evidenzweg einen Beleg an, und die Retention verschiebt die Historie. Erst
+// die Freigabe des Hakens laesst die Vorschau an ihren Append - und die
+// Append-Naht (Befund B16) laesst ihn scheitern.
+
+#[cfg(windows)]
+const F14_BASIS: i64 = 44_108_200;
+
+/// Ein Beleg an einer EIGENEN Projektposition: ein Bereichsausschluss trifft
+/// dann genau die Belege dieser Position.
+#[cfg(windows)]
+fn f14_beleg(adresse: &Adresse, nr: usize, position: i64) -> Vec<u8> {
+    evidenz_payload(adresse, nr, |w| {
+        w["transport"]["project_sample_start"] = json!(F14_BASIS + position * 512);
+    })
+}
+
+#[cfg(windows)]
+fn f14_von(position: i64) -> i64 {
+    F14_BASIS + position * 512
+}
+
+/// Eine Sonde im Harnisch: angemeldet, mit Kontakt und Deskriptor.
+#[cfg(windows)]
+fn f14_sonde(h: &HarnischMitStore, link: &str, instanz: usize) -> HelloControl {
+    let mut s = h.main.clone();
+    s.plugin_kind = "passive_probe".into();
+    s.adresse.instance_id = hex(instanz);
+    s.adresse.runtime_nonce = hex(instanz + 1);
+    anmelden(&h.c, link, &s);
+    report(&h.c, link, &s.adresse);
+    assert!(h
+        .c
+        .descriptor_setzen(link, descriptor(&s.adresse, "pre", &hex(0x77))));
+    s
+}
+
+#[cfg(windows)]
+fn f14_vorschau(h: &HarnischMitStore, command: usize) -> Value {
+    json!({
+        "type": "preview_begin",
+        "kopf": {
+            "command_id": hex(command),
+            "ziel": h.main.adresse,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "lease_duration_ms": 400,
+        "renew_id": hex(0x931)
+    })
+}
+
+/// Der `ausschlussgrund` einer Evidenzzeile in der SQLite-Projektion.
+#[cfg(windows)]
+fn f14_ausschluss_im_store(h: &HarnischMitStore, evidence_id: &str) -> Option<String> {
+    let db = rusqlite::Connection::open(h.db()).expect("Store liegt da");
+    let bytes: Vec<u8> = db
+        .query_row(
+            "SELECT state_jcs FROM evidence WHERE evidence_id = ?1",
+            [evidence_id],
+            |z| z.get(0),
+        )
+        .expect("die Evidenzzeile existiert");
+    let zeile: Value = serde_json::from_slice(&bytes).expect("state_jcs ist JSON");
+    zeile["ausschlussgrund"].as_str().map(str::to_owned)
+}
+
+/// Wartet auf einen BEOBACHTBAREN Zustand, den genau ein Schritt herstellt.
+/// Die Reihenfolge erzwingt das Sessionschloss, nicht diese Schleife; die
+/// Frist trennt nur „nicht gemessen" von einem haengenden Lauf.
+#[cfg(windows)]
+fn f14_warten_bis(mut bedingung: impl FnMut() -> bool, was: &str) {
+    let frist = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    while !bedingung() {
+        assert!(std::time::Instant::now() < frist, "NICHT GEMESSEN: {was}");
+        std::thread::yield_now();
+    }
+}
+
+/// Die Belege einer Quelle mit ihrem Ausschlussgrund, in Historienreihenfolge.
+#[cfg(windows)]
+fn f14_gruende(h: &HarnischMitStore, instanz: usize) -> Vec<(String, Option<String>)> {
+    h.c.evidenz_historie(&hex(instanz))
+        .into_iter()
+        .map(|e| (e.evidence_id, e.ausschlussgrund))
+        .collect()
+}
+
+/// Die Buehne von M-21 und M-23: `anzahl` Belege an eigenen Positionen, der
+/// Beleg `fremd` ist durch eine fruehere ERFOLGREICHE Ruecknahme
+/// ausgeschlossen. Danach haelt der Flush-Haken das Sessionschloss, die
+/// Vorschau schliesst vorlaeufig aus und wartet, der naechste Beleg trifft ein
+/// - am Deckel entfernt die Retention E0 -, und der Append der Vorschau
+/// scheitert. Rueckgabe: die Historie vor der Freigabe (nach dem Eintreffen).
+#[cfg(windows)]
+fn f14_luecke_mit_retention(
+    h: &HarnischMitStore,
+    anzahl: usize,
+    fremd: usize,
+) -> Vec<(String, Option<String>)> {
+    f14_luecke(h, anzahl, fremd, false)
+}
+
+/// Ein Beleg wie `f14_beleg`, mit angehobenem Anomalieband (Baender 98 bis
+/// 101, +9,0 dB) - dieselbe Grundform, mit der `sonde014_verdrahtung.rs`
+/// einen Befund baut.
+#[cfg(windows)]
+fn f14_beleg_laut(adresse: &Adresse, nr: usize, position: i64) -> Vec<u8> {
+    evidenz_payload(adresse, nr, |w| {
+        w["transport"]["project_sample_start"] = json!(F14_BASIS + position * 512);
+        for pfad in [
+            "/baender/werte",
+            "/verteilung/p10/werte",
+            "/verteilung/p50/werte",
+            "/verteilung/p95/werte",
+        ] {
+            if let Some(Value::Array(werte)) = w.pointer_mut(pfad) {
+                for index in 98..102usize.min(werte.len()) {
+                    let alt = werte[index].as_i64().unwrap_or(0);
+                    werte[index] = json!(alt + 90);
+                }
+            }
+        }
+    })
+}
+
+/// Die Buehne von `f14_luecke_mit_retention`. `mit_befund` stellt zusaetzlich
+/// die Vollstaendigkeitsmarke und zwoelf Masterfenster voran und hebt das
+/// Anomalieband aller Belege an: die Sitzung rechnet dann und traegt einen
+/// Befund ueber die Sondenbelege (M-24).
+#[cfg(windows)]
+fn f14_luecke(
+    h: &HarnischMitStore,
+    anzahl: usize,
+    fremd: usize,
+    mit_befund: bool,
+) -> Vec<(String, Option<String>)> {
+    // Die Sonde ZUERST: ihr erster Deskriptor wechselt den Messpunkt, und ein
+    // Messpunktwechsel nimmt die ganze Sitzung zurueck (M-55) - Masterfenster
+    // davor waeren schon ausgeschlossen.
+    let sonde = f14_sonde(h, "sonde", 0x20);
+    if mit_befund {
+        f14_intent_marke(h);
+        for nr in 0..12usize {
+            assert!(h.c.evidence_snapshot_json(
+                "main",
+                &f14_beleg_laut(&h.main.adresse, 0x200 + nr, nr as i64)
+            ));
+        }
+    }
+    for nr in 0..anzahl {
+        let beleg = if mit_befund {
+            f14_beleg_laut(&sonde.adresse, nr, nr as i64)
+        } else {
+            f14_beleg(&sonde.adresse, nr, nr as i64)
+        };
+        assert!(h.c.evidence_snapshot_json("sonde", &beleg));
+    }
+    let erwartet_getroffen = if mit_befund && fremd < 12 { 2 } else { 1 };
+    assert_eq!(
+        h.c.invalidierung_wegen_intervention_fuer_link(
+            "sonde",
+            f14_von(fremd as i64),
+            f14_von(fremd as i64) + 1
+        ),
+        erwartet_getroffen,
+        "die fruehere Ruecknahme trifft genau die Belege an Position {fremd}"
+    );
+    assert_eq!(
+        f14_ausschluss_im_store(h, &hex(0x1000 + fremd)).as_deref(),
+        Some("intervention"),
+        "der fremde Ausschluss ist persistiert"
+    );
+
+    let haken = eqcop_broker::coordinator::CoordinatorFlushTestHaken::default();
+    h.c.flush_test_haken_setzen(haken.clone());
+    let mut vor_der_freigabe = Vec::new();
+    std::thread::scope(|umfang| {
+        // F: ein Flush derselben Sitzung haelt am Haken - und mit ihm das
+        // Sessionschloss.
+        let f = umfang.spawn(|| {
+            h.c.descriptor_setzen("sonde", descriptor(&sonde.adresse, "pre", &hex(0x78)))
+        });
+        haken.warten_bis_erfasst();
+        // Ab hier scheitert jeder Append (erzwungener Storefehler, B16).
+        h.naht(true);
+        // I: die Vorschau schliesst die Evidenz ihrer Sitzung vorlaeufig aus
+        // und wartet danach am Sessionschloss.
+        let i = umfang.spawn(|| h.p0_von("main", &f14_vorschau(h, 0x2831)));
+        f14_warten_bis(
+            || {
+                h.c.evidenz_historie(&hex(0x20))
+                    .first()
+                    .is_some_and(|e0| e0.evidence_id == hex(0x1000) && e0.ausschlussgrund.is_some())
+            },
+            "die Vorschau hat E0 vorlaeufig ausgeschlossen",
+        );
+        // E: der naechste Beleg trifft ein. Am Deckel entfernt die Retention
+        // E0 und verschiebt alle Positionen um eins; sein eigener Append
+        // scheitert an derselben Naht.
+        assert!(
+            !h.c.evidence_snapshot_json("sonde", &f14_beleg(&sonde.adresse, anzahl, anzahl as i64)),
+            "der neue Beleg wird wegen des Storefehlers nicht angenommen"
+        );
+        vor_der_freigabe = f14_gruende(h, 0x20);
+        haken.freigeben();
+        let _ = f.join().expect("F endet");
+        assert!(
+            i.join().expect("I endet").is_none(),
+            "die Vorschau, deren Append scheitert, bleibt unbeantwortet"
+        );
+    });
+    vor_der_freigabe
+}
+
+/// **NAK-283 M-21 (F14, NAK-163): der Rollback trifft nur den eigenen
+/// Ausschluss.**
+///
+/// Die Historie steht am Retention-Deckel (32 Belege); E1 traegt
+/// `intervention` aus einer frueheren erfolgreichen Ruecknahme. Die Vorschau
+/// markiert unter dem Standlock E0 und die uebrigen Belege und gibt die Sperre
+/// frei; ein zweiter Beleg trifft ein, `pop_front()` entfernt E0 und
+/// verschiebt alle Positionen; danach scheitert der Append, und
+/// `invalidierung_ruecknehmen` laeuft. E1 traegt danach weiterhin
+/// `intervention` - im fluechtigen Stand wie in der Projektion.
+///
+/// Rotbeweis `NAK-283-rot-M-21-etappe-3.txt`.
+#[cfg(windows)]
+#[test]
+fn rollback_ueber_stabile_evidence_ids_laesst_fremden_ausschluss_stehen() {
+    let h = HarnischMitStore::neu("nak283-m21");
+    let vorher = f14_luecke_mit_retention(&h, 32, 1);
+    assert!(
+        !vorher.iter().any(|(id, _)| *id == hex(0x1000)),
+        "die Retention hat E0 entfernt - sonst maesse der Fall nichts"
+    );
+    let e1 = hex(0x1001);
+    let nachher = f14_gruende(&h, 0x20);
+    let im_stand = nachher
+        .iter()
+        .find(|(id, _)| *id == e1)
+        .and_then(|(_, grund)| grund.clone());
+    assert_eq!(
+        im_stand.as_deref(),
+        Some("intervention"),
+        "M-21: rollback_ueber_stabile_evidence_ids_laesst_fremden_ausschluss_stehen - E1 traegt \
+         weiterhin ausschlussgrund = intervention; kein fremder Ausschluss faellt"
+    );
+    assert_eq!(
+        f14_ausschluss_im_store(&h, &e1).as_deref(),
+        Some("intervention"),
+        "M-21: und die Projektion traegt denselben Ausschluss"
+    );
+}
+
+/// Der Vollbestand mit Vollstaendigkeitsmarke: ohne ihn rechnet der Broker
+/// nicht (NR-01), und ein Heilungstakt waere unbeobachtbar.
+#[cfg(windows)]
+fn f14_intent_marke(h: &HarnischMitStore) {
+    assert!(h.c.intent_update_json(
+        "main",
+        &serde_json::to_vec(&json!({
+            "type": "intent_update",
+            "adresse": h.main.adresse,
+            "session_epoch": h.main.adresse.session_epoch,
+            "vollstaendig": true,
+            "bestand_revision": 0
+        }))
+        .unwrap()
+    ));
+}
+
+/// **NAK-283 M-22 (F14, Regressionswache): der Rollback nimmt den eigenen
+/// Ausschluss vollstaendig zurueck.**
+///
+/// Eigene Buehne OHNE Retention-Abbau: zehn Belege unter dem Deckel; E2 und E5
+/// teilen eine Projektposition, die sonst kein Beleg traegt, und EINE
+/// Invalidierung markiert beide. Der Append scheitert, und
+/// `invalidierung_ruecknehmen` laeuft ueber alle markierten Belege. Kein
+/// zweiter Faden, keine Verschiebung - die Zeile ist KEIN Beleg fuer F14 (der
+/// fremde Ausschluss liegt bei M-21, der entfernte Beleg bei M-23).
+///
+/// Rotbeweis `NAK-283-rot-M-22-etappe-3.txt` (ein Rollback, der nach dem
+/// ersten Treffer abbricht).
+#[cfg(windows)]
+#[test]
+fn rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck() {
+    let h = HarnischMitStore::neu("nak283-m22");
+    f14_intent_marke(&h);
+    let sonde = f14_sonde(&h, "sonde", 0x20);
+    for nr in 0..10usize {
+        let position = if nr == 2 || nr == 5 { 40 } else { nr as i64 };
+        assert!(h
+            .c
+            .evidence_snapshot_json("sonde", &f14_beleg(&sonde.adresse, nr, position)));
+    }
+    let ausgeschlossen_vorher = h.c.evidenz_ausgeschlossen_zaehler();
+    let invalidierungen_vorher = h.c.invalidierungen_zaehler();
+    let neurechnungen = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let zaehler = Arc::clone(&neurechnungen);
+    h.c.rechen_test_haken_setzen(Box::new(move || {
+        zaehler.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    }));
+    h.naht(true);
+    assert_eq!(
+        h.c.invalidierung_wegen_intervention_fuer_link("sonde", f14_von(40), f14_von(40) + 1),
+        0,
+        "eine Invalidierung, deren Append scheitert, schliesst nichts aus"
+    );
+    let gruende = f14_gruende(&h, 0x20);
+    for nr in [2usize, 5] {
+        let grund = gruende
+            .iter()
+            .find(|(id, _)| *id == hex(0x1000 + nr))
+            .and_then(|(_, g)| g.clone());
+        assert_eq!(
+            grund, None,
+            "M-22: rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck - E{nr} traegt \
+             keinen Ausschlussgrund mehr"
+        );
+    }
+    assert!(
+        gruende.iter().all(|(_, g)| g.is_none()),
+        "M-22: kein Beleg bleibt ausgeschlossen"
+    );
+    assert_eq!(
+        h.c.evidenz_ausgeschlossen_zaehler(),
+        ausgeschlossen_vorher,
+        "M-22: evidenz_ausgeschlossen ist um genau die zwei gefallen, um die er stieg"
+    );
+    assert_eq!(
+        h.c.invalidierungen_zaehler(),
+        invalidierungen_vorher,
+        "M-22: der Invalidierungszaehler steht wieder"
+    );
+    assert_eq!(
+        neurechnungen.load(std::sync::atomic::Ordering::SeqCst),
+        1,
+        "M-22: der Rollback hat befunde_neu_bilden gesetzt - der Takt nach dem Storefehler \
+         hat gerechnet (der Rechenhaken faellt genau einmal und zaehlt nur, DASS gerechnet wurde)"
+    );
+}
+
+/// **NAK-283 M-23 (F14, Zahlenrand der Retention): die Retention verschiebt
+/// keine Rollbackzuordnung.**
+///
+/// Zwei Stufen am Rand von `EVIDENZ_RETENTION = 32`: unter dem Deckel (31
+/// Belege) entfernt der naechste Beleg nichts; am Deckel (32 Belege) entfernt
+/// `pop_front()` E0, waehrend die Vorschau auf den Store wartet. In beiden
+/// Stufen findet der Rollback seine eigenen Belege ueber die `evidence_id`,
+/// und E0, den die Retention entfernt hat, wird uebersprungen, statt an einem
+/// Nachbarn zu wirken. Der fremde Ausschluss E5 haelt eine Luecke in der
+/// markierten Menge offen - ohne sie waere eine Verschiebung am Stand nicht zu
+/// sehen.
+///
+/// Rotbeweis `NAK-283-rot-M-23-etappe-3.txt`.
+#[cfg(windows)]
+#[test]
+fn retention_am_deckel_verschiebt_keine_rollbackzuordnung() {
+    for (anzahl, entfernt) in [(31usize, false), (32usize, true)] {
+        let h = HarnischMitStore::neu(&format!("nak283-m23-{anzahl}"));
+        let vorher = f14_luecke_mit_retention(&h, anzahl, 5);
+        assert_eq!(
+            vorher.iter().any(|(id, _)| *id == hex(0x1000)),
+            !entfernt,
+            "Stufe {anzahl}: E0 ist {} - sonst maesse die Stufe nichts",
+            if entfernt { "entfernt" } else { "noch da" }
+        );
+        let nachher = f14_gruende(&h, 0x20);
+        let eigene_noch_ausgeschlossen: Vec<String> = nachher
+            .iter()
+            .filter(|(id, grund)| *id != hex(0x1005) && grund.is_some())
+            .map(|(id, _)| id.clone())
+            .collect();
+        assert!(
+            eigene_noch_ausgeschlossen.is_empty(),
+            "M-23 Stufe {anzahl}: retention_am_deckel_verschiebt_keine_rollbackzuordnung - jeder \
+             eigene Beleg ist zurueckgenommen, keiner bleibt ausgeschlossen: {eigene_noch_ausgeschlossen:?}"
+        );
+        assert_eq!(
+            nachher.len(),
+            31,
+            "M-23 Stufe {anzahl}: die Historie traegt danach 31 Belege"
+        );
+    }
+}
+
+/// **NAK-283 M-24 (F14, SONDE-014 M-24 „nie wieder sichtbar"): Cache und
+/// Projektion zeigen nach dem Storefehler denselben ausgeschlossenen Beleg.**
+///
+/// Wie M-21, mit laufender Rechnung: Vollstaendigkeitsmarke, zwoelf
+/// Masterfenster, 32 Sondenbelege am Deckel, E1 durch eine fruehere
+/// erfolgreiche Ruecknahme ausgeschlossen, dann die Luecke mit
+/// Retention-Verschiebung und gescheitertem Append. Danach stoesst ein
+/// Storefehler den Takt nach der Ruecknahme an
+/// (`invalidierung_verdrahtung.rs`:118): eine Invalidierung ohne Treffer,
+/// deren Append an derselben Naht scheitert. Die Rechnung liest denselben
+/// Ausschlussstand, den die Projektion traegt - E1 ist in keinem Befund ein
+/// gueltiger Beleg.
+///
+/// Rotbeweis `NAK-283-rot-M-24-etappe-3.txt`.
+#[cfg(windows)]
+#[test]
+fn cache_und_projektion_sind_nach_dem_storefehler_gleich() {
+    let h = HarnischMitStore::neu("nak283-m24");
+    let vorher = f14_luecke(&h, 32, 1, true);
+    assert!(
+        !vorher.iter().any(|(id, _)| *id == hex(0x1000)),
+        "die Retention hat E0 entfernt - sonst maesse der Fall nichts"
+    );
+
+    // Der Takt nach dem Storefehler (:118).
+    let neurechnungen = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let zaehler = Arc::clone(&neurechnungen);
+    h.c.rechen_test_haken_setzen(Box::new(move || {
+        zaehler.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    }));
+    assert_eq!(
+        h.c.invalidierung_wegen_intervention_fuer_link("sonde", f14_von(1000), f14_von(1000) + 1),
+        0,
+        "die Invalidierung ohne Treffer, deren Append scheitert, schliesst nichts aus"
+    );
+    assert_eq!(
+        neurechnungen.load(std::sync::atomic::Ordering::SeqCst),
+        1,
+        "der Takt nach dem Storefehler hat gerechnet - sonst maesse der Fall nichts"
+    );
+
+    let e1 = hex(0x1001);
+    for (id, grund) in f14_gruende(&h, 0x20) {
+        assert_eq!(
+            grund,
+            f14_ausschluss_im_store(&h, &id),
+            "M-24: cache_und_projektion_sind_nach_dem_storefehler_gleich - der Beleg {id} traegt \
+             im fluechtigen Stand und in der Projektion denselben Ausschluss"
+        );
+    }
+    let befunde = h
+        .c
+        .befunde_sicht(&h.main.adresse.project_binding_id, &h.main.adresse.session_epoch);
+    assert!(
+        !befunde.is_empty(),
+        "die Neurechnung traegt einen Befund - sonst maesse der Fall nichts"
+    );
+    assert!(
+        befunde.iter().all(|b| !b.evidence_ids.contains(&e1)),
+        "M-24: die Neurechnung nimmt E1 nicht wieder als gueltigen Beleg auf: {:?}",
+        befunde.iter().map(|b| b.evidence_ids.len()).collect::<Vec<_>>()
     );
 }
 

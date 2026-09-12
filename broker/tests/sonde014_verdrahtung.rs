@@ -22,7 +22,8 @@ use eqcop_broker::coordinator::{
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
 use serde_json::{json, Value};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 // ── Werkzeug ─────────────────────────────────────────────────────────────
 
@@ -648,6 +649,706 @@ fn veraltetes_rechenergebnis_wird_nicht_veroeffentlicht() {
             .iter()
             .all(|b| !b.evidence_ids.contains(&zurueckgenommen)),
         "eine waehrend der Rechnung zurueckgenommene ID darf nie wieder sichtbar werden"
+    );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-283 Etappe 3 · F02 (R-283-1): die Eingangsmenge beim Rueckschreiben
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Buehne aller Faelle dieses Abschnitts ist dieselbe: der Master traegt
+// dreizehn Fenster (Positionen 0 bis 12), die Sonde elf Belege (100 bis 110,
+// Positionen 0 bis 10). Der Beleg 111 an Position 11 loest Rechnung A aus,
+// ihre Befunde tragen ZWOELF Sonden-IDs; der Beleg 112 an Position 12 loest
+// Rechnung B aus, deren Befunde tragen DREIZEHN. Keine andere Rechnung dieser
+// Buehne traegt genau zwoelf — daran ist A's Ergebnis im Stand, im
+// `event_log` und in der Projektion eindeutig zu erkennen.
+//
+// Der Master traegt sein dreizehntes Fenster schon VOR A: sonst loeste es
+// selbst eine Rechnung mit zwoelf Sonden-IDs aus, und A waere nicht mehr die
+// einzige.
+
+const F02_BASIS: i64 = 44_108_200;
+
+fn f02_fenster(position: i64) -> i64 {
+    F02_BASIS + position * 512
+}
+
+/// Die Sonden-IDs `von..=bis` in Ankunftsreihenfolge — die Form, in der ein
+/// Befund sie traegt (`fenster_aus_historie` ordnet nach `empfangsfolge`).
+fn f02_sonden_ids(von: usize, bis: usize) -> Vec<String> {
+    (von..=bis).map(|nr| hex(0x1000 + nr)).collect()
+}
+
+/// Master und Sonde mit Deskriptor, Vollstaendigkeitsmarke, dreizehn
+/// Masterfenstern und elf Sondenbelegen. Rechnet bis zum Stand R11.
+fn f02_buehne(c: &Coordinator) -> (Adresse, Adresse) {
+    let master = adresse(0x11, 0x22, 1, 0x41);
+    let sonde = adresse(0x11, 0x22, 2, 0x42);
+    anmelden_mit_deskriptor(c, "main", &master, "main", Some(0));
+    anmelden_mit_deskriptor(c, "sonde0", &sonde, "passive_probe", Some(3));
+    ueber_senke(
+        c,
+        "main",
+        &json!({
+            "type": "intent_update",
+            "adresse": master,
+            "session_epoch": master.session_epoch,
+            "vollstaendig": true,
+            "bestand_revision": 0
+        }),
+    );
+    reihe(c, "main", &master, 0, 13);
+    reihe(c, "sonde0", &sonde, 100, 11);
+    let r11 = c.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert!(
+        !r11.is_empty() && r11.iter().all(|b| b.evidence_ids == f02_sonden_ids(100, 110)),
+        "die Buehne traegt einen Befund ueber elf Sondenbelege - sonst maesse der Fall nichts: {:?}",
+        r11.iter().map(|b| b.evidence_ids.len()).collect::<Vec<_>>()
+    );
+    (master, sonde)
+}
+
+/// Ein Zaehlhaken fuer den Rechenhaken, der sich bei JEDEM Lauf neu scharf
+/// stellt. Der Rechenhaken faellt genau einmal (er nimmt sich vor dem Lauf
+/// heraus, `mod.rs`); ein einmaliger Zaehler maesse deshalb nur „mindestens
+/// eine“ Neurechnung. Dieser zaehlt jede Rechnung nach dem Setzen und traegt
+/// damit die Obergrenze von „genau eine“ (NAK-283 M-13, M-16; gebrochen mit
+/// `NAK-283-rot-M-16c-etappe-3.txt`).
+fn f02_zaehlhaken(
+    k: std::sync::Weak<Coordinator>,
+    zaehler: Arc<AtomicUsize>,
+) -> Box<dyn Fn() + Send + Sync> {
+    Box::new(move || {
+        zaehler.fetch_add(1, Ordering::SeqCst);
+        if let Some(c) = k.upgrade() {
+            c.rechen_test_haken_setzen(f02_zaehlhaken(k.clone(), Arc::clone(&zaehler)));
+        }
+    })
+}
+
+/// **NAK-283 M-13, Fenster 1 (R-283-1, F02/NAK-253).**
+///
+/// Rechnung A hat ihre Eingangsmenge unter dem Standlock gesammelt und haengt
+/// am bestehenden Rechenhaken. Ein zweiter Beleg kommt an: Rechnung B sammelt
+/// ihn, rechnet, traegt ein und wird zugestellt. Danach will A eintragen. A's
+/// VERWENDETE IDs sind alle noch gueltig und die Intentgeneration ist dieselbe
+/// — der Riegel aus NR-03 liesse A durch. Erst der Vergleich der Eingangsmenge
+/// verwirft A.
+///
+/// Rotbeweis `NAK-283-rot-M-13a-etappe-3.txt` (dreimal rot).
+#[test]
+fn neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis() {
+    let c = Arc::new(coordinator());
+    let (master, sonde) = f02_buehne(&c);
+
+    let b_ergebnis = Arc::new(Mutex::new(Vec::new()));
+    let neurechnungen = Arc::new(AtomicUsize::new(0));
+    let schwach = Arc::downgrade(&c);
+    let (b_im_haken, zaehler, master_h, sonde_h) = (
+        Arc::clone(&b_ergebnis),
+        Arc::clone(&neurechnungen),
+        master.clone(),
+        sonde.clone(),
+    );
+    c.rechen_test_haken_setzen(Box::new(move || {
+        let Some(k) = schwach.upgrade() else {
+            return;
+        };
+        // Rechnung B: der Beleg 112 kommt an; B sammelt, rechnet, traegt ein.
+        k.p1("sonde0", &evidenz(&sonde_h, 112, f02_fenster(12)));
+        *b_im_haken.lock().unwrap() =
+            k.befunde_sicht(&master_h.project_binding_id, &master_h.session_epoch);
+        // Erst JETZT der Zaehlhaken: B liegt hinter uns, und die naechste
+        // Rechnung ist die, die A's Verwurf nach sich zieht.
+        k.rechen_test_haken_setzen(f02_zaehlhaken(Arc::downgrade(&k), Arc::clone(&zaehler)));
+    }));
+    // Rechnung A: der Beleg 111 loest sie aus.
+    c.p1("sonde0", &evidenz(&sonde, 111, f02_fenster(11)));
+
+    let b = b_ergebnis.lock().unwrap().clone();
+    assert!(
+        !b.is_empty() && b.iter().all(|x| x.evidence_ids == f02_sonden_ids(100, 112)),
+        "der Haken ist gefallen, und B traegt dreizehn IDs - sonst maesse der Fall nichts: {:?}",
+        b.iter().map(|x| x.evidence_ids.len()).collect::<Vec<_>>()
+    );
+    let ende = c.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert_eq!(
+        ende.iter().map(|x| x.evidence_ids.len()).collect::<Vec<_>>(),
+        b.iter().map(|x| x.evidence_ids.len()).collect::<Vec<_>>(),
+        "M-13 Fenster 1: neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis - \
+         stand.befunde traegt das Ergebnis von B (13 IDs), A (12 IDs) ist verworfen"
+    );
+    assert_eq!(
+        ende, b,
+        "M-13 Fenster 1: der Stand ist GENAU B - A hat nichts ueberschrieben"
+    );
+    assert_eq!(
+        neurechnungen.load(Ordering::SeqCst),
+        1,
+        "M-13 Fenster 1: A's Verwurf hat befunde_neu_bilden gesetzt, und genau eine \
+         Neurechnung ist gefolgt"
+    );
+}
+
+/// Die `finding`-Ereignisse des `event_log` in Annahmereihenfolge: `event_ord`
+/// und die `evidence_ids` ihres Payloads.
+fn f02_finding_ereignisse(writer: &eqcop_broker::store::StoreWriter) -> Vec<(i64, Vec<String>)> {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    let mut stmt = conn
+        .prepare(
+            "SELECT event_ord, payload_jcs FROM event_log \
+             WHERE event_type = 'finding' ORDER BY event_ord",
+        )
+        .expect("das event_log ist lesbar");
+    let zeilen = stmt
+        .query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, Vec<u8>>(1)?)))
+        .expect("Zeilen lesbar");
+    zeilen
+        .map(|zeile| {
+            let (ord, bytes) = zeile.expect("Zeile");
+            let wert: Value = serde_json::from_slice(&bytes).expect("der Payload ist JSON");
+            let ids = wert["evidence_ids"]
+                .as_array()
+                .map(|a| a.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+                .unwrap_or_default();
+            (ord, ids)
+        })
+        .collect()
+}
+
+/// Die Zeilen der Projektion `findings` (`writer.rs`:572): `finding_id` und die
+/// persistierten JCS-Bytes.
+fn f02_findings_projektion(writer: &eqcop_broker::store::StoreWriter) -> Vec<(String, Vec<u8>)> {
+    let conn = rusqlite::Connection::open(writer.handle().db_pfad()).expect("Store ist lesbar");
+    let mut stmt = conn
+        .prepare("SELECT finding_id, state_jcs FROM findings ORDER BY finding_id")
+        .expect("die Projektion `findings` existiert");
+    let zeilen = stmt
+        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?)))
+        .expect("Zeilen lesbar");
+    zeilen.map(|z| z.expect("Zeile")).collect()
+}
+
+/// Prueft, dass jede Wireform eines Befunds im fluechtigen Stand
+/// (`session_snapshot.findings`, erzeugt von `befund_json`) BYTEGLEICH in der
+/// Projektion steht — verglichen in JCS, derselben Form, in der der Befund
+/// persistiert wird. Rueckgabe: die Befunde des Stands.
+fn f02_stand_gleich_projektion(
+    c: &Coordinator,
+    writer: &eqcop_broker::store::StoreWriter,
+    a: &Adresse,
+    zeile: &str,
+) -> Vec<Value> {
+    let snapshot: Value = serde_json::from_slice(
+        &c.session_snapshot_json(&a.project_binding_id, &a.session_epoch),
+    )
+    .expect("der Snapshot ist JSON");
+    let stand = snapshot["findings"].as_array().cloned().unwrap_or_default();
+    let projektion = f02_findings_projektion(writer);
+    for befund in &stand {
+        let id = befund["finding_id"].as_str().expect("finding_id");
+        let persistiert = projektion
+            .iter()
+            .find(|(p, _)| p == id)
+            .map(|(_, bytes)| String::from_utf8_lossy(bytes).into_owned())
+            .unwrap_or_else(|| panic!("{zeile}: der Befund {id} fehlt in der Projektion"));
+        let im_stand = String::from_utf8(
+            serde_json_canonicalizer::to_vec(befund).expect("der Befund ist kanonisierbar"),
+        )
+        .expect("JCS ist UTF-8");
+        assert_eq!(
+            persistiert, im_stand,
+            "{zeile}: fluechtiger Stand und Projektion sind gleich"
+        );
+    }
+    stand
+}
+
+fn f02_ids_von(befund: &Value) -> Vec<String> {
+    befund["evidence_ids"]
+        .as_array()
+        .map(|a| a.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
+/// **NAK-283 M-13, Fenster 2 (R-283-1): die Frischepruefung reicht bis zur
+/// Persistenz.**
+///
+/// A hat den Riegel genommen und steht bereits in `stand.befunde`; der
+/// Standlock ist gefallen, und A haengt am Persistenzhaken vor dem
+/// Persistenzlauf. Erst dann laeuft B VOLLSTAENDIG durch — sammeln, rechnen,
+/// eintragen, persistieren. Danach wird A freigegeben und nimmt den Standlock:
+/// A schreibt nicht.
+///
+/// Rotbeweis `NAK-283-rot-M-13b-etappe-3.txt` (dreimal rot).
+#[test]
+#[cfg(windows)]
+fn aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert() {
+    let (c, writer, _ordner) = coordinator_mit_store("nak283-m13-fenster2");
+    let c = Arc::new(c);
+    let (master, sonde) = f02_buehne(&c);
+    assert!(
+        f02_finding_ereignisse(&writer)
+            .iter()
+            .any(|(_, ids)| *ids == f02_sonden_ids(100, 110)),
+        "die Buehne hat ihren Befund persistiert - sonst maesse der Fall nichts"
+    );
+
+    let b_ergebnis = Arc::new(Mutex::new(Vec::new()));
+    let neurechnungen = Arc::new(AtomicUsize::new(0));
+    let schwach = Arc::downgrade(&c);
+    let (b_im_haken, zaehler, master_h, sonde_h) = (
+        Arc::clone(&b_ergebnis),
+        Arc::clone(&neurechnungen),
+        master.clone(),
+        sonde.clone(),
+    );
+    c.persistenz_test_haken_setzen(Box::new(move || {
+        let Some(k) = schwach.upgrade() else {
+            return;
+        };
+        // A steht im Cache, der Standlock ist frei, A hat nichts persistiert.
+        // Jetzt laeuft B vollstaendig: sammeln, rechnen, eintragen,
+        // persistieren, zustellen.
+        k.p1("sonde0", &evidenz(&sonde_h, 112, f02_fenster(12)));
+        *b_im_haken.lock().unwrap() =
+            k.befunde_sicht(&master_h.project_binding_id, &master_h.session_epoch);
+        k.rechen_test_haken_setzen(f02_zaehlhaken(Arc::downgrade(&k), Arc::clone(&zaehler)));
+    }));
+    c.p1("sonde0", &evidenz(&sonde, 111, f02_fenster(11)));
+
+    let b = b_ergebnis.lock().unwrap().clone();
+    assert!(
+        !b.is_empty() && b.iter().all(|x| x.evidence_ids == f02_sonden_ids(100, 112)),
+        "der Haken ist gefallen, und B traegt dreizehn IDs - sonst maesse der Fall nichts: {:?}",
+        b.iter().map(|x| x.evidence_ids.len()).collect::<Vec<_>>()
+    );
+    let ereignisse = f02_finding_ereignisse(&writer);
+    println!(
+        "NAK-283 M-13 Fenster 2: finding-Ereignisse (event_ord, Zahl der IDs) {:?}",
+        ereignisse.iter().map(|(o, ids)| (*o, ids.len())).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        ereignisse
+            .iter()
+            .filter(|(_, ids)| *ids == f02_sonden_ids(100, 111))
+            .count(),
+        0,
+        "M-13 Fenster 2: aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert - \
+         das event_log traegt KEINEN finding-Event mit A's Payload (12 IDs)"
+    );
+    let stand = f02_stand_gleich_projektion(&c, &writer, &master, "M-13 Fenster 2");
+    assert!(
+        !stand.is_empty() && stand.iter().all(|f| f02_ids_von(f) == f02_sonden_ids(100, 112)),
+        "M-13 Fenster 2: Stand und Projektion tragen B's 13-ID-Payload"
+    );
+    assert_eq!(
+        c.befund_schreibversuche_unterlassen_zaehler(),
+        b.len() as u64,
+        "M-13 Fenster 2: A's unterlassener Schreibversuch ist gezaehlt, je Befund einer"
+    );
+    assert_eq!(
+        neurechnungen.load(Ordering::SeqCst),
+        1,
+        "M-13 Fenster 2: der unterlassene Schreibversuch zieht genau eine Neurechnung nach sich"
+    );
+}
+
+/// **NAK-283 M-75, Fenster 3 (R-283-1): wer den Vergleich spaeter besteht,
+/// reiht spaeter ein.**
+///
+/// Drei Faeden. A besteht in `befund_persistieren` den Wiedervergleich unter
+/// dem Standlock und haelt am Annahmehaken unmittelbar vor
+/// `append_einreihen` — am GEHALTENEN Guard. Der Kontrollfaden startet darauf
+/// B und wartet befristet auf dessen Abschlussmarke; er nimmt den Standlock
+/// nie. B stellt den dreizehnten Beleg zu und blockiert am Standlock, solange A
+/// ihn haelt. Laeuft die Frist ab, gibt der Kontrollfaden A frei.
+///
+/// Der FREIGABEGRUND ist Zusicherung: im Fixlauf `Frist` (B kam nicht durch
+/// die Luecke), im Mutantenlauf `Signal`. Die Frist liegt im Test, nie im
+/// Produkt; `NAK283_M75_FRIST_MS` verlaengert sie fuer einen Mutantenlauf, der
+/// mit `Frist` endete und damit nicht gemessen ist.
+///
+/// Rotbeweis `NAK-283-rot-M-75-etappe-3.txt` (dreimal rot, Freigabegrund je
+/// Lauf).
+#[test]
+#[cfg(windows)]
+fn annahmeordnung_folgt_der_vergleichsordnung() {
+    let frist = std::time::Duration::from_millis(
+        std::env::var("NAK283_M75_FRIST_MS")
+            .ok()
+            .and_then(|w| w.parse::<u64>().ok())
+            .unwrap_or(1000),
+    );
+    let (c, writer, _ordner) = coordinator_mit_store("nak283-m75");
+    let c = Arc::new(c);
+    let (master, sonde) = f02_buehne(&c);
+    assert_eq!(
+        c.befunde_sicht(&master.project_binding_id, &master.session_epoch)
+            .len(),
+        1,
+        "genau EIN Befund je Sitzung - nur dann trifft der einmalige Haken sicher den Lauf von A"
+    );
+
+    let haken = eqcop_broker::coordinator::CoordinatorFlushTestHaken::default();
+    c.annahme_test_haken_setzen(haken.clone());
+
+    // Faden A: der Beleg 111 loest die Rechnung aus, deren Befund am Haken haelt.
+    let (c_a, sonde_a) = (Arc::clone(&c), sonde.clone());
+    let faden_a =
+        std::thread::spawn(move || c_a.p1("sonde0", &evidenz(&sonde_a, 111, f02_fenster(11))));
+
+    // Die Erfassungsmarke, befristet: bleibt sie aus, hat A den Vergleich nicht
+    // bestanden, den die Buehne verlangt - dann ist der Fall nicht gemessen.
+    let (erfasst_tx, erfasst_rx) = std::sync::mpsc::channel();
+    let beobachter = haken.clone();
+    std::thread::spawn(move || {
+        beobachter.warten_bis_erfasst();
+        let _ = erfasst_tx.send(());
+    });
+    assert!(
+        erfasst_rx
+            .recv_timeout(std::time::Duration::from_secs(30))
+            .is_ok(),
+        "M-75 NICHT GEMESSEN: die Erfassungsmarke des Annahmehakens blieb aus"
+    );
+
+    // Faden B: der Beleg 112. Der Kontrollfaden wartet befristet auf seine
+    // Abschlussmarke und nimmt dabei den Standlock nie.
+    let (b_fertig_tx, b_fertig_rx) = std::sync::mpsc::channel();
+    let (c_b, sonde_b) = (Arc::clone(&c), sonde.clone());
+    let faden_b = std::thread::spawn(move || {
+        c_b.p1("sonde0", &evidenz(&sonde_b, 112, f02_fenster(12)));
+        let _ = b_fertig_tx.send(());
+    });
+    let beginn = std::time::Instant::now();
+    let freigabegrund = match b_fertig_rx.recv_timeout(frist) {
+        Ok(()) => "Signal",
+        Err(_) => "Frist",
+    };
+    println!(
+        "NAK-283 M-75: Freigabegrund = {freigabegrund} (Frist {} ms, gewartet {} ms)",
+        frist.as_millis(),
+        beginn.elapsed().as_millis()
+    );
+    haken.freigeben();
+    faden_a.join().expect("Faden A endet");
+    faden_b.join().expect("Faden B endet");
+
+    let ereignisse = f02_finding_ereignisse(&writer);
+    println!(
+        "NAK-283 M-75: finding-Ereignisse (event_ord, Zahl der IDs) {:?}",
+        ereignisse.iter().map(|(o, ids)| (*o, ids.len())).collect::<Vec<_>>()
+    );
+    let ord_a: Vec<i64> = ereignisse
+        .iter()
+        .filter(|(_, ids)| *ids == f02_sonden_ids(100, 111))
+        .map(|(o, _)| *o)
+        .collect();
+    let ord_b: Vec<i64> = ereignisse
+        .iter()
+        .filter(|(_, ids)| *ids == f02_sonden_ids(100, 112))
+        .map(|(o, _)| *o)
+        .collect();
+    assert_eq!(
+        (ord_a.len(), ord_b.len()),
+        (1, 1),
+        "M-75: das event_log traegt BEIDE finding-Events - A (12 IDs) und B (13 IDs)"
+    );
+    assert!(
+        ord_a[0] < ord_b[0],
+        "M-75: annahmeordnung_folgt_der_vergleichsordnung - A wird ZUERST angenommen, B \
+         danach: event_ord A {} < event_ord B {}",
+        ord_a[0],
+        ord_b[0]
+    );
+    let stand = f02_stand_gleich_projektion(&c, &writer, &master, "M-75");
+    assert!(
+        !stand.is_empty() && stand.iter().all(|f| f02_ids_von(f) == f02_sonden_ids(100, 112)),
+        "M-75: die Projektion traegt den 13-ID-Payload von B"
+    );
+    assert_eq!(
+        freigabegrund, "Frist",
+        "M-75: im Fixlauf gibt der Kontrollfaden A erst nach Ablauf der Frist frei - \
+         B kam nicht durch die Luecke"
+    );
+}
+
+/// **NAK-283 M-16 (R-283-1): jeder Verwurf zieht genau eine Neurechnung nach
+/// sich** — je Fenster ein Fall.
+///
+/// Beide Buehnen lassen den Stand nach dem Verwurf auf einem AELTEREN
+/// Ergebnis stehen: die Aenderung, die den Verwurf ausloest, rechnet selbst
+/// nicht nach. Fenster 1: eine Ruecknahme des dreizehnten Masterfensters —
+/// es teilt keine Position mit einem Sondenbeleg, faellt also aus keiner
+/// verwendeten ID. Fenster 2: eine Ruecknahme von A's Sondenbeleg 105, NACHDEM
+/// A im Cache steht; sie veraendert A's Eintrag, und A's Schreibversuch
+/// unterbleibt. Nur der Merker des Verwurfs bringt den juengsten Eingangsstand
+/// in den Stand — im folgenden Takt, ohne neue Evidenz. Den Merker der
+/// Vollstaendigkeitsmarke (`intent.rs`:626) hat das Sammeln der
+/// Buehnenrechnungen bereits eingeloest; solange es ihn nicht einloeste, trug
+/// er den Heilungstakt auch ohne den Merker des Verwurfs (erster Rotlauf 0/3,
+/// NAK-283 §29).
+///
+/// Rotbeweise `NAK-283-rot-M-16a-etappe-3.txt` (Fenster 1) und
+/// `NAK-283-rot-M-16b-etappe-3.txt` (Fenster 2); die Obergrenze „genau eine“
+/// misst der neu scharf stellende Zaehlhaken `f02_zaehlhaken`
+/// (`NAK-283-rot-M-16c-etappe-3.txt`).
+#[test]
+#[cfg(windows)]
+fn verworfene_rechnung_zieht_genau_eine_neurechnung_nach() {
+    // ── Fenster 1: Verwurf vor dem Cache-Eintrag ────────────────────────
+    let c = Arc::new(coordinator());
+    let (master, sonde) = f02_buehne(&c);
+    let neurechnungen = Arc::new(AtomicUsize::new(0));
+    let schwach = Arc::downgrade(&c);
+    let zaehler = Arc::clone(&neurechnungen);
+    c.rechen_test_haken_setzen(Box::new(move || {
+        let Some(k) = schwach.upgrade() else {
+            return;
+        };
+        let getroffen = k.invalidierung_wegen_intervention_fuer_link(
+            "main",
+            f02_fenster(12),
+            f02_fenster(12) + 1,
+        );
+        assert_eq!(getroffen, 1, "die Ruecknahme trifft genau das Masterfenster an Position 12");
+        k.rechen_test_haken_setzen(f02_zaehlhaken(Arc::downgrade(&k), Arc::clone(&zaehler)));
+    }));
+    c.p1("sonde0", &evidenz(&sonde, 111, f02_fenster(11)));
+    let befunde = c.befunde_sicht(&master.project_binding_id, &master.session_epoch);
+    assert!(
+        !befunde.is_empty() && befunde.iter().all(|b| b.evidence_ids == f02_sonden_ids(100, 111)),
+        "M-16 Fenster 1: verworfene_rechnung_zieht_genau_eine_neurechnung_nach - der folgende \
+         Takt traegt das Ergebnis des juengsten Eingangsstands ein (12 IDs), ohne dass neue \
+         Evidenz eintreffen muss: {:?}",
+        befunde.iter().map(|b| b.evidence_ids.len()).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        neurechnungen.load(Ordering::SeqCst),
+        1,
+        "M-16 Fenster 1: der Verwurf vor dem Cache-Eintrag zieht GENAU EINE Neurechnung nach sich"
+    );
+
+    // ── Fenster 2: unterlassener Schreibversuch vor der Persistenz ──────
+    let (d, writer, _ordner) = coordinator_mit_store("nak283-m16-fenster2");
+    let d = Arc::new(d);
+    let (master_d, sonde_d) = f02_buehne(&d);
+    let neurechnungen_d = Arc::new(AtomicUsize::new(0));
+    let schwach_d = Arc::downgrade(&d);
+    let zaehler_d = Arc::clone(&neurechnungen_d);
+    d.persistenz_test_haken_setzen(Box::new(move || {
+        let Some(k) = schwach_d.upgrade() else {
+            return;
+        };
+        let getroffen = k.invalidierung_wegen_intervention_fuer_link(
+            "sonde0",
+            f02_fenster(5),
+            f02_fenster(5) + 1,
+        );
+        assert_eq!(
+            getroffen, 2,
+            "die Ruecknahme trifft den Sondenbeleg 105 und das Masterfenster an Position 5"
+        );
+        k.rechen_test_haken_setzen(f02_zaehlhaken(Arc::downgrade(&k), Arc::clone(&zaehler_d)));
+    }));
+    d.p1("sonde0", &evidenz(&sonde_d, 111, f02_fenster(11)));
+    let erwartet: Vec<String> = (100..=111)
+        .filter(|nr| *nr != 105)
+        .map(|nr| hex(0x1000 + nr))
+        .collect();
+    let befunde_d = d.befunde_sicht(&master_d.project_binding_id, &master_d.session_epoch);
+    assert!(
+        !befunde_d.is_empty()
+            && befunde_d
+                .iter()
+                .all(|b| b.evidence_ids == erwartet && b.zustand != Befundzustand::Stale),
+        "M-16 Fenster 2: verworfene_rechnung_zieht_genau_eine_neurechnung_nach - der folgende \
+         Takt traegt das Ergebnis des juengsten Eingangsstands ein (ohne 105, nicht stale): {:?}",
+        befunde_d
+            .iter()
+            .map(|b| (b.evidence_ids.len(), b.zustand))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        d.befund_schreibversuche_unterlassen_zaehler() > 0,
+        "M-16 Fenster 2: der Verwurf war ein unterlassener Schreibversuch"
+    );
+    assert_eq!(
+        neurechnungen_d.load(Ordering::SeqCst),
+        1,
+        "M-16 Fenster 2: der unterlassene Schreibversuch zieht GENAU EINE Neurechnung nach sich"
+    );
+    f02_stand_gleich_projektion(&d, &writer, &master_d, "M-16 Fenster 2");
+}
+
+/// **NAK-283 M-25 (Uebergang F02 + F14): kein Rueckschreibeweg des
+/// Coordinators benennt sein Ziel ueber eine Position.**
+///
+/// Beide Wege in einem Lauf, je Lock-Luecke ein Haken. **Weg 1, die
+/// Hypothesenrechnung:** der Rechenhaken haelt A zwischen Rechnung und
+/// Eintrag, B traegt ein; A's Rueckschreiben prueft Generation und
+/// Eingangsmenge und faellt. **Weg 2, die Invalidierung:** der Flush-Haken
+/// haelt das Sessionschloss, die Vorschau wartet nach ihrer vorlaeufigen
+/// Markierung an ihm, die Retention verschiebt die Historie, der Append
+/// scheitert, und der Rollback findet seine Belege ueber die stabile
+/// `evidence_id`. Beide Luecken bleiben erlaubt - ihre Ueberbrueckung ist das
+/// Merkmal, nicht die Sperre. Dazu der Riegel im Bein: `git grep -n
+/// "zurueck: Vec<(ClientKey, usize)>" broker/src/` ist leer.
+///
+/// Rotbeweise `NAK-283-rot-M-25a-etappe-3.txt` (Weg 1) und
+/// `NAK-283-rot-M-25b-etappe-3.txt` (Weg 2).
+#[test]
+#[cfg(windows)]
+fn kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position() {
+    // ── Weg 1: die Hypothesenrechnung ───────────────────────────────────
+    let c = Arc::new(coordinator());
+    let (master, sonde) = f02_buehne(&c);
+    let b_ergebnis = Arc::new(Mutex::new(Vec::new()));
+    let schwach = Arc::downgrade(&c);
+    let (b_im_haken, master_h, sonde_h) =
+        (Arc::clone(&b_ergebnis), master.clone(), sonde.clone());
+    c.rechen_test_haken_setzen(Box::new(move || {
+        let Some(k) = schwach.upgrade() else {
+            return;
+        };
+        k.p1("sonde0", &evidenz(&sonde_h, 112, f02_fenster(12)));
+        *b_im_haken.lock().unwrap() =
+            k.befunde_sicht(&master_h.project_binding_id, &master_h.session_epoch);
+    }));
+    c.p1("sonde0", &evidenz(&sonde, 111, f02_fenster(11)));
+    let b = b_ergebnis.lock().unwrap().clone();
+    assert!(
+        !b.is_empty() && b.iter().all(|x| x.evidence_ids == f02_sonden_ids(100, 112)),
+        "Weg 1: B traegt dreizehn IDs - sonst maesse der Weg nichts"
+    );
+    assert_eq!(
+        c.befunde_sicht(&master.project_binding_id, &master.session_epoch),
+        b,
+        "M-25 Weg 1: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position \
+         - die Rechnung schreibt nur zurueck, was auf der aktuellen Eingangsmenge steht"
+    );
+
+    // ── Weg 2: die Invalidierung ────────────────────────────────────────
+    let (d, writer, _ordner) = coordinator_mit_store("nak283-m25");
+    let main = adresse(0x31, 0x32, 1, 0x51);
+    let probe = adresse(0x31, 0x32, 2, 0x52);
+    anmelden(&d, "main", &hello(main.clone()));
+    let _ = d.heartbeat_kontakt(
+        "main",
+        Some(&json!({
+            "type": "heartbeat",
+            "adresse": main,
+            "sequence": 1,
+            "state_revision": 0,
+            "capabilities": capabilities_vertragsgueltig(),
+            "zaehler": {}
+        })),
+    );
+    assert!(d.state_report_json(
+        "main",
+        &bytes(&json!({
+            "type": "state_report",
+            "adresse": main,
+            "dsp_schema_version": 1,
+            "state_revision": 0,
+            "state_hash": "a".repeat(64),
+            "record_state": {"valid": true, "recording": false}
+        }))
+    ));
+    anmelden_mit_deskriptor(&d, "sonde0", &probe, "passive_probe", Some(3));
+    for nr in 0..32usize {
+        d.p1("sonde0", &evidenz(&probe, nr, f02_fenster(nr as i64)));
+    }
+    assert_eq!(
+        d.invalidierung_wegen_intervention_fuer_link("sonde0", f02_fenster(1), f02_fenster(1) + 1),
+        1,
+        "Weg 2: eine fruehere, erfolgreiche Ruecknahme schliesst genau E1 aus"
+    );
+    let vorschau = json!({
+        "type": "preview_begin",
+        "kopf": {
+            "command_id": hex(0x2825),
+            "ziel": main,
+            "base_revision": 0,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        },
+        "lease_duration_ms": 400,
+        "renew_id": hex(0x931)
+    });
+    let mut neuer_deskriptor = json!({
+        "adresse": probe,
+        "plugin_kind": "passive_probe",
+        "measurement_position": "post",
+        "aussageklasse": "beobachtend",
+        "betrieb": "active",
+        "label": "Testquelle F",
+        "capabilities": capabilities(),
+        "frische": {"letzter_kontakt_ms": 10, "stale": false}
+    });
+    neuer_deskriptor["host_mixer_index"] = json!(3);
+    let haken = eqcop_broker::coordinator::CoordinatorFlushTestHaken::default();
+    d.flush_test_haken_setzen(haken.clone());
+    std::thread::scope(|umfang| {
+        // F haelt einen Flush der Sitzung am Haken - und mit ihm das Sessionschloss.
+        let f = umfang.spawn(|| d.descriptor_setzen("sonde0", neuer_deskriptor.clone()));
+        haken.warten_bis_erfasst();
+        writer.handle().append_naht_setzen(true);
+        // I: die Vorschau markiert vorlaeufig und wartet am Sessionschloss.
+        let i = umfang.spawn(|| Senke::p0(&d, "main", &bytes(&vorschau)));
+        let frist = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        while !d
+            .evidenz_historie(&probe.instance_id)
+            .first()
+            .is_some_and(|e0| e0.evidence_id == hex(0x1000) && e0.ausschlussgrund.is_some())
+        {
+            assert!(
+                std::time::Instant::now() < frist,
+                "M-25 NICHT GEMESSEN: die Vorschau hat E0 nicht vorlaeufig ausgeschlossen"
+            );
+            std::thread::yield_now();
+        }
+        // E: der 33. Beleg; die Retention entfernt E0, der Append scheitert.
+        assert!(
+            !d.evidence_snapshot_json("sonde0", &evidenz(&probe, 32, f02_fenster(32))),
+            "der neue Beleg wird wegen des Storefehlers nicht angenommen"
+        );
+        haken.freigeben();
+        let _ = f.join().expect("F endet");
+        assert!(
+            i.join().expect("I endet").is_none(),
+            "die Vorschau, deren Append scheitert, bleibt unbeantwortet"
+        );
+    });
+    let gruende: Vec<(String, Option<String>)> = d
+        .evidenz_historie(&probe.instance_id)
+        .into_iter()
+        .map(|e| (e.evidence_id, e.ausschlussgrund))
+        .collect();
+    assert!(
+        !gruende.iter().any(|(id, _)| *id == hex(0x1000)),
+        "Weg 2: die Retention hat E0 entfernt - sonst maesse der Weg nichts"
+    );
+    assert_eq!(
+        gruende
+            .iter()
+            .find(|(id, _)| *id == hex(0x1001))
+            .and_then(|(_, g)| g.clone())
+            .as_deref(),
+        Some("intervention"),
+        "M-25 Weg 2: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position \
+         - der Rollback trifft seine Belege ueber die stabile evidence_id; E1 behaelt seinen \
+         fremden Ausschluss"
+    );
+    assert!(
+        gruende
+            .iter()
+            .filter(|(id, _)| *id != hex(0x1001))
+            .all(|(_, g)| g.is_none()),
+        "M-25 Weg 2: und jeder eigene Beleg ist zurueckgenommen"
     );
 }
 

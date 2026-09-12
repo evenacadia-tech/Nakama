@@ -1,0 +1,16 @@
+URTEIL: NEEDS_WORK — drei DEFEKTE in Tests beziehungsweise Messabdeckung.
+
+Geprüft: vollständiger gebundener Diff, Aufruf-/Sperrpfade, Revisionsgrenzen und vorhandene Rot-/Bein-Rohbelege lesend; HEAD blieb 92386c37fafb8ac0bd89c2a09b982a86c3912ea0, Worktree unverändert.
+
+Nicht geprüft: eigene Laufzeit-, Build- oder Testausführung einschließlich Kanon; die zwölf Exit-0-Ergebnisse wurden ausschließlich aus vorhandenen Rohdateien gelesen.
+
+Full review comments:
+
+- [P2] Lasse den M-06-Rotbeweis am Bestandsvergleich scheitern — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp:1944-1949
+  DEFEKT gegen M-06 und den geforderten Rotbeweis an der Zusage: Nach Freigabe der alten Kopie publizieren Benennung und lokaler Unbind erneut den aktuellen State und reparieren dadurch den zu messenden Fehler. Nachvollziehbar mit `git show 988dc44d:docs/beweise/roh/NAK-283-rot-M-06-etappe-2.txt`: Trotz entfernter Folgenummernprüfung bleibt der Bestandsvergleich grün; ausschließlich der Überholt-Zähler fällt. Die alte Kopie muss zuletzt freigegeben werden, ohne anschließenden heilenden Handgriff, damit der Test die zugesagte Modellkohärenz tatsächlich falsifiziert (vgl. [CLAUDE.md:183–184](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L183-L184)).
+
+- [P2] Synchronisiere den Aufbau vor dem Scharfschalten — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp:2104-2110
+  DEFEKT gegen den verlangten deterministischen Aufbau von M-72, entsprechend auch M-01/M-02: Der Mitgliederstand bestätigt nur die Mutation, nicht den abgeschlossenen Publikations-/Dirty-Nachlauf (`git show 988dc44d:eq-copilot/plugin/src/prozessor/Ipc.cpp`, Zeilen 1576–1587). Wird der Worker nach Anwendung des Aufbau-Joins B unterbrochen, werden hier die Baselines zu früh gelesen und der Haken kann B statt A festhalten. Dann zählt die korrekte Fassung drei Änderungen statt zwei; MUT-B kann durch das ausgelassene Dirty/Revision-Paar sogar die erwarteten zwei liefern und bestehen. Vor Baseline und Scharfschalten muss der Aufbau-Drain nachweislich vollständig abgeschlossen sein; ein einmaliger Modellvergleich außerhalb der Wartebedingung wie in M-01/M-02 genügt ebenfalls nicht.
+
+- [P2] Miss Host-Dirty an den zugesagten Revisionsgrenzen — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde014IntentTest.cpp:1526-1530
+  DEFEKT in der Messabdeckung von M-12: Die vier MAX−1-Fälle prüfen ausschließlich `state::...` ohne Prozessor oder Hostlistener. Dieser Dirty-Block lädt dagegen keinen Grenzstand und misst nur Intent bei Revision 1→2, nicht alle vier Handgriffe bei MAX−1. Nachvollziehbar mit `git show 988dc44d:eq-copilot/plugin/tests/Sonde014IntentTest.cpp`, Zeilen 1470–1549. Auch die MAX-Ablehnungen für Schutz und Beziehung in M-08/M-09 besitzen keine Hostmessung; M-11 ergänzt dort nur Intent und Assistent. Die Grenzstände müssen zusätzlich durch die Prozessorhandgriffe mit Listener laufen, um die zugesagten null beziehungsweise genau eine Dirty-Meldung nachzuweisen ([CLAUDE.md:195–197](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L195-L197)).

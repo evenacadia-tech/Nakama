@@ -1,4 +1,4 @@
-# Nakama - clang-tidy-Regelsatz fuer eq-copilot/plugin (NAK-287, Kanon-Bein A33).
+# Nakama - clang-tidy-Regelsatz fuer eq-copilot/plugin (NAK-288, Kanon-Bein A33).
 #
 # Gefahren von tools/plan/tidy.py ueber die Uebersetzungseinheiten des
 # Ninja-Baums eq-copilot/build-tidy (cl.exe-Treibermodus, dieselben Schalter

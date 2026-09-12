@@ -139,7 +139,7 @@ Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
   NICHT HIER: die C++-Statikanalyse des Plugins (clang-tidy). Sie konfiguriert
   einen eigenen Ninja-Baum und parst jede Uebersetzungseinheit (Minuten) und
   ist deshalb ein eigenes Kanon-Bein A33 mit derselben Ratschenform:
-  tools/plan/tidy.py (NAK-287, 12.09.2026).
+  tools/plan/tidy.py (NAK-288, 12.09.2026).
 
 WAS GEMESSEN WIRD — KONTEXT
 ---------------------------

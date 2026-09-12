@@ -852,7 +852,7 @@ HostProbeTest (ohne Argument) · B3c SchemaTest · **B4 `EqCopQueueStressTest`**
 Manifest (`docs/beweise/SONDE-009.md`: 28/28). Geplant, nicht gebaut:
 B6 `EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 
-**A33 `tools/plan/tidy.py` (NAK-287, 12.09.2026) — C++-Statikanalyse als
+**A33 `tools/plan/tidy.py` (NAK-288, 12.09.2026) — C++-Statikanalyse als
 Ratsche.** Bis dahin übersetzte der Kanon das Plugin nur unter `/W4`. Das Bein
 konfiguriert einen eigenen Ninja-Baum `eq-copilot/build-tidy` mit `cl.exe`
 (nie gebaut; nur der Visual-Studio-Generator des Kanons schreibt keine
@@ -867,7 +867,7 @@ cppcoreguidelines, misc; Ausnahmen dort begründet). Wie A32 nicht blockierend
 (Exit 4 = `[HINWEIS]`); eine Übersetzungseinheit mit `error:`-Diagnose ist
 Werkzeugfehler (Exit 2), fehlendes clang-tidy/ninja/cmake ist `[FEHLT]`
 (Exit 3). `--nur <Teilpfad>` misst einzelne Einheiten ohne Ratschenurteil.
-Iststand und Verteilung je Check stehen im Manifest `docs/beweise/NAK-287.md`.
+Iststand und Verteilung je Check stehen im Manifest `docs/beweise/NAK-288.md`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
 [-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3

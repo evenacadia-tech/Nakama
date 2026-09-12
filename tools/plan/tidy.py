@@ -11,7 +11,7 @@ Exitcode 0 = Grenze gehalten · 4 = Grenze gerissen · 2 = Werkzeugfehler
 stuerzt ab, Selbsttest rot) · 3 = Voraussetzung fehlt (Visual Studio 2022 mit
 C++-Werkzeugen und Clang-Komponente, cmake, ninja). Nur Standardbibliothek.
 
-WARUM ES DIESES SKRIPT GIBT (NAK-287, 12.09.2026)
+WARUM ES DIESES SKRIPT GIBT (NAK-288, 12.09.2026)
 --------------------------------------------------
 Bis zum 12.09.2026 uebersetzte der Kanon das Plugin unter /W4 und sonst
 nichts: kein clang-tidy, kein cppcheck, kein Sanitizer. Der Broker hat seit
@@ -75,7 +75,7 @@ HERKUNFT DER SCHWELLE
 ---------------------
   clang-tidy-Fundstellen   Grenze = Iststand (Ratsche), Ziel 0. Gemessen am
                            12.09.2026 (siehe TIDY_GRENZE und das Manifest
-                           docs/beweise/NAK-287.md) mit clang-tidy 19.1.5 aus
+                           docs/beweise/NAK-288.md) mit clang-tidy 19.1.5 aus
                            den Build Tools 2022 (MSVC 14.44). Jede neue
                            Fundstelle reisst; gesenkte Zahlen werden
                            nachgezogen, nie erhoeht. Eine Aenderung des
@@ -106,9 +106,9 @@ DB_ORDNER = "tidy-db"
 HEADER_FILTER = r"eq-copilot[/\\]plugin[/\\]"
 TIDY_ZIEL = 0
 # Ratsche: Iststand 12.09.2026 mit dem Regelsatz aus eq-copilot/plugin/.clang-tidy
-# und den Ausnahmen oben (Erstmessung NAK-287, 41 Einheiten, clang-tidy 19.1.5;
+# und den Ausnahmen oben (Erstmessung NAK-288, 41 Einheiten, clang-tidy 19.1.5;
 # die rohe Erstmessung zaehlte 101: 8 optin.performance.Padding, 10 im Codegen;
-# Manifest docs/beweise/NAK-287.md). Nur senken.
+# Manifest docs/beweise/NAK-288.md). Nur senken.
 TIDY_GRENZE = 83
 KONFIGURIER_LIMIT_S = 40 * 60      # erste Konfiguration holt JUCE und FlatBuffers
 EINHEIT_LIMIT_S = 20 * 60

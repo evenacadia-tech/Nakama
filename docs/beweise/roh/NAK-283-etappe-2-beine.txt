@@ -1,0 +1,2202 @@
+NAK-283 Etappe 2 - Beine der Etappe, einzeln gefahren
+Zeitpunkt: 2026-09-12T17:39:12.7432115+02:00
+Juengste geaenderte Quelle: 09/12/2026 17:38:29
+
+--- BAU (Release) ---
+Ziele:   EqCopNullTest EqCopProbeeqNullTest EqCopIdentityTest EqCopStateMigrationTest EqCopQueueStressTest EqCopLebenslaufTest EqCopIpcTest EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest EqCopSonde014AssistentTest EqCopilot_VST3 EqCopSessionSoak
+Exit:    0
+warning C (eindeutig): 10
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIdentityTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopLebenslaufTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopNullTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopQueueStressTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSessionSoak.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014AssistentTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014IntentTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+
+--- FRISCHE DER BINARIES ---
+A1    EqCopNullTest                        2026-09-12T17:39:25.1383080+02:00  frisch
+A16   EqCopProbeeqNullTest                 2026-09-12T17:39:27.8259977+02:00  frisch
+B1    EqCopIdentityTest                    2026-09-12T17:39:40.1547658+02:00  frisch
+B2    EqCopStateMigrationTest              2026-09-12T17:39:47.0830440+02:00  frisch
+B4    EqCopQueueStressTest                 2026-09-12T17:40:02.8598231+02:00  frisch
+B8    EqCopLebenslaufTest                  2026-09-12T17:40:17.4142871+02:00  frisch
+B10   EqCopIpcTest                         2026-09-12T17:40:19.3383078+02:00  frisch
+B13   EqCopSonde012SourcesModelTest        2026-09-12T17:40:26.9398646+02:00  frisch
+B14   EqCopSonde012ProjectReloadTest       2026-09-12T17:40:33.5827987+02:00  frisch
+B27   EqCopSonde014IntentTest              2026-09-12T17:40:40.3077161+02:00  frisch
+B29   EqCopSonde014AssistentTest           2026-09-12T17:40:56.9608348+02:00  frisch
+
+--- A1  EqCopNullTest   ->  Exit 0 ---
+  ok      Latenz ist 0 Samples
+  ok      Tail ist 0 s
+  ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  ok      kein falscher NaN-Alarm bei endlichem Signal
+  ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+
+--- A16  EqCopProbeeqNullTest   ->  Exit 0 ---
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+
+--- B1  EqCopIdentityTest   ->  Exit 0 ---
+  ok      Identitaetsmanifest gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\identity\plugin-identities-v1.json]
+  ok      Manifest ist gueltiges JSON
+  ok      Herstellercode im Manifest  [Evna]
+  ok      Viercode ist vier Zeichen lang: hersteller.code  [4 Zeichen]
+  ok      Manifest kennt mindestens ein Ziel  [3]
+  ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+  ok      jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [0 unlesbar]
+  ok      Manifest kennt das heutige Ziel 'main'
+  ok      jedes AKTIVE Ziel im Manifest hat hier eine Zeile  [2 vs 2]
+  ok      jedes STILLGELEGTE Ziel im Manifest hat hier eine Zeile  [1 vs 1]
+  ok      main: steht als AKTIVES Ziel im Manifest
+  ok      active-probe: steht als AKTIVES Ziel im Manifest
+  ok      passive-probe: die Kennung steht weiter im Manifest
+  ok      passive-probe: und ist dort als stillgelegt markiert
+  ok      passive-probe: plugin_code ist nicht geloescht  [NkPr]
+  ok      passive-probe: bundle ist nicht geloescht  [Nakama Suna.vst3]
+  ok      passive-probe: produktname ist nicht geloescht  [Nakama Suna]
+  ok      passive-probe: component_cid ist nicht geloescht  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      passive-probe: controller_cid ist nicht geloescht  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      passive-probe: die Stilllegung nennt Datum und Entscheid  [2026-08-28 / design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md]
+  ok      plugin/CMakeLists.txt gefunden
+  ok      CMake: Zielblock juce_add_plugin(EqCopilot) gefunden
+  ok      CMake: Defineblock von EqCopilot gefunden
+  ok      CMake-Quelle: das Bauskript liest 'main' aus dem Identitaetsmanifest
+  ok      CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: der Viercode steht nicht literal im Zielblock  [Eqcp]
+  ok      CMake-Quelle: der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      CMake-Quelle: der Produktname steht nicht literal im Zielblock
+  ok      CMake-Quelle: JUCE_VST3_CAN_REPLACE_VST2=0 steht im Zielblock
+  ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
+  ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
+  ok      CMake: Zielblock juce_add_plugin(${ziel}) der Sondenfunktion gefunden
+  ok      CMake: Defineblock der Sondenfunktion gefunden
+  ok      CMake-Quelle: die Sondenfunktion liest ihre Identitaet aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      active-probe: der Viercode steht nicht literal im Sonden-Zielblock  [NkAc]
+  ok      active-probe: der Produktname steht nicht literal im Sonden-Zielblock  [Nakama Probeeq]
+  ok      active-probe: NakamaProbeeq entsteht ueber nakama_sonde_ziel()
+  ok      active-probe: der Aufruf uebergibt genau diese Manifest-ID  [nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)]
+  ok      CMake-Quelle (Sonde): JUCE_VST3_CAN_REPLACE_VST2=0 steht im Defineblock
+  ok      NakamaSuna: stillgelegt - kein Aufruf von nakama_sonde_ziel() mehr
+  ok      NakamaSuna: stillgelegt - auch kein eigener juce_add_plugin-Block
+  ok      NakamaSuna: das Bauskript erklaert die Stilllegung an Ort und Stelle
+  ok      main: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
+  ok      main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [12 Sep 2026 5:41:48pm vs 10 Sep 2026 7:19:51pm]
+  ok      main: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      main: Produktname wie im Manifest  [EQ-Copilot]
+  ok      main: Vendor wie im Manifest  [evenacadia]
+  ok      main: genau zwei Klassen (Component + Controller)  [2]
+  ok      main: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E6145716370]
+  ok      main: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E6145716370]
+  ok      main: Unterkategorien wie im Manifest
+  ok      main: keine fremde Ziel-CID im Bundle
+  ok      active-probe: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\VST3\Nakama Probeeq.vst3\Contents\Resources\moduleinfo.json]
+  ok      active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [12 Sep 2026 11:36:43am vs 10 Sep 2026 7:19:51pm]
+  ok      active-probe: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      active-probe: Produktname wie im Manifest  [Nakama Probeeq]
+  ok      active-probe: Vendor wie im Manifest  [evenacadia]
+  ok      active-probe: genau zwei Klassen (Component + Controller)  [2]
+  ok      active-probe: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      active-probe: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      active-probe: Unterkategorien wie im Manifest
+  ok      active-probe: keine fremde Ziel-CID im Bundle
+  ok      Viercode ist vier Zeichen lang: main.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: main Component (Eqcp)  [ABCDEF019182FAEB45766E6145716370]
+  ok      CID nachgerechnet: main Controller (Eqcp)  [ABCDEF011234ABCD45766E6145716370]
+  ok      Viercode ist vier Zeichen lang: passive-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: passive-probe Component (NkPr)  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      CID nachgerechnet: passive-probe Controller (NkPr)  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      Viercode ist vier Zeichen lang: active-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: active-probe Component (NkAc)  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      CID nachgerechnet: active-probe Controller (NkAc)  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      VST2-Ersatzpfad wuerde eine ANDERE CID erzeugen - das Define ist aus  [5653544571637065712D636F70696C6F]
+  ok      die echte CID stammt aus dem jucePluginId-Pfad
+  ok      Golden-Ordner vorhanden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\identity]
+  ok      Rolle 'sensor' geladen  [sensor]
+  ok      Rolle 'sensor': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'sensor': Label uebernommen  [Klavier A]
+  ok      Rolle 'sensor': Paar-ID uebernommen
+  ok      Golden 'sensor' gelesen  [state-schema1-sensor.bin]
+  ok      Schema-1-Saat 'sensor' ist bytegleich zum eingefrorenen Golden  [128 Bytes]
+  ok      Rolle 'sensor' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'sensor' laedt in eine frische Instanz zurueck
+  ok      Rolle 'hub' geladen  [hub]
+  ok      Rolle 'hub': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'hub': Label uebernommen  [Leitstand]
+  ok      Rolle 'hub': Paar-ID uebernommen
+  ok      Golden 'hub' gelesen  [state-schema1-hub.bin]
+  ok      Schema-1-Saat 'hub' ist bytegleich zum eingefrorenen Golden  [125 Bytes]
+  ok      Rolle 'hub' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'hub' laedt in eine frische Instanz zurueck
+  ok      Rolle 'pre' geladen  [pre]
+  ok      Rolle 'pre': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'pre': Label uebernommen  [Chor PRE]
+  ok      Rolle 'pre': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'pre' gelesen  [state-schema1-pre.bin]
+  ok      Schema-1-Saat 'pre' ist bytegleich zum eingefrorenen Golden  [133 Bytes]
+  ok      Rolle 'pre' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'pre' laedt in eine frische Instanz zurueck
+  ok      Rolle 'post' geladen  [post]
+  ok      Rolle 'post': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'post': Label uebernommen  [Chor POST]
+  ok      Rolle 'post': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'post' gelesen  [state-schema1-post.bin]
+  ok      Schema-1-Saat 'post' ist bytegleich zum eingefrorenen Golden  [135 Bytes]
+  ok      Rolle 'post' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'post' laedt in eine frische Instanz zurueck
+  ok      fremder ValueTree-Typ wird abgelehnt, Zustand bleibt
+  ok      Muellbytes aendern den Zustand nicht
+  ok      M-83: Gen fuehrt null Hostparameter  [0]
+  ok      M-83: der Prozessor ist Main - nur dort gibt es einen Schritt
+  ok      M-83: ein Assistentenschritt liegt im MainProject
+  ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+
+--- B2  EqCopStateMigrationTest   ->  Exit 0 ---
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [2ea87536c8ae4643b429d6e6ce8511d4]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [8d85e731e0c54fe2b7ce86c617401ff5]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [03d2131c64a44c32b07f2c6a7a141f74]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [9223372036854775807 / 9223372036854775807]
+  ok      M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [9223372036854775807]
+  ok      M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [497 vs. 497 Bytes]
+  ok      M-11: kein abgewiesener Handgriff meldet Host-Dirty  [0]
+  ok      M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  ok      M-11: beide Revisionen kommen als int64max zurueck  [9223372036854775807 / 9223372036854775807]
+  ok      M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [1 Eintrag/Eintraege]
+  ok      == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+
+STATE-MIGRATION-TEST OK - 287 Pruefungen ok, 0 Fehler
+
+--- B4  EqCopQueueStressTest   ->  Exit 0 ---
+== Nakama SONDE-008 - StampedAudioQueue, Quarantaene, Blockgroessen ==
+Produktionsstrom GenStrom: 1 Tap(s), 131072 Frames Ring, 2048 Deskriptoren, max 16384 Frames je Block.
+
+== A - Ganzblockaufnahme: Inhalt, Stempel, Reihenfolge ==
+  ok      drei Bloecke, drei Deskriptoren  [3]
+  ok      jeder Frame kommt bitgleich und an derselben Stelle heraus
+  ok      Stempel: lokaler Strom und Projektzeit stimmen je Block
+  ok      nach dem Leeren ist die Queue leer
+  ok      kein Verlust bei Normallast
+== B - Wrap: der Ring laeuft mehrfach um ==
+  ok      der Ring ist wirklich mehrfach umgelaufen  [11 Umlaeufe]
+  ok      ueber jeden Wrap hinweg bitgleicher Inhalt
+  ok      kein Frame verloren, keiner doppelt  [12000/12000]
+== C - Ueberlauf des SAMPLE-Rings: ganz oder gar nicht ==
+  ok      vier Bloecke passen, danach ist Schluss  [4]
+  ok      beide abgewiesenen Bloecke sind gezaehlt  [2]
+  ok      verlorene Frames = 2 x 256 (keine Teilmenge)  [512]
+  ok      ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst
+  ok      im Ring liegen NUR vollstaendige Bloecke  [4]
+  ok      nach dem Leeren nimmt der Ring wieder an
+  ok      die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock
+  ok      der erste Block nach dem Verlust traegt kFlagLueckeDavor
+  ok      und beginnt ein neues continuity_segment  [1]
+== D - Ueberlauf des DESKRIPTOR-Rings (der zweite Ring zaehlt) ==
+  ok      genau `deskriptorPlaetze` Bloecke passen  [8]
+  ok      die vier ueberzaehligen sind gezaehlt  [4]
+  ok      und genau so viele stehen zum Lesen bereit  [8]
+== E - Oversize: ein Block ueber der Slotkapazitaet ==
+  ok      ein Block ueber maxBlockFrames wird als GANZES abgewiesen
+  ok      und als Oversize gezaehlt, nicht als Ueberlauf  [1/0]
+  ok      der Ueberlaufzaehler bleibt sauber
+  ok      nichts Halbes im Ring
+  ok      die verlorene Zeit ist vollstaendig gemeldet  [257]
+  ok      genau maxBlockFrames passt noch (Kante, nicht Ausschluss)
+== F - Flush (numSamples == 0) ist kein Verlust ==
+  ok      ein Flush-Block wird nicht eingestellt
+  ok      und zaehlt NICHT als Verlust - er traegt keine Audiozeit
+  ok      der Folgeblock geht normal
+  ok      und traegt keine Luecke
+== G - Mono und Mehrfach-Tap ==
+  ok      Mono: R traegt das L-Duplikat (FIFO-Vertrag der Engine)
+  ok      und der Deskriptor sagt kanaele == 1
+  ok      Drei-Tap-Layout: Block angenommen
+  ok      das Bitset meldet genau die belegten Taps  [3]
+  ok      jeder Tap liegt getrennt und richtig; der inaktive liefert false
+  ok      eine falsche Tapzahl wird abgewiesen statt halb kopiert
+  ok      ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor
+== H - Ein-Block-Quarantaene ==
+  ok      5 Bloecke rein, 4 versiegelt - einer bleibt in Quarantaene  [4]
+  ok      und die Quarantaene haelt ihn wirklich
+  ok      kein Bruch bei lueckenlosem Strom
+  ok      drop_produces_counter_gap_and_boundary: der Seek ist als Bruch erkannt  [1]
+  ok      genau EIN Block faellt an der Grenze - der Strom laeuft weiter
+  ok      der Block NACH der Grenze ist schon wieder in Quarantaene
+  ok      Stopp verwirft den gehaltenen Block („bleiben sie unvollstaendig“)
+  ok      stehende Projektzeit (Teilpuffer/Stop) ist kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      Vorlauf ohne Bruch
+  ok      Transportkante play->stop ist ein Bruch  [1]
+  ok      ohne Hostkontext traegt der lokale monotone Strom (§53.6)
+  ok      und versiegelt normal  [3]
+  ok      Projektzeit nahe INT64_MAX: Ueberlauf ist eine Grenze, keine Fortsetzung
+  ok      negative Projektzeit ist eine gueltige, fortsetzbare Zeit (HostProbe sah sie)
+== I - Blockgroessen-Fuzz auf der Queue (1 .. ueber die Kante) ==
+  20 000 Bloecke, Groessen 1..288: angenommen 17809, Ueberlauf-Drops 0, Oversize-Drops 2191, groesster Block 256, versiegelt 15872, Brueche 1936
+  ok      jeder gelesene Frame steht an der Stelle, die sein Stempel nennt
+  ok      es gab nie einen Block mit sampleCount 0
+  ok      die Oversize-Faelle sind aufgetreten UND vollstaendig gezaehlt  [2191]
+  ok      kein angenommener Block war je groesser als die Slotkapazitaet  [256]
+  ok      es wurde wirklich gelesen  [2288127 Frames]
+== J - verdrahtet: Passthrough bitgleich ueber alle Blockgroessen ==
+  ok      18 Blockgroessen von 1 bis 16 384: kein Sample veraendert
+  ok      0 Samples Latenz  [0]
+  ok      kein Tail
+  angenommen 18, groesster Block 16384, Ueberlauf 0, Oversize 0
+== K - verdrahtet: Oversize aendert das Audio nicht ==
+  ok      ein Block ueber der Slotkapazitaet laeuft unveraendert durch
+  ok      und ist als Oversize-Drop der ANALYSE gezaehlt  [1]
+  ok      der abgewiesene Oversize-Block erscheint nicht im Projektfenster
+  ok      der naechste angenommene Lueckenblock beginnt das Fenster exakt neu  [16385..16449]
+  ok      der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben  [0]
+== L - verdrahtet: der Audiothread alloziert nicht ==
+  ok      als Main klassifiziert (§53.5)
+  ok      4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [0]
+  dabei Ueberlauf-Drops 3858 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
+
+== SONDE-013 M-74: 0 Allokationen auch mit Markierung und Ring ==
+  ok      M-74: Markierungsauftrag baut
+  ok      2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [0]
+== M - verdrahtet: die Messung bekommt den Strom wirklich ==
+  eingespeist 287744, analysiert 287232, Drops 0, versiegelt 561, Quarantaene-Verwuerfe 0, Brueche 0
+  ok      bei Normallast kein einziger Drop
+  ok      und kein Kontinuitaetsbruch (lueckenloser Transport)
+  ok      die Engine sieht den ganzen Strom bis auf den Block in Quarantaene  [512 Frames offen]
+  ok      Kurz-LUFS steht (der fixed-memory Akku wird wirklich gefuettert)  [-8.684240]
+  ok      framesDropped im Stats-Snapshot kommt aus derselben Quelle
+== N - Gegenpfad: prepareToPlay mitten im Betrieb ==
+  ok      auch der erste Block nach prepareToPlay alloziert nicht  [0]
+  veraltete Bloecke (alter Anlauf, nicht analysiert): 40
+  ok      ein Neuanlauf ist kein Oversize
+== O - Anlaufwechsel: Altbloecke sind SOFORT erkennbar (T2-3) ==
+  ok      der Anlauf steigt sofort, nicht erst beim naechsten Audioblock  [0 -> 1]
+  Bloecke aus dem ALTEN Anlauf: als veraltet erkannt 3, als aktuell durchgelassen 0
+  ok      alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar  [3/3]
+  ok      der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt
+  ok      Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell
+  ok      und er traegt die Luecke, die der Neuanlauf gerissen hat
+  ok      der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut
+  ok      zwei Neuanlaeufe hintereinander gehen beide nicht verloren  [1 -> 3]
+  ok      zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration
+  ok      und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste
+  ok      Nullframe konsumiert die wartende Generation nicht
+  ok      der naechste echte Block uebernimmt sie weiterhin
+== P - Seek bei gestopptem Transport ist eine Grenze (T2-4) ==
+  ok      Seek um 10 s bei gestopptem Transport ist EIN Bruch  [1]
+  ok      Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)  [0]
+  ok      und bei laufendem Transport ist der Seek weiterhin ein Bruch  [1]
+  ok      bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch  [0]
+  ok      und alle bis auf den juengsten sind versiegelt  [5]
+  ok      ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet  [0]
+== Q - Worker-Kadenz: monotone Deadlines statt Batchzaehler ==
+  ok      nach Start ist nur die leichte Publikation sofort faellig
+  ok      10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus
+  ok      vor 250 ms bleibt Gating/Kandidaten gesperrt
+  ok      bei 250 ms ist genau die schwere Runde faellig
+  ok      dieselbe Deadline kann nicht zweimal verbraucht werden
+  ok      nach Pause genau eine Runde, kein Catch-up-Sturm
+  ok      Reset/Generation startet die 250-ms-Deadline neu
+== R - verdrahtet: Rueckstau beschleunigt Auswertung nicht; Stop bleibt begrenzt ==
+  ok      Test hat echten Queue-Rueckstau hergestellt  [257 Bloecke bis zum ersten Drop]
+  ok      unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms  [1 Runden in 600 ms]
+  ok      neue Generation erbt keinen Batch-beschleunigten Schwertakt  [0 Runden in den ersten 100 ms]
+  ok      Frame-Leser wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Reset-Steuerer wird unter Rueckstau explizit vorgelassen  [0 ms]
+  ok      Stop/Join bleibt auch mit Queue-Rest begrenzt  [0 ms]
+== S - Projektfenster folgt der tatsaechlich uebernommenen Queue-Generation ==
+  ok      Gegenprobe: erste Generation hat ihr eigenes Projektfenster
+  ok      Testbarriere liegt deterministisch im laufenden Audiocallback
+  ok      der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster  [10000..10064]
+  ok      die Generationskante ist kein Seek innerhalb des alten Fensters  [0]
+== T - ungueltige Samplerate deaktiviert beide Analyse-Engines ==
+  ok      Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine
+  ok      nichtendliche Hostrate wird fail-closed auf 0 gespiegelt
+  ok      M1 verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      FeatureEngine verarbeitet unter ungueltiger Rate keinen Block  [0]
+  ok      ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung
+  ok      eine folgende gueltige Generation aktiviert beide Engines wieder
+
+== SONDE-014 M-72: 0 Allokationen und bitgleiches Audio, waehrend Intent und Schritt laufen ==
+  ok      M-72: beide Prozessoren sind Main (nur dort gibt es Intent und Schritt)
+  ok      M-72: der zweite Faden hat wirklich gearbeitet  [451]
+  ok      M-72: 2 000 Bloecke, waehrend Intent, Schutz und Schritt laufen: 0 Allokationen im Audiothread  [0]
+  ok      M-72: und das Audio ist BITGLEICH zum unberuehrten Prozessor
+  ok      M-72: der Vergleich lief auf echtem Material, nicht auf Stille
+
+121 Pruefungen, 0 Fehler.
+QUEUE-STRESSTEST OK
+
+--- B8  EqCopLebenslaufTest   ->  Exit 0 ---
+LEBENSLAUF-TEST — §53.5 Lifecycle-Klassifikation
+
+[1] Der Automat (nakama::state::Lebenslauf)
+  ok      frisch: unclassified  [unclassified]
+  ok      frisch: neutral
+  ok      frisch: keine Audio-Ausnahme (audio-neutral)
+  ok      frisch: kein Brokerstart
+  ok      Schema-1 'sensor' -> legacy  [legacy]
+  ok      Schema-1 'sensor': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'pre' -> legacy  [legacy]
+  ok      Schema-1 'pre': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'post' -> legacy  [legacy]
+  ok      Schema-1 'post': bleibt passiv (keine Audio-Ausnahme)
+  ok      Schema-1 'hub' -> main  [main]
+  ok      Schema-1 'hub': Audio-Ausnahme moeglich
+  ok      Schema-2 main (Kind-Matrix bestaetigt) -> main
+  ok      Schema-2 legacy -> legacy
+  ok      Vorbereitung: erst main
+  ok      unbekanntes Major danach -> zurueck auf unclassified
+  ok      Muell (ignoriert) aendert nichts - main bleibt main
+  ok      Muell auf einen frischen Automaten klassifiziert nicht
+  ok      explizite Initialisierung OHNE Editor: abgelehnt
+  ok      ... und der Automat bleibt neutral
+  ok      der geoeffnete Editor allein klassifiziert NICHT
+  ok      Editor offen + explizite Initialisierung: angenommen
+  ok      ... -> main
+  ok      main + offener Editor darf den Broker starten
+  ok      Editor zu: die Klassifikation bleibt (der Stand hat sich nicht geaendert)
+  ok      main OHNE offenen Editor darf NICHT starten
+  ok      Rueckweg: derselbe Akt fuehrt von main zurueck
+  ok      ... -> legacy
+  ok      legacy darf nie starten - auch mit Editor nicht
+  ok      legacy ist wieder audio-neutral
+  ok      Sonde (NkPr) frisch: neutral trotz fester Produktklasse
+  ok      Sonde (NkPr): gueltiger eigener Stand -> passive_probe
+  ok      Sonde (NkPr): kein Brokerstart
+  ok      Sonde (NkPr): auch mit offenem Editor kein Brokerstart
+  ok      Sonde (NkPr): kein Akt macht sie zum Main
+  ok      Sonde (NkAc): gueltiger eigener Stand -> active_probe
+  ok      Sonde (NkAc): ein fremder Main-Stand faellt auf neutral, nie auf main
+
+[2] Verdrahtet: EqCopilotProcessor (Gen)
+  ok      produkt_v3_hello_bindet_originalidentitaet_rolle_und_host
+  ok      Gen-ControlClient traegt den produktiven Heartbeat-/State-Report-Provider
+  ok      Scannerlauf: klassifiziert NICHT (53.5)  [unclassified]
+  ok      Scannerlauf: kein Brokerstart
+  ok      Scannerlauf: unclassified bleibt audio-neutral (kein Sample gefaerbt)
+  ok      Scannerlauf: Markierung meldet sich nicht hoerbar
+  ok      Altprojekt 'sensor' -> legacy  [legacy]
+  ok      legacy mit offenem Editor: kein Brokerstart
+  ok      legacy ist 'immer passiv' - kein Sample gefaerbt
+  ok      Altprojekt 'hub' -> main  [main]
+  ok      Schema-1-Migration erfindet keine Projektbindung
+  ok      main, aber Editor zu: noch kein Brokerstart
+  ok      main + offener Editor: Brokerstart erlaubt
+  ok      expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung
+  ok      Projektbindung reist im bestehenden Host-State verlustfrei
+  ok      main: DIESELBE Markierung faerbt jetzt (der Riegel kann fallen)
+  ok      Vorbereitung: Rollenwahl aendert den Stand
+  ok      frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit
+  ok      Rollenwahl OHNE offenen Editor klassifiziert nicht (53.5)  [unclassified]
+  ok      der geoeffnete Editor allein holt es auch nicht nach
+  ok      Vorbereitung: der User waehlt die Rolle im offenen Editor
+  ok      frische Instanz: Editor offen + Rollenwahl 'hub' -> main
+  ok      frische Instanz als main: faerbt
+  ok      Rueckweg: 'sensor' klassifiziert zurueck auf legacy
+  ok      Rueckweg/M-34: nach dem Ausfade greift neutral - und bleibt es ueber 80 Bloecke
+  ok      Vorbereitung: main
+  ok      der fremde Stand kommt read-only zurueck
+  ok      read-only -> zurueck auf unclassified
+  ok      read-only: kein Brokerstart
+  ok      read-only: wieder audio-neutral
+
+[3] Phase B — Broker-Lifecycle-Gate und Audiothread-Nulltest
+  ok      brokerstart_gate_alle_negativzustaende
+  ok      launcher_bleibt_vor_gate_unberuehrt
+  ok      broker_lifecycle_aufrufe_im_audiothread_null
+  ok      brokerstop_nie_im_processblock
+  ok      broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre
+  ok      processblock_quellschnitt_dateioperationen_null
+  ok      processblock_quellschnitt_pipeoperationen_null
+  ok      processblock_quellschnitt_prozessoperationen_null
+  ok      processblock_quellschnitt_logoperationen_null
+  ok      processblock_quellschnitt_store_wait_null
+  ok      NAK-180 N-20: die feindliche Pipe steht
+  ok      NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage  [0 ms]
+
+LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler
+
+--- B10  EqCopIpcTest   ->  Exit 0 ---
+SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
+
+== A · Envelope-Fixture-Korpus (dieselbe dritte Partei wie Rust) ==
+  ok      MANIFEST.json gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\v3\envelope\MANIFEST.json]
+  ok      Regelmenge und ihre Reihenfolge stimmen mit dem Manifest  [14 Regeln]
+  ok      die SAMMELNDE Stufe 3 ist in Deklarationsreihenfolge namenssortiert
+  ok      alle Fixtures klassifiziert wie das Manifest (Urteil UND Verstossmenge)  [8 gueltig / 29 ungueltig]
+  ok      Korpus ist substanziell  [37 Fixtures]
+  ok      jede der 14 Regeln hat mindestens ein Negativfixture  [14/14]
+
+== B · CRC32C und Envelope-Rundlauf ==
+  ok      CRC32C("") == 0
+  ok      CRC32C("123456789") == 0xE3069283 (RFC 3720)
+  ok      CRC32C(32x 0x00) == 0x8A9136AA
+  ok      CRC32C(32x 0xFF) == 0x62A8AB43
+  ok      P0-Frame geschrieben
+  ok      P0 ist JSON und traegt CRC exakt 0
+  ok      P2 traegt die Pflicht-CRC ueber genau die Payloadbytes
+  ok      ein gekipptes Payloadbit faellt an der CRC
+  ok      Payload an der Paketgrenze wird angenommen
+  ok      ein Byte darueber wird nicht einmal geschrieben
+
+== C · Fuzz (deterministisch): Invarianten des angenommenen Frames ==
+  ok      kein angenommener Zufallsframe verletzt eine Kopfregel  [0 angenommen / 40000 abgelehnt]
+  ok      ein gekipptes Bit in einem GUELTIGEN Frame: was durchkommt, haelt jede Kopfregel  [7671 angenommen / 12329 abgelehnt]
+  ok      3000 gekippte P2-Payloadbits: jedes einzelne faellt an der CRC
+  ok      byteweise Zustellung liefert exakt dieselben 40 Frames  [40 Frames, Rest 0]
+  ok      ein kaputter Frame im Strom wird gemeldet, nicht uebersprungen
+
+== D · v3-Pipename als reine Funktion ==
+  ok      Golden aus Entwurf §48.3
+  ok      vollstaendiger Pipename
+  ok      Schreibweise der SID ist egal (Grossschreibung vor dem Hashen)
+  ok      verschiedene SIDs, verschiedene Token
+  ok      der Golden-Pipename wird als Probe-Name VERWEIGERT
+  ok      die v1-Produktions-Pipe ebenso
+  ok      und ein v3-Name ausserhalb des Probe-Namensraums
+  ok      `probe.` allein ist keine Pipe, sondern nur der Namensraum
+  ok      der eigene Testname liegt im Probe-Namensraum
+  ok      SHA-256("abc") wie FIPS 180-4
+  ok      SHA-256 des 56-Byte-Vektors (Zweiblockfall)
+  ok      Base32 gegen die Testvektoren aus RFC 4648 §10
+  ok      eigene Logon-SID ist wohlgeformt  [S-1-5-21-369263037-1611576211-2081231688-1001]
+
+== E · Backpressure: P0 · P1 · P2 ==
+  ok      P0 nimmt 64 Nachrichten
+  ok      die 65. meldet Ueberlauf (nichts verwerfen ⇒ Verbindung schliessen)
+  ok      alle 64 kommen unveraendert und in Reihenfolge zurueck
+  ok      der Sender entnimmt den ersten Befehl und reserviert seinen Platz
+  ok      64 neue Befehle waehrend des Writes finden KEINEN Platz — ehrlich gezaehlt  [0 angenommen, 64 Ueberlaeufe]
+  ok      der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64  [64 Eintraege]
+  ok      und zwar VORN — kein P0-Befehl ist verlorengegangen
+  ok      P1 nimmt Snapshot a
+  ok      P1 nimmt Ereignis
+  ok      P1 nimmt Snapshot b
+  ok      ein zweiter Snapshot desselben Objekts koalesziert, ohne zu wachsen
+  ok      Koaleszieren behaelt die Position, tauscht nur den Inhalt
+  ok      nicht koaleszierbare Ereignisse gehen in den Wiederholpuffer
+  ok      ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still  [2 vorgehalten, 1 abgewiesen]
+  ok      ein einziges Senden zieht eine Wiederholung nach — ohne Reconnect  [1 noch vorgehalten]
+  ok      beim Reconnect ist nichts mehr nachzuholen — es floss schon ab
+  ok      und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge  [3,4]
+  ok      ein Neuzugang findet keinen Platz, solange eine Wiederholung wartet
+  ok      und er ueberholt sie nicht — Annahmereihenfolge ueber beide Puffer  [2,3]
+  ok      ein Snapshot im Wiederholpuffer behaelt seinen Schluessel und koalesziert dort  [1 vorgehalten, 0 abgewiesen]
+  ok      und der NEUERE geht raus, nicht der aeltere  [fremd,neu]
+  ok      entnehmen liefert Objektschluessel UND Nachricht
+  ok      ein gescheiterter Write legt das Ereignis an seinen Platz zurueck
+  ok      und es steht wieder VORN, nicht hinten
+  ok      ein zurueckgelegter Snapshot weicht dem neueren, statt ihn zu verdraengen
+  ok      und der neuere geht raus
+  ok      der entnommene P1-Eintrag zaehlt weiter gegen die Kapazitaet
+  ok      ein neues Ereignis findet deshalb keinen Platz und wartet auf den Reconnect
+  ok      und der unterwegs gewesene Eintrag kommt an SEINEN Platz zurueck
+  ok      ein nicht geschriebener P0-Befehl geht ebenfalls zurueck
+  ok      und behaelt seine Reihenfolge
+
+== E2 · P2-Schleuse: vorallokiert, ohne Allokation, replace-oldest ==
+  ok      der dritte Frame ersetzt den aeltesten ungesendeten (Cap 2)
+  ok      abgeholt wird der zweite, nicht der erste  [2]
+  ok      danach der dritte
+  ok      danach ist die Schleuse leer
+  ok      ein Frame ueber der Slotgroesse wird gezaehlt verworfen, nie halb geschrieben
+  ok      100 000 Uebergaben mit 0 Allokationen  [0]
+  ok      Gegenprobe: derselbe Zaehler sieht eine echte Allokation  [1]
+  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [209147 geholt, 0 zerrissen, 1996135 ersetzt]
+  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [20025 geholt, 0 zerrissen]
+  ok      und keine ruecklaeufige oder doppelte Folgenummer — die Loecher der Kollision brechen die Reihenfolge nicht  [0 ruecklaeufig]
+  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [10816 uebersprungene Positionen]
+  ok      der NEUESTE Frame faellt dabei NIE — es weicht der aelteste wartende (replace-oldest, §53.9)  [0 neueste wegen fremden Anspruchs verworfen]
+  ok      Testhaken: die zwei naechsten Plaetze sind beansprucht
+  ok      erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz  [0 verworfen, 2 Loecher]
+  ok      und die beiden beanspruchten Positionen sind LOECHER, nicht Verluste  [2]
+  ok      der Verbraucher ueberspringt die Loecher und bekommt genau diesen Frame  [64 Bytes]
+  ok      Kollisionsloecher lassen den Verbraucher wirklich zurueckfallen (schreib - boden waechst)  [6 Positionen Rueckstand nach 5 Runden]
+  ok      der Verbraucher ist zwischen JEDEM Versuch weitergerueckt — kein statisch freier dritter Platz  [6 Spruenge]
+  ok      und der Erzeuger bekommt TROTZDEM einen Platz — garantiert, nicht begrenzt versucht  [0 verworfen, 6 Loecher in dieser Veroeffentlichung]
+  ok      der neueste Frame liegt danach wirklich da, hinter allen Loechern  [64 Bytes]
+
+== F · Ratengrenze ==
+  ok      5000 Nachrichten in derselben Millisekunde: 1000 gehen durch  [1000]
+  ok      ein volles Fenster spaeter wieder 1000
+  ok      gleitend: 1 Nachricht je 10 ms laeuft unbegrenzt
+
+== G · ControlClient und TelemetryClient auf einer Testpipe ==
+  ok      Control verbindet und bekommt ein v3-gerahmtes welcome
+  ok      welcome liefert link_id und challenge
+  ok      Telemetry koppelt mit link_id + challenge + derselben runtime_nonce
+  ok      nak29_sender_project_samples_ohne_project_time_bit
+  ok      nak29_sender_local_monotonic_mit_project_sample_start
+  ok      band_stereo_sender_emittiert_erhoehten_schema_minor
+  ok      P0 kommt beim Server als P0-Familie an
+  ok      und die Antwort erreicht den Client
+  ok      P1 kommt als P1-Familie an
+  ok      ControlClient sendet P0 und P1 mit aktivem JSON-Minor
+  ok      P2 fliesst ueber die zweite Verbindung  [21 Frames]
+  ok      beide Bootstrap-Hellos tragen dieselbe runtime_nonce
+  ok      instance_address_alias_is_on_actual_wire
+  ok      das Bootstrap-Hello ist v3 und nicht v2
+  ok      stop() trennt beide Verbindungen und kehrt zurueck
+
+== G1a · JSON-Minor wird bis zum C++-Empfaenger getragen ==
+  ok      ControlClient reicht den empfangenen aktiven Minor an den Vertragsleser weiter
+  ok      ein hoeherer unbekannter JSON-Minor schliesst wie ein Envelopeverstoss
+
+== G1b · Produktstatus sendet Heartbeat und State-Report ==
+  ok      produkt_client_sendet_vollen_heartbeat_und_state_report
+  ok      heartbeat_laeuft_1hz_state_report_bleibt_koalesziert
+  ok      geaenderter_produktzustand_sendet_neuen_state_report
+
+== G2 · ungekoppelter Telemetry-Connect wird geschlossen ==
+  ok      der Server weist die ungekoppelte Telemetrieverbindung ab
+  ok      der Client gilt nicht als verbunden
+
+== G3 · Reconnect nach Serverneustart ==
+  ok      erste Verbindung steht
+  ok      nach dem Serverende faellt der Client auf getrennt
+  ok      der Client verbindet von selbst wieder (Backoff 500..8000 ms)
+  ok      und zaehlt die Versuche ehrlich mit  [2]
+
+== G4 · ein kaputter Envelope vom Server schliesst die Verbindung ==
+  ok      der Client weist den Frame ab und verbindet nicht
+  ok      Status bleibt ungleich 'verbunden'
+
+== G5 · P0-Ueberlauf schliesst die Verbindung, statt zu verwerfen ==
+  ok      64 P0-Nachrichten passen
+  ok      die 65. meldet Ueberlauf an den Aufrufer
+  ok      der Ueberlauf ist gezaehlt
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      ein 200-KiB-Befehl wird eingereiht
+  ok      die Queue laeuft ueber, weil der Peer nicht liest
+  ok      die Verbindung wird deswegen geschlossen, nicht stillschweigend gekuerzt  [P0-Ueberlauf: Verbindung wird geschlossen]
+
+== G6 · ein P1-Ereignis ueberlebt einen gescheiterten Write ==
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      der Write bricht, sobald der Server weg ist
+  ok      einige Ereignisse gingen raus, eines blieb im Sender haengen  [p1Gesendet = 77]
+  ok      das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an  [gesucht "id":77, · 3 P1 nach dem Reconnect empfangen]
+
+== G7 · der TelemetryClient prueft sein welcome vollstaendig ==
+  ok      ein welcome in der P2-Familie gilt NICHT als Kopplung  [welcome kam nicht als P0]
+  ok      ein welcome mit fremder link_id gilt nicht als Kopplung  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      ein welcome ohne `protocol` gilt nicht als Kopplung  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Gegenprobe: mit vollstaendigem welcome koppelt derselbe Client
+
+== G8 · nicht endliche Audiofelder werden VOR der Wandlung verriegelt ==
+  ok      48 kHz / 512 / 2 halten den Vertrag
+  ok      NaN, ±Inf, 1e300 und Grenzverstoesse fallen
+  ok      mit NaN/±Inf/1e300 verbindet der Client gar nicht erst  [Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)]
+  ok      und nennt den Grund ehrlich beim Namen  [Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)]
+  ok      kein Hello mit einer Nicht-Zahl hat den Server je erreicht
+
+== G9 · ein P0-Befehl ueberlebt einen gescheiterten Write bei voller Queue ==
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      der erste, grosse Befehl wird eingereiht
+  ok      genau 64 passen — der unterwegs befindliche belegt seinen Platz weiter  [64 angenommen]
+  ok      und der Ueberlauf ist oeffentlich gezaehlt  [1]
+  ok      die Verbindung wird deswegen geschlossen  [P0-Ueberlauf: Verbindung wird geschlossen]
+  ok      nach dem Reconnect kommt JEDER angenommene Befehl an — auch der, dessen Write scheiterte
+
+== G10 · beide Clients pruefen das welcome gegen den VOLLSTAENDIGEN Vertrag ==
+  ok      Telemetry: `broker_version` als `null` ist kein gueltiges welcome  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Telemetry: ein Zusatzfeld verletzt additionalProperties:false  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Telemetry: `broker_version` ueber 64 Zeichen faellt an der Laenge  [unerwartete Antwort auf das Telemetry-Hello]
+  ok      Control: dieselbe Strenge — `null` statt String verbindet nicht  [unerwartete Antwort auf hello]
+  ok      Control: ein Zusatzfeld verbindet nicht  [unerwartete Antwort auf hello]
+  ok      Control: eine zu lange `broker_version` verbindet nicht  [unerwartete Antwort auf hello]
+
+== G11 · ein P2-Frame auf der Control-Verbindung wird abgewiesen ==
+  ok      der Client weist den P2-Frame ab und schliesst die Verbindung
+  ok      und er hat die Binaerpayload NIE an den Aufrufer weitergereicht  [0 Rueckrufe]
+
+== G12 · die Nachrichtenratengrenze gilt auch im Client ==
+  ok      ein Peer, der schneller pipelined als die Rate erlaubt, wird getrennt
+  ok      und hoechstens die erlaubte Zahl Frames hat den Aufrufer erreicht  [4000 von 8000]
+
+== G13 · die Telemetrie merkt im Leerlauf, dass ihre Kopplung fort ist ==
+  ok      Control steht
+  ok      Telemetry koppelt
+  ok      ohne eine einzige Veroeffentlichung bemerkt der Client den Pipe-Abschluss
+  ok      und koppelt binnen Frist wieder
+  ok      Control koppelt neu und traegt eine frische link_id
+  ok      die Telemetrie bemerkt die neuen Kopplungswerte im Leerlauf  [Kopplung gewechselt — Telemetrie koppelt neu]
+  ok      und koppelt sich mit ihnen neu — ohne dass je ein P2-Frame floss  [Kopplung gewechselt — Telemetrie koppelt neu]
+  ok      Gegenprobe: es wurde in diesem Abschnitt wirklich nichts veroeffentlicht  [0 gesendet]
+
+== G14 · was der TelemetryClient auf SEINER Verbindung annimmt ==
+  ok      ein P0-Frame auf der Telemetrieverbindung schliesst sie
+  ok      auch hier gilt die Nachrichtenratengrenze
+  ok      die vertragsgemaessen P2-Frames sind gezaehlt, nicht still verworfen  [4000 von 8000 gezaehlt]
+
+== G15 · zu grosse Nachrichten werden an der TUER abgewiesen ==
+  ok      ein P0 ueber der Paketgrenze wird gar nicht erst eingereiht  [0]
+  ok      und ein P1 ebenso — der Aufrufer erfaehrt es sofort
+  ok      genau auf der Grenze wird eingereiht, nicht abgewiesen
+
+== G16 · ein P0-ACK kommt an, waehrend P1 rueckstaut ==
+  ok      Verbindung steht
+  ok      der Heartbeat wird eingereiht
+  ok      der ACK erreicht beiAntwort, obwohl P1 rueckstaut  [1 ACKs, 1 P1 gesendet, ]
+
+== G16b · der ACK trifft ein, WAEHREND der Write in seine Frist laeuft ==
+  ok      Verbindung steht, und der Peer liest kein einziges Byte
+  ok      ein vor dem Verbindungsende empfangener ACK geht nicht verloren — auch nach einem Write-Zeitlimit  [1 ACKs, empfangen=1, Pipe-Schreiben: Zeitlimit ueberschritten]
+
+== G17 · stop() kehrt in JEDEM Zustand zurueck ==
+  ok      Verbindung steht
+  ok      stop() aus beiAntwort kehrt zurueck — kein Self-Join, kein terminate
+  ok      und danach ist der Client getrennt
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      stop() kehrt trotz blockierendem Callback binnen Frist zurueck  [2000 ms]
+  ok      und die Fristueberschreitung ist sichtbar gezaehlt  [1]
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      nach dem Abloesen verbindet ein neuer start() wieder  [2 Versuche]
+  ok      und zwar GENAU EIN neuer Lauf — der abgeloeste Vorgaenger faehrt nicht daneben weiter  [2 Versuche, 1 Fristueberschreitungen]
+  ok      Verbindung steht
+  ok      der Callback blockiert wirklich
+  ok      der neue Lauf steht NACHGEWIESEN — welcome geprueft, nicht nur ein Versuch gezaehlt
+  ok      der zurueckkehrende alte Lauf trennt die neue Verbindung NICHT  [2 Versuche (vorher 2), 2 Serververbindungen (vorher 2), Status verbunden]
+  ok      und der neue Lauf beantwortet danach weiter P0  [1 ACKs]
+  ok      die Telemetrie steht
+  ok      der helloProvider blockiert wirklich
+  ok      der neue Telemetrielauf steht nachgewiesen
+  ok      dieselbe Zusage gilt fuer den TelemetryClient  [2 Versuche (vorher 2), 2 Serververbindungen (vorher 2), Status verbunden]
+  ok      die Telemetrie wartet auf ihre Kopplung
+  ok      stop() im Zustand wartetAufKopplung kehrt zurueck  [1 ms]
+  ok      die Telemetrie steht
+  ok      stop() waehrend eines blockierenden P2-Writes kehrt binnen Frist zurueck, nicht erst nach kIoFristMs  [1 ms]
+
+== G18 · die Telemetrie verliert die Verbindung mitten im Write ==
+  ok      die Telemetrie steht
+  ok      der Verbindungsverlust im Write wird bemerkt  [1 ms]
+  ok      und der Client zaehlt einen neuen Versuch — er koppelt von selbst neu  [1 Versuche]
+  ok      die Schleuse nimmt weiter an — der Erzeuger merkt vom Abbruch nichts
+
+== NAK-246 D2 · Besitz laufender Callbacks (Schleuse, M-06 bis M-08) ==
+  ok      M-06: der Callback steht VOR dem Eintritt in die Schleuse
+  ok      M-06: nach dem Destruktor ist die Schleuse geschlossen, nichts laeuft, und es wurde nicht gewartet - kein Callback stand im Zug  [geschlossen=1 aktiv=0 gewartetMs=0]
+  ok      M-06: schleuse_weist_callback_nach_dem_schliessen_ab - der freigegebene Callback beruehrt den zerstoerten Besitzer NICHT: das Muster ueber seinem Speicher ist in jedem Byte unveraendert  [0 von 96 Bytes veraendert]
+  ok      M-06: und der Versuch ist GEZAEHLT - abgewiesen == 1  [1]
+  ok      M-06: kein Callback hat die Schleuse je betreten  [0]
+  ok      M-07: der Callback steht IM Zug, vor dem Besitzerzugriff
+  ok      M-07: die Schleuse fuehrt ihn als laufend  [aktiv=1]
+  ok      M-07: schleuse_wartet_laufenden_callback_zu_ende_und_misst - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde  [301 ms Destruktor, Freigabe nach 300 ms]
+  ok      M-07: die Wartezeit ist GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=302]
+  ok      M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [0 ms nach der Freigabe]
+  ok      M-07: das Muster ueber dem zerstoerten Besitzer ist unveraendert - der Besitzerzugriff lag VOR der Zerstoerung, nicht danach  [0 Bytes veraendert]
+  ok      M-07: kein zweiter Callback begann waehrend des Wartens; nach dem Destruktor laeuft nichts mehr  [abgewiesen=0 aktiv=0]
+  ok      M-08: der Testserver steht
+  ok      M-08: ein Interventionsereignis der Generation 0 liegt in der Queue
+  ok      M-08: ein Bericht mit Marke 7 der Generation 0 liegt in der Queue
+  ok      M-08: der Aufbauzug ruft `hookReplayBegin`, und der Callback steht im Zug - unter `sendeMutex`, vor dem Besitzerzugriff
+  ok      M-08: stop() hat die volle Frist gewartet und den Thread abgeloest (B-CC-12) - der gehaltene Callback endete erst danach  [2500 ms Destruktor bei Frist 2000 ms]
+  ok      M-08/M-07: und der Destruktor hat den abgeloesten Callback zu Ende gewartet - gewartetMs > 0  [gewartetMs=501]
+  ok      M-06/M-08: abgeloester_callback_wird_nach_zerstoerung_abgewiesen - kein Callback des abgeloesten Threads beruehrt den zerstoerten Besitzer: das Muster ist in jedem Byte unveraendert  [0 von 144 Bytes veraendert]
+  ok      M-08: nach Abloesung + Zerstoerung + Freigabe ist mindestens ein Callback abgewiesen und gezaehlt (`beiP0Verworfen`, `beiLinkStatus`)  [abgewiesen=3 betreten=2]
+
+== NAK-246 D4 · dreiwertige Persistenzannahme und Deckel (M-15, M-17, M-18, M-19) ==
+  ok      M-15: confirm_join bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [zurWiederholungAngenommen]
+  ok      M-15: Reihenfolge - Eintrag im Register, Queueversuch gescheitert, `beiP0Verworfen` VOR der Rueckgabe, Ueberlauf gezaehlt  [1 verworfen, inFlight 1]
+  ok      M-15: nach dem Reconnect unter DERSELBEN command_id nachgespielt und vom Server bestaetigt (inFlight 0, inFlightErfolg >= 1)  [1 Erfolg, 1 Wiederholungen]
+  ok      M-17: kCapP0 (64) Auftraege sind eingereiht, geschrieben und unbestaetigt - das Register haelt genau 64, der Deckel hat noch nicht gegriffen  [64 angenommen, inFlight 64]
+  ok      M-17: inflight_register_deckelt_bei_kcapp0_und_verwirft_nichts_angenommenes - der 65. Auftrag wird ENDGUELTIG abgewiesen (Deckel = kCapP0 aus IpcQueues.h)  [endgueltigAbgewiesen]
+  ok      M-17: gezaehlt (inFlightRegisterVoll == 1), das Register bleibt bei 64  [64 im Register, 1 am Deckel]
+  ok      M-17: kein Queue-Ueberlauf, keine geschlossene Verbindung - der Deckel greift am EINTRITT, nicht am Draht
+  ok      M-17/M-18: ein bekannter, auf sein ACK wartender Auftrag zaehlt nicht gegen den Deckel - zur Wiederholung angenommen, Register unveraendert  [zurWiederholungAngenommen]
+  ok      M-17: vor der ACK-Freigabe hat jeder geschriebene Auftrag beim Server seine ACK-Entscheidung hinter sich (ohne ACK) - die Altverbindung bestaetigt keinen mehr  [64 entschieden, 64 geschrieben]
+  ok      M-17: nach dem Reconnect ist JEDER der 64 nachgespielt und bestaetigt - nichts Angenommenes wurde fuer den Deckel verworfen  [64 Erfolg, 64 Wiederholungen, 0 im Register]
+  ok      M-17: der endgueltig abgewiesene 65. hat den Server nie erreicht - er war nie im Register
+  ok      M-17: nach dem Abschluss der 64 nimmt das Register wieder an
+  ok      M-18 Aufbau: der erste Auftrag ist eingereiht
+  ok      M-18 (a): gleiche_command_id_liefert_den_zustand_des_gehaltenen_eintrags - gleicher Inhalt, Eintrag in der Queue -> eingereiht, kein zweiter Eintrag  [eingereiht]
+  ok      M-18 (c): dieselbe command_id mit ANDEREM Inhalt -> endgueltig abgewiesen, das Register waechst nicht  [endgueltigAbgewiesen]
+  ok      M-18 Aufbau: ein zweiter Auftrag bei voller Queue ist zur Wiederholung angenommen  [zurWiederholungAngenommen]
+  ok      M-18 (b): gleicher Inhalt, Eintrag wartet auf Replay -> zur Wiederholung angenommen, kein zweiter Eintrag  [zurWiederholungAngenommen]
+  ok      M-18 (c): auch fuer den wartenden Eintrag gilt - anderer Inhalt wird endgueltig abgewiesen  [endgueltigAbgewiesen]
+  ok      M-19: Nutzlast ueber kMaxPayloadBytes -> endgueltig abgewiesen, zuGross gezaehlt, kein Registereintrag  [endgueltigAbgewiesen]
+  ok      M-19: ohne gueltige command_id -> endgueltig abgewiesen, letzterFehler gesetzt, kein Registereintrag  [endgueltigAbgewiesen]
+
+== H · Bootstrapgrenze und JSON-Riegel ==
+  ok      16 KiB sind noch ein Bootstrap-Hello
+  ok      ein Byte darueber nicht mehr
+  ok      flaches Objekt wird gelesen
+  ok      Zahlen kommen als Text zurueck
+  ok      ein String kommt als String
+  ok      eine Zahl ist KEIN String
+  ok      und ein String ist kein Literal
+  ok      `null` ist ein Literal und wird nie als Text `null` durchgereicht
+  ok      der STRING "null" dagegen ist einer — beide sind unterscheidbar
+  ok      die exakte Feldmenge wird erkannt
+  ok      ein Zusatzfeld faellt auf (additionalProperties:false)
+  ok      und ein fehlendes Pflichtfeld ebenso
+  ok      Verschachtelung wird ABGELEHNT, nicht geraten
+  ok      Arrays ebenso
+  ok      ein Escape wird abgelehnt statt interpretiert
+  ok      doppelter Schluessel ist eine Ablehnung, keine 'letzter gewinnt'-Regel
+  ok      Text hinter dem Objekt wird abgelehnt
+  ok      das leere Objekt ist gueltig
+
+== I · Phase B: semantisches command_ack und In-Flight-Register ==
+  ok      command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei  [angewandt]
+  ok      command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei  [idempotent_wiederholt]
+  ok      command_ack_endgueltige_fehler_geben_ohne_erfolg_frei
+  ok      alle_command_ack_ergebnisse_beenden_inflight_korrekt
+  ok      queueplatz_frei_aber_semantischer_auftrag_bleibt_inflight
+  ok      brokerkill_vor_ack_reiht_dieselbe_command_id_wieder_ein
+  ok      command_ack_traegt_keine_event_uuid
+  ok      nur_schemafestes_command_ack_gibt_inflight_frei
+
+== I2 · NAK-230: der `code` im command_ack ==
+  ok      nak230_ack_ohne_code_bleibt_wie_bisher
+  ok      nak230_code_ohne_zeichenkette_bleibt_strukturfehler
+  ok      nak230_fassung_1_code_bleibt_unveraendert
+  ok      nak230_fassung_2_codes_sind_dem_leser_bekannt
+  ok      nak230_unbekannter_code_ist_generischer_fehler_nie_erfolg
+  ok      nak230_leerer_code_ist_generischer_fehler_und_gueltig
+  ok      nak230_bekannte_fehlercodes_decken_die_schema_enum_genau  [18 Enumworte]
+  ok      nak230_unbekannter_fehlercode_gibt_inflight_endgueltig_ohne_erfolg_frei
+
+== J · Phase B: Broker-Autostart und Signaturkette ==
+  ok      fehlender_broker_ist_einzige_startbedingung_auch_mit_serverauth
+  ok      serverauth_gueltiger_pid_sid_datei_hash_und_signer_vor_hello
+  ok      serverauth_fremde_sid_und_tokenabfragefehler_senden_null_bytes
+  ok      serverauth_bild_dateiid_hash_signatur_und_signer_fail_closed
+  ok      waitnamedpipe_toctou_wird_am_verbundenen_handle_erkannt
+  ok      control_und_telemetry_authentisieren_jedes_handle
+  ok      vorhandene_pipe_wird_nur_mit_dem_authentisierten_handle_uebernommen
+  ok      unverifizierte_belegte_pipe_spawnt_und_reconnectet_nicht
+  ok      vorhandene_fremdpipe_wird_nicht_adoptiert
+  ok      spawn_pid_ersetzt_serverauth_nicht_und_fremdpipe_im_bereitfenster_faellt
+  ok      reconnect_prueft_pid_sid_und_bild_ohne_altfreigabe
+  ok      reconnect_sendet_erst_nach_neuer_serverauth
+  ok      serverauth_nach_brokercrash_verweigert_pidwechsel_und_fremdbild
+  ok      serverauth_nach_idle_exit_verweigert_fremde_pipe
+  ok      spawn_retry_bereit_timeout_und_cooldown_grenzen
+  ok      normaler_reconnect_backoff_start_und_max
+  ok      letzter_client_idle_stop_an_grenze
+  ok      aktiver_fremdclient_verhindert_stop
+  ok      client_resetet_idlefrist
+  ok      fehlender_broker_ist_notwendige_startbedingung
+  ok      connect_without_spawn_kommt_zuerst
+  ok      autostart_hash_vor_signatur_vor_spawn
+  ok      lifecycle_gate_wird_unmittelbar_vor_spawn_neu_geprueft
+  ok      spawn_retry_bereit_timeout_und_cooldown_grenzen_zustandsmaschine
+  ok      autostart_parallel_startet_genau_einen_prozess  [haelt=1 pipe=1 spawns=1 mutexVerloren=1 reconnect=1 pruefungen=0 spawnVersuche=0]
+  ok      autostart_mehrere_mains_ein_broker
+  ok      autostart_mutex_verlierer_prueft_reale_pipe_trotz_stalem_cache
+  ok      thumbprint_null_erlaubt_nur_passenden_hash
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_fehlend
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_falsch
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_gueltig
+  ok      thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer
+  ok      spawn_per_createprocessw_nur_absolut_und_verborgen
+  ok      stop_waehrend_spawn
+BEREIT \\.\pipe\evenacadia.nakama.v3.probe.test.25248.84.foreign-broker-owner
+{"abweisungen":0,"acceptor_wartet_auf_instanz":0,"angenommen":1,"besitzlistener_nach_stopp":0,"besitzlistener_vor_stopp":2,"control_getrennt":1,"control_verbindungen":1,"ende_grund":"stdin","geschlossen_bootstrap":0,"geschlossen_envelope":0,"geschlossen_familie":0,"geschlossen_kopplung":0,"geschlossen_p0_ueberlauf":0,"geschlossen_rate":0,"geschlossen_writer":0,"ingress_hoechststand":0,"ingress_p1_ueberlauf_trennt":0,"ingress_p2_verworfen":0,"letzter_grund":"","p0":0,"p0_beantwortet":0,"p1":0,"p2":0,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.test.25248.84.foreign-broker-owner","telemetrie_getrennt":0,"telemetrie_verbindungen":0}
+  ok      plugin_stoppt_keinen_fremden_brokerprozess
+  ok      kein_installer_oder_boot_autostartartefakt
+
+== K · NAK-134: ERROR_PIPE_BUSY ist Liveness, kein Sicherheitsurteil ==
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/pipe_busy  [klass 1, 4016 ms, weitere Versuche 1 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/pipe_busy  [klass 1, weitere Versuche 1 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/file_not_found  [klass 1, 5 ms, weitere Versuche 2 (erwartet >=1), pruefungen 0 (erwartet 0)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/file_not_found  [klass 1, weitere Versuche 2 (erwartet >=1), pruefungen 0]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/access_denied  [klass 1, 5 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/access_denied  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/control/sonstiger_fehler  [klass 1, 6 ms, weitere Versuche 0 (erwartet 0), pruefungen 1 (erwartet 1)]
+  ok      oeffnungsausgaenge_sind_liveness_oder_sicherheit/telemetrie/sonstiger_fehler  [klass 1, weitere Versuche 0 (erwartet 0), pruefungen 1]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/control/erwartung_ungueltig  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/telemetrie/erwartung_ungueltig  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/control/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      authausgaenge_erwartung_und_serverpid_bleiben_sicherheit/telemetrie/server_pid_nicht_ermittelbar  [fiel 1, weitere Versuche 0, Fehler 0]
+  ok      telemetrie_authfehler_parkt_wie_control  [fiel 1, weitere Versuche 0]
+  ok      ressourcenfehler_nach_authbeweis_ist_liveness  [Codepruefung an IpcVerbindung.cpp — CreateEventW ist ohne Testhaken im Oeffnungspfad nicht injizierbar (Regressionswache durch Lesen)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/pipe_busy  [2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/access_denied  [1 Versuche, 1 Serverpruefungen]
+  ok      zaehlervertrag_verbindungsversuche_und_serverpruefungen/telemetrie_pipe_busy  [2 Versuche, 0 Serverpruefungen]
+  ok      kopplungswarte_faelscht_den_backoff_nicht  [Aufstieg 496 995 ms, Versuche in der Kopplungswarte 0, Rueckkehr nach 22 ms, Abstand danach 4003 ms (erwartet 3600..5800 — die Stufe vor der Warte), Status 1, Pruefungen 0]
+  ok      parken_uebergeht_den_backoff/control/authfehler  [Aufstieg 494 1001 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/telemetrie/authfehler  [Aufstieg 498 994 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 498 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/control/access_denied  [Aufstieg 495 1005 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 5 ms, Versuch DANACH nach 500 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_uebergeht_den_backoff/telemetrie/access_denied  [Aufstieg 501 1000 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 6 ms, Versuch DANACH nach 495 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      parken_loest_ueber_reconnect_und_stop/reconnect  [geparkt 1, geloest nach 6 ms]
+  ok      parken_loest_ueber_reconnect_und_stop/stop  [geparkt 1, geloest nach 0 ms]
+  ok      belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_connect  [0 Spawns, serverNichtVerifiziert 0, cooldowns 0, letzterStatus 0]
+  ok      belegt_nicht_erreicht_spawnt_nicht_und_blockiert_nicht/aus_serverpruefung  [Phase erreicht 1, danach 0, letzterStatus 3 (erwartet 3), 0 Spawns]
+  ok      abbruchsignal_gehoert_der_generation/ipcverbindung  [0 ms (R5-Frist 1500 ms; volle Warteschleife >= 4000 ms), Bericht 0]
+  ok      abbruchsignal_gehoert_der_generation/gegenpfad_neue_generation  [geoeffnet 1, Bericht 2, kein Fehler]
+  ok      abbruchsignal_gehoert_der_generation/oeffnen_loescht_nie  [Codepruefung an IpcVerbindung.cpp]
+  ok      abbruchsignal_gehoert_der_generation/control  [Regressionswache durch Lesen: loesen, Generation erneut pruefen, dann oeffnen]
+  ok      abbruchsignal_gehoert_der_generation/telemetrie  [Regressionswache durch Lesen: loesen, Generation erneut pruefen, dann oeffnen]
+  ok      abbruch_vor_und_nach_createfile/control/stop_vor_open  [95 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 0]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/stop_vor_open  [96 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 0]
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_vor_open  [99 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/reconnect_vor_open  [97 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      abbruch_vor_und_nach_createfile/control/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/stop_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/control/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      abbruch_vor_und_nach_createfile/telemetrie/reconnect_nach_open  [an der Barriere 1, kein Hello 1, Pruefungen 0 (unveraendert 0)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/control/file_not_found  [Abstaende 495 1007 2002 3994 8001 8009 ms (erwartet 500 1000 2000 4000 8000 8000)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/telemetrie/file_not_found  [Abstaende 497 1007 2000 ms (erwartet 500 1000 2000)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/control/pipe_busy  [Stempel 10 4514 9525 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/telemetrie/pipe_busy  [Stempel 10 4523 9526 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/control  [Stempel 11 5505 11510 ms, pruefungen 3]
+  ok      verifiziert_ohne_welcome_setzt_backoff_nicht_zurueck/telemetrie  [Stempel 10 5506 11509 ms, pruefungen 3]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/control/stehende_verbindung_setzt_zurueck  [Aufstieg 494 1002 ms, Verbindung stand 1, naechste Runde nach 504 ms (erwartet 350..1200, ohne Reset >= 2000)]
+  ok      backoff_folge_und_deckel_sind_beobachtbar/telemetrie/stehende_verbindung_setzt_zurueck  [Aufstieg 498 995 ms, Verbindung stand 1, naechste Runde nach 500 ms (erwartet 350..1200, ohne Reset >= 2000)]
+  ok      installer_boot_autostartinventar_ist_null_und_rueckweg_haengt_an_a17_a18
+
+== SONDE-013 · experiment_begin/_abort/_manual_result (C++-Haelfte) ==
+  ok      v3-Schema laedt in die C++-Engine
+  ok      experiment_familien_werden_von_der_cpp_engine_angenommen
+  ok      fremder_execution_mode_faellt_an_derselben_engine
+  ok      experiment_manual_result_ist_ein_persistenzpflichtiger_p0_befehl
+
+== SONDE-014 · Fassung 3 (C++-Haelfte, M-77/M-85/M-88/E-09) ==
+  ok      v3-Schema der Fassung 3 laedt in die C++-Engine
+  ok      fassung_3_familien_und_felder_werden_von_der_cpp_engine_angenommen
+  ok      sechster_rollenwert_faellt_an_der_cpp_engine
+  ok      vierter_rueckweg_dsp_revert_faellt_an_der_cpp_engine
+  ok      vierter_befundzustand_faellt_an_der_cpp_engine
+  ok      der_wire_envelope_traegt_die_fassung_fuenf
+  ok      draft_offer_reist_als_p1_mit_proposal_schluessel
+  ok      user_verdict_ist_ein_persistenzpflichtiger_p0_befehl_und_koalesziert_nicht
+  ok      M-15: user_verdict bei voller P0-Queue ist ZUR WIEDERHOLUNG ANGENOMMEN - weder endgueltig abgewiesen noch ein bool false  [zurWiederholungAngenommen]
+  ok      M-15: `beiP0Verworfen` ist VOR der Rueckgabe gerufen, der Eintrag steht im Register  [1 verworfen, inFlight 1]
+  ok      user_verdict_ueberlebt_die_volle_p0_queue_und_wird_nach_dem_reconnect_angewandt
+  ok      ein_konflikt_ack_wiederholt_das_urteil_unter_derselben_command_id
+  ok      zwei_ausstehende_urteile_melden_ihren_abschluss_je_kennung  [2 gemeldet, 2 Hookrufe]
+  ok      ein_angewandter_auftrag_meldet_seinen_abschluss_genau_einmal  [1 gemeldet]
+  ok      kr01_wire_nur_die_basisrevision_wechselt  [523 statt 520 Bytes]
+  ok      kr01_wire_die_ersetzung_ist_umkehrbar
+  ok      kr01_wire_faellt_fail_closed_auf_jedem_rand  [8 Raender]
+  ok      kr01_kcap_auftraege_stehen_gleichzeitig_aus  [64 im Register]
+  ok      kr01_der_naechste_auftrag_wird_am_deckel_endgueltig_abgewiesen_und_gezaehlt  [64 im Register, 1 am Deckel]
+  ok      kr01_der_erste_auftrag_wird_mit_frischem_kopf_wiederholt  [Text steht]
+  ok      kr01_erst_angewandt_gibt_den_ersten_auftrag_frei  [1 gemeldet, 63 bleiben]
+  ok      kr01_die_uebrigen_auftraege_bleiben_unberuehrt  [63 im Register, 0 endgueltig ohne Erfolg]
+  ok      NAK-180 R7: aufbaufilter_verwirft_nur_alte_berichte - genau der Bericht der alten Generation faellt, gemeldet mit seiner Marke  [1 gefallen]
+  ok      NAK-180 R7: das EREIGNIS bleibt - fuer P0-Ereignisse gilt 'nichts verwerfen' unveraendert (Paragraph 53.9)  [2]
+  ok      NAK-180 R7: und der Verwurf ist GEZAEHLT, nie stillschweigend  [1]
+  ok      NAK-180 R10: ein waehrend des Callbacks eingereihtes Replay traegt die NEUE Generation und wird ZUGESTELLT, nicht verworfen
+  ok      NAK-180 R12: der Aufbauzug SIEHT das Interventionsereignis aelterer Generation
+  ok      NAK-180 EP-09: ein persistenter P0-Befehl loest die Zustellpruefung NICHT aus - nur Interventionen tun das
+  ok      NAK-180 R12: zustellpruefung_stellt_das_replay_voran - auf dem neuen Link reist Begin VOR End, ohne dass ein Rennen noetig waere  [{"replaybegin":1}]
+  ok      NAK-180 R12: und das `end` folgt unmittelbar  [{"end":1}]
+  ok      NAK-180 R7: der Bericht ist entnommen und reserviert
+  ok      NAK-180 R7: bericht_wird_beim_write_fehler_fallen_gelassen - er geht NICHT zurueck in die Queue, und der Platz wird frei  [0/0]
+  ok      NAK-180 R7: ein Ereignis geht mit Klasse, Generation und Marke UNVERAENDERT zurueck - es reist auf dem neuen Link von selbst, und genau deshalb darf der Prozessor es nicht replayen (N-27)
+  ok      NAK-180 R13: aufraeumen_per_cas_verliert_kein_update - das CAS schlaegt fehl, und die Wirkung von G+1 bleibt stehen  [2]
+  ok      NAK-180 R13: und wenn niemand dazwischenschrieb, raeumt es auf
+  ok      NAK-180 N-26 (a): der Bericht von G1 ist eingereiht
+  ok      NAK-180 N-26 (a): und ein Interventionsereignis daneben
+  ok      NAK-180 N-26: der Aufbauzug vergibt die naechste Generation  [1 -> 2]
+  ok      NAK-180 N-26 (a): der Aufbaufilter verwirft GENAU den Bericht der alten Generation und meldet seine Marke - am echten Zug, nicht an einer isolierten Queue  [1]
+  ok      NAK-180 N-26 (b): das Replay wird IM Callback eingereiht
+  ok      NAK-180 N-26 (b): der Callback sieht bereits die NEUE Generation - die Vergabe liegt VOR ihm, sonst wuerfe der Filter das Replay des geweckten Workers weg (MP2-1/MP4-1)  [3 == 3]
+  ok      NAK-180 N-26 (b): und es wird ZUGESTELLT, nicht verworfen
+  ok      NAK-180 N-26 (a): das Interventionsereignis hat beide Wechsel ueberlebt - fuer Ereignisse gilt 'nichts verwerfen' unveraendert
+  ok      NAK-180 N-26 (c): der sterbende Link reiht noch einen Bericht ein
+  ok      NAK-180 N-26 (c): der Filter des naechsten Links ist zugleich die Generationspruefung fuer Queue-Inhalte - dafuer braucht es keinen Ende-Callback  [1]
+  ok      NAK-180 EP-07: der Aufbau-Heartbeat ist eingereiht
+  ok      NAK-180 EP-07: ein_markenraum - Heartbeat und Marker-Begin tragen VERSCHIEDENE Marken; zwei Folgen mit eigenem Nullpunkt liessen den Rueckruf des einen das andere als zugestellt buchen  [1 vs 2]
+  ok      NAK-180 EP-03: ein Urteil fuer eine TOTE Generation wird nicht angewendet  [0 (G1 gegen G2)]
+  ok      NAK-180 EP-03/R12: der erste Heartbeat von G+1 traegt SEIN Urteil - der veraltete Abschluss hat es nicht durch `false` ersetzt
+  ok      NAK-180 EP-05/N-37: der negative Callback bekommt die STERBENDE Generation, nicht die aktuelle  [1]
+  ok      NAK-180 N-34: der zweite Aufbau vergibt die naechste Generation  [1 -> 2]
+  ok      NAK-180 N-37: berichtOffen und replayFaellig tragen G2 - der ueberholte Callback von G1 hat sie nicht mitgenommen  [2/2]
+  ok      NAK-180 N-34: ueberholter_callback_praegt_keinen_spaeteren_link - der erste Heartbeat von G2 traegt dessen eigenes Urteil (`true`), nicht das `false`, das der Callback von G1 danach schrieb
+  ok      NAK-180 N-23: und die Aussage des toten Links reist nicht mit
+  ok      NAK-180 N-37: Ausgangslage - G2 haelt seine Zustaende
+  ok      NAK-180 N-37: G3 hat geschrieben  [3]
+  ok      NAK-180 EP-05/N-37 Fall 2: der festgehaltene negative Callback liest SEINE sterbende Generation, nicht die inzwischen aktuelle  [2 statt 3]
+  ok      NAK-180 EP-05/N-37 Fall 2: und er loescht die Wirkung von G3 NICHT - das CAS auf die sterbende Generation schlaegt fehl  [3/3]
+  ok      NAK-180 N-37: der erste Heartbeat von G3 traegt dessen E1-Urteil - ein verlorenes `neutralerNeuaufbau` waere D-01 in neuer Form
+  ok      NAK-180 EP-15/N-34 Fall 2: `stop()` fuehrt seinen negativen Callback mit der sterbenden Generation aus, waehrend der positive noch steht  [1]
+  ok      NAK-180 N-34 Fall 2: und `stop()` kehrt regulaer zurueck  [2 ms]
+  ok      NAK-180 N-37: nach `stop()`+`start()` tragen beide Zustaende die Generation des NEUEN Links  [2]
+  ok      NAK-180 N-34 Fall 2: der erste Heartbeat traegt das E1-Urteil von G2, nicht das `false`, das der ueberholte Callback danach schrieb
+  ok      NAK-180 EP-15/N-34 Fall 3: der reentrante negative Callback bekommt die Generation SEINES Links, nicht die aktuelle - und er verklemmt nicht (keine Serialisierung der Callbacks, E10)  [1]
+  ok      NAK-180 N-34 Fall 3: die spaete Wirkung traegt ihre eigene Generation  [1]
+  ok      NAK-180 N-34 Fall 3: G2 urteilt frisch - sein `false` reist, das `true` von G1 nicht  [1 -> 2]
+  ok      NAK-180 R6: der Testname liegt im Probe-Namensraum - ein produktiver v3-Name wird nie belegt
+  ok      NAK-180 R6: die feindliche Pipe steht (jedes lokale Konto darf das)
+  ok      NAK-180 R6: wartefrist_ist_unsere_nicht_die_des_servers - der Aufruf kehrt unter 1 s zurueck, obwohl der Pipe-Besitzer 0xFFFFFFFE als Default-Timeout gesetzt hat  [0 ms]
+  ok      NAK-180 R6: und eine belegte Instanz zaehlt weiter als erreichbar  [true]
+  ok      NAK-180 R6: ein nicht existierender Name bleibt nicht erreichbar und kehrt sofort zurueck  [0 ms]
+
+ALLE PRUEFUNGEN GRUEN — 432 Pruefungen, 0 Fehler
+
+--- B13  EqCopSonde012SourcesModelTest   ->  Exit 0 ---
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.98 / 2.36 ms p95]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 88/88 gruen
+
+--- B14  EqCopSonde012ProjectReloadTest   ->  Exit 0 ---
+  ok      M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat  [250 Bytes, Dirty 0, Revision 1]
+  ok      gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand
+== NAK-246 M-07 prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende ==
+  ok      M-07: der Testserver steht
+  ok      M-07: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.7244.0.nak246-m07]
+  ok      M-07: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-07: der Prozessor ist ein Main mit Bindung
+  ok      M-07: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-07: der Produkt-Callback `v3Antwort` steht im Haken - im Zug der Schleuse, vor dem ersten Zustandszugriff
+  ok      M-07: die Schleuse fuehrt ihn als laufend  [1 aktiv]
+  M-07: Destruktor beginnt; Freigabe nach 2500 ms
+  M-07: Destruktor zurueck nach 2501 ms, Muster gelegt, 300 ms warten
+  ok      M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest  [2501 ms Destruktor, Frist 2000 ms, Freigabe nach 2500 ms]
+  ok      M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=500]
+  ok      M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [0 ms nach der Freigabe]
+  ok      M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte unveraendert - der Zustandszugriff des Callbacks lag VOR der Zerstoerung  [0 von 101568 Bytes veraendert]
+  ok      M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu  [aktiv=0 betreten=6 abgewiesen=0]
+== NAK-246 M-06 abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht ==
+  ok      M-06: der Testserver steht
+  ok      M-06: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.7244.1.nak246-m06]
+  ok      M-06: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-06: der Prozessor ist ein Main mit Bindung
+  ok      M-06: der Sender ist bestaetigt angehalten
+  ok      M-06: der Ring nimmt Ereignisse auf  [32]
+  ok      M-06: die Ereignisse liegen als P0 in der Queue (Generation 0)
+  ok      M-06: der Aufbauzug des Testlinks hat die Zustellpruefung gefahren (Ruf 1)
+  ok      M-06: ein Aufbau-Heartbeat mit Marke liegt in der Queue (Generation 1)
+  ok      M-06: der echte Aufbauzug (Generation 2) ruft `hookReplayBegin`, und der Produkt-Callback steht im Haken - im Zug, unter sendeMutex, vor dem Zustandszugriff
+  M-06: Destruktor beginnt; Freigabe nach 2500 ms
+  M-06: Destruktor zurueck nach 2501 ms, Muster gelegt, 600 ms warten (der abgeloeste Thread laeuft seinen Aufbauzug zu Ende)
+  ok      M-06: stop() hat die volle Frist gewartet und den Clientthread abgeloest (B-CC-12) - der gehaltene Callback lebte ueber die Frist hinaus  [2501 ms Destruktor bei Frist 2000 ms]
+  ok      M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet  [gewartetMs=501]
+  ok      M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - `beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert  [0 von 101568 Bytes veraendert]
+  ok      M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1  [abgewiesen=3 betreten=4 aktiv=0]
+== NAK-246 M-09 alle_produkt_callbacks_laufen_durch_die_schleuse ==
+  ok      M-09: der Testserver steht
+  ok      M-09: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.7244.2.nak246-m09]
+  ok      M-09: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-09: der Prozessor ist ein Main mit Bindung
+  ok      M-09: der Sender ist bestaetigt angehalten
+  ok      M-09: Interventionsereignisse der Generation 0 liegen als P0 in der Queue - der Aufbauzug faehrt damit die Zustellpruefung, und jeder Wire-Commit ruft `beiP0Zugestellt`  [32]
+  ok      M-09: Control ist verbunden (Hello, Welcome, Link auf)
+  ok      M-09: Telemetrie ist gekoppelt und verbunden (Telemetrie-Hello)
+  ok      M-09: mindestens ein P2-Frame hat `beiFrame` erreicht  [64]
+  ok      M-09: mindestens ein heartbeat_ack hat `v3Antwort` erreicht  [1]
+  ok      M-09: mindestens ein P0-Wire-Commit hat `beiP0Zugestellt` erreicht  [32]
+  ok      M-09: der Server hat einen Heartbeat empfangen (`v3Status`)
+  ok      M-09: der Server hat das Control-Hello empfangen (`v3Hello`)
+  ok      M-09: die Zustellpruefung hat `hookReplayBegin` gerufen  [1]
+  ok      M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein Callback umgeht die Schleuse  [betreten=114 Summe=8 (vor der Zerstoerung 113)]
+  ok      M-09: der negative Link-Callback aus stop() lief synchron durch die noch OFFENE Schleuse - kein Selbstblock (Abweichung 1, Paragraph 5.10)  [1 Eintritte im Destruktor]
+  ok      M-09: ohne gehaltenen Callback blockiert der Destruktor nicht - keine Frist, kein Warten, kein abgewiesener Callback  [3 ms, gewartetMs=0, abgewiesen=0]
+== NAK-246 M-10 bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-10 Aufbau: Join B gesendet
+  ok      M-10 Aufbau: B ist Mitglied (ein Tick, ein Dirty)
+  ok      M-10: Join A gesendet
+  ok      M-10: B wird Hauptziel
+  ok      M-10: Unbind B gesendet (Wire, mit Runtime-Nonce)
+  ok      M-10: zwei Befehle, zwei Kennungen
+  ok      M-10: vor dem Speichern ist nichts angewandt - kein Tick lief
+  ok      M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr
+  ok      M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)  [3]
+  ok      M-10: die Revision ist je Befehl um 1 gestiegen (+2)  [2]
+  ok      M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt
+  ok      M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste  [1 Mitglied(er)]
+  ok      M-10: das Laden meldet kein Dirty
+== NAK-246 M-11 bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-11: Join A gesendet
+  ok      M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug spaetestens alle 50 ms)  [6 ms von ACK bis Anwendung]
+  ok      M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen  [Dirty 1, Revision +1]
+  ok      M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision
+  ok      M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt
+== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
+  ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten - beide Drains sind samt Nachfuehrung zurueck  [1 -> 2 -> 3 Eintritte]
+  ok      M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [0 Mitglied(er)]
+  ok      M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [2]
+  ok      M-12: Revision-Delta == 2  [2]
+  ok      M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: ja, B vor der Freigabe von A durchgelaufen: nein, 0 Mitglied(er) waehrend A hielt]
+  ok      M-12: beide Swaps liefen durch den Haken  [2]
+== NAK-246 M-13 ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-13: ein zweites Projekt
+  ok      M-13: Join A gesendet (alter Lauf)
+  ok      M-13: das Projekt ist gewechselt (andere project_binding_id)
+  ok      M-13: der ACK des alten Laufs findet nach dem Reload keine Zuordnung - Speichern ohne Tick aendert nichts
+  ok      M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)
+  ok      M-13: eine neue Instanz laedt kein Mitglied des alten Laufs
+  ok      M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an
+== NAK-246 M-16 volle_queue_join_reconnect_ack_save_load_als_eine_kette ==
+  ok      M-16: der Testserver steht
+  ok      M-16: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor)
+  ok      M-16: der Prozessor ist ein Main mit Bindung
+  ok      M-16: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-16: der Link-Aufbau-Callback ist durch - das Modell meldet authenticating
+  ok      M-16: die Verbindung ist weg
+  ok      M-16: der Link-Ende-Callback ist durch - das Modell meldet brokerUnavailable
+  ok      M-16 Aufbau: die Quelle A ist Hauptziel, dieses Main darf schreiben
+  ok      M-16: die P0-Queue ist voll  [64]
+  ok      M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [angenommen, Zuordnung vorhanden]
+  ok      M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)  [inFlight 1]
+  ok      M-16: der Testserver steht wieder (Reconnect)
+  ok      M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)  [inFlightErfolg 1, Wiederholungen 1]
+  ok      M-16: der zweite Server hat den Join empfangen (Replay nach dem Reconnect, M-73)  [1 confirm_join, bd50ab8958d04848aab10fb7595ef33a]
+  ok      M-16: der ACK hat die Zuordnung gefunden - der Replay traegt DIESELBE command_id, die der Aufrufer haelt, und der Befehl ist bestaetigt vorgemerkt  [1 bestaetigt, Aufrufer bd50ab8958d04848aab10fb7595ef33a]
+  ok      M-16: kein Tick lief - nichts ist angewandt, kein Dirty
+  ok      M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [1 Mitglied(er), Dirty 1]
+  ok      M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [1 Mitglied(er)]
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  ok      M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [1 Mitglied(er) im State, im Modell bestaetigt]
+  ok      M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [1]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  ok      NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-39 (read-only) gezogene_kopie_ueberholt_den_read_only_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39 (read-only): der geladene State ist read-only und traegt keine Mitglieder (Vorbedingung der Zusage)  [read-only, 0 Mitglied(er)]
+  ok      M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die alte Kopie (A)  [0 Zeile(n): ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  ok      NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==
+  ok      M-29 Aufbau (read-only): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 read-only: der geladene State ist read-only (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 0 Zeile(n)]
+  ok      M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff
+  ok      M-29 Aufbau (ungebunden): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung steht unveraendert (Vorbedingung)  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen Subscribe (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 1 Zeile(n)]
+  ok      M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied in State UND Modell
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  ok      M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [2]
+  ok      M-01: Revision-Delta == 2  [2]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-02 hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-02 Aufbau: A ist Mitglied
+  ok      M-02: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-02: der Benennungs-Handgriff laeuft durch
+  ok      M-02: hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt - nach Ruhe traegt das Modell das BENANNTE Hauptziel, nicht das alte Label  [aaaa=Fluegel bbbb=Eingeschleust]
+  ok      M-02: die aeltere Worker-Kopie ist als ueberholt gezaehlt  [1]
+  ok      M-02: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-03 lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-03: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-03: die gezogene Kopie traegt [A] (Vorbedingung der Zusage)
+  ok      M-03: der lokale Unbind ohne Broker laeuft durch
+  ok      M-03: der State traegt danach kein Mitglied mehr
+  ok      M-03: lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt - nach Ruhe traegt das Modell KEIN Mitglied mehr
+  ok      M-03: die aeltere Worker-Kopie ist als ueberholt gezaehlt  [1]
+  ok      M-03: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-05 inhaltsgleiche_publikation_zieht_die_frischemarke_nach ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-05 Aufbau: Modell und State sind leer (Vorbedingung der Zusage)
+  ok      M-05: der Workerzug haelt mit der Kopie [A] zwischen Kopie und Publikation
+  ok      M-05: der Unbind ist angewandt, der publizierte Stand `[]` ist inhaltsgleich zum leeren Modell
+  ok      M-05: inhaltsgleiche_publikation_zieht_die_frischemarke_nach - nach Ruhe ist das Modell LEER; die angehaltene Kopie [A] ist als ueberholt abgewiesen
+  ok      M-05: genau EINE ueberholte Publikation  [1]
+  ok      M-05: der Unbind meldet Host-Dirty und Revision wie bisher (Delta 2 fuer Join und Unbind) - die Trennung von Nummernvergabe und Bestandsuebernahme aendert daran nichts  [2 Dirty, Revision-Delta 2]
+  ok      M-05: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-06: der Workerzug haelt mit der Kopie [A]
+  ok      M-06: beide Drains sind samt Nachfuehrung zurueck
+  ok      M-06: `benenneSourcesHauptziel` laeuft durch
+  ok      M-06: der lokale Unbind ohne Broker laeuft durch
+  ok      M-06: nach dem letzten Handgriff ist Ruhe
+  ok      M-06: state_und_modell_sind_nach_ruhe_gleich - dieselbe Schluesselmenge, je Schluessel dasselbe Label  [State: aaaa=Fluegel | Modell: aaaa=Fluegel]
+  ok      M-06: genau die eine angehaltene Kopie wurde ueberholt - die drei seriellen Wege nicht  [1]
+== NAK-283 M-71 mitgliederfolge_wrappt_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-71 Aufbau: der Folgezaehler steht eine Nummer unter dem Anschlag
+  ok      M-71: die Publikation mit der Nummer am Anschlag wird uebernommen
+  ok      M-71: der Zaehler steht jetzt auf 2^64 - 1
+  ok      M-71: der zweite Join ist im State angewandt
+  ok      M-71: der Workerzug ist samt Nachfuehrung zurueck
+  ok      M-71: mitgliederfolge_wrappt_nicht - der Zaehler steht NACH der zweiten Publikation immer noch auf 2^64 - 1 und ist nicht auf 0 zurueckgesprungen  [-1]
+  ok      M-71: am Anschlag wird die Publikation abgewiesen und im Ueberholt-Zaehler gefuehrt - der Zaehler macht den Halt sichtbar  [1]
+  ok      M-71: das Modell behaelt seinen letzten Bestand [A], statt einen umgelaufenen Stand anzunehmen  [aaaa=Eingeschleust]
+== NAK-283 M-72 reloadablehnung_und_ueberholung_sind_unterscheidbar ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase A Aufbau: das fremde Projekt traegt genau B
+  ok      M-72 Phase A: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase A: der Workerzug ist zurueck
+  ok      M-72 Phase A: `sourcesNachfuehrungNachReloadUnterblieben` steigt genau im Reloadfall  [1 / 1]
+  ok      M-72 Phase A: der Ueberholt-Zaehler steigt im Reloadfall NICHT  [0]
+  ok      M-72 Phase A: NUR der Reloadfall unterdrueckt Dirty und Revision  [Dirty-Delta 0, Revision-Delta 0]
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase B Aufbau: B ist Mitglied
+  ok      M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase B: beide Drains sind zurueck
+  ok      M-72 Phase B: der Ueberholt-Zaehler steigt genau im Ueberholtfall  [1 / 1]
+  ok      M-72 Phase B: der Reloadzaehler steigt im Ueberholtfall NICHT  [0]
+  ok      M-72 Phase B: reloadablehnung_und_ueberholung_sind_unterscheidbar - der Ueberholtfall meldet Dirty und Revision, weil seine Aenderung angewandt bleibt  [2 Dirty, Revision-Delta 2]
+  ok      main_project_is_explicitly_initialised
+  ok      confirmed_join_ack_and_name_each_mark_host_dirty  [2]
+  ok      save_is_not_a_persistent_mutation
+  ok      same_instance_reload_discards_transient_snapshot_and_measurement
+  ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+  ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+  ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+  ok      nonleading_main_disables_label_and_reports_failed_write
+  ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+  ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 219/219 gruen
+
+--- B27  EqCopSonde014IntentTest   ->  Exit 0 ---
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+  ok      Rolle traegt ein nicht leeres Wort: traegt
+  ok      Rolle traegt ein nicht leeres Wort: begleitet
+  ok      Rolle traegt ein nicht leeres Wort: geschuetzt
+  ok      Rolle traegt ein nicht leeres Wort: verschmolzen
+  ok      die fuenf Rollenwoerter sind paarweise verschieden
+  ok      Wort und Rolle sind umkehrbar: fuehrt
+  ok      Wort und Rolle sind umkehrbar: traegt
+  ok      Wort und Rolle sind umkehrbar: begleitet
+  ok      Wort und Rolle sind umkehrbar: geschuetzt
+  ok      Wort und Rolle sind umkehrbar: verschmolzen
+  ok      ein sechster Rollenwert wird abgewiesen: 'impuls'
+  ok      ein sechster Rollenwert wird abgewiesen: 'raum'
+  ok      ein sechster Rollenwert wird abgewiesen: 'lead'
+  ok      ein sechster Rollenwert wird abgewiesen: 'Fuehrt'
+  ok      ein sechster Rollenwert wird abgewiesen: ''
+  ok      ein sechster Rollenwert wird abgewiesen: 'fuehrt '
+  ok      der Leser weist einen sechsten Rollenwert als read-only ab
+  ok      und nennt den Grund: MainProject.source_intents_v1 contains an unknown role: impuls
+
+== M-02  rolle_und_belegung_sind_umkehrbar ==
+  ok      Belegung von fuehrt ist (foreground, 'lead', '')
+  ok      Belegung von traegt ist (middle, 'foundation', '')
+  ok      Belegung von begleitet ist (background, 'texture', '')
+  ok      Belegung von geschuetzt ist (middle, '', 'schutz')
+  ok      Belegung von verschmolzen ist (middle, '', 'verschmolzen')
+  ok      Roundtrip Rolle -> Belegung -> Rolle: fuehrt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: traegt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: begleitet
+  ok      Roundtrip Rolle -> Belegung -> Rolle: geschuetzt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: verschmolzen
+
+== M-02  zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck ==
+  ok      alle zwanzig geordneten Paare der fuenf Rollen gefahren
+  ok      keine zwei verschiedenen Rollen teilen sich eine Belegung
+  ok      eine fremde Belegung gehoert zu keiner Rolle
+  ok      und eine zweite fremde ebenfalls nicht
+
+== M-03  attack_schutz_ist_unabhaengig_von_der_rolle ==
+  ok      eine Schutzangabe entsteht OHNE dass die Quelle eine Rolle traegt
+  ok      und sie erzeugt keine Rolle als Nebenwirkung
+  ok      Produktpfad: Schutz ohne Rolle wird angenommen
+  ok      der Bestand traegt genau die Schutzangabe und keinen Intent
+  ok      und danach die Rolle 'begleitet' an derselben Quelle
+  ok      eine Quelle mit Rolle 'begleitet' kann Attack geschuetzt haben
+
+== M-03  rollenwechsel_loescht_keinen_schutzbereich ==
+  ok      Rollenwechsel auf fuehrt
+  ok      der Schutzbereich ueberlebt den Wechsel auf fuehrt
+  ok      Rollenwechsel auf traegt
+  ok      der Schutzbereich ueberlebt den Wechsel auf traegt
+  ok      Rollenwechsel auf begleitet
+  ok      der Schutzbereich ueberlebt den Wechsel auf begleitet
+  ok      Rollenwechsel auf geschuetzt
+  ok      der Schutzbereich ueberlebt den Wechsel auf geschuetzt
+  ok      Rollenwechsel auf verschmolzen
+  ok      der Schutzbereich ueberlebt den Wechsel auf verschmolzen
+  ok      Schutz laesst sich einzeln aufheben
+  ok      und die Rolle bleibt dabei stehen
+  ok      Bandschutz [0, 221) am vollen Rand wird angenommen
+  ok      ein Band ueber dem Gitterrand wird abgewiesen
+  ok      ein leeres Bandintervall wird abgewiesen
+  ok      eine Bandeigenschaft ohne Intervall wird abgewiesen
+  ok      und eine Nicht-Bandeigenschaft MIT Intervall ebenfalls
+
+== M-04  nur_rolle ==
+  ok      ohne jeden Intent ist Entmaskierung erlaubt
+  ok      Quelle A bekommt die Rolle 'bewusst verschmolzen'
+  ok      das globale Veto sperrt A gegen B
+  ok      und ebenso A gegen jede dritte Quelle - es ist GLOBAL
+  ok      ein Paar ohne A bleibt unberuehrt
+
+== M-04  nur_beziehung ==
+  ok      eine gerichtete Beziehung 'A fuehrt vor B' ohne jede Rolle
+  ok      ohne Veto aendert sie an der Erlaubnis nichts
+
+== M-04  beides_im_widerspruch ==
+  ok      globales Veto an A
+  ok      und die ausdrueckliche Beziehung 'A fuehrt vor B'
+  ok      das SPEZIFISCHERE gewinnt: fuer dieses Paar ist Entmaskierung erlaubt
+  ok      fuer das Paar A/C bleibt das Veto stehen
+  ok      auch in der anderen Leserichtung
+  ok      Veto an A
+  ok      und eine Beziehung 'A/B duerfen verschmelzen'
+  ok      sie hebt das Veto NICHT auf - sie bestaetigt es
+
+== M-05  konfliktregeln_sind_eine_ordnung_kein_score ==
+  ok      Â§37.2 fuehrt genau fuenf Stufen
+  ok      Stufe 1 schlaegt Stufe 2 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 4 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      alle zehn Paarungen der fuenf Stufen gefahren
+  ok      hundert Vermutungen schlagen die Schutzgrenze nie - eine Ordnung, kein Score
+  ok      zwei gleiche Anspruechen sind gleichrangig - die Funktion ist nicht konstant
+
+== M-05  innerhalb_stufe_zwei_gewinnt_das_spezifischere ==
+  ok      auf Stufe 2 gewinnt die paarweise Beziehung vor dem globalen Veto
+  ok      und umgekehrt ebenso
+  ok      Spezifitaet hebt keine Stufe an
+  ok      globale Rolle 'traegt'
+  ok      und in Passage 1 die Rolle 'fuehrt'
+  ok      in Passage 1 wirkt der passagespezifische Wert
+  ok      in Passage 2 ohne eigenen Wert faellt er auf den globalen zurueck
+  ok      und global gilt der globale
+  ok      eine Quelle ohne jeden Intent hat keine wirkende Rolle - kein Vorgabewert
+
+== M-06  zyklus_wird_beim_speichern_erkannt ==
+  ok      eine leere Kantenmenge hat keinen Zyklus
+  ok      eine Kette A->B->C hat keinen Zyklus
+  ok      ein Dreierzyklus A->B->C->A wird erkannt
+  ok      dieselbe Runde mit einer gleichrangigen Kante ist KEIN Zyklus
+  ok      `darf_verschmelzen` ist keine Prioritaetskante und bildet keinen Zyklus
+  ok      A fuehrt vor B
+  ok      B fuehrt vor C
+  ok      C fuehrt vor A wird ABGEWIESEN - der Zyklus erreicht die Persistenz nicht
+  ok      der Bestand traegt weiterhin genau zwei Kanten
+  ok      und ein abgewiesener Wert hebt die Bestandsrevision nicht
+  ok      der Leser weist einen gespeicherten Zyklus als read-only ab: MainProject.intent_relations_v1 contains a cycle in fuehrt_vor
+
+== M-06  zyklus_wird_als_gleichrangigkeit_gespeichert ==
+  ok      derselbe Schluss als nicht steuerbare Gleichrangigkeit wird angenommen
+  ok      der Bestand traegt jetzt drei Kanten
+  ok      und die dritte ist als 'gleichrangig' MARKIERT, nicht als gerichtet
+  ok      der Stand mit markierter Gleichrangigkeit laedt normal
+  ok      und kommt als 'gleichrangig' zurueck
+
+== M-07  abgeleitet_ueberschreibt_user_nie ==
+  ok      der User setzt 'fuehrt'
+  ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+  ok      aber sie ERSETZT den Userwert nicht
+  ok      und hebt die Bestandsrevision nicht - es hat sich nichts geaendert
+  ok      zuerst eine abgeleitete Vermutung
+  ok      dann ein Userwert
+  ok      der Userwert gewinnt - die Regel ist gerichtet, nicht symmetrisch
+  ok      und die Objektrevision ist gestiegen
+  ok      Herkunft, Revision und Konfidenz ueberleben Save/Load
+  ok      eine reine Vermutung wird gespeichert
+  ok      und bleibt nach dem Laden als abgeleitet erkennbar
+
+== M-08  zwei_rollen_je_bus_in_zwei_passagen ==
+  ok      Passage 1: die Quelle fuehrt
+  ok      Passage 2: dieselbe Quelle begleitet
+  ok      beide Werte stehen nebeneinander - der zweite ueberschreibt den ersten nicht
+  ok      in Passage 1 wirkt 'fuehrt'
+  ok      in Passage 2 wirkt 'begleitet'
+  ok      nach dem Laden stehen weiterhin beide
+  ok      und Save nach Load ist BYTEGLEICH
+  ok      ein globaler Wert kommt dazu
+  ok      jetzt sind es drei Scopes derselben Quelle
+  ok      und der passagespezifische Wert gilt weiter (Â§37.2 Stufe 3)
+  ok      Passage 1 wird entfernt
+  ok      zwei Scopes bleiben
+  ok      und Passage 1 faellt jetzt auf den globalen Wert zurueck
+
+== M-09  userwerte_ueberleben_projekt_recall ==
+  ok      fuenf echte Aenderungen ergeben Bestandsrevision 5
+  ok      der Recall laedt normal
+  ok      alle drei Bestandteile kommen vollstaendig zurueck
+  ok      und die Bestandsrevision ueberlebt - sonst haette die Vollstaendigkeitsmarke aus M-86 keine Zahl
+  ok      Userwerte ueberleben, abgeleitete bleiben als solche erkennbar (Â§37.4)
+  ok      Save nach Recall ist bytegleich
+  ok      und ueber zwei Runden ebenfalls
+
+== State-Invariante  versionieren / Altstand / unbekanntes Feld / Dirty ==
+  ok      der Eigenschaftsname traegt seine Fassung: source_intents_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_protections_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_relations_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_revision_v1
+  ok      ein Altstand ohne Intent-Felder laedt normal
+  ok      und traegt einen leeren Bestand mit Revision 0 - kein erfundener Vorgabewert
+  ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+  ok      eine unbekannte MainProject-Eigenschaft zerstoert den Leser nicht
+  ok      und sie steht unveraendert im naechsten Save
+  ok      eine neue Rolle meldet genau einmal Host-Dirty
+  ok      derselbe Wert noch einmal ist ein No-op und meldet nichts
+  ok      ein anderer Wert meldet wieder
+  ok      ein abgewiesener Wert meldet NICHT
+  ok      eine NaN-Konfidenz wird abgewiesen und meldet nicht
+  ok      eine neue Schutzangabe meldet
+  ok      dieselbe noch einmal nicht
+  ok      eine neue Beziehung meldet
+  ok      das Entfernen meldet wie das Setzen - ein Loeschen ohne Dirty kaeme zurueck
+  ok      ein zweites Entfernen ist ein No-op
+  ok      das Aufheben eines Schutzes meldet
+  ok      und das Entfernen einer Beziehung ebenfalls
+  ok      Laden meldet kein Dirty
+  ok      ein fremdes Root-Major laedt read-only
+  ok      read-only verweigert setzeQuellenrolle
+  ok      read-only verweigert schuetzeQuelle
+  ok      read-only verweigert setzeQuellenbeziehung
+  ok      und meldet dabei nichts
+  ok      die Originalbytes gehen unveraendert zurueck
+
+== Raender  was die API ablehnt, lehnt auch der Leser ab ==
+  ok      Leser lehnt ab - Quelle ist keine hex32: MainProject.source_intents_v1 contains an invalid source id
+  ok      Leser lehnt ab - Passagenscope ist weder leer noch hex32: MainProject.source_intents_v1 contains an invalid passage scope
+  ok      Leser lehnt ab - Revision 0 gibt es nicht: MainProject.source_intents_v1 revision must be at least 1
+  ok      Leser lehnt ab - unbekannte Herkunft: MainProject.source_intents_v1 contains an unknown origin: geraten
+  ok      Leser lehnt ab - Konfidenz ueber 1: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz unter 0: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz NaN: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+
+== NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag
+  ok      M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` - intent revision would overflow
+  ok      M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  ok      M-07: der GANZE Zustand ist byteweise unveraendert
+  ok      M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  ok      M-08: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  ok      M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-09: Vorbedingung - eine Beziehung
+  ok      M-09: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  ok      M-09: der GANZE Zustand ist byteweise unveraendert
+  ok      Gegenprobe: der Writer-Stand laedt
+  ok      Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben
+
+== NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`
+  ok      M-10: `schrittAendern` weist ab statt zu inkrementieren - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9223372036854775807]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`
+  ok      M-10: auch der NEUE Schritt weist ab - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: auch das Ergebnis weist ab - assistant revision would overflow
+  ok      M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf int64max ausgefuehrt; kein negativer Folgewert, kein signed-integer-UB  [9223372036854775807]
+
+== NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Bestandsrevision bei int64max - 1
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Assistentenrevision bei int64max - 1
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+
+SONDE-014-INTENT-TEST OK - 254 Pruefungen ok, 0 Fehler
+
+--- B29  EqCopSonde014AssistentTest   ->  Exit 0 ---
+SONDE-014 Etappe G - AssistantStep im Main (M-55 bis M-62)
+
+== M-55: die Zustandsmenge, die Folge und der Sonderfall preview ==
+  ok      M-55: coverage kommt ueber seinen Rueckweg zurueck
+  ok      M-55: finding kommt ueber seinen Rueckweg zurueck
+  ok      M-55: evidence kommt ueber seinen Rueckweg zurueck
+  ok      M-55: listen kommt ueber seinen Rueckweg zurueck
+  ok      M-55: proposal kommt ueber seinen Rueckweg zurueck
+  ok      M-55: preview kommt ueber seinen Rueckweg zurueck
+  ok      M-55: remeasure kommt ueber seinen Rueckweg zurueck
+  ok      M-55: verdict kommt ueber seinen Rueckweg zurueck
+  ok      M-55: acht verschiedene Zustaende
+  ok      M-55: ein neunter Zustand faellt
+  ok      M-55: und ein leeres Wort ebenso
+  ok      M-55: keine Kante von coverage nach preview
+  ok      M-55: und keine von preview nach coverage
+  ok      M-55: keine Kante von finding nach preview
+  ok      M-55: und keine von preview nach finding
+  ok      M-55: keine Kante von evidence nach preview
+  ok      M-55: und keine von preview nach evidence
+  ok      M-55: keine Kante von listen nach preview
+  ok      M-55: und keine von preview nach listen
+  ok      M-55: keine Kante von proposal nach preview
+  ok      M-55: und keine von preview nach proposal
+  ok      M-55: keine Kante von preview nach preview
+  ok      M-55: und keine von preview nach preview
+  ok      M-55: keine Kante von remeasure nach preview
+  ok      M-55: und keine von preview nach remeasure
+  ok      M-55: keine Kante von verdict nach preview
+  ok      M-55: und keine von preview nach verdict
+  ok      M-55: coverage -> finding
+  ok      M-55: finding -> evidence
+  ok      M-55: evidence -> listen
+  ok      M-55: listen -> proposal
+  ok      M-55: proposal -> remeasure
+  ok      M-55: remeasure -> verdict
+  ok      M-55: `verdict` ist terminal
+  ok      M-55: und `preview` fuehrt nirgendwohin
+  ok      M-55: ein Sprung ueber zwei Zustaende ist keine Kante
+
+== M-55: ein gespeicherter preview-Schritt ist ein Lesefehler ==
+  ok      M-55: ein gespeicherter preview-Schritt wird NICHT normal geladen
+  ok      M-55: und der Grund nennt ihn beim Namen: MainProject.assistant_step_v1 carries preview, which P5 cannot reach
+  ok      M-55: derselbe Stand mit `proposal` laedt normal: 
+  ok      M-55: die API setzt `preview` nicht
+
+== M-56: fuenf Angaben je Zustand, keine optional ==
+  ok      M-56: coverage traegt alle fuenf Angaben
+  ok      M-56: coverage hat ein Timeout > 0
+  ok      M-56: coverage hat eine Rueckkante
+  ok      M-56: finding traegt alle fuenf Angaben
+  ok      M-56: finding hat ein Timeout > 0
+  ok      M-56: finding hat eine Rueckkante
+  ok      M-56: evidence traegt alle fuenf Angaben
+  ok      M-56: evidence hat ein Timeout > 0
+  ok      M-56: evidence hat eine Rueckkante
+  ok      M-56: listen traegt alle fuenf Angaben
+  ok      M-56: listen hat ein Timeout > 0
+  ok      M-56: listen hat eine Rueckkante
+  ok      M-56: proposal traegt alle fuenf Angaben
+  ok      M-56: proposal hat ein Timeout > 0
+  ok      M-56: proposal hat eine Rueckkante
+  ok      M-56: preview traegt alle fuenf Angaben
+  ok      M-56: preview hat ein Timeout > 0
+  ok      M-56: preview hat eine Rueckkante
+  ok      M-56: remeasure traegt alle fuenf Angaben
+  ok      M-56: remeasure hat ein Timeout > 0
+  ok      M-56: remeasure hat eine Rueckkante
+  ok      M-56: verdict traegt alle fuenf Angaben
+  ok      M-56: verdict hat ein Timeout > 0
+  ok      M-56: verdict hat eine Rueckkante
+  ok      M-56: auch `preview` traegt seinen vollstaendigen Vertrag
+  ok      M-56: der erste Zustand ist seine eigene sichere Rueckkante
+
+== M-57: EIN Slot, strukturell ==
+  ok      M-57: der erste Schritt beginnt: 
+  ok      M-57: ein zweiter Startversuch wird abgewiesen, nicht eingereiht
+  ok      M-57: und der erste Schritt steht unveraendert
+  ok      M-57: der Abbruch macht den Schritt terminal
+  ok      M-57: danach beginnt ein neuer Schritt: 
+
+== M-58: Abbruch, Zurueck, Ueberspringen, Resume ==
+  ok      M-58: Zurueck geht auf die Rueckkante: 
+  ok      M-58: und hebt die Revision genau einmal
+  ok      M-58: Ueberspringen geht auf den naechsten Zustand
+  ok      M-58: Resume setzt an derselben Stelle fort
+  ok      M-58: Resume ist eine FRAGE - es aendert nichts und hebt keine Revision
+  ok      M-58: Verwerfen ist ein terminales Ereignis, kein Loeschen der Historie
+  ok      M-58: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58: ein zweiter Abbruch faellt
+
+== M-61: drei benannte Ergebnisse, keine Leerzustaende ==
+  ok      M-61: passage_messen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: routing_bestaetigen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: keine_aenderung_empfohlen ist ein eigenes Ergebnis mit Objekt
+  ok      M-61: und der Schritt bleibt offen
+  ok      M-61: dasselbe Ergebnis zweimal hebt keine Revision
+
+== M-60: harte Gates vor der Gewichtung ==
+  ok      M-60: die drei Gates entfernen ihre Kandidaten VOR der Gewichtung
+  ok      M-60: und zwar, obwohl ihr Rang der hoechste waere
+  ok      M-60: bei Gleichstand gewinnt die kleinere Kennung
+  ok      M-60: NaN und Ausreisser vergiften den Rang nicht
+
+== Verdrahtung: der echte EqCopilotProcessor ==
+  ok      Verdrahtung: der Schritt beginnt
+  ok      Verdrahtung: und meldet GENAU einmal Host-Dirty
+  ok      M-57 verdrahtet: ein zweiter Start wird abgewiesen
+  ok      und ein abgewiesener Start meldet nichts
+  ok      Verdrahtung: der Uebergang laeuft
+  ok      M-55 verdrahtet: `preview` ist auch hier unerreichbar
+  ok      Verdrahtung: ein Sprung ueber vier Zustaende faellt
+  ok      M-61 verdrahtet: das benannte Ergebnis wird gesetzt
+  ok      M-61 verdrahtet: und steht im Main-State
+  ok      M-59: der Schritt wird aus dem gespeicherten MainProject rekonstruiert
+  ok      M-59: und laesst sich an derselben Stelle fortsetzen
+  ok      M-59: Save/Load ist bytegleich
+  ok      M-58 verdrahtet: der Abbruch laeuft
+  ok      M-58 verdrahtet: ein terminaler Schritt wird nicht fortgesetzt
+  ok      M-58 verdrahtet: und bleibt als Historie stehen
+
+== M-62: der Assistent hat keinen eigenen Experimentweg ==
+  ok      M-62: ohne offenen Schritt startet der Assistent nichts
+  ok      M-62: Vorbedingung - ein Schritt laeuft
+  ok      M-62: und ohne den bestehenden Weg auch mit offenem Schritt nicht
+  ok      M-62: der Schritt traegt KEINE Versuchskennung - der Assistent erzeugt keine eigene Experimentfamilie
+
+== Die Raender ==
+  ok      Rand: eine Liste mit sieben fehlenden Werten wird read-only
+  ok      Rand: eine step_id, die keine hex32 ist wird read-only
+  ok      Rand: ein unbekannter Zustand wird read-only
+  ok      Rand: Revision 0 wird read-only
+  ok      Rand: eine negative Revision wird read-only
+  ok      Rand: ein unbekanntes Ergebnis wird read-only
+  ok      Rand: ein gespeicherter preview-Schritt wird read-only
+  ok      Rand: der gueltige Stand laedt: 
+  ok      Rand: ein Altstand ohne die Eigenschaft laedt normal und traegt keinen Schritt
+  ok      Rand: ein nicht gesetzter Schritt reist gar nicht
+
+== M-71: der Main-State haelt von Store-Objekten NUR IDs ==
+  ok      M-71: ein Schritt liegt im Main-State
+  ok      M-71: und die Sitzung traegt einen Intent
+  ok      M-71: beide Kennungen stehen im gespeicherten Stand
+  ok      M-71: kein Feld eines Store-Objekts liegt im Main-State - keins gefunden
+  ok      M-71: `MainProject` hat kein Kind fuer ein Store-Objekt
+
+== M-81: State bleibt verlustfrei, auch mit den neuen Eigenschaften ==
+  ok      M-81: ein Stand mit unbekannter Eigenschaft UND beiden neuen laedt normal - 
+  ok      M-81: der Schritt kommt an
+  ok      M-81: und die unbekannte Eigenschaft ueberlebt das Speichern
+  ok      M-81: der Schritt daneben ebenso
+  ok      M-81: ein unbekanntes KIND laedt read-only - 
+
+== NR-08: der Sender liest den RESTAURIERTEN Main-State ==
+  ok      NR-08: ein Schritt liegt im Main
+  ok      NR-08: und geht einen Uebergang
+  ok      NR-08: die Wire-Nachricht traegt den Schritt
+  ok      NR-08: nach dem Reload ist die Wire-Nachricht NICHT leer
+  ok      NR-08: sie traegt die restaurierte step_id
+  ok      NR-08: und den restaurierten Schritt, nicht den Anfangszustand
+  ok      NR-08: die Revision kommt aus dem MainProject - 2
+  ok      NR-08: und sie ist dieselbe wie vor dem Speichern
+  ok      NR-08: der Vorgaengerschritt laeuft
+  ok      NR-08: nach dem Reload eines Standes OHNE Schritt reist der Vorgaenger nicht mehr
+  ok      NR-08: der Sender schweigt, statt einen Schritt zu erfinden
+
+== NR-10: `assistentAntwort` erzeugt genau EIN `user_verdict` ==
+  ok      NR-10: ein Schritt laeuft
+  ok      NR-10: ohne `finding_id` entsteht kein Urteil
+  ok      NR-10: und eine Kennung ausserhalb hex32 ebenso wenig
+  ok      NR-10: mit `finding_id` entsteht ein Objekt
+  ok      NR-10: es ist ein `user_verdict`
+  ok      NR-10: und bindet an DEN Befund, ueber den geurteilt wurde
+  ok      NR-10: das Urteil steht als Vertragswort darin
+  ok      NR-10: die Notiz reist unveraendert mit (User-Wort, nie interpretiert)
+  ok      NR-10: es traegt einen Steuerkopf - es ist ein P0-Befehl (E-09)
+  ok      NR-10: ein zweites Urteil ist ein EIGENES Objekt
+  ok      NR-10: ohne Notiz reist das Feld gar nicht
+  ok      NR-10: die vier Urteile tragen ihre Vertragswoerter
+
+== WN-01: `base_revision` kommt aus dem Draht, nicht aus dem Zaehler ==
+  ok      WN-01: ein Schritt laeuft
+  ok      WN-01: der lokale Zaehler ist gestiegen
+  ok      WN-01: das Urteil entsteht
+  ok      WN-01: der Kopf traegt die GEMELDETE Revision (0), nicht den Zaehler
+  ok      WN-01: und ausdruecklich NICHT den soeben erhoehten lokalen Stand
+  ok      WN-01: das Urteil traegt seine Kennung
+  ok      WN-01: ein `konflikt` ist kein Verlust - der Auftrag entsteht neu
+  ok      WN-01: unter DERSELBEN `command_id`
+  ok      WN-01: und mit der Revision, die der Broker genannt hat
+  ok      WN-01: die alte Zahl ist WEG, nicht bloss ergaenzt
+  ok      WN-01: der Gegenstand bleibt derselbe Befund
+  ok      WN-01: eine fremde `command_id` erzeugt kein Urteil
+  ok      WN-01: ein fremder Befehlstyp wird nicht mit frischem Kopf wiederholt
+
+== WN-05 / NAK-246 M-20: bei voller Queue meldet `assistentAntwort` Erfolg, und der Auftrag wird nach dem Reconnect bestaetigt ==
+  ok      M-20: der Probe-Server steht
+  ok      M-20: der echte ControlClient zeigt auf den Probe-Server
+  ok      M-20: Control ist verbunden
+  ok      WN-05: ein Schritt laeuft
+  ok      WN-05: mit Platz in der Queue meldet `assistentAntwort` Erfolg
+  ok      WN-05: und der Server hat das Urteil bestaetigt (inFlightErfolg 1)
+  ok      M-20: die Verbindung ist weg - die Queue kann nur noch volllaufen
+  ok      WN-05: die P0-Queue ist wirklich voll
+  ok      M-20: bei voller Queue meldet `assistentAntwort` ERFOLG - der Auftrag ist zur Wiederholung angenommen (Basis-SHA: false)
+  ok      M-20: der Auftrag steht im Register und der Ueberlauf ist gezaehlt (M-73) - inFlight 1, Ueberlaeufe 2
+  ok      M-20: der Probe-Server steht wieder
+  ok      M-20: nach dem Reconnect ist das Urteil nachgespielt und bestaetigt - inFlight 0, inFlightErfolg 2, Wiederholungen 1
+
+== KR-01: jedes ausstehende Urteil bleibt wiederholbar ==
+  ok      WN3-01: ein Schritt laeuft
+  ok      KR-01: beide Urteile tragen ihre eigene Kennung
+  ok      KR-01: das ERSTE Urteil ist nach dem zweiten noch wiederholbar
+  ok      KR-01: unter DERSELBEN `command_id`
+  ok      KR-01: und mit SEINEM Befund, nicht dem des zweiten
+  ok      KR-01: mit der Revision aus dem ACK
+  ok      KR-01: und mit SEINEM Urteil, nicht dem des zweiten
+  ok      KR-01: der Auftrag ist bytegleich - nur `base_revision` wechselt
+  ok      KR-01: das zweite Urteil bleibt unberuehrt
+  ok      KR-01: zweimal derselbe Auftrag, zweimal dasselbe Ergebnis
+  ok      KR-01: `kCapP0 + 4` Urteile sind entstanden, keines leer
+  ok      KR-01: das ERSTE von `kCapP0 + 4` ist noch wiederholbar - nichts wurde verdraengt
+  ok      KR-01: und das LETZTE ebenso
+  ok      KR-01: jedes unter SEINER eigenen `command_id`
+  ok      KR-01: ALLE `kCapP0 + 4` ausstehenden Auftraege sind wiederholbar (68 von 68)
+  ok      KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung
+
+SONDE-014 AssistantStep: 193/193 gruen
+
+--- A12  erzeuge_state_fixtures.py --pruefen  ->  Exit 0 ---
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 29 ungueltige mit Grund
+Preset: 3 gueltige, 17 ungueltige mit Grund
+STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+--- BILANZ ---
+A1    EqCopNullTest                        Exit 0
+A16   EqCopProbeeqNullTest                 Exit 0
+B1    EqCopIdentityTest                    Exit 0
+B2    EqCopStateMigrationTest              Exit 0
+B4    EqCopQueueStressTest                 Exit 0
+B8    EqCopLebenslaufTest                  Exit 0
+B10   EqCopIpcTest                         Exit 0
+B13   EqCopSonde012SourcesModelTest        Exit 0
+B14   EqCopSonde012ProjectReloadTest       Exit 0
+B27   EqCopSonde014IntentTest              Exit 0
+B29   EqCopSonde014AssistentTest           Exit 0
+A12   erzeuge_state_fixtures.py            Exit 0
+
+URTEIL: 12 von 12 Beinen Exit 0; neue warning C: 10

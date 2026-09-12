@@ -1,0 +1,612 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-F fuer M-07, M-11b
+Datei:      eq-copilot\plugin\state\NakamaState.cpp
+Mutation:   NakamaState: in entferneIntent die Revisionspruefung wieder HINTER das erase schieben (heutige Reihenfolge)
+SHA-256 vorher: A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9
+
+Bein:       EqCopSonde014IntentTest 
+SHA-256 nachher (bytegleiche Ruecknahme): A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+  ok      Rolle traegt ein nicht leeres Wort: traegt
+  ok      Rolle traegt ein nicht leeres Wort: begleitet
+  ok      Rolle traegt ein nicht leeres Wort: geschuetzt
+  ok      Rolle traegt ein nicht leeres Wort: verschmolzen
+  ok      die fuenf Rollenwoerter sind paarweise verschieden
+  ok      Wort und Rolle sind umkehrbar: fuehrt
+  ok      Wort und Rolle sind umkehrbar: traegt
+  ok      Wort und Rolle sind umkehrbar: begleitet
+  ok      Wort und Rolle sind umkehrbar: geschuetzt
+  ok      Wort und Rolle sind umkehrbar: verschmolzen
+  ok      ein sechster Rollenwert wird abgewiesen: 'impuls'
+  ok      ein sechster Rollenwert wird abgewiesen: 'raum'
+  ok      ein sechster Rollenwert wird abgewiesen: 'lead'
+  ok      ein sechster Rollenwert wird abgewiesen: 'Fuehrt'
+  ok      ein sechster Rollenwert wird abgewiesen: ''
+  ok      ein sechster Rollenwert wird abgewiesen: 'fuehrt '
+  ok      der Leser weist einen sechsten Rollenwert als read-only ab
+  ok      und nennt den Grund: MainProject.source_intents_v1 contains an unknown role: impuls
+
+== M-02  rolle_und_belegung_sind_umkehrbar ==
+  ok      Belegung von fuehrt ist (foreground, 'lead', '')
+  ok      Belegung von traegt ist (middle, 'foundation', '')
+  ok      Belegung von begleitet ist (background, 'texture', '')
+  ok      Belegung von geschuetzt ist (middle, '', 'schutz')
+  ok      Belegung von verschmolzen ist (middle, '', 'verschmolzen')
+  ok      Roundtrip Rolle -> Belegung -> Rolle: fuehrt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: traegt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: begleitet
+  ok      Roundtrip Rolle -> Belegung -> Rolle: geschuetzt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: verschmolzen
+
+== M-02  zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck ==
+  ok      alle zwanzig geordneten Paare der fuenf Rollen gefahren
+  ok      keine zwei verschiedenen Rollen teilen sich eine Belegung
+  ok      eine fremde Belegung gehoert zu keiner Rolle
+  ok      und eine zweite fremde ebenfalls nicht
+
+== M-03  attack_schutz_ist_unabhaengig_von_der_rolle ==
+  ok      eine Schutzangabe entsteht OHNE dass die Quelle eine Rolle traegt
+  ok      und sie erzeugt keine Rolle als Nebenwirkung
+  ok      Produktpfad: Schutz ohne Rolle wird angenommen
+  ok      der Bestand traegt genau die Schutzangabe und keinen Intent
+  ok      und danach die Rolle 'begleitet' an derselben Quelle
+  ok      eine Quelle mit Rolle 'begleitet' kann Attack geschuetzt haben
+
+== M-03  rollenwechsel_loescht_keinen_schutzbereich ==
+  ok      Rollenwechsel auf fuehrt
+  ok      der Schutzbereich ueberlebt den Wechsel auf fuehrt
+  ok      Rollenwechsel auf traegt
+  ok      der Schutzbereich ueberlebt den Wechsel auf traegt
+  ok      Rollenwechsel auf begleitet
+  ok      der Schutzbereich ueberlebt den Wechsel auf begleitet
+  ok      Rollenwechsel auf geschuetzt
+  ok      der Schutzbereich ueberlebt den Wechsel auf geschuetzt
+  ok      Rollenwechsel auf verschmolzen
+  ok      der Schutzbereich ueberlebt den Wechsel auf verschmolzen
+  ok      Schutz laesst sich einzeln aufheben
+  ok      und die Rolle bleibt dabei stehen
+  ok      Bandschutz [0, 221) am vollen Rand wird angenommen
+  ok      ein Band ueber dem Gitterrand wird abgewiesen
+  ok      ein leeres Bandintervall wird abgewiesen
+  ok      eine Bandeigenschaft ohne Intervall wird abgewiesen
+  ok      und eine Nicht-Bandeigenschaft MIT Intervall ebenfalls
+
+== M-04  nur_rolle ==
+  ok      ohne jeden Intent ist Entmaskierung erlaubt
+  ok      Quelle A bekommt die Rolle 'bewusst verschmolzen'
+  ok      das globale Veto sperrt A gegen B
+  ok      und ebenso A gegen jede dritte Quelle - es ist GLOBAL
+  ok      ein Paar ohne A bleibt unberuehrt
+
+== M-04  nur_beziehung ==
+  ok      eine gerichtete Beziehung 'A fuehrt vor B' ohne jede Rolle
+  ok      ohne Veto aendert sie an der Erlaubnis nichts
+
+== M-04  beides_im_widerspruch ==
+  ok      globales Veto an A
+  ok      und die ausdrueckliche Beziehung 'A fuehrt vor B'
+  ok      das SPEZIFISCHERE gewinnt: fuer dieses Paar ist Entmaskierung erlaubt
+  ok      fuer das Paar A/C bleibt das Veto stehen
+  ok      auch in der anderen Leserichtung
+  ok      Veto an A
+  ok      und eine Beziehung 'A/B duerfen verschmelzen'
+  ok      sie hebt das Veto NICHT auf - sie bestaetigt es
+
+== M-05  konfliktregeln_sind_eine_ordnung_kein_score ==
+  ok      Â§37.2 fuehrt genau fuenf Stufen
+  ok      Stufe 1 schlaegt Stufe 2 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 4 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      alle zehn Paarungen der fuenf Stufen gefahren
+  ok      hundert Vermutungen schlagen die Schutzgrenze nie - eine Ordnung, kein Score
+  ok      zwei gleiche Anspruechen sind gleichrangig - die Funktion ist nicht konstant
+
+== M-05  innerhalb_stufe_zwei_gewinnt_das_spezifischere ==
+  ok      auf Stufe 2 gewinnt die paarweise Beziehung vor dem globalen Veto
+  ok      und umgekehrt ebenso
+  ok      Spezifitaet hebt keine Stufe an
+  ok      globale Rolle 'traegt'
+  ok      und in Passage 1 die Rolle 'fuehrt'
+  ok      in Passage 1 wirkt der passagespezifische Wert
+  ok      in Passage 2 ohne eigenen Wert faellt er auf den globalen zurueck
+  ok      und global gilt der globale
+  ok      eine Quelle ohne jeden Intent hat keine wirkende Rolle - kein Vorgabewert
+
+== M-06  zyklus_wird_beim_speichern_erkannt ==
+  ok      eine leere Kantenmenge hat keinen Zyklus
+  ok      eine Kette A->B->C hat keinen Zyklus
+  ok      ein Dreierzyklus A->B->C->A wird erkannt
+  ok      dieselbe Runde mit einer gleichrangigen Kante ist KEIN Zyklus
+  ok      `darf_verschmelzen` ist keine Prioritaetskante und bildet keinen Zyklus
+  ok      A fuehrt vor B
+  ok      B fuehrt vor C
+  ok      C fuehrt vor A wird ABGEWIESEN - der Zyklus erreicht die Persistenz nicht
+  ok      der Bestand traegt weiterhin genau zwei Kanten
+  ok      und ein abgewiesener Wert hebt die Bestandsrevision nicht
+  ok      der Leser weist einen gespeicherten Zyklus als read-only ab: MainProject.intent_relations_v1 contains a cycle in fuehrt_vor
+
+== M-06  zyklus_wird_als_gleichrangigkeit_gespeichert ==
+  ok      derselbe Schluss als nicht steuerbare Gleichrangigkeit wird angenommen
+  ok      der Bestand traegt jetzt drei Kanten
+  ok      und die dritte ist als 'gleichrangig' MARKIERT, nicht als gerichtet
+  ok      der Stand mit markierter Gleichrangigkeit laedt normal
+  ok      und kommt als 'gleichrangig' zurueck
+
+== M-07  abgeleitet_ueberschreibt_user_nie ==
+  ok      der User setzt 'fuehrt'
+  ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+  ok      aber sie ERSETZT den Userwert nicht
+  ok      und hebt die Bestandsrevision nicht - es hat sich nichts geaendert
+  ok      zuerst eine abgeleitete Vermutung
+  ok      dann ein Userwert
+  ok      der Userwert gewinnt - die Regel ist gerichtet, nicht symmetrisch
+  ok      und die Objektrevision ist gestiegen
+  ok      Herkunft, Revision und Konfidenz ueberleben Save/Load
+  ok      eine reine Vermutung wird gespeichert
+  ok      und bleibt nach dem Laden als abgeleitet erkennbar
+
+== M-08  zwei_rollen_je_bus_in_zwei_passagen ==
+  ok      Passage 1: die Quelle fuehrt
+  ok      Passage 2: dieselbe Quelle begleitet
+  ok      beide Werte stehen nebeneinander - der zweite ueberschreibt den ersten nicht
+  ok      in Passage 1 wirkt 'fuehrt'
+  ok      in Passage 2 wirkt 'begleitet'
+  ok      nach dem Laden stehen weiterhin beide
+  ok      und Save nach Load ist BYTEGLEICH
+  ok      ein globaler Wert kommt dazu
+  ok      jetzt sind es drei Scopes derselben Quelle
+  ok      und der passagespezifische Wert gilt weiter (Â§37.2 Stufe 3)
+  ok      Passage 1 wird entfernt
+  ok      zwei Scopes bleiben
+  ok      und Passage 1 faellt jetzt auf den globalen Wert zurueck
+
+== M-09  userwerte_ueberleben_projekt_recall ==
+  ok      fuenf echte Aenderungen ergeben Bestandsrevision 5
+  ok      der Recall laedt normal
+  ok      alle drei Bestandteile kommen vollstaendig zurueck
+  ok      und die Bestandsrevision ueberlebt - sonst haette die Vollstaendigkeitsmarke aus M-86 keine Zahl
+  ok      Userwerte ueberleben, abgeleitete bleiben als solche erkennbar (Â§37.4)
+  ok      Save nach Recall ist bytegleich
+  ok      und ueber zwei Runden ebenfalls
+
+== State-Invariante  versionieren / Altstand / unbekanntes Feld / Dirty ==
+  ok      der Eigenschaftsname traegt seine Fassung: source_intents_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_protections_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_relations_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_revision_v1
+  ok      ein Altstand ohne Intent-Felder laedt normal
+  ok      und traegt einen leeren Bestand mit Revision 0 - kein erfundener Vorgabewert
+  ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+  ok      eine unbekannte MainProject-Eigenschaft zerstoert den Leser nicht
+  ok      und sie steht unveraendert im naechsten Save
+  ok      eine neue Rolle meldet genau einmal Host-Dirty
+  ok      derselbe Wert noch einmal ist ein No-op und meldet nichts
+  ok      ein anderer Wert meldet wieder
+  ok      ein abgewiesener Wert meldet NICHT
+  ok      eine NaN-Konfidenz wird abgewiesen und meldet nicht
+  ok      eine neue Schutzangabe meldet
+  ok      dieselbe noch einmal nicht
+  ok      eine neue Beziehung meldet
+  ok      das Entfernen meldet wie das Setzen - ein Loeschen ohne Dirty kaeme zurueck
+  ok      ein zweites Entfernen ist ein No-op
+  ok      das Aufheben eines Schutzes meldet
+  ok      und das Entfernen einer Beziehung ebenfalls
+  ok      Laden meldet kein Dirty
+  ok      ein fremdes Root-Major laedt read-only
+  ok      read-only verweigert setzeQuellenrolle
+  ok      read-only verweigert schuetzeQuelle
+  ok      read-only verweigert setzeQuellenbeziehung
+  ok      und meldet dabei nichts
+  ok      die Originalbytes gehen unveraendert zurueck
+
+== Raender  was die API ablehnt, lehnt auch der Leser ab ==
+  ok      Leser lehnt ab - Quelle ist keine hex32: MainProject.source_intents_v1 contains an invalid source id
+  ok      Leser lehnt ab - Passagenscope ist weder leer noch hex32: MainProject.source_intents_v1 contains an invalid passage scope
+  ok      Leser lehnt ab - Revision 0 gibt es nicht: MainProject.source_intents_v1 revision must be at least 1
+  ok      Leser lehnt ab - unbekannte Herkunft: MainProject.source_intents_v1 contains an unknown origin: geraten
+  ok      Leser lehnt ab - Konfidenz ueber 1: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz unter 0: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz NaN: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+
+== NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag
+  ok      M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` - intent revision would overflow
+  FEHLER  M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  FEHLER  M-07: der GANZE Zustand ist byteweise unveraendert
+  ok      M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  ok      M-08: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  ok      M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-09: Vorbedingung - eine Beziehung
+  ok      M-09: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  ok      M-09: der GANZE Zustand ist byteweise unveraendert
+  ok      Gegenprobe: der Writer-Stand laedt
+  ok      Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben
+
+== NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`
+  ok      M-10: `schrittAendern` weist ab statt zu inkrementieren - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9223372036854775807]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`
+  ok      M-10: auch der NEUE Schritt weist ab - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: auch das Ergebnis weist ab - assistant revision would overflow
+  ok      M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf int64max ausgefuehrt; kein negativer Folgewert, kein signed-integer-UB  [9223372036854775807]
+
+== NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Bestandsrevision bei int64max - 1
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Assistentenrevision bei int64max - 1
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+
+SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 2 Fehler, 252 ok
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+  ok      Rolle traegt ein nicht leeres Wort: traegt
+  ok      Rolle traegt ein nicht leeres Wort: begleitet
+  ok      Rolle traegt ein nicht leeres Wort: geschuetzt
+  ok      Rolle traegt ein nicht leeres Wort: verschmolzen
+  ok      die fuenf Rollenwoerter sind paarweise verschieden
+  ok      Wort und Rolle sind umkehrbar: fuehrt
+  ok      Wort und Rolle sind umkehrbar: traegt
+  ok      Wort und Rolle sind umkehrbar: begleitet
+  ok      Wort und Rolle sind umkehrbar: geschuetzt
+  ok      Wort und Rolle sind umkehrbar: verschmolzen
+  ok      ein sechster Rollenwert wird abgewiesen: 'impuls'
+  ok      ein sechster Rollenwert wird abgewiesen: 'raum'
+  ok      ein sechster Rollenwert wird abgewiesen: 'lead'
+  ok      ein sechster Rollenwert wird abgewiesen: 'Fuehrt'
+  ok      ein sechster Rollenwert wird abgewiesen: ''
+  ok      ein sechster Rollenwert wird abgewiesen: 'fuehrt '
+  ok      der Leser weist einen sechsten Rollenwert als read-only ab
+  ok      und nennt den Grund: MainProject.source_intents_v1 contains an unknown role: impuls
+
+== M-02  rolle_und_belegung_sind_umkehrbar ==
+  ok      Belegung von fuehrt ist (foreground, 'lead', '')
+  ok      Belegung von traegt ist (middle, 'foundation', '')
+  ok      Belegung von begleitet ist (background, 'texture', '')
+  ok      Belegung von geschuetzt ist (middle, '', 'schutz')
+  ok      Belegung von verschmolzen ist (middle, '', 'verschmolzen')
+  ok      Roundtrip Rolle -> Belegung -> Rolle: fuehrt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: traegt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: begleitet
+  ok      Roundtrip Rolle -> Belegung -> Rolle: geschuetzt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: verschmolzen
+
+== M-02  zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck ==
+  ok      alle zwanzig geordneten Paare der fuenf Rollen gefahren
+  ok      keine zwei verschiedenen Rollen teilen sich eine Belegung
+  ok      eine fremde Belegung gehoert zu keiner Rolle
+  ok      und eine zweite fremde ebenfalls nicht
+
+== M-03  attack_schutz_ist_unabhaengig_von_der_rolle ==
+  ok      eine Schutzangabe entsteht OHNE dass die Quelle eine Rolle traegt
+  ok      und sie erzeugt keine Rolle als Nebenwirkung
+  ok      Produktpfad: Schutz ohne Rolle wird angenommen
+  ok      der Bestand traegt genau die Schutzangabe und keinen Intent
+  ok      und danach die Rolle 'begleitet' an derselben Quelle
+  ok      eine Quelle mit Rolle 'begleitet' kann Attack geschuetzt haben
+
+== M-03  rollenwechsel_loescht_keinen_schutzbereich ==
+  ok      Rollenwechsel auf fuehrt
+  ok      der Schutzbereich ueberlebt den Wechsel auf fuehrt
+  ok      Rollenwechsel auf traegt
+  ok      der Schutzbereich ueberlebt den Wechsel auf traegt
+  ok      Rollenwechsel auf begleitet
+  ok      der Schutzbereich ueberlebt den Wechsel auf begleitet
+  ok      Rollenwechsel auf geschuetzt
+  ok      der Schutzbereich ueberlebt den Wechsel auf geschuetzt
+  ok      Rollenwechsel auf verschmolzen
+  ok      der Schutzbereich ueberlebt den Wechsel auf verschmolzen
+  ok      Schutz laesst sich einzeln aufheben
+  ok      und die Rolle bleibt dabei stehen
+  ok      Bandschutz [0, 221) am vollen Rand wird angenommen
+  ok      ein Band ueber dem Gitterrand wird abgewiesen
+  ok      ein leeres Bandintervall wird abgewiesen
+  ok      eine Bandeigenschaft ohne Intervall wird abgewiesen
+  ok      und eine Nicht-Bandeigenschaft MIT Intervall ebenfalls
+
+== M-04  nur_rolle ==
+  ok      ohne jeden Intent ist Entmaskierung erlaubt
+  ok      Quelle A bekommt die Rolle 'bewusst verschmolzen'
+  ok      das globale Veto sperrt A gegen B
+  ok      und ebenso A gegen jede dritte Quelle - es ist GLOBAL
+  ok      ein Paar ohne A bleibt unberuehrt
+
+== M-04  nur_beziehung ==
+  ok      eine gerichtete Beziehung 'A fuehrt vor B' ohne jede Rolle
+  ok      ohne Veto aendert sie an der Erlaubnis nichts
+
+== M-04  beides_im_widerspruch ==
+  ok      globales Veto an A
+  ok      und die ausdrueckliche Beziehung 'A fuehrt vor B'
+  ok      das SPEZIFISCHERE gewinnt: fuer dieses Paar ist Entmaskierung erlaubt
+  ok      fuer das Paar A/C bleibt das Veto stehen
+  ok      auch in der anderen Leserichtung
+  ok      Veto an A
+  ok      und eine Beziehung 'A/B duerfen verschmelzen'
+  ok      sie hebt das Veto NICHT auf - sie bestaetigt es
+
+== M-05  konfliktregeln_sind_eine_ordnung_kein_score ==
+  ok      Â§37.2 fuehrt genau fuenf Stufen
+  ok      Stufe 1 schlaegt Stufe 2 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 4 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      alle zehn Paarungen der fuenf Stufen gefahren
+  ok      hundert Vermutungen schlagen die Schutzgrenze nie - eine Ordnung, kein Score
+  ok      zwei gleiche Anspruechen sind gleichrangig - die Funktion ist nicht konstant
+
+== M-05  innerhalb_stufe_zwei_gewinnt_das_spezifischere ==
+  ok      auf Stufe 2 gewinnt die paarweise Beziehung vor dem globalen Veto
+  ok      und umgekehrt ebenso
+  ok      Spezifitaet hebt keine Stufe an
+  ok      globale Rolle 'traegt'
+  ok      und in Passage 1 die Rolle 'fuehrt'
+  ok      in Passage 1 wirkt der passagespezifische Wert
+  ok      in Passage 2 ohne eigenen Wert faellt er auf den globalen zurueck
+  ok      und global gilt der globale
+  ok      eine Quelle ohne jeden Intent hat keine wirkende Rolle - kein Vorgabewert
+
+== M-06  zyklus_wird_beim_speichern_erkannt ==
+  ok      eine leere Kantenmenge hat keinen Zyklus
+  ok      eine Kette A->B->C hat keinen Zyklus
+  ok      ein Dreierzyklus A->B->C->A wird erkannt
+  ok      dieselbe Runde mit einer gleichrangigen Kante ist KEIN Zyklus
+  ok      `darf_verschmelzen` ist keine Prioritaetskante und bildet keinen Zyklus
+  ok      A fuehrt vor B
+  ok      B fuehrt vor C
+  ok      C fuehrt vor A wird ABGEWIESEN - der Zyklus erreicht die Persistenz nicht
+  ok      der Bestand traegt weiterhin genau zwei Kanten
+  ok      und ein abgewiesener Wert hebt die Bestandsrevision nicht
+  ok      der Leser weist einen gespeicherten Zyklus als read-only ab: MainProject.intent_relations_v1 contains a cycle in fuehrt_vor
+
+== M-06  zyklus_wird_als_gleichrangigkeit_gespeichert ==
+  ok      derselbe Schluss als nicht steuerbare Gleichrangigkeit wird angenommen
+  ok      der Bestand traegt jetzt drei Kanten
+  ok      und die dritte ist als 'gleichrangig' MARKIERT, nicht als gerichtet
+  ok      der Stand mit markierter Gleichrangigkeit laedt normal
+  ok      und kommt als 'gleichrangig' zurueck
+
+== M-07  abgeleitet_ueberschreibt_user_nie ==
+  ok      der User setzt 'fuehrt'
+  ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+  ok      aber sie ERSETZT den Userwert nicht
+  ok      und hebt die Bestandsrevision nicht - es hat sich nichts geaendert
+  ok      zuerst eine abgeleitete Vermutung
+  ok      dann ein Userwert
+  ok      der Userwert gewinnt - die Regel ist gerichtet, nicht symmetrisch
+  ok      und die Objektrevision ist gestiegen
+  ok      Herkunft, Revision und Konfidenz ueberleben Save/Load
+  ok      eine reine Vermutung wird gespeichert
+  ok      und bleibt nach dem Laden als abgeleitet erkennbar
+
+== M-08  zwei_rollen_je_bus_in_zwei_passagen ==
+  ok      Passage 1: die Quelle fuehrt
+  ok      Passage 2: dieselbe Quelle begleitet
+  ok      beide Werte stehen nebeneinander - der zweite ueberschreibt den ersten nicht
+  ok      in Passage 1 wirkt 'fuehrt'
+  ok      in Passage 2 wirkt 'begleitet'
+  ok      nach dem Laden stehen weiterhin beide
+  ok      und Save nach Load ist BYTEGLEICH
+  ok      ein globaler Wert kommt dazu
+  ok      jetzt sind es drei Scopes derselben Quelle
+  ok      und der passagespezifische Wert gilt weiter (Â§37.2 Stufe 3)
+  ok      Passage 1 wird entfernt
+  ok      zwei Scopes bleiben
+  ok      und Passage 1 faellt jetzt auf den globalen Wert zurueck
+
+== M-09  userwerte_ueberleben_projekt_recall ==
+  ok      fuenf echte Aenderungen ergeben Bestandsrevision 5
+  ok      der Recall laedt normal
+  ok      alle drei Bestandteile kommen vollstaendig zurueck
+  ok      und die Bestandsrevision ueberlebt - sonst haette die Vollstaendigkeitsmarke aus M-86 keine Zahl
+  ok      Userwerte ueberleben, abgeleitete bleiben als solche erkennbar (Â§37.4)
+  ok      Save nach Recall ist bytegleich
+  ok      und ueber zwei Runden ebenfalls
+
+== State-Invariante  versionieren / Altstand / unbekanntes Feld / Dirty ==
+  ok      der Eigenschaftsname traegt seine Fassung: source_intents_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_protections_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_relations_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_revision_v1
+  ok      ein Altstand ohne Intent-Felder laedt normal
+  ok      und traegt einen leeren Bestand mit Revision 0 - kein erfundener Vorgabewert
+  ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+  ok      eine unbekannte MainProject-Eigenschaft zerstoert den Leser nicht
+  ok      und sie steht unveraendert im naechsten Save
+  ok      eine neue Rolle meldet genau einmal Host-Dirty
+  ok      derselbe Wert noch einmal ist ein No-op und meldet nichts
+  ok      ein anderer Wert meldet wieder
+  ok      ein abgewiesener Wert meldet NICHT
+  ok      eine NaN-Konfidenz wird abgewiesen und meldet nicht
+  ok      eine neue Schutzangabe meldet
+  ok      dieselbe noch einmal nicht
+  ok      eine neue Beziehung meldet
+  ok      das Entfernen meldet wie das Setzen - ein Loeschen ohne Dirty kaeme zurueck
+  ok      ein zweites Entfernen ist ein No-op
+  ok      das Aufheben eines Schutzes meldet
+  ok      und das Entfernen einer Beziehung ebenfalls
+  ok      Laden meldet kein Dirty
+  ok      ein fremdes Root-Major laedt read-only
+  ok      read-only verweigert setzeQuellenrolle
+  ok      read-only verweigert schuetzeQuelle
+  ok      read-only verweigert setzeQuellenbeziehung
+  ok      und meldet dabei nichts
+  ok      die Originalbytes gehen unveraendert zurueck
+
+== Raender  was die API ablehnt, lehnt auch der Leser ab ==
+  ok      Leser lehnt ab - Quelle ist keine hex32: MainProject.source_intents_v1 contains an invalid source id
+  ok      Leser lehnt ab - Passagenscope ist weder leer noch hex32: MainProject.source_intents_v1 contains an invalid passage scope
+  ok      Leser lehnt ab - Revision 0 gibt es nicht: MainProject.source_intents_v1 revision must be at least 1
+  ok      Leser lehnt ab - unbekannte Herkunft: MainProject.source_intents_v1 contains an unknown origin: geraten
+  ok      Leser lehnt ab - Konfidenz ueber 1: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz unter 0: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz NaN: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+
+== NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag
+  ok      M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` - intent revision would overflow
+  ok      M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  ok      M-07: der GANZE Zustand ist byteweise unveraendert
+  ok      M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  ok      M-08: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  ok      M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-09: Vorbedingung - eine Beziehung
+  ok      M-09: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  ok      M-09: der GANZE Zustand ist byteweise unveraendert
+  ok      Gegenprobe: der Writer-Stand laedt
+  ok      Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben
+
+== NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`
+  ok      M-10: `schrittAendern` weist ab statt zu inkrementieren - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9223372036854775807]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`
+  ok      M-10: auch der NEUE Schritt weist ab - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: auch das Ergebnis weist ab - assistant revision would overflow
+  ok      M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf int64max ausgefuehrt; kein negativer Folgewert, kein signed-integer-UB  [9223372036854775807]
+
+== NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Bestandsrevision bei int64max - 1
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Assistentenrevision bei int64max - 1
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+
+SONDE-014-INTENT-TEST OK - 254 Pruefungen ok, 0 Fehler

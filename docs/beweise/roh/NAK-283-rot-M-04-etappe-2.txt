@@ -1,0 +1,40 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-C fuer M-04
+Datei:      eq-copilot\plugin\src\SourcesModel.cpp
+Mutation:   SourcesModel: den Generationsvergleich entfernen - ein Riegel, der nur noch die Folgenummer prueft
+SHA-256 vorher: 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+
+Bein:       EqCopSonde012ProjectReloadTest --nur m39
+SHA-256 nachher (bytegleiche Ruecknahme): 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  FEHLER  M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): aaaa ]
+  FEHLER  M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [0]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  FEHLER  NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [0]
+  FEHLER  M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 1 (nach Reload 0), Revision-Delta 1]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 8/12 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  ok      NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 12/12 gruen

@@ -1,0 +1,46 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-B fuer M-01b, M-72
+Datei:      eq-copilot\plugin\src\prozessor\Ipc.cpp
+Mutation:   Ipc: den Ueberholt-Ausstieg auf den Reload-Zweig legen (Ausstieg VOR meldeHostDirty und v3StateRevision)
+SHA-256 vorher: B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m72
+SHA-256 nachher (bytegleiche Ruecknahme): B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== NAK-283 M-72 reloadablehnung_und_ueberholung_sind_unterscheidbar ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase A Aufbau: das fremde Projekt traegt genau B
+  ok      M-72 Phase A: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase A: der Workerzug ist zurueck
+  ok      M-72 Phase A: `sourcesNachfuehrungNachReloadUnterblieben` steigt genau im Reloadfall  [1 / 1]
+  ok      M-72 Phase A: der Ueberholt-Zaehler steigt im Reloadfall NICHT  [0]
+  ok      M-72 Phase A: NUR der Reloadfall unterdrueckt Dirty und Revision  [Dirty-Delta 0, Revision-Delta 0]
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase B Aufbau: B ist Mitglied
+  ok      M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase B: beide Drains sind zurueck
+  ok      M-72 Phase B: der Ueberholt-Zaehler steigt genau im Ueberholtfall  [1 / 1]
+  ok      M-72 Phase B: der Reloadzaehler steigt im Ueberholtfall NICHT  [0]
+  FEHLER  M-72 Phase B: reloadablehnung_und_ueberholung_sind_unterscheidbar - der Ueberholtfall meldet Dirty und Revision, weil seine Aenderung angewandt bleibt  [1 Dirty, Revision-Delta 1]
+SONDE-012 ProjectReload (nur 283m72): 14/15 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-72 reloadablehnung_und_ueberholung_sind_unterscheidbar ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase A Aufbau: das fremde Projekt traegt genau B
+  ok      M-72 Phase A: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase A: der Workerzug ist zurueck
+  ok      M-72 Phase A: `sourcesNachfuehrungNachReloadUnterblieben` steigt genau im Reloadfall  [1 / 1]
+  ok      M-72 Phase A: der Ueberholt-Zaehler steigt im Reloadfall NICHT  [0]
+  ok      M-72 Phase A: NUR der Reloadfall unterdrueckt Dirty und Revision  [Dirty-Delta 0, Revision-Delta 0]
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase B Aufbau: B ist Mitglied
+  ok      M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase B: beide Drains sind zurueck
+  ok      M-72 Phase B: der Ueberholt-Zaehler steigt genau im Ueberholtfall  [1 / 1]
+  ok      M-72 Phase B: der Reloadzaehler steigt im Ueberholtfall NICHT  [0]
+  ok      M-72 Phase B: reloadablehnung_und_ueberholung_sind_unterscheidbar - der Ueberholtfall meldet Dirty und Revision, weil seine Aenderung angewandt bleibt  [2 Dirty, Revision-Delta 2]
+SONDE-012 ProjectReload (nur 283m72): 15/15 gruen

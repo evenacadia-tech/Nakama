@@ -1,0 +1,34 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-E fuer M-71
+Datei:      eq-copilot\plugin\src\prozessor\Ipc.cpp
+Mutation:   Ipc: ++folge OHNE obere Schranke - die Nummer springt am Anschlag auf 0
+SHA-256 vorher: B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m71
+SHA-256 nachher (bytegleiche Ruecknahme): B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== NAK-283 M-71 mitgliederfolge_wrappt_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-71 Aufbau: der Folgezaehler steht eine Nummer unter dem Anschlag
+  ok      M-71: die Publikation mit der Nummer am Anschlag wird uebernommen
+  ok      M-71: der Zaehler steht jetzt auf 2^64 - 1
+  ok      M-71: der zweite Join ist im State angewandt
+  ok      M-71: der Workerzug ist samt Nachfuehrung zurueck
+  FEHLER  M-71: mitgliederfolge_wrappt_nicht - der Zaehler steht NACH der zweiten Publikation immer noch auf 2^64 - 1 und ist nicht auf 0 zurueckgesprungen  [0]
+  ok      M-71: am Anschlag wird die Publikation abgewiesen und im Ueberholt-Zaehler gefuehrt - der Zaehler macht den Halt sichtbar  [1]
+  ok      M-71: das Modell behaelt seinen letzten Bestand [A], statt einen umgelaufenen Stand anzunehmen  [aaaa=Eingeschleust]
+SONDE-012 ProjectReload (nur 283m71): 8/9 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-71 mitgliederfolge_wrappt_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-71 Aufbau: der Folgezaehler steht eine Nummer unter dem Anschlag
+  ok      M-71: die Publikation mit der Nummer am Anschlag wird uebernommen
+  ok      M-71: der Zaehler steht jetzt auf 2^64 - 1
+  ok      M-71: der zweite Join ist im State angewandt
+  ok      M-71: der Workerzug ist samt Nachfuehrung zurueck
+  ok      M-71: mitgliederfolge_wrappt_nicht - der Zaehler steht NACH der zweiten Publikation immer noch auf 2^64 - 1 und ist nicht auf 0 zurueckgesprungen  [-1]
+  ok      M-71: am Anschlag wird die Publikation abgewiesen und im Ueberholt-Zaehler gefuehrt - der Zaehler macht den Halt sichtbar  [1]
+  ok      M-71: das Modell behaelt seinen letzten Bestand [A], statt einen umgelaufenen Stand anzunehmen  [aaaa=Eingeschleust]
+SONDE-012 ProjectReload (nur 283m71): 9/9 gruen

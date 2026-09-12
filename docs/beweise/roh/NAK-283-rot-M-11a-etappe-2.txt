@@ -1,0 +1,596 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-I fuer M-10, M-11a
+Datei:      eq-copilot\plugin\state\NakamaState.cpp
+Mutation:   NakamaState: die obere Schranke der Assistentenrevision entfernen - a.revision += 1 laeuft an int64max ueber
+SHA-256 vorher: A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9
+
+Bein:       EqCopStateMigrationTest 
+SHA-256 nachher (bytegleiche Ruecknahme): A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [abc34fd9428f4b6a95d458f80a78d3f7]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [74c986180b2d421bbac942c9657375cc]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [acb8a421929f4331ae0cb12fddb0b2ab]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [9223372036854775807 / 9223372036854775807]
+  FEHLER  M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [-9223372036854775808]
+  ok      M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [496 vs. 496 Bytes]
+  FEHLER  M-11: kein abgewiesener Handgriff meldet Host-Dirty  [1]
+  FEHLER  M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  FEHLER  M-11: beide Revisionen kommen als int64max zurueck  [0 / 0]
+  FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+  FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 281 Pruefungen ok, 6 Fehler
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [437ddc8d1d4740288c7a481fb1388f5b]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [4ea107c90cbf4bfa9adf410ff2409002]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [7d6bfb596a1e40f1b6b301f21b7fcd50]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [9223372036854775807 / 9223372036854775807]
+  ok      M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [9223372036854775807]
+  ok      M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [497 vs. 497 Bytes]
+  ok      M-11: kein abgewiesener Handgriff meldet Host-Dirty  [0]
+  ok      M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  ok      M-11: beide Revisionen kommen als int64max zurueck  [9223372036854775807 / 9223372036854775807]
+  ok      M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [1 Eintrag/Eintraege]
+  ok      == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+
+STATE-MIGRATION-TEST OK - 287 Pruefungen ok, 0 Fehler

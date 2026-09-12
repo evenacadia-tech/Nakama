@@ -1,0 +1,32 @@
+NAK-283 Etappe 2 - Rotbeweis MUT-D fuer M-05
+Datei:      eq-copilot\plugin\src\SourcesModel.cpp
+Mutation:   SourcesModel: den fruehen return bei Gleichheit VOR die Uebernahme der Folgenummer legen (heutige Reihenfolge)
+SHA-256 vorher: 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m05
+SHA-256 nachher (bytegleiche Ruecknahme): 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== NAK-283 M-05 inhaltsgleiche_publikation_zieht_die_frischemarke_nach ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-05 Aufbau: Modell und State sind leer (Vorbedingung der Zusage)
+  ok      M-05: der Workerzug haelt mit der Kopie [A] zwischen Kopie und Publikation
+  ok      M-05: der Unbind ist angewandt, der publizierte Stand `[]` ist inhaltsgleich zum leeren Modell
+  FEHLER  M-05: inhaltsgleiche_publikation_zieht_die_frischemarke_nach - nach Ruhe ist das Modell LEER; die angehaltene Kopie [A] ist als ueberholt abgewiesen  [aaaa=Eingeschleust]
+  FEHLER  M-05: genau EINE ueberholte Publikation  [0]
+  ok      M-05: der Unbind meldet Host-Dirty und Revision wie bisher (Delta 2 fuer Join und Unbind) - die Trennung von Nummernvergabe und Bestandsuebernahme aendert daran nichts  [2 Dirty, Revision-Delta 2]
+  ok      M-05: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m05): 6/8 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-05 inhaltsgleiche_publikation_zieht_die_frischemarke_nach ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-05 Aufbau: Modell und State sind leer (Vorbedingung der Zusage)
+  ok      M-05: der Workerzug haelt mit der Kopie [A] zwischen Kopie und Publikation
+  ok      M-05: der Unbind ist angewandt, der publizierte Stand `[]` ist inhaltsgleich zum leeren Modell
+  ok      M-05: inhaltsgleiche_publikation_zieht_die_frischemarke_nach - nach Ruhe ist das Modell LEER; die angehaltene Kopie [A] ist als ueberholt abgewiesen
+  ok      M-05: genau EINE ueberholte Publikation  [1]
+  ok      M-05: der Unbind meldet Host-Dirty und Revision wie bisher (Delta 2 fuer Join und Unbind) - die Trennung von Nummernvergabe und Bestandsuebernahme aendert daran nichts  [2 Dirty, Revision-Delta 2]
+  ok      M-05: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m05): 8/8 gruen

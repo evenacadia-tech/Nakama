@@ -317,19 +317,35 @@ des Bauers, keine Anforderungsquelle. Dirigent §3.4 bleibt unverändert:
 Nacharbeit nur aus bestätigten Defekten des Prüfers. Der Prüfer liest den
 Wächterbericht als Kontext, wie die Prüfliste.
 
-### 4.6 Laufzeit-Arm `/fl-probe` — Stufe 2
+### 4.6 Laufzeit-Arm — Stufe 2, seit 12.09.2026 fester Bestandteil jedes lohnenden Tickets
 
-**Frage:** Kommt das, was die Sonde misst, wirklich in Gen an?
+**Frage:** Kommt das, was die Sonde misst, wirklich in Gen an — im echten
+Host, mit dem installierten Bau?
 
-Fährt FL Studio über den vorhandenen MCP-Server (Transport, Parameter,
-Routing), liest Broker-Telemetrie über den Probe-Pipenamen (nie die
-Produktions-Pipe), holt Bilder über `EqCopShot`, vergleicht gegen eine
-Erwartungsdatei je Szenario (`docs/gesundheit/szenarien/*.json`: Aktion,
-erwartete Telemetrie, erwartete Sicht). Rohdaten nach `docs/beweise/roh/`,
-Befunde ins Register. Der MCP-Server war am 12.09.2026 erreichbar; ob FL
-läuft und die Plugins installiert sind, ist damit nicht bewiesen. Die
-Installation bleibt ein bewusster Admin-Handgriff des Users; der Arm ist der
-Nachfolger der Handmessungen aus Termin A und B.
+**Stand 12.09.2026.** Der MCP-Server (`C:\Users\phili\Projekte\fl-studio-mcp`:
+loopMIDI → Controller-Skript in FL → JSON-Dateien) ist gemessen und
+erreichbar, sobald loopMIDI vor FL läuft; das Diagnoseprojekt liegt vor
+(`eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, Aufbau gemessen in
+`eq-copilot/fixtures/fl/LIES-MICH.md`); die Installation läuft ohne
+Handgriff über die erhöhten Aufgaben `\Nakama\*` (NAK-285). Der Arm ist der
+Nachfolger der Handmessungen aus Termin A und B. Sein Bau ist Plan-Schritt
+S25e (Register NAK-286) in vier Schichten: Bereitschaft selbstheilend
+(loopMIDI, Restprozesse, Manifest-Hashes, Installation, FL-Start mit Projekt,
+Ping), MCP-Härtung (nur loopMIDI-Port, Ping, Pegel, Fenster, Screenshot,
+berichtigte Modi), Diagnose-Briefkasten in Plugin und Broker (Snapshot und
+Aggregat ohne Klick, nur auf Anfragedatei, keine Host-Parameter) und
+Szenarien als JSON unter `docs/gesundheit/szenarien/` (anzulegen) mit dem
+Runner `tools/fl/szenario.py` (anzulegen). Der Telemetrie-Leser auf dem
+Pipenamen bleibt Stufe 2 dahinter, weil er eine Vertragsfläche ist.
+
+**Kadenz.** Je Ticket nach grünem Kanon (Dirigenten-Skill §3.3); ob der
+Lauf lohnt, entscheidet der Runner am Diff Basis..HEAD (`eq-copilot/plugin/`,
+`eq-copilot/schemas/`, `broker/src/`, `eq-copilot/install/`), nie der
+Dirigent. Dazu der Volllauf im nächtlichen Prüfgang (§10 Schritt 2). Ein
+verfehltes Szenario ist Nacharbeit (§6). Kein User-Handgriff außer dem
+Neuanlegen des Projekts nach NAK-30.
+
+**User-Wort 12.09.2026 (Session `nakama-a7`), wörtlich:** „ich möchte dass du alles dafür tust was nötig ist, dass das fester bestandteil wird, der automatisch ohne nachfragen absolviert wird immer dann wenn es lohnenswert ist. das sollte natürlicher bestandteil sein beim bauen eines plugins. das ist ja auch normaler bestandteil einer jeden softwareentwicklung. du kannst das alles erledigen und dem dirigenten mitteilen, dafür brauchst du mich nicht". Folge: Skill §3.3, §3.5, §4 und §6, Plan S25e, diese Fassung.
 
 **User-Wort 12.09.2026 (Karte U40, Dirigentensession), wörtlich:** „wir haben ein fl studio mcp. du kannst selbst messungen und alles was benötigt wird vornehmen. der mcp server kann auch weiter ausgebaut werden oder ich kann eine diagnose fl studio instanz vorbereiten die immer offen ist. der komplette bau kann sowieso viel mehr direkt mit fl studio interagieren. alle tools sind da oder können erstellt werden“.
 Folge (Dirigent): Produktwirkungen, die nur hörbar oder messbar entscheidbar
@@ -338,8 +354,9 @@ Dirigent selbst — headless auf echtem Material und über den FL-MCP-Server mit
 dem installierten Bau — und legt dem User Messwerte vor, keine Blindwahl. Der
 Laufzeit-Arm rückt damit vor (Register NAK-284): Szenarien je Karte unter
 `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den
-Probe-Pipenamen, MCP-Erweiterungen nach Bedarf. Eine dauerhaft offene
-Diagnose-Instanz von FL Studio bereitet der User auf Anforderung vor.
+Probe-Pipenamen, MCP-Erweiterungen nach Bedarf. Das Diagnoseprojekt hat der
+User am 12.09.2026 um 15:44 Uhr angelegt; die Instanz startet der Runner
+selbst.
 
 ---
 
@@ -602,7 +619,7 @@ neue persistente und vertragliche Felder bringt.
 | 6 | Wächter | vier Agentendateien, Satz im Ticketauftrag, Hook nennt den Wächter | ein Probelauf je Wächter gegen einen historischen Befund | 1 | nichts |
 | 7 | Echtzeit-Audit und Kalibrierung des Tors | Aufrufgraph, Ausnahmeliste, Tor von HINWEIS auf GRENZE | Rotbeweis mit absichtlicher Sperre in `processBlock` | 2 | nichts |
 | 8 | Zwecktreue | Prüfsession, Empfehlungen als Karten in `fragen.json` | Scope-Beweis | 1 | Entscheid je Rückbau |
-| 9 | Bedienehrlichkeit, Laufzeit-Arm, Tiefenaudit | Bedienehrlichkeit in zwei Läufen (Entscheid §11 Punkt 2, 12.09.2026, NAK-281): jetzt auf der Skizze, nach S26–28 auf der gebauten Oberfläche; Laufzeit-Arm nach Installation; Tiefenaudit am Gate G6 | Belege, Szenarien, Bericht | 2, Installation | Installationshandgriff |
+| 9 | Bedienehrlichkeit, Laufzeit-Arm, Tiefenaudit | Bedienehrlichkeit in zwei Läufen (Entscheid §11 Punkt 2, 12.09.2026, NAK-281): jetzt auf der Skizze, nach S26–28 auf der gebauten Oberfläche; Laufzeit-Arm als Plan-Schritt S25e (NAK-286, User-Entscheid 12.09.2026) vor S26–28, danach automatisch je lohnendem Ticket (§4.6); Tiefenaudit am Gate G6 | Belege, Szenarien, Bericht | 2 | nichts (Installation über NAK-285; nur das Diagnoseprojekt nach NAK-30 neu) |
 
 Schritte 1 bis 4 sind die Substanz; ohne sie läuft der Rest ins Leere.
 Schritt 0 ist Dirigentenarbeit im nächsten Abschlussfenster, kein Worker.
@@ -730,6 +747,7 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | §4.6 neu gefasst: Laufzeit-Arm fester, automatischer Bestandteil jedes lohnenden Tickets (User-Wort 12.09.2026, Register NAK-286, Plan S25e); Installation ohne Handgriff (NAK-285); Diagnoseprojekt liegt vor (NAK-284 Nachtrag); §10 Schritt 9 nachgezogen | Session `nakama-a7`, Konzept zum FL-MCP |
 | 12.09.2026 | §4.6: User-Wort zu Messungen über den FL-MCP-Server (Karte U40, 14:00 Uhr); Laufzeit-Arm rückt vor, Register NAK-284 | Dirigentensession, `/fragen U40` |
 | 12.09.2026 | §11 Punkt 3 entschieden (Karte U39, 12:00 Uhr, Wahl wörtlich „Nur Prüfsystem durch mich“): Torläufe §6.6 sind erster Torschritt an G6–G9, Ultra-Review überholt; §1.1, §4.3, §6.6 nachgezogen; Register NAK-282; Dirigenten-Skill §3.7 „Phasengate-Prüfung“ | Dirigentensession, `/fragen U39` |
 | 12.09.2026 | §11 Punkt 2 entschieden (Karte U38, 11:24 Uhr, Wahl wörtlich „Beides: jetzt Skizze, später Oberfläche (Empfohlen)"): Bedienehrlichkeits-Audit in zwei Läufen; §10 Schritt 9 nachgezogen; Register NAK-281 | Dirigentensession, `/fragen U38` |

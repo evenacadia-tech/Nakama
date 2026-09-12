@@ -105,7 +105,7 @@ Fixtures.
 
 ## Verknüpfungen
 
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/integration.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/integration.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/integration.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/integration.md)
 - [`../../docs/FL-Nakama-Sonden-Design-Entwurf.md`](../../docs/FL-Nakama-Sonden-Design-Entwurf.md)
 - [`../../eq-copilot/schemas/v3/README.md`](../../eq-copilot/schemas/v3/README.md)
 - [`2026-08-27-windows-pipes-sicherheit-und-lifecycle.md`](2026-08-27-windows-pipes-sicherheit-und-lifecycle.md)

@@ -110,7 +110,7 @@ dieser Eintrag legt sie nicht vorweg fest.
 
 ## Verknüpfungen
 
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/03-targets-lifecycle-installer.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/03-targets-lifecycle-installer.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/03-targets-lifecycle-installer.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/03-targets-lifecycle-installer.md)
 - [`../../docs/FL-Nakama-Sonden-Design-Entwurf.md`](../../docs/FL-Nakama-Sonden-Design-Entwurf.md)
 - [`../../docs/plugin-wissen.md`](../../docs/plugin-wissen.md)
 - [`2026-08-27-windows-pipes-sicherheit-und-lifecycle.md`](2026-08-27-windows-pipes-sicherheit-und-lifecycle.md)

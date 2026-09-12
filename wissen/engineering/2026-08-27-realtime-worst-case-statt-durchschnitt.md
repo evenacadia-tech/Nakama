@@ -100,8 +100,8 @@ optischen Aussagen daraus übernommen.
 
 ## Verknüpfungen
 
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/02-realtime-messkern.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/02-realtime-messkern.md)
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/07-worker-cadence.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/07-worker-cadence.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/02-realtime-messkern.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/02-realtime-messkern.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/07-worker-cadence.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/07-worker-cadence.md)
 - [`../../docs/FL-Nakama-Sonden-Design-Entwurf.md`](../../docs/FL-Nakama-Sonden-Design-Entwurf.md)
 - [`2026-08-26-audiodevcon-videoauswahl.md`](2026-08-26-audiodevcon-videoauswahl.md)
 - [`../dsp/2026-08-27-messwerte-brauchen-support-und-zeitanker.md`](../dsp/2026-08-27-messwerte-brauchen-support-und-zeitanker.md)

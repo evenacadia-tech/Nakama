@@ -111,7 +111,7 @@ Toleranz der ehrlichere Gegenbeweis.
 ## Verknüpfungen
 
 - [`../../design/docs/sondenplan.md`](../../design/docs/sondenplan.md)
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/verification.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/verification.md)
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/integration.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/integration.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/verification.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/verification.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/integration.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/integration.md)
 - [`../../docs/PLAN-STAND.md`](../../docs/PLAN-STAND.md)
 - [`2026-08-27-realtime-worst-case-statt-durchschnitt.md`](2026-08-27-realtime-worst-case-statt-durchschnitt.md)

@@ -107,7 +107,7 @@ Feldnamen und Fenster bleiben dem technischen Vertrag vorbehalten.
 
 ## Verknüpfungen
 
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/02-realtime-messkern.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/02-realtime-messkern.md)
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/05-adversarial-integration.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/05-adversarial-integration.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/02-realtime-messkern.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/02-realtime-messkern.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/05-adversarial-integration.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/05-adversarial-integration.md)
 - [`../../docs/FL-Nakama-Sonden-Design-Entwurf.md`](../../docs/FL-Nakama-Sonden-Design-Entwurf.md)
 - [`../engineering/2026-08-27-realtime-worst-case-statt-durchschnitt.md`](../engineering/2026-08-27-realtime-worst-case-statt-durchschnitt.md)

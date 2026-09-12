@@ -106,7 +106,7 @@ v3-Implementierung.
 
 ## Verknüpfungen
 
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/04-pipe-transport.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/04-pipe-transport.md)
-- [`../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/06-pipe-deadline.md`](../../.workflow/ultracode/20260827-001038-sondenplan-debug/packets/06-pipe-deadline.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/04-pipe-transport.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/04-pipe-transport.md)
+- [`../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/06-pipe-deadline.md`](../../docs/archiv/ultracode-2026-08-27-sondenplan-debug/packets/06-pipe-deadline.md)
 - [`../../docs/FL-Nakama-Sonden-Design-Entwurf.md`](../../docs/FL-Nakama-Sonden-Design-Entwurf.md)
 - [`2026-08-27-json-vertraege-vor-dem-parser.md`](2026-08-27-json-vertraege-vor-dem-parser.md)

@@ -331,15 +331,17 @@ Wochennutzung; der Dirigent committet dessen Stand nach eigenem Kanonlauf
 als Zwischenstand (§3.1). Stößt Codex als Prüfer an seine Grenze, prüft ein
 frischer Opus-Thread.
 
-### 3.7 Ultra-Review-Erinnerung
+### 3.7 Phasengate-Prüfung
 
-`/code-review ultra` ist die dritte Prüfspur (Claude-Cloud, nur vom User
-startbar; User 10.09.2026). Zeitpunkt: jedes Gate G6–G9 und der Abschluss von
-NAK-246, jeweils sauber, kanongrün, gepusht. Dann schreibt der Dirigent die
-Erinnerung als User-Handgriff in die Session und als `PushNotification`,
-startet auf diesem Stand keinen Codex-Audit und keinen Worker und wartet.
-Das Ergebnis wird wie ein externer Audit behandelt (Muster NAK-246,
-`docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
+An jedem Gate G6–G9 auf sauberem, kanongrünem, gepushtem Stand fährt der
+Dirigent als ersten Torschritt die Torläufe aus `docs/gesundheit/KONZEPT.md`
+§6.6 als Prüfsessions (§7): Tiefenaudit, fällige Spezialaudits,
+Mutanten-Vollmodus, voller `/freshen`-Lauf. Kein Worker auf diesem Stand,
+bis ihre Köpfe gelesen sind. Ultra-Review und Astra-Audit sind kein
+Torschritt, der User tut am Tor nichts (User 12.09.2026, Karte U39; die
+Erinnerung vom 10.09.2026 ist überholt). Ergebnisse und jeder vom User
+selbst angesetzte externe Audit werden wie NAK-246 behandelt
+(`docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
 
 ## 4. Haltgründe
 

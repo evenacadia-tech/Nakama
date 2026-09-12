@@ -180,20 +180,16 @@
    "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
    "seit": "07.09.",
    "status": "offen"
-  },
-  {
-   "id": "U39",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Planentscheid (Prüfspur an den Gates)",
-   "titel": "Ersetzt der externe Astra-Audit das Ultra-Review an den Gates G6 bis G9 allgemein — oder nur diesmal?",
-   "was": "Am 12.09.2026 hast du das Ultra-Review nach dem NAK-246-Abschluss gestrichen und stattdessen einen zweiten großen Astra-Audit außerhalb des Terminals angesetzt (Wortlaut in docs/beweise/NAK-246.md §13.10). Die Gate-Texte G6 bis G9 in docs/plan/plan.json und der Dirigenten-Skill §3.7 nennen weiterhin `/code-review ultra` als ersten Schritt jedes Gates. Drei Wege: „Astra-Audit ersetzt das Ultra-Review dauerhaft an allen Gates\", „nur diesmal, Gates bleiben wie geplant\", „beides je Gate, Astra zuerst\". Ohne Entscheidung erinnert der Dirigent an jedem Gate weiter an das Ultra-Review.",
-   "warum": "Der Dirigent darf aus dem Wortlaut nicht mehr ableiten, als dasteht; die Gate-Texte sind datierte Planentscheide (10.09.2026) und ändern sich nur mit deinem Wort.",
-   "wo": "docs/plan/plan.json (G6 bis G9), .claude/skills/dirigent/SKILL.md §3.7, docs/beweise/NAK-246.md §13.10",
-   "seit": "12.09.",
-   "status": "offen"
   }
  ],
  "beantwortet": {
+  "U39": {
+   "wahl": "Nur Prüfsystem durch mich",
+   "text": "Nur Prüfsystem durch mich — Wahl per AskUserQuestion in der Dirigentensession, Option wörtlich; die angebotenen Alternativen waren „Prüfsystem durch mich + Astra-Audit durch dich (Empfohlen)“, „Prüfsystem durch mich + Ultra-Review durch dich“ und „Wie heute geplant: Ultra-Review bleibt, Astra nur auf deinen Wunsch“. Klärung vorab, User-Wort 12.09.2026 wörtlich: „wäre es nicht sinnvoll wenn du das anleitest in dem du einen vollumfassenden check durch prüfer an den toren veranlasst ?  in sonifold hatte ich einen skill der hieß code health , der hat einen multi agenten schwarm ausgesendet um jeden winkel zu überprüfen. so etwas in der art lässt sich doch auch wunderbar hier durch dich auf nakama angepasst durchführen“",
+   "datum": "2026-09-12 12:00",
+   "status": "eingearbeitet",
+   "ergebnis": "An den Gates G6 bis G9 läuft ausschließlich das Mehragenten-Audit des Prüfsystems durch den Dirigenten (docs/gesundheit/KONZEPT.md §6.6: Tiefenaudit, fällige Spezialaudits, Mutanten-Vollmodus, /freshen) als erster Torschritt; Ultra-Review und Astra-Audit sind kein Torschritt, der User tut am Tor nichts. Gate-Texte G6–G9 in plan.json mit ÜBERHOLT-Nachtrag, Dirigenten-Skill §3.7 neu gefasst (Phasengate-Prüfung), KONZEPT §1.1/§4.3/§6.6/§11 Punkt 3/§12 nachgezogen, Register NAK-282, NAK-246 §13.11. Einen externen Audit setzt der User weiterhin nach eigenem Ermessen an (Muster NAK-246); der laufende zweite Astra-Audit vom 12.09.2026 bleibt unberührt und wird übergeben."
+  },
   "U38": {
    "wahl": "Beides: jetzt Skizze, später Oberfläche (Empfohlen)",
    "text": "Beides: jetzt Skizze, später Oberfläche (Empfohlen) — Wahl per AskUserQuestion in der Dirigentensession, Option wörtlich; die angebotenen Alternativen waren „Jetzt nur auf der Skizze\" und „Erst nach S26–28 auf der Oberfläche\".",

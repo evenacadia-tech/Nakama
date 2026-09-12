@@ -68,7 +68,7 @@ Nulltest-Pflicht.
 | Ticketprüfung | Dirigent §3.4: Codex `gpt-6-astra` lesend, gebundene Vorlage, Validator-Agent je Befund, Verhaltensmatrix, drei Runden, Konvergenzentscheid | Defekte gegen Gate-Text, Matrix und Invarianten, im Ticketbereich |
 | Befundklassen als Prosa | `tools/dirigent/pruefliste.md` A–F (40 bestätigte Befunde aus S8–S15) | nur, wenn der Bauer sie liest und der Prüfer sie kennt |
 | Riegel und Erinnerungen | `tools/hooks/`: Git-Riegel, Kreativschleuse, Fremdmodell-Riegel, Erinnerung für Plugin- und Schema-Pfade, Planstand-Hook | Destruktives, ungefragte Designartefakte, vergessene Realtime-Regeln |
-| Dritte Spur | externer Codex-Audit (`docs/audits/`, Muster NAK-246), Ultra-Review an Gates (Dirigent §3.7) | was Ticketprüfung und Kanon gemeinsam übersehen |
+| Dritte Spur | externer Codex-Audit auf Wunsch des Users (`docs/audits/`, Muster NAK-246); an G6–G9 die Torläufe nach §6.6 (Dirigent §3.7; Ultra-Review seit 12.09.2026 überholt, Karte U39) | was Ticketprüfung und Kanon gemeinsam übersehen |
 
 ### 1.2 Nicht vorhanden
 
@@ -269,7 +269,7 @@ Die Audits, in der Reihenfolge ihres Bedarfs (§3):
 | `/echtzeit-audit` | K6 | statischer Aufrufgraph ab `processBlock` und den Analyse-Einstiegen: Sperren, Allokationen, Datei-, Pipe- und Netzzugriffe, Logging; Ergebnis kalibriert das Tor Echtzeit-Hygiene (Ausnahmeliste, dann GRENZE). Der Codebase-Graph (`codebase-memory`, für Nakama indiziert) dient der Erkundung; das Tor selbst braucht einen eigenen deterministischen Läufer ohne MCP. | nach dem Prüfgang; danach nach jedem Ticket unter `eq-copilot/plugin/src/prozessor/` oder `core/analysis/` |
 | `/zwecktreue` | Produktmodell | nach `/logic-audit`: jede v3-Nachricht, jedes persistente Feld, jeder Parameter, jede Capability gegen Wahrheitskern, Blueprint und Entwurf 0.5; Klassen vestigial, verwaist, Modellwiderspruch, Duplikat, unehrliche Fläche. Erklärt außer Frage: Legacy-Bezeichner bis NAK-30, geparkte Studien. Empfiehlt Rückbau, entscheidet nie. | einmal vor S29–31 (Fernsteuerung), danach je Phasengate |
 | `/bedienehrlichkeit` | K8 | nach `/compositor-ui` auf die zwei User-Gesetze: jedes sichtbare Element führt einen Handgriff aus oder meldet einen Zustand; kein Zustand ändert Maße (gemessen am Layoutrechteck, `offsetWidth`/`offsetHeight`); dazu stille Pipe-Fehler ohne Anzeige, veraltete Anzeige, Aktion ohne Rücknahme. Belege mit `EqCopShot` beziehungsweise Playwright auf der Skizze. | Zeitpunkt ist Produktentscheid (§11): jetzt auf der Skizze oder nach S26–28 auf der gebauten Oberfläche |
-| `/tiefenaudit` | alle | nach `/deep-audit`, selten: acht Linsen (Grenze Plugin/Broker, Korrektheit und Zahlenränder, Audio-Pfad Bus → Sonde → Broker → Gen, Vertrag, Zustand, Echtzeit und Latenz, Bedienung gegen den Blueprint, Beinlücken: „welcher Bug käme an allen Beinen vorbei?"). Ausgabe: fünf bis zehn Einsichten und ein Planvorschlag, kein Code. | je Phasengate, am selben Tag wie die Ultra-Review-Erinnerung (Dirigent §3.7) |
+| `/tiefenaudit` | alle | nach `/deep-audit`, selten: acht Linsen (Grenze Plugin/Broker, Korrektheit und Zahlenränder, Audio-Pfad Bus → Sonde → Broker → Gen, Vertrag, Zustand, Echtzeit und Latenz, Bedienung gegen den Blueprint, Beinlücken: „welcher Bug käme an allen Beinen vorbei?"). Ausgabe: fünf bis zehn Einsichten und ein Planvorschlag, kein Code. | je Phasengate als erster Torschritt (Dirigent §3.7; User 12.09.2026, Karte U39) |
 
 ### 4.4 Mutanten `/mutanten` — Stufe 0 (Rechenzeit), Stufe 1 (Lesen)
 
@@ -458,10 +458,12 @@ an Gates) bleibt unverändert; `/pruefen` schließt sie ein.
 
 ### 6.6 Phasengates
 
-Am Gate laufen, an demselben Tag wie die Ultra-Review-Erinnerung:
-`/tiefenaudit`, die bis dahin fälligen Spezialaudits, der Mutanten-Vollmodus,
-der volle `/freshen`-Lauf. Ergebnisse werden wie ein externer Audit behandelt
-(Muster NAK-246). Ein Gate ohne diese Läufe ist nicht sauber.
+Am Gate laufen als erster Torschritt (User 12.09.2026, Karte U39, Wahl
+wörtlich „Nur Prüfsystem durch mich“; Ultra-Review und Astra-Audit sind kein
+Torschritt): `/tiefenaudit`, die bis dahin fälligen Spezialaudits, der
+Mutanten-Vollmodus, der volle `/freshen`-Lauf. Ergebnisse werden wie ein
+externer Audit behandelt (Muster NAK-246). Ein Gate ohne diese Läufe ist
+nicht sauber; der User tut am Tor nichts.
 
 ### 6.7 Pflegeschritte S31c und S35b
 
@@ -626,6 +628,13 @@ Zwei Punkte sind Produkt:
    auf der gebauten Oberfläche (Gesetz 2 am gemessenen Layoutrechteck,
    Gesetz 1 erneut). Schritt 9 in §10 trägt beide Läufe; Register NAK-281.
    Davor: Offen seit 12.09.2026 (`fdeef23c`).
+3. **Welche Prüfspuren am Tor zusammenkommen.** **Entschieden 12.09.2026,
+   12:00 Uhr** (Karte U39 in `docs/plan/fragen.json`, gestellt über `/fragen`;
+   Wahl wörtlich: „Nur Prüfsystem durch mich“): an G6 bis G9 läuft
+   ausschließlich das Mehragenten-Audit dieses Prüfsystems (§6.6) durch den
+   Dirigenten als erster Torschritt; Ultra-Review und Astra-Audit sind kein
+   Torschritt, der User tut am Tor nichts. Einen externen Audit setzt er
+   weiterhin nach eigenem Ermessen an (Muster NAK-246). Register NAK-282.
 
 Offene technische Punkte, die Claude später an der Quelle entscheidet und
 die hier stehen, damit sie nicht verloren gehen: Tragfähigkeit der
@@ -711,6 +720,7 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | §11 Punkt 3 entschieden (Karte U39, 12:00 Uhr, Wahl wörtlich „Nur Prüfsystem durch mich“): Torläufe §6.6 sind erster Torschritt an G6–G9, Ultra-Review überholt; §1.1, §4.3, §6.6 nachgezogen; Register NAK-282; Dirigenten-Skill §3.7 „Phasengate-Prüfung“ | Dirigentensession, `/fragen U39` |
 | 12.09.2026 | §11 Punkt 2 entschieden (Karte U38, 11:24 Uhr, Wahl wörtlich „Beides: jetzt Skizze, später Oberfläche (Empfohlen)"): Bedienehrlichkeits-Audit in zwei Läufen; §10 Schritt 9 nachgezogen; Register NAK-281 | Dirigentensession, `/fragen U38` |
 | 12.09.2026 | Schritt 3 erster Lauf (Auftragsvorlage, Bericht B-1 bis B-8); §4.1 W-Riss unterscheidet Codebase-Maße (Registerzeile) und Kontextfläche (sofort beheben, User 12.09.2026); §6.8, Anhang A und §11 auf Schritt 0 nachgezogen (`fdeef23c`: NAK-259 bis NAK-267, U38, Skill §7, Skill 23,3 KB / CLAUDE.md 17,7 KB) | Dirigenten-Meldung 12.09.2026; Lebenslauf-Audit |
 | 12.09.2026 | §3: K3 geteilt (Rust ✔, C++ ◐), K4 „dicht", K6 auf ◐ (RtWache am EQ-Kern) nach Verifikation; §4.2 und §10 Schritt 1 als erledigt | Abdeckungskarte, erste Fassung (5 Leser, 3 Skeptiker) |

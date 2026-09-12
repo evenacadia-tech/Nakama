@@ -24,7 +24,10 @@ Voraussetzungen je Rechner: loopMIDI installiert, Aufgaben `\Nakama\*`
 registriert (`tools/dirigent/install-aufgaben-registrieren.ps1`, einmal
 erhöht), FL Studio 2026 mit dem Controller „FL Studio MCP Controller" auf
 dem loopMIDI-Port (Registry, einmalig), `uv` im Pfad, das MCP-Repo unter dem
-Standardpfad (`-McpRepo` sonst).
+Standardpfad (`-McpRepo` sonst): privates Repo
+`https://github.com/evenacadia-tech/fl-studio-mcp`, Zweig `evenacadia-local`,
+nach `C:\Users\phili\Projekte\fl-studio-mcp` klonen und dort einmal
+`setup-local.ps1` ausführen (Controller-Skript in FLs Settings-Ordner).
 
 Gemessene Fallen (12.09.2026, FL 26.1.4.5589):
 

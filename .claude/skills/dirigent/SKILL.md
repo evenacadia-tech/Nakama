@@ -11,9 +11,8 @@ pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, zeigt
 `tools/dirigent/logo.ps1` und ruft Claude mit `claude-fable-5-1[1m]`, `xhigh`,
 `--permission-mode auto`, `--remote-control nakama-dirigent` (User 30.08.2026)
-und `/dirigent` auf. Der volle Modellname statt Alias `fable` hält die
-Entscheidung „Fable 5.1" fest (User 01.09.2026); `[1m]` trägt das
-1M-Fenster, auf dem §5 beruht. Endet Claude, bleibt das Fenster: liegt
+und `/dirigent` auf (Fable 5.1 voll benannt, User 01.09.2026; `[1m]` trägt
+das 1M-Fenster für §5). Endet Claude, bleibt das Fenster: liegt
 `nakama-dirigent-neustart.marker` im Temp-Ordner (`[IO.Path]::GetTempPath()`),
 startet der Starter sofort eine frische Session im selben Fenster; sonst
 wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne Starter:
@@ -34,14 +33,11 @@ selben Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, lesend
 `pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket <NAK-nnn>`,
 beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt die Zeile „Etappe"
 mit „Etappe n von m" und dem laufenden Schritt als letztem Fettsatz (≤ 70
-Zeichen). Ein laufender Starterprozess lädt sein Skript beim Marker-Neustart
-nicht neu (NAK-257): Skriptänderungen greifen erst nach Fensterneustart.
+Zeichen).
 
 `/dirigent stand`: `cockpit.ps1 -Plan` (im Ticket `-Plan -CurrentStep <ID>`);
 die Zahlen müssen `docs/PLAN-STAND.md` entsprechen. Kein Ticketlauf beginnt
-mit ungeprüfter nativer Fähigkeit; ein einzelner CLI-Fehler ist kein Halt —
-erst Hilfe, offizielle Doku und die kleinste gleichwertige Konstruktion
-prüfen.
+mit ungeprüfter nativer Fähigkeit (Ersatzwege: §4).
 
 ## 1. Rolle
 
@@ -180,6 +176,17 @@ Kein Selbstbericht zählt:
   steht in jedem Stand. Zwei Bau- oder Nacharbeitsrunden in Folge ohne
   Produkt- und Testzeilen → Konvergenzentscheid (§3.4); Matrixrunden zählen
   null.
+- **Laufzeit-Arm** (User 12.09.2026, Register NAK-286, Plan S25e): nach
+  grünem Kanon auf dem End-Stand `pwsh -NoProfile -File
+  tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>`. Der Runner
+  entscheidet selbst, ob der Diff lohnt (Plugin, Schemas,
+  Broker, Installer), zieht die Manifest-Hashes nach, installiert über die
+  erhöhte Aufgabe `\Nakama\installieren`, startet FL mit dem Diagnoseprojekt
+  und fährt die Szenarien. Exit 0 = gemessen oder begründet übersprungen
+  (Diff ohne Produktpfad, fremdes FL-Projekt offen), Exit 4 = Szenario
+  verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
+  `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest.
+  FL-Start, Installation und Messung sind nie Haltgrund und nie Frage.
 
 Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
 `origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler
@@ -292,7 +299,9 @@ Fertig, wenn die letzte Logzeile mit `EXIT=` beginnt; bis dahin höchstens
 alle 15 Minuten `Get-Content $log -Tail 3`. Ein hängendes Bein beendet der
 Runner nach 60 Minuten (Exit 124); kein `EXIT=` nach drei Stunden ist ein
 Befund gegen den Runner. Rohausgaben unter `docs/beweise/roh/<TICKET>-<sha>.md`,
-im Manifest nur die Kopfzeile. Beim Abschluss den lebenden Kopf nachziehen;
+im Manifest nur die Kopfzeile. Nach `EXIT=0` folgt der Laufzeit-Arm (§3.3); die
+dabei nachgezogenen Hashes in `eq-copilot/install/nakama-installer-v1.json`
+gehören zu den Abschlussdateien. Beim Abschluss den lebenden Kopf nachziehen;
 über ~3 000 Zeilen wandert der Rundenverlauf unverändert nach
 `docs/beweise/<TICKET>-verlauf.md`, der jüngste Kanon-Abschnitt bleibt
 (`planstand.py` liest ihn). Urteil, Modell, Effort, Basis- und End-SHA,
@@ -349,7 +358,9 @@ Ein Haltgrund stoppt nur das Ticket: Frage stellen (nur Design-/Produktfrage
 oder User-Handgriff) und sofort das nächste Ticket ohne Haltgrund vorziehen;
 erst ohne solches Ticket wartet die Sitzung.
 
-- User-, Figma-, FL- oder Installationsschritt,
+- User- oder Figma-Handgriff (FL-Start, Installation und Messung laufen
+  seit 12.09.2026 automatisch, §3.3, und sind keiner; einziger FL-Handgriff
+  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
 - Produktentscheid,
 - überlappende fremde Änderungen,
 - Befund, der nur durch Produktentscheid oder User-Handgriff schließbar ist
@@ -426,6 +437,8 @@ Nie Zustand raten, nie eine Recovery-Datei bauen.
   Ticketbereich fahren, eine vierte Runde ohne Konvergenzentscheid starten.
 - Einen Prüfauftrag frei formulieren, eine Runde ohne Rundenbilanz
   abschließen, einem Worker mehr auftragen als der Prüfer als Defekt erhob.
+- Den Laufzeit-Arm auslassen oder den User nach FL, Installation oder
+  Messung fragen.
 
 ## 7. Prüfsystem und Kanal
 

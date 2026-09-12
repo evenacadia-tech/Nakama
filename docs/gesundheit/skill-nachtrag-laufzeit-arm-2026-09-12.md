@@ -1,5 +1,7 @@
 # Nachtrag für den Dirigenten-Skill: Laufzeit-Arm (12.09.2026)
 
+**Eingearbeitet 12.09.2026 (Dirigent, Abschlussfenster NAK-283 Etappe 1): alle vier Einfügungen stehen im Skill; diese Datei ist Verlauf.**
+
 Anlass: User-Wort 12.09.2026 im Register NAK-286 (fester Bestandteil,
 automatisch, ohne Nachfrage, immer wenn lohnenswert). Register, Plan S25e
 und KONZEPT §4.6/§10 sind nachgezogen (Session `nakama-a7`). Den Skill

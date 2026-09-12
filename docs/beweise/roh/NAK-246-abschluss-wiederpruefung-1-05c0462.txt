@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — P1: nein; P2 bezüglich alter Kopien: ja, durch den gemeinsamen Modell-Mutex und Vergleich vor jeder Änderung (SourcesModel.cpp:360–372,423–430), mit Zusageprüfung beider M-39-Zweige in Sonde012ProjectReloadTest.cpp:1493–1516.
+
+Geprüft: Fixdiff, vier Publikationsaufrufer, beide Reloadzweige, Sperrenordnung, Audio-/Vertragsgrenzen und Testinfrastruktur; keine weiteren Brüche gefunden, Rohbelege melden A12 mit 71 bytegleichen Dateien und B2 mit 276 erfolgreichen Prüfungen, HEAD blieb vor/nach unverändert 05c0462290b6d60f1775f8e985181a82ecb61cbf und der Worktree unangetastet.
+
+Nicht geprüft: dynamische Reproduktion, Builds, Tests oder Produktläufe; Ausführungsergebnisse stammen ausschließlich aus den gelesenen Rohdateien.
+
+Review comment:
+
+- [P1] Ordne Batch und Generation ohne Reload-Fenster einander zu — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/prozessor/Ipc.cpp:1493-1493
+  P1 bleibt bei gleicher Bindung offen: Wird der Worker nach der Abholung (`Ipc.cpp:1485`), aber vor dieser Generationslesung unterbrochen, kann `setStateInformation` vollständig durchlaufen, da es `sourcesDrainMutex` nicht nimmt. Quellseitige Reproduktion: A speichern, bestätigtes `unbind_probe(A)` an dieser Stelle anhalten, dieselben Bytes laden, Worker fortsetzen. Der alte Batch erhält die neue Generation, passiert den Vergleich bei `:1510` und entfernt A; Dirty und Revision steigen, der Verwerfzähler bleibt unverändert. M-38 hält erst bei `:1498–1499`, hinter der Generationslesung, und erfasst dieses Fenster nicht. Läuft der Worker stattdessen zwischen Zustandstausch und `State.cpp:179` weiter, wird seine neue Generation vom noch alten Modell abgewiesen; anschließend enthält das Modell wieder A, während `zustand` ohne A bleibt. Das ist dieselbe Ursache, kein separater P2-Befund. Verletzt bleiben M-38/M-31, „Save/Reload … erhalten richtige Mitgliedschaft“ und die [State-Invariante](CLAUDE.md#L194-L196). Batch-Abholung und Generationszuordnung müssen gemeinsam gegen den Reload geordnet werden.

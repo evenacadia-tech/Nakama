@@ -4,6 +4,9 @@ tmp/
 
 # Bau-Artefakte (regenerierbar)
 eq-copilot/build/
+# Ninja-Baum des clang-tidy-Beins A33 (tools/plan/tidy.py, NAK-287): nur
+# konfiguriert, nie gebaut; liefert die compile_commands.json
+eq-copilot/build-tidy/
 broker/target/
 
 # Vendor (Playwright fuer Design-Renders)

@@ -1,0 +1,67 @@
+# Nakama - clang-tidy-Regelsatz fuer eq-copilot/plugin (NAK-287, Kanon-Bein A33).
+#
+# Gefahren von tools/plan/tidy.py ueber die Uebersetzungseinheiten des
+# Ninja-Baums eq-copilot/build-tidy (cl.exe-Treibermodus, dieselben Schalter
+# wie der Produktbau). Die Fundzahl ist eine RATSCHE (Grenze = Iststand, Ziel 0)
+# in tidy.py, kein Bauabbruch; deshalb steht hier kein WarningsAsErrors.
+#
+# Regelwahl: Fehlerklassen, die der Nulltest nicht sieht - Lebensdauer und
+# Aliasing (bugprone, clang-analyzer), unbeabsichtigtes Kopieren und Verschieben
+# (performance), thread-unsichere Bibliotheksaufrufe (concurrency), Objekt-
+# schneiden und virtuelle Destruktoren (cppcoreguidelines-Auswahl), tote
+# using-Deklarationen (misc). KEINE Stilregeln: modernize-*, readability-*,
+# hicpp-*, google-*, llvm-* sind Rauschen ohne Zusage und bleiben aus.
+#
+# Ausdruecklich ausgenommen, mit Grund:
+#   bugprone-easily-swappable-parameters  reine Signaturkosmetik, hunderte
+#                                         Treffer ohne Fehlerklasse
+#   bugprone-narrowing-conversions        deckt der Produktbau bereits unter
+#                                         /W4 als C4244/C4267; hier doppelt
+#   cert-err58-cpp                        statische JUCE-Objekte werfen laut
+#                                         Regel theoretisch beim Start; im
+#                                         Plugin-Rahmenwerk unvermeidbar
+#   performance-enum-size                 Layout-Hinweis (int statt uint8_t),
+#                                         keine Fehlerklasse; im Probelauf
+#                                         12.09.2026 13 von 15 Funden einer
+#                                         Einheit, und ein Basistypwechsel
+#                                         beruehrte Enums auf State und Draht
+#   clang-analyzer-optin.performance.Padding
+#                                         Layout-Hinweis (Feldreihenfolge gegen
+#                                         Fuellbytes), keine Fehlerklasse; in
+#                                         der Erstmessung 12.09.2026 8 von 101
+#                                         Funden. Die uebrigen optin-Checks
+#                                         (EnumCastOutOfRange) bleiben an.
+#
+# Aenderungen am Regelsatz aendern den Iststand: in demselben Commit die
+# Ratsche in tools/plan/tidy.py nachziehen und im Manifest begruenden.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  clang-analyzer-*,
+  -clang-analyzer-optin.performance.Padding,
+  concurrency-*,
+  performance-*,
+  -performance-enum-size,
+  cert-dcl58-cpp,
+  cert-err34-c,
+  cert-flp30-c,
+  cert-msc50-cpp,
+  cert-msc51-cpp,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-slicing,
+  cppcoreguidelines-virtual-class-destructor,
+  misc-unused-using-decls,
+  misc-unused-alias-decls,
+  misc-redundant-expression,
+  misc-static-assert,
+  misc-unconventional-assign-operator,
+  misc-throw-by-value-catch-by-reference
+WarningsAsErrors: ''
+# Der Header-Filter kommt von tidy.py auf der Befehlszeile (eq-copilot/plugin;
+# tests/ und der flatc-Codegen vertrag/generiert/ werden dort nachgefiltert);
+# hier bewusst leer, damit ein Aufruf von Hand nur die genannte
+# Uebersetzungseinheit meldet.
+HeaderFilterRegex: ''
+FormatStyle: none

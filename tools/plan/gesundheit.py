@@ -136,6 +136,11 @@ Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
       darf einen Namen aus einem anderen Repo, aus FL Studio oder aus einem
       Schema nennen — solche Faelle sind die Fehlerrate, die im Manifest steht.
 
+  NICHT HIER: die C++-Statikanalyse des Plugins (clang-tidy). Sie konfiguriert
+  einen eigenen Ninja-Baum und parst jede Uebersetzungseinheit (Minuten) und
+  ist deshalb ein eigenes Kanon-Bein A33 mit derselben Ratschenform:
+  tools/plan/tidy.py (NAK-287, 12.09.2026).
+
 WAS GEMESSEN WIRD — KONTEXT
 ---------------------------
 Bytes von `MEMORY.md` (Ziel 22 KB, Grenze 24,4 KB — darueber schneidet der

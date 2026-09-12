@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — ein DEFEKT im sitzungsübergreifenden Heilungstakt.
+
+Geprüft: vollständiger Sieben-Dateien-Diff, Sperrenordnung, Haken, Merker, Queue, Rollback und Matrixbezug einschließlich 20 Rotprotokollen und Beinrohdaten; geschützte Quellpfade diffleer, HEAD vor/nach unverändert bei 34a127e571c6720f993d35d274c494fb73fc6878, Arbeitsbaum unverändert.
+
+Nicht geprüft: keine Builds, Testläufe, Produktprozesse oder Laufzeitreproduktion; vorhandene Grünläufe wurden ausschließlich lesend abgeglichen, ausgeschlossene Bereiche nicht auditiert.
+
+Review comment:
+
+- [P2] Begrenze den Heilungstakt auf die überholten Sitzungen — C:/Users/phili/Projekte/Nakama/broker/src/coordinator/hypothese_verdrahtung.rs:108-109
+  DEFEKT bei zwei Sitzungen mit Vollständigkeitsmarke auf getrennten Host-PIDs: Am Rechenhaken verliert S1 wie in M-16/Fenster 1 ein unbenutztes Masterfenster (`Ueberholt`), während S2 wie in M-15 eine Intentänderung erhält (`Veraltet`). S2s veröffentlichter Befund wird stale; das laufende Ergebnis wird noch vor dem Cache-Eintrag verworfen. Die sitzungsübergreifende ODER-Verknüpfung startet hier jedoch eine Heilung, deren `aufnahmen_sammeln` erneut **alle** Sitzungen aufnimmt: Auch S2 wird ohne neue Evidenz frisch gerechnet und verliert stale. Das verletzt [R-283-7](C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md#L3916): außerhalb der Cache-Persistenz-Naht „stale bis neues Material, kein Nachrechnen“. BASIS hatte diesen Folgeaufruf nicht. Der Heilungsbedarf muss deshalb sitzungsbezogen bleiben. Lesender Pfadnachweis: `git show 30a0b1bf:broker/src/coordinator/hypothese_verdrahtung.rs`, insbesondere 107–175, 208–231 und 551–568; der beschriebene Reproablauf wurde nicht ausgeführt.

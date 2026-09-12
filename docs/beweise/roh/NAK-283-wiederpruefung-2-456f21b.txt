@@ -1,0 +1,5 @@
+URTEIL: PASS — der Befund ist an allen vier Fundstellen geschlossen; kein Bruch im Prüfbereich festgestellt.
+
+Geprüft: Alle vier Modellvergleiche stehen eigenständig und deterministisch hinter State-Wartebedingung und vollständigem Aufbau-Drain; kein vorgezogener Modellvergleich verbleibt, Standbelege, Baselines und Scharfschalten sind unverschoben; Produktdiff leer; Rohbelege bestätigen M-06 am Bestandsvergleich rot, M-01b/M-72 jeweils dreimal rot mit Dirty-/Revisionsdelta 1, keine gefallene Aufbauzeile, identische Rücknahme-Hashes, sämtliche Rücknahmeläufe grün und B14 elfmal 231/231 bei Exit 0; HEAD 456f21b5034973850b37bd9e19a58aba3974f188 und Git-Status vorher/nachher identisch.
+
+Nicht geprüft: eigene Laufzeitausführung, Builds, Kanon, Nulltest/Passthrough und ausgeschlossene Bereiche; Rot-/Grünbelege ausschließlich gelesen, nichts geschrieben.

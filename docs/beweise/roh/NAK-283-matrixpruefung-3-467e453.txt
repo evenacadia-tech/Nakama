@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — Punkt 1 nein: Lockkopplung und Fehlerpfad sind belegt (§6.4:961–989), der Rotbeweis bleibt offen; Punkt 2 ja (M-44:657, Hauptstufenentscheidung 1/1/0/0); Punkt 3 ja (M-73/M-74:674–675, getrennte Zusagen); Punkt 4 ja (M-73:674, blockgrenzensensitiver Transient); Punkt 5 ja (§8.1:1652–1677, Formel und Präzedenz tragen die Referenzparameter).
+
+Geprüft: Fixdiff und erforderliche Belegquellen, weitere geänderte Matrixzeilen, Regeln, Gate, Feinheiten und Pfadtrennung; Zählung bestätigt: 74 = 54 Baulücke (46 rot, 7 nicht messbar, 1 gemischt) + 20 Regressionswachen; keine weiteren Brüche gefunden, HEAD und Worktree unverändert.
+
+Nicht geprüft: Produktläufe, Builds, Tests und ausgeführte Rotbeweise sowie ausgeschlossene Ticketbereiche; ausschließlich lesend gearbeitet, nichts geschrieben.
+
+Review comment:
+
+- [P2] Erzwinge den M-13-Wettlauf nach bestandenem Frischevergleich — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:995-997
+  Im festgelegten Ablauf von M-13/Fenster 2 persistiert B vollständig, bevor A den Wiedervergleich ausführt. A wird deshalb bereits dort verworfen: Die Mutation „Lock zwischen Vergleich und `append_einreihen` freigeben“ bleibt bei diesem Ablauf grün. Der hier und in §6.1 benannte Haken sitzt weiterhin vor `befund_persistieren` (`hypothese_verdrahtung.rs:478–480`) und kann das neue Fenster nicht erzwingen. Die Lockkopplung selbst schließt den ursprünglichen Fehler, aber ihr geforderter [deterministischer Rotbeweis](NAK-283.md#L518-L523) fehlt. Dafür braucht es einen zusätzlichen Ablauf nach bestandener Prüfung und ein passendes Erfolgskriterium: A darf zuerst angenommen werden, anschließend muss B die jüngere Projektion bestimmen.

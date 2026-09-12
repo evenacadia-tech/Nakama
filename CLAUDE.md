@@ -209,7 +209,13 @@ Der Runner baut, fährt die deklarierten Beine, legt Rohausgaben unter
 `docs/beweise/roh/` ab (Manifest trägt Kopf, Urteilszeile, Übersicht) und
 verweigert die Beglaubigung, wenn Prüfbinaries älter sind als ihre Quellen.
 Einzelbefehle und Zielnamen stehen im Skript. Editor-Sichtprüfung ohne FL
-über `EqCopShot.exe`. Installation ist ein bewusster Admin-Schritt des Users.
+über `EqCopShot.exe`. Installation läuft seit 12.09.2026 ohne User-Handgriff
+über die erhöhten Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
+`\Nakama\rueckweg` (User-Entscheid, Register NAK-285; je Rechner einmal
+erhöht `tools/dirigent/install-aufgaben-registrieren.ps1`; Log unter
+`%LOCALAPPDATA%\evenacadia\nakama-installer\<modus>.log`, Exitcode =
+Installer). Der Installer verweigert bei laufendem FL und bei
+Manifest-Hash-Abweichung: vorher FL beenden, nach grünem Kanon `--hashen`.
 Broker-Ende-zu-Ende immer über den Probe-Pipenamen; nie ein Testbroker auf
 der Produktions-Pipe. Vor einer Installation State-Migrationsstand und
 letzten Installationsbeweis prüfen.

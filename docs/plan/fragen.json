@@ -180,6 +180,39 @@
    "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
    "seit": "07.09.",
    "status": "offen"
+  },
+  {
+   "id": "U40",
+   "dringlichkeit": "vor NAK-283 Etappe 5",
+   "art": "Produktentscheid (wann Nakama spricht)",
+   "titel": "Soll der Advisor nach der Korrektur des Aktivitätsgates auch auf leisem Material sprechen?",
+   "was": "Der zweite Codeaudit (12.09.2026, Befund F06) hat gezeigt, dass das Gate, das entscheidet, ob eine Stelle als „gemessen\" gilt, heute eine falsche Einheit vergleicht — die Grenze wandert mit der Samplerate um bis zu 13,7 dB. Nach der Korrektur gelten leise Stellen (Ausklang, Intro, ruhige Passage) als gemessen, und der Advisor schlägt dort künftig vor, wo er heute schweigt. Drei Wege: „So lassen — leise Stellen gelten als gemessen, der Advisor spricht dort\", „Eigene Sichtbarkeitsgrenze für sehr leises Material (Advisor schweigt unterhalb, die Grenze steht sichtbar dabei)\", „Erst sehen, dann entscheiden — Etappe 5 baut die Korrektur, die Grenze kommt als eigene Karte nach dem ersten Hören\". Ohne Entscheidung gilt Weg 1 (die Korrektur ohne zusätzliche Grenze).",
+   "warum": "Die Korrektur ändert nicht nur Zahlen, sondern wann Nakama spricht — eine Produktwirkung, die der Bauer nicht entscheidet (docs/beweise/NAK-283.md §8.3, P-283-3; Matrixzeilen M-44, M-46, M-47). Keine Matrixzeile ist blockiert.",
+   "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5 (Analysefachmodelle); später Gen-Oberfläche (S31b)",
+   "seit": "12.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U41",
+   "dringlichkeit": "vor NAK-283 Etappe 5",
+   "art": "Produktentscheid (Anzeige)",
+   "titel": "Was zeigt die Headroom-Verteilung, solange keine Passage markiert ist?",
+   "was": "Gen zeigt die Headroom-Verteilung künftig über die ganze markierte Passage (Audit-Befund F08: heute sind es faktisch die letzten 6,4 Sekunden, die sich als „über die Passage\" ausgeben). Solange keine Passage markiert ist, gibt es zwei Wege: „Verteilung seit der letzten Transportgrenze (kann beliebig lang werden)\" oder „ein benanntes gleitendes Fenster (die Fensterlänge steht sichtbar dabei)\". Ohne Entscheidung baut Etappe 5 den Passagenfall richtig und zeigt ohne Passage ein gleitendes Fenster mit sichtbarer Länge.",
+   "warum": "Der Fall ohne Passage ist eine Anzeigeentscheidung, keine Messfrage (docs/beweise/NAK-283.md §8.3, P-283-1; Matrixzeilen M-53, M-54, M-55).",
+   "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
+   "seit": "12.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U42",
+   "dringlichkeit": "vor NAK-283 Etappe 5",
+   "art": "Produktentscheid (Anzeige)",
+   "titel": "Was zeigt die Kurzzeit-Lautheit während der Sperrfrist nach einer Störung?",
+   "was": "Nach einer Störung im Zulauf (ersetzte Samples) bleibt die Kurzzeit-Lautheit künftig bis zu drei Sekunden ohne gültigen Wert (Audit-Befund F10: heute zeigt Gen sofort wieder einen Wert — einen falschen). Zwei Wege: „Nichts zeigen — Feld leer, wie bei fehlender Messung\" oder „den letzten gültigen Wert mit sichtbarer Unsicherheitsmarke\". Ohne Entscheidung zeigt die Oberfläche in der Sperrfrist nichts (Feld leer).",
+   "warum": "Wie das Zeitfenster ohne Aussage aussieht, ist Produktsache (docs/beweise/NAK-283.md §8.3, P-283-2; Matrixzeilen M-56, M-57, M-58). Die Messung selbst ist durch Regel R-283-5 festgelegt.",
+   "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
+   "seit": "12.09.",
+   "status": "offen"
   }
  ],
  "beantwortet": {

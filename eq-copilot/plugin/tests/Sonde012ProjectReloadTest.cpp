@@ -1694,9 +1694,8 @@ void aeltere_mitgliederpublikation_ersetzt_keine_juengere()
     // Aufbau: B ist Mitglied. Der Workerzug drain't ihn selbst; `scharf` ist
     // noch false, der Haken haelt also nicht.
     s.bestaetige (Art::confirmJoin, b);
-    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); })
-                && modellTraegt (*s.p, { b }),
-            "M-01 Aufbau: B ist Mitglied in State UND Modell", modellBestand (*s.p));
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); }),
+            "M-01 Aufbau: B ist Mitglied im State", modellBestand (*s.p));
     // ⚠️ NAK-283 Erstpruefung 2 Befund 2: der Mitgliederstand wird sichtbar,
     // sobald der Drain `bindungMutex` verlaesst (`Ipc.cpp`, Ende der Klammer) -
     // Kopie, Hakenruf, Modelluebernahme, `meldeHostDirty` und die Revision
@@ -1711,6 +1710,20 @@ void aeltere_mitgliederpublikation_ersetzt_keine_juengere()
     pruefe (s.ruheAbwarten(),
             "M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision "
             "zurueck - erst danach gelten Baseline und Scharfschalten");
+    // ⚠️ NAK-283 Wiederpruefung 1: der Modellvergleich steht HINTER beiden
+    // Riegeln - Zustandsbedingung und Eintrittszaehler -, nie in derselben
+    // kurzschliessenden Bedingung wie die Wartebedingung. State und Modell
+    // stehen unter ZWEI Sperren (`bindungMutex` bzw. `SourcesModel::mutex`):
+    // zwischen dem Verlassen der einen und dem Nehmen der anderen ist der neue
+    // Zustand sichtbar, waehrend das Modell noch den alten Bestand traegt. Ein
+    // dort EINMALIG ausgewerteter `modellTraegt` haengt am Interleaving, und
+    // `pruefe` kann den gezaehlten Fehler nicht zuruecknehmen - der geforderte
+    // Gruenlauf nach bytegleicher Ruecknahme waere ein Zufall (§6.1 Punkt 5).
+    // Hinter `ruheAbwarten()` ist der Aufbau-Drain samt Publikation zurueck;
+    // der Vergleich ist dort deterministisch und braucht kein Timing.
+    pruefe (modellTraegt (*s.p, { b }),
+            "M-01 Aufbau: hinter dem Drainriegel traegt auch das Modell B",
+            modellBestand (*s.p));
 
     const auto dirtyVor = dirty.nonParam.load();
     const auto revisionVor = s.p->v3StateRevisionFuerTest();
@@ -1786,15 +1799,19 @@ void hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt()
 
     // Aufbau: A ist Mitglied mit leerem Label (`confirm_join` traegt keines).
     s.bestaetige (Art::confirmJoin, a);
-    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a }); })
-                && modellTraegt (*s.p, { a }),
-            "M-02 Aufbau: A ist Mitglied", modellBestand (*s.p));
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a }); }),
+            "M-02 Aufbau: A ist Mitglied im State", modellBestand (*s.p));
     // ⚠️ NAK-283 Erstpruefung 2 Befund 2, wie in M-01: der Zustandsbestand
     // allein beweist nur die Anwendung, nicht den Nachlauf des Aufbau-Drains.
     // Der Eintrittszaehler des Drainrahmens ist der Riegel.
     pruefe (s.ruheAbwarten(),
             "M-02 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - erst danach "
             "wird scharf geschaltet");
+    // ⚠️ NAK-283 Wiederpruefung 1, wie in M-01: der Modellvergleich steht hinter
+    // BEIDEN Riegeln, nie im Fenster zwischen `bindungMutex` und Modellsperre.
+    pruefe (modellTraegt (*s.p, { a }),
+            "M-02 Aufbau: hinter dem Drainriegel traegt auch das Modell A",
+            modellBestand (*s.p));
     const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
 
     // Ereignis 1: der Workerzug wendet `confirm_join B` an und haelt - seine
@@ -1972,11 +1989,16 @@ void state_und_modell_sind_nach_ruhe_gleich()
     // Haken nicht scharf werden, sonst faengt er den AUFBAU-Ruf.
     s.bestaetige (Art::confirmJoin, a);
     s.bestaetige (Art::confirmJoin, c);
-    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a, c }); })
-                && modellTraegt (*s.p, { a, c }),
-            "M-06 Aufbau: A und C sind Mitglied in State UND Modell", modellBestand (*s.p));
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a, c }); }),
+            "M-06 Aufbau: A und C sind Mitglied im State", modellBestand (*s.p));
     pruefe (s.ruheAbwarten(),
             "M-06 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck");
+    // ⚠️ NAK-283 Wiederpruefung 1, wie in M-01: erst hinter dem Eintrittszaehler
+    // ist die Publikation des Aufbaus zurueck - vorher waere der Vergleich ein
+    // Wuerfel zwischen zwei Sperren.
+    pruefe (modellTraegt (*s.p, { a, c }),
+            "M-06 Aufbau: hinter dem Drainriegel traegt auch das Modell A und C",
+            modellBestand (*s.p));
 
     // Weg 3 aus dem WORKERZUG, erzwungen angehalten: der Workerzug wendet
     // `confirm_join B` an und haelt zwischen Kopie und Publikation. Seine Kopie
@@ -2162,9 +2184,8 @@ void reloadablehnung_und_ueberholung_sind_unterscheidbar()
         DirtyZaehler dirty;
         s.p->addListener (&dirty);
         s.bestaetige (Art::confirmJoin, b);
-        pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); })
-                    && modellTraegt (*s.p, { b }),
-                "M-72 Phase B Aufbau: B ist Mitglied in State UND Modell",
+        pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); }),
+                "M-72 Phase B Aufbau: B ist Mitglied im State",
                 modellBestand (*s.p));
         // ⚠️ NAK-283 Erstpruefung 2 Befund 2: erst der naechste Eintritt des
         // Drainrahmens beweist, dass der Aufbau-Drain samt Publikation, Dirty
@@ -2177,6 +2198,13 @@ void reloadablehnung_und_ueberholung_sind_unterscheidbar()
         pruefe (s.ruheAbwarten(),
                 "M-72 Phase B Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - "
                 "erst danach gelten Baseline und Scharfschalten");
+        // ⚠️ NAK-283 Wiederpruefung 1, wie in M-01: der Modellvergleich gehoert
+        // hinter denselben Riegel wie die Baselines - im Fenster zwischen
+        // `bindungMutex` und Modellsperre traegt das Modell noch den alten
+        // Bestand, und `pruefe` nimmt keinen gezaehlten Fehler zurueck.
+        pruefe (modellTraegt (*s.p, { b }),
+                "M-72 Phase B Aufbau: hinter dem Drainriegel traegt auch das Modell B",
+                modellBestand (*s.p));
         const auto dirtyVor = dirty.nonParam.load();
         const auto revisionVor = s.p->v3StateRevisionFuerTest();
 

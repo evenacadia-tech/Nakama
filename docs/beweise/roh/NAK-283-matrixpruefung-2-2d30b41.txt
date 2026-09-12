@@ -1,0 +1,22 @@
+URTEIL: NEEDS_WORK — Befunde 3 und 10 bleiben offen; zusätzliche Brüche betreffen M-44, die M-73-Klassifikation und Feinheit 14.
+
+Geprüft wurden der gebundene Fixdiff und seine Belegquellen; HEAD und Worktree blieben unverändert.
+
+Nicht geprüft wurden Builds, Produktläufe und ausgeführte Rotbeweise, da der Auftrag sie ausschließt.
+
+Full review comments:
+
+- [P2] Kopple den Frischevergleich atomar an die Store-Annahme — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:1007-1010
+  Befund 3 bleibt offen: A kann den neuen Wiedervergleich bestehen und unmittelbar nach der Sperrfreigabe anhalten; B persistiert anschließend sein jüngeres Ergebnis vollständig, danach schreibt A. Bei gleicher `finding_id` gewinnt weiterhin A wegen seiner höheren Append-Ordnungszahl (`broker/src/store/writer.rs:476,589–593`). Der vorgesehene Haken vor dem Wiedervergleich erfasst dieses verbleibende Fenster nicht. Damit ist [R-283-1](NAK-283.md#L111) weiterhin verletzt. Vergleich und geordnete Store-Annahme müssen zusammengehören; eine Änderung unter `broker/src/store/**` ist dafür nicht zwingend, denn `StoreHandle::append_einreihen` (`handle.rs:153–170`) trennt bereits die Annahme vom Commit-Warten.
+
+- [P2] Leite M-44 aus der tatsächlich gezählten Hauptstufe ab — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:640-640
+  Bei dem festgelegten −55-dBFS-Signal ist `abdeckung` am Basisstand bei allen vier Raten 0, nicht bei 44,1/48 kHz größer als 0: `featureengine/Spektrum.h:369–383` zählt ausdrücklich ausschließlich die Hauptstufe (`&s == &haupt`), deren Gate überall inaktiv bleibt. Die neue Aussage, beide Stufen gingen in die Abdeckung ein, widerspricht deshalb dem Code-Ist-Stand. Der behauptete Sampleratenunterschied ist an dieser Messgröße nicht beobachtbar; die Bühne für [R-283-4](NAK-283.md#L114) muss die tatsächlich gezählte Hauptstufenentscheidung zwischen den Raten kippen, statt den Abdeckungsumfang umzudeuten.
+
+- [P2] Klassifiziere M-73 nach ihrer vollständigen Zusage — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:657-657
+  M-73 verlangt neben gleicher Bewertung aller Blockgrößen ausdrücklich die Übereinstimmung jedes Laufs mit der isolierten Passage. Diese zweite Zusage verletzt bereits der Basisstand: Die vorab gebundene Passage übernimmt über die laufende Filterhistorie das laute Vormaterial (`FeatureEngine.h:621–622`, `featureengine/Spektrum.h:192–200`), genau das F07-Gegenbeispiel aus M-49. Die gesamte Zeile ist daher heute rot und keine [Regressionswache](NAK-283.md#L523-L525). Entweder müssen beide Zusagen getrennt oder die Klassifikation samt §5.6 angepasst werden; die ausgewiesenen 20 reinen Regressionswachen sind sonst inhaltlich falsch.
+
+- [P2] Wähle für M-73 einen blockgrenzensensitiven Verlauf — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:657-657
+  Der übernommene 12-kHz-Ton hat bei 48 kHz eine Periode von vier Samples; 64, 512 und 1024 sowie beide Passagengrenzen sind Vielfache davon. Beim mutierten Reset an jedem Blockanfang entstehen deshalb dieselben Einschwingantworten in derselben Signalphase; alle Teilstücke sind länger als die FIR-Historie (`TruePeak.h:75–78,172–179`). Ihre häufigere Wiederholung ändert das Passagenmaximum nicht (`featureengine/Spektrum.h:197–200`). Die behauptete Abweichung über ±0,1 dB folgt somit nicht aus dieser Mutation, sodass Befund 10 keinen tragenden Gegenbeweis erhält. Für die [Beweisregel](NAK-283.md#L517-L522) braucht es einen Verlauf, dessen entscheidende Spitze durch die unterschiedlichen inneren Blockgrenzen tatsächlich verändert wird.
+
+- [P2] Belege die neu festgelegten Referenzparameter — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-283.md:1583-1584
+  Feinheit 14 schreibt erstmals 64-fache Überabtastung und eine Referenzvalidierung auf ±0,01 dB verbindlich vor, ohne diese Zahlen durch eine Quelle oder Herleitung zu begründen. Die zitierten Stellen in Entwurf:2626–2627 und SONDE-013 M-02/M-81 tragen das Projektbudget ±0,1 dB, nicht diese zusätzlichen Referenzvorgaben; §6.7 und M-65 wiederholen lediglich dieselbe Festlegung. Damit verletzt der Fix die ausdrückliche Grenze [„keine neuen Deckel oder Zahlen ohne Quelle“](roh/NAK-283-matrix-nacharbeit-1-auftrag.txt#L37). Die Referenzparameter benötigen einen eigenständigen Beleg, bevor sie als zusätzliche Prüfgrenzen gelten.

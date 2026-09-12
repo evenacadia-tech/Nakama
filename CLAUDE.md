@@ -276,7 +276,10 @@ letzten Installationsbeweis prüfen.
   Worker-Prompt.
 - Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen
   „Voraussetzung fehlt" enden; vor einem Befund gegen den Runner einmal
-  wiederholen.
+  wiederholen. Fehlt es zweimal, fehlt `flatc.exe` (Zeiger in
+  `eq-copilot/build/nakama-flatc-pfad-Release.txt`, verschwindet nach manchem
+  Worker-Bau): `cmake --build eq-copilot/build --config Release --target
+  flatc` nachbauen (NAK-280).
 - Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt `dokuriegel.py`;
   als `\|` schreiben, Zeilenbereiche mit ASCII-Bindestrich.
 - `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelle kann

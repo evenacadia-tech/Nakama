@@ -186,7 +186,8 @@ Kein Selbstbericht zählt:
   (Diff ohne Produktpfad, fremdes FL-Projekt offen), Exit 4 = Szenario
   verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
   `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest.
-  FL-Start, Installation und Messung sind nie Haltgrund und nie Frage.
+  FL-Start, Installation und Messung sind nie Haltgrund und nie Frage. FL-Zugriff,
+  MCP-Server und Diagnoseprojekt: `tools/fl/LIES-MICH.md`.
 
 Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
 `origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler

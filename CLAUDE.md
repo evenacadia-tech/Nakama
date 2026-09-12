@@ -150,6 +150,7 @@ logische Commits gehen ohne Rückfrage raus.
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
+| FL-Laufzeit, MCP-Server, Diagnoseprojekt | `tools/fl/LIES-MICH.md`, Register NAK-284 bis NAK-286 (MCP-Repo `C:\Users\phili\Projekte\fl-studio-mcp`, GitHub `evenacadia-tech/fl-studio-mcp`) |
 | App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md`, `design/visuell/LIES-MICH.md`, jüngste passende Datei in `design/abnahmen/` |
 | Widerspruch Entwurf ↔ Blueprint | Vertrag und Code stehen über beiden; Widerspruch als Zeile in `docs/offene-punkte.md` |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
@@ -279,7 +280,8 @@ letzten Installationsbeweis prüfen.
   alles hinter einem Backtick-n-Umbruch verloren; mehrzeilige Einfügungen
   zeilenweise oder aus einer Datei. Der Sandbox-Filter blockt jeden Befehl,
   dessen Text den Namen des PowerShell-Lösch-Cmdlets enthält, auch in einem
-  Worker-Prompt.
+  Worker-Prompt. `claude rm <id>` nur als eigenen Befehl absetzen; in einer
+  Befehlskette blockt der Filter die ganze Kette (12.09.2026).
 - Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen
   „Voraussetzung fehlt" enden; vor einem Befund gegen den Runner einmal
   wiederholen. Fehlt es zweimal, fehlt `flatc.exe` (Zeiger in

@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — die drei verlangten Reparaturen sind umgesetzt, aber der Fixdiff führt den beschriebenen Fehler in den Aufbauprüfungen ein.
+
+Geprüft: Befund 1 ja — vier Produktwege vor Freigabe, anschließend nur Ruhe und Lesen (Sonde012:1966–2039), Bestandsvergleich im neuen M-06-Rohbeleg:22 rot; Befund 2 ja hinsichtlich Drainabschluss vor Baselines/Scharfschalten (Sonde012:1711,1795,1978,2177), M-03/M-05 ohne Aufbau-Drain, MUT-B für M-01b/M-72 jeweils dreimal rot; Befund 3 ja — sechs Prozessor-/Hostlistener-Blöcke an MAX−1 beziehungsweise MAX, passende Erst-/Zweitaufrufmessungen und fallende Dirty-Erwartungen unter MUT-J/MUT-K; alle neuen Prozessoren auf dem Heap, Listener rechtzeitig abgemeldet und Handgriff → Messwerte → Prüfung eingehalten; Produktdiff leer, kein weiterer Bruch erkennbar, HEAD d5205c281ceaf4f25421f2a67fe4668a6eebc49d und Git-Status vorher/nachher identisch.
+
+Nicht geprüft: eigene Laufzeitausführung einschließlich Reproduktion des Timingfensters, Builds, Kanon, Nulltest und Passthrough sowie ausgeschlossene Bereiche; die Rot-/Grünbelege und B14 227/227 beziehungsweise B27 270 Prüfungen wurden ausschließlich gelesen.
+
+Review comment:
+
+- [P2] Prüfe den Modellbestand erst nach dem Aufbau-Drain — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp:2165-2168
+  Wird der Worker beim Aufbau-Join nach Freigabe von `bindungMutex` (`Ipc.cpp:1585`), aber vor der Modellpublikation unterbrochen, liefert `warteAuf(...)` bereits `true`, während das anschließend einmalig ausgewertete `modellTraegt(...)` noch `false` liefert. `pruefe` zählt dadurch einen Fehler, den das nachfolgende `ruheAbwarten()` nicht zurücknehmen kann. Dieser neue Vergleich macht M-72 und ebenso den neuen M-06-Aufbau (`:1975-1977`) trotz korrektem Produktcode timingabhängig rot; der geforderte Grünlauf nach Rücknahme ist damit nicht zuverlässig ([§6.1](docs/beweise/NAK-283.md#L812-L815)). Verschiebe die Modellprüfung hinter die State-Wartebedingung und den bestehenden Drainriegel.

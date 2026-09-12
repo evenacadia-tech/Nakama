@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Gegenprobe der Git-Automatik: Riegel (blockt) und Auto-Push (schickt raus).
-# PRUEFLISTE 5.1: "Ein Gate, das nicht scheitern kann, beweist nichts" — deshalb
-# beide Richtungen. Ein Riegel, der zu viel blockt, wird abgeschaltet und
-# schuetzt danach gar nichts; genau daran ist die Prototyp-Schleuse am 21.08.
-# zweimal gescheitert.
+# Gegenprobe der Git-Automatik: der Riegel blockt, was er blocken soll, und
+# laesst durch, was er durchlassen soll. PRUEFLISTE 5.1: "Ein Gate, das nicht
+# scheitern kann, beweist nichts" — deshalb beide Richtungen. Ein Riegel, der
+# zu viel blockt, wird abgeschaltet und schuetzt danach gar nichts; genau daran
+# ist die Prototyp-Schleuse am 21.08. zweimal gescheitert. (Der Auto-Push-Hook
+# ist am 12.09.2026 entfernt; Pushen ist Schritt des Dirigenten-Skills.)
 #   Aufruf (vom Repo-Root):  bash tools/hooks/git-automatik-probe.sh
 cd "$(dirname "$0")/../.." || exit 1
 RIEGEL=tools/hooks/git-riegel.sh
@@ -117,19 +118,6 @@ fprobe durch "Prompt aus Datei"          'agy -p "$(cat /tmp/pruefung.txt)" --mo
 fprobe durch "mode plan"                 'agy -p x --mode plan'
 fprobe durch "Text erwaehnt den Schalter" 'echo "niemals agy --dangerously-skip-permissions benutzen"'
 fprobe durch "anderes Werkzeug"          'codex exec --dangerously-skip-permissions'
-
-echo
-echo "=== AUTO-PUSH: Torwaechter (ohne Netzzugriff pruefbar) ==="
-gesamt=$((gesamt+1))
-AUS=$(printf '{"session_id":"probe","tool_name":"Bash"}' | bash tools/hooks/auto-push.sh 2>&1)
-VORAUS=$(git rev-list --count "@{u}..HEAD" 2>/dev/null || echo "?")
-if [ "$VORAUS" = "0" ] && [ -z "$AUS" ]; then
-  printf 'ok    %-5s  %s\n' "still" "nichts voraus -> kein Netzzugriff, keine Ausgabe"
-elif [ "$VORAUS" != "0" ] && printf '%s' "$AUS" | grep -q "auto-push"; then
-  printf 'ok    %-5s  %s\n' "aktiv" "$VORAUS Commit(s) voraus -> Hook hat gehandelt"
-else
-  printf 'FEHL  voraus=%s  Ausgabe=%s\n' "$VORAUS" "${AUS:-(leer)}"; fehler=$((fehler+1))
-fi
 
 echo
 if [ "$fehler" -eq 0 ]; then

@@ -144,8 +144,9 @@ def git(*args: str) -> str:
     und legt dafuer `.git/index.lock` an; laeuft der Aufruf in das `timeout`
     unten, toetet subprocess das Kind mitten im Refresh und die Sperre bleibt
     liegen — sie blockiert dann jedes spaetere git. Genau das ist am 29.08.2026
-    unter Baulast dreimal passiert (NAK-96); dieses Skript laeuft ueber
-    `tools/hooks/planstand.sh` auf denselben Lastpfaden (NAK-97).
+    unter Baulast dreimal passiert (NAK-96); dieses Skript laeuft auf denselben
+    Lastpfaden (NAK-97; der fruehere Hook `tools/hooks/planstand.sh` ist am
+    12.09.2026 entfernt, der Aufruf kommt seither aus Skill und Session).
     """
     try:
         return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), *args],

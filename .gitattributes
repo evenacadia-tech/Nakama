@@ -13,7 +13,6 @@
 # dieselben Bytes behalten; insbesondere duerfen SVGs nicht per autocrlf
 # zwischen LF und CRLF umgeschrieben werden.
 design/assets/**  -text
-design/goldens/** -text
 
 # Alles andere bleibt wie gehabt: core.autocrlf regelt die Arbeitskopie.
 # Werkzeuge, die Quelltext lesen, muessen zeilenendenfest sein - der

@@ -6,6 +6,14 @@
 > `../../abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Weder die
 > früheren PNGs noch die Live-Nodes `25:444`, `28:994` und `6:2864` dürfen
 > die drei neuen Userbilder als aktuelle Grundlage überschreiben.
+>
+> **Seit 31.08.2026** sind auch die drei Rework-Bilder Verlauf; die visuelle
+> Phase läuft seit 02.09.2026 in der Figma-Datei `fable-dummy`
+> (`../../visuell/LIES-MICH.md`). Der Unterordner `nakama-gen-2026-08-24/`
+> (Assetpaket `nakama-gen-dark-2026-08-24-rc0`: `figma/`, `goldens/`,
+> `scales/`) ist der Build-Snapshot des historischen Simulators
+> `../../prototyp/` und ebenso Verlauf; zwölf dort nie referenzierte Dateien
+> wurden am 12.09.2026 entfernt.
 
 **Herkunft:** Figma, gestaltet vom **User** (Gen, Probeeq) bzw. von Claude auf
 seinen Auftrag in seiner Figma-Datei (Suna, siehe unten). Exportiert vom User
@@ -165,7 +173,7 @@ Leuchtsaum; Beschriftungen in Monospace-Versalien. Alle Texte englisch.
 
 Anmerkung, keine Wertung: zwölf Parameter je Band sind sichtbar; ob eine
 Sidechain-Quelle als dreizehnter dazukommt, ist im Technik-Repo offen
-(`docs/oberflaechen-spezifikation.md`, Abschnitt 2).
+(`../../docs/oberflaechen-spezifikation.md`, Abschnitt 2).
 
 
 ## `2026-08-21-suna.png` — Nakama Suna

@@ -57,11 +57,5 @@ design/werkzeug/pruefung/.gegenprobe/
 .c-review-results/
 .rust-review-results/
 
-# Nimbalyst-Automatiken: die Definition (nimbalyst-local/automations/*.md) ist
-# versioniert, ihre Laufergebnisse sind Maschinenartefakte (mode: replace, wird
-# bei jedem Lauf ueberschrieben). Muster mit Schraegstrich = nur Ordner, damit
-# die .md-Definitionen daneben getrackt bleiben.
-nimbalyst-local/automations/*/
-
 # Werkzeugordner des Workflow-Laufs (PR2 02.09.2026, NAK-128): Baucache, nie Produkt
 .workflow/

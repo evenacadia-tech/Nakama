@@ -90,7 +90,8 @@ Was du tust, wenn du etwas **änderst**:
 
 ## Was es nicht mehr gibt
 
-- Die Briefing-Seite `nakama-briefing.philipld.chatgpt.site`. `briefing-hub/`
-  bleibt als Verlauf liegen — **nicht deployen, nicht füttern, nicht lesen.**
+- Die Briefing-Seite `nakama-briefing.philipld.chatgpt.site`. Der Ordner
+  `briefing-hub/` wurde am 12.09.2026 aus dem Baum entfernt; sein letzter
+  Stand liegt im Verlauf bis Commit `f9750046`.
 - `tools/hub/hub_sync.py` (`holen`/`senden`) und `tools/hub/plan_blatt.py`.
 - Die Pflicht, je Session einen Hub nachzuziehen.

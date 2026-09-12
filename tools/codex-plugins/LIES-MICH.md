@@ -8,8 +8,9 @@ Editor- oder Plugin-Deinstallation die einzige Quelle löscht.
 
 - `audio-plugin-ux/` enthält die kanonische, im Nakama-Repository bearbeitete
   Pluginquelle.
-- `audio-plugin-ux-workspace/` enthält Benchmark, Baseline 0.2.1 und den
-  reproduzierbaren Vergleichslauf.
+- Der frühere Benchmark-Workspace (Baseline 0.2.1, Iterationen 1–4) wurde am
+  12.09.2026 entfernt; sein letzter Stand liegt im Verlauf bis Commit
+  `f9750046` unter `tools/codex-plugins/audio-plugin-ux-workspace/`.
 - Codex-Installationscache und persönliche Marketplace-Konfiguration werden
   bewusst nicht versioniert.
 

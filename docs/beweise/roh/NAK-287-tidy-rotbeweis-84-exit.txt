@@ -1,0 +1,166 @@
+SELBSTTEST
+  ok   Quelldatei im Plugin liegt im Quellort
+  ok   tests/ ist ausgenommen
+  ok   ein Ordner, der nur mit tests beginnt, ist nicht ausgenommen
+  ok   flatc-Codegen unter vertrag/generiert/ ist ausgenommen
+  ok   vertrag/ selbst zaehlt (Eingabe in Vergleichsform)
+  ok   JUCE unter _deps liegt nicht im Quellort
+  ok   Broker liegt nicht im Quellort
+  ok   fremde Wurzel liegt nicht im Quellort
+  ok   Wurzel mit Schlussstrich ist dieselbe Wurzel
+  ok   norm: Rueckstriche und Grossschreibung verschwinden
+  ok   Filter: eine Datei in zwei Zielen ergibt einen Eintrag, tests und _deps fallen weg
+  ok   Filter: der erste Eintrag gewinnt
+  ok   Filter: relativer Dateipfad wird an directory gehaengt und .. aufgeloest
+  ok   Filter: arguments-Form verliert /MP4 und -showIncludes
+  ok   bereinige: /MD bleibt, /MP faellt
+  ok   bereinige: Kommando ohne die Schalter bleibt gleich
+  ok   parse: drei Diagnosen mit Ort, note und Treiberwarnung nicht
+  ok   parse: Windows-Pfad mit Laufwerk bleibt ganz
+  ok   parse: Zeile und Spalte sind Zahlen
+  ok   parse: Check steht ohne Klammern
+  ok   parse: eckige Klammern im Text gehoeren zum Text
+  ok   parse: Mehrfach-Check bleibt eine Zeichenkette
+  ok   parse: error wird als error erkannt
+  ok   parse: leerer Text liefert nichts
+  ok   dedup: dieselbe Fundstelle aus zwei Einheiten zaehlt einmal
+  ok   dedup: andere Spalte zaehlt zweimal
+  ok   dedup: anderer Check am selben Ort zaehlt zweimal
+  ok   dedup: tests und JUCE zaehlen nicht
+  ok   dedup: Anzeigepfad ist relativ mit Vorwaertsstrichen
+  ok   dedup: sortiert nach Datei, Zeile, Spalte
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze plus eins reisst
+  ok   Null Fundstellen ist OK
+  ok   nicht messbar ist nie rot
+  ok   Ratsche ist nie unter dem Ziel
+  ok   Umgebung: erste Gleichheit trennt
+  ok   Umgebung: INCLUDE kommt an
+  ok   Umgebung: Zeilen ohne Gleichheit und Laufwerksmarken fallen weg
+  ok   je Check: absteigend, dann alphabetisch
+
+Selbsttest: 39/39 bestanden
+
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\nk-tidy
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 23 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 203 s mit 12 Prozess(en)
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  84   0     83      GRENZE
+
+Uebersetzungseinheiten: 41 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 41
+Langsamste Einheiten: eq-copilot/plugin/src/prozessor/Analyse.cpp 94 s, eq-copilot/plugin/src/PluginProcessor.cpp 93 s, eq-copilot/plugin/src/PluginEditor.cpp 93 s, eq-copilot/plugin/src/prozessor/Ipc.cpp 85 s, eq-copilot/plugin/src/SourcesModel.cpp 72 s
+
+Fundstellen je Check:
+     17  bugprone-misplaced-widening-cast
+     17  performance-unnecessary-copy-initialization
+      9  performance-avoid-endl
+      7  bugprone-exception-escape
+      7  bugprone-implicit-widening-of-multiplication-result
+      5  bugprone-suspicious-memory-comparison
+      5  cppcoreguidelines-pro-type-member-init
+      3  performance-move-const-arg
+      2  bugprone-branch-clone
+      2  clang-analyzer-core.NonNullParamChecker
+      2  clang-analyzer-optin.core.EnumCastOutOfRange
+      2  performance-unnecessary-value-param
+      1  bugprone-inc-dec-in-conditions
+      1  bugprone-incorrect-roundings
+      1  cert-err34-c
+      1  clang-analyzer-core.NullDereference
+      1  clang-analyzer-core.uninitialized.UndefReturn
+      1  clang-analyzer-deadcode.DeadStores
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:939:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:322:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:323:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:324:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:326:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:328:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:330:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:96:10 [bugprone-exception-escape] an exception may be thrown in function 'vorbereiten' which should not throw exceptions
+  eq-copilot/plugin/core/analysis/TruePeak.h:251:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:254:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:95:30 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:86:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:272:18 [performance-move-const-arg] passing result of std::move() as a const reference argument; no move will actually happen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:441:73 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+  eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp:230:6 [bugprone-exception-escape] an exception may be thrown in function 'audioGueltig' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/IpcQueues.h:414:10 [bugprone-exception-escape] an exception may be thrown in function 'bestaetigen' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:42:45 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:96:9 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/PipeToken.h:58:13 [bugprone-exception-escape] an exception may be thrown in function 'istProbePipename' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:281:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:390:75 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+  eq-copilot/plugin/core/ipc/WireEnvelope.cpp:150:27 [clang-analyzer-optin.core.EnumCastOutOfRange] The value provided to the cast expression is not in the valid range of values for 'Kodierung'
+  eq-copilot/plugin/core/ipc/WireEnvelope.cpp:151:27 [clang-analyzer-optin.core.EnumCastOutOfRange] The value provided to the cast expression is not in the valid range of values for 'Familie'
+  eq-copilot/plugin/core/ipc/WireZahl.h:138:28 [cert-err34-c] 'atoi' used to convert a string to an integer value, but function will not report conversion errors; consider using 'strtol' instead
+  eq-copilot/plugin/dsp/DspKern.cpp:63:36 [bugprone-incorrect-roundings] casting (double + 0.5) to integer leads to incorrect rounding; consider using lround (#include <cmath>) instead
+  eq-copilot/plugin/dsp/DspKern.cpp:457:16 [clang-analyzer-deadcode.DeadStores] Value stored to 'y0' during its initialization is never read
+  eq-copilot/plugin/dsp/DspKern.cpp:466:70 [clang-analyzer-core.NullDereference] Access to field 'detektorLaeuft' results in a dereference of a null pointer (loaded from variable 'qb')
+  eq-copilot/plugin/dsp/DspKern.cpp:474:42 [clang-analyzer-core.NonNullParamChecker] Forming reference to null pointer
+  eq-copilot/plugin/dsp/DspKern.cpp:527:38 [clang-analyzer-core.NonNullParamChecker] Forming reference to null pointer
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:99:5 [bugprone-exception-escape] an exception may be thrown in function 'main' which should not throw exceptions
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:113:22 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:118:79 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:137:59 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:147:73 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:166:62 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:168:72 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:174:69 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:179:77 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:183:83 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/src/AnalyseEngine.cpp:413:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/AnalyseEngine.cpp:523:5 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'live'
+  eq-copilot/plugin/src/AnalyseEngine.cpp:636:9 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'k'
+  eq-copilot/plugin/src/AnalyseEngine.cpp:1009:49 [bugprone-misplaced-widening-cast] either cast from 'int' to 'size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/PluginEditor.cpp:1049:5 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'k'
+  eq-copilot/plugin/src/PluginProcessor.cpp:867:12 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/SourcesModel.cpp:1950:58 [clang-analyzer-core.uninitialized.UndefReturn] Undefined or garbage value returned to caller
+  eq-copilot/plugin/state/NakamaParameter.cpp:139:40 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:159:20 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:604:33 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:637:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaParameter.cpp:664:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaParameter.h:87:8 [cppcoreguidelines-pro-type-member-init] constructor does not initialize these fields: typ
+  eq-copilot/plugin/state/NakamaState.cpp:82:35 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+  eq-copilot/plugin/state/NakamaState.cpp:331:16 [performance-unnecessary-copy-initialization] the const qualified variable 'v' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:676:9 [bugprone-branch-clone] switch has 3 consecutive identical branches
+  eq-copilot/plugin/state/NakamaState.cpp:1099:29 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/state/NakamaState.cpp:1306:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1424:24 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1480:16 [performance-unnecessary-copy-initialization] the const qualified variable 'id' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1484:16 [performance-unnecessary-copy-initialization] the const qualified variable 'kindWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1489:16 [performance-unnecessary-copy-initialization] the const qualified variable 'posWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1503:16 [performance-unnecessary-copy-initialization] the const qualified variable 'label' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1506:16 [performance-unnecessary-copy-initialization] the const qualified variable 'pair' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1512:16 [performance-unnecessary-copy-initialization] the const qualified variable 'binding' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1541:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1588:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1655:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1736:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1795:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1845:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:2645:9 [bugprone-branch-clone] switch has 2 consecutive identical branches
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:120:46 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:182:30 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/vertrag/NakamaEvidenz.cpp:463:19 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_type' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp:20:16 [bugprone-exception-escape] an exception may be thrown in function 'operator<' which should not throw exceptions
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp:447:11 [cppcoreguidelines-pro-type-member-init] constructor does not initialize these fields: name
+  eq-copilot/plugin/vertrag/NakamaUtf8.h:25:50 [bugprone-inc-dec-in-conditions] incrementing and referencing a variable in a complex condition can cause unintended side-effects due to C++'s order of evaluation, consider moving the modification outside of the condition to avoid misunderstandings
+  eq-copilot/plugin/vertrag/NakamaVertrag.cpp:261:18 [bugprone-exception-escape] an exception may be thrown in function 'operator<' which should not throw exceptions
+  eq-copilot/plugin/vertrag/NakamaVertrag.h:29:45 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+
+URTEIL: GRENZE GERISSEN - 84 Fundstellen, hoechstens 83 erlaubt
+EXIT=4 

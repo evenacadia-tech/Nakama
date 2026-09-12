@@ -89,7 +89,9 @@ logische Commits gehen ohne Rückfrage raus.
 - **Codebase-Gesundheit ist Planbestandteil** (User 08.09.2026, Register
   NAK-223): je Phase ein Pflegeschritt (S25b–S25d, S31c, S35b) und Schwellen,
   gemessen mit `py -3.13 tools/plan/gesundheit.py` (Exit 4 = gerissen, Exit 2
-  = Werkzeugfehler; Kanon-Bein A32, nicht blockierend). Codebase-Pflege läuft
+  = Werkzeugfehler; Kanon-Bein A32, nicht blockierend) und
+  `tools/plan/tidy.py` (clang-tidy-Ratsche des Plugins, Bein A33, gleiche
+  Exitcodes, Regelsatz `eq-copilot/plugin/.clang-tidy`). Codebase-Pflege läuft
   als eigenes verhaltensneutrales Ticket mit vollem Kanon vorher und nachher
   (Muster S19b). Die Always-on-Kontextfläche (diese Datei, Dirigenten-Skill,
   `MEMORY.md`) wird in jedem Abschlussfenster gemessen und ein Riss sofort

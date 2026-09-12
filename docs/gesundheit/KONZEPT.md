@@ -64,6 +64,7 @@ Nulltest-Pflicht.
 |---|---|---|
 | Verhaltensbeweis je Ticket | `tools/beweise.ps1` (Kanon): 64 Namenseinträge, darunter 41 C++-Testprogramme, 22 Broker-Integrationstests, Python-Riegel, flatc-Drift, Sichtprüfung `EqCopShot` | die Instanzen, für die ein Test geschrieben wurde; baut selbst, verweigert Beglaubigung bei veralteten Binaries |
 | Codebase- und Kontextmaße | `tools/plan/gesundheit.py` (Bein A32, Exit 4 bei Riss) | Zeilen je Datei, Funktionen über 200, Clippy-Ratsche, aufruferlose Helfer, Kommentar-Bezeichner, Bytes der Always-on-Fläche |
+| C++-Statikanalyse (seit NAK-287, 12.09.2026) | `tools/plan/tidy.py` (Bein A33, Exit 4 bei Riss; Regelsatz `eq-copilot/plugin/.clang-tidy`, eigener Ninja-Baum `eq-copilot/build-tidy`) | clang-tidy über alle Übersetzungseinheiten des Plugins ohne Tests und ohne den flatc-Codegen: Lebensdauer, Aliasing, nicht initialisierte Werte, unbeabsichtigte Kopien, thread-unsichere Bibliotheksaufrufe, Objektschneiden — eindeutige Fundstellen als Ratsche, Ziel 0 |
 | Plandokumente | `tools/plan/dokuriegel.py`, `planstand.py`, `rundenbilanz.py` | zerrissene Tabellen, Verweise ins Leere, Status als Messwert, Produktfortschritt je Runde |
 | Ticketprüfung | Dirigent §3.4: Codex `gpt-6-astra` lesend, gebundene Vorlage, Validator-Agent je Befund, Verhaltensmatrix, drei Runden, Konvergenzentscheid | Defekte gegen Gate-Text, Matrix und Invarianten, im Ticketbereich |
 | Befundklassen als Prosa | `tools/dirigent/pruefliste.md` A–F (40 bestätigte Befunde aus S8–S15) | nur, wenn der Bauer sie liest und der Prüfer sie kennt |
@@ -76,7 +77,7 @@ Nulltest-Pflicht.
 - **Keine Supply-Chain-Prüfung** des Brokers (`cargo deny`, `cargo audit`, `osv-scanner`), kein Geheimnis-Scan, kein Tippfehler-Scan. Alle vier Werkzeuge sind auf diesem Rechner installiert und ungenutzt.
 - **Keine Mutationstests, keine Abdeckungsmessung** in keiner Sprache. Ob ein Golden eine Änderung im Messkern bemerkt, ist ungemessen.
 - **Kein Klassen-Detektor** für die Klassen, die am häufigsten wiederkamen (§3). Sie leben als Prosa.
-- **Kein statischer Blick auf den Audio-Thread.** Der Nulltest beweist Bitgleichheit; eine Sperre oder Allokation, die Samples nicht verändert, besteht ihn.
+- **Kein statischer Blick auf den Audio-Thread.** Der Nulltest beweist Bitgleichheit; eine Sperre oder Allokation, die Samples nicht verändert, besteht ihn. Seit NAK-287 (12.09.2026) sieht clang-tidy (Bein A33) Lebensdauer, Aliasing und thread-unsichere Bibliotheksaufrufe im ganzen Plugin; die Echtzeitregel selbst (Sperren, Allokationen, Datei- und Pipe-Zugriffe im Audio-Pfad) kennt kein clang-tidy-Check — das bleibt das Tor Echtzeit-Hygiene (§4.1).
 - **Kein Rundgang über den ganzen Baum.** Geprüft wird, was ein Ticket berührt; Drift außerhalb des Ticketbereichs findet nur ein externer Audit.
 - **Keine Karte**, welche Zusage welchen Detektor besitzt. Ohne sie entsteht das nächste Prüfwerkzeug aus einem Gefühl.
 - **Ein Riss ohne Zeile.** `gesundheit.py` meldete am 12.09.2026 drei gerissene Grenzen (Funktionen über 200 Zeilen, Kommentar-Bezeichner 32 von 30, Dirigenten-Skill 38 448 von 36 864 Bytes). Für die ersten beiden stehen NAK-235, NAK-236 und NAK-255 im Register; eine Zeile, die den Skill-Riss nennt, fand `grep` nicht. Der Kreis „Riss → Registerzeile" schließt sich also nur, wenn jemand daran denkt. Genau das schließt der Prüfgang (§4.1, Wache W-Riss).
@@ -181,6 +182,7 @@ liest nur die roten Zeilen und ordnet sie ein.
 | Tor | Klasse | Misst | Anlass |
 |---|---|---|---|
 | `gesundheit.py` | GRENZE | wie heute; wird erstes Tor, bleibt Bein A32 | NAK-223 |
+| `tidy.py` | GRENZE | wie heute: clang-tidy-Ratsche über das Plugin, bleibt Bein A33 (Minuten, weil der Ninja-Baum konfiguriert und jede Einheit geparst wird — im Prüfgang vor einem Ticket deshalb nur mit `--nur` auf die Ticketpfade) | NAK-287 |
 | Bau und Clippy | GRENZE | `cargo clippy --all-targets` im Broker mit `-D warnings` auf der Ratsche aus `gesundheit.py`; CMake-Konfiguration des Plugins ohne Bau | `broker/Cargo.toml` (Clippy nie im Kanon) |
 | Supply-Chain | GRENZE | `cargo deny check`, `osv-scanner --lockfile broker/Cargo.lock` | K5, Werkzeuge installiert und ungenutzt |
 | Geheimnisse und Tippfehler | GRENZE / HINWEIS | `gitleaks protect --staged`, `typos` mit Ausnahmeliste | Steam-/Signatur-Lehre aus Sonifold |

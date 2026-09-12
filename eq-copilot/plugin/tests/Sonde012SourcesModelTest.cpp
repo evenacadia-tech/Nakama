@@ -335,7 +335,11 @@ int main()
     {
         Model m;
         const bool leer = m.sicht().quellen.empty();
-        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } });
+        // NAK-246 Abschluss Nacharbeit 1 Fortsetzung (R-A1 Punkt 4'): die
+        // Publikation traegt die Reload-Generation, fuer die sie gilt. Dieses
+        // Bein kennt keinen Reload - 0 ist der Startwert des Modells, die Zusage
+        // dieser Zeilen bleibt unveraendert.
+        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0);
         const auto s = m.sicht();
         const auto* q = einzige (s);
         pruefe (leer && q != nullptr && q->mitgliedschaft == Model::Mitgliedschaft::bestaetigt
@@ -410,7 +414,7 @@ int main()
     }
     {
         Model m;
-        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } });
+        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0);
         m.beginneSubscription (hex (1), hex (2), hex (10));
         uebernehme (m, snapshot ({ Mitglied {} }), t0);
         uebernehme (m, snapshot ({}), t0 + std::chrono::milliseconds (1));
@@ -705,7 +709,7 @@ int main()
         pruefe (m.sicht().quellen.front().sichtbarerName
                     == "Unnamed " + juce::String (q.id).substring (0, 8),
                 "empty_label_uses_unnamed_plus_instance_prefix");
-        m.setzePersistenteMitglieder ({ { juce::String (q.id), "Stored" } });
+        m.setzePersistenteMitglieder ({ { juce::String (q.id), "Stored" } }, 0);
         pruefe (m.sicht().quellen.front().sichtbarerName == "Stored"
                 && ! m.sicht().quellen.front().hostMixerIndexVorhanden,
                 "no_host_context_uses_persisted_untrusted_label_without_order_claim");
@@ -1240,7 +1244,7 @@ int main()
 
         // Die zwei Wege. Der Reload behaelt das Mitglied als persistentes -
         // so hat auch dieser Weg eine Zeile, deren `findingsOffen` zaehlt.
-        ueberReload.projektReload ({ { juce::String (mitglied), "Klavier-Bus" } });
+        ueberReload.projektReload ({ { juce::String (mitglied), "Klavier-Bus" } }, 1);
         ueberSubscription.beginneSubscription (binding, session, mitglied);
 
         const Model frisch;

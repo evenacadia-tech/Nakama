@@ -1286,8 +1286,16 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
 //   M-38  der abgeholte Batch liegt lokal auf dem Workerstack; `State.cpp`
 //         leert nur die geteilten Listen und erreicht ihn nicht;
 //   M-39  die fuer die Publikation gezogene Kopie ueberholt `projektReload`,
-//         den DRITTEN Schreiber des Modells.
+//         den DRITTEN Schreiber des Modells - in ZWEI Laeufen, je einmal gegen
+//         den Vollrestore (`m39`) und gegen den read-only-Zweig (`m39ro`,
+//         R-A1 Punkt 1'): beide Zweige erhoehen die Generation, beide muessen
+//         die alte Kopie abweisen.
 // Beide Faelle erzwingen die Ordnung ueber Testhaken, nie ueber Zeit.
+//
+// Seit der Fortsetzung der Nacharbeit 1 (R-A1 Punkt 4', Paragraph 13.4/13.5)
+// faellt der Generationsvergleich der Publikation im MODELL, unter dessen
+// eigenem `mutex` - damit ist er atomar zur Uebernahme; die Fassung davor
+// verglich im Prozessor davor und liess wenige Befehle offen (N-A1-2).
 
 /// M-38 · ein vor dem Reload abgeholter, bestaetigter Befehl mutiert den
 /// GELADENEN State nicht. Der Workerzug haelt am Haken zwischen Swap und
@@ -1377,6 +1385,27 @@ void abgeholter_batch_ueberlebt_den_reload_nicht()
     p->removeListener (&dirty);
 }
 
+/// Ein deklarierter Mutant eines WRITER-Standes (Pruefliste E), der als
+/// READ-ONLY laedt: `Common.plugin_kind` traegt die Schema-1-Rolle `sensor`, die
+/// ein Schema-2-Leser nicht interpretieren darf. Dieselbe EINE Abweichung wie in
+/// M-29 Variante 1 und N-13 in B23.
+juce::MemoryBlock nurLesbarerStand (const juce::MemoryBlock& writer)
+{
+    auto baum = juce::ValueTree::readFromData (writer.getData(), writer.getSize());
+    baum.getChildWithName ("Common").setProperty ("plugin_kind", "sensor", nullptr);
+    juce::MemoryBlock aus;
+    {
+        juce::MemoryOutputStream strom (aus, false);
+        baum.writeToStream (strom);
+    }
+    return aus;
+}
+
+/// Welcher Reload-Zweig von `setStateInformation` das Ereignis ist. Beide Laeufe
+/// von M-39 teilen den GANZEN Aufbau; sie unterscheiden sich in genau einer
+/// deklarierten Abweichung der geladenen Bytes (R-A1 Punkt 1').
+enum class ReloadZweig { vollrestore, nurLesen };
+
 /// M-39 · eine fuer die Publikation gezogene Mitgliederkopie ueberholt den
 /// Reload nicht. Der Workerzug hat einen Befehl gueltig angewandt und steht am
 /// NEUEN Haken zwischen Kopie und Publikation; beide Prozessorsperren sind
@@ -1384,9 +1413,17 @@ void abgeholter_batch_ueberlebt_den_reload_nicht()
 /// anderer Mitgliedermenge, `projektReload` laeuft durch. Zusage: die
 /// Publikation unterbleibt GANZ; das Modell traegt genau die Mitglieder des
 /// geladenen States, kein Dirty, keine Revision.
-void gezogene_kopie_ueberholt_den_reload_nicht()
+///
+/// Zweiter Lauf (`--nur m39ro`, R-A1 Punkt 1'): dasselbe, aber das Ereignis ist
+/// der READ-ONLY-Zweig. Er erhoeht die Generation genauso (`State.cpp`) und
+/// ruft `projektReload({})` - das Modell traegt danach KEINE persistenten
+/// Mitglieder, und die alte Kopie darf sie nicht wieder hineinbringen.
+void gezogene_kopie_ueberholt_den_reload_nicht (ReloadZweig zweig)
 {
-    std::cout << "== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==\n";
+    const bool ro = zweig == ReloadZweig::nurLesen;
+    std::cout << (ro ? "== NAK-246 M-39 (read-only) "
+                       "gezogene_kopie_ueberholt_den_read_only_reload_nicht ==\n"
+                     : "== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==\n");
     const auto a = id ('a');
     const auto b = id ('b');
     Schranke gate;
@@ -1429,13 +1466,21 @@ void gezogene_kopie_ueberholt_den_reload_nicht()
     pruefe (genau (mitglieder (*p), { a }),
             "M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)");
 
-    // Ereignis: der fremde State wird geladen; `projektReload` baut das Modell
-    // aus SEINEN Mitgliedern neu.
-    p->setStateInformation (fremdState.getData(), (int) fremdState.getSize());
+    // Ereignis: der State wird geladen; `projektReload` baut das Modell aus
+    // SEINEN Mitgliedern neu - im read-only-Zweig aus keinen.
+    const auto bytes = ro ? nurLesbarerStand (fremdState) : fremdState;
+    p->setStateInformation (bytes.getData(), (int) bytes.getSize());
     const auto dirtyNachReload = dirty.nonParam.load();
     const auto revisionNachReload = p->v3StateRevisionFuerTest();
-    pruefe (genau (mitglieder (*p), { b }),
-            "M-39: der geladene State traegt genau B");
+    if (ro)
+        pruefe (p->stateNurLesen() && mitglieder (*p).empty(),
+                "M-39 (read-only): der geladene State ist read-only und traegt keine "
+                "Mitglieder (Vorbedingung der Zusage)",
+                juce::String (p->stateNurLesen() ? "read-only, " : "NICHT read-only, ")
+                    + juce::String ((int) mitglieder (*p).size()) + " Mitglied(er)");
+    else
+        pruefe (genau (mitglieder (*p), { b }),
+                "M-39: der geladene State traegt genau B");
 
     const auto eintritteVorFreigabe = p->sourcesDrainEintritteFuerTest();
     gate.freigeben();
@@ -1445,14 +1490,20 @@ void gezogene_kopie_ueberholt_den_reload_nicht()
 
     const auto sicht = p->sourcesSicht();
     const auto* zeileB = sicht.quellen.size() == 1 ? &sicht.quellen.front() : nullptr;
-    const bool nurGeladene = zeileB != nullptr && zeileB->instanceId == b
-        && zeileB->mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    const bool nurGeladene = ro
+        ? sicht.quellen.empty() && mitglieder (*p).empty()
+        : (zeileB != nullptr && zeileB->instanceId == b
+           && zeileB->mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt
+           && genau (mitglieder (*p), { b }));
     juce::String imModell;
     for (const auto& q : sicht.quellen)
         imModell += juce::String (q.instanceId.substr (0, 4)) + " ";
-    pruefe (nurGeladene && genau (mitglieder (*p), { b }),
-            "M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die "
-            "Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)",
+    pruefe (nurGeladene,
+            ro ? "M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das "
+                 "Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die "
+                 "alte Kopie (A)"
+               : "M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die "
+                 "Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)",
             juce::String ((int) sicht.quellen.size()) + " Zeile(n): " + imModell);
     pruefe (p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 1,
             "M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest",
@@ -1472,7 +1523,8 @@ void gezogene_kopie_ueberholt_den_reload_nicht()
 bool nak246d3Fall (const std::string& name)
 {
     if (name == "m38") { abgeholter_batch_ueberlebt_den_reload_nicht(); return true; }
-    if (name == "m39") { gezogene_kopie_ueberholt_den_reload_nicht(); return true; }
+    if (name == "m39") { gezogene_kopie_ueberholt_den_reload_nicht (ReloadZweig::vollrestore); return true; }
+    if (name == "m39ro") { gezogene_kopie_ueberholt_den_reload_nicht (ReloadZweig::nurLesen); return true; }
     if (name == "m10") { bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state(); return true; }
     if (name == "m11") { bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt(); return true; }
     if (name == "m12") { dirty_und_revision_genau_einmal_je_bestaetigtem_befehl(); return true; }
@@ -1745,7 +1797,8 @@ int main (int argc, char** argv)
             && ! nak246d6::nak246d6Fall (argv[2]))
         {
             std::cout << "unbekannter Fall: " << argv[2]
-                      << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29 | m38 | m39)\n";
+                      << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29 | m38 | m39"
+                      << " | m39ro)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -1767,7 +1820,9 @@ int main (int argc, char** argv)
     // NAK-246 Abschluss Nacharbeit 1 (R-A1): Reload gegen laufenden
     // Persistenzabschluss - abgeholter Batch (M-38), gezogene Kopie (M-39).
     nak246d3::abgeholter_batch_ueberlebt_den_reload_nicht();
-    nak246d3::gezogene_kopie_ueberholt_den_reload_nicht();
+    nak246d3::gezogene_kopie_ueberholt_den_reload_nicht (nak246d3::ReloadZweig::vollrestore);
+    // R-A1 Punkt 1': derselbe Aufbau gegen den READ-ONLY-Zweig des Reloads.
+    nak246d3::gezogene_kopie_ueberholt_den_reload_nicht (nak246d3::ReloadZweig::nurLesen);
     // NAK-246 D6: der Projektwechsel leert den Sitzungszustand (M-29, M-31).
     nak246d6::projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen();
     const auto quelle = id ('a');

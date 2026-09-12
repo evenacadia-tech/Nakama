@@ -137,6 +137,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         // den Zustand im hello-Lambda - nach dem Tausch waere das ein hello
         // mit leerer instance_id (T2-Befund SONDE-006).
         pipe.stop();
+        std::uint64_t generation = 0;
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             zustand = geladen;
@@ -145,30 +146,37 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
             // Drain, der seinen Batch oder seine Kopie vorher abgeholt hat,
             // sieht danach eine andere Generation und faellt ganz aus. Der
             // read-only-Zweig ist genauso ein Projektwechsel wie der
-            // Vollrestore (dieselbe Begruendung wie `vergleichszustandLeeren`).
-            reloadGeneration.fetch_add (1);
+            // Vollrestore (dieselbe Begruendung wie `vergleichszustandLeeren`);
+            // seit R-A1 Punkt 1' ist er eigens rot belegt (M-39, Lauf `m39ro`).
+            generation = reloadGeneration.fetch_add (1) + 1;
             // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck
             // auf neutral - auch aus einer frueheren positiven Klassifikation.
             lebenslauf.stateRestauriert (ergebnis, geladen);
             spiegleKlassifikation();
         }
-        sourcesModel.projektReload ({});
+        // R-A1 Punkt 4' (c): genau die Generation dieses Reloads geht mit -
+        // `projektReload` bleibt ausserhalb von `bindungMutex` (Sperrenordnung
+        // Paragraph 10.2 Punkt 1 unveraendert).
+        sourcesModel.projektReload ({}, generation);
         v3StateRevision.fetch_add (1);
         controlV3.reconnect();
         return;
     }
 
+    std::uint64_t generation = 0;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         zustand = geladen;
-        reloadGeneration.fetch_add (1);   // R-A1 Punkt 1, zweiter Zweig (M-38/M-39)
+        // R-A1 Punkt 1, zweiter Zweig (M-38/M-39); der Wert NACH `fetch_add` ist
+        // die Generation, die `projektReload` dem Modell mitgibt (Punkt 4' (c)).
+        generation = reloadGeneration.fetch_add (1) + 1;
         // §53.5: JETZT, nach vollstaendigem Restore, darf klassifiziert
         // werden - Schema-1 `sensor|pre|post` ist zu `legacy` migriert,
         // Schema-1 `hub` und ein bestaetigter Schema-2-Main-State zu `main`.
         lebenslauf.stateRestauriert (ergebnis, geladen);
         spiegleKlassifikation();
     }
-    sourcesModel.projektReload (geladen.mainProjectMitglieder);
+    sourcesModel.projektReload (geladen.mainProjectMitglieder, generation);
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
     v3StateRevision.fetch_add (1);
@@ -252,6 +260,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         return false;
 
     std::vector<nakama::state::MainProjectMitglied> mainMitglieder;
+    std::uint64_t generation = 0;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen)
@@ -273,6 +282,9 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         if (klasse != nakama::state::Klasse::main)
             zustand.mainProjectMitglieder.clear();
         mainMitglieder = zustand.mainProjectMitglieder;
+        // R-A1 Punkt 4' (b): die Generation, fuer die diese Kopie gilt - im
+        // SELBEN Block wie die Kopie gelesen.
+        generation = reloadGeneration.load();
 
         // §53.5, dritter Punkt: "leerer, nie gespeicherter Altstate → Main
         // erst nach geoeffnetem Editor UND expliziter Initialisierung". Genau
@@ -288,9 +300,19 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         lebenslauf.expliziteInitialisierung (zustand);
         spiegleKlassifikation();
     }
-    sourcesModel.setzePersistenteMitglieder (mainMitglieder);
-    meldeHostDirty();
-    v3StateRevision.fetch_add (1);
+    // Dieselbe Wache wie bei den Handgriffen in `Ipc.cpp`: Rollenwahl und
+    // `setStateInformation` laufen heute beide auf dem Message-Thread, ein Reload
+    // kann zwischen Block und Publikation nicht liegen. Kommt er doch, ist die
+    // Publikation ganz unterblieben - kein Dirty, keine Revision; der geladene
+    // State ist die Wahrheit. Der Reconnect laeuft in beiden Faellen: er haengt
+    // an der neuen Bindung, nicht an der Publikation.
+    if (sourcesModel.setzePersistenteMitglieder (mainMitglieder, generation))
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    else
+        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
     pipe.reconnect();
     controlV3.reconnect();
     return true;

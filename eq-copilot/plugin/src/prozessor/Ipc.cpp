@@ -1209,6 +1209,7 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
         || ! sourcesModel.sicht().mainDarfSchreiben)
         return false;
     std::vector<nakama::state::MainProjectMitglied> kopie;
+    std::uint64_t generation = 0;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
@@ -1221,10 +1222,21 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
             return false;
         gefunden->label = label;
         kopie = zustand.mainProjectMitglieder;
+        // R-A1 Punkt 4' (b): die Generation, fuer die diese Kopie gilt - im
+        // SELBEN Block wie die Kopie gelesen.
+        generation = reloadGeneration.load();
     }
-    sourcesModel.setzePersistenteMitglieder (kopie);
-    meldeHostDirty();
-    v3StateRevision.fetch_add (1);
+    // Wache, kein gemessener Fall: dieser Handgriff und `setStateInformation`
+    // laufen heute beide auf dem Message-Thread, ein Reload kann zwischen Block
+    // und Publikation nicht liegen. Kommt er doch, gilt dieselbe Regel wie im
+    // Drain - Publikation unterblieben, kein Dirty, keine Revision.
+    if (sourcesModel.setzePersistenteMitglieder (kopie, generation))
+    {
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+    else
+        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
     return true;
 }
 
@@ -1243,6 +1255,7 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
     if (! nakama::ipc::istHex32 (quelle->runtimeNonce))
     {
         std::vector<nakama::state::MainProjectMitglied> kopie;
+        std::uint64_t generation = 0;
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
@@ -1256,10 +1269,16 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
                 return false;
             zustand.mainProjectMitglieder.erase (gefunden);
             kopie = zustand.mainProjectMitglieder;
+            generation = reloadGeneration.load();   // R-A1 Punkt 4' (b)
         }
-        sourcesModel.setzePersistenteMitglieder (kopie);
-        meldeHostDirty();
-        v3StateRevision.fetch_add (1);
+        // Dieselbe Wache wie in `benenneSourcesHauptziel`.
+        if (sourcesModel.setzePersistenteMitglieder (kopie, generation))
+        {
+            meldeHostDirty();
+            v3StateRevision.fetch_add (1);
+        }
+        else
+            sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
         return true;
     }
     return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
@@ -1359,10 +1378,13 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
 // Gegen den VIERTEN Schreiber - `setStateInformation` - serialisiert kein
 // Mutex: es nimmt `sourcesDrainMutex` nie (Sperrenordnung Paragraph 10.2
 // Punkt 1). Diese Luecke schliesst die `reloadGeneration` (R-A1, M-38/M-39):
-// jeder Drain merkt sich beim Abholen die Generation und faellt GANZ aus,
-// wenn zwischen Abholen und Anwendung oder zwischen Kopie und Publikation ein
-// Reload lag. Nach einem Reload ist der geladene State die Wahrheit; der
-// Abgleich mit dem Broker laeuft ueber den frischen `subscribe_session`.
+// jeder Drain merkt sich beim Abholen die Generation und verwirft seinen Batch
+// GANZ, wenn zwischen Abholen und Anwendung ein Reload lag. Die Publikation ans
+// Modell weist das MODELL selbst ab - es fuehrt die Generation mit und
+// vergleicht sie unter seinem eigenen `mutex`, also atomar zur Uebernahme
+// (R-A1 Punkt 4', Paragraph 13.4/13.5). Nach einem Reload ist der geladene
+// State die Wahrheit; der Abgleich mit dem Broker laeuft ueber den frischen
+// `subscribe_session`.
 
 std::vector<EqCopilotProcessor::SourcesCommand>
 EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
@@ -1414,12 +1436,14 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
     // Gegen den DRITTEN Schreiber des Modells - `projektReload` aus
     // `setStateInformation` - reicht das nicht (Paragraph 10.2 Punkt 1 kannte
     // nur zwei Drains): die Kopie ist aktuell im Augenblick des Ziehens, der
-    // Reload kann sie danach ueberholen. Deshalb R-A1 Punkt 4: die Generation
-    // wird ATOMAR ZUR KOPIE geprueft und - weil die Publikation selbst
-    // ausserhalb der Sperren bleiben MUSS (kein Hostaufruf unter eigener
-    // Sperre) - unmittelbar davor ein zweites Mal. Beides zusammen schliesst
-    // das Fenster bis auf die wenigen Befehle zwischen dem zweiten Vergleich
-    // und `setzePersistenteMitglieder`; genau dort greift M-39.
+    // Reload kann sie danach ueberholen. Deshalb R-A1 Punkt 4' (Paragraph 13.4,
+    // 13.5): der entscheidende Vergleich faellt im MODELL, unter dessen eigenem
+    // `mutex` und damit atomar zur Publikation - die Publikation selbst bleibt
+    // ausserhalb beider Prozessorsperren (kein Hostaufruf unter eigener Sperre).
+    // Der Vergleich hier ist nur noch der fruehe Ausstieg: er spart Kopie und
+    // Publikation, wenn der Reload schon sichtbar ist. Ein Fenster zwischen
+    // Vergleich und Uebernahme gibt es nicht mehr - die Fassung mit dem zweiten,
+    // sperrfreien Vergleich hatte eines von wenigen Befehlen (N-A1-2).
     std::vector<nakama::state::MainProjectMitglied> kopie;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
@@ -1434,12 +1458,14 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
     // gehaltene Sperre. Im Produkt leer.
     if (sourcesPublikationHakenFuerTest)
         sourcesPublikationHakenFuerTest (kopie.size());
-    if (reloadGeneration.load() != generationBeimAbholen)
+    if (! sourcesModel.setzePersistenteMitglieder (kopie, generationBeimAbholen))
     {
+        // Das Modell hat den Reload schon uebernommen: die Publikation ist GANZ
+        // unterblieben. Kein Dirty, keine Revision - der geladene State ist die
+        // Wahrheit, und eine Aenderung des Users ist das Laden nicht.
         sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
         return;
     }
-    sourcesModel.setzePersistenteMitglieder (kopie);
     meldeHostDirty();
     v3StateRevision.fetch_add (1);
 }

@@ -217,10 +217,37 @@ public:
     enum class SnapshotErgebnis { ignoriert, uebernommen, ungueltig };
     enum class RuecknahmeErgebnis { ignoriert, uebernommen, ungueltig };
 
-    void setzePersistenteMitglieder (
-        const std::vector<nakama::state::MainProjectMitglied>& mitglieder);
+    /** Die Publikation der persistenten Mitglieder, mit der Reload-Generation,
+        FUER die sie gilt (NAK-246 Abschluss Nacharbeit 1 Fortsetzung, Regel
+        R-A1 Punkt 4'; Manifest Paragraph 13.5, M-39).
+
+        Der Generationsvergleich faellt HIER, unter demselben `mutex` wie
+        `projektReload` - also atomar zur Publikation. Die Fassung davor
+        verglich im Prozessor unmittelbar VOR der Publikation und liess zwischen
+        Vergleich und Uebernahme wenige Befehle offen; genau dieses Fenster ist
+        die verbliebene Auspraegung des Befundes P2 (Paragraph 13.4).
+
+        Rueckgabe: hat die Publikation stattgefunden? `false` heisst GENAU
+        "die Generation weicht von der zuletzt geladenen ab, es wurde nichts
+        geaendert" - der Aufrufer meldet dann kein Host-Dirty und erhoeht keine
+        Revision. Gleicher Inhalt bei passender Generation liefert `true`: die
+        Publikation hat stattgefunden, nur ohne Aenderung (Idempotenz wie
+        bisher).
+
+        Kein Default-Argument: jeder Aufrufer reicht die Generation, die er im
+        selben Block wie die Kopie gelesen hat. Der Startwert ist 0 wie im
+        Prozessor. */
+    bool setzePersistenteMitglieder (
+        const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
+        std::uint64_t generation);
+    /** Der Projektwechsel: Mitglieder UND Generation im selben Block wie der
+        Neuaufbau der Eintraege (R-A1 Punkt 4' (a)). Ab hier weist das Modell
+        jede Publikation einer aelteren Generation ab; eine Publikation, die es
+        noch VOR diesem Aufruf erreicht, wird von ihm ueberschrieben - der
+        Endzustand ist in beiden Reihenfolgen der geladene State. */
     void projektReload (
-        const std::vector<nakama::state::MainProjectMitglied>& mitglieder);
+        const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
+        std::uint64_t generation);
     void beginneSubscription (std::string projectBindingId,
                               std::string sessionEpoch,
                               std::string eigeneMainInstanceId);
@@ -343,6 +370,12 @@ private:
     mutable std::mutex mutex;
     std::map<std::string, Eintrag> eintraege;
     std::map<std::string, juce::String> persistenteMitglieder;
+    /// NAK-246 Abschluss Nacharbeit 1 Fortsetzung (R-A1 Punkt 4' (a), M-39):
+    /// die Reload-Generation, fuer die `persistenteMitglieder` gilt. Nur
+    /// `projektReload` setzt sie, `setzePersistenteMitglieder` vergleicht sie -
+    /// beide unter diesem `mutex`. Startwert 0 wie `reloadGeneration` im
+    /// Prozessor; kein Wire-, Schema- oder Vertragswert.
+    std::uint64_t reloadGeneration = 0;
     std::string erwarteteBindung, erwarteteSession, eigeneMainId;
     std::string brokerEpoch, fuehrendesMain, hauptziel;
     bool subscriptionAktiv = false;

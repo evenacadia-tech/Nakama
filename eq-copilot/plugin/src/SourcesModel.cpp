@@ -346,8 +346,9 @@ bool inkompatiblerFehler (const std::string& text)
 
 } // namespace
 
-void SourcesModel::setzePersistenteMitglieder (
-    const std::vector<nakama::state::MainProjectMitglied>& mitglieder)
+bool SourcesModel::setzePersistenteMitglieder (
+    const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
+    std::uint64_t generation)
 {
     std::map<std::string, juce::String> neu;
     for (const auto& m : mitglieder)
@@ -357,8 +358,17 @@ void SourcesModel::setzePersistenteMitglieder (
             neu.emplace (m.instanceId.toStdString(), m.label);
 
     std::lock_guard<std::mutex> l (mutex);
+    // 🔑 NAK-246 Abschluss Nacharbeit 1 Fortsetzung (R-A1 Punkt 4', M-39): der
+    // Generationsvergleich VOR jeder Aenderung und unter DEMSELBEN `mutex`, den
+    // `projektReload` haelt. Damit ist er atomar zur Publikation: eine Kopie,
+    // die vor dem Reload gezogen wurde, kann den Reload nicht mehr ueberholen -
+    // sie kommt entweder vor `projektReload` an (und wird von ihm
+    // ueberschrieben) oder danach (und faellt hier aus). Ein Fenster zwischen
+    // Vergleich und Uebernahme gibt es nicht mehr; im Prozessor gab es das.
+    if (generation != reloadGeneration)
+        return false;
     if (neu == persistenteMitglieder)
-        return;
+        return true;    // Publikation hat stattgefunden, nur ohne Aenderung.
     persistenteMitglieder = std::move (neu);
     for (auto it = eintraege.begin(); it != eintraege.end();)
     {
@@ -396,10 +406,12 @@ void SourcesModel::setzePersistenteMitglieder (
     }
     stelleZielSicher();
     revidiere();
+    return true;
 }
 
 void SourcesModel::projektReload (
-    const std::vector<nakama::state::MainProjectMitglied>& mitglieder)
+    const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
+    std::uint64_t generation)
 {
     std::map<std::string, juce::String> persistent;
     for (const auto& m : mitglieder)
@@ -409,6 +421,11 @@ void SourcesModel::projektReload (
             persistent.emplace (m.instanceId.toStdString(), m.label);
 
     std::lock_guard<std::mutex> l (mutex);
+    // 🔑 NAK-246 Abschluss Nacharbeit 1 Fortsetzung (R-A1 Punkt 4' (a), M-39):
+    // Generation und Mitglieder wechseln im SELBEN Block. Ab dem Verlassen
+    // dieses Blocks weist `setzePersistenteMitglieder` jede Publikation ab, die
+    // fuer eine aeltere Generation gezogen wurde.
+    reloadGeneration = generation;
     persistenteMitglieder = std::move (persistent);
     eintraege.clear();
     for (const auto& [id, label] : persistenteMitglieder)

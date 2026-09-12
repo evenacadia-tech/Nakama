@@ -1148,10 +1148,13 @@ private:
         (Paragraph 10.2 Punkt 1: kein Hostaufruf unter eigener Sperre).
 
         `generationBeimAbholen` ist die `reloadGeneration`, die der Drain beim
-        Abholen des Batches gelesen hat. Sie wird ZWEIMAL verglichen: atomar
-        zur Kopie unter `bindungMutex` (R-A1 Punkt 4) und unmittelbar vor der
-        Publikation. Weicht sie ab, unterbleibt die Nachfuehrung GANZ - keine
-        Publikation, kein Dirty, keine Revision; gezaehlt in
+        Abholen des Batches gelesen hat. Sie geht MIT der Kopie an das Modell:
+        den entscheidenden Vergleich fuehrt `SourcesModel` unter seinem eigenen
+        `mutex`, atomar zur Uebernahme (R-A1 Punkt 4', Paragraph 13.4/13.5) -
+        deshalb gibt es kein Fenster zwischen Vergleich und Publikation. Der
+        Vergleich atomar zur Kopie unter `bindungMutex` bleibt als frueher
+        Ausstieg. Weicht die Generation ab, unterbleibt die Nachfuehrung GANZ -
+        keine Publikation, kein Dirty, keine Revision; gezaehlt in
         `sourcesNachfuehrungNachReloadUnterblieben` (M-39). */
     void meldeSourcesMitgliederNachBefehl (std::uint64_t generationBeimAbholen);
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
@@ -1184,7 +1187,13 @@ private:
     std::atomic<std::uint64_t> sourcesBatchNachReloadVerworfen { 0 };
     /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-39): wie oft eine
         Modellnachfuehrung ganz unterblieben ist, weil zwischen dem Ziehen der
-        Kopie und der Publikation ein Reload lag. Ebenfalls ohne Verhalten. */
+        Kopie und der Publikation ein Reload lag. Ebenfalls ohne Verhalten.
+
+        Gezaehlt wird an ALLEN vier Publikationsstellen: der Nachfuehrung des
+        Drains (M-39, gemessen) und den drei Handgriffen `benenneSourcesHauptziel`,
+        `entferneSourcesHauptziel` und `setzeBindung` - dort als Wache, weil
+        Handgriff und `setStateInformation` heute auf demselben Message-Thread
+        liegen (R-A1 Punkt 4' (d)). */
     std::atomic<std::uint64_t> sourcesNachfuehrungNachReloadUnterblieben { 0 };
     SourcesModel sourcesModel;
     mutable std::mutex sourcesCommandMutex;

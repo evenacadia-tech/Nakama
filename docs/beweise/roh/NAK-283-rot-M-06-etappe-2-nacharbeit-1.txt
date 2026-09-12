@@ -1,0 +1,39 @@
+NAK-283 Etappe 2, Nacharbeit 1 - Rotbeweis MUT-A fuer M-01a, M-02, M-06
+Datei:      eq-copilot\plugin\src\SourcesModel.cpp
+Mutation:   SourcesModel: die Folgenummernpruefung entfernen - nur der Generationsvergleich bleibt, wie am Basis-SHA
+SHA-256 vorher: 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m06
+Rotlaeufe:  1 (Exit je Lauf: 1)
+SHA-256 nachher (bytegleiche Ruecknahme): 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT, Lauf 1 von 1 (erwartet: rot) ---------------------
+== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-06 Aufbau: A und C sind Mitglied in State UND Modell
+  ok      M-06 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck
+  ok      M-06: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-06: die gezogene Kopie traegt [A, C, B], das Modell noch [A, C] (Vorbedingung der Zusage)  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: der Message-Thread hat den Unbind angewandt und `[A, C]` publiziert  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: `benenneSourcesHauptziel` laeuft durch
+  ok      M-06: der lokale Unbind ohne Broker laeuft durch
+  ok      M-06: nach der Freigabe der alten Kopie ist Ruhe
+  FEHLER  M-06: state_und_modell_sind_nach_ruhe_gleich - dieselbe Schluesselmenge, je Schluessel dasselbe Label  [State: aaaa=Fluegel | Modell: aaaa=Eingeschleust bbbb=Eingeschleust cccc=Eingeschleust]
+  FEHLER  M-06: genau die eine angehaltene Kopie wurde ueberholt - die drei seriellen Wege nicht  [0]
+SONDE-012 ProjectReload (nur 283m06): 9/11 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-06 Aufbau: A und C sind Mitglied in State UND Modell
+  ok      M-06 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck
+  ok      M-06: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-06: die gezogene Kopie traegt [A, C, B], das Modell noch [A, C] (Vorbedingung der Zusage)  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: der Message-Thread hat den Unbind angewandt und `[A, C]` publiziert  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: `benenneSourcesHauptziel` laeuft durch
+  ok      M-06: der lokale Unbind ohne Broker laeuft durch
+  ok      M-06: nach der Freigabe der alten Kopie ist Ruhe
+  ok      M-06: state_und_modell_sind_nach_ruhe_gleich - dieselbe Schluesselmenge, je Schluessel dasselbe Label  [State: aaaa=Fluegel | Modell: aaaa=Fluegel]
+  ok      M-06: genau die eine angehaltene Kopie wurde ueberholt - die drei seriellen Wege nicht  [1]
+SONDE-012 ProjectReload (nur 283m06): 11/11 gruen

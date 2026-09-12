@@ -1,0 +1,593 @@
+NAK-283 Etappe 2, Nacharbeit 1 - Beine der Runde, einzeln gefahren
+Zeitpunkt: 2026-09-12T18:48:14.7183769+02:00
+Juengste geaenderte Quelle: 09/12/2026 18:48:14
+
+--- BAU (Release) ---
+Ziele:   EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
+Exit:    0
+warning C (eindeutig): 2
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014IntentTest.vcxproj]
+
+--- FRISCHE DER BINARIES ---
+B14   EqCopSonde012ProjectReloadTest       2026-09-12T18:48:21.5917099+02:00  frisch
+B27   EqCopSonde014IntentTest              2026-09-12T18:48:27.0479123+02:00  frisch
+
+--- B14  EqCopSonde012ProjectReloadTest   ->  Exit 0 ---
+  ok      M-14: gefaelschtes_command_ack_vor_serverauth - ein Speichern OHNE Tick laesst State-Bytes, Mitglieder, Dirty und Revision unveraendert: der Speicher-Drain wendet nur an, was ein echter Produkt-Callback bestaetigt hat  [250 Bytes, Dirty 0, Revision 1]
+  ok      gefaelschtes_command_ack_vor_serverauth_mutiert_keinen_persistenten_projektzustand
+== NAK-246 M-07 prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende ==
+  ok      M-07: der Testserver steht
+  ok      M-07: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.22892.0.nak246-m07]
+  ok      M-07: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-07: der Prozessor ist ein Main mit Bindung
+  ok      M-07: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-07: der Produkt-Callback `v3Antwort` steht im Haken - im Zug der Schleuse, vor dem ersten Zustandszugriff
+  ok      M-07: die Schleuse fuehrt ihn als laufend  [1 aktiv]
+  M-07: Destruktor beginnt; Freigabe nach 2500 ms
+  M-07: Destruktor zurueck nach 2501 ms, Muster gelegt, 300 ms warten
+  ok      M-07: prozessorabbau_ueber_die_frist_wartet_den_produkt_callback_zu_ende - der Destruktor kehrt erst zurueck, nachdem der gehaltene Callback freigegeben wurde; stop() hatte die Frist laengst abgewartet und abgeloest  [2501 ms Destruktor, Frist 2000 ms, Freigabe nach 2500 ms]
+  ok      M-07: die Wartezeit ist an der Schleuse GEMESSEN - gewartetMs > 0 und nicht groesser als der Destruktor selbst  [gewartetMs=500]
+  ok      M-07: die Wartezeit ist durch die Callback-Dauer begrenzt - der Destruktor endet binnen 100 ms nach der Freigabe  [0 ms nach der Freigabe]
+  ok      M-07: das Muster ueber dem zerstoerten Prozessor ist in jedem Byte unveraendert - der Zustandszugriff des Callbacks lag VOR der Zerstoerung  [0 von 101568 Bytes veraendert]
+  ok      M-07: nach dem Destruktor laeuft kein Callback mehr, die Schleuse ist zu  [aktiv=0 betreten=6 abgewiesen=0]
+== NAK-246 M-06 abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht ==
+  ok      M-06: der Testserver steht
+  ok      M-06: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.22892.1.nak246-m06]
+  ok      M-06: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-06: der Prozessor ist ein Main mit Bindung
+  ok      M-06: der Sender ist bestaetigt angehalten
+  ok      M-06: der Ring nimmt Ereignisse auf  [32]
+  ok      M-06: die Ereignisse liegen als P0 in der Queue (Generation 0)
+  ok      M-06: der Aufbauzug des Testlinks hat die Zustellpruefung gefahren (Ruf 1)
+  ok      M-06: ein Aufbau-Heartbeat mit Marke liegt in der Queue (Generation 1)
+  ok      M-06: der echte Aufbauzug (Generation 2) ruft `hookReplayBegin`, und der Produkt-Callback steht im Haken - im Zug, unter sendeMutex, vor dem Zustandszugriff
+  M-06: Destruktor beginnt; Freigabe nach 2500 ms
+  M-06: Destruktor zurueck nach 2501 ms, Muster gelegt, 600 ms warten (der abgeloeste Thread laeuft seinen Aufbauzug zu Ende)
+  ok      M-06: stop() hat die volle Frist gewartet und den Clientthread abgeloest (B-CC-12) - der gehaltene Callback lebte ueber die Frist hinaus  [2501 ms Destruktor bei Frist 2000 ms]
+  ok      M-06: der Destruktor hat den gehaltenen Callback zu Ende gewartet  [gewartetMs=500]
+  ok      M-06: abgeloester_produkt_callback_beruehrt_den_zerstoerten_prozessor_nicht - `beiP0Verworfen` und `beiLinkStatus` aus dem abgeloesten Thread beruehren den zerstoerten Prozessor NICHT: das Muster ist in jedem Byte unveraendert  [0 von 101568 Bytes veraendert]
+  ok      M-06: und jeder Versuch nach dem Schliessen ist GEZAEHLT - abgewiesen >= 1  [abgewiesen=3 betreten=4 aktiv=0]
+== NAK-246 M-09 alle_produkt_callbacks_laufen_durch_die_schleuse ==
+  ok      M-09: der Testserver steht
+  ok      M-09: der Testserver liegt im PROBE-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.22892.2.nak246-m09]
+  ok      M-09: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor, Paragraph 5.2 Feinheit 5)
+  ok      M-09: der Prozessor ist ein Main mit Bindung
+  ok      M-09: der Sender ist bestaetigt angehalten
+  ok      M-09: Interventionsereignisse der Generation 0 liegen als P0 in der Queue - der Aufbauzug faehrt damit die Zustellpruefung, und jeder Wire-Commit ruft `beiP0Zugestellt`  [32]
+  ok      M-09: Control ist verbunden (Hello, Welcome, Link auf)
+  ok      M-09: Telemetrie ist gekoppelt und verbunden (Telemetrie-Hello)
+  ok      M-09: mindestens ein P2-Frame hat `beiFrame` erreicht  [64]
+  ok      M-09: mindestens ein heartbeat_ack hat `v3Antwort` erreicht  [1]
+  ok      M-09: mindestens ein P0-Wire-Commit hat `beiP0Zugestellt` erreicht  [32]
+  ok      M-09: der Server hat einen Heartbeat empfangen (`v3Status`)
+  ok      M-09: der Server hat das Control-Hello empfangen (`v3Hello`)
+  ok      M-09: die Zustellpruefung hat `hookReplayBegin` gerufen  [1]
+  ok      M-09: alle_produkt_callbacks_laufen_durch_die_schleuse - `betreten` ist mindestens die Summe der deterministisch ausgeloesten Ereignisse (8): kein Callback umgeht die Schleuse  [betreten=114 Summe=8 (vor der Zerstoerung 113)]
+  ok      M-09: der negative Link-Callback aus stop() lief synchron durch die noch OFFENE Schleuse - kein Selbstblock (Abweichung 1, Paragraph 5.10)  [1 Eintritte im Destruktor]
+  ok      M-09: ohne gehaltenen Callback blockiert der Destruktor nicht - keine Frist, kein Warten, kein abgewiesener Callback  [4 ms, gewartetMs=0, abgewiesen=0]
+== NAK-246 M-10 bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-10 Aufbau: Join B gesendet
+  ok      M-10 Aufbau: B ist Mitglied (ein Tick, ein Dirty)
+  ok      M-10: Join A gesendet
+  ok      M-10: B wird Hauptziel
+  ok      M-10: Unbind B gesendet (Wire, mit Runtime-Nonce)
+  ok      M-10: zwei Befehle, zwei Kennungen
+  ok      M-10: vor dem Speichern ist nichts angewandt - kein Tick lief
+  ok      M-10: das Speichern hat die bestaetigten Befehle angewandt - A ist Mitglied, B nicht mehr
+  ok      M-10: Dirty ist je geaendertem Befehl EINMAL gemeldet (+2)  [3]
+  ok      M-10: die Revision ist je Befehl um 1 gestiegen (+2)  [2]
+  ok      M-10: das Modell ist nachgefuehrt - A gilt als bestaetigt
+  ok      M-10: bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state - die neue Instanz laedt das gejointe Mitglied und nicht mehr das geloeste  [1 Mitglied(er)]
+  ok      M-10: das Laden meldet kein Dirty
+== NAK-246 M-11 bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-11: Join A gesendet
+  ok      M-11: bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt - ohne Editor und ohne Tick steht das Mitglied binnen Frist im State (Workerzug spaetestens alle 50 ms)  [5 ms von ACK bis Anwendung]
+  ok      M-11: Dirty ist einmal gemeldet, die Revision um 1 gestiegen  [Dirty 1, Revision +1]
+  ok      M-11: nach weiteren Workerzuegen bleibt es bei einem Dirty und einer Revision
+  ok      M-11: das Modell ist nachgefuehrt - A gilt als bestaetigt
+== NAK-246 M-12 dirty_und_revision_genau_einmal_je_bestaetigtem_befehl ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-12: Drain A (Workerzug) steht am Haken - zwischen Swap [confirm_join] und Anwendung
+  ok      M-12: waehrend A haelt, ist nichts angewandt und nichts gemeldet
+  ok      M-12: Drain B hat den Rahmen betreten, und der Workerzug hat ihn nach der Freigabe erneut betreten - beide Drains sind samt Nachfuehrung zurueck  [1 -> 2 -> 3 Eintritte]
+  ok      M-12: dirty_und_revision_genau_einmal_je_bestaetigtem_befehl - Join, dann Unbind desselben Mitglieds in ACK-Reihenfolge endet OHNE Mitglied  [0 Mitglied(er)]
+  ok      M-12: Dirty-Zaehler == Zahl der State-aendernden Befehle (2)  [2]
+  ok      M-12: Revision-Delta == 2  [2]
+  ok      M-12: der zweite Drain stand am Riegel, waehrend der erste hielt - `sourcesDrainMutex` klammert Swap UND Anwendung  [Riegel gehalten: ja, B vor der Freigabe von A durchgelaufen: nein, 0 Mitglied(er) waehrend A hielt]
+  ok      M-12: beide Swaps liefen durch den Haken  [2]
+== NAK-246 M-13 ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-13: ein zweites Projekt
+  ok      M-13: Join A gesendet (alter Lauf)
+  ok      M-13: das Projekt ist gewechselt (andere project_binding_id)
+  ok      M-13: der ACK des alten Laufs findet nach dem Reload keine Zuordnung - Speichern ohne Tick aendert nichts
+  ok      M-13: ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht - bestaetigte Befehle mit fremder Bindung oder Epoche wendet der Speicher-Drain nie an (Bytes gleich, kein Mitglied, kein Dirty, keine Revision)
+  ok      M-13: eine neue Instanz laedt kein Mitglied des alten Laufs
+  ok      M-13 Gegenprobe: mit passender Bindung und Epoche wendet der Speicher-Drain an
+== NAK-246 M-16 volle_queue_join_reconnect_ack_save_load_als_eine_kette ==
+  ok      M-16: der Testserver steht
+  ok      M-16: beide v3-Clients zeigen auf die Probe-Pipe (Testkonstruktor)
+  ok      M-16: der Prozessor ist ein Main mit Bindung
+  ok      M-16: der echte Client ist ueber die Probe-Pipe verbunden
+  ok      M-16: der Link-Aufbau-Callback ist durch - das Modell meldet authenticating
+  ok      M-16: die Verbindung ist weg
+  ok      M-16: der Link-Ende-Callback ist durch - das Modell meldet brokerUnavailable
+  ok      M-16 Aufbau: die Quelle A ist Hauptziel, dieses Main darf schreiben
+  ok      M-16: die P0-Queue ist voll  [64]
+  ok      M-16: volle_queue_join_reconnect_ack_save_load_als_eine_kette - der Join ist bei voller Queue ZUR WIEDERHOLUNG angenommen, und der Aufrufer BEHAELT die command_id-Zuordnung (Basis-SHA: bool false, Zuordnung geloescht)  [angenommen, Zuordnung vorhanden]
+  ok      M-16: der Join steht im Register, der Ueberlauf ist gezaehlt (M-73)  [inFlight 1]
+  ok      M-16: der Testserver steht wieder (Reconnect)
+  ok      M-16: nach dem Reconnect ist der Join nachgespielt und vom Server angewandt (ACK)  [inFlightErfolg 1, Wiederholungen 1]
+  ok      M-16: der zweite Server hat den Join empfangen (Replay nach dem Reconnect, M-73)  [1 confirm_join, e8198e855495408d804b6e637bf7e3c4]
+  ok      M-16: der ACK hat die Zuordnung gefunden - der Replay traegt DIESELBE command_id, die der Aufrufer haelt, und der Befehl ist bestaetigt vorgemerkt  [1 bestaetigt, Aufrufer e8198e855495408d804b6e637bf7e3c4]
+  ok      M-16: kein Tick lief - nichts ist angewandt, kein Dirty
+  ok      M-16: das Speichern ohne Tick wendet den bestaetigten Join an, Dirty einmal  [1 Mitglied(er), Dirty 1]
+  ok      M-16: die neue Instanz laedt das Mitglied - die Kette ist geschlossen  [1 Mitglied(er)]
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  ok      M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [1 Mitglied(er) im State, im Modell bestaetigt]
+  ok      M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [1]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  ok      NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-39 (read-only) gezogene_kopie_ueberholt_den_read_only_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39 (read-only): der geladene State ist read-only und traegt keine Mitglieder (Vorbedingung der Zusage)  [read-only, 0 Mitglied(er)]
+  ok      M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die alte Kopie (A)  [0 Zeile(n): ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im Prozessor noch im Modell  [0 / 0]
+  ok      NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+== NAK-246 M-29 projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen ==
+  ok      M-29 Aufbau (read-only): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 read-only: der geladene State ist read-only (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines read-only States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 0 Zeile(n)]
+  ok      M-31 (Wache) read-only: keine Subscription, brokerUnavailable mit Handgriff
+  ok      M-29 Aufbau (ungebunden): ein Main mit Bindung traegt alle sieben Sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: das Mitglied ist bestaetigt und gespeichert, die Sitzung steht unveraendert (Vorbedingung)  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      M-29 ungebunden: geladen ist ein Main OHNE Bindung mit dem bestaetigten Mitglied, und ohne Bindung gibt es keine gueltige Adresse fuer einen Subscribe (Vorbedingung)
+  ok      M-29: projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen - nach dem Laden eines ungebundenen Main-States traegt die Sicht sofort keine Experimente, Paare, Befunde, Ruecknahmen und kein findingsOffen mehr  [alle sieben leer, 1 Zeile(n)]
+  ok      M-31 (Wache) ungebunden: das persistente Mitglied kommt als bestaetigt, getrennt, missing zurueck; keine Subscription, brokerUnavailable mit Handgriff
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied in State UND Modell
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  ok      M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [2]
+  ok      M-01: Revision-Delta == 2  [2]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-02 hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-02 Aufbau: A ist Mitglied
+  ok      M-02 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - erst danach wird scharf geschaltet
+  ok      M-02: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-02: die gezogene Kopie traegt [A, B] mit dem ALTEN Label, das Modell noch [A] (Vorbedingung der Zusage)  [aaaa=Eingeschleust]
+  ok      M-02: der Benennungs-Handgriff laeuft durch
+  ok      M-02: hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt - nach Ruhe traegt das Modell das BENANNTE Hauptziel, nicht das alte Label  [aaaa=Fluegel bbbb=Eingeschleust]
+  ok      M-02: die aeltere Worker-Kopie ist als ueberholt gezaehlt  [1]
+  ok      M-02: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-03 lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-03: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-03: die gezogene Kopie traegt [A] (Vorbedingung der Zusage)
+  ok      M-03: der lokale Unbind ohne Broker laeuft durch
+  ok      M-03: der State traegt danach kein Mitglied mehr
+  ok      M-03: lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt - nach Ruhe traegt das Modell KEIN Mitglied mehr
+  ok      M-03: die aeltere Worker-Kopie ist als ueberholt gezaehlt  [1]
+  ok      M-03: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-05 inhaltsgleiche_publikation_zieht_die_frischemarke_nach ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-05 Aufbau: Modell und State sind leer (Vorbedingung der Zusage)
+  ok      M-05: der Workerzug haelt mit der Kopie [A] zwischen Kopie und Publikation
+  ok      M-05: der Unbind ist angewandt, der publizierte Stand `[]` ist inhaltsgleich zum leeren Modell
+  ok      M-05: inhaltsgleiche_publikation_zieht_die_frischemarke_nach - nach Ruhe ist das Modell LEER; die angehaltene Kopie [A] ist als ueberholt abgewiesen
+  ok      M-05: genau EINE ueberholte Publikation  [1]
+  ok      M-05: der Unbind meldet Host-Dirty und Revision wie bisher (Delta 2 fuer Join und Unbind) - die Trennung von Nummernvergabe und Bestandsuebernahme aendert daran nichts  [2 Dirty, Revision-Delta 2]
+  ok      M-05: der Workerzug ist samt Nachfuehrung zurueck
+== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-06 Aufbau: A und C sind Mitglied in State UND Modell
+  ok      M-06 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck
+  ok      M-06: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-06: die gezogene Kopie traegt [A, C, B], das Modell noch [A, C] (Vorbedingung der Zusage)  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: der Message-Thread hat den Unbind angewandt und `[A, C]` publiziert  [aaaa=Eingeschleust cccc=Eingeschleust]
+  ok      M-06: `benenneSourcesHauptziel` laeuft durch
+  ok      M-06: der lokale Unbind ohne Broker laeuft durch
+  ok      M-06: nach der Freigabe der alten Kopie ist Ruhe
+  ok      M-06: state_und_modell_sind_nach_ruhe_gleich - dieselbe Schluesselmenge, je Schluessel dasselbe Label  [State: aaaa=Fluegel | Modell: aaaa=Fluegel]
+  ok      M-06: genau die eine angehaltene Kopie wurde ueberholt - die drei seriellen Wege nicht  [1]
+== NAK-283 M-71 mitgliederfolge_wrappt_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-71 Aufbau: der Folgezaehler steht eine Nummer unter dem Anschlag
+  ok      M-71: die Publikation mit der Nummer am Anschlag wird uebernommen
+  ok      M-71: der Zaehler steht jetzt auf 2^64 - 1
+  ok      M-71: der zweite Join ist im State angewandt
+  ok      M-71: der Workerzug ist samt Nachfuehrung zurueck
+  ok      M-71: mitgliederfolge_wrappt_nicht - der Zaehler steht NACH der zweiten Publikation immer noch auf 2^64 - 1 und ist nicht auf 0 zurueckgesprungen  [-1]
+  ok      M-71: am Anschlag wird die Publikation abgewiesen und im Ueberholt-Zaehler gefuehrt - der Zaehler macht den Halt sichtbar  [1]
+  ok      M-71: das Modell behaelt seinen letzten Bestand [A], statt einen umgelaufenen Stand anzunehmen  [aaaa=Eingeschleust]
+== NAK-283 M-72 reloadablehnung_und_ueberholung_sind_unterscheidbar ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase A Aufbau: das fremde Projekt traegt genau B
+  ok      M-72 Phase A: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase A: der Workerzug ist zurueck
+  ok      M-72 Phase A: `sourcesNachfuehrungNachReloadUnterblieben` steigt genau im Reloadfall  [1 / 1]
+  ok      M-72 Phase A: der Ueberholt-Zaehler steigt im Reloadfall NICHT  [0]
+  ok      M-72 Phase A: NUR der Reloadfall unterdrueckt Dirty und Revision  [Dirty-Delta 0, Revision-Delta 0]
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-72 Phase B Aufbau: B ist Mitglied in State UND Modell
+  ok      M-72 Phase B Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation
+  ok      M-72 Phase B: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-72 Phase B: beide Drains sind zurueck
+  ok      M-72 Phase B: der Ueberholt-Zaehler steigt genau im Ueberholtfall  [1 / 1]
+  ok      M-72 Phase B: der Reloadzaehler steigt im Ueberholtfall NICHT  [0]
+  ok      M-72 Phase B: reloadablehnung_und_ueberholung_sind_unterscheidbar - der Ueberholtfall meldet Dirty und Revision, weil seine Aenderung angewandt bleibt  [2 Dirty, Revision-Delta 2]
+  ok      main_project_is_explicitly_initialised
+  ok      confirmed_join_ack_and_name_each_mark_host_dirty  [2]
+  ok      save_is_not_a_persistent_mutation
+  ok      same_instance_reload_discards_transient_snapshot_and_measurement
+  ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+  ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+  ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+  ok      nonleading_main_disables_label_and_reports_failed_write
+  ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+  ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 227/227 gruen
+
+--- B27  EqCopSonde014IntentTest   ->  Exit 0 ---
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+  ok      Rolle traegt ein nicht leeres Wort: traegt
+  ok      Rolle traegt ein nicht leeres Wort: begleitet
+  ok      Rolle traegt ein nicht leeres Wort: geschuetzt
+  ok      Rolle traegt ein nicht leeres Wort: verschmolzen
+  ok      die fuenf Rollenwoerter sind paarweise verschieden
+  ok      Wort und Rolle sind umkehrbar: fuehrt
+  ok      Wort und Rolle sind umkehrbar: traegt
+  ok      Wort und Rolle sind umkehrbar: begleitet
+  ok      Wort und Rolle sind umkehrbar: geschuetzt
+  ok      Wort und Rolle sind umkehrbar: verschmolzen
+  ok      ein sechster Rollenwert wird abgewiesen: 'impuls'
+  ok      ein sechster Rollenwert wird abgewiesen: 'raum'
+  ok      ein sechster Rollenwert wird abgewiesen: 'lead'
+  ok      ein sechster Rollenwert wird abgewiesen: 'Fuehrt'
+  ok      ein sechster Rollenwert wird abgewiesen: ''
+  ok      ein sechster Rollenwert wird abgewiesen: 'fuehrt '
+  ok      der Leser weist einen sechsten Rollenwert als read-only ab
+  ok      und nennt den Grund: MainProject.source_intents_v1 contains an unknown role: impuls
+
+== M-02  rolle_und_belegung_sind_umkehrbar ==
+  ok      Belegung von fuehrt ist (foreground, 'lead', '')
+  ok      Belegung von traegt ist (middle, 'foundation', '')
+  ok      Belegung von begleitet ist (background, 'texture', '')
+  ok      Belegung von geschuetzt ist (middle, '', 'schutz')
+  ok      Belegung von verschmolzen ist (middle, '', 'verschmolzen')
+  ok      Roundtrip Rolle -> Belegung -> Rolle: fuehrt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: traegt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: begleitet
+  ok      Roundtrip Rolle -> Belegung -> Rolle: geschuetzt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: verschmolzen
+
+== M-02  zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck ==
+  ok      alle zwanzig geordneten Paare der fuenf Rollen gefahren
+  ok      keine zwei verschiedenen Rollen teilen sich eine Belegung
+  ok      eine fremde Belegung gehoert zu keiner Rolle
+  ok      und eine zweite fremde ebenfalls nicht
+
+== M-03  attack_schutz_ist_unabhaengig_von_der_rolle ==
+  ok      eine Schutzangabe entsteht OHNE dass die Quelle eine Rolle traegt
+  ok      und sie erzeugt keine Rolle als Nebenwirkung
+  ok      Produktpfad: Schutz ohne Rolle wird angenommen
+  ok      der Bestand traegt genau die Schutzangabe und keinen Intent
+  ok      und danach die Rolle 'begleitet' an derselben Quelle
+  ok      eine Quelle mit Rolle 'begleitet' kann Attack geschuetzt haben
+
+== M-03  rollenwechsel_loescht_keinen_schutzbereich ==
+  ok      Rollenwechsel auf fuehrt
+  ok      der Schutzbereich ueberlebt den Wechsel auf fuehrt
+  ok      Rollenwechsel auf traegt
+  ok      der Schutzbereich ueberlebt den Wechsel auf traegt
+  ok      Rollenwechsel auf begleitet
+  ok      der Schutzbereich ueberlebt den Wechsel auf begleitet
+  ok      Rollenwechsel auf geschuetzt
+  ok      der Schutzbereich ueberlebt den Wechsel auf geschuetzt
+  ok      Rollenwechsel auf verschmolzen
+  ok      der Schutzbereich ueberlebt den Wechsel auf verschmolzen
+  ok      Schutz laesst sich einzeln aufheben
+  ok      und die Rolle bleibt dabei stehen
+  ok      Bandschutz [0, 221) am vollen Rand wird angenommen
+  ok      ein Band ueber dem Gitterrand wird abgewiesen
+  ok      ein leeres Bandintervall wird abgewiesen
+  ok      eine Bandeigenschaft ohne Intervall wird abgewiesen
+  ok      und eine Nicht-Bandeigenschaft MIT Intervall ebenfalls
+
+== M-04  nur_rolle ==
+  ok      ohne jeden Intent ist Entmaskierung erlaubt
+  ok      Quelle A bekommt die Rolle 'bewusst verschmolzen'
+  ok      das globale Veto sperrt A gegen B
+  ok      und ebenso A gegen jede dritte Quelle - es ist GLOBAL
+  ok      ein Paar ohne A bleibt unberuehrt
+
+== M-04  nur_beziehung ==
+  ok      eine gerichtete Beziehung 'A fuehrt vor B' ohne jede Rolle
+  ok      ohne Veto aendert sie an der Erlaubnis nichts
+
+== M-04  beides_im_widerspruch ==
+  ok      globales Veto an A
+  ok      und die ausdrueckliche Beziehung 'A fuehrt vor B'
+  ok      das SPEZIFISCHERE gewinnt: fuer dieses Paar ist Entmaskierung erlaubt
+  ok      fuer das Paar A/C bleibt das Veto stehen
+  ok      auch in der anderen Leserichtung
+  ok      Veto an A
+  ok      und eine Beziehung 'A/B duerfen verschmelzen'
+  ok      sie hebt das Veto NICHT auf - sie bestaetigt es
+
+== M-05  konfliktregeln_sind_eine_ordnung_kein_score ==
+  ok      Â§37.2 fuehrt genau fuenf Stufen
+  ok      Stufe 1 schlaegt Stufe 2 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 4 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      alle zehn Paarungen der fuenf Stufen gefahren
+  ok      hundert Vermutungen schlagen die Schutzgrenze nie - eine Ordnung, kein Score
+  ok      zwei gleiche Anspruechen sind gleichrangig - die Funktion ist nicht konstant
+
+== M-05  innerhalb_stufe_zwei_gewinnt_das_spezifischere ==
+  ok      auf Stufe 2 gewinnt die paarweise Beziehung vor dem globalen Veto
+  ok      und umgekehrt ebenso
+  ok      Spezifitaet hebt keine Stufe an
+  ok      globale Rolle 'traegt'
+  ok      und in Passage 1 die Rolle 'fuehrt'
+  ok      in Passage 1 wirkt der passagespezifische Wert
+  ok      in Passage 2 ohne eigenen Wert faellt er auf den globalen zurueck
+  ok      und global gilt der globale
+  ok      eine Quelle ohne jeden Intent hat keine wirkende Rolle - kein Vorgabewert
+
+== M-06  zyklus_wird_beim_speichern_erkannt ==
+  ok      eine leere Kantenmenge hat keinen Zyklus
+  ok      eine Kette A->B->C hat keinen Zyklus
+  ok      ein Dreierzyklus A->B->C->A wird erkannt
+  ok      dieselbe Runde mit einer gleichrangigen Kante ist KEIN Zyklus
+  ok      `darf_verschmelzen` ist keine Prioritaetskante und bildet keinen Zyklus
+  ok      A fuehrt vor B
+  ok      B fuehrt vor C
+  ok      C fuehrt vor A wird ABGEWIESEN - der Zyklus erreicht die Persistenz nicht
+  ok      der Bestand traegt weiterhin genau zwei Kanten
+  ok      und ein abgewiesener Wert hebt die Bestandsrevision nicht
+  ok      der Leser weist einen gespeicherten Zyklus als read-only ab: MainProject.intent_relations_v1 contains a cycle in fuehrt_vor
+
+== M-06  zyklus_wird_als_gleichrangigkeit_gespeichert ==
+  ok      derselbe Schluss als nicht steuerbare Gleichrangigkeit wird angenommen
+  ok      der Bestand traegt jetzt drei Kanten
+  ok      und die dritte ist als 'gleichrangig' MARKIERT, nicht als gerichtet
+  ok      der Stand mit markierter Gleichrangigkeit laedt normal
+  ok      und kommt als 'gleichrangig' zurueck
+
+== M-07  abgeleitet_ueberschreibt_user_nie ==
+  ok      der User setzt 'fuehrt'
+  ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+  ok      aber sie ERSETZT den Userwert nicht
+  ok      und hebt die Bestandsrevision nicht - es hat sich nichts geaendert
+  ok      zuerst eine abgeleitete Vermutung
+  ok      dann ein Userwert
+  ok      der Userwert gewinnt - die Regel ist gerichtet, nicht symmetrisch
+  ok      und die Objektrevision ist gestiegen
+  ok      Herkunft, Revision und Konfidenz ueberleben Save/Load
+  ok      eine reine Vermutung wird gespeichert
+  ok      und bleibt nach dem Laden als abgeleitet erkennbar
+
+== M-08  zwei_rollen_je_bus_in_zwei_passagen ==
+  ok      Passage 1: die Quelle fuehrt
+  ok      Passage 2: dieselbe Quelle begleitet
+  ok      beide Werte stehen nebeneinander - der zweite ueberschreibt den ersten nicht
+  ok      in Passage 1 wirkt 'fuehrt'
+  ok      in Passage 2 wirkt 'begleitet'
+  ok      nach dem Laden stehen weiterhin beide
+  ok      und Save nach Load ist BYTEGLEICH
+  ok      ein globaler Wert kommt dazu
+  ok      jetzt sind es drei Scopes derselben Quelle
+  ok      und der passagespezifische Wert gilt weiter (Â§37.2 Stufe 3)
+  ok      Passage 1 wird entfernt
+  ok      zwei Scopes bleiben
+  ok      und Passage 1 faellt jetzt auf den globalen Wert zurueck
+
+== M-09  userwerte_ueberleben_projekt_recall ==
+  ok      fuenf echte Aenderungen ergeben Bestandsrevision 5
+  ok      der Recall laedt normal
+  ok      alle drei Bestandteile kommen vollstaendig zurueck
+  ok      und die Bestandsrevision ueberlebt - sonst haette die Vollstaendigkeitsmarke aus M-86 keine Zahl
+  ok      Userwerte ueberleben, abgeleitete bleiben als solche erkennbar (Â§37.4)
+  ok      Save nach Recall ist bytegleich
+  ok      und ueber zwei Runden ebenfalls
+
+== State-Invariante  versionieren / Altstand / unbekanntes Feld / Dirty ==
+  ok      der Eigenschaftsname traegt seine Fassung: source_intents_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_protections_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_relations_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_revision_v1
+  ok      ein Altstand ohne Intent-Felder laedt normal
+  ok      und traegt einen leeren Bestand mit Revision 0 - kein erfundener Vorgabewert
+  ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+  ok      eine unbekannte MainProject-Eigenschaft zerstoert den Leser nicht
+  ok      und sie steht unveraendert im naechsten Save
+  ok      eine neue Rolle meldet genau einmal Host-Dirty
+  ok      derselbe Wert noch einmal ist ein No-op und meldet nichts
+  ok      ein anderer Wert meldet wieder
+  ok      ein abgewiesener Wert meldet NICHT
+  ok      eine NaN-Konfidenz wird abgewiesen und meldet nicht
+  ok      eine neue Schutzangabe meldet
+  ok      dieselbe noch einmal nicht
+  ok      eine neue Beziehung meldet
+  ok      das Entfernen meldet wie das Setzen - ein Loeschen ohne Dirty kaeme zurueck
+  ok      ein zweites Entfernen ist ein No-op
+  ok      das Aufheben eines Schutzes meldet
+  ok      und das Entfernen einer Beziehung ebenfalls
+  ok      Laden meldet kein Dirty
+  ok      ein fremdes Root-Major laedt read-only
+  ok      read-only verweigert setzeQuellenrolle
+  ok      read-only verweigert schuetzeQuelle
+  ok      read-only verweigert setzeQuellenbeziehung
+  ok      und meldet dabei nichts
+  ok      die Originalbytes gehen unveraendert zurueck
+
+== Raender  was die API ablehnt, lehnt auch der Leser ab ==
+  ok      Leser lehnt ab - Quelle ist keine hex32: MainProject.source_intents_v1 contains an invalid source id
+  ok      Leser lehnt ab - Passagenscope ist weder leer noch hex32: MainProject.source_intents_v1 contains an invalid passage scope
+  ok      Leser lehnt ab - Revision 0 gibt es nicht: MainProject.source_intents_v1 revision must be at least 1
+  ok      Leser lehnt ab - unbekannte Herkunft: MainProject.source_intents_v1 contains an unknown origin: geraten
+  ok      Leser lehnt ab - Konfidenz ueber 1: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz unter 0: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz NaN: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+
+== NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag
+  ok      M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` - intent revision would overflow
+  ok      M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  ok      M-07: der GANZE Zustand ist byteweise unveraendert
+  ok      M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  ok      M-08: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  ok      M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-09: Vorbedingung - eine Beziehung
+  ok      M-09: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  ok      M-09: der GANZE Zustand ist byteweise unveraendert
+  ok      Gegenprobe: der Writer-Stand laedt
+  ok      Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben
+
+== NAK-283 M-08/M-09 (Host)  ablehnung_am_maximum_meldet_kein_host_dirty ==
+  ok      M-08 Host: Vorbedingung - Bestandsrevision am int64-Maximum IM Prozessor, eine Schutzangabe  [9223372036854775807]
+  ok      M-08 Host: der Handgriff wird abgewiesen - die Schutzangabe steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [0 Dirty, 1 Angabe(n)]
+  ok      M-09 Host: Vorbedingung - Bestandsrevision am int64-Maximum, eine Beziehung
+  ok      M-09 Host: der Handgriff wird abgewiesen - die Kante steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [0 Dirty, 1 Kante(n)]
+
+== NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`
+  ok      M-10: `schrittAendern` weist ab statt zu inkrementieren - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9223372036854775807]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`
+  ok      M-10: auch der NEUE Schritt weist ab - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: auch das Ergebnis weist ab - assistant revision would overflow
+  ok      M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf int64max ausgefuehrt; kein negativer Folgewert, kein signed-integer-UB  [9223372036854775807]
+
+== NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Bestandsrevision bei int64max - 1
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Assistentenrevision bei int64max - 1
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 Host (Intent): Vorbedingung - der Grenzstand int64max - 1 liegt IM Prozessor, ein Intent-Eintrag  [9223372036854775806]
+  ok      M-12 Host (Intent): bei int64max - 1 wird der Eintrag entfernt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Intent): der folgenlose Zweitaufruf schweigt - keine Revision, kein weiteres Dirty; der Riegel hat den No-op-Pfad nicht verschoben  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Schutz): Vorbedingung - Grenzstand und eine Schutzangabe
+  ok      M-12 Host (Schutz): die Angabe wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Schutz): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Beziehung): Vorbedingung - Grenzstand und eine Beziehung
+  ok      M-12 Host (Beziehung): die Kante wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Beziehung): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei int64max - 1  [9223372036854775806]
+  ok      M-12 Host (Assistent): der Schritt wechselt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Assistent): der Zweitaufruf steht jetzt AM Maximum, wird abgewiesen und meldet nichts - keine Revision, kein Dirty  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+
+SONDE-014-INTENT-TEST OK - 270 Pruefungen ok, 0 Fehler
+
+--- BILANZ ---
+B14   EqCopSonde012ProjectReloadTest       Exit 0
+B27   EqCopSonde014IntentTest              Exit 0
+
+URTEIL: 2 von 2 Beinen Exit 0; warning C (eindeutig): 2

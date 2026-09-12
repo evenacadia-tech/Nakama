@@ -1,0 +1,41 @@
+NAK-283 Etappe 2, Nacharbeit 1 - Rotbeweis MUT-A fuer M-01a, M-02, M-06
+Datei:      eq-copilot\plugin\src\SourcesModel.cpp
+Mutation:   SourcesModel: die Folgenummernpruefung entfernen - nur der Generationsvergleich bleibt, wie am Basis-SHA
+SHA-256 vorher: 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m01
+Rotlaeufe:  1 (Exit je Lauf: 1)
+SHA-256 nachher (bytegleiche Ruecknahme): 520A727382AAF6C0A8E1AA65D9BA973CC9E87B75825C8D2EB16CEDCB412373B3
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+
+--- MUTIERT, Lauf 1 von 1 (erwartet: rot) ---------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied in State UND Modell
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  FEHLER  M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust bbbb=Eingeschleust]
+  FEHLER  M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [0 / 0]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  ok      M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [2]
+  ok      M-01: Revision-Delta == 2  [2]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 10/12 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied in State UND Modell
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  ok      M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [2]
+  ok      M-01: Revision-Delta == 2  [2]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 12/12 gruen

@@ -1297,6 +1297,22 @@ juce::MemoryBlock bytesVon (const state::Zustand& z)
     return b;
 }
 
+/// Denselben deklarierten Mutanten in einen FRISCHEN Prozessor laden.
+///
+/// ⚠️ NAK-283 Erstpruefung 2 Befund 3: Host-Dirty existiert nur im Prozessor -
+/// die `state::`-Funktionen kennen ihn nicht; sie liefern `veraendert`, und
+/// erst `State.cpp` macht daraus eine Meldung. Eine Zusage der Form "Host-Dirty
+/// wird genau einmal gemeldet" ist am Grenzstand deshalb NUR ueber diesen Weg
+/// pruefbar. Es entsteht keine neue Fixture, nur ein zweiter Traeger desselben
+/// Writer-Mutanten (Fixture-Regel §6.2); `StateMigrationTestMain.cpp` fuehrt
+/// denselben Weg fuer M-11 vor. HEAP, nicht Rahmen (NAK-175).
+std::unique_ptr<EqCopilotProcessor> prozessorMit (const juce::MemoryBlock& bytes)
+{
+    auto p = std::make_unique<EqCopilotProcessor>();
+    p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+    return p;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // M-07 bis M-09 · Ablehnung ohne Mutation in den drei Entfern-Handgriffen
 // ─────────────────────────────────────────────────────────────────────────
@@ -1388,6 +1404,80 @@ void m283_07_bis_09()
                     && z.intentBestandRevision == revVorher,
                 "Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine "
                 "Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// M-08 / M-09 am HOST · die MAX-Ablehnung fuer Schutz und Beziehung durch den
+// Produktpfad, mit Hostlistener
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Dirigentenregel vom 12.09.2026 (Manifest §22, Luecke aus der Erstpruefung 2):
+// "kein Host-Dirty, keine Revision" steht bei M-08 und M-09 in Reihenfolge und
+// Frist und ist damit Teil ihrer Zusage; gemessen wird es am Grenzstand
+// `int64max` ueber den Prozessor mit Hostlistener - null Meldungen, Revision
+// unveraendert. `StateMigrationTestMain.cpp` (M-11) fuehrt dieselbe Messung
+// heute schon fuer Intent und Assistent; Schutz und Beziehung fehlten an
+// beiden Raendern, und die Asymmetrie blieb ungeprueft.
+//
+// Rotbeweis: derselbe Mutant wie M-08 bzw. M-09 (die Revisionspruefung hinter
+// das `erase` zurueckschieben) - dann ist der Eintrag entfernt, obwohl der
+// Handgriff ablehnt, und diese Zeile faellt. Die Dirty-NULL-Haelfte allein ist
+// eine REGRESSIONSWACHE (Muster M-04, M-12): der Prozessor steigt bei jeder
+// Ablehnung mit `return false` aus, BEVOR er `if (veraendert)` erreicht
+// (`State.cpp`), also bricht keine Mutation an einer Zusagezeile sie einzeln.
+// Sie ist als Wache benannt, nicht als Beleg gezaehlt.
+void m283_08_09_am_host()
+{
+    abschnitt ("NAK-283 M-08/M-09 (Host)  ablehnung_am_maximum_meldet_kein_host_dirty");
+
+    const auto writer = writerMitBestand();
+    const auto amRand = mitMainFeld (writer, "intent_revision_v1", juce::var (kMax));
+
+    // ── M-08 · `hebeQuellenschutzAuf` an der Obergrenze ────────────────────
+    {
+        auto p = prozessorMit (amRand);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax
+                    && p->intentSchutzangaben().size() == 1,
+                "M-08 Host: Vorbedingung - Bestandsrevision am int64-Maximum IM Prozessor, "
+                "eine Schutzangabe",
+                juce::String (p->intentBestandRevision()));
+        const auto dirtyVor = dirty.nonParam;
+        // Handgriff zuerst, Messwerte danach in Konstanten: die
+        // Argumentauswertung von `pruefe` ist unspezifiziert (siehe M-12 Host).
+        const bool ok = p->hebeQuellenschutzAuf (kQuelleA, state::Schutzeigenschaft::attack,
+                                                 -1, -1);
+        const auto dirtyNach = dirty.nonParam;
+        const auto revNach = p->intentBestandRevision();
+        const auto angaben = (int) p->intentSchutzangaben().size();
+        pruefe (! ok && angaben == 1 && revNach == kMax && dirtyNach == dirtyVor,
+                "M-08 Host: der Handgriff wird abgewiesen - die Schutzangabe steht noch, "
+                "die Revision steht still, und NULL Host-Dirty-Meldungen",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, "
+                    + juce::String (angaben) + " Angabe(n)");
+        p->removeListener (&dirty);
+    }
+
+    // ── M-09 · `entferneQuellenbeziehung` an der Obergrenze ────────────────
+    {
+        auto p = prozessorMit (amRand);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (p->intentBestandRevision() == kMax && p->intentBeziehungen().size() == 1,
+                "M-09 Host: Vorbedingung - Bestandsrevision am int64-Maximum, eine Beziehung");
+        const auto dirtyVor = dirty.nonParam;
+        const bool ok = p->entferneQuellenbeziehung (kQuelleA, kQuelleB);
+        const auto dirtyNach = dirty.nonParam;
+        const auto revNach = p->intentBestandRevision();
+        const auto kanten = (int) p->intentBeziehungen().size();
+        pruefe (! ok && kanten == 1 && revNach == kMax && dirtyNach == dirtyVor,
+                "M-09 Host: der Handgriff wird abgewiesen - die Kante steht noch, die "
+                "Revision steht still, und NULL Host-Dirty-Meldungen",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, "
+                    + juce::String (kanten) + " Kante(n)");
+        p->removeListener (&dirty);
     }
 }
 
@@ -1520,8 +1610,138 @@ void m283_12()
                 juce::String (z.assistent.revision));
     }
 
-    // Und der Weg ueber den PRODUKTPFAD: ein echter Handgriff meldet genau
-    // einmal Host-Dirty (`nakama-state-v2.md:139`).
+    // ── Der GRENZSTAND durch den Produktpfad, mit Hostlistener ─────────────
+    //
+    // ⚠️ NAK-283 Erstpruefung 2 Befund 3: die vier Bloecke oben laufen unter
+    // den `state::`-Funktionen, die Host-Dirty gar nicht kennen. Die
+    // Zusagespalte von M-12 nennt aber drei Groessen unter EINER Vorbedingung
+    // (`int64max - 1`, alle vier Handgriffe): Eintrag entfernt, Revision +1 und
+    // Host-Dirty GENAU EINMAL. Bis zur Nacharbeit 1 war die dritte Groesse nur
+    // an einem Normalstand und nur fuer einen Handgriff gemessen - unter der
+    // Mutation, die diese Zeile traegt, blieb der ganze Dirty-Block gruen, die
+    // Zusage hatte keine Falsifikation (§6.1 Schritt 4, Pruefliste E).
+    // Seither laeuft JEDER der vier Handgriffe zusaetzlich aus einem FRISCH in
+    // den Prozessor geladenen Grenzstand, mit angehaengtem `DirtyZaehler`.
+    {
+        auto p = prozessorMit (knappDrunter);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax - 1
+                    && p->sourceIntents().size() == 1,
+                "M-12 Host (Intent): Vorbedingung - der Grenzstand int64max - 1 liegt IM "
+                "Prozessor, ein Intent-Eintrag",
+                juce::String (p->intentBestandRevision()));
+        const auto dirtyVor = dirty.nonParam;
+        // ⚠️ Der Handgriff laeuft VOR `pruefe`, und die Messwerte stehen in
+        // lokalen Konstanten: die Auswertungsreihenfolge der Argumente eines
+        // Funktionsaufrufs ist in C++ unspezifiziert, und MSVC wertet die
+        // Detailspalte VOR der Bedingung aus - sie zeigte sonst den Zustand
+        // von VOR dem Handgriff und log im Rotlauf.
+        const bool ok = p->entferneQuellenrolle (kQuelleA, {});
+        const auto dirtyNach = dirty.nonParam;
+        const auto revNach = p->intentBestandRevision();
+        const bool leer = p->sourceIntents().empty();
+        pruefe (ok && leer && revNach == kMax && dirtyNach == dirtyVor + 1,
+                "M-12 Host (Intent): bei int64max - 1 wird der Eintrag entfernt, die "
+                "Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, Revision "
+                    + juce::String (revNach));
+        const bool okZwei = p->entferneQuellenrolle (kQuelleA, {});
+        const auto dirtyNachZwei = dirty.nonParam;
+        const auto revNachZwei = p->intentBestandRevision();
+        pruefe (okZwei && revNachZwei == kMax && dirtyNachZwei == dirtyNach,
+                "M-12 Host (Intent): der folgenlose Zweitaufruf schweigt - keine Revision, "
+                "kein weiteres Dirty; der Riegel hat den No-op-Pfad nicht verschoben",
+                juce::String (dirtyNachZwei - dirtyNach) + " weiteres Dirty, Revision "
+                    + juce::String (revNachZwei));
+        p->removeListener (&dirty);
+    }
+    {
+        auto p = prozessorMit (knappDrunter);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (p->intentBestandRevision() == kMax - 1 && p->intentSchutzangaben().size() == 1,
+                "M-12 Host (Schutz): Vorbedingung - Grenzstand und eine Schutzangabe");
+        const auto dirtyVor = dirty.nonParam;
+        const bool ok = p->hebeQuellenschutzAuf (kQuelleA, state::Schutzeigenschaft::attack,
+                                                 -1, -1);
+        const auto dirtyNach = dirty.nonParam;
+        const auto revNach = p->intentBestandRevision();
+        const bool leer = p->intentSchutzangaben().empty();
+        pruefe (ok && leer && revNach == kMax && dirtyNach == dirtyVor + 1,
+                "M-12 Host (Schutz): die Angabe wird entfernt, Revision +1, und Host-Dirty "
+                "GENAU EINMAL",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, Revision "
+                    + juce::String (revNach));
+        const bool okZwei = p->hebeQuellenschutzAuf (kQuelleA,
+                                                     state::Schutzeigenschaft::attack, -1, -1);
+        const auto dirtyNachZwei = dirty.nonParam;
+        const auto revNachZwei = p->intentBestandRevision();
+        pruefe (okZwei && revNachZwei == kMax && dirtyNachZwei == dirtyNach,
+                "M-12 Host (Schutz): der folgenlose Zweitaufruf schweigt",
+                juce::String (dirtyNachZwei - dirtyNach) + " weiteres Dirty, Revision "
+                    + juce::String (revNachZwei));
+        p->removeListener (&dirty);
+    }
+    {
+        auto p = prozessorMit (knappDrunter);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (p->intentBestandRevision() == kMax - 1 && p->intentBeziehungen().size() == 1,
+                "M-12 Host (Beziehung): Vorbedingung - Grenzstand und eine Beziehung");
+        const auto dirtyVor = dirty.nonParam;
+        const bool ok = p->entferneQuellenbeziehung (kQuelleA, kQuelleB);
+        const auto dirtyNach = dirty.nonParam;
+        const auto revNach = p->intentBestandRevision();
+        const bool leer = p->intentBeziehungen().empty();
+        pruefe (ok && leer && revNach == kMax && dirtyNach == dirtyVor + 1,
+                "M-12 Host (Beziehung): die Kante wird entfernt, Revision +1, und "
+                "Host-Dirty GENAU EINMAL",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, Revision "
+                    + juce::String (revNach));
+        const bool okZwei = p->entferneQuellenbeziehung (kQuelleA, kQuelleB);
+        const auto dirtyNachZwei = dirty.nonParam;
+        const auto revNachZwei = p->intentBestandRevision();
+        pruefe (okZwei && revNachZwei == kMax && dirtyNachZwei == dirtyNach,
+                "M-12 Host (Beziehung): der folgenlose Zweitaufruf schweigt",
+                juce::String (dirtyNachZwei - dirtyNach) + " weiteres Dirty, Revision "
+                    + juce::String (revNachZwei));
+        p->removeListener (&dirty);
+    }
+    {
+        const auto assistentAmHost =
+            mitAssistentenPlatz (writerMitAssistent(), 2, juce::var (kMax - 1));
+        auto p = prozessorMit (assistentAmHost);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (! p->stateNurLesen() && p->assistentAusState().revision == kMax - 1
+                    && p->assistentAusState().offen,
+                "M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei int64max - 1",
+                juce::String (p->assistentAusState().revision));
+        const auto dirtyVor = dirty.nonParam;
+        const auto schrittVor = p->assistentAusState().schritt;
+        const bool ok = p->assistentUeberspringen();
+        const auto dirtyNach = dirty.nonParam;
+        const auto nachErstem = p->assistentAusState();
+        pruefe (ok && nachErstem.revision == kMax && nachErstem.schritt != schrittVor
+                    && dirtyNach == dirtyVor + 1,
+                "M-12 Host (Assistent): der Schritt wechselt, die Revision steigt um GENAU "
+                "1, und Host-Dirty wird GENAU EINMAL gemeldet",
+                juce::String (dirtyNach - dirtyVor) + " Dirty, Revision "
+                    + juce::String (nachErstem.revision));
+        const bool okZwei = p->assistentUeberspringen();
+        const auto dirtyNachZwei = dirty.nonParam;
+        const auto revNachZwei = p->assistentAusState().revision;
+        pruefe (! okZwei && revNachZwei == kMax && dirtyNachZwei == dirtyNach,
+                "M-12 Host (Assistent): der Zweitaufruf steht jetzt AM Maximum, wird "
+                "abgewiesen und meldet nichts - keine Revision, kein Dirty",
+                juce::String (dirtyNachZwei - dirtyNach) + " weiteres Dirty, Revision "
+                    + juce::String (revNachZwei));
+        p->removeListener (&dirty);
+    }
+
+    // Und der Weg ueber den PRODUKTPFAD am Normalstand: ein echter Handgriff
+    // meldet genau einmal Host-Dirty (`nakama-state-v2.md:139`).
     {
         auto p = mainProzessor();
         DirtyZaehler dirty;
@@ -1573,9 +1793,12 @@ int main()
     raender();
     m11();
     // NAK-283 Etappe 2 (F11): die Revisionsraender - Ablehnung ohne Mutation
-    // (M-07 bis M-09), die obere Schranke der Assistentenrevision (M-10) und
-    // die Wache, dass der Normalfall unter der Grenze unveraendert bleibt (M-12).
+    // (M-07 bis M-09), dieselbe Ablehnung am Host fuer Schutz und Beziehung
+    // (M-08/M-09, Dirigentenregel 12.09.2026), die obere Schranke der
+    // Assistentenrevision (M-10) und die Wache, dass der Normalfall unter der
+    // Grenze unveraendert bleibt (M-12, jetzt auch am Grenzstand mit Listener).
     nak283::m283_07_bis_09();
+    nak283::m283_08_09_am_host();
     nak283::m283_10();
     nak283::m283_12();
 

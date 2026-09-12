@@ -1697,6 +1697,20 @@ void aeltere_mitgliederpublikation_ersetzt_keine_juengere()
     pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); })
                 && modellTraegt (*s.p, { b }),
             "M-01 Aufbau: B ist Mitglied in State UND Modell", modellBestand (*s.p));
+    // ⚠️ NAK-283 Erstpruefung 2 Befund 2: der Mitgliederstand wird sichtbar,
+    // sobald der Drain `bindungMutex` verlaesst (`Ipc.cpp`, Ende der Klammer) -
+    // Kopie, Hakenruf, Modelluebernahme, `meldeHostDirty` und die Revision
+    // stehen dann noch aus. Wer in diesem Fenster die Baselines liest und
+    // scharf schaltet, faengt moeglicherweise den AUFBAU-Ruf des Hakens (Kopie
+    // `[B]` statt `[B, A]`) und zaehlt eine Dirty-Meldung zu wenig; MUT-B
+    // lieferte dann genau die erwarteten zwei und BESTUENDE. Der einzige
+    // deterministische Riegel ist der Eintrittszaehler des Drainrahmens
+    // (`PluginProcessor.h`): der naechste Eintritt des Workerzugs heisst, sein
+    // voriger Aufruf ist SAMT Nachfuehrung zurueck. Zustandsbestand,
+    // einmaliger Modellvergleich und der Haken selbst genuegen nicht.
+    pruefe (s.ruheAbwarten(),
+            "M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision "
+            "zurueck - erst danach gelten Baseline und Scharfschalten");
 
     const auto dirtyVor = dirty.nonParam.load();
     const auto revisionVor = s.p->v3StateRevisionFuerTest();
@@ -1775,6 +1789,12 @@ void hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt()
     pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a }); })
                 && modellTraegt (*s.p, { a }),
             "M-02 Aufbau: A ist Mitglied", modellBestand (*s.p));
+    // ⚠️ NAK-283 Erstpruefung 2 Befund 2, wie in M-01: der Zustandsbestand
+    // allein beweist nur die Anwendung, nicht den Nachlauf des Aufbau-Drains.
+    // Der Eintrittszaehler des Drainrahmens ist der Riegel.
+    pruefe (s.ruheAbwarten(),
+            "M-02 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - erst danach "
+            "wird scharf geschaltet");
     const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
 
     // Ereignis 1: der Workerzug wendet `confirm_join B` an und haelt - seine
@@ -1783,6 +1803,11 @@ void hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt()
     s.bestaetige (Art::confirmJoin, b);
     pruefe (s.gate.warteBisErreicht (2000),
             "M-02: der Workerzug haelt zwischen Kopie und Publikation");
+    // Welchen Stand haelt der Haken? Ohne diesen Beleg bliebe das gemessene
+    // Interleaving eine Annahme (Erstpruefung 2 Befund 2, Zusatz).
+    pruefe (genau (mitglieder (*s.p), { a, b }) && modellTraegt (*s.p, { a }),
+            "M-02: die gezogene Kopie traegt [A, B] mit dem ALTEN Label, das Modell noch "
+            "[A] (Vorbedingung der Zusage)", modellBestand (*s.p));
 
     // Ereignis 2: der Message-Thread benennt A um (`Ipc.cpp`, Handgriff).
     pruefe (s.p->benenneSourcesHauptziel (a, "Fluegel"),
@@ -1922,44 +1947,79 @@ void inhaltsgleiche_publikation_zieht_die_frischemarke_nach()
 /// Es gibt keinen Heilungstakt: `wendeBestaetigteSourcesCommandsAn` kehrt bei
 /// leerem Batch zurueck, und ein `session_snapshot` schreibt `eintraege`, nicht
 /// `persistenteMitglieder`. Die Zusage muss ohne weiteren Befehl halten.
+///
+/// ⚠️ NAK-283 Erstpruefung 2 Befund 1: bis zur Nacharbeit 1 liefen Benennung
+/// und lokaler Unbind NACH der Freigabe der angehaltenen Kopie. Beide ziehen
+/// ihre Kopie frisch aus `zustand.mainProjectMitglieder` und publizieren sie -
+/// sie heilten damit genau die Abweichung, die diese Zeile messen soll. Unter
+/// der Mutation blieb der Bestandsvergleich gruen, rot war nur der
+/// Ueberholt-Zaehler; das ist die Zusage von M-01/M-71/M-72, nicht von M-06.
+/// Seither laufen ALLE vier Produktwege VOR der Freigabe, und der letzte
+/// Schritt vor der Ruhe ist die Freigabe plus `ruheAbwarten` - ohne jeden
+/// weiteren Handgriff, wie in M-01, M-02, M-03 und M-05.
 void state_und_modell_sind_nach_ruhe_gleich()
 {
     std::cout << "== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==\n";
     const auto a = id ('a');
     const auto b = id ('b');
+    const auto c = id ('c');
     Buehne s;   // Weg 4: `setzeBindung` hat in `mainAnlegen` schon publiziert.
     s.p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
 
-    // Weg 3 (Drain-Nachfuehrung) aus BEIDEN Threads, mit erzwungenem
-    // Interleaving: der Workerzug haelt mit `[A]`, der Message-Thread
-    // publiziert `[A, B]`.
-    s.scharf.store (true);
+    // Aufbau (Weg 3 aus dem Workerzug, noch unscharf): A und C werden
+    // Mitglieder. Erst der naechste Eintritt des Drainrahmens beweist, dass
+    // dieser Aufruf samt Publikation zurueck ist (Befund 2) - vorher darf der
+    // Haken nicht scharf werden, sonst faengt er den AUFBAU-Ruf.
     s.bestaetige (Art::confirmJoin, a);
-    pruefe (s.gate.warteBisErreicht (2000), "M-06: der Workerzug haelt mit der Kopie [A]");
+    s.bestaetige (Art::confirmJoin, c);
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a, c }); })
+                && modellTraegt (*s.p, { a, c }),
+            "M-06 Aufbau: A und C sind Mitglied in State UND Modell", modellBestand (*s.p));
+    pruefe (s.ruheAbwarten(),
+            "M-06 Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck");
+
+    // Weg 3 aus dem WORKERZUG, erzwungen angehalten: der Workerzug wendet
+    // `confirm_join B` an und haelt zwischen Kopie und Publikation. Seine Kopie
+    // traegt `[A, C, B]` mit dem alten (leeren) Label von A.
+    s.scharf.store (true);
     s.bestaetige (Art::confirmJoin, b);
+    pruefe (s.gate.warteBisErreicht (2000),
+            "M-06: der Workerzug haelt zwischen Kopie und Publikation");
+    pruefe (genau (mitglieder (*s.p), { a, c, b }) && modellTraegt (*s.p, { a, c }),
+            "M-06: die gezogene Kopie traegt [A, C, B], das Modell noch [A, C] "
+            "(Vorbedingung der Zusage)", modellBestand (*s.p));
+
+    // Weg 3 aus dem MESSAGE-THREAD: `unbind_probe B` wird angewandt und
+    // `[A, C]` publiziert - mit groesserer Folgenummer als die angehaltene
+    // Kopie.
+    s.bestaetige (Art::unbindProbe, b);
     std::atomic<bool> tickFertig { false };
     std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });
     const bool tickDurch = warteAuf (5000, [&] { return tickFertig.load(); });
     tick.join();
-    s.gate.freigeben();
-    pruefe (tickDurch && s.ruheAbwarten(),
-            "M-06: beide Drains sind samt Nachfuehrung zurueck");
+    pruefe (tickDurch && genau (mitglieder (*s.p), { a, c }),
+            "M-06: der Message-Thread hat den Unbind angewandt und `[A, C]` publiziert",
+            modellBestand (*s.p));
 
     // Weg 1: der Benennungs-Handgriff auf dem Message-Thread.
     pruefe (s.p->benenneSourcesHauptziel (a, "Fluegel"),
             "M-06: `benenneSourcesHauptziel` laeuft durch");
 
-    // Weg 2: der lokale Unbind ohne Broker - B wird Hauptziel ohne gueltige
+    // Weg 2: der lokale Unbind ohne Broker - C wird Hauptziel ohne gueltige
     // Runtime-Nonce.
-    auto sicht = lebendeQuelle (b);
+    auto sicht = lebendeQuelle (c);
     sicht.quellen.front().mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
     sicht.quellen.front().runtimeNonce.clear();
     s.p->setzeSourcesFixtureFuerTest (std::move (sicht));
-    pruefe (s.p->entferneSourcesHauptziel (b),
+    pruefe (s.p->entferneSourcesHauptziel (c),
             "M-06: der lokale Unbind ohne Broker laeuft durch");
 
-    // Ruhe. Jetzt muessen beide Seiten dasselbe tragen.
-    pruefe (s.ruheAbwarten(), "M-06: nach dem letzten Handgriff ist Ruhe");
+    // 🔑 Der LETZTE Schritt vor der Ruhe: die Freigabe der angehaltenen Kopie
+    // plus ihre Nachfuehrung. Danach kein Handgriff, kein Tick, kein
+    // Fixture-Setzen - sonst ueberschriebe eine spaetere Publikation genau die
+    // Abweichung, die diese Zeile messen soll (Befund 1).
+    s.gate.freigeben();
+    pruefe (s.ruheAbwarten(), "M-06: nach der Freigabe der alten Kopie ist Ruhe");
 
     const auto imState = mitglieder (*s.p);
     const auto imModell = s.p->sourcesPersistenteMitgliederFuerTest();
@@ -2102,8 +2162,21 @@ void reloadablehnung_und_ueberholung_sind_unterscheidbar()
         DirtyZaehler dirty;
         s.p->addListener (&dirty);
         s.bestaetige (Art::confirmJoin, b);
-        pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); }),
-                "M-72 Phase B Aufbau: B ist Mitglied");
+        pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); })
+                    && modellTraegt (*s.p, { b }),
+                "M-72 Phase B Aufbau: B ist Mitglied in State UND Modell",
+                modellBestand (*s.p));
+        // ⚠️ NAK-283 Erstpruefung 2 Befund 2: erst der naechste Eintritt des
+        // Drainrahmens beweist, dass der Aufbau-Drain samt Publikation, Dirty
+        // und Revision zurueck ist. Ohne ihn faengt der Haken moeglicherweise
+        // den Aufbau-Ruf, die Baselines liegen im Nachlauf eines dritten
+        // Befehls - und MUT-B (Ausstieg vor Dirty und Revision) liefert dann
+        // genau die erwarteten zwei Meldungen und BESTUENDE, waehrend die
+        // korrekte Fassung drei zaehlt und ROT wird. Diese Zeile ist der
+        // einzige Rotbeweis von M-72.
+        pruefe (s.ruheAbwarten(),
+                "M-72 Phase B Aufbau: der Aufbau-Drain ist samt Nachfuehrung zurueck - "
+                "erst danach gelten Baseline und Scharfschalten");
         const auto dirtyVor = dirty.nonParam.load();
         const auto revisionVor = s.p->v3StateRevisionFuerTest();
 
@@ -2111,6 +2184,9 @@ void reloadablehnung_und_ueberholung_sind_unterscheidbar()
         s.bestaetige (Art::confirmJoin, a);
         pruefe (s.gate.warteBisErreicht (2000),
                 "M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation");
+        pruefe (genau (mitglieder (*s.p), { b, a }) && modellTraegt (*s.p, { b }),
+                "M-72 Phase B: die gezogene Kopie traegt [B, A], das Modell noch [B] "
+                "(Vorbedingung der Zusage)", modellBestand (*s.p));
         s.bestaetige (Art::unbindProbe, b);
         std::atomic<bool> tickFertig { false };
         std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });

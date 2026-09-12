@@ -303,6 +303,16 @@ Weder offen im Sinne von Arbeit noch erledigt. Statusblatt:
 `eq-copilot/design/prisma-studie/STATUS.md`. Wird nur wieder bewegt, wenn der
 User die Studie ausdrücklich reaktiviert.
 
+**Nachtrag 12.09.2026 — der gesamte Designteil ist geparkt** (User-Wort:
+„der gesamte design part ist geparkt , für wenn alles technische erledigt ist
+und die 2 plugins reibungslos funktionieren wie sie sollen";
+`design/abnahmen/2026-09-12-designteil-geparkt.md`). Folgen: Schritt S31b
+steht am Planende hinter P8–P9; die Karten U23 und U28–U37 liegen in
+`docs/plan/fragen.json` unter `geparkt`; Registerzeilen, die auf das
+Gen-UI-Ticket S31b warten, ruhen mit. Die Ehrlichkeit der vorhandenen
+Oberfläche (keine toten Elemente) bleibt technische Arbeit. Wiederaufnahme nur
+durch neues User-Wort.
+
 | ID | Seit | Punkt |
 |---|---|---|
 | NAK-11 | 08-17 | Unicorn-Studio-Weg: Offline-/Selbsthosting der Szenen-JSON braucht den „Legend"-Plan; SDK-Lizenz („nur für legitime Unicorn-Studio-Projekte") vor einem JUCE-WebView-Einsatz im ausgelieferten Plugin klären. Design-Phase (CDN-Embed) ist unkritisch. **Geparkt 08-21:** die Unicorn-Lichtwelt gehört zur Prisma-Studie; ohne Studie kein WebView-Einsatz, ohne Einsatz keine Lizenzfrage. |

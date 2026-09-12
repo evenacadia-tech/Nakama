@@ -99,33 +99,18 @@ irreführende UI-Zustände lesen.
 - Einen nicht ausführbaren Test mit Grund melden und einen kleineren, ehrlichen Beleg
   liefern; niemals Erfolg aus bloßer Codeinspektion behaupten.
 
-## UI-, UX- und Figma-Arbeit
+## UI-, UX- und Figma-Arbeit — geparkt seit 12.09.2026
 
-Für Designaufgaben gilt zusätzlich diese Reihenfolge:
-
-1. `design/LIES-MICH.md` lesen.
-2. Für die seit 31.08.2026 laufende funktionale UI-Ableitung zuerst
-   `design/docs/funktions-und-bedien-blueprint.md` und
-   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`
-   lesen; danach nur die jüngste passende Detailabnahme.
-3. Seit 02.09.2026 läuft die visuelle Phase in der Figma-Datei `fable-dummy`
-   (`design/visuell/LIES-MICH.md`); die Skizze in `design/skizze/` ist
-   Layout-Wahrheit, ein Figma-Stand bleibt Vorschlag bis zur datierten Abnahme.
-   Frühere Figma-Nodes, Exporte und die drei Rework-Bilder vom 25.08. sind
-   Verlauf und ergänzen keine Raster-, Farb-, Material- oder
-   Positionsentscheidung still.
-4. Genau eine echte, technisch noch offene UI-Architekturfrage stellen. Die
-   Antworten werden in festen Fünferblöcken gesammelt. Erst nach der fünften
-   Antwort werden laufende Skizze, Abnahmen und Blueprint gemeinsam
-   aktualisiert und sichtbar geprüft; danach beginnt der nächste Block.
-5. Bei Audio-Plugin-Oberflächen den Skill `audio-plugin-ux` verwenden.
-
-Technische Grenzen vor der Frage aus aktuellem Code, Tests und Verträgen
-ableiten; sie sind keine Geschmacksentscheidung des Users. Keine geparkte
-Designrichtung und keine eigene Stilsuche ungefragt reaktivieren. Sichtbare
-Elemente müssen entweder einen Handgriff ausführen oder einen ehrlichen Zustand
-anzeigen. Erst eine dokumentierte Abnahme darf in den Produktcode gespiegelt
-werden.
+Der gesamte Designteil ruht (User-Wort 12.09.2026,
+`design/abnahmen/2026-09-12-designteil-geparkt.md`), bis alles Technische
+erledigt ist und beide Plugins reibungslos funktionieren: keine Designfragen,
+keine Figma-, Skizzen- oder Blueprint-Arbeit, keine Spiegelung von
+Designständen in den Produktcode. `design/LIES-MICH.md` beschreibt den Stand
+beim Parken; `design/docs/funktions-und-bedien-blueprint.md` bleibt die
+Beschreibung der Funktions- und Bedienarchitektur, die technische Schritte
+zitieren. Weiter gültig für die vorhandene Oberfläche: sichtbare Elemente
+führen einen Handgriff aus oder zeigen einen ehrlichen Zustand; keine geparkte
+Designrichtung und keine eigene Stilsuche ungefragt reaktivieren.
 
 ## Sprache und Abschluss
 

@@ -1,5 +1,9 @@
 # design/visuell — die visuelle Phase in Figma
 
+> **Geparkt seit 12.09.2026** mit dem gesamten Designteil
+> (`../abnahmen/2026-09-12-designteil-geparkt.md`); keine Figma-Arbeit, bis
+> der User den Designteil wieder öffnet. Dieses Blatt ist der Stand beim Parken.
+
 **Stand: 02.09.2026 (Abend) · Grundrahmen und 21 Zustandsrahmen nach der
 Poliersession, Vorschlag von Claude, nicht abgenommen.**
 

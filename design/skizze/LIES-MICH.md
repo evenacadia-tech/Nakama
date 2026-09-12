@@ -1,4 +1,8 @@
-# design/skizze — die laufende technische UI-Skizze
+# design/skizze — die technische UI-Skizze
+
+> **Geparkt seit 12.09.2026** mit dem gesamten Designteil
+> (`../abnahmen/2026-09-12-designteil-geparkt.md`); dieses Blatt ist der Stand
+> beim Parken.
 
 **Stand: 02.09.2026 nach Fünferblock 05 · derzeitiger Stand, nicht der
 finale.**

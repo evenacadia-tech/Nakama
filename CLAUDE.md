@@ -32,27 +32,22 @@ logische Commits gehen ohne Rückfrage raus.
   vor. Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder
   Netzzugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio.
 - **Keine KI-Erklärschicht** im Produkt; der Advisor ist regelbasiert.
-- **UI-Funktionsneustart (User 31.08.2026):** Die UI-Architektur wird
-  designneutral aus `design/docs/funktions-und-bedien-blueprint.md` und den
-  datierten Abnahmen abgeleitet; frühere Figma-Nodes, Exporte und die drei
-  Rework-Bilder vom 25.08. sind Verlauf. Die visuelle Phase läuft seit
-  02.09.2026 in der Figma-Datei `fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`,
-  Seite „01 — Nakama 950×538 · Skizze in Materialsprache") in der
-  Materialsprache der Entwürfe vom 20.–22.08.2026 (Unibody, Glas, Kinn,
-  Apertur, Geist, Wein, Cyan nur als Saum) mit der Wortmarke im rot-blauen
-  Verlauf. Skizze ist Layout-Wahrheit, Figma visuelle Wahrheit; ein
-  Figma-Stand ist Vorschlag bis zur datierten Abnahme
-  (`design/abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`,
-  `design/visuell/LIES-MICH.md`). Produktsprache Englisch; Docs, Commits,
+- **Designteil geparkt (User 12.09.2026):** „der gesamte design part ist
+  geparkt , für wenn alles technische erledigt ist und die 2 plugins
+  reibungslos funktionieren wie sie sollen"
+  (`design/abnahmen/2026-09-12-designteil-geparkt.md`). Bis zu einem neuen
+  User-Wort keine Designfragen, keine Figma-, Skizzen- oder Blueprint-Arbeit,
+  keine Spiegelung von Designständen nach `eq-copilot/`; die Karten U23 und
+  U28–U37 liegen in `docs/plan/fragen.json` unter `geparkt`, Schritt S31b
+  steht am Planende. Stand beim Parken: Funktionsneustart vom 31.08.2026
+  (Blueprint designneutral, Fünferblöcke 01–05 integriert, Block 06 bei 1 von
+  5; `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`),
+  visuelle Phase seit 02.09.2026 in Figma `fable-dummy` (Key
+  `DvMbHg0MWCPwibDj8q6hI8`; Skizze Layout-Wahrheit, Figma visuelle Wahrheit,
+  Figma-Stand ist Vorschlag bis zur datierten Abnahme;
+  `design/visuell/LIES-MICH.md`); frühere Figma-Nodes, Exporte und die drei
+  Rework-Bilder sind Verlauf. Produktsprache Englisch; Docs, Commits,
   Gespräch Deutsch.
-- **UI-Arbeitsmodus:** pro User-Schritt genau eine offene Architekturfrage;
-  technische Grenzen vorher aus Code, Tests und Verträgen ableiten; Antworten
-  in Fünferblöcken, nach der fünften Skizze, Abnahmen und Blueprint gemeinsam
-  aktualisieren und sichtbar prüfen
-  (`design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`).
-  Die technische Skizze liegt nur in `design/skizze/` und ist laufender
-  Stand; Skizze und Blueprint heißen nie fertig oder abgenommen — bindend
-  sind nur datierte Abnahmen.
 - **Keine toten UI-Elemente** (User 24.08.2026): jedes sichtbare Element
   führt einen Handgriff aus oder meldet ehrlich einen Zustand.
 - **Tasten sind Material** (User 25.08.2026): Zustände wechseln Fläche,
@@ -69,7 +64,8 @@ logische Commits gehen ohne Rückfrage raus.
   02.09.2026): `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5) bindet
   Technik, Verträge, Phasen und Falsifikation;
   `design/docs/funktions-und-bedien-blueprint.md` bindet die Funktions- und
-  Bedienarchitektur beider Apps. Über beiden stehen aktueller Vertrag und
+  Bedienarchitektur beider Apps (Stand beim Parken des Designteils,
+  Fortschreibung geparkt). Über beiden stehen aktueller Vertrag und
   Code. Widersprüche werden als Zeile in `docs/offene-punkte.md` geführt, nie
   kaschiert. Der gerechnete Stand und die nächste Arbeit stehen in
   `docs/PLAN-STAND.md`; danach nur Gate-Text, Fachquellen und Manifest des
@@ -151,7 +147,7 @@ logische Commits gehen ohne Rückfrage raus.
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
 | FL-Laufzeit, MCP-Server, Diagnoseprojekt | `tools/fl/LIES-MICH.md`, Register NAK-284 bis NAK-286 (MCP-Repo `C:\Users\phili\Projekte\fl-studio-mcp`, GitHub `evenacadia-tech/fl-studio-mcp`) |
-| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md`, `design/visuell/LIES-MICH.md`, jüngste passende Datei in `design/abnahmen/` |
+| App-Design (geparkt seit 12.09.2026) | `design/abnahmen/2026-09-12-designteil-geparkt.md`, dann `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md`, `design/visuell/LIES-MICH.md` |
 | Widerspruch Entwurf ↔ Blueprint | Vertrag und Code stehen über beiden; Widerspruch als Zeile in `docs/offene-punkte.md` |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
@@ -230,25 +226,17 @@ Broker-Ende-zu-Ende immer über den Probe-Pipenamen; nie ein Testbroker auf
 der Produktions-Pipe. Vor einer Installation State-Migrationsstand und
 letzten Installationsbeweis prüfen.
 
-## Design-Arbeitsmodell
+## Design-Arbeitsmodell (geparkt seit 12.09.2026)
 
-1. Blueprint und der Arbeitsmodus vom 31.08.2026 sind die Grundlage; frühere
-   visuelle Entwürfe sind keine Vorgabe.
-2. Pro Oberfläche genau eine offene Frage zu Aufbau, Hierarchie,
-   Sichtbarkeit, Objektbesitz oder Disclosure; Funktionsumfang und
-   technische Grenzen vorher selbst klären.
-3. Antworten im Fünferblock sammeln, User-Wortlaut im Blockprotokoll
-   `design/abnahmen/<datum>-technische-ui-architektur-fuenferblock-NN.md`
-   (entsteht mit der ersten Antwort, nie leer vorab); liegt die Frage als
-   Karte in `docs/plan/fragen.json`, wird sie mit `/fragen` gestellt. Nach
-   der fünften Antwort Skizze (`design/skizze/nakama-ui-technical-sketch.html`),
-   Abnahmen und Blueprint gemeinsam aktualisieren, Screenshot nach
-   `design/skizze/belege/`, committen; Geschlossenes nicht erneut öffnen.
-4. Farben, Material, Typografie entstehen in Figma (`fable-dummy`); jeder
-   Stand wird unter `design/visuell/belege/` belegt und bleibt Vorschlag;
-   erst eine dokumentierte Abnahme erlaubt die Spiegelung in `eq-copilot/`.
-5. `eq-copilot/design/`, frühere Figma-Stände und die drei Rework-Bilder sind
-   Verlauf; sie ergänzen die Funktionsarchitektur nicht still.
+Der Designteil ruht bis nach der technischen Fertigstellung (Wahrheitskern).
+Das Arbeitsmodell beim Parken steht in `design/LIES-MICH.md` und
+`design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`:
+Blueprint als Grundlage, eine offene Frage je Oberfläche, Fünferblöcke mit
+Blockprotokoll in `design/abnahmen/`, Skizze und Blueprint nach der fünften
+Antwort gemeinsam nachziehen, Farben und Material in Figma `fable-dummy` mit
+Belegen unter `design/visuell/belege/`, Spiegelung nach `eq-copilot/` nur nach
+dokumentierter Abnahme. `eq-copilot/design/`, frühere Figma-Stände und die
+drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
 
 ## Maschinen-Landminen
 

@@ -1,5 +1,5 @@
 {
- "_lies_mich": "docs/plan/LIES-MICH.md — offene Fragen an den User. Gestellt wird im Chat durch .claude/skills/fragen/. Eine Antwort ist User-Wort: sie wird WOERTLICH mit Datum hier und im Register bzw. in design/abnahmen/ festgehalten, nie zusammengefasst.",
+ "_lies_mich": "docs/plan/LIES-MICH.md — offene Fragen an den User. Gestellt wird im Chat durch .claude/skills/fragen/. Eine Antwort ist User-Wort: sie wird WOERTLICH mit Datum hier und im Register bzw. in design/abnahmen/ festgehalten, nie zusammengefasst. `geparkt` (seit 12.09.2026) haelt Karten, die zum geparkten Designteil gehoeren; sie werden nicht gestellt, bis der User den Designteil wieder oeffnet (design/abnahmen/2026-09-12-designteil-geparkt.md).",
  "herkunft": "docs/hub/hub.json, Stand 2026-08-23 (bei_dir + antworten)",
  "offen": [
   {
@@ -26,17 +26,6 @@
    "bilder": [],
    "status": "offen",
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
-  },
-  {
-   "id": "U23",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Namensentscheid (zwei Wörter)",
-   "titel": "Wie heißen Gens zwei Oberflächen im Produkt?",
-   "was": "Gen hat zwei Flächen: die erste zeigt Quellen, Befunde und Advisor, die zweite den EQ mit der zentralen Sondenbedienung. Intern heißen sie bisher „Overview“ und „EQ-Zentrale“ — beides sind ausdrücklich Arbeitsnamen. Gesucht sind die beiden Namen, die im Produkt sichtbar werden (Produktsprache Englisch).",
-   "warum": "Blueprint §15 Punkt 2 führt die Arbeitsnamen als offen. Sobald die Oberfläche gebaut wird, steht der Name in der Bedienung — ein späterer Wechsel ist eine sichtbare Produktänderung. Eilt nicht: erst zu S31b nötig.",
-   "wo": "design/docs/funktions-und-bedien-blueprint.md §15 Punkt 2; CLAUDE.md Wahrheitskern",
-   "seit": "02.09.",
-   "status": "offen"
   },
   {
    "id": "U24",
@@ -69,116 +58,6 @@
    "warum": "Register NAK-122. Dein Entscheid vom 23.08.2026 verlangt, dass der Sonden-Durchschalter den Bus-Namen zeigt und die Mixer-Reihenfolge hält. Beides kann nur FL liefern, und es ist nie gemessen worden. Der Termin entscheidet, ob das Fähigkeitsbit `host_channel_context` auf supported geht — bis dahin gilt der am 30.08.2026 entschiedene Rückfall (Antwort U20: der Name, den du je Sonde selbst vergibst). Eilt nicht, blockiert aber die ehrliche Anzeige in S31b.",
    "wo": "docs/offene-punkte.md NAK-122 und NAK-106; docs/plan/plan.json S18–19; eq-copilot/identity/host-capabilities-fl-v1.json",
    "seit": "02.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U28",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Wie markierst du eine Passage — welche Geste, welcher sichtbare Zustand, und was passiert bei Transportstopp mittendrin?",
-   "was": "Auf Gens erster Oberfläche soll eine Passage von Hand markiert werden (SONDE-013 baut die Technik: Start, Ende, Transportepoche, Fingerprint). Offen ist die Bedienung: eine Geste (z. B. Start-/Ende-Taste, Ziehen im Graph), was während der Markierung sichtbar ist, und ob ein Transportstopp die halbe Markierung verwirft oder hält.",
-   "warum": "SONDE-013 §4.2 P-01. Die Technik hält das Fenster passagengebunden und verwirft es bei Seek (Gate §58); wie der User es setzt und sieht, entscheidet die Bedienarchitektur, nicht die Technik.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U29",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Was zeigt Gen von einem laufenden Versuch, während du im fremden Werkzeug arbeitest?",
-   "was": "Ein manueller Versuch (Baseline verriegelt, du änderst etwas in einem anderen Plugin, dann Kandidat) läuft minutenlang. Bleibt die Landkarte dabei normal bedienbar, oder gibt es einen sichtbaren Versuchszustand (Banner, gesperrte Elemente, Fortschritt)?",
-   "warum": "SONDE-013 §4.2 P-02. Der Broker hält den offenen Versuch (M-48 Retention, M-50 Neustart); Register NAK-172 (Preset-/Screenshot-Hash als Beleg) hängt an derselben Antwort.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U30",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Ist der Blind-A/B-Modus der Standard oder eine Zuschaltung?",
-   "was": "Beim Hörurteil kann Gen die Reihenfolge von Baseline und Kandidat verbergen und randomisieren (M-44: Reihenfolge wird vor dem Urteil append-only gebunden). Der Entwurf §43.2 nennt den Modus „optional\". Standard an, Standard aus, oder je Versuch wählbar?",
-   "warum": "SONDE-013 §4.2 P-03. Rein eine Bedienentscheidung; die Technik bindet die Reihenfolge in beiden Fällen.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U31",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "In welcher Reihenfolge zeigt Gen Zielmetrik, Guardrails, Effektstabilität und Hörurteil — und welche Guardrail-Verletzung ist sichtbar dringlicher?",
-   "was": "Die Auswertung hat vier getrennte Achsen und nie eine Gesamtnote (M-45). Gesucht: die Lesereihenfolge auf der Fläche und ob z. B. eine Loudness-Verletzung lauter angezeigt wird als eine Breiten-Verletzung.",
-   "warum": "SONDE-013 §4.2 P-04. Loudness und True Peak sind bis NAK-171 „nicht gemessen\" mit Grund; die Anzeige muss das ehrlich zeigen können.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U32",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Wie sieht ein PRE/POST-Paar in der Quellenliste aus — zwei Zeilen, eine Zeile mit zwei Hälften, oder eine eigene Ansicht?",
-   "was": "Zwei Sonden mit derselben pair_id (vor und nach der Kette) bilden ein Paar mit drei getrennten Ergebnissen (M-14). Wie das Paar in der Quellenliste erscheint und wie eine fehlende oder getrennte Hälfte aussieht (M-22 „unclear mit Grund\"), ist offen.",
-   "warum": "SONDE-013 §4.2 P-05; Blueprint Gen Fläche 1.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U33",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Soll der User eine Passage benennen können, und reist der Name mit dem FL-Projekt?",
-   "was": "Die Technik kann beides: ein Name im Plugin-State reist mit dem Projekt (NakamaState, bis 64 Passagen). Die Frage ist, ob das Produkt Namen will oder Passagen nur über Zeitbereich und Zeitpunkt identifiziert.",
-   "warum": "SONDE-013 §4.2 P-06. Ein Name wäre ein persistentes Feld und damit ein Vertragsschritt am State — deshalb vor dem UI-Ticket entscheiden.",
-   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
-   "seit": "05.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U34",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Bedienung)",
-   "titel": "Braucht ein Befund eine vom User markierte Passage, oder arbeitet der Advisor auch auf dem laufenden Fenster?",
-   "was": "Die Technik kann beides: Der Datenweg (SONDE-014, M-61) erlaubt dem Assistenten ausdrücklich den Schritt „erst Passage messen\"; er kann aber auch auf dem laufenden Fenster rechnen. Die Frage ist, ob „erst Passage markieren\" der Normalfall oder die Ausnahme sein soll.",
-   "warum": "SONDE-014 §4.10 P-01. Es ist eine Bedienentscheidung über die erste Handlung des Users; sie berührt Karte U28 (Passagengeste), die offen bleibt.",
-   "wo": "docs/beweise/SONDE-014.md §4.10 P-01; design/docs/funktions-und-bedien-blueprint.md",
-   "seit": "07.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U35",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Priorität)",
-   "titel": "Wie viele Befunde dürfen gleichzeitig offen sein, bevor die Liste selbst ein Problem wird?",
-   "was": "Der Datenweg liefert beliebig viele Befunde je Sitzung (Alternativen sind eigene Befunde, U21). Ein Deckel oder eine Rangordnung in der Liste ALL FINDINGS wäre eine sichtbare Priorität und damit Produktentscheid.",
-   "warum": "SONDE-014 §4.10 P-02. Der Blueprint entscheidet Scrollliste und Filter für Quellen (§4.1), nicht für Befunde.",
-   "wo": "docs/beweise/SONDE-014.md §4.10 P-02; design/docs/funktions-und-bedien-blueprint.md §4.1",
-   "seit": "07.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U36",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Anzeige)",
-   "titel": "Verschwindet ein Befund, dessen Evidenz zurückgenommen wurde, aus der Liste, oder bleibt er als STALE stehen?",
-   "was": "Der Datenweg invalidiert deterministisch (M-24) und kann beides liefern: den Befund aus der Liste nehmen oder ihn sichtbar als STALE ohne Draft stehen lassen. Welche Anzeige der User will, ist Priorität der Fläche.",
-   "warum": "SONDE-014 §4.10 P-03. M-24 legt fest, DASS invalidiert wird; ob der Befund sichtbar bleibt, ist Anzeigeentscheid.",
-   "wo": "docs/beweise/SONDE-014.md §4.10 P-03 und §3.3 (Befundzustände)",
-   "seit": "07.09.",
-   "status": "offen"
-  },
-  {
-   "id": "U37",
-   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
-   "art": "Produktentscheid (Grundgesetz)",
-   "titel": "Darf der Advisor von sich aus einen neuen, sicheren Befund in den Fokus ziehen?",
-   "was": "Normal ist genau ein Finding im Fokus (Abnahme 31.08.). Entsteht ein neuer sicherer Befund, kann der Advisor ihn still in die Liste stellen oder den Fokus wechseln. Ein Fokuswechsel von sich aus grenzt an das Grundgesetz „nichts Ungefragtes\" (M-78).",
-   "warum": "SONDE-014 §4.10 P-04. Wer den Fokus wechselt, steht in keiner Abnahme; deshalb Produktfrage, keine Technikfrage.",
-   "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
-   "seit": "07.09.",
    "status": "offen"
   },
   {
@@ -215,6 +94,151 @@
    "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
    "seit": "12.09.",
    "status": "offen"
+  }
+ ],
+ "geparkt": [
+  {
+   "id": "U23",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Namensentscheid (zwei Wörter)",
+   "titel": "Wie heißen Gens zwei Oberflächen im Produkt?",
+   "was": "Gen hat zwei Flächen: die erste zeigt Quellen, Befunde und Advisor, die zweite den EQ mit der zentralen Sondenbedienung. Intern heißen sie bisher „Overview“ und „EQ-Zentrale“ — beides sind ausdrücklich Arbeitsnamen. Gesucht sind die beiden Namen, die im Produkt sichtbar werden (Produktsprache Englisch).",
+   "warum": "Blueprint §15 Punkt 2 führt die Arbeitsnamen als offen. Sobald die Oberfläche gebaut wird, steht der Name in der Bedienung — ein späterer Wechsel ist eine sichtbare Produktänderung. Eilt nicht: erst zu S31b nötig.",
+   "wo": "design/docs/funktions-und-bedien-blueprint.md §15 Punkt 2; CLAUDE.md Wahrheitskern",
+   "seit": "02.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U28",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Wie markierst du eine Passage — welche Geste, welcher sichtbare Zustand, und was passiert bei Transportstopp mittendrin?",
+   "was": "Auf Gens erster Oberfläche soll eine Passage von Hand markiert werden (SONDE-013 baut die Technik: Start, Ende, Transportepoche, Fingerprint). Offen ist die Bedienung: eine Geste (z. B. Start-/Ende-Taste, Ziehen im Graph), was während der Markierung sichtbar ist, und ob ein Transportstopp die halbe Markierung verwirft oder hält.",
+   "warum": "SONDE-013 §4.2 P-01. Die Technik hält das Fenster passagengebunden und verwirft es bei Seek (Gate §58); wie der User es setzt und sieht, entscheidet die Bedienarchitektur, nicht die Technik.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U29",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Was zeigt Gen von einem laufenden Versuch, während du im fremden Werkzeug arbeitest?",
+   "was": "Ein manueller Versuch (Baseline verriegelt, du änderst etwas in einem anderen Plugin, dann Kandidat) läuft minutenlang. Bleibt die Landkarte dabei normal bedienbar, oder gibt es einen sichtbaren Versuchszustand (Banner, gesperrte Elemente, Fortschritt)?",
+   "warum": "SONDE-013 §4.2 P-02. Der Broker hält den offenen Versuch (M-48 Retention, M-50 Neustart); Register NAK-172 (Preset-/Screenshot-Hash als Beleg) hängt an derselben Antwort.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U30",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Ist der Blind-A/B-Modus der Standard oder eine Zuschaltung?",
+   "was": "Beim Hörurteil kann Gen die Reihenfolge von Baseline und Kandidat verbergen und randomisieren (M-44: Reihenfolge wird vor dem Urteil append-only gebunden). Der Entwurf §43.2 nennt den Modus „optional\". Standard an, Standard aus, oder je Versuch wählbar?",
+   "warum": "SONDE-013 §4.2 P-03. Rein eine Bedienentscheidung; die Technik bindet die Reihenfolge in beiden Fällen.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U31",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "In welcher Reihenfolge zeigt Gen Zielmetrik, Guardrails, Effektstabilität und Hörurteil — und welche Guardrail-Verletzung ist sichtbar dringlicher?",
+   "was": "Die Auswertung hat vier getrennte Achsen und nie eine Gesamtnote (M-45). Gesucht: die Lesereihenfolge auf der Fläche und ob z. B. eine Loudness-Verletzung lauter angezeigt wird als eine Breiten-Verletzung.",
+   "warum": "SONDE-013 §4.2 P-04. Loudness und True Peak sind bis NAK-171 „nicht gemessen\" mit Grund; die Anzeige muss das ehrlich zeigen können.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U32",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Wie sieht ein PRE/POST-Paar in der Quellenliste aus — zwei Zeilen, eine Zeile mit zwei Hälften, oder eine eigene Ansicht?",
+   "was": "Zwei Sonden mit derselben pair_id (vor und nach der Kette) bilden ein Paar mit drei getrennten Ergebnissen (M-14). Wie das Paar in der Quellenliste erscheint und wie eine fehlende oder getrennte Hälfte aussieht (M-22 „unclear mit Grund\"), ist offen.",
+   "warum": "SONDE-013 §4.2 P-05; Blueprint Gen Fläche 1.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U33",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Soll der User eine Passage benennen können, und reist der Name mit dem FL-Projekt?",
+   "was": "Die Technik kann beides: ein Name im Plugin-State reist mit dem Projekt (NakamaState, bis 64 Passagen). Die Frage ist, ob das Produkt Namen will oder Passagen nur über Zeitbereich und Zeitpunkt identifiziert.",
+   "warum": "SONDE-013 §4.2 P-06. Ein Name wäre ein persistentes Feld und damit ein Vertragsschritt am State — deshalb vor dem UI-Ticket entscheiden.",
+   "wo": "docs/beweise/SONDE-013.md §4.2; design/docs/funktions-und-bedien-blueprint.md; docs/offene-punkte.md NAK-179",
+   "seit": "05.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U34",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Bedienung)",
+   "titel": "Braucht ein Befund eine vom User markierte Passage, oder arbeitet der Advisor auch auf dem laufenden Fenster?",
+   "was": "Die Technik kann beides: Der Datenweg (SONDE-014, M-61) erlaubt dem Assistenten ausdrücklich den Schritt „erst Passage messen\"; er kann aber auch auf dem laufenden Fenster rechnen. Die Frage ist, ob „erst Passage markieren\" der Normalfall oder die Ausnahme sein soll.",
+   "warum": "SONDE-014 §4.10 P-01. Es ist eine Bedienentscheidung über die erste Handlung des Users; sie berührt Karte U28 (Passagengeste), die offen bleibt.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-01; design/docs/funktions-und-bedien-blueprint.md",
+   "seit": "07.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U35",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Priorität)",
+   "titel": "Wie viele Befunde dürfen gleichzeitig offen sein, bevor die Liste selbst ein Problem wird?",
+   "was": "Der Datenweg liefert beliebig viele Befunde je Sitzung (Alternativen sind eigene Befunde, U21). Ein Deckel oder eine Rangordnung in der Liste ALL FINDINGS wäre eine sichtbare Priorität und damit Produktentscheid.",
+   "warum": "SONDE-014 §4.10 P-02. Der Blueprint entscheidet Scrollliste und Filter für Quellen (§4.1), nicht für Befunde.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-02; design/docs/funktions-und-bedien-blueprint.md §4.1",
+   "seit": "07.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U36",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Anzeige)",
+   "titel": "Verschwindet ein Befund, dessen Evidenz zurückgenommen wurde, aus der Liste, oder bleibt er als STALE stehen?",
+   "was": "Der Datenweg invalidiert deterministisch (M-24) und kann beides liefern: den Befund aus der Liste nehmen oder ihn sichtbar als STALE ohne Draft stehen lassen. Welche Anzeige der User will, ist Priorität der Fläche.",
+   "warum": "SONDE-014 §4.10 P-03. M-24 legt fest, DASS invalidiert wird; ob der Befund sichtbar bleibt, ist Anzeigeentscheid.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-03 und §3.3 (Befundzustände)",
+   "seit": "07.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U37",
+   "dringlichkeit": "vor dem Gen-UI-Ticket (S31b)",
+   "art": "Produktentscheid (Grundgesetz)",
+   "titel": "Darf der Advisor von sich aus einen neuen, sicheren Befund in den Fokus ziehen?",
+   "was": "Normal ist genau ein Finding im Fokus (Abnahme 31.08.). Entsteht ein neuer sicherer Befund, kann der Advisor ihn still in die Liste stellen oder den Fokus wechseln. Ein Fokuswechsel von sich aus grenzt an das Grundgesetz „nichts Ungefragtes\" (M-78).",
+   "warum": "SONDE-014 §4.10 P-04. Wer den Fokus wechselt, steht in keiner Abnahme; deshalb Produktfrage, keine Technikfrage.",
+   "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
+   "seit": "07.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-12",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
   }
  ],
  "beantwortet": {

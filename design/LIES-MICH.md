@@ -8,13 +8,21 @@ dann nurnoch im nakama repo gearbeitet"). Vorher eigenes Repo
 zu `design/`**; ältere Texte, die `Nakama-Design/…` sagen, meinen denselben
 Ort.
 
+> **Geparkt seit 12.09.2026 (User-Wort:** „der gesamte design part ist
+> geparkt , für wenn alles technische erledigt ist und die 2 plugins
+> reibungslos funktionieren wie sie sollen"**;**
+> [abnahmen/2026-09-12-designteil-geparkt.md](abnahmen/2026-09-12-designteil-geparkt.md)**).**
+> Alles unterhalb beschreibt den Stand beim Parken. Keine Designfragen, keine
+> Figma-, Skizzen- oder Blueprint-Arbeit, bis der User den Designteil wieder
+> öffnet.
+
 Hier entsteht das Design der beiden Apps als lebende Blätter im Browser. Es
 wird KEIN Plugin-Code geschrieben — der lebt in `eq-copilot/` und `broker/`.
 Die Produktwahrheit (was die Apps und Flächen sind und dürfen) und das
 Register der User-Entscheide stehen in `CLAUDE.md` an der Repo-Wurzel
 (Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
 
-## Aktuelle Phase: Funktionsneustart vom 31.08.2026
+## Phase beim Parken: Funktionsneustart vom 31.08.2026
 
 Für die neue funktionale Designableitung gilt der direkte User-Auftrag vom
 31.08.2026: Der aktuelle Implementierungsplan wird in einen erweiterbaren
@@ -30,7 +38,7 @@ Entwurf `../docs/FL-Nakama-Sonden-Design-Entwurf.md` bindet Technik,
 Verträge, Phasen und Falsifikation; über beiden stehen aktueller Vertrag und
 Code (Rangfolge in beiden Köpfen und in `CLAUDE.md`).
 
-## Laufende technische UI-Architektur
+## Technische UI-Architektur (Stand beim Parken)
 
 Arbeitsmodus, bestätigter Strukturstand und die bewusst offenen nächsten
 Entscheide stehen in

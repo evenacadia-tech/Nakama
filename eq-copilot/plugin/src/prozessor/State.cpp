@@ -77,17 +77,30 @@ void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
     // Hostaufruf unter einer eigenen Sperre ist eine Sperrenordnung, die
     // dieses Projekt nirgends fuehrt (unten, Etappe A).
     std::size_t geaendert = 0;
+    std::uint64_t generationBeimAbholen = 0;
     {
         std::lock_guard<std::mutex> drain (sourcesDrainMutex);
         const auto befehle = bestaetigteSourcesCommandsAbholen();
+        // NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 2 und 3): derselbe
+        // Generationsvergleich wie im Rahmen (`Ipc.cpp`). Hier ist er trivial
+        // erfuellt - Speichern und Laden ruft der Host auf DEMSELBEN
+        // Message-Thread, zwischen Abholen und Anwendung kann kein Reload
+        // liegen. Er wird trotzdem gefahren, damit kein Drain die Regel
+        // umgeht; `speichere` laeuft in jedem Fall.
+        generationBeimAbholen = reloadGeneration.load();
         std::lock_guard<std::mutex> l (bindungMutex);
-        for (const auto& befehl : befehle)
-            if (wendeSourcesCommandAnUnterBindung (befehl))
-                ++geaendert;
+        if (reloadGeneration.load() == generationBeimAbholen)
+        {
+            for (const auto& befehl : befehle)
+                if (wendeSourcesCommandAnUnterBindung (befehl))
+                    ++geaendert;
+        }
+        else if (! befehle.empty())
+            sourcesBatchNachReloadVerworfen.fetch_add (1);
         nakama::state::speichere (zustand, ziel);
     }
     for (std::size_t i = 0; i < geaendert; ++i)
-        meldeSourcesMitgliederNachBefehl();
+        meldeSourcesMitgliederNachBefehl (generationBeimAbholen);
 }
 
 void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
@@ -127,6 +140,13 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             zustand = geladen;
+            // 🔑 NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 1, M-38/M-39): die
+            // Reload-Generation wechselt im SELBEN Block wie `zustand` - ein
+            // Drain, der seinen Batch oder seine Kopie vorher abgeholt hat,
+            // sieht danach eine andere Generation und faellt ganz aus. Der
+            // read-only-Zweig ist genauso ein Projektwechsel wie der
+            // Vollrestore (dieselbe Begruendung wie `vergleichszustandLeeren`).
+            reloadGeneration.fetch_add (1);
             // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck
             // auf neutral - auch aus einer frueheren positiven Klassifikation.
             lebenslauf.stateRestauriert (ergebnis, geladen);
@@ -141,6 +161,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         zustand = geladen;
+        reloadGeneration.fetch_add (1);   // R-A1 Punkt 1, zweiter Zweig (M-38/M-39)
         // §53.5: JETZT, nach vollstaendigem Restore, darf klassifiziert
         // werden - Schema-1 `sensor|pre|post` ist zu `legacy` migriert,
         // Schema-1 `hub` und ein bestaetigter Schema-2-Main-State zu `main`.

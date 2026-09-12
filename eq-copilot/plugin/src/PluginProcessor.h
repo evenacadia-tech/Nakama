@@ -855,6 +855,24 @@ public:
         frei. Nur Tests; nie aus einem Drain heraus (der Riegel ist nicht
         rekursiv). */
     bool sourcesDrainRiegelGehaltenFuerTest() const;
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-39): Haken in der Nachfuehrung,
+        NACH dem Ziehen der Kopie (`bindungMutex` ist wieder frei) und VOR der
+        Publikation; Parameter: die Groesse der gezogenen Kopie. Ein Bein haelt
+        den Drain hier fest und faehrt dazwischen einen Reload - genau das
+        Fenster, das der Vergleich vor der Publikation schliesst. Der Haken
+        liegt AUSSERHALB von `bindungMutex`: innerhalb waere ein Reload aus
+        dem Testthread ein Deadlock. Im Produkt leer. Nie im Audiothread. */
+    void setzeSourcesPublikationHakenFuerTest (std::function<void (std::size_t)> haken)
+    { sourcesPublikationHakenFuerTest = std::move (haken); }
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-38): wie oft ein abgeholter
+        Batch wegen eines dazwischenliegenden Reloads GANZ verworfen wurde. */
+    std::uint64_t sourcesBatchNachReloadVerworfenFuerTest() const
+    { return sourcesBatchNachReloadVerworfen.load(); }
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-39): wie oft eine
+        Modellnachfuehrung wegen eines dazwischenliegenden Reloads ganz
+        unterblieb (keine Publikation, kein Dirty, keine Revision). */
+    std::uint64_t sourcesNachfuehrungNachReloadUnterbliebenFuerTest() const
+    { return sourcesNachfuehrungNachReloadUnterblieben.load(); }
     /** Nur Tests (SONDE-013 M-39): schreibt in den ECHTEN RT-Control-Ring,
         bis er voll ist. Das Sticky-Bit setzt dabei der Ring selbst, nicht
         dieser Aufruf — gemessen wird der Weg von dort nach `v3Status()`.
@@ -1115,16 +1133,27 @@ private:
     /// Der Swap unter `sourcesCommandMutex`. Aufrufer haelt `sourcesDrainMutex`.
     std::vector<SourcesCommand> bestaetigteSourcesCommandsAbholen();
     /** Der INNERE Teil: EIN bestaetigter Befehl gegen `zustand`. Aufrufer
-        haelt `bindungMutex`. Reload-Riegel (Klasse, Bindung, Epoche) wie
-        bisher: ein ACK eines vor dem Reload gueltigen Laufs mutiert den
-        neuen State nie. Rueckgabe: hat sich `mainProjectMitglieder`
-        geaendert? */
+        haelt `bindungMutex`. Der Riegel hier prueft Klasse, Bindung und
+        Epoche - er trennt FREMDE Laeufe ab (andere Bindung, andere Instanz).
+        Er trennt NICHT "vor dem Reload abgeholt" von "nach dem Reload
+        angewandt": `v3SessionEpoch` ist ueber die Lebenszeit des Prozessors
+        konstant, bei einem Reload derselben Bindung passieren alle drei
+        Pruefungen. Diesen Fall schliesst `reloadGeneration` im Rahmen
+        (R-A1, M-38), nicht dieser Riegel. Rueckgabe: hat sich
+        `mainProjectMitglieder` geaendert? */
     bool wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl);
     /** Die Nachfuehrung je geaendertem Befehl: `setzePersistenteMitglieder`
-        mit dem AKTUELLEN Stand (unter `bindungMutex` gelesen, damit zwei
-        Drains einander keinen aelteren Stand nachreichen), Host-Dirty,
-        Revision + 1. Laeuft ohne gehaltene Sperre des Prozessors. */
-    void meldeSourcesMitgliederNachBefehl();
+        mit dem unter `bindungMutex` gezogenen Stand, Host-Dirty, Revision + 1.
+        Die Publikation laeuft ohne gehaltene Sperre des Prozessors
+        (Paragraph 10.2 Punkt 1: kein Hostaufruf unter eigener Sperre).
+
+        `generationBeimAbholen` ist die `reloadGeneration`, die der Drain beim
+        Abholen des Batches gelesen hat. Sie wird ZWEIMAL verglichen: atomar
+        zur Kopie unter `bindungMutex` (R-A1 Punkt 4) und unmittelbar vor der
+        Publikation. Weicht sie ab, unterbleibt die Nachfuehrung GANZ - keine
+        Publikation, kein Dirty, keine Revision; gezaehlt in
+        `sourcesNachfuehrungNachReloadUnterblieben` (M-39). */
+    void meldeSourcesMitgliederNachBefehl (std::uint64_t generationBeimAbholen);
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -1134,6 +1163,29 @@ private:
     // Eqcp darf die Klassen main und legacy laden.
     mutable std::mutex bindungMutex;
     nakama::state::Zustand zustand;
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1; Manifest Paragraph 13.3, M-38 und
+        M-39): die INTERNE Reload-Generation. `setStateInformation` erhoeht sie
+        unter `bindungMutex` im selben Block wie den Tausch von `zustand`, in
+        BEIDEN Zweigen (read-only und Vollrestore). Kein Wire-, Schema- oder
+        Vertragswert - `v3SessionEpoch` bleibt `const` und unberuehrt, die
+        v3-Zieladresse aendert sich nicht.
+
+        Wozu: `v3SessionEpoch` ist ueber die Lebenszeit des Prozessors konstant
+        und kann "vor dem Reload" nicht von "nach dem Reload" unterscheiden.
+        Jeder Nachlaufschritt eines Drains - die Anwendung des abgeholten
+        Batches und die Publikation der gezogenen Kopie - gilt nur fuer die
+        Generation, in der er abgeholt wurde; weicht sie ab, faellt er GANZ
+        aus. Nie im Audiothread gelesen oder geschrieben. */
+    std::atomic<std::uint64_t> reloadGeneration { 0 };
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-38): wie oft ein Drain einen
+        bereits abgeholten Batch verworfen hat, weil zwischen Abholen und
+        Anwendung ein Reload lag. Im Produkt liest ihn niemand - er hat kein
+        Verhalten, er ist der Zeuge des Falls. */
+    std::atomic<std::uint64_t> sourcesBatchNachReloadVerworfen { 0 };
+    /** NAK-246 Abschluss Nacharbeit 1 (R-A1, M-39): wie oft eine
+        Modellnachfuehrung ganz unterblieben ist, weil zwischen dem Ziehen der
+        Kopie und der Publikation ein Reload lag. Ebenfalls ohne Verhalten. */
+    std::atomic<std::uint64_t> sourcesNachfuehrungNachReloadUnterblieben { 0 };
     SourcesModel sourcesModel;
     mutable std::mutex sourcesCommandMutex;
     std::map<std::string, SourcesCommand> ausstehendeSourcesCommands;
@@ -1660,6 +1712,10 @@ private:
     /// Schalter fuer den Drain im Workerzug (M-10/M-13/M-14). Im Produkt leer
     /// bzw. `false`. Nie im Audiothread.
     std::function<void (std::size_t)> sourcesDrainHakenFuerTest;
+    /// NAK-246 Abschluss Nacharbeit 1 (M-39): der Haken in der Nachfuehrung,
+    /// zwischen der gezogenen Kopie und ihrer Publikation. Im Produkt leer.
+    /// Nie im Audiothread.
+    std::function<void (std::size_t)> sourcesPublikationHakenFuerTest;
     std::atomic<bool> workerDrainAusFuerTest { false };
     /// NAK-246 Etappe 4 Nacharbeit 1 (M-12): der Eintrittszaehler des Rahmens,
     /// erhoeht VOR dem Riegel und nur im Testbau (`Ipc.cpp`). Nie im Audiothread.

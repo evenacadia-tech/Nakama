@@ -1272,8 +1272,207 @@ void volle_queue_join_reconnect_ack_save_load_als_eine_kette()
             juce::String ((int) geladen.size()) + " Mitglied(er)");
 }
 
+//==============================================================================
+// NAK-246 Abschluss Nacharbeit 1 · Reload gegen laufenden Persistenzabschluss
+// (Regel R-A1; Manifest docs/beweise/NAK-246.md Paragraph 13.3, M-38 und M-39)
+//==============================================================================
+//
+// Die Abschlusspruefung fand zwei Wege, auf denen ein Nachlaufschritt des
+// Drains einen Reload ueberholt. Beide haben EINE Ursache: `setStateInformation`
+// nimmt `sourcesDrainMutex` nie (Sperrenordnung Paragraph 10.2 Punkt 1), und
+// der Reload-Riegel im inneren Teil prueft eine Epoche, die ueber die
+// Lebenszeit des Prozessors konstant ist - bei einem Reload DERSELBEN Bindung
+// unterscheidet er "vor dem Reload abgeholt" nicht von "danach angewandt".
+//   M-38  der abgeholte Batch liegt lokal auf dem Workerstack; `State.cpp`
+//         leert nur die geteilten Listen und erreicht ihn nicht;
+//   M-39  die fuer die Publikation gezogene Kopie ueberholt `projektReload`,
+//         den DRITTEN Schreiber des Modells.
+// Beide Faelle erzwingen die Ordnung ueber Testhaken, nie ueber Zeit.
+
+/// M-38 · ein vor dem Reload abgeholter, bestaetigter Befehl mutiert den
+/// GELADENEN State nicht. Der Workerzug haelt am Haken zwischen Swap und
+/// Anwendung - der Batch liegt lokal -, waehrenddessen laedt derselbe
+/// Prozessor dieselben Bytes (gleiche Bindung, gleiche Epoche: alle drei
+/// Pruefungen des Reload-Riegels passieren). Zusage: der GANZE Batch wird
+/// verworfen, das geladene Mitglied bleibt, kein Dirty, keine Revision.
+void abgeholter_batch_ueberlebt_den_reload_nicht()
+{
+    std::cout << "== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==\n";
+    const auto a = id ('a');
+    // Schranke, Zaehler und Scharfschalter VOR dem Prozessor (Muster M-12):
+    // der Haken lebt im Prozessor und laeuft bis zu dessen Destruktor aus dem
+    // Workerzug - was er faengt, muss ihn ueberleben. Gesetzt wird er, SOLANGE
+    // kein bestaetigter Befehl vorliegt: nur ein nichtleerer Swap liest ihn,
+    // also gibt es in diesem Augenblick keinen nebenlaeufigen Leser.
+    Schranke gate;
+    std::atomic<int> hakenRufe { 0 };
+    std::atomic<bool> scharf { false };
+    auto p = mainAnlegen (true, true);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->setzeSourcesDrainHakenFuerTest ([&gate, &hakenRufe, &scharf] (std::size_t)
+    {
+        if (scharf.load() && hakenRufe.fetch_add (1) == 0)
+            gate.halten();
+    });
+
+    // Aufbau: A wird Mitglied (der Workerzug wendet an), die Bytes tragen A.
+    const auto joinId = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a);
+    p->v3AntwortFuerTest (ack (joinId, true));
+    pruefe (warteAuf (2000, [&] { return genau (mitglieder (*p), { a }); }),
+            "M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt");
+    juce::MemoryBlock state;
+    p->getStateInformation (state);
+
+    // Der bestaetigte Unbind - eingeschleust, ACK ueber den ECHTEN Weg.
+    scharf.store (true);
+    const auto unbindId = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::unbindProbe, a);
+    p->v3AntwortFuerTest (ack (unbindId, true));
+    pruefe (gate.warteBisErreicht (2000),
+            "M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt "
+            "lokal auf seinem Stack, angewandt ist nichts");
+    pruefe (genau (mitglieder (*p), { a }),
+            "M-38: waehrend der Drain haelt, ist A noch Mitglied");
+
+    // Ereignis: DIESELBEN Bytes in DIESELBE Instanz. `State.cpp` leert die
+    // geteilten Listen - der lokale Batch ist davon unberuehrt.
+    p->setStateInformation (state.getData(), (int) state.getSize());
+    const auto dirtyNachReload = dirty.nonParam.load();
+    const auto revisionNachReload = p->v3StateRevisionFuerTest();
+    pruefe (genau (mitglieder (*p), { a }),
+            "M-38: der geladene State traegt A (Vorbedingung der Zusage)");
+
+    // Ruhe als EREIGNIS, nie als Schlafintervall: der naechste Eintritt des
+    // Workerzugs beweist, dass sein voriger Aufruf samt Nachlauf zurueck ist.
+    const auto eintritteVorFreigabe = p->sourcesDrainEintritteFuerTest();
+    gate.freigeben();
+    const bool ruhe = warteAuf (5000, [&] {
+        return p->sourcesDrainEintritteFuerTest() > eintritteVorFreigabe;
+    });
+
+    const auto sicht = p->sourcesSicht();
+    bool aImModell = false;
+    for (const auto& q : sicht.quellen)
+        if (q.instanceId == a)
+            aImModell = q.mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    pruefe (genau (mitglieder (*p), { a }) && aImModell,
+            "M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied "
+            "BLEIBT Mitglied des `zustand` UND des Modells",
+            juce::String ((int) mitglieder (*p).size()) + " Mitglied(er) im State, im Modell "
+                + (aImModell ? "bestaetigt" : "NICHT bestaetigt"));
+    pruefe (p->sourcesBatchNachReloadVerworfenFuerTest() == 1,
+            "M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch",
+            juce::String ((juce::int64) p->sourcesBatchNachReloadVerworfenFuerTest()));
+    pruefe (dirty.nonParam == dirtyNachReload
+                && p->v3StateRevisionFuerTest() == revisionNachReload,
+            "M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden",
+            "Dirty " + juce::String (dirty.nonParam.load()) + " (nach Reload "
+                + juce::String (dirtyNachReload) + "), Revision-Delta "
+                + juce::String ((juce::int64) (p->v3StateRevisionFuerTest() - revisionNachReload)));
+    pruefe (ruhe, "M-38: der Workerzug ist samt Nachlauf zurueck",
+            juce::String ((juce::int64) eintritteVorFreigabe) + " -> "
+                + juce::String ((juce::int64) p->sourcesDrainEintritteFuerTest()) + " Eintritte");
+    p->removeListener (&dirty);
+}
+
+/// M-39 · eine fuer die Publikation gezogene Mitgliederkopie ueberholt den
+/// Reload nicht. Der Workerzug hat einen Befehl gueltig angewandt und steht am
+/// NEUEN Haken zwischen Kopie und Publikation; beide Prozessorsperren sind
+/// frei. Waehrenddessen laedt der Prozessor einen FREMDEN Projektstate mit
+/// anderer Mitgliedermenge, `projektReload` laeuft durch. Zusage: die
+/// Publikation unterbleibt GANZ; das Modell traegt genau die Mitglieder des
+/// geladenen States, kein Dirty, keine Revision.
+void gezogene_kopie_ueberholt_den_reload_nicht()
+{
+    std::cout << "== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    Schranke gate;
+    std::atomic<int> hakenRufe { 0 };
+    std::atomic<bool> scharf { false };
+    auto p = mainAnlegen (true, true);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    // Der Haken liegt NACH der Kopie und VOR der Publikation, ohne gehaltene
+    // Sperre - innerhalb von `bindungMutex` waere der Reload aus dem
+    // Testthread ein Deadlock. Gesetzt, solange kein Befehl angewandt ist:
+    // gerufen wird er nur aus der Nachfuehrung eines geaenderten Befehls.
+    p->setzeSourcesPublikationHakenFuerTest ([&gate, &hakenRufe, &scharf] (std::size_t)
+    {
+        if (scharf.load() && hakenRufe.fetch_add (1) == 0)
+            gate.halten();
+    });
+
+    // Ein ANDERES Projekt mit einer anderen Mitgliedermenge: B statt A.
+    juce::MemoryBlock fremdState;
+    {
+        auto fremd = mainAnlegen (false, true);   // Speicher-Drain als einziger Drain
+        const auto joinB = fremd->merkeSourcesCommandFuerTest (
+            eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, b);
+        fremd->v3AntwortFuerTest (ack (joinB, true));
+        fremd->getStateInformation (fremdState);
+        pruefe (genau (mitglieder (*fremd), { b }),
+                "M-39 Aufbau: das fremde Projekt traegt genau B");
+    }
+
+    // Der Workerzug wendet `confirm_join` A gueltig an und bleibt in der
+    // Nachfuehrung stehen: Kopie [A] gezogen, Publikation offen.
+    scharf.store (true);
+    const auto joinA = p->merkeSourcesCommandFuerTest (
+        eqcop::EqCopilotProcessor::SourcesCommandArt::confirmJoin, a);
+    p->v3AntwortFuerTest (ack (joinA, true));
+    pruefe (gate.warteBisErreicht (2000),
+            "M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist "
+            "angewandt, das Modell noch nicht nachgefuehrt");
+    pruefe (genau (mitglieder (*p), { a }),
+            "M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)");
+
+    // Ereignis: der fremde State wird geladen; `projektReload` baut das Modell
+    // aus SEINEN Mitgliedern neu.
+    p->setStateInformation (fremdState.getData(), (int) fremdState.getSize());
+    const auto dirtyNachReload = dirty.nonParam.load();
+    const auto revisionNachReload = p->v3StateRevisionFuerTest();
+    pruefe (genau (mitglieder (*p), { b }),
+            "M-39: der geladene State traegt genau B");
+
+    const auto eintritteVorFreigabe = p->sourcesDrainEintritteFuerTest();
+    gate.freigeben();
+    const bool ruhe = warteAuf (5000, [&] {
+        return p->sourcesDrainEintritteFuerTest() > eintritteVorFreigabe;
+    });
+
+    const auto sicht = p->sourcesSicht();
+    const auto* zeileB = sicht.quellen.size() == 1 ? &sicht.quellen.front() : nullptr;
+    const bool nurGeladene = zeileB != nullptr && zeileB->instanceId == b
+        && zeileB->mitgliedschaft == eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    juce::String imModell;
+    for (const auto& q : sicht.quellen)
+        imModell += juce::String (q.instanceId.substr (0, 4)) + " ";
+    pruefe (nurGeladene && genau (mitglieder (*p), { b }),
+            "M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die "
+            "Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)",
+            juce::String ((int) sicht.quellen.size()) + " Zeile(n): " + imModell);
+    pruefe (p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 1,
+            "M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest",
+            juce::String ((juce::int64) p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest()));
+    pruefe (dirty.nonParam == dirtyNachReload
+                && p->v3StateRevisionFuerTest() == revisionNachReload,
+            "M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision",
+            "Dirty " + juce::String (dirty.nonParam.load()) + " (nach Reload "
+                + juce::String (dirtyNachReload) + "), Revision-Delta "
+                + juce::String ((juce::int64) (p->v3StateRevisionFuerTest() - revisionNachReload)));
+    pruefe (ruhe, "M-39: der Workerzug ist samt Nachlauf zurueck",
+            juce::String ((juce::int64) eintritteVorFreigabe) + " -> "
+                + juce::String ((juce::int64) p->sourcesDrainEintritteFuerTest()) + " Eintritte");
+    p->removeListener (&dirty);
+}
+
 bool nak246d3Fall (const std::string& name)
 {
+    if (name == "m38") { abgeholter_batch_ueberlebt_den_reload_nicht(); return true; }
+    if (name == "m39") { gezogene_kopie_ueberholt_den_reload_nicht(); return true; }
     if (name == "m10") { bestaetigte_join_und_unbind_landen_ohne_tick_im_gespeicherten_state(); return true; }
     if (name == "m11") { bestaetigtes_ack_wird_ohne_editor_vom_prozessortakt_angewandt(); return true; }
     if (name == "m12") { dirty_und_revision_genau_einmal_je_bestaetigtem_befehl(); return true; }
@@ -1545,7 +1744,8 @@ int main (int argc, char** argv)
         if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2])
             && ! nak246d6::nak246d6Fall (argv[2]))
         {
-            std::cout << "unbekannter Fall: " << argv[2] << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29)\n";
+            std::cout << "unbekannter Fall: " << argv[2]
+                      << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29 | m38 | m39)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -1564,6 +1764,10 @@ int main (int argc, char** argv)
     nak246d3::ack_eines_alten_laufs_mutiert_den_neuen_state_auch_im_speicherdrain_nicht();
     // NAK-246 D3 + D4: die Kette M-16 am echten Prozessor gegen den Testserver.
     nak246d3::volle_queue_join_reconnect_ack_save_load_als_eine_kette();
+    // NAK-246 Abschluss Nacharbeit 1 (R-A1): Reload gegen laufenden
+    // Persistenzabschluss - abgeholter Batch (M-38), gezogene Kopie (M-39).
+    nak246d3::abgeholter_batch_ueberlebt_den_reload_nicht();
+    nak246d3::gezogene_kopie_ueberholt_den_reload_nicht();
     // NAK-246 D6: der Projektwechsel leert den Sitzungszustand (M-29, M-31).
     nak246d6::projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen();
     const auto quelle = id ('a');

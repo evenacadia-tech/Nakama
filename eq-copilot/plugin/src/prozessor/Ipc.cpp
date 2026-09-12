@@ -1353,8 +1353,16 @@ bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
 //   (c) der Editor-Tick (`sourcesTick`): wie bisher, zusaetzlich.
 // Alle drei serialisieren sich ueber `sourcesDrainMutex` - die einzige
 // Klammer ueber Swap UND Anwendung (Manifest Paragraph 5.3 Feinheit 3, M-12).
-// `bindungMutex` deckt je Befehl nur die Mutation; Modell, Host-Dirty und
+// `bindungMutex` deckt die Mutation des Batches; Modell, Host-Dirty und
 // Revision folgen je geaendertem Befehl genau einmal, NACH der Freigabe.
+//
+// Gegen den VIERTEN Schreiber - `setStateInformation` - serialisiert kein
+// Mutex: es nimmt `sourcesDrainMutex` nie (Sperrenordnung Paragraph 10.2
+// Punkt 1). Diese Luecke schliesst die `reloadGeneration` (R-A1, M-38/M-39):
+// jeder Drain merkt sich beim Abholen die Generation und faellt GANZ aus,
+// wenn zwischen Abholen und Anwendung oder zwischen Kopie und Publikation ein
+// Reload lag. Nach einem Reload ist der geladene State die Wahrheit; der
+// Abgleich mit dem Broker laeuft ueber den frischen `subscribe_session`.
 
 std::vector<EqCopilotProcessor::SourcesCommand>
 EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
@@ -1371,7 +1379,11 @@ bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand
     if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
         || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
         || v3SessionEpoch != befehl.sessionEpoch)
-        return false; // ACK eines vor Reload gueltigen Laufs mutiert den neuen State nie.
+        return false; // Befehl eines FREMDEN Laufs (andere Bindung/Instanz) mutiert nie.
+    // Was dieser Riegel NICHT kann: `v3SessionEpoch` ist konstant, `bindungId`
+    // beim Reload derselben Bindung gleich - ein VOR dem Reload abgeholter
+    // Befehl passiert ihn. Diesen Fall schliesst der Generationsvergleich im
+    // Rahmen (R-A1 Punkt 3, M-38), nicht diese Zeile.
     auto gefunden = std::find_if (
         zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
         [&] (const auto& m) { return m.instanceId.toStdString() == befehl.instanceId; });
@@ -1393,15 +1405,39 @@ bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand
     return false;
 }
 
-void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl()
+void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generationBeimAbholen)
 {
     // Der AKTUELLE Stand, nicht eine beim Anwenden gezogene Kopie: zwei
     // Drains, die ihre Nachfuehrung nacheinander fahren, reichen dem Modell
     // so nie einen aelteren Stand als den zuletzt angewandten nach.
+    //
+    // Gegen den DRITTEN Schreiber des Modells - `projektReload` aus
+    // `setStateInformation` - reicht das nicht (Paragraph 10.2 Punkt 1 kannte
+    // nur zwei Drains): die Kopie ist aktuell im Augenblick des Ziehens, der
+    // Reload kann sie danach ueberholen. Deshalb R-A1 Punkt 4: die Generation
+    // wird ATOMAR ZUR KOPIE geprueft und - weil die Publikation selbst
+    // ausserhalb der Sperren bleiben MUSS (kein Hostaufruf unter eigener
+    // Sperre) - unmittelbar davor ein zweites Mal. Beides zusammen schliesst
+    // das Fenster bis auf die wenigen Befehle zwischen dem zweiten Vergleich
+    // und `setzePersistenteMitglieder`; genau dort greift M-39.
     std::vector<nakama::state::MainProjectMitglied> kopie;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
+        if (reloadGeneration.load() != generationBeimAbholen)
+        {
+            sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+            return;
+        }
         kopie = zustand.mainProjectMitglieder;
+    }
+    // NAK-246 M-39: der Testhaken zwischen Kopie und Publikation, ohne
+    // gehaltene Sperre. Im Produkt leer.
+    if (sourcesPublikationHakenFuerTest)
+        sourcesPublikationHakenFuerTest (kopie.size());
+    if (reloadGeneration.load() != generationBeimAbholen)
+    {
+        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+        return;
     }
     sourcesModel.setzePersistenteMitglieder (kopie);
     meldeHostDirty();
@@ -1411,6 +1447,7 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl()
 void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
 {
     std::size_t geaendert = 0;
+    std::uint64_t generationBeimAbholen = 0;
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     // NAK-246 Etappe 4 Nacharbeit 1 (M-12, R-E4-1): der Eintritt in den
     // Rahmen, gezaehlt VOR dem Riegel - ein Bein erzwingt das Interleaving
@@ -1422,19 +1459,39 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
         const auto befehle = bestaetigteSourcesCommandsAbholen();
         if (befehle.empty())
             return;
+        // NAK-246 Abschluss Nacharbeit 1 (R-A1 Punkt 2): die Generation, fuer
+        // die dieser Batch gilt - gelesen INNERHALB von `sourcesDrainMutex`,
+        // unmittelbar nach dem Swap. Ab hier liegt der Batch nur noch lokal;
+        // `setStateInformation` leert die geteilten Listen und erreicht ihn
+        // nicht mehr (State.cpp).
+        generationBeimAbholen = reloadGeneration.load();
         // NAK-246 D3 (M-12): der Testhaken zwischen Swap und Anwendung,
-        // innerhalb der Klammer. Im Produkt leer.
+        // innerhalb der Klammer, VOR `bindungMutex` - ein Bein faehrt hier
+        // einen Reload aus einem anderen Faden (M-38); unter `bindungMutex`
+        // waere das ein Deadlock. Im Produkt leer.
         if (sourcesDrainHakenFuerTest)
             sourcesDrainHakenFuerTest (befehle.size());
-        for (const auto& befehl : befehle)
+        // R-A1 Punkt 3: EINE Klammer ueber Vergleich UND Anwendung des ganzen
+        // Batches. `setStateInformation` erhoeht die Generation unter
+        // derselben Sperre, also kann sie zwischen zwei Befehlen dieses Batches
+        // nicht mehr wechseln - "verworfen, nie teilweise angewandt" ist damit
+        // gehalten und nicht nur behauptet. `bindungMutex` klammert den Swap
+        // weiterhin NICHT (Paragraph 5.3 Feinheit 1/3: die einzige Klammer
+        // ueber Swap und Anwendung bleibt `sourcesDrainMutex`, an der M-12
+        // faellt); der Speicher-Drain haelt es ohnehin schon ueber alle
+        // Befehle und `speichere` (State.cpp).
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (reloadGeneration.load() != generationBeimAbholen)
         {
-            std::lock_guard<std::mutex> l (bindungMutex);
+            sourcesBatchNachReloadVerworfen.fetch_add (1);
+            return;  // kein Dirty, keine Revision: der geladene State ist die Wahrheit.
+        }
+        for (const auto& befehl : befehle)
             if (wendeSourcesCommandAnUnterBindung (befehl))
                 ++geaendert;
-        }
     }
     for (std::size_t i = 0; i < geaendert; ++i)
-        meldeSourcesMitgliederNachBefehl();
+        meldeSourcesMitgliederNachBefehl (generationBeimAbholen);
 }
 
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)

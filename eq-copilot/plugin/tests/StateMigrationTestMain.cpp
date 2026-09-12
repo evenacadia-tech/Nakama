@@ -2339,6 +2339,120 @@ int main (int argc, char* argv[])
         a.schliesse ("Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich");
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 2 · M-11 — Save/Load am Zahlenrand, MIT ausgeloester
+    // Aenderung (Manifest docs/beweise/NAK-283.md Paragraph 5.1, F11)
+    // ══════════════════════════════════════════════════════════════════════
+    //
+    // Die Zeile hat zwei Haelften, und beide messen den GELADENEN Zustand einer
+    // neuen Instanz, nicht einen Rueckgabewert:
+    //
+    //   (a) Ein Assistentenhandgriff wird an der Obergrenze TATSAECHLICH
+    //       gerufen. Ohne obere Schranke liefe `a.revision += 1` ueber, der
+    //       gespeicherte Stand truege `-9223372036854775808`, und der eigene
+    //       Reader wiese ihn read-only ab ("revision must be at least 1") -
+    //       "State bleibt verlustfrei" waere verletzt. Zusage: der geladene
+    //       Stand ist NICHT read-only, und `a.revision` kommt als int64max
+    //       zurueck.
+    //   (b) `entferneIntent` wird an der Obergrenze tatsaechlich gerufen und
+    //       abgewiesen. Zusage: die Bytes vor und nach dem Aufruf sind
+    //       BYTEGLEICH, und die neue Instanz laedt den Intent-Eintrag
+    //       unveraendert.
+    //
+    // Der Stand am Rand entsteht als deklarierter Mutant eines WRITER-Standes
+    // mit genau zwei benannten Abweichungen (`intent_revision_v1` und der
+    // Revisionsplatz der flachen Assistentenliste) - beide Werte nimmt der
+    // eigene Reader an, er hat keine obere Schranke.
+    {
+        Abschnitt a;
+        constexpr auto kMax = std::numeric_limits<juce::int64>::max();
+        const auto qa = juce::String::toHexString (0xA1).paddedLeft ('0', 32);
+
+        // Writer-Stand: ein Intent und ein offener Assistentenschritt.
+        juce::MemoryBlock writer;
+        {
+            auto p = std::make_unique<EqCopilotProcessor>();
+            pruefe (p->setzeBindung ("hub", "Leitstand", ""), "M-11 Aufbau: Main mit Bindung");
+            pruefe (p->setzeQuellenrolle (qa, {}, state::Rolle::fuehrt,
+                                          state::IntentHerkunft::user, 1.0),
+                    "M-11 Aufbau: ein Intent ist gesetzt");
+            pruefe (p->assistentStarten (juce::String::toHexString (0x5711).paddedLeft ('0', 32)),
+                    "M-11 Aufbau: ein Assistentenschritt ist offen");
+            p->getStateInformation (writer);
+        }
+
+        // Deklarierter Mutant: beide Revisionen an den oberen Rand.
+        auto baum = juce::ValueTree::readFromData (writer.getData(), writer.getSize());
+        auto mp = baum.getChildWithName ("MainProject");
+        mp.setProperty ("intent_revision_v1", juce::var (kMax), nullptr);
+        {
+            const auto* alt = mp.getProperty ("assistant_step_v1").getArray();
+            juce::Array<juce::var> liste;
+            if (alt != nullptr) liste = *alt;
+            if (liste.size() > 2) liste.set (2, juce::var (kMax));
+            mp.setProperty ("assistant_step_v1", juce::var (liste), nullptr);
+        }
+        const auto amRand = alsBlock (baum);
+
+        auto p = std::make_unique<EqCopilotProcessor>();
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        p->setStateInformation (amRand.getData(), (int) amRand.getSize());
+        pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax
+                    && p->assistentAusState().revision == kMax
+                    && p->sourceIntents().size() == 1,
+                "M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an "
+                "(Vorbedingung der Zusage)",
+                juce::String (p->intentBestandRevision()) + " / "
+                    + juce::String (p->assistentAusState().revision));
+        const auto dirtyNachLaden = dirty.nonParam;
+
+        // ── (a) der Assistentenhandgriff an der Obergrenze ─────────────────
+        const bool uebersprungen = p->assistentUeberspringen();
+        pruefe (! uebersprungen && p->assistentAusState().revision == kMax,
+                "M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt "
+                "int64max - kein Ueberlauf auf einen negativen Wert",
+                juce::String (p->assistentAusState().revision));
+
+        // ── (b) `entferneIntent` an der Obergrenze - Bytes vor und nach ────
+        juce::MemoryBlock vorHandgriff;
+        p->getStateInformation (vorHandgriff);
+        const bool entfernt = p->entferneQuellenrolle (qa, {});
+        juce::MemoryBlock nachHandgriff;
+        p->getStateInformation (nachHandgriff);
+        pruefe (! entfernt && gleich (vorHandgriff, nachHandgriff),
+                "M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten "
+                "Bytes BYTEGLEICH",
+                juce::String ((int) vorHandgriff.getSize()) + " vs. "
+                    + juce::String ((int) nachHandgriff.getSize()) + " Bytes");
+        pruefe (dirty.nonParam == dirtyNachLaden,
+                "M-11: kein abgewiesener Handgriff meldet Host-Dirty",
+                juce::String (dirty.nonParam - dirtyNachLaden));
+
+        // ── Der geladene Zustand einer NEUEN Instanz ist die Pruefgroesse ──
+        juce::MemoryBlock gespeichert;
+        p->getStateInformation (gespeichert);
+        auto neu = std::make_unique<EqCopilotProcessor>();
+        neu->setStateInformation (gespeichert.getData(), (int) gespeichert.getSize());
+        pruefe (! neu->stateNurLesen(),
+                "M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand "
+                "laedt in einer neuen Instanz NORMAL, nicht read-only");
+        pruefe (neu->assistentAusState().revision == kMax
+                    && neu->intentBestandRevision() == kMax,
+                "M-11: beide Revisionen kommen als int64max zurueck",
+                juce::String (neu->intentBestandRevision()) + " / "
+                    + juce::String (neu->assistentAusState().revision));
+        const auto intents = neu->sourceIntents();
+        pruefe (intents.size() == 1 && intents[0].quelleId == qa
+                    && intents[0].rolle == state::Rolle::fuehrt,
+                "M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der "
+                "abgewiesene Handgriff hat ihn nicht entfernt",
+                juce::String ((int) intents.size()) + " Eintrag/Eintraege");
+        p->removeListener (&dirty);
+        a.schliesse ("NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener "
+                     "Handgriff laesst die Bytes bytegleich");
+    }
+
     std::cout << std::endl
               << (fehler == 0 ? "STATE-MIGRATION-TEST OK" : "STATE-MIGRATION-TEST FEHLGESCHLAGEN")
               << " - " << bestanden << " Pruefungen ok, " << fehler << " Fehler" << std::endl;

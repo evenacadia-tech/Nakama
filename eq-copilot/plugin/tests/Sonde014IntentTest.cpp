@@ -68,9 +68,14 @@ namespace
 int bestanden = 0;
 int fehler    = 0;
 
-void pruefe (bool ok, const juce::String& was)
+/// NAK-283 Etappe 2: `detail` ist neu und optional - der gemessene Wert neben
+/// der Behauptung, wie in B14. Bestehende Aufrufe bleiben unveraendert.
+void pruefe (bool ok, const juce::String& was, const juce::String& detail = {})
 {
-    std::cout << (ok ? "  ok      " : "  FEHLER  ") << was << std::endl;
+    std::cout << (ok ? "  ok      " : "  FEHLER  ") << was;
+    if (detail.isNotEmpty())
+        std::cout << "  [" << detail << "]";
+    std::cout << std::endl;
     ok ? ++bestanden : ++fehler;
 }
 
@@ -1201,6 +1206,351 @@ void m11()
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-283 Etappe 2 · F11 — die Revisionsraender
+// (Manifest docs/beweise/NAK-283.md Paragraph 5.1, M-07 bis M-12)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Zwei Befunde in einem: (1) in den drei Entfern-Handgriffen stand das `erase`
+// VOR dem Riegel - an der Revisionsobergrenze war der Eintrag entfernt, der
+// Handgriff meldete `false`, `veraendert` blieb `false`, also KEIN Host-Dirty
+// und keine Revision. Eine persistente Aenderung ohne Marke verletzt
+// `nakama-state-v2.md:139` und "State bleibt verlustfrei". (2) die
+// Assistentenrevision hatte keine obere Schranke - `a.revision += 1` an
+// `int64max` ist signed-integer-UB, und der erzeugte negative Wert wird vom
+// EIGENEN Reader abgewiesen ("revision must be at least 1").
+//
+// Der Zustand am Rand ist ueber den LADEWEG erreichbar: der Reader hat keine
+// obere Schranke, und der eigene Headroomkandidat erzeugt `int64max`
+// ausdruecklich. Jeder Fall hier baut ihn deshalb als DEKLARIERTEN MUTANTEN
+// eines Writer-Standes mit genau EINER Abweichung (Pruefliste E) und laedt ihn,
+// statt den `Zustand` von Hand zu setzen.
+// Rotlauf: docs/beweise/roh/NAK-283-rot-M-07-etappe-2.txt bis -M-12-etappe-2.txt.
+
+namespace nak283
+{
+constexpr auto kMax = std::numeric_limits<juce::int64>::max();
+
+/// Ein deklarierter Mutant eines WRITER-Standes: genau eine MainProject-
+/// Eigenschaft wird ersetzt.
+juce::MemoryBlock mitMainFeld (const juce::MemoryBlock& writer,
+                               const juce::Identifier& feld, const juce::var& wert)
+{
+    auto baum = juce::ValueTree::readFromData (writer.getData(), writer.getSize());
+    baum.getChildWithName ("MainProject").setProperty (feld, wert, nullptr);
+    return alsBlock (baum);
+}
+
+/// Derselbe Mutant fuer EINEN Platz der flachen Assistentenliste (Index 2 ist
+/// die Revision, Index 3 das Offen-Flag).
+juce::MemoryBlock mitAssistentenPlatz (const juce::MemoryBlock& writer,
+                                       int platz, const juce::var& wert)
+{
+    auto baum = juce::ValueTree::readFromData (writer.getData(), writer.getSize());
+    auto mp = baum.getChildWithName ("MainProject");
+    const auto* alt = mp.getProperty ("assistant_step_v1").getArray();
+    juce::Array<juce::var> liste;
+    if (alt != nullptr) liste = *alt;
+    if (platz < liste.size()) liste.set (platz, wert);
+    mp.setProperty ("assistant_step_v1", juce::var (liste), nullptr);
+    return alsBlock (baum);
+}
+
+/// Ein Writer-Stand mit allen drei Bestandteilen des Intents.
+juce::MemoryBlock writerMitBestand()
+{
+    auto p = mainProzessor();
+    p->setzeQuellenrolle (kQuelleA, {}, state::Rolle::fuehrt, state::IntentHerkunft::user, 1.0);
+    p->schuetzeQuelle (kQuelleA, state::Schutzeigenschaft::attack, -1, -1);
+    p->setzeQuellenbeziehung (kQuelleA, kQuelleB, state::Beziehungsart::fuehrtVor);
+    juce::MemoryBlock b;
+    p->getStateInformation (b);
+    return b;
+}
+
+/// Ein Writer-Stand mit einem OFFENEN Assistentenschritt.
+juce::MemoryBlock writerMitAssistent()
+{
+    auto p = mainProzessor();
+    p->assistentStarten (hex32 (0x5711));
+    juce::MemoryBlock b;
+    p->getStateInformation (b);
+    return b;
+}
+
+/// Laedt einen Stand und prueft, dass er NORMAL (nicht read-only) ankommt.
+state::Zustand geladen (const juce::MemoryBlock& bytes, const char* was)
+{
+    state::Zustand z;
+    const auto erg = lade (bytes, z);
+    pruefe (erg == state::LadeErgebnis::geladen && ! z.nurLesen,
+            juce::String (was) + ": der Mutant laedt normal (der eigene Reader nimmt "
+            "int64max an, er hat keine obere Schranke) - " + z.grund);
+    return z;
+}
+
+/// Die Bytes eines Zustands - die schaerfste Form von "unveraendert".
+juce::MemoryBlock bytesVon (const state::Zustand& z)
+{
+    juce::MemoryBlock b;
+    state::speichere (z, b);
+    return b;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// M-07 bis M-09 · Ablehnung ohne Mutation in den drei Entfern-Handgriffen
+// ─────────────────────────────────────────────────────────────────────────
+void m283_07_bis_09()
+{
+    abschnitt ("NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts");
+
+    const auto writer = writerMitBestand();
+    const auto amRand = mitMainFeld (writer, "intent_revision_v1", juce::var (kMax));
+
+    // ── M-07 · entferneIntent ──────────────────────────────────────────────
+    {
+        auto z = geladen (amRand, "M-07");
+        pruefe (z.intentBestandRevision == kMax && z.sourceIntents.size() == 1,
+                "M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag");
+        const auto vorher = bytesVon (z);
+        const auto intentsVorher = z.sourceIntents;
+
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::entferneIntent (z, kQuelleA, {}, veraendert, grund);
+
+        pruefe (! ok && ! veraendert && grund == "intent revision would overflow",
+                "M-07: der Handgriff liefert `false` mit gesetztem Grund und "
+                "`veraendert == false` - " + grund);
+        pruefe (z.sourceIntents == intentsVorher && z.sourceIntents.size() == 1,
+                "M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - "
+                "`z.sourceIntents` ist unveraendert, der Eintrag steht noch");
+        pruefe (gleich (bytesVon (z), vorher),
+                "M-07: der GANZE Zustand ist byteweise unveraendert");
+        pruefe (z.intentBestandRevision == kMax,
+                "M-07: und die Bestandsrevision steht weiterhin am Maximum");
+    }
+
+    // ── M-08 · entferneSchutzangabe ────────────────────────────────────────
+    {
+        auto z = geladen (amRand, "M-08");
+        pruefe (z.schutzangaben.size() == 1, "M-08: Vorbedingung - eine Schutzangabe");
+        const auto vorher = bytesVon (z);
+
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::entferneSchutzangabe (
+            z, kQuelleA, state::Schutzeigenschaft::attack, -1, -1, veraendert, grund);
+
+        pruefe (! ok && ! veraendert && grund == "intent revision would overflow",
+                "M-08: der Handgriff liefert `false` mit gesetztem Grund - " + grund);
+        pruefe (z.schutzangaben.size() == 1,
+                "M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - "
+                "`z.schutzangaben` ist unveraendert");
+        pruefe (gleich (bytesVon (z), vorher),
+                "M-08: der GANZE Zustand ist byteweise unveraendert");
+    }
+
+    // ── M-09 · entferneBeziehung ───────────────────────────────────────────
+    {
+        auto z = geladen (amRand, "M-09");
+        pruefe (z.intentBeziehungen.size() == 1, "M-09: Vorbedingung - eine Beziehung");
+        const auto vorher = bytesVon (z);
+
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::entferneBeziehung (z, kQuelleA, kQuelleB, veraendert, grund);
+
+        pruefe (! ok && ! veraendert && grund == "intent revision would overflow",
+                "M-09: der Handgriff liefert `false` mit gesetztem Grund - " + grund);
+        pruefe (z.intentBeziehungen.size() == 1,
+                "M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - "
+                "`z.intentBeziehungen` ist unveraendert");
+        pruefe (gleich (bytesVon (z), vorher),
+                "M-09: der GANZE Zustand ist byteweise unveraendert");
+    }
+
+    // ── Gegenprobe: NICHTS ZU ENTFERNEN bleibt ein No-op ───────────────────
+    //
+    // Der Fix haette den No-op-Pfad verschieben koennen: waere die Revision
+    // jetzt auch dann gehoben, wenn gar kein Eintrag passt, meldete ein
+    // folgenloser Aufruf Host-Dirty. Diese Probe haelt fest, dass das nicht
+    // passiert (M-12, `nakama-state-v2.md:139`).
+    {
+        state::Zustand z;
+        const auto erg = lade (writer, z);
+        pruefe (erg == state::LadeErgebnis::geladen, "Gegenprobe: der Writer-Stand laedt");
+        const auto revVorher = z.intentBestandRevision;
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::entferneIntent (z, kQuelleC, {}, veraendert, grund);
+        pruefe (ok && ! veraendert && grund.isEmpty()
+                    && z.intentBestandRevision == revVorher,
+                "Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine "
+                "Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// M-10 · die Assistentenrevision laeuft nicht ueber - an allen drei
+// Inkrementstellen
+// ─────────────────────────────────────────────────────────────────────────
+void m283_10()
+{
+    abschnitt ("NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber");
+
+    const auto writer = writerMitAssistent();
+    const auto offenAmRand = mitAssistentenPlatz (writer, 2, juce::var (kMax));
+
+    // ── Weg 1: `schrittAendern` ueber `assistentUeberspringen` ─────────────
+    {
+        auto z = geladen (offenAmRand, "M-10 (schrittAendern)");
+        pruefe (z.assistent.gesetzt && z.assistent.offen && z.assistent.revision == kMax,
+                "M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`");
+        const auto schrittVorher = z.assistent.schritt;
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::assistentUeberspringen (z, veraendert, grund);
+        pruefe (! ok && ! veraendert && grund == "assistant revision would overflow",
+                "M-10: `schrittAendern` weist ab statt zu inkrementieren - " + grund);
+        pruefe (z.assistent.revision == kMax && z.assistent.schritt == schrittVorher
+                    && z.assistent.offen,
+                "M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` "
+                "sind angefasst - die Schranke steht VOR der Zuweisung",
+                juce::String (z.assistent.revision));
+    }
+
+    // ── Weg 2: der neue Schritt (zweite Inkrementstelle) ───────────────────
+    {
+        // Derselbe Stand, aber der Schritt ist GESCHLOSSEN - dann nimmt
+        // `setzeAssistentenschritt` den Zweig "neuer Schritt" mit seinem
+        // eigenen `a.revision += 1`.
+        const auto geschlossenAmRand = mitAssistentenPlatz (offenAmRand, 3, juce::var (false));
+        auto z = geladen (geschlossenAmRand, "M-10 (neuer Schritt)");
+        pruefe (z.assistent.gesetzt && ! z.assistent.offen && z.assistent.revision == kMax,
+                "M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`");
+        const auto stepIdVorher = z.assistent.stepId;
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::setzeAssistentenschritt (
+            z, hex32 (0x5712), state::Assistentenschritt::coverage, veraendert, grund);
+        pruefe (! ok && ! veraendert && grund == "assistant revision would overflow",
+                "M-10: auch der NEUE Schritt weist ab - " + grund);
+        pruefe (z.assistent.revision == kMax && z.assistent.stepId == stepIdVorher,
+                "M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist "
+                "unveraendert");
+    }
+
+    // ── Weg 3: das Ergebnis (dritte Inkrementstelle) ───────────────────────
+    {
+        auto z = geladen (offenAmRand, "M-10 (Ergebnis)");
+        const auto ergebnisVorher = z.assistent.ergebnis;
+        bool veraendert = true;
+        juce::String grund;
+        const bool ok = state::setzeAssistentenergebnis (
+            z, state::Assistentenergebnis::passageMessen, veraendert, grund);
+        pruefe (! ok && ! veraendert && grund == "assistant revision would overflow",
+                "M-10: auch das Ergebnis weist ab - " + grund);
+        pruefe (z.assistent.revision == kMax && z.assistent.ergebnis == ergebnisVorher,
+                "M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an "
+                "keiner der drei Stellen auf int64max ausgefuehrt; kein negativer "
+                "Folgewert, kein signed-integer-UB",
+                juce::String (z.assistent.revision));
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// M-12 · Regressionswache: unter der Grenze aendert sich nichts
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Die Vorpruefung darf den NORMALFALL nicht verschieben: bei `int64max - 1`
+// wird der Eintrag entfernt, die Revision steigt um GENAU 1, und jeder der
+// vier Handgriffe verhaelt sich wie vor der Etappe. Heute gruen; absichtlich
+// gebrochen mit einer Schranke bei `int64max - 1`.
+void m283_12()
+{
+    abschnitt ("NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts");
+
+    const auto writer = writerMitBestand();
+    const auto knappDrunter = mitMainFeld (writer, "intent_revision_v1", juce::var (kMax - 1));
+
+    {
+        auto z = geladen (knappDrunter, "M-12 (Intent)");
+        pruefe (z.intentBestandRevision == kMax - 1,
+                "M-12: Vorbedingung - Bestandsrevision bei int64max - 1");
+        bool veraendert = false;
+        juce::String grund;
+        const bool ok = state::entferneIntent (z, kQuelleA, {}, veraendert, grund);
+        pruefe (ok && veraendert && grund.isEmpty() && z.sourceIntents.empty()
+                    && z.intentBestandRevision == kMax,
+                "M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1",
+                juce::String (z.intentBestandRevision));
+    }
+    {
+        auto z = geladen (knappDrunter, "M-12 (Schutz)");
+        bool veraendert = false;
+        juce::String grund;
+        const bool ok = state::entferneSchutzangabe (
+            z, kQuelleA, state::Schutzeigenschaft::attack, -1, -1, veraendert, grund);
+        pruefe (ok && veraendert && z.schutzangaben.empty()
+                    && z.intentBestandRevision == kMax,
+                "M-12: die Schutzangabe wird entfernt, Revision +1");
+    }
+    {
+        auto z = geladen (knappDrunter, "M-12 (Beziehung)");
+        bool veraendert = false;
+        juce::String grund;
+        const bool ok = state::entferneBeziehung (z, kQuelleA, kQuelleB, veraendert, grund);
+        pruefe (ok && veraendert && z.intentBeziehungen.empty()
+                    && z.intentBestandRevision == kMax,
+                "M-12: die Beziehung wird entfernt, Revision +1");
+    }
+    {
+        const auto assistentDrunter =
+            mitAssistentenPlatz (writerMitAssistent(), 2, juce::var (kMax - 1));
+        auto z = geladen (assistentDrunter, "M-12 (Assistent)");
+        pruefe (z.assistent.revision == kMax - 1,
+                "M-12: Vorbedingung - Assistentenrevision bei int64max - 1");
+        bool veraendert = false;
+        juce::String grund;
+        const bool ok = state::assistentUeberspringen (z, veraendert, grund);
+        pruefe (ok && veraendert && z.assistent.revision == kMax,
+                "M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt "
+                "wechselt, und die Revision steigt um GENAU 1",
+                juce::String (z.assistent.revision));
+    }
+
+    // Und der Weg ueber den PRODUKTPFAD: ein echter Handgriff meldet genau
+    // einmal Host-Dirty (`nakama-state-v2.md:139`).
+    {
+        auto p = mainProzessor();
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        pruefe (p->setzeQuellenrolle (kQuelleA, {}, state::Rolle::fuehrt,
+                                      state::IntentHerkunft::user, 1.0),
+                "M-12 Produktpfad: ein Intent wird gesetzt");
+        const auto dirtyNachSetzen = dirty.nonParam;
+        const auto revNachSetzen = p->intentBestandRevision();
+        pruefe (p->entferneQuellenrolle (kQuelleA, {}),
+                "M-12 Produktpfad: derselbe Intent wird entfernt");
+        pruefe (dirty.nonParam == dirtyNachSetzen + 1
+                    && p->intentBestandRevision() == revNachSetzen + 1
+                    && p->sourceIntents().empty(),
+                "M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je "
+                "persistenter Aenderung",
+                juce::String (dirty.nonParam - dirtyNachSetzen));
+        // Ein folgenloser Aufruf schweigt weiterhin.
+        pruefe (p->entferneQuellenrolle (kQuelleA, {}),
+                "M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg");
+        pruefe (dirty.nonParam == dirtyNachSetzen + 1
+                    && p->intentBestandRevision() == revNachSetzen + 1,
+                "M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision",
+                juce::String (dirty.nonParam - dirtyNachSetzen));
+        p->removeListener (&dirty);
+    }
+}
+} // namespace nak283
+
 } // namespace
 
 int main()
@@ -1222,6 +1572,12 @@ int main()
     stateInvariante();
     raender();
     m11();
+    // NAK-283 Etappe 2 (F11): die Revisionsraender - Ablehnung ohne Mutation
+    // (M-07 bis M-09), die obere Schranke der Assistentenrevision (M-10) und
+    // die Wache, dass der Normalfall unter der Grenze unveraendert bleibt (M-12).
+    nak283::m283_07_bis_09();
+    nak283::m283_10();
+    nak283::m283_12();
 
     std::cout << std::endl;
     if (fehler == 0)

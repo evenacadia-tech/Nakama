@@ -339,7 +339,13 @@ int main()
         // Publikation traegt die Reload-Generation, fuer die sie gilt. Dieses
         // Bein kennt keinen Reload - 0 ist der Startwert des Modells, die Zusage
         // dieser Zeilen bleibt unveraendert.
-        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0);
+        //
+        // NAK-283 Etappe 2 (F01): dazu die Folgenummer des Standes. Jeder Fall
+        // dieses Beins baut ein FRISCHES Modell, dessen zuletzt uebernommene
+        // Nummer 0 ist; 1 ist deshalb die erste gueltige Nummer, und die Zusage
+        // dieser Zeilen bleibt ebenfalls unveraendert. Die ORDNUNG selbst misst
+        // B14 (M-01 bis M-06, M-71, M-72), nicht dieses Bein.
+        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0, 1);
         const auto s = m.sicht();
         const auto* q = einzige (s);
         pruefe (leer && q != nullptr && q->mitgliedschaft == Model::Mitgliedschaft::bestaetigt
@@ -414,7 +420,7 @@ int main()
     }
     {
         Model m;
-        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0);
+        m.setzePersistenteMitglieder ({ { juce::String (hex (20)), "Piano" } }, 0, 1);
         m.beginneSubscription (hex (1), hex (2), hex (10));
         uebernehme (m, snapshot ({ Mitglied {} }), t0);
         uebernehme (m, snapshot ({}), t0 + std::chrono::milliseconds (1));
@@ -709,7 +715,7 @@ int main()
         pruefe (m.sicht().quellen.front().sichtbarerName
                     == "Unnamed " + juce::String (q.id).substring (0, 8),
                 "empty_label_uses_unnamed_plus_instance_prefix");
-        m.setzePersistenteMitglieder ({ { juce::String (q.id), "Stored" } }, 0);
+        m.setzePersistenteMitglieder ({ { juce::String (q.id), "Stored" } }, 0, 1);
         pruefe (m.sicht().quellen.front().sichtbarerName == "Stored"
                 && ! m.sicht().quellen.front().hostMixerIndexVorhanden,
                 "no_host_context_uses_persisted_untrusted_label_without_order_claim");

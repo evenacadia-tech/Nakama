@@ -873,6 +873,38 @@ public:
         unterblieb (keine Publikation, kein Dirty, keine Revision). */
     std::uint64_t sourcesNachfuehrungNachReloadUnterbliebenFuerTest() const
     { return sourcesNachfuehrungNachReloadUnterblieben.load(); }
+    /** NAK-283 Etappe 2 (F01, M-01, M-72): wie oft eine Publikation abgewiesen
+        wurde, weil eine juengere Publikation derselben Generation das Modell
+        schon erreicht hatte. */
+    std::uint64_t sourcesPublikationUeberholtFuerTest() const
+    { return sourcesPublikationUeberholt.load(); }
+    /** NAK-283 Etappe 2 (F01, M-71): der aktuelle Stand des Folgezaehlers -
+        die Zahl, die die naechste gezogene Kopie erhielte, wenn er nicht
+        saettigte. Nur Tests; gelesen unter `bindungMutex`, unter dem er auch
+        vergeben wird. */
+    std::uint64_t sourcesMitgliederFolgeFuerTest() const;
+    /** NAK-283 Etappe 2 (F01, M-71): den Folgezaehler auf einen Stand setzen,
+        den ein Lauf sonst erst nach 2^64 Publikationen erreichte. Setzt NUR
+        den Zaehler des Prozessors, nie die Marke im Modell - genau deshalb
+        misst M-71 den Anschlag am echten Weg (ziehen, publizieren, abweisen)
+        statt an einem gesetzten Modellzustand. Nur Tests, nie im Audiothread,
+        unter `bindungMutex`. */
+    void setzeSourcesMitgliederFolgeFuerTest (std::uint64_t folge);
+    /** NAK-283 Etappe 2 (M-06): der persistente Mitgliederbestand des MODELLS -
+        die zweite Haelfte der Zusage "nach Ruhe zeigen State und Modell
+        denselben Bestand". Nur Tests. */
+    std::map<std::string, juce::String> sourcesPersistenteMitgliederFuerTest() const
+    { return sourcesModel.persistenteMitgliederKopie(); }
+    /** NAK-283 Etappe 2 (M-72): die beiden Ablehnungszaehler des MODELLS. Sie
+        zaehlen die Entscheidungen an der Stelle, an der sie fallen; die
+        Prozessorzaehler daneben zaehlen die WEGE und fangen zusaetzlich den
+        fruehen Reload-Ausstieg ab, der das Modell nie erreicht. M-72 misst
+        beide Paare, damit keiner der vier Zaehler eine Behauptung ohne Messung
+        bleibt. */
+    std::uint64_t sourcesModellUeberholtFuerTest() const
+    { return sourcesModel.publikationenUeberholt(); }
+    std::uint64_t sourcesModellReloadAbgewiesenFuerTest() const
+    { return sourcesModel.publikationenNachReloadAbgewiesen(); }
     /** Nur Tests (SONDE-013 M-39): schreibt in den ECHTEN RT-Control-Ring,
         bis er voll ist. Das Sticky-Bit setzt dabei der Ring selbst, nicht
         dieser Aufruf — gemessen wird der Weg von dort nach `v3Status()`.
@@ -1187,8 +1219,25 @@ private:
         Vergleich atomar zur Kopie unter `bindungMutex` bleibt als frueher
         Ausstieg. Weicht die Generation ab, unterbleibt die Nachfuehrung GANZ -
         keine Publikation, kein Dirty, keine Revision; gezaehlt in
-        `sourcesNachfuehrungNachReloadUnterblieben` (M-39). */
+        `sourcesNachfuehrungNachReloadUnterblieben` (M-39).
+
+        NAK-283 Etappe 2 (F01): die Kopie reist seit dieser Etappe mit ihrer
+        Folgenummer - gezogen im selben `bindungMutex`-Block wie die Kopie
+        selbst. Erst sie ordnet zwei Publikationen DERSELBEN Generation. */
     void meldeSourcesMitgliederNachBefehl (std::uint64_t generationBeimAbholen);
+    /** NAK-283 Etappe 2 (F01, M-71): die naechste Folgenummer fuer einen
+        gezogenen Mitgliederstand. **Nur unter gehaltenem `bindungMutex` rufen**
+        - die Nummer muss unter derselben Sperre entstehen wie der Stand, den
+        sie ordnet (Lehre 12.09.2026: Zuordnung und Operation unter derselben
+        Sperre). Saettigt am Anschlag statt umzulaufen. */
+    std::uint64_t naechsteSourcesFolgeUnterBindung();
+    /** NAK-283 Etappe 2 (F01, M-72): die eine Auswertung des dreiwertigen
+        Publikationsergebnisses, fuer alle vier Produktaufrufer. Meldet
+        Host-Dirty und erhoeht die Revision bei `uebernommen` UND bei
+        `ueberholt` (die Aenderung ist im State angewandt, nur die Darstellung
+        ist juenger); der Reloadfall steigt vor beidem aus. Laeuft nie unter
+        einer eigenen Prozessorsperre - `meldeHostDirty` ruft in den Host. */
+    void werteSourcesPublikationAus (SourcesModel::Publikation ergebnis);
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -1236,6 +1285,23 @@ private:
         Handgriff und `setStateInformation` heute auf demselben Message-Thread
         liegen (R-A1 Punkt 4' (d)). */
     std::atomic<std::uint64_t> sourcesNachfuehrungNachReloadUnterblieben { 0 };
+    /** NAK-283 Etappe 2 (F01, M-01, M-72): wie oft eine Publikation abgewiesen
+        wurde, weil eine JUENGERE Publikation derselben Generation das Modell
+        schon erreicht hatte. Streng getrennt von
+        `sourcesNachfuehrungNachReloadUnterblieben` - die beiden Gruende haben
+        verschiedenes Verhalten: der Reloadfall unterdrueckt Dirty und Revision,
+        der Ueberholtfall NICHT (die eigene Aenderung ist im State angewandt und
+        gilt). Ohne Verhalten, der Zeuge des Falls. */
+    std::atomic<std::uint64_t> sourcesPublikationUeberholt { 0 };
+    /** NAK-283 Etappe 2 (F01, M-01, M-71): die Folgenummer der
+        Mitgliederstaende. Sie ordnet, was `reloadGeneration` nicht ordnen kann:
+        zwei Publikationen DERSELBEN Generation, gezogen von verschiedenen
+        Threads. Vergeben wird sie ausschliesslich unter `bindungMutex` - unter
+        derselben Sperre, unter der der Stand entsteht und die Kopie gezogen
+        wird -, und sie SAETTIGT am Anschlag, statt umzulaufen (M-71): eine
+        umlaufende Nummer machte die aeltere Kopie wieder zur juengeren.
+        Kein Wire-, Schema- oder Vertragswert; sie lebt im Prozess. */
+    std::uint64_t sourcesMitgliederFolge = 0;
     SourcesModel sourcesModel;
     mutable std::mutex sourcesCommandMutex;
     std::map<std::string, SourcesCommand> ausstehendeSourcesCommands;

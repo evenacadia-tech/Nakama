@@ -217,9 +217,38 @@ public:
     enum class SnapshotErgebnis { ignoriert, uebernommen, ungueltig };
     enum class RuecknahmeErgebnis { ignoriert, uebernommen, ungueltig };
 
+    /** Wie eine Publikation ausgegangen ist (NAK-283 Etappe 2, F01; Manifest
+        `docs/beweise/NAK-283.md` M-01, M-72, Paragraph 8.1 Feinheit 19).
+
+        Die Ablehnung hat seit NAK-283 ZWEI Bedeutungen, und beide verlangen
+        beim Aufrufer verschiedenes Verhalten - ein gemeinsamer `false`-Zweig
+        verloere beides zugleich:
+
+        - `uebernommen`   die Publikation hat stattgefunden. Host-Dirty und
+                          Revision wie bisher (auch bei gleichem Inhalt: die
+                          Publikation fand statt, nur ohne Aenderung an der
+                          Mitgliederkarte).
+        - `ueberholt`     eine JUENGERE Publikation derselben Generation liegt
+                          schon im Modell. Die eigene Aenderung ist im State
+                          ANGEWANDT und gilt - nur die Darstellung ist juenger.
+                          Deshalb meldet der Aufrufer Host-Dirty und erhoeht die
+                          Revision wie im Erfolgsfall (`nakama-state-v2.md:139`:
+                          "steigt bei jeder persistenten Aenderung genau
+                          einmal").
+        - `reloadAbgewiesen` die Generation weicht von der zuletzt geladenen ab.
+                          Die Anwendung ist NICHTIG, der geladene State ist die
+                          Wahrheit: kein Dirty, keine Revision (M-04). */
+    enum class Publikation
+    {
+        uebernommen,
+        ueberholt,
+        reloadAbgewiesen
+    };
+
     /** Die Publikation der persistenten Mitglieder, mit der Reload-Generation,
         FUER die sie gilt (NAK-246 Abschluss Nacharbeit 1 Fortsetzung, Regel
-        R-A1 Punkt 4'; Manifest Paragraph 13.5, M-39).
+        R-A1 Punkt 4'; Manifest Paragraph 13.5, M-39), und seit NAK-283 Etappe 2
+        mit der FOLGENUMMER des Mitgliederstandes, den sie traegt (F01, M-01).
 
         Der Generationsvergleich faellt HIER, unter demselben `mutex` wie
         `projektReload` - also atomar zur Publikation. Die Fassung davor
@@ -227,19 +256,40 @@ public:
         Vergleich und Uebernahme wenige Befehle offen; genau dieses Fenster ist
         die verbliebene Auspraegung des Befundes P2 (Paragraph 13.4).
 
-        Rueckgabe: hat die Publikation stattgefunden? `false` heisst GENAU
-        "die Generation weicht von der zuletzt geladenen ab, es wurde nichts
-        geaendert" - der Aufrufer meldet dann kein Host-Dirty und erhoeht keine
-        Revision. Gleicher Inhalt bei passender Generation liefert `true`: die
-        Publikation hat stattgefunden, nur ohne Aenderung (Idempotenz wie
-        bisher).
+        🔑 NAK-283 F01: die Generation ordnet nur PROJEKTE, nicht die
+        Mitgliederstaende INNERHALB eines Projekts. Zwei Publikationen derselben
+        Generation - ein Worker-Drain und ein Handgriff auf dem Message-Thread -
+        trugen bisher dieselbe Zahl, und die spaeter eintreffende gewann, auch
+        wenn ihr Stand aelter war. `folge` ist diese fehlende Ordnung: sie wird
+        unter DEMSELBEN `mutex` vergeben, unter dem der Stand entsteht
+        (`bindungMutex` im Prozessor), und steigt genau einmal je gezogener
+        Kopie. Abgewiesen wird jede Publikation, deren Nummer NICHT GROESSER ist
+        als die zuletzt uebernommene.
 
-        Kein Default-Argument: jeder Aufrufer reicht die Generation, die er im
-        selben Block wie die Kopie gelesen hat. Der Startwert ist 0 wie im
-        Prozessor. */
-    bool setzePersistenteMitglieder (
+        Kein Default-Argument: jeder Aufrufer reicht Generation UND Folgenummer,
+        die er im selben Block wie die Kopie gelesen hat. Der Startwert ist 0
+        wie im Prozessor; die erste vergebene Nummer ist 1. */
+    Publikation setzePersistenteMitglieder (
         const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
-        std::uint64_t generation);
+        std::uint64_t generation,
+        std::uint64_t folge);
+    /** NAK-283 Etappe 2 (M-72): wie viele Publikationen das Modell wegen einer
+        nicht groesseren Folgenummer abgewiesen hat - der Zeuge des Falls, den
+        F01 beschreibt. Getrennt von `publikationenNachReloadAbgewiesen`
+        gefuehrt, damit die beiden Ablehnungsgruende unterscheidbar sind. */
+    std::uint64_t publikationenUeberholt() const;
+    /** NAK-283 Etappe 2 (M-72): wie viele Publikationen das Modell wegen einer
+        abweichenden Reload-Generation abgewiesen hat. Zaehlt NUR die
+        Entscheidungen dieses Modells; der Prozessor zaehlt daneben auch die
+        Publikationen, die schon sein frueher Ausstieg abfaengt
+        (`Ipc.cpp`, `sourcesNachfuehrungNachReloadUnterblieben`). */
+    std::uint64_t publikationenNachReloadAbgewiesen() const;
+    /** NAK-283 Etappe 2 (M-06): der persistente Mitgliederbestand, wie ihn das
+        Modell fuehrt - Schluessel und Label. Die Zusage "nach Ruhe zeigen
+        Prozessorstate und Modell denselben Bestand" braucht beide Seiten; die
+        `Sicht` mischt Mitgliedschaft mit Fixture- und Snapshotzeilen und kann
+        sie nicht belegen. */
+    std::map<std::string, juce::String> persistenteMitgliederKopie() const;
     /** Der Projektwechsel: Mitglieder UND Generation im selben Block wie der
         Neuaufbau der Eintraege (R-A1 Punkt 4' (a)). Ab hier weist das Modell
         jede Publikation einer aelteren Generation ab; eine Publikation, die es
@@ -376,6 +426,18 @@ private:
     /// beide unter diesem `mutex`. Startwert 0 wie `reloadGeneration` im
     /// Prozessor; kein Wire-, Schema- oder Vertragswert.
     std::uint64_t reloadGeneration = 0;
+    /// NAK-283 Etappe 2 (F01, M-01, M-05): die Folgenummer des zuletzt
+    /// UEBERNOMMENEN Mitgliederstandes. Sie wird von JEDER angenommenen
+    /// Publikation fortgeschrieben - auch von der inhaltsgleichen, die nur die
+    /// Mitgliederkarte unberuehrt laesst (M-05, Paragraph 8.1 Feinheit 20).
+    /// Eine dort nicht verbrauchte Nummer liesse die angehaltene aeltere Kopie
+    /// danach mit einer groesseren Nummer wieder durch. Startwert 0 wie der
+    /// Zaehler im Prozessor; kein Wire-, Schema- oder Vertragswert.
+    std::uint64_t zuletztUebernommeneFolge = 0;
+    /// NAK-283 Etappe 2 (M-72): die beiden Ablehnungsgruende, getrennt gezaehlt.
+    /// Ohne Verhalten - sie sind die Zeugen der Faelle.
+    std::uint64_t ueberholtZaehler = 0;
+    std::uint64_t reloadAbgewiesenZaehler = 0;
     std::string erwarteteBindung, erwarteteSession, eigeneMainId;
     std::string brokerEpoch, fuehrendesMain, hauptziel;
     bool subscriptionAktiv = false;

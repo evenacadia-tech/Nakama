@@ -346,9 +346,10 @@ bool inkompatiblerFehler (const std::string& text)
 
 } // namespace
 
-bool SourcesModel::setzePersistenteMitglieder (
+SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
     const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
-    std::uint64_t generation)
+    std::uint64_t generation,
+    std::uint64_t folge)
 {
     std::map<std::string, juce::String> neu;
     for (const auto& m : mitglieder)
@@ -365,10 +366,35 @@ bool SourcesModel::setzePersistenteMitglieder (
     // sie kommt entweder vor `projektReload` an (und wird von ihm
     // ueberschrieben) oder danach (und faellt hier aus). Ein Fenster zwischen
     // Vergleich und Uebernahme gibt es nicht mehr; im Prozessor gab es das.
+    //
+    // Er bleibt die ERSTE Entscheidung (NAK-283 M-04): ein Reload macht die
+    // Anwendung nichtig, eine Ueberholung nicht - die Gruende duerfen nicht
+    // die Rollen tauschen.
     if (generation != reloadGeneration)
-        return false;
+    {
+        ++reloadAbgewiesenZaehler;
+        return Publikation::reloadAbgewiesen;
+    }
+    // 🔑 NAK-283 Etappe 2 (F01, M-01): die zweite Entscheidung - die Ordnung
+    // der Mitgliederstaende INNERHALB der Generation. `nicht groesser` faellt,
+    // nicht `kleiner`: zwei Publikationen derselben Nummer sind derselbe Stand,
+    // und am Anschlag (M-71) haelt genau diese Form die Nummer fest, statt sie
+    // umlaufen zu lassen.
+    if (folge <= zuletztUebernommeneFolge)
+    {
+        ++ueberholtZaehler;
+        return Publikation::ueberholt;
+    }
+    // 🔑 NAK-283 M-05 (Paragraph 8.1 Feinheit 20): NUMMERNVERGABE VOR
+    // INHALTSVERGLEICH. Die Frischemarke gehoert der Publikation, nicht der
+    // Aenderung - der fruehe Ausstieg bei Gleichheit laesst nur die
+    // Mitgliederkarte unberuehrt. Stuende er davor, bliebe der Rueckweg
+    // `[] -> [A] -> []` offen: der leere Stand des Unbinds ist inhaltsgleich
+    // zum leeren Modell, seine Nummer bliebe unverbraucht, und die angehaltene
+    // Kopie `[A]` kaeme danach mit einer GROESSEREN Nummer wieder durch.
+    zuletztUebernommeneFolge = folge;
     if (neu == persistenteMitglieder)
-        return true;    // Publikation hat stattgefunden, nur ohne Aenderung.
+        return Publikation::uebernommen;  // Publikation fand statt, ohne Aenderung.
     persistenteMitglieder = std::move (neu);
     for (auto it = eintraege.begin(); it != eintraege.end();)
     {
@@ -406,7 +432,25 @@ bool SourcesModel::setzePersistenteMitglieder (
     }
     stelleZielSicher();
     revidiere();
-    return true;
+    return Publikation::uebernommen;
+}
+
+std::uint64_t SourcesModel::publikationenUeberholt() const
+{
+    std::lock_guard<std::mutex> l (mutex);
+    return ueberholtZaehler;
+}
+
+std::uint64_t SourcesModel::publikationenNachReloadAbgewiesen() const
+{
+    std::lock_guard<std::mutex> l (mutex);
+    return reloadAbgewiesenZaehler;
+}
+
+std::map<std::string, juce::String> SourcesModel::persistenteMitgliederKopie() const
+{
+    std::lock_guard<std::mutex> l (mutex);
+    return persistenteMitglieder;
 }
 
 void SourcesModel::projektReload (
@@ -425,6 +469,13 @@ void SourcesModel::projektReload (
     // Generation und Mitglieder wechseln im SELBEN Block. Ab dem Verlassen
     // dieses Blocks weist `setzePersistenteMitglieder` jede Publikation ab, die
     // fuer eine aeltere Generation gezogen wurde.
+    //
+    // NAK-283 Etappe 2: `zuletztUebernommeneFolge` wird hier BEWUSST NICHT
+    // zurueckgesetzt. Der Zaehler im Prozessor laeuft generationsuebergreifend
+    // monoton weiter, also traegt jede Publikation NACH dem Reload ohnehin eine
+    // groessere Nummer; jede davor faellt schon am Generationsvergleich. Ein
+    // Ruecksetzen auf 0 waere eine zweite, schwaechere Ordnung neben der
+    // bestehenden - und der Punkt, an dem die Folge doch noch umlaufen koennte.
     reloadGeneration = generation;
     persistenteMitglieder = std::move (persistent);
     eintraege.clear();

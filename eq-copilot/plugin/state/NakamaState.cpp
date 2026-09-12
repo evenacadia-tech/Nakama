@@ -2279,13 +2279,27 @@ bool entferneIntent (Zustand& z, const juce::String& quelleId, const juce::Strin
     if (! istHex32 (quelleId))             { grund = "source id is not hex32"; return false; }
     if (! passageScopeGueltig (passageId)) { grund = "passage scope is neither empty nor hex32"; return false; }
 
-    const auto vorher = z.sourceIntents.size();
+    /*  🔑 NAK-283 F01/F11 (M-07; Paragraph 8.1 Feinheit 12): ABLEHNUNG OHNE
+        MUTATION. Bis zur Etappe 2 stand das `erase` VOR dem Riegel: an der
+        Revisionsobergrenze war der Eintrag entfernt, der Handgriff meldete
+        `false`, `veraendert` blieb `false` - also kein Host-Dirty, keine
+        Revision, und eine persistente Aenderung ohne Marke. Das verletzt
+        `nakama-state-v2.md:139` ("steigt bei jeder persistenten Aenderung genau
+        einmal") und "State bleibt verlustfrei".
+
+        Deshalb in DREI Schritten: erst FRAGEN, ob ueberhaupt etwas passt (ohne
+        Mutation), dann der Riegel, dann die Mutation. Der No-op-Pfad bleibt
+        unveraendert - nichts gefunden heisst weiterhin `true` ohne Revision und
+        ohne Dirty (M-12). Es wird KEIN Rollback gebaut: eine Pruefung ist
+        billiger als eine Containerkopie im Erfolgspfad. */
+    const bool passendeVorhanden = std::any_of (z.sourceIntents.begin(), z.sourceIntents.end(),
+        [&] (const SourceIntent& s) { return s.quelleId == quelleId && s.passageId == passageId; });
+    if (! passendeVorhanden)
+        return true;
+    if (! bestandsrevisionHeben (z, grund)) return false;
     z.sourceIntents.erase (std::remove_if (z.sourceIntents.begin(), z.sourceIntents.end(),
         [&] (const SourceIntent& s) { return s.quelleId == quelleId && s.passageId == passageId; }),
         z.sourceIntents.end());
-    if (z.sourceIntents.size() == vorher)
-        return true;
-    if (! bestandsrevisionHeben (z, grund)) return false;
     veraendert = true;
     return true;
 }
@@ -2337,12 +2351,13 @@ bool entferneSchutzangabe (Zustand& z, const juce::String& quelleId, Schutzeigen
     veraendert = false;
     if (! istHex32 (quelleId)) { grund = "source id is not hex32"; return false; }
     const Schutzangabe eintrag { quelleId, eigenschaft, bandVon, bandBis };
-    const auto vorher = z.schutzangaben.size();
-    z.schutzangaben.erase (std::remove (z.schutzangaben.begin(), z.schutzangaben.end(), eintrag),
-                           z.schutzangaben.end());
-    if (z.schutzangaben.size() == vorher)
+    // NAK-283 F11 (M-08): Ablehnung ohne Mutation, wie `entferneIntent`.
+    if (std::find (z.schutzangaben.begin(), z.schutzangaben.end(), eintrag)
+            == z.schutzangaben.end())
         return true;
     if (! bestandsrevisionHeben (z, grund)) return false;
+    z.schutzangaben.erase (std::remove (z.schutzangaben.begin(), z.schutzangaben.end(), eintrag),
+                           z.schutzangaben.end());
     veraendert = true;
     return true;
 }
@@ -2452,13 +2467,16 @@ bool entferneBeziehung (Zustand& z, const juce::String& quelleA, const juce::Str
     {
         grund = "source id is not hex32"; return false;
     }
-    const auto vorher = z.intentBeziehungen.size();
+    // NAK-283 F11 (M-09): Ablehnung ohne Mutation, wie `entferneIntent`.
+    const bool passendeVorhanden = std::any_of (
+        z.intentBeziehungen.begin(), z.intentBeziehungen.end(),
+        [&] (const IntentBeziehung& k) { return k.quelleA == quelleA && k.quelleB == quelleB; });
+    if (! passendeVorhanden)
+        return true;
+    if (! bestandsrevisionHeben (z, grund)) return false;
     z.intentBeziehungen.erase (std::remove_if (z.intentBeziehungen.begin(), z.intentBeziehungen.end(),
         [&] (const IntentBeziehung& k) { return k.quelleA == quelleA && k.quelleB == quelleB; }),
         z.intentBeziehungen.end());
-    if (z.intentBeziehungen.size() == vorher)
-        return true;
-    if (! bestandsrevisionHeben (z, grund)) return false;
     veraendert = true;
     return true;
 }
@@ -2645,22 +2663,49 @@ bool p5UebergangErlaubt (Assistentenschritt von, Assistentenschritt nach) noexce
 
 namespace
 {
+/*  🔑 NAK-283 F11 (M-10): der obere Rand der Assistentenrevision.
+
+    `a.revision += 1` stand an drei Stellen OHNE Schranke, waehrend der Bestand
+    daneben eine hatte (`bestandsrevisionHeben`). Bei `int64max` war das
+    signed-integer-UB, und der MSVC-Lauf erzeugte `-9223372036854775808` - einen
+    Stand, den der EIGENE Reader danach ablehnt („revision must be at least 1",
+    `:1905-1909`). Das verletzt "State bleibt verlustfrei" und den Vertragssatz
+    `nakama-state-v2.md:136` ("`revision` `int64` >= 1").
+
+    Der Rand ist kein Ueberlauf, sondern ein HALT - dieselbe Form wie beim
+    Bestand: die Aenderung wird abgewiesen, der Wert bleibt stehen. */
+bool assistentenrevisionHeben (Assistentenzustand& a, juce::String& grund)
+{
+    if (a.revision >= std::numeric_limits<juce::int64>::max())
+    {
+        grund = "assistant revision would overflow";
+        return false;
+    }
+    a.revision += 1;
+    return true;
+}
+
 /// Der gemeinsame Weg jeder angenommenen Aenderung am Schritt.
 ///
 /// Die Revision steigt GENAU EINMAL je Aenderung; ein No-op meldet nichts
 /// (M-13: „No-op, abgewiesener Wert, Laden und read-only schweigen").
-void schrittAendern (Assistentenzustand& a, Assistentenschritt neu, bool offen,
-                     bool& veraendert)
+///
+/// NAK-283 F11 (M-10): die obere Schranke steht VOR der Zuweisung von
+/// `a.schritt`/`a.offen` - abgewiesen heisst unveraendert, nicht halb geaendert.
+bool schrittAendern (Assistentenzustand& a, Assistentenschritt neu, bool offen,
+                     bool& veraendert, juce::String& grund)
 {
     if (a.gesetzt && a.schritt == neu && a.offen == offen)
     {
         veraendert = false;
-        return;
+        return true;
     }
+    if (! assistentenrevisionHeben (a, grund))
+        return false;
     a.schritt = neu;
     a.offen = offen;
-    a.revision += 1;
     veraendert = true;
+    return true;
 }
 } // namespace
 
@@ -2700,11 +2745,15 @@ bool setzeAssistentenschritt (Zustand& z, const juce::String& stepId,
             grund = "a new assistant step must start at coverage";
             return false;
         }
+        // NAK-283 F11 (M-10): die Schranke VOR jeder Zuweisung - auch der
+        // erste Schritt eines neuen Laufs erbt die Revision des vorigen und
+        // kann deshalb am Rand stehen.
+        if (! assistentenrevisionHeben (a, grund))
+            return false;
         a.gesetzt = true;
         a.stepId = stepId;
         a.schritt = schritt;
         a.offen = true;
-        a.revision += 1;
         a.ergebnis = Assistentenergebnis::schritt;
         a.findingId.clear();
         a.proposalId.clear();
@@ -2719,8 +2768,7 @@ bool setzeAssistentenschritt (Zustand& z, const juce::String& stepId,
               + " to " + wort (schritt);
         return false;
     }
-    schrittAendern (a, schritt, true, veraendert);
-    return true;
+    return schrittAendern (a, schritt, true, veraendert, grund);
 }
 
 bool assistentAbbrechen (Zustand& z, bool& veraendert, juce::String& grund)
@@ -2736,8 +2784,7 @@ bool assistentAbbrechen (Zustand& z, bool& veraendert, juce::String& grund)
     // Ereignis, kein Loeschen der Historie." Der Schritt bleibt stehen und
     // traegt `offen = false`; wer ihn entfernte, naehme dem User die Spur
     // seiner eigenen Entscheidung.
-    schrittAendern (a, a.schritt, false, veraendert);
-    return true;
+    return schrittAendern (a, a.schritt, false, veraendert, grund);
 }
 
 bool assistentZurueck (Zustand& z, bool& veraendert, juce::String& grund)
@@ -2757,8 +2804,7 @@ bool assistentZurueck (Zustand& z, bool& veraendert, juce::String& grund)
         // keine Aenderung.
         return true;
     }
-    schrittAendern (a, ziel, true, veraendert);
-    return true;
+    return schrittAendern (a, ziel, true, veraendert, grund);
 }
 
 bool assistentUeberspringen (Zustand& z, bool& veraendert, juce::String& grund)
@@ -2776,8 +2822,7 @@ bool assistentUeberspringen (Zustand& z, bool& veraendert, juce::String& grund)
         grund = "the last assistant step cannot be skipped";
         return false;
     }
-    schrittAendern (a, weiter, true, veraendert);
-    return true;
+    return schrittAendern (a, weiter, true, veraendert, grund);
 }
 
 bool assistentResume (const Zustand& z, Assistentenzustand& aus)
@@ -2806,8 +2851,11 @@ bool setzeAssistentenergebnis (Zustand& z, Assistentenergebnis ergebnis,
     // §46.2: die drei Antworten sind eigene, benannte ERGEBNISSE mit Objekt —
     // der Schritt bleibt stehen, bekommt aber seine Antwort und eine neue
     // Revision. Ein Leerzustand haette keine.
+    //
+    // NAK-283 F11 (M-10): auch hier die Schranke VOR der Zuweisung.
+    if (! assistentenrevisionHeben (a, grund))
+        return false;
     a.ergebnis = ergebnis;
-    a.revision += 1;
     veraendert = true;
     return true;
 }

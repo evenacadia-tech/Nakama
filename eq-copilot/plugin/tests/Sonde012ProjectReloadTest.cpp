@@ -1524,6 +1524,22 @@ void gezogene_kopie_ueberholt_den_reload_nicht (ReloadZweig zweig)
     pruefe (p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 1,
             "M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest",
             juce::String ((juce::int64) p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest()));
+    // NAK-283 M-04 (Regressionswache, Folgenummernpfad): der Reload-Riegel
+    // bleibt der STAERKERE. Die Folgenummer der alten Kopie ist groesser als
+    // die zuletzt uebernommene - an ihr allein kaeme die Publikation durch -,
+    // und trotzdem faellt sie, weil der Generationsvergleich VOR dem
+    // Folgenummernvergleich steht. Der Ueberholt-Zaehler bleibt deshalb bei 0:
+    // dieser Fall ist kein Ueberholen (M-72).
+    pruefe (p->sourcesPublikationUeberholtFuerTest() == 0
+                && p->sourcesModellUeberholtFuerTest() == 0,
+            "NAK-283 M-04: der Reloadfall zaehlt NICHT als ueberholt - weder im "
+            "Prozessor noch im Modell",
+            juce::String ((juce::int64) p->sourcesPublikationUeberholtFuerTest()) + " / "
+                + juce::String ((juce::int64) p->sourcesModellUeberholtFuerTest()));
+    pruefe (p->sourcesModellReloadAbgewiesenFuerTest() == 1,
+            "NAK-283 M-04: das Modell hat genau EINE Publikation wegen der Generation "
+            "abgewiesen - der Vergleich faellt dort, nicht im fruehen Ausstieg",
+            juce::String ((juce::int64) p->sourcesModellReloadAbgewiesenFuerTest()));
     pruefe (dirty.nonParam == dirtyNachReload
                 && p->v3StateRevisionFuerTest() == revisionNachReload,
             "M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision",
@@ -1550,6 +1566,594 @@ bool nak246d3Fall (const std::string& name)
     return false;
 }
 } // namespace nak246d3
+
+//==============================================================================
+// NAK-283 Etappe 2 · F01 - die Ordnung der Mitgliederstaende INNERHALB einer
+// Reload-Generation (Manifest docs/beweise/NAK-283.md Paragraph 5.1, M-01 bis
+// M-06, M-71, M-72; Bauplan Paragraph 6.3)
+//==============================================================================
+//
+// Der Befund: die Kopie wird unter `bindungMutex` gezogen, die Publikation
+// laeuft ohne Sperre. Zwei gueltige Publikationen DERSELBEN Generation - ein
+// Worker-Drain und ein Handgriff auf dem Message-Thread - trugen dieselbe Zahl,
+// und die spaeter eintreffende gewann, auch wenn ihr Stand aelter war. Der
+// State blieb richtig, das MODELL sprang zurueck: ein nach bestaetigtem Unbind
+// weiterhin als `bestaetigt` gezeigtes Mitglied ist ein unehrlicher Zustand
+// (CLAUDE.md 24.08.2026), und "Engine kennt keine Optik" verlangt, dass State
+// und Anzeigemodell nach Ruhe nicht auseinanderfallen.
+//
+//   M-01  der Drain-Weg: eine aeltere Publikation ersetzt keine juengere, und
+//         ihre bereits angewandte Aenderung bleibt gezaehlt (Dirty, Revision);
+//   M-02  derselbe Riegel fuer `benenneSourcesHauptziel`;
+//   M-03  derselbe Riegel fuer den lokalen Unbind ohne Broker;
+//   M-04  Wache im M-39-Fall: der Reload-Riegel bleibt der staerkere;
+//   M-05  der Ruecksprung ueber einen INHALTSGLEICHEN Stand - die Frischemarke
+//         wird auch dort fortgeschrieben;
+//   M-06  schliessend: nach Ruhe tragen State und Modell denselben Bestand;
+//   M-71  Zahlenrand: die Folgenummer saettigt, sie wrappt nie;
+//   M-72  die beiden Ablehnungsgruende sind unterscheidbar, und nur der
+//         Reloadfall unterdrueckt Dirty und Revision.
+//
+// Jede Nebenlaeufigkeitszeile faellt an einem ERZWUNGENEN Interleaving am
+// bestehenden Publikationshaken (Paragraph 6.1), nie an einer
+// Wahrscheinlichkeit.
+// Rotlauf: docs/beweise/roh/NAK-283-rot-M-01-etappe-2.txt bis -M-72-etappe-2.txt.
+
+namespace nak283
+{
+using nak246::Schranke;
+using nak246d3::genau;
+using nak246d3::mainAnlegen;
+using nak246d3::mitglieder;
+using Art = eqcop::EqCopilotProcessor::SourcesCommandArt;
+
+/// Der persistente Mitgliederbestand des Modells als geordnete Liste "id=label".
+juce::String modellBestand (const eqcop::EqCopilotProcessor& p)
+{
+    juce::String aus;
+    for (const auto& [ident, label] : p.sourcesPersistenteMitgliederFuerTest())
+        aus += juce::String (ident.substr (0, 4)) + "=" + label + " ";
+    return aus.trim();
+}
+
+/// Traegt das Modell genau diese Mitglieder (Schluesselmenge), ohne Ruecksicht
+/// auf die Labels?
+bool modellTraegt (const eqcop::EqCopilotProcessor& p, std::initializer_list<std::string> ids)
+{
+    const auto bestand = p.sourcesPersistenteMitgliederFuerTest();
+    if (bestand.size() != ids.size())
+        return false;
+    for (const auto& erwartet : ids)
+        if (bestand.count (erwartet) == 0)
+            return false;
+    return true;
+}
+
+/// Die gemeinsame Buehne von M-01, M-02, M-03 und M-06: ein Main mit
+/// Workerzug, dessen Publikationshaken den ERSTEN scharfen Ruf festhaelt.
+/// `scharf` wird erst nach dem Aufbau gesetzt, damit die Vorbelegung
+/// durchlaeuft.
+struct Buehne
+{
+    Schranke gate;
+    std::atomic<int> hakenRufe { 0 };
+    std::atomic<bool> scharf { false };
+    std::unique_ptr<eqcop::EqCopilotProcessor> p;
+
+    explicit Buehne (bool workerDrain = true)
+        : p (mainAnlegen (workerDrain, true))
+    {
+        // Der Haken lebt im Prozessor und kann bis zu dessen Destruktor aus dem
+        // Workerzug gerufen werden - was er faengt, muss ihn ueberleben.
+        // Deshalb stehen Schranke und Zaehler VOR dem Prozessor im Member-
+        // Block dieser Struktur (Reihenfolge der Zerstoerung).
+        p->setzeSourcesPublikationHakenFuerTest ([this] (std::size_t)
+        {
+            if (scharf.load() && hakenRufe.fetch_add (1) == 0)
+                gate.halten();
+        });
+    }
+
+    ~Buehne() { p.reset(); }
+
+    /// Einen bestaetigten Befehl einschleusen (derselbe ACK-Weg wie M-12).
+    void bestaetige (Art art, const std::string& instanz)
+    {
+        const auto cmd = p->merkeSourcesCommandFuerTest (art, instanz);
+        p->v3AntwortFuerTest (ack (cmd, true));
+    }
+
+    /// Ruhe als EREIGNIS, nie als Schlafintervall: der naechste Eintritt des
+    /// Workerzugs beweist, dass sein voriger Aufruf samt Nachfuehrung zurueck
+    /// ist (NAK-246 R-E4-1).
+    bool ruheAbwarten()
+    {
+        const auto vorher = p->sourcesDrainEintritteFuerTest();
+        return warteAuf (5000, [&] { return p->sourcesDrainEintritteFuerTest() > vorher; });
+    }
+};
+
+/// M-01 · B ist Mitglied; der Workerzug wendet `confirm_join (A)` an und haelt
+/// zwischen Kopie und Publikation. Der Message-Thread wendet `unbind_probe (B)`
+/// an und publiziert `[A]`. Danach publiziert der Worker seine AELTERE Kopie
+/// `[B, A]`.
+///
+/// Zusage (zwei Haelften): das Modell traegt danach genau `[A]`, die aeltere
+/// Publikation wird als UEBERHOLT abgewiesen und eigens gezaehlt - UND ihre
+/// bereits unter `bindungMutex` angewandte Aenderung bleibt gezaehlt: Dirty
+/// und Revisionsdelta stehen bei 2, nicht bei 1.
+void aeltere_mitgliederpublikation_ersetzt_keine_juengere()
+{
+    std::cout << "== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    Buehne s;
+    DirtyZaehler dirty;
+    s.p->addListener (&dirty);
+
+    // Aufbau: B ist Mitglied. Der Workerzug drain't ihn selbst; `scharf` ist
+    // noch false, der Haken haelt also nicht.
+    s.bestaetige (Art::confirmJoin, b);
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); })
+                && modellTraegt (*s.p, { b }),
+            "M-01 Aufbau: B ist Mitglied in State UND Modell", modellBestand (*s.p));
+
+    const auto dirtyVor = dirty.nonParam.load();
+    const auto revisionVor = s.p->v3StateRevisionFuerTest();
+    const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
+
+    // Ereignis 1: der Workerzug wendet `confirm_join A` an und haelt zwischen
+    // Kopie und Publikation. `sourcesDrainMutex` ist dabei schon frei - die
+    // Publikationsschleife liegt ausserhalb der Klammer (`Ipc.cpp`).
+    s.scharf.store (true);
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (s.gate.warteBisErreicht (2000),
+            "M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist "
+            "angewandt, das Modell noch nicht nachgefuehrt");
+    pruefe (genau (mitglieder (*s.p), { b, a }) && modellTraegt (*s.p, { b }),
+            "M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] "
+            "(Vorbedingung der Zusage)", modellBestand (*s.p));
+
+    // Ereignis 2: der Message-Thread wendet `unbind_probe B` an und publiziert
+    // `[A]` - mit einer GROESSEREN Folgenummer als die angehaltene Kopie.
+    s.bestaetige (Art::unbindProbe, b);
+    std::atomic<bool> tickFertig { false };
+    std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });
+    const bool tickDurch = warteAuf (5000, [&] { return tickFertig.load(); });
+    tick.join();
+    pruefe (tickDurch && genau (mitglieder (*s.p), { a }) && modellTraegt (*s.p, { a }),
+            "M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert",
+            modellBestand (*s.p));
+
+    // Ereignis 3: die aeltere Kopie wird freigegeben.
+    s.gate.freigeben();
+    const bool ruhe = s.ruheAbwarten();
+
+    pruefe (genau (mitglieder (*s.p), { a }) && modellTraegt (*s.p, { a }),
+            "M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe "
+            "traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]",
+            modellBestand (*s.p));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == ueberholtVor + 1
+                && s.p->sourcesModellUeberholtFuerTest() == 1,
+            "M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor "
+            "und im Modell",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()) + " / "
+                + juce::String ((juce::int64) s.p->sourcesModellUeberholtFuerTest()));
+    pruefe (s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 0,
+            "M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0",
+            juce::String ((juce::int64) s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest()));
+    // Die zweite Haelfte der Zusage (Paragraph 8.1 Feinheit 19): der Join ist
+    // unter `bindungMutex` angewandt worden und wurde NICHT durch einen Reload
+    // ersetzt. Seine Aenderung gilt, nur ihre Darstellung ist ueberholt -
+    // Dirty-Zaehler und Revisionsdelta zaehlen deshalb BEIDE Befehle.
+    pruefe (dirty.nonParam == dirtyVor + 2,
+            "M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - "
+            "die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt",
+            juce::String (dirty.nonParam.load() - dirtyVor));
+    pruefe (s.p->v3StateRevisionFuerTest() == revisionVor + 2,
+            "M-01: Revision-Delta == 2",
+            juce::String ((juce::int64) (s.p->v3StateRevisionFuerTest() - revisionVor)));
+    pruefe (ruhe, "M-01: der Workerzug ist samt Nachfuehrung zurueck");
+    s.p->removeListener (&dirty);
+}
+
+/// M-02 · derselbe Riegel fuer den Benennungs-Handgriff auf dem Message-Thread.
+/// Der Worker haelt die Kopie mit dem ALTEN Label; `benenneSourcesHauptziel`
+/// publiziert das neue. Zusage: nach Ruhe traegt das Modell das benannte
+/// Hauptziel.
+void hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt()
+{
+    std::cout << "== NAK-283 M-02 hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    Buehne s;
+    // A ist Hauptziel mit Schreibrecht - die Vorbedingung des Handgriffs.
+    s.p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
+
+    // Aufbau: A ist Mitglied mit leerem Label (`confirm_join` traegt keines).
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a }); })
+                && modellTraegt (*s.p, { a }),
+            "M-02 Aufbau: A ist Mitglied", modellBestand (*s.p));
+    const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
+
+    // Ereignis 1: der Workerzug wendet `confirm_join B` an und haelt - seine
+    // Kopie traegt A mit dem ALTEN (leeren) Label.
+    s.scharf.store (true);
+    s.bestaetige (Art::confirmJoin, b);
+    pruefe (s.gate.warteBisErreicht (2000),
+            "M-02: der Workerzug haelt zwischen Kopie und Publikation");
+
+    // Ereignis 2: der Message-Thread benennt A um (`Ipc.cpp`, Handgriff).
+    pruefe (s.p->benenneSourcesHauptziel (a, "Fluegel"),
+            "M-02: der Benennungs-Handgriff laeuft durch");
+
+    s.gate.freigeben();
+    const bool ruhe = s.ruheAbwarten();
+
+    const auto bestand = s.p->sourcesPersistenteMitgliederFuerTest();
+    const auto trefferA = bestand.find (a);
+    pruefe (trefferA != bestand.end() && trefferA->second == "Fluegel",
+            "M-02: hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt - "
+            "nach Ruhe traegt das Modell das BENANNTE Hauptziel, nicht das alte Label",
+            modellBestand (*s.p));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == ueberholtVor + 1,
+            "M-02: die aeltere Worker-Kopie ist als ueberholt gezaehlt",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+    pruefe (ruhe, "M-02: der Workerzug ist samt Nachfuehrung zurueck");
+}
+
+/// M-03 · derselbe Riegel fuer den lokalen Unbind ohne Broker. Das Mitglied
+/// traegt keine gueltige Runtime-Nonce, der Handgriff nimmt deshalb den
+/// LOKALEN Zweig (`Ipc.cpp`) und publiziert die verkuerzte Liste selbst.
+/// Zusage: der lokale Unbind bleibt wirksam - nach Ruhe traegt das Modell kein
+/// Mitglied mehr.
+void lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt()
+{
+    std::cout << "== NAK-283 M-03 lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt ==\n";
+    const auto a = id ('a');
+    Buehne s;
+    // A ist Hauptziel, bestaetigtes Mitglied und hat KEINE gueltige
+    // Runtime-Nonce - genau die Bedingung des lokalen Zweigs (Broker offline).
+    auto sicht = lebendeQuelle (a);
+    sicht.quellen.front().mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    sicht.quellen.front().runtimeNonce.clear();
+    s.p->setzeSourcesFixtureFuerTest (std::move (sicht));
+
+    const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
+
+    // Ereignis 1: der Workerzug wendet `confirm_join A` an und haelt - seine
+    // Kopie traegt [A].
+    s.scharf.store (true);
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (s.gate.warteBisErreicht (2000),
+            "M-03: der Workerzug haelt zwischen Kopie und Publikation");
+    pruefe (genau (mitglieder (*s.p), { a }),
+            "M-03: die gezogene Kopie traegt [A] (Vorbedingung der Zusage)");
+
+    // Ereignis 2: der lokale Unbind auf dem Message-Thread.
+    pruefe (s.p->entferneSourcesHauptziel (a),
+            "M-03: der lokale Unbind ohne Broker laeuft durch");
+    pruefe (mitglieder (*s.p).empty(),
+            "M-03: der State traegt danach kein Mitglied mehr");
+
+    s.gate.freigeben();
+    const bool ruhe = s.ruheAbwarten();
+
+    pruefe (s.p->sourcesPersistenteMitgliederFuerTest().empty(),
+            "M-03: lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt - nach "
+            "Ruhe traegt das Modell KEIN Mitglied mehr",
+            modellBestand (*s.p));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == ueberholtVor + 1,
+            "M-03: die aeltere Worker-Kopie ist als ueberholt gezaehlt",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+    pruefe (ruhe, "M-03: der Workerzug ist samt Nachfuehrung zurueck");
+}
+
+/// M-05 · der Ruecksprung ueber einen INHALTSGLEICHEN Stand. Modell und State
+/// sind leer; der Workerzug wendet `confirm_join (A)` an, zieht `[A]` und
+/// haelt. Der Message-Thread wendet `unbind_probe (A)` an und publiziert `[]` -
+/// inhaltsgleich zum leeren Modell.
+///
+/// Zusage: auch diese Publikation schreibt die FRISCHEMARKE fort. Taete sie es
+/// nicht (frueher `return true` VOR der Uebernahme der Nummer), bliebe die
+/// zuletzt uebernommene Nummer stehen, und die angehaltene Kopie `[A]` kaeme
+/// danach mit einer GROESSEREN Nummer durch - das Modell truege nach
+/// bestaetigtem Unbind wieder `[A]`.
+void inhaltsgleiche_publikation_zieht_die_frischemarke_nach()
+{
+    std::cout << "== NAK-283 M-05 inhaltsgleiche_publikation_zieht_die_frischemarke_nach ==\n";
+    const auto a = id ('a');
+    Buehne s;
+    DirtyZaehler dirty;
+    s.p->addListener (&dirty);
+    pruefe (s.p->sourcesPersistenteMitgliederFuerTest().empty() && mitglieder (*s.p).empty(),
+            "M-05 Aufbau: Modell und State sind leer (Vorbedingung der Zusage)");
+
+    const auto dirtyVor = dirty.nonParam.load();
+    const auto revisionVor = s.p->v3StateRevisionFuerTest();
+
+    // Ereignis 1: der Workerzug wendet `confirm_join A` an, zieht `[A]` und
+    // haelt.
+    s.scharf.store (true);
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (s.gate.warteBisErreicht (2000),
+            "M-05: der Workerzug haelt mit der Kopie [A] zwischen Kopie und Publikation");
+
+    // Ereignis 2: der Message-Thread wendet `unbind_probe A` an und publiziert
+    // `[]` - inhaltsgleich zum leeren Modell.
+    s.bestaetige (Art::unbindProbe, a);
+    std::atomic<bool> tickFertig { false };
+    std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });
+    const bool tickDurch = warteAuf (5000, [&] { return tickFertig.load(); });
+    tick.join();
+    pruefe (tickDurch && mitglieder (*s.p).empty(),
+            "M-05: der Unbind ist angewandt, der publizierte Stand `[]` ist "
+            "inhaltsgleich zum leeren Modell");
+
+    s.gate.freigeben();
+    const bool ruhe = s.ruheAbwarten();
+
+    pruefe (s.p->sourcesPersistenteMitgliederFuerTest().empty(),
+            "M-05: inhaltsgleiche_publikation_zieht_die_frischemarke_nach - nach Ruhe "
+            "ist das Modell LEER; die angehaltene Kopie [A] ist als ueberholt abgewiesen",
+            modellBestand (*s.p));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == 1,
+            "M-05: genau EINE ueberholte Publikation",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+    // Die inhaltsgleiche Publikation meldet weiterhin Erfolg: Join und Unbind
+    // sind zwei State-aendernde Befehle, also zwei Dirty-Meldungen.
+    pruefe (dirty.nonParam == dirtyVor + 2
+                && s.p->v3StateRevisionFuerTest() == revisionVor + 2,
+            "M-05: der Unbind meldet Host-Dirty und Revision wie bisher (Delta 2 fuer "
+            "Join und Unbind) - die Trennung von Nummernvergabe und Bestandsuebernahme "
+            "aendert daran nichts",
+            juce::String (dirty.nonParam.load() - dirtyVor) + " Dirty, Revision-Delta "
+                + juce::String ((juce::int64) (s.p->v3StateRevisionFuerTest() - revisionVor)));
+    pruefe (ruhe, "M-05: der Workerzug ist samt Nachfuehrung zurueck");
+    s.p->removeListener (&dirty);
+}
+
+/// M-06 · die schliessende Zusage. Alle VIER Produktwege der Publikation und
+/// beide Threads laufen in EINEM Lauf; danach ist Ruhe (kein weiterer Befehl,
+/// kein Tick). Zusage: Prozessorstate und Modell tragen denselben
+/// Mitgliederbestand - dieselbe Schluesselmenge, je Schluessel dasselbe Label.
+///
+/// Es gibt keinen Heilungstakt: `wendeBestaetigteSourcesCommandsAn` kehrt bei
+/// leerem Batch zurueck, und ein `session_snapshot` schreibt `eintraege`, nicht
+/// `persistenteMitglieder`. Die Zusage muss ohne weiteren Befehl halten.
+void state_und_modell_sind_nach_ruhe_gleich()
+{
+    std::cout << "== NAK-283 M-06 state_und_modell_sind_nach_ruhe_gleich ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    Buehne s;   // Weg 4: `setzeBindung` hat in `mainAnlegen` schon publiziert.
+    s.p->setzeSourcesFixtureFuerTest (lebendeQuelle (a));
+
+    // Weg 3 (Drain-Nachfuehrung) aus BEIDEN Threads, mit erzwungenem
+    // Interleaving: der Workerzug haelt mit `[A]`, der Message-Thread
+    // publiziert `[A, B]`.
+    s.scharf.store (true);
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (s.gate.warteBisErreicht (2000), "M-06: der Workerzug haelt mit der Kopie [A]");
+    s.bestaetige (Art::confirmJoin, b);
+    std::atomic<bool> tickFertig { false };
+    std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });
+    const bool tickDurch = warteAuf (5000, [&] { return tickFertig.load(); });
+    tick.join();
+    s.gate.freigeben();
+    pruefe (tickDurch && s.ruheAbwarten(),
+            "M-06: beide Drains sind samt Nachfuehrung zurueck");
+
+    // Weg 1: der Benennungs-Handgriff auf dem Message-Thread.
+    pruefe (s.p->benenneSourcesHauptziel (a, "Fluegel"),
+            "M-06: `benenneSourcesHauptziel` laeuft durch");
+
+    // Weg 2: der lokale Unbind ohne Broker - B wird Hauptziel ohne gueltige
+    // Runtime-Nonce.
+    auto sicht = lebendeQuelle (b);
+    sicht.quellen.front().mitgliedschaft = eqcop::SourcesModel::Mitgliedschaft::bestaetigt;
+    sicht.quellen.front().runtimeNonce.clear();
+    s.p->setzeSourcesFixtureFuerTest (std::move (sicht));
+    pruefe (s.p->entferneSourcesHauptziel (b),
+            "M-06: der lokale Unbind ohne Broker laeuft durch");
+
+    // Ruhe. Jetzt muessen beide Seiten dasselbe tragen.
+    pruefe (s.ruheAbwarten(), "M-06: nach dem letzten Handgriff ist Ruhe");
+
+    const auto imState = mitglieder (*s.p);
+    const auto imModell = s.p->sourcesPersistenteMitgliederFuerTest();
+    bool gleich = imState.size() == imModell.size();
+    for (const auto& m : imState)
+    {
+        const auto treffer = imModell.find (m.instanceId.toStdString());
+        if (treffer == imModell.end() || treffer->second != m.label)
+            gleich = false;
+    }
+    juce::String stateText;
+    for (const auto& m : imState)
+        stateText += m.instanceId.substring (0, 4) + "=" + m.label + " ";
+    pruefe (gleich && ! imState.empty(),
+            "M-06: state_und_modell_sind_nach_ruhe_gleich - dieselbe Schluesselmenge, "
+            "je Schluessel dasselbe Label",
+            "State: " + stateText.trim() + " | Modell: " + modellBestand (*s.p));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == 1,
+            "M-06: genau die eine angehaltene Kopie wurde ueberholt - die drei "
+            "seriellen Wege nicht",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+}
+
+/// M-71 · Zahlenrand. Der Folgezaehler steht auf `2^64 - 2`; die naechste
+/// gezogene Kopie erhaelt `2^64 - 1`. Zusage: die Nummer WRAPPT NIE. Am
+/// Anschlag wird die naechste Publikation abgewiesen und im Ueberholt-Zaehler
+/// gefuehrt, statt auf 0 zurueckzuspringen; das Modell behaelt seinen letzten
+/// Bestand.
+///
+/// Waere `++folge` ohne obere Schranke, spraenge die Nummer auf 0 - und eine
+/// angehaltene AELTERE Kopie mit der grossen Nummer gewaenne danach wieder
+/// gegen jeden juengeren Stand.
+void mitgliederfolge_wrappt_nicht()
+{
+    std::cout << "== NAK-283 M-71 mitgliederfolge_wrappt_nicht ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    constexpr auto kAnschlag = std::numeric_limits<std::uint64_t>::max();
+    Buehne s (true);
+    s.p->setzeSourcesMitgliederFolgeFuerTest (kAnschlag - 1);
+    pruefe (s.p->sourcesMitgliederFolgeFuerTest() == kAnschlag - 1,
+            "M-71 Aufbau: der Folgezaehler steht eine Nummer unter dem Anschlag");
+
+    // Publikation 1: zieht die letzte freie Nummer - den Anschlag selbst.
+    s.bestaetige (Art::confirmJoin, a);
+    pruefe (warteAuf (5000, [&] { return modellTraegt (*s.p, { a }); }),
+            "M-71: die Publikation mit der Nummer am Anschlag wird uebernommen",
+            modellBestand (*s.p));
+    pruefe (s.p->sourcesMitgliederFolgeFuerTest() == kAnschlag,
+            "M-71: der Zaehler steht jetzt auf 2^64 - 1");
+    const auto ueberholtVor = s.p->sourcesPublikationUeberholtFuerTest();
+
+    // Publikation 2: ein tatsaechlich GEAENDERTER Bestand am Anschlag.
+    s.bestaetige (Art::confirmJoin, b);
+    pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { a, b }); }),
+            "M-71: der zweite Join ist im State angewandt");
+    pruefe (s.ruheAbwarten(), "M-71: der Workerzug ist samt Nachfuehrung zurueck");
+
+    // 🔑 Die Zusage dieser Zeile, direkt gemessen.
+    pruefe (s.p->sourcesMitgliederFolgeFuerTest() == kAnschlag,
+            "M-71: mitgliederfolge_wrappt_nicht - der Zaehler steht NACH der zweiten "
+            "Publikation immer noch auf 2^64 - 1 und ist nicht auf 0 zurueckgesprungen",
+            juce::String ((juce::int64) s.p->sourcesMitgliederFolgeFuerTest()));
+    pruefe (s.p->sourcesPublikationUeberholtFuerTest() == ueberholtVor + 1,
+            "M-71: am Anschlag wird die Publikation abgewiesen und im Ueberholt-Zaehler "
+            "gefuehrt - der Zaehler macht den Halt sichtbar",
+            juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+    pruefe (modellTraegt (*s.p, { a }),
+            "M-71: das Modell behaelt seinen letzten Bestand [A], statt einen "
+            "umgelaufenen Stand anzunehmen",
+            modellBestand (*s.p));
+}
+
+/// M-72 · beide Ablehnungsgruende in einem Lauf, in zwei Phasen mit je eigenem
+/// Prozessor - so ist "keiner steigt im Fall des anderen" direkt messbar und
+/// nicht das Ergebnis einer verschraenkten Buehne.
+///
+///   Phase A (Reload): ein Reload ueberholt eine gezogene Kopie. Zusage: der
+///   Reloadzaehler steigt, der Ueberholt-Zaehler NICHT - und weder Dirty noch
+///   Revision werden gemeldet.
+///   Phase B (Ueberholung): eine juengere Publikation derselben Generation
+///   ueberholt eine aeltere Worker-Kopie. Zusage: der Ueberholt-Zaehler steigt,
+///   der Reloadzaehler NICHT - und Dirty und Revision werden GEMELDET, weil die
+///   Aenderung im State angewandt bleibt.
+void reloadablehnung_und_ueberholung_sind_unterscheidbar()
+{
+    std::cout << "== NAK-283 M-72 reloadablehnung_und_ueberholung_sind_unterscheidbar ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+
+    // ── Phase A: Reload ────────────────────────────────────────────────────
+    {
+        Buehne s;
+        DirtyZaehler dirty;
+        s.p->addListener (&dirty);
+
+        // Ein FREMDES Projekt mit einer anderen Mitgliedermenge.
+        juce::MemoryBlock fremdState;
+        {
+            auto fremd = mainAnlegen (false, true);
+            const auto joinB = fremd->merkeSourcesCommandFuerTest (Art::confirmJoin, b);
+            fremd->v3AntwortFuerTest (ack (joinB, true));
+            fremd->getStateInformation (fremdState);
+            pruefe (genau (mitglieder (*fremd), { b }),
+                    "M-72 Phase A Aufbau: das fremde Projekt traegt genau B");
+        }
+
+        s.scharf.store (true);
+        s.bestaetige (Art::confirmJoin, a);
+        pruefe (s.gate.warteBisErreicht (2000),
+                "M-72 Phase A: der Workerzug haelt zwischen Kopie und Publikation");
+        s.p->setStateInformation (fremdState.getData(), (int) fremdState.getSize());
+        const auto dirtyNachReload = dirty.nonParam.load();
+        const auto revisionNachReload = s.p->v3StateRevisionFuerTest();
+        s.gate.freigeben();
+        pruefe (s.ruheAbwarten(), "M-72 Phase A: der Workerzug ist zurueck");
+
+        pruefe (s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 1
+                    && s.p->sourcesModellReloadAbgewiesenFuerTest() == 1,
+                "M-72 Phase A: `sourcesNachfuehrungNachReloadUnterblieben` steigt genau "
+                "im Reloadfall",
+                juce::String ((juce::int64) s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest())
+                    + " / " + juce::String ((juce::int64) s.p->sourcesModellReloadAbgewiesenFuerTest()));
+        pruefe (s.p->sourcesPublikationUeberholtFuerTest() == 0
+                    && s.p->sourcesModellUeberholtFuerTest() == 0,
+                "M-72 Phase A: der Ueberholt-Zaehler steigt im Reloadfall NICHT",
+                juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest()));
+        pruefe (dirty.nonParam == dirtyNachReload
+                    && s.p->v3StateRevisionFuerTest() == revisionNachReload,
+                "M-72 Phase A: NUR der Reloadfall unterdrueckt Dirty und Revision",
+                "Dirty-Delta " + juce::String (dirty.nonParam.load() - dirtyNachReload)
+                    + ", Revision-Delta "
+                    + juce::String ((juce::int64) (s.p->v3StateRevisionFuerTest() - revisionNachReload)));
+        s.p->removeListener (&dirty);
+    }
+
+    // ── Phase B: Ueberholung ───────────────────────────────────────────────
+    {
+        Buehne s;
+        DirtyZaehler dirty;
+        s.p->addListener (&dirty);
+        s.bestaetige (Art::confirmJoin, b);
+        pruefe (warteAuf (5000, [&] { return genau (mitglieder (*s.p), { b }); }),
+                "M-72 Phase B Aufbau: B ist Mitglied");
+        const auto dirtyVor = dirty.nonParam.load();
+        const auto revisionVor = s.p->v3StateRevisionFuerTest();
+
+        s.scharf.store (true);
+        s.bestaetige (Art::confirmJoin, a);
+        pruefe (s.gate.warteBisErreicht (2000),
+                "M-72 Phase B: der Workerzug haelt zwischen Kopie und Publikation");
+        s.bestaetige (Art::unbindProbe, b);
+        std::atomic<bool> tickFertig { false };
+        std::thread tick ([&] { s.p->sourcesTick(); tickFertig.store (true); });
+        const bool tickDurch = warteAuf (5000, [&] { return tickFertig.load(); });
+        tick.join();
+        s.gate.freigeben();
+        pruefe (tickDurch && s.ruheAbwarten(), "M-72 Phase B: beide Drains sind zurueck");
+
+        pruefe (s.p->sourcesPublikationUeberholtFuerTest() == 1
+                    && s.p->sourcesModellUeberholtFuerTest() == 1,
+                "M-72 Phase B: der Ueberholt-Zaehler steigt genau im Ueberholtfall",
+                juce::String ((juce::int64) s.p->sourcesPublikationUeberholtFuerTest())
+                    + " / " + juce::String ((juce::int64) s.p->sourcesModellUeberholtFuerTest()));
+        pruefe (s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest() == 0
+                    && s.p->sourcesModellReloadAbgewiesenFuerTest() == 0,
+                "M-72 Phase B: der Reloadzaehler steigt im Ueberholtfall NICHT",
+                juce::String ((juce::int64) s.p->sourcesNachfuehrungNachReloadUnterbliebenFuerTest()));
+        pruefe (dirty.nonParam == dirtyVor + 2
+                    && s.p->v3StateRevisionFuerTest() == revisionVor + 2,
+                "M-72 Phase B: reloadablehnung_und_ueberholung_sind_unterscheidbar - der "
+                "Ueberholtfall meldet Dirty und Revision, weil seine Aenderung angewandt "
+                "bleibt",
+                juce::String (dirty.nonParam.load() - dirtyVor) + " Dirty, Revision-Delta "
+                    + juce::String ((juce::int64) (s.p->v3StateRevisionFuerTest() - revisionVor)));
+        s.p->removeListener (&dirty);
+    }
+}
+
+/// Die Fallnamen tragen das Praefix `283`, weil NAK-246 und NAK-283 je eine
+/// eigene Matrix mit eigenen IDs fuehren - `m06` gibt es in beiden. Ein
+/// Rotbeweis, der den falschen Fall faehrt, waere kein Rotbeweis.
+bool nak283Fall (const std::string& name)
+{
+    if (name == "283m01") { aeltere_mitgliederpublikation_ersetzt_keine_juengere(); return true; }
+    if (name == "283m02") { hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt(); return true; }
+    if (name == "283m03") { lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt(); return true; }
+    if (name == "283m05") { inhaltsgleiche_publikation_zieht_die_frischemarke_nach(); return true; }
+    if (name == "283m06") { state_und_modell_sind_nach_ruhe_gleich(); return true; }
+    if (name == "283m71") { mitgliederfolge_wrappt_nicht(); return true; }
+    if (name == "283m72") { reloadablehnung_und_ueberholung_sind_unterscheidbar(); return true; }
+    return false;
+}
+} // namespace nak283
 
 //==============================================================================
 // NAK-246 D6 · eine Reset-Funktion fuer den Sitzungszustand (Regel R-D6;
@@ -1810,11 +2414,12 @@ int main (int argc, char** argv)
     if (argc == 3 && std::string (argv[1]) == "--nur")
     {
         if (! nak246::nak246Fall (argv[2]) && ! nak246d3::nak246d3Fall (argv[2])
-            && ! nak246d6::nak246d6Fall (argv[2]))
+            && ! nak246d6::nak246d6Fall (argv[2]) && ! nak283::nak283Fall (argv[2]))
         {
             std::cout << "unbekannter Fall: " << argv[2]
                       << " (m06 | m07 | m09 | m10 | m11 | m12 | m13 | m14 | m16 | m29 | m38 | m39"
-                      << " | m39ro)\n";
+                      << " | m39ro | 283m01 | 283m02 | 283m03 | 283m05 | 283m06 | 283m71"
+                      << " | 283m72)\n";
             return 2;
         }
         std::cout << "SONDE-012 ProjectReload (nur " << argv[2] << "): " << bestanden << "/"
@@ -1841,6 +2446,17 @@ int main (int argc, char** argv)
     nak246d3::gezogene_kopie_ueberholt_den_reload_nicht (nak246d3::ReloadZweig::nurLesen);
     // NAK-246 D6: der Projektwechsel leert den Sitzungszustand (M-29, M-31).
     nak246d6::projektwechsel_leert_experimente_paare_befunde_und_ruecknahmen();
+    // NAK-283 Etappe 2 (F01): die Ordnung der Mitgliederstaende innerhalb einer
+    // Generation - Drain (M-01), Benennung (M-02), lokaler Unbind (M-03), der
+    // inhaltsgleiche Ruecksprung (M-05), die schliessende Zusage (M-06), der
+    // Zahlenrand (M-71) und die Unterscheidbarkeit der Gruende (M-72).
+    nak283::aeltere_mitgliederpublikation_ersetzt_keine_juengere();
+    nak283::hauptziel_benennung_wird_nicht_von_aelterer_workerkopie_ueberholt();
+    nak283::lokaler_unbind_wird_nicht_von_aelterer_workerkopie_ueberholt();
+    nak283::inhaltsgleiche_publikation_zieht_die_frischemarke_nach();
+    nak283::state_und_modell_sind_nach_ruhe_gleich();
+    nak283::mitgliederfolge_wrappt_nicht();
+    nak283::reloadablehnung_und_ueberholung_sind_unterscheidbar();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

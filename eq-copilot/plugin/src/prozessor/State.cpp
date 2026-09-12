@@ -299,6 +299,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
 
     std::vector<nakama::state::MainProjectMitglied> mainMitglieder;
     std::uint64_t generation = 0;
+    std::uint64_t folge = 0;   // NAK-283 Etappe 2 (F01): Signaturfolge zu :347
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen)
@@ -323,6 +324,10 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         // R-A1 Punkt 4' (b): die Generation, fuer die diese Kopie gilt - im
         // SELBEN Block wie die Kopie gelesen.
         generation = reloadGeneration.load();
+        // NAK-283 Etappe 2 (F01, M-04): und die Folgenummer dieses Standes,
+        // ebenfalls im selben Block. Der Generationsvergleich bleibt die ERSTE
+        // Entscheidung im Modell; die Folgenummer entscheidet erst danach.
+        folge = naechsteSourcesFolgeUnterBindung();
 
         // §53.5, dritter Punkt: "leerer, nie gespeicherter Altstate → Main
         // erst nach geoeffnetem Editor UND expliziter Initialisierung". Genau
@@ -344,13 +349,14 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     // Publikation ganz unterblieben - kein Dirty, keine Revision; der geladene
     // State ist die Wahrheit. Der Reconnect laeuft in beiden Faellen: er haengt
     // an der neuen Bindung, nicht an der Publikation.
-    if (sourcesModel.setzePersistenteMitglieder (mainMitglieder, generation))
-    {
-        meldeHostDirty();
-        v3StateRevision.fetch_add (1);
-    }
-    else
-        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+    //
+    // NAK-283 Etappe 2 (F01): "kein Dirty, keine Revision" gilt seither NUR
+    // noch fuer diesen Reloadfall. Ueberholt eine juengere Publikation diese
+    // hier, bleibt die Bindungsaenderung im State angewandt und wird deshalb
+    // weiterhin gemeldet - die Unterscheidung faellt in
+    // `werteSourcesPublikationAus` (`Ipc.cpp`, M-72).
+    werteSourcesPublikationAus (
+        sourcesModel.setzePersistenteMitglieder (mainMitglieder, generation, folge));
     pipe.reconnect();
     controlV3.reconnect();
     return true;

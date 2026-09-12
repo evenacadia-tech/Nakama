@@ -1210,6 +1210,7 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
         return false;
     std::vector<nakama::state::MainProjectMitglied> kopie;
     std::uint64_t generation = 0;
+    std::uint64_t folge = 0;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
@@ -1225,18 +1226,19 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
         // R-A1 Punkt 4' (b): die Generation, fuer die diese Kopie gilt - im
         // SELBEN Block wie die Kopie gelesen.
         generation = reloadGeneration.load();
+        // NAK-283 Etappe 2 (F01, M-02): und die Folgenummer, die diesen Stand
+        // ordnet - ebenfalls im SELBEN Block, unter derselben Sperre, unter der
+        // die Aenderung entstanden ist.
+        folge = naechsteSourcesFolgeUnterBindung();
     }
-    // Wache, kein gemessener Fall: dieser Handgriff und `setStateInformation`
-    // laufen heute beide auf dem Message-Thread, ein Reload kann zwischen Block
-    // und Publikation nicht liegen. Kommt er doch, gilt dieselbe Regel wie im
-    // Drain - Publikation unterblieben, kein Dirty, keine Revision.
-    if (sourcesModel.setzePersistenteMitglieder (kopie, generation))
-    {
-        meldeHostDirty();
-        v3StateRevision.fetch_add (1);
-    }
-    else
-        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+    // Zwei Wachen in einer: der Reload kann zwischen Block und Publikation
+    // heute nicht liegen (dieser Handgriff und `setStateInformation` laufen
+    // beide auf dem Message-Thread); ein WORKER-DRAIN aber schon - er zieht
+    // seine Kopie in einem eigenen Faden und publiziert ohne Sperre. Genau das
+    // war F01: die Wache deckte bis NAK-283 nur den Reload ab. Beide Faelle
+    // entscheidet jetzt derselbe Riegel im Modell (M-02).
+    werteSourcesPublikationAus (
+        sourcesModel.setzePersistenteMitglieder (kopie, generation, folge));
     return true;
 }
 
@@ -1256,6 +1258,7 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
     {
         std::vector<nakama::state::MainProjectMitglied> kopie;
         std::uint64_t generation = 0;
+        std::uint64_t folge = 0;
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
@@ -1270,15 +1273,14 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
             zustand.mainProjectMitglieder.erase (gefunden);
             kopie = zustand.mainProjectMitglieder;
             generation = reloadGeneration.load();   // R-A1 Punkt 4' (b)
+            folge = naechsteSourcesFolgeUnterBindung();   // NAK-283 F01 (M-03)
         }
-        // Dieselbe Wache wie in `benenneSourcesHauptziel`.
-        if (sourcesModel.setzePersistenteMitglieder (kopie, generation))
-        {
-            meldeHostDirty();
-            v3StateRevision.fetch_add (1);
-        }
-        else
-            sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+        // Dieselbe Wache wie in `benenneSourcesHauptziel` - und seit NAK-283
+        // derselbe Riegel gegen eine aeltere Worker-Kopie (M-03): der lokale
+        // Unbind ohne Broker bleibt wirksam, auch wenn ein Drain danach seine
+        // aeltere Kopie nachreicht.
+        werteSourcesPublikationAus (
+            sourcesModel.setzePersistenteMitglieder (kopie, generation, folge));
         return true;
     }
     return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
@@ -1441,24 +1443,80 @@ bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand
     return false;
 }
 
+std::uint64_t EqCopilotProcessor::naechsteSourcesFolgeUnterBindung()
+{
+    // 🔑 NAK-283 Etappe 2 (F01, M-71): SAETTIGUNG, kein Wrap. Ein Umlauf auf 0
+    // machte die naechste Kopie zur aeltesten und liesse eine angehaltene alte
+    // Publikation wieder gewinnen - genau der Ruecksprung, den diese Etappe
+    // schliesst. Am Anschlag tragen alle weiteren Staende dieselbe Nummer; das
+    // Modell weist sie dann als ueberholt ab und behaelt seinen letzten Stand
+    // (`SourcesModel::setzePersistenteMitglieder`, `folge <= zuletzt`).
+    //
+    // Der Aufrufer haelt `bindungMutex` - die Nummer entsteht unter derselben
+    // Sperre wie der Stand, den sie ordnet.
+    if (sourcesMitgliederFolge < std::numeric_limits<std::uint64_t>::max())
+        ++sourcesMitgliederFolge;
+    return sourcesMitgliederFolge;
+}
+
+void EqCopilotProcessor::werteSourcesPublikationAus (SourcesModel::Publikation ergebnis)
+{
+    switch (ergebnis)
+    {
+        case SourcesModel::Publikation::uebernommen:
+            break;
+
+        case SourcesModel::Publikation::ueberholt:
+            // 🔑 NAK-283 Etappe 2 (M-01, M-72; Paragraph 8.1 Feinheit 19): die
+            // eigene Aenderung ist unter `bindungMutex` ANGEWANDT und gilt -
+            // ueberholt ist nur ihre DARSTELLUNG. Sie hier ohne Dirty und ohne
+            // Revision zu lassen, verstiesse gegen `nakama-state-v2.md:139`
+            // ("steigt bei jeder persistenten Aenderung genau einmal") und
+            // gegen den bestehenden Nachweis Dirty == 2 / Revisionsdelta 2 bei
+            // zwei zustandsaendernden Befehlen.
+            sourcesPublikationUeberholt.fetch_add (1);
+            break;
+
+        case SourcesModel::Publikation::reloadAbgewiesen:
+            // Das Modell hat den Reload schon uebernommen: die Publikation ist
+            // GANZ unterblieben. Kein Dirty, keine Revision - der geladene
+            // State ist die Wahrheit, und eine Aenderung des Users ist das
+            // Laden nicht.
+            sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+            return;
+    }
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+}
+
 void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generationBeimAbholen)
 {
     // Der AKTUELLE Stand, nicht eine beim Anwenden gezogene Kopie: zwei
     // Drains, die ihre Nachfuehrung nacheinander fahren, reichen dem Modell
     // so nie einen aelteren Stand als den zuletzt angewandten nach.
     //
+    // ⚠️ NAK-283 F01: dieser Satz galt nur fuer zwei Drains, die NACHEINANDER
+    // fahren. Ein Worker-Drain und ein Handgriff auf dem Message-Thread laufen
+    // NEBENEINANDER - beide ziehen ihre Kopie unter `bindungMutex`, beide
+    // publizieren ohne Sperre, und die spaeter eintreffende gewann, auch wenn
+    // ihr Stand aelter war. Die Reload-Generation konnte das nicht scheiden:
+    // beide Kopien tragen dieselbe. Deshalb reist seit dieser Etappe die
+    // FOLGENUMMER mit, gezogen im selben Block wie die Kopie (M-01).
+    //
     // Gegen den DRITTEN Schreiber des Modells - `projektReload` aus
-    // `setStateInformation` - reicht das nicht (Paragraph 10.2 Punkt 1 kannte
-    // nur zwei Drains): die Kopie ist aktuell im Augenblick des Ziehens, der
-    // Reload kann sie danach ueberholen. Deshalb R-A1 Punkt 4' (Paragraph 13.4,
-    // 13.5): der entscheidende Vergleich faellt im MODELL, unter dessen eigenem
-    // `mutex` und damit atomar zur Publikation - die Publikation selbst bleibt
-    // ausserhalb beider Prozessorsperren (kein Hostaufruf unter eigener Sperre).
-    // Der Vergleich hier ist nur noch der fruehe Ausstieg: er spart Kopie und
-    // Publikation, wenn der Reload schon sichtbar ist. Ein Fenster zwischen
-    // Vergleich und Uebernahme gibt es nicht mehr - die Fassung mit dem zweiten,
-    // sperrfreien Vergleich hatte eines von wenigen Befehlen (N-A1-2).
+    // `setStateInformation` - reicht die Kopie erst recht nicht (Paragraph 10.2
+    // Punkt 1 kannte nur zwei Drains): die Kopie ist aktuell im Augenblick des
+    // Ziehens, der Reload kann sie danach ueberholen. Deshalb R-A1 Punkt 4'
+    // (Paragraph 13.4, 13.5): der entscheidende Vergleich faellt im MODELL,
+    // unter dessen eigenem `mutex` und damit atomar zur Publikation - die
+    // Publikation selbst bleibt ausserhalb beider Prozessorsperren (kein
+    // Hostaufruf unter eigener Sperre). Der Vergleich hier ist nur noch der
+    // fruehe Ausstieg: er spart Kopie und Publikation, wenn der Reload schon
+    // sichtbar ist. Ein Fenster zwischen Vergleich und Uebernahme gibt es nicht
+    // mehr - die Fassung mit dem zweiten, sperrfreien Vergleich hatte eines von
+    // wenigen Befehlen (N-A1-2).
     std::vector<nakama::state::MainProjectMitglied> kopie;
+    std::uint64_t folge = 0;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (reloadGeneration.load() != generationBeimAbholen)
@@ -1467,21 +1525,14 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
             return;
         }
         kopie = zustand.mainProjectMitglieder;
+        folge = naechsteSourcesFolgeUnterBindung();
     }
     // NAK-246 M-39: der Testhaken zwischen Kopie und Publikation, ohne
     // gehaltene Sperre. Im Produkt leer.
     if (sourcesPublikationHakenFuerTest)
         sourcesPublikationHakenFuerTest (kopie.size());
-    if (! sourcesModel.setzePersistenteMitglieder (kopie, generationBeimAbholen))
-    {
-        // Das Modell hat den Reload schon uebernommen: die Publikation ist GANZ
-        // unterblieben. Kein Dirty, keine Revision - der geladene State ist die
-        // Wahrheit, und eine Aenderung des Users ist das Laden nicht.
-        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
-        return;
-    }
-    meldeHostDirty();
-    v3StateRevision.fetch_add (1);
+    werteSourcesPublikationAus (
+        sourcesModel.setzePersistenteMitglieder (kopie, generationBeimAbholen, folge));
 }
 
 void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
@@ -1558,6 +1609,25 @@ bool EqCopilotProcessor::sourcesDrainRiegelGehaltenFuerTest() const
     // ein zweiter, der den Rahmen betreten hat, kommt nicht an ihm vorbei.
     std::unique_lock<std::mutex> probe (sourcesDrainMutex, std::try_to_lock);
     return ! probe.owns_lock();
+}
+
+std::uint64_t EqCopilotProcessor::sourcesMitgliederFolgeFuerTest() const
+{
+    // NAK-283 Etappe 2 (M-71): gelesen unter derselben Sperre, unter der die
+    // Nummer vergeben wird - sonst maesse das Bein einen Zwischenstand.
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return sourcesMitgliederFolge;
+}
+
+void EqCopilotProcessor::setzeSourcesMitgliederFolgeFuerTest (std::uint64_t folge)
+{
+    // NAK-283 Etappe 2 (M-71): der Anschlag `2^64 - 1` ist in einem Lauf sonst
+    // unerreichbar. Gesetzt wird NUR der Zaehler des Prozessors; die Marke im
+    // Modell entsteht danach auf dem echten Weg (ziehen, publizieren,
+    // uebernehmen), damit die Zeile am Produktpfad faellt und nicht an einem
+    // gesetzten Modellzustand.
+    std::lock_guard<std::mutex> l (bindungMutex);
+    sourcesMitgliederFolge = folge;
 }
 
 std::string EqCopilotProcessor::merkeSourcesCommandFuerTest (SourcesCommandArt art,

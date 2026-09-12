@@ -1,0 +1,1944 @@
+NAK-283 Etappe 3 - Beine der Etappe, einzeln gefahren
+Zeitpunkt: 2026-09-12T22:37:09.4662544+02:00
+HEAD: a754a99214a265fcfeee3bbccc3a844184a4bd51
+
+--- git status --short ---
+ M broker/src/coordinator/hypothese_verdrahtung.rs
+ M broker/src/coordinator/invalidierung_verdrahtung.rs
+ M broker/src/coordinator/mod.rs
+ M broker/src/coordinator/zustand.rs
+ M broker/src/transport/server_v3/queues.rs
+ M broker/tests/sonde013_verdrahtung.rs
+ M broker/tests/sonde014_verdrahtung.rs
+ M docs/beweise/NAK-283.md
+?? briefing-hub/
+?? docs/beweise/roh/NAK-283-etappe-3-beine-lauf-2.txt
+?? docs/beweise/roh/NAK-283-etappe-3-beine.txt
+?? docs/beweise/roh/NAK-283-etappe-3-beinskript.ps1
+?? docs/beweise/roh/NAK-283-etappe-3-rotbilanz.txt
+?? docs/beweise/roh/NAK-283-etappe-3-rotskript.ps1
+?? docs/beweise/roh/NAK-283-rot-M-13a-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-13b-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-14-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-15-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-16a-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-16b-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-16c-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-17-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-18-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-19-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-20a-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-20b-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-21-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-22-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-23-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-24-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-25a-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-25b-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-26-etappe-3.txt
+?? docs/beweise/roh/NAK-283-rot-M-75-etappe-3.txt
+?? nimbalyst-local/
+
+--- git diff --numstat (gemessener Arbeitsstand) ---
+308	55	broker/src/coordinator/hypothese_verdrahtung.rs
+32	11	broker/src/coordinator/invalidierung_verdrahtung.rs
+46	0	broker/src/coordinator/mod.rs
+6	0	broker/src/coordinator/zustand.rs
+242	10	broker/src/transport/server_v3/queues.rs
+493	6	broker/tests/sonde013_verdrahtung.rs
+702	1	broker/tests/sonde014_verdrahtung.rs
+1	1	docs/beweise/NAK-283.md
+
+--- geaenderte Quellen: Blob (git hash-object), SHA-256, Zeitstempel ---
+broker/src/coordinator/hypothese_verdrahtung.rs         blob c707137e4282d29b41f2c07e90d9c2a9ba576de8  sha256 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  2026-09-12T22:33:00.5220400+02:00
+broker/src/coordinator/mod.rs                           blob 763d65b21b4e7d276e2744ab67acb06bd105820e  sha256 1A9567E76A6B504EF1B490D70BC2EB716D0CC10F67EB61CC1CB5E7E2AE55105E  2026-09-12T20:29:08.5016277+02:00
+broker/src/coordinator/zustand.rs                       blob f0e4defa1d760619fb2dec3f3704b5999753aa8b  sha256 0159D1B42B54D5660BDEADDAF20ADB0E8F65445B30FE3233A54DB2D713F9ACE4  2026-09-12T20:28:29.5145353+02:00
+broker/src/coordinator/invalidierung_verdrahtung.rs     blob 1d41495b34d1d49416e0b18e0c693030c5cf78df  sha256 276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719  2026-09-12T22:36:53.7262000+02:00
+broker/src/transport/server_v3/queues.rs                blob 6f9dca2c0e4e6f5c3314c653bb170b3040f5a578  sha256 A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  2026-09-12T22:33:45.6456190+02:00
+broker/tests/sonde013_verdrahtung.rs                    blob c101cc061a562a1a174ae81215bbdeaf81884994  sha256 BF267643B6984573A9CDBB51E719E6DEB42A539C136C566FEB6961B6E6551445  2026-09-12T22:22:14.9042489+02:00
+broker/tests/sonde014_verdrahtung.rs                    blob d70b335bfb45318b57b38d8adc9e7a1d62f4742f  sha256 9B1092E2B6BC0C3A16748F35F7D86A65C7589BFC2A4B2CDFFCF115B057DB28E6  2026-09-12T22:23:39.1371334+02:00
+Juengste geaenderte Quelle: 2026-09-12T22:36:53.7262000+02:00
+
+--- BAU-cargo  Release-Broker (wie tools/beweise.ps1 fuer A22/A23/A24)  ->  Exit 0  (24 s) ---
+Befehl: cargo build --release --manifest-path broker/Cargo.toml --bin eqcop-broker-v3probe --bin eqcop-broker-sonde012-probe --bin eqcop-broker --color never
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `release` profile [optimized] target(s) in 23.47s
+
+--- BAU-cmake (Release) ---
+Ziele: EqCopPipeClientTest, EqCopSchemaTest, EqCopSonde012SourcesModelTest, EqCopIpcTest, EqCopIpcLast, EqCopSonde012SourcesLatencyTest, EqCopSessionSoak
+Exit: 0
+warning C (eindeutig): 0
+
+--- FRISCHE ---
+eqcop-broker-v3probe.exe                 2026-09-12T22:37:34.5621620+02:00  frisch (juenger als die juengste geaenderte Quelle)
+eqcop-broker-sonde012-probe.exe          2026-09-12T22:37:34.5777226+02:00  frisch (juenger als die juengste geaenderte Quelle)
+eqcop-broker.exe                         2026-09-12T22:37:34.0955308+02:00  frisch (juenger als die juengste geaenderte Quelle)
+EqCopPipeClientTest.exe                  2026-09-12T21:00:05.7176812+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopSchemaTest.exe                      2026-09-12T21:00:06.6941357+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopSonde012SourcesModelTest.exe        2026-09-12T21:00:11.5762214+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopIpcTest.exe                         2026-09-12T21:00:12.6621989+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopIpcLast.exe                         2026-09-12T21:00:13.5698269+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopSonde012SourcesLatencyTest.exe      2026-09-12T21:00:19.6094650+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+EqCopSessionSoak.exe                     2026-09-12T21:00:25.0405404+02:00  (C++: uebersetzt keine geaenderte Quelle dieser Etappe)
+
+--- A4  broker  ->  Exit 0  (1296 s) ---
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.60s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 266 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test coordinator::hypothese::befund::tests::finding_id_ist_deterministisch_und_trennt ... ok
+test coordinator::hypothese::befund::tests::sechs_teile_sind_sechs_und_benannt ... ok
+test coordinator::hypothese::determinismus::tests::quantisierung_klemmt_rastet_und_ist_nan_ehrlich ... ok
+test coordinator::hypothese::eingang::tests::band_ohne_bit_traegt_keinen_wert ... ok
+test coordinator::hypothese::klassenwahl::tests::messgruende_sind_genau_die_fuenf_aus_r2 ... ok
+test coordinator::hypothese::messung::tests::alignment_misst_paarweise_ueberlappung ... ok
+test coordinator::hypothese::messung::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar ... ok
+test coordinator::hypothese::messung::tests::korrelation_ist_streng ... ok
+test coordinator::hypothese::messung::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster ... ok
+test coordinator::hypothese::messung::tests::spanne_saettigt_an_den_raendern ... ok
+test coordinator::hypothese::messung::tests::unabhaengige_fenster_verdichten_wiederholungen ... ok
+test coordinator::hypothese::rechnung::tests::einzelueberlebender_neben_passagenausschluss ... ok
+test coordinator::hypothese::rechnung::tests::ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht ... ok
+test coordinator::hypothese::screening::tests::bandraender_fallen_von_beiden_seiten ... ok
+test coordinator::hypothese::screening::tests::gate_faellt_in_der_zugesagten_reihenfolge ... ok
+test coordinator::hypothese::screening::tests::passagengates_trennen_verschoben_anders_und_zu_kurz ... ok
+test coordinator::hypothese::screening::tests::screeningrang_misst_auf_der_gruppe ... ok
+test coordinator::hypothese::screening::tests::screeningrang_traegt_die_koinzidenz ... ok
+test coordinator::hypothese::screening::tests::stufe_b_laeuft_hoechstens_fuenfmal ... ok
+test coordinator::hypothese::vertrag::tests::geschlossene_mengen_sind_rund ... ok
+test coordinator::hypothese::zusammenhang::tests::belegpraedikate_lesen_vorzeichen ... ok
+test coordinator::hypothese::zusammenhang::tests::bootstrap_einseitig_trennt_die_richtung ... ok
+test coordinator::hypothese::zusammenhang::tests::gemessene_null_trennt_vom_nicht_gemessenen ... ok
+test coordinator::hypothese::zusammenhang::tests::getrennt_verlangt_rang_und_zusammenhang ... ok
+test coordinator::hypothese::zusammenhang::tests::rang_ist_das_quantisierte_mittel_der_sechs ... ok
+test coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+test coordinator::maskierung::tests::bandpegel_summiert_leistung_statt_dezibel_zu_mitteln ... ok
+test coordinator::maskierung::tests::der_wert_traegt_keine_zeichenanweisung ... ok
+test coordinator::maskierung::tests::herabgesetzt_misst_die_luecke_und_nicht_den_seek ... ok
+test coordinator::maskierung::tests::ohne_fenster_gibt_es_kein_objekt ... ok
+test coordinator::maskierung::tests::ohne_messung_null_mit_gueltig_falsch ... ok
+test coordinator::maskierung::tests::wert_ist_die_differenz_und_benennt_den_bereich ... ok
+test coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund ... ok
+test coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen ... ok
+test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3 ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_5_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_kennt_state_report_dsp_nicht ... ok
+test bindung::tests::runde_laden_schreiben_laden ... ok
+test aggregat::tests::schreiben_erzeugt_haltbare_datei ... ok
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::tests::heartbeat_ack_meldet_alias_quarantaene_fuer_beide_links ... ok
+test coordinator::tests::hoermarkierung_tail_sperrt_bis_ende ... ok
+test coordinator::tests::hoermarkierung_v2_v3_gleicher_zustand ... ok
+test coordinator::tests::hoermarkierung_vor_evidence_dispatch ... ok
+test coordinator::tests::instance_alias_gleiche_id_in_verschiedenen_sitzungsadressraeumen_kollidiert_nicht ... ok
+test coordinator::tests::intervention_control_disconnect_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_falsche_end_id_bleibt_gesperrt ... ok
+test coordinator::tests::intervention_neutral_resync_entsperrt ... ok
+test coordinator::tests::intervention_overflow_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_sequenzluecke_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_ueberlappung_bleibt_bis_alle_end ... ok
+test coordinator::tests::intervention_unbekanntes_erstes_end_setzt_sticky_unknown ... ok
+test coordinator::tests::p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema ... ok
+test coordinator::tests::subscription_cleanup_vor_weiterem_push ... ok
+test coordinator::zustand::h21_tests::konfliktriegel_greift_auch_bei_anderer_sid_schreibweise ... ok
+test dto::tests::as_f64_liefert_fuer_jede_number_einen_wert ... ok
+test dto::tests::bestand_kommt_aus_dem_vertrag_und_hat_120_eintraege ... ok
+test dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben ... ok
+test dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls ... ok
+test dto::tests::zonenleiter_meldet_denselben_ersten_grund_wie_die_anderen_beine ... ok
+test framing::tests::abbruch_mitten_im_frame ... ok
+test framing::tests::hin_und_zurueck ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
+test framing::tests::laengengrenze_beidseitig ... ok
+test aggregat::tests::alte_temp_restdatei_blockiert_snapshot_nicht ... ok
+test bindung::tests::fremde_temp_restdatei_wird_weder_benutzt_noch_ueberschrieben ... ok
+test instance_alias::tests::instance_alias_collision_abgeleitet_dann_native_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_address_empty_uses_fresh_uuid ... ok
+test instance_alias::tests::instance_alias_collision_native_dann_abgeleitet_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_collision_zwei_ableitungen_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_target_recomputed_and_matched ... ok
+test instance_alias::tests::instance_alias_unknown_fail_closed ... ok
+test paar::tests::paar_ausgerichtet_bei_deckungsgleichen_fenstern ... ok
+test paar::tests::paar_in_verschiedenen_prozessen_hoechstens_wahrscheinlich ... ok
+test paar::tests::paar_mit_v1_partner_bleibt_unklar_mit_klarem_grund ... ok
+test paar::tests::paar_ohne_partner_ist_unvollstaendig ... ok
+test paar::tests::paar_wird_bei_spruengen_herabgestuft ... ok
+test paar::tests::paar_wird_bei_teilueberdeckung_herabgestuft_und_ohne_ueberlappung_unklar ... ok
+test paar::tests::paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulaufen ... ok
+test protokoll::tests::fehlende_hoermarkierung_bleibt_fuer_alte_v2_sender_false ... ok
+test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
+test protokoll::tests::gemeinsame_floatbreiten_akzeptieren_maximum_aber_keinen_overflow ... ok
+test protokoll::tests::gemeinsame_integerbreiten_urteilen_an_den_wire_kanten_exakt ... ok
+test protokoll::tests::heartbeat_session_token_hat_dieselbe_codepunktgrenze_wie_das_schema ... ok
+test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
+test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
+test protokoll::tests::hello_enum_und_audiofelder_werden_semantisch_begrenzt ... ok
+test protokoll::tests::hello_textfelder_haben_codepunktgenaue_harte_grenzen ... ok
+test protokoll::tests::messstand_guard_prueft_minima_endlichkeit_und_textcap ... ok
+test protokoll::tests::option_felder_akzeptieren_explizites_null_wie_das_schema ... ok
+test protokoll::tests::unbekannte_felder_werden_auf_jeder_vertragsebene_abgelehnt ... ok
+test protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz ... ok
+test protokoll::tests::v1_hello_bleibt_angenommen_und_welcome_spiegelt_v1 ... ok
+test protokoll::tests::v2_hello_mit_nonce_wird_angenommen ... ok
+test protokoll::tests::version_3_bekommt_reject_mit_spanne ... ok
+test register::tests::hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false ... ok
+test register::tests::konflikt_kommt_und_geht_mit_der_zweiten_verbindung ... ok
+test register::tests::owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her ... ok
+test register::tests::marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset ... ok
+test register::tests::profilbindung_haelt_ueber_reconnect ... ok
+test register::tests::snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id ... ok
+test register::tests::sechzehn_sensoren_werden_korrekt_benannt ... ok
+test register::tests::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge ... ok
+test register::tests::v2_sensorpool_gibt_getrennte_ids_zurueck ... ok
+test register::tests::unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt ... ok
+test instance_alias::tests::instance_address_alias_vectors ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab ... ok
+test server::tests::falsche_protokollversion_bekommt_reject ... ok
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+test server::tests::bye_braucht_exakt_das_ausgegebene_session_token ... ok
+test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
+test server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht ... ok
+test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
+test server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen ... ok
+test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
+test server::tests::produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel ... ok
+test server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab ... ok
+test server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung ... ok
+test server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten ... ok
+test server::tests::user_sid_ist_wohlgeformt ... ok
+test server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt ... ok
+test server::tests::v2_abbau_flusht_die_letzte_antwort ... ok
+test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
+test server::tests::vorhandene_leere_instance_nonce_wird_nicht_als_uuid_umgedeutet ... ok
+test server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch ... ok
+test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
+test aggregat::tests::gleicher_zeitstempel_ueberschreibt_keinen_snapshot ... ok
+test sitzung::tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
+test store::tests::konstante_trigger_haben_exakte_grenzen ... ok
+test store::tests::rusqlite_version_0_40_2_ist_exakt_gepinnt ... ok
+test store::tests::rust_version_boden_ist_exakt_gepinnt ... ok
+test server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen ... ok
+test server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben ... ok
+test transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt ... ok
+test transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser ... ok
+test transport::bootstrap::tests::hex32_riegel ... ok
+test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... ok
+test transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch ... ok
+test transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale ... ok
+test transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt ... ok
+test transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt ... ok
+test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... ok
+test transport::legacy_v2::tests::echtes_v2_json_geht_weiterhin_durch ... ok
+test transport::legacy_v2::tests::v2_json_ist_kein_gueltiger_v3_envelope ... ok
+test transport::legacy_v2::tests::v3_binaerframe_wird_nie_als_v2_json_gedeutet ... ok
+test transport::pipetoken::tests::base32_gegen_rfc_4648 ... ok
+test transport::pipetoken::tests::golden_aus_dem_entwurf ... ok
+test transport::pipetoken::tests::probe_namensraum_laesst_nur_probe_namen_durch ... ok
+test transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform ... ok
+test transport::pipetoken::tests::schreibweise_der_sid_ist_egal ... ok
+test transport::pipetoken::tests::tokenform_ist_stabil ... ok
+test transport::pipetoken::tests::verschiedene_sids_verschiedene_token ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+test transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... ok
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz ... ok
+test server::tests::ungelesenes_welcome_blockiert_connection_ende_nicht ... ok
+test server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_befehlssequenz_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_flush_marke_am_zahlenrand_nicht_um ... ok
+test bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_subscribe_marke_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten ... ok
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... ok
+test transport::server_v3::tests_fristen::bootstrap_und_senkenfrist_minus_eins_und_exakt_sind_inklusive ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_fristen::p0_auf_der_telemetriepipe_wird_abgewiesen ... ok
+test transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender ... ok
+test transport::server_v3::tests_fristen::transportfassung_und_json_leser_stimmen_ueberein ... ok
+test transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... ok
+test transport::server_v3::tests_fristen::p2_auf_der_controlpipe_wird_abgewiesen ... ok
+test bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand ... ok
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+test coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet ... ok
+test aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten ... ok
+test store::writer::tests::group_commit_batchcap_hat_keinen_einzel_fsync_je_event ... ok
+test transport::server_v3::tests_kopplung::connect_callbacks_je_kopplung_genau_einmal ... ok
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_je_callback_genau_einmal ... ok
+test transport::server_v3::tests_kopplung::welcome_folgt_dem_abgeschlossenen_control_verbunden ... ok
+test transport::server_v3::tests_lebenszyklus::beendete_verbindungen_werden_geerntet ... ok
+test transport::server_v3::tests_lebenszyklus::acceptor_ueberlebt_die_verbindungsgrenze ... ok
+test transport::server_v3::tests_lebenszyklus::kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins ... ok
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test transport::server_v3::tests_rueckstau::blockierende_senke_haelt_den_leser_nicht_auf ... ok
+test transport::server_v3::tests_rueckstau::geschlossener_eingang_liefert_nichts_mehr ... ok
+test transport::server_v3::tests_lebenszyklus::control_ende_beendet_die_telemetrie ... ok
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+test transport::server_v3::win_handles::d11_tests::stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler ... ok
+test transport::v3::tests::crc32c_gegen_bekannte_vektoren ... ok
+test transport::v3::tests::grenzen_des_rahmens ... ok
+test transport::v3::tests::jeder_regelname_ist_rueckuebersetzbar ... ok
+test transport::v3::tests::json_rundlauf ... ok
+test transport::v3::tests::p2_traegt_pflicht_crc ... ok
+test transport::v3::tests::ratengrenze_haelt_das_fenster ... ok
+test transport::v3::tests::stromleser_vertraegt_byteweise_zustellung ... ok
+test transport::v3::tests::stufe_drei_sammelt_und_sortiert ... ok
+test transport::v3::tests::u32_ueberlauf_wird_nicht_akzeptiert ... ok
+test transport::warteschlange::tests::ingress_droppt_p2_zuerst_und_trennt_bei_p0 ... ok
+test transport::warteschlange::tests::ingress_liefert_p0_getrennt_vom_rest ... ok
+test transport::warteschlange::tests::ingress_voll_ohne_p2_trennt_auch_bei_p1 ... ok
+test transport::warteschlange::tests::p0_verwirft_nie_und_meldet_ueberlauf ... ok
+test transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor ... ok
+test transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position ... ok
+test transport::warteschlange::tests::p1_neuzugang_ueberholt_keine_wiederholung ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_fliesst_ohne_reconnect_ab ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_haelt_den_schluessel ... ok
+test transport::warteschlange::tests::p2_ersetzt_den_aeltesten_ungesendeten ... ok
+test transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus ... ok
+test vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden ... ok
+test vertrag::tests::discriminator_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::discriminator_boolean_falscher_typ ... ok
+test vertrag::tests::discriminator_boolean_fehlt ... ok
+test vertrag::tests::discriminator_boolean_true_false ... ok
+test vertrag::tests::discriminator_json_pointer_boolean ... ok
+test vertrag::tests::discriminator_json_pointer_segment_fehlt ... ok
+test vertrag::tests::fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt ... ok
+test vertrag::tests::haengende_referenz_bricht_das_laden ... ok
+test vertrag::tests::integer_akzeptiert_1punkt0 ... ok
+test vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes ... ok
+test vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden ... ok
+test vertrag::tests::oneof_ohne_discriminator_bricht_das_laden ... ok
+test vertrag::tests::required_mit_nicht_string_bricht_das_laden ... ok
+test vertrag::tests::textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python ... ok
+test vertrag::tests::type_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::typfehler_erzeugt_keine_lawine ... ok
+test vertrag::tests::unbekannter_discriminator_wird_abgelehnt ... ok
+test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
+test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
+test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+test transport::server_v3::tests_rueckstau::p0_wird_beantwortet_waehrend_p1_die_senke_blockiert ... ok
+test transport::server_v3::tests_kopplung::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_haelt_im_kopplungs_callback_fenster ... ok
+test transport::server_v3::tests_lebenszyklus::stop_im_fenster_vor_der_bedienung_haengt_nicht ... ok
+test transport::server_v3::tests_rueckstau::p0_ueberlauf_trennt_die_verbindung ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengender_senke ... ok
+
+test result: ok. 266 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.90s
+
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+
+running 5 tests
+test aktiver_fremdclient_verhindert_stop ... ok
+test client_resetet_idlefrist ... ok
+test letzter_client_idle_stop_an_grenze ... ok
+test geordneter_stopp_schliesst_den_store ... ok
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst has been running for over 60 seconds
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.65s
+
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+running 10 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test wirezahl_texte_halten_den_textriegel ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.42s
+
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 51 tests
+test control_vor_welcome ... ok
+test brokerneustart_behaelt_session_epoch ... ok
+test brokerneustart_ohne_mainprojectstate_ingress ... ok
+test brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei ... ok
+test erstes_einziges_main_fuehrt_sonst_bestaetigung ... ok
+test fuehrung_exklusiv_und_uebergabe ... ok
+test fuehrung_stale_bis_eviction ... ok
+test fuehrung_exklusiv_und_reconnect_im_selben_lauf ... ok
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht ... ok
+test eviction_haelt_phase_a_riegel ... ok
+test eviction_haelt_dauerhaften_konfliktriegel ... ok
+test eviction_loescht_intervention_unknown_nicht ... ok
+test abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen ... ok
+test join_reconnect_disconnect_setzt_sticky_unknown_bis_resync ... ok
+test hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen ... ok
+test neue_nonce_verdraengt_alte_sofort ... ok
+test p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch ... ok
+test join_nur_bei_eindeutigem_main ... ok
+test liveness_nur_instant ... ok
+test p2_mutiert_erst_nach_flatbuffers_verifikation ... ok
+test produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag ... ok
+test probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung ... ok
+test konfliktriegel_ueberlebt_eviction ... ok
+test probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed ... ok
+test reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck ... ok
+test schreiber_wartet_nicht_unbegrenzt_auf_den_peer ... ok
+test p2_push_haelt_den_standlock_nicht ... ok
+test session_faellt_mit_dem_letzten_client ... ok
+test stale_konstanten_ableitung ... ok
+test senke_haelt_den_standlock_nicht_ueber_den_push ... ok
+test stale_grenze_exklusiv_und_kontakt_setzt_zurueck ... ok
+test telemetrie_einmalig_gekoppelt ... ok
+test state_report_erreicht_liveness_ueber_produktive_p1_senke ... ok
+test tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel ... ok
+test subnormale_samplerate_ergibt_kein_fenster ... ok
+test verdraengte_nonce_report_sperrt_beide ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test unverarbeitete_bytes_aendern_den_sessiongraphen_nicht ... ok
+test trennen_bereinigt_vor_join ... ok
+test verdraengung_flusht_den_snapshot_im_trennzyklus ... ok
+test global_session_cap_weist_am_cap_plus_eins_ab ... ok
+test zwei_projekte_bleiben_getrennt ... ok
+test vergifteter_stand_beendet_den_prozess_nicht ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test kein_expect_mehr_auf_dem_standlock ... ok
+test session_und_global_cap ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+test caps_stale_first_deterministisch ... ok
+test sichtgrenzen_und_wire_replay_null ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 23 tests
+test jeder_unsafe_block_traegt_einen_safety_kommentar ... ok
+test prozesskill_gibt_name_frei ... ok
+test fremde_sid_revertiert_und_erreicht_keinen_coordinator ... ok
+test start_belegter_name_scheitert_ohne_zweiten_broker ... ok
+test accept_bewaffnet_nachfolger_vor_worker_uebergabe_bei_zwei_listenern ... ok
+test freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen ... ok
+test gleiche_sid_wird_erst_nach_revert_angenommen ... ok
+test control_und_telemetry_durchlaufen_die_identische_sid_kette ... ok
+test nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext ... ok
+test impersonation_fehlschlag_schliesst_ohne_serverkontext ... ok
+test ersatzlistener_fehler_behaelt_besitz_und_meldet_nicht_bereit ... ok
+test neustart_besetzt_name_vor_bereit ... ok
+test startfehler_nach_erstem_handle_raeumt_handles_threads_und_namen_vor_publish ... ok
+test revert_fehlschlag_beendet_testbrokerprozess_fail_fast ... ok
+test start_freier_name_bewaffnet_zwei_listener_vor_veroeffentlichung ... ok
+test stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich ... ok
+test zwei_verschraenkte_freigaben_lassen_aktive_worker_auf_null ... ok
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... ok
+test tokenabfragefehler_revertiert_und_schliesst_ohne_senke ... ok
+test vollstaendiges_abzulehnendes_hello_impersoniert_prueft_sid_und_revertiert_vor_reject ... ok
+test zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz ... ok
+test verbindungsgriff_besitzt_handle_und_registereintrag ... ok
+test bootstrap_timeout_und_lesefehler_revertieren_jeweils_ohne_serverweiterlauf ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.52s
+
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+
+running 26 tests
+test every_loudness_contract_violation_is_removed_without_losing_the_rest ... ok
+test foreign_main_command_is_rejected ... ok
+test first_valid_p2_changes_only_measurement_axis ... ok
+test invalid_frame_keeps_last_valid_but_marks_measurement_invalid ... ok
+test eviction_removes_volatile_measurement_projection ... ok
+test betrieb_suspended_and_offline_reach_snapshot ... ok
+test latest_per_source_no_cross_gap_interpolation ... ok
+test bridge_pid_change_preserves_membership_but_never_old_control_address ... ok
+test join_is_connected_but_measurement_missing ... ok
+test control_end_is_atomic_and_no_push_uses_old_link_after_unlock ... ok
+test nonfinite_loudness_counts_per_source_but_keeps_rest_of_frame ... ok
+test missing_messpunkt_yields_member_without_descriptor ... ok
+test p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement ... ok
+test loudness_pair_reaches_only_its_source ... ok
+test handover_snapshot_revokes_old_main_before_new_write ... ok
+test json_minor_selects_runtime_contract_and_label_reaches_descriptor ... ok
+test probe_control_end_disconnects_before_next_push ... ok
+test confirm_join_and_unbind_full_roundtrip ... ok
+test p2_reject_reason_reaches_subscriber_and_keeps_last_valid_frame ... ok
+test store_degraded_travels_only_as_true ... ok
+test restart_has_no_old_live_or_measurement_truth ... ok
+test main_subscribe_pushes_absolute_snapshot_and_reconnect_resubscribes ... ok
+test runtime_block_sets_and_updates_descriptor ... ok
+test telemetry_silence_does_not_change_control_liveness ... ok
+test unbind_removes_confirmed_membership_from_next_absolute_snapshot ... ok
+test main_link_end_cleans_subscription_before_push ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+running 23 tests
+test experiment_survives_restart_without_silent_continuation ... ok
+test block_bootstrap_weist_nichtendliches_ab ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test four_axes_are_reported_separately ... ok
+test manual_external_begin_locks_baseline ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test offenes_experiment_liefert_seine_passage ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test passage_carries_all_six_fields ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test zurueckgenommenes_experiment_liefert_keine_passage ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test unbekannte_vergleichbarkeit_liefert_keine_passage ... ok
+test unvergleichbar_ist_nicht_unbekannt ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+running 12 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test messpunktklasse_wird_je_quelle_verglichen ... ok
+test suspend_counts_as_missing_coverage ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test jaccard_rechnet_ueber_mengen_nicht_ueber_listen ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test nicht_endliche_abdeckung_ist_fail_closed ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+running 23 tests
+test duplicate_half_is_conflict_not_first_wins ... ok
+test fehlender_teilfenster_lag_stuft_herab ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test identisches_paar_liefert_delta_und_gain_exakt_null ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich ... ok
+test flaches_delta_mit_gain_traegt_den_wirkungsbeleg ... ok
+test feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg ... ok
+test nicht_endliche_werte_ergeben_keine_stationaere_kette ... ok
+test leere_baender_erzeugen_kein_nan ... ok
+test paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg ... ok
+test noise_yields_unclear ... ok
+test each_downgrade_reason_falls_alone ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test peak_to_sidelobe_bleibt_endlich ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test feature_aligned_verlangt_den_presentation_nachweis ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test three_results_are_never_collapsed ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test retention_abort_also_closes_intervals ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 82 tests
+test bestaetigter_resync_loest_das_sticky_unknown ... ok
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+test ergebnis_ohne_resultatmessung_wird_abgelehnt ... ok
+test erste_intervention_nach_resync_wird_angenommen ... ok
+test erster_heartbeat_mit_false_loest_das_sticky_unknown ... ok
+test bandsatz_ohne_bit_ist_fail_closed ... ok
+test evidenz_faellt_mit_dem_client ... ok
+test experiment_begin_legt_passage_und_versuch_an ... ok
+test evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen ... ok
+test beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt ... ok
+test evidenz_historie_bleibt_und_ist_gedeckelt ... ok
+test drop_invalidiert_als_sequenzluecke ... ok
+test eviction_raeumt_das_paarurteil_und_bildet_neu ... ok
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+test fremdes_projekt_erreicht_den_versuch_nicht ... ok
+test blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden ... ok
+test evidenz_historie_haelt_ihren_deckel ... ok
+test experimentbefehl_bleibt_in_seinem_projekt ... ok
+test invalidierung_aus_dem_produktpfad_haelt_den_vertrag ... ok
+test invalidierung_bildet_das_paarurteil_neu ... ok
+test invalidierung_schliesst_gespeicherte_evidenz_aus ... ok
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+test halbe_snapshotdichte_stuft_herab ... ok
+test gleiche_dichte_stuft_nicht_herab ... ok
+test markerinvalidierung_ohne_projektzeit_ist_fail_closed ... ok
+test markerinvalidierung_trifft_genau_ihren_bereich ... ok
+test export_traegt_seine_transitionen_auch_nach_dem_neustart ... ok
+test messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich ... ok
+test nachbericht_behaelt_die_sequenzbasis ... ok
+test nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung ... ok
+test nachlauf_laeuft_in_echtzeit_ab ... ok
+test nachlauf_rechnet_ab_seinem_start ... ok
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test invalidierung_laesst_die_sessionprojektion_stehen ... ok
+test invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen ... ok
+test paare_bleiben_in_ihrer_sitzung ... ok
+test genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat ... ok
+test dekodierte_evidenz_findet_gain_mit_intervall ... ok
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+test evidenzreihenfolge_ueberdauert_den_neustart ... ok
+test prepost_join_laeuft_im_produktpfad ... ok
+test materialwechsel_invalidiert_aus_dem_fingerprintvergleich ... ok
+test r2_backlog_ohne_replay_end_zu_end ... ok
+test persistierter_retry_bleibt_idempotent ... ok
+test replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht ... ok
+test prepost_filtert_ausschluss_und_rechnet_in_einer_konvention ... ok
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... ok
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+test projektspanne_traegt_weiter_den_suchraum ... ok
+test retry_an_unbekanntes_ziel_wird_abgewiesen ... ok
+test retry_an_fremde_sitzung_wird_abgewiesen ... ok
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+test sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt ... ok
+test paarurteil_entsteht_beim_neustart_aus_der_evidenz ... ok
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+test preview_und_ruecknahme_liegen_in_einem_append ... ok
+test sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel ... ok
+test sondenhello_aendert_den_taint_nicht ... ok
+test spaeteres_false_loest_das_sticky_unknown_nicht ... ok
+test taint_ist_sitzungsweit ... ok
+test taintmap_haelt_ihren_deckel ... ok
+test passagenbelege_kommen_aus_den_vertretenen_quellen ... ok
+test transportbruch_invalidiert_mit_seinem_grund ... ok
+test paarurteil_erreicht_gen_ueber_outbox_und_push ... ok
+test sonde014_m74_zustellschuld_flieszt_ohne_reconnect ... ok
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+test wire_experimentintervall_ohne_id_wird_abgelehnt ... ok
+test wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen ... ok
+test wire_intervention_traegt_art_und_experiment_bis_zum_terminal ... ok
+test sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen ... ok
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test verdraengung_bekommt_ihr_eigenes_terminal ... ok
+test rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck ... ok
+test sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik ... ok
+test versuchsergebnis_erreicht_gen_ueber_outbox_und_push ... ok
+test rollback_ueber_stabile_evidence_ids_laesst_fremden_ausschluss_stehen ... ok
+test der_snapshot_haelt_den_versuchsdeckel_des_vertrages ... ok
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... ok
+test cache_und_projektion_sind_nach_dem_storefehler_gleich ... ok
+
+test result: ok. 82 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.16s
+
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+
+running 7 tests
+test messqualitaet_und_befundsicherheit_sind_zwei_felder ... ok
+test sicherheit_wird_auf_drei_zustaende_abgebildet ... ok
+test drei_zeilen_sind_datenfelder ... ok
+test hoehere_intent_revision_macht_den_befund_stale ... ok
+test beleg_ist_zone_und_kein_text ... ok
+test nur_ready_to_send_erlaubt_audition_und_draft ... ok
+test alternative_ist_ein_eigener_befund_mit_eigenem_zustand ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 20 tests
+test eigen3_antikorrelierte_quelle ... ok
+test eigen4_quelle_im_falschen_band ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test nak214_probables_paar_bleibt_klasse_eins ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test nak214_zwei_mains_erzeugen_keinen_vorschlag ... ok
+test nak214_juengste_passage_untauglich ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 46.53s
+
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+running 37 tests
+test causehypothesis_traegt_die_zehn_felder ... ok
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... ok
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+test gemessene_nullkoinzidenz_trennt_zwei_kandidaten ... ok
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... ok
+test enthaltung_ohne_ort_traegt_existente_evidenz_ids ... ok
+test jedes_band_liegt_im_intervall_seiner_gruppe ... ok
+test gleichstand_zeigt_beide ... ok
+test gegenbeleg_schliesst_hoch_aus ... ok
+test keine_hypothese_vor_der_vollstaendigkeitsmarke ... ok
+test deckel_mit_abstand_erlaubt_weiter_hoch ... ok
+test hoch_verlangt_einen_belegten_zusammenhang ... ok
+test intent_veto_ist_kein_messausschluss ... ok
+test koinzidenz_allein_traegt_den_zusammenhang ... ok
+test hoch_verlangt_energie_im_befundband ... ok
+test mehr_daten_ist_ein_ergebnis ... ok
+test master_ohne_verwertbares_band_ergibt_enthaltung ... ok
+test keine_komponente_kompensiert_coverage_oder_alignment ... ok
+test deckel_ohne_abstand_senkt_die_klasse ... ok
+test messausschluss_wirkt_auf_jeden_befund ... ok
+test parallele_telemetrie_bleibt_klasse_eins ... ok
+test einzelueberlebender_neben_messausschluss ... ok
+test rollenaenderung_bewegt_die_intent_relevanz ... ok
+test materialmenge_und_bandpassung_trennen_nicht ... ok
+test sechs_teile_im_datenmodell ... ok
+test ruecknahme_invalidiert_abhaengige_hypothesen ... ok
+test parent_duplikat_erzeugt_keine_zwei_starken ... ok
+test ursachenklassen_sind_geschlossen_und_sieben ... ok
+test passage_zu_kurz_traegt_keine_starke_aussage ... ok
+test screening_bezieht_die_koinzidenz_ein ... ok
+test ausschluesse_bleiben_unter_dem_sitzungsdeckel ... ok
+test screening_reicht_hoechstens_fuenf_weiter ... ok
+test deckel_greift_vor_stufe_b ... ok
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+test enthaltung_ohne_ort_ist_deterministisch ... ok
+test ranking_ist_bytegleich_ueber_hundert_laeufe ... ok
+test screening_ist_deterministisch has been running for over 60 seconds
+test screening_ist_deterministisch ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 174.70s
+
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+running 5 tests
+test datenweg_traegt_keine_zeichenanweisung ... ok
+test maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich ... ok
+test maskierungswert_ist_hoechstens_ein_evidenzintervall_alt ... ok
+test zone_hat_keine_eigene_schwelle ... ok
+test rueckstau_setzt_das_kennzeichen_herabgesetzt ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.84s
+
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+running 8 tests
+test intent_bestand_wird_versioniert_gespiegelt ... ok
+test experimentziel_ueberlebt_den_brokerneustart ... ok
+test passagengate_misst_auch_die_fenster_des_masters ... ok
+test befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ... ok
+test der_flush_pfad_haelt_die_belege_ebenfalls_gegen_den_store ... ok
+test user_verdict_wird_persistiert_und_bestaetigt ... ok
+test user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill ... ok
+test sechs_gate_felder_sind_pflicht_mit_passage ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.75s
+
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+
+running 4 tests
+test user_verdict_haelt_sich_an_die_gemeldete_revision ... ok
+test re_subscribe_haelt_die_belege_gegen_den_store ... ok
+test ohne_passage_entsteht_kein_proposal ... ok
+test verspaeteter_teilbericht_entwertet_abhaengige_befunde ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.02s
+
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+
+running 3 tests
+test die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel ... ok
+test wire_zahl_haelt_den_textriegel_ueber_drei_baender ... ok
+test ein_befund_kleiner_rangkomponenten_wird_ausgeliefert ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.77s
+
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.66s
+
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+running 21 tests
+test bandmitte_folgt_dem_eingefrorenen_gitter ... ok
+test keine_aenderung_und_mehr_daten_sind_vorschlaege ... ok
+test gate_riegel_greift_im_erzeuger ... ok
+test geschuetzte_eigenschaft_ist_harte_constraint ... ok
+test manueller_busvorschlag_ist_ein_proposal ... ok
+test ein_proposal_ohne_useraktion_bleibt_folgenlos ... ok
+test jede_zahl_hat_feld_evidenz_und_generatorversion ... ok
+test hard_caps_und_engeres_userbudget_werden_nie_ueberschritten ... ok
+test gate_riegel_faellt_je_feld ... ok
+test kein_nicht_endlicher_wert_erreicht_die_leitung ... ok
+test in_p5_ist_jede_aktion_manual ... ok
+test evidenz_ids_und_intent_revision_sind_pflicht ... ok
+test p5_bietet_weiterhin_keinen_draft_an ... ok
+test proposal_traegt_die_fuenfzehn_felder ... ok
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... ok
+test stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar ... ok
+test text_entsteht_aus_bausteinen_und_erfindet_keine_zahl ... ok
+test zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta ... ok
+test veraltet_ungueltig_capability_erreichen_keine_probe ... ok
+test rollenaenderung_macht_den_vorschlag_stale ... ok
+test derselbe_eingang_erzeugt_denselben_entwurf has been running for over 60 seconds
+test derselbe_eingang_erzeugt_denselben_entwurf ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 843.07s
+
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 62 tests
+test ausgeschlossenes_paar_setzt_keine_marke ... ok
+test besseres_paar_hebt_die_klasse ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... ok
+test paar_ohne_gemessene_wirkung_bleibt_klasse_eins ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test paar_id_ohne_urteil_setzt_keine_marke ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test probables_paar_bleibt_klasse_eins ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... ok
+test kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal ... ok
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... ok
+test annahmeordnung_folgt_der_vergleichsordnung ... ok
+test main_rueckzug_zwischen_befund_und_vorschlag ... ok
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen ... ok
+test ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage ... ok
+test interventionsende_ohne_nachlauf_sperrt_nicht ... ok
+test wirkungsbeleg_aus_ausgerichtetem_paar ... ok
+test wirkungsbeleg_wirkt_je_kandidat ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten ... ok
+test unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... ok
+test unknown_sperrt_das_material_nicht_die_passage ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+test resync_gibt_die_passage_frei ... ok
+test wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund ... ok
+test vorschlaege_bleiben_ihren_befunden_zugeordnet ... ok
+test terminal_laesst_die_nachlaufzuordnung_stehen ... ok
+test getaintetes_experiment_liefert_keine_passage ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.66s
+
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 90 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ignored, A4-SI: blockierter Storewriter gegen echten Coordinator-Ingress
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ignored, A4-SI: blockierende externe Pusharbeit haelt keine Coordinator-/Storelocks
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test descriptor_setzen_weist_beitragsklasse_ab ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test busy_timeout_grenze ... ok
+test commit_bei_fenster_oder_batch ... ok
+test degradierter_store_verweigert_annahme_und_tick_trennt_verursacher ... ok
+test disk_full_io_kaputt_neues_schema_degradieren_ohne_brokerstop ... ok
+test alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden ... ok
+test event_uuid_bleibt_aus_ack_und_session_snapshot_wire_fern ... ok
+test domainprojektionen_spalten_keys_und_rebuild ... ok
+test eviction_cleanup_vor_push ... ignored, A4-SI: Eviction und Snapshot-Senke in echter Reihenfolge
+test checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus ... ok
+test brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion ... ok
+test event_log_keys_und_append_only ... ok
+test event_projection_snapshotschuld_command_id_atomare_transaktion ... ok
+test cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push ... ok
+test guard_aufloesung_raeumt_den_aliaseintrag ... ok
+test guard_aufloesung_wirkt_auch_ohne_lebende_links ... ok
+test experiment_events_composite_key_und_fks ... ok
+test event_log_append_only_und_sequence_eindeutig ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test command_id_mappt_intern_auf_eine_event_uuid ... ok
+test domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht ... ok
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test command_id_mappt_intern_auf_genau_eine_event_uuid ... ok
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test alter_store_ueberschreibt_plugin_state_nicht ... ok
+test group_commit_faehrt_echten_batch_bis_commitgrenze ... ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ignored, A4-SI: restaurierter Riegelindex, Coordinator und echter Store
+test guard_restore_vor_routing ... ok
+test guard_aufloesung_ohne_treffer_meldet_fehler ... ok
+test guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex ... ok
+test konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ignored, A4-SI: Nonce-Verdrängung bereinigt Subscription vor altem Report
+test migration_1_frisch_und_idempotent ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ignored, A4-SI: P1-Snapshotpfad ueber echten Store und kontrollierte Writesenke
+test passive_checkpoint_an_dualer_grenze ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test pfadwandlung_haelt_ein_ungepaartes_surrogat ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ignored, A4-SI: Produktgrenze des Snapshot-only-Abflusses
+test migration_1_spalten_und_schluessel_exakt ... ok
+test pragmas_exakt ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k04-27960-01bc66d2d1f041aeae91e649cc03c07d\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k07-27960-4cc04a4598d74047a2b77e61521ffa28\nakama-broker.sqlite3
+test eviction_bewahrt_domainzustand_und_konfliktriegel_bei_vollstaendigem_cleanup ... ok
+test jeder_group_commit_bleibt_bei_hoechstens_64_events ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k09-27960-3bd781425e494ab1b0aa5ccf1fb8f0a2\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k06-27960-535870b0ac7048168aa481fd20164170\nakama-broker.sqlite3
+test outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt ... ok
+test leser_haelt_keine_transaktion_ueber_externe_arbeit ... ok
+test kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung ... ok
+test kill_nach_store_commit_vor_snapshot_push ... ok
+test projects_projection_rebuild_und_fk ... ok
+test quarantaene_deckel_weist_ab_statt_zu_wachsen ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test recovery_unter_testgrenze ... ok
+test remote_volume_degradiert_ohne_db_oder_wal ... ok
+test kill_vor_snapshot_outbox_kompaktierung ... ok
+test routing_bleibt_zu_bis_konfliktriegel_restauriert ... ok
+test kill_waehrend_wal_replay ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ignored, A4-SI: Coordinator schreibt koaleszierte Snapshot-Schuld in echten Store
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_hat_keinen_event_uuid_wire_traeger ... ok
+test session_subscription_hat_nur_snapshot_push ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test projektionslesefehler_haelt_subscription_sichtbar_fail_closed ... ok
+test pruefsumme_entscheidet_vor_der_migration ... ok
+test snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test projektion_rebuild_ist_deterministisch_und_unter_testgrenze ... ok
+test kill_waehrend_migration_1 ... ok
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... ok
+test store_pfad_nutzt_folderid_localappdata ... ok
+test schema_major_1_schreibt_und_major_plus_1_degradiert_read_only ... ok
+test projektion_rebuild_nach_neustart_unter_testgrenze ... ok
+test produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet ... ok
+test sessions_projection_composite_key_ohne_fuehrungsrestore ... ok
+test store_start_protokolliert_sqlite_version ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... ignored, A4-SI: Junction-Umhaengen unter einer offenen SQLite-Datenbank
+test produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries ... ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ignored, A4-SI: absoluter Empfaengerzustand wird real aus Snapshots gesetzt
+test snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht ... ok
+test store_kanal_cap_und_naechster_trennt ... ok
+test volumenklassifikation_faellt_am_geoeffneten_objekt ... ok
+test store_writer_ist_alleiniger_write_connection_besitzer ... ok
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+test resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert ... ok
+test truncate_nur_in_ruhelage ... ok
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... ok
+Verbindung erstellt für C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-27960-185c603a18a8407d97ee487e1222e94d\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-27960-185c603a18a8407d97ee487e1222e94d\echt
+test store_weist_reparse_punkt_im_pfad_ab ... ok
+test subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent ... ok
+test snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton ... ok
+
+test result: ok. 67 passed; 0 failed; 23 ignored; 0 measured; 0 filtered out; finished in 1.65s
+
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+
+running 12 tests
+test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+test ingress_bytebudget_verwirft_p2_zuerst ... ok
+test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+test ratengrenze_haelt_unter_flut ... ok
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test fragmentierung_aendert_das_ergebnis_nie ... ok
+test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+test panik_im_verbindungsthread_wird_gezaehlt ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+   Doc-tests eqcop_broker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+--- A29  pruefe_p5_korpus.py (nach A4: frisches Ergebnis)  ->  Exit 0  (0 s) ---
+Befehl: py -3.13 tools/eq-copilot/pruefe_p5_korpus.py
+P5-Korpus: 27 Sitzungen, 38 ausgegebene Befunde
+  daten_reichen_nicht: n=2 precision=1.000 recall=1.000 (soll_starke=0) brier=0.000 kalibrierung=0.000 coverage=0.000 enthaltung=1.000 falsche_starke=0
+  quelle_resonanz: n=17 precision=1.000 recall=1.000 (soll_starke=4) brier=0.117 kalibrierung=0.314 coverage=0.824 enthaltung=0.176 falsche_starke=0
+  zwei_quellen_konkurrenz: n=19 precision=1.000 recall=1.000 (soll_starke=1) brier=0.152 kalibrierung=0.384 coverage=1.000 enthaltung=0.000 falsche_starke=0
+  GESAMT: n=38 precision=1.000 recall=1.000 brier=0.137 kalibrierung=0.355 coverage=0.868 enthaltung=0.132 rangmittel=0.409
+  ZUVERLAESSIGKEIT hoch: n=5 nennwert=0.90 gemessene Trefferquote=1.000
+  ZUVERLAESSIGKEIT mittel: n=28 nennwert=0.60 gemessene Trefferquote=1.000
+  Schwelle hoch: handelbar=5 davon_falsch=0 haelt=True
+  Schwelle mittel: handelbar=33 davon_falsch=17 haelt=False (korrelierter_distraktor, parent_duplikat, gegenbeleg_uplift, gegenbeleg_koinzidenz, routing_unbekannt, getrennt_durch_zusammenhang, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_parent_partner_zu_wenig_fenster, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt)
+  Schwelle unklar: handelbar=38 davon_falsch=17 haelt=False (korrelierter_distraktor, parent_duplikat, gegenbeleg_uplift, gegenbeleg_koinzidenz, routing_unbekannt, getrennt_durch_zusammenhang, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_distraktor_allein_im_rennen, g5_unbeteiligte_quelle, g5_parent_partner_zu_wenig_fenster, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt)
+  SCHWELLE (Ausgabe, M-31): niedrigste haltende Stufe = hoch
+  PRODUKTSCHWELLE (M-31): 5 von 38 Befunden handelbar, Sicherheiten ['hoch']
+  GEGENBEISPIELE (M-69): 21 Sitzungen, 31 Befunde, 0 davon stark — „auf jedem Gegenbeispiel unsicher" HAELT
+  P4-LUECKE NAK-190 (M-70): gedruckt, inzwischen gemessen durch korrelierter_distraktor, getrennt_durch_zusammenhang, g5_distraktor_mehr_fenster, g5_distraktor_lauter, g5_kandidatendeckel, g5_gleichstand_verursacher_fuehrt — sie darf jetzt entfernt werden
+  GATE_MINDEST_FENSTER: 5 Faelle aus den zwei Passagensitzungen, 0 davon stark
+  GATE_MINDEST_FENSTER: der Startwert 8 haelt — kein Versionsschritt noetig (E-12 Fall 3)
+P5-Korpus: gruen
+
+--- A4-SI  subscription_server_integration  ->  Exit 0  (16 s) ---
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 23 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ok
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ok
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ok
+test descriptor_setzen_weist_beitragsklasse_ab ... ok
+test eviction_cleanup_vor_push ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-29260-30f38042ce2944bda3724d70b624d7ee\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-29260-30f38042ce2944bda3724d70b624d7ee\nakama-broker.sqlite3
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-29260-f059424975d74da9b6df74bddbe436f0\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_persist-29260-f059424975d74da9b6df74bddbe436f0\nakama-broker.sqlite3
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-29260-13da5129b23343a382905fa25e4f456c\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-vor_store_commit-29260-13da5129b23343a382905fa25e4f456c\nakama-broker.sqlite3
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... phase_b_command_client result=angewandt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ok
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ok
+test session_subscription_hat_nur_snapshot_push ... ok
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ok
+test snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-29260-8bbfc21261334daa988d08a48d568f1e\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-nach_store_commit-29260-8bbfc21261334daa988d08a48d568f1e\nakama-broker.sqlite3
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... phase_b_command_client result=idempotent_wiederholt connected=1 queued=1 answered=1 wire_uuid=0
+ok
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... Verbindung erstellt für C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-29260-c8d370f5c60e4647b6b47fcbad945a58\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-29260-c8d370f5c60e4647b6b47fcbad945a58\ziel-a
+Verbindung erstellt für C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-29260-c8d370f5c60e4647b6b47fcbad945a58\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-29260-c8d370f5c60e4647b6b47fcbad945a58\ziel-b
+ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 15.53s
+
+
+--- A21  transport_fuzz  ->  Exit 0  (0 s) ---
+Befehl: cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+
+running 12 tests
+test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+test ingress_bytebudget_verwirft_p2_zuerst ... ok
+test ratengrenze_haelt_unter_flut ... ok
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test fragmentierung_aendert_das_ergebnis_nie ... ok
+test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+test panik_im_verbindungsthread_wird_gezaehlt ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+
+--- A31  sonde014_gegenbeispiele  ->  Exit 0  (116 s) ---
+Befehl: cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 20 tests
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ── A1 rolle=fuehrt auf dem Distraktor, sonst identisch ──
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test a3_sonde_auf_masterkanal ... ── A3 Sonde auf dem Masterkanal (beide Kanal 1) ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "master_duplikat")]
+   => starke Befunde: 0
+── A3 zweite Sonde auf eigenem Kanal ──
+   quelle=..03 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "master_duplikat")]
+   => starke Befunde: 1
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-a4-13016\nakama-broker.sqlite3
+test a4_masteranomalie_ausserhalb_der_passage ... ── A4 Masteranomalie in einem Fenster HINTER der Passage ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ── D2 drei Kandidaten: A und C identisch, M dazwischen ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.676064
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=1.000000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.611707
+     rang: bandpassung=0.068089 koinzidenz=0.000000 uplift=0.857143 intent=0.750000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-d3-ohne-master-13016\nakama-broker.sqlite3
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ── F5 Passage [12,24) — alle Belege liegen DAVOR ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_unvergleichbar")]
+   => starke Befunde: 0
+ok
+test d4_umklammernde_und_disjunkte_spanne ... ── D4 umklammernd ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "alignment_falsch")]
+   => starke Befunde: 0
+── D4 disjunkt ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("02", "alignment_falsch")]
+   => starke Befunde: 0
+ok
+test eigen3_antikorrelierte_quelle ... ── EIGEN-3 antikorrelierte Quelle (laut, wenn der Master leise ist) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.269965
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test eigen4_quelle_im_falschen_band ... ── EIGEN-4 Sonde hebt Band 30..34, Masterbefund liegt bei 98..102 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.252838
+     rang: bandpassung=0.017029 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test eigen5_antikorreliert_neben_korreliert ... ── EIGEN-5 korrelierte und antikorrelierte Quelle nebeneinander ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=ZweiQuellenKonkurrenz score=0.602467
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.269965
+     rang: bandpassung=0.119789 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 1
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-k12-vorbedingung-13016\nakama-broker.sqlite3
+test einzelueberlebender_neben_passagenausschluss ... ── K-12/K-13 Vorbedingung: allein in der Passage ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-k12-unvergleichbar-13016\nakama-broker.sqlite3
+── K-12 Konkurrent faellt an `passage_unvergleichbar` ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("03", "passage_unvergleichbar")]
+   => starke Befunde: 0
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-k13-zu-kurz-13016\nakama-broker.sqlite3
+── K-13 Konkurrent faellt an `passage_zu_kurz` ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("03", "passage_zu_kurz")]
+   => starke Befunde: 0
+ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ── F4 Lage 1: beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 1: nach dem Kanalwechsel von C (7 -> 9), C misst weiter ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 2: beide Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+── F4 Lage 2: nach dem Kanalwechsel von C (7 -> 9), C misst NICHT mehr ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=QuelleResonanz score=0.266956
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[("03", "evidenz_zurueckgenommen")]
+   => starke Befunde: 0
+── F4 Gegenprobe: Teilruecknahme statt Kanalwechsel ──
+   quelle=..02 klasse=Mittel zustand=Stale ursache=QuelleResonanz score=0.266635
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test f4b_drei_sonden_auf_einem_kanal ... ── F4b drei Sonden auf Mixerkanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+── F4b vierte, STUMME Sonde auf demselben Kanal 7 ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183950
+     rang: bandpassung=0.103699 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[("05", "evidenz_zurueckgenommen")]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183623
+     rang: bandpassung=0.101738 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   quelle=..04 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.183302
+     rang: bandpassung=0.099809 koinzidenz=0.000000 uplift=0.000000 intent=0.500000 wiederholbarkeit=0.000000 routing=0.500000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=2 ausschluesse=[]
+   => starke Befunde: 0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-12-13016\nakama-broker.sqlite3
+test f5_passagenrandwerte ... ── F5 Passage [0,12) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-11-13016\nakama-broker.sqlite3
+── F5 Passage [0,11) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-8-13016\nakama-broker.sqlite3
+── F5 Passage [0,8) Fensterlaengen ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5-7-13016\nakama-broker.sqlite3
+── F5 Passage [0,7) Fensterlaengen ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_zu_kurz")]
+   => starke Befunde: 0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-f5b-13016\nakama-broker.sqlite3
+test f5b_gleiche_passage_id_verschobenes_fenster ... ── F5b gleiche passage_id, Fenster verschoben [0,12) -> [12,24) ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005032") alternatives=0 ausschluesse=[("02", "passage_unvergleichbar")]
+   => starke Befunde: 0
+ok
+test f7_rangdifferenz_am_quantum ... ── F7 kleinste darstellbare Rangstoerung (0,1 dB in Band 210) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.592729
+     rang: bandpassung=0.061364 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ── F8 zwei Master (A: Band 98..102, B: Band 150..154) ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 0, bis: 221 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+test f8b_master_ohne_fenster ... ── F8b Master angemeldet, aber ohne Beleg ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 0, bis: 221 } passage=None alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-nak214-passagenwahl-13016\nakama-broker.sqlite3
+test nak214_juengste_passage_untauglich ... ── NAK-214 Fall 3: beide Passagen tauglich (Kontrolle) ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005034") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+   aeltere Passage: 00000000000000000000000000005033
+   juengere Passage: 00000000000000000000000000005034
+   gerechnet mit: Some("00000000000000000000000000005034")
+── NAK-214 Fall 3: juengste Passage zurueckgenommen (R5) ──
+   quelle=..02 klasse=Hoch zustand=ReadyToSend ursache=QuelleResonanz score=0.592730
+     rang: bandpassung=0.061370 koinzidenz=0.000000 uplift=1.000000 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=Some("00005033") alternatives=0 ausschluesse=[]
+   => starke Befunde: 1
+   gerechnet mit: Some("00000000000000000000000000005033")   (erwartet: die AELTERE 00000000000000000000000000005033)
+ok
+test nak214_probables_paar_bleibt_klasse_eins ... ── NAK-214 Fall 2: Paar unter der Schwelle ──
+   Klasse: Probable   Ergebnis vorhanden: true   ausgerichtetes Delta: false
+── NAK-214 Fall 2: Paar unter der Schwelle (R2) ──
+   quelle=..02 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.514869
+     rang: bandpassung=0.082190 koinzidenz=0.000000 uplift=0.512012 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   quelle=..03 klasse=Mittel zustand=MoreData ursache=ZweiQuellenKonkurrenz score=0.514869
+     rang: bandpassung=0.082190 koinzidenz=0.000000 uplift=0.512012 intent=0.500000 wiederholbarkeit=0.995012 routing=1.000000
+     band=Bandintervall { von: 97, bis: 101 } passage=None alternatives=1 ausschluesse=[]
+   => starke Befunde: 0
+ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-nak212-nak214-zwei-mains-13016\nakama-broker.sqlite3
+test nak214_zwei_mains_erzeugen_keinen_vorschlag ... ── NAK-214 Fall 1: EIN Main (Kontrolle) ──
+   Vorschlaege: 1
+     target=00000000000000000000000000000001 passage=Some("00000000000000000000000000005032") finding=Some("131d403dbf1a21e06c851c690d43b430")
+   proposal-Zeilen im Store: 3
+── NAK-214 Fall 1: zwei Mains ──
+   quelle=..01 klasse=Unklar zustand=MoreData ursache=DatenReichenNicht score=0.000000
+     rang: bandpassung=0.000000 koinzidenz=0.000000 uplift=0.000000 intent=0.000000 wiederholbarkeit=0.000000 routing=0.000000
+     band=Bandintervall { von: 0, bis: 221 } passage=Some("00005032") alternatives=0 ausschluesse=[]
+   => starke Befunde: 0
+── NAK-214 Fall 1: zwei Mains (R1) ──
+   Vorschlaege: 0
+   proposal-Zeilen im Store: 3
+ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 115.53s
+
+
+--- A5  pruefe_v3_vertrag.py  ->  Exit 0  (4 s) ---
+Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:2240: DeprecationWarning: Accessing jsonschema.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for jsonschema's version.
+  print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")
+jsonschema 4.26.0 (draft 2020-12)
+115 Definitionen, 26 Nachrichtenfamilien, 402 Fixtures
+Pruefungen: 631 bestanden, 0 gescheitert
+
+Abdeckung je Schluesselwort (mit Negativfixture / vorhanden).
+HART sind nur enum und const: dort ist ein falscher Wert ein echtes
+Produktrisiko. Die uebrigen Quoten stehen hier VOLLSTAENDIG, damit
+Unterabdeckung sichtbar bleibt statt still zu sein.
+  additionalProperties     29 / 92  
+  const                    16 / 16   HART
+  enum                     50 / 50   HART
+  exclusiveMinimum          3 / 3   
+  items                     9 / 36  
+  maxItems                  6 / 36  
+  maxLength                 6 / 37  
+  maxProperties             2 / 3   
+  maximum                  15 / 61  
+  minItems                  5 / 36  
+  minLength                 8 / 30  
+  minimum                  14 / 103 
+  oneOf                    11 / 17  
+  pattern                   5 / 13  
+  required                 70 / 451 
+  type                     14 / 328 
+
+$defs ohne Negativfixture: keine
+
+--- A8  erzeuge_v3_fixtures.py  ->  Exit 0  (0 s) ---
+Befehl: py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+112 gueltige, 290 ungueltige Fixtures
+  bytegleich: 406 Dateien, MANIFEST sha256=75eb1c5c5b5aec222067c9cbbb024e8a5f2642c6895ed08237d8fd1365294849
+
+--- A22  pruefe_ipc_last.py  ->  Exit 0  (11 s) ---
+Befehl: py -3.13 tools/eq-copilot/pruefe_ipc_last.py
+  ok      beide Probeprogramme verweigern Golden- und v1-Pipename
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.last.36084.1789246898
+  BEREIT \\.\pipe\evenacadia.nakama.v3.probe.last.36084.1789246898
+SONDE-010 | Lastbein: 32 Sonden, 8 s, Pipe \\.\pipe\evenacadia.nakama.v3.probe.last.36084.1789246898
+  verbunden: 32 Control, 32 Telemetrie
+{"sonden":32,"sekunden":8,"p2_veroeffentlicht":134816,"p2_gesendet":95124,"p2_ersetzt":39698,"p2_abgelehnt":0,"p2_zu_gross":0,"p2_kollisionsloecher":0,"p2_neueste_verworfen":0,"p0_gesendet":10016,"p0_beantwortet":10016,"p0_latenz_max_ms":20,"p0_latenz_p99_ms":20,"p0_ueberlaeufe":0,"envelope_abweisungen":0}
+  ok      P0-Befehle wurden ueberhaupt gesendet  [10016]
+  ok      KEIN P0-Frame geht verloren  [10016/10016]
+  ok      P0-Antwortlatenz bleibt beschraenkt  [max 20 ms, p99 20 ms, Schranke 1000 ms]
+  ok      es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)  [39698 ersetzte P2-Frames]
+  ok      und dabei faellt NIE der neueste Frame (replace-oldest)  [0 neueste verworfen, 0 Positionen uebersprungen]
+  ok      jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt = 0 zu gross + 0 ohne Platz]
+  ok      kein Envelope wurde abgewiesen  [0]
+  ok      keine P0-Queue lief ueber  [0]
+LASTBEIN GRUEN
+Brokerbericht: {"abweisungen": 0, "acceptor_wartet_auf_instanz": 0, "angenommen": 64, "besitzlistener_nach_stopp": 0, "besitzlistener_vor_stopp": 2, "control_getrennt": 32, "control_verbindungen": 32, "ende_grund": "stdin", "geschlossen_bootstrap": 0, "geschlossen_envelope": 0, "geschlossen_familie": 0, "geschlossen_kopplung": 0, "geschlossen_p0_ueberlauf": 0, "geschlossen_rate": 0, "geschlossen_writer": 0, "ingress_hoechststand": 3, "ingress_p1_ueberlauf_trennt": 0, "ingress_p2_verworfen": 0, "letzter_grund": "", "p0": 10016, "p0_beantwortet": 10016, "p1": 0, "p2": 95124, "pipe": "\\\\.\\pipe\\evenacadia.nakama.v3.probe.last.36084.1789246898", "telemetrie_getrennt": 32, "telemetrie_verbindungen": 32}
+  ok      das C++-Lastbein selbst ist gruen  [Exit 0]
+  ok      der Rust-Broker hat einen Bericht geliefert  [26 Felder]
+  ok      32 Control-Verbindungen im Broker angekommen  [32]
+  ok      32 Telemetrieverbindungen GEKOPPELT (nicht nur verbunden)  [32]
+  ok      der Broker hat P0 gesehen und beantwortet  [10016 empfangen / 10016 beantwortet]
+  ok      und P2 ueber die zweiten Verbindungen  [95124]
+  ok      keine Verbindung wegen Envelope, Rate oder P0-Ueberlauf geschlossen  [envelope=0 rate=0 p0=0]
+  ok      kein P0-Frame geht verloren (Clientseite)  [10016/10016]
+  ok      es lag wirklich Rueckstau an  [39698 ersetzte P2-Frames]
+  ok      und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen, 0 Positionen uebersprungen]
+  ok      jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt = 0 zu gross + 0 ohne Platz]
+GRUEN
+
+--- A23  pruefe_sonde012_sources_latency.py  ->  Exit 0  (5 s) ---
+Befehl: py -3.13 tools/eq-copilot/pruefe_sonde012_sources_latency.py
+  ok      beide Programme verweigern Produktions- und Golden-Pipe
+  ok      16 Quellen / 2048 Samples p95 48.8431 ms <= 300 ms
+  ok      16 Quellen / 4096 Samples p95 93.5816 ms <= 300 ms
+  ok      16 Quellen / 16384 Samples p95 349.575 ms <= 750 ms
+  ok      32 Quellen / 2048 Samples p95 53.077 ms <= 300 ms
+  ok      32 Quellen / 4096 Samples p95 97.3888 ms <= 300 ms
+  ok      32 Quellen / 16384 Samples p95 355.355 ms <= 750 ms
+{"p95_16_2048_ms":48.8431,"p95_16_4096_ms":93.5816,"p95_16_16384_ms":349.575,"p95_32_2048_ms":53.077,"p95_32_4096_ms":97.3888,"p95_32_16384_ms":355.355}
+GRUEN - sechs p95-Grenzen und Anzeige-Revisionen
+
+--- A24  pruefe_session_soak.py  ->  Exit 0  (149 s) ---
+Befehl: py -3.13 tools/eq-copilot/pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1
+  ok      beide Programme verweigern Produktions- und Golden-Pipename
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.soak.31988.1789246913
+  ok      Topologie steht, Warmup 20 s vorbei
+  ..      Neustart 1 (k_s4, Totzeit 1188 ms): NEUSTART_VOLLSTAENDIG 1 2326
+Bericht: {"abbau_haenger": "", "audio": {"blockgroesse": 512, "bloecke": 220672, "bloecke_je_sonde_min": 13792, "ganzblockdrops_oversize": 0, "ganzblockdrops_ueberlauf": 0, "kontinuitaetsbrueche": 0, "publikationen": 22064, "publikationen_je_sonde_min": 1379, "samplerate": 48000.0}, "client_exit": 0, "clientpaare": 17, "fluter": {"abgelehnt": 0, "ersetzte_liveframes": 178, "kollisionsloecher": 0, "neueste_verworfen": 0, "veroeffentlichungen": 1652, "zu_gross": 0}, "kill": {"k_s1": {"gefahren": true, "telemetrie_handle_fehler": 1, "urteil": "getroffen"}, "k_s2": {"gefahren": false, "snapshot_vor_kill": false, "urteil": "nicht_gefahren"}, "k_s3": {"gefahren": true, "p0_ohne_ack_im_fenster": 0, "urteil": "nicht_getroffen"}, "k_s4": {"flag_zum_killzeitpunkt": 4, "gefahren": true, "urteil": "getroffen"}, "k_s5": {"backoff_deckel_erreicht": 0, "erwartet": 17, "gefahren": false, "urteil": "nicht_gefahren"}}, "langsam": {"abgelehnt": 0, "blockiert_andere_nicht": true, "ersetzte_liveframes": 6142, "fluter_ueberlappt": false, "immer_mitglied": true, "kollisionsloecher": 0, "neueste_verworfen": 0, "schnelle_p95_ms": 22.2, "sonden": 4, "veroeffentlichungen": 17664, "zu_gross": 0}, "langsam_anzahl": 4, "liveness": {"evicted_ausserhalb_neustart": 0, "stale_ausserhalb_neustart": 0, "stale_im_neustartfenster": 0}, "minuten": 2, "mitgliedschaft": {"abtast_pruefungen": 1228, "abtast_vollstaendig": 1228, "fremde_adresse": 0, "fuehrendes_main_falsch": 0, "snapshot_pruefungen": 3936, "uebernahmen": 4618, "ungueltig": 0, "vollstaendig": 3936}, "neustart": [{"alte_epoche_nach_neustart_gesehen": 0, "backoff_deckel_in_totzeit": 0, "bereit_bis_vollstaendig_ms": 2326, "epoch_alt": "8239ccedcd5d45499b77e184c60b4b8f", "epoch_neu": "64c1ef2c70124eca8c26c696b118122e", "frist_ms": 60000, "index": 1, "kill_dauer_ms": 4, "kill_erfolgt_gesehen": true, "reconnect_ms": {"max": 2326.2, "min": 358.9, "p95": 2326.2}, "reconnect_paare": 17, "s09_quellen_getrennt": 15, "s09_sichten": 35, "s09_subscription_weg": 15, "schranke_ms": 45051, "totzeit_erfasst": true, "totzeit_ms": 1188, "ueber_schranke": false}], "p0": {"beantwortet": 2336, "einreihung_abgelehnt": 0, "einreihung_abgelehnt_ausserhalb_neustart": 0, "gemessen_ausserhalb": 2256, "gemessen_im_stoerfenster": 80, "gesendet": 2336, "latenz_max_im_stoerfenster_ms": 2869.9, "latenz_max_ms": 122.0, "latenz_p95_ms": 23.8, "nachlauf_ms": 2000, "schranke_ms": 1000, "verloren_ausserhalb_neustart": 0, "verloren_im_neustartfenster": 0}, "pipe": {"clientnamen_geprueft": 34, "eigene_probe_sichtbar": true, "fremder_name_versucht": 0, "goldenname_neu": false, "namen_nach": 466, "namen_vor": 465, "namensraum_lesbar": true, "ohne_produkt_v3": true, "produktionsname_neu": false}, "riegel": {"golden_EqCopSessionSoak": 3, "golden_eqcop-broker-sonde012-probe": 3, "produktion_EqCopSessionSoak": 3, "produktion_eqcop-broker-sonde012-probe": 3}, "sonden": 16, "speicher": {"broker": [{"generation": 0, "im_neustartfenster": false, "minute": 0, "rss_bytes": 14921728, "sekunden": 0.0}, {"generation": 0, "im_neustartfenster": false, "minute": 1, "rss_bytes": 15179776, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": true, "minute": 1, "rss_bytes": 6201344, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 1, "rss_bytes": 13922304, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 2, "rss_bytes": 14819328, "sekunden": 120.1}], "budget_bytes": 16777216, "budget_prozent": 10, "client": [{"im_neustartfenster": false, "minute": 0, "rss_bytes": 121896960, "sekunden": 0.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 122236928, "sekunden": 60.0}, {"im_neustartfenster": true, "minute": 1, "rss_bytes": 122261504, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 122679296, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 2, "rss_bytes": 122679296, "sekunden": 120.1}], "takt_s": 60}, "subscription": {"weg_im_neustartfenster": 15}, "topologie_ms": 139, "warmup_s": 20}
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [139 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3936/3936 bei 4618 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1228/1228]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 23.8 ms, max 122.0 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6142 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 22.2 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220672 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13792 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 465 -> 466 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_eqcop-broker-sonde012-probe': 3, 'golden_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2326 ms von 60000 ms (Schranke 45051 ms, reconnect max 2326.2 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 358.9 / p95 2326.2 / max 2326.2 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 4 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [8239cced… -> 64c1ef2c…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.9 -> 122.7 MB, +0.8 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.2 MB, +0.3 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [13.9 -> 14.8 MB, +0.9 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'flag_zum_killzeitpunkt': 4}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'backoff_deckel_erreicht': 0, 'erwartet': 17}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+
+--- A4b  EqCopPipeClientTest  ->  Exit 0  (66 s) ---
+Befehl: C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe 
+PIPECLIENT-LIFECYCLE-TEST
+  ok      Fake-Pipe fuer Welcome-Stopp angelegt
+  ok      stop() bricht blockiertes Welcome-Lesen begrenzt ab  [0 ms]
+  ok      SQOS begrenzt den Peer auf SecurityIdentification  [1]
+  ok      Fake-Pipe fuer ACK-Stopp angelegt
+  ok      stop() bricht blockiertes ACK-Lesen begrenzt ab  [0 ms]
+  ok      Reconnect-Fake-Pipe angelegt
+  ok      Reconnect waehrend Welcome verliert keine Konfigurationsgeneration
+  ok      pipeclient_reconnect_verwirft_serverfreigabe
+  ok      pipeclient_sendet_vor_serverauth_keine_bytes
+  ok      ungueltiges UTF-8 wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      rohes NUL wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
+  ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [323 ms]
+  ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
+  ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4011 ms, weitere Versuche 1 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [file_not_found: klass 1, 10 ms, weitere Versuche 2 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [access_denied: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [sonstiger_fehler: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [pipe_busy: 2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [access_denied: 1 Versuche, 0 Serverpruefungen (erwartet 0 — positionsgesteuert)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [welcome_bleibt_aus: Hello gelesen 1, Pruefungen 1, Protokoll 0 (erwartet 0), Status 0 (erwartet nichtGeprueft)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [erwartung_ungueltig: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [server_pid_nicht_ermittelbar: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 495 1003 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 493 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 499 998 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 494 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_vor_open: 89 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 1 (v2 setzt nicht zurueck)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_vor_open: 96 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 491 1008 1999 ms (erwartet 500 1000 2000)]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 10 4513 9525 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [verifiziert_ohne_welcome Stempel 10 5503 11510 ms, Pruefungen 3]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [stehende_verbindung_setzt_zurueck: Aufstieg 495 998 ms, Verbindung stand 1, naechste Runde nach 507 ms (erwartet 350..1200, ohne Reset >= 2000)]
+PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+
+--- B3c  EqCopSchemaTest  ->  Exit 0  (1 s) ---
+Befehl: C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe 
+EqCopSchemaTest - v3-Vertrag (SONDE-005a)
+-----------------------------------------
+[ok]   Textriegel deckt die gemeinsame Falltabelle  [102 Faelle]
+[ok]   Falltabelle hat Substanz  [102 Faelle]
+[ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+[ok]   unbekanntes Schluesselwort bricht den Ladevorgang  [unbekanntes Schluesselwort #/multipleOf]
+[ok]   oneOf ohne Discriminator bricht den Ladevorgang  [falscher Werttyp fuer #/oneOf; oneOf ohne x-nakama-discriminator bei #]
+[ok]   additives Objekt ohne maxProperties bricht den Ladevorgang  [additives Objekt # ohne maxProperties]
+[ok]   unbekanntes Muster bricht den Ladevorgang  [unbekanntes Muster #: ^S-1-.*$]
+[ok]   nicht-lokale Referenz bricht den Ladevorgang  [nicht-lokale Referenz bei #: https://fremd/schema.json]
+[ok]   haengende Referenz bricht den Ladevorgang  [haengende Referenz bei #: #/$defs/gibtsnicht hat kein Ziel]
+[ok]   maxLength als Gleitkommazahl bricht den Ladevorgang  [falscher Werttyp fuer #/maxLength]
+[ok]   type als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/type]
+[ok]   required mit Nicht-String bricht den Ladevorgang  [falscher Werttyp fuer #/required]
+[ok]   Discriminator als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/x-nakama-discriminator]
+[ok]   integer akzeptiert 1.0 (draft 2020-12)
+[ok]   integer lehnt 1.5 ab
+[ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+[ok]   unbekannter Discriminator wird abgelehnt
+[ok]   discriminator_boolean_true_false
+[ok]   discriminator_boolean_falscher_typ
+[ok]   discriminator_boolean_fehlt
+[ok]   discriminator_json_pointer_boolean
+[ok]   discriminator_json_pointer_segment_fehlt
+[ok]   Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type
+[ok]   fehlendes Pflichtfeld zeigt auf das Elternobjekt
+[ok]   Laenge zaehlt Codepunkte, nicht Bytes
+[ok]   vier Codepunkte fallen bei maxLength 3
+[ok]   Verletzungen sind kanonisch sortiert und doppelfrei  [3]
+[ok]   objektwertiges const vergleicht reihenfolgeunabhaengig
+[ok]   objektwertiges const sieht einen Unterschied in der Tiefe
+[ok]   objektwertiges const sieht eine fehlende Eigenschaft
+[ok]   Binaerkorpus klassifiziert wie das Manifest (128 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [128 Fixtures]
+[ok]   Binaer-Manifestzahlen passen zur Fixtureliste
+[ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
+[ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
+[ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
+[ok]   JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json
+[ok]   band_stereo_featureframe_to_flatbuffer
+[ok]   nak29_encoder_project_samples_ohne_project_time_bit
+[ok]   nak29_encoder_local_monotonic_mit_project_sample_start
+[ok]   integration_samples_wird_von_beiden_lesern_klassifiziert  [gesetzt: der Leser gibt Bit UND Wert zurueck]
+[ok]   integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null  [abwesend: gueltig, aber ohne Bit â der Wert 0 ist hier NICHT die Aussage]
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ok]   N-18: die Byteinstanz liegt im Korpus
+[ok]   N-18: die Liste `angenommen` traegt Klassen  [14]
+[ok]   N-18: minus_null - wireZahl erzeugt GENAU den Text der Fixture  [0 gegen 0]
+[ok]   N-18: ein_zehntel - wireZahl erzeugt GENAU den Text der Fixture  [0.1 gegen 0.1]
+[ok]   N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.333333333333333]
+[ok]   N-18: kleinster_normaler_float - wireZahl erzeugt GENAU den Text der Fixture  [1.17549435082229e-38 gegen 1.17549435082229e-38]
+[ok]   N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: sichere_ganzzahl - wireZahl erzeugt GENAU den Text der Fixture  [9007199254740991 gegen 9007199254740991]
+[ok]   N-18: nyquist_gekappter_bandwert - wireZahl erzeugt GENAU den Text der Fixture  [18000 gegen 18000]
+[ok]   N-18: samplerate - wireZahl erzeugt GENAU den Text der Fixture  [48000 gegen 48000]
+[ok]   N-18: rangkomponente_2p7e_minus_11 - wireZahl erzeugt GENAU den Text der Fixture  [2.7e-11 gegen 2.7e-11]
+[ok]   N-18: rangkomponente_5p55e_minus_12 - wireZahl erzeugt GENAU den Text der Fixture  [5.55e-12 gegen 5.55e-12]
+[ok]   N-18: rangkomponente_lang - wireZahl erzeugt GENAU den Text der Fixture  [9.03808480367243e-11 gegen 9.03808480367243e-11]
+[ok]   N-18: float_minus_3p3 - wireZahl erzeugt GENAU den Text der Fixture  [-3.29999995231628 gegen -3.29999995231628]
+[ok]   N-18: null_komma_eins_plus_null_komma_zwei - wireZahl erzeugt GENAU den Text der Fixture  [0.3 gegen 0.3]
+[ok]   N-18: die Liste `verweigert` traegt Klassen  [6]
+[ok]   N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: zwei_hoch_53 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: groesster_normaler_float - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: nicht_endlich - wireZahl verweigert, wie die Fixture sagt
+[ok]   v3-Schema haelt die Engine-Teilmenge ein
+[ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+[ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+[ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (402 Fixtures)
+[ok]   Korpus hat Substanz  [402 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide  [ ]
+[ok]   fassung_4_leser_lehnt_state_report_dsp_ab
+[ok]   ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)
+[ok]   Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich
+[ok]   hash_stimmt_mit_der_zeichenkette  [ ]
+[ok]   q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck  [0.70710678118654757]
+[ok]   abweichender_hash_wird_abgewiesen  [state_hash SHA-256(dsp.jcs) = 583dd70cec8181fa632573c160cdb83e1e8fe5360b43109b3f2924d2bead7f0c, state_report.state_hash = 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+[ok]   das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   die mutierte Zeichenkette passiert den DTO-Weg: nur der Hash weist sie ab  [ ]
+[ok]   hash_stimmt_aber_dto_faellt: der Bericht wird GANZ abgewiesen  [struktur Wurzel braucht genau dsp_schema_version, parameters und schutz_zonen]
+[ok]   auch dieses Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert â NaN
+[ok]   N-18b: verweigert â +Inf
+[ok]   N-18b: verweigert â -Inf
+[ok]   N-18b: verweigert â 2^53 — eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert â 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert â groesster normaler float — Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert â 1e300 — Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert â -1e300
+[ok]   N-18b: verweigert â 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert â 9.99e-308 — dez = -308
+[ok]   N-18b: verweigert â 1e-308
+[ok]   N-18b: verweigert â 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+152 bestanden, 0 gescheitert
+
+--- B13  EqCopSonde012SourcesModelTest  ->  Exit 0  (0 s) ---
+Befehl: C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe 
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.90 / 2.30 ms p95]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 88/88 gruen
+
+--- RIEGEL M-25: git grep -n "zurueck: Vec<(ClientKey, usize)>" broker/src/ ---
+git grep Exit: 1
+Urteil: leer (git grep Exit 1)
+
+--- BILANZ ---
+BAU-cargo    Exit   0     24 s  Release-Broker (wie tools/beweise.ps1 fuer A22/A23/A24)  |     Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+BAU-cmake    Exit   0      0 s  EqCopPipeClientTest EqCopSchemaTest EqCopSonde012SourcesModelTest EqCopIpcTest EqCopIpcLast EqCopSonde012SourcesLatencyTest EqCopSessionSoak  |  warning C: 0
+A4           Exit   0   1296 s  broker  |  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+A29          Exit   0      0 s  pruefe_p5_korpus.py (nach A4: frisches Ergebnis)  |  P5-Korpus: gruen
+A4-SI        Exit   0     16 s  subscription_server_integration  |  test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 15.53s
+A21          Exit   0      0 s  transport_fuzz  |  test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+A31          Exit   0    116 s  sonde014_gegenbeispiele  |  test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 115.53s
+A5           Exit   0      4 s  pruefe_v3_vertrag.py  |  Pruefungen: 631 bestanden, 0 gescheitert
+A8           Exit   0      0 s  erzeuge_v3_fixtures.py  |  
+A22          Exit   0     11 s  pruefe_ipc_last.py  |  GRUEN
+A23          Exit   0      5 s  pruefe_sonde012_sources_latency.py  |  GRUEN - sechs p95-Grenzen und Anzeige-Revisionen
+A24          Exit   0    149 s  pruefe_session_soak.py  |  GRUEN
+A4b          Exit   0     66 s  EqCopPipeClientTest  |  PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+B3c          Exit   0      1 s  EqCopSchemaTest  |  152 bestanden, 0 gescheitert
+B13          Exit   0      0 s  EqCopSonde012SourcesModelTest  |  SONDE-012 SourcesModel: 88/88 gruen
+Riegel M-25  Exit   0      0 s  git grep  |  leer (git grep Exit 1)
+URTEIL: 16 von 16 Schritten Exit 0

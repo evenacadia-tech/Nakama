@@ -1,0 +1,141 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-22 fuer M-22
+Zeitpunkt:  2026-09-12T22:36:17.0018747+02:00
+Datei:      broker\src\coordinator\invalidierung_verdrahtung.rs
+Mutation:   invalidierung_ruecknehmen: der Rollback bricht nach dem ersten Treffer ab - Regressionswache
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde013_verdrahtung rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck -- --exact --nocapture
+SHA-256 vorher:  276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719
+SHA-256 nachher: 276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde013_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: function `sonde_mit_evidenz` is never used |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.45s
+Neubau zurueckgespielt: [sonde013_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: function `sonde_mit_evidenz` is never used |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.79s
+Geforderte Rotlaeufe: 1; gemessen rot: 1
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-22: rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck
+
+--- MUTIERTE STELLE ---
+-             eintrag.ausschlussgrund = None;
++             eintrag.ausschlussgrund = None;
++             break; // MUTATION NAK-283 M-22: Rollback bricht nach dem ersten Treffer ab
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m22-35092-f5e4ee4fba584b39b248bc44fcd7bbb2\nakama-broker.sqlite3
+
+thread 'rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck' (26340) panicked at tests\sonde013_verdrahtung.rs:3665:9:
+assertion `left == right` failed: M-22: rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck - E5 traegt keinen Ausschlussgrund mehr
+  left: Some("intervention")
+ right: None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck ... FAILED
+
+failures:
+
+failures:
+    rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 81 filtered out; finished in 3.46s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m22-37004-1f8cabbc2a1940ebad662affd9bf202e\nakama-broker.sqlite3
+test rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 81 filtered out; finished in 3.45s
+
+
+URTEIL: BESTANDEN (rot gemessen 1/1, gruen Exit 0)

@@ -1,0 +1,159 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-13a fuer M-26 (Haelfte 2)
+Zeitpunkt:  2026-09-12T22:27:40.9611330+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   ergebnis_ist_noch_gueltig: der Vergleich der Eingangsmenge entfaellt (Stand am Basis-SHA: nur Generation und verwendete IDs)
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: unused variable: `eingangsmenge` | warning: variant `Ueberholt` is never constructed |     Finished `test` profile [unoptimized + debuginfo] target(s) in 9.46s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 6.28s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-13 Fenster 1: neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis
+
+--- MUTIERTE STELLE ---
+-         if gueltig != *eingangsmenge {
+-             return Rueckschreibung::Ueberholt;
+-         }
++         // MUTATION NAK-283 M-13a: Vergleich der Eingangsmenge entfernt
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis' (25416) panicked at tests\sonde014_verdrahtung.rs:776:5:
+assertion `left == right` failed: M-13 Fenster 1: neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis - stand.befunde traegt das Ergebnis von B (13 IDs), A (12 IDs) ist verworfen
+  left: [12]
+ right: [13]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... FAILED
+
+failures:
+
+failures:
+    neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.73s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis' (22908) panicked at tests\sonde014_verdrahtung.rs:776:5:
+assertion `left == right` failed: M-13 Fenster 1: neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis - stand.befunde traegt das Ergebnis von B (13 IDs), A (12 IDs) ist verworfen
+  left: [12]
+ right: [13]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... FAILED
+
+failures:
+
+failures:
+    neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.56s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis' (32920) panicked at tests\sonde014_verdrahtung.rs:776:5:
+assertion `left == right` failed: M-13 Fenster 1: neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis - stand.befunde traegt das Ergebnis von B (13 IDs), A (12 IDs) ist verworfen
+  left: [12]
+ right: [13]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... FAILED
+
+failures:
+
+failures:
+    neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.44s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.92s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

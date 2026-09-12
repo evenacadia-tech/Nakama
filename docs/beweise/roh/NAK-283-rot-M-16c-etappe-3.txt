@@ -1,0 +1,56 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-16c fuer M-16c
+Zeitpunkt:  2026-09-12T22:32:40.6326256+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   hypothesen_bilden: nach dem Heilungstakt laeuft eine zweite Rechnung - bricht die Obergrenze von genau einer Neurechnung (Zaehlhaken stellt sich neu scharf)
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung verworfene_rechnung_zieht_genau_eine_neurechnung_nach -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.90s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 5.09s
+Geforderte Rotlaeufe: 1; gemessen rot: 1
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-16 Fenster 1: der Verwurf vor dem Cache-Eintrag zieht GENAU EINE Neurechnung nach sich
+
+--- MUTIERTE STELLE ---
+-         if self.hypothesen_rechnen() {
+-             self.hypothesen_bei_bedarf_bilden();
+-         }
++         if self.hypothesen_rechnen() {
++             self.hypothesen_bei_bedarf_bilden();
++             self.hypothesen_rechnen(); // MUTATION NAK-283 M-16c: zweite Rechnung nach dem Heilungstakt
++         }
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'verworfene_rechnung_zieht_genau_eine_neurechnung_nach' (26340) panicked at tests\sonde014_verdrahtung.rs:1128:5:
+assertion `left == right` failed: M-16 Fenster 1: der Verwurf vor dem Cache-Eintrag zieht GENAU EINE Neurechnung nach sich
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... FAILED
+
+failures:
+
+failures:
+    verworfene_rechnung_zieht_genau_eine_neurechnung_nach
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.46s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m16-fenster2-31248-f6496ec7edd14123a739122384a8facb\nakama-broker.sqlite3
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 8.65s
+
+
+URTEIL: BESTANDEN (rot gemessen 1/1, gruen Exit 0)

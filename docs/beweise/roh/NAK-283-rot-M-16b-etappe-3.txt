@@ -1,0 +1,96 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-16b fuer M-16b
+Zeitpunkt:  2026-09-12T22:32:19.7542242+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   befund_persistieren, unterlassener Schreibversuch (Fenster 2): befunde_neu_bilden wird nicht gesetzt
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung verworfene_rechnung_zieht_genau_eine_neurechnung_nach -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 17.20s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 5.39s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-16 Fenster 2: verworfene_rechnung_zieht_genau_eine_neurechnung_nach
+
+--- MUTIERTE STELLE ---
+-                     stand.befund_schreibversuche_unterlassen.saturating_add(1);
+-                 stand.befunde_neu_bilden = true;
+-                 return false;
++                     stand.befund_schreibversuche_unterlassen.saturating_add(1);
++                 // MUTATION NAK-283 M-16b: Merker im Verwurfzweig vor der Persistenz nicht gesetzt
++                 return false;
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m16-fenster2-34720-6329368c35524edcbea11f2dcf010dff\nakama-broker.sqlite3
+
+thread 'verworfene_rechnung_zieht_genau_eine_neurechnung_nach' (33720) panicked at tests\sonde014_verdrahtung.rs:1162:5:
+M-16 Fenster 2: verworfene_rechnung_zieht_genau_eine_neurechnung_nach - der folgende Takt traegt das Ergebnis des juengsten Eingangsstands ein (ohne 105, nicht stale): [(11, Stale)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... FAILED
+
+failures:
+
+failures:
+    verworfene_rechnung_zieht_genau_eine_neurechnung_nach
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 10.45s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m16-fenster2-13504-945e4ddea7be45debf5d158dddce698d\nakama-broker.sqlite3
+
+thread 'verworfene_rechnung_zieht_genau_eine_neurechnung_nach' (35404) panicked at tests\sonde014_verdrahtung.rs:1162:5:
+M-16 Fenster 2: verworfene_rechnung_zieht_genau_eine_neurechnung_nach - der folgende Takt traegt das Ergebnis des juengsten Eingangsstands ein (ohne 105, nicht stale): [(11, Stale)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... FAILED
+
+failures:
+
+failures:
+    verworfene_rechnung_zieht_genau_eine_neurechnung_nach
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 9.62s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m16-fenster2-36476-918574527b5c4fe7a6c90b4fc81fc52e\nakama-broker.sqlite3
+
+thread 'verworfene_rechnung_zieht_genau_eine_neurechnung_nach' (27752) panicked at tests\sonde014_verdrahtung.rs:1162:5:
+M-16 Fenster 2: verworfene_rechnung_zieht_genau_eine_neurechnung_nach - der folgende Takt traegt das Ergebnis des juengsten Eingangsstands ein (ohne 105, nicht stale): [(11, Stale)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... FAILED
+
+failures:
+
+failures:
+    verworfene_rechnung_zieht_genau_eine_neurechnung_nach
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 9.91s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m16-fenster2-34396-a99c7c10ed1a43f88388fc34afd20d54\nakama-broker.sqlite3
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 8.87s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

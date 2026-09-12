@@ -1,0 +1,160 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-13a fuer M-25a
+Zeitpunkt:  2026-09-12T22:27:49.6154360+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   ergebnis_ist_noch_gueltig: der Vergleich der Eingangsmenge entfaellt (Stand am Basis-SHA: nur Generation und verwendete IDs)
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: unused variable: `eingangsmenge` | warning: variant `Ueberholt` is never constructed |     Finished `test` profile [unoptimized + debuginfo] target(s) in 9.46s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 6.28s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-25 Weg 1: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position
+
+--- MUTIERTE STELLE ---
+-         if gueltig != *eingangsmenge {
+-             return Rueckschreibung::Ueberholt;
+-         }
++         // MUTATION NAK-283 M-13a: Vergleich der Eingangsmenge entfernt
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position' (23100) panicked at tests\sonde014_verdrahtung.rs:1226:5:
+assertion `left == right` failed: M-25 Weg 1: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position - die Rechnung schreibt nur zurueck, was auf der aktuellen Eingangsmenge steht
+  left: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462281039, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+ right: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462280918, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f", "00000000000000000000000000001070"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... FAILED
+
+failures:
+
+failures:
+    kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.41s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position' (26156) panicked at tests\sonde014_verdrahtung.rs:1226:5:
+assertion `left == right` failed: M-25 Weg 1: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position - die Rechnung schreibt nur zurueck, was auf der aktuellen Eingangsmenge steht
+  left: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462281039, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+ right: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462280918, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f", "00000000000000000000000000001070"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... FAILED
+
+failures:
+
+failures:
+    kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.40s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingangsmenge`
+    --> src\coordinator\hypothese_verdrahtung.rs:1187:9
+     |
+1187 |         eingangsmenge: &BTreeSet<String>,
+     |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingangsmenge`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `Ueberholt` is never constructed
+  --> src\coordinator\hypothese_verdrahtung.rs:73:5
+   |
+62 | enum Rueckschreibung {
+   |      --------------- variant in this enum
+...
+73 |     Ueberholt,
+   |     ^^^^^^^^^
+   |
+   = note: `Rueckschreibung` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position' (23852) panicked at tests\sonde014_verdrahtung.rs:1226:5:
+assertion `left == right` failed: M-25 Weg 1: kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position - die Rechnung schreibt nur zurueck, was auf der aktuellen Eingangsmenge steht
+  left: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462281039, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+ right: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: None, pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.09980920462280918, koinzidenz: 0.0, uplift: 0.0, intent_relevanz: 0.5, wiederholbarkeit: 0.0, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Mittel, score: 0.266635 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f", "00000000000000000000000000001070"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: MoreData, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... FAILED
+
+failures:
+
+failures:
+    kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.46s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m25-35496-b1c21acf198942b287c8c8f03f1cf978\nakama-broker.sqlite3
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 7.34s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

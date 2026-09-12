@@ -1,0 +1,60 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-18 fuer M-20a
+Zeitpunkt:  2026-09-12T22:33:33.6682911+02:00
+Datei:      broker\src\transport\server_v3\queues.rs
+Mutation:   einreihen_eintrag: statt zu ersetzen wird angehaengt (zwei Eintraege desselben Schluessels) - Regressionswache fuer M-18 und M-20 Haelfte 1
+Fall:       cargo test --manifest-path broker/Cargo.toml --lib transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen -- --exact --nocapture
+SHA-256 vorher:  A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6
+SHA-256 nachher: A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: unused variable: `position` |     Finished `test` profile [unoptimized + debuginfo] target(s) in 3.42s
+Neubau zurueckgespielt: [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 3.36s
+Geforderte Rotlaeufe: 1; gemessen rot: 1
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-20 Haelfte 1: ersetzung_ans_ende_laesst_die_queue_nicht_wachsen
+
+--- MUTIERTE STELLE ---
+-                     ersetzt = g.0.remove(position);
+-                     g.0.push_back(eintrag);
++                     g.0.push_back(eintrag); // MUTATION NAK-283 M-18/M-20a: anhaengen statt ersetzen
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `position`
+   --> src\transport\server_v3\queues.rs:237:36
+    |
+237 |                 } else if let Some(position) = g.0.iter().position(|alt| {
+    |                                    ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_position`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib test) generated 1 warning (run `cargo fix --lib -p eqcop-broker --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen' (10260) panicked at src\transport\server_v3\queues.rs:725:9:
+assertion `left == right` failed: M-20 Haelfte 1: ersetzung_ans_ende_laesst_die_queue_nicht_wachsen - die Deque traegt genau drei Eintraege
+  left: 303
+ right: 3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+test transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+
+URTEIL: BESTANDEN (rot gemessen 1/1, gruen Exit 0)

@@ -1,0 +1,95 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-17 fuer M-17
+Zeitpunkt:  2026-09-12T22:33:23.7518149+02:00
+Datei:      broker\src\transport\server_v3\queues.rs
+Mutation:   einreihen_eintrag: die Ersetzung wieder an der alten Position (std::mem::replace, Stand am Basis-SHA)
+Fall:       cargo test --manifest-path broker/Cargo.toml --lib transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel -- --exact --nocapture
+SHA-256 vorher:  A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6
+SHA-256 nachher: A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 9.51s
+Neubau zurueckgespielt: [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 2.87s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-17: koaleszierung_erhaelt_die_ordnung_ueber_schluessel
+
+--- MUTIERTE STELLE ---
+-                     ersetzt = g.0.remove(position);
+-                     g.0.push_back(eintrag);
++                     ersetzt = Some(std::mem::replace(&mut g.0[position], eintrag)); // MUTATION NAK-283 M-17: Ersetzung an der alten Position
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel' (26452) panicked at src\transport\server_v3\queues.rs:680:9:
+assertion `left == right` failed: M-17: koaleszierung_erhaelt_die_ordnung_ueber_schluessel - der Consumer entnimmt Invalidierung 2, dann Snapshot 3
+  left: ((3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]), (2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]))
+ right: ((2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]), (3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel' (37136) panicked at src\transport\server_v3\queues.rs:680:9:
+assertion `left == right` failed: M-17: koaleszierung_erhaelt_die_ordnung_ueber_schluessel - der Consumer entnimmt Invalidierung 2, dann Snapshot 3
+  left: ((3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]), (2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]))
+ right: ((2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]), (3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel' (35820) panicked at src\transport\server_v3\queues.rs:680:9:
+assertion `left == right` failed: M-17: koaleszierung_erhaelt_die_ordnung_ueber_schluessel - der Consumer entnimmt Invalidierung 2, dann Snapshot 3
+  left: ((3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]), (2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]))
+ right: ((2, [114, 117, 101, 99, 107, 110, 97, 104, 109, 101, 45, 50]), (3, [115, 110, 97, 112, 115, 104, 111, 116, 45, 51]))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

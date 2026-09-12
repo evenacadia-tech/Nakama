@@ -1,0 +1,162 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-13b fuer M-13b
+Zeitpunkt:  2026-09-12T22:28:51.5478570+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   befund_persistieren: der Wiedervergleich entfaellt, die Sperre bleibt unberuehrt
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: unused variable: `eingetragen` | warning: associated function `standeintrag_ist_noch` is never used |     Finished `test` profile [unoptimized + debuginfo] target(s) in 15.61s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 6.24s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-13 Fenster 2: aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert
+
+--- MUTIERTE STELLE ---
+-             if !Self::standeintrag_ist_noch(&stand, session, eingetragen) {
++             if false { // MUTATION NAK-283 M-13b: Wiedervergleich entfernt, die Sperre bleibt
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingetragen`
+   --> src\coordinator\hypothese_verdrahtung.rs:638:9
+    |
+638 |         eingetragen: &[Value],
+    |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingetragen`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `standeintrag_ist_noch` is never used
+   --> src\coordinator\hypothese_verdrahtung.rs:720:8
+    |
+ 88 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+720 |     fn standeintrag_ist_noch(stand: &Stand, session: &SessionKey, eingetragen: &[Value]) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m13-fenster2-33164-ab86f41593484e1b895b2c991ea86bc0\nakama-broker.sqlite3
+NAK-283 M-13 Fenster 2: finding-Ereignisse (event_ord, Zahl der IDs) [(5, 1), (9, 2), (13, 3), (17, 4), (21, 5), (25, 6), (29, 7), (33, 8), (37, 9), (41, 10), (45, 11), (49, 12), (53, 13), (57, 1), (61, 2), (65, 3), (69, 4), (73, 5), (77, 6), (81, 7), (85, 8), (89, 9), (93, 10), (97, 11), (102, 13), (105, 12)]
+
+thread 'aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert' (24680) panicked at tests\sonde014_verdrahtung.rs:932:5:
+assertion `left == right` failed: M-13 Fenster 2: aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert - das event_log traegt KEINEN finding-Event mit A's Payload (12 IDs)
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... FAILED
+
+failures:
+
+failures:
+    aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 8.93s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingetragen`
+   --> src\coordinator\hypothese_verdrahtung.rs:638:9
+    |
+638 |         eingetragen: &[Value],
+    |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingetragen`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `standeintrag_ist_noch` is never used
+   --> src\coordinator\hypothese_verdrahtung.rs:720:8
+    |
+ 88 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+720 |     fn standeintrag_ist_noch(stand: &Stand, session: &SessionKey, eingetragen: &[Value]) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m13-fenster2-20512-b33451b5aa594b1499aae8607c2b5d07\nakama-broker.sqlite3
+NAK-283 M-13 Fenster 2: finding-Ereignisse (event_ord, Zahl der IDs) [(5, 1), (9, 2), (13, 3), (17, 4), (21, 5), (25, 6), (29, 7), (33, 8), (37, 9), (41, 10), (45, 11), (49, 12), (53, 13), (57, 1), (61, 2), (65, 3), (69, 4), (73, 5), (77, 6), (81, 7), (85, 8), (89, 9), (93, 10), (97, 11), (102, 13), (105, 12)]
+
+thread 'aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert' (24164) panicked at tests\sonde014_verdrahtung.rs:932:5:
+assertion `left == right` failed: M-13 Fenster 2: aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert - das event_log traegt KEINEN finding-Event mit A's Payload (12 IDs)
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... FAILED
+
+failures:
+
+failures:
+    aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 9.10s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: unused variable: `eingetragen`
+   --> src\coordinator\hypothese_verdrahtung.rs:638:9
+    |
+638 |         eingetragen: &[Value],
+    |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_eingetragen`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `standeintrag_ist_noch` is never used
+   --> src\coordinator\hypothese_verdrahtung.rs:720:8
+    |
+ 88 | impl Coordinator {
+    | ---------------- associated function in this implementation
+...
+720 |     fn standeintrag_ist_noch(stand: &Stand, session: &SessionKey, eingetragen: &[Value]) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib) generated 2 warnings (run `cargo fix --lib -p eqcop-broker` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m13-fenster2-19740-bf41e5662a6e44b68eb1e0f8354a65ca\nakama-broker.sqlite3
+NAK-283 M-13 Fenster 2: finding-Ereignisse (event_ord, Zahl der IDs) [(5, 1), (9, 2), (13, 3), (17, 4), (21, 5), (25, 6), (29, 7), (33, 8), (37, 9), (41, 10), (45, 11), (49, 12), (53, 13), (57, 1), (61, 2), (65, 3), (69, 4), (73, 5), (77, 6), (81, 7), (85, 8), (89, 9), (93, 10), (97, 11), (102, 13), (105, 12)]
+
+thread 'aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert' (28932) panicked at tests\sonde014_verdrahtung.rs:932:5:
+assertion `left == right` failed: M-13 Fenster 2: aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert - das event_log traegt KEINEN finding-Event mit A's Payload (12 IDs)
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... FAILED
+
+failures:
+
+failures:
+    aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 8.55s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde014-nak283-m13-fenster2-33180-7e8d9fa67fc444daaf88deefcd6c12fa\nakama-broker.sqlite3
+NAK-283 M-13 Fenster 2: finding-Ereignisse (event_ord, Zahl der IDs) [(5, 1), (9, 2), (13, 3), (17, 4), (21, 5), (25, 6), (29, 7), (33, 8), (37, 9), (41, 10), (45, 11), (49, 12), (53, 13), (57, 1), (61, 2), (65, 3), (69, 4), (73, 5), (77, 6), (81, 7), (85, 8), (89, 9), (93, 10), (97, 11), (102, 13)]
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 9.61s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

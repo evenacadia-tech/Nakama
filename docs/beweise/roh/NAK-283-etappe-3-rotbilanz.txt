@@ -1,0 +1,31 @@
+NAK-283 Etappe 3 - Bilanz der Rotbeweise (2026-09-12T22:37:08.9732298+02:00)
+
+
+Kennung Zeile            RotGemessen RotExits    Gruende              Gruen GruenGrund HashGleich Urteil    Datei
+------- -----            ----------- --------    -------              ----- ---------- ---------- ------    -----
+MUT-13a M-13a            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-13a-etappe-3.txt
+MUT-13a M-26 (Haelfte 2) 3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-26-etappe-3.txt
+MUT-13a M-25a            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-25a-etappe-3.txt
+MUT-13b M-13b            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-13b-etappe-3.txt
+MUT-75  M-75             3/3         101/101/101 Signal/Signal/Signal     0 Frist            True BESTANDEN NAK-283-rot-M-75-etappe-3.txt
+MUT-16a M-16a            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-16a-etappe-3.txt
+MUT-16b M-16b            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-16b-etappe-3.txt
+MUT-16c M-16c            1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-16c-etappe-3.txt
+MUT-14  M-14             1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-14-etappe-3.txt
+MUT-15  M-15             1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-15-etappe-3.txt
+MUT-17  M-17             3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-17-etappe-3.txt
+MUT-18  M-18             1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-18-etappe-3.txt
+MUT-18  M-20a            1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-20a-etappe-3.txt
+MUT-19  M-19             1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-19-etappe-3.txt
+MUT-20b M-20b            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-20b-etappe-3.txt
+MUT-21  M-21             3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-21-etappe-3.txt
+MUT-21  M-24             3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-24-etappe-3.txt
+MUT-21  M-25b            3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-25b-etappe-3.txt
+MUT-22  M-22             1/1         101                                  0                  True BESTANDEN NAK-283-rot-M-22-etappe-3.txt
+MUT-23  M-23             3/3         101/101/101                          0                  True BESTANDEN NAK-283-rot-M-23-etappe-3.txt
+
+
+Ausgangshashes (vorher = nachher):
+  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  broker\src\coordinator\hypothese_verdrahtung.rs
+  276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719  broker\src\coordinator\invalidierung_verdrahtung.rs
+  A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  broker\src\transport\server_v3\queues.rs

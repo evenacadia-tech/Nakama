@@ -1,0 +1,52 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-14 fuer M-14
+Zeitpunkt:  2026-09-12T22:32:53.6929907+02:00
+Datei:      broker\src\coordinator\hypothese_verdrahtung.rs
+Mutation:   gueltige_evidenz_ids_locked: der Riegel verliert den ID-Gueltigkeitsteil (ausgeschlossene Belege gelten als gueltig) - Regressionswache
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde014_verdrahtung veraltetes_rechenergebnis_wird_nicht_veroeffentlicht -- --exact --nocapture
+SHA-256 vorher:  902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E
+SHA-256 nachher: 902A1B39BE793AB1BA4D376D969D2DBFBCEC644AD7E95FD9819650D60D76B40E  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.83s
+Neubau zurueckgespielt: [sonde014_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.73s
+Geforderte Rotlaeufe: 1; gemessen rot: 1
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  eine waehrend der Rechnung zurueckgenommene ID darf nie wieder sichtbar werden
+
+--- MUTIERTE STELLE ---
+-             for eintrag in historie.iter() {
+-                 if eintrag.ausschlussgrund.is_none() {
+-                     gueltig.insert(eintrag.evidence_id.clone());
++             for eintrag in historie.iter() {
++                 { // MUTATION NAK-283 M-14: Ausschluss wird nicht mehr geprueft
++                     gueltig.insert(eintrag.evidence_id.clone());
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+
+thread 'veraltetes_rechenergebnis_wird_nicht_veroeffentlicht' (37416) panicked at tests\sonde014_verdrahtung.rs:647:5:
+eine waehrend der Rechnung zurueckgenommene ID darf nie wieder sichtbar werden
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... FAILED
+
+failures:
+
+failures:
+    veraltetes_rechenergebnis_wird_nicht_veroeffentlicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.95s
+
+error: test failed, to rerun pass `--test sonde014_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 1 test
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.79s
+
+
+URTEIL: BESTANDEN (rot gemessen 1/1, gruen Exit 0)

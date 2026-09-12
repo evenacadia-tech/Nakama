@@ -1,0 +1,274 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-23 fuer M-23
+Zeitpunkt:  2026-09-12T22:37:08.9456418+02:00
+Datei:      broker\src\coordinator\invalidierung_verdrahtung.rs
+Mutation:   invalidierung_ruecknehmen: der Uebersprung-Zweig entfaellt - eine unbekannte ID bricht den Rollback ab
+Fall:       cargo test --manifest-path broker/Cargo.toml --test sonde013_verdrahtung retention_am_deckel_verschiebt_keine_rollbackzuordnung -- --exact --nocapture
+SHA-256 vorher:  276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719
+SHA-256 nachher: 276D5F532BC7F5A7F2B87D89A4FC09C42203084449530DE44E59A2EFF8644719  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [sonde013_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: function `sonde_mit_evidenz` is never used |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.37s
+Neubau zurueckgespielt: [sonde013_verdrahtung]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | warning: function `sonde_mit_evidenz` is never used |     Finished `test` profile [unoptimized + debuginfo] target(s) in 4.47s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-23 Stufe 32: retention_am_deckel_verschiebt_keine_rollbackzuordnung
+
+--- MUTIERTE STELLE ---
+-                 // Von der Retention entfernt: uebersprungen.
+-                 continue;
++                 // Von der Retention entfernt: uebersprungen.
++                 break; // MUTATION NAK-283 M-23: unbekannte ID bricht den Rollback ab
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-31-33056-5b6519b1142c4f249d6059d5b1368526\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-32-33056-6056365b1d484f1a99bfd474633b59d8\nakama-broker.sqlite3
+
+thread 'retention_am_deckel_verschiebt_keine_rollbackzuordnung' (36064) panicked at tests\sonde013_verdrahtung.rs:3724:9:
+M-23 Stufe 32: retention_am_deckel_verschiebt_keine_rollbackzuordnung - jeder eigene Beleg ist zurueckgenommen, keiner bleibt ausgeschlossen: ["00000000000000000000000000001001", "00000000000000000000000000001002", "00000000000000000000000000001003", "00000000000000000000000000001004", "00000000000000000000000000001006", "00000000000000000000000000001007", "00000000000000000000000000001008", "00000000000000000000000000001009", "0000000000000000000000000000100a", "0000000000000000000000000000100b", "0000000000000000000000000000100c", "0000000000000000000000000000100d", "0000000000000000000000000000100e", "0000000000000000000000000000100f", "00000000000000000000000000001010", "00000000000000000000000000001011", "00000000000000000000000000001012", "00000000000000000000000000001013", "00000000000000000000000000001014", "00000000000000000000000000001015", "00000000000000000000000000001016", "00000000000000000000000000001017", "00000000000000000000000000001018", "00000000000000000000000000001019", "0000000000000000000000000000101a", "0000000000000000000000000000101b", "0000000000000000000000000000101c", "0000000000000000000000000000101d", "0000000000000000000000000000101e", "0000000000000000000000000000101f"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... FAILED
+
+failures:
+
+failures:
+    retention_am_deckel_verschiebt_keine_rollbackzuordnung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 81 filtered out; finished in 10.10s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-31-37596-7e7be153476f4dc4874c805afc36d3e2\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-32-37596-790991d41f6f4149b5f12b1f8bfdc9ca\nakama-broker.sqlite3
+
+thread 'retention_am_deckel_verschiebt_keine_rollbackzuordnung' (29608) panicked at tests\sonde013_verdrahtung.rs:3724:9:
+M-23 Stufe 32: retention_am_deckel_verschiebt_keine_rollbackzuordnung - jeder eigene Beleg ist zurueckgenommen, keiner bleibt ausgeschlossen: ["00000000000000000000000000001001", "00000000000000000000000000001002", "00000000000000000000000000001003", "00000000000000000000000000001004", "00000000000000000000000000001006", "00000000000000000000000000001007", "00000000000000000000000000001008", "00000000000000000000000000001009", "0000000000000000000000000000100a", "0000000000000000000000000000100b", "0000000000000000000000000000100c", "0000000000000000000000000000100d", "0000000000000000000000000000100e", "0000000000000000000000000000100f", "00000000000000000000000000001010", "00000000000000000000000000001011", "00000000000000000000000000001012", "00000000000000000000000000001013", "00000000000000000000000000001014", "00000000000000000000000000001015", "00000000000000000000000000001016", "00000000000000000000000000001017", "00000000000000000000000000001018", "00000000000000000000000000001019", "0000000000000000000000000000101a", "0000000000000000000000000000101b", "0000000000000000000000000000101c", "0000000000000000000000000000101d", "0000000000000000000000000000101e", "0000000000000000000000000000101f"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... FAILED
+
+failures:
+
+failures:
+    retention_am_deckel_verschiebt_keine_rollbackzuordnung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 81 filtered out; finished in 10.11s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-31-29772-b1c19aa3acc247c589092f7ae323b04f\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-32-29772-eae0205cb9fe486fadb6d90b0000bcdf\nakama-broker.sqlite3
+
+thread 'retention_am_deckel_verschiebt_keine_rollbackzuordnung' (29572) panicked at tests\sonde013_verdrahtung.rs:3724:9:
+M-23 Stufe 32: retention_am_deckel_verschiebt_keine_rollbackzuordnung - jeder eigene Beleg ist zurueckgenommen, keiner bleibt ausgeschlossen: ["00000000000000000000000000001001", "00000000000000000000000000001002", "00000000000000000000000000001003", "00000000000000000000000000001004", "00000000000000000000000000001006", "00000000000000000000000000001007", "00000000000000000000000000001008", "00000000000000000000000000001009", "0000000000000000000000000000100a", "0000000000000000000000000000100b", "0000000000000000000000000000100c", "0000000000000000000000000000100d", "0000000000000000000000000000100e", "0000000000000000000000000000100f", "00000000000000000000000000001010", "00000000000000000000000000001011", "00000000000000000000000000001012", "00000000000000000000000000001013", "00000000000000000000000000001014", "00000000000000000000000000001015", "00000000000000000000000000001016", "00000000000000000000000000001017", "00000000000000000000000000001018", "00000000000000000000000000001019", "0000000000000000000000000000101a", "0000000000000000000000000000101b", "0000000000000000000000000000101c", "0000000000000000000000000000101d", "0000000000000000000000000000101e", "0000000000000000000000000000101f"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... FAILED
+
+failures:
+
+failures:
+    retention_am_deckel_verschiebt_keine_rollbackzuordnung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 81 filtered out; finished in 10.05s
+
+error: test failed, to rerun pass `--test sonde013_verdrahtung`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-31-16844-e76971cadd3f4789b413be80ffd3e481\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde013-nak283-m23-32-16844-6f8d626b15584492804505a9527a9f23\nakama-broker.sqlite3
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 81 filtered out; finished in 10.18s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

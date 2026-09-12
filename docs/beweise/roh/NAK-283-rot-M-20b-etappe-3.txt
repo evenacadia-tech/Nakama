@@ -1,0 +1,100 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-20b fuer M-20b
+Zeitpunkt:  2026-09-12T22:33:50.0126777+02:00
+Datei:      broker\src\transport\server_v3\queues.rs
+Mutation:   einreihen_eintrag: Entfernen und Anhaengen in ZWEI Sperrabschnitten, der Ersetzungshaken feuert dazwischen - Regressionswache
+Fall:       cargo test --manifest-path broker/Cargo.toml --lib transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel -- --exact --nocapture
+SHA-256 vorher:  A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6
+SHA-256 nachher: A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 3.68s
+Neubau zurueckgespielt: [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 3.70s
+Geforderte Rotlaeufe: 3; gemessen rot: 3
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-20 Haelfte 2: konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel
+
+--- MUTIERTE STELLE ---
+-                     ersetzt = g.0.remove(position);
+-                     g.0.push_back(eintrag);
++                     ersetzt = g.0.remove(position);
++                     drop(g); // MUTATION NAK-283 M-20b: Entfernen und Anhaengen in zwei Sperrabschnitten
++                     #[cfg(test)]
++                     self.ersetzungshaken_ausloesen();
++                     g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
++                     g.0.push_back(eintrag);
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel' (21980) panicked at src\transport\server_v3\queues.rs:822:9:
+assertion `left == right` failed: M-20 Haelfte 2: konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel - genau EIN Eintrag des Schluessels: [("evidence_invalidate", 2), ("proposal:m20", 3), ("session_snapshot", 5), ("session_snapshot", 4)]
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- MUTIERT, Versuch 2 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel' (28640) panicked at src\transport\server_v3\queues.rs:822:9:
+assertion `left == right` failed: M-20 Haelfte 2: konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel - genau EIN Eintrag des Schluessels: [("evidence_invalidate", 2), ("proposal:m20", 3), ("session_snapshot", 5), ("session_snapshot", 4)]
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- MUTIERT, Versuch 3 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel' (22728) panicked at src\transport\server_v3\queues.rs:822:9:
+assertion `left == right` failed: M-20 Haelfte 2: konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel - genau EIN Eintrag des Schluessels: [("evidence_invalidate", 2), ("proposal:m20", 3), ("session_snapshot", 5), ("session_snapshot", 4)]
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+
+URTEIL: BESTANDEN (rot gemessen 3/3, gruen Exit 0)

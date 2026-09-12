@@ -1,0 +1,48 @@
+NAK-283 Etappe 3 - Rotbeweis MUT-19 fuer M-19
+Zeitpunkt:  2026-09-12T22:33:41.0995062+02:00
+Datei:      broker\src\transport\server_v3\queues.rs
+Mutation:   einreihen_eintrag: die Hochwasserpruefung mit marke <= hochwasser (Gleichheit wird Nachzuegler) - Regressionswache
+Fall:       cargo test --manifest-path broker/Cargo.toml --lib transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot -- --exact --nocapture
+SHA-256 vorher:  A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6
+SHA-256 nachher: A2D6BCBFD937F7462F17486D5B36D3629ECAF2F937B31E0BC8F7CDFC8B2E36C6  (bytegleiche Ruecknahme: ja)
+Neubau mutiert:      [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 2.86s
+Neubau zurueckgespielt: [lib]    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) |     Finished `test` profile [unoptimized + debuginfo] target(s) in 3.11s
+Geforderte Rotlaeufe: 1; gemessen rot: 1
+Tragende Meldung (eine davon muss in jedem gemessenen Rotlauf fallen):
+  M-21: gleiche Marke 12 wird angenommen
+
+--- MUTIERTE STELLE ---
+-                 if hochwasser.is_some_and(|hoch| eintrag.marke < hoch) {
++                 if hochwasser.is_some_and(|hoch| eintrag.marke <= hoch) { // MUTATION NAK-283 M-19
+
+--- MUTIERT, Versuch 1 (Frist Standard): Exit 101, Zusagezeile faellt, gemessen: ja ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot' (26568) panicked at src\transport\server_v3\queues.rs:472:14:
+M-21: gleiche Marke 12 wird angenommen
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... FAILED
+
+failures:
+
+failures:
+    transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+
+--- ZURUECKGESPIELT: Exit 0 ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.00s
+
+
+URTEIL: BESTANDEN (rot gemessen 1/1, gruen Exit 0)

@@ -180,20 +180,16 @@
    "wo": "docs/beweise/SONDE-014.md §4.10 P-04; design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md",
    "seit": "07.09.",
    "status": "offen"
-  },
-  {
-   "id": "U38",
-   "dringlichkeit": "wenn du dazu kommst (ab 9:00)",
-   "art": "Planentscheid (Prüfsystem, Zeitpunkt)",
-   "titel": "Wann soll das Bedienehrlichkeits-Audit laufen: jetzt auf der Skizze oder nach S26–28 auf der gebauten Oberfläche?",
-   "was": "Das Bedienehrlichkeits-Audit prüft die zwei UI-Gesetze (keine toten Elemente; Tasten ändern nie ihre Maße). Soll es jetzt auf der technischen Skizze laufen, damit Verstöße vor dem JUCE-Bau auffallen, oder erst nach S26–28 auf der gebauten Oberfläche, wo das echte Layoutrechteck messbar ist? Zwei Wege: „Jetzt auf der Skizze\" oder „Nach S26–28 auf der Oberfläche\".",
-   "warum": "docs/gesundheit/KONZEPT.md §11 Punkt 2 und §10 Schritt 9 (Prüfsystem-Konzept, abgenommen 12.09.2026): der Zeitpunkt entscheidet, ob das Audit die Skizze oder die Oberfläche misst; die Folge steht im Aufbauplan.",
-   "wo": "docs/gesundheit/KONZEPT.md §4.3, §10 Schritt 9, §11, Anhang A.5; Register NAK-259",
-   "seit": "12.09.",
-   "status": "offen"
   }
  ],
  "beantwortet": {
+  "U38": {
+   "wahl": "Beides: jetzt Skizze, später Oberfläche (Empfohlen)",
+   "text": "Beides: jetzt Skizze, später Oberfläche (Empfohlen) — Wahl per AskUserQuestion in der Dirigentensession, Option wörtlich; die angebotenen Alternativen waren „Jetzt nur auf der Skizze\" und „Erst nach S26–28 auf der Oberfläche\".",
+   "datum": "2026-09-12 11:24",
+   "status": "eingearbeitet",
+   "ergebnis": "Das Bedienehrlichkeits-Audit (Prüfsystem Schritt 9, K8) läuft zweimal: erster Lauf jetzt auf der technischen Skizze (Gesetz 1 keine toten Elemente vollständig, Gesetz 2 soweit die Skizze Zustände trägt; Verstöße vor dem JUCE-Bau als Auftrag an den nächsten UI-Bauer), zweiter Lauf nach S26–28 auf der gebauten Oberfläche (Gesetz 2 am gemessenen Layoutrechteck, Gesetz 1 erneut). KONZEPT.md §10 Schritt 9 und §11 Punkt 2 nachgezogen; Register NAK-281. [docs/gesundheit/KONZEPT.md]"
+  },
   "U14": {
    "wahl": "Limit entfällt ganz",
    "text": "ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst",

@@ -590,7 +590,7 @@ neue persistente und vertragliche Felder bringt.
 | 6 | Wächter | vier Agentendateien, Satz im Ticketauftrag, Hook nennt den Wächter | ein Probelauf je Wächter gegen einen historischen Befund | 1 | nichts |
 | 7 | Echtzeit-Audit und Kalibrierung des Tors | Aufrufgraph, Ausnahmeliste, Tor von HINWEIS auf GRENZE | Rotbeweis mit absichtlicher Sperre in `processBlock` | 2 | nichts |
 | 8 | Zwecktreue | Prüfsession, Empfehlungen als Karten in `fragen.json` | Scope-Beweis | 1 | Entscheid je Rückbau |
-| 9 | Bedienehrlichkeit, Laufzeit-Arm, Tiefenaudit | nach Entscheid §11; Laufzeit-Arm nach Installation; Tiefenaudit am Gate G6 | Belege, Szenarien, Bericht | 2, Installation | Installationshandgriff |
+| 9 | Bedienehrlichkeit, Laufzeit-Arm, Tiefenaudit | Bedienehrlichkeit in zwei Läufen (Entscheid §11 Punkt 2, 12.09.2026, NAK-281): jetzt auf der Skizze, nach S26–28 auf der gebauten Oberfläche; Laufzeit-Arm nach Installation; Tiefenaudit am Gate G6 | Belege, Szenarien, Bericht | 2, Installation | Installationshandgriff |
 
 Schritte 1 bis 4 sind die Substanz; ohne sie läuft der Rest ins Leere.
 Schritt 0 ist Dirigentenarbeit im nächsten Abschlussfenster, kein Worker.
@@ -616,9 +616,16 @@ Zwei Punkte sind Produkt:
    Skizze (findet Verstöße gegen die Gesetze, bevor sie in JUCE gebaut
    werden) oder erst nach S26–28 auf der gebauten Oberfläche (misst das
    echte Layoutrechteck). Beides ist möglich; die Wahl bestimmt, was der
-   nächste UI-Bauer als Auftrag bekommt. **Offen.** Karte U38 in
-   `docs/plan/fragen.json` (eingetragen 12.09.2026, `fdeef23c`), gestellt
-   über `/fragen` ab 9:00; bis zur Antwort läuft Schritt 9 nicht.
+   nächste UI-Bauer als Auftrag bekommt. **Entschieden 12.09.2026, 11:24
+   Uhr** (Karte U38 in `docs/plan/fragen.json`, gestellt über `/fragen`;
+   Wahl wörtlich: „Beides: jetzt Skizze, später Oberfläche (Empfohlen)"):
+   das Audit läuft zweimal — erster Lauf jetzt auf der technischen Skizze
+   (Gesetz 1 „keine toten Elemente" vollständig, Gesetz 2 „Tasten sind
+   Material" soweit die Skizze Zustände trägt; Verstöße gehen vor dem
+   JUCE-Bau als Auftrag an den nächsten UI-Bauer), zweiter Lauf nach S26–28
+   auf der gebauten Oberfläche (Gesetz 2 am gemessenen Layoutrechteck,
+   Gesetz 1 erneut). Schritt 9 in §10 trägt beide Läufe; Register NAK-281.
+   Davor: Offen seit 12.09.2026 (`fdeef23c`).
 
 Offene technische Punkte, die Claude später an der Quelle entscheidet und
 die hier stehen, damit sie nicht verloren gehen: Tragfähigkeit der
@@ -704,6 +711,7 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | §11 Punkt 2 entschieden (Karte U38, 11:24 Uhr, Wahl wörtlich „Beides: jetzt Skizze, später Oberfläche (Empfohlen)"): Bedienehrlichkeits-Audit in zwei Läufen; §10 Schritt 9 nachgezogen; Register NAK-281 | Dirigentensession, `/fragen U38` |
 | 12.09.2026 | Schritt 3 erster Lauf (Auftragsvorlage, Bericht B-1 bis B-8); §4.1 W-Riss unterscheidet Codebase-Maße (Registerzeile) und Kontextfläche (sofort beheben, User 12.09.2026); §6.8, Anhang A und §11 auf Schritt 0 nachgezogen (`fdeef23c`: NAK-259 bis NAK-267, U38, Skill §7, Skill 23,3 KB / CLAUDE.md 17,7 KB) | Dirigenten-Meldung 12.09.2026; Lebenslauf-Audit |
 | 12.09.2026 | §3: K3 geteilt (Rust ✔, C++ ◐), K4 „dicht", K6 auf ◐ (RtWache am EQ-Kern) nach Verifikation; §4.2 und §10 Schritt 1 als erledigt | Abdeckungskarte, erste Fassung (5 Leser, 3 Skeptiker) |
 | 12.09.2026 | Status auf abgenommen; §5.1 Kanal zwischen Sessions; §11 Punkt 1 entschieden, Punkt 2 als Karte; Anhang A mit Wortlaut für Register, Plan, Skill und Karte | User-Abnahme 12.09.2026 (Wortlaut im Kopf); Kanaltest 00:37 |

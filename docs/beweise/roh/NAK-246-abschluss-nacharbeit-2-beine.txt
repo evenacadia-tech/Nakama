@@ -1,0 +1,266 @@
+NAK-246 Abschluss Nacharbeit 2 - Beine, jedes einzeln aus pwsh; Stand: R-A1 Punkt 2-Strich gebaut (Release), Basis fe4bcd80
+
+=== B14 EqCopSonde012ProjectReloadTest | Start 2026-09-12 04:22:13 | Dauer 7s | EXIT=0 ===
+  ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+  ok      nonleading_main_disables_label_and_reports_failed_write
+  ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+  ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+  ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+SONDE-012 ProjectReload: 149/149 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m38 | Start 2026-09-12 04:22:20 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  ok      M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [1 Mitglied(er) im State, im Modell bestaetigt]
+  ok      M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [1]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m38): 9/9 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m38 | Start 2026-09-12 04:22:20 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  ok      M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [1 Mitglied(er) im State, im Modell bestaetigt]
+  ok      M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [1]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m38): 9/9 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m38 | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  ok      M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [1 Mitglied(er) im State, im Modell bestaetigt]
+  ok      M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [1]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m38): 9/9 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39 | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 10/10 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39 | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 10/10 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39 | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  ok      M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): bbbb ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 10/10 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39ro | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 (read-only) gezogene_kopie_ueberholt_den_read_only_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39 (read-only): der geladene State ist read-only und traegt keine Mitglieder (Vorbedingung der Zusage)  [read-only, 0 Mitglied(er)]
+  ok      M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die alte Kopie (A)  [0 Zeile(n): ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39ro): 10/10 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39ro | Start 2026-09-12 04:22:21 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 (read-only) gezogene_kopie_ueberholt_den_read_only_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39 (read-only): der geladene State ist read-only und traegt keine Mitglieder (Vorbedingung der Zusage)  [read-only, 0 Mitglied(er)]
+  ok      M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die alte Kopie (A)  [0 Zeile(n): ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39ro): 10/10 gruen
+
+=== B14 EqCopSonde012ProjectReloadTest --nur m39ro | Start 2026-09-12 04:22:22 | Dauer 0s | EXIT=0 ===
+== NAK-246 M-39 (read-only) gezogene_kopie_ueberholt_den_read_only_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39 (read-only): der geladene State ist read-only und traegt keine Mitglieder (Vorbedingung der Zusage)  [read-only, 0 Mitglied(er)]
+  ok      M-39 (read-only): gezogene_kopie_ueberholt_den_read_only_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (KEINE), nicht die alte Kopie (A)  [0 Zeile(n): ]
+  ok      M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [1]
+  ok      M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 0 (nach Reload 0), Revision-Delta 0]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39ro): 10/10 gruen
+
+=== B10 EqCopIpcTest | Start 2026-09-12 04:22:22 | Dauer 220s | EXIT=0 ===
+  ok      NAK-180 R6: die feindliche Pipe steht (jedes lokale Konto darf das)
+  ok      NAK-180 R6: wartefrist_ist_unsere_nicht_die_des_servers - der Aufruf kehrt unter 1 s zurueck, obwohl der Pipe-Besitzer 0xFFFFFFFE als Default-Timeout gesetzt hat  [0 ms]
+  ok      NAK-180 R6: und eine belegte Instanz zaehlt weiter als erreichbar  [true]
+  ok      NAK-180 R6: ein nicht existierender Name bleibt nicht erreichbar und kehrt sofort zurueck  [0 ms]
+
+ALLE PRUEFUNGEN GRUEN — 432 Pruefungen, 0 Fehler
+
+=== B13 EqCopSonde012SourcesModelTest | Start 2026-09-12 04:26:02 | Dauer 0s | EXIT=0 ===
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 88/88 gruen
+
+=== B2 EqCopStateMigrationTest | Start 2026-09-12 04:26:02 | Dauer 1s | EXIT=0 ===
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST OK - 276 Pruefungen ok, 0 Fehler
+
+=== B8 EqCopLebenslaufTest | Start 2026-09-12 04:26:03 | Dauer 0s | EXIT=0 ===
+  ok      processblock_quellschnitt_logoperationen_null
+  ok      processblock_quellschnitt_store_wait_null
+  ok      NAK-180 N-20: die feindliche Pipe steht
+  ok      NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage  [0 ms]
+
+LEBENSLAUF-TEST OK - 79 Pruefungen ok, 0 Fehler
+
+=== B23 EqCopSonde013PassageStateTest | Start 2026-09-12 04:26:04 | Dauer 12s | EXIT=0 ===
+[ok]   Feinheit 2: Stereo, nur Kanal 1 nass Inf in Frame 0 - der ganze Frame faellt, ein Sample gezaehlt  [1020 Frames (erwartet 1020), 4 nicht-endliche (erwartet 4), 4 Bloecke]
+[ok]   Feinheit 2: Stereo, Kanal 0 trocken NaN und Kanal 1 nass Inf in Frame 0 - ein Frame faellt, zwei gezaehlt  [1020 Frames (erwartet 1020), 8 nicht-endliche (erwartet 8), 4 Bloecke]
+[ok]   Feinheit 2: Stereo, Kanal 0 trocken NaN und nass Inf in Frame 0 - ein Frame faellt, das Kanalpaar zaehlt einmal wie in der Kanalaufrufform  [1020 Frames (erwartet 1020), 4 nicht-endliche (erwartet 4), 4 Bloecke]
+[ok]   Feinheit 2: Stereo, Kanal 0 trocken NaN in Frame 0 und Kanal 1 nass Inf in Frame 1 - zwei Frames fallen, zwei gezaehlt  [1016 Frames (erwartet 1016), 8 nicht-endliche (erwartet 8), 4 Bloecke]
+
+409 bestanden, 0 gescheitert
+
+=== B29 EqCopSonde014AssistentTest | Start 2026-09-12 04:26:15 | Dauer 1s | EXIT=0 ===
+  ok      KR-01: und das LETZTE ebenso
+  ok      KR-01: jedes unter SEINER eigenen `command_id`
+  ok      KR-01: ALLE `kCapP0 + 4` ausstehenden Auftraege sind wiederholbar (68 von 68)
+  ok      KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung
+
+SONDE-014 AssistantStep: 193/193 gruen
+
+=== A1 EqCopNullTest | Start 2026-09-12 04:26:16 | Dauer 0s | EXIT=0 ===
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+
+=== A16 EqCopProbeeqNullTest | Start 2026-09-12 04:26:16 | Dauer 0s | EXIT=0 ===
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 57 Pruefungen ok, 0 Fehler
+
+=== Bilanz ===
+  A1             EXIT=0
+  A16            EXIT=0
+  B10            EXIT=0
+  B13            EXIT=0
+  B14 m38 #1     EXIT=0
+  B14 m38 #2     EXIT=0
+  B14 m38 #3     EXIT=0
+  B14 m39 #1     EXIT=0
+  B14 m39 #2     EXIT=0
+  B14 m39 #3     EXIT=0
+  B14 m39ro #1   EXIT=0
+  B14 m39ro #2   EXIT=0
+  B14 m39ro #3   EXIT=0
+  B14 voll       EXIT=0
+  B2             EXIT=0
+  B23            EXIT=0
+  B29            EXIT=0
+  B8             EXIT=0
+  ROT: 0 von 18
+
+=== A12 erzeuge_state_fixtures.py --pruefen | Start 2026-09-12 04:26:30 | Dauer 0s | EXIT=0 ===
+Parameterbestand v2: 120 Kennungen (112 Host-Parameter), 120 eindeutige IDs, 109 v1-Eintraege woertlich abgeleitet; Preset 119 Kennungen, 6 verbotene Felder
+RFC-8785-Tabelle: 24 Zahlen gegen den RFC-Text bestaetigt, 28 Handvektoren bestaetigt, 2 abgelehnt (NaN, Infinity)
+JCS-Dokumente: 13 Hand-Erwartungen von rfc8785 bestaetigt
+DTO: 7 gueltige gehasht, 29 ungueltige mit Grund
+Preset: 3 gueltige, 17 ungueltige mit Grund
+STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+=== Bau (Release, cmake --build --target, 10 Ziele inkl. EqCopilot_VST3) | 2026-09-12 04:24 | EXIT=0 ===
+cmake: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\...\CMake\bin\cmake.exe
+Ziele: EqCopSonde012ProjectReloadTest EqCopIpcTest EqCopSonde012SourcesModelTest
+       EqCopStateMigrationTest EqCopLebenslaufTest EqCopSonde013PassageStateTest
+       EqCopSonde014AssistentTest EqCopNullTest EqCopProbeeqNullTest EqCopilot_VST3
+warning C - vollstaendig, sortiert, dedupliziert:
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopLebenslaufTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopNullTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013PassageStateTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014AssistentTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\StateMigrationTestMain.cpp(1348,28): warning C4456: Deklaration von "zurueck" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\StateMigrationTestMain.cpp(1636,28): warning C4456: Deklaration von "z" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+error C / error MSB: keine.
+Beide Warnungsklassen (C4458 Stereo.h:70, C4456 StateMigrationTestMain.cpp:1348/:1636)
+liegen ausserhalb der Ticketpfade und bestanden vor dieser Runde; keine NEUE warning C.
+
+=== Frische der Pruefbinaries ===
+Drei Ziele tragen keinen neuen Zeitstempel, weil sie die geaenderten Quellen NICHT
+uebersetzen - gegen ihre EIGENEN Eingaben sind sie frisch:
+  EqCopIpcTest                   exe 09-12 02:21:02 > juengste eigene Quelle 09-11 17:02:46  frisch=True
+  EqCopSonde012SourcesModelTest  exe 09-12 03:20:58 > juengste eigene Quelle 09-12 03:20:48  frisch=True
+  EqCopProbeeqNullTest           exe 09-12 02:24:32 > juengste eigene Quelle 09-10 21:38:27  frisch=True
+Belegt an CMakeLists.txt: nakama_sonde_nulltest (394-409), EqCopSonde012SourcesModelTest
+(474-485), EqCopIpcTest (927-933) - keines nennt PluginProcessor, prozessor/State.cpp
+oder prozessor/Ipc.cpp.
+Alle uebrigen Ziele sind nach den Quellen gebaut:
+  EqCopSonde012ProjectReloadTest   exe 09-12 04:20:48
+  EqCopStateMigrationTest          exe 09-12 04:21:04
+  EqCopLebenslaufTest              exe 09-12 04:21:11
+  EqCopSonde013PassageStateTest    exe 09-12 04:21:21
+  EqCopSonde014AssistentTest       exe 09-12 04:21:29
+  EqCopNullTest                    exe 09-12 04:21:37
+Geaenderte Quellen:
+  State.cpp                        09-12 04:00:20
+  Ipc.cpp                          09-12 04:10:12
+  PluginProcessor.h                09-12 04:20:07
+  Sonde012ProjectReloadTest.cpp    09-12 04:00:49

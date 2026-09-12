@@ -1,0 +1,3 @@
+repro.cpp
+C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\PLUGIN\CORE\analysis\featureengine/Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\PLUGIN\CORE\analysis/FeatureEngine.h(1101,12): note: Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"

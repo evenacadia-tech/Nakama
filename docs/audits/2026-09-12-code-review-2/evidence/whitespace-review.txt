@@ -1,0 +1,27 @@
+Read-only staged-diff review.
+Original raw archive bytes preserved; regular CRLF is declared as a valid line ending.
+No product whitespace exception; original extra EOF blanks and double CRs retained.
+Full staged whitespace exit: 2
+Archive whitespace notices: 20
+Notices outside raw evidence: 0
+Markdown-only staged whitespace check: exit 0.
+docs/audits/2026-09-12-code-review-2/evidence/audio/build-gap-validated.cmd:7: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/audio/gap-validated.cpp:19: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/audio/hashes.txt:17: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/audio/repro-validated.cpp:28: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/broker/queue-controls.log:15: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/host/vst3_contract.cpp:37: new blank line at EOF.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:1: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:2: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:3: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:4: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:5: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:6: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build.cmd:7: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:1: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:2: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:3: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:4: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:5: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:6: trailing whitespace.
+docs/audits/2026-09-12-code-review-2/evidence/state/build_numbers.cmd:7: trailing whitespace.

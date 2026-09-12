@@ -1,0 +1,4 @@
+repro_numbers.cpp
+C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\PLUGIN\CORE\analysis\featureengine/Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus
+C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\PLUGIN\CORE\analysis/FeatureEngine.h(1101,12): note: Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+C:\Users\phili\AppData\Local\Temp\nakama-audit-state-publication-20260912\repro_numbers.cpp(45,24): warning C4189: "result": Lokale Variable ist initialisiert aber nicht referenziert

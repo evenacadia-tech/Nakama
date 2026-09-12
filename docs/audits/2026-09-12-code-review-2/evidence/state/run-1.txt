@@ -1,0 +1,18 @@
+MODE=worker-message-thread-interleave
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      setup: public Join B accepted
+  ok      setup: B confirmed in State and model
+  ok      public Join A accepted
+  ok      Join A applied; interleave mode pauses real worker before publication
+  ok      worker has already applied Join A to State
+  ok      publication pause holds no drain mutex
+  ok      B is still confirmed, so normal Unbind is enabled
+  ok      public select B accepted
+  ok      public Unbind B accepted
+  ok      message-thread drain completes Unbind B before worker publication
+  ok      both publications finished
+RESULT state_only_A=1 model_confirms_removed_B=1 publication_calls=2
+  FEHLER  model must reflect the latest committed membership
+saved_bytes=333 saved_member_count=1 load_result=0
+  ok      saved project contains only A while model was stale
+AUDIT PUBLICATION 13/14 expectations met

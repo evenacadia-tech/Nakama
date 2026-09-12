@@ -1,0 +1,14 @@
+ACTIVITY sr=8000 input_rms_db=-54.9999999141 activity=1 coverage=1 evidence=1 stereo_bands=167
+ACTIVITY sr=44100 input_rms_db=-55.0000000248 activity=1 coverage=0 evidence=1 stereo_bands=49
+ACTIVITY sr=48000 input_rms_db=-54.9999999264 activity=1 coverage=0 evidence=1 stereo_bands=47
+ACTIVITY sr=96000 input_rms_db=-54.9999998849 activity=1 coverage=0 evidence=1 stereo_bands=0
+ACTIVITY sr=192000 input_rms_db=-54.9999999227 activity=1 coverage=0 evidence=1 stereo_bands=0
+STEREO exact_bin_tone=.5 freq=1171.875 band=126 mid_db=55.9463119507 side_db=-300 expected_energy_normalized_mid_db=-6.02059991328 frames=23
+FUTURE_PASSAGE t=2 lufsM_set=1 M=-56.691444397 lufsS_set=0 S=0 TP=-59.8426208496 passageTP=0.157058462501 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0
+ISOLATED_REFERENCE t=1 lufsM_set=1 M=-56.691444397 lufsS_set=0 S=0 TP=-59.8426208496 passageTP=-59.8426208496 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0
+NAN_BEFORE t=3 lufsM_set=1 M=-14.0141048431 lufsS_set=1 S=-14.0141448975 TP=-13.9793996811 passageTP=-13.9793996811 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0
+NAN_DAMAGE t=3.2 lufsM_set=0 M=0 lufsS_set=0 S=0 TP=0 passageTP=0 passageTP_set=0 nonfinite_frame=4800 nonfinite_evidence=9600
+NAN_ONE_CLEAN_FRAME t=3.3 lufsM_set=1 M=-17.0245380402 lufsS_set=1 S=-14.3137464523 TP=-13.9793996811 passageTP=-13.9793996811 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=9600
+NAN_TWO_CLEAN_FRAMES t=3.4 lufsM_set=1 M=-17.0245380402 lufsS_set=1 S=-14.3137464523 TP=-13.9793996811 passageTP=-13.9793996811 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=9600
+PASSAGE_K_STATE t=1.4 lufsM_set=1 M=-34.1585769653 lufsS_set=0 S=0 TP=-60 passageTP=-60 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0
+PASSAGE_K_REFERENCE t=0.4 lufsM_set=1 M=-60.0350036621 lufsS_set=0 S=0 TP=-60 passageTP=-60 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0

@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests\queue_repro.rs (target\debug\deps\queue_repro-d56c1803023eddc3.exe)
+
+running 8 tests
+test original_queue::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test original_queue::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+test original_queue::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test original_queue::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test original_queue::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test original_queue::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test original_queue::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test original_queue::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

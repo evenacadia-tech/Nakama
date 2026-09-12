@@ -1,0 +1,7 @@
+Read-only artifact validation; no product tests or harnesses executed.
+UTF-8 Markdown files: 12
+Local file links and requested line bounds checked: 78
+Finding detail groups: 14 (F01-F14)
+Compiled EXE/OBJ/LIB/DLL files archived: 0
+Markdown staged whitespace: exit 0; original raw archive notices separately recorded.
+Result: PASS

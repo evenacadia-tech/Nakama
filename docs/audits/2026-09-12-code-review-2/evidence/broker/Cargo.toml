@@ -1,0 +1,10 @@
+[package]
+name = "nakama-audit2-broker-repros"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+eqcop-broker = { path = "C:/Users/phili/Projekte/Nakama/broker" }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled"] }

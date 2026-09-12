@@ -1,0 +1,14 @@
+Final read-only source comparison: 2026-09-12T12:21:10.1937792+02:00
+Audit source base: 91bb5fa34fa9c949611656c787c343cf7ffee0b7
+HEAD: 3225b1e7e45a4b44dad27a4452cb3379688b55dd
+Committed changed paths since audit source base:
+.claude/skills/dirigent/SKILL.md
+docs/PLAN-STAND.md
+docs/beweise/NAK-246.md
+docs/gesundheit/KONZEPT.md
+docs/offene-punkte.md
+docs/plan/fragen.json
+docs/plan/plan.json
+Current worktree status:
+?? docs/audits/2026-09-12-code-review-2/
+Product code source changes in compared commits: none; changed paths above are documentation and orchestration.

@@ -1,0 +1,22 @@
+   Compiling nakama-audit2-broker-repros v0.0.0 (C:\na-audit2-broker-20260912)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.81s
+     Running tests\queue_repro.rs (target\debug\deps\queue_repro-d56c1803023eddc3.exe)
+
+running 1 test
+Queue publication order: (3, new snapshot), (2, invalidation)
+
+thread 'snapshot_nach_ruecknahme_muss_auch_danach_entnommen_werden' (26948) panicked at tests\queue_repro.rs:34:5:
+assertion `left == right` failed: Die alte Ruecknahme darf nicht hinter den danach gebildeten Vollstand wandern
+  left: (3, 2)
+ right: (2, 3)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test snapshot_nach_ruecknahme_muss_auch_danach_entnommen_werden ... FAILED
+
+failures:
+
+failures:
+    snapshot_nach_ruecknahme_muss_auch_danach_entnommen_werden
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test queue_repro`

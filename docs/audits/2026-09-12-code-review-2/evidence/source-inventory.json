@@ -1,0 +1,1970 @@
+{
+  "revision": "91bb5fa34fa9c949611656c787c343cf7ffee0b7",
+  "scope": "Tracked selected first-party source, contracts, tooling, tests; inventory is not deep-review coverage",
+  "files": [
+    {
+      "path": "broker/Cargo.lock",
+      "bytes": 14917,
+      "lines": 549,
+      "sha256": "f24c21146a45c7132cf8a5d10633afbde259c250d6d938e70b06b94a350b2c23"
+    },
+    {
+      "path": "broker/Cargo.toml",
+      "bytes": 3858,
+      "lines": 82,
+      "sha256": "069a06a02b6ab309676409096e47e7d2733f4242ab5a56215245cae9b39be891"
+    },
+    {
+      "path": "broker/src/aggregat.rs",
+      "bytes": 14921,
+      "lines": 379,
+      "sha256": "4697c0c0aa41a1faf687635af2f25148221e520ed06752f53219afc78d0136ec"
+    },
+    {
+      "path": "broker/src/bin/eqcop-broker-probe.rs",
+      "bytes": 1553,
+      "lines": 35,
+      "sha256": "443aa490973260e540e417aa02ded09604f67d9517fd8bffd0ac7aedc976323a"
+    },
+    {
+      "path": "broker/src/bin/eqcop-broker-sonde012-probe.rs",
+      "bytes": 2367,
+      "lines": 73,
+      "sha256": "a0f07420c4171957501113f5e1a0b2c0b7435ff3214606e69932fb9b4c024496"
+    },
+    {
+      "path": "broker/src/bin/eqcop-broker-v3probe.rs",
+      "bytes": 6170,
+      "lines": 144,
+      "sha256": "0117fd79672f4613de7452b86e8fcc79a2e7e1807475caba8a0e6a30f51194b4"
+    },
+    {
+      "path": "broker/src/bin/eqcop-store-crash-worker.rs",
+      "bytes": 11914,
+      "lines": 298,
+      "sha256": "42afd2fa7fdf398745c13631e8c5d84e43642c2edbcf4a395e5734db8718fabc"
+    },
+    {
+      "path": "broker/src/bindung.rs",
+      "bytes": 5860,
+      "lines": 156,
+      "sha256": "ad5b717039c186eb8e102501aa9e1ebb51f88f6b05ba7e57d7a4b4e6ad923278"
+    },
+    {
+      "path": "broker/src/coordinator/assistent.rs",
+      "bytes": 9622,
+      "lines": 236,
+      "sha256": "c5b586515d12ff93a9ff8fec1aded59d0897ff7810c6dd7369acfd17375e21f3"
+    },
+    {
+      "path": "broker/src/coordinator/befehl.rs",
+      "bytes": 64300,
+      "lines": 1332,
+      "sha256": "62059dc2644c90aed5480e315b137d289703bf4df090a9d70658d5f69a146f7b"
+    },
+    {
+      "path": "broker/src/coordinator/evidenz.rs",
+      "bytes": 25372,
+      "lines": 528,
+      "sha256": "b4409f82fc881106744520450e82dcc270cdc469678d3a82a9fa539209472111"
+    },
+    {
+      "path": "broker/src/coordinator/experiment.rs",
+      "bytes": 74015,
+      "lines": 1727,
+      "sha256": "779b711858a6a7527997b9dcd75f760d8dd787b66d2276a8215976e8f3e1d65d"
+    },
+    {
+      "path": "broker/src/coordinator/experiment_verdrahtung.rs",
+      "bytes": 89352,
+      "lines": 1892,
+      "sha256": "2dfbe2d1350d350e835980945a088dc0e5109acf61c98c3fce2c4021bf4f46ad"
+    },
+    {
+      "path": "broker/src/coordinator/flush.rs",
+      "bytes": 14768,
+      "lines": 318,
+      "sha256": "0c61071c7fa2ffd9d04381ec365fb3cadfae8026d9c3cf7130038e989feb41ac"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/befund.rs",
+      "bytes": 20882,
+      "lines": 484,
+      "sha256": "b3d625df2fafeb122ed8b5a3d0a3a6af1c267b1dcd959aadff91e480a5634526"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/determinismus.rs",
+      "bytes": 5173,
+      "lines": 120,
+      "sha256": "39fd379f98b63d4599b889ae5bc63967f78d6eb31ef834409417495be08e3d8b"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/eingang.rs",
+      "bytes": 8375,
+      "lines": 179,
+      "sha256": "b40c5c10b7b09c1c820a8fd32e4349998dfd799f55ad78ac0f6ddb118558390d"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/enthaltung.rs",
+      "bytes": 8869,
+      "lines": 203,
+      "sha256": "b7422806569e354420d38baaf2e1caa2d325c8bf36d1d71b19f7d3d5f48b662a"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/klassenwahl.rs",
+      "bytes": 10290,
+      "lines": 240,
+      "sha256": "5a5f87f84e28cffd7c7d9d5bfd297e4feed68691a28b5dba9050520e4d7215c4"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/messung.rs",
+      "bytes": 25087,
+      "lines": 556,
+      "sha256": "5583b5c865be2f49d064de398aa049eded27e30d5006d03a6d55cc8d2b20d8f0"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/mod.rs",
+      "bytes": 3368,
+      "lines": 72,
+      "sha256": "a28d8b92b0a60854463c84f671e9a4fabd0e8ed39b569a749ec687c1ec8f0862"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/rechnung.rs",
+      "bytes": 24455,
+      "lines": 523,
+      "sha256": "ff085916602178ef89e6c25e2fdc31cd0d62bb8e71bac4a1997e275820f0c675"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/screening.rs",
+      "bytes": 36623,
+      "lines": 813,
+      "sha256": "c2bf9f56e2c215a70f9c1921c669208a9618184e6e74663e09d04dbb840c05cf"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/testhilfe.rs",
+      "bytes": 4048,
+      "lines": 132,
+      "sha256": "ece25f8b2b5870ab98ba369834e3bd40aca5710e1b45aac58c89af9cad820565"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/vertrag.rs",
+      "bytes": 12669,
+      "lines": 354,
+      "sha256": "3fb21ec6638e95b6772ad5bbd675f2f0b92c4d47af2d74c9915b07da321a3448"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese/zusammenhang.rs",
+      "bytes": 27281,
+      "lines": 630,
+      "sha256": "d08a1c6ce65b259fea7b5ddd75a2900f026e0240254eca847590287c8b5c9e9a"
+    },
+    {
+      "path": "broker/src/coordinator/hypothese_verdrahtung.rs",
+      "bytes": 52126,
+      "lines": 1077,
+      "sha256": "f1323f68de95ef69782780a4ba58a08c1dd3ab3bac93cfef598b2e5d3e8d8350"
+    },
+    {
+      "path": "broker/src/coordinator/intent.rs",
+      "bytes": 41328,
+      "lines": 921,
+      "sha256": "d86da481b7e229763f22e504752295c7f2216f84c879225dfdde40b998689910"
+    },
+    {
+      "path": "broker/src/coordinator/intervention.rs",
+      "bytes": 30491,
+      "lines": 674,
+      "sha256": "e3129c88d6d7d30d4ec9bdc1943be1d63c4b1312503da3cb4d07ce11bff126ad"
+    },
+    {
+      "path": "broker/src/coordinator/invalidierung.rs",
+      "bytes": 10669,
+      "lines": 285,
+      "sha256": "b0bd72404ae575d2ad0360d55ceb5027e38e20e40555be6a86aa528d62fd1fbf"
+    },
+    {
+      "path": "broker/src/coordinator/invalidierung_verdrahtung.rs",
+      "bytes": 34894,
+      "lines": 760,
+      "sha256": "239a46563644588c760d7ad2165fdd18fb189f8cc44d23bb0ae9ac832dbc8d65"
+    },
+    {
+      "path": "broker/src/coordinator/link.rs",
+      "bytes": 31513,
+      "lines": 648,
+      "sha256": "ff3c4f1c72c41086bcfaf171dff3874fc5fa429dc651b165367cf4a1388308bb"
+    },
+    {
+      "path": "broker/src/coordinator/liveness.rs",
+      "bytes": 42252,
+      "lines": 911,
+      "sha256": "40392599f7ffe9240b8eea75a57730e71b8a3703545de699309f4fb815f64ab0"
+    },
+    {
+      "path": "broker/src/coordinator/maskierung.rs",
+      "bytes": 14816,
+      "lines": 334,
+      "sha256": "5322037a5c366086a95c28c70412176b6705fab26b7d4cedce2dda593c723238"
+    },
+    {
+      "path": "broker/src/coordinator/mitgliedschaft.rs",
+      "bytes": 10181,
+      "lines": 269,
+      "sha256": "a9e1fe8ca6911f8eb6f20a1bc16e74a35448735960258303a44ec97f33ae463c"
+    },
+    {
+      "path": "broker/src/coordinator/mod.rs",
+      "bytes": 28689,
+      "lines": 691,
+      "sha256": "7e7cbc326ad7680fadf1aecfc576de627522a03f4d6584503a19568ba2259d78"
+    },
+    {
+      "path": "broker/src/coordinator/prepost.rs",
+      "bytes": 54651,
+      "lines": 1248,
+      "sha256": "d0965688f24f919913d6cc7efe80d79f2e954731cd4a7ee5db57a698d36e746a"
+    },
+    {
+      "path": "broker/src/coordinator/prepost_verdrahtung.rs",
+      "bytes": 17914,
+      "lines": 382,
+      "sha256": "530086c8694a01e44ee9f9210adf6fd762de74eb3e3639413981f81ae0cb4dff"
+    },
+    {
+      "path": "broker/src/coordinator/proposal.rs",
+      "bytes": 39507,
+      "lines": 960,
+      "sha256": "04cf66e6ecd1c0e4615947e2396c2989256eaea9504175b6132f6c5893d21165"
+    },
+    {
+      "path": "broker/src/coordinator/proposal_verdrahtung.rs",
+      "bytes": 33757,
+      "lines": 741,
+      "sha256": "2541c88103a1aa28f8cc4798b6fa0ad293f8ff3e6b696053ca0e30d9a959e846"
+    },
+    {
+      "path": "broker/src/coordinator/schema.rs",
+      "bytes": 36171,
+      "lines": 856,
+      "sha256": "d5b143d2c2c3e0c131e141c37860d8ef7bc4285d1714571de0e5319da508395b"
+    },
+    {
+      "path": "broker/src/coordinator/senke.rs",
+      "bytes": 11649,
+      "lines": 264,
+      "sha256": "35b6151e5fffa611d9074beeb528f59435ca572599a48d97c19b1e061cd44ba5"
+    },
+    {
+      "path": "broker/src/coordinator/sicht.rs",
+      "bytes": 28462,
+      "lines": 662,
+      "sha256": "991eda05c5d44fdb6d1547d0e56ee173a9991314551d61f559325b76a91286f2"
+    },
+    {
+      "path": "broker/src/coordinator/subscription.rs",
+      "bytes": 24219,
+      "lines": 495,
+      "sha256": "57aa3d2fe7244143b8cefd623c77e3e6f188479c9bcf7c66542f9643e47ac655"
+    },
+    {
+      "path": "broker/src/coordinator/uhr.rs",
+      "bytes": 1233,
+      "lines": 54,
+      "sha256": "85b415dcd42ed93e8f318b0bf8aaef12402cbaaaccf71be739bcd63e76ab32f6"
+    },
+    {
+      "path": "broker/src/coordinator/vergleichbarkeit.rs",
+      "bytes": 17958,
+      "lines": 403,
+      "sha256": "6874b11eb1f635732aa3bb2774c8ee5caa61e0849eb5ded3e2a61a525d5ab344"
+    },
+    {
+      "path": "broker/src/coordinator/zustand.rs",
+      "bytes": 31112,
+      "lines": 679,
+      "sha256": "77ffa9d002454f113b0cd2115b9e182fd07efeb798e95a09cb3658a73b41a52b"
+    },
+    {
+      "path": "broker/src/dto.rs",
+      "bytes": 23591,
+      "lines": 591,
+      "sha256": "cdae64a0e23568f76834efc56402ee0949956318b71b8d008db8d0f2d39a6c74"
+    },
+    {
+      "path": "broker/src/framing.rs",
+      "bytes": 4443,
+      "lines": 118,
+      "sha256": "fe03cbac7612e2ecf1700c8bc1347b49343ad02d1091598697bda10957b7c6e5"
+    },
+    {
+      "path": "broker/src/instance_alias.rs",
+      "bytes": 21260,
+      "lines": 539,
+      "sha256": "2e3b815f1f24ddf8517932d94973cf2bae4fbf330f6a2d264d4c1971317d9721"
+    },
+    {
+      "path": "broker/src/lebenslauf.rs",
+      "bytes": 15546,
+      "lines": 398,
+      "sha256": "53028dccf2afbc7d982ae7dd9946d579fa4be0d8ddf7fd86a4cbba78ef853c96"
+    },
+    {
+      "path": "broker/src/lib.rs",
+      "bytes": 2124,
+      "lines": 58,
+      "sha256": "33ff6ad1151f34f6459839448a46ee3c06eab909459633e4b661e301a50641c7"
+    },
+    {
+      "path": "broker/src/main.rs",
+      "bytes": 3023,
+      "lines": 81,
+      "sha256": "ce2322439e770eb990d5ccbb73207c2ba2f3b10e1fd43fa6978f257cee725e00"
+    },
+    {
+      "path": "broker/src/paar.rs",
+      "bytes": 15754,
+      "lines": 433,
+      "sha256": "05fe1bb85bb2d3763f8205a5fdf0c56a477778f647df9cf177f5be6865415efc"
+    },
+    {
+      "path": "broker/src/persistenz.rs",
+      "bytes": 6499,
+      "lines": 186,
+      "sha256": "57347f29288ee98f35b51a032248225345b8381bfdf6d8025e525ca38e4a9904"
+    },
+    {
+      "path": "broker/src/probe.rs",
+      "bytes": 4806,
+      "lines": 117,
+      "sha256": "44187d4b447e6225504b9a8eb45c3c1703b1329451bed6bf7a24cf533cc2eb49"
+    },
+    {
+      "path": "broker/src/protokoll.rs",
+      "bytes": 26981,
+      "lines": 718,
+      "sha256": "5f4281552ddef7288fbc3be60d4ed7a1489e52ecdb1a4e6045cb5fac78307d10"
+    },
+    {
+      "path": "broker/src/register.rs",
+      "bytes": 39710,
+      "lines": 996,
+      "sha256": "cd1171107fdd727713e750eca3ed7af7e7402f9364afb6d893e76570720d5b9f"
+    },
+    {
+      "path": "broker/src/server.rs",
+      "bytes": 74293,
+      "lines": 1841,
+      "sha256": "bc4fd0d818f5d741b22db4bb547605f934bb6f07e8314be0a530714e8973b525"
+    },
+    {
+      "path": "broker/src/sitzung.rs",
+      "bytes": 2613,
+      "lines": 71,
+      "sha256": "3d634501096db80098fe8bc09ec033d87bb2deb557d36d86ffb04512ed52fe1a"
+    },
+    {
+      "path": "broker/src/store/handle.rs",
+      "bytes": 19867,
+      "lines": 509,
+      "sha256": "2feba2364015ba2dac4c356659233b9aebd4abaf3f91cfe8234d3d72f6ea1fe8"
+    },
+    {
+      "path": "broker/src/store/migration.rs",
+      "bytes": 14785,
+      "lines": 384,
+      "sha256": "79a73deb06569ee99ed8904e6431cf5f0c237e07104e31282f2a2df6a8207a36"
+    },
+    {
+      "path": "broker/src/store/mod.rs",
+      "bytes": 14670,
+      "lines": 414,
+      "sha256": "abc020f719063f22d198dca1d81b714d267d766fed3f7607d9a648f2b634414a"
+    },
+    {
+      "path": "broker/src/store/pfad.rs",
+      "bytes": 15135,
+      "lines": 368,
+      "sha256": "26edfc40439f21ecdcdf2e57318dac58228a52e157b3e8b92551fc6f56914fe8"
+    },
+    {
+      "path": "broker/src/store/writer.rs",
+      "bytes": 42701,
+      "lines": 1020,
+      "sha256": "a5b6e98235305c472fcd015aa15373598a3a150c76b180908db5fb14e0b26967"
+    },
+    {
+      "path": "broker/src/telemetrie.rs",
+      "bytes": 42869,
+      "lines": 1096,
+      "sha256": "3f4941342bc6ec1106cad106082e530be73c84f310c16fc0e5dafd0fddeebdbd"
+    },
+    {
+      "path": "broker/src/testhilfe.rs",
+      "bytes": 1798,
+      "lines": 61,
+      "sha256": "bf432a287ccb31208d7937a5610415c0f30cbdd68cd280775e389a0e51dec936"
+    },
+    {
+      "path": "broker/src/transport/bootstrap.rs",
+      "bytes": 27081,
+      "lines": 704,
+      "sha256": "65c2bfddbeca9472759596ca2ee8d0f7e1bfae4b866f4108ebaf5e80123268a8"
+    },
+    {
+      "path": "broker/src/transport/legacy_v2.rs",
+      "bytes": 4252,
+      "lines": 93,
+      "sha256": "f54a20018338fe00ded49321e4414e02ed2964ca5d798034a4d5179e67a8187f"
+    },
+    {
+      "path": "broker/src/transport/mod.rs",
+      "bytes": 981,
+      "lines": 24,
+      "sha256": "fea8cf994742ba193b5ff6d4b01566df40b79cdb0447726d0c56f24bf77748d1"
+    },
+    {
+      "path": "broker/src/transport/pipetoken.rs",
+      "bytes": 8208,
+      "lines": 199,
+      "sha256": "bb28b04e9c907b892a75aff5f1f7dcd93569b5921b8748ea3c0dc9934ed20cbf"
+    },
+    {
+      "path": "broker/src/transport/server_v3/auth.rs",
+      "bytes": 8145,
+      "lines": 189,
+      "sha256": "217f6a54d5f6970f85e750bd1a26707d361920d483bc02bcaacd8029f4161803"
+    },
+    {
+      "path": "broker/src/transport/server_v3/griff.rs",
+      "bytes": 20504,
+      "lines": 495,
+      "sha256": "d91047882af96c95fb99b63c7bce38ef0ab801e88b4fc7cc8518fb8e86e7a38e"
+    },
+    {
+      "path": "broker/src/transport/server_v3/listener.rs",
+      "bytes": 30079,
+      "lines": 703,
+      "sha256": "d67d3273951ceac7b593cdfb3e76a7edc1e42eb58e8b27b2b4d5f569025f4095"
+    },
+    {
+      "path": "broker/src/transport/server_v3/mod.rs",
+      "bytes": 11341,
+      "lines": 231,
+      "sha256": "ef41d9bc7457c6dfe27a23da989da6ae128f936b05c1bd5011a419c1e7086431"
+    },
+    {
+      "path": "broker/src/transport/server_v3/queues.rs",
+      "bytes": 25580,
+      "lines": 599,
+      "sha256": "8bd13715bf43b1604d080331c7c29b032fff99f26404f0db5a30a4a00837f3d9"
+    },
+    {
+      "path": "broker/src/transport/server_v3/senke.rs",
+      "bytes": 5702,
+      "lines": 140,
+      "sha256": "87c0e6f59261e43d137956140c8e8f00b7a88c8ba076597b23b1b2a098b96543"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_abonnement.rs",
+      "bytes": 68310,
+      "lines": 1567,
+      "sha256": "98f7f68c2e55b5e9a9e3f0b1791d2b212fd42a4824d6e9ca90a5925705a8b64b"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_fristen.rs",
+      "bytes": 7925,
+      "lines": 179,
+      "sha256": "f1ce2040b6295d9632703ab0ec51db3a4c82283770add0af76062d5441d69965"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_hilfe.rs",
+      "bytes": 16047,
+      "lines": 454,
+      "sha256": "a6a564e72cf66d44a5cd97a97b327d9065d60fb07de641aeab1705c0b2a82412"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_kopplung.rs",
+      "bytes": 20276,
+      "lines": 498,
+      "sha256": "990233dab342900d4e2a20f11d0e6f68ea459af1fcb879c91793a353186c3ca2"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_lebenszyklus.rs",
+      "bytes": 16046,
+      "lines": 422,
+      "sha256": "fb5eac2aa89bd97690ee8e3895594a527d0f6325b22ae8f2d2464ca31f4135e0"
+    },
+    {
+      "path": "broker/src/transport/server_v3/tests_rueckstau.rs",
+      "bytes": 9030,
+      "lines": 240,
+      "sha256": "888e66ad77cb2b5f9dc6e05216f278ab0b2057523c61ea380b8d38656def33f9"
+    },
+    {
+      "path": "broker/src/transport/server_v3/trennung.rs",
+      "bytes": 7781,
+      "lines": 192,
+      "sha256": "e18211cf9b386794d787b12bf921f08daad689e28ee0d5386a069e1ee9f7299f"
+    },
+    {
+      "path": "broker/src/transport/server_v3/verbindung.rs",
+      "bytes": 39918,
+      "lines": 890,
+      "sha256": "90ea7cafafcd1c95219b60688846a186a7f67e6e35659ec8dd9afc905e61678a"
+    },
+    {
+      "path": "broker/src/transport/server_v3/win_handles.rs",
+      "bytes": 28639,
+      "lines": 718,
+      "sha256": "c10a71db450cf69ee44f50c1a30dcbc8081a97c563536e3384574c94e6287776"
+    },
+    {
+      "path": "broker/src/transport/v3.rs",
+      "bytes": 20488,
+      "lines": 586,
+      "sha256": "51bd92f0cafa8bd1673f7fedd723acea5cc04c914ad11471721a20fb8410fa66"
+    },
+    {
+      "path": "broker/src/transport/warteschlange.rs",
+      "bytes": 29519,
+      "lines": 712,
+      "sha256": "fb15f28c5db9f1a0c9299569d6d3f42e932714e23c71c59682cdcb644a5e7adf"
+    },
+    {
+      "path": "broker/src/vertrag.rs",
+      "bytes": 49411,
+      "lines": 1250,
+      "sha256": "c84d994e5492ebfc7ae68d3a509418d0f2e75a59239811596fec5007225cb952"
+    },
+    {
+      "path": "broker/src/zeit.rs",
+      "bytes": 1218,
+      "lines": 41,
+      "sha256": "856056eacdebd991116a76438d1b13c34b20aef08417c350f406af4939f52fbd"
+    },
+    {
+      "path": "broker/tests/broker_idle.rs",
+      "bytes": 8568,
+      "lines": 235,
+      "sha256": "12aeb3724fb253567896fc68e0239a5de0ac269e2d756d8863b13a9b94bf8938"
+    },
+    {
+      "path": "broker/tests/contract_cross_language.rs",
+      "bytes": 34381,
+      "lines": 811,
+      "sha256": "8ff7c9229eb07cbfd49c5c8c39b5ea864ec4a5f1e5f828de5ad9ff200653574d"
+    },
+    {
+      "path": "broker/tests/coordinator_model.rs",
+      "bytes": 70824,
+      "lines": 1873,
+      "sha256": "aec8643ad6dd871f83bb927f4f158b7ea2e84ec48b9482b275bda692fcab6bcc"
+    },
+    {
+      "path": "broker/tests/security_vectors.rs",
+      "bytes": 48750,
+      "lines": 1259,
+      "sha256": "0e97d894b014f5d70af0af29c918eec035d7a286124b583c7e2896e424d2b30a"
+    },
+    {
+      "path": "broker/tests/sonde012_sources_slice.rs",
+      "bytes": 40731,
+      "lines": 1197,
+      "sha256": "2dfb4e480c5bf23b9da000dc99a88f45f04a7e8c19ce4d2ae74fe8a195679a4c"
+    },
+    {
+      "path": "broker/tests/sonde013_experiment.rs",
+      "bytes": 48566,
+      "lines": 1074,
+      "sha256": "d52c594ff773ca55fd50cc6000841e6b01b9c5acf1b3d336884ed980c0aaa40e"
+    },
+    {
+      "path": "broker/tests/sonde013_passage.rs",
+      "bytes": 21036,
+      "lines": 511,
+      "sha256": "5ad19090968ac35e02e84fbdf22ac8bb2918d07859f05422c99a2519c7e5f126"
+    },
+    {
+      "path": "broker/tests/sonde013_prepost.rs",
+      "bytes": 59837,
+      "lines": 1335,
+      "sha256": "f98f256255424309535528b4700e9c169df6159feeb077bb03a955df03bff45c"
+    },
+    {
+      "path": "broker/tests/sonde013_taint.rs",
+      "bytes": 33128,
+      "lines": 662,
+      "sha256": "b4b65b0c730e49954e372c8476210798a1ef0688999000efb1ae2c810fcb48f8"
+    },
+    {
+      "path": "broker/tests/sonde013_verdrahtung.rs",
+      "bytes": 252441,
+      "lines": 6088,
+      "sha256": "ed1220e303dfe065539196912bbea32d44f3af23de6c474cbaeef9bb8e0d1dca"
+    },
+    {
+      "path": "broker/tests/sonde014_befund.rs",
+      "bytes": 22862,
+      "lines": 495,
+      "sha256": "36d3c6762662d9b498baf6690b100f9a15be20c9d756a12cc3261395be976cc4"
+    },
+    {
+      "path": "broker/tests/sonde014_gegenbeispiele.rs",
+      "bytes": 97977,
+      "lines": 2125,
+      "sha256": "f357abccb5b8364f797325aa568a59609fcacc78aceb9f300dbf61fa7391110b"
+    },
+    {
+      "path": "broker/tests/sonde014_hypothese.rs",
+      "bytes": 120718,
+      "lines": 2622,
+      "sha256": "0005185bd7f858a3feeb73e328899af2e67347cc242b9cf1e28fddf748fd0ba6"
+    },
+    {
+      "path": "broker/tests/sonde014_maskierung.rs",
+      "bytes": 17638,
+      "lines": 389,
+      "sha256": "f25adf2df70cb1001b61dcb8d3f6d91d38cff15e03276a014a3a88825749ebc2"
+    },
+    {
+      "path": "broker/tests/sonde014_nacharbeit1.rs",
+      "bytes": 31507,
+      "lines": 805,
+      "sha256": "e6031807c97f16a8fe0b6210a3100083642365d461cf21dbb524bacd5c6d1690"
+    },
+    {
+      "path": "broker/tests/sonde014_nacharbeit2.rs",
+      "bytes": 29178,
+      "lines": 766,
+      "sha256": "f0f15b7ad3daaaa4ada7711e2680f5cf486a82ae9f0f9f9b297952ecf2238710"
+    },
+    {
+      "path": "broker/tests/sonde014_nacharbeit3.rs",
+      "bytes": 27586,
+      "lines": 699,
+      "sha256": "9c525f139a7e0b43e72e6e8adae0f54584da321e58ed82db70b5ff0255ce22fa"
+    },
+    {
+      "path": "broker/tests/sonde014_p5_korpus.rs",
+      "bytes": 20445,
+      "lines": 474,
+      "sha256": "6819ced82598ee25542d1171fa9fcc5ffd88fe4b5402937e9b459ee476a44757"
+    },
+    {
+      "path": "broker/tests/sonde014_proposal.rs",
+      "bytes": 65408,
+      "lines": 1495,
+      "sha256": "cabf06b274660336b9e8e687ac2368019d805598c85ad8352062a5fc38267597"
+    },
+    {
+      "path": "broker/tests/sonde014_verdrahtung.rs",
+      "bytes": 174199,
+      "lines": 4188,
+      "sha256": "4532b4451fabdcd5df4ab9dd08f13eac56d4d6b6420753d2a33efd7c4d56b477"
+    },
+    {
+      "path": "broker/tests/store_crash_matrix.rs",
+      "bytes": 150346,
+      "lines": 3981,
+      "sha256": "d40152588619fd113433b37751ca5dc2cc26425cd5c3828d22f446d1711bda94"
+    },
+    {
+      "path": "broker/tests/transport_fuzz.rs",
+      "bytes": 21178,
+      "lines": 551,
+      "sha256": "e6ab6b05da00f5eaa7ad0445bc55ab799dca7469c4d2079d9d742db5a0d87ab6"
+    },
+    {
+      "path": "eq-copilot/CMakeLists.txt",
+      "bytes": 3341,
+      "lines": 64,
+      "sha256": "8ebe71d0b2a116d8efb31b771b98e32226a32555757ac05d9376c0a8471dec5f"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaBruecke.cmake",
+      "bytes": 6114,
+      "lines": 127,
+      "sha256": "55a29fe30300cba0f11026bbe8d1e20afcb7b7e73700361ea8829a62ae43701a"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaFlatBuffers.cmake",
+      "bytes": 11632,
+      "lines": 227,
+      "sha256": "9c029d27919e6bb77ea8fe4197c94f26331cee76110d242f9b29c44f19ccd368"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaFlatBuffersProjektHook.cmake",
+      "bytes": 605,
+      "lines": 11,
+      "sha256": "b337e1f2fdcc309a83505ba0ec12fb1f2294f0e50cd520b6527ae231fd173c4d"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaFlatcBeleg.cmake",
+      "bytes": 4543,
+      "lines": 111,
+      "sha256": "c39fb46bcf253c115c9b506ed4b647840014f743c5aac19d1248ce3f34ed20a5"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaIdentitaet.cmake",
+      "bytes": 14796,
+      "lines": 257,
+      "sha256": "ec9cbb01602b415bdf36264ff68c5f034b1943b08995641e3c4f5ce1ead7cc43"
+    },
+    {
+      "path": "eq-copilot/cmake/NakamaKern.cmake",
+      "bytes": 76897,
+      "lines": 1671,
+      "sha256": "bc7e168dffd817d51e7546c46d5436295f53fc950c58f8c18ea561c6828a20cc"
+    },
+    {
+      "path": "eq-copilot/cmake/pruefe_nakama_kern_genex.cmake",
+      "bytes": 26154,
+      "lines": 583,
+      "sha256": "4fd0ee90bbc33700cdcc59df4a6de7dee03a93e2845da1da0e7f113b7eabd342"
+    },
+    {
+      "path": "eq-copilot/identity/host-capabilities-fl-v1.json",
+      "bytes": 12598,
+      "lines": 131,
+      "sha256": "954f8aab0cecaff996e8c43894f6818621b2b2353b2f274bc88b37a3f8c15d92"
+    },
+    {
+      "path": "eq-copilot/identity/plugin-identities-v1.json",
+      "bytes": 6734,
+      "lines": 89,
+      "sha256": "46e4885cd4c1cab1026111778ca6af43a9f2e15293144a60112e0a512956bda5"
+    },
+    {
+      "path": "eq-copilot/install/Install-Nakama.ps1",
+      "bytes": 66293,
+      "lines": 1249,
+      "sha256": "e0205a7bc2f6dd347f2f8e84f87ccda69dfddfde4c67653ca9fa3b478e5086d1"
+    },
+    {
+      "path": "eq-copilot/install/NakamaOrdnerHash.ps1",
+      "bytes": 5611,
+      "lines": 125,
+      "sha256": "fc8660cd70d617f0ca7982a64ec1f6b6960258042ca6c79b7626772434bdddde"
+    },
+    {
+      "path": "eq-copilot/install/nakama-installer-v1.json",
+      "bytes": 10716,
+      "lines": 95,
+      "sha256": "8fe8d065c703a05c3ee2e4aaa4c4dd44e16ecb6945f67bf2c8967f5ef6e98d3e"
+    },
+    {
+      "path": "eq-copilot/plugin/CMakeLists.txt",
+      "bytes": 73201,
+      "lines": 1342,
+      "sha256": "4e9a9a46fe2e32f0177ad265a0cabb18c0c2db4c6759066e090a0740e917cef4"
+    },
+    {
+      "path": "eq-copilot/plugin/core/StampedAudioQueue.h",
+      "bytes": 43646,
+      "lines": 826,
+      "sha256": "cfb86fefdd3fc7352f296650a3322a5be01b514e231c2d21fa19bd37f40c5e3c"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/BandGrid.h",
+      "bytes": 10662,
+      "lines": 259,
+      "sha256": "f9b958c089b586b52effd573aadcd0c2dcba9f2c160b8a0e1f7fee610a318c0d"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/BandGridZahlen.h",
+      "bytes": 16232,
+      "lines": 203,
+      "sha256": "710de26b35edf7040f47351005bb73b769825e170c7f744e8160d2f843acd3f3"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Blindvergleich.h",
+      "bytes": 7530,
+      "lines": 203,
+      "sha256": "9e03d6baa4c7643ab7adb632e99add950258c75ae8fcde1470babe09a2a83bd3"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+      "bytes": 65003,
+      "lines": 1314,
+      "sha256": "a73ff91ee45301126c362bac4db7091af516df4f9bfaf92ecfc59aaecdf858d8"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Fft.h",
+      "bytes": 5570,
+      "lines": 143,
+      "sha256": "1b28b4d7cbf870f7c7935e50a2e332a2e61c04484e807b808502a6f108728228"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/KGewichtung.h",
+      "bytes": 4881,
+      "lines": 127,
+      "sha256": "7dda89f03055a013eb5286d01c556afd1e4eb98dbaf35bed28333614a62da0eb"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+      "bytes": 8817,
+      "lines": 194,
+      "sha256": "bd17088097184e4ae9bf4e259b0b4dd97bb9fe56b84fd7c1091775302e1e69e8"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/LoudnessAccumulator.h",
+      "bytes": 20888,
+      "lines": 460,
+      "sha256": "e0b3312476a167556180310c8c70fe8dbf473ec98f08a32ab03e746fe65e37f1"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Statistik.h",
+      "bytes": 7220,
+      "lines": 187,
+      "sha256": "431dbb92eb8ef37a73519e7485ae83e7205d84929c927aa3af19c8e38c1b9127"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/TruePeak.h",
+      "bytes": 14475,
+      "lines": 307,
+      "sha256": "39c8c79b2df406e0afac12f7371a0fb2671dd91793c3e2e85a8e5c3b968b6d2f"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Vergleichspegel.h",
+      "bytes": 22611,
+      "lines": 512,
+      "sha256": "c3f226f7c2717050beb6af2a481a6267b12cb89c164b72e5973fc60db18243c8"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h",
+      "bytes": 8514,
+      "lines": 199,
+      "sha256": "4a4e17135a68bdaf69e5e82fafddf5364b615d9c2d006f05d37d3e73553c774e"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Frame.h",
+      "bytes": 28080,
+      "lines": 668,
+      "sha256": "96e26e3f3b1e7b315efb84d06c02cf2bd7ab6616ecade67d69a649da222c0896"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Lautheit.h",
+      "bytes": 9825,
+      "lines": 239,
+      "sha256": "c6254a028d1e3b45cf1625a1495a40af09caa476dba986239ffd33b3da98b5c7"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Spektrum.h",
+      "bytes": 31158,
+      "lines": 650,
+      "sha256": "ed36ae170a8cd55e6c1d65e29d67a731182534306fe8a3609bf0d41780db9c15"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Stereo.h",
+      "bytes": 14129,
+      "lines": 318,
+      "sha256": "51a9c85ce7c29ef95f271ab93a18f77d434eaf3b12a87dcdb40ea59de7135fa0"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Vertrag.h",
+      "bytes": 39898,
+      "lines": 760,
+      "sha256": "ec514e906a69da3137b5a9c5358a279652d54a70c1d880c72d9b02142575c049"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Zeit.h",
+      "bytes": 28422,
+      "lines": 601,
+      "sha256": "1b4ca39c298c7bbe964b55b1b636e4cc09aab6cf08b61be03f0d2777edd0fb53"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp",
+      "bytes": 36298,
+      "lines": 951,
+      "sha256": "1c0f7f957b5751714dcbc912e08bfb8e1c3fc81ad1d029252a34422d454adc2d"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/BrokerLifecycle.h",
+      "bytes": 5164,
+      "lines": 155,
+      "sha256": "4afa980e59196cba5fd86b11eb60b8f527a2c53f8d3155535e89edae26efa5f5"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/ControlClient.cpp",
+      "bytes": 10178,
+      "lines": 247,
+      "sha256": "28857293cc3c890a12bce09b0729275497f5993cf70a7216fb9f2b6fcb62f992"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/ControlClient.h",
+      "bytes": 39692,
+      "lines": 744,
+      "sha256": "5a606501559110f6ed71e877db6a53f0ea34a1c5688974fb3ae84e71600adb29"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/InterventionsRing.h",
+      "bytes": 11366,
+      "lines": 232,
+      "sha256": "3784f16db5803b84cb8fefcef6f097bcaa11b6032d5b0c8b2dea9efaa3ac1c0f"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcQueues.h",
+      "bytes": 41932,
+      "lines": 906,
+      "sha256": "3dd9e5691b211f509c032c735157eb4bcdd3d4d09aae65d9518e38d5878c8692"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp",
+      "bytes": 21984,
+      "lines": 587,
+      "sha256": "00fc9f62c464263bb8b044683d954caf6a1c76f027cc6457be82fd6b4710a392"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcVerbindung.h",
+      "bytes": 12477,
+      "lines": 282,
+      "sha256": "8d4faf1142b5863d6c60bd1c050a8f38711b6f80630e8e9dc087d5df6583252e"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/PipeToken.cpp",
+      "bytes": 6321,
+      "lines": 184,
+      "sha256": "3746a87ae01711c8c15b0b9b340c3412a3d31eafe1bb45f66242f5abba5ba87c"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/PipeToken.h",
+      "bytes": 3822,
+      "lines": 82,
+      "sha256": "83d2d0ac4118d2f505e8e7c7a669312c16bef2999a8f2c9068b76055712592bb"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/TelemetryClient.cpp",
+      "bytes": 34879,
+      "lines": 812,
+      "sha256": "04d27eb0e964e68c062a4457dfe5beed972a60a8a8ba458a3e5b443107d4e128"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/TelemetryClient.h",
+      "bytes": 7163,
+      "lines": 161,
+      "sha256": "2beee11f6c1e76fd8d2974d55e9a8b76f2e1320df62b3b3c5f9c11689e8ab035"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireEnvelope.cpp",
+      "bytes": 10053,
+      "lines": 297,
+      "sha256": "210af2b3b2a65a5b0d8b4a641ba2718baa4569ff4f289eac33590a191aa8577d"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireEnvelope.h",
+      "bytes": 10178,
+      "lines": 252,
+      "sha256": "6d766f7f03a3d7414775687cbd09021a07286148cf4e200688c27a9890c38faa"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireZahl.h",
+      "bytes": 8629,
+      "lines": 222,
+      "sha256": "342568d1a30660621bf873939acfe4b1e84585d485d26d623ff868c2fa5b80ec"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Intern.h",
+      "bytes": 18674,
+      "lines": 467,
+      "sha256": "33195f01e64d6197dea805fc930e9272daf3d0c0a4fda0e81a1d8efb66303288"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Laufzeit.h",
+      "bytes": 12044,
+      "lines": 227,
+      "sha256": "d3779f749b0aa6cc7bb64631bac783a0262169d24330fe7d2d2cc9d2456f5a4a"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp",
+      "bytes": 20610,
+      "lines": 479,
+      "sha256": "3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Schleuse.h",
+      "bytes": 8977,
+      "lines": 204,
+      "sha256": "d2291be1fbbc1f66b78f3f22b4072544d89c3ba928cce72dc6ff682ce03247e9"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp",
+      "bytes": 50023,
+      "lines": 1080,
+      "sha256": "5cf32c77c91d01edd872ebb85363ec738263d95b297ea84b8cb854a82100f014"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp",
+      "bytes": 13872,
+      "lines": 312,
+      "sha256": "4f2708bc27f698509161241aeee23ca6145cca6a7e7beff8d878f86b845672df"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspBankPool.cpp",
+      "bytes": 11281,
+      "lines": 285,
+      "sha256": "8b0ea20534dcd10bbfc44c2e5ffc191e4eea661169e6fcf66c8f666272b6515f"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspBankPool.h",
+      "bytes": 13410,
+      "lines": 309,
+      "sha256": "31103bd0cc5675cd950a4cc15e1a058b70bf84744585b8d8f7b083d4b4ed3f28"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspFilter.h",
+      "bytes": 14191,
+      "lines": 369,
+      "sha256": "c3c76c1718c1b55b3f901e585278285b22ea52f9d200881b12eefe106835318a"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspKern.cpp",
+      "bytes": 42116,
+      "lines": 1027,
+      "sha256": "a3083db5c1541aa75c92d01744c4fcc4d926ba8c9c491a9f35474d96002f6097"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspKern.h",
+      "bytes": 20539,
+      "lines": 426,
+      "sha256": "04fb8fadf8d1889421b49812493ced9dcb18c83d41621a26615626804d6c04f0"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspProgramm.cpp",
+      "bytes": 12285,
+      "lines": 272,
+      "sha256": "692f92c869051bc3392b621668faf44821d2dc7f04fd5b4c3509fb883880b989"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspProgramm.h",
+      "bytes": 10293,
+      "lines": 222,
+      "sha256": "e6df85a5566a4e7e6d4179390207947b6fe0025951c2d319ef48eebc8a056593"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspRtWache.h",
+      "bytes": 5479,
+      "lines": 157,
+      "sha256": "b6b882d957f52a679c88bba6c617c4d866d4a1efbdc463217fe3dec0244d8d65"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspSvf.h",
+      "bytes": 6096,
+      "lines": 166,
+      "sha256": "9fa61a8e2d71ef02044cb37fe1e6a75fb79f4cf898b30fb82bfa138ada073168"
+    },
+    {
+      "path": "eq-copilot/plugin/hostbridge/NakamaHostBridge.h",
+      "bytes": 21574,
+      "lines": 486,
+      "sha256": "54ea6f5dee62026a999f76ee9da0abd00aef07afcf326f506632152eebac281b"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeEditor.cpp",
+      "bytes": 12544,
+      "lines": 278,
+      "sha256": "6e38bb4263928f74ad6537b3a235771964c7ab564db37a177cbca64ecc666937"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeEditor.h",
+      "bytes": 3333,
+      "lines": 86,
+      "sha256": "369a945b2f35344ea1328b0a504ae9f7595dd2a16f522ede430a561d9a14eaf6"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeFactory.cpp",
+      "bytes": 273,
+      "lines": 8,
+      "sha256": "3d0043b3c1306ea40b5b6acc319442165ea2a071911ea29265372cbb5b6c462c"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp",
+      "bytes": 28151,
+      "lines": 645,
+      "sha256": "29164c87baf848864a704bed8df0f2cbfe8cf40eea909355f4361e9e30e7b75c"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeProcessor.h",
+      "bytes": 12101,
+      "lines": 268,
+      "sha256": "7a03e1dc68efff7ab5b53f16edf8cb175f4c563e8cefa871f7c208b78cc97b66"
+    },
+    {
+      "path": "eq-copilot/plugin/probe/PipeProbeMain.cpp",
+      "bytes": 8132,
+      "lines": 187,
+      "sha256": "04438f7d822e7ae46cc983763c0eb7808b416b8ef7db105e5f597d415ecc0f83"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeFactory.cpp",
+      "bytes": 473,
+      "lines": 11,
+      "sha256": "56c4425be2cfd48342d2a0d68acb883b8af80977e073cccc001395f0b66a4fe9"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeProcessor.cpp",
+      "bytes": 54241,
+      "lines": 1260,
+      "sha256": "9dce2a67ffd6bdf69370592f059721ad4835d3617fcab915e767186581d9aba0"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeProcessor.h",
+      "bytes": 22306,
+      "lines": 461,
+      "sha256": "2e29efb2b5c52913564cd4e06e51b1a573ed96ef2344ec8b9ceaf98a842a3377"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeEditor.cpp",
+      "bytes": 6989,
+      "lines": 179,
+      "sha256": "b0a6cc155576043422b3b2bbbe335a9bcea9dea3909a57b8d30a626d4aebde63"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeEditor.h",
+      "bytes": 1207,
+      "lines": 36,
+      "sha256": "e801133c2e8a86c2381ac9db3d2ce829efae0a160417f1777796bacd9c70e89a"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeFactory.cpp",
+      "bytes": 267,
+      "lines": 8,
+      "sha256": "1516274bc601e2824ce64ffe91563ccad25309eaa800c3ca47a57600bf8c04ad"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeProcessor.cpp",
+      "bytes": 11792,
+      "lines": 313,
+      "sha256": "bd5f3d74874bc6ec82abefe11d4b6b5eb1d47adbdfe54151ae196950819469d9"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeProcessor.h",
+      "bytes": 6023,
+      "lines": 146,
+      "sha256": "b4e363223b8349ad60cafa28579ba51dd045d4ca84a700aaf37bb02d8457c5ef"
+    },
+    {
+      "path": "eq-copilot/plugin/src/AnalyseEngine.cpp",
+      "bytes": 46770,
+      "lines": 1129,
+      "sha256": "06ca32f24daff5a830a78fc77c83bb5cd0eb2c9c8478492fd1499053fb809525"
+    },
+    {
+      "path": "eq-copilot/plugin/src/AnalyseEngine.h",
+      "bytes": 17804,
+      "lines": 369,
+      "sha256": "874379917abb61003b0c3b49b73256d747f0edf62a0ba4c3d3c73cdca5e88241"
+    },
+    {
+      "path": "eq-copilot/plugin/src/Diagnose.cpp",
+      "bytes": 24060,
+      "lines": 520,
+      "sha256": "b7363747b7034042ac8f3bb93d698def892dbf7fcc768c02939d5b5cad5e06fa"
+    },
+    {
+      "path": "eq-copilot/plugin/src/Diagnose.h",
+      "bytes": 4217,
+      "lines": 83,
+      "sha256": "94f4372b6e57d27fc7b55462f5a080fa11ebbc95bb4a30104124ca35575ccbfb"
+    },
+    {
+      "path": "eq-copilot/plugin/src/EqCopilotAssetKit.h",
+      "bytes": 22488,
+      "lines": 477,
+      "sha256": "dd1de1ce4a35a3eb51030ff28fb8d661397964e623fcb0188c025fe4f8cf59b2"
+    },
+    {
+      "path": "eq-copilot/plugin/src/EqCopilotIds.h",
+      "bytes": 1310,
+      "lines": 26,
+      "sha256": "bcd97081edb3dac25654cc94b59565f4b435e71e66c02d66d59a81001ecf816f"
+    },
+    {
+      "path": "eq-copilot/plugin/src/HoerMarkierung.h",
+      "bytes": 37748,
+      "lines": 808,
+      "sha256": "034f6cef6e89724ac987ebcdf0d5e43d4170e1b683a52cfec560bdbee2fd0e80"
+    },
+    {
+      "path": "eq-copilot/plugin/src/LeitstandTokens.h",
+      "bytes": 5967,
+      "lines": 101,
+      "sha256": "3b4367ea3a475e2935eabd98c3f192267f876be00a54d296e222595898578304"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PipeClient.cpp",
+      "bytes": 33588,
+      "lines": 824,
+      "sha256": "344420a5c3f45529143cd662f744d3e9effe1e6e25ca649da05f6bad46ded473"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PipeClient.h",
+      "bytes": 7314,
+      "lines": 174,
+      "sha256": "be63938e7bdb46caff507399e29adb901f6c9940ec1bb93616a7d8d553606097"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginEditor.cpp",
+      "bytes": 76025,
+      "lines": 1665,
+      "sha256": "e2a9beff301104d365feabbc56d3083562cb28e6a324576321863ad7f4a754cf"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginEditor.h",
+      "bytes": 8714,
+      "lines": 183,
+      "sha256": "fe81a97beece9835d05c61ce63862252ecb5fd87dfaa559eeb3b70bb4e0a6a17"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginFactory.cpp",
+      "bytes": 272,
+      "lines": 8,
+      "sha256": "c9e7b29379902007e38bebe9666a13753edff610568215c9d0f81c56eff6c9f7"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginProcessor.cpp",
+      "bytes": 56357,
+      "lines": 1134,
+      "sha256": "1d7b7cb03e520503e7092fb5271b57bc10e1f77252a0d82ae43d9f569aeabb4a"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginProcessor.h",
+      "bytes": 104997,
+      "lines": 1833,
+      "sha256": "1699fc159ad6afa39f1bb894b4685454a274c97efae60adebf0c6228cd9d979d"
+    },
+    {
+      "path": "eq-copilot/plugin/src/SourcesModel.cpp",
+      "bytes": 84918,
+      "lines": 1896,
+      "sha256": "f5b41e6e852adb2f9bf6561fc1fbbe49d679db6db57e019f47763776618158b2"
+    },
+    {
+      "path": "eq-copilot/plugin/src/SourcesModel.h",
+      "bytes": 18856,
+      "lines": 396,
+      "sha256": "16ea24cd1c781587608f4f1f7df16b8a03e777d5efd6ec74086ace60f8c0eb88"
+    },
+    {
+      "path": "eq-copilot/plugin/src/WorkerCadence.h",
+      "bytes": 2121,
+      "lines": 70,
+      "sha256": "134621eb7a4a4c7d100bc5f93d574109dae25f1b72a46a76fb1f0484688cfdd6"
+    },
+    {
+      "path": "eq-copilot/plugin/src/ZonenRegeln.h",
+      "bytes": 1476,
+      "lines": 37,
+      "sha256": "dd4291afc5d112a8586246f7a26295ecc5b53abe517472adc50ab0b6d4ea2046"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Analyse.cpp",
+      "bytes": 69200,
+      "lines": 1479,
+      "sha256": "c5264fcd7a2b5e2e79a1b50c3d339921937e31ce6484266f92a99223ac6d4fe1"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Hostbruecke.cpp",
+      "bytes": 9625,
+      "lines": 187,
+      "sha256": "c8da333ea182ce53d76fcc192dc1e6845cc7979a121a5af4660fd810af3f19ae"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Intern.h",
+      "bytes": 2150,
+      "lines": 49,
+      "sha256": "8fc9b3eaf97ac788a1e3c39b068b23e9b8a558fa69a634d0b1008b06e3ee5c14"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Ipc.cpp",
+      "bytes": 78862,
+      "lines": 1593,
+      "sha256": "640f6150fc773f7d81dd44786ce3524c18f7f4fa5a58913cae3e47856c87b1b9"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/State.cpp",
+      "bytes": 32410,
+      "lines": 691,
+      "sha256": "9024d075195e8bce53cc2062b098dda03794fdd003e3f1f3ba13d95eee69280a"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKanon.cpp",
+      "bytes": 15791,
+      "lines": 428,
+      "sha256": "aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKanon.h",
+      "bytes": 4289,
+      "lines": 88,
+      "sha256": "24c1288cbec9904a8516d3acfc75f89518e65b1878d250701e806eeb1e66567e"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKernRiegel.h",
+      "bytes": 6979,
+      "lines": 122,
+      "sha256": "108a7398e9db4e56199325d7eaf4da8d843170e2e16a1c61b2c0b0e68064285f"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaLebenslauf.cpp",
+      "bytes": 4878,
+      "lines": 119,
+      "sha256": "5d09e1650932564a7aef47c98ae9574971955a4b5fcde4b464608f594e2df5bc"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaLebenslauf.h",
+      "bytes": 6979,
+      "lines": 148,
+      "sha256": "15a80cfe24bb610bde50fa64e5e161e62aa292211ed45111cc17fdbc96a9b62e"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaParameter.cpp",
+      "bytes": 27155,
+      "lines": 701,
+      "sha256": "95c805f4436127ff90d51be0b446545a3330df0576969f58a570541099add1f2"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaParameter.h",
+      "bytes": 10877,
+      "lines": 233,
+      "sha256": "8b136ec3b132280196938d04010cdf4044c90d4312f23c99a6a0cda30903dd3b"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaPreset.cpp",
+      "bytes": 10454,
+      "lines": 269,
+      "sha256": "15aac56b8bb3c26f8601b37b2cde59b6c2acb4f4360d207a223f0f83cef911fb"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaPreset.h",
+      "bytes": 3164,
+      "lines": 74,
+      "sha256": "34d127589a8542fc6010a4095ccc246b738d0a2f6524a14956dad145f91e028b"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaState.cpp",
+      "bytes": 118508,
+      "lines": 2863,
+      "sha256": "c5004e8c421c27a4d031c692f43a48b0b72f475bf2804d39c663b6bd0af06fce"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaState.h",
+      "bytes": 34717,
+      "lines": 704,
+      "sha256": "9c66b6115d605f5d1702d3a5965edebd87d036e930ebdbd431d2ffef74e0841e"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaTransaktion.cpp",
+      "bytes": 30997,
+      "lines": 820,
+      "sha256": "39ce1f8d046695a4798ad51772937cadd8534457deb3b5b57874389e25fb6317"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaTransaktion.h",
+      "bytes": 18909,
+      "lines": 393,
+      "sha256": "5f7b8c9d72b1664bc66ac2e2ea34dfcc05f4da26479c74116e714b0ca880f79a"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp",
+      "bytes": 154493,
+      "lines": 2961,
+      "sha256": "deadf88149870cbb602a1cdc64225be49d94bf2bfcdf033251722fa444db06a9"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/AuxSpikeTestMain.cpp",
+      "bytes": 12835,
+      "lines": 290,
+      "sha256": "b005d08938d789e3c88a4d99945b3d985b2b4d5b84c3c84327169991d31b1b95"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/DspGoldenTestMain.cpp",
+      "bytes": 233570,
+      "lines": 4481,
+      "sha256": "079a75bdad9d3eedac865b1b6db585158e37e392dcbfe8cea8689ab1f687827b"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/GoldenTestMain.cpp",
+      "bytes": 45920,
+      "lines": 883,
+      "sha256": "9d78e1c085623d4142f221a21550eb1043adca6d93be6f204ba3ecdf164f84ad"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/HostContextTestMain.cpp",
+      "bytes": 28761,
+      "lines": 577,
+      "sha256": "be7652959b512a2bac3dd1772c70653ee6d8e2096c8f4eef0939db6d4db92d34"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/HostProbeTestMain.cpp",
+      "bytes": 37804,
+      "lines": 777,
+      "sha256": "b1d29d8a28ff36e7ef903cb4f4e5af3695484b2f8ec27d14add60462c0150a86"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IdentityTestMain.cpp",
+      "bytes": 42358,
+      "lines": 848,
+      "sha256": "bab80cfe0fcb36b25441c4773675baa2ad0e66e11271c5f7effd260b57b70391"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IpcLastMain.cpp",
+      "bytes": 14485,
+      "lines": 337,
+      "sha256": "46f9102629c6c2307dee8ebc840a0d92dbed54c85a4fce1c0a5b340a26d4dc68"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IpcTestMain.cpp",
+      "bytes": 393003,
+      "lines": 7862,
+      "sha256": "ca86109ffac5a083ed14ed430032ccbaf1a63bd7209e1fc7493316d48b30f06d"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
+      "bytes": 35689,
+      "lines": 778,
+      "sha256": "6cccba351d4552ed009a2443d7d445ef68bda52d95549817a0c66d7a5b3e4adc"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp",
+      "bytes": 35625,
+      "lines": 670,
+      "sha256": "7429e213c53f24d531b426612d73e360e632e1a776d9d8af537493ec15a46233"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/MarkierungTestMain.cpp",
+      "bytes": 90169,
+      "lines": 1999,
+      "sha256": "06f55baa47317ac9ceef3d8f3562e42a7a67e83c07c12172925d21fd46fe6e54"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/NullTestMain.cpp",
+      "bytes": 4221,
+      "lines": 93,
+      "sha256": "1d1b703837cb11102068fc6e553ee9e04aeb648cc5386debd7fc7311efa292b0"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/PaintBenchMain.cpp",
+      "bytes": 3956,
+      "lines": 103,
+      "sha256": "8f1725c218d1465c43a692274393b7de11e40d9460bc6c951eb9728e92812d08"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp",
+      "bytes": 61012,
+      "lines": 1431,
+      "sha256": "9e509315bc2048bd335535fc56276f89454deed87a00bf6252ca52521f0e9ce9"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/QueueStressTestMain.cpp",
+      "bytes": 75369,
+      "lines": 1565,
+      "sha256": "a21b2416ba3fd1752e08f2604a82ecbcb50d0cc60194d663af310162500e3ce7"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SchemaTestMain.cpp",
+      "bytes": 65378,
+      "lines": 1415,
+      "sha256": "1d58ca69bfe657a3f2c6f97dd25f758333cfea6ae941eb1277b82a51c6bcfe71"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SessionSoakMain.cpp",
+      "bytes": 82252,
+      "lines": 1773,
+      "sha256": "b01042cbd16cccddafa248894fd139dda61089534d296e4bc6701eeea19696a9"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/ShotTestMain.cpp",
+      "bytes": 13529,
+      "lines": 318,
+      "sha256": "acd4368875caf6d41980a5ea5523319e06e3c8c8a8f9a7285f55725c2893da6a"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp",
+      "bytes": 24080,
+      "lines": 531,
+      "sha256": "bc54fb7e87169eb1730852e124696ebb882809ad2fc97eb2fd9a600034a19960"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012LoudnessSourceTest.cpp",
+      "bytes": 11689,
+      "lines": 334,
+      "sha256": "079d1a93176b9771b583f23fd95426af312753167e8767d4d6d10f59c244488f"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp",
+      "bytes": 109603,
+      "lines": 2070,
+      "sha256": "ee8c7463722f92873cbe96c38ee49833ca27f6afa04bbc8032c83780ce41bd0f"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp",
+      "bytes": 14484,
+      "lines": 356,
+      "sha256": "78ba9b8f854843d7565450f1a4629101c00a148ca499b31a2764f079ff394c70"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp",
+      "bytes": 66246,
+      "lines": 1281,
+      "sha256": "a5de81ff358a88aae34c937ba8ad1806eedcf4a3631a39ef43de51723aac3c19"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp",
+      "bytes": 34976,
+      "lines": 708,
+      "sha256": "8395817180e9e2bc9a50401f0a826a5f430c8645b8fe96409c545d381439e55e"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013EventWireTest.cpp",
+      "bytes": 96904,
+      "lines": 1865,
+      "sha256": "b2680c8c3296ade7f86932e7818c8814f52c7d7e13b5407cd9a08f272ca90dab"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013ExperimentGoldenTest.cpp",
+      "bytes": 13201,
+      "lines": 285,
+      "sha256": "4645ed2ef83232e493ae67b8552b0b0fb2242edf0fb07aac97fce2bcb3698ada"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013ExperimentUiTest.cpp",
+      "bytes": 19889,
+      "lines": 419,
+      "sha256": "59c59c7c9bc40018d4f2668307e8c27725ca0d7fb82dc9f22135c55c69b5fb7b"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp",
+      "bytes": 16827,
+      "lines": 356,
+      "sha256": "cc2ecf64d5db014e2eba81b60fefa8f3566760adfdf57399174c67aca3636217"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013InterventionRingTest.cpp",
+      "bytes": 11722,
+      "lines": 271,
+      "sha256": "e67a68e6ad9c0b24c7e14a089901f163c8253090c9045ecf618ae4f2e62f3190"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp",
+      "bytes": 207479,
+      "lines": 4171,
+      "sha256": "9b6a2dd55466364121f206286f5c9cc46357fbab1ff39e5919f6f3b31a160838"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp",
+      "bytes": 25866,
+      "lines": 575,
+      "sha256": "f1e49b16f81b422bc99e8665f125a43c65c0877a228727dcab9dc9a211494a3f"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013QualityClassTest.cpp",
+      "bytes": 14333,
+      "lines": 317,
+      "sha256": "71454779bb811fc06f8780f32d13af448e83b4a9456bd1c7766f67fb13d6c65e"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp",
+      "bytes": 65808,
+      "lines": 1329,
+      "sha256": "3e17b8295fb520d86bf8b1b6f6c088a5eb6cbbd07a28878dbf3858d26b0d1863"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp",
+      "bytes": 16052,
+      "lines": 323,
+      "sha256": "f5b4bc67731965326a8abc072d1c980c748ad82dfc0abee84e98b7f4d6d47a9e"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014AssistentTest.cpp",
+      "bytes": 67586,
+      "lines": 1214,
+      "sha256": "ccaaf23c8ad6daba900821b4ca69e4eb6bec8c27155a92865ac92252d14a2b59"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014BefundTest.cpp",
+      "bytes": 45196,
+      "lines": 778,
+      "sha256": "5c95fa5b335d5582d61eb6806a115c6a30de8b11b8dc0ab574fedf8c8322098d"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014IntentTest.cpp",
+      "bytes": 64133,
+      "lines": 1234,
+      "sha256": "7c3cdd0d508b939c1f600eee9fa1da45621f22cd53d41f79b3d5e08fe146905d"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SondeNullTestMain.cpp",
+      "bytes": 39337,
+      "lines": 734,
+      "sha256": "1bcd4bc1c4d9d72f436d714a37135d675ce52b069f856415ff26858ccc178cb1"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/StateMigrationTestMain.cpp",
+      "bytes": 135372,
+      "lines": 2346,
+      "sha256": "0f243c377d7a5c16e17043217592e3e3c80c6c7f53a9e39b47066d973c1318db"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/TransactionTestMain.cpp",
+      "bytes": 114747,
+      "lines": 2251,
+      "sha256": "78f6ef03cfc022c064b2ef136dbe523a048087b34e0a4c885602400acabd0239"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/V3TestServer.h",
+      "bytes": 35716,
+      "lines": 763,
+      "sha256": "c4523f685c98851e16ed59a3eacbb8f3b0d10f617090d1915cdc25ce8b9ff88a"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaEvidenz.cpp",
+      "bytes": 26940,
+      "lines": 606,
+      "sha256": "60c74d100fea32410d79bba809258ca101b43ca8c061ea2a802ef5fbbf417c8a"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaEvidenz.h",
+      "bytes": 5001,
+      "lines": 112,
+      "sha256": "92d8497df8d8a78547a187725c1caacc4eef998cee8bc17a9b2285c3454fac02"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp",
+      "bytes": 32238,
+      "lines": 757,
+      "sha256": "3853e162a827fe8cbe041d91eeaf51d6aca89ac4df6a159ac374ce4303e3386b"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaTelemetrie.h",
+      "bytes": 5829,
+      "lines": 142,
+      "sha256": "c83063f308dd956309f33f3d73a08d5fd60c6c6c886d2fd2bf4c5b2b7d5a4ab8"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaUtf8.h",
+      "bytes": 2295,
+      "lines": 74,
+      "sha256": "eb7ffbf2d904ac414e99a7a2c48782fbce87c1884ce61467ac758fcc4ef9856c"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaVertrag.cpp",
+      "bytes": 47090,
+      "lines": 1187,
+      "sha256": "e8a19042934632079059649066ea61f82ea73b65e137aa133fb8ce4a99fe3006"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaVertrag.h",
+      "bytes": 6681,
+      "lines": 149,
+      "sha256": "84b829f472265fb758ed9e8a9188b28edb422c2a7b07720c3e44598f1bb49ba8"
+    },
+    {
+      "path": "eq-copilot/schemas/eq-aggregat.schema.json",
+      "bytes": 4848,
+      "lines": 81,
+      "sha256": "efbd8f12a03e4ad71940a0810b8d1d7e13defaf581a50dfafca1223e1b499a68"
+    },
+    {
+      "path": "eq-copilot/schemas/eq-ipc.schema.json",
+      "bytes": 11265,
+      "lines": 159,
+      "sha256": "0a74135f21464c8704eb3c5509028071c8d088ded097107014ed9761d5e377b3"
+    },
+    {
+      "path": "eq-copilot/schemas/eq-measurement.schema.json",
+      "bytes": 2724,
+      "lines": 56,
+      "sha256": "308e42df50e8b8300e4871a9f1aafb9f48712802f502beab0472993f1f5c7f28"
+    },
+    {
+      "path": "eq-copilot/schemas/eq-report.schema.json",
+      "bytes": 2919,
+      "lines": 58,
+      "sha256": "e31b6f281b770b311823c1ee0279558399e26d7a19e4076b7fc693cb8dde1469"
+    },
+    {
+      "path": "eq-copilot/schemas/eq-snapshot.schema.json",
+      "bytes": 9419,
+      "lines": 169,
+      "sha256": "7c2a1003edabceb215efe9ed90f9650d34d27ab8135bb651a4ae4e2e38acf7b7"
+    },
+    {
+      "path": "eq-copilot/schemas/state/nakama-parameter-v1.json",
+      "bytes": 9427,
+      "lines": 69,
+      "sha256": "62eb112420570b35c4e931c91ee1b56b749662169d6f94922d79e477e69e4a2b"
+    },
+    {
+      "path": "eq-copilot/schemas/state/nakama-parameter-v2.json",
+      "bytes": 19280,
+      "lines": 506,
+      "sha256": "f564952b1778a6695e85958802327ff7e386030b1cbf1bcdd4a967ce40494e66"
+    },
+    {
+      "path": "eq-copilot/schemas/state/nakama-preset-v1.json",
+      "bytes": 6153,
+      "lines": 68,
+      "sha256": "1d63e6b665fe040413e964ff3b5c1a6dd5d19a44b4e2a029419506b97639c291"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/bandgitter/nakama_1_24_oct_30_18k_v1.json",
+      "bytes": 24645,
+      "lines": 922,
+      "sha256": "61db4ff041660efbfd8226d572180b1c80d3cd495be5165c1758b35cdf39a7ba"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/bandgitter/nakama_log64_v1.json",
+      "bytes": 14155,
+      "lines": 671,
+      "sha256": "8f6645b20a55e747ffcb835e9b7a0104eab3a8fa556e00d4b98126a0bacaee75"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/eq-ipc-v3.schema.json",
+      "bytes": 134654,
+      "lines": 2395,
+      "sha256": "5edf1f0158013ec4040794b67ea064b91504e12c830bf924a70aa7659728eb5b"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json",
+      "bytes": 5712,
+      "lines": 150,
+      "sha256": "6f65861e89987919f45d2cde485f973cffd8e917a14b84cdffab60fde1e5beab"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/flatbuffers/WERKZEUG.json",
+      "bytes": 2161,
+      "lines": 39,
+      "sha256": "792b151b80bb0612f4ffff9a78be33a32c4b6b6548bfeefd5a2aa7dc3efd9aff"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs",
+      "bytes": 17990,
+      "lines": 365,
+      "sha256": "b2f5e05e40012e084192752362a5efb534e6c185aa7a0fed1fdf7119cbaa10ae"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/metriken-v1.json",
+      "bytes": 10742,
+      "lines": 160,
+      "sha256": "24804257e103e598655c170eb8f35f42046f1fc15603d41183a95b0a0358a92c"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/quantisierung-v1.json",
+      "bytes": 14138,
+      "lines": 491,
+      "sha256": "147ab43a6ab87f3e5bc8843df52cd9a9aa9572e50a0556e1ad1e5d53c931c3d1"
+    },
+    {
+      "path": "eq-copilot/schemas/v3/reservierte-nachrichten-v1.json",
+      "bytes": 23288,
+      "lines": 309,
+      "sha256": "0e3379e3971003547b9ab324287e25c3b9aa81b443e542c7e5a17bbc283ebab9"
+    },
+    {
+      "path": "tools/beweise-roh.ps1",
+      "bytes": 4171,
+      "lines": 93,
+      "sha256": "effc12804130d43641f3295099e9ea3f0a629ae0f78f37f642aaa24a6dea1cc1"
+    },
+    {
+      "path": "tools/beweise.ps1",
+      "bytes": 123204,
+      "lines": 1431,
+      "sha256": "c1c1348a69c313cbf437b46f1deacf503fea4953dd2f4f87c0a2cde2acb4f22e"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_aux_spike_fixtures.py",
+      "bytes": 2589,
+      "lines": 76,
+      "sha256": "56e1de2f5e0adb5b4f236b5259a29950ca0d0d3407768816bcbb027a68f0f603"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_bandgitter.py",
+      "bytes": 14192,
+      "lines": 338,
+      "sha256": "3f904e477222bebc96dac188c1656e4bd3bfd19e26b82773a584ec5cc66971e9"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_bandgitter_header.py",
+      "bytes": 9249,
+      "lines": 220,
+      "sha256": "fb1753e5749099d8960443ea712369e74d32b6455b26be7c3c4db39065137d50"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_envelope_fixtures.py",
+      "bytes": 20350,
+      "lines": 449,
+      "sha256": "08e57e138799d0c895e6b377f5db713fa71787975ce765fbe96b1c3968af6c80"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_fb_fixtures.py",
+      "bytes": 61207,
+      "lines": 1328,
+      "sha256": "07878f0a15754a91a7d480f6bed66e88aa09d10b06733332903866ee3236760a"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_fixtures.py",
+      "bytes": 10402,
+      "lines": 243,
+      "sha256": "c5285e34edcbf9725a941cf76949572e146d956721f24d773b75fa875a1e4eba"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_p4_korpus.py",
+      "bytes": 21376,
+      "lines": 386,
+      "sha256": "8974d1321b82bb89fa7a2eb5850579d83c063063d18af2c7d8995dfb56e0a3de"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_p5_korpus.py",
+      "bytes": 40380,
+      "lines": 848,
+      "sha256": "544bda79d81a46e77d0dec68dbe3da5d1e6eda7f1e73d74e30119228dd162d25"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_quantisierung.py",
+      "bytes": 14754,
+      "lines": 338,
+      "sha256": "ff369de2b29a46c58688d1171ca6bf000a77948754c3f8f540ed4ec417ee0e9e"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_state_fixtures.py",
+      "bytes": 57051,
+      "lines": 1169,
+      "sha256": "3cc8b126de80bc13b9baa08afb8dc67e29ab5658aec99c7356b490e7eb4019ff"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_testsong.py",
+      "bytes": 12206,
+      "lines": 277,
+      "sha256": "21b0f3a73edf8c02493ad0c0083012872da21137f15584c5fcf9c60b90eae84d"
+    },
+    {
+      "path": "tools/eq-copilot/erzeuge_v3_fixtures.py",
+      "bytes": 197285,
+      "lines": 3933,
+      "sha256": "b529042bd8ff95cad4af69535cd6fc2014981138c560607062a9310923c0e9ae"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_fbs_feldids.py",
+      "bytes": 20247,
+      "lines": 452,
+      "sha256": "9c7186da935056a0071139d73794a1de4922c2c094635dcb7cffa9aa62104034"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_flatc_drift.py",
+      "bytes": 17522,
+      "lines": 391,
+      "sha256": "9c4894913dcdca47857ca0307a346c3ede8c1a5f92f9691caa9d7ec9dc508d80"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_host_capabilities.py",
+      "bytes": 17712,
+      "lines": 312,
+      "sha256": "0061b3934d65790fae71e00ac48ff2eab430ba8582e34b9f07a4cc5e65c0180a"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_installer_gegenpfad.py",
+      "bytes": 43378,
+      "lines": 747,
+      "sha256": "a28bf3cfc5bbbcdbd44c4814ba1e65ddbea452cc566afc5789688cac9187e7f8"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_installer_manifest.py",
+      "bytes": 85350,
+      "lines": 1710,
+      "sha256": "96f88f275a79ee8ba3aaabf7da8ddcdd3fb8ce9b216d70dbddf5c4730cccbd3c"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_ipc_last.py",
+      "bytes": 8990,
+      "lines": 207,
+      "sha256": "b2494da210fc8331c56d7e4a6baad3062bb49d87b3656ec55c2d275abfc939de"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_kern_identitaetsfrei.py",
+      "bytes": 36298,
+      "lines": 774,
+      "sha256": "da3ef821ad1a456b87ea7cb3a1dee00f86c3796a3b0ee4578491f4f99ecef512"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_p4_korpus.py",
+      "bytes": 31187,
+      "lines": 631,
+      "sha256": "0f8dc5b25d717fb55f3be596ceaa55b3eb95c553b29d5c21e68ca7212e1034a6"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_p5_korpus.py",
+      "bytes": 62192,
+      "lines": 1162,
+      "sha256": "86ac4168ee010792a6b78f4619f37d2b4c0d157c79a3933dab6a242746c53ae8"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_session_soak.py",
+      "bytes": 60997,
+      "lines": 1229,
+      "sha256": "e6a9043685fcd22663462a6d302d1d923af7588c5428066b5a3809221480d4d3"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_sonde012_sources_latency.py",
+      "bytes": 3683,
+      "lines": 94,
+      "sha256": "d03ac275334d3379b4ebd5d7a03e882cfe9a667afeeea283df2eb6aa30070244"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_v2_schemas.py",
+      "bytes": 4272,
+      "lines": 112,
+      "sha256": "7dac2c228813513b48e2251cd4ab633aa69333c7b48b8a1329f0b66db0e9cc43"
+    },
+    {
+      "path": "tools/eq-copilot/pruefe_v3_vertrag.py",
+      "bytes": 114914,
+      "lines": 2288,
+      "sha256": "d5bd6c66c979e90d645daea91c5206891e88bfebd4988712c810179822cc256e"
+    },
+    {
+      "path": "tools/eq-copilot/smf.py",
+      "bytes": 5711,
+      "lines": 144,
+      "sha256": "16e924fe7680a49e1534ddc3619d42d65d683ae33b703ebff749be16951772e1"
+    },
+    {
+      "path": "tools/eq-copilot/verify_testsong.py",
+      "bytes": 5729,
+      "lines": 153,
+      "sha256": "a0645ecc9643efecbd4ef3559d6aa3178b61fd1c79d843b755498ee630e6f8d9"
+    },
+    {
+      "path": "tools/eq-copilot/vorfuehrung_g1_vertrag.py",
+      "bytes": 7755,
+      "lines": 172,
+      "sha256": "47a0dabb4900a09dcdb2be2ca5988232eeb39921e8564ac863b648b675b24c04"
+    },
+    {
+      "path": "tools/plan/antworten_blatt.py",
+      "bytes": 4712,
+      "lines": 113,
+      "sha256": "b96c59b93fbd6044dc058baa0bae177494e6a370178edcb63eb4d8c44e5b362e"
+    },
+    {
+      "path": "tools/plan/dokuriegel.py",
+      "bytes": 14354,
+      "lines": 358,
+      "sha256": "33acc6fe41ef52da5604db4c8b207be8b9d51347bea7d5dcfd848c434c2661af"
+    },
+    {
+      "path": "tools/plan/gesundheit.py",
+      "bytes": 71452,
+      "lines": 1471,
+      "sha256": "e65d1eb86c490b7dc168630dac170864da9129354558ddb2aef45fcd5e08fb1a"
+    },
+    {
+      "path": "tools/plan/planstand.py",
+      "bytes": 21529,
+      "lines": 466,
+      "sha256": "b03f1a599717edc5fb09f4c075d29d35944ceae946d4c4501ef4bb50209b2230"
+    }
+  ],
+  "file_count": 327,
+  "line_count": 221045
+}

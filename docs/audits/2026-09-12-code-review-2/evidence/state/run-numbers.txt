@@ -1,0 +1,33 @@
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=0 input_revision=9223372036854775806 action_return=1 dirty=1 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  ok      rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=1 input_revision=9223372036854775806 action_return=1 dirty=1 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  ok      rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=2 input_revision=9223372036854775806 action_return=1 dirty=1 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  ok      rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=3 input_revision=9223372036854775806 action_return=1 dirty=1 remaining=0 assistant_revision=9223372036854775807 reload_readonly=0 reason=
+  ok      rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=0 input_revision=9223372036854775807 action_return=0 dirty=0 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  FEHLER  rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=1 input_revision=9223372036854775807 action_return=0 dirty=0 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  FEHLER  rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=2 input_revision=9223372036854775807 action_return=0 dirty=0 remaining=0 assistant_revision=0 reload_readonly=0 reason=
+  FEHLER  rejected change preserves state; accepted output remains reloadable
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      legal boundary state loads writable
+REVISION_BOUNDARY kind=3 input_revision=9223372036854775807 action_return=1 dirty=1 remaining=0 assistant_revision=-9223372036854775808 reload_readonly=1 reason=MainProject.assistant_step_v1 revision must be at least 1
+  FEHLER  rejected change preserves state; accepted output remains reloadable
+AUDIT REVISIONS 20/24 expectations met

@@ -1,0 +1,6 @@
+repro-validated.cpp
+publicParameterValidation=1 reason= id=
+DSP +6dB half-FLT_MAX finite=1 value=3.39476e+38 inputNonfinite=0 stateHealed=0
+DSP +6dB 0.75-FLT_MAX finite=0 value=inf inputNonfinite=0 stateHealed=0 doubleTapFinite=1
+markerBuilt=1
+markerOutputNonfinite=2348 firstSample=2796 counter=0

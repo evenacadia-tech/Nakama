@@ -1,0 +1,4 @@
+HEADROOM t=14 window_set=1 kept_frames=64 p10=-66.0205993652 p50=-66.0205993652 p95=-66.0205993652 expected_p95=-6.02059991328 passage_max=-6.02059984207
+NAN_4p1_SECOND t=4.1 lufsM_set=1 M=-14.0141048431 lufsS_set=1 S=-14.3137464523 TP=-13.9793996811 passageTP=-13.9793996811 passageTP_set=1 nonfinite_frame=0 nonfinite_evidence=0
+FP_STEADY_SELF set=1 windows=68 onset_nonzero=0 similarity=0
+FP_BASS_CHANGED a_set=1 b_set=1 band_differences=0 chroma_differences=0 similarity=0

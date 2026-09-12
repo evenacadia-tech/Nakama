@@ -1,0 +1,214 @@
+[
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\RELEASE\\NAKAMAKERN.LIB",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\NAKAMAKERN.LIB",
+    "sha256": "f06d907835ccd02c6b8639036e3a7c90c4bdd583a64f0d6b9a0cebd2024759e5",
+    "mtime": 1789185941.715367
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\..\\_DEPS\\FLATBUFFERS-BUILD\\RELEASE\\FLATBUFFERS.LIB",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\FLATBUFFERS.LIB",
+    "sha256": "bdff60922f58becd915e07f6ede89e97cf3b642c9ef19e18617c1b985113df1f",
+    "mtime": 1789172259.7363684
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\PLUGINPROCESSOR.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\PLUGINPROCESSOR.OBJ",
+    "sha256": "15a59faa492dacc5606a3e6edf6edca7dc8cae90f0fb881cbade97219609cb9e",
+    "mtime": 1789179647.2765126
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\HOSTBRUECKE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\HOSTBRUECKE.OBJ",
+    "sha256": "bd820bdff5de86bfa333a8ccd1b01cb2b42c1e4a4a94f482357eedbefb207503",
+    "mtime": 1789179645.924292
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\STATE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\STATE.OBJ",
+    "sha256": "0d724c610ca13db1bdd2625e3381e262fa99c8845b5f9d880278930e20a214c0",
+    "mtime": 1789179646.3242111
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\IPC.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\IPC.OBJ",
+    "sha256": "686ed07ec5f5fcf259d43d27aacd68b35f0d701a31ee36f9474b4b19626249a5",
+    "mtime": 1789180070.3747003
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\ANALYSE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\ANALYSE.OBJ",
+    "sha256": "72cc873f2c80df082a0fcf31214423f468e25ee4d4337a7868cc6cb57cc5305d",
+    "mtime": 1789179646.8880906
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\PLUGINEDITOR.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\PLUGINEDITOR.OBJ",
+    "sha256": "90e549a55b098edbd8bdc44079991d4891781aeaf57e2293015ea6facc68aba4",
+    "mtime": 1789179646.5503647
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\PIPECLIENT.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\PIPECLIENT.OBJ",
+    "sha256": "7470c8e98eea4600d417ce6088c3eb50e4b9c223f9407b194995cb14d496dc8c",
+    "mtime": 1789172375.7467072
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\ANALYSEENGINE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\ANALYSEENGINE.OBJ",
+    "sha256": "c6234e2afad9db2f428cfd572d6eaf7f4fd203b47f9d359b82a9bc521d2c0a08",
+    "mtime": 1789172375.6378472
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\DIAGNOSE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\DIAGNOSE.OBJ",
+    "sha256": "3be376cc9f191ee780b52d769a57aa61fc7a9a26cf978089fbe5b7a63c7728a6",
+    "mtime": 1789172375.7627857
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\SOURCESMODEL.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\SOURCESMODEL.OBJ",
+    "sha256": "3c0995f4a2de60e5381c9117ceaf8aab5b6ffbcca919b2552f3e880e98c4f6f2",
+    "mtime": 1789176053.3380187
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\PIPETOKEN.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\PIPETOKEN.OBJ",
+    "sha256": "3d0b48061f38de31706bb8d5b92916081659e2ba4c94a15897b55d62c9d8f21c",
+    "mtime": 1789172373.5136793
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_UTILS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_UTILS.OBJ",
+    "sha256": "c47100422064dd4c55a33e1d48c5da24347cbf5b4c4503ae37527a013ea9602f",
+    "mtime": 1789172382.478103
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_PROCESSORS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_PROCESSORS.OBJ",
+    "sha256": "7b9a4a11eaa2085027d6f46b30321d4553a0eace805804c65b69b73fa88bbe27",
+    "mtime": 1789172388.4977856
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_PROCESSORS_ARA.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_PROCESSORS_ARA.OBJ",
+    "sha256": "152b60298282ab3c061500b5e8f36433aef8991e9182bf54eea525c386e3f6ca",
+    "mtime": 1789172375.7587793
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_PROCESSORS_LV2_LIBS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_PROCESSORS_LV2_LIBS.OBJ",
+    "sha256": "eb459f74aff9b7de09a439f1558601ced677bb3493ffc5bc1b7fa1738c181771",
+    "mtime": 1789172375.7708063
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_GUI_EXTRA.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_GUI_EXTRA.OBJ",
+    "sha256": "21ebded9ee597f3d3d3247ce8e2d471362ffd0e8a7a1dd1596d77d2bf70b52b4",
+    "mtime": 1789172384.0086215
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_GUI_BASICS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_GUI_BASICS.OBJ",
+    "sha256": "d566205c0417d01bd9273e1bed82df5e611a781cc008a0eca5abce3b4f2dcc58",
+    "mtime": 1789172403.8967836
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_GRAPHICS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_GRAPHICS.OBJ",
+    "sha256": "4c2eec01ccea4df05ed3273a8ee131099e90b48c1b1f6c6f6c9b89395966f044",
+    "mtime": 1789172402.2801137
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_GRAPHICS_HARFBUZZ.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_GRAPHICS_HARFBUZZ.OBJ",
+    "sha256": "5c36a7282a55df7ace0d174d63f0f46737995988e1f279bdd00a71b8022f368f",
+    "mtime": 1789172403.8603823
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_GRAPHICS_SHEENBIDI.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_GRAPHICS_SHEENBIDI.OBJ",
+    "sha256": "76cd52ebca72f0636fe7deb28a60b380445e97fb6d412cea04257f7c33a9f8e2",
+    "mtime": 1789172404.2887352
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_EVENTS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_EVENTS.OBJ",
+    "sha256": "3f09fa6566e513f174605b5bc8c5b30caaf1907008a01ed59ab4bf1836f649ed",
+    "mtime": 1789172384.7110622
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_CORE.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_CORE.OBJ",
+    "sha256": "f8c1ec055eb9e5c6140d4d4d10a0b5610fafc433699cda129e56ecdf667fe127",
+    "mtime": 1789172391.0272853
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_CORE_COMPILATIONTIME.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_CORE_COMPILATIONTIME.OBJ",
+    "sha256": "d92c0d06e5d2190faf21cf34fbc69afe9f94f439d35387571858f0c192cd4f3e",
+    "mtime": 1789172380.991714
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_DATA_STRUCTURES.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_DATA_STRUCTURES.OBJ",
+    "sha256": "c6ae1e17b4fdc4d4e45394d36f71972af88b532ea21dda4602e1cd843591e5c1",
+    "mtime": 1789172384.9401526
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_BASICS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_BASICS.OBJ",
+    "sha256": "699c4d9d9f6543bb4970aef54e70b368332bff42b76969840fe2c96e1ebe63e5",
+    "mtime": 1789172389.7794816
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_FORMATS.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_FORMATS.OBJ",
+    "sha256": "2dbce6962f46a7723aec5451da6c26b7ab3fbcb7da47fe94fe3e38d9d5e9bf98",
+    "mtime": 1789172392.3706918
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_AUDIO_DEVICES.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_AUDIO_DEVICES.OBJ",
+    "sha256": "9d0dd2333f4593839af8679884a0fdf985de67e0df9fe2626734e1f185e1c54e",
+    "mtime": 1789172391.3307505
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_DSP.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_DSP.OBJ",
+    "sha256": "26109fc45f3c3fba5f1d5a6502625a4ed57ba682f3189962f01249b7e40b1c4e",
+    "mtime": 1789172390.7919855
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\build\\plugin\\EQCOPSONDE012PROJECTRELOADTEST.DIR\\RELEASE\\JUCE_CRYPTOGRAPHY.OBJ",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\JUCE_CRYPTOGRAPHY.OBJ",
+    "sha256": "b6c4cc531af7b25428e0dae59d9c21ca2ecb65970b50e7285a01a39af25d6d02",
+    "mtime": 1789172387.2471375
+  },
+  {
+    "source": "C:\\USERS\\PHILI\\PROJEKTE\\NAKAMA\\EQ-COPILOT\\BUILD\\PLUGIN\\EQCOPSONDE012PROJECTRELOADTEST_RC_LIB.DIR\\RELEASE\\EQCOPSONDE012PROJECTRELOADTEST_RESOURCES.RES",
+    "copy": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-audit-state-publication-20260912\\inputs\\EQCOPSONDE012PROJECTRELOADTEST_RESOURCES.RES",
+    "sha256": "cce57c18ebbc83caefaa2659752520e9b845bd9e137fed23a1fe7f8228ac7cd5",
+    "mtime": 1789172372.12131
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\plugin\\src\\prozessor\\Ipc.cpp",
+    "sha256": "640f6150fc773f7d81dd44786ce3524c18f7f4fa5a58913cae3e47856c87b1b9",
+    "mtime": 1789180053.2026079
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\plugin\\src\\prozessor\\State.cpp",
+    "sha256": "9024d075195e8bce53cc2062b098dda03794fdd003e3f1f3ba13d95eee69280a",
+    "mtime": 1789178420.8525565
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\plugin\\src\\SourcesModel.cpp",
+    "sha256": "f5b41e6e852adb2f9bf6561fc1fbbe49d679db6db57e019f47763776618158b2",
+    "mtime": 1789176048.9871502
+  },
+  {
+    "source": "C:\\Users\\phili\\Projekte\\Nakama\\eq-copilot\\plugin\\src\\PluginProcessor.h",
+    "sha256": "1699fc159ad6afa39f1bb894b4685454a274c97efae60adebf0c6228cd9d979d",
+    "mtime": 1789179607.8352022
+  }
+]

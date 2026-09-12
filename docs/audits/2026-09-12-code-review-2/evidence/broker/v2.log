@@ -1,0 +1,55 @@
+warning: unused import: `Befundzustand`
+ --> tests\broker_repros.rs:3:33
+  |
+3 | use eqcop_broker::coordinator::{Befundzustand, Coordinator, ManualClock};
+  |                                 ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: methods `teilupdate`, `vorschlaege`, `sql`, and `sql_ausfuehren` are never used
+   --> tests\broker_repros.rs:300:8
+    |
+185 | impl Harnisch {
+    | ------------- methods in this implementation
+...
+300 |     fn teilupdate(&self, quelle: &Adresse, rolle: &str, revision: i64) -> bool {
+    |        ^^^^^^^^^^
+...
+342 |     fn vorschlaege(&self) -> Vec<eqcop_broker::coordinator::Proposal> {
+    |        ^^^^^^^^^^^
+...
+371 |     fn sql(&self, sql: &str) -> i64 {
+    |        ^^^
+...
+376 |     fn sql_ausfuehren(&self, sql: &str) {
+    |        ^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `nakama-audit2-broker-repros` (test "broker_repros") generated 2 warnings (run `cargo fix --test "broker_repros" -p nakama-audit2-broker-repros` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests\broker_repros.rs (target\debug\deps\broker_repros-a45d7f23f3a87a73.exe)
+
+running 1 test
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:/na-audit2-broker-20260912\nakama-sonde014-nacharbeit2-audit-v2-17416-16db5bb071e2400abbaafe325d7ed116\nakama-broker.sqlite3
+V2 newer evidence counts: [13]
+V2 final evidence counts: [12]
+V2 latest source evidence still retained: true
+V2 final session-snapshot findings: [{"band_hz":{"bis":101,"von":97},"beobachtung":{"gueltig":true,"wert_db":-8.30000019073486},"candidate_source":"00000000000000000000000000000002","claim_class":"zusammenhang","confidence":{"class":"hoch","score":0.594189},"evidence_ids":["00000000000000000000000000001064","00000000000000000000000000001065","00000000000000000000000000001066","00000000000000000000000000001067","00000000000000000000000000001068","00000000000000000000000000001069","0000000000000000000000000000106a","0000000000000000000000000000106b","0000000000000000000000000000106c","0000000000000000000000000000106d","0000000000000000000000000000106e","0000000000000000000000000000106f"],"finding_id":"131d403dbf1a21e06c851c690d43b430","intent_revision":0,"likely_cause":"00000000 draengt im Bandbereich 97..101 gegen den Master.","listen_for":"Ob der Master im markierten Bereich Luft bekommt.","maskierung":{"band_bis":101,"band_von":97,"gueltig":true,"herabgesetzt":false,"quelle_a":"00000000000000000000000000000001","quelle_b":"00000000000000000000000000000002","wert_db":0.0},"next_test":"pre_post_paar_messen","passage_id":"0000000000000000000000000000f202","rang":{"bandpassung":0.0701220213142003,"intent_relevanz":0.5,"koinzidenz":0.0,"routingqualitaet":1.0,"uplift":1.0,"wiederholbarkeit":0.99501246882793},"smallest_test":"PRE/POST-Paar an dieser Quelle messen.","target_metric":"band_pegel_db","ursachenklasse":"quelle_resonanz","zustand":"ready_to_send"}]
+V2 final SQLite finding: {"band_hz":{"bis":101,"von":97},"beobachtung":{"gueltig":true,"wert_db":-8.30000019073486},"candidate_source":"00000000000000000000000000000002","claim_class":"zusammenhang","confidence":{"class":"hoch","score":0.594189},"evidence_ids":["00000000000000000000000000001064","00000000000000000000000000001065","00000000000000000000000000001066","00000000000000000000000000001067","00000000000000000000000000001068","00000000000000000000000000001069","0000000000000000000000000000106a","0000000000000000000000000000106b","0000000000000000000000000000106c","0000000000000000000000000000106d","0000000000000000000000000000106e","0000000000000000000000000000106f"],"finding_id":"131d403dbf1a21e06c851c690d43b430","intent_revision":0,"likely_cause":"00000000 draengt im Bandbereich 97..101 gegen den Master.","listen_for":"Ob der Master im markierten Bereich Luft bekommt.","maskierung":{"band_bis":101,"band_von":97,"gueltig":true,"herabgesetzt":false,"quelle_a":"00000000000000000000000000000001","quelle_b":"00000000000000000000000000000002","wert_db":0},"next_test":"pre_post_paar_messen","passage_id":"0000000000000000000000000000f202","rang":{"bandpassung":0.0701220213142003,"intent_relevanz":0.5,"koinzidenz":0,"routingqualitaet":1,"uplift":1,"wiederholbarkeit":0.99501246882793},"smallest_test":"PRE/POST-Paar an dieser Quelle messen.","target_metric":"band_pegel_db","ursachenklasse":"quelle_resonanz","zustand":"ready_to_send"}
+
+thread 'v2_juengeres_hypothesenergebnis_darf_nicht_zurueckrollen' (25920) panicked at tests\broker_repros.rs:423:5:
+assertion `left == right` failed: Ein aelteres A darf das bereits publizierte B nicht ersetzen
+  left: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: Some("0000000000000000000000000000f202"), pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -8.300000190734863, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.07012202131420026, koinzidenz: 0.0, uplift: 1.0, intent_relevanz: 0.5, wiederholbarkeit: 0.9950124688279302, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Hoch, score: 0.594189 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: ReadyToSend, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+ right: [CauseHypothesis { finding_id: "131d403dbf1a21e06c851c690d43b430", claim_class: Zusammenhang, ursachenklasse: QuelleResonanz, target_metric: BandPegelDb, candidate_source: "00000000000000000000000000000002", passage_id: Some("0000000000000000000000000000f202"), pre_post: None, band_hz: Bandintervall { von: 97, bis: 101 }, beobachtung: Beobachtung { wert_db: -3.299999952316284, gueltig: true }, rang: Rangkomponenten { bandpassung: 0.0725015619358033, koinzidenz: 0.0, uplift: 1.0, intent_relevanz: 0.5, wiederholbarkeit: 0.9950124688279302, routingqualitaet: 1.0 }, confidence: Befundkonfidenz { klasse: Hoch, score: 0.594586 }, evidence_ids: ["00000000000000000000000000001064", "00000000000000000000000000001065", "00000000000000000000000000001066", "00000000000000000000000000001067", "00000000000000000000000000001068", "00000000000000000000000000001069", "0000000000000000000000000000106a", "0000000000000000000000000000106b", "0000000000000000000000000000106c", "0000000000000000000000000000106d", "0000000000000000000000000000106e", "0000000000000000000000000000106f", "00000000000000000000000000001138"], alternatives: [], ausschluesse: [], next_test: PrePostPaarMessen, zustand: ReadyToSend, intent_revision: 0, intent_generation: 1, likely_cause: "00000000 draengt im Bandbereich 97..101 gegen den Master.", smallest_test: "PRE/POST-Paar an dieser Quelle messen.", listen_for: "Ob der Master im markierten Bereich Luft bekommt.", maskierung: Some(Maskierung { quelle_a: "00000000000000000000000000000001", quelle_b: "00000000000000000000000000000002", band_von: 97, band_bis: 101, wert_db: 0.0, gueltig: true, herabgesetzt: false }), metrics_version: 20260904 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test v2_juengeres_hypothesenergebnis_darf_nicht_zurueckrollen ... FAILED
+
+failures:
+
+failures:
+    v2_juengeres_hypothesenergebnis_darf_nicht_zurueckrollen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 9.09s
+
+error: test failed, to rerun pass `--test broker_repros`

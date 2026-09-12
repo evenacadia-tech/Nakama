@@ -1,0 +1,6 @@
+gap-validated.cpp
+publicParameterValidation=1
+hostFrames=64 tapFrames=64 dspDrops=0 queueDrops=0
+hostFrames=128 tapFrames=0 dspDrops=1 queueDrops=0
+hostFrames=64 tapFrames=64 dspDrops=1 queueDrops=0
+beforeLocal=0 beforeFrames=64 afterLocal=64 expectedAfterLocal=192 sameSegment=1 gapFlag=0 quarantineAccepts=1 queueDroppedFrames=0

@@ -1,0 +1,11 @@
+vst3_contract.cpp
+factory_create=0
+initialize=0
+vst3_quad_set_result=0 vst3_input_channels=4
+activateInput=0 activateOutput=0
+vst3_setup=0 vst3_activate=0
+gain_setState=0
+vst3_process=0 vst3_quad_samples=0.199526235461,0.199526235461,0.10000000149,0.10000000149
+resonator_setState=0
+vst3_setProcessing_false=0 vst3_setProcessing_true=0
+vst3_after_reset_silent_input_peak=0.019208887592 reported_tail_samples=0

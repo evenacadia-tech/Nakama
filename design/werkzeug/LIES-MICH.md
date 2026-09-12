@@ -19,12 +19,12 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 > (`abnahmen/2026-08-21-designvertrag.md`) ist **Figma die Quelle**: die
 > Blätter hier bleiben Messinstrumente und Belege, **entworfen wird hier
 > nichts mehr** — übersetzt wird in `prototyp/` (Phase 1b,
-> `docs/arbeitsplan.md`). Der **Active-Probe-Editor** (**Nakama Probeeq**,
+> `../docs/arbeitsplan.md`). Der **Active-Probe-Editor** (**Nakama Probeeq**,
 > 700×420) ist **gemessen** (`sonde-messung.html` sagt, was der Inhalt
 > kostet); seine Anordnung zeigt der Figma-Stand
 > `assets/figma/2026-08-21-probeeq.png`. Danach **Passive-Kachel**
 > (**Nakama Suna**, 260×84) — noch kein Stand vorhanden. Auftrag und Klemme:
-> `docs/sondenplan.md` · Prüfbericht: `abnahmen/2026-08-21-codereview.md`.
+> `../docs/sondenplan.md` · Prüfbericht: `../abnahmen/2026-08-21-codereview.md`.
 
 **Stufe 1 — The Feeling** *(erhoben — ⚠ VERWORFEN am 2026-08-21)*
 1. `weltenwahl.html` — welche Welt? → Glas und Licht *(verworfen)*
@@ -37,8 +37,10 @@ zu dem zeitpunkt logisch. wir werden sehen wenn das layout steht ob es dann
 noch passt." — und am 2026-08-21 **verworfen**: „Glas/Licht raus; Profil nur
 Studie" (`abnahmen/2026-08-21-designvertrag.md`). Der Prüfpunkt „erneut
 vorlegen auf 760×430" ist damit eingelöst: **nicht mehr vorlegen.** Die
-Richtung kommt aus Figma (`assets/figma/`). Die beiden Blätter bleiben als
-Beleg, was zur Wahl stand.
+Richtung kam damals aus Figma (`assets/figma/`, heute Verlauf); seit dem
+02.09.2026 läuft die visuelle Phase in `fable-dummy`
+(`../visuell/LIES-MICH.md`). Die beiden Blätter bleiben als Beleg, was zur
+Wahl stand.
 
 **Phase 0.5 — Formfaktor** *(abgeschlossen — drei Größen abgenommen)*
 3. `formfaktor.html` — wie groß darf das Fenster sein, und welche Form hat es?
@@ -75,7 +77,7 @@ lesen; jede Zeile dort hat einmal Arbeit gekostet.
     auf 700×420? *(Messbank, kein Entwurf — entscheidet nichts)*
 4f. *(offen)* **Active-Probe-Editor**, 700×420 — der Wireframe. Erst nach
     `/interview struktur` und der abgenommenen Aufgabenliste
-    (`docs/sondenplan.md` Abschnitt 3).
+    (`../docs/sondenplan.md` Abschnitt 3).
 4g. *(offen)* **Passive-Kachel**, 260×84. Gemessen ist schon etwas:
     im Grenzfall läuft sie bei 260×84 um **23 px** über (`formfaktor.html`).
 5. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
@@ -168,7 +170,7 @@ lassen sich dazuschalten — die reale Situation, nicht ein Fenster allein.
 nichts zur Wahl — sie beantwortet die eine Frage, die vor jedem Wireframe
 steht: *was kostet der Inhalt auf 700×420?*
 
-Warum es sie gibt: `docs/sondenplan.md` Abschnitt 4 rechnete die Klemme bereits
+Warum es sie gibt: `../docs/sondenplan.md` Abschnitt 4 rechnete die Klemme bereits
 vor — an einem Blatt, das **sitzungslokal war und weg ist**. Beim ersten Lauf
 dieser Messbank waren von **19 nachprüfbaren Angaben 10 falsch**. Eine Zahl, die
 man nicht nachmessen kann, ist eine Behauptung.
@@ -225,7 +227,7 @@ acht Nummern lagen absolut gesetzt übereinander in einer Ecke.
 Stufe 2, Schritt 1. Fünf **Disclosure-Mechaniken** von **Main** auf der
 abgenommenen Größe **760×430**, in reinen Graustufen — kein Farbton, kein
 Material, kein Licht. Varianten unterscheiden sich in der Mechanik, nicht in
-der Kastenanordnung (`docs/DESIGN-GESETZE.md`, verbindliche Folge 3):
+der Kastenanordnung (`../docs/DESIGN-GESETZE.md`, verbindliche Folge 3):
 
 1. **Schritt für Schritt** — der Bildschirm zeigt genau den Schritt, in dem
    du bist, sonst nichts.
@@ -239,7 +241,7 @@ der Kastenanordnung (`docs/DESIGN-GESETZE.md`, verbindliche Folge 3):
    (Liste → Heatmap → Detail).
 
 Alle fünf zeigen denselben Pflichtinhalt aus
-`docs/oberflaechen-spezifikation.md`. Im Raster sind die Strukturen zu
+`../docs/oberflaechen-spezifikation.md`. Im Raster sind die Strukturen zu
 erkennen, in der Großansicht (Zweikampf, 1:1) die Beschriftungen zu lesen.
 
 ### Was das Werkzeug misst, statt es zu behaupten

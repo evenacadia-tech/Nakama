@@ -79,7 +79,7 @@ Umschnitt.
 | 22 | Probeeq: manuelle Bedienung und Gen-Weisungen seien *„equal first-class workflows"* | Bedienung liegt **zentral auf Gen Seite 2**; Probeeq behält nur eine Minimal-Rückfallfläche | `design/abnahmen/2026-08-23-gen-eq-zentrale.md:59-62` · `docs/bauaufteilung-sonden.md:159-166` |
 | 44, 52 | *„eight bands at 700x420"*, *„five global values in a 700x420 surface"* | 700×420 ist seit dem 23.08. **nur noch historisches Working Design**. Die reale EQ-Fläche ist Gen Seite 2 mit 760×430 | `docs/bauaufteilung-sonden.md:163-166` · `design/docs/ui-spielregeln-eq-zentrale.md:29-34` |
 | 52 | *„twelve displayed parameters per band, a possible thirteenth sidechain source"* | **13 Parameter je Band.** Der dreizehnte (`sidechain_source`) ist entschieden: im ersten Release unsichtbar, Default `none` | `design/docs/ui-spielregeln-eq-zentrale.md:41-48` |
-| 35 | *„Probeeq's central sonic object is an EQ band inside the aggregate EQ result"* | Der zentrale Sonic Object der EQ-Arbeit sitzt in **Gen Seite 2**, und dort liegen **zwei** EQ-Spuren in einem Graph | `design/abnahmen/2026-08-23-gen-eq-zentrale.md:50-51, 61-65` |
+| 35 | *„Probeeq's central sonic object is an EQ band inside the aggregate EQ result"* | Der zentrale Sonic Object der EQ-Arbeit sitzt in **Gen Seite 2**, und dort liegen **zwei** EQ-Spuren in einem Graph | `design/abnahmen/2026-08-23-gen-eq-zentrale.md` (Zeilen 50–51, 61–65) |
 
 **Herkunft des Fehlers:** Die Zahl „zwölf plus möglicher dreizehnter" steht
 wörtlich in `briefing-hub/data/hub.json` — der Briefing-Seite, die laut
@@ -329,7 +329,7 @@ Alle Pfade vom Workspace-Root `C:/Users/phili/Projekte/Nakama`.
 | Markt-Befund Instance List / Group View | `design/abnahmen/2026-08-23-gen-eq-zentrale.md:86-90` |
 | Suna in Probeeq aufgegangen; 760×430 beide Seiten; 700×420 historisch | `docs/bauaufteilung-sonden.md:159-166` |
 | 8 Band-Slots × 13 Parameter, 5 globale Regler, 109 Hostparameter | `design/docs/ui-spielregeln-eq-zentrale.md:41-48` |
-| Sidechain unsichtbar im ersten Release, U5/NAK-33 geschlossen | `design/docs/ui-spielregeln-eq-zentrale.md:44, 287` |
+| Sidechain unsichtbar im ersten Release, U5/NAK-33 geschlossen | `design/docs/ui-spielregeln-eq-zentrale.md` (Zeilen 44, 287) |
 | 760×430 beide Seiten, freie Skalierung als Produktentscheid offen | `design/docs/ui-spielregeln-eq-zentrale.md:29-34` |
 | Pro-Q als Handling-Referenz autorisiert, Optik bleibt Nakama | `design/docs/ui-spielregeln-eq-zentrale.md:36-37` |
 | Quellen×Band-Gitter ist offene Klärung (NAK-38) | `design/docs/oberflaechen-spezifikation.md:45` |

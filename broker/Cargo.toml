@@ -33,10 +33,10 @@ description = "EQ-Copilot-Broker (Nakama) — eigenständiger Named-Pipe-Server,
 # (c) `undocumented_unsafe_blocks` ist ein reiner CLIPPY-Lint. Er steht hier,
 #     BEWEIST im Kanon aber nichts: tools/beweise.ps1 faehrt in keinem Bein
 #     Clippy. Die Clippy-Verdrahtung ist benannte Haertung ausserhalb dieses
-#     Tickets; `tools/` bleibt unangetastet und die Beinzahl bleibt 40.
+#     Tickets; `tools/` bleibt unangetastet (die Beinzahl steht im Runner).
 #
 # Die [lints]-Tabelle gilt ab Cargo 1.74; gemessen laeuft hier cargo 1.93.1,
-# und rust-version steht auf 1.82.
+# und rust-version steht auf 1.85 (siehe oben).
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
 

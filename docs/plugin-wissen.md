@@ -1,7 +1,8 @@
 # Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
 > **Stand: 31.08.2026** (S16–17/SONDE-011 Phase B: Coordinator, SQLite-Store,
-> Snapshot-Outbox und Broker-Lifecycle) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> Snapshot-Outbox und Broker-Lifecycle; Modulpfade und Zahlen am 12.09.2026
+> nachgezogen) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
 > metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC v2-Legacy plus
 > produktiver SID-gebundener v3-Control-/Sessionpfad ·
@@ -718,7 +719,7 @@ des Acceptors (auch unvollständige Bootstraps zählen). Messung:
 `broker/tests/security_vectors.rs` (A-01..B-09); Matrix in
 `docs/beweise/NAK-123.md`. NAK-90 ist damit geschlossen.
 
-**Coordinator und Sessiongraph** (`coordinator.rs`): alleiniger Besitzer von
+**Coordinator und Sessiongraph** (`broker/src/coordinator/mod.rs` mit Teilmodulen, seit S19b): alleiniger Besitzer von
 Control-/Telemetry-Kopplung, Join-Kandidaten, internem Bestätigungsbedarf,
 Führung, Nonces, monotone Liveness und Subscriptionbesitz. Liveness verwendet
 nur `Instant`: fresh bis einschließlich 2500 ms, danach stale; Tombstone bei
@@ -728,7 +729,7 @@ Client gezählt abgewiesen. Eviction entfernt alle flüchtigen Sichten, nicht
 sticky Hör- oder dauerhafte Alias-Konfliktwahrheit. Phase B hat bewusst keinen
 `MainProjectState`-Ingress und keine neue Join-/Führungsfamilie.
 
-**SQLite-Store** (`store.rs`): `rusqlite = "=0.40.2"` mit `bundled`, Migration
+**SQLite-Store** (`broker/src/store/mod.rs`, `handle.rs`, `migration.rs`, `pfad.rs`, `writer.rs`): `rusqlite = "=0.40.2"` mit `bundled`, Migration
 1 und genau eine Writer-Connection auf einem eigenen Thread. DB/WAL liegen
 unter `%LOCALAPPDATA%\evenacadia\nakama-broker\nakama-broker.sqlite3`, nie
 auf einem Remote-Volume. `BEGIN IMMEDIATE` appendet `event_log`, aktualisiert
@@ -818,10 +819,12 @@ als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
 übersetzte bis dahin als einziger Code im Baum unter `/W1`. Riegel **K2c**
 (`cmake/NakamaKern.cmake`) hält es fest.
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
-unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
+unter `eq-copilot/build/plugin/Release/NakamaKern.lib`
+(Bauartefakte, nicht ins Repo).
 
-**Kanon, 35 Einträge (`tools/beweise.ps1`, Tabelle `$kanon`) — Lauf vom
-29.08.2026 auf `f62b4fb`: 32 gefahren und grün, 2 geplant, 1 stillgelegt.**
+**Kanon (`tools/beweise.ps1`, Tabelle `$kanon`; Beinzahl dort lesen, sie
+wächst mit dem Plan) — Lauf vom 29.08.2026 auf `f62b4fb`: damals 35
+Einträge, 32 gefahren und grün, 2 geplant, 1 stillgelegt.**
 Neu mit SONDE-010: **A20** `erzeuge_envelope_fixtures.py --pruefen` · **A21**
 `cargo test --test transport_fuzz` (eigener Eintrag, obwohl A4 ihn mitfährt —
 §65 nennt Fuzz namentlich) · **A22** `pruefe_ipc_last.py` (startet den
@@ -866,7 +869,7 @@ der installierte Broker aus `BrokerInstallBinding.h` die Erwartung, und die
 Serverauthentisierung wird in keinem Fall abgeschaltet)
 · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
-**Python-Werkzeuge (15, `tools/eq-copilot/`):** `pruefe_host_capabilities.py`
+**Python-Werkzeuge (`tools/eq-copilot/`; Zahl dort lesen), unter anderem:** `pruefe_host_capabilities.py`
 Capabilityreport gegen Rohdaten + v3-Vertragsform · `erzeuge_state_fixtures.py`
 State-Korpus + MANIFEST (RFC-8785-Vektoren mit `rfc8785` als Referenz, DTOs,
 Parametervertrag; `--pruefen` = bytegleich) · `erzeuge_fixtures.py`

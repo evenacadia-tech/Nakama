@@ -1,4 +1,4 @@
-> **Historischer Prüfbericht (20.08.2026) zur Fassung 0.3 des Entwurfs.** Er prüfte Korrektheit, nicht Produktentscheide. Pfade darin meinen den Stand vor dem Umzug vom 21.08. (`docs/visuelles-zielbild-hoerkompass.md` → `eq-copilot/design/prisma-studie/docs/`). Gültige Produktdefinition: `CLAUDE.md`.
+> **Historischer Prüfbericht (20.08.2026) zur Fassung 0.3 des Entwurfs.** Er prüfte Korrektheit, nicht Produktentscheide. Pfade darin meinen den Stand vor dem Umzug vom 21.08. (historisch: `docs/visuelles-zielbild-hoerkompass.md` liegt seither unter `eq-copilot/design/prisma-studie/docs/`). Gültige Produktdefinition: `CLAUDE.md`.
 
 # Prüfbericht — Sondenentwurf 0.3 (Codex)
 
@@ -124,7 +124,7 @@ das Symptom richtig, die Ursache ist eine Ebene tiefer — und seine Lösung
 | Base32-Golden `S-1-5-21-111111111-222222222-333333333-1001` → `BNSM62JZZCCXIDV3PJZAEHMZPA` | SHA-256 der UTF-8-Bytes, erste 128 bit, RFC-4648-Base32 ohne Padding | ✅ **bitgenau** |
 | `Pmono=(PLL+PRR+2·Re{PLR})/4` gegen `Pstereo=(PLL+PRR)/2` | identisch 0,000 dB · unkorreliert −3,037 dB · gegenphasig −∞; deckt sich exakt mit dem direkt gefalteten Puffer | ✅ |
 | `M=(L+R)/√2`, `S=(L−R)/√2` energieerhaltend | E(M)+E(S) = E(L)+E(R) auf 4 Nachkommastellen; mit `/2` nur halbe Energie | ✅ |
-| `φᵢ = Re{Xᵢ·conj(Y)}`, `Σφᵢ = |Y|²` | relativer Fehler 3·10⁻¹⁶; negative Beiträge treten auf | ✅ |
+| `φᵢ = Re{Xᵢ·conj(Y)}`, `Σφᵢ = \|Y\|²` | relativer Fehler 3·10⁻¹⁶; negative Beiträge treten auf | ✅ |
 | 16384 @ 48 kHz ≈ 341 ms | 341,33 ms | ✅ |
 | Linear statt Equal-Power bei korreliertem Dry/Processed | Equal-Power erzeugt bei t=0,5 einen **+2,9 dB**-Buckel, linear bleibt flach; bei unkorreliert genau umgekehrt (linear −3,0 dB) | ✅ Regel quantitativ belegt |
 | `min(20 kHz, 0,45·fₛ)` | 44,1 k → 19 845 Hz; 48 k → 20 kHz | ✅ sinnvoll |

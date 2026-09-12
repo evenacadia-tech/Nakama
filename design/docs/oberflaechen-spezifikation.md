@@ -1,16 +1,22 @@
 # Oberflächen-Spezifikation — was jede Ansicht zeigen MUSS
 
+> **Status:** Sachquelle der visuellen Stände bis 27.08.2026, seit dem
+> Funktionsneustart 31.08.2026 Verlauf. Funktions- und Bedienarchitektur
+> bindet seit 02.09.2026
+> [funktions-und-bedien-blueprint.md](funktions-und-bedien-blueprint.md);
+> die drei Rework-Bilder sind Verlauf.
+
 **Ergänzung für Bedienung und Bewegung:** Die
 [Interaktions- und Motion-Spezifikation](interaktions-und-motion-spezifikation.md)
 konkretisiert Gesten und Zustandswechsel, ohne die aktuelle User-Referenz
 umzudeuten.
 
-Diese Datei ist die zentrale Sachquelle des Projekts für Inhalte und
-Zustände. Die verlinkte Interaktions- und Motion-Spezifikation ergänzt
-nur die Bediengesten und Übergänge dieser festgelegten Elemente. Sie
+Diese Datei war bis zum Blueprint die zentrale Sachquelle des Projekts für
+Inhalte und Zustände. Die verlinkte Interaktions- und Motion-Spezifikation
+ergänzt nur die Bediengesten und Übergänge dieser festgelegten Elemente. Sie
 erfindet keine zusätzlichen Messwerte oder Produktzustände. Die Gestaltung
-kommt aus den drei aktuellen Rework-Bildern und neueren User-Entscheiden; sie
-wird hier nicht beschrieben. Was hier nicht steht, existiert nicht — keine
+kam aus den drei Rework-Bildern vom 25.08.2026 und den User-Entscheiden bis
+27.08.2026; sie wird hier nicht beschrieben. Was hier nicht steht, existiert nicht — keine
 zusätzlichen Messwerte oder Zustände erfinden.
 
 **Aktuelle Produktstruktur (User, 2026-08-27):** Gen hat zwei Oberflächen;

@@ -26,6 +26,11 @@ Der Fehler, aus dem diese Unterscheidung entstand: Claude hat „logisch zu
 diesem Zeitpunkt" als „entschieden" verbucht und im Sessionbericht als
 Festlegung geführt.
 
+Daneben liegen hier zwei weitere, im Titel so benannte Sorten, die keine
+Abnahmen sind: **Sessionende**-Zeilen (`JJJJ-MM-TT-sessionende.md`) und
+**Offen-Notizen** (`JJJJ-MM-TT-offen-<thema>.md`, Review-Volltexte). Sie
+halten fest, was offen blieb, und entscheiden nichts.
+
 Festgelegtes wird nicht ohne neues User-Wort wieder geöffnet. Am
 Sessionende kommt eine Zeile dazu, was offen blieb — Wissen lebt in
 diesen Dateien, nie im Gedächtnis einer Session.

@@ -3,6 +3,7 @@ version: alpha
 authority:
   functionalSizing: "current"
   visualSystem: "historical-pre-2026-08-31"
+  components: "historical-pre-2026-08-31"
 functionalSizing:
   genStage:
     logicalSize: "950x538 logical px"
@@ -62,8 +63,10 @@ retained as historical implementation and comparison context, not as the
 layout, color, material or position authority for the current functional UI
 architecture. The current target is routed through
 `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` and the
-newer dated files under `design/abnahmen/`. A new visual system begins only
-after an explicit user decision to enter that phase.
+newer dated files under `design/abnahmen/`. The visual phase started on
+2 September 2026 in the Figma file `fable-dummy` (`design/visuell/LIES-MICH.md`,
+acceptance `design/abnahmen/2026-09-02-wechsel-visuelle-phase-figma.md`);
+nothing below supplies it.
 
 ## Current functional sizing contract
 
@@ -90,9 +93,9 @@ surrounding prototype tooling is German.
 
 ## Colors
 
-The palette follows the current Figma nodes `4090:685` and `6002:2`. Neutral values form the material and hierarchy. Wine red is reserved for musical focus, a pending signal or a real emitted-light state. White/grey selection remains distinct from red signal meaning. Error, stale, disconnected and protected states always include text, shape or pattern; color is never their only carrier.
+The legacy palette followed the former Figma nodes `4090:685` and `6002:2` (history since 31 August 2026; the current visual truth is the Figma file `fable-dummy`). Neutral values form the material and hierarchy. Wine red is reserved for musical focus, a pending signal or a real emitted-light state. White/grey selection remains distinct from red signal meaning. Error, stale, disconnected and protected states always include text, shape or pattern; color is never their only carrier.
 
-Runtime ownership uses model B: Figma plus approved pixel goldens own the visual values; `design/prototyp/styles.css` mirrors those values as CSS custom properties. A token change is valid only when the Figma revision, this file, runtime CSS and visual goldens are reconciled together.
+Runtime ownership of the legacy simulator used model B: Figma plus approved pixel goldens owned the visual values and `design/prototyp/styles.css` mirrored them as CSS custom properties. Today only a documented acceptance may be mirrored into `eq-copilot/` (`CLAUDE.md`, Design-Arbeitsmodell).
 
 ## Typography
 

@@ -1,6 +1,6 @@
 # Nakama Gen UX Contract
 
-This is the durable observable-behavior contract for the web simulator and the later native editor. Visual intent lives in `DESIGN.md`; machine-readable names and invariants live in `design/prototyp/contract/ui-contract.json`. This contract is internal UI behavior, not a replacement for Nakama IPC, processor state or the 109-parameter host contract.
+This is the durable observable-behavior contract for the web simulator and the later native editor. Visual truth is the Figma file `fable-dummy` routed by `design/visuell/LIES-MICH.md`; `DESIGN.md` records the pre-31-August-2026 simulator system. Machine-readable names and invariants of the legacy simulator live in `design/prototyp/contract/ui-contract.json` (legacy prototype binding, still to be cleaned up per `design/docs/funktions-und-bedien-blueprint.md`). This contract is internal UI behavior, not a replacement for Nakama IPC, processor state or the host parameter contract (`eq-copilot/schemas/state/nakama-parameter-v2.json`).
 
 The checked-in simulator predates the functional restart of 31 August 2026.
 Where it still exposes the former peer-page tabs or another superseded layout,
@@ -121,7 +121,7 @@ Critical conditions remain visible in the affected region instead of disappearin
 
 ## Motion and data truth
 
-Motion values come from `design/prototyp/contract/motion-tokens.json`. Pointer manipulation updates cursor, handle, number and curve in one frame. Measurement animation runs only while measuring. Spectrum input advances at 20Hz and display frames interpolate between samples. Reduced-motion mode removes transforms and keeps short opacity feedback. Audio ramps remain outside this contract.
+Motion values of the legacy simulator come from `design/prototyp/contract/motion-tokens.json` (legacy prototype binding, see the blueprint). Pointer manipulation updates cursor, handle, number and curve in one frame. Measurement animation runs only while measuring. Spectrum input advances at 20Hz and display frames interpolate between samples. Reduced-motion mode removes transforms and keeps short opacity feedback. Audio ramps remain outside this contract.
 
 For Dynamic EQ, the outer band contour remains at configured gain as the stable
 state marker and hit target. The inner point and its response-curve segment may

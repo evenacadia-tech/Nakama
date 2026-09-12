@@ -1,47 +1,56 @@
 # eq-copilot — Plugin-Bauwurzel (Nakama)
 
-Hier liegen Plugin (JUCE 8 + CMake), Verträge (v2 + v3), Identität, Fixtures,
-Install-Skript (gitignoriert, nur auf dem Desktop) und die Material-Kit-Kette.
-Produkt, Namen, Grundgesetz und Beweis-Kanon stehen in **einer** Quelle:
-`../CLAUDE.md` (Wahrheitskern + Register der User-Entscheide). Dieses README
-wiederholt sie nicht.
+Hier liegen Plugin (JUCE 8 + CMake), Verträge (v2, v3, State, Installer),
+Identität, Fixtures, der ausführende Teil des Installers und die
+Material-Kit-Kette. Produkt, Namen, Grundgesetz und Beweis-Kanon stehen in
+**einer** Quelle: `../CLAUDE.md` (Wahrheitskern). Dieses README wiederholt
+sie nicht.
 
 **Legacy-Name:** Bundle, Codes und Pipes heißen noch `EQ-Copilot` / `EqCop*`;
 die Umbenennung zu „Nakama Studio" ist NAK-30 (Identitäts-Ticket), kein
 Nebenbei-Refactor. Die kompilierte Material-Kit-Front ist ein **Provisorium**
-(User 21.08.: „Nie abgenommen – bleibt Provisorium"); die neue UI aller drei
-Apps kommt aus Figma über `design/` (Repo-Wurzel).
+(User 21.08.: „Nie abgenommen – bleibt Provisorium"); die neue UI beider
+Apps (Gen, Probeeq) entsteht über `design/` (Repo-Wurzel) und die
+Figma-Datei `fable-dummy`.
 
 ## Layout
 
 ```
 eq-copilot/
   CMakeLists.txt   Bauwurzel; JUCE 8.0.9 gepinnt; Versions-Riegel (CMake == kPluginVersion)
-  cmake/           NakamaBruecke.cmake (Quellhash-Gate des JUCE-Patches), FlatBuffers-Pin
+  cmake/           NakamaBruecke (Quellhash-Gate des JUCE-Patches), NakamaIdentitaet, NakamaKern, NakamaFlatcBeleg, FlatBuffers-Pin
   plugin/
-    src/           Produkt: AnalyseEngine · Diagnose · PluginProcessor/-Editor · PipeClient · HoerMarkierung · AssetKit
+    src/           Produkt: AnalyseEngine · Diagnose · PluginProcessor/-Editor · SourcesModel · PipeClient · HoerMarkierung · WorkerCadence · ZonenRegeln · AssetKit · prozessor/
+    core/          Analyse-, IPC- und Lifecycle-Kern (FeatureEngine, ControlClient, TelemetryClient, BrokerLifecycle)
+    state/         Host-State (NakamaState, Schema 2, Migration)
+    sonde/         Probeeq-Prozessor
     hostbridge/    Gegenseite des Bridge-Patches (JUCE-frei, 0 Allokationen)
     hostprobe/     Wegwerf-Messgerät Termin B (NkHp)
     spike/         Wegwerf-Messgerät Termin A, Aux/PDC (NkSp)
     vertrag/       v3-Vertragsengine C++ (JSON + FlatBuffers)
-    tests/         Prüfbinaries (Null, Golden, Markierung, Identität, Hostkontext, HostProbe, Schema, AuxSpike, Shot, PaintBench, PipeProbe)
-  schemas/         v2-Verträge des heutigen Plugins · v3/ Sondenfamilie (Bandgitter, Textriegel, FlatBuffers)
-  identity/        plugin-identities-v1.json — eingefrorene Bundle-Identität
-  fixtures/        Golden-Referenz, Identity-Goldens, v3-Korpus (JSON + Binär), Aux-Spike-Impulse
-  design/          tokens.json → gen-tokens.mjs → plugin/src/LeitstandTokens.h (Provisorium) · archive/ · prisma-studie/
-  docs/            Befunde M0–M3a, CS1, Benchmark-Studie, FL-Testanleitung, FL-Termine A/B, Hör-Markierungs-Konzept
-  install/         (gitignoriert) Install-Skript + Rollback-Bundles
+    tests/         Prüfbinaries; Ziele und Beine in plugin/CMakeLists.txt und tools/beweise.ps1
+  schemas/         v2-Verträge · v3/ Sondenfamilie (Bandgitter, Textriegel, FlatBuffers) · state/ Host-State · installer/ Installer-Manifest
+  identity/        plugin-identities-v1.json, host-capabilities-fl-v1.json — eingefrorene Identität
+  fixtures/        Golden-Referenz · identity/ · v3/ · state/ · p4-korpus/ · p5-korpus/ · aux-spike/ · fl/ (Diagnoseprojekt)
+  kalibration/     Kalibrier-Protokoll und Teststück-Erzeugung (Medien gitignoriert)
+  design/          tokens.json → gen-tokens.mjs → plugin/src/LeitstandTokens.h (Provisorium) · archive/ · prisma-studie/ (Verlauf)
+  docs/            Befunde M0–M3a, CS1, Benchmark-Studie, FL-Testanleitung, FL-Termine A/B, Hör-Markierungs-Konzept, Lizenznotiz
+  install/         Install-Nakama.ps1, NakamaOrdnerHash.ps1, nakama-installer-v1.json (versioniert); Bundles und Rückweg gitignoriert
 ```
 
 ## Bauen und Prüfen
 
-Der vollständige Bau- und Kanonbefehl steht in `../CLAUDE.md` („Bauen &
-Beweisen"): `pwsh -File tools/beweise.ps1 -Bauen …` fährt alle 15 Beine und
-schreibt die rohe Ausgabe ins Manifest. Einzelbefehle ebenfalls dort.
+Der vollständige Bau- und Kanonbefehl steht in `../CLAUDE.md` („Bauen und
+beweisen"): `pwsh -File tools/beweise.ps1 -Bauen …` fährt alle deklarierten
+Beine (Zahl im Runner) und schreibt die rohe Ausgabe ins Manifest.
+Einzelbefehle ebenfalls dort.
 
-Artefakt: `build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3`.
-Installation nur per User-Klick (`install/Install-EQ-Copilot.ps1` als Admin);
-installiert ist zurzeit das Bundle vom 16.08.
+Artefakte: `build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3`
+und das Probeeq-Bundle; die installierten Stände und Hashes stehen in
+`install/nakama-installer-v1.json` und im jüngsten Installationsbeweis unter
+`../docs/beweise/`. Installation läuft seit 12.09.2026 ohne User-Handgriff
+über die erhöhten Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
+`\Nakama\rueckweg` (`../CLAUDE.md`, „Bauen und beweisen").
 
 Pipe Ende-zu-Ende (immer der eigene Probe-Pipename, nie die Produktion):
 
@@ -60,7 +69,7 @@ Nulltest + Probe (`docs/M0-BEFUND.md`).
 M1: Einzelinstanz-Messung — AnalyseEngine (Mehrfachauflösung §5.10.1,
 BS.1770-LUFS, True Peak, Abdeckung, Resonanzkandidaten), Editor-Graph,
 lokaler Snapshot, Kreuzvalidierung **GOLDEN OK 88/88** (`docs/M1-BEFUND.md`).
-**M2 (dieser Stand): Multi-Instanz + Projektbindung** — Protokoll v2
+**M2: Multi-Instanz + Projektbindung** — Protokoll v2
 (Messstand im Heartbeat, heartbeat_ack mit Konflikt-Flag), Projektzeit-Fenster
 mit Sprungzähler, PRE/POST-Paar-Auswertung mit ehrlicher Herabstufung (§5.7),
 persistente Profilbindung, Aggregat-Snapshot (`schemas/eq-aggregat.schema.json`),
@@ -106,3 +115,5 @@ je Region (vorher zählte Quasi-Stille als „Härte"-Zeit). Beweise:
 **MARKIERUNGSTEST 30/30** (inkl. Freewheel/Render bitidentisch) · GOLDEN
 weiter 239/239 (`docs/HOER-MARKIERUNG-KONZEPT.md`,
 `kalibration/KALIBRIER-PROTOKOLL.md`).
+Die Sondenfamilie ab 0.3.0 (P0–P5, SONDE-001 ff., NAK-Tickets) ist in
+`../docs/PLAN-STAND.md` und `../docs/plugin-wissen.md` beschrieben.

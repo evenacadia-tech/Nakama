@@ -42,7 +42,7 @@
     git den Index auf, legt .git/index.lock an, und ein unter Last
     abgeschossener Aufruf laesst die Sperre liegen.
 
-    Der Kanon waechst mit dem Plan: geplante Pruefbinaries (ab P0/P1/P2/P6)
+    Der Kanon waechst mit dem Plan: geplante Pruefbinaries (AbPhase P0 bis P5)
     stehen bereits in der Tabelle. Solange sie fehlen, sind sie eine neutrale
     Zeile "geplant"; sobald sie gebaut sind, laufen sie automatisch mit und
     sind ab dann Pflicht.

@@ -13,8 +13,9 @@ Legacy-Simulator, bildet ihn ab.
 
 ## Status der Figma-Baseline
 
-Die einzige aktuelle Designquelle ist immer `Nakama-Design`, Key
-`NPCQYSkoZEd4Av0NlKxBOd`. Das heutige Simulator-Assetpaket
+Bis zum 02.09.2026 war `Nakama-Design` (Key `NPCQYSkoZEd4Av0NlKxBOd`) die
+Designquelle; seit dem 02.09.2026 läuft die visuelle Phase in `fable-dummy`
+(Key `DvMbHg0MWCPwibDj8q6hI8`, `../visuell/LIES-MICH.md`). Das Simulator-Assetpaket
 `nakama-gen-dark-2026-08-24-rc0` wurde aus einer inzwischen als Verlauf
 eingeordneten Copy-Datei erzeugt. Seine Hashes und Tests bleiben als Beleg des
 gebauten Snapshots gültig, es ist aber keine aktuelle Figma-Baseline.

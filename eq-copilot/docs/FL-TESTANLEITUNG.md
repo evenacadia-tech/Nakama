@@ -1,4 +1,4 @@
-> **Stand-Hinweis 21.08.2026: Anleitung für das heutige Plugin (Material-Kit-Provisorium, 0.3.0). Die Abschnitte, die eine Hub-App oder den 🎚-Knopf voraussetzen (§4, §11–15), sind seit dem Umzug am 18.08. nicht mehr ausführbar — Broker ist eigenständig, Hub-App gestrichen. Die FL-Messungen der Sondenfamilie laufen über `FL-TERMIN-A-AUX-PDC.md` und `FL-TERMIN-B-HOSTZEIT.md`.**
+> **Stand-Hinweis 21.08.2026: Anleitung für das heutige Plugin (Material-Kit-Provisorium, 0.3.0). Die Abschnitte, die eine Hub-App oder den 🎚-Knopf voraussetzen (§4, §11–15), sind seit dem Umzug am 18.08. nicht mehr ausführbar — Broker ist eigenständig, Hub-App gestrichen. Die FL-Messungen der Sondenfamilie laufen über `FL-TERMIN-A-AUX-PDC.md` und `FL-TERMIN-B-HOSTZEIT.md`. Der Block „Aktueller Build" darunter ist der Stand vom 15.08.2026 (historisch): das dort genannte `install\Install-EQ-Copilot.ps1` gibt es nicht mehr, versioniert ist `Install-Nakama.ps1`, und die Installation läuft seit 12.09.2026 über die erhöhten Aufgaben (`../../CLAUDE.md`, „Bauen und beweisen").**
 
 # EQ-Copilot — Probefahrt in FL Studio (M0 ≈ 10 min · M1 ≈ 10 min · M2 ≈ 10 min · M3-Kern ≈ 5 min · M3a ≈ 5 min)
 

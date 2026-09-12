@@ -42,7 +42,7 @@ werden sichtbare Skizze, Abnahmen und Blueprint gemeinsam aktualisiert und
 geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
 ausdrücklichen Wechsel der Phase außen vor.
 
-Stand 02.09.2026: Fünferblock 01
+Stand 12.09.2026: Fünferblock 01
 ([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md),
 Dynamic im Band-Panel) und Fünferblock 02
 ([abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md](abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md),
@@ -50,8 +50,12 @@ Bandbesitz, Kanalmodus, Bypass, Remove) sind integriert; ebenso Fünferblock
 03 (Befund-Dichte, Global-Zeile, Kopf-Umschalter, Probeeq-Kachel) und die
 delegierten Blöcke 04 und 05
 ([abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-04.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-04.md),
-[abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md)),
-mit denen die offenen Bedienfragen erschöpft sind. Der aktuelle
+[abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-05.md)).
+Fünferblock 06 läuft seit dem 02.09.2026
+([abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md](abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md),
+1 von 5, Karte U27); dazu die Fragenrunde vom 06.09.2026
+([abnahmen/2026-09-06-fragenrunde-rollen-u22.md](abnahmen/2026-09-06-fragenrunde-rollen-u22.md),
+fünf Rollen je Quelle). Der aktuelle
 Größenvertrag für beide Gen-Flächen steht in
 [abnahmen/2026-09-01-gen-nur-standardgroesse.md](abnahmen/2026-09-01-gen-nur-standardgroesse.md):
 genau eine logische Größe von 950×538. Compact, Fenster-Resize und eine zweite
@@ -166,11 +170,10 @@ Design-Phasennummer.
 5. **Der User gestaltet mit, nicht nur per Zuruf.** In der laufenden
    Funktionsphase heißt das: die technische Skizze schaltet alle Flächen und
    Szenarien über ihre Inspektionsleiste durch, und jede Antwort wird dort
-   sichtbar geprüft. Lebende Blätter der visuellen Phase (`werkzeug/`,
-   `prototyp/`) bekommen zusätzlich ein eingebautes Bedien-Panel mit live
-   verstellbaren Look-Parametern (Farben, Typo-Größen, Dichte, Radien,
-   Abstände) und vergleichbaren Varianten — erst nach dem ausdrücklichen
-   Wechsel in diese Phase.
+   sichtbar geprüft. Die visuelle Phase läuft seit dem 02.09.2026 in Figma
+   (`fable-dummy`, [visuell/LIES-MICH.md](visuell/LIES-MICH.md)); dort
+   gestaltet der User direkt. `werkzeug/` und `prototyp/` sind historische
+   Messinstrumente und bekommen kein Bedien-Panel mehr.
 6. **Ehrliche Blätter.** In 2 Sekunden ablesbar ist der Maßstab. Nie
    einen Zustand zeigen, den die Spezifikation nicht kennt. Demo-Daten
    sind erlaubt, aber realistisch UND sichtbar als Demo gekennzeichnet.

@@ -6,7 +6,9 @@ wechselnde Instrumente geladen und ohne (später: mit) Effekten gerendert.
 Jede Runde vergleicht **drei Sichten auf dieselbe Datei**:
 
 1. **Offline-Analyse:** `py -3.13 tools/analyze-track.py <wav>` — exakt die
-   Referenzachse, gegen die die Plugin-Engine kreuzvalidiert ist.
+   Referenzachse, gegen die die Plugin-Engine kreuzvalidiert ist (Werkzeug
+   des Protokollstands vom 15.08.2026, historisch, nicht in diesem Repo; die
+   Golden-Referenz erzeugt heute `tools/eq-copilot/erzeuge_fixtures.py`).
 2. **Plugin-Befund:** Snapshot-Datei aus dem Festhalten-Knopf
    (`%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`) — trägt seit v3
    Befundkarten, Perzentile, Zonen-Zeitverlauf und Konvergenz.

@@ -1,9 +1,11 @@
 # Interaktions- und Motion-Spezifikation
 
 > **Status:** Arbeitsvorgabe vom 23.08.2026, auf die Produktstruktur vom
-> 27.08.2026 berichtigt.  
-> **Geltung:** Ergänzt die drei aktuellen Rework-Bilder um Bedienung und
-> Zustandswechsel, ohne ihre visuelle Sprache umzudeuten.  
+> 27.08.2026 berichtigt. **Verlauf seit 31.08.2026:** die drei Rework-Bilder
+> sind Verlauf, Funktions- und Bedienarchitektur bindet seit 02.09.2026
+> [funktions-und-bedien-blueprint.md](funktions-und-bedien-blueprint.md).  
+> **Geltung damals:** Ergänzte die drei Rework-Bilder vom 25.08.2026 um
+> Bedienung und Zustandswechsel, ohne ihre visuelle Sprache umzudeuten.  
 > **Grundlage:** [Oberflächen-Spezifikation](oberflaechen-spezifikation.md),
 > [Arbeitsplan](arbeitsplan.md),
 > [aktuelle Rework-Referenz](../abnahmen/2026-08-25-rework-referenz-drei-designs.md)
@@ -12,7 +14,7 @@
 
 ## 1. Grundsatz
 
-Die drei aktuellen User-Bilder bleiben die visuelle Referenz:
+Die drei User-Bilder vom 25.08.2026 waren die visuelle Referenz dieser Fassung:
 
 - [Gen Fläche 1](../assets/rework-basis-2026-08-25/gen-page-1-overview.png)
 - [Gen Fläche 2](../assets/rework-basis-2026-08-25/gen-page-2-eq-center.png)

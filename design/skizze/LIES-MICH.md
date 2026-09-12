@@ -109,10 +109,12 @@ noch nicht abgeleitete Bereiche. Sie gehören in die nächsten Fünferblöcke.
   Skizze zeigt nur eine endliche Bewegungsprobe und das Zielverhalten. Auch
   die Preset-, Kopie- und Kandidatentransaktionen warten auf ihre Verträge
   (Punkte 12 und 14).
-- **Bedienfragen sind seit Block 05 keine offen.** Was die Skizze zeigt,
-  deckt eine datierte Abnahme oder die delegierte Ableitung vom 02.09.2026;
-  eine neue Frage entsteht erst aus einem neuen User-Entscheid oder einem
-  technischen Vertrag.
+- **Offene Bedienfragen laufen in Block 06** (seit 02.09.2026, 1 von 5,
+  Karte U27, `../abnahmen/2026-09-02-technische-ui-architektur-fuenferblock-06.md`);
+  dazu die Fragenrunde U22 vom 06.09.2026
+  (`../abnahmen/2026-09-06-fragenrunde-rollen-u22.md`). Die Skizze wird nach
+  der fünften Antwort des Blocks nachgezogen; was sie heute zeigt, deckt eine
+  datierte Abnahme oder die delegierte Ableitung vom 02.09.2026.
 
 ## Was hier nicht liegt
 

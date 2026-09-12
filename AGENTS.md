@@ -13,8 +13,10 @@ Vor Änderungen:
 
 1. `git status --short` prüfen und fremde oder unklare Änderungen markieren.
 2. Nur die für den Auftrag passenden Quellen und Fachdateien lesen.
-3. Bei fortgesetzter Planarbeit `tools/plan/planstand.py` ausführen und mit
-   `docs/PLAN-STAND.md` beginnen; danach nur die dort genannte Ticketquelle lesen.
+3. Bei fortgesetzter Planarbeit `py -3.13 tools/plan/planstand.py` ausführen und
+   mit `docs/PLAN-STAND.md` beginnen; danach nur die dort genannte Ticketquelle
+   lesen. Plandokumente laufen vor dem Commit durch
+   `py -3.13 tools/plan/dokuriegel.py <datei>`; ein Verweis ins Leere ist ein Befund.
 4. Umfang und passenden Beweisweg festlegen, bevor Code geändert wird.
 
 Aktueller Code und Beweise aus der laufenden Session gehen beschreibender Doku vor.
@@ -32,7 +34,7 @@ und User-Wortlaut dokumentiert sind. Archive und Studien sind Verlauf, keine Vor
 | Verträge v3 | `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/v3/flatbuffers/README.md` |
 | State oder Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Installation | `eq-copilot/install/` und der jüngste passende Installationsbeweis |
-| UI, UX oder Plugin-Design | `design/LIES-MICH.md`, danach die jüngste passende Datei in `design/abnahmen/` |
+| UI, UX oder Plugin-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md`, `design/visuell/LIES-MICH.md`, danach die jüngste passende Datei in `design/abnahmen/` |
 | Ticketbeweis | das jüngste passende Manifest in `docs/beweise/` und `tools/beweise.ps1` |
 
 Nicht vorsorglich den gesamten Dokumentationsbaum laden. Historische Dateien unter
@@ -88,7 +90,10 @@ irreführende UI-Zustände lesen.
 
 - Broker-E2E nur über den Probe-Pipenamen; nie einen Testbroker auf der
   Produktions-Pipe starten.
-- Installation ist ein bewusster Admin-Schritt des Users und kein normaler Testlauf.
+- Installation läuft seit 12.09.2026 ohne User-Handgriff über die erhöhten
+  Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`, `\Nakama\rueckweg`
+  (`CLAUDE.md`, „Bauen und beweisen"); der Installer verweigert bei laufendem FL
+  und bei Manifest-Hash-Abweichung.
 - UI-Sichtprüfung ohne FL Studio über `EqCopShot.exe`; relevante Zustände und feste
   Fenstermaße visuell prüfen.
 - Einen nicht ausführbaren Test mit Grund melden und einen kleineren, ehrlichen Beleg
@@ -103,10 +108,12 @@ Für Designaufgaben gilt zusätzlich diese Reihenfolge:
    `design/docs/funktions-und-bedien-blueprint.md` und
    `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`
    lesen; danach nur die jüngste passende Detailabnahme.
-3. Frühere Figma-Nodes, Exporte und die drei Rework-Bilder vom 25.08. sind für
-   diese designneutrale Phase Verlauf. Sie dürfen keine Raster-, Farb-,
-   Material- oder Positionsentscheidung still ergänzen. Eine neue visuelle
-   Richtung beginnt erst nach ausdrücklichem User-Wechsel in diese Phase.
+3. Seit 02.09.2026 läuft die visuelle Phase in der Figma-Datei `fable-dummy`
+   (`design/visuell/LIES-MICH.md`); die Skizze in `design/skizze/` ist
+   Layout-Wahrheit, ein Figma-Stand bleibt Vorschlag bis zur datierten Abnahme.
+   Frühere Figma-Nodes, Exporte und die drei Rework-Bilder vom 25.08. sind
+   Verlauf und ergänzen keine Raster-, Farb-, Material- oder
+   Positionsentscheidung still.
 4. Genau eine echte, technisch noch offene UI-Architekturfrage stellen. Die
    Antworten werden in festen Fünferblöcken gesammelt. Erst nach der fünften
    Antwort werden laufende Skizze, Abnahmen und Blueprint gemeinsam

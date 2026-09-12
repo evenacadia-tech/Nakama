@@ -3,7 +3,7 @@
 | Merkmal | Wert |
 |---|---|
 | Ticket | S26–28, `SONDE-015` (Phase P6), Leitungsname „Die Klangregelung in der Sonde sicher und speicherbar machen" |
-| Etappe | **Etappe 4a gebaut auf `dc6c148a`; Erstprüfung 4a NEEDS_WORK mit sechs Defekten (§10.8), Nacharbeit VERTAGT hinter den Audit (User-Wort 10.09.2026, Register NAK-246). SONDE-015-Audit-Nacharbeit D8/D10/N-12/N-9 gebaut auf `4711dab0` und mit Wiederprüfung PASS abgeschlossen (§11, §11.8).** Reihenfolge: NAK-246 (`docs/beweise/roh/NAK-246-auftrag.txt`) → `/code-review ultra` (Skill §3.7) → Nacharbeit 1 der Etappe 4a → Etappe 4b (Fernweg-Anteile, voller Kanon). Etappe 1 (Matrix) nach sieben Matrixprüfungen, Konvergenzentscheid und NAK-245-Runde (§7); Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
+| Etappe | **Etappe 4a gebaut auf `dc6c148a`; Erstprüfung 4a NEEDS_WORK mit sechs Defekten (§10.8), Nacharbeit VERTAGT hinter den Audit (User-Wort 10.09.2026, Register NAK-246). SONDE-015-Audit-Nacharbeit D8/D10/N-12/N-9 gebaut auf `4711dab0` und mit Wiederprüfung PASS abgeschlossen (§11, §11.8).** Reihenfolge: NAK-246 (`docs/beweise/roh/NAK-246-auftrag.txt`) → NAK-283 (zweiter Codeaudit, Übernahme 12.09.2026; das Ultra-Review entfällt, Karte U39) → Nacharbeit 1 der Etappe 4a (Quellvalidierung und Einordnung liegen vor, §12) → Etappe 4b (Fernweg-Anteile, voller Kanon). Etappe 1 (Matrix) nach sieben Matrixprüfungen, Konvergenzentscheid und NAK-245-Runde (§7); Etappe 2 (Verträge in drei Sprachen) nach Erstprüfung und zwei Nacharbeiten (§8); Etappe 3 (DSP-Kern als Bibliothek, B6 scharf) nach Erstprüfung und drei Nacharbeiten (§9). |
 | Phase | **Etappe 2 abgenommen auf `6f2baba6`; Etappe 3 abgenommen auf `156445a8` (Erstprüfung NEEDS_WORK → Nacharbeit 1 → Wiederprüfung 1 NEEDS_WORK → Nacharbeit 2 → Wiederprüfung 2 NEEDS_WORK → Nacharbeit 3 → Wiederprüfung 3 PASS; das Budget von drei Runden ist genau ausgeschöpft).** Etappe 4a ist gebaut, ihre Prüfung steht aus (§10); Etappe 4b folgt. Die Abschlussprüfung über den ganzen Ticketbereich und der volle Kanon folgen nach Etappe 4b. |
 | Urteil | **Offen.** Weder T1 noch T2 vergeben. Etappe 1 baut nichts und behauptet deshalb kein gemessenes Produktverhalten; ihr einziger Gegenstand ist, ob §3 die Zusagen des Gate-Textes vollständig und widerspruchsfrei trägt. |
 | Prüfstufe | **T2 gefordert** (`docs/plan/plan.json`, Schritt S26–28, `"stufe": "T2"`). Heute vergeben: **keine**. |
@@ -4318,3 +4318,36 @@ Das Mittel des Übergangs ist das 2,03-Fache des stationären Mittels: vier gege
 | Etappenstand | Die Auditbefunde D8 und D10 innerhalb von SONDE-015 sind geschlossen; N-12 (B28 rot seit Etappe 2) und N-9 (M-118, M-120 B6-Hälfte) ebenfalls. **Als Nächstes NAK-246** (Auditbefunde D1–D7, D9 außerhalb von SONDE-015; `docs/beweise/roh/NAK-246-auftrag.txt`, Etappe 1 Matrix); danach `/code-review ultra` (Skill §3.7), Nacharbeit 1 der Etappe 4a (§10.8), Etappe 4b |
 
 ---
+
+## 12. Quellvalidierung der Etappe-4a-Befunde und Einordnung (Dirigent, 12.09.2026)
+
+| Merkmal | Wert |
+|---|---|
+| Anlass | §10.8: sechs Defekte der Erstprüfung 4a (Codex `gpt-6-astra` max, Thread `01a08cfc`), Nacharbeit vertagt hinter den Audit; Reihenfolge nach NAK-246 §13.10/§13.11 und NAK-283. |
+| Validierer | Ein lesender Opus-Agent (Effort max), gestartet 11:48 Uhr an HEAD `0359e4da`; Produktcode der sechs Quelldateien identisch mit `dc6c148a` (Diff `dc6c148a..HEAD`: nur `eq-copilot/plugin/dsp/DspKern.h` +18, Testzugang aus §11), die Zeilenangaben des Urteils gelten unverändert. Keine Repros, keine Builds. |
+| Rohdatei | `docs/beweise/roh/SONDE-015-etappe-4a-quellvalidierung.md` (Quellzitate, Matrixzeilen, Auslöseketten, tragende Tests, gemeinsame Ursachen). |
+| Ergebnis | **Alle sechs bestätigt; alle sechs DEFEKT** (Einordnung unten). |
+
+### 12.1 Befunde, Status und Einordnung
+
+| Nr | Status | Klasse (Dirigent) | Zusage | HEAD-Zeilen (`SondeProcessor.cpp`, sofern nicht anders) | Kurzgrund |
+|---|---|---|---|---|---|
+| 1 | BESTÄTIGT | **DEFEKT** | M-67, M-84 | `:1202-1212`; Kette `:1110-1118`, `:1161-1172`, `:1234-1246` | Abgleich trägt Herkunftstag, lässt die Mailbox stehen; der nächste Takt legt den abgewiesenen Wert erneut ins Overlay und publiziert ihn hörbar. |
+| 2 | BESTÄTIGT | **DEFEKT** | CLAUDE.md Audio-Thread (keine Sperren) | `:1120-1136`, `:1009-1033`; JUCE `juce_AudioProcessorParameter.cpp:88-121`, VST3-Wrapper `:843-850` | Gestus-Callback hält `listenerLock` desselben Parameters über die ganze Transaktion; der Audiothread nimmt dieselbe Sperre. Heute nur über B7 erreichbar (`hasEditor()==false`); die Zusage gilt unabhängig vom Pfad. |
+| 3 | BESTÄTIGT | **DEFEKT** | M-92 | `:1227-1258` gegen `:1014-1023` | `dspKontrollTakt` prüft `zustand.nurLesen` nie; Hostautomation auf fremdem Major wird hörbar publiziert. Pfad heute scharf. |
+| 4 | BESTÄTIGT | **DEFEKT** | CLAUDE.md Audio-Thread (keine Sperren) | `:1101-1108`; VST3-Wrapper `:3880-3910` (`:3892`) | Der Wrapper ruft `setNonRealtime` je Offline-Block im Audiothread; die Sperre umschließt den Programmbau des Workers. Realtime bleibt frei (`:1104`). |
+| 5 | BESTÄTIGT | **DEFEKT** | CLAUDE.md NaN-Ehrlichkeit („verriegelt und gezählt") | `:1174-1200` (`:1188-1189`) | Verriegelt, aber nicht gezählt; kein Zähler im ganzen Prozessor. Die Matrix schweigt (E4-10 ohne Zähler), die Invariante steht über der Matrix — deshalb Defekt, nicht Lücke. |
+| 6 | BESTÄTIGT, breiter | **DEFEKT** | M-125 („nach jeder Eingabe und nach jedem Ladestart") | `TransactionTestMain.cpp:141-146`, `:553-568`, `:581-589`, `:591-611`, `:1008-1016` | 112 `fahre`-Stellen gegen 27 `wachen`; auch T11 und der Ladestart in Abschnitt F ohne Wache. Der Test misst die Zusage nicht. |
+
+**Zusatzbefund des Validierers.** Keiner der fünf Produktbefunde (1 bis 5) würde heute rot: B7 fährt den Prozessor einthreadig, nie über den Wrapper-Pfad, ohne Sperrenzähler, ohne abgewiesenen Gestus, ohne Automation auf read-only. Nacharbeit 1 braucht deshalb je Zeile einen Rotbeweis an der Zusage, nicht nur den Fix.
+
+### 12.2 Gemeinsame Ursachen und Regeln für Nacharbeit 1 (Dirigent)
+
+Haben Befunde eine gemeinsame Ursache, ist die Ursache der Auftrag, nicht die Punktkorrektur (Skill §3.2). Drei Ursachen, drei Regeln; der Worker schreibt daraus zuerst die Matrixzeilen (Spezifikation vor Code), je Zeile fällt der Rotbeweis an der Zeile, die die Zusage trägt, nicht an einem Nebeneffekt.
+
+- **Ursache A (Befunde 1, 3, 5) — der Hostereignis-Weg ist eine zweite Eingangstür in den Zustand**, die an S0 bis S8 vorbeigeht und trotzdem über `publiziereWirksam` hörbar wird: ohne Read-only-Riegel, ohne Rücknahme bei Abweisung oder Ladestart, ohne Verwurfszähler. **Regel R-4a-A:** Der Hostereignis-Eingang (Automation, Gestus → Mailbox → `dspKontrollTakt`) unterliegt denselben Riegeln wie jede Transaktion: ein read-only gehaltener Zustand verriegelt ihn vollständig (kein Overlay, keine Publikation); ein abgewiesener oder von einem Ladestart überholter Gestus wird beim Abgleich aus der Mailbox entfernt (Herkunftstag plus Generation), nie erneut angelegt; nicht-endliche Hostwerte werden verworfen und in einem sichtbaren Zähler gezählt. Je Satz eine Matrixzeile mit Rotbeweis.
+- **Ursache B (Befunde 2, 4) — es gibt keinen Übergabepunkt für fremde Callbacks außer der Hostwert-Mailbox;** Gestus-Ende und Offline-Wechsel fassen `zustandSchloss` selbst an, und diese Sperre umschließt die längste Arbeit des Prozessors (SHA-256, Programmbau, Bankpflege). **Regel R-4a-B:** Kein Host- oder Audio-Callback (Parameter-Listener, Gestus-Ende, `setNonRealtime`, `processBlock`) nimmt `zustandSchloss` oder rechnet eine Transaktion synchron; er legt nur einen Wunsch in die Mailbox, den der Message-Thread beziehungsweise Worker verarbeitet. Beweis: Sperrenzähler oder Assertion auf dem nachgebildeten Wrapper-Pfad (Listener-Callback und Offline-Umschaltung aus einem zweiten Thread), rot vor dem Fix.
+- **Ursache C (Befund 6, allein) — Prüfkadenz, verhaltensneutral.** **Regel R-4a-C:** Die M-125-Wachen laufen nach jeder Eingabe und nach jedem Ladestart in allen Abschnitten (33-Commit-Vorlauf, T11, T12, Abschnitt F); der Test zählt seine Wachen gegen seine Eingaben und fällt bei Ungleichheit.
+
+**Reihenfolge.** NAK-283 (zweiter Codeaudit, Vorrang nach User-Wort 10.09. und 12.09.2026) → Nacharbeit 1 der Etappe 4a mit R-4a-A bis R-4a-C als Auftrag (Runde 1 von 3, Wiederprüfung durch Codex Astra max) → Etappe 4b. Kein Worker im Checkout, bevor NAK-283 seine Einordnung hat.
+

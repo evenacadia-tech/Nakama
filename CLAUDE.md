@@ -297,3 +297,7 @@ drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
 - Ein laufender Dirigenten-Starterprozess lädt sein Skript beim
   Marker-Neustart nicht neu (NAK-257); Skriptänderungen greifen erst nach
   Fensterneustart.
+- Zwei Kanons auf einem Rechner (Worker-Checkout und Arbeitskopie) teilen
+  die Probe-Pipenamen: A4 hängt dann bei 0 % CPU bis zum 60-Minuten-Limit
+  (NAK-289). Vor einem Kanon in einer Arbeitskopie prüfen, dass im
+  sichtbaren Checkout kein Bau- oder Testprozess läuft.

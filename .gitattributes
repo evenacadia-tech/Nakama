@@ -6,6 +6,7 @@
 *.wav  binary
 *.flac binary
 *.exr  binary
+*.flp  binary
 
 # Die freigegebenen Design-Assets und Goldens werden ueber SHA-256 im
 # Asset-Manifest verifiziert. Sie muessen deshalb auf jedem Rechner exakt

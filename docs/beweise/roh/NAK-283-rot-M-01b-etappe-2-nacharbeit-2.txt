@@ -1,0 +1,86 @@
+NAK-283 Etappe 2, Nacharbeit 2 - Rotbeweis MUT-B fuer M-01b, M-72 (je drei Rotlaeufe)
+Datei:      eq-copilot\plugin\src\prozessor\Ipc.cpp
+Mutation:   Ipc: den Ueberholt-Ausstieg auf den Reload-Zweig legen (Ausstieg VOR meldeHostDirty und v3StateRevision)
+SHA-256 vorher: B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97  (= Manifest §23.4: ja)
+
+Bein:       EqCopSonde012ProjectReloadTest --nur 283m01
+Rotlaeufe:  3 (Exit je Lauf: 1, 1, 1)
+SHA-256 nachher (bytegleiche Ruecknahme): B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97
+Urteil:     ROT Exit 1/1/1 / GRUEN Exit 0
+
+--- RIEGEL DIESER RUNDE ---
+Zusagezeile(n), die in JEDEM Rotlauf fallen muessen:
+  M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle
+  M-01: Revision-Delta == 2
+  Ergebnis: erfuellt in allen 3 Rotlaeufen
+Keine FEHLER-Zeile eines Rotlaufs darf 'Aufbau:' enthalten (§6.1 Punkt 2):
+  Ergebnis: erfuellt - keine Aufbauzeile ist gefallen
+Gruenlauf ohne FEHLER-Zeile: ja
+
+--- MUTIERT, Lauf 1 von 3 (erwartet: rot) ---------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied im State
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01 Aufbau: hinter dem Drainriegel traegt auch das Modell B  [bbbb=Eingeschleust]
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  FEHLER  M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [1]
+  FEHLER  M-01: Revision-Delta == 2  [1]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 11/13 gruen
+
+--- MUTIERT, Lauf 2 von 3 (erwartet: rot) ---------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied im State
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01 Aufbau: hinter dem Drainriegel traegt auch das Modell B  [bbbb=Eingeschleust]
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  FEHLER  M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [1]
+  FEHLER  M-01: Revision-Delta == 2  [1]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 11/13 gruen
+
+--- MUTIERT, Lauf 3 von 3 (erwartet: rot) ---------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied im State
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01 Aufbau: hinter dem Drainriegel traegt auch das Modell B  [bbbb=Eingeschleust]
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  FEHLER  M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [1]
+  FEHLER  M-01: Revision-Delta == 2  [1]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 11/13 gruen
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== NAK-283 M-01 aeltere_mitgliederpublikation_ersetzt_keine_juengere ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-01 Aufbau: B ist Mitglied im State
+  ok      M-01 Aufbau: der Aufbau-Drain ist samt Publikation, Dirty und Revision zurueck - erst danach gelten Baseline und Scharfschalten
+  ok      M-01 Aufbau: hinter dem Drainriegel traegt auch das Modell B  [bbbb=Eingeschleust]
+  ok      M-01: der Workerzug steht zwischen Kopie und Publikation - der Join ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-01: die gezogene Kopie traegt [B, A], das Modell noch [B] (Vorbedingung der Zusage)  [bbbb=Eingeschleust]
+  ok      M-01: der Message-Thread hat den Unbind angewandt und `[A]` publiziert  [aaaa=Eingeschleust]
+  ok      M-01: aeltere_mitgliederpublikation_ersetzt_keine_juengere - nach Ruhe traegt das Modell GENAU [A], nicht die aeltere Kopie [B, A]  [aaaa=Eingeschleust]
+  ok      M-01: die aeltere Publikation ist als UEBERHOLT gezaehlt - im Prozessor und im Modell  [1 / 1]
+  ok      M-01: KEIN Reloadfall - der Reloadzaehler bleibt bei 0  [0]
+  ok      M-01: Dirty-Zaehler == Zahl der State-aendernden Befehle (2), nicht 1 - die ueberholte Publikation laesst ihre Aenderung nicht ungezaehlt  [2]
+  ok      M-01: Revision-Delta == 2  [2]
+  ok      M-01: der Workerzug ist samt Nachfuehrung zurueck
+SONDE-012 ProjectReload (nur 283m01): 13/13 gruen

@@ -1,0 +1,21 @@
+{
+ "id": "bereitschaft",
+ "titel": "FL antwortet, das Diagnoseprojekt mit beiden Plugins ist offen, Ton fließt durch Sondenspur und Master",
+ "quelle": "docs/gesundheit/KONZEPT.md §4.6; Projektaufbau eq-copilot/fixtures/fl/LIES-MICH.md",
+ "schritte": [
+  {"aktion": "system.ping", "erwarte": {"program_title": {"enthaelt": "FL Studio"}, "fl_version": {"nicht_leer": true}}},
+  {"aktion": "plugins.getName", "params": {"index": 0, "slot_index": 0, "use_global": true}, "erwarte": {"name": {"gleich": "EQ-Copilot"}}},
+  {"aktion": "plugins.getName", "params": {"index": 1, "slot_index": 0, "use_global": true}, "erwarte": {"name": {"gleich": "Nakama Probeeq"}}},
+  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"name": {"gleich": "Testtrack"}, "target_fx_track": {"gleich": 1}, "is_muted": {"gleich": false}}},
+  {"aktion": "transport.getLength", "erwarte": {"bars": {"min": 16}}},
+  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}},
+  {"aktion": "transport.stop"},
+  {"aktion": "transport.setPosition", "params": {"position": 2, "mode": 1}},
+  {"aktion": "transport.start", "erwarte": {"is_playing": {"gleich": true}}},
+  {"warte_s": 3},
+  {"aktion": "mixer.getPeaks", "params": {"track": 1}, "erwarte": {"peak_max": {"min": 0.01, "max": 1.0}}},
+  {"aktion": "mixer.getPeaks", "params": {"track": 0}, "erwarte": {"peak_max": {"min": 0.01, "max": 1.0}}},
+  {"aktion": "transport.getStatus", "erwarte": {"is_playing": {"gleich": true}, "loop_mode": {"gleich": "song"}}},
+  {"aktion": "transport.stop", "erwarte": {"stopped": {"gleich": true}}}
+ ]
+}

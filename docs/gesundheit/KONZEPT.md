@@ -334,8 +334,9 @@ S25e (Register NAK-286) in vier Schichten: Bereitschaft selbstheilend
 Ping), MCP-Härtung (nur loopMIDI-Port, Ping, Pegel, Fenster, Screenshot,
 berichtigte Modi), Diagnose-Briefkasten in Plugin und Broker (Snapshot und
 Aggregat ohne Klick, nur auf Anfragedatei, keine Host-Parameter) und
-Szenarien als JSON unter `docs/gesundheit/szenarien/` (anzulegen) mit dem
-Runner `tools/fl/szenario.py` (anzulegen). Der Telemetrie-Leser auf dem
+Szenarien als JSON unter `docs/gesundheit/szenarien/` mit dem Runner
+`tools/fl/szenario.py` und dem Ablauf `tools/fl/laufzeit.ps1` (erste Fassung
+12.09.2026, Bereitschaftsszenario gemessen). Der Telemetrie-Leser auf dem
 Pipenamen bleibt Stufe 2 dahinter, weil er eine Vertragsfläche ist.
 
 **Kadenz.** Je Ticket nach grünem Kanon (Dirigenten-Skill §3.3); ob der

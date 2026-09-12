@@ -11,8 +11,8 @@ den exakten Wortlaut der vier Einfügungen und ist danach Verlauf.
 ```markdown
 - **Laufzeit-Arm** (User 12.09.2026, Register NAK-286, Plan S25e): nach
   grünem Kanon auf dem End-Stand `pwsh -NoProfile -File
-  tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>` (anzulegen in
-  S25e). Der Runner entscheidet selbst, ob der Diff lohnt (Plugin, Schemas,
+  tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>`. Der Runner
+  entscheidet selbst, ob der Diff lohnt (Plugin, Schemas,
   Broker, Installer), zieht die Manifest-Hashes nach, installiert über die
   erhöhte Aufgabe `\Nakama\installieren`, startet FL mit dem Diagnoseprojekt
   und fährt die Szenarien. Exit 0 = gemessen oder begründet übersprungen
@@ -54,5 +54,5 @@ Neu:
 ```
 
 Prüfung danach: `py -3.13 tools/plan/dokuriegel.py .claude/skills/dirigent/SKILL.md`
-(der Verweis auf `tools/fl/laufzeit.ps1` ist mit „anzulegen" markiert, bis
-S25e ihn baut) und die Byte-Grenze aus `docs/context-hygiene-playbook.md`.
+(`tools/fl/laufzeit.ps1` liegt seit 12.09.2026 vor) und die Byte-Grenze aus
+`docs/context-hygiene-playbook.md`.

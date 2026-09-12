@@ -1,0 +1,61 @@
+NAK-246 Rotbeweis M-38 - abgeholter Batch ueberlebt den Reload
+==============================================================
+Rotbau: der Generationsvergleich vor der Anwendung des Batches
+(wendeBestaetigteSourcesCommandsAn, R-A1 Punkt 3) ist entfernt; alles andere
+- Testhaken, Testfall, Generation in setStateInformation, Vergleich in der
+Nachfuehrung - bleibt unveraendert. Grundstand: Commit 77c4e03f.
+
+Rotbau-Diff
+-----------
+diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+index 413eaf65..21de895f 100644
+--- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
++++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+@@ -1481,11 +1481,7 @@ void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
+         // faellt); der Speicher-Drain haelt es ohnehin schon ueber alle
+         // Befehle und `speichere` (State.cpp).
+         std::lock_guard<std::mutex> l (bindungMutex);
+-        if (reloadGeneration.load() != generationBeimAbholen)
+-        {
+-            sourcesBatchNachReloadVerworfen.fetch_add (1);
+-            return;  // kein Dirty, keine Revision: der geladene State ist die Wahrheit.
+-        }
++        // ROTBAU M-38: Vergleich entfernt.
+         for (const auto& befehl : befehle)
+             if (wendeSourcesCommandAnUnterBindung (befehl))
+                 ++geaendert;
+
+Lauf --nur m38 | 2026-09-12 02:30:44 | EXIT=1
+-----------------------------------------------------
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  FEHLER  M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [0 Mitglied(er) im State, im Modell bestaetigt]
+  FEHLER  M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [0]
+  ok      M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 1 (nach Reload 1), Revision-Delta 0]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m38): 7/9 gruen
+
+Rotbau 2 - BEIDE Vergleiche entfernt (das Verhalten des Standes a88c87e8)
+------------------------------------------------------------------------
+Zusaetzlich zum Vergleich im Rahmen ist auch der Vergleich in der Nachfuehrung
+entfernt. Erst so zeigt der Lauf die volle Folge des Befundes P1: das geladene
+Mitglied faellt UND Host-Dirty und Revision steigen unmittelbar nach einem
+Ladevorgang, der laut State.cpp bewusst kein Dirty meldet.
+
+Lauf --nur m38 | 2026-09-12 02:31:32 | EXIT=1
+-----------------------------------------------------
+== NAK-246 M-38 abgeholter_batch_ueberlebt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-38 Aufbau: A ist Mitglied - der Workerzug hat den bestaetigten Join angewandt
+  ok      M-38: der Workerzug steht am Haken - [unbind_probe] ist geswappt und liegt lokal auf seinem Stack, angewandt ist nichts
+  ok      M-38: waehrend der Drain haelt, ist A noch Mitglied
+  ok      M-38: der geladene State traegt A (Vorbedingung der Zusage)
+  FEHLER  M-38: abgeholter_batch_ueberlebt_den_reload_nicht - das geladene Mitglied BLEIBT Mitglied des `zustand` UND des Modells  [0 Mitglied(er) im State, im Modell NICHT bestaetigt]
+  FEHLER  M-38: der Verwerfzaehler zaehlt genau EINEN ganz verworfenen Batch  [0]
+  FEHLER  M-38: kein Host-Dirty und keine Revisionserhoehung nach dem Laden  [Dirty 2 (nach Reload 1), Revision-Delta 1]
+  ok      M-38: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m38): 6/9 gruen

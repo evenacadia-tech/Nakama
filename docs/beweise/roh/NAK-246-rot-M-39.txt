@@ -1,0 +1,94 @@
+NAK-246 Rotbeweis M-39 - gezogene Kopie ueberholt den Reload
+============================================================
+Rotbau: die Fassung MIT dem neuen Publikationshaken, aber OHNE die beiden
+Generationsvergleiche in meldeSourcesMitgliederNachBefehl (R-A1 Punkt 4).
+Der Vergleich im Rahmen (Punkt 3) bleibt unveraendert - er greift hier nicht,
+weil der Befehl VOR dem Reload gueltig angewandt wurde. Grundstand: 77c4e03f.
+
+Rotbau-Diff
+-----------
+diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+index 413eaf65..73b61156 100644
+--- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
++++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+@@ -1423,22 +1423,14 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
+     std::vector<nakama::state::MainProjectMitglied> kopie;
+     {
+         std::lock_guard<std::mutex> l (bindungMutex);
+-        if (reloadGeneration.load() != generationBeimAbholen)
+-        {
+-            sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+-            return;
+-        }
++        // ROTBAU M-39: Vergleich atomar zur Kopie entfernt.
+         kopie = zustand.mainProjectMitglieder;
+     }
+     // NAK-246 M-39: der Testhaken zwischen Kopie und Publikation, ohne
+     // gehaltene Sperre. Im Produkt leer.
+     if (sourcesPublikationHakenFuerTest)
+         sourcesPublikationHakenFuerTest (kopie.size());
+-    if (reloadGeneration.load() != generationBeimAbholen)
+-    {
+-        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+-        return;
+-    }
++    // ROTBAU M-39: Vergleich vor der Publikation entfernt.
+     sourcesModel.setzePersistenteMitglieder (kopie);
+     meldeHostDirty();
+     v3StateRevision.fetch_add (1);
+
+Lauf --nur m39 | 2026-09-12 02:32:13 | EXIT=1
+-----------------------------------------------------
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  FEHLER  M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): aaaa ]
+  FEHLER  M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [0]
+  FEHLER  M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 1 (nach Reload 0), Revision-Delta 1]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 7/10 gruen
+
+Rotbau 2 - R-A1 Punkt 4 WOERTLICH: nur der Vergleich atomar zur Kopie
+---------------------------------------------------------------------
+Warum die Nacharbeit einen ZWEITEN Vergleich fuehrt. Steht der Vergleich nur
+innerhalb des indungMutex-Blocks, in dem die Kopie gezogen wird, dann ist
+er beim Haken zwischen Kopie und Publikation (die Stelle, die der Auftrag fuer
+M-39 nennt) bereits gelaufen - der Reload danach bleibt ungesehen und die
+Publikation faellt trotzdem durch. Dieser Lauf ist der Beleg dafuer; er ist
+der Grund fuer die Abweichung, die Paragraph 13.3 festhaelt.
+
+Lauf --nur m39 | 2026-09-12 02:32:50 | EXIT=1
+-----------------------------------------------------
+diff --git a/eq-copilot/plugin/src/prozessor/Ipc.cpp b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+index 413eaf65..5d4416eb 100644
+--- a/eq-copilot/plugin/src/prozessor/Ipc.cpp
++++ b/eq-copilot/plugin/src/prozessor/Ipc.cpp
+@@ -1434,11 +1434,7 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
+     // gehaltene Sperre. Im Produkt leer.
+     if (sourcesPublikationHakenFuerTest)
+         sourcesPublikationHakenFuerTest (kopie.size());
+-    if (reloadGeneration.load() != generationBeimAbholen)
+-    {
+-        sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
+-        return;
+-    }
++    // ROTBAU 2: nur der zweite Vergleich entfernt - R-A1 Punkt 4 woertlich.
+     sourcesModel.setzePersistenteMitglieder (kopie);
+     meldeHostDirty();
+     v3StateRevision.fetch_add (1);
+== NAK-246 M-39 gezogene_kopie_ueberholt_den_reload_nicht ==
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      NAK-246 D3: der Prozessor ist ein Main mit Bindung
+  ok      M-39 Aufbau: das fremde Projekt traegt genau B
+  ok      M-39: der Workerzug steht zwischen Kopie und Publikation - der Befehl ist angewandt, das Modell noch nicht nachgefuehrt
+  ok      M-39: die gezogene Kopie traegt A (Vorbedingung der Zusage)
+  ok      M-39: der geladene State traegt genau B
+  FEHLER  M-39: gezogene_kopie_ueberholt_den_reload_nicht - das Modell traegt GENAU die Mitglieder des geladenen States (B als bestaetigt), nicht die alte Kopie (A)  [1 Zeile(n): aaaa ]
+  FEHLER  M-39: der Zaehler haelt genau EINE unterbliebene Nachfuehrung fest  [0]
+  FEHLER  M-39: die unterbliebene Publikation meldet kein Dirty und erhoeht keine Revision  [Dirty 1 (nach Reload 0), Revision-Delta 1]
+  ok      M-39: der Workerzug ist samt Nachlauf zurueck  [2 -> 3 Eintritte]
+SONDE-012 ProjectReload (nur m39): 7/10 gruen

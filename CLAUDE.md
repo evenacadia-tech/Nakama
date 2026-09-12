@@ -166,13 +166,18 @@ Die frühere Daueranweisung liegt als Snapshot in
 - `eq-copilot/identity/`: eingefrorene Identität und Host-Capabilities.
 - `eq-copilot/install/`: manifestgetriebener Installer und Rückweg.
 - `broker/`: Rust-Broker `eqcop-broker.exe`.
-- `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
+- `tools/`: `beweise.ps1` (kanonischer Beweis-Runner), `plan/` (Planstand,
+  Dokuriegel, Gesundheit, Antwortblatt), `dirigent/` (Starter, Cockpit,
+  Prüfliste, Vorlagen), `fl/` (Laufzeit-Arm, Szenarien), `eq-copilot/`
+  (Fixture- und Prüfskripte), `hooks/` (Primer, Git-Riegel), `pruefung/`
+  (Prüfsessions), `codex-plugins/` (Codex-Werkzeugquelle).
 - `design/`: Übersetzung der User-Vorgabe, Skizze (`skizze/`), visuelle Phase
   (`visuell/`), Abnahmen, Designregeln, historischer Web-Prototyp
   (`prototyp/`).
 - `wissen/`: eingeordnetes externes Wissen; keine Produktentscheide, keine
   Roh-PDFs.
-- `docs/beweise/`: rohe, ticketspezifische Belegmanifeste.
+- `docs/beweise/`: rohe, ticketspezifische Belegmanifeste; Rohausgaben unter
+  `roh/`, User-Messtermine unter `termin-a/` und `termin-b/`.
 
 ## Tragende technische Invarianten
 
@@ -209,7 +214,11 @@ pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -
 Der Runner baut, fährt die deklarierten Beine, legt Rohausgaben unter
 `docs/beweise/roh/` ab (Manifest trägt Kopf, Urteilszeile, Übersicht) und
 verweigert die Beglaubigung, wenn Prüfbinaries älter sind als ihre Quellen.
-Einzelbefehle und Zielnamen stehen im Skript. Editor-Sichtprüfung ohne FL
+Einzelbefehle und Zielnamen stehen im Skript. Nach grünem Kanon fährt der
+Laufzeit-Arm `tools/fl/laufzeit.ps1 -Ticket <T> -Basis <sha>` (installiert,
+startet FL mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, fährt die
+Szenarien aus `docs/gesundheit/szenarien/`; Exit 4 = Szenario verfehlt;
+`tools/fl/LIES-MICH.md`). Editor-Sichtprüfung ohne FL
 über `EqCopShot.exe`. Installation läuft seit 12.09.2026 ohne User-Handgriff
 über die erhöhten Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
 `\Nakama\rueckweg` (User-Entscheid, Register NAK-285; je Rechner einmal
@@ -251,9 +260,10 @@ letzten Installationsbeweis prüfen.
 - Bash-Heredocs können Backslashes in Windows-Pfaden verändern; Pipes
   verdecken Exitcodes.
 - Bytegleiche Fixtures und Patches brauchen passende `.gitattributes`-Regeln.
-  `eq-copilot/schemas/**` und `eq-copilot/fixtures/**` sind `-text`, der Baum
-  darunter ist gemischt (LF und CRLF): vor dem Schreiben `git ls-files --eol
-  <datei>` lesen und dieselben Zeilenenden zurückschreiben.
+  `-text` gilt für `eq-copilot/schemas/{v3,state}/**`,
+  `eq-copilot/fixtures/{v3,state,p4-korpus,p5-korpus}/**`, `design/assets/**`
+  und `*.patch`; der übrige Baum ist gemischt (LF und CRLF): vor dem Schreiben
+  `git ls-files --eol <datei>` lesen und dieselben Zeilenenden zurückschreiben.
 - Keine GPU-Batch-Render-Loops auf der Arc A770; Renderprüfung einzeln oder
   per CPU.
 - Playwright-MCP lädt keine `file://`-Adressen und legt relative
@@ -285,8 +295,8 @@ letzten Installationsbeweis prüfen.
 - Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen
   „Voraussetzung fehlt" enden; vor einem Befund gegen den Runner einmal
   wiederholen. Fehlt es zweimal, fehlt `flatc.exe` (Zeiger in
-  `eq-copilot/build/nakama-flatc-pfad-Release.txt`, verschwindet nach manchem
-  Worker-Bau): `cmake --build eq-copilot/build --config Release --target
+  `eq-copilot/build/nakama-flatc-pfad-Release.txt`, Bauartefakt,
+  nicht ins Repo, verschwindet nach manchem Worker-Bau): `cmake --build eq-copilot/build --config Release --target
   flatc` nachbauen (NAK-280).
 - Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt `dokuriegel.py`;
   als `\|` schreiben, Zeilenbereiche mit ASCII-Bindestrich.

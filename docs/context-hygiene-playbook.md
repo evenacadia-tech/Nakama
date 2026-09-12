@@ -37,22 +37,26 @@ rechnerlokale Memory-Ordner, melden die Memory-Maße „nicht messbar" statt rot
 Die Einzelkommandos unten bleiben als Gegenprobe gültig.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
-geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (17,3 KB am 12.09.2026, **Grenze ≤ 20 KB** —
+geladen): globales `~/.claude/CLAUDE.md` (~6,7 KB, User-Besitz — nie
+auto-editieren) + Repo-`CLAUDE.md` (19,2 KB am 12.09.2026, **Grenze ≤ 20 KB** —
 von Claude gepflegt; ein Riss wird im selben Abschlussfenster behoben, User
 12.09.2026) + `MEMORY.md` (Hebel). Dazu die Dirigenten-Fläche, die jeder
-`/dirigent`-Aufruf lädt: `.claude/skills/dirigent/SKILL.md` (~23 KB am
-12.09.2026, **Grenze ≤ 24 KB**; am 12.09. von 38,4 KB gekürzt: Vorgeschichten,
-Wiederholungen und Zitatwortlaute raus, Logik und Kommandos unverändert) mit
+`/dirigent`-Aufruf lädt: `.claude/skills/dirigent/SKILL.md` (24,2 KB am
+12.09.2026 abends, **Grenze ≤ 24 KB**, Kürzungsliste in Register NAK-255; am
+12.09. von 38,4 KB gekürzt: Vorgeschichten, Wiederholungen und Zitatwortlaute
+raus, Logik und Kommandos unverändert) mit
 `tools/dirigent/pruefliste.md` und `pruefauftrag-vorlage.md`. Jede Runde neu
-messen und im Report nennen; `gesundheit.py` trägt dieselben Grenzen.
+messen und im Report nennen; `gesundheit.py` trägt dieselben Grenzen. Codex'
+Always-on-Fläche (`AGENTS.md`, ~7 KB, und `.agents/skills/`) ist ungemessen;
+bei jeder CLAUDE.md-Änderung auf Widerspruch prüfen.
 
 **Der Korpus** (die Memory-*Dateien* auf Platte) ist die dritte Fläche —
-Recall-Qualität, nicht Kontextkosten. Stand 08.09.2026: 17 Dateien
-(junges Repo; die Sonifold-Marke „80–90 gesund" gilt hier NICHT als Ziel).
-Wächst nur die Klasse der datierten `project_session_*`-Memos — deren
-**Cap ist 6** (CLAUDE.md „Arbeitsweise": eine Lehre pro Datei, mit dem
-Warum; Falsches löschen statt stapeln).
+Recall-Qualität, nicht Kontextkosten. Stand 12.09.2026: 25 Dateien
+(20 `feedback_`, 4 `reference_`, 1 `user_`; junges Repo; die Sonifold-Marke
+„80–90 gesund" gilt hier NICHT als Ziel). Die Klasse der datierten
+`project_session_*`-Memos (derzeit leer) hat **Cap 6** (CLAUDE.md
+„Arbeitsweise": eine Lehre pro Datei, mit dem Warum; Falsches löschen statt
+stapeln).
 
 ## System-of-Record-Karte
 
@@ -98,12 +102,12 @@ selben Lauf reparieren.
 | Pfad-Tabelle + alle `docs/…`-Verweise im CLAUDE.md | je Pfad `[ -e ]`-Schleife |
 | Build-Targets (EqCop*) | `grep -oE 'EqCop[A-Za-z_]+' eq-copilot/plugin/CMakeLists.txt \| sort -u` |
 | Broker-Binärnamen | `broker/Cargo.toml` (`name =`) + `ls broker/src/bin/` |
-| Pipe-Namen (v1 / m2probe) | `grep -rl 'evenacadia\.eq-copilot' broker/src eq-copilot/plugin/src` |
+| Pipe-Namen (v1 / m2probe / v3-Token / v3-Probe) | `grep -rn 'evenacadia\.' broker/src eq-copilot/plugin/src` |
 | NAK-IDs in MEMORY.md/Skill | gegen `docs/offene-punkte.md` (offen vs. geschlossen) |
 | „Stand DD.MM."-Zeilen im CLAUDE.md | gegen `docs/PLAN-STAND.md` und das jüngste Manifest; der Wahrheitskern trägt sein Datum selbst |
 | Skill-Regel ↔ Memory | gleicher Fakt darf nur im Skill stehen; Memory trägt Warum, User-Zitat und Rechnerlokales |
 | Remote-/Repo-Claims | `git remote -v` |
-| Schema-Versionen (eq-ipc v2, eq-snapshot v3 …) | `eq-copilot/schemas/` |
+| Schema-Versionen (eq-ipc v2 und v3, eq-snapshot v3 …) | `eq-copilot/schemas/`, `eq-copilot/schemas/v3/` |
 
 Cross-Doc-Regel: Ein in einem Doc gefixter Wert ist in den anderen noch
 alt — den WERT repo-weit greppen (`git grep`), jede lebende Kopie
@@ -130,7 +134,7 @@ endet netto kleiner. Dann:
 
 ### Phase D — Lücken-Erkennung
 
-`git log --oneline -20` gegen CLAUDE.md-/Skill-Abdeckung. Für
+`git log --oneline -30` gegen CLAUDE.md-/Skill-Abdeckung. Für
 jeden Kandidaten erst `ls`/`grep`, ob das Genannte im Code existiert
 (Commit-Messages können Phantome nennen). Mechanische Lücke (Zahl, Pfad,
 Zeile) → fixen. Architektur-Prosa oder Design-Urteil → dem User
@@ -184,8 +188,9 @@ vorlegen (Surface ≠ Menü).
   Wachstum melden.
 - **`feedback_*.md` nie auto-editieren** (Ausnahmen: fehlende Why/How-Zeile
   ergänzen; ausdrücklicher User-Auftrag zur Auffrischung wie am 08.09.2026 —
-  dann Drift im How-to-apply fixen, User-Zitate bleiben wörtlich). Das Entscheide-Register in CLAUDE.md (wörtliche User-Urteile) und
-  `.claude/kreativ-freigabe.md` (Schleusen-Marker) sind ebenso tabu.
+  dann Drift im How-to-apply fixen, User-Zitate bleiben wörtlich). Wörtliche
+  User-Urteile in `design/abnahmen/` und im Register `docs/offene-punkte.md`
+  sind ebenso tabu (schließen nur mit ID und Commit-SHA).
 - **Nie eine Memory-Datei löschen ohne ls-bestätigtes kanonisches
   Artefakt.** Index komprimieren, nicht die Dateien.
 - **Ein backup-first Write für MEMORY.md** — `.bak`, Re-Read, einfalten.

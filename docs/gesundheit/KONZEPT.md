@@ -331,6 +331,16 @@ läuft und die Plugins installiert sind, ist damit nicht bewiesen. Die
 Installation bleibt ein bewusster Admin-Handgriff des Users; der Arm ist der
 Nachfolger der Handmessungen aus Termin A und B.
 
+**User-Wort 12.09.2026 (Karte U40, Dirigentensession), wörtlich:** „wir haben ein fl studio mcp. du kannst selbst messungen und alles was benötigt wird vornehmen. der mcp server kann auch weiter ausgebaut werden oder ich kann eine diagnose fl studio instanz vorbereiten die immer offen ist. der komplette bau kann sowieso viel mehr direkt mit fl studio interagieren. alle tools sind da oder können erstellt werden“.
+Folge (Dirigent): Produktwirkungen, die nur hörbar oder messbar entscheidbar
+sind (zuerst U40: Aktivitätsgate nach F06, NAK-283 Etappe 5), misst der
+Dirigent selbst — headless auf echtem Material und über den FL-MCP-Server mit
+dem installierten Bau — und legt dem User Messwerte vor, keine Blindwahl. Der
+Laufzeit-Arm rückt damit vor (Register NAK-284): Szenarien je Karte unter
+`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den
+Probe-Pipenamen, MCP-Erweiterungen nach Bedarf. Eine dauerhaft offene
+Diagnose-Instanz von FL Studio bereitet der User auf Anforderung vor.
+
 ---
 
 ## 5. Prüfsessions: wie Audits laufen, ohne den Dirigenten zu belasten
@@ -720,6 +730,7 @@ Oberfläche". Folge im Konzept: Schritt 9 in §10.
 
 | Datum | Änderung | Anlass |
 |---|---|---|
+| 12.09.2026 | §4.6: User-Wort zu Messungen über den FL-MCP-Server (Karte U40, 14:00 Uhr); Laufzeit-Arm rückt vor, Register NAK-284 | Dirigentensession, `/fragen U40` |
 | 12.09.2026 | §11 Punkt 3 entschieden (Karte U39, 12:00 Uhr, Wahl wörtlich „Nur Prüfsystem durch mich“): Torläufe §6.6 sind erster Torschritt an G6–G9, Ultra-Review überholt; §1.1, §4.3, §6.6 nachgezogen; Register NAK-282; Dirigenten-Skill §3.7 „Phasengate-Prüfung“ | Dirigentensession, `/fragen U39` |
 | 12.09.2026 | §11 Punkt 2 entschieden (Karte U38, 11:24 Uhr, Wahl wörtlich „Beides: jetzt Skizze, später Oberfläche (Empfohlen)"): Bedienehrlichkeits-Audit in zwei Läufen; §10 Schritt 9 nachgezogen; Register NAK-281 | Dirigentensession, `/fragen U38` |
 | 12.09.2026 | Schritt 3 erster Lauf (Auftragsvorlage, Bericht B-1 bis B-8); §4.1 W-Riss unterscheidet Codebase-Maße (Registerzeile) und Kontextfläche (sofort beheben, User 12.09.2026); §6.8, Anhang A und §11 auf Schritt 0 nachgezogen (`fdeef23c`: NAK-259 bis NAK-267, U38, Skill §7, Skill 23,3 KB / CLAUDE.md 17,7 KB) | Dirigenten-Meldung 12.09.2026; Lebenslauf-Audit |

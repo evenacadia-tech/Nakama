@@ -190,6 +190,8 @@
    "warum": "Die Korrektur ändert nicht nur Zahlen, sondern wann Nakama spricht — eine Produktwirkung, die der Bauer nicht entscheidet (docs/beweise/NAK-283.md §8.3, P-283-3; Matrixzeilen M-44, M-46, M-47). Keine Matrixzeile ist blockiert.",
    "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5 (Analysefachmodelle); später Gen-Oberfläche (S31b)",
    "seit": "12.09.",
+   "zwischenantwort": "2026-09-12 14:00 — keine Wahl, User-Wort wörtlich: „wir haben ein fl studio mcp. du kannst selbst messungen und alles was benötigt wird vornehmen. der mcp server kann auch weiter ausgebaut werden oder ich kann eine diagnose fl studio instanz vorbereiten die immer offen ist. der komplette bau kann sowieso viel mehr direkt mit fl studio interagieren. alle tools sind da oder können erstellt werden“",
+   "vertagt": "2026-09-12 — bis die Wirkung der Korrektur gemessen ist: der Dirigent misst selbst (headless auf echtem Material und über den FL-Studio-MCP-Server mit dem installierten Bau, nach NAK-283 Etappe 5) und legt Messwerte vor, keine Blindwahl; Register NAK-284, KONZEPT §4.6. Eine dauerhaft offene Diagnose-Instanz bereitet der User auf Anforderung vor (Handgriff).",
    "status": "offen"
   },
   {

@@ -72,17 +72,6 @@
    "zwischenantwort": "2026-09-12 14:00 — keine Wahl, User-Wort wörtlich: „wir haben ein fl studio mcp. du kannst selbst messungen und alles was benötigt wird vornehmen. der mcp server kann auch weiter ausgebaut werden oder ich kann eine diagnose fl studio instanz vorbereiten die immer offen ist. der komplette bau kann sowieso viel mehr direkt mit fl studio interagieren. alle tools sind da oder können erstellt werden“",
    "vertagt": "2026-09-12 — bis die Wirkung der Korrektur gemessen ist: der Dirigent misst selbst (headless auf echtem Material und über den FL-Studio-MCP-Server mit dem installierten Bau, nach NAK-283 Etappe 5) und legt Messwerte vor, keine Blindwahl; Register NAK-284, KONZEPT §4.6. Eine dauerhaft offene Diagnose-Instanz bereitet der User auf Anforderung vor (Handgriff).",
    "status": "offen"
-  },
-  {
-   "id": "U42",
-   "dringlichkeit": "vor NAK-283 Etappe 5",
-   "art": "Produktentscheid (Anzeige)",
-   "titel": "Was zeigt die Kurzzeit-Lautheit während der Sperrfrist nach einer Störung?",
-   "was": "Nach einer Störung im Zulauf (ersetzte Samples) bleibt die Kurzzeit-Lautheit künftig bis zu drei Sekunden ohne gültigen Wert (Audit-Befund F10: heute zeigt Gen sofort wieder einen Wert — einen falschen). Zwei Wege: „Nichts zeigen — Feld leer, wie bei fehlender Messung\" oder „den letzten gültigen Wert mit sichtbarer Unsicherheitsmarke\". Ohne Entscheidung zeigt die Oberfläche in der Sperrfrist nichts (Feld leer).",
-   "warum": "Wie das Zeitfenster ohne Aussage aussieht, ist Produktsache (docs/beweise/NAK-283.md §8.3, P-283-2; Matrixzeilen M-56, M-57, M-58). Die Messung selbst ist durch Regel R-283-5 festgelegt.",
-   "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
-   "seit": "12.09.",
-   "status": "offen"
   }
  ],
  "geparkt": [
@@ -656,6 +645,24 @@
     "titel": "Was zeigt die Headroom-Verteilung, solange keine Passage markiert ist?",
     "was": "Gen zeigt die Headroom-Verteilung künftig über die ganze markierte Passage (Audit-Befund F08: heute sind es faktisch die letzten 6,4 Sekunden, die sich als „über die Passage\" ausgeben). Solange keine Passage markiert ist, gibt es zwei Wege: „Verteilung seit der letzten Transportgrenze (kann beliebig lang werden)\" oder „ein benanntes gleitendes Fenster (die Fensterlänge steht sichtbar dabei)\". Ohne Entscheidung baut Etappe 5 den Passagenfall richtig und zeigt ohne Passage ein gleitendes Fenster mit sichtbarer Länge.",
     "warum": "Der Fall ohne Passage ist eine Anzeigeentscheidung, keine Messfrage (docs/beweise/NAK-283.md §8.3, P-283-1; Matrixzeilen M-53, M-54, M-55).",
+    "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
+    "seit": "12.09.",
+    "status": "offen"
+   }
+  },
+  "U42": {
+   "wahl": "Nichts zeigen — Feld leer",
+   "text": "Nichts zeigen — Feld leer (Empfohlen) — Wahl per AskUserQuestion in der Dirigentensession, Option wörtlich; die angebotene Alternative war „Letzten gültigen Wert mit Unsicherheitsmarke“ (Beschreibung: „Der zuletzt gültige Wert bleibt sichtbar stehen und trägt eine deutliche Marke „unsicher“. Braucht einen zusätzlichen Anzeigezustand und ein weiteres Feld auf dem Weg von der Sonde zu Gen.“). Beschreibung der gewählten Option: „Wie bei fehlender Messung: kein Wert, kein Platzhalter. Ehrlich und ohne neuen Anzeigezustand; nach spätestens drei Sekunden sauberem Material steht der Wert wieder.“",
+   "datum": "2026-09-13 12:05",
+   "status": "eingearbeitet",
+   "ergebnis": "In der Sperrfrist nach ersetzten Samples trägt die Kurzzeit-Lautheit kein Präsenzbit (NAK-283 M-56 bis M-58, Regel R-283-5) und Gen zeigt das Feld leer wie bei fehlender Messung; kein zusätzlicher Anzeigezustand, kein neues Feld auf der Leitung. Die Messung baut NAK-283 Etappe 5; die Anzeige gehört zur Gen-Oberfläche (S31b, geparkt) und braucht dafür keine Änderung. Festgehalten in design/abnahmen/2026-09-13-lautheit-sperrfrist-u42.md und docs/beweise/NAK-283.md §38.4.",
+   "karte": {
+    "id": "U42",
+    "dringlichkeit": "vor NAK-283 Etappe 5",
+    "art": "Produktentscheid (Anzeige)",
+    "titel": "Was zeigt die Kurzzeit-Lautheit während der Sperrfrist nach einer Störung?",
+    "was": "Nach einer Störung im Zulauf (ersetzte Samples) bleibt die Kurzzeit-Lautheit künftig bis zu drei Sekunden ohne gültigen Wert (Audit-Befund F10: heute zeigt Gen sofort wieder einen Wert — einen falschen). Zwei Wege: „Nichts zeigen — Feld leer, wie bei fehlender Messung\" oder „den letzten gültigen Wert mit sichtbarer Unsicherheitsmarke\". Ohne Entscheidung zeigt die Oberfläche in der Sperrfrist nichts (Feld leer).",
+    "warum": "Wie das Zeitfenster ohne Aussage aussieht, ist Produktsache (docs/beweise/NAK-283.md §8.3, P-283-2; Matrixzeilen M-56, M-57, M-58). Die Messung selbst ist durch Regel R-283-5 festgelegt.",
     "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
     "seit": "12.09.",
     "status": "offen"

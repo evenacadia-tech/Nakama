@@ -36,24 +36,24 @@
       "ziel_id": "main",
       "cmake_ziel": "EqCopilot",
       "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3",
-      "sha256": "D7D5DE75D7537B6EED38129D85F322037436C792AB4255FA6F4A6DDF2042B667"
+      "sha256": "AFCB797283BC7B28BF406C0699B44413275E16F938908EDBEDB9D779216C1FC4"
     },
     {
       "art": "vst3",
       "ziel_id": "active-probe",
       "cmake_ziel": "NakamaProbeeq",
       "quelle": "eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3",
-      "sha256": "09211F448322C96845F52BACF56D2887188B4EABBDA90F353C311813480B92D0"
+      "sha256": "31CC951BDDCEFED297E0B8D1D0E1DFFF0CCB8D87DDEEA3AC5BFB1ECCD4BC4FE7"
     },
     {
       "art": "broker",
       "name": "eqcop-broker.exe",
       "quelle": "broker/target/release/eqcop-broker.exe",
-      "sha256": "307F8BC275D39CB1BA72FB184E40ADE47DD1B2B1EA25AE874E6A70B13CA9C5B8",
+      "sha256": "F8F67718BF5A797D7DE7F13820D162C7150F57A0A99C975CF873B5510B047BE3",
       "hinweis": "Seit SONDE-011 Phase B startet ausschliesslich ein als Main klassifiziertes Plugin mit offenem Editor den Broker ueber den vorhandenen Lifecycle-Haken. Vor jedem Spawn prueft es diesen Manifest-Hash und bei gesetztem Thumbprint zusaetzlich WinVerifyTrust; das Plugin beendet keinen Brokerprozess, die Idle-Selbstende liegt im Broker."
     }
   ],
-  "hashes_erzeugt_am": "2026-08-31T21:18:47Z",
+  "hashes_erzeugt_am": "2026-09-13T19:13:49Z",
   "hashes_null_bedeutet": "NICHT AUSLIEFERBAR. `sha256: null` heisst 'dieses Artefakt wurde nie gegen einen Bau festgeschrieben'. Install-Nakama.ps1 bricht dann ab, statt irgendetwas zu kopieren - dieselbe Regel wie im Identitaetsleser (cmake/NakamaIdentitaet.cmake): ein Vorgabewert waere eine Auslieferung, die nirgends eingefroren ist. Gefuellt wird per `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen` unmittelbar nach einem gruenen Kanon-Lauf.",
   "rueckweg": {
     "strategie": "vor-dem-tausch-sichern",

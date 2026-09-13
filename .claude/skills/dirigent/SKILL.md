@@ -317,7 +317,9 @@ aus dem Gedächtnis: Bytes von `MEMORY.md`, Root-`CLAUDE.md` und diesem
 Skill gegen die Grenzen in `docs/context-hygiene-playbook.md`, Indexzeilen
 über 250 Zeichen, Memory-Dateien ohne Indexlink, `dokuriegel.py` auf
 CLAUDE.md und Skill, dazu `py -3.13 tools/plan/gesundheit.py` (Exit 4 =
-Schwelle gerissen; im Kanon Bein A32, nicht blockierend). Ein Riss der
+Schwelle gerissen; im Kanon Bein A32, nicht blockierend) und `py -3.13
+tools/plan/tidy.py` (clang-tidy-Ratsche des Plugins, Bein A33, gleiche
+Exitcodes). Ein Riss der
 Kontextfläche (Bytes, Redundanz, Prosa, entbehrliche Zitate) wird im selben
 Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids
 nur als Datum, Wortlaut bleibt in Abnahmen und Register. Ein Riss der

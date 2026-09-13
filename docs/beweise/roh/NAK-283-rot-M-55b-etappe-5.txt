@@ -1,0 +1,28 @@
+NAK-283 Etappe 5 - Rotbeweis MUT-55b fuer M-55 (b)
+Zeitpunkt:  2026-09-13T13:32:00.6357014+02:00
+Mutation:   FeatureEngine.h: kVerteilungPlaetze = 65 - die Ressourcengrenze der Bandverteilungen steigt
+Erwartet:   mutiert rot / zurueckgespielt gruen
+Datei:      eq-copilot/plugin/core/analysis/FeatureEngine.h
+  SHA-256 vorher:   C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD
+  SHA-256 mutiert:  980BD6466998A85435410467D6EEB1C32DD08E2383118E3C6CF9C2DE1355BC43
+  SHA-256 nachher:  C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD (bytegleiche Ruecknahme: True)
+Bein:       docs/beweise/roh/NAK-283-etappe-5-riegel-M-55.ps1 
+Neubau:     mutiert  / zurueckgespielt 
+Traeger:    R2 die Definition lautet kVerteilungPlaetze = 64
+Urteil:     MUTIERT Exit 1 / ZURUECKGESPIELT Exit 0
+Traegerzeile mutiert:        [ROT]  R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+Traegerzeile zurueckgespielt: [ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+
+--- MUTIERT (erwartet: rot) --------------------------------
+Riegel M-55 (b) gegen Arbeitsbaum - git -C C:\Users\phili\Projekte\Nakama grep -n kVerteilungPlaetze =  -- eq-copilot/plugin/core/
+  Treffer: eq-copilot/plugin/core/analysis/FeatureEngine.h:118:inline constexpr int kVerteilungPlaetze = 65;   // MUTATION NAK-283 Rotbeweis M-55 (b)
+[ok]   R1 genau eine Definition von kVerteilungPlaetze unter eq-copilot/plugin/core/
+[ROT]  R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+URTEIL: 1 von 2 Pruefungen ok
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+Riegel M-55 (b) gegen Arbeitsbaum - git -C C:\Users\phili\Projekte\Nakama grep -n kVerteilungPlaetze =  -- eq-copilot/plugin/core/
+  Treffer: eq-copilot/plugin/core/analysis/FeatureEngine.h:118:inline constexpr int kVerteilungPlaetze = 64;
+[ok]   R1 genau eine Definition von kVerteilungPlaetze unter eq-copilot/plugin/core/
+[ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+URTEIL: 2 von 2 Pruefungen ok

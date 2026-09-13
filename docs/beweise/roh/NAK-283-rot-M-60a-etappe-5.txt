@@ -1,0 +1,238 @@
+NAK-283 Etappe 5 - Rotbeweis MUT-49a fuer M-60 True Peak
+Zeitpunkt:  2026-09-13T13:26:54.2009682+02:00
+Mutation:   Spektrum.h/FeatureEngine.h: Nachlauf und Filterreset wandern vom Startsample zurueck ans Binden, der Nachlaufwert wird dort verworfen (Stand am Basis-SHA)
+Erwartet:   mutiert rot / zurueckgespielt gruen
+Datei:      eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+  SHA-256 vorher:   1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA
+  SHA-256 mutiert:  246EA4A4AA75A551227B39C0C116FAC8338E905A0334E748C297A5A89FB48C49
+  SHA-256 nachher:  1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/plugin/core/analysis/FeatureEngine.h
+  SHA-256 vorher:   C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD
+  SHA-256 mutiert:  AD27C200F615629C4DD64AA868237487C0856EAC4AF5B1D0F0D5595C71F15008
+  SHA-256 nachher:  C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD (bytegleiche Ruecknahme: True)
+Bein:       B18 EqCopSonde013DynamicsTest
+Neubau:     mutiert EqCopSonde013EventWireTest EqCopSonde013DynamicsTest / zurueckgespielt EqCopSonde013EventWireTest EqCopSonde013DynamicsTest
+Traeger:    True-Peak-Kette: das Passagenmaximum ist das der Passage
+Urteil:     MUTIERT Exit 1 / ZURUECKGESPIELT Exit 0
+Traegerzeile mutiert:        [ROT]  NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das Passagenmaximum ist das der Passage, nicht das der Kante davor  [-0.736 dBTP (Kante -0,92 dBTP)]
+Traegerzeile zurueckgespielt: [ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das Passagenmaximum ist das der Passage, nicht das der Kante davor  [-6.021 dBTP (Kante -0,92 dBTP)]
+
+--- MUTIERT (erwartet: rot) --------------------------------
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-02  impuls_am_rahmenende ==
+[ok]   der Zustand ist wirklich hergestellt: Rahmen, deren einzige Spitze in den letzten vier Samples liegt  [8 von 8 Runden, Rahmen alle 10 Bloecke]
+[ok]   in KEINEM davon liegt der True Peak unter dem Sample-Peak - der Abtastpunkt geht in den True Peak ein, weil er zur rekonstruierten Wellenform gehoert  [0 Verletzungen]
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ok]   nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples  [10]
+[ok]   und traegt seine sampleabhaengigen Skalare NICHT - 'nicht gemessen' statt 'gemessen und sauber' (M-07)
+[ok]   ohne NaN traegt derselbe Aufbau seine Skalare - kein Dauerschweigen
+[ok]   M-58: jeder Rahmen der Erholungsstrecke endet auf einem Zellen- und Rahmenrand (384 000 + k x 4 800)
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): Momentary - bei 0,3 s nach dem Ende der Ersetzung ungesetzt, bei 0,4 s gesetzt  [0,3 s leer, 0,4 s gesetzt]
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): Short-term - bei 2,9 s ungesetzt, bei 3,0 s gesetzt  [2,9 s leer, 3,0 s gesetzt]
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): bei 3,0 s entsprechen beide Werte der sauberen Referenz (+-0,1 LU), und beide Zaehler sind 0  [S -7.9935 gegen -7.9935 LUFS, M -7.9935 gegen -7.9935 LUFS, Zaehler 0/0]
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+== NAK-283 M-53/M-54  headroomverteilung_umfasst_die_ganze_passage / headroomfenster_nennt_die_passagenlaenge ==
+[ok]   M-53: 14 s bei 10 Hz sind 140 publizierte Rahmen  [140 / 140]
+[ok]   NAK-283 M-53: headroomverteilung_umfasst_die_ganze_passage - P95 traegt den fruehen lauten, P10 den spaeten leisen Abschnitt  [P10 -66.025, P50 -6.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 M-54: headroomfenster_nennt_die_passagenlaenge - die Zahl der Rahmen der Passage (140), nicht 64  [P10 -66.025, P50 -6.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 U41 (User 13.09.2026): ohne markierte Passage bleibt die Verteilung das gleitende Fenster der letzten 64 Rahmen (6,4 s), headroomFenster nennt seine Belegung  [P10 -66.021, P50 -66.021, P95 -66.021 dBTP, headroomFenster 64]
+
+== NAK-283 M-55  headroom_unter_vier_rahmen_bleibt_ungesetzt ==
+[ok]   NAK-283 M-55: headroom_unter_vier_rahmen_bleibt_ungesetzt (Regressionswache) - eine Passage mit drei Rahmen traegt keine Headroomverteilung  [kein Bit]
+[ok]   M-55: Gegenprobe - mit vier Rahmen steht sie, ueber genau vier Rahmen  [Fenster 4]
+[ok]   M-55 (b): eine 60-s-Passage wird gebunden
+[ok]   M-55 (b): 20 s Passage legen keinen Speicher an - Band- und Headroomverteilung sind fest gedeckelt  [0 Allokationen, headroomFenster am Ende 200; vorbereiten() legte 2536859 Byte in 68 Allokationen an]
+
+== NAK-283 M-56/M-57  kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist / momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen ==
+[ok]   M-56: die Ersetzung liegt in genau zwei Rahmen, und jeder Rahmen danach endet auf einem Zellenrand  [2 Rahmen mit ersetzten Samples]
+[ok]   NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - der erste saubere Rahmen traegt kein Short-term  [0.1 s: M leer, S leer]
+[ok]   NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - nach genau 3 s sauberem Material ist es wieder gesetzt  [3.0 s: M gesetzt, S gesetzt]
+[ok]   NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 0,4 s traegt derselbe Frame Momentary mit und Short-term ohne Praesenzbit  [0.4 s: M gesetzt, S leer]
+[ok]   NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 2,9 s gilt das immer noch  [2.9 s: M gesetzt, S leer]
+
+== NAK-283 M-59  nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt ==
+[ok]   NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt (Regressionswache fuer die Saettigung) - beide Zaehler bleiben bei 0xFFFFFFFF, der Rahmen bleibt verriegelt  [ffffffff / ffffffff]
+[ok]   M-59: der Rahmen mit der Ersetzung haelt den Zaehler am Anschlag und bleibt verriegelt  [ffffffff]
+[ok]   NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt - die Zellenmarke steht, obwohl der Zaehler nicht mehr gestiegen ist: Momentary kommt bei 0,4 s, Short-term bei 3,0 s wieder  [0,1 s M leer S leer; 0,3 s M leer; 0,4 s M gesetzt; 2,9 s S leer; 3,0 s S gesetzt]
+
+== NAK-283 M-60  jede_analysehistorie_traegt_ihre_eigene_spanne ==
+[ok]   M-60: die Passage ist vorab gebunden, und 3,0 s nach der Ersetzung endet sie
+[ROT]  NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das Passagenmaximum ist das der Passage, nicht das der Kante davor  [-0.736 dBTP (Kante -0,92 dBTP)]
+[ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Headroom: die Verteilung beschreibt beide Haelften der ganzen Passage  [P10 -66.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Loudnesszellen: Momentary kommt 0,4 s, Short-term 3,0 s nach der Ersetzung wieder  [0,3 s M leer; 0,4 s M gesetzt; 2,9 s S leer; 3,0 s S gesetzt]
+
+-----------------------------------------
+69 bestanden, 1 gescheitert
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-02  impuls_am_rahmenende ==
+[ok]   der Zustand ist wirklich hergestellt: Rahmen, deren einzige Spitze in den letzten vier Samples liegt  [8 von 8 Runden, Rahmen alle 10 Bloecke]
+[ok]   in KEINEM davon liegt der True Peak unter dem Sample-Peak - der Abtastpunkt geht in den True Peak ein, weil er zur rekonstruierten Wellenform gehoert  [0 Verletzungen]
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ok]   nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples  [10]
+[ok]   und traegt seine sampleabhaengigen Skalare NICHT - 'nicht gemessen' statt 'gemessen und sauber' (M-07)
+[ok]   ohne NaN traegt derselbe Aufbau seine Skalare - kein Dauerschweigen
+[ok]   M-58: jeder Rahmen der Erholungsstrecke endet auf einem Zellen- und Rahmenrand (384 000 + k x 4 800)
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): Momentary - bei 0,3 s nach dem Ende der Ersetzung ungesetzt, bei 0,4 s gesetzt  [0,3 s leer, 0,4 s gesetzt]
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): Short-term - bei 2,9 s ungesetzt, bei 3,0 s gesetzt  [2,9 s leer, 3,0 s gesetzt]
+[ok]   NAK-283 M-58 (M-07, Erholungsstrecke): bei 3,0 s entsprechen beide Werte der sauberen Referenz (+-0,1 LU), und beide Zaehler sind 0  [S -7.9935 gegen -7.9935 LUFS, M -7.9935 gegen -7.9935 LUFS, Zaehler 0/0]
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+== NAK-283 M-53/M-54  headroomverteilung_umfasst_die_ganze_passage / headroomfenster_nennt_die_passagenlaenge ==
+[ok]   M-53: 14 s bei 10 Hz sind 140 publizierte Rahmen  [140 / 140]
+[ok]   NAK-283 M-53: headroomverteilung_umfasst_die_ganze_passage - P95 traegt den fruehen lauten, P10 den spaeten leisen Abschnitt  [P10 -66.025, P50 -6.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 M-54: headroomfenster_nennt_die_passagenlaenge - die Zahl der Rahmen der Passage (140), nicht 64  [P10 -66.025, P50 -6.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 U41 (User 13.09.2026): ohne markierte Passage bleibt die Verteilung das gleitende Fenster der letzten 64 Rahmen (6,4 s), headroomFenster nennt seine Belegung  [P10 -66.021, P50 -66.021, P95 -66.021 dBTP, headroomFenster 64]
+
+== NAK-283 M-55  headroom_unter_vier_rahmen_bleibt_ungesetzt ==
+[ok]   NAK-283 M-55: headroom_unter_vier_rahmen_bleibt_ungesetzt (Regressionswache) - eine Passage mit drei Rahmen traegt keine Headroomverteilung  [kein Bit]
+[ok]   M-55: Gegenprobe - mit vier Rahmen steht sie, ueber genau vier Rahmen  [Fenster 4]
+[ok]   M-55 (b): eine 60-s-Passage wird gebunden
+[ok]   M-55 (b): 20 s Passage legen keinen Speicher an - Band- und Headroomverteilung sind fest gedeckelt  [0 Allokationen, headroomFenster am Ende 200; vorbereiten() legte 2536859 Byte in 68 Allokationen an]
+
+== NAK-283 M-56/M-57  kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist / momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen ==
+[ok]   M-56: die Ersetzung liegt in genau zwei Rahmen, und jeder Rahmen danach endet auf einem Zellenrand  [2 Rahmen mit ersetzten Samples]
+[ok]   NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - der erste saubere Rahmen traegt kein Short-term  [0.1 s: M leer, S leer]
+[ok]   NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - nach genau 3 s sauberem Material ist es wieder gesetzt  [3.0 s: M gesetzt, S gesetzt]
+[ok]   NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 0,4 s traegt derselbe Frame Momentary mit und Short-term ohne Praesenzbit  [0.4 s: M gesetzt, S leer]
+[ok]   NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 2,9 s gilt das immer noch  [2.9 s: M gesetzt, S leer]
+
+== NAK-283 M-59  nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt ==
+[ok]   NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt (Regressionswache fuer die Saettigung) - beide Zaehler bleiben bei 0xFFFFFFFF, der Rahmen bleibt verriegelt  [ffffffff / ffffffff]
+[ok]   M-59: der Rahmen mit der Ersetzung haelt den Zaehler am Anschlag und bleibt verriegelt  [ffffffff]
+[ok]   NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt - die Zellenmarke steht, obwohl der Zaehler nicht mehr gestiegen ist: Momentary kommt bei 0,4 s, Short-term bei 3,0 s wieder  [0,1 s M leer S leer; 0,3 s M leer; 0,4 s M gesetzt; 2,9 s S leer; 3,0 s S gesetzt]
+
+== NAK-283 M-60  jede_analysehistorie_traegt_ihre_eigene_spanne ==
+[ok]   M-60: die Passage ist vorab gebunden, und 3,0 s nach der Ersetzung endet sie
+[ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das Passagenmaximum ist das der Passage, nicht das der Kante davor  [-6.021 dBTP (Kante -0,92 dBTP)]
+[ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Headroom: die Verteilung beschreibt beide Haelften der ganzen Passage  [P10 -66.025, P95 -6.025 dBTP, headroomFenster 140]
+[ok]   NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Loudnesszellen: Momentary kommt 0,4 s, Short-term 3,0 s nach der Ersetzung wieder  [0,3 s M leer; 0,4 s M gesetzt; 2,9 s S leer; 3,0 s S gesetzt]
+
+-----------------------------------------
+70 bestanden, 0 gescheitert

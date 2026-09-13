@@ -1,0 +1,504 @@
+NAK-283 Etappe 5 - Rotbeweis MUT-49a fuer M-50
+Zeitpunkt:  2026-09-13T13:26:43.3369743+02:00
+Mutation:   Spektrum.h/FeatureEngine.h: Nachlauf und Filterreset wandern vom Startsample zurueck ans Binden, der Nachlaufwert wird dort verworfen (Stand am Basis-SHA)
+Erwartet:   mutiert rot / zurueckgespielt gruen
+Datei:      eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+  SHA-256 vorher:   1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA
+  SHA-256 mutiert:  246EA4A4AA75A551227B39C0C116FAC8338E905A0334E748C297A5A89FB48C49
+  SHA-256 nachher:  1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/plugin/core/analysis/FeatureEngine.h
+  SHA-256 vorher:   C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD
+  SHA-256 mutiert:  AD27C200F615629C4DD64AA868237487C0856EAC4AF5B1D0F0D5595C71F15008
+  SHA-256 nachher:  C4F57568B5A596920E64F88E016FC98BA4BBDA27F0AC8D1750BE66E8167A18FD (bytegleiche Ruecknahme: True)
+Bein:       B16 EqCopSonde013EventWireTest
+Neubau:     mutiert EqCopSonde013EventWireTest EqCopSonde013DynamicsTest / zurueckgespielt EqCopSonde013EventWireTest EqCopSonde013DynamicsTest
+Traeger:    NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein
+Urteil:     MUTIERT Exit 1 / ZURUECKGESPIELT Exit 0
+Traegerzeile mutiert:        [ROT]  NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein - der erste Passagenrahmen traegt keine verzoegerte Antwort der Kante davor  [vorab -0.815 dBTP, isoliert -60.000 dBTP, Kante davor -0,92 dBTP]
+Traegerzeile zurueckgespielt: [ok]   NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein - der erste Passagenrahmen traegt keine verzoegerte Antwort der Kante davor  [vorab -60.000 dBTP, isoliert -60.000 dBTP, Kante davor -0,92 dBTP]
+
+--- MUTIERT (erwartet: rot) --------------------------------
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== A2 · Der Snapshot mit Stereoevidenz haelt denselben Vertrag ==
+[ok]   ein Evidenzframe mit langer Kadenz wird faellig
+[ok]   und die Engine traegt bandweise Stereoevidenz
+[ok]   Snapshot mit Stereo wird gebaut
+[ok]   er passiert den gemeinsamen Textriegel - kein NaN, kein Inf
+[ok]   und wird von derselben Vertragsengine wie B3c angenommen - alle elf Bandsaetze, beide Metadatenlisten und die zwei Skalare
+[ok]   das `stereo`-Objekt ist da
+[ok]   und seine Bandsaetze tragen KEIN `saturated` - die Marke gehoert zur Quantisierung und waere hier ein totes Feld
+[ok]   jeder Bandsatz traegt genau 221 Werte  [221]
+[ok]   und die Freiheitsgrade ebenso - Â§40.1 verlangt sie je Band
+[ok]   ohne Stereosicht fehlt das Feld ganz - Abwesenheit ist erlaubt und billiger als 11 KiB Nullen
+[ok]   und der Snapshot ist dadurch um ein Vielfaches kleiner - die Rueckstauschwelle misst in EINTRAEGEN, nicht in Bytes  [4619 gegen 19409 Byte]
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   ein Ereignis ausserhalb der Vertragsgrenzen faellt einzeln heraus  [1 getragen, Snapshot gueltig: ja]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+== N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse ==
+[ok]   B05: die Ausgangs-ID ist bewusst KEIN hex32
+[ok]   B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID verhindert den Snapshot NICHT mehr
+[ok]   B05: und auf der Leitung steht der ALIAS, nicht die persistente ID  [ebd0bb1af0b846bc5c4d21ebd496671e]
+[ok]   B05: die persistente ID fliesst NICHT auf die Leitung
+[ok]   B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN Weg zur Wireadresse
+
+== N1 - B06: nur eine erfolgreiche Uebergabe entnimmt den Ring ==
+[ok]   B06: `eingereiht` gilt als uebergeben
+[ok]   B06: `koalesziert` ebenso - der Platz in der Reihenfolge bleibt
+[ok]   B06: `zurWiederholung` ebenso - der Wiederholpuffer wirft nichts weg (SONDE-010)
+[ok]   B06: ring_bleibt_bei_rueckstau - `abgewiesen` ist ein echter Verlust, die Quelle bleibt stehen
+[ok]   B06: `zuGross` ebenso - an der Tuer abgewiesen ist nicht uebergeben
+[ok]   B06: der Ring traegt Ereignisse  [6]
+[ok]   B06: und behaelt sie, solange niemand sie ENTNIMMT - genau das tat der Sender bei Rueckstau trotzdem
+[ok]   B06: erst `ereignisseEntnommen()` leert ihn - die Gegenprobe, ohne die der Fall darueber nichts sagt
+
+== N1 - B07: nicht-endliche Samples werden gezaehlt und verriegeln ==
+[ok]   B07: ein sauberer Evidenzframe entsteht
+[ok]   B07: und zaehlt NULL nicht-endliche Samples - 0 heisst nachweislich keines
+[ok]   B07: seine Rahmenskalare sind gesetzt (die Gegenprobe)
+[ok]   B07: auch mit NaN/Inf entsteht ein Frame
+[ok]   B07: nicht_endliche_samples_werden_gezaehlt  [8]
+[ok]   B07: und die Zahl reist im Frame mit  [8]
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ok]   B07: EIN nicht-endliches Sample macht den Beleg `unbrauchbar` - nicht `schwach`: die Zahl beschreibt Stille, nicht Musik
+[ok]   B07: und `samples_nicht_endlich` steht im Snapshot
+
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B08: der laute Abschnitt setzt ein hohes Passagenmaximum  [-0.92]
+[ok]   B08: das Passagenfenster wird gesetzt
+[ok]   B08: und ist intakt
+[ok]   B08: ein Frame in der leisen Passage entsteht
+[ok]   B08: passage_metriken_haengen_am_fenster - die leise Passage erbt die Spitze des lauten Abschnitts NICHT  [-33.98 gegen -0.92]
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+
+== N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang ==
+[ok]   R04: das 3-s-Fenster ist vor der Passage gefuellt
+[ok]   R04: das Passagenfenster wird gesetzt
+[ok]   R04: nach dem Passagenanfang entsteht ein Frame
+[ok]   R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich aus der Passage neu fuellen
+[ok]   R04: auch nach einer Sekunde nicht - das Fenster ist drei Sekunden lang und fuellt sich AUS DER PASSAGE  [0.00]
+[ok]   R04: das Fenster fuellt sich aus der Passage neu
+[ok]   R04: und der Crest ist der der leisen Passage, nicht der des lauten Abschnitts davor  [3.01 gegen 3.01]
+
+== N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block ==
+[ok]   R05: beide Faelle liefern ein Passagenmaximum  [-2.35 / -2.35]
+[ok]   R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten zwoelf Samples steht im Passagenmaximum, nicht nur ihr Samplewert  [-2.35 gegen Samplescheitel -6.11]
+[ok]   R05: und WO der Blockrand faellt, aendert das Passagenmaximum nicht  [0.000 dB Unterschied]
+
+== NAK-181 N-16  zahlen_bleiben_locale_unabhaengig ==
+[ok]   N-16: ein Evidenzframe wird faellig
+[ok]   N-16: der Snapshot entsteht unter der C-Locale
+[ok]   N-16: eine Komma-Locale ist verfuegbar â ohne sie misst der Fall nichts
+[ok]   N-16: derselbe Aufruf ist unter Komma-Locale BYTEGLEICH  [21370 Bytes]
+[ok]   N-16: und traegt keinen Komma-Dezimaltrenner
+[ok]   N-16: juce::JSON nimmt ihn an
+[ok]   N-16: der Bandsatz traegt genau 221 Werte  [221]
+[ok]   N-24: korrelation_kurz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: korrelation_mittel traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: persistenz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: und keine der drei ist die Bitmap von mid_db
+[ok]   N-24: und sie sind paarweise verschieden - vertauschte Selektoren faellt der Rotbeweis hier
+
+== NAK-181 N-35  grenze_leert_die_fenster_und_laesst_den_ereignisring ==
+[ok]   N-35: der Ereignisring traegt Ereignisse  [6]
+[ok]   N-35 Vorbedingung: das HAUPTfenster traegt Material  [2048]
+[ok]   N-35 Vorbedingung: das BASSfenster traegt Material  [14336]
+[ok]   N-35 Vorbedingung: die Loudness-ZELLE ist angefangen  [3648]
+[ok]   N-35 Vorbedingung: die KURZ-Loudness traegt fertige Zellen  [21]
+[ok]   N-35 Vorbedingung: der BANDAKKU traegt belegte Baender  [149]
+[ok]   N-35 Vorbedingung: das FINGERPRINTfenster traegt Frames  [39]
+[ok]   N-35 Vorbedingung: die STEREOevidenz traegt belegte Baender  [196]
+[ok]   N-35: `grenzeZiehen` hat GENAU EINMAL getrennt  [1]
+[ok]   N-35: und der Grund ist die lokale Luecke
+[ok]   N-35: das SEGMENT steigt, die Epoche bleibt (Paragraph 32.3)  [Epoche 0, Segment 1]
+[ok]   N-35: das HAUPTfenster traegt nur noch den Block NACH der Grenze  [512]
+[ok]   N-35: das BASSfenster ebenso  [512]
+[ok]   N-35: die Loudness-ZELLE ebenso  [512]
+[ok]   N-35: die KURZ-Loudness ist LEER - ein Block schliesst keine 100-ms-Zelle, also darf hier keine einzige stehen  [0]
+[ok]   N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze  [0]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+[ok]   N-35: der Ereignisring UEBERLEBT die Grenze  [6 gegen 6]
+[ok]   N-35: und der Eintrag von VOR der Grenze steht unveraendert mit seinem alten Stempel darin  [Epoche 0, Segment 0]
+[ok]   N-35: ein Zeitsprung hebt dagegen die EPOCHE und setzt das Segment zurueck - die zwei Gruende sind unterscheidbar  [Epoche 1, Segment 0]
+[ok]   N-35: auch die Epochengrenze laesst den Ring stehen  [6]
+[ok]   N-35: vor dem Reset steht die Epoche ueber 0 - sonst maesse die Gegenprobe nichts  [1]
+[ok]   N-35: `zuruecksetzen()` leert den Ring - genau die Differenz, die Probeeq beim Quarantaenebruch nicht mehr faehrt (R7)
+[ok]   N-35: und setzt Epoche wie Segment auf 0 - ein Stempel 0/0 nach einem Bruch ist auf dem Draht UNSICHTBAR  [vorher Epoche 1]
+
+== NAK-181 N-18c  ppq_ausserhalb_des_riegels_laesst_den_zyklus_entfallen ==
+[ok]   N-18c: ein Evidenzframe wird faellig
+[ok]   N-18c: der Snapshot entsteht trotz verweigerter PPQ-Werte
+[ok]   N-18c: das cycle-Objekt entfaellt GANZ â kein null in einem number
+[ok]   N-18c: und validity.cycle_bounds faellt mit ihm (das Schema koppelt sie)
+[ok]   N-18c: der Snapshot passiert den Textriegel
+[ok]   N-18c: mit gueltigen Werten traegt cycle active, bounds_valid und beide PPQ
+[ok]   N-18c: und validity.cycle_bounds steht
+
+== NAK-181 N-18d  samplerate_ausserhalb_des_riegels_erzeugt_keinen_snapshot ==
+[ok]   N-18d: ein Evidenzframe wird faellig
+[ok]   N-18d: sample_rate = 1e-308 erzeugt KEINEN Snapshot
+[ok]   N-18d: mit 48000 entsteht er unveraendert
+
+== NAK-182 M-83  focused_evidence_wire_carries_0p01_db_steps ==
+[ok]   die Byteinstanz liegt im Korpus - keine der drei Sprachen erzeugt sie, alle messen dagegen
+[ok]   die Fixture traegt Gain, Toleranz, Aufloesung und die Leiter als ZAHLEN  [G=3.00 dB, Toleranz 0.10 dB, 20 Stufen, Teiler 100, q_db_0p01_i16]
+[ok]   und sie traegt das MATERIAL - Frequenz, Samplerate, Amplitude, Blockgroesse und Laufbegrenzung stehen nicht mehr lokal im Test  [1000 Hz bei 48000 Hz, Amplitude 0.250, bis zu 900 Bloecke zu 512 Frames]
+[ok]   aus beiden Laeufen entsteht ein SERIALISIERTER Snapshot samt `verteilung.p50` (PRE und POST)
+[ok]   der Wire-Text nennt die FOKUSSIERTE Aufloesung der Fixture - nicht die des Liveframes  [q_db_0p01_i16 / q_db_0p01_i16 gegen q_db_0p01_i16]
+[ok]   beide Wire-Texte tragen genau 221 Bandwerte  [221]
+[ok]   genug Baender tragen in BEIDEN Wire-Texten ein Praesenzbit - sonst haette die Zeile nichts gemessen  [56 Baender]
+[ok]   aus dem EIGENEN Wire-Text, dekodiert mit der Vertragsformel (Teiler aus der Fixture), kommt der Gain je Band mit Bit innerhalb der Toleranz zurueck  [0 Baender daneben, groesste Abweichung 0.0000 dB; Differenzen 3.000 bis 3.000 dB gegen G=3.00]
+[ok]   jede der 20 Stufen erzeugt einen Snapshot, dessen Wire-Text das gemessene Band traegt  [Band 120 (Versatz -0.004 dB), 20 von 20; erste: -3256, -3255, -3254, -3253, ...]
+[ok]   und jede Stufe nennt dasselbe Encoding-Wort wie die Fixture  [20 von 20]
+[ok]   die Leiter im Wire-Text ist STRENG MONOTON - 0,01 dB mehr sind nie dieselbe Ganzzahl  [19 von 19]
+[ok]   und benachbarte Stufen unterscheiden sich um GENAU 1 - das ist die Aufloesung 0,01 dB, am erzeugten Snapshot gemessen statt an einer Testzahl gerechnet  [19 von 19]
+[ok]   und es ist DIESELBE Schrittfolge, die die Fixture zusagt - der absolute Pegel ist nicht vorhersagbar, die Schritte sind es  [19 von 19]
+
+== NAK-283 M-44  aktivgate_ist_samplerateunabhaengig ==
+[ok]   M-44: die Buehne ist die gerechnete - der Eingang liegt bei allen vier Raten bei -48,0 dB mittlerer Kanalenergie
+[ok]   NAK-283 M-44: aktivgate_ist_samplerateunabhaengig - jedes Hauptstufenfenster nimmt bei 44,1 / 48 / 96 / 192 kHz das Gate, abdeckung ist ueberall 1  [44.1 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 48.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 96.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 192.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; ]
+
+== NAK-283 M-45  aktivgate_ist_stufenunabhaengig ==
+[ok]   M-45: beide Pegel tragen Evidenzframes  [2 / 2]
+[ok]   NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L1 = -52,3 dBFS nehmen BEIDE Stufen das Gate (Baender mit Beitrag in beiden Stufen)  [Bassbaender 47, Hauptbaender 149, abdeckung 1.000]
+[ok]   NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L2 = -63,0 dBFS nimmt KEINE Stufe das Gate (kein Band mit Beitrag)  [Bassbaender 0, Hauptbaender 0, abdeckung 0.000]
+
+== NAK-283 M-46  aktivitaet_und_abdeckung_widersprechen_sich_nicht ==
+[ok]   NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (a) -58,0 dBFS bei 44,1 kHz: aktivitaet 1 UND abdeckung 1 im selben Frame  [aktivitaet 1.000, abdeckung 1.000, Widersprueche 0 in 9 Evidenzframes]
+[ok]   NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (b) -62,0 dBFS bei 44,1 kHz: aktivitaet 0 UND abdeckung 0 im selben Frame  [aktivitaet 0.000, abdeckung 0.000, Widersprueche 0]
+
+== NAK-283 M-47  aktives_fenster_liefert_bandwerte ==
+[ok]   NAK-283 M-47: aktives_fenster_liefert_bandwerte - -58,0 dBFS bei 96 kHz: jedes Fenster nimmt das Gate, stereo_bands > 0 und Evidenzbaender mit Bit  [stereo_bands 161, Evidenzbaender mit Bit 16, abdeckung 1.000]
+
+== NAK-283 M-48  stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert ==
+[ok]   NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) - (a) digitale Stille: abdeckung 0, endlich, kein Band mit Stereobasis  [abdeckung 0.000, aktivitaet 0.000, stereo_bands 0 in 6 Evidenzframes]
+[ok]   NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) - (b) Fenster mit Dichtesumme exakt 0 nach einer Sekunde Ton bleiben inaktiv  [abdeckung 0.000, stereo_bands 0 in 4 Evidenzframes]
+
+== NAK-283 M-49  vorab_gebundene_passage_traegt_kein_material_davor ==
+[ok]   M-49: beide Laeufe binden das Fenster und tragen ein Passagenmaximum
+[ROT]  NAK-283 M-49: vorab_gebundene_passage_traegt_kein_material_davor - das Passagenmaximum gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [vorab 0.157 dBTP, isoliert -59.843 dBTP]
+
+== NAK-283 M-50  zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein ==
+[ok]   M-50: der Passagenanfang liegt im Blockinneren (Versatz 384 in einem 512er-Block)
+[ROT]  NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein - der erste Passagenrahmen traegt keine verzoegerte Antwort der Kante davor  [vorab -0.815 dBTP, isoliert -60.000 dBTP, Kante davor -0,92 dBTP]
+
+== NAK-283 M-51  nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage ==
+[ok]   M-51 (A): die Buehne traegt eine Intersample-Spitze ueber dem Samplescheitel (Gegenprobe ohne Bindung)  [-5.920 dBTP gegen Samplescheitel -9.031]
+[ROT]  NAK-283 M-51 (A): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - das Binden einer spaeteren Passage nimmt dem laufenden Rahmen seine Intersample-Spitze nicht  [mit Bindung -9.031 dBTP, ohne -5.920 dBTP, Passagenbit leer]
+[ok]   NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - am Startsample geht der Nachlauf in den laufenden Rahmen  [Rahmen mit Passage -5.920 dBTP, ohne Passage -5.920 dBTP, Samplescheitel -9.031]
+[ROT]  NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - und NICHT in das Passagenmaximum  [Passage -5.920 dBTP, isoliert -60.000 dBTP]
+
+== NAK-283 M-52  passagenanfang_und_passagenende_wirken_auf_dieselben_historien ==
+[ok]   M-52: gebunden nach einer Sekunde, Anfang und Ende im Blockinneren
+[ROT]  NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - True-Peak-Kette am Anfang und hinter dem Ende: keine der zwei Kanten geht ein  [-0.736 dBTP (Kanten -0,92 dBTP)]
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - True-Peak-Kette am Ende: der Nachlauf an passBis traegt die Spitze der letzten zwoelf Passagensamples  [-0.736 dBTP gegen Samplescheitel -29.031]
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - Headroom: die Verteilung umfasst genau die Rahmen der Passage, keinen davor oder dahinter  [Fenster 132 bei 132 Rahmen der Passage; P10 -40.005, P50 -40.005, P95 -40.005 dBTP]
+[ROT]  NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - 3-s-Zellen: das Kurzzeitfenster beginnt am Passagenanfang, nicht beim Binden  [0 Rahmen mit 3-s-Crest vor 2,9 s; erster ab 3.080 s mit 42.274 dB]
+
+== NAK-283 M-73/M-74  passagenmaximum_haengt_nicht_an_der_blockgroesse / passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse ==
+[ok]   M-73: der Anfang faellt bei 64 auf einen Blockanfang und liegt bei 512 und 1024 im Blockinneren
+[ok]   NAK-283 M-73: passagenmaximum_haengt_nicht_an_der_blockgroesse (Regressionswache) - 64, 512 und 1024 Samples je Block liefern dasselbe Passagenmaximum (+-0,1 dB)  [64: 0.157 dBTP; 512: 0.157 dBTP; 1024: 0.157 dBTP; Spanne 0.000 dB]
+[ROT]  NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: 0.157 dBTP; 512: 0.157 dBTP; 1024: 0.157 dBTP; isoliert -5.919 dBTP, groesste Abweichung 6.077 dB]
+
+-----------------------------------------
+172 bestanden, 7 gescheitert
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, Konvergenz und der Ereignisstrom
+
+== A · Der erzeugte Snapshot haelt den v3-Vertrag ==
+[ok]   ein Evidenzframe wird faellig
+[ok]   Snapshot wird gebaut
+[ok]   Snapshot passiert den gemeinsamen Textriegel
+[ok]   v3-Schema laedt
+[ok]   der erzeugte Snapshot wird von derselben Engine wie B3c angenommen
+[ok]   Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine
+
+== A2 · Der Snapshot mit Stereoevidenz haelt denselben Vertrag ==
+[ok]   ein Evidenzframe mit langer Kadenz wird faellig
+[ok]   und die Engine traegt bandweise Stereoevidenz
+[ok]   Snapshot mit Stereo wird gebaut
+[ok]   er passiert den gemeinsamen Textriegel - kein NaN, kein Inf
+[ok]   und wird von derselben Vertragsengine wie B3c angenommen - alle elf Bandsaetze, beide Metadatenlisten und die zwei Skalare
+[ok]   das `stereo`-Objekt ist da
+[ok]   und seine Bandsaetze tragen KEIN `saturated` - die Marke gehoert zur Quantisierung und waere hier ein totes Feld
+[ok]   jeder Bandsatz traegt genau 221 Werte  [221]
+[ok]   und die Freiheitsgrade ebenso - Â§40.1 verlangt sie je Band
+[ok]   ohne Stereosicht fehlt das Feld ganz - Abwesenheit ist erlaubt und billiger als 11 KiB Nullen
+[ok]   und der Snapshot ist dadurch um ein Vielfaches kleiner - die Rueckstauschwelle misst in EINTRAEGEN, nicht in Bytes  [4619 gegen 19409 Byte]
+
+== B · P10/P50/P95 unterscheiden, was ein Mittelwert gleichmacht ==
+[ok]   beide Evidenzframes sind da
+[ok]   beide Signale tragen im selben Band ein Bit  [120]
+[ok]   die Spanne P95-P10 trennt das springende vom ruhigen Signal  [ruhig 0.00 dB, springend 6.65 dB]
+[ok]   das ruhige Signal hat eine schmale Spanne  [0.00 dB]
+[ok]   in JEDEM Band mit Bit gilt P10 <= P50 <= P95  [56 Baender]
+[ok]   der Frame nennt, ueber wie viele Fenster die Verteilung geht  [4]
+
+== C · Abdeckung ist gemessenes Signal, Konvergenz ist Ruhe ==
+[ok]   beide Evidenzframes sind da
+[ok]   Dauerton deckt das Evidenzfenster fast vollstaendig ab  [1.000]
+[ok]   halbe Stille senkt die Abdeckung messbar  [0.667]
+[ok]   ein stehender Ton konvergiert  [1.000]
+[ok]   ein wandernder Pegel konvergiert schlechter als ein stehender  [0.557 < 1.000]
+
+== D · Ereignisse reisen mit beiden Qualitaetsbits und ihrem Verlust ==
+[ok]   events_travel_with_quality_and_loss_counter/alle_drei_reisen  [3]
+[ok]   events_travel_with_quality_and_loss_counter/beide_bits_getrennt  [Fluss-only, Peak-only und beide bleiben unterscheidbar]
+[ok]   events_travel_with_quality_and_loss_counter/verlustzaehler  [7]
+[ok]   fremde_epoche_reist_nicht_und_wird_gezaehlt  [1 getragen, 1 verloren]
+[ok]   ein Ereignis ausserhalb der Vertragsgrenzen faellt einzeln heraus  [1 getragen, Snapshot gueltig: ja]
+[ok]   leerer Strom ohne Verlust laesst `ereignisse` weg
+
+== E · Kein Snapshot ist besser als ein widerspruechlicher ==
+[ok]   kein Snapshot ohne faelliges Evidenzfenster
+[ok]   kein Snapshot ohne Abdeckungsbit â 0 waere eine andere Aussage
+[ok]   kein Snapshot ohne Konvergenzbit
+[ok]   kein Snapshot ohne gueltige evidence_id
+[ok]   kein Snapshot mit einer erfundenen Konfidenzklasse
+[ok]   kein Snapshot mit unmoeglicher Samplerate
+[ok]   ohne Anker reist kein Ereignis und der Verlust wird gemeldet
+
+== F · Die Evidenzkadenz bleibt zwischen 1 und 4 Hz ==
+[ok]   frisch vorbereitet laeuft die Evidenz mit 4 Hz
+[ok]   ein zu grosser Wunsch wird auf 1 Hz geklemmt, nicht abgelehnt
+[ok]   ein zu kleiner Wunsch wird auf 4 Hz geklemmt
+[ok]   ein NaN verstellt die Kadenz NICHT
+[ok]   auch mit 1 Hz entsteht ein vollstaendiger Snapshot
+[ok]   die reduzierte Kadenz braucht wirklich laenger, statt nur anders zu heissen  [30 gegen 100 Bloecke]
+
+== G · Eine Grenze trennt Verteilung, Abdeckung und Konvergenz ==
+[ok]   ein Evidenzfenster ist gelaufen
+[ok]   der Snapshot hat sein Fenster mitgenommen
+[ok]   das naechste Fenster fuellt die neuen Traeger  [112 Plaetze, 2 Fenster]
+[ok]   der Verteilungsring ist leer  [0]
+[ok]   beide Fensterzaehler der Abdeckung sind leer
+
+== N1 - B05: die Evidenz reist unter der NAK-40-WIREadresse ==
+[ok]   B05: die Ausgangs-ID ist bewusst KEIN hex32
+[ok]   B05: evidenz_reist_unter_der_wireadresse - eine Legacy-ID verhindert den Snapshot NICHT mehr
+[ok]   B05: und auf der Leitung steht der ALIAS, nicht die persistente ID  [ebd0bb1af0b846bc5c4d21ebd496671e]
+[ok]   B05: die persistente ID fliesst NICHT auf die Leitung
+[ok]   B05: die Hilfsfunktion ist idempotent - es gibt genau EINEN Weg zur Wireadresse
+
+== N1 - B06: nur eine erfolgreiche Uebergabe entnimmt den Ring ==
+[ok]   B06: `eingereiht` gilt als uebergeben
+[ok]   B06: `koalesziert` ebenso - der Platz in der Reihenfolge bleibt
+[ok]   B06: `zurWiederholung` ebenso - der Wiederholpuffer wirft nichts weg (SONDE-010)
+[ok]   B06: ring_bleibt_bei_rueckstau - `abgewiesen` ist ein echter Verlust, die Quelle bleibt stehen
+[ok]   B06: `zuGross` ebenso - an der Tuer abgewiesen ist nicht uebergeben
+[ok]   B06: der Ring traegt Ereignisse  [6]
+[ok]   B06: und behaelt sie, solange niemand sie ENTNIMMT - genau das tat der Sender bei Rueckstau trotzdem
+[ok]   B06: erst `ereignisseEntnommen()` leert ihn - die Gegenprobe, ohne die der Fall darueber nichts sagt
+
+== N1 - B07: nicht-endliche Samples werden gezaehlt und verriegeln ==
+[ok]   B07: ein sauberer Evidenzframe entsteht
+[ok]   B07: und zaehlt NULL nicht-endliche Samples - 0 heisst nachweislich keines
+[ok]   B07: seine Rahmenskalare sind gesetzt (die Gegenprobe)
+[ok]   B07: auch mit NaN/Inf entsteht ein Frame
+[ok]   B07: nicht_endliche_samples_werden_gezaehlt  [8]
+[ok]   B07: und die Zahl reist im Frame mit  [8]
+[ok]   B07: ohne Samplefehler ist die Klasse brauchbar (die Gegenprobe)
+[ok]   B07: EIN nicht-endliches Sample macht den Beleg `unbrauchbar` - nicht `schwach`: die Zahl beschreibt Stille, nicht Musik
+[ok]   B07: und `samples_nicht_endlich` steht im Snapshot
+
+== N1 - B08/B09: die Passagenmetriken haengen am Passagenfenster ==
+[ok]   B08: der laute Abschnitt setzt ein hohes Passagenmaximum  [-0.92]
+[ok]   B08: das Passagenfenster wird gesetzt
+[ok]   B08: und ist intakt
+[ok]   B08: ein Frame in der leisen Passage entsteht
+[ok]   B08: passage_metriken_haengen_am_fenster - die leise Passage erbt die Spitze des lauten Abschnitts NICHT  [-33.98 gegen -0.92]
+[ok]   B09: der Interpolator hat eine Verzoegerung, die geleert werden muss  [24]
+[ok]   B09: polyphasen_nachlauf_am_fensterende - nach dem letzten Sample steht noch Energie in der Kette, und `nachlauf()` holt sie  [0.8000]
+[ok]   B09: zusammen erreichen sie den wahren Scheitel - ohne den Nachlauf ginge er an der Grenze verloren  [0.8000]
+
+== N2 - R04: das Kurzzeitfenster faellt mit dem Passagenanfang ==
+[ok]   R04: das 3-s-Fenster ist vor der Passage gefuellt
+[ok]   R04: das Passagenfenster wird gesetzt
+[ok]   R04: nach dem Passagenanfang entsteht ein Frame
+[ok]   R04: kurzzeitfenster_faellt_mit_dem_passagenanfang - direkt nach dem Passagenanfang gibt es KEINEN 3-s-Wert mehr; er muss sich aus der Passage neu fuellen
+[ok]   R04: auch nach einer Sekunde nicht - das Fenster ist drei Sekunden lang und fuellt sich AUS DER PASSAGE  [0.00]
+[ok]   R04: das Fenster fuellt sich aus der Passage neu
+[ok]   R04: und der Crest ist der der leisen Passage, nicht der des lauten Abschnitts davor  [3.01 gegen 3.01]
+
+== N3 - R05: der Nachlauf laeuft am Index passBis, nicht nach dem Block ==
+[ok]   R05: beide Faelle liefern ein Passagenmaximum  [-2.35 / -2.35]
+[ok]   R05: nachlauf_am_index_passbis - der wahre Scheitel der letzten zwoelf Samples steht im Passagenmaximum, nicht nur ihr Samplewert  [-2.35 gegen Samplescheitel -6.11]
+[ok]   R05: und WO der Blockrand faellt, aendert das Passagenmaximum nicht  [0.000 dB Unterschied]
+
+== NAK-181 N-16  zahlen_bleiben_locale_unabhaengig ==
+[ok]   N-16: ein Evidenzframe wird faellig
+[ok]   N-16: der Snapshot entsteht unter der C-Locale
+[ok]   N-16: eine Komma-Locale ist verfuegbar â ohne sie misst der Fall nichts
+[ok]   N-16: derselbe Aufruf ist unter Komma-Locale BYTEGLEICH  [21370 Bytes]
+[ok]   N-16: und traegt keinen Komma-Dezimaltrenner
+[ok]   N-16: juce::JSON nimmt ihn an
+[ok]   N-16: der Bandsatz traegt genau 221 Werte  [221]
+[ok]   N-24: korrelation_kurz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: korrelation_mittel traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: persistenz traegt EXAKT sein eigenes Praesenzmuster
+[ok]   N-24: und keine der drei ist die Bitmap von mid_db
+[ok]   N-24: und sie sind paarweise verschieden - vertauschte Selektoren faellt der Rotbeweis hier
+
+== NAK-181 N-35  grenze_leert_die_fenster_und_laesst_den_ereignisring ==
+[ok]   N-35: der Ereignisring traegt Ereignisse  [6]
+[ok]   N-35 Vorbedingung: das HAUPTfenster traegt Material  [2048]
+[ok]   N-35 Vorbedingung: das BASSfenster traegt Material  [14336]
+[ok]   N-35 Vorbedingung: die Loudness-ZELLE ist angefangen  [3648]
+[ok]   N-35 Vorbedingung: die KURZ-Loudness traegt fertige Zellen  [21]
+[ok]   N-35 Vorbedingung: der BANDAKKU traegt belegte Baender  [149]
+[ok]   N-35 Vorbedingung: das FINGERPRINTfenster traegt Frames  [39]
+[ok]   N-35 Vorbedingung: die STEREOevidenz traegt belegte Baender  [196]
+[ok]   N-35: `grenzeZiehen` hat GENAU EINMAL getrennt  [1]
+[ok]   N-35: und der Grund ist die lokale Luecke
+[ok]   N-35: das SEGMENT steigt, die Epoche bleibt (Paragraph 32.3)  [Epoche 0, Segment 1]
+[ok]   N-35: das HAUPTfenster traegt nur noch den Block NACH der Grenze  [512]
+[ok]   N-35: das BASSfenster ebenso  [512]
+[ok]   N-35: die Loudness-ZELLE ebenso  [512]
+[ok]   N-35: die KURZ-Loudness ist LEER - ein Block schliesst keine 100-ms-Zelle, also darf hier keine einzige stehen  [0]
+[ok]   N-35: der BANDAKKU ist leer - kein Spektrum ueberbrueckt die Grenze  [0]
+[ok]   N-35: und der Fluss hat keinen Vorgaenger aus der alten Epoche
+[ok]   N-35: das FINGERPRINTfenster ist leer (M-27)  [0]
+[ok]   N-35: und die STEREOevidenz ebenso (M-11)  [0]
+[ok]   N-35: der Ereignisring UEBERLEBT die Grenze  [6 gegen 6]
+[ok]   N-35: und der Eintrag von VOR der Grenze steht unveraendert mit seinem alten Stempel darin  [Epoche 0, Segment 0]
+[ok]   N-35: ein Zeitsprung hebt dagegen die EPOCHE und setzt das Segment zurueck - die zwei Gruende sind unterscheidbar  [Epoche 1, Segment 0]
+[ok]   N-35: auch die Epochengrenze laesst den Ring stehen  [6]
+[ok]   N-35: vor dem Reset steht die Epoche ueber 0 - sonst maesse die Gegenprobe nichts  [1]
+[ok]   N-35: `zuruecksetzen()` leert den Ring - genau die Differenz, die Probeeq beim Quarantaenebruch nicht mehr faehrt (R7)
+[ok]   N-35: und setzt Epoche wie Segment auf 0 - ein Stempel 0/0 nach einem Bruch ist auf dem Draht UNSICHTBAR  [vorher Epoche 1]
+
+== NAK-181 N-18c  ppq_ausserhalb_des_riegels_laesst_den_zyklus_entfallen ==
+[ok]   N-18c: ein Evidenzframe wird faellig
+[ok]   N-18c: der Snapshot entsteht trotz verweigerter PPQ-Werte
+[ok]   N-18c: das cycle-Objekt entfaellt GANZ â kein null in einem number
+[ok]   N-18c: und validity.cycle_bounds faellt mit ihm (das Schema koppelt sie)
+[ok]   N-18c: der Snapshot passiert den Textriegel
+[ok]   N-18c: mit gueltigen Werten traegt cycle active, bounds_valid und beide PPQ
+[ok]   N-18c: und validity.cycle_bounds steht
+
+== NAK-181 N-18d  samplerate_ausserhalb_des_riegels_erzeugt_keinen_snapshot ==
+[ok]   N-18d: ein Evidenzframe wird faellig
+[ok]   N-18d: sample_rate = 1e-308 erzeugt KEINEN Snapshot
+[ok]   N-18d: mit 48000 entsteht er unveraendert
+
+== NAK-182 M-83  focused_evidence_wire_carries_0p01_db_steps ==
+[ok]   die Byteinstanz liegt im Korpus - keine der drei Sprachen erzeugt sie, alle messen dagegen
+[ok]   die Fixture traegt Gain, Toleranz, Aufloesung und die Leiter als ZAHLEN  [G=3.00 dB, Toleranz 0.10 dB, 20 Stufen, Teiler 100, q_db_0p01_i16]
+[ok]   und sie traegt das MATERIAL - Frequenz, Samplerate, Amplitude, Blockgroesse und Laufbegrenzung stehen nicht mehr lokal im Test  [1000 Hz bei 48000 Hz, Amplitude 0.250, bis zu 900 Bloecke zu 512 Frames]
+[ok]   aus beiden Laeufen entsteht ein SERIALISIERTER Snapshot samt `verteilung.p50` (PRE und POST)
+[ok]   der Wire-Text nennt die FOKUSSIERTE Aufloesung der Fixture - nicht die des Liveframes  [q_db_0p01_i16 / q_db_0p01_i16 gegen q_db_0p01_i16]
+[ok]   beide Wire-Texte tragen genau 221 Bandwerte  [221]
+[ok]   genug Baender tragen in BEIDEN Wire-Texten ein Praesenzbit - sonst haette die Zeile nichts gemessen  [56 Baender]
+[ok]   aus dem EIGENEN Wire-Text, dekodiert mit der Vertragsformel (Teiler aus der Fixture), kommt der Gain je Band mit Bit innerhalb der Toleranz zurueck  [0 Baender daneben, groesste Abweichung 0.0000 dB; Differenzen 3.000 bis 3.000 dB gegen G=3.00]
+[ok]   jede der 20 Stufen erzeugt einen Snapshot, dessen Wire-Text das gemessene Band traegt  [Band 120 (Versatz -0.004 dB), 20 von 20; erste: -3256, -3255, -3254, -3253, ...]
+[ok]   und jede Stufe nennt dasselbe Encoding-Wort wie die Fixture  [20 von 20]
+[ok]   die Leiter im Wire-Text ist STRENG MONOTON - 0,01 dB mehr sind nie dieselbe Ganzzahl  [19 von 19]
+[ok]   und benachbarte Stufen unterscheiden sich um GENAU 1 - das ist die Aufloesung 0,01 dB, am erzeugten Snapshot gemessen statt an einer Testzahl gerechnet  [19 von 19]
+[ok]   und es ist DIESELBE Schrittfolge, die die Fixture zusagt - der absolute Pegel ist nicht vorhersagbar, die Schritte sind es  [19 von 19]
+
+== NAK-283 M-44  aktivgate_ist_samplerateunabhaengig ==
+[ok]   M-44: die Buehne ist die gerechnete - der Eingang liegt bei allen vier Raten bei -48,0 dB mittlerer Kanalenergie
+[ok]   NAK-283 M-44: aktivgate_ist_samplerateunabhaengig - jedes Hauptstufenfenster nimmt bei 44,1 / 48 / 96 / 192 kHz das Gate, abdeckung ist ueberall 1  [44.1 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 48.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 96.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; 192.0 kHz: abdeckung 1.000 in 9 Evidenzframes, Eingang -48.000 dB; ]
+
+== NAK-283 M-45  aktivgate_ist_stufenunabhaengig ==
+[ok]   M-45: beide Pegel tragen Evidenzframes  [2 / 2]
+[ok]   NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L1 = -52,3 dBFS nehmen BEIDE Stufen das Gate (Baender mit Beitrag in beiden Stufen)  [Bassbaender 47, Hauptbaender 149, abdeckung 1.000]
+[ok]   NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L2 = -63,0 dBFS nimmt KEINE Stufe das Gate (kein Band mit Beitrag)  [Bassbaender 0, Hauptbaender 0, abdeckung 0.000]
+
+== NAK-283 M-46  aktivitaet_und_abdeckung_widersprechen_sich_nicht ==
+[ok]   NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (a) -58,0 dBFS bei 44,1 kHz: aktivitaet 1 UND abdeckung 1 im selben Frame  [aktivitaet 1.000, abdeckung 1.000, Widersprueche 0 in 9 Evidenzframes]
+[ok]   NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (b) -62,0 dBFS bei 44,1 kHz: aktivitaet 0 UND abdeckung 0 im selben Frame  [aktivitaet 0.000, abdeckung 0.000, Widersprueche 0]
+
+== NAK-283 M-47  aktives_fenster_liefert_bandwerte ==
+[ok]   NAK-283 M-47: aktives_fenster_liefert_bandwerte - -58,0 dBFS bei 96 kHz: jedes Fenster nimmt das Gate, stereo_bands > 0 und Evidenzbaender mit Bit  [stereo_bands 161, Evidenzbaender mit Bit 16, abdeckung 1.000]
+
+== NAK-283 M-48  stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert ==
+[ok]   NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) - (a) digitale Stille: abdeckung 0, endlich, kein Band mit Stereobasis  [abdeckung 0.000, aktivitaet 0.000, stereo_bands 0 in 6 Evidenzframes]
+[ok]   NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) - (b) Fenster mit Dichtesumme exakt 0 nach einer Sekunde Ton bleiben inaktiv  [abdeckung 0.000, stereo_bands 0 in 4 Evidenzframes]
+
+== NAK-283 M-49  vorab_gebundene_passage_traegt_kein_material_davor ==
+[ok]   M-49: beide Laeufe binden das Fenster und tragen ein Passagenmaximum
+[ok]   NAK-283 M-49: vorab_gebundene_passage_traegt_kein_material_davor - das Passagenmaximum gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [vorab -59.843 dBTP, isoliert -59.843 dBTP]
+
+== NAK-283 M-50  zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein ==
+[ok]   M-50: der Passagenanfang liegt im Blockinneren (Versatz 384 in einem 512er-Block)
+[ok]   NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein - der erste Passagenrahmen traegt keine verzoegerte Antwort der Kante davor  [vorab -60.000 dBTP, isoliert -60.000 dBTP, Kante davor -0,92 dBTP]
+
+== NAK-283 M-51  nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage ==
+[ok]   M-51 (A): die Buehne traegt eine Intersample-Spitze ueber dem Samplescheitel (Gegenprobe ohne Bindung)  [-5.920 dBTP gegen Samplescheitel -9.031]
+[ok]   NAK-283 M-51 (A): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - das Binden einer spaeteren Passage nimmt dem laufenden Rahmen seine Intersample-Spitze nicht  [mit Bindung -5.920 dBTP, ohne -5.920 dBTP, Passagenbit leer]
+[ok]   NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - am Startsample geht der Nachlauf in den laufenden Rahmen  [Rahmen mit Passage -5.920 dBTP, ohne Passage -5.920 dBTP, Samplescheitel -9.031]
+[ok]   NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - und NICHT in das Passagenmaximum  [Passage -60.000 dBTP, isoliert -60.000 dBTP]
+
+== NAK-283 M-52  passagenanfang_und_passagenende_wirken_auf_dieselben_historien ==
+[ok]   M-52: gebunden nach einer Sekunde, Anfang und Ende im Blockinneren
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - True-Peak-Kette am Anfang und hinter dem Ende: keine der zwei Kanten geht ein  [-25.918 dBTP (Kanten -0,92 dBTP)]
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - True-Peak-Kette am Ende: der Nachlauf an passBis traegt die Spitze der letzten zwoelf Passagensamples  [-25.918 dBTP gegen Samplescheitel -29.031]
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - Headroom: die Verteilung umfasst genau die Rahmen der Passage, keinen davor oder dahinter  [Fenster 132 bei 132 Rahmen der Passage; P10 -40.005, P50 -40.005, P95 -40.005 dBTP]
+[ok]   NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - 3-s-Zellen: das Kurzzeitfenster beginnt am Passagenanfang, nicht beim Binden  [0 Rahmen mit 3-s-Crest vor 2,9 s; erster ab 3.080 s mit 3.010 dB]
+
+== NAK-283 M-73/M-74  passagenmaximum_haengt_nicht_an_der_blockgroesse / passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse ==
+[ok]   M-73: der Anfang faellt bei 64 auf einen Blockanfang und liegt bei 512 und 1024 im Blockinneren
+[ok]   NAK-283 M-73: passagenmaximum_haengt_nicht_an_der_blockgroesse (Regressionswache) - 64, 512 und 1024 Samples je Block liefern dasselbe Passagenmaximum (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1024: -5.919 dBTP; Spanne 0.000 dB]
+[ok]   NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1024: -5.919 dBTP; isoliert -5.919 dBTP, groesste Abweichung 0.000 dB]
+
+-----------------------------------------
+179 bestanden, 0 gescheitert

@@ -1,0 +1,23 @@
+Versatz 10*log10(fs/N) je Stufe:
+  fs=44100: Haupt 10.32 dB, Bass 4.30 dB
+  fs=48000: Haupt 10.69 dB, Bass 4.67 dB
+  fs=96000: Haupt 13.70 dB, Bass 7.68 dB
+  fs=192000: Haupt 16.71 dB, Bass 10.69 dB
+Differenz der Stufen: 6.02 dB
+M-44 Fenster fuer L: -49.31 < L < -46.30; L=-48.0: 1.31 dB ueber unterer, 1.70 dB unter oberer Kante
+  M-44 ohne Δf fs=44100: Haupt -58.32 dB -> aktiv
+  M-44 ohne Δf fs=48000: Haupt -58.69 dB -> aktiv
+  M-44 ohne Δf fs=96000: Haupt -61.70 dB -> inaktiv
+  M-44 ohne Δf fs=192000: Haupt -64.71 dB -> inaktiv
+M-45 L1 ohne Δf bei 48k: Bass -56.97, Haupt -62.99
+M-45 L2 Δf fest aus kHauptPunkte: Bass -56.98, Haupt -63.00
+M-45 L2-Fenster der Mutation: -66.02 .. -60.00
+M-46 (a) 44.1k ohne Δf: Bass -62.30, Haupt -68.32
+M-47 96k ohne Δf: Bass -65.68, Haupt -71.70
+  Amplitude fuer -48.0 dB mittlere Kanalenergie: 0.005630
+  Amplitude fuer -52.3 dB mittlere Kanalenergie: 0.003432
+  Amplitude fuer -63.0 dB mittlere Kanalenergie: 0.001001
+  Amplitude fuer -58.0 dB mittlere Kanalenergie: 0.001780
+  Amplitude fuer -62.0 dB mittlere Kanalenergie: 0.001123
+Klasse -6.0206: 19397 Mitte -6.025000000000006
+Histogramm Bytes: 104000

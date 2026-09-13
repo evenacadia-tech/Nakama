@@ -1,0 +1,63 @@
+NAK-283 Etappe 5 - Rotbilanz
+Zeitpunkt: 2026-09-13T13:37:58.1518394+02:00
+HEAD: bc0941e51bcdf8d3752362c3ca10cda628bd1438
+Basis: bc0941e51bcdf8d3752362c3ca10cda628bd1438
+
+MUT-44         M-44                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-44-etappe-5.txt  BESTANDEN
+MUT-44         M-45 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-45a-etappe-5.txt  BESTANDEN
+MUT-44         M-46                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-46-etappe-5.txt  BESTANDEN
+MUT-44         M-47                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-47-etappe-5.txt  BESTANDEN
+MUT-45         M-45 (b)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-45b-etappe-5.txt  BESTANDEN
+MUT-48         M-48 (a) Beobachtung     erwartet gruen mutiert Exit 0 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-48-beobachtung-etappe-5.txt  BESTANDEN
+MUT-48b        M-48 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-48a-etappe-5.txt  BESTANDEN
+MUT-48b        M-48 (b)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-48b-etappe-5.txt  BESTANDEN
+MUT-49a        M-49 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-49-etappe-5.txt  BESTANDEN
+MUT-49a        M-50                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-50-etappe-5.txt  BESTANDEN
+MUT-49a        M-51 (A)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-51A-etappe-5.txt  BESTANDEN
+MUT-49a        M-52 Anfang              erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52a-etappe-5.txt  BESTANDEN
+MUT-49a        M-74                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-74-etappe-5.txt  BESTANDEN
+MUT-49a        M-60 True Peak           erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-60a-etappe-5.txt  BESTANDEN
+MUT-49b        M-73                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-73-etappe-5.txt  BESTANDEN
+MUT-50         M-50                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-50b-etappe-5.txt  BESTANDEN
+MUT-51a        M-51 (B) Rahmen          erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-51Ba-etappe-5.txt  BESTANDEN
+MUT-51b        M-51 (B) Passage         erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-51Bb-etappe-5.txt  BESTANDEN
+MUT-52b        M-52 Ende                erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52b-etappe-5.txt  BESTANDEN
+MUT-52c        M-52 3-s-Zellen          erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52c-etappe-5.txt  BESTANDEN
+MUT-52d        M-52 Headroom            erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52d-etappe-5.txt  BESTANDEN
+MUT-53         M-53                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-53-etappe-5.txt  BESTANDEN
+MUT-53         M-54                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-54-etappe-5.txt  BESTANDEN
+MUT-53         M-60 Headroom            erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-60b-etappe-5.txt  BESTANDEN
+MUT-53         M-52 Headroom (Ring)     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52e-etappe-5.txt  BESTANDEN
+MUT-54         M-54                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-54b-etappe-5.txt  BESTANDEN
+MUT-55         M-55 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-55-etappe-5.txt  BESTANDEN
+MUT-55b        M-55 (b)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-55b-etappe-5.txt  BESTANDEN
+MUT-56         M-56                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-56-etappe-5.txt  BESTANDEN
+MUT-56         M-57                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-57-etappe-5.txt  BESTANDEN
+MUT-56         M-60 Loudness            erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-60c-etappe-5.txt  BESTANDEN
+MUT-57         M-57                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-57b-etappe-5.txt  BESTANDEN
+MUT-58a        M-58 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-58a-etappe-5.txt  BESTANDEN
+MUT-58b        M-58 (b) Momentary       erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-58b-etappe-5.txt  BESTANDEN
+MUT-58b        M-58 (b) Short-term      erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-58c-etappe-5.txt  BESTANDEN
+MUT-59a        M-59 Saettigung          erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-59a-etappe-5.txt  BESTANDEN
+MUT-59b        M-59 Marke               erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-59b-etappe-5.txt  BESTANDEN
+BASIS          M-44                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-44-basis-etappe-5.txt  BESTANDEN
+BASIS          M-45 (a)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-45-basis-etappe-5.txt  BESTANDEN
+BASIS          M-46                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-46-basis-etappe-5.txt  BESTANDEN
+BASIS          M-47                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-47-basis-etappe-5.txt  BESTANDEN
+BASIS          M-48 (Wache)             erwartet gruen mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-48-basis-etappe-5.txt  BESTANDEN
+BASIS          M-49                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-49-basis-etappe-5.txt  BESTANDEN
+BASIS          M-50                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-50-basis-etappe-5.txt  BESTANDEN
+BASIS          M-51 (A)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-51-basis-etappe-5.txt  BESTANDEN
+BASIS          M-52 Anfang              erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-52-basis-etappe-5.txt  BESTANDEN
+BASIS          M-73 (Wache)             erwartet gruen mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-73-basis-etappe-5.txt  BESTANDEN
+BASIS          M-74                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-74-basis-etappe-5.txt  BESTANDEN
+BASIS          M-53                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-53-basis-etappe-5.txt  BESTANDEN
+BASIS          M-54                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-54-basis-etappe-5.txt  BESTANDEN
+BASIS          M-55 (Wache)             erwartet gruen mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-55-basis-etappe-5.txt  BESTANDEN
+BASIS          M-56                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-56-basis-etappe-5.txt  BESTANDEN
+BASIS          M-57                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-57-basis-etappe-5.txt  BESTANDEN
+BASIS          M-58 (b)                 erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-58-basis-etappe-5.txt  BESTANDEN
+BASIS          M-60                     erwartet rot   mutiert Exit 1 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-60-basis-etappe-5.txt  BESTANDEN
+MUT-55b-BASIS  M-55 (b) Basis           erwartet gruen mutiert Exit 0 (Traeger True) / zurueck Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-55b-basis-etappe-5.txt  BESTANDEN
+
+URTEIL: 56 von 56 Laeufen bestanden (Rotlauf mit [ROT]-Traeger oder Beobachtung mit [ok]-Traeger, zurueckgespielt gruen mit [ok]-Traeger, Ruecknahme bytegleich)

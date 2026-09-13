@@ -1,0 +1,25 @@
+NAK-283 Etappe 5 - Rotbeweis MUT-55b-BASIS fuer M-55 (b) Basis
+Zeitpunkt:  2026-09-13T13:37:58.1502130+02:00
+Mutation:   keine Mutation: derselbe Riegel am Basis-SHA - Regressionswache, dort erwartet gruen
+Erwartet:   mutiert gruen / zurueckgespielt gruen
+Datei:      (keine Mutation)
+Bein:       docs/beweise/roh/NAK-283-etappe-5-riegel-M-55.ps1 -Revision bc0941e51bcdf8d3752362c3ca10cda628bd1438
+Neubau:     mutiert  / zurueckgespielt 
+Traeger:    R2 die Definition lautet kVerteilungPlaetze = 64
+Urteil:     MUTIERT Exit 0 / ZURUECKGESPIELT Exit 0
+Traegerzeile mutiert:        [ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+Traegerzeile zurueckgespielt: [ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+
+--- MUTIERT (erwartet: gruen) --------------------------------
+Riegel M-55 (b) gegen Revision bc0941e51bcdf8d3752362c3ca10cda628bd1438 - git -C C:\Users\phili\Projekte\Nakama grep -n kVerteilungPlaetze =  bc0941e51bcdf8d3752362c3ca10cda628bd1438 -- eq-copilot/plugin/core/
+  Treffer: bc0941e51bcdf8d3752362c3ca10cda628bd1438:eq-copilot/plugin/core/analysis/FeatureEngine.h:118:inline constexpr int kVerteilungPlaetze = 64;
+[ok]   R1 genau eine Definition von kVerteilungPlaetze unter eq-copilot/plugin/core/
+[ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+URTEIL: 2 von 2 Pruefungen ok
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+Riegel M-55 (b) gegen Arbeitsbaum - git -C C:\Users\phili\Projekte\Nakama grep -n kVerteilungPlaetze =  -- eq-copilot/plugin/core/
+  Treffer: eq-copilot/plugin/core/analysis/FeatureEngine.h:118:inline constexpr int kVerteilungPlaetze = 64;
+[ok]   R1 genau eine Definition von kVerteilungPlaetze unter eq-copilot/plugin/core/
+[ok]   R2 die Definition lautet kVerteilungPlaetze = 64 - der Bandspeicher je Instanz waechst nicht
+URTEIL: 2 von 2 Pruefungen ok

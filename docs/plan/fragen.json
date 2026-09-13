@@ -72,6 +72,17 @@
    "zwischenantwort": "2026-09-12 14:00 — keine Wahl, User-Wort wörtlich: „wir haben ein fl studio mcp. du kannst selbst messungen und alles was benötigt wird vornehmen. der mcp server kann auch weiter ausgebaut werden oder ich kann eine diagnose fl studio instanz vorbereiten die immer offen ist. der komplette bau kann sowieso viel mehr direkt mit fl studio interagieren. alle tools sind da oder können erstellt werden“",
    "vertagt": "2026-09-12 — bis die Wirkung der Korrektur gemessen ist: der Dirigent misst selbst (headless auf echtem Material und über den FL-Studio-MCP-Server mit dem installierten Bau, nach NAK-283 Etappe 5) und legt Messwerte vor, keine Blindwahl; Register NAK-284, KONZEPT §4.6. Eine dauerhaft offene Diagnose-Instanz bereitet der User auf Anforderung vor (Handgriff).",
    "status": "offen"
+  },
+  {
+   "id": "U43",
+   "dringlichkeit": "vor NAK-286 Etappe 4 (nur für den Render mit Verarbeitung, M-64); die übrigen Etappen laufen ohne die Antwort",
+   "art": "User-Handgriff (FL Studio), keine Produktfrage",
+   "titel": "Zwei Referenzprojekte neben dem Diagnoseprojekt für den Nulltest im echten Host",
+   "was": "Der Laufzeit-Arm soll den Nulltest auch im echten FL Studio führen: einmal ohne Verarbeitung (Auslieferungszustand — das schafft die Automatik allein, indem sie das Diagnoseprojekt rendert und Sample für Sample gegen den Testtrack vergleicht) und einmal mit eingeschalteter Verarbeitung. Für den zweiten Teil und als Rückfall, falls die FL-Kette nicht einheitsverstärkend ist, braucht die Automatik zwei Kopien des Diagnoseprojekts, die nur du in FL speichern kannst: (a) ohne die beiden Nakama-Plugins (Slot auf Insert 1 und Slot auf Master leer, sonst unverändert); (b) mit eingeschalteter Verarbeitung in Nakama Probeeq und einer deutlich hörbaren Bandänderung (über das allgemeine Plugin-Fenster von FL), sonst unverändert. Beide Dateien neben das Diagnoseprojekt legen (Ordner von Project_1.flp); die Automatik liest sie nur und speichert nie. Wenige Minuten; kann mit dem Neuanlegen des Diagnoseprojekts nach NAK-30 zusammenfallen. Ohne die Kopien läuft alles Übrige; nur der Render mit Verarbeitung (M-64) und der Rückfallweg (M-62/M-63 bei KETTE oder Formatfehler) warten.",
+   "warum": "Die Automatik kann keinen zweiten Projektzustand erzeugen, ohne ein FL-Projekt zu speichern oder eine Einstellung des Users zu verändern (docs/beweise/NAK-286.md §7.1 T-11, §7.2 K-286-1, §2.3 R-286-3); Skill §4: der einzige FL-Handgriff war bisher das Neuanlegen des Diagnoseprojekts nach NAK-30.",
+   "wo": "docs/beweise/NAK-286.md §2.3 (R-286-3, F-17 bis F-20), §4.8 (M-62 bis M-64), §7.2 (K-286-1); Etappe 4 des Tickets",
+   "seit": "13.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

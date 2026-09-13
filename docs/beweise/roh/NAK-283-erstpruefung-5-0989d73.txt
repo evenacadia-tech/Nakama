@@ -1,0 +1,5 @@
+URTEIL: PASS — kein DEFEKT im gebundenen Prüfbereich.
+
+Geprüft: vollständiger Sieben-Dateien-Diff, Gate-Einheiten und Bühnenpegel, Start-/Endgrenzen, Histogramm samt Sättigung, getrennte Loudnessfristen, M-60, Worker-/Audiothread-Abgrenzung und Writer/Reader; 56 Rotbeweisdateien mit passenden Zusageprüfungen und 133 übereinstimmenden protokollierten Hashpaaren, sieben Quellhashes passend zum Endlauf, unveränderte ausgeschlossene Produktpfade und Fixtures; Prüffrage (f) bestätigt: `Spektrum.h:200–211,268–270` übernimmt ersetztes Material in den Rahmenbeitrag, `Frame.h:112–122` sammelt ihn vor der Verriegelung `Frame.h:569–570` — die angeordnete M-76-Nacharbeit bleibt separat; HEAD `0989d7386dffd75d05d2a32cb9aefff6857b5a4d` und Worktree-Status blieben unverändert.
+
+Nicht geprüft: keine eigenen Builds, Test-, Mutations-, Produkt- oder Kanonläufe gemäß Leseauftrag; die grünen Ergebnisse von B16/B18, Nulltests, Goldens und Vertragsbeinen einschließlich A10 sind gelesene Rohbelege, keine eigenen Laufmessungen.

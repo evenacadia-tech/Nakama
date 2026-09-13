@@ -40,9 +40,11 @@ HERKUNFT JEDER SCHWELLE (Stand 09.09.2026, Basis-SHA 274d3ff8)
 --------------------------------------------------------------
   Zeilen je Quelldatei   Grenze 2 000 / Ziel 1 500 — gesetzt durch Plan S25b
                          und CLAUDE.md („bis es gebaut ist, von Hand: keine
-                         Quelldatei ueber 2 000 Zeilen"). HAELT seit NAK-225
-                         (S25d, 09.09.2026): keine Quelldatei liegt mehr ueber
-                         der Grenze, die Pflegeticket-Zuordnung ist leer. Der
+                         Quelldatei ueber 2 000 Zeilen"). Hielt nach NAK-225
+                         (S25d, 09.09.2026) fuer den damals handgepflegten
+                         Umfang; seit dem Inventar (NAK-283 M-69, 13.09.2026)
+                         gilt sie fuer das ganze Plugin. Die
+                         Pflegeticket-Zuordnung ist leer. Der
                          naechste Treffer traegt „OHNE PFLEGETICKET" und ist
                          damit sichtbar neue Schuld; ein Eintrag, dessen Datei
                          die Grenze nicht mehr reisst, beendet den Lauf als
@@ -61,12 +63,23 @@ das letzte, und die drei Dateien, die sie rissen, sind geteilt. Jede Rotmeldung
 ab hier ist echte Verschlechterung — es gibt keinen bekannten Rest mehr, hinter
 dem sie sich verstecken koennte.
 
+Das galt fuer den handgepflegten Umfang. Seit NAK-283 (M-69, 13.09.2026) misst
+das Werkzeug das ganze Inventar; was dort reisst, war vorher UNGEMESSEN, nicht
+gesund. Es steht als Befund im Bericht und wird in einem eigenen Pflegeticket
+behandelt, nicht still nachgebessert und nicht mit einer angehobenen Ratsche
+zugedeckt.
+
 WAS GEMESSEN WIRD — CODEBASE
 ----------------------------
-Quellorte: `broker/src`, `eq-copilot/plugin/src`, `eq-copilot/plugin/core`;
-Endungen `.rs`, `.cpp`, `.h`, `.hpp`. Ausgenommen `broker/src/generiert/` —
-das ist Codegen aus dem `.fbs` und wird von Bein A9 bytegleich gehalten; seine
-Zeilen sind kein Wartungsaufwand (Ticketnachtrag 08.09.2026).
+Quellumfang aus einem pruefbaren Inventar statt einer Handliste (NAK-249, gebaut
+in NAK-283 M-69, 13.09.2026): jede Datei mit Endung `.rs`, `.cpp`, `.h`, `.hpp`
+unter `broker/src` und `eq-copilot/plugin`. Ausgenommen, je mit Grund: der
+Codegen aus dem `.fbs` (`broker/src/generiert/`,
+`eq-copilot/plugin/vertrag/generiert/`; Bein A9 haelt ihn bytegleich, seine
+Zeilen sind kein Wartungsaufwand, Ticketnachtrag 08.09.2026) und der Testbaum
+`eq-copilot/plugin/tests/`. Bericht und JSON drucken das Inventar. Eine
+Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als
+Werkzeugfehler (Inventarriegel, Exit 2).
 
   (1) ZEILEN JE QUELLDATEI. Zeilenzahl = Anzahl `\\n` plus eins, wenn die Datei
       nicht mit einem Umbruch endet; die leere Datei hat 0. CRLF und LF zaehlen
@@ -177,12 +190,35 @@ import sys
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 
 # ------------------------------------------------------------------ Messorte
-
-QUELLORTE = ("broker/src", "eq-copilot/plugin/src", "eq-copilot/plugin/core")
+#
+# NAK-249, gebaut in NAK-283 (M-69, 13.09.2026): der Quellumfang ist keine
+# Handliste mehr. Bis dahin standen hier drei Orte (`broker/src`,
+# `eq-copilot/plugin/src`, `eq-copilot/plugin/core`), und acht Unterbaeume des
+# Plugins mit Produktquellen - `state`, `dsp`, `sonde`, `vertrag`,
+# `hostbridge`, `hostprobe`, `probe`, `spike` - blieben still ungemessen; jede
+# Aussage des Masses galt nur fuer den gemessenen Teil.
+#
+# Jetzt leitet sich der Umfang aus einem pruefbaren INVENTAR ab: jeder
+# Unterbaum der Inventarwurzeln, der Quelldateien traegt, wird gemessen -
+# ausser er steht mit Grund in AUSGENOMMEN (Codegen) oder TESTBAEUME. Bericht
+# und JSON drucken das Inventar. Der Inventarriegel zaehlt davon unabhaengig
+# jede Quelldatei unter den Wurzeln: eine, die weder gemessen noch
+# ausgenommen ist, ist ein Werkzeugfehler (Exit 2) - wie der fehlende
+# Messort, denn ein ungemessener Unterbaum machte jedes andere Mass falsch.
+INVENTARWURZELN = ("broker/src", "eq-copilot/plugin")
 QUELLENDUNGEN = (".rs", ".cpp", ".h", ".hpp")
 # Codegen aus dem .fbs. Bein A9 haelt ihn bytegleich zur Neuerzeugung; wer ihn
 # von Hand kuerzte, braeche A9. Seine Zeilen sind deshalb kein Wartungsaufwand.
-AUSGENOMMEN = ("broker/src/generiert",)
+AUSGENOMMEN = {
+    "broker/src/generiert": "Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich",
+    "eq-copilot/plugin/vertrag/generiert":
+        "Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich",
+}
+# Testcode ist kein Produktumfang (Plan S25b misst Produktquellen); die
+# Broker-Tests liegen ohnehin ausserhalb von `broker/src`.
+TESTBAEUME = {
+    "eq-copilot/plugin/tests": "Testcode, kein Produktumfang",
+}
 
 # ------------------------------------------------------------------ Schwellen
 
@@ -409,33 +445,121 @@ def lies_text(pfad: pathlib.Path) -> str:
     return roh.decode("utf-8-sig", errors="replace")
 
 
-def sammle_quellen(wurzel: pathlib.Path):
-    """Alle Quelldateien der Messorte, sortiert, ohne die Ausnahmen.
+def ausnahme(rel: str) -> str | None:
+    """Der Grund, wenn `rel` (Datei oder Ordner) unter einer ausdruecklichen
+    Ausnahme liegt - Codegen oder Testbaum -, sonst None."""
+    for basis, grund in {**AUSGENOMMEN, **TESTBAEUME}.items():
+        if rel == basis or rel.startswith(basis + "/"):
+            return grund
+    return None
 
-    Ein FEHLENDER Messort ist ein Werkzeugfehler, kein leeres Ergebnis. Das
-    Kontext-Hygiene-Playbook nennt die Klasse beim Namen: „Ein Prüfkommando auf
-    einen verschobenen Pfad liefert still 0 und lässt Veraltetes verifiziert
-    aussehen." Wird `eq-copilot/plugin/core` umbenannt, faellt ohne diese
-    Wache ein Drittel der Codebase unbemerkt aus der Messung — und das Werkzeug
-    meldete gruen.
+
+def ist_quelldatei(pfad: pathlib.Path) -> bool:
+    return pfad.is_file() and pfad.suffix in QUELLENDUNGEN
+
+
+def inventar(wurzel: pathlib.Path):
+    """Das pruefbare Inventar (NAK-249): jeder Unterbaum mit Quelldateien.
+
+    Unterbaum heisst direkter Unterordner einer Inventarwurzel; Quelldateien
+    direkt in der Wurzel bilden einen eigenen Eintrag (`direkt`). Ein Ordner
+    ohne Quelldatei - leer oder nur Doku - steht nicht im Inventar, er hat
+    nichts zu messen. Je Eintrag: `pfad`, `direkt`, `dateien` (alle
+    Quelldateien darin), `ausgenommen` (davon ausdruecklich ausgenommen, etwa
+    geschachtelter Codegen) und `grund` (gesetzt, wenn der ganze Unterbaum
+    ausgenommen ist).
     """
-    fehlend = [ort for ort in QUELLORTE if not (wurzel / ort).is_dir()]
+    eintraege = []
+    for ort in INVENTARWURZELN:
+        basis = wurzel / ort
+        direkt = [p for p in basis.iterdir() if ist_quelldatei(p)]
+        if direkt:
+            eintraege.append(dict(pfad=ort, direkt=True, dateien=len(direkt),
+                                  ausgenommen=sum(1 for p in direkt if ausnahme(
+                                      p.relative_to(wurzel).as_posix())),
+                                  grund=None))
+        for ordner in sorted(p for p in basis.iterdir() if p.is_dir()):
+            rel = ordner.relative_to(wurzel).as_posix()
+            dateien = [p for p in ordner.rglob("*") if ist_quelldatei(p)]
+            if not dateien:
+                continue
+            eintraege.append(dict(
+                pfad=rel, direkt=False, dateien=len(dateien),
+                ausgenommen=sum(1 for p in dateien
+                                if ausnahme(p.relative_to(wurzel).as_posix())),
+                grund=ausnahme(rel)))
+    return eintraege
+
+
+def quellorte(inv) -> list[dict]:
+    """Der gemessene Umfang: das Inventar ohne die ganz ausgenommenen Unterbaeume."""
+    return [e for e in inv if e["grund"] is None]
+
+
+def inventarluecken(wurzel: pathlib.Path, gemessen: set[str]) -> list[tuple[str, int]]:
+    """Der Inventarriegel (NAK-283 M-69): Unterbaeume, deren Quelldateien weder
+    gemessen noch ausdruecklich ausgenommen sind, je mit der Zahl dieser Dateien.
+
+    Er zaehlt UNABHAENGIG von `inventar` und `quellorte` jede Quelldatei unter
+    den Inventarwurzeln neu. Verliert die Ableitung still einen Unterbaum,
+    faellt er hier auf, statt dass Riegel und Ableitung denselben Fehler teilen.
+    """
+    fehlend: dict[str, int] = {}
+    for ort in INVENTARWURZELN:
+        basis = wurzel / ort
+        if not basis.is_dir():
+            continue
+        for pfad in basis.rglob("*"):
+            if not ist_quelldatei(pfad):
+                continue
+            rel = pfad.relative_to(wurzel).as_posix()
+            if rel in gemessen or ausnahme(rel):
+                continue
+            teile = pfad.relative_to(basis).parts
+            unterbaum = f"{ort} (direkt)" if len(teile) == 1 else f"{ort}/{teile[0]}"
+            fehlend[unterbaum] = fehlend.get(unterbaum, 0) + 1
+    return sorted(fehlend.items())
+
+
+def sammle_quellen(wurzel: pathlib.Path):
+    """Alle Quelldateien des gemessenen Umfangs, sortiert, ohne die Ausnahmen.
+
+    Eine FEHLENDE Inventarwurzel ist ein Werkzeugfehler, kein leeres Ergebnis.
+    Das Kontext-Hygiene-Playbook nennt die Klasse beim Namen: „Ein
+    Prüfkommando auf einen verschobenen Pfad liefert still 0 und lässt
+    Veraltetes verifiziert aussehen." Wird `eq-copilot/plugin` umbenannt, fiele
+    ohne diese Wache das ganze Plugin unbemerkt aus der Messung — und das
+    Werkzeug meldete gruen.
+
+    Danach der Inventarriegel (NAK-283 M-69): jede Quelldatei unter den
+    Inventarwurzeln ist gemessen oder ausdruecklich ausgenommen, sonst
+    Werkzeugfehler.
+    """
+    fehlend = [ort for ort in INVENTARWURZELN if not (wurzel / ort).is_dir()]
     if fehlend:
         raise RuntimeError(
             "Messort fehlt: " + ", ".join(fehlend)
             + f" (unter {wurzel}). Umbenannt oder verschoben? "
-              "Die Ortsliste QUELLORTE gehoert nachgezogen.")
+              "Die Inventarwurzeln INVENTARWURZELN gehoeren nachgezogen.")
     treffer = []
-    for ort in QUELLORTE:
-        basis = wurzel / ort
-        for pfad in basis.rglob("*"):
-            if not pfad.is_file() or pfad.suffix not in QUELLENDUNGEN:
+    for e in quellorte(inventar(wurzel)):
+        basis = wurzel / e["pfad"]
+        for pfad in (basis.iterdir() if e["direkt"] else basis.rglob("*")):
+            if not ist_quelldatei(pfad):
                 continue
             rel = pfad.relative_to(wurzel).as_posix()
-            if any(rel.startswith(a + "/") or rel == a for a in AUSGENOMMEN):
+            if ausnahme(rel):
                 continue
             treffer.append((rel, pfad))
-    return sorted(treffer)
+    treffer.sort()
+    luecken = inventarluecken(wurzel, {rel for rel, _ in treffer})
+    if luecken:
+        raise RuntimeError(
+            "Inventarriegel: Unterbaum mit Quelldateien weder gemessen noch "
+            "ausgenommen: " + ", ".join(f"{u} ({n} Datei(en))" for u, n in luecken)
+            + ". Entweder misst ihn der Quellumfang, oder er steht mit Grund in "
+              "AUSGENOMMEN oder TESTBAEUME.")
+    return treffer
 
 
 # -------------------------------------------------- Maass 2: lange Funktionen
@@ -913,10 +1037,24 @@ def tabelle(maasse):
     return aus
 
 
-def drucke_bericht(maasse, wurzel, memory, ueberschrieben):
+def drucke_bericht(maasse, wurzel, memory, ueberschrieben, inv=None):
     print("NAKAMA-GESUNDHEIT")
     print(f"Wurzel : {wurzel}" + ("  (UEBERSCHRIEBEN)" if ueberschrieben else ""))
     print(f"Memory : {memory}")
+    if inv is not None:
+        # NAK-249: der Quellumfang steht im Bericht, damit er pruefbar ist.
+        gemessen = quellorte(inv)
+        print(f"Quellumfang (Inventar, NAK-249): {len(gemessen)} von {len(inv)} "
+              f"Eintraegen mit Quelldateien gemessen, "
+              f"{sum(e['dateien'] - e['ausgenommen'] for e in gemessen)} Dateien")
+        for e in inv:
+            name = e["pfad"] + (" (direkt)" if e["direkt"] else "")
+            if e["grund"]:
+                print(f"  ausgenommen  {name}: {e['dateien']} Datei(en) - {e['grund']}")
+            else:
+                zusatz = (f", davon {e['ausgenommen']} ausgenommen"
+                          if e["ausgenommen"] else "")
+                print(f"  gemessen     {name}: {e['dateien']} Datei(en){zusatz}")
     # Ein eingespeister Wert steht zwar mit seiner Marke in der Zeile, aber die
     # Urteilszeile unten spraeche sonst von „allen Grenzen" und meinte eine
     # Messung, die es nicht gab. Der Kopf sagt es deshalb zuerst.
@@ -963,7 +1101,7 @@ def drucke_bericht(maasse, wurzel, memory, ueberschrieben):
 def miss(wurzel: pathlib.Path, memory: pathlib.Path, mit_clippy: bool):
     quellen = sammle_quellen(wurzel)
     if not quellen:
-        raise RuntimeError(f"kein Messort gefunden unter {wurzel} ({', '.join(QUELLORTE)})")
+        raise RuntimeError(f"kein Messort gefunden unter {wurzel} ({', '.join(INVENTARWURZELN)})")
     texte = {rel: lies_text(p) for rel, p in quellen}
 
     maasse = []
@@ -1273,9 +1411,9 @@ def selbsttest() -> int:
         # Der Gesamtlauf erbt den Fehler: miss() reicht ihn durch, main() macht
         # daraus „Werkzeugfehler" und Exit 2 - derselbe Weg wie beim fehlenden
         # Messort, nie 0 und nie 4.
-        for ort in QUELLORTE:
+        for ort in INVENTARWURZELN:
             (w / ort).mkdir(parents=True)
-        (w / QUELLORTE[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
+        (w / INVENTARWURZELN[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
         kein_memory = w / "kein-memory"
         antwort = subprocess.CompletedProcess([], 101, "", "error: linker failed")
         echt_run, echt_which = subprocess.run, shutil.which
@@ -1347,23 +1485,99 @@ def selbsttest() -> int:
     pruefe("Indexzeile mit 251 Zeichen reisst", len("x" * 251) > INDEXZEILE_GRENZE, True)
 
     # --- Fehlender Messort ist ein Werkzeugfehler, kein leeres Ergebnis -----
-    # Die Wache laeuft gegen einen temporaeren Baum: mit allen drei Orten
-    # liefert sie eine Dateiliste, ohne einen davon wirft sie.
+    # Die Wache laeuft gegen einen temporaeren Baum: mit beiden
+    # Inventarwurzeln liefert sie eine Dateiliste, ohne eine davon wirft sie.
+    # Seit NAK-283 (M-69) ist der verschobene Pfad eine WURZEL: ein
+    # umbenannter Unterbaum fehlt nicht mehr, das Inventar misst ihn unter
+    # seinem neuen Namen.
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         w = pathlib.Path(tmp)
-        for ort in QUELLORTE:
+        for ort in INVENTARWURZELN:
             (w / ort).mkdir(parents=True)
-        (w / QUELLORTE[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
+        (w / INVENTARWURZELN[0] / "a.rs").write_text("fn a() {}\n", encoding="utf-8")
         pruefe("vollstaendige Messorte liefern Dateien", len(sammle_quellen(w)), 1)
-        # Einen Ort umbenennen - genau der Fall „Pfad verschoben".
-        (w / QUELLORTE[2]).rename(w / QUELLORTE[2].replace("core", "kern"))
+        # Eine Wurzel umbenennen - genau der Fall „Pfad verschoben".
+        (w / INVENTARWURZELN[1]).rename(w / (INVENTARWURZELN[1] + "-alt"))
         geworfen = False
         try:
             sammle_quellen(w)
         except RuntimeError as e:
             geworfen = "Messort fehlt" in str(e)
         pruefe("fehlender Messort wirft statt still 0 zu messen", geworfen, True)
+
+    # --- kein_quellbaum_bleibt_ungemessen (NAK-283 M-69, NAK-249) ------------
+    # Ein Baum mit jeder Form, die das Inventar kennen muss: Dateien direkt in
+    # der Wurzel, tiefe Unterbaeume, Codegen ganz und geschachtelt, Tests,
+    # ein neuer Unterbaum, den keine Liste kennt, ein leerer Ordner und einer
+    # nur mit Doku. Jede Erwartung mit ihrem Gegenteil.
+    with tempfile.TemporaryDirectory() as tmp:
+        w = pathlib.Path(tmp)
+        baum = {
+            "broker/src/lib.rs": "fn a() {}\n",
+            "broker/src/coordinator/b.rs": "fn b() {}\n",
+            "broker/src/generiert/c.rs": "fn c() {}\n",
+            "eq-copilot/plugin/src/d.cpp": "void d() {}\n",
+            "eq-copilot/plugin/core/analysis/e.h": "void e();\n",
+            "eq-copilot/plugin/state/f.cpp": "void f() {}\n",
+            "eq-copilot/plugin/dsp/g.h": "void g();\n",
+            "eq-copilot/plugin/vertrag/h.cpp": "void h() {}\n",
+            "eq-copilot/plugin/vertrag/generiert/i.h": "void i();\n",
+            "eq-copilot/plugin/tests/j.cpp": "int main() { return 0; }\n",
+            "eq-copilot/plugin/neuer_baum/tief/k.hpp": "void k();\n",
+            "eq-copilot/plugin/nur_doku/LIES-MICH.md": "# Doku\n",
+        }
+        for rel, text in baum.items():
+            (w / rel).parent.mkdir(parents=True, exist_ok=True)
+            (w / rel).write_text(text, encoding="utf-8")
+        (w / "eq-copilot/plugin/leer").mkdir(parents=True)
+        erwartet = sorted(rel for rel in baum
+                          if rel.endswith(QUELLENDUNGEN) and not ausnahme(rel))
+        try:
+            gemessen = [rel for rel, _ in sammle_quellen(w)]
+        except RuntimeError as e:
+            gemessen = [f"WERKZEUGFEHLER: {e}"]
+        pruefe("kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei "
+               "wird gemessen, auch im neuen Unterbaum", gemessen, erwartet)
+        pruefe("kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke",
+               inventarluecken(w, set(erwartet)), [])
+        pruefe("kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender "
+               "Unterbaum ist ein Befund",
+               inventarluecken(w, set(erwartet) - {"eq-copilot/plugin/state/f.cpp"}),
+               [("eq-copilot/plugin/state", 1)])
+        pruefe("kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt "
+               "in der Wurzel, ist das ein Befund",
+               inventarluecken(w, set(erwartet) - {"broker/src/lib.rs"}),
+               [("broker/src (direkt)", 1)])
+        inv = inventar(w)
+        pruefe("kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, "
+               "nicht ungemessen",
+               [e["pfad"] for e in inv if e["grund"]],
+               ["broker/src/generiert", "eq-copilot/plugin/tests"])
+        pruefe("kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen "
+               "nicht im Inventar",
+               [e["pfad"] for e in inv if e["pfad"].endswith(("/leer", "/nur_doku"))], [])
+        pruefe("kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im "
+               "gemessenen Unterbaum als ausgenommen",
+               [(e["pfad"], e["dateien"], e["ausgenommen"], e["grund"])
+                for e in inv if e["pfad"].endswith("/vertrag")],
+               [("eq-copilot/plugin/vertrag", 2, 1, None)])
+        # Verliert die Ableitung einen Unterbaum, wirft der Riegel - simuliert
+        # mit einem Inventar, das `state` nicht liefert.
+        echt = globals()["inventar"]
+        globals()["inventar"] = lambda wz: [e for e in echt(wz)
+                                            if not e["pfad"].endswith("/state")]
+        try:
+            sammle_quellen(w)
+            verlust = "(nicht geworfen)"
+        except RuntimeError as e:
+            verlust = str(e)
+        finally:
+            globals()["inventar"] = echt
+        pruefe("kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen "
+               "Unterbaum, wirft der Inventarriegel",
+               verlust.startswith("Inventarriegel:")
+               and "eq-copilot/plugin/state (1 Datei(en))" in verlust, True)
 
     # --- Eingespeister Wert wird im Kopf angesagt ---------------------------
     # Die Marke an der Zeile allein genuegt nicht: die Urteilszeile spraeche
@@ -1459,15 +1673,17 @@ def main() -> int:
     for m in maasse:
         m["status"] = bewerte(m["ist"], m.get("ziel"), m.get("grenze"))
 
+    inv = inventar(wurzel)
     if a.json:
         print(json.dumps({
             "wurzel": str(wurzel),
             "memory": str(memory),
             "clippy_gemessen": bool(a.clippy),
+            "inventar": inv,
             "maasse": maasse,
         }, indent=2, ensure_ascii=True))
     else:
-        drucke_bericht(maasse, wurzel, memory, bool(a.wurzel))
+        drucke_bericht(maasse, wurzel, memory, bool(a.wurzel), inv)
 
     return 4 if any(m["status"] == "GRENZE" for m in maasse) else 0
 

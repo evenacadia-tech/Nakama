@@ -20,6 +20,18 @@
     {
       "aussage": "stark",
       "bein": "B17",
+      "fall": "true_peak_matches_ebu_transient_set",
+      "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP",
+      "konfidenz": 0.96,
+      "quelle": {
+        "bezeichner": "true_peak_matches_ebu_transient_set",
+        "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"
+      },
+      "wahrheit": "ueberschreitet"
+    },
+    {
+      "aussage": "stark",
+      "bein": "B17",
       "fall": "eight_times_oversampling_error_bound",
       "hinweis": "die geschlossene Fehlerformel bei fs/4: -0,042 dB mit 8x",
       "konfidenz": 0.97,

@@ -2,8 +2,8 @@
   "$id": "evenacadia.nakama.p4korpus.v1",
   "dateien": {
     "referenz.json": {
-      "bytes": 2315,
-      "sha256": "40a335044982b06f4d991331ee37e2816cd8ab9914c7194ac8f1e28042da05ba"
+      "bytes": 2801,
+      "sha256": "8acd00972bf63bdcd55f739cdbb13c6e7ac76b930f1566d8dd6afdb53c836a51"
     },
     "stereo.json": {
       "bytes": 2436,
@@ -19,7 +19,7 @@
     }
   },
   "erzeuger": "tools/eq-copilot/erzeuge_p4_korpus.py",
-  "faelle_gesamt": 25,
+  "faelle_gesamt": 26,
   "klassen": [
     "referenz",
     "stereo",

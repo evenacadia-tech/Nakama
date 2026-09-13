@@ -94,6 +94,16 @@ FAELLE: dict[str, list[dict]] = {
                      "true_peak_matches_ebu_test_set"),
          "wahrheit": "ueberschreitet", "aussage": "stark", "konfidenz": 0.98,
          "hinweis": "EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS"},
+        # NAK-283 N01 (13.09.2026): die transienten Faelle als EIGENER Eintrag
+        # (Manifest §8.1 Feinheit 15) - eine andere Referenz (im Test gerechnet
+        # und validiert statt analytisch) und eine zweite Toleranz. Die
+        # Konfidenz liegt deshalb eine Stufe unter 15-19.
+        {"bein": "B17", "fall": "true_peak_matches_ebu_transient_set",
+         "quelle": q(PLUGIN + "Sonde013TruePeakGoldenTest.cpp",
+                     "true_peak_matches_ebu_transient_set"),
+         "wahrheit": "ueberschreitet", "aussage": "stark", "konfidenz": 0.96,
+         "hinweis": ("EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, "
+                     "±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP")},
         {"bein": "B17", "fall": "eight_times_oversampling_error_bound",
          "quelle": q(PLUGIN + "Sonde013TruePeakGoldenTest.cpp",
                      "eight_times_oversampling_error_bound"),

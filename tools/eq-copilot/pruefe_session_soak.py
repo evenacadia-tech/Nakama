@@ -63,6 +63,23 @@ Sonden rot war, ohne dass A24 es sah:
     statt der Vektorlaenge (Zeile S11) — bis dahin kamen dort Ist und Soll aus
     derselben Konstante.
 
+Aus NAK-283 (Befund F13, 13.09.2026) kam die fuenfte Regel, weil ein
+gescheiterter Speicherabruf bis dahin als Wert 0 im Bericht stand und
+`0,0 -> 0,0 MB` das Budget bestand:
+
+  * eine FEHLENDE MESSUNG ist kein Messwert und kein PASS. `rss_messung`
+    liefert neben dem Wert das Gueltigkeitsmerkmal `rss_gueltig` und beim
+    Scheitern den Grund `rss_fehler`; der Wert eines gescheiterten Abrufs ist
+    `null`, nie 0. `speicherpunkt` traegt beides unveraendert in den Bericht,
+    und S07 prueft die Gueltigkeit der tragenden Punkte VOR der
+    Budgetrechnung: fehlt ausserhalb der Neustartfenster eine gueltige
+    Messung, endet der Lauf mit dem eigenen Status MESSUNG FEHLT (Exit 3), nie
+    mit "im Budget". Das Neustartfenster filtert die Kurve, das Merkmal
+    entscheidet ueber den Lauf - zwei getrennte Pruefungen. Ein Altbericht
+    ohne Merkmal bleibt ueber `--bericht` auswertbar ("Merkmal unbekannt"); ein
+    Livelauf ohne Merkmal ist rot. `--selbsttest` faehrt die vier Faelle
+    dazu im Speicher, ohne Repo-Fixture.
+
 DIE PIPE
 --------
 Immer ein Probe-Name mit PID und Zeitstempel. Weder dieses Bein noch eines der
@@ -75,15 +92,20 @@ Aufruf:
     py -3.13 tools/eq-copilot/pruefe_session_soak.py
         [--sonden 16] [--minuten 2] [--neustarts 1] [--langsam 0.25]
         [--mutant <name>]   # nur fuer den Rotbeweis, siehe --mutant-liste
+    py -3.13 tools/eq-copilot/pruefe_session_soak.py --selbsttest
 
-Exitcodes: 0 gruen · 2 Zusage verfehlt · 3 Voraussetzung fehlt.
+Exitcodes: 0 gruen · 2 Zusage verfehlt · 3 Voraussetzung fehlt oder Messung
+fehlt (S07: MESSUNG FEHLT; ein zugleich roter Pruefpunkt gewinnt, dann 2).
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import copy
 import ctypes
 import ctypes.wintypes as wt
+import io
 import json
 import os
 import pathlib
@@ -237,6 +259,10 @@ MUTANTEN = {
                      "melden und zieht den Sollwert `erwartet` auf denselben "
                      "Wert nach — der Pruefer muss N + 1 selbst rechnen "
                      "(Runde 2)",
+    # NAK-283 F13 (13.09.2026): die fehlende Messung am echten Bericht.
+    "rss_fehlt": "ersetzt jede tragende Speichermessung durch die Messung eines "
+                 "nicht abfragbaren Prozesses — S07 muss MESSUNG FEHLT melden "
+                 "und der Lauf mit Exit 3 enden, nie im Budget (NAK-283 F13)",
 }
 
 
@@ -281,21 +307,94 @@ _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 _PROCESS_VM_READ = 0x0010
 
 
-def rss_bytes(pid: int) -> int:
-    """Working Set eines Prozesses. 0, wenn er nicht (mehr) greifbar ist."""
-    k32, psapi = ctypes.windll.kernel32, ctypes.windll.psapi
-    h = k32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ,
-                        False, pid)
-    if not h:
-        return 0
-    try:
+class WindowsSpeicherApi:
+    """Die drei Windows-Aufrufe hinter `rss_messung`.
+
+    Ein eigenes Objekt, damit der Selbsttest dieselbe Messstelle mit einem
+    Ersatz fahren kann: einen Prozess, der tatsaechlich 0 Bytes Working Set
+    meldet, gibt es an keinem echten Prozess (NAK-283 M-62). `use_last_error`
+    haelt den Windows-Fehlercode des gescheiterten Aufrufs fest, bevor ctypes
+    ihn ueberschreibt, und `OpenProcess` liefert ein HANDLE statt eines auf
+    `int` gekuerzten Werts.
+    """
+
+    def __init__(self):
+        self._k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        self._psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        self._k32.OpenProcess.restype = wt.HANDLE
+        self._k32.OpenProcess.argtypes = (wt.DWORD, wt.BOOL, wt.DWORD)
+        self._k32.CloseHandle.argtypes = (wt.HANDLE,)
+        self._psapi.GetProcessMemoryInfo.argtypes = (
+            wt.HANDLE, ctypes.POINTER(_PMC), wt.DWORD)
+
+    def oeffne(self, pid: int):
+        return self._k32.OpenProcess(
+            _PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ, False, pid)
+
+    def working_set(self, handle) -> int | None:
         pmc = _PMC()
         pmc.cb = ctypes.sizeof(_PMC)
-        if not psapi.GetProcessMemoryInfo(h, ctypes.byref(pmc), pmc.cb):
-            return 0
+        if not self._psapi.GetProcessMemoryInfo(handle, ctypes.byref(pmc), pmc.cb):
+            return None
         return int(pmc.WorkingSetSize)
+
+    def schliesse(self, handle) -> None:
+        self._k32.CloseHandle(handle)
+
+    def letzter_fehler(self) -> int:
+        return ctypes.get_last_error()
+
+
+_WINDOWS_SPEICHER_API: WindowsSpeicherApi | None = None
+
+
+def _windows_speicher_api() -> WindowsSpeicherApi:
+    global _WINDOWS_SPEICHER_API
+    if _WINDOWS_SPEICHER_API is None:
+        _WINDOWS_SPEICHER_API = WindowsSpeicherApi()
+    return _WINDOWS_SPEICHER_API
+
+
+def _fehlmessung(grund: str) -> dict:
+    """Die Messung, die es nicht gibt: kein Wert, Merkmal ungueltig, Grund."""
+    return {"rss_bytes": None, "rss_gueltig": False, "rss_fehler": grund}
+
+
+def rss_messung(pid: int, api=None) -> dict:
+    """Working Set eines Prozesses MIT Gueltigkeitsmerkmal (NAK-283 F13, M-62).
+
+    Gelingt der Abruf, ist das Ergebnis `{"rss_bytes": n, "rss_gueltig": True}`
+    - auch fuer n = 0. Scheitert `OpenProcess` oder `GetProcessMemoryInfo`
+    (Prozess beendet, PID nicht mehr greifbar, Rechte), ist es
+    `{"rss_bytes": None, "rss_gueltig": False, "rss_fehler": "<Aufruf>: Fehler <n>"}`.
+
+    Bis NAK-283 lieferte die Messstelle in beiden Faellen die Zahl 0, und die
+    Bewertung konnte einen nicht gemessenen Prozess nicht von einem Prozess
+    ohne Working Set unterscheiden: `0,0 -> 0,0 MB` bestand das Budget. Das
+    Merkmal entsteht HIER und wird nie in der Bewertung aus dem Wert
+    rekonstruiert.
+    """
+    api = api if api is not None else _windows_speicher_api()
+    h = api.oeffne(pid)
+    if not h:
+        return _fehlmessung(f"OpenProcess: Fehler {api.letzter_fehler()}")
+    try:
+        n = api.working_set(h)
+        if n is None:
+            return _fehlmessung(f"GetProcessMemoryInfo: Fehler {api.letzter_fehler()}")
+        return {"rss_bytes": n, "rss_gueltig": True}
     finally:
-        k32.CloseHandle(h)
+        api.schliesse(h)
+
+
+def speicherpunkt(eintrag: dict, messung: dict) -> dict:
+    """Ein Punkt der Speicherkurve: Zeitangaben plus Messung, UNVERAENDERT.
+
+    Das Gueltigkeitsmerkmal reist hier nur durch (NAK-283 M-62): `probe()` baut
+    jeden Punkt ueber diese Funktion, und der Selbsttest faehrt sie mit
+    denselben Messungen.
+    """
+    return {**eintrag, **messung}
 
 
 # ───────────────────────────────────────────────── Prozesshilfen
@@ -426,9 +525,11 @@ def fahre(args) -> tuple[int, dict]:
         """
         eintrag = {"minute": minute, "sekunden": round(sekunden, 1),
                    "im_neustartfenster": im_fenster}
-        speicher["client"].append({**eintrag, "rss_bytes": rss_bytes(klient.pid)})
-        speicher["broker"].append({**eintrag, "generation": generation,
-                                   "rss_bytes": rss_bytes(broker.pid)})
+        # NAK-283 F13: Wert UND Gueltigkeitsmerkmal kommen von der Messstelle
+        # und reisen unveraendert in den Bericht.
+        speicher["client"].append(speicherpunkt(eintrag, rss_messung(klient.pid)))
+        speicher["broker"].append(speicherpunkt({**eintrag, "generation": generation},
+                                                rss_messung(broker.pid)))
 
     try:
         if aus.warte_auf("TOPOLOGIE_STEHT", FRIST_MS / 1000.0 + 30) is None:
@@ -697,12 +798,30 @@ def mutiere(bericht: dict, args) -> None:
         bericht["kill"]["k_s5"]["erwartet"] = 0
         bericht["kill"]["k_s5"]["gefahren"] = True
         bericht["kill"]["k_s5"]["urteil"] = "getroffen"
+    elif args.mutant == "rss_fehlt":
+        # NAK-283 F13: PID 0 laesst sich nie oeffnen - eingesetzt wird genau
+        # die Messung, die `rss_messung` fuer einen nicht abfragbaren Prozess
+        # liefert. Punkte im Neustartfenster bleiben: sie tragen kein Budget.
+        fehl = rss_messung(0)
+        for kurve in ("client", "broker"):
+            for p in bericht["speicher"][kurve]:
+                if not p.get("im_neustartfenster"):
+                    p.update(fehl)
 
 
 # ───────────────────────────────────────────────── Urteil
 
-def urteile(bericht: dict, args) -> int:
+def urteile(bericht: dict, args, altbericht_erlaubt: bool = False) -> int:
     """Jedes Urteil folgt aus einem Beleg IM BERICHT — keines wird uebernommen.
+
+    `altbericht_erlaubt` gilt nur fuer `--bericht`: ein historischer Bericht
+    ohne Gueltigkeitsmerkmal an den Speicherpunkten wird dann als "Merkmal
+    unbekannt" bewertet statt pauschal rot (NAK-283 M-64). Der Livelauf ruft
+    ohne Schalter - dort ist das Merkmal Pflicht, und ein Bericht, der es an
+    einem Punkt traegt, muss es an jedem tragen.
+
+    Exit: 0 gruen · 2 mindestens ein roter Pruefpunkt · 3 kein roter
+    Pruefpunkt, aber eine tragende Speichermessung fehlt (MESSUNG FEHLT).
 
     Zwei Regeln tragen diese Funktion:
 
@@ -729,6 +848,21 @@ def urteile(bericht: dict, args) -> int:
         print(("  ok      " if ok else "  ROT     ") + f"{kopf} {text}  [{detail}]")
         if not ok:
             fehler += 1
+
+    fehlende_messungen = 0
+
+    def messung_fehlt(zeile: str, text: str, detail: str) -> None:
+        """Der eigene Status MESSUNG FEHLT (NAK-283 F13, M-61).
+
+        Weder `ok` noch ein Budgetbefund: die Zusage ist nicht gemessen. Der
+        Lauf endet deshalb nie gruen - mit Exit 3, oder mit 2, wenn zugleich
+        ein Pruefpunkt rot ist.
+        """
+        nonlocal fehlende_messungen
+        marke = PRUEFPUNKTE.get(zeile, "")
+        kopf = f"[{zeile} · {marke}]" if marke else f"[{zeile}]"
+        print(f"  FEHLT   {kopf} {text}  [{detail}]")
+        fehlende_messungen += 1
 
     FEHLT = object()
 
@@ -990,22 +1124,94 @@ def urteile(bericht: dict, args) -> int:
     # Z3 je Kurve: Basis ist die erste Probe nach dem Warmup ausserhalb eines
     # Neustartfensters; Brokerkurven gelten je Generation (Manifest §3.2).
     def wachstum(punkte, budget_p, budget_b):
-        gueltig = [p for p in punkte if not p.get("im_neustartfenster")]
-        if len(gueltig) < 2:
+        tragend = [p for p in punkte if not p.get("im_neustartfenster")]
+        if len(tragend) < 2:
             return None
-        basis, ende = gueltig[0]["rss_bytes"], gueltig[-1]["rss_bytes"]
+        basis, ende = tragend[0]["rss_bytes"], tragend[-1]["rss_bytes"]
         grenze = max(basis * budget_p / 100.0, budget_b)
-        spanne = gueltig[-1].get("sekunden", 0) - gueltig[0].get("sekunden", 0)
+        spanne = tragend[-1].get("sekunden", 0) - tragend[0].get("sekunden", 0)
         return basis, ende, ende - basis, grenze, spanne
 
+    # NAK-283 F13: das Gueltigkeitsmerkmal der Speicherpunkte. Ein Bericht, der
+    # es an einem Punkt traegt, muss es an jedem tragen; nur ein Altbericht
+    # ueber `--bericht` darf ganz ohne sein (M-64).
+    alle_punkte = list(sp.get("client", [])) + list(sp.get("broker", []))
+    merkmal_pflicht = (not altbericht_erlaubt
+                       or any("rss_gueltig" in p for p in alle_punkte))
+
+    def merkmal(p):
+        """True oder False aus dem Merkmal; None heisst Merkmal unbekannt."""
+        return p.get("rss_gueltig")
+
+    def merkmal_vollstaendig(name: str, punkte: list) -> bool:
+        """Form der Punkte: Merkmal vorhanden (oder als Altbericht unbekannt),
+        ein Wahrheitswert, und jeder als gemessen geltende Punkt traegt eine
+        ganze Zahl >= 0 - ein gueltiger Punkt ohne Zahl widerspraeche sich."""
+        ohne = [p for p in punkte if "rss_gueltig" not in p]
+        if merkmal_pflicht and ohne:
+            pruefe(False, "S07",
+                   f"{name}: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt",
+                   f"fehlt an {len(ohne)} von {len(punkte)} Punkten")
+            return False
+        falsch = [p["rss_gueltig"] for p in punkte
+                  if "rss_gueltig" in p and not isinstance(p["rss_gueltig"], bool)]
+        if falsch:
+            pruefe(False, "S07", f"{name}: `rss_gueltig` ist ein Wahrheitswert",
+                   ", ".join(repr(w) for w in falsch))
+            return False
+        ohne_zahl = [p for p in punkte if merkmal(p) is not False
+                     and (isinstance(p.get("rss_bytes"), bool)
+                          or not isinstance(p.get("rss_bytes"), int)
+                          or p["rss_bytes"] < 0)]
+        if ohne_zahl:
+            pruefe(False, "S07",
+                   f"{name}: jeder gemessene Punkt traegt sein Working Set als Zahl",
+                   "; ".join(f"minute {p.get('minute')}: {p.get('rss_bytes')!r}"
+                             for p in ohne_zahl))
+            return False
+        if ohne:
+            print(f"  HINWEIS [S07] {name}: Merkmal unbekannt - Altbericht ohne "
+                  f"`rss_gueltig`, {len(ohne)} Punkt(e) werden wie gemessen bewertet")
+        return True
+
+    def gueltig_gemessen(name: str, punkte: list) -> bool:
+        """Die Erfolgsbedingung von S07 (NAK-283 M-61 bis M-63).
+
+        Zwei Pruefungen, getrennt: das Neustartfenster FILTERT die Kurve, das
+        Merkmal ENTSCHEIDET ueber den Lauf. Ein ungueltiger Punkt im Fenster
+        traegt kein Budget und wird nur genannt; ein ungueltiger Punkt
+        ausserhalb laesst die Kurve ungemessen - MESSUNG FEHLT, und es wird
+        kein Budget gerechnet, also auch keins bestanden.
+        """
+        for p in punkte:
+            if p.get("im_neustartfenster") and merkmal(p) is False:
+                print(f"  HINWEIS [S07] {name}: Punkt im Neustartfenster ohne "
+                      f"gueltige Messung (traegt das Budget nicht): minute "
+                      f"{p.get('minute')}, {p.get('rss_fehler') or 'ohne Grund'}")
+        tragend_ohne = [p for p in punkte
+                        if not p.get("im_neustartfenster") and merkmal(p) is False]
+        if tragend_ohne:
+            messung_fehlt("S07",
+                          f"{name}: Messung fehlt - das Working Set ist nicht gueltig "
+                          f"gemessen, kein Budget wird gerechnet",
+                          "; ".join(f"minute {p.get('minute')} bei {p.get('sekunden')} s: "
+                                    f"{p.get('rss_fehler') or 'ohne Grund'}"
+                                    for p in tragend_ohne))
+            return False
+        return True
+
     for name, punkte in (("Client", sp.get("client", [])),):
-        w = wachstum(punkte, sp.get("budget_prozent", 0), sp.get("budget_bytes", 0))
-        pruefe(w is not None, "S07",
+        tragend = [p for p in punkte if not p.get("im_neustartfenster")]
+        pruefe(len(tragend) >= 2, "S07",
                f"{name}: mindestens zwei Messpunkte ausserhalb der Neustartfenster",
-               f"{len([p for p in punkte if not p.get('im_neustartfenster')])} Punkte")
-        if w is None:
+               f"{len(tragend)} Punkte")
+        if len(tragend) < 2 or not merkmal_vollstaendig(name, punkte):
             continue
-        basis, ende, delta, grenze, spanne = w
+        # Die Erfolgsbedingung steht VOR der Budgetrechnung (NAK-283 M-61).
+        if not gueltig_gemessen(name, punkte):
+            continue
+        basis, ende, delta, grenze, spanne = wachstum(
+            punkte, sp.get("budget_prozent", 0), sp.get("budget_bytes", 0))
         # Zwei Punkte reichen nur, wenn zwischen ihnen wirklich Zeit liegt. Die
         # Vorfassung erzeugte am Laufende eine zweite Probe unmittelbar nach der
         # letzten regulaeren; die "Kurve" hatte dann Spanne 0 und konnte S07
@@ -1025,18 +1231,21 @@ def urteile(bericht: dict, args) -> int:
            f"{len(generationen)} geliefert: {generationen}")
     for g in generationen:
         punkte = [p for p in sp.get("broker", []) if p["generation"] == g]
-        w = wachstum(punkte, sp.get("budget_prozent", 0), sp.get("budget_bytes", 0))
-        gueltige = len([p for p in punkte if not p.get("im_neustartfenster")])
+        tragend = [p for p in punkte if not p.get("im_neustartfenster")]
         # Abschnitt 3.2: eine Generation mit weniger als zwei Messpunkten ist
         # UNZUREICHEND und damit NICHT bestanden — kein `continue` (Befund 3).
-        pruefe(w is not None, "S07",
+        pruefe(len(tragend) >= 2, "S07",
                f"Broker Generation {g}: mindestens zwei Messpunkte "
                f"ausserhalb der Neustartfenster",
-               f"{gueltige} von {len(punkte)} Punkten"
-               + ("" if w is not None else " — unzureichend ist nicht bestanden"))
-        if w is None:
+               f"{len(tragend)} von {len(punkte)} Punkten"
+               + ("" if len(tragend) >= 2 else " — unzureichend ist nicht bestanden"))
+        if len(tragend) < 2 or not merkmal_vollstaendig(f"Broker Generation {g}", punkte):
             continue
-        basis, ende, delta, grenze, spanne = w
+        # Die Erfolgsbedingung steht VOR der Budgetrechnung (NAK-283 M-61).
+        if not gueltig_gemessen(f"Broker Generation {g}", punkte):
+            continue
+        basis, ende, delta, grenze, spanne = wachstum(
+            punkte, sp.get("budget_prozent", 0), sp.get("budget_bytes", 0))
         pruefe(spanne >= SPEICHER_ENDPROBE_MIN_S, "S07",
                f"Broker Generation {g}: die Kurve traegt echte Minutenabstaende",
                f"{spanne:.0f} s (mindestens {SPEICHER_ENDPROBE_MIN_S} s)")
@@ -1055,8 +1264,17 @@ def urteile(bericht: dict, args) -> int:
     zusatz = killurteile(bericht, args, pruefe)
     fehler += zusatz
 
-    print("GRUEN" if fehler == 0 else "ROT")
-    return 0 if fehler == 0 else 2
+    # NAK-283 F13: MESSUNG FEHLT ist ein eigener Status. Ein roter Pruefpunkt
+    # gewinnt (Exit 2); ohne ihn endet der Lauf mit 3 - nie gruen.
+    if fehler:
+        print("ROT")
+        return 2
+    if fehlende_messungen:
+        print(f"MESSUNG FEHLT - {fehlende_messungen} Speicherkurve(n) ohne gueltige "
+              f"Messung, das Budget ist nicht belegt")
+        return 3
+    print("GRUEN")
+    return 0
 
 
 def killurteile(bericht: dict, args, pruefe) -> int:
@@ -1147,6 +1365,318 @@ def killurteile(bericht: dict, args, pruefe) -> int:
     return fehler
 
 
+# ───────────────────────────────────────────────── Selbsttest (NAK-283 F13)
+#
+# Bis NAK-283 hatte S07 kein Testartefakt: der Mutant `s07` setzt das BUDGET
+# auf 0, nicht die Messung, und ein Lauf ohne RSS-Werte blieb gruen. Der
+# Selbsttest baut seine Berichte IM SPEICHER und schickt sie durch dieselben
+# Funktionen, die der Lauf fuehrt: `rss_messung`, `speicherpunkt`, `urteile`.
+# Er liest keine Repo-Datei - ein Selbsttest gegen eine committete Fixture
+# maesse die Fixture mit, nicht das Orakel (docs/beweise/NAK-283.md §8.1,
+# Feinheit 13). Jede Erwartung laeuft mit ihrem Gegenteil.
+
+SELBSTTEST_FAELLE = (
+    ("M-61", "fehlende_rss_messung_ist_kein_pass"),
+    ("M-62", "messfehler_und_nullmessung_sind_unterscheidbar"),
+    ("M-63", "fehlerpunkt_ausserhalb_des_fensters_faellt"),
+    ("M-64", "altbericht_ohne_merkmal_bleibt_auswertbar"),
+)
+
+
+class _ErsatzSpeicherApi:
+    """Die Messstelle ohne Prozess: dieselben Aufrufe wie `WindowsSpeicherApi`,
+    mit vorgegebenem Ausgang (`working_set=None` = die Abfrage scheitert)."""
+
+    def __init__(self, working_set=None, oeffnen=True, fehler=0):
+        self._ws, self._oeffnen, self._fehler = working_set, oeffnen, fehler
+
+    def oeffne(self, pid):
+        return 4711 if self._oeffnen else None
+
+    def working_set(self, handle):
+        return self._ws
+
+    def schliesse(self, handle):
+        pass
+
+    def letzter_fehler(self):
+        return self._fehler
+
+
+def _selbsttest_args() -> argparse.Namespace:
+    """Die Aufrufform des Kanonbeins A24 (`--sonden 16 --minuten 2 --neustarts 1`)."""
+    return argparse.Namespace(sonden=16, minuten=2, neustarts=1, langsam=0.25,
+                              langsam_ms=120, mutant=None, bericht=None)
+
+
+def _selbsttest_bericht() -> dict:
+    """Ein vollstaendiger, gruener A24-Bericht, im Speicher gebaut.
+
+    Die Zahlen sind die des Kontrolllaufs `4ff6f248` (Rohausgabe
+    docs/beweise/roh/NAK-246-4ff6f24.md: 16 Sonden, 2 Minuten, 1 Neustart) -
+    abgeschrieben, nie gelesen. Die Speicherpunkte entstehen ueber
+    `speicherpunkt` und `rss_messung` mit einer Ersatz-API, die die damaligen
+    Working-Set-Werte meldet: derselbe Weg wie in `probe()`, nur ohne Prozess.
+    """
+    def punkt(minute, sekunden, fenster, rss, **generation):
+        eintrag = {"minute": minute, "sekunden": sekunden,
+                   "im_neustartfenster": fenster, **generation}
+        return speicherpunkt(eintrag, rss_messung(1, api=_ErsatzSpeicherApi(rss)))
+
+    return {
+        "abbau_haenger": "",
+        "audio": {"blockgroesse": 512, "bloecke": 220640, "bloecke_je_sonde_min": 13790,
+                  "ganzblockdrops_oversize": 0, "ganzblockdrops_ueberlauf": 0,
+                  "kontinuitaetsbrueche": 0, "publikationen": 22048,
+                  "publikationen_je_sonde_min": 1378, "samplerate": 48000.0},
+        "client_exit": 0,
+        "fluter": {"ersetzte_liveframes": 178},
+        "kill": {
+            "k_s1": {"gefahren": True, "telemetrie_handle_fehler": 1, "urteil": "getroffen"},
+            "k_s2": {"gefahren": False, "snapshot_vor_kill": False,
+                     "urteil": "nicht_gefahren"},
+            "k_s3": {"gefahren": True, "p0_ohne_ack_im_fenster": 0,
+                     "urteil": "nicht_getroffen"},
+            "k_s4": {"flag_zum_killzeitpunkt": 4, "gefahren": True, "urteil": "getroffen"},
+            "k_s5": {"backoff_deckel_erreicht": 0, "erwartet": 17, "gefahren": False,
+                     "urteil": "nicht_gefahren"},
+        },
+        "langsam": {"abgelehnt": 0, "blockiert_andere_nicht": True,
+                    "ersetzte_liveframes": 6127, "immer_mitglied": True,
+                    "neueste_verworfen": 0, "schnelle_p95_ms": 21.0,
+                    "veroeffentlichungen": 17652, "zu_gross": 0},
+        "langsam_anzahl": 4,
+        "liveness": {"evicted_ausserhalb_neustart": 0, "stale_ausserhalb_neustart": 0},
+        "mitgliedschaft": {"abtast_pruefungen": 1228, "abtast_vollstaendig": 1228,
+                           "fremde_adresse": 0, "fuehrendes_main_falsch": 0,
+                           "snapshot_pruefungen": 3919, "uebernahmen": 4617,
+                           "ungueltig": 0, "vollstaendig": 3919},
+        "neustart": [{"alte_epoche_nach_neustart_gesehen": 0,
+                      "bereit_bis_vollstaendig_ms": 2507,
+                      "epoch_alt": "a1490309681e43b3ba132fd44864312b",
+                      "epoch_neu": "4ac34281b1394b3590e2fc4a11ab509a", "index": 1,
+                      "kill_dauer_ms": 3, "kill_erfolgt_gesehen": True,
+                      "reconnect_ms": {"max": 2508.0, "min": 537.0, "p95": 2508.0},
+                      "reconnect_paare": 17, "s09_quellen_getrennt": 15,
+                      "s09_sichten": 35, "s09_subscription_weg": 15,
+                      "totzeit_erfasst": True}],
+        "p0": {"beantwortet": 2336, "einreihung_abgelehnt": 0,
+               "einreihung_abgelehnt_ausserhalb_neustart": 0, "gesendet": 2336,
+               "latenz_max_ms": 119.2, "latenz_p95_ms": 21.6, "nachlauf_ms": 2000,
+               "verloren_ausserhalb_neustart": 0, "verloren_im_neustartfenster": 0},
+        "pipe": {"clientnamen_geprueft": 34, "eigene_probe_sichtbar": True,
+                 "fremder_name_versucht": 0, "goldenname_neu": False, "namen_nach": 323,
+                 "namen_vor": 322, "namensraum_lesbar": True, "ohne_produkt_v3": True,
+                 "produktionsname_neu": False},
+        "riegel": {"golden_EqCopSessionSoak": 3, "golden_eqcop-broker-sonde012-probe": 3,
+                   "produktion_EqCopSessionSoak": 3,
+                   "produktion_eqcop-broker-sonde012-probe": 3},
+        "sonden": 16,
+        "speicher": {
+            "budget_bytes": BUDGET_BYTES, "budget_prozent": BUDGET_PROZENT,
+            "takt_s": SPEICHER_TAKT_S,
+            "client": [punkt(0, 0.0, False, 121663488), punkt(1, 60.0, False, 121798656),
+                       punkt(1, 60.0, True, 121831424), punkt(1, 60.0, False, 122601472),
+                       punkt(2, 120.1, False, 122601472)],
+            "broker": [punkt(0, 0.0, False, 14856192, generation=0),
+                       punkt(1, 60.0, False, 14983168, generation=0),
+                       punkt(1, 60.0, True, 6213632, generation=1),
+                       punkt(1, 60.0, False, 14012416, generation=1),
+                       punkt(2, 120.1, False, 14819328, generation=1)],
+        },
+        "subscription": {"weg_im_neustartfenster": 15},
+        "topologie_ms": 119,
+    }
+
+
+def _selbsttest_urteil(bericht: dict, altbericht_erlaubt: bool = False):
+    """`urteile` ueber eine Kopie. Liefert (Exitcode oder None, Ausgabe) - eine
+    Ausnahme ist ein Ergebnis dieses Falls, kein Absturz des Selbsttests."""
+    puffer = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(puffer):
+            code = urteile(copy.deepcopy(bericht), _selbsttest_args(), altbericht_erlaubt)
+    except Exception as f:  # noqa: BLE001 - jede Ausnahme ist hier ein Befund
+        return None, puffer.getvalue() + f"\nAUSNAHME {type(f).__name__}: {f}"
+    return code, puffer.getvalue()
+
+
+def _ersetze_messung(bericht: dict, kurve: str, auswahl, messung: dict) -> None:
+    """Setzt an den gewaehlten Punkten einer Kurve eine andere Messung ein - ueber
+    `speicherpunkt`, also so, wie `probe()` den Punkt gebaut haette."""
+    for i, p in enumerate(bericht["speicher"][kurve]):
+        if auswahl(p):
+            zeit = {k: v for k, v in p.items() if not k.startswith("rss_")}
+            bericht["speicher"][kurve][i] = speicherpunkt(zeit, messung)
+
+
+def _meldet_messung_fehlt(text: str, name: str = "") -> bool:
+    return any(z.startswith("  FEHLT   [S07") and "Messung fehlt" in z and name in z
+               for z in text.splitlines())
+
+
+def _meldet_im_budget(text: str, name: str = "") -> bool:
+    return any(z.startswith("  ok      [S07") and "im Budget" in z and name in z
+               for z in text.splitlines())
+
+
+def _fall_m61():
+    pruefungen = []
+    code, text = _selbsttest_urteil(_selbsttest_bericht())
+    pruefungen.append((code == 0 and not _meldet_messung_fehlt(text) and _meldet_im_budget(text),
+                       "Gegenteil: der vollstaendig gemessene Bericht endet gruen, "
+                       "S07 im Budget", f"Exit {code}", text))
+    # PID 0 laesst sich nie oeffnen: die echte Messstelle scheitert.
+    fehl = rss_messung(0)
+    for wert, messung in (("Wert null, wie rss_messung ihn schreibt", fehl),
+                          ("deklarierte Abweichung: rss_bytes 0 statt null", {**fehl, "rss_bytes": 0})):
+        b = _selbsttest_bericht()
+        for kurve in ("client", "broker"):
+            _ersetze_messung(b, kurve, lambda p: not p["im_neustartfenster"], messung)
+        code, text = _selbsttest_urteil(b)
+        ok = (code == 3 and _meldet_messung_fehlt(text) and not _meldet_im_budget(text)
+              and any(z.startswith("MESSUNG FEHLT") for z in text.splitlines()))
+        pruefungen.append((ok, f"jede tragende Messung fehlt ({wert}): S07 meldet "
+                               f"MESSUNG FEHLT, nie im Budget, Exit 3",
+                           f"Exit {code}", text))
+    return "Eine fehlende Messung ist kein PASS", pruefungen
+
+
+def _fall_m62():
+    pruefungen = []
+    zeit = {"minute": 1, "sekunden": 60.0, "im_neustartfenster": False}
+    nicht_abfragbar = speicherpunkt(zeit, rss_messung(0))
+    abfrage_scheitert = speicherpunkt(zeit, rss_messung(1, api=_ErsatzSpeicherApi(None, fehler=299)))
+    null_bytes = speicherpunkt(zeit, rss_messung(1, api=_ErsatzSpeicherApi(0)))
+    noch_einmal_null = speicherpunkt(zeit, rss_messung(1, api=_ErsatzSpeicherApi(0)))
+
+    def als_json(p):
+        return json.loads(json.dumps(p, sort_keys=True))
+
+    pruefungen.append((nicht_abfragbar.get("rss_gueltig") is False
+                       and nicht_abfragbar.get("rss_bytes") is None
+                       and "OpenProcess" in str(nicht_abfragbar.get("rss_fehler")),
+                       "nicht abfragbarer Prozess (PID 0, echte Messstelle): Merkmal "
+                       "ungueltig, kein Wert, Grund genannt", json.dumps(nicht_abfragbar), ""))
+    pruefungen.append((abfrage_scheitert.get("rss_gueltig") is False
+                       and abfrage_scheitert.get("rss_bytes") is None
+                       and "GetProcessMemoryInfo" in str(abfrage_scheitert.get("rss_fehler")),
+                       "geoeffneter Prozess, Speicherabfrage scheitert: ebenso",
+                       json.dumps(abfrage_scheitert), ""))
+    pruefungen.append((null_bytes.get("rss_gueltig") is True and null_bytes.get("rss_bytes") == 0
+                       and "rss_fehler" not in null_bytes,
+                       "Prozess mit tatsaechlich 0 Bytes: Merkmal gueltig, Wert 0",
+                       json.dumps(null_bytes), ""))
+    pruefungen.append((als_json(nicht_abfragbar) != als_json(null_bytes)
+                       and als_json(abfrage_scheitert) != als_json(null_bytes),
+                       "im Bericht (JSON) sind Messfehler und Nullmessung zwei "
+                       "verschiedene Dinge", "", ""))
+    pruefungen.append((als_json(null_bytes) == als_json(noch_einmal_null),
+                       "Gegenteil: zwei Nullmessungen sind im Bericht gleich", "", ""))
+    messung = rss_messung(1, api=_ErsatzSpeicherApi(0))
+    pruefungen.append((all(null_bytes.get(k) == v for k, v in {**zeit, **messung}.items())
+                       and set(null_bytes) == set(zeit) | set(messung),
+                       "speicherpunkt traegt Zeitangaben und Messung unveraendert in den Punkt",
+                       "", ""))
+    # Bis ins Urteil: Nullmessungen werden bewertet, Messfehler melden MESSUNG FEHLT.
+    b_null, b_fehl = _selbsttest_bericht(), _selbsttest_bericht()
+    _ersetze_messung(b_null, "client", lambda p: not p["im_neustartfenster"],
+                     rss_messung(1, api=_ErsatzSpeicherApi(0)))
+    _ersetze_messung(b_fehl, "client", lambda p: not p["im_neustartfenster"], rss_messung(0))
+    code_null, text_null = _selbsttest_urteil(b_null)
+    code_fehl, text_fehl = _selbsttest_urteil(b_fehl)
+    pruefungen.append((code_null == 0 and _meldet_im_budget(text_null, "Client")
+                       and not _meldet_messung_fehlt(text_null)
+                       and code_fehl == 3 and _meldet_messung_fehlt(text_fehl, "Client"),
+                       "bis ins Urteil: die Nullmessung wird als Messung bewertet, der "
+                       "Messfehler meldet MESSUNG FEHLT", f"Exit {code_null} / Exit {code_fehl}",
+                       text_null + "\n" + text_fehl))
+    return "Der Fehlerstatus ist vom Messwert 0 unterscheidbar", pruefungen
+
+
+def _fall_m63():
+    pruefungen = []
+    fehl = rss_messung(0)
+    orte = (
+        ("direkt nach dem Neustartfenster (Basiswert der neuen Generation)", 1,
+         lambda p: p.get("generation") == 1 and p["minute"] == 1 and not p["im_neustartfenster"]),
+        ("direkt vor dem Neustartfenster (letzter Punkt der alten Generation)", 0,
+         lambda p: p.get("generation") == 0 and p["minute"] == 1),
+    )
+    for ort, generation, auswahl in orte:
+        for wert, messung in (("Wert null", fehl),
+                              ("deklarierte Abweichung: rss_bytes 0", {**fehl, "rss_bytes": 0})):
+            b = _selbsttest_bericht()
+            _ersetze_messung(b, "broker", auswahl, messung)
+            code, text = _selbsttest_urteil(b)
+            name = f"Broker Generation {generation}"
+            ok = (code == 3 and _meldet_messung_fehlt(text, name)
+                  and not _meldet_im_budget(text, f"Generation {generation}"))
+            pruefungen.append((ok, f"ein Fehlerpunkt {ort}, {wert}: {name} meldet MESSUNG "
+                                   f"FEHLT, Exit 3", f"Exit {code}", text))
+    b = _selbsttest_bericht()
+    _ersetze_messung(b, "broker", lambda p: p["im_neustartfenster"], fehl)
+    code, text = _selbsttest_urteil(b)
+    pruefungen.append((code == 0 and not _meldet_messung_fehlt(text)
+                       and "Punkt im Neustartfenster ohne gueltige Messung" in text,
+                       "Gegenteil: derselbe Fehler IM Fenster traegt kein Budget - gruen, "
+                       "aber genannt", f"Exit {code}", text))
+    return ("Die Filterung des Neustartfensters ersetzt die Gueltigkeitspruefung nicht",
+            pruefungen)
+
+
+def _fall_m64():
+    pruefungen = []
+    # Die Form des Altberichts (docs/beweise/roh/NAK-246-4ff6f24.md): jeder
+    # Speicherpunkt traegt nur `rss_bytes`. Deklarierte Abweichung vom Writer:
+    # genau das Feld `rss_gueltig` fehlt.
+    alt = _selbsttest_bericht()
+    for kurve in ("client", "broker"):
+        for p in alt["speicher"][kurve]:
+            del p["rss_gueltig"]
+    code, text = _selbsttest_urteil(alt, altbericht_erlaubt=True)
+    pruefungen.append((code == 0 and "Merkmal unbekannt" in text
+                       and not _meldet_messung_fehlt(text)
+                       and "121.7 -> 122.6 MB" in text and _meldet_im_budget(text, "Client"),
+                       "Altbericht ueber --bericht: auswertbar, S07 im Budget mit den "
+                       "historischen Werten, Merkmal unbekannt genannt", f"Exit {code}", text))
+    code, text = _selbsttest_urteil(alt, altbericht_erlaubt=False)
+    pruefungen.append((code == 2 and "Pflichtfeld `rss_gueltig`" in text,
+                       "Gegenteil: derselbe Bericht als Livelauf ist rot (Pflichtfeld)",
+                       f"Exit {code}", text))
+    gemischt = copy.deepcopy(alt)
+    gemischt["speicher"]["client"][0]["rss_gueltig"] = True
+    code, text = _selbsttest_urteil(gemischt, altbericht_erlaubt=True)
+    pruefungen.append((code == 2 and "Pflichtfeld `rss_gueltig`" in text,
+                       "Gegenteil: traegt ein Punkt das Merkmal, muss es jeder tragen",
+                       f"Exit {code}", text))
+    return "Gueltige historische Messwerte bleiben gueltig", pruefungen
+
+
+def selbsttest() -> int:
+    print("Selbsttest pruefe_session_soak.py (NAK-283 F13, M-61 bis M-64): "
+          "Berichte im Speicher, kein Lauf, keine Repo-Fixture")
+    faelle = {"M-61": _fall_m61, "M-62": _fall_m62, "M-63": _fall_m63, "M-64": _fall_m64}
+    bestanden = 0
+    for zeile, name in SELBSTTEST_FAELLE:
+        try:
+            titel, pruefungen = faelle[zeile]()
+        except Exception as f:  # noqa: BLE001 - ein abgestuerzter Fall ist rot
+            titel, pruefungen = "Fall abgebrochen", [(False, f"{type(f).__name__}: {f}", "", "")]
+        ok = bool(pruefungen) and all(p[0] for p in pruefungen)
+        print(("  ok      " if ok else "  ROT     ") + f"[{zeile} · {name}] {titel}")
+        for p_ok, text, detail, ausgabe in pruefungen:
+            print(("      ok   " if p_ok else "      ROT  ") + text
+                  + (f"  [{detail}]" if detail else ""))
+            for z in ausgabe.splitlines():
+                if ("[S07" in z or z.startswith(("GRUEN", "ROT", "MESSUNG FEHLT", "AUSNAHME"))):
+                    print("             " + z.strip())
+        bestanden += ok
+    print()
+    print(f"Selbsttest: {bestanden} von {len(SELBSTTEST_FAELLE)} Faellen bestanden")
+    return 0 if bestanden == len(SELBSTTEST_FAELLE) else 2
+
+
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(add_help=True)
     p.add_argument("--sonden", type=int, default=16)
@@ -1163,13 +1693,20 @@ def main(argv: list[str]) -> int:
                    help="NUR das Urteil ueber einen gespeicherten Bericht "
                         "fahren, ohne Lauf. Fuer den Rotbeweis: jeder Mutant "
                         "laesst sich damit an EINEM echten Lauf zeigen, statt "
-                        "je Mutant einen weiteren Soak zu fahren.")
+                        "je Mutant einen weiteren Soak zu fahren. Ein Altbericht "
+                        "ohne Gueltigkeitsmerkmal bleibt so auswertbar.")
+    p.add_argument("--selbsttest", action="store_true",
+                   help="die vier Faelle aus NAK-283 F13 im Speicher: kein Lauf, "
+                        "keine Repo-Fixture, dieselben Funktionen wie der Lauf")
     args = p.parse_args(argv)
 
     if args.mutant_liste:
         for k, v in sorted(MUTANTEN.items()):
             print(f"  {k}: {v}")
         return 0
+
+    if args.selbsttest:
+        return selbsttest()
 
     if args.bericht:
         # Kein Lauf, kein Riegel, keine Messung — nur `urteile()` ueber einen
@@ -1180,7 +1717,7 @@ def main(argv: list[str]) -> int:
         print(f"NUR URTEIL aus {args.bericht} — kein Lauf, keine Messung"
               + (f", Mutant {args.mutant}" if args.mutant else ""))
         mutiere(bericht, args)
-        return urteile(bericht, args)
+        return urteile(bericht, args, altbericht_erlaubt=True)
 
     for pfad, bau in (
         (BROKER, "cargo build --release --manifest-path broker/Cargo.toml "

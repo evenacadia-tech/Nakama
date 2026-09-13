@@ -672,9 +672,11 @@ struct FeatureFrame
         dargestellt.  Ein Peak darf nicht als Problem gelten, nur weil er hoch
         ist").
 
-        Die drei Punkte sind P10/P50/P95 der RAHMEN-True-Peaks, ein Wert je
-        publiziertem Rahmen (10 Hz). NAK-283 F08: mit markierter Passage gehen
-        ALLE Rahmen der Passage ein (speicherfestes Histogramm in
+        Die drei Punkte sind P10/P50/P95 der RAHMEN-True-Peaks, hoechstens ein
+        Wert je publiziertem Rahmen (10 Hz): ein Rahmen ohne True Peak
+        (digitale Stille) oder mit ersetzten Samples (NaN-Riegel, NAK-283
+        M-76) traegt keinen. NAK-283 F08: mit markierter Passage gehen ALLE
+        uebrigen Rahmen der Passage ein (speicherfestes Histogramm in
         0,01-dB-Klassen, `HeadroomVerteilung` in `FeatureEngine.h`); ohne
         markierte Passage die letzten hoechstens `kVerteilungPlaetze` Rahmen
         als gleitendes Fenster (6,4 s; User-Entscheid vom 13.09.2026, U41).

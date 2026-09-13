@@ -109,7 +109,17 @@ inline bool FeatureEngine::baueFrame() noexcept
     // hinter dem Ende einer Passage liegt kein Sample im Fenster, der Beitrag
     // ist 0 und geht nirgends ein - die Passagengrenzen wirken hier ueber
     // `imPassagenfenster` in `verarbeiteSamples`.
-    if (passagenTruePeakRahmen > 0.0 && ! headroomRing.empty())
+    //
+    // 🔑 NAK-283 M-76 (R-283-5): ein Rahmen mit ERSETZTEN Samples geht
+    // ebenfalls nirgends ein - wie ein Rahmen digitaler Stille. Sein Beitrag
+    // ist endlich und plausibel, aber ueber Samples gerechnet, die der
+    // NaN-Riegel durch 0 ersetzt hat. Die Verriegelung in `fuelleSkalare`
+    // kaeme dafuer zu spaet: der Wert laege dann schon im Passagenmaximum und
+    // in der Verteilung. Gelesen wird der Rahmenzaehler vor `rahmenLeeren()`;
+    // er beschreibt genau diesen Rahmen und bleibt auch am Anschlag > 0
+    // (M-59). `headroomFenster` zaehlt den Rahmen damit nicht, die Passage
+    // bleibt gueltig - ihre Verteilung beschreibt nur gemessenes Material.
+    if (passagenTruePeakRahmen > 0.0 && rahmenNichtEndlich == 0 && ! headroomRing.empty())
     {
         passageTruePeak = std::max (passageTruePeak, passagenTruePeakRahmen);
         const double db = 20.0 * std::log10 (passagenTruePeakRahmen);
@@ -564,6 +574,8 @@ inline void FeatureEngine::fuelleSkalare (FeatureFrame& f) const noexcept
     // ersetzte Material noch enthielten. Die Praesenzbits fallen damit je
     // Metrik, nicht pauschal je Rahmen; die zwei Zaehler hier bleiben die
     // gezaehlte Haelfte und werden fuer die Marke nicht gelesen.
+    // Passagenmaximum und Headroomverteilung nehmen einen solchen Rahmen gar
+    // nicht erst auf - die Sperre steht vor dem Einschub in `baueFrame` (M-76).
     f.nichtEndlichRahmen  = rahmenNichtEndlich;
     f.nichtEndlichEvidenz = evidenzNichtEndlich;
     if (rahmenNichtEndlich > 0)

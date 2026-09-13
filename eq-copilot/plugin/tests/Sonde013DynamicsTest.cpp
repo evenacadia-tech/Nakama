@@ -181,7 +181,7 @@ int bloeckeFuer (double sekunden, double sr, int frames)
 #if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
 namespace nakama::analyse
 {
-/** NAK-283 M-59: der einzige Testzugang dieser Etappe.
+/** NAK-283 M-59 und M-76: der einzige Testzugang dieser Etappe.
 
     Die zwei NaN-Zaehler sind `uint32` und saettigen bei `0xFFFFFFFF`. Der
     Rahmenzaehler faellt mit jedem Rahmen (hoechstens rund 5 000 Samples), der
@@ -197,6 +197,18 @@ struct FeatureEngineTestzugang
     {
         e.rahmenNichtEndlich  = rahmen;
         e.evidenzNichtEndlich = evidenz;
+    }
+
+    /** M-76, nur lesend: die Klassenmitte der groessten belegten Klasse der
+        Headroomverteilung einer Passage in dBTP - der hoechste Wert, den die
+        Verteilung traegt. P10, P50 und P95 zeigen einen einzelnen Ausreisser
+        nicht; diese Zahl zeigt ihn. NaN, wenn die Verteilung leer ist. */
+    static double headroomGroessteKlasseDb (const FeatureEngine& e) noexcept
+    {
+        if (e.headroomRing.empty() || e.headroomRing[0].groesste < 0)
+            return std::numeric_limits<double>::quiet_NaN();
+        return kHeadroomKlasseUntenDb
+             + ((double) e.headroomRing[0].groesste + 0.5) * kHeadroomKlassenBreiteDb;
     }
 };
 } // namespace nakama::analyse
@@ -1094,7 +1106,9 @@ int main()
         // Mitte (0,5 auf 0,0005) und einer Ersetzung im letzten Drittel
         // (10,8 bis 11,0 s der Passage, jedes zweite Sample). Die Ersetzung
         // laesst jedem Rahmen endliche Samples, damit jeder der 140 Rahmen
-        // einen True Peak traegt.
+        // einen True Peak traegt. Seit M-76 gehen die zwei Rahmen mit der
+        // Ersetzung trotzdem nicht in die Headroomverteilung ein: sie traegt
+        // 138 Rahmen, und beide Haelften bleiben darin.
         constexpr std::int64_t start = 96000, ende = start + 672000, mitte = start + 336000;
         constexpr std::uint64_t ersetzungVon = 614400u, ersetzungBis = 624000u;
         const auto signal = [] (std::uint64_t nu) -> float
@@ -1135,11 +1149,12 @@ int main()
                 "NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das "
                 "Passagenmaximum ist das der Passage, nicht das der Kante davor",
                 juce::String (amEnde.truePeakPassageDb, 3) + " dBTP (Kante -0,92 dBTP)");
-        pruefe (amEnde.headroomGesetzt && amEnde.headroomFenster == 140u
+        pruefe (amEnde.headroomGesetzt && amEnde.headroomFenster == 138u
                     && std::abs (amEnde.headroomP95Db + 6.0206f) <= 0.1f
                     && std::abs (amEnde.headroomP10Db + 66.0206f) <= 0.1f,
                 "NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Headroom: die Verteilung "
-                "beschreibt beide Haelften der ganzen Passage",
+                "beschreibt beide Haelften der ganzen Passage (138 Rahmen: die zwei mit ersetzten "
+                "Samples fehlen, M-76)",
                 "P10 " + juce::String (amEnde.headroomP10Db, 3) + ", P95 "
                     + juce::String (amEnde.headroomP95Db, 3) + " dBTP, headroomFenster "
                     + juce::String ((int) amEnde.headroomFenster));
@@ -1150,6 +1165,159 @@ int main()
                     + "; 0,4 s M " + (bei04.lufsMGesetzt ? "gesetzt" : "leer")
                     + "; 2,9 s S " + (bei29.lufsSGesetzt ? "gesetzt" : "leer")
                     + "; 3,0 s S " + (bei30.lufsSGesetzt ? "gesetzt" : "leer"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · Nacharbeit 1 · M-76 (R-283-5, Regel zu §39.9 Punkt 1 (b))
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-283 M-76  rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein");
+    {
+        // Buehne wie M-53: 14 s gebunden, 1-kHz-Ton, erste Haelfte Amplitude
+        // 0,5, zweite 0,0005; 480er-Bloecke, also 140 Rahmen zu je 4 800
+        // Samples. Der Rahmen 6,9 bis 7,0 s - der letzte der lauten Haelfte -
+        // traegt 50 Perioden Ton mit Amplitude 0,9 (-0,92 dBTP, lauter als
+        // jeder andere Rahmen), dann 49 Perioden NaN, die der Riegel durch 0
+        // ersetzt und zaehlt, dann eine Periode des regulaeren Tons seiner
+        // Haelfte. Jeder Wechsel liegt auf einem Nulldurchgang (Vielfaches von
+        // 48 Samples).
+        //
+        // Warum die letzte Periode regulaer ist: der Interpolator gibt ein
+        // Sample zwoelf Ticks spaeter aus und liest dafuer 25 Samples zurueck
+        // (`TruePeak.h`). Stuende der laute Ton bis zum Rahmenende, truege der
+        // naechste, saubere Rahmen dessen Nachklang ins Passagenmaximum
+        // (§39.9 Punkt 1 (d), NAK-295) - eine Stelle, die M-76 nicht zusagt.
+        // So rechnet der Interpolator in jedem anderen Rahmen ueber dieselben
+        // Samples wie im Gegenlauf.
+        //
+        // Drei Laeufe auf je einer frischen Engine: die Buehne; der Gegenlauf
+        // der Zeile (derselbe Rahmen mit dem regulaeren Ton seiner Haelfte);
+        // und die Gegenprobe - die Buehne mit echten Nullen statt NaN. Nach dem
+        // Riegel rechnen Buehne und Gegenprobe ueber dieselben Samples; nur die
+        // Buehne zaehlt und markiert sie als ersetzt.
+        constexpr std::int64_t ende = 14 * 48000, haelfte = ende / 2;
+        constexpr std::int64_t rahmenVon = haelfte - 4800;
+        enum class Art { buehne, gegenlauf, gegenprobe };
+        struct Ergebnis
+        {
+            int rahmen { 0 }, ersetzteRahmen { 0 };
+            std::int64_t ersetztBis { -1 };
+            bool intakt { false }, headroomGesetzt { false }, maximumGesetzt { false };
+            float p10 { 0.0f }, p50 { 0.0f }, p95 { 0.0f }, maximumDb { 0.0f };
+            std::uint32_t fenster { 0 };
+            double groessteKlasseDb { std::numeric_limits<double>::quiet_NaN() };
+        };
+        const auto lauf = [] (Art art)
+        {
+            const auto signal = [art] (std::uint64_t nu) -> float
+            {
+                const auto n = (std::int64_t) nu;
+                const double ton = std::sin (kZweiPi * 1000.0 * (double) n / 48000.0);
+                if (art != Art::gegenlauf && n >= rahmenVon && n < rahmenVon + 4752)
+                {
+                    if (n < rahmenVon + 2400)
+                        return (float) (0.9 * ton);
+                    return art == Art::buehne ? std::numeric_limits<float>::quiet_NaN() : 0.0f;
+                }
+                return (float) ((n < haelfte ? 0.5 : 0.0005) * ton);
+            };
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (48000.0);
+            Speiser s { e };
+            s.frames = 480;
+            const bool gebunden = e.setzePassagenfenster (0, ende, e.transportEpocheJetzt());
+            Ergebnis r;
+            while (s.projekt < ende)
+            {
+                if (! s.sende (signal))
+                    continue;
+                ++r.rahmen;
+                if (e.frame().nichtEndlichRahmen > 0)
+                {
+                    ++r.ersetzteRahmen;
+                    r.ersetztBis = s.projekt;
+                }
+            }
+            const auto& f = e.frame();
+            r.intakt = gebunden && e.passagenfensterIntakt();
+            r.headroomGesetzt = f.headroomGesetzt;
+            r.p10 = f.headroomP10Db;
+            r.p50 = f.headroomP50Db;
+            r.p95 = f.headroomP95Db;
+            r.fenster = f.headroomFenster;
+            r.maximumGesetzt = f.truePeakPassageGesetzt;
+            r.maximumDb = f.truePeakPassageDb;
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+            r.groessteKlasseDb = nakama::analyse::FeatureEngineTestzugang::headroomGroessteKlasseDb (e);
+#endif
+            return r;
+        };
+        const auto buehne = lauf (Art::buehne);
+        const auto gegen  = lauf (Art::gegenlauf);
+        const auto probe  = lauf (Art::gegenprobe);
+        const double sollDb = 20.0 * std::log10 (0.5);     // -6,0206 dBTP, der laute Ton
+        const double lautDb = 20.0 * std::log10 (0.9);     // -0,9151 dBTP, der Rahmen 6,9 bis 7,0 s
+        const auto text = [] (const Ergebnis& r)
+        {
+            return "headroomFenster " + juce::String ((int) r.fenster)
+                 + ", Passagenmaximum " + juce::String (r.maximumDb, 3)
+                 + " dBTP, P10 " + juce::String (r.p10, 3) + ", P50 " + juce::String (r.p50, 3)
+                 + ", P95 " + juce::String (r.p95, 3) + " dBTP, groesste Klasse "
+                 + juce::String (r.groessteKlasseDb, 3) + " dBTP"
+                 + (r.headroomGesetzt ? "" : ", KEIN Headroombit")
+                 + (r.maximumGesetzt ? "" : ", KEIN Maximumbit");
+        };
+
+        pruefe (buehne.rahmen == 140 && gegen.rahmen == 140 && probe.rahmen == 140
+                    && buehne.ersetzteRahmen == 1 && buehne.ersetztBis == haelfte
+                    && gegen.ersetzteRahmen == 0 && probe.ersetzteRahmen == 0,
+                "M-76: je 140 Rahmen; in der Buehne traegt genau EIN Rahmen ersetzte Samples - der "
+                "Rahmen 6,9 bis 7,0 s, ganz im Passagenfenster -, Gegenlauf und Gegenprobe keinen",
+                juce::String (buehne.rahmen) + " / " + juce::String (gegen.rahmen) + " / "
+                    + juce::String (probe.rahmen) + " Rahmen; mit ersetzten Samples: "
+                    + juce::String (buehne.ersetzteRahmen) + " (endet bei Sample "
+                    + juce::String ((juce::int64) buehne.ersetztBis) + ") / "
+                    + juce::String (gegen.ersetzteRahmen) + " / " + juce::String (probe.ersetzteRahmen));
+        pruefe (probe.headroomGesetzt && probe.fenster == 140u && probe.maximumGesetzt
+                    && std::abs ((double) probe.maximumDb - lautDb) <= 0.1,
+                "M-76: Gegenprobe - derselbe Rahmen mit echten Nullen statt NaN geht ein: "
+                "headroomFenster 140, Passagenmaximum rund -0,92 dBTP - sein Beitrag ist erkennbar",
+                text (probe));
+        pruefe (buehne.headroomGesetzt && buehne.fenster == 139u
+                    && gegen.headroomGesetzt && gegen.fenster == 140u,
+                "NAK-283 M-76: rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein - "
+                "headroomFenster zaehlt den Rahmen nicht (139, der Gegenlauf 140)",
+                text (buehne) + " | Gegenlauf: " + text (gegen));
+        pruefe (buehne.maximumGesetzt && std::abs ((double) buehne.maximumDb - sollDb) <= 0.1,
+                "NAK-283 M-76: rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein - "
+                "das Passagenmaximum bleibt beim gemessenen Material (rund -6,02 dBTP, nicht -0,92)",
+                text (buehne));
+        pruefe (buehne.headroomGesetzt && gegen.headroomGesetzt
+                    && std::abs (buehne.p10 - gegen.p10) < 0.01f
+                    && std::abs (buehne.p50 - gegen.p50) < 0.01f
+                    && std::abs (buehne.p95 - gegen.p95) < 0.01f,
+                "NAK-283 M-76: rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein - "
+                "P10, P50 und P95 gleichen dem Gegenlauf innerhalb der 0,01-dB-Rasterung",
+                text (buehne) + " | Gegenlauf: " + text (gegen));
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+        pruefe (std::isfinite (buehne.groessteKlasseDb) && std::isfinite (gegen.groessteKlasseDb)
+                    && std::abs (buehne.groessteKlasseDb - gegen.groessteKlasseDb) < 0.005
+                    && std::abs (probe.groessteKlasseDb - lautDb) <= 0.1,
+                "NAK-283 M-76: rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein - "
+                "die Verteilung traegt keinen Wert aus dem teilweise stillgelegten Rahmen: ihre groesste "
+                "Klasse ist die des Gegenlaufs (in der Gegenprobe die des lauten Rahmens)",
+                "Buehne " + juce::String (buehne.groessteKlasseDb, 3) + ", Gegenlauf "
+                    + juce::String (gegen.groessteKlasseDb, 3) + ", Gegenprobe "
+                    + juce::String (probe.groessteKlasseDb, 3) + " dBTP");
+#else
+        pruefe (false,
+                "M-76: der Testzugang NAKAMA_FEATUREENGINE_TESTZUGANG fehlt - die groesste Klasse der "
+                "Verteilung ist ohne ihn nicht lesbar");
+#endif
+        pruefe (buehne.intakt && buehne.headroomGesetzt && buehne.maximumGesetzt,
+                "NAK-283 M-76: rahmen_mit_ersetzten_samples_geht_nicht_in_die_passagenverteilung_ein - "
+                "die Passage selbst bleibt gueltig: Fenster intakt, Verteilung und Passagenmaximum gesetzt",
+                text (buehne));
     }
 
     std::cout << "\n-----------------------------------------" << std::endl;

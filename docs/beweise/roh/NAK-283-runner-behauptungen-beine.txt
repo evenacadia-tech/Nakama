@@ -1,0 +1,683 @@
+# NAK-283 - Runner-Behauptungen A16/B7/B6/A3/B17/A32 nachgezogen: Parser, AST und Beinlaeufe
+
+Zeitpunkt : 2026-09-13 06:52:46 +02:00
+Rechner   : SCHUBBINATOR200
+Zweig     : master
+HEAD      : f2827441f8ae23bcb7f8c7ff4f8dc406e7811ad6 (= Basis-SHA des Auftrags)
+git status --short:
+   M tools/beweise.ps1
+  ?? briefing-hub/
+  ?? nimbalyst-local/
+
+## 1. Fremde Bau-, Test- und Kanonprozesse (NAK-290)
+keine
+
+## 2. Parser und AST: tools/beweise.ps1 (Arbeitsbaum) gegen f2827441:tools/beweise.ps1
+[System.Management.Automation.Language.Parser]::ParseFile tools/beweise.ps1 (Arbeitsbaum): 0 Parse-Fehler
+[System.Management.Automation.Language.Parser]::ParseFile Basis-SHA: 0 Parse-Fehler
+Beintabelle $kanon: Zuweisung Basis Zeile 464, Arbeitsbaum Zeile 464; Eintraege Basis 67, Arbeitsbaum 67
+doppelte Kuerzel im Arbeitsbaum: keine
+Behauptung geaendert: A3, A16, B6, B7, B17, A32 (6), erwartet A16, B7, B6, A3, B17, A32 (6)
+Behauptung unveraendert: 61 Eintraege
+Kuerzel, Name, Art, Argumente, AbPhase und alle weiteren Schluessel aller 67 Eintraege ausser Behauptung: unveraendert (Quelltext je Wert verglichen)
+
+| Bein | Zeile | Zeichen alt | Zeichen neu | Nicht-ASCII alt/neu | Backticks alt/neu | Umbruch neu | Apostroph neu |
+|---|---:|---:|---:|---|---|---|---|
+| A16 | 659 | 1572 | 2251 | 1/1 | 0/0 | nein | nein |
+| B7 | 699 | 1064 | 2136 | 1/1 | 0/0 | nein | nein |
+| B6 | 694 | 1410 | 1993 | 0/0 | 0/0 | nein | nein |
+| A3 | 487 | 239 | 500 | 0/0 | 0/0 | nein | nein |
+| B17 | 730 | 1140 | 1475 | 1/1 | 0/0 | nein | nein |
+| A32 | 751 | 1618 | 2344 | 0/0 | 2/0 | nein | nein |
+
+Zeilenvergleich: Basis 1442 Zeilen, Arbeitsbaum 1442 Zeilen; verschieden: 487, 659, 694, 699, 730, 751; Behauptungszeilen der sechs Beine: 487, 659, 694, 699, 730, 751
+Arbeitsbaum-Bytes: BOM ja, CRLF 1442, nur LF 0; git ls-files --eol: i/lf w/crlf attr/ tools/beweise.ps1
+git diff --numstat -- tools/beweise.ps1: 6 6 tools/beweise.ps1
+Urteil Parser und AST: OK - keine Parse-Fehler, genau sechs Behauptungen geaendert, keine andere Zeile, kein anderer Schluessel
+
+Behauptungen alt (Basis-SHA) und neu (Arbeitsbaum), woertlich:
+
+[A16 alt, f2827441 Zeile 659]
+Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2.
+[A16 neu, Arbeitsbaum Zeile 659]
+Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Seit NAK-283 (F04, F05) bleibt der Nulltest bitgleich, wenn reset() vor jedem dritten Block laeuft - ausgeschaltet bei 44,1 / 48 / 96 / 192 kHz, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen, und im Hard-Bypass auch mit NaN, +Inf und -Inf zwischen zwei reset(); Mono und Stereo mit gleichem Ein- und Ausgang werden angenommen (im Monobus bleibt der Passthrough bitgleich, und das Band rechnet endlich), Quadrophonie, 5.1, vier diskrete Kanaele, Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus bekommen ein Nein, setBusesLayout auf Quadrophonie scheitert, und der Prozessor bleibt bei zwei Kanaelen. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2.
+
+[B7 alt, f2827441 Zeile 699]
+Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang.
+[B7 neu, Arbeitsbaum Zeile 699]
+Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang. Seit NAK-283 (F05, F09, F12) am echten SondeProcessor: reset() beendet die Audiohistorie - nach einem Impuls in den Resonator (1 kHz, +12 dB, Q 10) ist der erste Block Stille auf beiden Kanaelen exakt 0, ohne reset() klingt er nach - und laesst getStateInformation bytegleich, die Revision, das bestaetigte eq_enabled und die engagierte Bank im Kern stehen (1 kHz danach mehr als 6 dB lauter); releaseResources->prepareToPlay, reset() und prepareToPlay allein enden in derselben Audiohistorie (Stille exakt 0, untereinander bitgleich). Ein Block ueber maxBlock bei rechnendem Kern hinterlaesst in der Analysequeue eine Luecke (der naechste Block beginnt bei 192 mit kFlagLueckeDavor, Segment +1), und Kern und Queue beschreiben dieselbe verworfene Zeitspanne (ein verworfener Tap, ein Block ohne Audio mit 128 Frames, oversize und Ueberlauf +0); ruht der Committed-Pfad im Hard-Bypass, wird derselbe Block ohne Luecke angenommen. Endliche double ueber FLT_MAX am Tap kommen in der Analysekopie als endliche floats an, und der Kernzaehler steigt um genau diese 1024 Werte.
+
+[B6 alt, f2827441 Zeile 694]
+Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht.
+[B6 neu, Arbeitsbaum Zeile 694]
+Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht. Ein Block ueber maxBlock (1024 Samples bei 256) verwirft den Analyse-Tap und gleicht auf beiden Kanaelen sample-exakt dem Lauf ohne Ueberlast in 4 x 256. Seit NAK-283 (F12) die float-Kante des Ausgangs: ein endlicher double ueber FLT_MAX (Output-Trim +6 dB auf 0,75 und 0,25 x FLT_MAX) kommt auf 0 verriegelt und im Eingangszaehler gezaehlt heraus, und kein Ausgangswert ist nicht endlich; auf endlichem Material in +/-1,0 (Bell +9 dB und Output-Trim +6 dB, 204 800 Werte, auch mit Betrag >= 1) ist jeder float bitgleich die Verengung des double-Taps, und der Zaehler bleibt stehen.
+
+[A3 alt, f2827441 Zeile 487]
+Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport).
+[A3 neu, Arbeitsbaum Zeile 487]
+Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). Seit NAK-283 (F12) erzeugt ein endlicher Eingang keinen nicht endlichen Wet-Ausgang: im Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX ist jedes Ausgangssample endlich, und nach dem Einblenden steigt der Wet-Zaehler um genau die verriegelten Samples.
+
+[B17 alt, f2827441 Zeile 730]
+True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt bitgenau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten.
+[B17 neu, Arbeitsbaum Zeile 730]
+True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht fuer 15 bis 19 keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt auf 1e-9 genau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten. Seit NAK-283 (N01) zusaetzlich die vier transienten Faelle 20 bis 23 aus EBU Tech 3341 (Versatz 0 bis 3): jeder trifft eine im Test gerechnete, vorher an 15 bis 19 auf +/-0,01 dB validierte 64-fach-Referenz innerhalb +/-0,1 dB und liegt zusaetzlich in der Normtoleranz 0,0 +0,2/-0,4 dBTP. Insgesamt 43 Pruefungen.
+
+[A32 alt, f2827441 Zeile 751]
+Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook: Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500, `broker/src/generiert/` ausgenommen), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Zeilengrenze HAELT seit NAK-225 (S25d): keine Quelldatei liegt mehr ueber 2 000 Zeilen, und die Pflegeticket-Zuordnung ist leer. Jeder neue Treffer meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 121 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest oder ein fehlender Messort, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen.
+[A32 neu, Arbeitsbaum Zeile 751]
+Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook. Der Quellumfang kommt seit NAK-283 (M-69) aus einem pruefbaren Inventar: jede Datei mit Endung .rs, .cpp, .h oder .hpp unter broker/src und eq-copilot/plugin samt allen Unterbaeumen, mit Grund ausgenommen nur der flatc-Codegen (broker/src/generiert, eq-copilot/plugin/vertrag/generiert) und der Testbaum eq-copilot/plugin/tests; der Bericht druckt das Inventar, und eine Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als WERKZEUGFEHLER (Inventarriegel, Exit 2). Gemessen werden Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Grenzen - Zeilen je Datei, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner - werden ehrlich gemeldet, auch wenn sie reissen (Pflegeticket NAK-292). Jeder neue Treffer ueber der Zeilengrenze meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 129 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung; das Inventar mit neuem Unterbaum, Codegen, Tests und einer Ableitung, die still einen Unterbaum verliert). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 heisst gerissen und ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest, eine fehlende Inventarwurzel oder der Inventarriegel, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen, und ein ungemessener Unterbaum machte jedes andere Mass falsch.
+
+## 3. Frische der Pruefbinaries
+git diff --name-only e6771fc9..HEAD -- eq-copilot broker tools: leer
+git status --short -- eq-copilot broker: leer
+juengste Quelle unter eq-copilot/plugin: 2026-09-13 04:31:20 eq-copilot\plugin\core\analysis\TruePeak.h
+  EqCopProbeeqNullTest.exe: 2026-09-13 05:34:40 - juenger als die juengste Quelle, kein Neubau
+  EqCopTransactionTest.exe: 2026-09-13 05:35:59 - juenger als die juengste Quelle, kein Neubau
+  EqCopDspGoldenTest.exe: 2026-09-13 05:35:53 - juenger als die juengste Quelle, kein Neubau
+  EqCopMarkierungTest.exe: 2026-09-13 05:34:33 - juenger als die juengste Quelle, kein Neubau
+  EqCopSonde013TruePeakGoldenTest.exe: 2026-09-13 04:31:24 - juenger als die juengste Quelle, kein Neubau
+
+## 4. Beinlaeufe (direkt, aus dem Workspace-Root, wie tools/beweise.ps1)
+
+### A16 - eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe
+Beginn 06:52:47, Dauer 0.25 s, Exit 0 (erwartet 0) - wie erwartet, 94 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+  -- 3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset
+    ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+    ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+    ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+    ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+    ok        im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 0 abweichend, NaN/Inf roh ja]
+  -- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+    ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  -- 5. M-50 passthrough_sanitisiert_nichts
+    ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+    ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+    ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+    ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+Letzte Zeilen:
+    ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+    ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+    ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+    ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+    ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+  
+  -- 12. NAK-283 F04 Buslayout (M-27 bis M-29)
+    ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+    ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+    ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+  
+  SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler
+
+### B7 - eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe
+Beginn 06:52:47, Dauer 0.36 s, Exit 0 (erwartet 0) - wie erwartet, 213 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+    ok      host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach  [Peak nach reset 0, ohne reset 0.0192088876]
+    ok      host_reset_laesst_parameter_und_zustand_unberuehrt (M-31, Regressionswache): getStateInformation bytegleich vor und nach reset(), die Bank bleibt engagiert (bestaetigt und im Kern), und der naechste Block mit Material traegt die Filterwirkung (1 kHz mehr als 6 dB lauter)  [4704 Bytes, gleich ja, Revision 1 -> 1, eq_enabled 1, Bank im Kern 1, 1 kHz 12 dB]
+    ok      die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich  [Peaks 0 / 0 / 0, a=b 1, b=c 1]
+    ok      ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke (M-35): 64, 128 (> maxBlock 64) und 64 Samples bei rechnendem Kern - der dritte Block beginnt lokal bei 192, traegt kFlagLueckeDavor, und continuity_segment steigt um 1  [Kern rechnet: ja; 2 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 192 n 64 Luecke ja Segment 2]
+    ok      dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne (M-36): derselbe Block zaehlt im Kern als ein verworfener Tap und in der Queue als genau 128 verlorene Frames eines Blocks ohne Audio - nicht als oversizeDrops  [Kern +1, ohne Audio +1, Frames +128, oversize +0, Ueberlauf +0]
+    ok      ruhender_passthrough_erzeugt_keine_luecke (M-37, Regressionswache): im Hard-Bypass liest die Analyse den uebergrossen Block als unberuehrten Eingang - er wird angenommen, und keine Luecke entsteht  [Committed ruht: ja; 3 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 64 n 128 Luecke nein Segment 1; #3 stromVon 192 n 64 Luecke nein Segment 1; Kern +1, ohne Audio +0]
+    ok      analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich ja, Zaehler +1024]
+Letzte Zeilen:
+    ok      host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach  [Peak nach reset 0, ohne reset 0.0192088876]
+    ok      host_reset_laesst_parameter_und_zustand_unberuehrt (M-31, Regressionswache): getStateInformation bytegleich vor und nach reset(), die Bank bleibt engagiert (bestaetigt und im Kern), und der naechste Block mit Material traegt die Filterwirkung (1 kHz mehr als 6 dB lauter)  [4704 Bytes, gleich ja, Revision 1 -> 1, eq_enabled 1, Bank im Kern 1, 1 kHz 12 dB]
+    ok      die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich  [Peaks 0 / 0 / 0, a=b 1, b=c 1]
+  
+  == Q - NAK-283 F09 und F12: Analysezufuehrung der Sonde (M-35 bis M-37, M-41) ==
+    ok      ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke (M-35): 64, 128 (> maxBlock 64) und 64 Samples bei rechnendem Kern - der dritte Block beginnt lokal bei 192, traegt kFlagLueckeDavor, und continuity_segment steigt um 1  [Kern rechnet: ja; 2 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 192 n 64 Luecke ja Segment 2]
+    ok      dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne (M-36): derselbe Block zaehlt im Kern als ein verworfener Tap und in der Queue als genau 128 verlorene Frames eines Blocks ohne Audio - nicht als oversizeDrops  [Kern +1, ohne Audio +1, Frames +128, oversize +0, Ueberlauf +0]
+    ok      ruhender_passthrough_erzeugt_keine_luecke (M-37, Regressionswache): im Hard-Bypass liest die Analyse den uebergrossen Block als unberuehrten Eingang - er wird angenommen, und keine Luecke entsteht  [Committed ruht: ja; 3 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 64 n 128 Luecke nein Segment 1; #3 stromVon 192 n 64 Luecke nein Segment 1; Kern +1, ohne Audio +0]
+    ok      analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich ja, Zaehler +1024]
+  
+  174 geprueft, 0 Fehler
+  TRANSAKTION OK
+
+### B6 - eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe
+Beginn 06:52:48, Dauer 4.96 s, Exit 0 (erwartet 0) - wie erwartet, 296 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+    ok      ueberlast_verwirft_analyse (M-48)  [Block 1024 > maxBlock 256: Tap verworfen und gezaehlt]
+    ok      der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+    ok      endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang (M-39, R-283-6)  [ueber dem float-Rand 512 von 1024 Werten, am Ausgang nicht endlich 0, abweichend von der Erwartung 0, Zaehler +512]
+    ok      ausgangsriegel_beruehrt_endliches_material_nicht (M-42 Haelfte a, Regressionswache)  [204800 Werte verglichen, davon nicht bitgleich zur Verengung des Taps 0, mit Betrag >= 1 105396, Zaehler +0]
+Letzte Zeilen:
+    ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.030 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+  
+  == O - Realtime und Offline gleich (M-120, Haelfte des Kerns) ==
+    ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.844 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 12.25 ms]
+    ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.003 s fuer 0.843 s Audio, groesste Luecke 0.058 ms]
+    ok      beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [6 und 6]
+    ok      realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [Toleranz 0]
+    ok      die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)  [Slot 5 zwischen -6.00 und 0.00 dB]
+    ok      realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+  
+  259 geprueft, 0 Fehler
+  DSP-GOLDEN OK
+
+### A3 - eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
+Beginn 06:52:53, Dauer 7.44 s, Exit 0 (erwartet 0) - wie erwartet, 117 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+    ok      NAK-283 M-40: endlicher_eingang_erzeugt_keinen_nichtendlichen_wetausgang - Puls auf 1 kHz, Ton mit 0,8 x FLT_MAX: jedes Ausgangssample ist endlich, und der Wet-Zaehler steigt um genau die verriegelten Samples  [0 nicht endlich; Zaehler +4228, verriegelte Samples 4228]
+Letzte Zeilen:
+    ok      T4: Markierung war waehrend der Messung hoerbar
+    ok      T4: keine Analyse-Drops (Vergleich belastbar)
+    ok      T4: beide Messungen messbereit
+    ok      T4: genug Baender fuer den Vergleich
+    ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+    ok      T11: als Main klassifiziert (Â§53.5)
+    ok      T11: Auftrag gebaut
+    ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+    ok      T11: und die Markierung meldet sich nicht hoerbar
+    ok      T11: mit gestopptem Transport ebenfalls kein Sample
+    ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+  MARKIERUNGSTEST OK
+
+### B17 - eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe
+Beginn 06:53:00, Dauer 0.31 s, Exit 0 (erwartet 0) - wie erwartet, 61 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+  [ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+  [ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0004 dB]
+  [ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0001 dB]
+  [ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+  [ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.985 dBTP, erwartet 2.984, Abweichung 0.0004 dB]
+  == Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+  [ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+  == Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+  [ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+  == true_peak_matches_ebu_transient_set - EBU Tech 3341, Testfaelle 20 bis 23 (transient, Versatz 0 bis 3): +/-0,1 dB gegen die validierte 64-fach-Referenz UND 0,0 +0,2/-0,4 dBTP ==
+  [ok]   Referenz an Testfall 15: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+  [ok]   Referenz an Testfall 16: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020601 dBTP, erwartet -6.020600, Abstand -0.000001 dB]
+  [ok]   Referenz an Testfall 17: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020604 dBTP, erwartet -6.020600, Abstand -0.000005 dB]
+  [ok]   Referenz an Testfall 18: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+  [ok]   Referenz an Testfall 19: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz 2.984381 dBTP, erwartet 2.984382, Abstand -0.000001 dB]
+  [ok]   Anti-Aliasing-Tiefpass (257 Taps, Kaiser 10, 6 dB bei 0,45*fs): Durchlass bis 0,4*fs innerhalb 0,001 dB  [groesste Abweichung 0.000101 dB]
+  [ok]   Anti-Aliasing-Tiefpass: Sperrbereich 0,5*fs bis 2*fs unter -90 dB  [hoechster Wert -100.04 dB]
+  [ok]   Versatz 3 greift beim letzten fs-Sample genau den letzten 4*fs-Index, nicht darueber  [38399 von 38399]
+  [ok]   Testfall 20 (Versatz 0): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001470]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15843 dBTP, Referenz -0.12552 dBTP, Abstand -0.03292 dB, Sample-Peak -0.1584 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15843 dBTP, Normabstand -0.15843 dB]
+  [ok]   Testfall 21 (Versatz 1): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001375]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12552 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+  [ok]   Testfall 22 (Versatz 2): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001249]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.16416 dBTP, Referenz -0.12552 dBTP, Abstand -0.03864 dB, Sample-Peak -2.6495 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.16416 dBTP, Normabstand -0.16416 dB]
+  [ok]   Testfall 23 (Versatz 3): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001216]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12551 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+Letzte Zeilen:
+  [ok]   Testfall 21 (Versatz 1): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001375]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12552 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+  [ok]   Testfall 22 (Versatz 2): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001249]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.16416 dBTP, Referenz -0.12552 dBTP, Abstand -0.03864 dB, Sample-Peak -2.6495 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.16416 dBTP, Normabstand -0.16416 dB]
+  [ok]   Testfall 23 (Versatz 3): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001216]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12551 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+  [ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+  
+  -----------------------------------------
+  43 bestanden, 0 gescheitert
+
+### A32 - py -3.13 tools\plan\gesundheit.py --mit-selbsttest
+Beginn 06:53:00, Dauer 14.31 s, Exit 4 (erwartet 4) - wie erwartet, 244 Ausgabezeilen
+Traegerzeilen der nachgezogenen Behauptung:
+    ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+    ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+    ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+    ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+    ok   clippy: Abbruch ohne stderr sagt genau das
+    ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+    ok   clippy: fehlender Messort ist ein Werkzeugfehler
+    ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+    ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+    ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+    ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+    ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+    ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+    ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+    ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  Selbsttest: 129/129 bestanden
+  Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 196 Dateien
+    gemessen     broker/src (direkt): 19 Datei(en)
+    gemessen     broker/src/bin: 4 Datei(en)
+    gemessen     broker/src/coordinator: 39 Datei(en)
+    ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+    gemessen     broker/src/store: 5 Datei(en)
+    gemessen     broker/src/transport: 21 Datei(en)
+    gemessen     eq-copilot/plugin/core: 40 Datei(en)
+    gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+    gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+    gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+    gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+    gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+    gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+    gemessen     eq-copilot/plugin/src: 24 Datei(en)
+    gemessen     eq-copilot/plugin/state: 13 Datei(en)
+    ausgenommen  eq-copilot/plugin/tests: 42 Datei(en) - Testcode, kein Produktumfang
+    gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+  GRENZE gerissen: Quelldateien ueber 2000 Zeilen (1 von hoechstens 0)
+    eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]
+  GRENZE gerissen: Funktionen ueber 200 Zeilen (35 von hoechstens 28)
+  GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 30)
+  Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+  URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+Letzte Zeilen:
+    eq-copilot/plugin/src/PluginProcessor.h: 1899 Zeilen
+    broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+    broker/src/server.rs: 1841 Zeilen
+    broker/src/coordinator/experiment.rs: 1727 Zeilen
+    eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+    eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+    broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+  Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+  Hinweis: 125 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+  Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+  
+  URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+
+## 5. Zusammenfassung
+
+| Bein | Befehl | Exit (erwartet) | Dauer | Zaehlzeilen |
+|---|---|---|---|---|
+| A16 | eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe | 0 (0) | 0.25 s | SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler |
+| B7 | eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe | 0 (0) | 0.36 s | 174 geprueft, 0 Fehler |
+| B6 | eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe | 0 (0) | 4.96 s | 259 geprueft, 0 Fehler / DSP-GOLDEN OK |
+| A3 | eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe | 0 (0) | 7.44 s | MARKIERUNGSTEST OK |
+| B17 | eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe | 0 (0) | 0.31 s | 43 bestanden, 0 gescheitert |
+| A32 | py -3.13 tools\plan\gesundheit.py --mit-selbsttest | 4 (4) | 14.31 s | Selbsttest: 129/129 bestanden / URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code |
+
+Gesamturteil: OK - keine Parse-Fehler, genau sechs Behauptungen geaendert, Binaries frisch, alle sechs Beine mit erwartetem Exit
+
+
+## 6. Nachtrag: Dokuriegel, Hashvergleich der Binaries und Zitatabgleich des Manifests
+Zeitpunkt : 2026-09-13 07:02:20 +02:00
+HEAD      : f2827441f8ae23bcb7f8c7ff4f8dc406e7811ad6
+py -3.13 tools/plan/dokuriegel.py docs/beweise/NAK-283.md: Exit 0
+  docs/beweise/NAK-283.md: sauber (2 benannt)
+  docs/beweise/NAK-283.md:783 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („Zielpfad“ im Umfeld): docs/beweise/roh/NAK-283-rot-M-01.txt
+  docs/beweise/NAK-283.md:785 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („Zielpfad“ im Umfeld): docs/beweise/roh/NAK-283-etappe2-beine.txt
+  Dokuriegel: 0 Befund(e), 2 benannt (historisch oder Zielpfad)
+Binaries gegen den Baustand des Zwischenkanons (docs/beweise/roh/NAK-283-e6771fc-dirty.md, SHA-256-Praefix mit 16 Zeichen):
+  EqCopProbeeqNullTest: ist 2B2BA800D04424C6, Baustand 2B2BA800D04424C6 (gebaut 2026-09-13 05:34:40, frisch (Bau bestaetigt)) - gleich
+  EqCopTransactionTest: ist 9E5278E05813E98E, Baustand 9E5278E05813E98E (gebaut 2026-09-13 05:35:59, frisch (Bau bestaetigt)) - gleich
+  EqCopDspGoldenTest: ist A08218D9BEE00461, Baustand A08218D9BEE00461 (gebaut 2026-09-13 05:35:53, frisch (Bau bestaetigt)) - gleich
+  EqCopMarkierungTest: ist FB83021FF0CC04D3, Baustand FB83021FF0CC04D3 (gebaut 2026-09-13 05:34:33, frisch (Bau bestaetigt)) - gleich
+  EqCopSonde013TruePeakGoldenTest: ist 3AC0FF270230B55C, Baustand 3AC0FF270230B55C (gebaut 2026-09-13 04:31:24, frisch (Bau bestaetigt)) - gleich
+Zitatabgleich Abschnitt 38.2: 12 text-Bloecke, erwartet 12 (je Bein alt und neu, Reihenfolge A16, B7, B6, A3, B17, A32)
+  A16 alt (Basis-SHA): woertlich gleich
+  A16 neu (Arbeitsbaum): woertlich gleich
+  B7 alt (Basis-SHA): woertlich gleich
+  B7 neu (Arbeitsbaum): woertlich gleich
+  B6 alt (Basis-SHA): woertlich gleich
+  B6 neu (Arbeitsbaum): woertlich gleich
+  A3 alt (Basis-SHA): woertlich gleich
+  A3 neu (Arbeitsbaum): woertlich gleich
+  B17 alt (Basis-SHA): woertlich gleich
+  B17 neu (Arbeitsbaum): woertlich gleich
+  A32 alt (Basis-SHA): woertlich gleich
+  A32 neu (Arbeitsbaum): woertlich gleich
+Urteil Nachtrag: OK
+
+## Skript (woertlich)
+
+<#
+    NAK-283 - Runner-Behauptungen A16/B7/B6/A3/B17/A32 nachgezogen (Worker, 13.09.2026)
+
+    Der Runner tools/beweise.ps1 kennt keine Einzelbeinform. Dieses Skript
+    (1) parst tools/beweise.ps1 (Arbeitsbaum) und die Fassung am Basis-SHA mit
+        dem PowerShell-Parser und vergleicht die Beintabelle $kanon Eintrag fuer
+        Eintrag: geaendert sein duerfen genau die Behauptungen von A16, B7, B6,
+        A3, B17 und A32, sonst keine Zeile und kein Schluessel;
+    (2) prueft die Frische der fuenf Pruefbinaries gegen die Quellen;
+    (3) faehrt die sechs Beine direkt aus dem Workspace-Root, wie der Runner;
+    (4) schreibt die Rohausgabe mit LF, das Skript woertlich am Ende.
+    Mit -Nachtrag: dokuriegel.py auf das Manifest und der Abgleich der in
+    Abschnitt 38.2 zitierten Behauptungen gegen Basis-SHA und Arbeitsbaum; der
+    Abschnitt wird vor dem woertlichen Skript in die Rohausgabe eingefuegt.
+
+    Aufruf: pwsh -NoProfile -File <skript> -Ausgabe <rohdatei> -Tmp <ordner> [-Nachtrag]
+#>
+param(
+    [Parameter(Mandatory)][string] $Ausgabe,
+    [Parameter(Mandatory)][string] $Tmp,
+    [switch] $Nachtrag
+)
+
+$ErrorActionPreference = 'Stop'
+$Wurzel = ((& git rev-parse --show-toplevel) | Out-String).Trim().Replace('/', '\')
+Set-Location -LiteralPath $Wurzel
+
+$Geaendert = @('A16', 'B7', 'B6', 'A3', 'B17', 'A32')
+$BasisHead = 'f2827441f8ae23bcb7f8c7ff4f8dc406e7811ad6'    # HEAD beim Start dieses Auftrags
+$KanonStand = 'e6771fc927a130360a80b075b37afac4ab9715d4'   # Zwischenkanon 05:34 Uhr, Bau der Binaries
+$Marke = '## Skript (woertlich)'
+$Invariant = [Globalization.CultureInfo]::InvariantCulture
+$z = New-Object System.Collections.Generic.List[string]
+function N([string] $Text = '') { $script:z.Add($Text) }
+
+function Parse([string] $Pfad) {
+    $tokens = $null
+    $fehler = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($Pfad, [ref] $tokens, [ref] $fehler)
+    [pscustomobject]@{ Ast = $ast; Fehler = @($fehler) }
+}
+
+function Wert($StatementAst) {
+    # Der Wert eines Schluessels, wenn er eine konstante Zeichenkette ist, sonst $null.
+    if ($StatementAst -isnot [System.Management.Automation.Language.PipelineAst]) { return $null }
+    $e = $StatementAst.PipelineElements[0].Expression
+    if ($e -is [System.Management.Automation.Language.StringConstantExpressionAst]) { return $e.Value }
+    return $null
+}
+
+function Beine($Ast) {
+    $zuweisung = $Ast.Find({
+        param($n)
+        $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+        $n.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and
+        $n.Left.VariablePath.UserPath -eq 'kanon'
+    }, $true)
+    if ($null -eq $zuweisung) { throw 'Zuweisung $kanon nicht gefunden' }
+    $liste = New-Object System.Collections.Generic.List[object]
+    foreach ($h in $zuweisung.Right.FindAll({ param($n) $n -is [System.Management.Automation.Language.HashtableAst] }, $true)) {
+        $felder = [ordered]@{}
+        $kuerzel = $null
+        $behauptung = $null
+        $zeile = 0
+        foreach ($kv in $h.KeyValuePairs) {
+            $schluessel = [string] $kv.Item1.Value
+            $felder[$schluessel] = $kv.Item2.Extent.Text
+            if ($schluessel -eq 'Kuerzel') { $kuerzel = Wert $kv.Item2 }
+            if ($schluessel -eq 'Behauptung') { $behauptung = Wert $kv.Item2; $zeile = $kv.Item2.Extent.StartLineNumber }
+        }
+        if ($kuerzel) {
+            $liste.Add([pscustomobject]@{ Kuerzel = $kuerzel; Felder = $felder; Behauptung = $behauptung; Zeile = $zeile })
+        }
+    }
+    [pscustomobject]@{ Zeile = $zuweisung.Extent.StartLineNumber; Liste = $liste }
+}
+
+function Eintrag($Beine, [string] $Kuerzel) {
+    $Beine.Liste | Where-Object Kuerzel -eq $Kuerzel | Select-Object -First 1
+}
+
+function BasisKopie {
+    $kopie = Join-Path $Tmp 'beweise-basis.ps1'
+    & cmd.exe /d /c ('git show ' + $BasisHead + ':tools/beweise.ps1 > ' + $kopie)
+    if ($LASTEXITCODE -ne 0) { throw ('git show ' + $BasisHead + ':tools/beweise.ps1 fehlgeschlagen') }
+    return $kopie
+}
+
+function Zaehle([string] $Text, [scriptblock] $Bedingung) {
+    @($Text.ToCharArray() | Where-Object $Bedingung).Count
+}
+
+function SkriptText {
+    [IO.File]::ReadAllText($PSCommandPath, [Text.Encoding]::UTF8).TrimEnd()
+}
+
+if (-not $Nachtrag) {
+    $befunde = 0
+    $head = ((& git rev-parse HEAD) | Out-String).Trim()
+    N '# NAK-283 - Runner-Behauptungen A16/B7/B6/A3/B17/A32 nachgezogen: Parser, AST und Beinlaeufe'
+    N ''
+    N ('Zeitpunkt : ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz'))
+    N ('Rechner   : ' + $env:COMPUTERNAME)
+    N ('Zweig     : ' + ((& git rev-parse --abbrev-ref HEAD) | Out-String).Trim())
+    N ('HEAD      : ' + $head + $(if ($head -eq $BasisHead) { ' (= Basis-SHA des Auftrags)' } else { ' (NICHT der Basis-SHA ' + $BasisHead + ')' }))
+    N 'git status --short:'
+    foreach ($s in @(& git status --short)) { N ('  ' + $s) }
+    if ($head -ne $BasisHead) { $befunde++ }
+    N ''
+
+    # --- 1. Fremdprozesse -----------------------------------------------------
+    N '## 1. Fremde Bau-, Test- und Kanonprozesse (NAK-290)'
+    $fremd = @(Get-Process | Where-Object { $_.ProcessName -match '^(cmake|MSBuild|cl|link|cargo|rustc|ninja|clang-tidy|flatc)$' -or $_.ProcessName -like 'EqCop*' })
+    if ($fremd.Count -eq 0) { N 'keine' } else { foreach ($p in $fremd) { N ('  ' + $p.ProcessName + ' PID ' + $p.Id) } }
+    N ''
+
+    # --- 2. Parser und AST ----------------------------------------------------
+    N ('## 2. Parser und AST: tools/beweise.ps1 (Arbeitsbaum) gegen ' + $BasisHead.Substring(0, 8) + ':tools/beweise.ps1')
+    $basisDatei = BasisKopie
+    $arbeit = Join-Path $Wurzel 'tools\beweise.ps1'
+    $pNeu = Parse $arbeit
+    $pAlt = Parse $basisDatei
+    N ('[System.Management.Automation.Language.Parser]::ParseFile tools/beweise.ps1 (Arbeitsbaum): ' + $pNeu.Fehler.Count + ' Parse-Fehler')
+    foreach ($f in $pNeu.Fehler) { N ('  Zeile ' + $f.Extent.StartLineNumber + ': ' + $f.Message) }
+    N ('[System.Management.Automation.Language.Parser]::ParseFile Basis-SHA: ' + $pAlt.Fehler.Count + ' Parse-Fehler')
+    if ($pNeu.Fehler.Count -ne 0) { $befunde++ }
+    $bNeu = Beine $pNeu.Ast
+    $bAlt = Beine $pAlt.Ast
+    N ('Beintabelle $kanon: Zuweisung Basis Zeile ' + $bAlt.Zeile + ', Arbeitsbaum Zeile ' + $bNeu.Zeile + '; Eintraege Basis ' + $bAlt.Liste.Count + ', Arbeitsbaum ' + $bNeu.Liste.Count)
+    if ($bAlt.Liste.Count -ne $bNeu.Liste.Count) { $befunde++ }
+    $doppelt = @($bNeu.Liste | Group-Object Kuerzel | Where-Object Count -gt 1 | ForEach-Object Name)
+    N ('doppelte Kuerzel im Arbeitsbaum: ' + $(if ($doppelt.Count) { $doppelt -join ', ' } else { 'keine' }))
+    if ($doppelt.Count) { $befunde++ }
+
+    $alleKuerzel = @(@($bAlt.Liste.Kuerzel) + @($bNeu.Liste.Kuerzel) | Select-Object -Unique)
+    $geaendertGemessen = New-Object System.Collections.Generic.List[string]
+    $gleich = 0
+    $feldBefunde = 0
+    foreach ($k in $alleKuerzel) {
+        $a = Eintrag $bAlt $k
+        $n = Eintrag $bNeu $k
+        if (-not $a -or -not $n) { N ('BEFUND: ' + $k + ' fehlt in ' + $(if (-not $a) { 'Basis' } else { 'Arbeitsbaum' })); $feldBefunde++; continue }
+        if ((@($a.Felder.Keys) -join ',') -cne (@($n.Felder.Keys) -join ',')) {
+            N ('BEFUND: ' + $k + ' Schluessel ' + (@($a.Felder.Keys) -join ',') + ' -> ' + (@($n.Felder.Keys) -join ','))
+            $feldBefunde++
+        }
+        foreach ($s in @($a.Felder.Keys)) {
+            if ($s -eq 'Behauptung') { continue }
+            if ($a.Felder[$s] -cne $n.Felder[$s]) { N ('BEFUND: ' + $k + '.' + $s + ' geaendert: ' + $a.Felder[$s] + ' -> ' + $n.Felder[$s]); $feldBefunde++ }
+        }
+        if ($a.Behauptung -cne $n.Behauptung) { $geaendertGemessen.Add($k) } else { $gleich++ }
+    }
+    $befunde += $feldBefunde
+    N ('Behauptung geaendert: ' + ($geaendertGemessen -join ', ') + ' (' + $geaendertGemessen.Count + '), erwartet ' + ($Geaendert -join ', ') + ' (' + $Geaendert.Count + ')')
+    N ('Behauptung unveraendert: ' + $gleich + ' Eintraege')
+    N ('Kuerzel, Name, Art, Argumente, AbPhase und alle weiteren Schluessel aller ' + $alleKuerzel.Count + ' Eintraege ausser Behauptung: ' + $(if ($feldBefunde -eq 0) { 'unveraendert (Quelltext je Wert verglichen)' } else { [string] $feldBefunde + ' Befund(e)' }))
+    if ((($geaendertGemessen | Sort-Object) -join ',') -cne (($Geaendert | Sort-Object) -join ',')) { N 'BEFUND: die Menge der geaenderten Behauptungen weicht ab'; $befunde++ }
+
+    N ''
+    N '| Bein | Zeile | Zeichen alt | Zeichen neu | Nicht-ASCII alt/neu | Backticks alt/neu | Umbruch neu | Apostroph neu |'
+    N '|---|---:|---:|---:|---|---|---|---|'
+    foreach ($k in $Geaendert) {
+        $a = Eintrag $bAlt $k
+        $n = Eintrag $bNeu $k
+        $nichtAsciiA = Zaehle $a.Behauptung { [int] $_ -gt 127 }
+        $nichtAsciiN = Zaehle $n.Behauptung { [int] $_ -gt 127 }
+        $tickA = Zaehle $a.Behauptung { [int] $_ -eq 96 }
+        $tickN = Zaehle $n.Behauptung { [int] $_ -eq 96 }
+        $umbruch = $n.Behauptung -match "[`r`n]"
+        $apostroph = $n.Behauptung.Contains("'")
+        N ('| {0} | {1} | {2} | {3} | {4}/{5} | {6}/{7} | {8} | {9} |' -f $k, $n.Zeile, $a.Behauptung.Length, $n.Behauptung.Length, $nichtAsciiA, $nichtAsciiN, $tickA, $tickN, $(if ($umbruch) { 'JA' } else { 'nein' }), $(if ($apostroph) { 'JA' } else { 'nein' }))
+        if ($nichtAsciiN -gt $nichtAsciiA -or $tickN -gt 0 -or $umbruch -or $apostroph) { $befunde++ }
+    }
+
+    $zAlt = [IO.File]::ReadAllLines($basisDatei, [Text.Encoding]::UTF8)
+    $zNeu = [IO.File]::ReadAllLines($arbeit, [Text.Encoding]::UTF8)
+    $verschieden = @(for ($i = 0; $i -lt [Math]::Max($zAlt.Count, $zNeu.Count); $i++) {
+        if ($i -ge $zAlt.Count -or $i -ge $zNeu.Count -or $zAlt[$i] -cne $zNeu[$i]) { $i + 1 }
+    })
+    $sollZeilen = @($Geaendert | ForEach-Object { (Eintrag $bNeu $_).Zeile } | Sort-Object)
+    N ''
+    N ('Zeilenvergleich: Basis ' + $zAlt.Count + ' Zeilen, Arbeitsbaum ' + $zNeu.Count + ' Zeilen; verschieden: ' + ($verschieden -join ', ') + '; Behauptungszeilen der sechs Beine: ' + ($sollZeilen -join ', '))
+    if ((($verschieden | Sort-Object) -join ',') -cne ($sollZeilen -join ',')) { N 'BEFUND: andere Zeilen als die sechs Behauptungszeilen geaendert'; $befunde++ }
+
+    $bytes = [IO.File]::ReadAllBytes($arbeit)
+    $crlf = 0
+    $nurLf = 0
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        if ($bytes[$i] -eq 10) { if ($i -gt 0 -and $bytes[$i - 1] -eq 13) { $crlf++ } else { $nurLf++ } }
+    }
+    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    N ('Arbeitsbaum-Bytes: BOM ' + $(if ($bom) { 'ja' } else { 'nein' }) + ', CRLF ' + $crlf + ', nur LF ' + $nurLf + '; git ls-files --eol: ' + (((& git ls-files --eol tools/beweise.ps1) | Out-String).Trim() -replace '\s+', ' '))
+    N ('git diff --numstat -- tools/beweise.ps1: ' + (((& git diff --numstat -- tools/beweise.ps1) | Out-String).Trim() -replace '\s+', ' '))
+    if (-not $bom -or $nurLf -ne 0) { $befunde++ }
+    N ('Urteil Parser und AST: ' + $(if ($befunde -eq 0) { 'OK - keine Parse-Fehler, genau sechs Behauptungen geaendert, keine andere Zeile, kein anderer Schluessel' } else { 'BEFUND (' + $befunde + ')' }))
+
+    N ''
+    N 'Behauptungen alt (Basis-SHA) und neu (Arbeitsbaum), woertlich:'
+    foreach ($k in $Geaendert) {
+        $a = Eintrag $bAlt $k
+        $n = Eintrag $bNeu $k
+        N ''
+        N ('[' + $k + ' alt, ' + $BasisHead.Substring(0, 8) + ' Zeile ' + $a.Zeile + ']')
+        N $a.Behauptung
+        N ('[' + $k + ' neu, Arbeitsbaum Zeile ' + $n.Zeile + ']')
+        N $n.Behauptung
+    }
+
+    # --- 3. Frische -----------------------------------------------------------
+    N ''
+    N '## 3. Frische der Pruefbinaries'
+    $seitKanon = @(& git diff --name-only ($KanonStand + '..HEAD') -- eq-copilot broker tools)
+    N ('git diff --name-only ' + $KanonStand.Substring(0, 8) + '..HEAD -- eq-copilot broker tools: ' + $(if ($seitKanon.Count) { $seitKanon -join ', ' } else { 'leer' }))
+    $offen = @(& git status --short -- eq-copilot broker)
+    N ('git status --short -- eq-copilot broker: ' + $(if ($offen.Count) { $offen -join '; ' } else { 'leer' }))
+    if ($seitKanon.Count -or $offen.Count) { $befunde++ }
+    $juengste = Get-ChildItem -Recurse -File -Path (Join-Path $Wurzel 'eq-copilot\plugin') -Include *.cpp, *.h, *.hpp, *.inl, CMakeLists.txt | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    N ('juengste Quelle unter eq-copilot/plugin: ' + $juengste.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss') + ' ' + $juengste.FullName.Substring($Wurzel.Length + 1))
+    foreach ($ziel in @('EqCopProbeeqNullTest', 'EqCopTransactionTest', 'EqCopDspGoldenTest', 'EqCopMarkierungTest', 'EqCopSonde013TruePeakGoldenTest')) {
+        $exe = Get-Item -LiteralPath (Join-Path $Wurzel ('eq-copilot\build\plugin\{0}_artefacts\Release\{0}.exe' -f $ziel))
+        $frisch = $exe.LastWriteTime -gt $juengste.LastWriteTime
+        N ('  {0}.exe: {1} - {2}' -f $ziel, $exe.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'), $(if ($frisch) { 'juenger als die juengste Quelle, kein Neubau' } else { 'VERALTET' }))
+        if (-not $frisch) { $befunde++ }
+    }
+
+    # --- 4. Beinlaeufe ----------------------------------------------------------
+    N ''
+    N '## 4. Beinlaeufe (direkt, aus dem Workspace-Root, wie tools/beweise.ps1)'
+    $laeufe = @(
+        @{ K = 'A16'; Datei = 'eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe'; Arg = @(); Soll = 0
+           Traeger = 'nulltest_bleibt_bitidentisch_mit_host_reset|im Hard-Bypass: bitgleich mit reset|latenz_bleibt_null|passthrough_sanitisiert_nichts|mehrkanallayout_wird_abgelehnt|mono_und_stereo_bleiben_angenommen|ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt' }
+        @{ K = 'B7'; Datei = 'eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe'; Arg = @(); Soll = 0
+           Traeger = 'host_reset_beendet_die_audiohistorie|host_reset_laesst_parameter_und_zustand_unberuehrt|die_drei_hosteintritte_enden_in_derselben_audiohistorie|ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke|dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne|ruhender_passthrough_erzeugt_keine_luecke|analysekopie_verengt_nicht_unbemerkt' }
+        @{ K = 'B6'; Datei = 'eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe'; Arg = @(); Soll = 0
+           Traeger = 'ueberlast_verwirft_analyse|der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast|endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang|ausgangsriegel_beruehrt_endliches_material_nicht' }
+        @{ K = 'A3'; Datei = 'eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe'; Arg = @(); Soll = 0
+           Traeger = 'endlicher_eingang_erzeugt_keinen_nichtendlichen_wetausgang' }
+        @{ K = 'B17'; Datei = 'eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe'; Arg = @(); Soll = 0
+           Traeger = 'Testfall 1[5-9]|Gleichanteil|true_peak_matches_ebu_transient_set|Referenz an Testfall|4\*fs-Stellen|Versatz 3 greift|Tiefpass' }
+        @{ K = 'A32'; Datei = 'py'; Arg = @('-3.13', 'tools\plan\gesundheit.py', '--mit-selbsttest'); Soll = 4
+           Traeger = '^Selbsttest: |kein_quellbaum_bleibt_ungemessen|^Quellumfang|^\s+(ausgenommen|gemessen)\s|^GRENZE gerissen|OHNE PFLEGETICKET|^URTEIL|ABBRUCH|Werkzeugfehler' }
+    )
+    $tabelle = New-Object System.Collections.Generic.List[string]
+    foreach ($l in $laeufe) {
+        $aus = Join-Path $Tmp ('bein-' + $l.K + '.out')
+        $err = Join-Path $Tmp ('bein-' + $l.K + '.err')
+        $start = @{ FilePath = $l.Datei; NoNewWindow = $true; PassThru = $true; RedirectStandardOutput = $aus; RedirectStandardError = $err; WorkingDirectory = $Wurzel }
+        if ($l.Arg.Count -gt 0) { $start.ArgumentList = $l.Arg }
+        $befehl = (@($l.Datei) + $l.Arg) -join ' '
+        $beginn = Get-Date
+        $uhr = [Diagnostics.Stopwatch]::StartNew()
+        $prozess = Start-Process @start
+        $null = $prozess.Handle
+        $prozess.WaitForExit()
+        $uhr.Stop()
+        $code = $prozess.ExitCode
+        $sekunden = [Math]::Round($uhr.Elapsed.TotalSeconds, 2).ToString($Invariant)
+        $text = [IO.File]::ReadAllText($aus, [Text.Encoding]::UTF8)
+        $fehlertext = [IO.File]::ReadAllText($err, [Text.Encoding]::UTF8)
+        $zeilen = @($text.TrimEnd("`r", "`n") -split "`r?`n")
+        $wieErwartet = ($code -eq $l.Soll)
+        if (-not $wieErwartet) { $befunde++ }
+        N ''
+        N ('### ' + $l.K + ' - ' + $befehl)
+        N ('Beginn ' + $beginn.ToString('HH:mm:ss') + ', Dauer ' + $sekunden + ' s, Exit ' + $code + ' (erwartet ' + $l.Soll + ') - ' + $(if ($wieErwartet) { 'wie erwartet' } else { 'ABWEICHUNG' }) + ', ' + $zeilen.Count + ' Ausgabezeilen')
+        N 'Traegerzeilen der nachgezogenen Behauptung:'
+        foreach ($t in @($zeilen | Where-Object { $_ -match $l.Traeger })) { N ('  ' + $t) }
+        N 'Letzte Zeilen:'
+        for ($i = [Math]::Max(0, $zeilen.Count - 12); $i -lt $zeilen.Count; $i++) { N ('  ' + $zeilen[$i]) }
+        if ($fehlertext.Trim()) {
+            N 'stderr:'
+            foreach ($t in ($fehlertext.TrimEnd() -split "`r?`n")) { N ('  ' + $t) }
+        }
+        $zaehl = @($zeilen | Where-Object { $_ -match 'Pruefungen ok|geprueft, .* Fehler|bestanden, .* gescheitert|^Selbsttest: |TEST (OK|FEHLGESCHLAGEN)|GOLDEN (OK|FEHLGESCHLAGEN)|^URTEIL' }) -join ' / '
+        $tabelle.Add(('| {0} | {1} | {2} ({3}) | {4} s | {5} |' -f $l.K, $befehl, $code, $l.Soll, $sekunden, $zaehl))
+    }
+
+    N ''
+    N '## 5. Zusammenfassung'
+    N ''
+    N '| Bein | Befehl | Exit (erwartet) | Dauer | Zaehlzeilen |'
+    N '|---|---|---|---|---|'
+    foreach ($s in $tabelle) { N $s }
+    N ''
+    N ('Gesamturteil: ' + $(if ($befunde -eq 0) { 'OK - keine Parse-Fehler, genau sechs Behauptungen geaendert, Binaries frisch, alle sechs Beine mit erwartetem Exit' } else { 'BEFUND (' + $befunde + ')' }))
+    N ''
+    N $Marke
+    N ''
+    foreach ($t in ((SkriptText) -split "`r?`n")) { N $t }
+    [IO.File]::WriteAllText($Ausgabe, (($z -join "`n") + "`n"), (New-Object System.Text.UTF8Encoding $false))
+    Write-Host ('Rohausgabe: ' + $Ausgabe + ' - Befunde ' + $befunde)
+    exit $(if ($befunde -eq 0) { 0 } else { 1 })
+}
+
+# --- -Nachtrag: Dokuriegel und Zitatabgleich ------------------------------------
+$roh = [IO.File]::ReadAllText($Ausgabe, [Text.Encoding]::UTF8)
+$idx = $roh.IndexOf("`n" + $Marke + "`n")
+if ($idx -lt 0) { throw ('Marke ' + $Marke + ' nicht in der Rohausgabe') }
+$vorne = $roh.Substring(0, $idx + 1)
+$alterNachtrag = $vorne.IndexOf("`n`n## 6. Nachtrag")
+if ($alterNachtrag -ge 0) { $vorne = $vorne.Substring(0, $alterNachtrag + 1) }
+
+N ''
+N '## 6. Nachtrag: Dokuriegel, Hashvergleich der Binaries und Zitatabgleich des Manifests'
+N ('Zeitpunkt : ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz'))
+N ('HEAD      : ' + ((& git rev-parse HEAD) | Out-String).Trim())
+$aus = Join-Path $Tmp 'dokuriegel.out'
+$err = Join-Path $Tmp 'dokuriegel.err'
+$doku = Start-Process -FilePath 'py' -ArgumentList @('-3.13', 'tools/plan/dokuriegel.py', 'docs/beweise/NAK-283.md') -NoNewWindow -PassThru -RedirectStandardOutput $aus -RedirectStandardError $err -WorkingDirectory $Wurzel
+$null = $doku.Handle
+$doku.WaitForExit()
+$dokuExit = $doku.ExitCode
+N ('py -3.13 tools/plan/dokuriegel.py docs/beweise/NAK-283.md: Exit ' + $dokuExit)
+foreach ($t in (([IO.File]::ReadAllText($aus, [Text.Encoding]::UTF8) + [IO.File]::ReadAllText($err, [Text.Encoding]::UTF8)).TrimEnd() -split "`r?`n")) { N ('  ' + $t) }
+
+# Die gefahrenen Binaries gegen den Baustand des Zwischenkanons: derselbe
+# SHA-256-Praefix heisst, dass hier dieselben Bytes liefen, die der Kanon
+# als frisch bestaetigt hat.
+$kanonRoh = [IO.File]::ReadAllText((Join-Path $Wurzel 'docs\beweise\roh\NAK-283-e6771fc-dirty.md'), [Text.Encoding]::UTF8)
+$hashOk = $true
+N 'Binaries gegen den Baustand des Zwischenkanons (docs/beweise/roh/NAK-283-e6771fc-dirty.md, SHA-256-Praefix mit 16 Zeichen):'
+foreach ($ziel in @('EqCopProbeeqNullTest', 'EqCopTransactionTest', 'EqCopDspGoldenTest', 'EqCopMarkierungTest', 'EqCopSonde013TruePeakGoldenTest')) {
+    $exe = Join-Path $Wurzel ('eq-copilot\build\plugin\{0}_artefacts\Release\{0}.exe' -f $ziel)
+    $ist = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.Substring(0, 16)
+    $treffer = [regex]::Match($kanonRoh, '(?m)^\| `' + [regex]::Escape($ziel) + '` \| ([^|]+) \| `([0-9A-F]{16})` \| ([^|]+) \|')
+    $baustand = if ($treffer.Success) { $treffer.Groups[2].Value } else { '(nicht im Baustand)' }
+    $hashGleich = $treffer.Success -and ($baustand -eq $ist)
+    if (-not $hashGleich) { $hashOk = $false }
+    N ('  {0}: ist {1}, Baustand {2} (gebaut {3}, {4}) - {5}' -f $ziel, $ist, $baustand, $(if ($treffer.Success) { $treffer.Groups[1].Value.Trim() } else { '-' }), $(if ($treffer.Success) { $treffer.Groups[3].Value.Trim() } else { '-' }), $(if ($hashGleich) { 'gleich' } else { 'ABWEICHUNG' }))
+}
+
+$manifest = [IO.File]::ReadAllText((Join-Path $Wurzel 'docs\beweise\NAK-283.md'), [Text.Encoding]::UTF8)
+$a0 = $manifest.IndexOf('### 38.2 ')
+$a1 = $manifest.IndexOf('## Kanon-Lauf - NAK-283')
+if ($a0 -lt 0 -or $a1 -lt $a0) { throw 'Abschnitt 38.2 steht nicht vor dem Runner-Anhang' }
+$abschnitt = $manifest.Substring($a0, $a1 - $a0)
+$bloecke = @([regex]::Matches($abschnitt, '(?ms)^```text\r?\n(.*?)\r?\n```') | ForEach-Object { $_.Groups[1].Value })
+$bAlt = Beine (Parse (BasisKopie)).Ast
+$bNeu = Beine (Parse (Join-Path $Wurzel 'tools\beweise.ps1')).Ast
+$soll = New-Object System.Collections.Generic.List[string]
+foreach ($k in $Geaendert) {
+    $soll.Add((Eintrag $bAlt $k).Behauptung)
+    $soll.Add((Eintrag $bNeu $k).Behauptung)
+}
+N ('Zitatabgleich Abschnitt 38.2: ' + $bloecke.Count + ' text-Bloecke, erwartet ' + $soll.Count + ' (je Bein alt und neu, Reihenfolge ' + ($Geaendert -join ', ') + ')')
+$abweichend = 0
+for ($i = 0; $i -lt $soll.Count; $i++) {
+    $k = $Geaendert[[int][Math]::Floor($i / 2)]
+    $art = if ($i % 2 -eq 0) { 'alt (Basis-SHA)' } else { 'neu (Arbeitsbaum)' }
+    $woertlich = ($i -lt $bloecke.Count) -and ($bloecke[$i] -ceq $soll[$i])
+    if (-not $woertlich) { $abweichend++ }
+    N ('  ' + $k + ' ' + $art + ': ' + $(if ($woertlich) { 'woertlich gleich' } else { 'ABWEICHUNG' }))
+}
+$nachtragOk = ($dokuExit -eq 0) -and $hashOk -and ($abweichend -eq 0) -and ($bloecke.Count -eq $soll.Count)
+N ('Urteil Nachtrag: ' + $(if ($nachtragOk) { 'OK' } else { 'BEFUND' }))
+
+$neu = $vorne + ($z -join "`n") + "`n`n" + $Marke + "`n`n" + (SkriptText) + "`n"
+[IO.File]::WriteAllText($Ausgabe, $neu, (New-Object System.Text.UTF8Encoding $false))
+Write-Host ('Nachtrag: ' + $(if ($nachtragOk) { 'OK' } else { 'BEFUND' }))
+exit $(if ($nachtragOk) { 0 } else { 1 })

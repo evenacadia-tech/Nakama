@@ -74,17 +74,6 @@
    "status": "offen"
   },
   {
-   "id": "U41",
-   "dringlichkeit": "vor NAK-283 Etappe 5",
-   "art": "Produktentscheid (Anzeige)",
-   "titel": "Was zeigt die Headroom-Verteilung, solange keine Passage markiert ist?",
-   "was": "Gen zeigt die Headroom-Verteilung künftig über die ganze markierte Passage (Audit-Befund F08: heute sind es faktisch die letzten 6,4 Sekunden, die sich als „über die Passage\" ausgeben). Solange keine Passage markiert ist, gibt es zwei Wege: „Verteilung seit der letzten Transportgrenze (kann beliebig lang werden)\" oder „ein benanntes gleitendes Fenster (die Fensterlänge steht sichtbar dabei)\". Ohne Entscheidung baut Etappe 5 den Passagenfall richtig und zeigt ohne Passage ein gleitendes Fenster mit sichtbarer Länge.",
-   "warum": "Der Fall ohne Passage ist eine Anzeigeentscheidung, keine Messfrage (docs/beweise/NAK-283.md §8.3, P-283-1; Matrixzeilen M-53, M-54, M-55).",
-   "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
-   "seit": "12.09.",
-   "status": "offen"
-  },
-  {
    "id": "U42",
    "dringlichkeit": "vor NAK-283 Etappe 5",
    "art": "Produktentscheid (Anzeige)",
@@ -653,6 +642,24 @@
    "datum": "2026-09-06 16:47",
    "status": "eingearbeitet",
    "ergebnis": "Eine Quelle kann genau fünf musikalische Rollen bekommen (führt, trägt, begleitet, geschützt, bewusst verschmolzen); Impuls und Raum sind keine Rollen, sondern Schutzangabe bzw. Verschmelzungs-Erlaubnis an der Quelle, die der Advisor berücksichtigt. Abbildung auf das Intent-Modell (Entwurf §37.1) ist Technik von S23–25. Entwurf §9 Erratum (h) 06.09.2026, Register NAK-38 geschlossen, Plan S23–25 und Bauaufteilung nachgetragen. [design/abnahmen/2026-09-06-fragenrunde-rollen-u22.md]"
+  },
+  "U41": {
+   "wahl": "Gleitendes Fenster mit sichtbarer Länge",
+   "text": "Gleitendes Fenster mit sichtbarer Länge (Empfohlen) — Wahl per AskUserQuestion in der Dirigentensession, Option wörtlich; die angebotene Alternative war „Seit der letzten Transportgrenze“ (Beschreibung: „Die Verteilung sammelt alles seit dem letzten Start oder Sprung des Abspielkopfs. Kann beliebig lang werden; nach Minuten Hören verwischen kurze laute oder leise Stellen.“). Beschreibung der gewählten Option: „Die Verteilung beschreibt nur die letzten Sekunden (heute 6,4 s), und die Fensterlänge steht sichtbar dabei. Bleibt frisch, verwischt nicht, entspricht dem heutigen Verhalten — nur ehrlich beschriftet.“",
+   "datum": "2026-09-13 12:03",
+   "status": "eingearbeitet",
+   "ergebnis": "NAK-283 Etappe 5 baut den Passagenfall über die ganze Passage (M-53 bis M-55) und lässt ohne markierte Passage das gleitende Fenster der bestehenden 64 Rahmen (6,4 s) stehen; `headroomFenster` nennt in beiden Fällen die tatsächliche Zahl der eingegangenen Rahmen, die Anzeige beschriftet die Fensterlänge sichtbar (Gen-Oberfläche S31b, geparkt); kein Sammeln seit der Transportgrenze. Festgehalten in design/abnahmen/2026-09-13-headroom-ohne-passage-u41.md und docs/beweise/NAK-283.md §38.4.",
+   "karte": {
+    "id": "U41",
+    "dringlichkeit": "vor NAK-283 Etappe 5",
+    "art": "Produktentscheid (Anzeige)",
+    "titel": "Was zeigt die Headroom-Verteilung, solange keine Passage markiert ist?",
+    "was": "Gen zeigt die Headroom-Verteilung künftig über die ganze markierte Passage (Audit-Befund F08: heute sind es faktisch die letzten 6,4 Sekunden, die sich als „über die Passage\" ausgeben). Solange keine Passage markiert ist, gibt es zwei Wege: „Verteilung seit der letzten Transportgrenze (kann beliebig lang werden)\" oder „ein benanntes gleitendes Fenster (die Fensterlänge steht sichtbar dabei)\". Ohne Entscheidung baut Etappe 5 den Passagenfall richtig und zeigt ohne Passage ein gleitendes Fenster mit sichtbarer Länge.",
+    "warum": "Der Fall ohne Passage ist eine Anzeigeentscheidung, keine Messfrage (docs/beweise/NAK-283.md §8.3, P-283-1; Matrixzeilen M-53, M-54, M-55).",
+    "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
+    "seit": "12.09.",
+    "status": "offen"
+   }
   }
  }
 }

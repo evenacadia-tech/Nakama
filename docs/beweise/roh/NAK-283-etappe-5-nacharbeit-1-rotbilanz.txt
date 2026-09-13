@@ -1,0 +1,27 @@
+NAK-283 Etappe 5 Nacharbeit 1 - Rotbilanz
+Zeitpunkt: 2026-09-13T19:29:49.0653879+02:00
+HEAD: afef10778399fd68bb2f5cc012da0eac72eccbe9
+Basis Nacharbeit 1: d8c3f74c656bb88a08999edbf6705440a4f2e71a
+Basis Etappe 5: bc0941e51bcdf8d3752362c3ca10cda628bd1438
+
+MUT-76     M-76                         mutiert Exit 1 (ROT-Traeger 3/3) / zurueck Exit 0 (ok-Traeger 3/3), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1.txt  BESTANDEN
+MUT-76     M-60 Headroom (Folge M-76)   mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60-folge-M-76.txt  BESTANDEN
+BASIS-N1   M-76                         mutiert Exit 1 (ROT-Traeger 3/3) / zurueck Exit 0 (ok-Traeger 3/3), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-basis.txt  BESTANDEN
+BASIS-N1   M-60 Headroom                mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60-basis-n1.txt  BESTANDEN
+BUEHNE-76  M-76 Buehnenprobe            mutiert Exit 1 (ROT-Traeger 2/2) / zurueck Exit 0 (ok-Traeger 2/2), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-buehnenprobe.txt  BESTANDEN
+PB-76a     M-76 Buehnenpruefung         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-bruch-a.txt  BESTANDEN
+PB-76b     M-76 Gegenprobe              mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-bruch-b.txt  BESTANDEN
+PB-76c     M-76 Perzentile              mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-bruch-c.txt  BESTANDEN
+PB-76d     M-76 Passage gueltig         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-rot-M-76-etappe-5-nacharbeit-1-bruch-d.txt  BESTANDEN
+MUT-52d    M-52 Headroom                mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-52d.txt  BESTANDEN
+MUT-53     M-53                         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-53.txt  BESTANDEN
+MUT-53     M-54                         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-54.txt  BESTANDEN
+MUT-53     M-60 Headroom                mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60b.txt  BESTANDEN
+MUT-53     M-52 Headroom (Ring)         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-52e.txt  BESTANDEN
+MUT-54     M-54                         mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-54b.txt  BESTANDEN
+MUT-55     M-55 (a)                     mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-55.txt  BESTANDEN
+MUT-49a    M-60 True Peak               mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60a.txt  BESTANDEN
+MUT-56     M-60 Loudness                mutiert Exit 1 (ROT-Traeger 1/1) / zurueck Exit 0 (ok-Traeger 1/1), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60c.txt  BESTANDEN
+BASIS-E5   M-60                         mutiert Exit 1 (ROT-Traeger 3/3) / zurueck Exit 0 (ok-Traeger 3/3), Hash gleich True  NAK-283-etappe-5-nacharbeit-1-rot-M-60-basis-e5.txt  BESTANDEN
+
+URTEIL: 19 von 19 Laeufen bestanden (mutiert Exit != 0 mit [ROT] an jedem Traeger, zurueckgespielt Exit 0 mit [ok] an jedem Traeger, Ruecknahme bytegleich)

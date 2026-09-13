@@ -141,6 +141,52 @@ void DspKern::freigeben()
     letzteKanaele = 0;
 }
 
+void DspKern::beendeAudiohistorie() noexcept
+{
+    for (auto& z : pfade)
+    {
+        // Die gefahrenen Baenke starten kalt, wie eine frisch publizierte in
+        // `publiziereVorbau`: Zustaende genullt, beide SVF-Enden auf der Ruhe.
+        // Das Programm bleibt, wie es ist.
+        for (const int slot : { z.aktiv, z.quelle })
+        {
+            if (slot < 0 || slot >= DspBankPool::kBaenke) continue;
+            auto& bank = baenke.bank (slot);
+            bank.zustaendeNullen();
+            for (int i = 0; i < kSlots; ++i)
+            {
+                auto& b = bank.baender[(size_t) i];
+                b.svfVon = b.svfNach = bank.programm.baender[(size_t) i].svfRuhe;
+            }
+        }
+
+        // Ein laufender Uebergang endet auf seinem Ziel: die Quellbank dient
+        // ueber den regulaeren Weg aus (ACK, danach Reclaim durch den Worker),
+        // wie am natuerlichen Ende in `verarbeitePfad`. Auch der Hoerhalt
+        // endet hier; mischt die Hoermatrix danach noch Candidate, liest sie
+        // den unveraenderten Eingang (`kAusL/R` ohne rechnenden Pfad).
+        if (z.uebergang != Uebergang::keiner)
+        {
+            if (z.quelle >= 0) baenke.meldeAusgedient (z.quelle);
+            z.quelle    = -1;
+            z.uebergang = Uebergang::keiner;
+            z.rest      = 0;
+        }
+
+        // Die Rampen stehen auf ihrem Ziel - das Ziel ist das Programm, der
+        // Weg dorthin ist Historie.
+        for (auto* r : { &z.rampen.input, &z.rampen.output, &z.rampen.mix, &z.rampen.width, &z.rampen.autoGain })
+            r->setzeSofort (r->ziel);
+
+        for (auto& a : z.auslenkungen) a.store (0.0, std::memory_order_relaxed);
+    }
+
+    // Der Fade der Hoermatrix endet auf ihrer laufenden Auswahl; die
+    // gewuenschte Auswahl selbst ist kein Verlauf und bleibt.
+    hoerVorher   = hoerLaufend;
+    hoerFadeRest = 0;
+}
+
 void DspKern::zaehlerZuruecksetzen() noexcept
 {
     zaehlerEingaenge  .store (0, std::memory_order_relaxed);
@@ -1004,8 +1050,24 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
             --hoerFadeRest;
         }
 
-        kanaele[0][i] = (float) l;
-        if (numKanaele > 1) kanaele[1][i] = (float) r;
+        // NAK-283 F12 (R-283-6, M-39): die Endlichkeitspruefung steht NACH der
+        // Verengung auf float, unmittelbar vor dem Schreiben - und nur hier, wo
+        // eine engagierte Bank rechnet (`committedRuht` ist oben schon
+        // zurueckgekehrt). Ein endliches double ueber FLT_MAX wird als float
+        // nicht endlich; es wird wie R9 auf 0 verriegelt und im selben Zaehler
+        // gezaehlt wie ein nicht-endlicher Eingang. Ein Wert, der schon als
+        // double nicht endlich ist, kommt nur roh aus dem Dry-Anteil (Dry,
+        // Delta, Passthrough-Seite eines Crossfades): der Dry-Zweig bleibt roh,
+        // und der Eingangsriegel oben hat ihn bereits gezaehlt.
+        float fl = (float) l;
+        if (! std::isfinite (fl) && std::isfinite (l)) { fl = 0.0f; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
+        kanaele[0][i] = fl;
+        if (numKanaele > 1)
+        {
+            float fr = (float) r;
+            if (! std::isfinite (fr) && std::isfinite (r)) { fr = 0.0f; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
+            kanaele[1][i] = fr;
+        }
     }
 
     if (schreibBis < n)

@@ -733,6 +733,78 @@ static void nak180WetRiegel (const Pruefer& pruefe, double fs, int bs)
     }
 }
 
+// ── NAK-283 F12 (R-283-6, M-40): der Wet-Pfad prueft den VERENGTEN Wert ────
+//
+// NAK-180 R4 hat den Ausgangsriegel auf die double-Zwischengroesse `y` gelegt.
+// Ein endliches `y` ueber FLT_MAX wird aber erst bei der Verengung auf float
+// nicht endlich - der Riegel sah den Fall nicht, und der Zaehler blieb 0,
+// waehrend `inf` in den Hostpuffer lief (Audit vom 12.09.2026). Gemessen am
+// Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX: kein
+// Ausgangssample ist nicht endlich, und der Wet-Zaehler steigt um genau die
+// Zahl der verriegelten Samples. Nach dem Einblenden (Wet-Anteil 1) ist ein
+// verriegeltes Sample am Ausgang exakt 0,0 - so wird die Zahl unabhaengig vom
+// Zaehler abgelesen.
+static void nak283WetVerengung (const Pruefer& pruefe)
+{
+    constexpr double fs = 48000.0;
+    constexpr int bs = 64;
+    MarkierungsWunsch w;
+    w.modus = MarkierungsModus::puls;
+    w.istResonanz = true;
+    w.fVon = 800.0; w.fBis = 1200.0; w.fSchwerpunkt = 1000.0;
+    w.breiteOktaven = 0.5;
+    w.fs = fs;
+    MarkierungsAuftrag auftrag;
+    if (! baueMarkierungsAuftrag (auftrag, w))
+    {
+        pruefe (false, "NAK-283 M-40: der Puls-Auftrag baut", {});
+        return;
+    }
+
+    auto dsp = std::make_unique<HoerMarkierungDsp>();   // MSVC-Stack: Heap (NAK-175)
+    dsp->vorbereiten (bs);
+    dsp->setzeSamplerate (fs);
+    dsp->reicheEin (auftrag);
+
+    juce::AudioBuffer<float> puffer (2, bs);
+    const float amplitude = 0.8f * std::numeric_limits<float>::max();
+    constexpr int kBloecke = 200;      // 12 800 Samples: der erste Pulsanstieg ganz
+    constexpr int kEinblenden = 60;    // 3 840 Samples > Puls-Fade 30 ms (1 440)
+    std::int64_t n = 0;
+    int nichtEndlich = 0;
+    std::uint64_t nullenImVollenWet = 0;
+    std::uint64_t zaehlerNachEinblenden = 0;
+    for (int block = 0; block < kBloecke; ++block)
+    {
+        for (int i = 0; i < bs; ++i, ++n)
+        {
+            const float v = amplitude * (float) std::sin (2.0 * juce::MathConstants<double>::pi
+                                                          * 1000.0 * (double) n / fs);
+            puffer.setSample (0, i, v);
+            puffer.setSample (1, i, v);
+        }
+        dsp->verarbeite (puffer, 2, true);
+        if (block == kEinblenden - 1)
+            zaehlerNachEinblenden = dsp->nichtEndlicheWetSamples();
+        for (int k = 0; k < 2; ++k)
+            for (int i = 0; i < bs; ++i)
+            {
+                const float y = puffer.getSample (k, i);
+                if (! std::isfinite (y)) ++nichtEndlich;
+                if (block >= kEinblenden && y == 0.0f) ++nullenImVollenWet;
+            }
+    }
+    const std::uint64_t zaehlerImVollenWet = dsp->nichtEndlicheWetSamples() - zaehlerNachEinblenden;
+    pruefe (nichtEndlich == 0 && zaehlerImVollenWet > 0 && zaehlerImVollenWet == nullenImVollenWet
+                && dsp->hoerbar(),
+            "NAK-283 M-40: endlicher_eingang_erzeugt_keinen_nichtendlichen_wetausgang - "
+            "Puls auf 1 kHz, Ton mit 0,8 x FLT_MAX: jedes Ausgangssample ist endlich, und der "
+            "Wet-Zaehler steigt um genau die verriegelten Samples",
+            juce::String (nichtEndlich) + " nicht endlich; Zaehler +"
+                + juce::String ((juce::int64) zaehlerImVollenWet) + ", verriegelte Samples "
+                + juce::String ((juce::int64) nullenImVollenWet));
+}
+
 static void sonde013Nacharbeit1 (const Pruefer& pruefe, double fs, int bs)
 {
     MarkierungsWunsch w;
@@ -1499,6 +1571,7 @@ int main()
     sonde013M34 (pruefer, fs, bs);
     sonde013M36 (pruefer, fs, bs);
     nak180WetRiegel (pruefer, fs, bs);
+    nak283WetVerengung (pruefer);
     sonde013Nacharbeit1 (pruefer, fs, bs);
     nak246D1Besitz (pruefer, fs, bs);
 

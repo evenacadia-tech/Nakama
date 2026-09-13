@@ -12,7 +12,13 @@
          Attrappe. Hier laufen Falltabelle, Einspritzpunkte, der
          10.000er-Lauf, Belegung, Zonen, Undo-Ring und Preset.
       2. DERSELBE Kern im echten `SondeProcessor`: Host-Parameter, Automation,
-         Gestus, Save/Load, Host-Dirty und der erste Audioblock.
+         Gestus, Save/Load, Host-Dirty und der erste Audioblock. Seit NAK-283
+         Etappe 4 dazu der Host-Reset und das Lebenszyklus-Trio (M-30 bis
+         M-32) und die Analysezufuehrung der Sonde: Luecke bei verworfenem
+         Tap, gemeinsame Zaehler, ruhender Passthrough, float-Kante der
+         Analysekopie (M-35 bis M-37, M-41). Die Analysefaelle halten den
+         Worker ueber `mitAngehaltenerAnalyseFuerTest` an und lesen die Queue
+         selbst - deterministisch, ohne auf Zeit zu warten.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -2219,6 +2225,370 @@ void prozessorAutomation()
     }
 }
 
+//==============================================================================
+// NAK-283 Etappe 4: Host-Reset und Analysezufuehrung am echten SondeProcessor
+
+using AnalyseQueue = nakama::echtzeit::StampedAudioQueue<nakama::echtzeit::GenStrom>;
+
+/** Der Resonator aus NAK-283 M-30: +12-dB-Bell bei 1 kHz, Q 10, auf Slot 0. */
+param::DspSatz resonator()
+{
+    auto z = mitEq (true);
+    setzeBand (z, 0, 1000.0, 12.0);
+    z.werte[(size_t) iBand (0, param::kQ)].zahl = 10.0;
+    return z;
+}
+
+/** Ein Block Stille ueber den echten processBlock, auf Wunsch mit 1,0 im
+    LETZTEN Sample beider Kanaele. Liefert den Ausgang beider Kanaele. */
+std::vector<float> stilleBlock (Prozessor& p, int groesse, bool impulsAmEnde = false)
+{
+    juce::AudioBuffer<float> b (2, groesse);
+    b.clear();
+    if (impulsAmEnde)
+    {
+        b.setSample (0, groesse - 1, 1.0f);
+        b.setSample (1, groesse - 1, 1.0f);
+    }
+    juce::MidiBuffer midi;
+    p.processBlock (b, midi);
+    std::vector<float> aus;
+    aus.reserve ((size_t) groesse * 2u);
+    for (int k = 0; k < 2; ++k)
+        for (int n = 0; n < groesse; ++n)
+            aus.push_back (b.getSample (k, n));
+    return aus;
+}
+
+double spitze (const std::vector<float>& v)
+{
+    double m = 0.0;
+    for (float x : v) m = std::max (m, (double) std::abs (x));
+    return m;
+}
+
+/** Faehrt der Committed-Pfad eine engagierte, nicht hart gebypasste Bank? */
+bool bankRechnet (Prozessor& p)
+{
+    int aktiv = -1, quelle = -1, kandidat = -1, kandidatQuelle = -1;
+    p.dspKernFuerTest().gefahreneSlots (aktiv, quelle, kandidat, kandidatQuelle);
+    if (aktiv < 0) return false;
+    const auto& prog = p.dspKernFuerTest().pool().bank (aktiv).programm;
+    return prog.eqEngagiert && ! prog.hardBypass;
+}
+
+/** Der Spiegel von `SondeProcessor::committedRuhtImPassthrough` (privat). */
+bool committedRuht (Prozessor& p)
+{
+    int aktiv = -1, quelle = -1, kandidat = -1, kandidatQuelle = -1;
+    p.dspKernFuerTest().gefahreneSlots (aktiv, quelle, kandidat, kandidatQuelle);
+    const auto passthrough = [&p] (int slot)
+    {
+        if (slot < 0) return true;
+        const auto& prog = p.dspKernFuerTest().pool().bank (slot).programm;
+        return ! prog.eqEngagiert || prog.hardBypass;
+    };
+    return passthrough (aktiv) && passthrough (quelle);
+}
+
+/** Der Aufbau aus M-30: Resonator bestaetigt, Engagier-Fade und Rampen vorbei
+    (vier Bloecke Stille je 512 Samples; kFadeSamples und kRampeSamples sind
+    256), dann ein Impuls am Blockende, der die Biquad-Zustaende fuellt. */
+std::unique_ptr<Prozessor> resonatorMitHistorie (tx::Ergebnis& ergebnis)
+{
+    auto p = prozessor (48000.0, 512);
+    ergebnis = setze (*p, resonator());
+    for (int i = 0; i < 4; ++i) stilleBlock (*p, 512);
+    stilleBlock (*p, 512, true);
+    return p;
+}
+
+/** Wie stark der Pfad 1 kHz hebt: ein 1-kHz-Sinus ueber acht Bloecke je 512
+    Samples, dB des Ausgangs ueber dem Eingang in den letzten vier Bloecken. */
+double resonanzGewinnDb (Prozessor& p)
+{
+    double ein = 0.0, aus = 0.0;
+    juce::MidiBuffer midi;
+    std::int64_t n = 0;
+    for (int blk = 0; blk < 8; ++blk)
+    {
+        juce::AudioBuffer<float> b (2, 512);
+        for (int i = 0; i < 512; ++i, ++n)
+        {
+            const float v = (float) (0.05 * std::sin (2.0 * 3.141592653589793 * 1000.0 * (double) n / 48000.0));
+            b.setSample (0, i, v);
+            b.setSample (1, i, v);
+        }
+        const juce::AudioBuffer<float> eingang (b);
+        p.processBlock (b, midi);
+        if (blk < 4) continue;
+        for (int i = 0; i < 512; ++i)
+        {
+            ein += (double) eingang.getSample (0, i) * (double) eingang.getSample (0, i);
+            aus += (double) b.getSample (0, i) * (double) b.getSample (0, i);
+        }
+    }
+    return ein > 0.0 && aus > 0.0 ? 10.0 * std::log10 (aus / ein) : -400.0;
+}
+
+void nak283Hosteintritte()
+{
+    abschnitt ("P - NAK-283 F05: Host-Reset und Lebenszyklus-Trio am Prozessor (M-30 bis M-32, R-283-3)");
+    {
+        tx::Ergebnis e, eg;
+        auto p = resonatorMitHistorie (e);
+        const bool rechnet = bankRechnet (*p);
+        p->reset();                                   // VST3: setProcessing (false) ruft NUR reset
+        const auto nach = stilleBlock (*p, 512);      // der ERSTE Block danach
+        auto g = resonatorMitHistorie (eg);           // Gegenprobe: derselbe Aufbau ohne reset
+        const auto ohne = stilleBlock (*g, 512);
+        std::ostringstream d;
+        d << std::setprecision (9) << "Peak nach reset " << spitze (nach) << ", ohne reset " << spitze (ohne);
+        pruefe (e.ausgang == tx::Ausgang::commit && eg.ausgang == tx::Ausgang::commit && rechnet
+                    && spitze (nach) == 0.0 && spitze (ohne) > 0.0,
+                "host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - "
+                "der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach",
+                d.str());
+    }
+    {
+        tx::Ergebnis e;
+        auto p = resonatorMitHistorie (e);
+        juce::MemoryBlock vorher;
+        p->getStateInformation (vorher);
+        const auto revision = p->stateRevision();
+        p->reset();
+        juce::MemoryBlock nachher;
+        p->getStateInformation (nachher);
+        const bool bestaetigtAn = p->bestaetigterZustand().werte[(size_t) param::kIndexEqEnabled].b;
+        const double gewinn = resonanzGewinnDb (*p);
+        const bool kernRechnet = bankRechnet (*p);
+        std::ostringstream d;
+        d << vorher.getSize() << " Bytes, gleich " << (vorher == nachher ? "ja" : "nein") << ", Revision " << revision
+          << " -> " << p->stateRevision() << ", eq_enabled " << bestaetigtAn << ", Bank im Kern " << kernRechnet
+          << ", 1 kHz " << std::setprecision (4) << gewinn << " dB";
+        pruefe (e.ausgang == tx::Ausgang::commit && vorher == nachher && p->stateRevision() == revision
+                    && bestaetigtAn && kernRechnet && gewinn > 6.0,
+                "host_reset_laesst_parameter_und_zustand_unberuehrt (M-31, Regressionswache): getStateInformation bytegleich "
+                "vor und nach reset(), die Bank bleibt engagiert (bestaetigt und im Kern), und der naechste Block mit "
+                "Material traegt die Filterwirkung (1 kHz mehr als 6 dB lauter)",
+                d.str());
+    }
+    {
+        const auto weg = [] (int art)
+        {
+            tx::Ergebnis e;
+            auto p = resonatorMitHistorie (e);
+            if (art == 0)
+            {
+                p->releaseResources();
+                p->setRateAndBufferSizeDetails (48000.0, 512);
+                p->prepareToPlay (48000.0, 512);
+            }
+            else if (art == 1)
+            {
+                p->reset();
+            }
+            else
+            {
+                p->setRateAndBufferSizeDetails (48000.0, 512);
+                p->prepareToPlay (48000.0, 512);
+            }
+            return stilleBlock (*p, 512);
+        };
+        const auto a = weg (0), b = weg (1), c = weg (2);
+        std::ostringstream d;
+        d << std::setprecision (9) << "Peaks " << spitze (a) << " / " << spitze (b) << " / " << spitze (c)
+          << ", a=b " << bitgleich (a, b) << ", b=c " << bitgleich (b, c);
+        pruefe (spitze (a) == 0.0 && spitze (b) == 0.0 && spitze (c) == 0.0 && bitgleich (a, b) && bitgleich (b, c),
+                "die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset "
+                "und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich",
+                d.str());
+    }
+}
+
+/** Liest alle wartenden Deskriptoren als Kopie und gibt sie frei - nur unter
+    angehaltener Analyse (`mitAngehaltenerAnalyseFuerTest`). */
+std::vector<nakama::echtzeit::StampedBlock> leereQueue (AnalyseQueue& q)
+{
+    std::vector<nakama::echtzeit::StampedBlock> aus;
+    while (const auto* b = q.spitze())
+    {
+        aus.push_back (*b);
+        q.freigeben();
+    }
+    return aus;
+}
+
+/** Ein Block Rauschen in ±0,1 ueber den echten processBlock. */
+void rauschBlock (Prozessor& p, int groesse, juce::Random& w)
+{
+    juce::AudioBuffer<float> b (2, groesse);
+    for (int k = 0; k < 2; ++k)
+        for (int n = 0; n < groesse; ++n)
+            b.setSample (k, n, w.nextFloat() * 0.2f - 0.1f);
+    juce::MidiBuffer midi;
+    p.processBlock (b, midi);
+}
+
+struct Queuezaehler
+{
+    std::uint64_t kernVerworfen = 0, ohneAudio = 0, frames = 0, oversize = 0, ueberlauf = 0;
+};
+
+Queuezaehler queuezaehler (Prozessor& p)
+{
+    Queuezaehler z;
+    z.kernVerworfen = p.dspKernFuerTest().verworfeneAnalyseframes();
+    z.ohneAudio     = p.analyseDropsOhneAudioFuerTest();
+    z.frames        = p.analyseVerloreneFramesFuerTest();
+    z.oversize      = p.analyseDropsOversizeFuerTest();
+    z.ueberlauf     = p.analyseDropsUeberlaufFuerTest();
+    return z;
+}
+
+std::string beschreibeBlock (const nakama::echtzeit::StampedBlock& b)
+{
+    return "stromVon " + zahl (b.stromVon) + " n " + std::to_string (b.sampleCount) + " Luecke "
+         + ((b.flags & nakama::echtzeit::kFlagLueckeDavor) != 0 ? "ja" : "nein") + " Segment " + zahl (b.segment);
+}
+
+/** Alle gelesenen Deskriptoren in Reihenfolge - auch wenn ihre Zahl nicht die
+    erwartete ist, damit ein roter Lauf zeigt, was die Queue wirklich trug. */
+std::string beschreibeBloecke (const std::vector<nakama::echtzeit::StampedBlock>& bloecke)
+{
+    std::string text;
+    for (size_t i = 0; i < bloecke.size(); ++i)
+        text += std::string (i == 0 ? "" : "; ") + "#" + std::to_string (i + 1) + " " + beschreibeBlock (bloecke[i]);
+    return text;
+}
+
+void nak283Analysezufuehrung()
+{
+    namespace rt = nakama::echtzeit;
+    abschnitt ("Q - NAK-283 F09 und F12: Analysezufuehrung der Sonde (M-35 bis M-37, M-41)");
+    {
+        // M-35 und M-36: 64, 128 und 64 Samples bei maxBlock 64 und rechnendem Kern.
+        auto p = prozessor (48000.0, 64);
+        auto z = mitEq (true);
+        setzeBand (z, 0, 1000.0, 6.0);
+        const auto e = setze (*p, z);
+        std::vector<rt::StampedBlock> bloecke;
+        Queuezaehler vor, nach;
+        bool rechnet = false;
+        p->mitAngehaltenerAnalyseFuerTest ([&] (AnalyseQueue& q)
+        {
+            leereQueue (q);                         // nichts Fremdes vor dem gemessenen Zug
+            juce::Random w (35);
+            rauschBlock (*p, 64, w);                // Block 1: angenommen
+            vor = queuezaehler (*p);
+            rauschBlock (*p, 128, w);               // Block 2: groesser als maxBlock, der Kern stueckelt
+            rechnet = ! committedRuht (*p);
+            nach = queuezaehler (*p);
+            rauschBlock (*p, 64, w);                // Block 3
+            bloecke = leereQueue (q);
+        });
+        const bool zwei = bloecke.size() == 2;
+        const rt::StampedBlock b1 = zwei ? bloecke[0] : rt::StampedBlock {};
+        const rt::StampedBlock b3 = zwei ? bloecke[1] : rt::StampedBlock {};
+        pruefe (e.ausgang == tx::Ausgang::commit && rechnet && zwei && b1.stromVon == 0 && b1.sampleCount == 64
+                    && b3.stromVon == 192 && b3.sampleCount == 64 && (b3.flags & rt::kFlagLueckeDavor) != 0
+                    && b3.segment == b1.segment + 1,
+                "ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke (M-35): 64, 128 (> maxBlock 64) und 64 Samples "
+                "bei rechnendem Kern - der dritte Block beginnt lokal bei 192, traegt kFlagLueckeDavor, und "
+                "continuity_segment steigt um 1",
+                std::string ("Kern rechnet: ") + (rechnet ? "ja" : "nein") + "; " + std::to_string (bloecke.size())
+                + " Deskriptoren: " + beschreibeBloecke (bloecke));
+        pruefe (nach.kernVerworfen == vor.kernVerworfen + 1 && nach.ohneAudio == vor.ohneAudio + 1
+                    && nach.frames == vor.frames + 128 && nach.oversize == vor.oversize && nach.ueberlauf == vor.ueberlauf,
+                "dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne (M-36): derselbe Block zaehlt im Kern als "
+                "ein verworfener Tap und in der Queue als genau 128 verlorene Frames eines Blocks ohne Audio - nicht als oversizeDrops",
+                "Kern +" + zahl (nach.kernVerworfen - vor.kernVerworfen) + ", ohne Audio +" + zahl (nach.ohneAudio - vor.ohneAudio)
+                + ", Frames +" + zahl (nach.frames - vor.frames) + ", oversize +" + zahl (nach.oversize - vor.oversize)
+                + ", Ueberlauf +" + zahl (nach.ueberlauf - vor.ueberlauf));
+    }
+    {
+        // M-37: derselbe Zug, aber der Committed-Pfad ruht im Hard-Bypass.
+        auto p = prozessor (48000.0, 64);
+        auto z = mitEq (true);
+        z.werte[(size_t) param::indexVonId ("v1.global.bypass")].b = true;
+        setzeBand (z, 0, 1000.0, 6.0);              // hoerbar dahinter, ruht im Hard-Bypass
+        const auto e = setze (*p, z);
+        std::vector<rt::StampedBlock> bloecke;
+        Queuezaehler vor, nach;
+        bool ruht = false;
+        p->mitAngehaltenerAnalyseFuerTest ([&] (AnalyseQueue& q)
+        {
+            leereQueue (q);
+            juce::Random w (37);
+            rauschBlock (*p, 64, w);
+            vor = queuezaehler (*p);
+            rauschBlock (*p, 128, w);
+            ruht = committedRuht (*p);
+            nach = queuezaehler (*p);
+            rauschBlock (*p, 64, w);
+            bloecke = leereQueue (q);
+        });
+        const bool drei = bloecke.size() == 3;
+        const rt::StampedBlock b1 = drei ? bloecke[0] : rt::StampedBlock {};
+        const rt::StampedBlock b2 = drei ? bloecke[1] : rt::StampedBlock {};
+        const rt::StampedBlock b3 = drei ? bloecke[2] : rt::StampedBlock {};
+        pruefe (e.ausgang == tx::Ausgang::commit && ruht && drei && nach.kernVerworfen == vor.kernVerworfen + 1
+                    && nach.ohneAudio == vor.ohneAudio && b2.stromVon == 64 && b2.sampleCount == 128
+                    && (b2.flags & rt::kFlagLueckeDavor) == 0 && b2.segment == b1.segment
+                    && b3.stromVon == 192 && (b3.flags & rt::kFlagLueckeDavor) == 0 && b3.segment == b1.segment,
+                "ruhender_passthrough_erzeugt_keine_luecke (M-37, Regressionswache): im Hard-Bypass liest die Analyse den "
+                "uebergrossen Block als unberuehrten Eingang - er wird angenommen, und keine Luecke entsteht",
+                std::string ("Committed ruht: ") + (ruht ? "ja" : "nein") + "; " + std::to_string (bloecke.size())
+                + " Deskriptoren: " + beschreibeBloecke (bloecke) + "; Kern +" + zahl (nach.kernVerworfen - vor.kernVerworfen)
+                + ", ohne Audio +" + zahl (nach.ohneAudio - vor.ohneAudio));
+    }
+    {
+        // M-41: Output-Trim +6 dB, Eingang 0,75 x FLT_MAX, Hoermatrix Dry - der
+        // Ausgang ist der rohe Eingang, der Tap post_committed liegt ueber FLT_MAX.
+        auto p = prozessor (48000.0, 512);
+        auto z = mitEq (true);
+        z.werte[(size_t) param::indexVonId ("v1.global.output_trim_db")].zahl = 6.0;
+        const auto e = setze (*p, z);
+        p->setzeHoermatrix (dsp::Hoermatrix::dry);
+        for (int i = 0; i < 4; ++i) stilleBlock (*p, 512);   // Engagier-Fade, Rampe und Hoermatrix-Fade vorbei
+        const auto zaehlerVorher = p->dspKernFuerTest().nichtEndlicheEingaenge();
+        const float gross = 0.75f * std::numeric_limits<float>::max();
+        std::vector<float> analyse;
+        bool gelesen = false, tapUeberRand = false, ausgangRoh = true;
+        p->mitAngehaltenerAnalyseFuerTest ([&] (AnalyseQueue& q)
+        {
+            leereQueue (q);
+            juce::AudioBuffer<float> b (2, 512);
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < 512; ++n)
+                    b.setSample (k, n, gross);
+            juce::MidiBuffer midi;
+            p->processBlock (b, midi);
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < 512; ++n)
+                    if (b.getSample (k, n) != gross) ausgangRoh = false;
+            if (const double* t = p->dspKernFuerTest().tap (dsp::Tap::postCommitted, 0))
+                tapUeberRand = std::isfinite (t[0]) && std::abs (t[0]) > (double) std::numeric_limits<float>::max();
+            if (const auto* blk = q.spitze())
+            {
+                analyse.resize ((size_t) blk->sampleCount * 2u);
+                gelesen = blk->sampleCount == 512 && q.lies (*blk, 0, analyse.data());
+                q.freigeben();
+            }
+        });
+        const bool analyseEndlich = gelesen
+            && std::all_of (analyse.begin(), analyse.end(), [] (float v) { return std::isfinite (v); });
+        const auto delta = p->dspKernFuerTest().nichtEndlicheEingaenge() - zaehlerVorher;
+        pruefe (e.ausgang == tx::Ausgang::commit && gelesen && tapUeberRand && ausgangRoh && analyseEndlich && delta == 1024,
+                "analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber "
+                "FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 "
+                "verriegelten Werte",
+                std::string ("gelesen ") + (gelesen ? "ja" : "nein") + ", Tap ueber FLT_MAX " + (tapUeberRand ? "ja" : "nein")
+                + ", Ausgang roh " + (ausgangRoh ? "ja" : "nein") + ", Analyse endlich " + (analyseEndlich ? "ja" : "nein")
+                + ", Zaehler +" + zahl (delta));
+    }
+}
+
 } // namespace
 
 int main()
@@ -2244,6 +2614,10 @@ int main()
     prozessorParameter();
     prozessorZustand();
     prozessorAutomation();
+
+    // NAK-283 Etappe 4: Host-Reset, Lebenszyklus-Trio und Analysezufuehrung
+    nak283Hosteintritte();
+    nak283Analysezufuehrung();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

@@ -17,10 +17,13 @@
       Nakama Probeeq (NkAc) - aktive Sonde. Laut User ein vollwertiger EQ
                               ("die active Probe fester Name : Nakama Probeeq
                               ist ein vollwertiger hochwertiger EQ", 21.08.);
-                              seine DSP kommt in P6. HEUTE ist dieses Bundle
-                              die Huelle mit eingefrorener Identitaet, nicht
-                              der EQ - und es tut deshalb dasselbe wie Suna:
-                              nichts am Audio.
+                              seit SONDE-015 Etappe 4a traegt dieses Bundle
+                              den aktiven DSP-Kern (`dsp::DspKern`). Nur mit
+                              `eq_enabled` aus ist es der Passthrough von
+                              bisher (GRUNDGESETZ unten); Buslayout,
+                              Lebenszyklus, Analysezufuehrung und float-Kante
+                              begruenden sich am rechnenden Kern (NAK-283
+                              M-43).
 
     WARUM DAS HIER LIEGT UND NICHT IM KERN (Entwurf §53.4, S8-Riegel K1):
     Eine AudioProcessor-Ableitung braucht juce_audio_processors; der
@@ -133,6 +136,14 @@ public:
 
     void prepareToPlay (double samplerate, int maxBlock) override;
     void releaseResources() override;
+
+    /** NAK-283 F05 (R-283-3): der dritte Hosteintritt. Der VST3-Wrapper ruft
+        ihn bei `setProcessing (false)` - ohne `releaseResources` und ohne
+        `prepareToPlay`. Er beendet die Audiohistorie des Kerns und laesst
+        Programm, Parameter und Zustand stehen; getTailLengthSeconds() bleibt
+        0,0 (SONDE-015 M-51). */
+    void reset() override;
+
     bool isBusesLayoutSupported (const BusesLayout& layout) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     void nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund&) noexcept override;
@@ -215,7 +226,7 @@ public:
         feste Produktklasse, bleiben aber bis gueltigem State neutral."
 
         Der Automat sagt, welche Haelfte gerade gilt. Audio haengt hier an
-        nichts davon - beide Bundles sind heute Passthrough -, aber der
+        nichts davon - `processBlock` fragt die Klassifikation nie -, aber der
         Brokerstart tut es: `darfBrokerStarten()` ist fuer eine Sonde IMMER
         falsch, weil sie nie `main` wird. Das ist die Sonden-Haelfte von
         "Scanner/Probe/Render spawnen nie Broker".
@@ -289,6 +300,27 @@ public:
     std::uint64_t analyseDropsOversizeFuerTest() const noexcept
     {
         return analyseQueue.dropsOversize();
+    }
+    /** NAK-283 F09 (M-36): Bloecke, deren Zeit die Queue ohne Audio verbucht
+        hat (`verwirfOhneAudio`), und alle verlorenen Analyseframes. */
+    std::uint64_t analyseDropsOhneAudioFuerTest() const noexcept
+    {
+        return analyseQueue.dropsOhneAudio();
+    }
+    std::uint64_t analyseVerloreneFramesFuerTest() const noexcept
+    {
+        return analyseQueue.verloreneFrames();
+    }
+    /** NAK-283 M-35 bis M-37, M-41: haelt den Analyseworker an, solange `f`
+        laeuft, und reicht `f` die Queue als EINZIGEM Consumenten. Der Worker
+        liest die Queue nur unter `analyseSchloss`, der Audiopfad nimmt es
+        nie - `f` darf deshalb `processBlock` rufen, aber weder
+        `prepareToPlay` noch einen Testzugang, der dasselbe Schloss nimmt. */
+    template <typename Funktion>
+    void mitAngehaltenerAnalyseFuerTest (Funktion&& f)
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        f (analyseQueue);
     }
     bool hostCallbackAufMessageThreadFuerTest() const noexcept
     {

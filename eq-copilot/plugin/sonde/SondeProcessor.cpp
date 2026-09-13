@@ -250,11 +250,13 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
 
 void SondeProcessor::releaseResources()
 {
-    // Gegenstueck zu prepareToPlay (Beziehungen mitpruefen): der Kern gibt
-    // seine Blockpuffer frei und setzt seine Baenke zurueck. Ein Block ohne
-    // neue Vorbereitung laeuft dann unberuehrt durch (`verarbeiteStueck`).
-    // Der bestaetigte Zustand bleibt im Transaktionskern; die naechste
-    // Vorbereitung publiziert ihn wieder.
+    // Einer der drei Hosteintritte, die mit dem Rechenzustand ein Paar bilden
+    // (NAK-283 R-283-3, CLAUDE.md "Beziehungen mitpruefen"): prepareToPlay
+    // allokiert und publiziert, releaseResources gibt frei, reset beendet nur
+    // die Audiohistorie. Hier gibt der Kern seine Blockpuffer frei und setzt
+    // seine Baenke zurueck; ein Block ohne neue Vorbereitung laeuft dann
+    // unberuehrt durch (`verarbeiteStueck`). Der bestaetigte Zustand bleibt im
+    // Transaktionskern; die naechste Vorbereitung publiziert ihn wieder.
     const juce::ScopedLock callback (getCallbackLock());
     const juce::ScopedLock l (zustandSchloss);
     dspKern->freigeben();
@@ -262,18 +264,52 @@ void SondeProcessor::releaseResources()
     publikationOffen = false;
 }
 
+void SondeProcessor::reset()
+{
+    // NAK-283 F05 (R-283-3, M-30 bis M-34): der VST3-Wrapper ruft bei
+    // setProcessing (false) NUR diesen Eintritt, weder releaseResources noch
+    // prepareToPlay (juce_audio_plugin_client_VST3.cpp, setProcessing). Bis
+    // hierher war er die leere JUCE-Basis, und ein resonanter Filterzustand
+    // lief in den naechsten Block hinein.
+    //
+    // Sperrenordnung wie releaseResources: erst das Callback-Schloss (kein
+    // processBlock laeuft), dann das Zustandsschloss (der Worker pflegt
+    // dieselben Baenke) - nie umgekehrt (NAK-283 §8.1 Feinheit 4).
+    //
+    // Zurueck geht nur die Audiohistorie des Kerns: Filterzustaende, Rampen,
+    // Crossfades. Programm, Parameter, bestaetigter Zustand und
+    // `publikationOffen` bleiben, ebenso die Hostwert-Mailbox (`hostWert`,
+    // `hostEreignis`): sie traegt Hostwerte, keine Audiohistorie. Kein
+    // `vergissLetztePublikation` - anders als nach releaseResources laeuft der
+    // Kern weiter, und seine zuletzt publizierte Kernsicht gilt. Keine
+    // Tail-Funktion: getTailLengthSeconds() bleibt 0,0 (SONDE-015 M-51).
+    const juce::ScopedLock callback (getCallbackLock());
+    const juce::ScopedLock l (zustandSchloss);
+    dspKern->beendeAudiohistorie();
+}
+
 bool SondeProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
 {
-    // Ein Passthrough, der Kanaele erfinden oder verschlucken muesste, waere
-    // kein Passthrough. Deshalb nur gleiche Ein-/Ausgangsbelegung, und keine
-    // deaktivierten Hauptbusse.
+    // NAK-283 F04 (M-27 bis M-29): dieselbe Regel wie Gen
+    // (`src/prozessor/Hostbruecke.cpp`, isBusesLayoutSupported) - Eingang
+    // gleich Ausgang UND Mono oder Stereo, sonst ein klares Nein, nie still
+    // umgedeutet (Entwurf §48.2). Die alte Begruendung, ein Passthrough, der
+    // Kanaele erfinden oder verschlucken muesste,
+    // "waere kein Passthrough", traegt seit SONDE-015 Etappe 4a nicht mehr:
+    // hier rechnet ein DSP-Kern, der genau zwei Kanaele kennt (`processBlock`,
+    // `kanalZeiger[2]`). Ein angenommener Vierkanalbus bekaeme auf Kanal 1 und
+    // 2 EQ und Trim, auf 3 und 4 nichts; ihn zu bedienen waere Verarbeitung,
+    // die niemand eingeschaltet hat.
     const auto ein = layout.getMainInputChannelSet();
     const auto aus = layout.getMainOutputChannelSet();
 
     if (ein.isDisabled() || aus.isDisabled())
         return false;
 
-    return ein == aus;
+    if (ein != aus)
+        return false;
+
+    return ein == juce::AudioChannelSet::mono() || ein == juce::AudioChannelSet::stereo();
 }
 
 void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiBuffer&)
@@ -350,9 +386,26 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
         if (tapL != nullptr && tapR != nullptr && dspKern->tapLaenge() == samples
             && (size_t) samples <= analyseL.size())
         {
-            for (int i = 0; i < samples; ++i) analyseL[(size_t) i] = (float) tapL[i];
+            // NAK-283 F12 (R-283-6, M-41): die dritte Verengungsstelle derselben
+            // Kante. Ein endliches double ueber FLT_MAX wird als float nicht
+            // endlich, und die Analyse saehe einen Senderfehler. Geprueft wird
+            // nach der Verengung; verriegelt wie R9 und im Zaehler des Kerns
+            // gezaehlt, eine Addition je Block. Ein schon als double nicht
+            // endlicher Tapwert kommt nur roh aus dem Dry-Anteil und bleibt roh.
+            std::uint64_t verriegelt = 0;
+            const auto kopiere = [samples, &verriegelt] (const double* von, float* nach) noexcept
+            {
+                for (int i = 0; i < samples; ++i)
+                {
+                    float wert = (float) von[i];
+                    if (! std::isfinite (wert) && std::isfinite (von[i])) { wert = 0.0f; ++verriegelt; }
+                    nach[i] = wert;
+                }
+            };
+            kopiere (tapL, analyseL.data());
             if (kanaele > 1)
-                for (int i = 0; i < samples; ++i) analyseR[(size_t) i] = (float) tapR[i];
+                kopiere (tapR, analyseR.data());
+            dspKern->zaehleVerriegelteVerengungen (verriegelt);
             abgriff.links  = analyseL.data();
             abgriff.rechts = kanaele > 1 ? analyseR.data() : nullptr;
             // Ganz oder gar nicht. Rueckstau verwirft Analyse, niemals Audio.
@@ -362,11 +415,22 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
         {
             // Ohne gueltigen Tap (unvorbereitet oder uebergrosser Block) ist der
             // ruhende Passthrough-Ausgang der unberuehrte Eingang: die Analyse
-            // liest ihn wie bisher. Rechnet der Kern, ist der Tap dieses Blocks
-            // verworfen und gezaehlt (M-48) - die Analyse faellt, nie Audio.
+            // liest ihn wie bisher.
             abgriff.links  = puffer.getReadPointer (0);
             abgriff.rechts = kanaele > 1 ? puffer.getReadPointer (1) : nullptr;
             analyseQueue.veroeffentliche (&abgriff, 1, kanaele, samples, stempel);
+        }
+        else
+        {
+            // NAK-283 F09 (M-35, M-36): der dritte Zustand - Tap ungueltig UND
+            // Kern rechnet. Der Kern hat einen uebergrossen Block gestueckelt
+            // und seinen Tap verworfen (M-48): verworfen wird die Analyse, nie
+            // Audio. Die Zeit dieses Blocks bleibt auf der Analysezeitachse
+            // sichtbar - die Queue verbucht sie ohne Audio (lokaler Strom,
+            // eigener Zaehler, Luecke vor dem naechsten angenommenen Block).
+            // Den rohen Eingang als Ersatz einzustellen waere eine Messung, die
+            // der Kern nie gesehen hat (M-57, NAK-283 §8.1 Feinheit 11).
+            analyseQueue.verwirfOhneAudio (samples);
         }
     }
 

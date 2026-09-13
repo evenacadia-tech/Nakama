@@ -24,6 +24,12 @@
       - 0 Samples Latenz; kein Tail im Passthrough und im Hard-Bypass (M-51);
       - Speichern, Laden, Speichern bytegleich im Layout v2 mit Kind `Dsp`
         (M-93).
+    Seit NAK-283 Etappe 4 (Manifest NAK-283 §5.3) zusaetzlich:
+      - der Host-Reset zwischen den Bloecken laesst den Passthrough
+        bitidentisch und bewegt keinen Zaehler des Kerns (M-34);
+      - das Buslayout folgt der Regel von Gen: Mono und Stereo mit gleichem
+        Ein- und Ausgang sind angenommen, Mehrkanal-, ungleiche und
+        deaktivierte Busse bekommen ein Nein (M-27 bis M-29).
     Ein eingeschalteter resonanter Filter klingt naturgemaess aus; das ist
     kein Tail im Sinne des Hostvertrags, und dieses Bein behauptet dazu
     nichts.
@@ -141,13 +147,18 @@ struct Nulllauf
 
 /** Faehrt `bloecke` Bloecke Rauschen durch. Abweichungen zaehlen erst ab dem
     globalen Sample `zaehlenAb` - davor liegt ein Fade, der hier nicht
-    gemessen wird. */
-Nulllauf fahreNull (Prozessor& p, int bloecke, juce::Random& wuerfel, std::int64_t zaehlenAb = 0)
+    gemessen wird. `resetAlle > 0` ruft vor jedem `resetAlle`-ten Block den
+    Host-Reset (NAK-283 M-34), wie ihn der VST3-Wrapper bei
+    `setProcessing (false)` ausloest. */
+Nulllauf fahreNull (Prozessor& p, int bloecke, juce::Random& wuerfel, std::int64_t zaehlenAb = 0,
+                    int resetAlle = 0)
 {
     Nulllauf l;
     juce::MidiBuffer midi;
     for (int b = 0; b < bloecke; ++b)
     {
+        if (resetAlle > 0 && b % resetAlle == resetAlle - 1)
+            p.reset();
         const int groesse = kBlockgroessen[(size_t) b % std::size (kBlockgroessen)];
         juce::AudioBuffer<float> puffer (2, groesse), kopie (2, groesse);
         fuelle (puffer, wuerfel);
@@ -219,6 +230,59 @@ int main()
                     && p->dspKernFuerTest().pool().belegteSlots() == 0,
                 "  eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt",
                 "belegt " + juce::String (p->dspKernFuerTest().pool().belegteSlots()));
+    }
+
+    // -- 3b. NAK-283 M-34: der Host-Reset laesst den Passthrough bitidentisch --
+    // Regressionswache (R-283-3, Grundgesetz): reset() laeuft zwischen den
+    // Bloecken, der Ausgang bleibt bitgleich zum Eingang, und kein Zaehler des
+    // Kerns bewegt sich - ausgeschaltet bei vier Raten, im Hard-Bypass und mit
+    // NaN und Inf im Passthrough.
+    abschnitt ("3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset");
+    for (const double rate : { 44100.0, 48000.0, 96000.0, 192000.0 })
+    {
+        auto p = vorbereitet (rate, 2048);
+        juce::Random wuerfel ((juce::int64) rate + 34);
+        const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 3);
+        auto& k = p->dspKernFuerTest();
+        pruefe (lauf.abweichend == 0 && lauf.latenzNull && k.nichtEndlicheEingaenge() == 0
+                    && k.geheilteFilterzustaende() == 0 && k.verworfeneAnalyseframes() == 0,
+                "nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei " + juce::String (rate, 0)
+                    + " Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich",
+                juce::String (lauf.samples) + " Samples, " + juce::String (lauf.abweichend) + " abweichend, Zaehler "
+                    + juce::String ((juce::int64) k.nichtEndlicheEingaenge()) + "/"
+                    + juce::String ((juce::int64) k.geheilteFilterzustaende()) + "/"
+                    + juce::String ((juce::int64) k.verworfeneAnalyseframes()));
+    }
+    {
+        auto p = vorbereitet (48000.0, 2048);
+        auto z = p->bestaetigterZustand();
+        z.werte[(size_t) param::kIndexEqEnabled].b = true;
+        z.werte[(size_t) iGlobal ("v1.global.bypass")].b = true;
+        setzeHoerbaresBand (z);
+        const auto e = setze (*p, z);
+        juce::Random wuerfel (534);
+        const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 3);
+
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> b (2, 256), kopie (2, 256);
+        fuelle (b, wuerfel);
+        b.setSample (0, 10, std::numeric_limits<float>::quiet_NaN());
+        b.setSample (1, 20, std::numeric_limits<float>::infinity());
+        b.setSample (0, 30, -std::numeric_limits<float>::infinity());
+        kopie.makeCopyOf (b);
+        p->reset();
+        p->processBlock (b, midi);
+        p->reset();
+        bool roh = true;
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < 256; ++n)
+                if (std::memcmp (b.getReadPointer (k) + n, kopie.getReadPointer (k) + n, sizeof (float)) != 0) roh = false;
+        auto& kern = p->dspKernFuerTest();
+        pruefe (e.ausgang == tx::Ausgang::commit && lauf.abweichend == 0 && lauf.latenzNull && roh
+                    && kern.nichtEndlicheEingaenge() == 0 && kern.geheilteFilterzustaende() == 0,
+                "  im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt",
+                juce::String (lauf.samples) + " Samples, " + juce::String (lauf.abweichend) + " abweichend, NaN/Inf roh "
+                    + (roh ? "ja" : "nein"));
     }
 
     // -- 4. M-51: Latenz und Tail -------------------------------------------
@@ -725,6 +789,94 @@ int main()
         prozessor->setStateInformation (nullptr, 0);
         pruefe (prozessor->zustandLesen().common == vorher,
                 "Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert");
+    }
+
+    // -- 12. NAK-283 F04: das Buslayout folgt der Regel von Gen --------------
+    // Der rechnende Kern kennt zwei Kanaele. Mono und Stereo mit gleichem Ein-
+    // und Ausgang sind angenommen; alles andere bekommt ein klares Nein, nie
+    // still umgedeutet (Entwurf §48.2) und nie ein Bus, dessen Kanaele 3 und 4
+    // unbearbeitet durchliefen.
+    abschnitt ("12. NAK-283 F04 Buslayout (M-27 bis M-29)");
+    {
+        const auto layout = [] (const juce::AudioChannelSet& ein, const juce::AudioChannelSet& aus)
+        {
+            juce::AudioProcessor::BusesLayout l;
+            l.inputBuses.add (ein);
+            l.outputBuses.add (aus);
+            return l;
+        };
+        const auto mono   = juce::AudioChannelSet::mono();
+        const auto stereo = juce::AudioChannelSet::stereo();
+        const auto quad   = juce::AudioChannelSet::quadraphonic();
+        const auto fuenf1 = juce::AudioChannelSet::create5point1();
+        const auto vier   = juce::AudioChannelSet::discreteChannels (4);
+        const auto aus    = juce::AudioChannelSet::disabled();
+        const auto jaNein = [] (bool b) { return juce::String (b ? "ja" : "nein"); };
+
+        {
+            auto p = std::make_unique<Prozessor>();
+            const bool quadAn  = p->checkBusesLayoutSupported (layout (quad, quad));
+            const bool fuenfAn = p->checkBusesLayoutSupported (layout (fuenf1, fuenf1));
+            const bool vierAn  = p->checkBusesLayoutSupported (layout (vier, vier));
+            const bool gesetzt = p->setBusesLayout (layout (quad, quad));
+            pruefe (! quadAn && ! fuenfAn && ! vierAn && ! gesetzt
+                        && p->getTotalNumInputChannels() == 2 && p->getTotalNumOutputChannels() == 2,
+                    "mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele "
+                    "liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen",
+                    "angenommen: Quad " + jaNein (quadAn) + ", 5.1 " + jaNein (fuenfAn) + ", 4 diskret " + jaNein (vierAn)
+                        + ", gesetzt " + jaNein (gesetzt) + ", Kanaele " + juce::String (p->getTotalNumInputChannels())
+                        + "/" + juce::String (p->getTotalNumOutputChannels()));
+        }
+        {
+            auto p = std::make_unique<Prozessor>();
+            const bool stereoAn    = p->checkBusesLayoutSupported (layout (stereo, stereo));
+            const bool monoAn      = p->checkBusesLayoutSupported (layout (mono, mono));
+            const bool monoGesetzt = p->setBusesLayout (layout (mono, mono));
+            p->setRateAndBufferSizeDetails (48000.0, 256);
+            p->prepareToPlay (48000.0, 256);
+            juce::MidiBuffer midi;
+            juce::Random w (28);
+            juce::AudioBuffer<float> b (1, 256), kopie (1, 256);
+            fuelle (b, w);
+            kopie.makeCopyOf (b);
+            p->processBlock (b, midi);
+            const bool passthrough = std::memcmp (b.getReadPointer (0), kopie.getReadPointer (0), 256 * sizeof (float)) == 0;
+            auto z = p->bestaetigterZustand();
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            setzeHoerbaresBand (z);
+            const auto e = setze (*p, z);
+            bool gerechnet = false, endlich = true;
+            for (int blk = 0; blk < 8; ++blk)
+            {
+                fuelle (b, w);
+                kopie.makeCopyOf (b);
+                p->processBlock (b, midi);
+                if (std::memcmp (b.getReadPointer (0), kopie.getReadPointer (0), 256 * sizeof (float)) != 0)
+                    gerechnet = true;
+                for (int n = 0; n < 256; ++n)
+                    if (! std::isfinite (b.getSample (0, n))) endlich = false;
+            }
+            pruefe (stereoAn && monoAn && monoGesetzt && p->getTotalNumInputChannels() == 1 && passthrough
+                        && e.ausgang == tx::Ausgang::commit && gerechnet && endlich,
+                    "mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im "
+                    "Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich",
+                    "Stereo " + jaNein (stereoAn) + ", Mono " + jaNein (monoAn) + ", Mono gesetzt " + jaNein (monoGesetzt)
+                        + ", Passthrough bitgleich " + jaNein (passthrough) + ", Band rechnet " + jaNein (gerechnet));
+        }
+        {
+            auto p = std::make_unique<Prozessor>();
+            const bool monoStereo = p->checkBusesLayoutSupported (layout (mono, stereo));
+            const bool stereoMono = p->checkBusesLayoutSupported (layout (stereo, mono));
+            const bool ausStereo  = p->checkBusesLayoutSupported (layout (aus, stereo));
+            const bool stereoAus  = p->checkBusesLayoutSupported (layout (stereo, aus));
+            const bool beideAus   = p->checkBusesLayoutSupported (layout (aus, aus));
+            pruefe (! monoStereo && ! stereoMono && ! ausStereo && ! stereoAus && ! beideAus,
+                    "ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, "
+                    "Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein",
+                    "angenommen: Mono->Stereo " + jaNein (monoStereo) + ", Stereo->Mono " + jaNein (stereoMono)
+                        + ", aus->Stereo " + jaNein (ausStereo) + ", Stereo->aus " + jaNein (stereoAus)
+                        + ", aus->aus " + jaNein (beideAus));
+        }
     }
 
     std::cout << std::endl

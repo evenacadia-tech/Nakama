@@ -3298,6 +3298,103 @@ int main()
         }
     }
 
+    // NAK-283 F12 (R-283-6, M-39 und M-42 Haelfte a): die float-Kante des
+    // Ausgangs. Ein endlicher Eingang, der erst bei der Verengung auf float
+    // nicht endlich wuerde, wird verriegelt und im Eingangszaehler gezaehlt;
+    // endliches Material in ±1,0 beruehrt der Riegel an keinem Bit.
+    {
+        // M-39: Output-Trim +6 dB, Eingang abwechselnd 0,75 und 0,25 x FLT_MAX.
+        auto k = neuerKern (48000.0, 512);
+        auto s = machSatz (true);
+        setzeGlobal (s, "v1.global.output_trim_db", 6.0);
+        k->uebernehmeZustand (s);
+        fahreStille (*k, 2048, 512);   // Engagier-Fade und Trimrampe sind vorbei
+
+        const float fmax = std::numeric_limits<float>::max();
+        std::vector<float> a (512), b (512);
+        for (int i = 0; i < 512; ++i)
+        {
+            a[(size_t) i] = (i % 2 == 0) ? 0.75f * fmax : 0.25f * fmax;
+            b[(size_t) i] = (i % 3 == 0) ? -a[(size_t) i] : a[(size_t) i];
+        }
+        const auto vorher = k->nichtEndlicheEingaenge();
+        float* kan[2] = { a.data(), b.data() };
+        k->verarbeite (kan, 2, 512);
+
+        // Die Erwartung kommt aus dem double-Tap `post_committed`, nicht aus
+        // dem Ausgang: welcher Wert wuerde bei der Verengung nicht endlich?
+        const double* tl = k->tap (Tap::postCommitted, 0);
+        const double* tr = k->tap (Tap::postCommitted, 1);
+        std::uint64_t betroffen = 0, abweichend = 0, nichtEndlich = 0;
+        const bool tapsDa = tl != nullptr && tr != nullptr;
+        for (int i = 0; i < 512 && tapsDa; ++i)
+        {
+            const double taps[2] = { tl[i], tr[i] };
+            const float  aus[2]  = { a[(size_t) i], b[(size_t) i] };
+            for (int kanal = 0; kanal < 2; ++kanal)
+            {
+                const float roh = (float) taps[kanal];
+                const bool ueberRand = std::isfinite (taps[kanal]) && ! std::isfinite (roh);
+                if (ueberRand) ++betroffen;
+                const float soll = ueberRand ? 0.0f : roh;
+                if (std::memcmp (&aus[kanal], &soll, sizeof (float)) != 0) ++abweichend;
+                if (! std::isfinite (aus[kanal])) ++nichtEndlich;
+            }
+        }
+        pruefe (tapsDa && betroffen == 512 && nichtEndlich == 0 && abweichend == 0
+                    && k->nichtEndlicheEingaenge() == vorher + betroffen,
+                "endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang (M-39, R-283-6)",
+                "ueber dem float-Rand " + std::to_string (betroffen) + " von 1024 Werten, am Ausgang nicht endlich "
+                + std::to_string (nichtEndlich) + ", abweichend von der Erwartung " + std::to_string (abweichend)
+                + ", Zaehler +" + std::to_string (k->nichtEndlicheEingaenge() - vorher));
+    }
+    {
+        // M-42 Haelfte a (Regressionswache): Bell +9 dB und Output-Trim +6 dB
+        // auf Rauschen in ±1,0 - jeder geschriebene float ist bitgleich die
+        // Verengung des double-Taps, und der Zaehler bleibt stehen.
+        auto k = neuerKern (48000.0, 512);
+        auto s = machSatz (true);
+        belege (s, 0, Filtertyp::bell, 1000.0, 2.0, 9.0);
+        setzeGlobal (s, "v1.global.output_trim_db", 6.0);
+        k->uebernehmeZustand (s);
+        fahreStille (*k, 2048, 512);
+
+        std::uint32_t saat = 0x4d2a91u;
+        const auto zufallswert = [&saat]
+        {
+            saat = saat * 1664525u + 1013904223u;
+            return ((float) (saat >> 8) / (float) 0x00ffffff) * 2.0f - 1.0f;
+        };
+        const auto vorher = k->nichtEndlicheEingaenge();
+        std::vector<float> a (512), b (512);
+        float* kan[2] = { a.data(), b.data() };
+        std::uint64_t verglichen = 0, abweichend = 0, ueberEins = 0;
+        bool tapsDa = true;
+        for (int blk = 0; blk < 200 && tapsDa; ++blk)
+        {
+            for (int i = 0; i < 512; ++i) { a[(size_t) i] = zufallswert(); b[(size_t) i] = zufallswert(); }
+            k->verarbeite (kan, 2, 512);
+            const double* tl = k->tap (Tap::postCommitted, 0);
+            const double* tr = k->tap (Tap::postCommitted, 1);
+            if (tl == nullptr || tr == nullptr) { tapsDa = false; break; }
+            for (int i = 0; i < 512; ++i)
+            {
+                const float sl = (float) tl[i], sr = (float) tr[i];
+                if (std::memcmp (&a[(size_t) i], &sl, sizeof (float)) != 0) ++abweichend;
+                if (std::memcmp (&b[(size_t) i], &sr, sizeof (float)) != 0) ++abweichend;
+                if (std::abs (sl) >= 1.0f) ++ueberEins;
+                if (std::abs (sr) >= 1.0f) ++ueberEins;
+                verglichen += 2;
+            }
+        }
+        pruefe (tapsDa && abweichend == 0 && verglichen == 200u * 512u * 2u && ueberEins > 0
+                    && k->nichtEndlicheEingaenge() == vorher,
+                "ausgangsriegel_beruehrt_endliches_material_nicht (M-42 Haelfte a, Regressionswache)",
+                std::to_string (verglichen) + " Werte verglichen, davon nicht bitgleich zur Verengung des Taps "
+                + std::to_string (abweichend) + ", mit Betrag >= 1 " + std::to_string (ueberEins)
+                + ", Zaehler +" + std::to_string (k->nichtEndlicheEingaenge() - vorher));
+    }
+
     //==========================================================================
     std::cout << std::endl << "== L - Hoermatrix und Taps (M-52 bis M-57, M-114) ==" << std::endl;
     {

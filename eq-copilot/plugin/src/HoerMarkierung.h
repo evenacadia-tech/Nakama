@@ -710,17 +710,21 @@ private:
 
         DREI Riegel, nicht einer (Matrix E5):
           - EINGANG: ein nicht-endliches Sample geht als 0.0 ins Filter.
-          - AUSGANG: ein nicht-endliches `y` wird als 0.0f geschrieben, statt
-            in die Wet-Kopie zu gelangen.
+          - AUSGANG: ein Wert, der als float nicht endlich ist, wird als 0.0f
+            geschrieben, statt in die Wet-Kopie zu gelangen.
           - ZUSTAND: nach dem Block faellt ein nicht-endliches s1/s2 auf 0.
         Der Eingangsriegel allein genuegt nicht: `y` kann auch bei endlichem
         `x` nicht endlich werden, wenn `s1` es aus einem frueheren Block schon
-        war — und genau diese Verkettung IST der Latch.
+        war — und genau diese Verkettung IST der Latch. Und ein
+        endliches `y` ueber FLT_MAX wird erst bei der Verengung auf float nicht
+        endlich (NAK-283 F12, R-283-6): der Ausgangsriegel prueft deshalb den
+        verengten Wert, der geschrieben wird, nicht seine double-Vorstufe.
 
         Gezaehlt wird in `n`, einer lokalen Variable des Aufrufers; das Atomic
-        bekommt EINE Addition je Blocklauf, nie eine je Sample. Bei endlichem
-        Material aendert der Riegel kein Bit: `isfinite` ist dann wahr und die
-        Konvertierung dieselbe wie zuvor (Nulltest und Goldens unberuehrt). */
+        bekommt EINE Addition je Blocklauf, nie eine je Sample. Bei endlichem,
+        als float darstellbarem Material aendert der Riegel kein Bit: `isfinite`
+        ist dann wahr und die Konvertierung dieselbe wie zuvor (Nulltest und
+        Goldens unberuehrt). */
     static void tdf2Lauf (float* d, int n, const BiquadKoeff& c, Zust& z,
                           std::uint64_t& nichtEndlich)
     {
@@ -732,8 +736,12 @@ private:
             const double y = c.b0 * x + s1;
             s1 = c.b1 * x - c.a1 * y + s2;
             s2 = c.b2 * x - c.a2 * y;
-            if (std::isfinite (y))
-                d[i] = (float) y;
+            // NAK-283 F12 (R-283-6, M-40): erst verengen, dann pruefen. Ein
+            // endliches `y` ueber FLT_MAX wird als float nicht endlich; der
+            // Riegel sieht den Wert, der geschrieben wird.
+            const float f = (float) y;
+            if (std::isfinite (f))
+                d[i] = f;
             else
                 { d[i] = 0.0f; ++nichtEndlich; }
         }

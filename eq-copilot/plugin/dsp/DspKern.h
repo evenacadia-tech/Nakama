@@ -90,6 +90,18 @@ public:
         Generationszaehler des Pools bleibt stehen (B-12). */
     void freigeben();
 
+    /** NAK-283 F05 (R-283-3): der Host-Reset (`SondeProcessor::reset`).
+        Beendet die Audiohistorie, OHNE Programm, Publikation,
+        Hoermatrix-Auswahl oder Zaehler zu aendern: die Filter-, Detektor- und
+        Huellkurvenzustaende der gefahrenen Baenke starten kalt wie eine frisch
+        publizierte Bank, jeder laufende Uebergang (Crossfade, Rampe,
+        Hoerhalt) endet auf seinem Ziel und dient seine Quellbank ueber den
+        regulaeren ACK aus, die Rampen stehen auf ihrem Zielwert, der Fade der
+        Hoermatrix endet. Danach erzeugt Stille am Eingang exakt Stille am
+        Ausgang. Allokiert nicht und sperrt nicht; nur rufen, waehrend kein
+        `verarbeite` laeuft (im Prozessor unter dem Callback-Schloss). */
+    void beendeAudiohistorie() noexcept;
+
     double samplerate() const noexcept { return abtastrate; }
 
     //== Control-Worker-Seite - laeuft NIE im Audiothread ====================
@@ -225,9 +237,22 @@ public:
     //== Zaehler und abgeleitete Werte ======================================
 
     /** Nicht-endliche EINGANGSsamples im aktiven Pfad, verriegelt und
-        gezaehlt (R9). Der Passthrough zaehlt hier NICHT mit. */
+        gezaehlt (R9). Im selben sichtbaren Zaehler seit NAK-283 (R-283-6):
+        endliche double-Werte, die erst bei der Verengung auf float nicht
+        endlich werden - am Ausgang des Kerns und in der Analysekopie der
+        Sonde (`zaehleVerriegelteVerengungen`). Der Passthrough zaehlt hier
+        NICHT mit. */
     std::uint64_t nichtEndlicheEingaenge() const noexcept
     { return zaehlerEingaenge.load (std::memory_order_relaxed); }
+
+    /** NAK-283 F12 (R-283-6, M-41): ein Verbraucher des Taps meldet Werte,
+        die er beim Verengen auf float verriegelt hat, in denselben sichtbaren
+        Zaehler wie die Riegel des Kerns. Lockfrei und ohne Allokation - der
+        Audiothread ruft ihn (Analysekopie der Sonde), eine Addition je Block. */
+    void zaehleVerriegelteVerengungen (std::uint64_t anzahl) noexcept
+    {
+        if (anzahl != 0) zaehlerEingaenge.fetch_add (anzahl, std::memory_order_relaxed);
+    }
 
     /** Am Blockrand geheilte Filterzustaende (§5.9 Feinheit 3 und 4), je
         geheiltem Bandzustand bzw. Mono-Bass-Zustand einer. */

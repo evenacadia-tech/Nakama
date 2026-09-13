@@ -33,7 +33,8 @@
 //   * Der lokale Strom (`stromVon`) zaehlt JEDEN Hostblock mit, auch den
 //     verworfenen. Ein Zaehler, der nur die angenommenen Frames zaehlt, koennte
 //     "hier fehlt Zeit" nicht mehr ausdruecken - genau der Fehler, den der
-//     AbstractFifo-Weg macht.
+//     AbstractFifo-Weg macht. Seit NAK-283 F09 auch den Block, dessen Zeit der
+//     Aufrufer ohne Audio verbucht (`verwirfOhneAudio`).
 //   * `projectSampleStart` traegt ein eigenes Gueltigkeitsbit. Ohne Hostkontext
 //     ist Projektzeit unbewiesen (§32.3) - dann gilt nur der lokale monotone
 //     Verlauf (§53.6, Verhalten ohne Beweis von `project_time_samples`).
@@ -490,6 +491,36 @@ public:
         return true;
     }
 
+    /** NAK-283 F09 (M-35, M-36): die Zeitbuchfuehrung eines Hostblocks, der
+        fuer die Analyse verworfen ist, OHNE Audio einzustellen.
+
+        Der Aufrufer hat fuer diesen Block kein Material, das die Analyse
+        messen duerfte - in Probeeq ist der Tap `post_committed` verworfen,
+        weil der Kern einen uebergrossen Block gestueckelt hat (M-48). Ein
+        Ersatz aus dem rohen Eingang waere eine Messung, die der Kern nie
+        gesehen hat. Deshalb dieselbe Wirkung wie der `verlust`-Pfad von
+        `veroeffentliche`, nur ohne Ringzugriff: der lokale Strom rueckt um
+        `frames` vor, der eigene Zaehler steigt, die Frames zaehlen als
+        verloren, und der naechste angenommene Block traegt `kFlagLueckeDavor`
+        und ein neues `continuity_segment`. Nur Produzentenzustand und Atomics
+        - keine Allokation, kein Lock.
+
+        Der Zaehler ist NICHT `oversizeDrops`: dessen Ursache ist die
+        Blockgroesse an der Queue, hier liegt sie beim Aufrufer. `frames <= 0`
+        traegt keine Audiozeit und ist kein Verlust. Ein wartender Neuanlauf
+        bleibt stehen; der naechste angenommene Block uebernimmt ihn, und weil
+        `lueckeOffen` schon steht, traegt er dieselbe Luecke wie nach einer
+        Uebernahme in diesem Zug. */
+    void verwirfOhneAudio (int frames) noexcept
+    {
+        if (frames <= 0)
+            return;
+        stromPos += (std::uint64_t) frames;
+        ohneAudioDrops.fetch_add (1, std::memory_order_relaxed);
+        verworfeneFrames.fetch_add ((std::uint64_t) frames, std::memory_order_relaxed);
+        lueckeOffen = true;
+    }
+
     //== Consument (Worker) ===================================================
 
     /** Aeltester noch nicht freigegebener Block, oder `nullptr`. Der Zeiger ist
@@ -542,6 +573,10 @@ public:
 
     std::uint64_t dropsUeberlauf() const noexcept  { return ueberlaufDrops.load (std::memory_order_relaxed); }
     std::uint64_t dropsOversize() const noexcept   { return oversizeDrops.load (std::memory_order_relaxed); }
+    /** NAK-283 F09: Bloecke, deren Zeit der Aufrufer ohne Audio verbucht hat
+        (`verwirfOhneAudio`). Eigene Ursache - weder in `dropsOversize()` noch
+        in `dropsGesamt()`; ihre Frames stehen in `verloreneFrames()`. */
+    std::uint64_t dropsOhneAudio() const noexcept  { return ohneAudioDrops.load (std::memory_order_relaxed); }
     std::uint64_t dropsGesamt() const noexcept     { return dropsUeberlauf() + dropsOversize(); }
     /** Analyseframes, die nie in den Ring kamen. Einheit: FRAMES, nicht Bloecke -
         derselbe Wert, den der alte FIFO-Weg als `framesDropped` meldete. */
@@ -603,6 +638,7 @@ private:
 
     std::atomic<std::uint64_t> ueberlaufDrops     { 0 };
     std::atomic<std::uint64_t> oversizeDrops      { 0 };
+    std::atomic<std::uint64_t> ohneAudioDrops     { 0 };   // NAK-283 F09: `verwirfOhneAudio`
     std::atomic<std::uint64_t> verworfeneFrames   { 0 };
     std::atomic<std::uint64_t> angenommeneBloecke { 0 };
     std::atomic<std::uint32_t> groesstenBlock     { 0 };

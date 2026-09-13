@@ -1,0 +1,204 @@
+NAK-283 Etappe 4 - Rotbeweis MUT-34 fuer M-34
+Zeitpunkt:  2026-09-13T02:10:34.9546480+02:00
+Mutation:   SondeProcessor.cpp: eine reset-Fassung, die den Ausgangspuffer nullt - reset setzt eine Marke, der naechste processBlock loescht seinen Puffer
+Datei:      eq-copilot/plugin/sonde/SondeProcessor.cpp
+  SHA-256 vorher:  0D517BC8AA8270F3AF29D656E1F4F8D195B4F5EF837A6FAA4B55400AA3070CCC
+  SHA-256 nachher: 0D517BC8AA8270F3AF29D656E1F4F8D195B4F5EF837A6FAA4B55400AA3070CCC (bytegleiche Ruecknahme: True)
+Bein:       A16 EqCopProbeeqNullTest (rot: '', gruen: '')
+Neubau:     rot EqCopProbeeqNullTest / gruen EqCopProbeeqNullTest
+Traeger:    nulltest_bleibt_bitidentisch_mit_host_reset
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+Traegerzeile rot:   FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 152379 abweichend, Zaehler 0/0/0]
+Traegerzeile gruen: ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset
+  FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 152379 abweichend, Zaehler 0/0/0]
+  FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 152379 abweichend, Zaehler 0/0/0]
+  FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 152379 abweichend, Zaehler 0/0/0]
+  FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 152379 abweichend, Zaehler 0/0/0]
+  FEHLER    im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 152379 abweichend, NaN/Inf roh nein]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+-- 12. NAK-283 F04 Buslayout (M-27 bis M-29)
+  ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+  ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+  ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+
+SONDE-NULLTEST FEHLGESCHLAGEN - 60 Pruefungen ok, 5 Fehler
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok        im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 0 abweichend, NaN/Inf roh ja]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+-- 12. NAK-283 F04 Buslayout (M-27 bis M-29)
+  ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+  ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+  ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+
+SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler

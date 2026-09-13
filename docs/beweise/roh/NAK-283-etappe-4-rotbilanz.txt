@@ -1,0 +1,26 @@
+NAK-283 Etappe 4 - Rotbilanz
+Zeitpunkt: 2026-09-13T02:14:00.9378903+02:00
+HEAD: 0f0bc1edbd0554eede8976f05a3eb3f4c376e19c
+
+MUT-27        M-27        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-27-etappe-4.txt  BESTANDEN
+MUT-28        M-28        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-28-etappe-4.txt  BESTANDEN
+MUT-29        M-29        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-29-etappe-4.txt  BESTANDEN
+MUT-33        M-33        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-33-etappe-4.txt  BESTANDEN
+MUT-34        M-34        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-34-etappe-4.txt  BESTANDEN
+MUT-42b       M-42b       rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-42b-etappe-4.txt  BESTANDEN
+MUT-30        M-30        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-30-etappe-4.txt  BESTANDEN
+MUT-30        M-32        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-32-etappe-4.txt  BESTANDEN
+MUT-31        M-31        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-31-etappe-4.txt  BESTANDEN
+MUT-31b       M-31b       rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-31b-etappe-4.txt  BESTANDEN
+MUT-35        M-35        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-35-etappe-4.txt  BESTANDEN
+MUT-36        M-36        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-36-etappe-4.txt  BESTANDEN
+MUT-37        M-37        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-37-etappe-4.txt  BESTANDEN
+MUT-41        M-41        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-41-etappe-4.txt  BESTANDEN
+MUT-38        M-38        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-38-etappe-4.txt  BESTANDEN
+MUT-39        M-39        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-39-etappe-4.txt  BESTANDEN
+MUT-42a       M-42a       rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-42a-etappe-4.txt  BESTANDEN
+MUT-40        M-40        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-40-etappe-4.txt  BESTANDEN
+MUT-43        M-43        rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-43-etappe-4.txt  BESTANDEN
+MUT-43-BASIS  M-43 Basis  rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-43-basis-etappe-4.txt  BESTANDEN
+
+URTEIL: 20 von 20 Rotbeweisen bestanden (rot mit Traeger, gruen mit Traeger, Ruecknahme bytegleich)

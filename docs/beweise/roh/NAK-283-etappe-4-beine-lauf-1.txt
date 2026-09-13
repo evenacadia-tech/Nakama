@@ -1,0 +1,79 @@
+NAK-283 Etappe 4 - Beine der Etappe, einzeln gefahren
+Zeitpunkt: 2026-09-13T01:50:06.7202883+02:00
+HEAD: 0f0bc1edbd0554eede8976f05a3eb3f4c376e19c
+Juengste geaenderte Quelle: 2026-09-13T01:49:29.5140453+02:00
+A15 EqCopSunaNullTest: STILLGELEGT seit 2026-08-28 (tools/beweise.ps1) - weder gebaut noch gefahren, nicht gezaehlt.
+
+--- BAU (Release) ---
+Ziele:   EqCopProbeeqNullTest EqCopNullTest EqCopTransactionTest EqCopDspGoldenTest EqCopMarkierungTest EqCopQueueStressTest EqCopAnalysisGoldenTest EqCopSonde013InterventionRingTest EqCopGoldenTest EqCopIdentityTest EqCopStateMigrationTest EqCopSchemaTest EqCopLebenslaufTest EqCopIpcTest EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest EqCopSonde012ProjectReloadTest EqCopShot EqCopSonde013EventWireTest EqCopSonde013DynamicsTest EqCopSonde013StereoGoldenTest EqCopSonde013FingerprintGoldenTest EqCopSonde013PassageStateTest EqCopSonde013PrePostGoldenTest EqCopSonde014IntentTest EqCopSonde014AssistentTest EqCopSonde012SourcesLatencyTest EqCopilot_VST3 NakamaProbeeq_VST3 EqCopSessionSoak
+Exit:    0
+warning C (eindeutig): 40; davon auf einer Zeile, die diese Etappe hinzugefuegt oder geaendert hat: 0
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopAnalysisGoldenTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIdentityTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopLebenslaufTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopNullTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopProbeeqNullTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopQueueStressTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSchemaTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSessionSoak.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopShot.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012LoudnessSourceTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012SourcesLatencyTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013DynamicsTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013EventWireTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013FingerprintGoldenTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013PassageStateTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013PrePostGoldenTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde013StereoGoldenTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014AssistentTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde014IntentTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopTransactionTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\IpcTestMain.cpp(3705,25): warning C4456: Deklaration von "weg" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\IpcTestMain.cpp(3987,26): warning C4456: Deklaration von "ziel" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(295,55): warning C4244:             Type=float [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(295,55): warning C4244:         [ [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(295,55): warning C4244:         ] [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(295,55): warning C4244:         with [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(295,55): warning C4244: "Argument": Konvertierung von "double" in "Type", möglicher Datenverlust [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(450,46): warning C4244:             Type=float [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(450,46): warning C4244:         [ [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(450,46): warning C4244:         ] [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(450,46): warning C4244:         with [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\Sonde012HostChannelContextTest.cpp(450,46): warning C4244: "Argument": Konvertierung von "double" in "Type", möglicher Datenverlust [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\StateMigrationTestMain.cpp(1348,28): warning C4456: Deklaration von "zurueck" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+  C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\tests\StateMigrationTestMain.cpp(1636,28): warning C4456: Deklaration von "z" blendet vorherige lokale Deklaration aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopStateMigrationTest.vcxproj]
+
+--- FRISCHE DER BINARIES ---
+A16   EqCopProbeeqNullTest                   2026-09-13T01:50:13.4279575+02:00  frisch
+A1    EqCopNullTest                          2026-09-13T01:50:24.9640229+02:00  frisch
+B7    EqCopTransactionTest                   2026-09-13T01:50:30.3074859+02:00  frisch
+B6    EqCopDspGoldenTest                     2026-09-13T01:48:52.1616961+02:00  VERALTET
+A3    EqCopMarkierungTest                    2026-09-13T01:49:21.5898260+02:00  VERALTET
+B4    EqCopQueueStressTest                   2026-09-13T01:50:42.3943201+02:00  frisch
+B5    EqCopAnalysisGoldenTest                2026-09-13T01:50:56.9048734+02:00  frisch
+B21   EqCopSonde013InterventionRingTest      2026-09-13T01:50:58.8036524+02:00  frisch
+A2    EqCopGoldenTest                        2026-09-12T03:35:07.3815591+02:00  haengt an keiner geaenderten Quelle
+B1    EqCopIdentityTest                      2026-09-13T01:51:08.2014205+02:00  frisch
+B2    EqCopStateMigrationTest                2026-09-13T01:51:24.7696720+02:00  frisch
+B3c   EqCopSchemaTest                        2026-09-13T01:51:27.9381429+02:00  frisch
+B8    EqCopLebenslaufTest                    2026-09-13T01:51:37.5712074+02:00  frisch
+B10   EqCopIpcTest                           2026-09-13T01:52:36.0873558+02:00  frisch
+B11   EqCopSonde012HostChannelContextTest    2026-09-13T01:52:41.8418570+02:00  frisch
+B12   EqCopSonde012LoudnessSourceTest        2026-09-13T01:52:47.9967506+02:00  frisch
+B14   EqCopSonde012ProjectReloadTest         2026-09-13T01:52:57.3973748+02:00  frisch
+B15   EqCopShot                              2026-09-13T01:53:05.8902989+02:00  frisch
+B16   EqCopSonde013EventWireTest             2026-09-13T01:53:11.9182141+02:00  frisch
+B18   EqCopSonde013DynamicsTest              2026-09-13T01:53:15.0427385+02:00  frisch
+B19   EqCopSonde013StereoGoldenTest          2026-09-13T01:53:18.3629458+02:00  frisch
+B22   EqCopSonde013FingerprintGoldenTest     2026-09-13T01:53:21.0871384+02:00  frisch
+B23   EqCopSonde013PassageStateTest          2026-09-13T01:53:31.5302565+02:00  frisch
+B24   EqCopSonde013PrePostGoldenTest         2026-09-13T01:53:34.2579156+02:00  frisch
+B27   EqCopSonde014IntentTest                2026-09-13T01:53:42.7925884+02:00  frisch
+B29   EqCopSonde014AssistentTest             2026-09-13T01:53:52.5756866+02:00  frisch
+

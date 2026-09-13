@@ -1,0 +1,608 @@
+NAK-283 Etappe 4 - Rotbeweis MUT-38 fuer M-38
+Zeitpunkt:  2026-09-13T02:12:53.6449629+02:00
+Mutation:   DspKern.cpp verarbeite: ein Kern, der den uebergrossen Block zurueckweist statt ihn zu stueckeln
+Datei:      eq-copilot/plugin/dsp/DspKern.cpp
+  SHA-256 vorher:  DB7F930002D154BDB9890434AC884AA517481CFC39E3409201973D6FB8DDA20E
+  SHA-256 nachher: DB7F930002D154BDB9890434AC884AA517481CFC39E3409201973D6FB8DDA20E (bytegleiche Ruecknahme: True)
+Bein:       B6 EqCopDspGoldenTest (rot: '', gruen: '')
+Neubau:     rot EqCopDspGoldenTest / gruen EqCopDspGoldenTest
+Traeger:    der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+Traegerzeile rot:   FEHLER  der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+Traegerzeile gruen: ok      der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== Nakama SONDE-015 B6 - aktiver DSP-Kern: Goldens, Bypass, Baenke ==
+Gate: Entwurf §44.2/§44.5, Matrix §3.1-§3.6, §3.13 und aus §3.14 M-118 und M-120 (Kern).
+
+== A - Passthrough und Hard-Bypass (M-01, M-02, M-05, M-50) ==
+  ok      default_ist_bitidentisch bei 44100 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 44100 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 48000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 48000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 96000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 96000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 192000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 192000 (M-01, M-07, B-10)  [belegt=0]
+  ok      ausschalten_gibt_jede_bank_frei (M-07, B-10)  [eingeschaltet belegt=1, nach aus/Fade/Pflege belegt=0, audio_active=0]
+  ok      unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  ok      hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  ok      passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+  ok      passthrough zaehlt keinen nicht-endlichen Eingang (M-50)  [Zaehler=0]
+
+== B - Crossfades: engagieren, ausschalten, Bypasswechsel (M-03, M-04, M-06) ==
+  ok      engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.01821 gegen Eigensprung 0.01440]
+  ok      fade_ist_in_samples_gezaehlt_nicht_in_bloecken (M-03)  [Blockgroesse 1 gegen 2048: 0 Abweichungen]
+  ok      nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  ok      bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284123 gegen Fadeschritt 0.00284122]
+  ok      bypasswechsel_endet_bitgleich (M-06)
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + eq_enabled aus  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + eq_enabled aus  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.000000000 und 0.002130926 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.002529919 gegen hergeleitete Schranke 0.002956120]
+  ok      der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)  [Ende 0.423761 gegen 0.423761]
+  ok      ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000000000000]
+
+== C - Filtergoldens gegen die analytische RBJ-Antwort (M-10 bis M-13) ==
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 207.5 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 61.7 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 21.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 18245.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 23.1 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 806.3 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 1015.9 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 226.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 53.4 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 30.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 241 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.259 gegen -0.259 dB; 1000 Hz: -12.000 gegen -12.000 dB; 4000 Hz: -23.761 gegen -23.761 dB; ]
+  ok      nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+  ok      kappung_aendert_den_persistenten_wert_nicht (M-12)  [DTO traegt weiter 20000 Hz]
+  ok      bei_96_khz_greift_der_deckel_nicht (M-12)  [0,45 * 96000 = 43200 Hz liegt ueber 20000]
+  ok      koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+
+== D - Kaskade und Richtung (M-15) ==
+  ok      kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 12.0000 dB, Produkt 12.0000 dB]
+  ok      richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.000000000000]
+  ok      ein_rueckwaertslauf_wuerde_das_golden_reissen (M-15)  [Abweichung rueckwaerts 0.006948965 - die Probe trennt die Richtung]
+
+== E - Rampe und Zipper (M-17) ==
+  ok      zipperresiduen_unter_minus_100_dbfs (M-17)  [groesste Stufe 0.00388777 gegen Rampenschritt 0.00388774]
+  ok      die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.000000059]
+  ok      rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.995262265 gegen Ziel 1.995262315]
+  ok      bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+
+== F - Dynamische Baender (M-18 bis M-22, M-25 bis M-27) ==
+  ok      unter_threshold_steht_das_band_exakt_still (M-19)  [Auslenkung 0.000000000000000]
+  ok      range_null_rechnet_keinen_detektor (M-20)
+  ok      range_null_ergibt_exakt_null_auslenkung (M-20)  [0.000000000000000]
+  ok      sidechain_none_liefert_keine_auslenkung (M-22)
+  ok      priority_sidechain_wird_geklemmt_und_gemeldet (M-23)  [das Programm rechnet internal, die Klemmung steht im Bericht]
+  ok      der persistente Wert bleibt priority_sidechain (M-23)
+  ok      dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung -9.000000 gegen range -9.000000]
+  ok      auslenkung_bleibt_innerhalb_range (M-18)
+  ok      kennlinie_im_knie_wirkt_im_audiopfad (M-18, B-14)  [6 dB ueber Threshold: Auslenkung -4.5000 (soll -4.50), Wirkung -1.5000 dB (soll -1.50)]
+  ok      plateau_wirkt_zusaetzlich_zu_gain_db_im_audiopfad (M-18, B-14)  [24 dB ueber Threshold: Auslenkung -9.0000, Wirkung -6.0000 dB (soll -6.00)]
+  ok      detektor_ist_bandbegrenzt (M-21)  [1000 Hz -9.0000 dB, 60 Hz -1.3373 dB]
+  ok      detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: -12.000000 dB]
+  ok      dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.022388935 gegen 0.023443103 im ruhigen Lauf]
+  ok      auslenkung_ist_gemessen_nicht_gerechnet (M-27)  [bei Stille meldet auch das dynamische Band exakt 0]
+  ok      attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold 0.0000 dB, mit 400 ms Hold -6.8136 dB]
+  ok      attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)  [soll A 20 H 30 R 50 ms +/- 1 ms; 44.1 kHz: A 20.32 H 30.20 R 49.89 ms; 48.0 kHz: A 20.33 H 30.17 R 49.83 ms; 96.0 kHz: A 20.33 H 30.17 R 49.83 ms; 192.0 kHz: A 20.38 H 30.12 R 49.88 ms; ]
+  ok      dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)  [Spanne je Stufe ueber vier Raten <= 1 ms]
+  ok      huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000022502 von Pss, Auslenkung 0.000000046 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_hold_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000401 von Pss, Auslenkung 0.000000003 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_release_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000000 von Pss, Auslenkung 0.000000000 dB, Holdzaehler ungemessen (kein Anstieg); Leistung beim Wechsel 0.2697 Pss]
+  ok      range_minus_12_nach_0_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -11.953125 dB (Idealrampe -11.953125), groesstes Residuum 0.000000000000 dB; danach Detektor aus, Leistung 0.000000000]
+  ok      range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -0.046875 dB (Idealrampe -0.046875), groesstes Residuum 0.000000000000 dB; danach Detektor an, Leistung 0.406344790]
+  ok      ausschalten_aendert_nur_dynamic_enabled (M-24 im Kern)  [die fuenf Werte bleiben bitgleich]
+
+== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  ok      width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.000000000]
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+  ok      input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -3.0000 dB (soll -3)]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  ok      mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  ok      mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.50000000]
+  ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+
+== H - Auto-Gain (M-35 bis M-40) ==
+  ok      flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: 0.000000000000000]
+  ok      neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: 0.000000000000000]
+  ok      shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-5.9970 dB]
+  ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  ok      auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -5.9970 dB]
+  ok      der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.99435]
+  ok      dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 0.000000000]
+  ok      und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung -12.0000 dB]
+  ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
+  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+== I - Bankpool und Ownership (M-41 bis M-46) ==
+  ok      vier_baenke_vorallokiert (M-41)  [4]
+  ok      der ACK-Ring fasst mehr Eintraege als es Slots gibt (M-45)  [8 > 4]
+  ok      uebergang_frei_nach_vorbereitend (M-42)
+  ok      uebergang_vorbereitend_nach_bereit (M-42)
+  ok      uebergang_bereit_nach_audio_aktiv (M-42)
+  ok      uebergang_audio_aktiv_nach_verblassend (M-42)
+  ok      uebergang_verblassend_nach_ausgedient (M-42)
+  ok      uebergang_ausgedient_nach_frei_erst_nach_ack (M-42, M-43)
+  ok      ein_nicht_genannter_uebergang_scheitert (M-42)  [frei -> verblassend ist im Automaten nicht moeglich]
+  ok      uebernahme_nur_in_der_publizierten_generation (M-42, B-1)  [verdraengt 0, neu belegt 0, Uebernahme mit alter Beobachtung -1, Committed 1, Candidate 0]
+  ok      generation_waechst_ueber_den_neuanlauf (R9 Feinheit 2, B-12)  [vor dem Neuanlauf 1, danach 2]
+  ok      ack_einer_alten_generation_gibt_keine_bank_frei (B-12)  [alter ACK geerntet: 0 frei, eigener ACK: 1 frei]
+  ok      reclaim_erst_nach_ack (M-43)  [ohne ACK bleibt die Bank verblassend und wird nie frei]
+  ok      nach dem ACK wird sie frei (M-43)
+  ok      alle vier Baenke reservierbar (M-41)
+  ok      busy_retry_wenn_kein_slot_frei (M-44)  [der fuenfte Wunsch verdraengt keine aktive Bank]
+  ok      wiederholung_nach_bankfreigabe_gelingt (M-44)
+  ok      ueberlaeufe_und_verriegelungen_sind_gekoppelt (M-45)  [Ueberlaeufe=0, Verriegelungen=0]
+  ok      der Ring droppt bei regulaerem Betrieb nie (M-45)  [der Ring fasst 8 Eintraege bei 4 Slots]
+  ok      erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung (M-45, B-17)  [verriegelt=ja, geerntet=2, haelt=ja, bestaetigt=ja, danach frei=ja]
+  ok      bestaetigung_ohne_verriegelung_gibt_nichts_frei (M-45, E-23)  [der regulaere ACK gibt ihn frei]
+  ok      Committed nimmt eine Bank
+  ok      Candidate nimmt eine zweite Bank
+  ok      Committed wechselt (dritte Bank)
+  ok      Candidate wechselt (vierte Bank)
+  ok      vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle 0, Candidate 3 mit Quelle 1, freie Slots 0]
+  ok      und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  ok      candidate_endet_neutral (M-46)
+
+== J - Audiothread-Invarianten (M-47, M-48) ==
+  ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 71 Blockrand-Uebernahmen, 50 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  ok      sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)  [ausserhalb 0, im Audiopfad 1]
+  ok      keine_sperre_am_wrapper_vorbei_im_kern (M-47, B-13)  [9 Dateien unter C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp, kein Treffer]
+  ok      der_zaehler_trennt_worker_und_audiothread (M-47)  [Testzaehler 1, Kernzaehler 0]
+  ok      ueberlast_verwirft_analyse (M-48)  [Block 1024 > maxBlock 256: Tap verworfen und gezaehlt]
+  FEHLER  der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+  FEHLER  uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 0 mal, Uebernahmen im Aufruf 0, groesste Abweichung im Block 0.000000000, naechster Aufruf endet bei 0.300000]
+  ok      denormale_filterzustaende_werden_am_blockrand_geriegelt (E-14)  [Riegel griff 2 mal]
+  ok      der_denormal_riegel_aendert_nichts_hoerbares (E-14)  [max 0.000000000000]
+
+== K - Nicht-Endlich-Riegel (M-49, M-113) ==
+  ok      nichtendlicher_eingang_wird_verriegelt_und_gezaehlt (M-49)  [Zaehler=3]
+  ok      kein_nan_vergiftet_den_filterzustand (M-49)
+  ok      der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+  ok      nichtendlicher_filterzustand_wird_am_blockrand_geheilt (M-49, B-20)  [geheilt +2, Eingangszaehler +0, Ausgang endlich: ja]
+  ok      im_regulaeren_betrieb_ist_jede_auslenkung_endlich (M-113)  [Riegel griff 0 mal]
+  ok      nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113, B-21)  [gemeldet 0.000000000000000, Zaehler +10 bei 10 Bloecken]
+  ok      endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang (M-39, R-283-6)  [ueber dem float-Rand 512 von 1024 Werten, am Ausgang nicht endlich 0, abweichend von der Erwartung 0, Zaehler +512]
+  ok      ausgangsriegel_beruehrt_endliches_material_nicht (M-42 Haelfte a, Regressionswache)  [204800 Werte verglichen, davon nicht bitgleich zur Verengung des Taps 0, mit Betrag >= 1 105396, Zaehler +0]
+
+== L - Hoermatrix und Taps (M-52 bis M-57, M-114) ==
+  ok      nach_dem_anlegen_immer_processed (M-52)
+  ok      hoermatrix_dry_ist_bitidentisch (M-53)
+  ok      delta_bei_gleichheit_ist_exakt_null (M-54)
+  ok      delta_ist_differenz_mit_festem_abgleich (M-54, B-23)  [Verhaeltnis bei 0,1 und 0,5: 3.962211 / 3.962211 gegen Soll 3.962211]
+  ok      hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00232899 gegen Fadeschritt 0.00231986]
+  ok      identische_zustaende_nullen_beim_wechsel (M-55)  [groesste Abweichung zum Eingang 0.000000014]
+  ok      hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)  [am Umschaltsample 0.000777543, max Sprung 0.002314270 gegen Fadeschritt 0.002314227, Fade zu Dry laeuft zu Ende: ja, Ende 0.792442 gegen Delta 0.792442]
+  ok      candidate_ohne_kandidat_faellt_sichtbar_zurueck (M-56)  [der Getter meldet den WIRKSAMEN Zustand]
+  ok      mit_kandidat_greift_die_auswahl (M-56)
+  ok      candidate_fuehrt_eigene_rampen (§3.0, B-6)  [Candidate 0.498816 gegen 0.498816, Committed 0.250000]
+  ok      candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)  [Candidate -5.9970 dB, Committed 0.0000 dB, Candidate-Tap bei DC 0.125340 gegen 0.125340]
+  ok      candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.000000000 (aus Dry waeren es 0.5455), andere Kurve 0.000000000 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.000719666 gegen 0.002531178, andere Kurve max 0.002529919 gegen 0.002956120]
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  ok      candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2304, Auswahl am Ende wirksam: ja]
+  ok      auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)  [Committed bei freiem Candidate-Slot -3.0000 dB; mit Candidate-Range -12: Committed -3.0000 dB, Candidate -12.0000 dB]
+  ok      hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 185.814748 gegen delta 185.814748]
+  ok      taps_sind_kohaerent (M-57)  [gleiches Zeitfenster, gleiche Laenge]
+  ok      feld_reist_nur_bei_vorhandener_dynamik (M-114)  [kein dynamisches Band: keine Meldung]
+  ok      mit dynamischem Band reist das Feld (M-114)
+  ok      bei ausgeschaltetem EQ reist es nicht (M-114)
+  ok      remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove 0.000000000000000]
+  ok      remove_mit_neubelegung_verwirft_die_alte_auslenkung (M-121)  [nachher 0.000000000000000]
+
+== M - Bankpool unter echter Parallelitaet (M-122) ==
+  ok      bankpool_parallel_ohne_rennen (M-122)  [4825 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+  ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2130]
+  ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+  ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+
+== N - Messwert des Vier-Bank-Falls (M-118, R15, kein erfundener Deckel) ==
+  MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 2.044 % Echtzeit im Mittel, p99 3.045 %, Maximum 8.614 % - 8000 Callbacks zu 128 Samples bei 48000 Hz (21.333 s Audio; 4000 Uebergaenge zu je 2 Callbacks)
+  MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.015 % Echtzeit im Mittel, p99 1.530 %, Maximum 3.439 % - 8000 Callbacks zu 128 Samples (21.333 s Audio)
+  ok      jede Publikation des Messlaufs kam durch (kein busy_retry)  [0 abgewiesen]
+  ok      worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [4000/4000 Stichproben]
+  ok      jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [8000/8000]
+  ok      jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)  [8000/8000]
+  ok      die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)  [2.044 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+  ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.015 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+
+== O - Realtime und Offline gleich (M-120, Haelfte des Kerns) ==
+  ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.843 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 11.98 ms]
+  ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.003 s fuer 0.843 s Audio, groesste Luecke 0.065 ms]
+  ok      beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [6 und 6]
+  ok      realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [Toleranz 0]
+  ok      die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)  [Slot 5 zwischen -6.00 und 0.00 dB]
+  ok      realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+259 geprueft, 2 Fehler
+DSP-GOLDEN FEHLGESCHLAGEN
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== Nakama SONDE-015 B6 - aktiver DSP-Kern: Goldens, Bypass, Baenke ==
+Gate: Entwurf §44.2/§44.5, Matrix §3.1-§3.6, §3.13 und aus §3.14 M-118 und M-120 (Kern).
+
+== A - Passthrough und Hard-Bypass (M-01, M-02, M-05, M-50) ==
+  ok      default_ist_bitidentisch bei 44100 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 44100 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 48000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 48000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 96000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 96000 (M-01, M-07, B-10)  [belegt=0]
+  ok      default_ist_bitidentisch bei 192000 Hz  [128899 Samples]
+  ok      ausgeschaltet ist keine Bank belegt bei 192000 (M-01, M-07, B-10)  [belegt=0]
+  ok      ausschalten_gibt_jede_bank_frei (M-07, B-10)  [eingeschaltet belegt=1, nach aus/Fade/Pflege belegt=0, audio_active=0]
+  ok      unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+  ok      hard_bypass_schreibt_nicht (M-05)  [width 1,7 und ein +12-dB-Bell liegen an und schlagen NICHT durch]
+  ok      passthrough_sanitisiert_nichts (M-50)  [NaN und beide Inf kommen unveraendert heraus]
+  ok      passthrough zaehlt keinen nicht-endlichen Eingang (M-50)  [Zaehler=0]
+
+== B - Crossfades: engagieren, ausschalten, Bypasswechsel (M-03, M-04, M-06) ==
+  ok      engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.01821 gegen Eigensprung 0.01440]
+  ok      fade_ist_in_samples_gezaehlt_nicht_in_bloecken (M-03)  [Blockgroesse 1 gegen 2048: 0 Abweichungen]
+  ok      nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+  ok      bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284123 gegen Fadeschritt 0.00284122]
+  ok      bypasswechsel_endet_bitgleich (M-06)
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + eq_enabled aus  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.0034714 gegen Fadeschritt 0.0034713, Fadeende 0.303471]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + eq_enabled aus  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.0021309 gegen Fadeschritt 0.0021309, Fadeende 0.302131]
+  ok      nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  ok      zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.000000000 und 0.002130926 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.002529919 gegen hergeleitete Schranke 0.002956120]
+  ok      der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)  [Ende 0.423761 gegen 0.423761]
+  ok      ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000000000000]
+
+== C - Filtergoldens gegen die analytische RBJ-Antwort (M-10 bis M-13) ==
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 207.5 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 61.7 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 21.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 18245.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 23.1 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 806.3 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 1015.9 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 226.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 53.4 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 30.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 241 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.259 gegen -0.259 dB; 1000 Hz: -12.000 gegen -12.000 dB; 4000 Hz: -23.761 gegen -23.761 dB; ]
+  ok      nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+  ok      kappung_aendert_den_persistenten_wert_nicht (M-12)  [DTO traegt weiter 20000 Hz]
+  ok      bei_96_khz_greift_der_deckel_nicht (M-12)  [0,45 * 96000 = 43200 Hz liegt ueber 20000]
+  ok      koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+
+== D - Kaskade und Richtung (M-15) ==
+  ok      kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 12.0000 dB, Produkt 12.0000 dB]
+  ok      richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.000000000000]
+  ok      ein_rueckwaertslauf_wuerde_das_golden_reissen (M-15)  [Abweichung rueckwaerts 0.006948965 - die Probe trennt die Richtung]
+
+== E - Rampe und Zipper (M-17) ==
+  ok      zipperresiduen_unter_minus_100_dbfs (M-17)  [groesste Stufe 0.00388777 gegen Rampenschritt 0.00388774]
+  ok      die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.000000059]
+  ok      rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.995262265 gegen Ziel 1.995262315]
+  ok      bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+  ok      bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000000000000 (-100 dBFS = 1e-5)]
+
+== F - Dynamische Baender (M-18 bis M-22, M-25 bis M-27) ==
+  ok      unter_threshold_steht_das_band_exakt_still (M-19)  [Auslenkung 0.000000000000000]
+  ok      range_null_rechnet_keinen_detektor (M-20)
+  ok      range_null_ergibt_exakt_null_auslenkung (M-20)  [0.000000000000000]
+  ok      sidechain_none_liefert_keine_auslenkung (M-22)
+  ok      priority_sidechain_wird_geklemmt_und_gemeldet (M-23)  [das Programm rechnet internal, die Klemmung steht im Bericht]
+  ok      der persistente Wert bleibt priority_sidechain (M-23)
+  ok      dynamische_kennlinie_golden_plateau (M-18)  [Auslenkung -9.000000 gegen range -9.000000]
+  ok      auslenkung_bleibt_innerhalb_range (M-18)
+  ok      kennlinie_im_knie_wirkt_im_audiopfad (M-18, B-14)  [6 dB ueber Threshold: Auslenkung -4.5000 (soll -4.50), Wirkung -1.5000 dB (soll -1.50)]
+  ok      plateau_wirkt_zusaetzlich_zu_gain_db_im_audiopfad (M-18, B-14)  [24 dB ueber Threshold: Auslenkung -9.0000, Wirkung -6.0000 dB (soll -6.00)]
+  ok      detektor_ist_bandbegrenzt (M-21)  [1000 Hz -9.0000 dB, 60 Hz -1.3373 dB]
+  ok      detektor_hoert_vor_dem_band (M-21)  [trotz -12 dB Absenkung bleibt die Auslenkung im Plateau: -12.000000 dB]
+  ok      dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.022388935 gegen 0.023443103 im ruhigen Lauf]
+  ok      auslenkung_ist_gemessen_nicht_gerechnet (M-27)  [bei Stille meldet auch das dynamische Band exakt 0]
+  ok      attack_hold_release_sind_drei_stufen (M-26)  [ohne Hold 0.0000 dB, mit 400 ms Hold -6.8136 dB]
+  ok      attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)  [soll A 20 H 30 R 50 ms +/- 1 ms; 44.1 kHz: A 20.32 H 30.20 R 49.89 ms; 48.0 kHz: A 20.33 H 30.17 R 49.83 ms; 96.0 kHz: A 20.33 H 30.17 R 49.83 ms; 192.0 kHz: A 20.38 H 30.12 R 49.88 ms; ]
+  ok      dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)  [Spanne je Stufe ueber vier Raten <= 1 ms]
+  ok      huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000022502 von Pss, Auslenkung 0.000000046 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_hold_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000401 von Pss, Auslenkung 0.000000003 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+  ok      huellkurvenwert_release_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000000 von Pss, Auslenkung 0.000000000 dB, Holdzaehler ungemessen (kein Anstieg); Leistung beim Wechsel 0.2697 Pss]
+  ok      range_minus_12_nach_0_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -11.953125 dB (Idealrampe -11.953125), groesstes Residuum 0.000000000000 dB; danach Detektor aus, Leistung 0.000000000]
+  ok      range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)  [erster Steuerschritt -0.046875 dB (Idealrampe -0.046875), groesstes Residuum 0.000000000000 dB; danach Detektor an, Leistung 0.406344790]
+  ok      ausschalten_aendert_nur_dynamic_enabled (M-24 im Kern)  [die fuenf Werte bleiben bitgleich]
+
+== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  ok      width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.000000000]
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+  ok      input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -3.0000 dB (soll -3)]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  ok      mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  ok      mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.50000000]
+  ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+
+== H - Auto-Gain (M-35 bis M-40) ==
+  ok      flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: 0.000000000000000]
+  ok      neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: 0.000000000000000]
+  ok      shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-5.9970 dB]
+  ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  ok      auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -5.9970 dB]
+  ok      der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.99435]
+  ok      dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 0.000000000]
+  ok      und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung -12.0000 dB]
+  ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
+  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+== I - Bankpool und Ownership (M-41 bis M-46) ==
+  ok      vier_baenke_vorallokiert (M-41)  [4]
+  ok      der ACK-Ring fasst mehr Eintraege als es Slots gibt (M-45)  [8 > 4]
+  ok      uebergang_frei_nach_vorbereitend (M-42)
+  ok      uebergang_vorbereitend_nach_bereit (M-42)
+  ok      uebergang_bereit_nach_audio_aktiv (M-42)
+  ok      uebergang_audio_aktiv_nach_verblassend (M-42)
+  ok      uebergang_verblassend_nach_ausgedient (M-42)
+  ok      uebergang_ausgedient_nach_frei_erst_nach_ack (M-42, M-43)
+  ok      ein_nicht_genannter_uebergang_scheitert (M-42)  [frei -> verblassend ist im Automaten nicht moeglich]
+  ok      uebernahme_nur_in_der_publizierten_generation (M-42, B-1)  [verdraengt 0, neu belegt 0, Uebernahme mit alter Beobachtung -1, Committed 1, Candidate 0]
+  ok      generation_waechst_ueber_den_neuanlauf (R9 Feinheit 2, B-12)  [vor dem Neuanlauf 1, danach 2]
+  ok      ack_einer_alten_generation_gibt_keine_bank_frei (B-12)  [alter ACK geerntet: 0 frei, eigener ACK: 1 frei]
+  ok      reclaim_erst_nach_ack (M-43)  [ohne ACK bleibt die Bank verblassend und wird nie frei]
+  ok      nach dem ACK wird sie frei (M-43)
+  ok      alle vier Baenke reservierbar (M-41)
+  ok      busy_retry_wenn_kein_slot_frei (M-44)  [der fuenfte Wunsch verdraengt keine aktive Bank]
+  ok      wiederholung_nach_bankfreigabe_gelingt (M-44)
+  ok      ueberlaeufe_und_verriegelungen_sind_gekoppelt (M-45)  [Ueberlaeufe=0, Verriegelungen=0]
+  ok      der Ring droppt bei regulaerem Betrieb nie (M-45)  [der Ring fasst 8 Eintraege bei 4 Slots]
+  ok      erzwungener_ueberlauf_verriegelt_den_slot_bis_zur_bestaetigung (M-45, B-17)  [verriegelt=ja, geerntet=2, haelt=ja, bestaetigt=ja, danach frei=ja]
+  ok      bestaetigung_ohne_verriegelung_gibt_nichts_frei (M-45, E-23)  [der regulaere ACK gibt ihn frei]
+  ok      Committed nimmt eine Bank
+  ok      Candidate nimmt eine zweite Bank
+  ok      Committed wechselt (dritte Bank)
+  ok      Candidate wechselt (vierte Bank)
+  ok      vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle 0, Candidate 3 mit Quelle 1, freie Slots 0]
+  ok      und der fuenfte Wunsch bekommt busy_retry (M-44/M-46)
+  ok      candidate_endet_neutral (M-46)
+
+== J - Audiothread-Invarianten (M-47, M-48) ==
+  ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 71 Blockrand-Uebernahmen, 50 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  ok      sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)  [ausserhalb 0, im Audiopfad 1]
+  ok      keine_sperre_am_wrapper_vorbei_im_kern (M-47, B-13)  [9 Dateien unter C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp, kein Treffer]
+  ok      der_zaehler_trennt_worker_und_audiothread (M-47)  [Testzaehler 1, Kernzaehler 0]
+  ok      ueberlast_verwirft_analyse (M-48)  [Block 1024 > maxBlock 256: Tap verworfen und gezaehlt]
+  ok      der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)  [alle 1024 Samples beider Kanaele bitgleich zum Referenzlauf in 4 x 256]
+  ok      uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, Uebernahmen im Aufruf 0, groesste Abweichung im Block 0.000000000, naechster Aufruf endet bei 0.106444]
+  ok      denormale_filterzustaende_werden_am_blockrand_geriegelt (E-14)  [Riegel griff 2 mal]
+  ok      der_denormal_riegel_aendert_nichts_hoerbares (E-14)  [max 0.000000000000]
+
+== K - Nicht-Endlich-Riegel (M-49, M-113) ==
+  ok      nichtendlicher_eingang_wird_verriegelt_und_gezaehlt (M-49)  [Zaehler=3]
+  ok      kein_nan_vergiftet_den_filterzustand (M-49)
+  ok      der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+  ok      nichtendlicher_filterzustand_wird_am_blockrand_geheilt (M-49, B-20)  [geheilt +2, Eingangszaehler +0, Ausgang endlich: ja]
+  ok      im_regulaeren_betrieb_ist_jede_auslenkung_endlich (M-113)  [Riegel griff 0 mal]
+  ok      nichtendliche_auslenkung_wird_null_und_gezaehlt (M-113, B-21)  [gemeldet 0.000000000000000, Zaehler +10 bei 10 Bloecken]
+  ok      endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang (M-39, R-283-6)  [ueber dem float-Rand 512 von 1024 Werten, am Ausgang nicht endlich 0, abweichend von der Erwartung 0, Zaehler +512]
+  ok      ausgangsriegel_beruehrt_endliches_material_nicht (M-42 Haelfte a, Regressionswache)  [204800 Werte verglichen, davon nicht bitgleich zur Verengung des Taps 0, mit Betrag >= 1 105396, Zaehler +0]
+
+== L - Hoermatrix und Taps (M-52 bis M-57, M-114) ==
+  ok      nach_dem_anlegen_immer_processed (M-52)
+  ok      hoermatrix_dry_ist_bitidentisch (M-53)
+  ok      delta_bei_gleichheit_ist_exakt_null (M-54)
+  ok      delta_ist_differenz_mit_festem_abgleich (M-54, B-23)  [Verhaeltnis bei 0,1 und 0,5: 3.962211 / 3.962211 gegen Soll 3.962211]
+  ok      hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00232899 gegen Fadeschritt 0.00231986]
+  ok      identische_zustaende_nullen_beim_wechsel (M-55)  [groesste Abweichung zum Eingang 0.000000014]
+  ok      hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)  [am Umschaltsample 0.000777543, max Sprung 0.002314270 gegen Fadeschritt 0.002314227, Fade zu Dry laeuft zu Ende: ja, Ende 0.792442 gegen Delta 0.792442]
+  ok      candidate_ohne_kandidat_faellt_sichtbar_zurueck (M-56)  [der Getter meldet den WIRKSAMEN Zustand]
+  ok      mit_kandidat_greift_die_auswahl (M-56)
+  ok      candidate_fuehrt_eigene_rampen (§3.0, B-6)  [Candidate 0.498816 gegen 0.498816, Committed 0.250000]
+  ok      candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)  [Candidate -5.9970 dB, Committed 0.0000 dB, Candidate-Tap bei DC 0.125340 gegen 0.125340]
+  ok      candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.000000000 (aus Dry waeren es 0.5455), andere Kurve 0.000000000 gegen Fadeschritt 0.002130918]
+  ok      wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.000719666 gegen 0.002531178, andere Kurve max 0.002529919 gegen 0.002956120]
+  ok      candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.0022975 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  ok      candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.002130926 gegen Fadeschritt 0.002130918, geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  ok      candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2304, Auswahl am Ende wirksam: ja]
+  ok      auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)  [Committed bei freiem Candidate-Slot -3.0000 dB; mit Candidate-Range -12: Committed -3.0000 dB, Candidate -12.0000 dB]
+  ok      hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 185.814748 gegen delta 185.814748]
+  ok      taps_sind_kohaerent (M-57)  [gleiches Zeitfenster, gleiche Laenge]
+  ok      feld_reist_nur_bei_vorhandener_dynamik (M-114)  [kein dynamisches Band: keine Meldung]
+  ok      mit dynamischem Band reist das Feld (M-114)
+  ok      bei ausgeschaltetem EQ reist es nicht (M-114)
+  ok      remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove 0.000000000000000]
+  ok      remove_mit_neubelegung_verwirft_die_alte_auslenkung (M-121)  [nachher 0.000000000000000]
+
+== M - Bankpool unter echter Parallelitaet (M-122) ==
+  ok      bankpool_parallel_ohne_rennen (M-122)  [4375 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+  ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2055]
+  ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+  ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+
+== N - Messwert des Vier-Bank-Falls (M-118, R15, kein erfundener Deckel) ==
+  MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 2.056 % Echtzeit im Mittel, p99 3.094 %, Maximum 8.096 % - 8000 Callbacks zu 128 Samples bei 48000 Hz (21.333 s Audio; 4000 Uebergaenge zu je 2 Callbacks)
+  MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.022 % Echtzeit im Mittel, p99 1.538 %, Maximum 7.973 % - 8000 Callbacks zu 128 Samples (21.333 s Audio)
+  ok      jede Publikation des Messlaufs kam durch (kein busy_retry)  [0 abgewiesen]
+  ok      worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [4000/4000 Stichproben]
+  ok      jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [8000/8000]
+  ok      jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)  [8000/8000]
+  ok      die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)  [2.056 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+  ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.022 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im Test]
+
+== O - Realtime und Offline gleich (M-120, Haelfte des Kerns) ==
+  ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.843 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 11.74 ms]
+  ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.003 s fuer 0.843 s Audio, groesste Luecke 0.053 ms]
+  ok      beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [6 und 6]
+  ok      realtime_und_offline_gleich (M-120): derselbe Ausgang, bitgleich ueber 40446 Samples in 180 Bloecken  [Toleranz 0]
+  ok      die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der Parameterverlauf nur Nullen (M-120)  [Slot 5 zwischen -6.00 und 0.00 dB]
+  ok      realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich
+
+259 geprueft, 0 Fehler
+DSP-GOLDEN OK

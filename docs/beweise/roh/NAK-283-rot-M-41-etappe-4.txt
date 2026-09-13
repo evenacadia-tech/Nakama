@@ -1,0 +1,442 @@
+NAK-283 Etappe 4 - Rotbeweis MUT-41 fuer M-41
+Zeitpunkt:  2026-09-13T02:12:16.0461364+02:00
+Mutation:   SondeProcessor.cpp processBlock: die Pruefung aus der Kopierschleife der Analyse entfernen (Stand am Basis-SHA: blosse Verengung)
+Datei:      eq-copilot/plugin/sonde/SondeProcessor.cpp
+  SHA-256 vorher:  0D517BC8AA8270F3AF29D656E1F4F8D195B4F5EF837A6FAA4B55400AA3070CCC
+  SHA-256 nachher: 0D517BC8AA8270F3AF29D656E1F4F8D195B4F5EF837A6FAA4B55400AA3070CCC (bytegleiche Ruecknahme: True)
+Bein:       B7 EqCopTransactionTest (rot: '', gruen: '')
+Neubau:     rot EqCopTransactionTest / gruen EqCopTransactionTest
+Traeger:    analysekopie_verengt_nicht_unbemerkt
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+Traegerzeile rot:   FEHLER  analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich nein, Zaehler +0]
+Traegerzeile gruen: ok      analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich ja, Zaehler +1024]
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+Gate: Manifest SONDE-015 §5.11.4 (S0-S8, I1-I6, T1-T17), Matrix §3.1, §3.7-§3.11, §3.14.
+
+== A - Falltabelle §5.11.4 Teil 4, tabellengetrieben mit Wachen I1/I2/I4 (M-125, zugleich M-44, M-123, M-124) ==
+  ok        Wachen I1/I2/I4 nach T1 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T1 wiederholung_im_fenster_liefert_dasselbe_ergebnis  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T1  [belegt 3 soll 3, r=3 r0=0]
+  ok      T2 veraltete_base_revision_ist_konflikt_ohne_wirkung  [konflikt @S1 rev=1 nicht-memo, r danach 1, nicht im Register | soll konflikt @S1 r=1 nicht-memo]
+  ok      T2 der bestaetigte Zustand ist unberuehrt
+  ok        Wachen I1/I2/I4 nach T2  [belegt 1 soll 1, r=1 r0=0]
+  ok      T2 der Konflikt liegt nicht im Register: dieselbe tid mit aktueller base committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T2 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  ok      T3 der Grund kommt aus dem DTO-Vertrag  [bereich @ v1.band.0.gain_db]
+  ok        Wachen I1/I2/I4 nach T3  [belegt 1 soll 1, r=1 r0=0]
+  ok      T3 der Fehler ist nicht gemerkt: dieselbe tid mit gueltiger Nutzlast committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T3 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T4 zonenriegel_weist_ab_und_merkt_nichts  [user_schutz @S3 rev=1 nicht-memo, r danach 1, nicht im Register | soll user_schutz @S3 r=1 nicht-memo]
+  ok      T4 das Band bleibt ausserhalb der Zone
+  ok        Wachen I1/I2/I4 nach T4  [belegt 1 soll 1, r=1 r0=0]
+  ok      T5 busy_retry_wird_nicht_gemerkt  [busy_retry @S5 rev=1 nicht-memo, r danach 1, nicht im Register | soll busy_retry @S5 r=1 nicht-memo]
+  ok      T5 der Pool war wirklich voll  [frei 0]
+  ok        Wachen I1/I2/I4 nach T5  [belegt 1 soll 1, r=1 r0=0]
+  ok      T6 commit_erzeugt_genau_eine_revision_und_einen_eintrag  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok      T6 der Eintrag traegt (tid, e = r, Hash des neuen Zustands)  [e=2]
+  ok        Wachen I1/I2/I4 nach T6  [belegt 2 soll 2, r=2 r0=0]
+  ok      T7 Vorlauf: T endet in busy_retry (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      T7 ein Audio-ACK gibt eine Bank frei - ohne Revision  [frei 1, r=1]
+  ok      T7 wiederholung_nach_bankfreigabe_committet  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok        Wachen I1/I2/I4 nach T7  [belegt 2 soll 2, r=2 r0=0]
+  ok      T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=2 memo]
+  ok      T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt  [konflikt @S1 rev=2 nicht-memo, r danach 2, nicht im Register | soll konflikt @S1 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T8  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T9  [belegt 3 soll 3, r=3 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [busy_retry @S5 rev=2 nicht-memo, r danach 2, nicht im Register | soll busy_retry @S5 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T9 bankpflichtig bei vollem Pool  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok      T9 der Pool war im bankfreien Fall wirklich voll  [reserviert 4]
+  ok        Wachen I1/I2/I4 nach T9 bankfrei bei vollem Pool  [belegt 3 soll 3, r=3 r0=0]
+  ok        Wachen I1/I2/I4 nach T10 Vorlauf (33 Commits)  [belegt 32 soll 32, r=33 r0=0]
+  ok      T10 fensterrand_erste_transaktion_ist_draussen  [konflikt @S1 rev=33 nicht-memo, r danach 33, nicht im Register | soll konflikt @S1 r=33 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T10  [belegt 32 soll 32, r=33 r0=0]
+  ok      T11 fensterrand_zweite_transaktion_ist_drinnen  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  ok        Wachen I1/I2/I4 nach T11  [belegt 32 soll 32, r=33 r0=0]
+  ok      T12 Vorlauf: 31 Abweisungen wegen veralteter base_revision  [31]
+  ok        Wachen I1/I2/I4 nach T12 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T12 abweisungen_verdraengen_keinen_committeten_eintrag  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T12  [belegt 3 soll 3, r=3 r0=0]
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T13 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T13  [belegt 1 soll 1, r=1 r0=0]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+  ok      T14 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T14  [belegt 1 soll 1, r=1 r0=0]
+  ok      T15 fehler_in_S7_laesst_committed_und_hash_unveraendert  [fehler @S7 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S7 r=1 nicht-memo]
+  ok      T15 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T15  [belegt 1 soll 1, r=1 r0=0]
+  ok      T16 Vorlauf: Zone ueber dem Band (erlaubt) und Remove committen  [commit @S8 rev=2 memo / commit @S8 rev=3 memo]
+  ok      T16 undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung  [commit @S8 rev=4 memo, r danach 4, im Register | soll commit @S8 r=4 memo]
+  ok      T16 das Band liegt wieder da und gilt als verletzt (M-68)
+  ok        Wachen I1/I2/I4 nach T16  [belegt 4 soll 4, r=4 r0=0]
+  ok      T17 Ladestart: r0 = r = 33, das Register ist leer
+  ok        Wachen I1/I2/I4 nach T17 Ladestart  [belegt 0 soll 0, r=33 r0=33]
+  ok      T17 wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch  [commit @S8 rev=34 memo, r danach 34, im Register | soll commit @S8 r=34 memo]
+  ok        Wachen I1/I2/I4 nach T17  [belegt 1 soll 1, r=34 r0=33]
+  ok      falltabelle_vollstaendig_gefahren: jede Zeile T1 bis T17 genau einmal, in Tabellenreihenfolge  [17 Faelle]
+
+== B - Fehler in jeder fehlbaren Stufe S1 bis S7, je an ihrer Tabellenzeile (M-75) ==
+  ok      fehler_in_S1_laesst_committed_und_hash_unveraendert (T2)  [konflikt @S1 rev=1 nicht-memo]
+  ok      fehler_in_S2_laesst_committed_und_hash_unveraendert (T3)  [fehler @S2 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S3_laesst_committed_und_hash_unveraendert (T4)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      fehler_in_S4_laesst_committed_und_hash_unveraendert (T13)  [fehler @S4 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [fehler @S6 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  ok        Wachen I1/I2/I4 nach den sieben Einspritzungen  [belegt 1 soll 1, r=1 r0=0]
+  ok      fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [commit @S8 rev=2 memo]
+  ok      nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl (10.000 Nachschlaege)  [Allokationen 0, Treffer 10000]
+
+== C - Hinter dem Commit-Punkt wird nicht alloziert (§5.11.4 Teil 2) ==
+  ok      hinter_dem_commit_punkt_wird_nicht_alloziert  [Allokationen ab S8: 0 ueber 47 Commits (40 Apply mit Ringueberlauf und Registerverdraengung, Undo, Undo, Redo, Remove, Neutralisieren, Revert, Preset)]
+  ok        Wachen I1/I2/I4 nach den Commit-Messungen  [belegt 32 soll 32, r=47 r0=0]
+
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+  ok      apply_erzeugt_genau_eine_revision  [commit @S8 rev=2 memo, Ring 2, Register 2]
+  ok        Wachen I1/I2/I4 nach apply  [belegt 2 soll 2, r=2 r0=0]
+  ok      remove_erzeugt_genau_eine_revision  [commit @S8 rev=3 memo, Ring 3, Register 3]
+  ok        Wachen I1/I2/I4 nach remove  [belegt 3 soll 3, r=3 r0=0]
+  ok      undo_erzeugt_genau_eine_revision  [commit @S8 rev=4 memo, Ring 3, Register 4]
+  ok        Wachen I1/I2/I4 nach undo  [belegt 4 soll 4, r=4 r0=0]
+  ok      redo_erzeugt_genau_eine_revision  [commit @S8 rev=5 memo, Ring 3, Register 5]
+  ok        Wachen I1/I2/I4 nach redo  [belegt 5 soll 5, r=5 r0=0]
+  ok      neutralisieren_erzeugt_genau_eine_revision  [commit @S8 rev=6 memo, Ring 4, Register 6]
+  ok        Wachen I1/I2/I4 nach neutralisieren  [belegt 6 soll 6, r=6 r0=0]
+  ok      revert_erzeugt_genau_eine_revision  [commit @S8 rev=7 memo, Ring 5, Register 7]
+  ok        Wachen I1/I2/I4 nach revert  [belegt 7 soll 7, r=7 r0=0]
+  ok        revert fuehrt exakt auf den Zustand der referenzierten Revision 1
+  ok        das Preset dieses Laufs ist geschrieben
+  ok      preset_laden_erzeugt_genau_eine_revision  [commit @S8 rev=8 memo, Ring 6, Register 8]
+  ok        Wachen I1/I2/I4 nach preset_laden  [belegt 8 soll 8, r=8 r0=0]
+  ok      alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt  [Commit S0..S8 in Reihenfolge: ja, S8 ohne Commit erreicht: nie]
+
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  ok      zehntausend_transaktionen_erzeugen_hoechstens_eine_revision  [r0=7, r - r0 = 1; T1 9993, T2 6, T6 1, andere 0, Mischzustaende 0]
+  ok        Wachen I1/I2/I4 nach jeder der 10.000 Eingaben  [keine Verletzung]
+
+== F - Wiederholung unter einer Zone, Ladestart und Register (M-123, M-124) ==
+  ok      wiederholung_unter_einer_zone_bekommt_nicht_user_schutz  [gespeichertes_ergebnis @S0 rev=3 memo]
+  ok        Wachen I1/I2/I4 nach dem Zonenablauf  [belegt 4 soll 4, r=4 r0=0]
+  ok      ladestart_hat_leeres_register_und_haelt_die_revision (dieselbe Instanz, vorher 32 Registereintraege)  [r=34 r0=34 belegt 32 -> 0, Cursor 1]
+  ok      register_ist_nicht_teil_des_zustands: Speichern schreibt es nicht, der Ladestart leert es, Hash und Revision bleiben  [5745 Bytes]
+
+== G - Belegung, Remove und Undo als ein Objekt (M-58 bis M-62) ==
+  ok      ausschalten_gibt_keinen_slot_frei (M-59): Slot bleibt belegt, Werte bleiben, Einschalten nimmt dieselben
+  ok      remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  ok      remove_nummeriert_nicht_um (M-60): Slot 5 bleibt Slot 5
+  ok      undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  ok      acht_belegte_slots_ueberschreiben_nichts (M-62): eigener Fehler, kein Opfer  [fehler @S4 rev=9 nicht-memo grund=alle_slots_belegt]
+  ok      freier_slot_verarbeitet_nichts (M-58): Slot 2 frei mit +12 dB, Dynamik und Auto-Gain an - Ausgang bitgleich, Auto-Gain gleich, keine Auslenkung  [Auto-Gain -1.427212 / -1.427212 dB, Auslenkung Slot 2 0.000000 dB]
+
+== H - Schutz-Zonen (M-66 bis M-73, M-126) ==
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  ok      zone_laufzeitkappung_aendert_nichts_persistentes (M-66): bei 44,1 kHz auf 0,45 fs gekappt, persistent 19900-20000 Hz
+  ok      band_in_zone_ziehen_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      abweisung_laesst_hash_und_revision_unveraendert (M-67): keine halbe Anwendung
+  ok      einschalten_in_der_zone_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      von_zone_a_nach_zone_b_wird_abgewiesen (M-67, B-03): je Zone einzeln, kein Sammelzustand  [user_schutz @S3 rev=2 nicht-memo]
+  ok      zone_ueber_band_ist_erlaubt_und_meldet_verletzung (M-68): das Band klingt weiter und steht im Bericht  [commit @S8 rev=2 memo]
+  ok      verletztes_band_bleibt_bedienbar (M-69): Gain und Frequenz innerhalb seiner Zone  [commit @S8 rev=3 memo / commit @S8 rev=4 memo]
+  ok      automation_verletzt_und_meldet_denselben_zustand (M-70): vorbeigeschrieben, keine Revision, dieselbe Meldung
+  ok      zone_deaktivieren_ist_eine_transaktion (M-71): danach ist kein Band verletzt und der Weg hinein frei  [commit @S8 rev=5 memo]
+  ok      zone_entfernen_ist_eine_transaktion (M-71)  [commit @S8 rev=7 memo]
+  ok      zonen_sind_teil_von_hash_preset_bericht_und_state (M-72): eine Zonenliste, vier Orte
+  ok      neunte_zone_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_anzahl @ schutz_zonen]
+  ok      doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_doppelt @ schutz_zonen[1].id]
+  ok      preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=2 memo]
+  ok      redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=4 memo]
+
+== I - Undo-Ring: Tiefe, Redo-Zweig, Neutralisieren (M-78 bis M-80) ==
+  ok      undo_ring_haelt_tiefe_32 (M-78): beim 33. Eintrag faellt der aelteste heraus; der volle Ring reist durch Speichern und Laden  [Ring 32, aeltester rev 8, juengster rev 39, 36975 Bytes]
+  ok      neue_transaktion_schneidet_den_redo_zweig_ab (M-79): ein Cursor im selben Ring  [fehler @S4 rev=5 nicht-memo grund=redo_leer]
+  ok      neutralisieren_loescht_die_historie_nicht (M-80): alle Werte auf Default, Rollenschalter und Zonen bleiben, Undo fuehrt zurueck  [commit @S8 rev=2 memo]
+
+== J - AutomationOverlay und PreviewOverlay am Kern (M-81, M-83) ==
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      preview_wird_nie_serialisiert (M-83): Speichern waehrend der Vorschau ergibt dieselben Bytes
+
+== K - Validator, Kanalmodus, Dynamikwerte, Klemmliste, Auto-Gain und Hash (M-14, M-23, M-24, M-28, M-39, M-77) ==
+  ok      apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=nichtendlich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.q]
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich (M-24, ueber zwei Transaktionen)
+  ok      channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S2 rev=2 nicht-memo grund=enum @ v1.band.0.channel_mode]
+  ok      kein_slot_erbt_den_modus (M-28)  [commit @S8 rev=3 memo]
+  ok      klemmliste_erscheint_im_bericht (M-23, E2-7): geklemmt auf internal, persistent weiter priority_sidechain; ein Eintrag je Slot, obwohl die Frequenz zusaetzlich gekappt ist  [1 Klemmung(en)]
+  ok      auto_gain_ist_nicht_im_hash (M-39): derselbe Hash bei verschiedenem abgeleitetem Wert  [44,1 kHz -1.093124 dB, 96 kHz -0.815437 dB]
+  ok      hash_kommt_aus_dem_bestandskanon (M-77): der Kern hasht jedes gueltige DTO-Fixture wie MANIFEST.json  [7/7]
+
+== L - Preset (M-95 bis M-100) ==
+  ok      preset_traegt_zwei_getrennte_versionen (M-95): preset_schema_version 1 neben dsp_schema_version 2
+  ok      preset_hat_keine_identitaetsfelder (M-97): keines der sechs Felder existiert im geschriebenen Preset
+  ok      preset_traegt_den_klanginhalt_vollstaendig (M-96): 119 Werte und Zonen kommen an  [commit @S8 rev=2 memo]
+  ok      preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  ok      preset_laesst_eq_enabled_unberuehrt (M-100, R12): das Ziel bleibt engagiert, obwohl die Quelle des Presets es nicht war
+  ok      undo_nach_preset_stellt_alles_her (M-100)
+  ok      identitaetsfeld_wird_abgelehnt (M-97): je Feld ein Negativfixture, als Preset-Laden in S2 abgewiesen  [6/6]
+  ok      unbekanntes_preset_major_wird_abgelehnt (M-99): klarer Fehler preset_schema_version, keine read-only-Haltung
+  ok        jedes ungueltige Preset-Fixture faellt mit seinem Manifestgrund  [17/17]
+  ok      unbekanntes_top_level_feld_wird_ignoriert (M-98)  [commit @S8 rev=4 memo]
+
+== M - Prozessor: 112 Host-Parameter in Vertragsreihenfolge (M-64, M-87, M-88) ==
+  ok      apvts_fuehrt_112_parameter_in_vertragsreihenfolge (M-88): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [112 Parameter, Reihenfolge 112, Typ/Grenzen 112]
+  ok      v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  ok      occupied_ist_kein_hostparameter (M-64): nicht in der Hostliste, von aussen nicht automatisierbar
+  ok      jede_v2_kennung_erklaert_ihren_ort (M-87): host_parameter genau dann, wenn sie in der Hostliste steht  [11/11]
+
+== N - Prozessor: Host-Dirty, Kind Dsp, erster Block, Freigabe, Altstand und fremdes Major (M-08, M-09, M-85, M-89, M-90, M-92) ==
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+  ok      abgewiesene_meldet_nicht (M-85): die Abweisung am Zonenriegel und das Laden melden kein Dirty  [user_schutz @S3 rev=2 nicht-memo, Laden 0]
+  ok      prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [5895 Bytes]
+  ok      eq_enabled_ueberlebt_speichern_laden (M-08): im bestaetigten Zustand und im Hostparameter
+  ok      bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 0, nach 1]
+  ok      ohne_callback_bleibt_gespeichert_und_wird_nachgeholt (M-09): bestaetigt ohne Callback, uebernommen vom naechsten Block vor seiner Ausgabe  [Uebernahmen 1 -> 1 -> 2]
+  ok      freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  ok      altstand_v1_laedt_im_prozessor_verlustfrei (M-90, R5, Prozessorhaelfte): der migrierte Stand wird der bestaetigte Zustand, Revision 0, gespeichert als v2  [3458 Bytes v1 -> 3644 Bytes]
+  ok      fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt (M-92, Prozessorhaelfte): read-only mit Originalbytes, eq_enabled aus, keine Transaktion  [fehler @keine rev=0 nicht-memo grund=schreibgeschuetzt, 186 Bytes]
+
+== O - Prozessor: Automation, Gestus, Vorschau, Reload, Offline, nicht-endlicher Hostwert (M-52, M-63, M-81 bis M-84, M-119, M-120) ==
+  ok      automation_auf_freien_slot_aendert_werte_nicht_klang (M-63): der Parameter folgt; Belegung, Programm und Audio bleiben gleich  [51200 Samples verglichen, Programmuebernahmen 1 / 1]
+  ok      capability_entscheidet_den_automationspfad (M-119): sample_accurate_automation ist unsupported - Topologieautomation wirkt nicht, der Parameter folgt trotzdem
+  ok        Gegenprobe: kontinuierliche Automation (gain_db) wirkt blockweise
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      abgeschlossener_gestus_ist_eine_revision (M-82): zwei ueberlappende Gesten mit 25 Zwischenwerten, eine Revision, die Endwerte bestaetigt  [r 1 -> 2, gain -11.000000, freq 1680.000244]
+  ok      nichtendlicher_hostwert_erreicht_das_programm_nie (E4-10): NaN und +Inf ueber den Hostparameter lassen den wirksamen Zustand beim bestaetigten Wert, der Ausgang bleibt endlich  [gain 3.000000, freq 1000.000000]
+  ok      preview_wird_nie_serialisiert (M-83, Prozessor): getStateInformation waehrend der Vorschau liefert dieselben Bytes
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      nach_laden_immer_processed (M-52): die Auswahl ist transient und steht weder im State noch im DTO
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120): der Wechsel in den Offline-Betrieb beendet die Vorschau; der Render ist bitgleich zum Lauf ohne Vorschau
+
+== P - NAK-283 F05: Host-Reset und Lebenszyklus-Trio am Prozessor (M-30 bis M-32, R-283-3) ==
+  ok      host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach  [Peak nach reset 0, ohne reset 0.0192088876]
+  ok      host_reset_laesst_parameter_und_zustand_unberuehrt (M-31, Regressionswache): getStateInformation bytegleich vor und nach reset(), die Bank bleibt engagiert (bestaetigt und im Kern), und der naechste Block mit Material traegt die Filterwirkung (1 kHz mehr als 6 dB lauter)  [4704 Bytes, gleich ja, Revision 1 -> 1, eq_enabled 1, Bank im Kern 1, 1 kHz 12 dB]
+  ok      die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich  [Peaks 0 / 0 / 0, a=b 1, b=c 1]
+
+== Q - NAK-283 F09 und F12: Analysezufuehrung der Sonde (M-35 bis M-37, M-41) ==
+  ok      ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke (M-35): 64, 128 (> maxBlock 64) und 64 Samples bei rechnendem Kern - der dritte Block beginnt lokal bei 192, traegt kFlagLueckeDavor, und continuity_segment steigt um 1  [Kern rechnet: ja; 2 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 192 n 64 Luecke ja Segment 2]
+  ok      dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne (M-36): derselbe Block zaehlt im Kern als ein verworfener Tap und in der Queue als genau 128 verlorene Frames eines Blocks ohne Audio - nicht als oversizeDrops  [Kern +1, ohne Audio +1, Frames +128, oversize +0, Ueberlauf +0]
+  ok      ruhender_passthrough_erzeugt_keine_luecke (M-37, Regressionswache): im Hard-Bypass liest die Analyse den uebergrossen Block als unberuehrten Eingang - er wird angenommen, und keine Luecke entsteht  [Committed ruht: ja; 3 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 64 n 128 Luecke nein Segment 1; #3 stromVon 192 n 64 Luecke nein Segment 1; Kern +1, ohne Audio +0]
+  FEHLER  analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich nein, Zaehler +0]
+
+174 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+Gate: Manifest SONDE-015 §5.11.4 (S0-S8, I1-I6, T1-T17), Matrix §3.1, §3.7-§3.11, §3.14.
+
+== A - Falltabelle §5.11.4 Teil 4, tabellengetrieben mit Wachen I1/I2/I4 (M-125, zugleich M-44, M-123, M-124) ==
+  ok        Wachen I1/I2/I4 nach T1 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T1 wiederholung_im_fenster_liefert_dasselbe_ergebnis  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T1  [belegt 3 soll 3, r=3 r0=0]
+  ok      T2 veraltete_base_revision_ist_konflikt_ohne_wirkung  [konflikt @S1 rev=1 nicht-memo, r danach 1, nicht im Register | soll konflikt @S1 r=1 nicht-memo]
+  ok      T2 der bestaetigte Zustand ist unberuehrt
+  ok        Wachen I1/I2/I4 nach T2  [belegt 1 soll 1, r=1 r0=0]
+  ok      T2 der Konflikt liegt nicht im Register: dieselbe tid mit aktueller base committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T2 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  ok      T3 der Grund kommt aus dem DTO-Vertrag  [bereich @ v1.band.0.gain_db]
+  ok        Wachen I1/I2/I4 nach T3  [belegt 1 soll 1, r=1 r0=0]
+  ok      T3 der Fehler ist nicht gemerkt: dieselbe tid mit gueltiger Nutzlast committet  [commit @S8 rev=2 memo]
+  ok        Wachen I1/I2/I4 nach T3 Wiederholung  [belegt 2 soll 2, r=2 r0=0]
+  ok      T4 zonenriegel_weist_ab_und_merkt_nichts  [user_schutz @S3 rev=1 nicht-memo, r danach 1, nicht im Register | soll user_schutz @S3 r=1 nicht-memo]
+  ok      T4 das Band bleibt ausserhalb der Zone
+  ok        Wachen I1/I2/I4 nach T4  [belegt 1 soll 1, r=1 r0=0]
+  ok      T5 busy_retry_wird_nicht_gemerkt  [busy_retry @S5 rev=1 nicht-memo, r danach 1, nicht im Register | soll busy_retry @S5 r=1 nicht-memo]
+  ok      T5 der Pool war wirklich voll  [frei 0]
+  ok        Wachen I1/I2/I4 nach T5  [belegt 1 soll 1, r=1 r0=0]
+  ok      T6 commit_erzeugt_genau_eine_revision_und_einen_eintrag  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok      T6 der Eintrag traegt (tid, e = r, Hash des neuen Zustands)  [e=2]
+  ok        Wachen I1/I2/I4 nach T6  [belegt 2 soll 2, r=2 r0=0]
+  ok      T7 Vorlauf: T endet in busy_retry (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      T7 ein Audio-ACK gibt eine Bank frei - ohne Revision  [frei 1, r=1]
+  ok      T7 wiederholung_nach_bankfreigabe_committet  [commit @S8 rev=2 memo, r danach 2, im Register | soll commit @S8 r=2 memo]
+  ok        Wachen I1/I2/I4 nach T7  [belegt 2 soll 2, r=2 r0=0]
+  ok      T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=2 memo]
+  ok      T8 retry_nach_zonenloesung_mit_alter_base_revision_ist_konflikt  [konflikt @S1 rev=2 nicht-memo, r danach 2, nicht im Register | soll konflikt @S1 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T8  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T9  [belegt 3 soll 3, r=3 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ist_busy_retry (bankpflichtig, nach I6 Ausgang T5)  [busy_retry @S5 rev=2 nicht-memo, r danach 2, nicht im Register | soll busy_retry @S5 r=2 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T9 bankpflichtig bei vollem Pool  [belegt 2 soll 2, r=2 r0=0]
+  ok      T9 retry_nach_zonenloesung_bei_vollem_pool_ohne_bankpflicht_committet  [commit @S8 rev=3 memo, r danach 3, im Register | soll commit @S8 r=3 memo]
+  ok      T9 der Pool war im bankfreien Fall wirklich voll  [reserviert 4]
+  ok        Wachen I1/I2/I4 nach T9 bankfrei bei vollem Pool  [belegt 3 soll 3, r=3 r0=0]
+  ok        Wachen I1/I2/I4 nach T10 Vorlauf (33 Commits)  [belegt 32 soll 32, r=33 r0=0]
+  ok      T10 fensterrand_erste_transaktion_ist_draussen  [konflikt @S1 rev=33 nicht-memo, r danach 33, nicht im Register | soll konflikt @S1 r=33 nicht-memo]
+  ok        Wachen I1/I2/I4 nach T10  [belegt 32 soll 32, r=33 r0=0]
+  ok      T11 fensterrand_zweite_transaktion_ist_drinnen  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  ok        Wachen I1/I2/I4 nach T11  [belegt 32 soll 32, r=33 r0=0]
+  ok      T12 Vorlauf: 31 Abweisungen wegen veralteter base_revision  [31]
+  ok        Wachen I1/I2/I4 nach T12 Vorlauf  [belegt 3 soll 3, r=3 r0=0]
+  ok      T12 abweisungen_verdraengen_keinen_committeten_eintrag  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 3, im Register | soll gespeichertes_ergebnis @S0 r=3 memo]
+  ok        Wachen I1/I2/I4 nach T12  [belegt 3 soll 3, r=3 r0=0]
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T13 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T13  [belegt 1 soll 1, r=1 r0=0]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+  ok      T14 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T14  [belegt 1 soll 1, r=1 r0=0]
+  ok      T15 fehler_in_S7_laesst_committed_und_hash_unveraendert  [fehler @S7 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S7 r=1 nicht-memo]
+  ok      T15 bestaetigter Zustand, Hash und Undo-Ring unveraendert - kein halber Eintrag
+  ok        Wachen I1/I2/I4 nach T15  [belegt 1 soll 1, r=1 r0=0]
+  ok      T16 Vorlauf: Zone ueber dem Band (erlaubt) und Remove committen  [commit @S8 rev=2 memo / commit @S8 rev=3 memo]
+  ok      T16 undo_unter_einer_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung  [commit @S8 rev=4 memo, r danach 4, im Register | soll commit @S8 r=4 memo]
+  ok      T16 das Band liegt wieder da und gilt als verletzt (M-68)
+  ok        Wachen I1/I2/I4 nach T16  [belegt 4 soll 4, r=4 r0=0]
+  ok      T17 Ladestart: r0 = r = 33, das Register ist leer
+  ok        Wachen I1/I2/I4 nach T17 Ladestart  [belegt 0 soll 0, r=33 r0=33]
+  ok      T17 wiederholung_ueber_sitzungsgrenze_ist_neuer_versuch  [commit @S8 rev=34 memo, r danach 34, im Register | soll commit @S8 r=34 memo]
+  ok        Wachen I1/I2/I4 nach T17  [belegt 1 soll 1, r=34 r0=33]
+  ok      falltabelle_vollstaendig_gefahren: jede Zeile T1 bis T17 genau einmal, in Tabellenreihenfolge  [17 Faelle]
+
+== B - Fehler in jeder fehlbaren Stufe S1 bis S7, je an ihrer Tabellenzeile (M-75) ==
+  ok      fehler_in_S1_laesst_committed_und_hash_unveraendert (T2)  [konflikt @S1 rev=1 nicht-memo]
+  ok      fehler_in_S2_laesst_committed_und_hash_unveraendert (T3)  [fehler @S2 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S3_laesst_committed_und_hash_unveraendert (T4)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      fehler_in_S4_laesst_committed_und_hash_unveraendert (T13)  [fehler @S4 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [fehler @S6 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  ok        Wachen I1/I2/I4 nach den sieben Einspritzungen  [belegt 1 soll 1, r=1 r0=0]
+  ok      fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [commit @S8 rev=2 memo]
+  ok      nachschlag_allokiert_nicht_und_schlaegt_nicht_fehl (10.000 Nachschlaege)  [Allokationen 0, Treffer 10000]
+
+== C - Hinter dem Commit-Punkt wird nicht alloziert (§5.11.4 Teil 2) ==
+  ok      hinter_dem_commit_punkt_wird_nicht_alloziert  [Allokationen ab S8: 0 ueber 47 Commits (40 Apply mit Ringueberlauf und Registerverdraengung, Undo, Undo, Redo, Remove, Neutralisieren, Revert, Preset)]
+  ok        Wachen I1/I2/I4 nach den Commit-Messungen  [belegt 32 soll 32, r=47 r0=0]
+
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+  ok      apply_erzeugt_genau_eine_revision  [commit @S8 rev=2 memo, Ring 2, Register 2]
+  ok        Wachen I1/I2/I4 nach apply  [belegt 2 soll 2, r=2 r0=0]
+  ok      remove_erzeugt_genau_eine_revision  [commit @S8 rev=3 memo, Ring 3, Register 3]
+  ok        Wachen I1/I2/I4 nach remove  [belegt 3 soll 3, r=3 r0=0]
+  ok      undo_erzeugt_genau_eine_revision  [commit @S8 rev=4 memo, Ring 3, Register 4]
+  ok        Wachen I1/I2/I4 nach undo  [belegt 4 soll 4, r=4 r0=0]
+  ok      redo_erzeugt_genau_eine_revision  [commit @S8 rev=5 memo, Ring 3, Register 5]
+  ok        Wachen I1/I2/I4 nach redo  [belegt 5 soll 5, r=5 r0=0]
+  ok      neutralisieren_erzeugt_genau_eine_revision  [commit @S8 rev=6 memo, Ring 4, Register 6]
+  ok        Wachen I1/I2/I4 nach neutralisieren  [belegt 6 soll 6, r=6 r0=0]
+  ok      revert_erzeugt_genau_eine_revision  [commit @S8 rev=7 memo, Ring 5, Register 7]
+  ok        Wachen I1/I2/I4 nach revert  [belegt 7 soll 7, r=7 r0=0]
+  ok        revert fuehrt exakt auf den Zustand der referenzierten Revision 1
+  ok        das Preset dieses Laufs ist geschrieben
+  ok      preset_laden_erzeugt_genau_eine_revision  [commit @S8 rev=8 memo, Ring 6, Register 8]
+  ok        Wachen I1/I2/I4 nach preset_laden  [belegt 8 soll 8, r=8 r0=0]
+  ok      alle_fehlbaren_stufen_liegen_vor_dem_commit_punkt  [Commit S0..S8 in Reihenfolge: ja, S8 ohne Commit erreicht: nie]
+
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  ok      zehntausend_transaktionen_erzeugen_hoechstens_eine_revision  [r0=7, r - r0 = 1; T1 9993, T2 6, T6 1, andere 0, Mischzustaende 0]
+  ok        Wachen I1/I2/I4 nach jeder der 10.000 Eingaben  [keine Verletzung]
+
+== F - Wiederholung unter einer Zone, Ladestart und Register (M-123, M-124) ==
+  ok      wiederholung_unter_einer_zone_bekommt_nicht_user_schutz  [gespeichertes_ergebnis @S0 rev=3 memo]
+  ok        Wachen I1/I2/I4 nach dem Zonenablauf  [belegt 4 soll 4, r=4 r0=0]
+  ok      ladestart_hat_leeres_register_und_haelt_die_revision (dieselbe Instanz, vorher 32 Registereintraege)  [r=34 r0=34 belegt 32 -> 0, Cursor 1]
+  ok      register_ist_nicht_teil_des_zustands: Speichern schreibt es nicht, der Ladestart leert es, Hash und Revision bleiben  [5745 Bytes]
+
+== G - Belegung, Remove und Undo als ein Objekt (M-58 bis M-62) ==
+  ok      ausschalten_gibt_keinen_slot_frei (M-59): Slot bleibt belegt, Werte bleiben, Einschalten nimmt dieselben
+  ok      remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  ok      remove_nummeriert_nicht_um (M-60): Slot 5 bleibt Slot 5
+  ok      undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  ok      acht_belegte_slots_ueberschreiben_nichts (M-62): eigener Fehler, kein Opfer  [fehler @S4 rev=9 nicht-memo grund=alle_slots_belegt]
+  ok      freier_slot_verarbeitet_nichts (M-58): Slot 2 frei mit +12 dB, Dynamik und Auto-Gain an - Ausgang bitgleich, Auto-Gain gleich, keine Auslenkung  [Auto-Gain -1.427212 / -1.427212 dB, Auslenkung Slot 2 0.000000 dB]
+
+== H - Schutz-Zonen (M-66 bis M-73, M-126) ==
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  ok      zone_laufzeitkappung_aendert_nichts_persistentes (M-66): bei 44,1 kHz auf 0,45 fs gekappt, persistent 19900-20000 Hz
+  ok      band_in_zone_ziehen_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      abweisung_laesst_hash_und_revision_unveraendert (M-67): keine halbe Anwendung
+  ok      einschalten_in_der_zone_wird_abgewiesen (M-67)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      von_zone_a_nach_zone_b_wird_abgewiesen (M-67, B-03): je Zone einzeln, kein Sammelzustand  [user_schutz @S3 rev=2 nicht-memo]
+  ok      zone_ueber_band_ist_erlaubt_und_meldet_verletzung (M-68): das Band klingt weiter und steht im Bericht  [commit @S8 rev=2 memo]
+  ok      verletztes_band_bleibt_bedienbar (M-69): Gain und Frequenz innerhalb seiner Zone  [commit @S8 rev=3 memo / commit @S8 rev=4 memo]
+  ok      automation_verletzt_und_meldet_denselben_zustand (M-70): vorbeigeschrieben, keine Revision, dieselbe Meldung
+  ok      zone_deaktivieren_ist_eine_transaktion (M-71): danach ist kein Band verletzt und der Weg hinein frei  [commit @S8 rev=5 memo]
+  ok      zone_entfernen_ist_eine_transaktion (M-71)  [commit @S8 rev=7 memo]
+  ok      zonen_sind_teil_von_hash_preset_bericht_und_state (M-72): eine Zonenliste, vier Orte
+  ok      neunte_zone_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_anzahl @ schutz_zonen]
+  ok      doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_doppelt @ schutz_zonen[1].id]
+  ok      preset_laden_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=2 memo]
+  ok      redo_in_eine_zone_wird_nicht_abgewiesen_sondern_meldet_verletzung (M-126, T16)  [commit @S8 rev=4 memo]
+
+== I - Undo-Ring: Tiefe, Redo-Zweig, Neutralisieren (M-78 bis M-80) ==
+  ok      undo_ring_haelt_tiefe_32 (M-78): beim 33. Eintrag faellt der aelteste heraus; der volle Ring reist durch Speichern und Laden  [Ring 32, aeltester rev 8, juengster rev 39, 36975 Bytes]
+  ok      neue_transaktion_schneidet_den_redo_zweig_ab (M-79): ein Cursor im selben Ring  [fehler @S4 rev=5 nicht-memo grund=redo_leer]
+  ok      neutralisieren_loescht_die_historie_nicht (M-80): alle Werte auf Default, Rollenschalter und Zonen bleiben, Undo fuehrt zurueck  [commit @S8 rev=2 memo]
+
+== J - AutomationOverlay und PreviewOverlay am Kern (M-81, M-83) ==
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      preview_wird_nie_serialisiert (M-83): Speichern waehrend der Vorschau ergibt dieselben Bytes
+
+== K - Validator, Kanalmodus, Dynamikwerte, Klemmliste, Auto-Gain und Hash (M-14, M-23, M-24, M-28, M-39, M-77) ==
+  ok      apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=nichtendlich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.q]
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich (M-24, ueber zwei Transaktionen)
+  ok      channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S2 rev=2 nicht-memo grund=enum @ v1.band.0.channel_mode]
+  ok      kein_slot_erbt_den_modus (M-28)  [commit @S8 rev=3 memo]
+  ok      klemmliste_erscheint_im_bericht (M-23, E2-7): geklemmt auf internal, persistent weiter priority_sidechain; ein Eintrag je Slot, obwohl die Frequenz zusaetzlich gekappt ist  [1 Klemmung(en)]
+  ok      auto_gain_ist_nicht_im_hash (M-39): derselbe Hash bei verschiedenem abgeleitetem Wert  [44,1 kHz -1.093124 dB, 96 kHz -0.815437 dB]
+  ok      hash_kommt_aus_dem_bestandskanon (M-77): der Kern hasht jedes gueltige DTO-Fixture wie MANIFEST.json  [7/7]
+
+== L - Preset (M-95 bis M-100) ==
+  ok      preset_traegt_zwei_getrennte_versionen (M-95): preset_schema_version 1 neben dsp_schema_version 2
+  ok      preset_hat_keine_identitaetsfelder (M-97): keines der sechs Felder existiert im geschriebenen Preset
+  ok      preset_traegt_den_klanginhalt_vollstaendig (M-96): 119 Werte und Zonen kommen an  [commit @S8 rev=2 memo]
+  ok      preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  ok      preset_laesst_eq_enabled_unberuehrt (M-100, R12): das Ziel bleibt engagiert, obwohl die Quelle des Presets es nicht war
+  ok      undo_nach_preset_stellt_alles_her (M-100)
+  ok      identitaetsfeld_wird_abgelehnt (M-97): je Feld ein Negativfixture, als Preset-Laden in S2 abgewiesen  [6/6]
+  ok      unbekanntes_preset_major_wird_abgelehnt (M-99): klarer Fehler preset_schema_version, keine read-only-Haltung
+  ok        jedes ungueltige Preset-Fixture faellt mit seinem Manifestgrund  [17/17]
+  ok      unbekanntes_top_level_feld_wird_ignoriert (M-98)  [commit @S8 rev=4 memo]
+
+== M - Prozessor: 112 Host-Parameter in Vertragsreihenfolge (M-64, M-87, M-88) ==
+  ok      apvts_fuehrt_112_parameter_in_vertragsreihenfolge (M-88): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [112 Parameter, Reihenfolge 112, Typ/Grenzen 112]
+  ok      v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  ok      occupied_ist_kein_hostparameter (M-64): nicht in der Hostliste, von aussen nicht automatisierbar
+  ok      jede_v2_kennung_erklaert_ihren_ort (M-87): host_parameter genau dann, wenn sie in der Hostliste steht  [11/11]
+
+== N - Prozessor: Host-Dirty, Kind Dsp, erster Block, Freigabe, Altstand und fremdes Major (M-08, M-09, M-85, M-89, M-90, M-92) ==
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+  ok      abgewiesene_meldet_nicht (M-85): die Abweisung am Zonenriegel und das Laden melden kein Dirty  [user_schutz @S3 rev=2 nicht-memo, Laden 0]
+  ok      prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [5895 Bytes]
+  ok      eq_enabled_ueberlebt_speichern_laden (M-08): im bestaetigten Zustand und im Hostparameter
+  ok      bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 0, nach 1]
+  ok      ohne_callback_bleibt_gespeichert_und_wird_nachgeholt (M-09): bestaetigt ohne Callback, uebernommen vom naechsten Block vor seiner Ausgabe  [Uebernahmen 1 -> 1 -> 2]
+  ok      freigabe_und_vorbereitung_sind_ein_paar (E4-22): releaseResources gibt den Kern frei, ohne Vorbereitung unberuehrt, danach klingt derselbe bestaetigte Zustand  [51200 Samples]
+  ok      altstand_v1_laedt_im_prozessor_verlustfrei (M-90, R5, Prozessorhaelfte): der migrierte Stand wird der bestaetigte Zustand, Revision 0, gespeichert als v2  [3458 Bytes v1 -> 3644 Bytes]
+  ok      fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt (M-92, Prozessorhaelfte): read-only mit Originalbytes, eq_enabled aus, keine Transaktion  [fehler @keine rev=0 nicht-memo grund=schreibgeschuetzt, 186 Bytes]
+
+== O - Prozessor: Automation, Gestus, Vorschau, Reload, Offline, nicht-endlicher Hostwert (M-52, M-63, M-81 bis M-84, M-119, M-120) ==
+  ok      automation_auf_freien_slot_aendert_werte_nicht_klang (M-63): der Parameter folgt; Belegung, Programm und Audio bleiben gleich  [51200 Samples verglichen, Programmuebernahmen 1 / 1]
+  ok      capability_entscheidet_den_automationspfad (M-119): sample_accurate_automation ist unsupported - Topologieautomation wirkt nicht, der Parameter folgt trotzdem
+  ok        Gegenprobe: kontinuierliche Automation (gain_db) wirkt blockweise
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      abgeschlossener_gestus_ist_eine_revision (M-82): zwei ueberlappende Gesten mit 25 Zwischenwerten, eine Revision, die Endwerte bestaetigt  [r 1 -> 2, gain -11.000000, freq 1680.000244]
+  ok      nichtendlicher_hostwert_erreicht_das_programm_nie (E4-10): NaN und +Inf ueber den Hostparameter lassen den wirksamen Zustand beim bestaetigten Wert, der Ausgang bleibt endlich  [gain 3.000000, freq 1000.000000]
+  ok      preview_wird_nie_serialisiert (M-83, Prozessor): getStateInformation waehrend der Vorschau liefert dieselben Bytes
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      nach_laden_immer_processed (M-52): die Auswahl ist transient und steht weder im State noch im DTO
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120): der Wechsel in den Offline-Betrieb beendet die Vorschau; der Render ist bitgleich zum Lauf ohne Vorschau
+
+== P - NAK-283 F05: Host-Reset und Lebenszyklus-Trio am Prozessor (M-30 bis M-32, R-283-3) ==
+  ok      host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach  [Peak nach reset 0, ohne reset 0.0192088876]
+  ok      host_reset_laesst_parameter_und_zustand_unberuehrt (M-31, Regressionswache): getStateInformation bytegleich vor und nach reset(), die Bank bleibt engagiert (bestaetigt und im Kern), und der naechste Block mit Material traegt die Filterwirkung (1 kHz mehr als 6 dB lauter)  [4704 Bytes, gleich ja, Revision 1 -> 1, eq_enabled 1, Bank im Kern 1, 1 kHz 12 dB]
+  ok      die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich  [Peaks 0 / 0 / 0, a=b 1, b=c 1]
+
+== Q - NAK-283 F09 und F12: Analysezufuehrung der Sonde (M-35 bis M-37, M-41) ==
+  ok      ungueltiger_tap_bei_rechnendem_kern_hinterlaesst_eine_luecke (M-35): 64, 128 (> maxBlock 64) und 64 Samples bei rechnendem Kern - der dritte Block beginnt lokal bei 192, traegt kFlagLueckeDavor, und continuity_segment steigt um 1  [Kern rechnet: ja; 2 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 192 n 64 Luecke ja Segment 2]
+  ok      dsp_und_queuezaehler_beschreiben_dieselbe_verworfene_zeitspanne (M-36): derselbe Block zaehlt im Kern als ein verworfener Tap und in der Queue als genau 128 verlorene Frames eines Blocks ohne Audio - nicht als oversizeDrops  [Kern +1, ohne Audio +1, Frames +128, oversize +0, Ueberlauf +0]
+  ok      ruhender_passthrough_erzeugt_keine_luecke (M-37, Regressionswache): im Hard-Bypass liest die Analyse den uebergrossen Block als unberuehrten Eingang - er wird angenommen, und keine Luecke entsteht  [Committed ruht: ja; 3 Deskriptoren: #1 stromVon 0 n 64 Luecke ja Segment 1; #2 stromVon 64 n 128 Luecke nein Segment 1; #3 stromVon 192 n 64 Luecke nein Segment 1; Kern +1, ohne Audio +0]
+  ok      analysekopie_verengt_nicht_unbemerkt (M-41, R-283-6): der Tap post_committed traegt endliche double ueber FLT_MAX, die Analyse bekommt 1024 endliche floats, und der Zaehler des Kerns sieht genau die 1024 verriegelten Werte  [gelesen ja, Tap ueber FLT_MAX ja, Ausgang roh ja, Analyse endlich ja, Zaehler +1024]
+
+174 geprueft, 0 Fehler
+TRANSAKTION OK

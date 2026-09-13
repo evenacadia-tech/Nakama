@@ -1,0 +1,44 @@
+NAK-283 Etappe 4 - Rotbeweis MUT-43-BASIS fuer M-43 Basis
+Zeitpunkt:  2026-09-13T02:14:00.9372902+02:00
+Mutation:   keine Mutation: derselbe Riegel misst rot den Stand am Basis-SHA (git show), gruen den Arbeitsbaum
+Datei:      (keine Mutation)
+Bein:       docs/beweise/roh/NAK-283-etappe-4-riegel-M-43.ps1 (rot: '-Revision 0f0bc1edbd0554eede8976f05a3eb3f4c376e19c', gruen: '')
+Neubau:     rot  / gruen 
+Traeger:    R3 F09
+Urteil:     ROT Exit 1 / GRUEN Exit 0
+Traegerzeile rot:   FEHLER  R3 F09: der dritte Zustand (Tap ungueltig, Kern rechnet) fuehrt die Zeitbuchfuehrung der Queue
+Traegerzeile gruen: ok      R3 F09: der dritte Zustand (Tap ungueltig, Kern rechnet) fuehrt die Zeitbuchfuehrung der Queue
+
+--- MUTIERT (erwartet: rot) ---------------------------------------
+NAK-283 Etappe 4 - Riegel M-43 (Revision 0f0bc1edbd0554eede8976f05a3eb3f4c376e19c)
+  FEHLER  R1 F04: git grep "waere kein Passthrough" unter sonde/ trifft nur die nachgezogene Fassung (Marker "traegt seit SONDE-015 Etappe 4a nicht mehr")  [0 Treffer, davon 0 ohne Marker]
+  FEHLER  R1 F04: isBusesLayoutSupported traegt die alte Passthrough-Begruendung nicht mehr  [alte Fassung steht: 'Ein Passthrough, der Kanaele erfinden oder verschlucken muesste, waere kein Passthrough']
+  FEHLER  R1 F04: die Layoutregel nennt Mono oder Stereo wie Gen (Hostbruecke.cpp)
+  FEHLER  R2 F05: der dritte Hosteintritt reset ist ueberschrieben
+  FEHLER  R2 F05: releaseResources begruendet sich nicht mehr als Paar ohne reset  [alte Fassung steht: 'Gegenstueck zu prepareToPlay (Beziehungen mitpruefen): der Kern gibt seine Blockpuffer frei']
+  FEHLER  R3 F09: der dritte Zustand (Tap ungueltig, Kern rechnet) fuehrt die Zeitbuchfuehrung der Queue
+  FEHLER  R3 F09: der Passthrough-Zweig traegt nicht mehr die Begruendung, die Analyse falle still  [alte Fassung steht]
+  FEHLER  R4 F12: tdf2Lauf prueft den verengten Wert, nicht seine double-Vorstufe
+  FEHLER  R4 F12: die Selbstzusage des Riegels nennt die Verengung (NAK-283 F12)
+  FEHLER  R5 SondeProcessor.h traegt nicht mehr: 'es tut deshalb dasselbe wie Suna: nichts am Audio'
+  FEHLER  R5 SondeProcessor.h traegt nicht mehr: 'beide Bundles sind heute Passthrough'
+  ok      R6 die Runner-Behauptung von A16 nennt den aktiven Kern
+
+RIEGEL M-43 FEHLGESCHLAGEN - 12 Pruefungen, 11 Fehler
+
+--- ZURUECKGESPIELT (erwartet: gruen) -----------------------------
+NAK-283 Etappe 4 - Riegel M-43 (Arbeitsbaum)
+  ok      R1 F04: git grep "waere kein Passthrough" unter sonde/ trifft nur die nachgezogene Fassung (Marker "traegt seit SONDE-015 Etappe 4a nicht mehr")  [1 Treffer, davon 0 ohne Marker]
+  ok      R1 F04: isBusesLayoutSupported traegt die alte Passthrough-Begruendung nicht mehr
+  ok      R1 F04: die Layoutregel nennt Mono oder Stereo wie Gen (Hostbruecke.cpp)
+  ok      R2 F05: der dritte Hosteintritt reset ist ueberschrieben
+  ok      R2 F05: releaseResources begruendet sich nicht mehr als Paar ohne reset
+  ok      R3 F09: der dritte Zustand (Tap ungueltig, Kern rechnet) fuehrt die Zeitbuchfuehrung der Queue
+  ok      R3 F09: der Passthrough-Zweig traegt nicht mehr die Begruendung, die Analyse falle still
+  ok      R4 F12: tdf2Lauf prueft den verengten Wert, nicht seine double-Vorstufe
+  ok      R4 F12: die Selbstzusage des Riegels nennt die Verengung (NAK-283 F12)
+  ok      R5 SondeProcessor.h traegt nicht mehr: 'es tut deshalb dasselbe wie Suna: nichts am Audio'
+  ok      R5 SondeProcessor.h traegt nicht mehr: 'beide Bundles sind heute Passthrough'
+  ok      R6 die Runner-Behauptung von A16 nennt den aktiven Kern
+
+RIEGEL M-43 OK - 12 Pruefungen

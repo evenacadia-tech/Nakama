@@ -1,0 +1,137 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-66b fuer M-66b A27 (BEOBACHTUNG, kein Rotbeweis)
+Zeitpunkt:  2026-09-13T04:31:28.5712366+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   wie MUT-66, danach schreibt der mutierte Erzeuger den Korpus neu - A25, A26 und A27 sehen die Behauptung nicht, der Riegel M-66 sieht sie
+Datei:      tools/eq-copilot/erzeuge_p4_korpus.py
+  SHA-256 vorher:  93A0049387641362A904C1D9F490F5ECDB37D5CE7DB2896473628D8AFD787143
+  SHA-256 nachher: 93A0049387641362A904C1D9F490F5ECDB37D5CE7DB2896473628D8AFD787143 (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/fixtures/p4-korpus/MANIFEST.json
+  SHA-256 vorher:  8DC286E37FF938D9394324805C095CB517BA8F2EF8811FA90E985F5CF7EAA2D4
+  SHA-256 nachher: 8DC286E37FF938D9394324805C095CB517BA8F2EF8811FA90E985F5CF7EAA2D4 (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/fixtures/p4-korpus/referenz.json
+  SHA-256 vorher:  8ACD00972BF63BDCD55F739CDBB13C6E7AC76B930F1566D8DD6AFDB53C836A51
+  SHA-256 nachher: 8ACD00972BF63BDCD55F739CDBB13C6E7AC76B930F1566D8DD6AFDB53C836A51 (bytegleiche Ruecknahme: True)
+Vorlauf:    py -3.13 tools/eq-copilot/erzeuge_p4_korpus.py -> Exit 0: P4-Korpus: 5 Dateien, 25 Faelle in 4 Klassen / geschrieben
+Befehl:     rot 'py -3.13 tools/eq-copilot/pruefe_p4_korpus.py --selbsttest' / gruen 'py -3.13 tools/eq-copilot/pruefe_p4_korpus.py --selbsttest'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'A27:' + '' / gruen 'A27:' + ''
+Erwartet:   rot Exit 0 / gruen Exit 0
+Urteil:     ROT Exit 0 (0.28 s) / GRUEN Exit 0 (0.52 s)
+Traegerzeile rot:   A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+Traegerzeile gruen: A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+Zeilen mit roter Marke im roten Lauf: 1
+  A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+A27 · Selbsttest von pruefe_p4_korpus.py (NAK-182 R1, MP1-6)
+
+Korpusweg (synthetischer Korpus -> _kennzahlen -> _riegel)
+[ok]   S-01 unbekannt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unbekannt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unvergleichbar Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 zeitvariabel Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_kausal Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_exakt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-02 unbekannt: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unbekannt Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unvergleichbar Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 zeitvariabel Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-02 nicht_exakt: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_exakt Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-07: ein Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN faellt an derselben Validierung, die A26 fuehrt, und die Meldung nennt den Fall  [synthetisch: Wahrheit 'erfundene_wahrheit' steht nicht in ERLAUBTE_WAHRHEITEN]
+[ok]   S-07 Gegenteil: derselbe Fall mit einem Wert AUS der Menge erzeugt keine rote Zeile
+
+Kennzahlweg (_riegel direkt) - der Korpus kann diese Faelle nach R1a
+nicht mehr erzeugen, die Wachen brauchen trotzdem einen Weg zu fallen
+[ok]   S-03 recall: der Riegel meldet rot und nennt Recall  [selbsttest: Recall 1.0700 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-03 recall Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04 precision: der Riegel meldet rot und nennt Precision  [selbsttest: Precision 1.0200 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-04 precision Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04b falsche_starke: der Riegel meldet rot und nennt starke  [selbsttest: 1 falsche starke Behauptung(en): ]
+[ok]   S-04b falsche_starke Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04c falsche_schwache: der Riegel meldet rot und nennt schwache  [selbsttest: 1 falsche schwache Behauptung(en): ]
+[ok]   S-04c falsche_schwache Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04d brier: der Riegel meldet rot und nennt Brier  [selbsttest: Brier Score 0.2600 >= 0.25]
+[ok]   S-04d brier Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e coverage: der Riegel meldet rot und nennt Coverage  [selbsttest: Coverage 0.49 < 0.5]
+[ok]   S-04e coverage Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e kalibrierung: der Riegel meldet rot und nennt Kalibrierung  [selbsttest: Kalibrierung 0.1600 > 0.15]
+[ok]   S-04e kalibrierung Gegenteil: innerhalb des Gates keine rote Zeile
+
+Quellenweg (_quelle_pruefen)
+[ok]   S-05 Gegenteil: ein Bezeichner, der in der Datei steht, ist gruen
+[ok]   S-05: ein erfundener Bezeichner ist rot und die Meldung nennt Datei und Bezeichner  [x: Bezeichner 'gibt_es_nicht_9f3a2b1c' steht nicht in tools/eq-copilot/pruefe_p4_korpus.py]
+[ok]   S-06: ein Pfad ins Leere ist rot  [x: Quelldatei fehlt: gibt/es/nicht.cpp]
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+42 bestanden, 0 gescheitert
+A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+A27 · Selbsttest von pruefe_p4_korpus.py (NAK-182 R1, MP1-6)
+
+Korpusweg (synthetischer Korpus -> _kennzahlen -> _riegel)
+[ok]   S-01 unbekannt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unbekannt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unvergleichbar Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 zeitvariabel Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_kausal Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_exakt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-02 unbekannt: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unbekannt Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unvergleichbar Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 zeitvariabel Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-02 nicht_exakt: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_exakt Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-07: ein Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN faellt an derselben Validierung, die A26 fuehrt, und die Meldung nennt den Fall  [synthetisch: Wahrheit 'erfundene_wahrheit' steht nicht in ERLAUBTE_WAHRHEITEN]
+[ok]   S-07 Gegenteil: derselbe Fall mit einem Wert AUS der Menge erzeugt keine rote Zeile
+
+Kennzahlweg (_riegel direkt) - der Korpus kann diese Faelle nach R1a
+nicht mehr erzeugen, die Wachen brauchen trotzdem einen Weg zu fallen
+[ok]   S-03 recall: der Riegel meldet rot und nennt Recall  [selbsttest: Recall 1.0700 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-03 recall Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04 precision: der Riegel meldet rot und nennt Precision  [selbsttest: Precision 1.0200 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-04 precision Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04b falsche_starke: der Riegel meldet rot und nennt starke  [selbsttest: 1 falsche starke Behauptung(en): ]
+[ok]   S-04b falsche_starke Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04c falsche_schwache: der Riegel meldet rot und nennt schwache  [selbsttest: 1 falsche schwache Behauptung(en): ]
+[ok]   S-04c falsche_schwache Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04d brier: der Riegel meldet rot und nennt Brier  [selbsttest: Brier Score 0.2600 >= 0.25]
+[ok]   S-04d brier Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e coverage: der Riegel meldet rot und nennt Coverage  [selbsttest: Coverage 0.49 < 0.5]
+[ok]   S-04e coverage Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e kalibrierung: der Riegel meldet rot und nennt Kalibrierung  [selbsttest: Kalibrierung 0.1600 > 0.15]
+[ok]   S-04e kalibrierung Gegenteil: innerhalb des Gates keine rote Zeile
+
+Quellenweg (_quelle_pruefen)
+[ok]   S-05 Gegenteil: ein Bezeichner, der in der Datei steht, ist gruen
+[ok]   S-05: ein erfundener Bezeichner ist rot und die Meldung nennt Datei und Bezeichner  [x: Bezeichner 'gibt_es_nicht_9f3a2b1c' steht nicht in tools/eq-copilot/pruefe_p4_korpus.py]
+[ok]   S-06: ein Pfad ins Leere ist rot  [x: Quelldatei fehlt: gibt/es/nicht.cpp]
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+42 bestanden, 0 gescheitert
+A27: der Pruefer faellt an jeder Zusage, die er behauptet.

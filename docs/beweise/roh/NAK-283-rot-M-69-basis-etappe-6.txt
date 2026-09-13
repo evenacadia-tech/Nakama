@@ -1,0 +1,34 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-69-BASIS fuer M-69 Basis
+Zeitpunkt:  2026-09-13T04:31:49.5315686+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   keine Mutation: das Werkzeug des Basis-SHA laesst acht Unterbaeume ungemessen (rot), das Werkzeug des Arbeitsbaums keinen (gruen)
+Datei:      (keine Mutation)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py basis-M-69 --revision 7b1f38b7bddcf67965d1bbc2609fd74464cfaaea' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py basis-M-69'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'M-69' / gruen 'ok' + 'M-69'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.28 s) / GRUEN Exit 0 (0.39 s)
+Traegerzeile rot:   FEHLER  M-69 Revision 7b1f38b7: kein Unterbaum mit Quelldateien bleibt ungemessen - gemessen 152 Dateien, ungemessen 8 Unterbaeume mit 44 Dateien
+Traegerzeile gruen: ok      M-69 Arbeitsbaum: kein Unterbaum mit Quelldateien bleibt ungemessen - gemessen 196 Dateien, ungemessen 0 Unterbaeume mit 0 Dateien
+Zeilen mit roter Marke im roten Lauf: 1
+  FEHLER  M-69 Revision 7b1f38b7: kein Unterbaum mit Quelldateien bleibt ungemessen - gemessen 152 Dateien, ungemessen 8 Unterbaeume mit 44 Dateien
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+  ok      V0 die Produktquellen des Arbeitsbaums gleichen Revision 7b1f38b7 (git diff --quiet, Tests ausgenommen) - der Arbeitsbaum steht fuer ihren Baum
+Basislauf M-69 an Revision 7b1f38b7
+  FEHLER  M-69 Revision 7b1f38b7: kein Unterbaum mit Quelldateien bleibt ungemessen - gemessen 152 Dateien, ungemessen 8 Unterbaeume mit 44 Dateien
+             eq-copilot/plugin/dsp: 9 Datei(en), 3320 Zeilen, groesste eq-copilot/plugin/dsp/DspKern.cpp mit 1089
+             eq-copilot/plugin/hostbridge: 1 Datei(en), 486 Zeilen, groesste eq-copilot/plugin/hostbridge/NakamaHostBridge.h mit 486
+             eq-copilot/plugin/hostprobe: 5 Datei(en), 1285 Zeilen, groesste eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp mit 645
+             eq-copilot/plugin/probe: 1 Datei(en), 187 Zeilen, groesste eq-copilot/plugin/probe/PipeProbeMain.cpp mit 187
+             eq-copilot/plugin/sonde: 3 Datei(en), 1828 Zeilen, groesste eq-copilot/plugin/sonde/SondeProcessor.cpp mit 1324
+             eq-copilot/plugin/spike: 5 Datei(en), 682 Zeilen, groesste eq-copilot/plugin/spike/AuxSpikeProcessor.cpp mit 313
+             eq-copilot/plugin/state: 13 Datei(en), 7010 Zeilen, groesste eq-copilot/plugin/state/NakamaState.cpp mit 2911
+             eq-copilot/plugin/vertrag: 7 Datei(en), 3027 Zeilen, groesste eq-copilot/plugin/vertrag/NakamaVertrag.cpp mit 1187
+  --      Selbsttest des Werkzeugs an Revision 7b1f38b7: Exit 0, Selbsttest: 121/121 bestanden - kein Fall misst den Quellumfang, kein Riegel meldet die Luecke
+RIEGEL basis-M-69: 1 von 2 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+Basislauf M-69 an Arbeitsbaum
+  ok      M-69 Arbeitsbaum: kein Unterbaum mit Quelldateien bleibt ungemessen - gemessen 196 Dateien, ungemessen 0 Unterbaeume mit 0 Dateien
+RIEGEL basis-M-69: 1 von 1 ok

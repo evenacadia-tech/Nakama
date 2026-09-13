@@ -1,0 +1,34 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-62 fuer M-70
+Zeitpunkt:  2026-09-13T04:31:02.2311007+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   pruefe_session_soak.py _fehlmessung: den Fehlerwert wieder als Zahl 0 kodieren - ein nicht abfragbarer Prozess sieht aus wie gemessene 0 Bytes (Stand am Basis-SHA)
+Datei:      tools/eq-copilot/pruefe_session_soak.py
+  SHA-256 vorher:  054EF7F2A0B4FE861B45BF59105EDE0F8165B5AB6BB05C58FE135B56188B602E
+  SHA-256 nachher: 054EF7F2A0B4FE861B45BF59105EDE0F8165B5AB6BB05C58FE135B56188B602E (bytegleiche Ruecknahme: True)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-70' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-70'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'P2' / gruen 'ok' + 'P2'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.69 s) / GRUEN Exit 0 (0.54 s)
+Traegerzeile rot:   FEHLER  P2 Python-Selbsttest gruen: Exit 2, M-61 ok False, M-62 ok False
+Traegerzeile gruen: ok      P2 Python-Selbsttest gruen: Exit 0, M-61 ok True, M-62 ok True
+Zeilen mit roter Marke im roten Lauf: 1
+  FEHLER  P2 Python-Selbsttest gruen: Exit 2, M-61 ok False, M-62 ok False
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+M-70 an Arbeitsbaum
+  ok      C1 C++-Haelfte (F11, Etappe 2): Sonde014IntentTest traegt M-07 bis M-09 - Ablehnung ohne Mutation plus gesetzter grund
+  ok      P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+  ok      C2 das B27-Binary existiert und ist juenger als Test und NakamaState.cpp
+  ok      C3 B27 gruen am Stand: Exit 0, M-07 bis M-09 je mit ok-Zeile True, FEHLER-Zeilen zu M-07 bis M-09: 0
+  FEHLER  P2 Python-Selbsttest gruen: Exit 2, M-61 ok False, M-62 ok False
+RIEGEL M-70: 4 von 5 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+M-70 an Arbeitsbaum
+  ok      C1 C++-Haelfte (F11, Etappe 2): Sonde014IntentTest traegt M-07 bis M-09 - Ablehnung ohne Mutation plus gesetzter grund
+  ok      P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+  ok      C2 das B27-Binary existiert und ist juenger als Test und NakamaState.cpp
+  ok      C3 B27 gruen am Stand: Exit 0, M-07 bis M-09 je mit ok-Zeile True, FEHLER-Zeilen zu M-07 bis M-09: 0
+  ok      P2 Python-Selbsttest gruen: Exit 0, M-61 ok True, M-62 ok True
+RIEGEL M-70: 5 von 5 ok

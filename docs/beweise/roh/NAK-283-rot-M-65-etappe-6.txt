@@ -1,0 +1,142 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-65b fuer M-65
+Zeitpunkt:  2026-09-13T04:31:25.1711181+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   TruePeak.h: der Interpolator mit 12 statt 24 Taps je Phase - ein kuerzerer Filter, dessen Durchlass den transienten Anteil zwischen 0,4 und 0,5*fs nicht mehr traegt
+Datei:      eq-copilot/plugin/core/analysis/TruePeak.h
+  SHA-256 vorher:  39C8C79B2DF406E0AFAC12F7371A0FB2671DD91793C3E2E85A8E5C3B968B6D2F
+  SHA-256 nachher: 39C8C79B2DF406E0AFAC12F7371A0FB2671DD91793C3E2E85A8E5C3B968B6D2F (bytegleiche Ruecknahme: True)
+Befehl:     rot 'EqCopSonde013TruePeakGoldenTest' / gruen 'EqCopSonde013TruePeakGoldenTest'
+Neubau:     rot EqCopSonde013TruePeakGoldenTest Exit 0, frisch: EqCopSonde013TruePeakGoldenTest 04:31:20.063 / gruen Exit 0, frisch: EqCopSonde013TruePeakGoldenTest 04:31:24.799
+Traeger:    rot '[ROT]' + 'true_peak_matches_ebu_transient_set Testfall 22' / gruen '[ok]' + 'true_peak_matches_ebu_transient_set Testfall 22'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.29 s) / GRUEN Exit 0 (0.31 s)
+Traegerzeile rot:   [ROT]  true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.25972 dBTP, Referenz -0.12552 dBTP, Abstand -0.13420 dB, Sample-Peak -2.6495 dBFS]
+Traegerzeile gruen: [ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.16416 dBTP, Referenz -0.12552 dBTP, Abstand -0.03864 dB, Sample-Peak -2.6495 dBFS]
+Zeilen mit roter Marke im roten Lauf: 1
+  [ROT]  true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.25972 dBTP, Referenz -0.12552 dBTP, Abstand -0.13420 dB, Sample-Peak -2.6495 dBFS]
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== true_peak_matches_ebu_test_set - EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.022 dBTP, erwartet -6.021, Abweichung 0.0009 dB]
+[ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.983 dBTP, erwartet 2.984, Abweichung 0.0009 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ok]   der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 3.009 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ok]   bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0326 dB]
+[ok]   bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0326 dB]
+[ok]   bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0326 dB]
+[ok]   bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0326 dB]
+[ok]   bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0326 dB]
+
+== eight_times_oversampling_error_bound - Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ok]   die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen -0.0009 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500508]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.587644]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [97 Taps, 12 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+== true_peak_matches_ebu_transient_set - EBU Tech 3341, Testfaelle 20 bis 23 (transient, Versatz 0 bis 3): +/-0,1 dB gegen die validierte 64-fach-Referenz UND 0,0 +0,2/-0,4 dBTP ==
+[ok]   Referenz an Testfall 15: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 16: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020601 dBTP, erwartet -6.020600, Abstand -0.000001 dB]
+[ok]   Referenz an Testfall 17: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020604 dBTP, erwartet -6.020600, Abstand -0.000005 dB]
+[ok]   Referenz an Testfall 18: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 19: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz 2.984381 dBTP, erwartet 2.984382, Abstand -0.000001 dB]
+[ok]   Anti-Aliasing-Tiefpass (257 Taps, Kaiser 10, 6 dB bei 0,45*fs): Durchlass bis 0,4*fs innerhalb 0,001 dB  [groesste Abweichung 0.000101 dB]
+[ok]   Anti-Aliasing-Tiefpass: Sperrbereich 0,5*fs bis 2*fs unter -90 dB  [hoechster Wert -100.04 dB]
+[ok]   Versatz 3 greift beim letzten fs-Sample genau den letzten 4*fs-Index, nicht darueber  [38399 von 38399]
+[ok]   Testfall 20 (Versatz 0): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001470]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15843 dBTP, Referenz -0.12552 dBTP, Abstand -0.03292 dB, Sample-Peak -0.1584 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15843 dBTP, Normabstand -0.15843 dB]
+[ok]   Testfall 21 (Versatz 1): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001375]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.13441 dBTP, Referenz -0.12552 dBTP, Abstand -0.00890 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.13441 dBTP, Normabstand -0.13441 dB]
+[ok]   Testfall 22 (Versatz 2): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001249]
+[ROT]  true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.25972 dBTP, Referenz -0.12552 dBTP, Abstand -0.13420 dB, Sample-Peak -2.6495 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.25972 dBTP, Normabstand -0.25972 dB]
+[ok]   Testfall 23 (Versatz 3): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001216]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.13441 dBTP, Referenz -0.12551 dBTP, Abstand -0.00890 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.13441 dBTP, Normabstand -0.13441 dB]
+
+-----------------------------------------
+42 bestanden, 1 gescheitert
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== true_peak_matches_ebu_test_set - EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0004 dB]
+[ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0001 dB]
+[ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.985 dBTP, erwartet 2.984, Abweichung 0.0004 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ok]   der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 3.011 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ok]   bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+
+== eight_times_oversampling_error_bound - Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ok]   die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen 0.0004 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500103]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.601801]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [193 Taps, 24 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+== true_peak_matches_ebu_transient_set - EBU Tech 3341, Testfaelle 20 bis 23 (transient, Versatz 0 bis 3): +/-0,1 dB gegen die validierte 64-fach-Referenz UND 0,0 +0,2/-0,4 dBTP ==
+[ok]   Referenz an Testfall 15: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 16: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020601 dBTP, erwartet -6.020600, Abstand -0.000001 dB]
+[ok]   Referenz an Testfall 17: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020604 dBTP, erwartet -6.020600, Abstand -0.000005 dB]
+[ok]   Referenz an Testfall 18: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 19: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz 2.984381 dBTP, erwartet 2.984382, Abstand -0.000001 dB]
+[ok]   Anti-Aliasing-Tiefpass (257 Taps, Kaiser 10, 6 dB bei 0,45*fs): Durchlass bis 0,4*fs innerhalb 0,001 dB  [groesste Abweichung 0.000101 dB]
+[ok]   Anti-Aliasing-Tiefpass: Sperrbereich 0,5*fs bis 2*fs unter -90 dB  [hoechster Wert -100.04 dB]
+[ok]   Versatz 3 greift beim letzten fs-Sample genau den letzten 4*fs-Index, nicht darueber  [38399 von 38399]
+[ok]   Testfall 20 (Versatz 0): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001470]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15843 dBTP, Referenz -0.12552 dBTP, Abstand -0.03292 dB, Sample-Peak -0.1584 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15843 dBTP, Normabstand -0.15843 dB]
+[ok]   Testfall 21 (Versatz 1): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001375]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12552 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+[ok]   Testfall 22 (Versatz 2): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001249]
+[ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.16416 dBTP, Referenz -0.12552 dBTP, Abstand -0.03864 dB, Sample-Peak -2.6495 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.16416 dBTP, Normabstand -0.16416 dB]
+[ok]   Testfall 23 (Versatz 3): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001216]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12551 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+
+-----------------------------------------
+43 bestanden, 0 gescheitert

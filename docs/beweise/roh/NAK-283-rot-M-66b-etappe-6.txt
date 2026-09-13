@@ -1,0 +1,42 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-66b fuer M-66b Riegel
+Zeitpunkt:  2026-09-13T04:31:27.2651711+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   wie MUT-66, danach schreibt der mutierte Erzeuger den Korpus neu - A25, A26 und A27 sehen die Behauptung nicht, der Riegel M-66 sieht sie
+Datei:      tools/eq-copilot/erzeuge_p4_korpus.py
+  SHA-256 vorher:  93A0049387641362A904C1D9F490F5ECDB37D5CE7DB2896473628D8AFD787143
+  SHA-256 nachher: 93A0049387641362A904C1D9F490F5ECDB37D5CE7DB2896473628D8AFD787143 (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/fixtures/p4-korpus/MANIFEST.json
+  SHA-256 vorher:  8DC286E37FF938D9394324805C095CB517BA8F2EF8811FA90E985F5CF7EAA2D4
+  SHA-256 nachher: 8DC286E37FF938D9394324805C095CB517BA8F2EF8811FA90E985F5CF7EAA2D4 (bytegleiche Ruecknahme: True)
+Datei:      eq-copilot/fixtures/p4-korpus/referenz.json
+  SHA-256 vorher:  8ACD00972BF63BDCD55F739CDBB13C6E7AC76B930F1566D8DD6AFDB53C836A51
+  SHA-256 nachher: 8ACD00972BF63BDCD55F739CDBB13C6E7AC76B930F1566D8DD6AFDB53C836A51 (bytegleiche Ruecknahme: True)
+Vorlauf:    py -3.13 tools/eq-copilot/erzeuge_p4_korpus.py -> Exit 0: P4-Korpus: 5 Dateien, 25 Faelle in 4 Klassen / geschrieben
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-66' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-66'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'K2 committeter Korpus' / gruen 'ok' + 'K2 committeter Korpus'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.16 s) / GRUEN Exit 0 (0.17 s)
+Traegerzeile rot:   FEHLER  K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - Eintrag fehlt
+Traegerzeile gruen: ok      K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - {"aussage": "stark", "bein": "B17", "fall": "true_peak_matches_ebu_transient_set", "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP", "konfidenz": 0.96, "quelle": {"bezeichner": "true_peak_matches_ebu_transient_set", "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"}, "wahrheit": "ueberschreitet"}
+Zeilen mit roter Marke im roten Lauf: 4
+  FEHLER  K1 Neuerzeugung: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-23: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  FEHLER  K2 Neuerzeugung: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - Eintrag fehlt
+  FEHLER  K1 committeter Korpus: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-23: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  FEHLER  K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - Eintrag fehlt
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+  FEHLER  K1 Neuerzeugung: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-23: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  FEHLER  K2 Neuerzeugung: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - Eintrag fehlt
+  FEHLER  K1 committeter Korpus: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-23: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  FEHLER  K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - Eintrag fehlt
+  ok      K3 der Bezeichner steht woertlich im Golden (B17)
+RIEGEL M-66: 1 von 5 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+  ok      K1 Neuerzeugung: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  ok      K2 Neuerzeugung: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - {"aussage": "stark", "bein": "B17", "fall": "true_peak_matches_ebu_transient_set", "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP", "konfidenz": 0.96, "quelle": {"bezeichner": "true_peak_matches_ebu_transient_set", "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"}, "wahrheit": "ueberschreitet"}
+  ok      K1 committeter Korpus: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  ok      K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - {"aussage": "stark", "bein": "B17", "fall": "true_peak_matches_ebu_transient_set", "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP", "konfidenz": 0.96, "quelle": {"bezeichner": "true_peak_matches_ebu_transient_set", "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"}, "wahrheit": "ueberschreitet"}
+  ok      K3 der Bezeichner steht woertlich im Golden (B17)
+RIEGEL M-66: 5 von 5 ok

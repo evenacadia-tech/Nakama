@@ -1,0 +1,361 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-62 fuer M-62
+Zeitpunkt:  2026-09-13T04:31:01.6527418+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   pruefe_session_soak.py _fehlmessung: den Fehlerwert wieder als Zahl 0 kodieren - ein nicht abfragbarer Prozess sieht aus wie gemessene 0 Bytes (Stand am Basis-SHA)
+Datei:      tools/eq-copilot/pruefe_session_soak.py
+  SHA-256 vorher:  054EF7F2A0B4FE861B45BF59105EDE0F8165B5AB6BB05C58FE135B56188B602E
+  SHA-256 nachher: 054EF7F2A0B4FE861B45BF59105EDE0F8165B5AB6BB05C58FE135B56188B602E (bytegleiche Ruecknahme: True)
+Befehl:     rot 'py -3.13 tools/eq-copilot/pruefe_session_soak.py --selbsttest' / gruen 'py -3.13 tools/eq-copilot/pruefe_session_soak.py --selbsttest'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'ROT' + 'messfehler_und_nullmessung_sind_unterscheidbar' / gruen 'ok' + 'messfehler_und_nullmessung_sind_unterscheidbar'
+Erwartet:   rot Exit 2 / gruen Exit 0
+Urteil:     ROT Exit 2 (0.16 s) / GRUEN Exit 0 (0.15 s)
+Traegerzeile rot:   ROT     [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+Traegerzeile gruen: ok      [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+Zeilen mit roter Marke im roten Lauf: 22
+  ROT     [M-61 · fehlende_rss_messung_ist_kein_pass] Eine fehlende Messung ist kein PASS
+  ROT  jede tragende Messung fehlt (Wert null, wie rss_messung ihn schreibt): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 0]
+  ROT  jede tragende Messung fehlt (deklarierte Abweichung: rss_bytes 0 statt null): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 0]
+  ROT     [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+  ROT  nicht abfragbarer Prozess (PID 0, echte Messstelle): Merkmal ungueltig, kein Wert, Grund genannt  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+  ROT  geoeffneter Prozess, Speicherabfrage scheitert: ebenso  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+  ROT  im Bericht (JSON) sind Messfehler und Nullmessung zwei verschiedene Dinge
+  ROT  bis ins Urteil: die Nullmessung wird als Messung bewertet, der Messfehler meldet MESSUNG FEHLT  [Exit 0 / Exit 0]
+  ROT     [M-63 · fehlerpunkt_ausserhalb_des_fensters_faellt] Die Filterung des Neustartfensters ersetzt die Gueltigkeitspruefung nicht
+  ROT  ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), Wert null: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+  ROT  ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+  ROT  ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), Wert null: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+  ROT  ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+  ROT  Gegenteil: derselbe Fehler IM Fenster traegt kein Budget - gruen, aber genannt  [Exit 0]
+  ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 5 von 5 Punkten]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+  ROT
+  ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 4 von 5 Punkten]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+  ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+  ROT
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+Selbsttest pruefe_session_soak.py (NAK-283 F13, M-61 bis M-64): Berichte im Speicher, kein Lauf, keine Repo-Fixture
+  ROT     [M-61 · fehlende_rss_messung_ist_kein_pass] Eine fehlende Messung ist kein PASS
+      ok   Gegenteil: der vollstaendig gemessene Bericht endet gruen, S07 im Budget  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  jede tragende Messung fehlt (Wert null, wie rss_messung ihn schreibt): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  jede tragende Messung fehlt (deklarierte Abweichung: rss_bytes 0 statt null): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+  ROT     [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+      ROT  nicht abfragbarer Prozess (PID 0, echte Messstelle): Merkmal ungueltig, kein Wert, Grund genannt  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+      ROT  geoeffneter Prozess, Speicherabfrage scheitert: ebenso  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+      ok   Prozess mit tatsaechlich 0 Bytes: Merkmal gueltig, Wert 0  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+      ROT  im Bericht (JSON) sind Messfehler und Nullmessung zwei verschiedene Dinge
+      ok   Gegenteil: zwei Nullmessungen sind im Bericht gleich
+      ok   speicherpunkt traegt Zeitangaben und Messung unveraendert in den Punkt
+      ROT  bis ins Urteil: die Nullmessung wird als Messung bewertet, der Messfehler meldet MESSUNG FEHLT  [Exit 0 / Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+  ROT     [M-63 · fehlerpunkt_ausserhalb_des_fensters_faellt] Die Filterung des Neustartfensters ersetzt die Gueltigkeitspruefung nicht
+      ROT  ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), Wert null: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [0.0 -> 14.8 MB, +14.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [0.0 -> 14.8 MB, +14.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), Wert null: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 0.0 MB, +-14.9 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 0.0 MB, +-14.9 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ROT  Gegenteil: derselbe Fehler IM Fenster traegt kein Budget - gruen, aber genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+  ok      [M-64 · altbericht_ohne_merkmal_bleibt_auswertbar] Gueltige historische Messwerte bleiben gueltig
+      ok   Altbericht ueber --bericht: auswertbar, S07 im Budget mit den historischen Werten, Merkmal unbekannt genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             HINWEIS [S07] Client: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 5 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             HINWEIS [S07] Broker Generation 0: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 2 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             HINWEIS [S07] Broker Generation 1: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 3 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ok   Gegenteil: derselbe Bericht als Livelauf ist rot (Pflichtfeld)  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 5 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+      ok   Gegenteil: traegt ein Punkt das Merkmal, muss es jeder tragen  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 4 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+
+Selbsttest: 1 von 4 Faellen bestanden
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+Selbsttest pruefe_session_soak.py (NAK-283 F13, M-61 bis M-64): Berichte im Speicher, kein Lauf, keine Repo-Fixture
+  ok      [M-61 · fehlende_rss_messung_ist_kein_pass] Eine fehlende Messung ist kein PASS
+      ok   Gegenteil: der vollstaendig gemessene Bericht endet gruen, S07 im Budget  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ok   jede tragende Messung fehlt (Wert null, wie rss_messung ihn schreibt): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   jede tragende Messung fehlt (deklarierte Abweichung: rss_bytes 0 statt null): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+  ok      [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+      ok   nicht abfragbarer Prozess (PID 0, echte Messstelle): Merkmal ungueltig, kein Wert, Grund genannt  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": null, "rss_gueltig": false, "rss_fehler": "OpenProcess: Fehler 87"}]
+      ok   geoeffneter Prozess, Speicherabfrage scheitert: ebenso  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": null, "rss_gueltig": false, "rss_fehler": "GetProcessMemoryInfo: Fehler 299"}]
+      ok   Prozess mit tatsaechlich 0 Bytes: Merkmal gueltig, Wert 0  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+      ok   im Bericht (JSON) sind Messfehler und Nullmessung zwei verschiedene Dinge
+      ok   Gegenteil: zwei Nullmessungen sind im Bericht gleich
+      ok   speicherpunkt traegt Zeitangaben und Messung unveraendert in den Punkt
+      ok   bis ins Urteil: die Nullmessung wird als Messung bewertet, der Messfehler meldet MESSUNG FEHLT  [Exit 0 / Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+  ok      [M-63 · fehlerpunkt_ausserhalb_des_fensters_faellt] Die Filterung des Neustartfensters ersetzt die Gueltigkeitspruefung nicht
+      ok   ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), Wert null: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), Wert null: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   Gegenteil: derselbe Fehler IM Fenster traegt kein Budget - gruen, aber genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             HINWEIS [S07] Broker Generation 1: Punkt im Neustartfenster ohne gueltige Messung (traegt das Budget nicht): minute 1, OpenProcess: Fehler 87
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+  ok      [M-64 · altbericht_ohne_merkmal_bleibt_auswertbar] Gueltige historische Messwerte bleiben gueltig
+      ok   Altbericht ueber --bericht: auswertbar, S07 im Budget mit den historischen Werten, Merkmal unbekannt genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             HINWEIS [S07] Client: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 5 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             HINWEIS [S07] Broker Generation 0: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 2 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             HINWEIS [S07] Broker Generation 1: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 3 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ok   Gegenteil: derselbe Bericht als Livelauf ist rot (Pflichtfeld)  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 5 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+      ok   Gegenteil: traegt ein Punkt das Merkmal, muss es jeder tragen  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 4 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+
+Selbsttest: 4 von 4 Faellen bestanden

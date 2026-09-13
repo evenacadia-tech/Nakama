@@ -1,0 +1,282 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-69 fuer M-69
+Zeitpunkt:  2026-09-13T04:31:34.1496851+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   gesundheit.py quellorte: den Unterbaum state still aus dem gemessenen Umfang nehmen, ohne ihn auszunehmen
+Datei:      tools/plan/gesundheit.py
+  SHA-256 vorher:  2F1B279F813E3212ABB44F8322FAC216BA23B9F717838E03FFF88711BB47A60A
+  SHA-256 nachher: 2F1B279F813E3212ABB44F8322FAC216BA23B9F717838E03FFF88711BB47A60A (bytegleiche Ruecknahme: True)
+Befehl:     rot 'py -3.13 tools/plan/gesundheit.py --selbsttest' / gruen 'py -3.13 tools/plan/gesundheit.py --selbsttest'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'ROT' + 'kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei' / gruen 'ok' + 'kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei'
+Erwartet:   rot Exit 2 / gruen Exit 0
+Urteil:     ROT Exit 2 (0.19 s) / GRUEN Exit 0 (0.18 s)
+Traegerzeile rot:   ROT  kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum   ist=['WERKZEUGFEHLER: Inventarriegel: Unterbaum mit Quelldateien weder gemessen noch ausgenommen: eq-copilot/plugin/state (1 Datei(en)). Entweder misst ihn der Quellumfang, oder er steht mit Grund in AUSGENOMMEN oder TESTBAEUME.'] soll=['broker/src/coordinator/b.rs', 'broker/src/lib.rs', 'eq-copilot/plugin/core/analysis/e.h', 'eq-copilot/plugin/dsp/g.h', 'eq-copilot/plugin/neuer_baum/tief/k.hpp', 'eq-copilot/plugin/src/d.cpp', 'eq-copilot/plugin/state/f.cpp', 'eq-copilot/plugin/vertrag/h.cpp']
+Traegerzeile gruen: ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+Zeilen mit roter Marke im roten Lauf: 1
+  ROT  kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum   ist=['WERKZEUGFEHLER: Inventarriegel: Unterbaum mit Quelldateien weder gemessen noch ausgenommen: eq-copilot/plugin/state (1 Datei(en)). Entweder misst ihn der Quellumfang, oder er steht mit Grund in AUSGENOMMEN oder TESTBAEUME.'] soll=['broker/src/coordinator/b.rs', 'broker/src/lib.rs', 'eq-copilot/plugin/core/analysis/e.h', 'eq-copilot/plugin/dsp/g.h', 'eq-copilot/plugin/neuer_baum/tief/k.hpp', 'eq-copilot/plugin/src/d.cpp', 'eq-copilot/plugin/state/f.cpp', 'eq-copilot/plugin/vertrag/h.cpp']
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ROT  kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum   ist=['WERKZEUGFEHLER: Inventarriegel: Unterbaum mit Quelldateien weder gemessen noch ausgenommen: eq-copilot/plugin/state (1 Datei(en)). Entweder misst ihn der Quellumfang, oder er steht mit Grund in AUSGENOMMEN oder TESTBAEUME.'] soll=['broker/src/coordinator/b.rs', 'broker/src/lib.rs', 'eq-copilot/plugin/core/analysis/e.h', 'eq-copilot/plugin/dsp/g.h', 'eq-copilot/plugin/neuer_baum/tief/k.hpp', 'eq-copilot/plugin/src/d.cpp', 'eq-copilot/plugin/state/f.cpp', 'eq-copilot/plugin/vertrag/h.cpp']
+  ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+  ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+  ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+  ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 128/129 bestanden
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+  ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+  ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+  ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+  ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 129/129 bestanden

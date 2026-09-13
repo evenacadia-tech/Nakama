@@ -1,0 +1,30 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-70-BASIS fuer M-70 Basis
+Zeitpunkt:  2026-09-13T04:31:52.1391171+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   keine Mutation: am Basis-SHA der Etappe 6 fehlt die Python-Haelfte, am Basis-SHA der Etappe 1 fehlen beide Haelften (rot); am Arbeitsbaum stehen beide (gruen)
+Datei:      (keine Mutation)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-70 --revision 7b1f38b7bddcf67965d1bbc2609fd74464cfaaea' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-70'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'P1' / gruen 'ok' + 'P1'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.22 s) / GRUEN Exit 0 (0.78 s)
+Traegerzeile rot:   FEHLER  P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+Traegerzeile gruen: ok      P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+Zeilen mit roter Marke im roten Lauf: 1
+  FEHLER  P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+M-70 an Revision 7b1f38b7
+  ok      C1 C++-Haelfte (F11, Etappe 2): Sonde014IntentTest traegt M-07 bis M-09 - Ablehnung ohne Mutation plus gesetzter grund
+  FEHLER  P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+  --      die Laeufe C2, C3 und P2 gibt es nur am Arbeitsbaum
+RIEGEL M-70: 1 von 2 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+M-70 an Arbeitsbaum
+  ok      C1 C++-Haelfte (F11, Etappe 2): Sonde014IntentTest traegt M-07 bis M-09 - Ablehnung ohne Mutation plus gesetzter grund
+  ok      P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+  ok      C2 das B27-Binary existiert und ist juenger als Test und NakamaState.cpp
+  ok      C3 B27 gruen am Stand: Exit 0, M-07 bis M-09 je mit ok-Zeile True, FEHLER-Zeilen zu M-07 bis M-09: 0
+  ok      P2 Python-Selbsttest gruen: Exit 0, M-61 ok True, M-62 ok True
+RIEGEL M-70: 5 von 5 ok

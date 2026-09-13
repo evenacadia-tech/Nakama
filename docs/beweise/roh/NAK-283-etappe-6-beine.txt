@@ -1,0 +1,1661 @@
+NAK-283 Etappe 6 - Beine (Skript docs/beweise/roh/NAK-283-etappe-6-beinskript.ps1)
+Zeitpunkt: 2026-09-13T05:00:02.8329729+02:00
+HEAD: 7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Basis-SHA der Etappe 6: 7b1f38b7bddcf67965d1bbc2609fd74464cfaaea
+git status --short:
+   M docs/beweise/NAK-283.md
+   M docs/beweise/SONDE-013.md
+  ?? briefing-hub/
+  ?? docs/beweise/roh/NAK-283-etappe-6-beine.txt
+  ?? docs/beweise/roh/NAK-283-etappe-6-beinskript.ps1
+  ?? docs/beweise/roh/NAK-283-etappe-6-riegel.py
+  ?? docs/beweise/roh/NAK-283-etappe-6-rotbilanz.txt
+  ?? docs/beweise/roh/NAK-283-etappe-6-rotskript.ps1
+  ?? docs/beweise/roh/NAK-283-rot-M-61-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-61-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-62-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-62-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-63-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-64-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-65-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-65-matrix-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66-riegel-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66b-A25-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66b-A26-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66b-A27-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-66b-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-67-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-67-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-68-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-68-register-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-69-A32-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-69-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-69-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-70-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-70-etappe-1-basis-etappe-6.txt
+  ?? docs/beweise/roh/NAK-283-rot-M-70-etappe-6.txt
+  ?? nimbalyst-local/
+Kanonabgleich gegen tools/beweise.ps1:
+  A34  python tools\eq-copilot\pruefe_session_soak.py --selbsttest
+  B17  plugin EqCopSonde013TruePeakGoldenTest 
+  A25  python tools\eq-copilot\erzeuge_p4_korpus.py --pruefen
+  A26  python tools\eq-copilot\pruefe_p4_korpus.py 
+  A27  python tools\eq-copilot\pruefe_p4_korpus.py --selbsttest
+  B9   plugin EqCopLoudnessGoldenTest 
+  B18  plugin EqCopSonde013DynamicsTest 
+  B27  plugin EqCopSonde014IntentTest 
+  A32  python tools\plan\gesundheit.py --mit-selbsttest
+  A24  python tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1
+Fremde Prozesse (vor dem Bau): 0; MSBuild-Knoten ohne Bauauftrag: 0
+Bau: cmake --build eq-copilot/build --config Release --target EqCopSonde013TruePeakGoldenTest EqCopSonde013DynamicsTest EqCopLoudnessGoldenTest EqCopSonde014IntentTest EqCopSessionSoak -> Exit 0 (3.6 s)
+  Warnungen (eindeutige Zeilen): 0, davon in der geaenderten Testdatei Sonde013TruePeakGoldenTest.cpp: 0
+Broker-Probe: 2026-09-12 23:16:43, juengste Broker-Quelle broker/src/transport/server_v3/queues.rs 2026-09-12 23:10:24 -> frisch
+Frische EqCopSonde013TruePeakGoldenTest: Binary 2026-09-13 04:31:24.799, juengste Eingabe eq-copilot/build/plugin/Release/NakamaKern.lib 2026-09-13 04:31:23.111 -> frisch
+Frische EqCopSonde013DynamicsTest: Binary 2026-09-13 04:33:11.525, juengste Eingabe eq-copilot/build/plugin/Release/NakamaKern.lib 2026-09-13 04:31:23.111 -> frisch
+Frische EqCopLoudnessGoldenTest: Binary 2026-09-12 03:37:40.108, juengste Eingabe eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp 2026-09-07 04:41:30.854 -> frisch
+Frische EqCopSonde014IntentTest: Binary 2026-09-13 04:33:19.426, juengste Eingabe eq-copilot/build/plugin/Release/NakamaKern.lib 2026-09-13 04:31:23.111 -> frisch
+Frische EqCopSessionSoak: Binary 2026-09-13 04:33:25.494, juengste Eingabe eq-copilot/build/plugin/Release/NakamaKern.lib 2026-09-13 04:31:23.111 -> frisch
+Fremde Prozesse (vor A24): 0; MSBuild-Knoten ohne Bauauftrag: 0
+
+Uebersicht (Exit gegen die Erwartung):
+  A34                        Exit  0 erwartet  0     0,2 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest
+  B17                        Exit  0 erwartet  0     0,3 s  wie erwartet  - eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe
+  A25                        Exit  0 erwartet  0     0,1 s  wie erwartet  - py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen
+  A26                        Exit  0 erwartet  0     0,3 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_p4_korpus.py
+  A27                        Exit  0 erwartet  0     0,1 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest
+  B9                         Exit  0 erwartet  0     0,1 s  wie erwartet  - eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe
+  B18                        Exit  0 erwartet  0     3,9 s  wie erwartet  - eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe
+  B27                        Exit  0 erwartet  0     0,4 s  wie erwartet  - eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe
+  A32                        Exit  4 erwartet  4      14 s  wie erwartet  - py -3.13 tools\plan\gesundheit.py --mit-selbsttest
+  A32 vorher                 Exit  4 erwartet  4    13,4 s  wie erwartet  - py -3.13 <tmp>\gesundheit-basis-7b1f38b7.py --mit-selbsttest --wurzel C:\Users\phili\Projekte\Nakama --memory C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+  A24                        Exit  0 erwartet  0   148,5 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1
+  A24 --bericht              Exit  0 erwartet  0     0,1 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\a24-bericht.json
+  A24 --bericht rss_fehlt    Exit  3 erwartet  3     0,3 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\a24-bericht.json --mutant rss_fehlt
+  NAK-246 --bericht          Exit  0 erwartet  0     0,1 s  wie erwartet  - py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\nak246-4ff6f24-bericht.json
+  Riegel M-66                Exit  0 erwartet  0     0,2 s  wie erwartet  - py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-66
+  Riegel M-67                Exit  0 erwartet  0     0,3 s  wie erwartet  - py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-67
+  Riegel M-68                Exit  0 erwartet  0     0,3 s  wie erwartet  - py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-68
+  Riegel M-68 Registerstand  Exit  1 erwartet  1     0,3 s  wie erwartet  - py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-68 --registerstand
+  Riegel M-70                Exit  0 erwartet  0     0,6 s  wie erwartet  - py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-70
+  dokuriegel                 Exit  0 erwartet  0     0,4 s  wie erwartet  - py -3.13 tools\plan\dokuriegel.py docs/beweise/SONDE-013.md docs/beweise/NAK-283.md
+URTEIL: 20 von 20 Laeufen mit erwartetem Exit
+
+#### A34 | py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest | Exit 0 (erwartet 0) | 0.2 s | das neue Selbsttestbein (F13, M-61 bis M-64)
+Selbsttest pruefe_session_soak.py (NAK-283 F13, M-61 bis M-64): Berichte im Speicher, kein Lauf, keine Repo-Fixture
+  ok      [M-61 · fehlende_rss_messung_ist_kein_pass] Eine fehlende Messung ist kein PASS
+      ok   Gegenteil: der vollstaendig gemessene Bericht endet gruen, S07 im Budget  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ok   jede tragende Messung fehlt (Wert null, wie rss_messung ihn schreibt): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   jede tragende Messung fehlt (deklarierte Abweichung: rss_bytes 0 statt null): S07 meldet MESSUNG FEHLT, nie im Budget, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+  ok      [M-62 · messfehler_und_nullmessung_sind_unterscheidbar] Der Fehlerstatus ist vom Messwert 0 unterscheidbar
+      ok   nicht abfragbarer Prozess (PID 0, echte Messstelle): Merkmal ungueltig, kein Wert, Grund genannt  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": null, "rss_gueltig": false, "rss_fehler": "OpenProcess: Fehler 87"}]
+      ok   geoeffneter Prozess, Speicherabfrage scheitert: ebenso  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": null, "rss_gueltig": false, "rss_fehler": "GetProcessMemoryInfo: Fehler 299"}]
+      ok   Prozess mit tatsaechlich 0 Bytes: Merkmal gueltig, Wert 0  [{"minute": 1, "sekunden": 60.0, "im_neustartfenster": false, "rss_bytes": 0, "rss_gueltig": true}]
+      ok   im Bericht (JSON) sind Messfehler und Nullmessung zwei verschiedene Dinge
+      ok   Gegenteil: zwei Nullmessungen sind im Bericht gleich
+      ok   speicherpunkt traegt Zeitangaben und Messung unveraendert in den Punkt
+      ok   bis ins Urteil: die Nullmessung wird als Messung bewertet, der Messfehler meldet MESSUNG FEHLT  [Exit 0 / Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+  ok      [M-63 · fehlerpunkt_ausserhalb_des_fensters_faellt] Die Filterung des Neustartfensters ersetzt die Gueltigkeitspruefung nicht
+      ok   ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), Wert null: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt nach dem Neustartfenster (Basiswert der neuen Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 1 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), Wert null: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   ein Fehlerpunkt direkt vor dem Neustartfenster (letzter Punkt der alten Generation), deklarierte Abweichung: rss_bytes 0: Broker Generation 0 meldet MESSUNG FEHLT, Exit 3  [Exit 3]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             MESSUNG FEHLT - 1 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+      ok   Gegenteil: derselbe Fehler IM Fenster traegt kein Budget - gruen, aber genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             HINWEIS [S07] Broker Generation 1: Punkt im Neustartfenster ohne gueltige Messung (traegt das Budget nicht): minute 1, OpenProcess: Fehler 87
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+  ok      [M-64 · altbericht_ohne_merkmal_bleibt_auswertbar] Gueltige historische Messwerte bleiben gueltig
+      ok   Altbericht ueber --bericht: auswertbar, S07 im Budget mit den historischen Werten, Merkmal unbekannt genannt  [Exit 0]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             HINWEIS [S07] Client: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 5 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             HINWEIS [S07] Broker Generation 0: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 2 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             HINWEIS [S07] Broker Generation 1: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 3 Punkt(e) werden wie gemessen bewertet
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+      ok   Gegenteil: derselbe Bericht als Livelauf ist rot (Pflichtfeld)  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 5 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+      ok   Gegenteil: traegt ein Punkt das Merkmal, muss es jeder tragen  [Exit 2]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ROT     [S07 · A24:speicherkurve_im_budget] Client: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 4 von 5 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ROT     [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Pflichtfeld `rss_gueltig` steht an jedem Speicherpunkt  [fehlt an 3 von 3 Punkten]
+             ROT
+
+Selbsttest: 4 von 4 Faellen bestanden
+
+#### B17 | eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe | Exit 0 (erwartet 0) | 0.3 s | True-Peak-Golden mit den Faellen 20 bis 23 (N01, M-65)
+== Nakama SONDE-013 M-02 - True Peak nach ITU-R BS.1770-5 ==
+
+== true_peak_matches_ebu_test_set - EBU Tech 3341, Testfaelle 15 bis 19 (Toleranz aus §49.3: +/-0,1 dB) ==
+[ok]   Testfall 15  fs/4, 0,50 FFS, 0 Grad: True Peak trifft die Amplitude  [gemessen -6.021 dBTP, erwartet -6.021, Abweichung 0.0000 dB]
+[ok]   Testfall 16  fs/4, 0,50 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0004 dB]
+[ok]   Testfall 17  fs/6, 0,50 FFS, 60 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0001 dB]
+[ok]   Testfall 18  fs/8, 0,50 FFS, 67,5 Grad: True Peak trifft die Amplitude  [gemessen -6.020 dBTP, erwartet -6.021, Abweichung 0.0005 dB]
+[ok]   Testfall 19  fs/4, 1,41 FFS, 45 Grad: True Peak trifft die Amplitude  [gemessen 2.985 dBTP, erwartet 2.984, Abweichung 0.0004 dB]
+
+== Gegenbeleg: der Sample-Peak liegt bei Testfall 16 um 3 dB darunter ==
+[ok]   Sample-Peak von Testfall 16 liegt bei -9,03 dBFS  [-9.031 dBFS]
+[ok]   der True Peak findet die drei Dezibel, die zwischen den Samples liegen  [Unterschied 3.011 dB]
+
+== Sampleraten-Sweep: dieselbe Zusage bei 44,1 / 48 / 88,2 / 96 / 192 kHz ==
+[ok]   bei 44.1 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 48.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 88.2 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 96.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+[ok]   bei 192.0 kHz halten fs/4, fs/6 und fs/8 die Toleranz  [groesste Abweichung 0.0313 dB]
+
+== eight_times_oversampling_error_bound - Die 8-fach-Entscheidung: die Schranke, die 4-fach reissen wuerde ==
+[ok]   8-fach: die ausgerechnete Schranke bei fs/4 haelt die Toleranz aus Â§49.3  [-0.0419 dB]
+[ok]   4-fach wuerde sie bei derselben Frequenz REISSEN - deshalb 8-fach  [-0.1685 dB]
+[ok]   die WIRKLICHE Abweichung bleibt innerhalb der ausgerechneten Schranke  [gemessen 0.0004 dB, Schranke -0.0419 dB]
+
+== Raender: Stille, NaN, Gleichanteil und der ungeruestete Detektor ==
+[ok]   Stille ergibt exakt 0, nicht einen Filterrest  [0.000000000000]
+[ok]   ein NaN im Eingang erzeugt keinen NaN im Ausgang  [0.500103]
+[ok]   und er bleibt nicht im Filterzustand haengen - danach misst er wieder  [0.601801]
+[ok]   ein Gleichanteil bleibt exakt er selbst - jede Phase hat DC-Verstaerkung 1  [gemessen 0.500000000000, Abweichung 0.000000000000]
+[ok]   ohne vorbereiten() misst er nicht, statt zu raten oder zu stuerzen
+
+== Der Interpolator: Faktor, Taps und die Zusage ueber den Nulldurchgang ==
+[ok]   Ueberabtastfaktor ist 8 (BS.1770-4 Annex 2 verlangt mindestens 4)
+[ok]   die Filterlaenge ist ungerade und zerlegt sich glatt in die Phasen  [193 Taps, 24 je Phase]
+[ok]   JEDE der acht Phasen summiert sich auf 1 - nicht nur die Gesamtsumme auf 8  [groesste Abweichung 0.000000000000000]
+
+== true_peak_matches_ebu_transient_set - EBU Tech 3341, Testfaelle 20 bis 23 (transient, Versatz 0 bis 3): +/-0,1 dB gegen die validierte 64-fach-Referenz UND 0,0 +0,2/-0,4 dBTP ==
+[ok]   Referenz an Testfall 15: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 16: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020601 dBTP, erwartet -6.020600, Abstand -0.000001 dB]
+[ok]   Referenz an Testfall 17: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020604 dBTP, erwartet -6.020600, Abstand -0.000005 dB]
+[ok]   Referenz an Testfall 18: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz -6.020600 dBTP, erwartet -6.020600, Abstand -0.000000 dB]
+[ok]   Referenz an Testfall 19: die 64-fach-Referenz trifft die Amplitude innerhalb +/-0,01 dB  [Referenz 2.984381 dBTP, erwartet 2.984382, Abstand -0.000001 dB]
+[ok]   Anti-Aliasing-Tiefpass (257 Taps, Kaiser 10, 6 dB bei 0,45*fs): Durchlass bis 0,4*fs innerhalb 0,001 dB  [groesste Abweichung 0.000101 dB]
+[ok]   Anti-Aliasing-Tiefpass: Sperrbereich 0,5*fs bis 2*fs unter -90 dB  [hoechster Wert -100.04 dB]
+[ok]   Versatz 3 greift beim letzten fs-Sample genau den letzten 4*fs-Index, nicht darueber  [38399 von 38399]
+[ok]   Testfall 20 (Versatz 0): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001470]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15843 dBTP, Referenz -0.12552 dBTP, Abstand -0.03292 dB, Sample-Peak -0.1584 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 20 (Versatz 0): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15843 dBTP, Normabstand -0.15843 dB]
+[ok]   Testfall 21 (Versatz 1): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001375]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12552 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 21 (Versatz 1): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+[ok]   Testfall 22 (Versatz 2): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001249]
+[ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.16416 dBTP, Referenz -0.12552 dBTP, Abstand -0.03864 dB, Sample-Peak -2.6495 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 22 (Versatz 2): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.16416 dBTP, Normabstand -0.16416 dB]
+[ok]   Testfall 23 (Versatz 3): die Referenz gleicht an den 4*fs-Stellen dem synthetisierten Signal  [groesste Abweichung 0.000001216]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak trifft die validierte Referenz innerhalb +/-0,1 dB  [gemessen -0.15306 dBTP, Referenz -0.12551 dBTP, Abstand -0.02755 dB, Sample-Peak -0.5581 dBFS]
+[ok]   true_peak_matches_ebu_transient_set Testfall 23 (Versatz 3): True Peak liegt in der Normtoleranz 0,0 +0,2/-0,4 dBTP  [gemessen -0.15306 dBTP, Normabstand -0.15306 dB]
+
+-----------------------------------------
+43 bestanden, 0 gescheitert
+
+#### A25 | py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen | Exit 0 (erwartet 0) | 0.1 s | P4-Korpus bytegleich zur Neuerzeugung (M-66)
+P4-Korpus: 5 Dateien, 26 Faelle in 4 Klassen
+bytegleich
+
+#### A26 | py -3.13 tools\eq-copilot\pruefe_p4_korpus.py | Exit 0 (erwartet 0) | 0.3 s | Sammelbein des P4-Exit-Gates (M-66)
+P4-Referenzkorpus: 26 Faelle in 4 Klassen
+  in P4 nicht gemessen: M-85 Ziel 1 (korrelierter, nicht kausaler Distraktor) -> NAK-190
+
+[ok]  referenz    6 Faelle · 5 stark · 1 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0011 · Coverage 0.83
+[ok]  stereo      6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0009 · Coverage 1.00
+[ok]  vergleich   8 Faelle · 2 stark · 4 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0717 · Coverage 0.50
+[ok]  zeitachse   6 Faelle · 6 stark · 0 Enthaltungen · Precision 1.00 · Recall 1.00 · Brier 0.0007 · Coverage 1.00
+
+Gesamt: 26 Faelle · 0 falsche starke Behauptungen · 0 falsche schwache · Brier 0.0144 · Kalibrierung 0.0619 · Coverage 0.81 · Enthaltungsrate 0.19
+Vertrag: 5 von 5 geschlossenen Mengen gelesen, kein kausaler Bezeichner darin (G4 §8)
+Exit-Gate P4: alle vier Klassen bestehen, keine falsche Behauptung.
+
+#### A27 | py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest | Exit 0 (erwartet 0) | 0.1 s | Selbsttest des P4-Sammelbeins (M-66)
+A27 · Selbsttest von pruefe_p4_korpus.py (NAK-182 R1, MP1-6)
+
+Korpusweg (synthetischer Korpus -> _kennzahlen -> _riegel)
+[ok]   S-01 unbekannt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unbekannt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 unvergleichbar: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 unvergleichbar Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 zeitvariabel: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 zeitvariabel Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_kausal: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_kausal Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-01 nicht_exakt: eine STARKE Aussage darauf ist eine falsche Behauptung  [falsche_starke=1]
+[ok]   S-01 nicht_exakt Gegenteil: dieselbe Wahrheit mit `unsicher` ist keine  [falsche_starke=0]
+[ok]   S-02 unbekannt: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unbekannt Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 unvergleichbar: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 unvergleichbar Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 zeitvariabel: auch eine SCHWACHE Aussage darauf ist falsch  [falsche_schwache=1]
+[ok]   S-02 zeitvariabel Gegenteil: mit `unsicher` ist sie keine  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_kausal Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-02 nicht_exakt: die SCHWACHE Aussage traegt diese Wahrheit - genau das trennt KEINE_STARKE von KEINE_BEHAUPTUNG  [falsche_schwache=0]
+[ok]   S-02 nicht_exakt Gegenteil: die STARKE ist es nicht  [falsche_starke=1]
+[ok]   S-07: ein Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN faellt an derselben Validierung, die A26 fuehrt, und die Meldung nennt den Fall  [synthetisch: Wahrheit 'erfundene_wahrheit' steht nicht in ERLAUBTE_WAHRHEITEN]
+[ok]   S-07 Gegenteil: derselbe Fall mit einem Wert AUS der Menge erzeugt keine rote Zeile
+
+Kennzahlweg (_riegel direkt) - der Korpus kann diese Faelle nach R1a
+nicht mehr erzeugen, die Wachen brauchen trotzdem einen Weg zu fallen
+[ok]   S-03 recall: der Riegel meldet rot und nennt Recall  [selbsttest: Recall 1.0700 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-03 recall Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04 precision: der Riegel meldet rot und nennt Precision  [selbsttest: Precision 1.0200 > 1.0 - eine Quote kann das nicht sein]
+[ok]   S-04 precision Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04b falsche_starke: der Riegel meldet rot und nennt starke  [selbsttest: 1 falsche starke Behauptung(en): ]
+[ok]   S-04b falsche_starke Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04c falsche_schwache: der Riegel meldet rot und nennt schwache  [selbsttest: 1 falsche schwache Behauptung(en): ]
+[ok]   S-04c falsche_schwache Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04d brier: der Riegel meldet rot und nennt Brier  [selbsttest: Brier Score 0.2600 >= 0.25]
+[ok]   S-04d brier Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e coverage: der Riegel meldet rot und nennt Coverage  [selbsttest: Coverage 0.49 < 0.5]
+[ok]   S-04e coverage Gegenteil: innerhalb des Gates keine rote Zeile
+[ok]   S-04e kalibrierung: der Riegel meldet rot und nennt Kalibrierung  [selbsttest: Kalibrierung 0.1600 > 0.15]
+[ok]   S-04e kalibrierung Gegenteil: innerhalb des Gates keine rote Zeile
+
+Quellenweg (_quelle_pruefen)
+[ok]   S-05 Gegenteil: ein Bezeichner, der in der Datei steht, ist gruen
+[ok]   S-05: ein erfundener Bezeichner ist rot und die Meldung nennt Datei und Bezeichner  [x: Bezeichner 'gibt_es_nicht_9f3a2b1c' steht nicht in tools/eq-copilot/pruefe_p4_korpus.py]
+[ok]   S-06: ein Pfad ins Leere ist rot  [x: Quelldatei fehlt: gibt/es/nicht.cpp]
+
+Vertragsweg (_vertragsmengen_pruefen)
+[ok]   S-08/S-09 Gegenteil: das Vertragsschema traegt alle fuenf Mengen und keinen kausalen Bezeichner  [5 Mengen]
+[ok]   S-08: fehlt eine der fuenf Mengen, ist das rot  [geschlossene Menge fehlt im Vertrag: alignment_klasse ($defs/alignment_klasse)]
+[ok]   S-09: ein Enumwert mit kausalem Bezeichner ist rot  [kausaler Bezeichner in kettenbefund: 'sicherer_ausloeser' enthaelt 'ausloeser' - P4 gibt keine Ursachenaussage ab]
+
+42 bestanden, 0 gescheitert
+A27: der Pruefer faellt an jeder Zusage, die er behauptet.
+
+#### B9 | eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe | Exit 0 (erwartet 0) | 0.1 s | Klasse referenz des P4-Korpus
+== Nakama SONDE-008 - EBU-Golden der fixed-memory Loudness ==
+Referenz: die ausgebaute Rechnung (unbegrenzter Vektor + Zweitdurchgang).
+Toleranz: +-0.1 LU (Entwurf §49).
+Feingitter: 10001 Bins a 0.01 LU ueber [-70.00, 30.01) LUFS.
+Oberband:   3070 Bins a 1.00 LU ueber [30.01, 3100.01) LUFS - lautheit(DBL_MAX) = 3081,86.
+
+== A - konstante Pegel (kein Block am Gate) ==
+  ok      konstant z=1.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=1.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=1.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-0.691000 ref=-0.691000 d=0.000000000]
+  ok      konstant z=1.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=1.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=1.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=1.00000: Kurz-LUFS BITGLEICH  [akku=-0.691000000000000 ref=-0.691000000000000]
+  ok      konstant z=0.01000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.01000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.01000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-20.691000 ref=-20.691000 d=0.000000000]
+  ok      konstant z=0.01000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.01000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.01000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.01000: Kurz-LUFS BITGLEICH  [akku=-20.690999999999999 ref=-20.690999999999999]
+  ok      konstant z=0.00001: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.00001: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.00001: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-50.691000 ref=-50.691000 d=0.000000000]
+  ok      konstant z=0.00001: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.00001: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.00001: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.00001: Kurz-LUFS BITGLEICH  [akku=-50.691000000000003 ref=-50.691000000000003]
+  ok      konstant z=100.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=100.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=100.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=19.309000 ref=19.309000 d=0.000000000]
+  ok      konstant z=100.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=100.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=100.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=100.00000: Kurz-LUFS BITGLEICH  [akku=19.309000000000001 ref=19.309000000000001]
+== B - Rampe, Rauschen, lange Laufzeit ==
+  ok      Rampe 30 dB ueber 90 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Rampe 30 dB ueber 90 s: kein Block faellt durch das Raster  [0]
+  ok      Rampe 30 dB ueber 90 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-7.083701 ref=-7.083701 d=0.000000000]
+  ok      Rampe 30 dB ueber 90 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.007384000]
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS BITGLEICH  [akku=-1.198087457573391 ref=-1.198087457573391]
+  ok      Pseudo-Zufall 300 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Pseudo-Zufall 300 s: kein Block faellt durch das Raster  [0]
+  ok      Pseudo-Zufall 300 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-9.750816 ref=-9.750816 d=0.000000000]
+  ok      Pseudo-Zufall 300 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.001599230]
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS BITGLEICH  [akku=-12.109256046331003 ref=-12.109256046331003]
+  ok      eine Stunde (36 000 Zellen): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      eine Stunde (36 000 Zellen): kein Block faellt durch das Raster  [0]
+  ok      eine Stunde (36 000 Zellen): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-15.230810 ref=-15.230810 d=0.000000000]
+  ok      eine Stunde (36 000 Zellen): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      eine Stunde (36 000 Zellen): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000583]
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS Gueltigkeit gleich
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS BITGLEICH  [akku=-14.735286948147577 ref=-14.735286948147577]
+== C - Pausen unter dem absoluten Gate (-70 LUFS) ==
+  ok      Musik + echte Stille: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Musik + echte Stille: kein Block faellt durch das Raster  [0]
+  ok      Musik + echte Stille: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-8.281644 ref=-8.281644 d=0.000000000]
+  ok      Musik + echte Stille: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Musik + echte Stille: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000027]
+  ok      Musik + echte Stille: Kurz-LUFS Gueltigkeit gleich
+  ok      Musik + echte Stille: Kurz-LUFS BITGLEICH  [akku=-12.451912590513381 ref=-12.451912590513381]
+== D - adversarial: 1000 Bloecke im Grenzbin des relativen Gates ==
+  Sweep: 201 Laeufe, groesste Abweichung 2.781360 LU bei Faktor 1.000000, groesste gemeldete Schranke 2.781412 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen (Eingang aendert sich um 1e-5): 2.781403 LU
+  ok      Sweep vollstaendig gefahren  [201/201]
+  ok      Sweep hat den Grenzbin wirklich getroffen (Gegenprobe)  [sonst pruefte D nichts; schranke=2.781412]
+  ok      die selbstgemeldete Schranke deckt JEDEN Lauf  [201/201]
+  ok      wo die Schranke <= 0,1 LU meldet, liegt der Wert auch innerhalb 0,1 LU  [76/76]
+  ok      die Abweichung bleibt unter dem eigenen Sprung der Referenz (Kante, kein Fehler)  [maxD=2.781360 refSprung=2.781403]
+  (Der adversariale Fall geht NICHT in die Toleranzbilanz unten ein - er misst eine Unstetigkeit der Norm, keine Rechengenauigkeit.)
+== E - fixed memory: eine Million Zellen ==
+  Akku:     0 Allokationen, LUFS-I -8.386510, Schranke 0.000000000 LU
+  Referenz: 36 Allokationen, LUFS-I -8.386510
+  ok      1 000 000 Zellen: 0 Allokationen im Akku  [0]
+  ok      Gegenprobe: die alte Rechnung alloziert sehr wohl  [36]
+  ok      1 000 000 Zellen: LUFS-I innerhalb ±0,1 LU  [d=0.000000000]
+  Fester Bedarf laut speicherBytes(): 157122 Byte - haengt an keiner Laufzeitgroesse.
+  ok      speicherBytes() ist eine reine Compile-Time-Groesse
+== F - numerische Raender ==
+  ok      leer: kein LUFS-I (null, nie eine Zahl)
+  ok      leer: kein Kurz-LUFS
+  ok      leer: Schranke 0
+  ok      alles unter -70 LUFS: beide ungueltig (Referenz-JSON: null)
+  ok      l_j == -70,0 exakt: Gueltigkeit wie die Referenz  [akku=0 ref=0]
+  ok      NaN/Inf-Zellen sind gezaehlt  [6]
+  ok      NaN/Inf vergiften das Gating nicht  [-7.680700]
+  ok      Kurz-LUFS meldet einen nichtendlichen Ring nie als gueltig
+  ok      ueber dem Gitter: EIN Pegel bleibt wertgleich  [akku=59.309000 ref=59.309000 ueberGitter=197]
+  ok      Gegenprobe: der Korpus liegt wirklich im Oberband  [197]
+  ok      und kein Block faellt durch das Raster
+  ok      500 Zellen ergeben 497 Bloecke (400 ms, Hop 100 ms)  [500/497]
+  ok      zuruecksetzen(): 0 Allokationen  [0]
+  ok      zuruecksetzen(): der Akku ist danach wirklich leer
+== G - Oberband: zwei Pegel ueber dem Feingitter ==
+  G1: akku=49.302611 ref=49.302611 schranke=0.000000000 ueberGitter=1997
+  ok      G1: alle 1997 Bloecke liegen im Oberband (Gegenprobe)  [1997]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      zwei Pegel ueber dem Gitter (T2-1): kein Block faellt durch das Raster  [0]
+  ok      zwei Pegel ueber dem Gitter (T2-1): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302611 ref=49.302611 d=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS Gueltigkeit gleich
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS BITGLEICH  [akku=32.319299956639810 ref=32.319299956639810]
+  ok      Naht, Gamma_r im Oberband: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Oberband: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Oberband: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302481 ref=49.302481 d=0.000000000]
+  ok      Naht, Gamma_r im Oberband: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Oberband: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  ok      Naht, Gamma_r im Feingitter: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Feingitter: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Feingitter: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.243363 ref=49.243363 d=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  G3-Sweep: 201 Laeufe, groesste Abweichung 2.781577 LU bei Faktor 1.001000, groesste gemeldete Schranke 2.781577 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen: 2.781401 LU
+  ok      G3: Sweep vollstaendig gefahren  [201/201]
+  ok      G3: JEDER Lauf liegt wirklich im Oberband (Gegenprobe)  [1997]
+  ok      G3: der Grenzbin des Oberbands wurde wirklich getroffen (Gegenprobe)  [sonst pruefte G3 nichts; schranke=2.781577]
+  ok      G3: die selbstgemeldete Schranke deckt JEDEN Lauf auch im Oberband  [201/201]
+  ok      G3: die Abweichung bleibt unter dem eigenen Sprung der Referenz  [maxD=2.781577 refSprung=2.781401]
+  ok      G3: kein Block faellt durch das Raster  [0]
+  (Wie §D misst G3 an der Unstetigkeit der Norm, nicht an 0,1 LU - 1000 Bloecke kippen gemeinsam die Gateseite.)
+  G4: LUFS-I 3038.851, Schranke 0.000000000, ueberGitter 197, ueberOberband 0
+  ok      G4: die lauteste darstellbare Blocklautheit liefert einen endlichen Wert  [3038.851]
+  ok      G4: nichts wird faelschlich als nicht-endlich gezaehlt  [0]
+  ok      G4: auch am aeussersten Rand faellt kein Block durch das Raster  [0]
+  ok      G4: und die Schranke bleibt endlich  [0.000000000]
+
+Schlimmste gemessene Abweichung ueber alle Korpora: 0.000000000 LU (Toleranz 0.1).
+109 Pruefungen, 0 Fehler.
+LOUDNESS-GOLDEN OK
+
+#### B18 | eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe | Exit 0 (erwartet 0) | 3.9 s | Klasse referenz des P4-Korpus
+== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==
+
+== M-01  momentary_short_integrated_are_separate_windows ==
+[ok]   nach zwoelf Sekunden stehen beide Fenster  [M -34.01 LUFS, S -34.01 LUFS]
+[ok]   bei stehendem Pegel sind sie fast gleich - der Unterschied ist der VERLAUF, nicht die Rechnung  [Abstand 0.000 LU]
+[ok]   0,8 s nach dem Sprung tragen beide weiterhin einen Wert
+[ok]   Momentary ist dem Sprung gefolgt, Short-term noch nicht - die zwei Fenster sind wirklich verschieden lang  [M -6.06 gegen S -11.78 LUFS, Abstand 5.72 LU]
+[ok]   fuenf Sekunden spaeter sind sie wieder beieinander - der Abstand oben war der Sprung, kein Versatz  [Abstand 0.000 LU]
+
+== M-01  jedes Fenster braucht seine eigene Fuellung ==
+[ok]   nach 0,6 s traegt der Frame Momentary, aber KEIN Short-term - eine Kurzzeitlautheit ueber 0,6 s waere eine andere Zahl mit demselben Namen  [M ja, S nein]
+[ok]   nach weiteren drei Sekunden steht auch Short-term
+
+== M-09  thin_frame_after_boundary_is_recognisable ==
+[ok]   ein Rahmen im Dauerbetrieb sagt, ueber wie viel Audio er gerechnet wurde  [5120 Samples je Kanal]
+[ok]   und die Zahl passt zur Livekadenz von 10 Hz plus hoechstens einem Block  [5120 gegen 4800..5312]
+[ok]   auch der erste Rahmen nach einer Grenze traegt das Feld
+[ok]   und er sagt ehrlich, dass er ueber WENIGER Audio gerechnet wurde  [2560 gegen 5120 Samples]
+
+== M-03  plr_psr_definitions_and_labels ==
+[ok]   der Frame traegt True Peak des Rahmens UND der Passage  [Rahmen -6.021 dBTP, Passage -6.021 dBTP]
+[ok]   der True Peak liegt nie unter dem Sample-Peak desselben Rahmens  [TP -6.021 gegen SP -6.021 dB]
+[ok]   und das Passagenmaximum liegt nie unter dem Rahmenmaximum
+[ok]   PSR steht, sobald das 3-s-Fenster steht
+[ok]   im Rahmen NACH dem Impuls stehen PSR und der Rahmen-True-Peak
+[ok]   der aktuelle Rahmen ist leise - sein True Peak liegt tief  [-33.98 dBTP]
+[ok]   PSR rechnet trotzdem gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters - der Impuls ist darin noch enthalten  [PSR 12.73 dB; gegen den Rahmen waeren es -20.34 dB]
+[ok]   und die Zahl passt zum Impulspegel: 20*log10(0,9) minus LUFS-S  [gemessen 12.73 dB, erwartet 12.72 dB]
+[ok]   die Engine selbst setzt KEIN PLR - LUFS-I kommt aus dem Loudness-Akkumulator und wird erst im Sondenprozessor zugemischt
+
+== M-02  impuls_am_rahmenende ==
+[ok]   der Zustand ist wirklich hergestellt: Rahmen, deren einzige Spitze in den letzten vier Samples liegt  [8 von 8 Runden, Rahmen alle 10 Bloecke]
+[ok]   in KEINEM davon liegt der True Peak unter dem Sample-Peak - der Abtastpunkt geht in den True Peak ein, weil er zur rekonstruierten Wellenform gehoert  [0 Verletzungen]
+
+== M-03  headroom_is_distribution_not_single_peak ==
+[ok]   beide tragen eine Headroomverteilung  [Fenster 46 / 47 Rahmen]
+[ok]   die drei Punkte sind geordnet - P10 <= P50 <= P95
+[ok]   beide haben nahezu dasselbe P95 - die laute Stelle ist in beiden drin  [durchgehend -6.02 dBTP, Spitze -6.02 dBTP]
+[ok]   aber ihr P50 liegt weit auseinander - GENAU das kann ein einzelner Maximalwert nicht ausdruecken  [durchgehend -6.02 dBTP, Spitze -33.98 dBTP]
+[ok]   und die Spanne der Spitzenvariante ist gross - der Headroom SCHWANKT  [Spanne 27.96 dB]
+
+== M-04  crest_multiple_windows ==
+[ok]   es gibt Rahmen ohne Impuls, in denen BEIDE Crestfenster stehen
+[ok]   und dort liegt der 3-s-Crest weit ueber dem des 100-ms-Rahmens - das ist der Unterschied, den ein einzelnes Fenster nicht sehen kann  [Rahmen 3.00 dB, 3 s 29.35 dB]
+
+== M-04  lra_below_sixty_seconds_is_not_a_number ==
+[ok]   nach 30 s gibt es KEINEN LRA-Wert - `nicht belastbar` heisst hier Abwesenheit, nicht eine Null
+[ok]   nach insgesamt 75 s steht er
+[ok]   und traegt eine Dynamikspanne, die zum wandernden Pegel passt  [18.90 LU]
+[ok]   ein Signal ohne Dynamik ergibt eine LRA nahe null - der Wert misst wirklich die Spanne und nicht die Laufzeit  [0.000 LU]
+
+== M-04  die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr ==
+[ok]   90 s Stille ergeben KEIN LRA - eine Minute Stille ist keine Minute Material (Â§39.1: 'rund 60 s GEEIGNETEN Materials')
+
+== M-07  non_finite_never_reaches_wire_for_new_metrics ==
+[ok]   NaN und Inf im Eingang erzeugen in KEINER neuen Metrik einen nichtendlichen Wert - der Riegel liegt beim Erzeugen, nicht auf der Leitung  [alle 9 Traeger endlich]
+[ok]   der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples  [10]
+[ok]   und traegt seine sampleabhaengigen Skalare NICHT - 'nicht gemessen' statt 'gemessen und sauber' (M-07)
+[ok]   ohne NaN traegt derselbe Aufbau seine Skalare - der Riegel ist ein Latch des Rahmens, kein Dauerschweigen
+
+== M-75/M-77  der verworfene Analyseblock schliesst auch die neuen Fenster ==
+[ok]   vor dem verworfenen Block stehen die neuen Fenster
+[ok]   die Luecke zieht eine Segmentgrenze - der Verlust ist sichtbar, nicht interpoliert  [Segmentwechsel 1]
+[ok]   danach tragen die 3-s-Fenster KEINEN Wert mehr - sie sind geschlossen, nicht fortgeschrieben
+[ok]   und das Passagenmaximum hat die Grenze nicht ueberbrueckt - es ist das der neuen, leisen Passage  [vorher -7.96 dBTP, danach -47.84 dBTP]
+
+== M-84  jede Grenze trennt auch die neuen Fenster, namentlich ==
+[ok]   vor der Grenze stehen Passagenmaximum und Headroomverteilung  [Passage -4.44 dBTP]
+[ok]   nach der Grenze ist das Passagenmaximum das der NEUEN Passage - der laute Peak von vorher ist weg  [vorher -4.44 dBTP, nachher -40.00 dBTP]
+[ok]   und die Headroomverteilung ist entweder leer oder ganz aus dem neuen Material - sie mischt die zwei Passagen nicht
+[ok]   die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie wurden wirklich geleert, nicht fortgeschrieben
+
+-----------------------------------------
+46 bestanden, 0 gescheitert
+
+#### B27 | eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe | Exit 0 (erwartet 0) | 0.4 s | C++-Haelfte des Uebergangs M-70 (Etappe 2)
+EqCopSonde014IntentTest - der musikalische Intent im Main-State
+SONDE-014 Etappe A, M-01 bis M-09 und M-11
+
+== M-01  rollenmenge_ist_geschlossen_und_fuenf ==
+  ok      die Produktzusage aus U22 ist die Zahl 5
+  ok      das Rollenfeld dieses Beins hat genau so viele Eintraege
+  ok      Rolle traegt ein nicht leeres Wort: fuehrt
+  ok      Rolle traegt ein nicht leeres Wort: traegt
+  ok      Rolle traegt ein nicht leeres Wort: begleitet
+  ok      Rolle traegt ein nicht leeres Wort: geschuetzt
+  ok      Rolle traegt ein nicht leeres Wort: verschmolzen
+  ok      die fuenf Rollenwoerter sind paarweise verschieden
+  ok      Wort und Rolle sind umkehrbar: fuehrt
+  ok      Wort und Rolle sind umkehrbar: traegt
+  ok      Wort und Rolle sind umkehrbar: begleitet
+  ok      Wort und Rolle sind umkehrbar: geschuetzt
+  ok      Wort und Rolle sind umkehrbar: verschmolzen
+  ok      ein sechster Rollenwert wird abgewiesen: 'impuls'
+  ok      ein sechster Rollenwert wird abgewiesen: 'raum'
+  ok      ein sechster Rollenwert wird abgewiesen: 'lead'
+  ok      ein sechster Rollenwert wird abgewiesen: 'Fuehrt'
+  ok      ein sechster Rollenwert wird abgewiesen: ''
+  ok      ein sechster Rollenwert wird abgewiesen: 'fuehrt '
+  ok      der Leser weist einen sechsten Rollenwert als read-only ab
+  ok      und nennt den Grund: MainProject.source_intents_v1 contains an unknown role: impuls
+
+== M-02  rolle_und_belegung_sind_umkehrbar ==
+  ok      Belegung von fuehrt ist (foreground, 'lead', '')
+  ok      Belegung von traegt ist (middle, 'foundation', '')
+  ok      Belegung von begleitet ist (background, 'texture', '')
+  ok      Belegung von geschuetzt ist (middle, '', 'schutz')
+  ok      Belegung von verschmolzen ist (middle, '', 'verschmolzen')
+  ok      Roundtrip Rolle -> Belegung -> Rolle: fuehrt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: traegt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: begleitet
+  ok      Roundtrip Rolle -> Belegung -> Rolle: geschuetzt
+  ok      Roundtrip Rolle -> Belegung -> Rolle: verschmolzen
+
+== M-02  zwei_belegungen_lesen_nie_dieselbe_rolle_zurueck ==
+  ok      alle zwanzig geordneten Paare der fuenf Rollen gefahren
+  ok      keine zwei verschiedenen Rollen teilen sich eine Belegung
+  ok      eine fremde Belegung gehoert zu keiner Rolle
+  ok      und eine zweite fremde ebenfalls nicht
+
+== M-03  attack_schutz_ist_unabhaengig_von_der_rolle ==
+  ok      eine Schutzangabe entsteht OHNE dass die Quelle eine Rolle traegt
+  ok      und sie erzeugt keine Rolle als Nebenwirkung
+  ok      Produktpfad: Schutz ohne Rolle wird angenommen
+  ok      der Bestand traegt genau die Schutzangabe und keinen Intent
+  ok      und danach die Rolle 'begleitet' an derselben Quelle
+  ok      eine Quelle mit Rolle 'begleitet' kann Attack geschuetzt haben
+
+== M-03  rollenwechsel_loescht_keinen_schutzbereich ==
+  ok      Rollenwechsel auf fuehrt
+  ok      der Schutzbereich ueberlebt den Wechsel auf fuehrt
+  ok      Rollenwechsel auf traegt
+  ok      der Schutzbereich ueberlebt den Wechsel auf traegt
+  ok      Rollenwechsel auf begleitet
+  ok      der Schutzbereich ueberlebt den Wechsel auf begleitet
+  ok      Rollenwechsel auf geschuetzt
+  ok      der Schutzbereich ueberlebt den Wechsel auf geschuetzt
+  ok      Rollenwechsel auf verschmolzen
+  ok      der Schutzbereich ueberlebt den Wechsel auf verschmolzen
+  ok      Schutz laesst sich einzeln aufheben
+  ok      und die Rolle bleibt dabei stehen
+  ok      Bandschutz [0, 221) am vollen Rand wird angenommen
+  ok      ein Band ueber dem Gitterrand wird abgewiesen
+  ok      ein leeres Bandintervall wird abgewiesen
+  ok      eine Bandeigenschaft ohne Intervall wird abgewiesen
+  ok      und eine Nicht-Bandeigenschaft MIT Intervall ebenfalls
+
+== M-04  nur_rolle ==
+  ok      ohne jeden Intent ist Entmaskierung erlaubt
+  ok      Quelle A bekommt die Rolle 'bewusst verschmolzen'
+  ok      das globale Veto sperrt A gegen B
+  ok      und ebenso A gegen jede dritte Quelle - es ist GLOBAL
+  ok      ein Paar ohne A bleibt unberuehrt
+
+== M-04  nur_beziehung ==
+  ok      eine gerichtete Beziehung 'A fuehrt vor B' ohne jede Rolle
+  ok      ohne Veto aendert sie an der Erlaubnis nichts
+
+== M-04  beides_im_widerspruch ==
+  ok      globales Veto an A
+  ok      und die ausdrueckliche Beziehung 'A fuehrt vor B'
+  ok      das SPEZIFISCHERE gewinnt: fuer dieses Paar ist Entmaskierung erlaubt
+  ok      fuer das Paar A/C bleibt das Veto stehen
+  ok      auch in der anderen Leserichtung
+  ok      Veto an A
+  ok      und eine Beziehung 'A/B duerfen verschmelzen'
+  ok      sie hebt das Veto NICHT auf - sie bestaetigt es
+
+== M-05  konfliktregeln_sind_eine_ordnung_kein_score ==
+  ok      Â§37.2 fuehrt genau fuenf Stufen
+  ok      Stufe 1 schlaegt Stufe 2 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 1 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 3 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 2 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 4 in beiden Leserichtungen
+  ok      Stufe 3 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      Stufe 4 schlaegt Stufe 5 in beiden Leserichtungen
+  ok      alle zehn Paarungen der fuenf Stufen gefahren
+  ok      hundert Vermutungen schlagen die Schutzgrenze nie - eine Ordnung, kein Score
+  ok      zwei gleiche Anspruechen sind gleichrangig - die Funktion ist nicht konstant
+
+== M-05  innerhalb_stufe_zwei_gewinnt_das_spezifischere ==
+  ok      auf Stufe 2 gewinnt die paarweise Beziehung vor dem globalen Veto
+  ok      und umgekehrt ebenso
+  ok      Spezifitaet hebt keine Stufe an
+  ok      globale Rolle 'traegt'
+  ok      und in Passage 1 die Rolle 'fuehrt'
+  ok      in Passage 1 wirkt der passagespezifische Wert
+  ok      in Passage 2 ohne eigenen Wert faellt er auf den globalen zurueck
+  ok      und global gilt der globale
+  ok      eine Quelle ohne jeden Intent hat keine wirkende Rolle - kein Vorgabewert
+
+== M-06  zyklus_wird_beim_speichern_erkannt ==
+  ok      eine leere Kantenmenge hat keinen Zyklus
+  ok      eine Kette A->B->C hat keinen Zyklus
+  ok      ein Dreierzyklus A->B->C->A wird erkannt
+  ok      dieselbe Runde mit einer gleichrangigen Kante ist KEIN Zyklus
+  ok      `darf_verschmelzen` ist keine Prioritaetskante und bildet keinen Zyklus
+  ok      A fuehrt vor B
+  ok      B fuehrt vor C
+  ok      C fuehrt vor A wird ABGEWIESEN - der Zyklus erreicht die Persistenz nicht
+  ok      der Bestand traegt weiterhin genau zwei Kanten
+  ok      und ein abgewiesener Wert hebt die Bestandsrevision nicht
+  ok      der Leser weist einen gespeicherten Zyklus als read-only ab: MainProject.intent_relations_v1 contains a cycle in fuehrt_vor
+
+== M-06  zyklus_wird_als_gleichrangigkeit_gespeichert ==
+  ok      derselbe Schluss als nicht steuerbare Gleichrangigkeit wird angenommen
+  ok      der Bestand traegt jetzt drei Kanten
+  ok      und die dritte ist als 'gleichrangig' MARKIERT, nicht als gerichtet
+  ok      der Stand mit markierter Gleichrangigkeit laedt normal
+  ok      und kommt als 'gleichrangig' zurueck
+
+== M-07  abgeleitet_ueberschreibt_user_nie ==
+  ok      der User setzt 'fuehrt'
+  ok      eine abgeleitete Vermutung wird angenommen - das ist kein Fehler
+  ok      aber sie ERSETZT den Userwert nicht
+  ok      und hebt die Bestandsrevision nicht - es hat sich nichts geaendert
+  ok      zuerst eine abgeleitete Vermutung
+  ok      dann ein Userwert
+  ok      der Userwert gewinnt - die Regel ist gerichtet, nicht symmetrisch
+  ok      und die Objektrevision ist gestiegen
+  ok      Herkunft, Revision und Konfidenz ueberleben Save/Load
+  ok      eine reine Vermutung wird gespeichert
+  ok      und bleibt nach dem Laden als abgeleitet erkennbar
+
+== M-08  zwei_rollen_je_bus_in_zwei_passagen ==
+  ok      Passage 1: die Quelle fuehrt
+  ok      Passage 2: dieselbe Quelle begleitet
+  ok      beide Werte stehen nebeneinander - der zweite ueberschreibt den ersten nicht
+  ok      in Passage 1 wirkt 'fuehrt'
+  ok      in Passage 2 wirkt 'begleitet'
+  ok      nach dem Laden stehen weiterhin beide
+  ok      und Save nach Load ist BYTEGLEICH
+  ok      ein globaler Wert kommt dazu
+  ok      jetzt sind es drei Scopes derselben Quelle
+  ok      und der passagespezifische Wert gilt weiter (Â§37.2 Stufe 3)
+  ok      Passage 1 wird entfernt
+  ok      zwei Scopes bleiben
+  ok      und Passage 1 faellt jetzt auf den globalen Wert zurueck
+
+== M-09  userwerte_ueberleben_projekt_recall ==
+  ok      fuenf echte Aenderungen ergeben Bestandsrevision 5
+  ok      der Recall laedt normal
+  ok      alle drei Bestandteile kommen vollstaendig zurueck
+  ok      und die Bestandsrevision ueberlebt - sonst haette die Vollstaendigkeitsmarke aus M-86 keine Zahl
+  ok      Userwerte ueberleben, abgeleitete bleiben als solche erkennbar (Â§37.4)
+  ok      Save nach Recall ist bytegleich
+  ok      und ueber zwei Runden ebenfalls
+
+== State-Invariante  versionieren / Altstand / unbekanntes Feld / Dirty ==
+  ok      der Eigenschaftsname traegt seine Fassung: source_intents_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_protections_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_relations_v1
+  ok      der Eigenschaftsname traegt seine Fassung: intent_revision_v1
+  ok      ein Altstand ohne Intent-Felder laedt normal
+  ok      und traegt einen leeren Bestand mit Revision 0 - kein erfundener Vorgabewert
+  ok      sein Save ist bytegleich - eine leere Liste reist NICHT als leeres Array
+  ok      eine unbekannte MainProject-Eigenschaft zerstoert den Leser nicht
+  ok      und sie steht unveraendert im naechsten Save
+  ok      eine neue Rolle meldet genau einmal Host-Dirty
+  ok      derselbe Wert noch einmal ist ein No-op und meldet nichts
+  ok      ein anderer Wert meldet wieder
+  ok      ein abgewiesener Wert meldet NICHT
+  ok      eine NaN-Konfidenz wird abgewiesen und meldet nicht
+  ok      eine neue Schutzangabe meldet
+  ok      dieselbe noch einmal nicht
+  ok      eine neue Beziehung meldet
+  ok      das Entfernen meldet wie das Setzen - ein Loeschen ohne Dirty kaeme zurueck
+  ok      ein zweites Entfernen ist ein No-op
+  ok      das Aufheben eines Schutzes meldet
+  ok      und das Entfernen einer Beziehung ebenfalls
+  ok      Laden meldet kein Dirty
+  ok      ein fremdes Root-Major laedt read-only
+  ok      read-only verweigert setzeQuellenrolle
+  ok      read-only verweigert schuetzeQuelle
+  ok      read-only verweigert setzeQuellenbeziehung
+  ok      und meldet dabei nichts
+  ok      die Originalbytes gehen unveraendert zurueck
+
+== Raender  was die API ablehnt, lehnt auch der Leser ab ==
+  ok      Leser lehnt ab - Quelle ist keine hex32: MainProject.source_intents_v1 contains an invalid source id
+  ok      Leser lehnt ab - Passagenscope ist weder leer noch hex32: MainProject.source_intents_v1 contains an invalid passage scope
+  ok      Leser lehnt ab - Revision 0 gibt es nicht: MainProject.source_intents_v1 revision must be at least 1
+  ok      Leser lehnt ab - unbekannte Herkunft: MainProject.source_intents_v1 contains an unknown origin: geraten
+  ok      Leser lehnt ab - Konfidenz ueber 1: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz unter 0: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz NaN: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - Konfidenz Inf: MainProject.source_intents_v1 confidence must be finite within [0,1]
+  ok      Leser lehnt ab - zwei Intents fuer denselben Scope: MainProject.source_intents_v1 contains two intents for the same source and scope
+  ok      Leser lehnt ab - unvollstaendiges Sextupel: MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries
+  ok      Leser lehnt ab - unbekannte Schutzeigenschaft: MainProject.intent_protections_v1 contains an unknown trait: hall
+  ok      Leser lehnt ab - Bandschutz ueber dem Gitterrand: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - leeres Bandintervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Nicht-Bandeigenschaft mit Intervall: MainProject.intent_protections_v1 band bounds are outside the evidence grid
+  ok      Leser lehnt ab - Beziehung auf sich selbst: MainProject.intent_relations_v1 contains a self relation
+  ok      Leser lehnt ab - unbekannte Beziehungsart: MainProject.intent_relations_v1 contains an unknown relation: haengt_ab
+  ok      Leser lehnt ab - zwei Beziehungen fuer dasselbe geordnete Paar: MainProject.intent_relations_v1 contains two relations for the same ordered pair
+  ok      ein gueltiger Stand mit allen drei Bestandteilen laedt normal
+  ok      und traegt die Werte, die dort stehen
+  ok      samt Bestandsrevision 7
+  ok      Intent-Inhalt ohne Bestandsrevision wird abgewiesen: MainProject carries intent data without intent_revision_v1
+  ok      API lehnt ab - Quelle ist keine hex32
+  ok      API lehnt ab - Passagenscope ist weder leer noch hex32
+  ok      API lehnt ab - Konfidenz ueber 1
+  ok      API lehnt ab - Konfidenz Inf
+  ok      API lehnt ab - Beziehung auf sich selbst
+  ok      API lehnt ab - Bandschutz ueber dem Gitterrand
+  ok      und nach sechs Ablehnungen ist der Bestand unveraendert leer
+  ok      der Deckel von 256 Intents wird erreicht
+  ok      und der 257. wird abgewiesen statt still verworfen
+  ok      der volle Stand laedt - die API schreibt nichts, was der Leser verweigert
+  ok      und ist bytegleich reproduzierbar
+
+== M-11  intent_beruehrt_keine_messwerte ==
+  ok      beide Laeufe liefern einen Evidenzframe
+  ok      die 221 Evidenzbaender sind bitgleich (Werte, Bitmap, Gitter, Encoding)
+  ok      die drei Perzentile sind bitgleich
+  ok      die 64 Livebaender sind bitgleich
+  ok      die metrics_version ist dieselbe
+  ok      und die NaN-Zaehler ebenfalls
+  ok      Gegenprobe: 70 Evidenzbaender tragen wirklich einen Wert
+
+== NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag
+  ok      M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` - intent revision would overflow
+  ok      M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  ok      M-07: der GANZE Zustand ist byteweise unveraendert
+  ok      M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  ok      M-08: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  ok      M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-09: Vorbedingung - eine Beziehung
+  ok      M-09: der Handgriff liefert `false` mit gesetztem Grund - intent revision would overflow
+  ok      M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  ok      M-09: der GANZE Zustand ist byteweise unveraendert
+  ok      Gegenprobe: der Writer-Stand laedt
+  ok      Gegenprobe: nichts zu entfernen bleibt ein No-op - `true`, keine Revision, kein Grund; der Riegel hat den No-op-Pfad nicht verschoben
+
+== NAK-283 M-08/M-09 (Host)  ablehnung_am_maximum_meldet_kein_host_dirty ==
+  ok      M-08 Host: Vorbedingung - Bestandsrevision am int64-Maximum IM Prozessor, eine Schutzangabe  [9223372036854775807]
+  ok      M-08 Host: der Handgriff wird abgewiesen - die Schutzangabe steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [0 Dirty, 1 Angabe(n)]
+  ok      M-09 Host: Vorbedingung - Bestandsrevision am int64-Maximum, eine Beziehung
+  ok      M-09 Host: der Handgriff wird abgewiesen - die Kante steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [0 Dirty, 1 Kante(n)]
+
+== NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`
+  ok      M-10: `schrittAendern` weist ab statt zu inkrementieren - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9223372036854775807]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`
+  ok      M-10: auch der NEUE Schritt weist ab - assistant revision would overflow
+  ok      M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-10: auch das Ergebnis weist ab - assistant revision would overflow
+  ok      M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf int64max ausgefuehrt; kein negativer Folgewert, kein signed-integer-UB  [9223372036854775807]
+
+== NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Bestandsrevision bei int64max - 1
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt int64max an, er hat keine obere Schranke) - 
+  ok      M-12: Vorbedingung - Assistentenrevision bei int64max - 1
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9223372036854775807]
+  ok      M-12 Host (Intent): Vorbedingung - der Grenzstand int64max - 1 liegt IM Prozessor, ein Intent-Eintrag  [9223372036854775806]
+  ok      M-12 Host (Intent): bei int64max - 1 wird der Eintrag entfernt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Intent): der folgenlose Zweitaufruf schweigt - keine Revision, kein weiteres Dirty; der Riegel hat den No-op-Pfad nicht verschoben  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Schutz): Vorbedingung - Grenzstand und eine Schutzangabe
+  ok      M-12 Host (Schutz): die Angabe wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Schutz): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Beziehung): Vorbedingung - Grenzstand und eine Beziehung
+  ok      M-12 Host (Beziehung): die Kante wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Beziehung): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei int64max - 1  [9223372036854775806]
+  ok      M-12 Host (Assistent): der Schritt wechselt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9223372036854775807]
+  ok      M-12 Host (Assistent): der Zweitaufruf steht jetzt AM Maximum, wird abgewiesen und meldet nichts - keine Revision, kein Dirty  [0 weiteres Dirty, Revision 9223372036854775807]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+
+SONDE-014-INTENT-TEST OK - 270 Pruefungen ok, 0 Fehler
+
+#### A32 | py -3.13 tools\plan\gesundheit.py --mit-selbsttest | Exit 4 (erwartet 4) | 14 s | Quellumfang aus dem Inventar (NAK-249, M-69); nicht blockierend, Exit 4 = gerissen
+SELBSTTEST
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+  ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+  ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+  ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+  ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 129/129 bestanden
+
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 196 Dateien
+  gemessen     broker/src (direkt): 19 Datei(en)
+  gemessen     broker/src/bin: 4 Datei(en)
+  gemessen     broker/src/coordinator: 39 Datei(en)
+  ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+  gemessen     broker/src/store: 5 Datei(en)
+  gemessen     broker/src/transport: 21 Datei(en)
+  gemessen     eq-copilot/plugin/core: 40 Datei(en)
+  gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+  gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+  gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+  gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+  gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+  gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+  gemessen     eq-copilot/plugin/src: 24 Datei(en)
+  gemessen     eq-copilot/plugin/state: 13 Datei(en)
+  ausgenommen  eq-copilot/plugin/tests: 42 Datei(en) - Testcode, kein Produktumfang
+  gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       1      0      0       GRENZE       
+Quelldateien ueber Ziel 1500 Zeilen  8      0      -       ZIEL         
+Funktionen ueber 200 Zeilen          35     0      28      GRENZE       
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       36     0      30      GRENZE       
+MEMORY.md (Bytes)                    5338   22528  24986   OK           
+CLAUDE.md (Bytes)                    19434  -      20480   OK           
+Dirigenten-Skill (Bytes)             24465  -      24576   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+GRENZE gerissen: Quelldateien ueber 2000 Zeilen (1 von hoechstens 0)
+  eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (35 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:589 EqCopilotProcessor::processBlock - 409 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:404 Transaktionskern::fuehreAus - 305 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:91 EqCopilotProcessor::workerLauf - 269 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen
+  broker/src/store/writer.rs:176 writer_lauf - 229 Zeilen
+  ... und 10 weitere
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+  broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1241 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  ... und 11 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (8 von hoechstens -)
+  eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1899 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+  broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+Hinweis: 125 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+
+#### A32 vorher | py -3.13 <tmp>\gesundheit-basis-7b1f38b7.py --mit-selbsttest --wurzel C:\Users\phili\Projekte\Nakama --memory C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory | Exit 4 (erwartet 4) | 13.4 s | das Werkzeug des Basis-SHA am selben Arbeitsbaum: die Werte vorher
+SELBSTTEST
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 121/121 bestanden
+
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama  (UEBERSCHRIEBEN)
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       0      0      0       OK           
+Quelldateien ueber Ziel 1500 Zeilen  8      0      -       ZIEL         
+Funktionen ueber 200 Zeilen          29     0      28      GRENZE       
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       32     0      30      GRENZE       
+MEMORY.md (Bytes)                    5338   22528  24986   OK           
+CLAUDE.md (Bytes)                    19434  -      20480   OK           
+Dirigenten-Skill (Bytes)             24465  -      24576   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (29 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:589 EqCopilotProcessor::processBlock - 409 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:91 EqCopilotProcessor::workerLauf - 269 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen
+  broker/src/store/writer.rs:176 writer_lauf - 229 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1101 EqCopilotEditor::paintMainFlaeche - 229 Zeilen
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:31 FeatureEngine::verarbeiteSamples - 226 Zeilen
+  broker/src/coordinator/liveness.rs:317 heartbeat_kontakt - 223 Zeilen
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:722 BrokerLifecycle::tick - 218 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:851 EqCopilotProcessor::v3ControlLink - 211 Zeilen
+  ... und 4 weitere
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (32 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+  broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1241 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  ... und 7 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (8 von hoechstens -)
+  eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1899 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+  broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+Hinweis: 80 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 2 Maass(e): Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+
+#### A24 | py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1 | Exit 0 (erwartet 0) | 148.5 s | voller Soak ueber die Probe-Pipe, Speicherpunkte mit Gueltigkeitsmerkmal
+  ok      beide Programme verweigern Produktions- und Golden-Pipename
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.soak.19132.1789268440
+  ok      Topologie steht, Warmup 20 s vorbei
+  ..      Neustart 1 (k_s4, Totzeit 1149 ms): NEUSTART_VOLLSTAENDIG 1 2382
+Bericht: {"abbau_haenger": "", "audio": {"blockgroesse": 512, "bloecke": 220688, "bloecke_je_sonde_min": 13793, "ganzblockdrops_oversize": 0, "ganzblockdrops_ueberlauf": 0, "kontinuitaetsbrueche": 0, "publikationen": 22064, "publikationen_je_sonde_min": 1379, "samplerate": 48000.0}, "client_exit": 0, "clientpaare": 17, "fluter": {"abgelehnt": 0, "ersetzte_liveframes": 178, "kollisionsloecher": 0, "neueste_verworfen": 0, "veroeffentlichungen": 1652, "zu_gross": 0}, "kill": {"k_s1": {"gefahren": true, "telemetrie_handle_fehler": 1, "urteil": "getroffen"}, "k_s2": {"gefahren": false, "snapshot_vor_kill": false, "urteil": "nicht_gefahren"}, "k_s3": {"gefahren": true, "p0_ohne_ack_im_fenster": 0, "urteil": "nicht_getroffen"}, "k_s4": {"flag_zum_killzeitpunkt": 4, "gefahren": true, "urteil": "getroffen"}, "k_s5": {"backoff_deckel_erreicht": 0, "erwartet": 17, "gefahren": false, "urteil": "nicht_gefahren"}}, "langsam": {"abgelehnt": 0, "blockiert_andere_nicht": true, "ersetzte_liveframes": 6136, "fluter_ueberlappt": false, "immer_mitglied": true, "kollisionsloecher": 0, "neueste_verworfen": 0, "schnelle_p95_ms": 21.5, "sonden": 4, "veroeffentlichungen": 17664, "zu_gross": 0}, "langsam_anzahl": 4, "liveness": {"evicted_ausserhalb_neustart": 0, "stale_ausserhalb_neustart": 0, "stale_im_neustartfenster": 0}, "minuten": 2, "mitgliedschaft": {"abtast_pruefungen": 1228, "abtast_vollstaendig": 1228, "fremde_adresse": 0, "fuehrendes_main_falsch": 0, "snapshot_pruefungen": 3895, "uebernahmen": 4621, "ungueltig": 0, "vollstaendig": 3895}, "neustart": [{"alte_epoche_nach_neustart_gesehen": 0, "backoff_deckel_in_totzeit": 0, "bereit_bis_vollstaendig_ms": 2382, "epoch_alt": "0b4fbee99e1644abad862aa9710b82bc", "epoch_neu": "2cb0ebc089064a9293438c114fb40325", "frist_ms": 60000, "index": 1, "kill_dauer_ms": 3, "kill_erfolgt_gesehen": true, "reconnect_ms": {"max": 2382.7, "min": 387.7, "p95": 2382.7}, "reconnect_paare": 17, "s09_quellen_getrennt": 15, "s09_sichten": 35, "s09_subscription_weg": 15, "schranke_ms": 45051, "totzeit_erfasst": true, "totzeit_ms": 1149, "ueber_schranke": false}], "p0": {"beantwortet": 2336, "einreihung_abgelehnt": 0, "einreihung_abgelehnt_ausserhalb_neustart": 0, "gemessen_ausserhalb": 2256, "gemessen_im_stoerfenster": 80, "gesendet": 2336, "latenz_max_im_stoerfenster_ms": 3297.6, "latenz_max_ms": 109.2, "latenz_p95_ms": 21.8, "nachlauf_ms": 2000, "schranke_ms": 1000, "verloren_ausserhalb_neustart": 0, "verloren_im_neustartfenster": 0}, "pipe": {"clientnamen_geprueft": 34, "eigene_probe_sichtbar": true, "fremder_name_versucht": 0, "goldenname_neu": false, "namen_nach": 403, "namen_vor": 402, "namensraum_lesbar": true, "ohne_produkt_v3": true, "produktionsname_neu": false}, "riegel": {"golden_EqCopSessionSoak": 3, "golden_eqcop-broker-sonde012-probe": 3, "produktion_EqCopSessionSoak": 3, "produktion_eqcop-broker-sonde012-probe": 3}, "sonden": 16, "speicher": {"broker": [{"generation": 0, "im_neustartfenster": false, "minute": 0, "rss_bytes": 14667776, "rss_gueltig": true, "sekunden": 0.0}, {"generation": 0, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14917632, "rss_gueltig": true, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": true, "minute": 1, "rss_bytes": 6193152, "rss_gueltig": true, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 1, "rss_bytes": 14471168, "rss_gueltig": true, "sekunden": 60.0}, {"generation": 1, "im_neustartfenster": false, "minute": 2, "rss_bytes": 15134720, "rss_gueltig": true, "sekunden": 120.1}], "budget_bytes": 16777216, "budget_prozent": 10, "client": [{"im_neustartfenster": false, "minute": 0, "rss_bytes": 121679872, "rss_gueltig": true, "sekunden": 0.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 121847808, "rss_gueltig": true, "sekunden": 60.0}, {"im_neustartfenster": true, "minute": 1, "rss_bytes": 121872384, "rss_gueltig": true, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 1, "rss_bytes": 122441728, "rss_gueltig": true, "sekunden": 60.0}, {"im_neustartfenster": false, "minute": 2, "rss_bytes": 122441728, "rss_gueltig": true, "sekunden": 120.1}], "takt_s": 60}, "subscription": {"weg_im_neustartfenster": 15}, "topologie_ms": 115, "warmup_s": 20}
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [115 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3895/3895 bei 4621 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1228/1228]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.8 ms, max 109.2 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6136 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.5 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220688 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13793 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 402 -> 403 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_eqcop-broker-sonde012-probe': 3, 'golden_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2382 ms von 60000 ms (Schranke 45051 ms, reconnect max 2382.7 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 387.7 / p95 2382.7 / max 2382.7 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [0b4fbee9… -> 2cb0ebc0…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.4 MB, +0.8 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.7 -> 14.9 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.5 -> 15.1 MB, +0.7 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'flag_zum_killzeitpunkt': 4}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'backoff_deckel_erreicht': 0, 'erwartet': 17}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+
+#### A24 --bericht | py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\a24-bericht.json | Exit 0 (erwartet 0) | 0.1 s | derselbe frische Bericht, nur geurteilt
+NUR URTEIL aus C:\Users\phili\AppData\Local\Temp\nak283-etappe6-e9fa5187\a24-bericht.json — kein Lauf, keine Messung
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [115 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3895/3895 bei 4621 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1228/1228]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.8 ms, max 109.2 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6136 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.5 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220688 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13793 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 402 -> 403 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2382 ms von 60000 ms (Schranke 45051 ms, reconnect max 2382.7 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 387.7 / p95 2382.7 / max 2382.7 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [0b4fbee9… -> 2cb0ebc0…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.4 MB, +0.8 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.7 -> 14.9 MB, +0.2 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.5 -> 15.1 MB, +0.7 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'backoff_deckel_erreicht': 0, 'erwartet': 17, 'gefahren': False}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+
+#### A24 --bericht rss_fehlt | py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\a24-bericht.json --mutant rss_fehlt | Exit 3 (erwartet 3) | 0.3 s | M-61 am echten Bericht: jede tragende Messung durch die eines nicht abfragbaren Prozesses ersetzt
+NUR URTEIL aus C:\Users\phili\AppData\Local\Temp\nak283-etappe6-e9fa5187\a24-bericht.json — kein Lauf, keine Messung, Mutant rss_fehlt
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [115 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3895/3895 bei 4621 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1228/1228]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.8 ms, max 109.2 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6136 ersetzt bei 17664 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.5 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220688 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22064 gesamt, kleinste Sonde 1379 >= 1103 (13793 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 402 -> 403 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2382 ms von 60000 ms (Schranke 45051 ms, reconnect max 2382.7 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 387.7 / p95 2382.7 / max 2382.7 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [0b4fbee9… -> 2cb0ebc0…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'backoff_deckel_erreicht': 0, 'erwartet': 17, 'gefahren': False}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+
+#### NAK-246 --bericht | py -3.13 tools\eq-copilot\pruefe_session_soak.py --bericht <tmp>\nak246-4ff6f24-bericht.json | Exit 0 (erwartet 0) | 0.1 s | M-64 an der Kontrollquelle: der Altbericht ohne Merkmal bleibt auswertbar
+NUR URTEIL aus C:\Users\phili\AppData\Local\Temp\nak283-etappe6-e9fa5187\nak246-4ff6f24-bericht.json — kein Lauf, keine Messung
+  ok      [S14 · A24:sauberer_abbau] das C++-Programm endet sauber  [Exit 0]
+  ok      [S01 · A24:topologie_steht_in_frist] die Topologie stand in der Frist (60000 ms)  [119 ms]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] der Lauf traegt genau 16 Sonden  [16]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] jede Snapshot-Uebernahme war sofort vollstaendig und richtig  [3919/3919 bei 4617 Uebernahmen]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] kein Snapshot wurde als ungueltig abgewiesen  [0]
+  ok      [S03 · A24:mitgliedschaft_driftet_nicht] auch die laufende Abtastung sah nie eine abweichende Sicht  [1228/1228]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] nie eine fremde Adresse im Snapshot  [0]
+  ok      [S02 · A24:mitgliedschaft_nach_warmup] fuehrendes_main war immer die Main-Adresse  [0]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] kein P0 geht ausserhalb der Neustartfenster verloren  [2336/2336, 0 verloren (Nachlauffenster 2000 ms)]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] P0-ACK p95 unter 1000 ms  [p95 21.6 ms, max 119.2 ms]
+  ok      [S04 · A24:p0_kein_verlust_und_p95] keine P0-Einreihung wurde ausserhalb der Neustartfenster abgelehnt  [0 abgelehnt (Summe ueber den ganzen Lauf 0)]
+  ok      [S14 · A24:sauberer_abbau] vor dem Abbau lief ein Nachlauffenster fuer ausstehende ACKs  [2000 ms]
+  ok      [S05 · A24:langsame_bleiben_mitglied] die langsamen Leser blieben durchgehend Mitglied  [True]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] die Schleuse der langsamen Leser lag wirklich im Rueckstau  [6127 ersetzt bei 17652 Veroeffentlichungen (Fluter getrennt: 178)]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] und dabei fiel nie der neueste Frame (replace-oldest)  [0 neueste verworfen]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt (aus dem Rueckgabewert) = 0 + 0]
+  ok      [S06 · A24:cap_ersetzt_aeltesten_und_blockiert_nie] kein langsamer Leser bremst die schnellen  [True (schnelle p95 21.0 ms)]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] 0 Ganzblockdrops auf dem echten Sondenpfad  [220640 Bloecke, 0 Ueberlauf, 0 Oversize]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] keine unerklaerten Kontinuitaetsbrueche  [0]
+  ok      [S08 · A24:audio_ganzblock_ohne_drop] jede Sonde hat je Analysefenster einen Producer-Frame veroeffentlicht  [22048 gesamt, kleinste Sonde 1378 >= 1103 (13790 Bloecke / 10 je Fenster, Toleranz 0.8)]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied wurde ausserhalb der Neustartfenster stale  [0]
+  ok      [S13 · A24:kein_stale_ausserhalb_neustart] kein Mitglied verschwand ausserhalb der Neustartfenster  [0]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] kein Client bekam je einen anderen Pipenamen  [0 fremd bei 34 geprueften Uebergaben, ohne_produkt_v3 True]
+  ok      [S10 · A24:backoff_ohne_namenswechsel] im Pipe-Namensraum entstand kein Produktions- oder Goldenname  [eigene Probe sichtbar True, produktionsname_neu False, goldenname_neu False, 322 -> 323 Namen]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] der Kill beendet die Subscription des Main sichtbar  [15 mal ohne aktive Subscription im Neustartfenster gesehen]
+  ok      [S15 · A24:verweigert_produktion_und_golden] beide Programme verweigern Produktions- und Golden-Pipename  [{'golden_EqCopSessionSoak': 3, 'golden_eqcop-broker-sonde012-probe': 3, 'produktion_EqCopSessionSoak': 3, 'produktion_eqcop-broker-sonde012-probe': 3}]
+  ok      [S16 · A24:skalierungsreihe_1_4_8_16_32] langsam_anzahl folgt max(1, round(N x Anteil))  [N = 16, langsam_anzahl 4, erwartet 4]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] der Bericht traegt genau 1 Neustart(e)  [1 geliefert]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Snapshot wieder vollstaendig in der Frist  [2507 ms von 60000 ms (Schranke 45051 ms, reconnect max 2508.0 ms)]
+  ok      [S11 · A24:reconnect_vollstaendig_in_frist] Neustart 1: Reconnect je Clientpaar gemessen  [17 Paare (erwartet 17), min 537.0 / p95 2508.0 / max 2508.0 ms]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Subscription weg UND Quellen getrennt  [15 ohne Subscription, 15 mit getrennter Quelle, 35 Sichten im Fenster]
+  ok      [S09 · A24:kill_beendet_subscription_sichtbar] Neustart 1: Kill und Totzeit wurden belegt  [kill_erfolgt True, totzeit_erfasst True (Killdauer 3 ms)]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: die alte broker_epoch kam nie wieder  [0]
+  ok      [S12 · A24:alte_epoche_kommt_nie_wieder] Neustart 1: neue broker_epoch  [a1490309… -> 4ac34281…]
+  ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+  HINWEIS [S07] Client: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 5 Punkt(e) werden wie gemessen bewertet
+  ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [121.7 -> 122.6 MB, +0.9 MB, Grenze 16.8 MB ueber 120 s]
+  ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+  HINWEIS [S07] Broker Generation 0: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 2 Punkt(e) werden wie gemessen bewertet
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [14.9 -> 15.0 MB, +0.1 MB, Grenze 16.8 MB ueber 60 s]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+  HINWEIS [S07] Broker Generation 1: Merkmal unbekannt - Altbericht ohne `rss_gueltig`, 3 Punkt(e) werden wie gemessen bewertet
+  ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+  ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [14.0 -> 14.8 MB, +0.8 MB, Grenze 16.8 MB ueber 60 s]
+  --      Killpunkte (Urteil aus dem Beleg abgeleitet, nicht uebernommen):
+  ok      [k_s1 · A24:kill_im_frameverkehr] getroffen (abgeleitet: getroffen)  {'gefahren': True, 'telemetrie_handle_fehler': 1}
+  ok      [k_s2 · A24:kill_waehrend_subscribe] nicht_gefahren (abgeleitet: nicht_gefahren)  {'gefahren': False, 'snapshot_vor_kill': False}
+  ok      [k_s3 · A24:kill_waehrend_heartbeat] nicht_getroffen (abgeleitet: nicht_getroffen)  {'gefahren': True, 'p0_ohne_ack_im_fenster': 0}
+  ok      [k_s4 · A24:kill_mit_langsamem_leser] getroffen (abgeleitet: getroffen)  {'flag_zum_killzeitpunkt': 4, 'gefahren': True}
+  ok      [k_s5 · A24:kill_aus_backoff_deckel] nicht_gefahren (abgeleitet: nicht_gefahren)  {'backoff_deckel_erreicht': 0, 'erwartet': 17, 'gefahren': False}
+  ok      [S04 · A24:p0_kein_verlust_und_p95] K-S3 zaehlt genau die endgueltig im Fenster verlorenen ACKs  [0 vs. 0]
+GRUEN
+
+#### Riegel M-66 | py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-66 | Exit 0 (erwartet 0) | 0.2 s | beide Fallgruppen getrennt im Korpus
+  ok      K1 Neuerzeugung: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  ok      K2 Neuerzeugung: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - {"aussage": "stark", "bein": "B17", "fall": "true_peak_matches_ebu_transient_set", "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP", "konfidenz": 0.96, "quelle": {"bezeichner": "true_peak_matches_ebu_transient_set", "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"}, "wahrheit": "ueberschreitet"}
+  ok      K1 committeter Korpus: der bestehende Eintrag true_peak_matches_ebu_test_set behaelt seinen ehrlichen hinweis (Faelle 15-19) - 'EBU Tech 3341 Faelle 15-19: fs/4, fs/6, fs/8 bei 0,50 und 1,41 FFS'
+  ok      K2 committeter Korpus: ein ZWEITER Eintrag der Klasse referenz fuer true_peak_matches_ebu_transient_set mit bein B17, quelle auf den neuen Fallnamen und dem hinweis der Matrix - {"aussage": "stark", "bein": "B17", "fall": "true_peak_matches_ebu_transient_set", "hinweis": "EBU Tech 3341 Faelle 20-23: transient, vier Abtastversaetze, ±0,1 dB gegen validierte Referenz plus Normtoleranz +0,2/−0,4 dBTP", "konfidenz": 0.96, "quelle": {"bezeichner": "true_peak_matches_ebu_transient_set", "datei": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp"}, "wahrheit": "ueberschreitet"}
+  ok      K3 der Bezeichner steht woertlich im Golden (B17)
+RIEGEL M-66: 5 von 5 ok
+
+#### Riegel M-67 | py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-67 | Exit 0 (erwartet 0) | 0.3 s | SONDE-013: nur Zuwachs in den Nachweisspalten von M-02 und M-81
+M-67 an Arbeitsbaum, verglichen mit dem Basis-SHA 7b1f38b7
+  ok      R1 dieselbe Zeilenzahl (4506 / 4506)
+  ok      R1 die Matrixzeilen M-02 und M-81 stehen je genau einmal (Zeilen [471] und [623])
+  ok      R1 keine andere Zeile veraendert
+  ok      R2 M-02 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-02 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-02 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  ok      R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-02 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+  ok      R2 M-81 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-81 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-81 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  ok      R4 M-81 der Zuwachs traegt den datierten Nachtrag und nennt ['15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-81 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+  ok      R6 dokuriegel.py ohne Befund (Exit 0: Dokuriegel: 0 Befund(e), 0 benannt (historisch oder Zielpfad))
+RIEGEL M-67: 14 von 14 ok
+
+#### Riegel M-68 | py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-68 | Exit 0 (erwartet 0) | 0.3 s | NAK-199-Fixfassung mit dem Wortlaut aus §36
+  ok      R0 erst der Nachweis: B17 und P4-Korpus tragen true_peak_matches_ebu_transient_set (M-65, M-66)
+  ok      R1 der Wortlaut steht im Etappenabschnitt von docs/beweise/NAK-283.md (Marke und text-Block)
+  ok      R1 der Wortlaut nennt Datum, Ticket, den Umfang 15 bis 23 und den offenen LUFS-I-Teil: '**Nachtrag 13.09.2026 (NAK-283, N01):** True Peak jetzt über 15 bis 23 gedeckt — B17 misst seit NAK-283 Etappe 6 auch die transienten EBU-Tech-3341-Fälle 20 bis 23 (`true_peak_matches_ebu_transient_set`, Versatz 0 bis 3: je ±0,1 dB gegen eine im Test gerechnete, an den Fällen 15 bis 19 validierte 64-fach-Referenz plus Normtoleranz 0,0 +0,2/−0,4 dBTP; eigener P4-Korpuseintrag; `docs/beweise/NAK-283.md` §36). Der LUFS-I-Teil dieser Zeile bleibt offen.'
+  ok      R2 die Registerzeile NAK-199 steht genau einmal
+M-68 an der Fixfassung der Zeile NAK-199
+  ok      R3 Fixfassung: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+  ok      R4 Fixfassung: nur Anfuegen - der bestehende Wortlaut samt offenem LUFS-I-Teil bleibt unberuehrt
+  ok      R5 Fixfassung: dokuriegel.py ohne Befund
+RIEGEL M-68: 7 von 7 ok
+
+#### Riegel M-68 Registerstand | py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-68 --registerstand | Exit 1 (erwartet 1) | 0.3 s | die Registerzeile, wie sie heute steht: der Nachtrag ist Dirigentensache
+  ok      R0 erst der Nachweis: B17 und P4-Korpus tragen true_peak_matches_ebu_transient_set (M-65, M-66)
+  ok      R1 der Wortlaut steht im Etappenabschnitt von docs/beweise/NAK-283.md (Marke und text-Block)
+  ok      R1 der Wortlaut nennt Datum, Ticket, den Umfang 15 bis 23 und den offenen LUFS-I-Teil: '**Nachtrag 13.09.2026 (NAK-283, N01):** True Peak jetzt über 15 bis 23 gedeckt — B17 misst seit NAK-283 Etappe 6 auch die transienten EBU-Tech-3341-Fälle 20 bis 23 (`true_peak_matches_ebu_transient_set`, Versatz 0 bis 3: je ±0,1 dB gegen eine im Test gerechnete, an den Fällen 15 bis 19 validierte 64-fach-Referenz plus Normtoleranz 0,0 +0,2/−0,4 dBTP; eigener P4-Korpuseintrag; `docs/beweise/NAK-283.md` §36). Der LUFS-I-Teil dieser Zeile bleibt offen.'
+  ok      R2 die Registerzeile NAK-199 steht genau einmal
+M-68 am Registerstand der Zeile NAK-199
+  FEHLER  R3 Registerstand: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+  ok      R4 Registerstand: nur Anfuegen - der bestehende Wortlaut samt offenem LUFS-I-Teil bleibt unberuehrt
+  ok      R5 Registerstand: dokuriegel.py ohne Befund
+RIEGEL M-68: 6 von 7 ok
+
+#### Riegel M-70 | py -3.13 docs\beweise\roh\NAK-283-etappe-6-riegel.py M-70 | Exit 0 (erwartet 0) | 0.6 s | beide Haelften des Musters Scheitern ohne unterscheidbaren Status
+M-70 an Arbeitsbaum
+  ok      C1 C++-Haelfte (F11, Etappe 2): Sonde014IntentTest traegt M-07 bis M-09 - Ablehnung ohne Mutation plus gesetzter grund
+  ok      P1 Python-Haelfte (F13, Etappe 6): pruefe_session_soak.py --selbsttest traegt M-61 und M-62 - Messpunkt mit eigenem Gueltigkeitsmerkmal
+  ok      C2 das B27-Binary existiert und ist juenger als Test und NakamaState.cpp
+  ok      C3 B27 gruen am Stand: Exit 0, M-07 bis M-09 je mit ok-Zeile True, FEHLER-Zeilen zu M-07 bis M-09: 0
+  ok      P2 Python-Selbsttest gruen: Exit 0, M-61 ok True, M-62 ok True
+RIEGEL M-70: 5 von 5 ok
+
+#### dokuriegel | py -3.13 tools\plan\dokuriegel.py docs/beweise/SONDE-013.md docs/beweise/NAK-283.md | Exit 0 (erwartet 0) | 0.4 s | die zwei beruehrten Manifeste ohne Befund
+docs/beweise/SONDE-013.md: sauber
+docs/beweise/NAK-283.md: sauber (2 benannt)
+docs/beweise/NAK-283.md:783 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („Zielpfad“ im Umfeld): docs/beweise/roh/NAK-283-rot-M-01.txt
+docs/beweise/NAK-283.md:785 VERWEIS OHNE ZIEL, aber als noch nicht angelegter Zielpfad markiert („Zielpfad“ im Umfeld): docs/beweise/roh/NAK-283-etappe2-beine.txt
+Dokuriegel: 0 Befund(e), 2 benannt (historisch oder Zielpfad)

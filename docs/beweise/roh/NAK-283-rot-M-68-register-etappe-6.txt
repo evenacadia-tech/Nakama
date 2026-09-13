@@ -1,0 +1,36 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-68-REGISTER fuer M-68 Register
+Zeitpunkt:  2026-09-13T04:31:33.3768590+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   keine Mutation: derselbe Riegel misst rot die Registerzeile, wie sie heute steht (Nachtrag ist Dirigentensache), gruen die Fixfassung mit dem Wortlaut
+Datei:      (keine Mutation)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-68 --registerstand' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-68'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'R3' / gruen 'ok' + 'R3'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.26 s) / GRUEN Exit 0 (0.27 s)
+Traegerzeile rot:   FEHLER  R3 Registerstand: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+Traegerzeile gruen: ok      R3 Fixfassung: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+Zeilen mit roter Marke im roten Lauf: 1
+  FEHLER  R3 Registerstand: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+  ok      R0 erst der Nachweis: B17 und P4-Korpus tragen true_peak_matches_ebu_transient_set (M-65, M-66)
+  ok      R1 der Wortlaut steht im Etappenabschnitt von docs/beweise/NAK-283.md (Marke und text-Block)
+  ok      R1 der Wortlaut nennt Datum, Ticket, den Umfang 15 bis 23 und den offenen LUFS-I-Teil: '**Nachtrag 13.09.2026 (NAK-283, N01):** True Peak jetzt über 15 bis 23 gedeckt — B17 misst seit NAK-283 Etappe 6 auch die transienten EBU-Tech-3341-Fälle 20 bis 23 (`true_peak_matches_ebu_transient_set`, Versatz 0 bis 3: je ±0,1 dB gegen eine im Test gerechnete, an den Fällen 15 bis 19 validierte 64-fach-Referenz plus Normtoleranz 0,0 +0,2/−0,4 dBTP; eigener P4-Korpuseintrag; `docs/beweise/NAK-283.md` §36). Der LUFS-I-Teil dieser Zeile bleibt offen.'
+  ok      R2 die Registerzeile NAK-199 steht genau einmal
+M-68 an der Registerstand der Zeile NAK-199
+  FEHLER  R3 Registerstand: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+  ok      R4 Registerstand: nur Anfuegen - der bestehende Wortlaut samt offenem LUFS-I-Teil bleibt unberuehrt
+  ok      R5 Registerstand: dokuriegel.py ohne Befund
+RIEGEL M-68: 6 von 7 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+  ok      R0 erst der Nachweis: B17 und P4-Korpus tragen true_peak_matches_ebu_transient_set (M-65, M-66)
+  ok      R1 der Wortlaut steht im Etappenabschnitt von docs/beweise/NAK-283.md (Marke und text-Block)
+  ok      R1 der Wortlaut nennt Datum, Ticket, den Umfang 15 bis 23 und den offenen LUFS-I-Teil: '**Nachtrag 13.09.2026 (NAK-283, N01):** True Peak jetzt über 15 bis 23 gedeckt — B17 misst seit NAK-283 Etappe 6 auch die transienten EBU-Tech-3341-Fälle 20 bis 23 (`true_peak_matches_ebu_transient_set`, Versatz 0 bis 3: je ±0,1 dB gegen eine im Test gerechnete, an den Fällen 15 bis 19 validierte 64-fach-Referenz plus Normtoleranz 0,0 +0,2/−0,4 dBTP; eigener P4-Korpuseintrag; `docs/beweise/NAK-283.md` §36). Der LUFS-I-Teil dieser Zeile bleibt offen.'
+  ok      R2 die Registerzeile NAK-199 steht genau einmal
+M-68 an der Fixfassung der Zeile NAK-199
+  ok      R3 Fixfassung: die Zeile behaelt nicht den alten Umfang, obwohl der neue gemessen ist - sie nennt 15 bis 23 mit Datum und Ticket
+  ok      R4 Fixfassung: nur Anfuegen - der bestehende Wortlaut samt offenem LUFS-I-Teil bleibt unberuehrt
+  ok      R5 Fixfassung: dokuriegel.py ohne Befund
+RIEGEL M-68: 7 von 7 ok

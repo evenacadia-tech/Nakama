@@ -1,0 +1,46 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-61-62-BASIS fuer M-62 Basis
+Zeitpunkt:  2026-09-13T04:31:50.8853317+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   keine Mutation: das Soak-Orakel des Basis-SHA laesst 0,0 -> 0,0 MB bestehen und kodiert den Messfehler wie 0 Bytes (rot), das Orakel des Arbeitsbaums nicht (gruen)
+Datei:      (keine Mutation)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py basis-M-61-M-62 --revision 7b1f38b7bddcf67965d1bbc2609fd74464cfaaea' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py basis-M-61-M-62'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'M-62' / gruen 'ok' + 'M-62'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.57 s) / GRUEN Exit 0 (0.15 s)
+Traegerzeile rot:   FEHLER  M-62 Revision 7b1f38b7: Messfehler und Nullmessung sind im Bericht verschieden - Messfehler {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}, Nullmessung {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}
+Traegerzeile gruen: ok      M-62 Arbeitsbaum: Messfehler und Nullmessung sind im Bericht verschieden - Messfehler {"im_neustartfenster": false, "minute": 1, "rss_bytes": null, "rss_fehler": "OpenProcess: Fehler 87", "rss_gueltig": false, "sekunden": 60.0}, Nullmessung {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "rss_gueltig": true, "sekunden": 60.0}
+Zeilen mit roter Marke im roten Lauf: 2
+  FEHLER  M-62 Revision 7b1f38b7: Messfehler und Nullmessung sind im Bericht verschieden - Messfehler {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}, Nullmessung {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}
+  FEHLER  M-61 Revision 7b1f38b7: eine fehlende Messung ist kein PASS - Exit 0, S07 im Budget True, MESSUNG FEHLT False
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+Basislauf M-61/M-62 an Revision 7b1f38b7 (Messstelle mit Gueltigkeitsmerkmal: False)
+  FEHLER  M-62 Revision 7b1f38b7: Messfehler und Nullmessung sind im Bericht verschieden - Messfehler {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}, Nullmessung {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "sekunden": 60.0}
+  FEHLER  M-61 Revision 7b1f38b7: eine fehlende Messung ist kein PASS - Exit 0, S07 im Budget True, MESSUNG FEHLT False
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             ok      [S07 · A24:speicherkurve_im_budget] Client: die Kurve traegt echte Minutenabstaende  [120 s zwischen erstem und letztem gueltigen Punkt (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Client-Working-Set bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 120 s]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 0 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: die Kurve traegt echte Minutenabstaende  [60 s (mindestens 30 s)]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker-Working-Set Generation 1 bleibt im Budget  [0.0 -> 0.0 MB, +0.0 MB, Grenze 16.8 MB ueber 60 s]
+             GRUEN
+RIEGEL basis-M-61-M-62: 0 von 2 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+Basislauf M-61/M-62 an Arbeitsbaum (Messstelle mit Gueltigkeitsmerkmal: True)
+  ok      M-62 Arbeitsbaum: Messfehler und Nullmessung sind im Bericht verschieden - Messfehler {"im_neustartfenster": false, "minute": 1, "rss_bytes": null, "rss_fehler": "OpenProcess: Fehler 87", "rss_gueltig": false, "sekunden": 60.0}, Nullmessung {"im_neustartfenster": false, "minute": 1, "rss_bytes": 0, "rss_gueltig": true, "sekunden": 60.0}
+  ok      M-61 Arbeitsbaum: eine fehlende Messung ist kein PASS - Exit 3, S07 im Budget False, MESSUNG FEHLT True
+             ok      [S07 · A24:speicherkurve_im_budget] Client: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [4 Punkte]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Client: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] die Speicherkurve traegt 2 Brokergeneration(en)  [2 geliefert: [0, 1]]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 0: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 2 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 0: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 0 bei 0.0 s: OpenProcess: Fehler 87; minute 1 bei 60.0 s: OpenProcess: Fehler 87]
+             ok      [S07 · A24:speicherkurve_im_budget] Broker Generation 1: mindestens zwei Messpunkte ausserhalb der Neustartfenster  [2 von 3 Punkten]
+             FEHLT   [S07 · A24:speicherkurve_im_budget] Broker Generation 1: Messung fehlt - das Working Set ist nicht gueltig gemessen, kein Budget wird gerechnet  [minute 1 bei 60.0 s: OpenProcess: Fehler 87; minute 2 bei 120.1 s: OpenProcess: Fehler 87]
+             MESSUNG FEHLT - 3 Speicherkurve(n) ohne gueltige Messung, das Budget ist nicht belegt
+RIEGEL basis-M-61-M-62: 2 von 2 ok

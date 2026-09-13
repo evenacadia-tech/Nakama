@@ -1,0 +1,30 @@
+NAK-283 Etappe 6 - Rotbilanz
+Zeitpunkt: 2026-09-13T04:31:52.7983587+02:00
+HEAD: 7d65adc718265d20fa4163d2a4f94fc41d1211d2
+
+MUT-61           M-61           rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-61-etappe-6.txt  BESTANDEN
+MUT-62           M-62           rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-62-etappe-6.txt  BESTANDEN
+MUT-62           M-70           rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-70-etappe-6.txt  BESTANDEN
+MUT-63           M-63           rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-63-etappe-6.txt  BESTANDEN
+MUT-64           M-64           rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-64-etappe-6.txt  BESTANDEN
+MUT-65-MATRIX    M-65 Matrix    BEOBACHTUNG rot-Lauf Exit 1 (Traeger gefallen False, Zeilen mit roter Marke 2) / gruen Exit 0, Hash gleich True  NAK-283-rot-M-65-matrix-etappe-6.txt
+MUT-65b          M-65           rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-65-etappe-6.txt  BESTANDEN
+MUT-66           M-66 A25       rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-66-etappe-6.txt  BESTANDEN
+MUT-66           M-66 Riegel    rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-66-riegel-etappe-6.txt  BESTANDEN
+MUT-66b          M-66b Riegel   rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-66b-etappe-6.txt  BESTANDEN
+MUT-66b          M-66b A25      BEOBACHTUNG rot-Lauf Exit 0 (Traeger gefallen True, Zeilen mit roter Marke 1) / gruen Exit 0, Hash gleich True  NAK-283-rot-M-66b-A25-etappe-6.txt
+MUT-66b          M-66b A26      BEOBACHTUNG rot-Lauf Exit 0 (Traeger gefallen True, Zeilen mit roter Marke 1) / gruen Exit 0, Hash gleich True  NAK-283-rot-M-66b-A26-etappe-6.txt
+MUT-66b          M-66b A27      BEOBACHTUNG rot-Lauf Exit 0 (Traeger gefallen True, Zeilen mit roter Marke 1) / gruen Exit 0, Hash gleich True  NAK-283-rot-M-66b-A27-etappe-6.txt
+MUT-67           M-67           rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-67-etappe-6.txt  BESTANDEN
+MUT-67-BASIS     M-67 Basis     rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-67-basis-etappe-6.txt  BESTANDEN
+MUT-68           M-68           rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-68-etappe-6.txt  BESTANDEN
+MUT-68-REGISTER  M-68 Register  rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-68-register-etappe-6.txt  BESTANDEN
+MUT-69           M-69           rot Exit 2 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-69-etappe-6.txt  BESTANDEN
+MUT-69           M-69 A32       rot Exit 2 (Traeger True) / gruen Exit 4 (Traeger True), Hash gleich True  NAK-283-rot-M-69-A32-etappe-6.txt  BESTANDEN
+MUT-69-BASIS     M-69 Basis     rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-69-basis-etappe-6.txt  BESTANDEN
+MUT-61-62-BASIS  M-61 Basis     rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-61-basis-etappe-6.txt  BESTANDEN
+MUT-61-62-BASIS  M-62 Basis     rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-62-basis-etappe-6.txt  BESTANDEN
+MUT-70-BASIS     M-70 Basis     rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-70-basis-etappe-6.txt  BESTANDEN
+MUT-70-BASIS     M-70 Etappe 1  rot Exit 1 (Traeger True) / gruen Exit 0 (Traeger True), Hash gleich True  NAK-283-rot-M-70-etappe-1-basis-etappe-6.txt  BESTANDEN
+
+URTEIL: 20 von 20 Rotbeweisen bestanden (Exit wie erwartet, rot mit Traeger, gruen mit Traeger, Ruecknahme bytegleich); 4 Beobachtungslaeufe

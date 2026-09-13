@@ -1,0 +1,50 @@
+NAK-283 Etappe 6 - Rotbeweis MUT-67-BASIS fuer M-67 Basis
+Zeitpunkt:  2026-09-13T04:31:32.0177342+02:00
+HEAD:       7d65adc718265d20fa4163d2a4f94fc41d1211d2
+Mutation:   keine Mutation: derselbe Riegel misst rot den Stand am Basis-SHA (git show), gruen den Arbeitsbaum
+Datei:      (keine Mutation)
+Befehl:     rot 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-67 --revision 7b1f38b7bddcf67965d1bbc2609fd74464cfaaea' / gruen 'py -3.13 docs/beweise/roh/NAK-283-etappe-6-riegel.py M-67'
+Neubau:     rot (kein Bauziel) / gruen (kein Bauziel)
+Traeger:    rot 'FEHLER' + 'R4 M-02' / gruen 'ok' + 'R4 M-02'
+Erwartet:   rot Exit 1 / gruen Exit 0
+Urteil:     ROT Exit 1 (0.41 s) / GRUEN Exit 0 (0.35 s)
+Traegerzeile rot:   FEHLER  R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+Traegerzeile gruen: ok      R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+Zeilen mit roter Marke im roten Lauf: 2
+  FEHLER  R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+  FEHLER  R4 M-81 der Zuwachs traegt den datierten Nachtrag und nennt ['15 bis 23', 'true_peak_matches_ebu_transient_set']
+
+--- MUTIERT / ROT (erwartet: rot) -----------------------------------
+M-67 an Revision 7b1f38b7, verglichen mit dem Basis-SHA 7b1f38b7
+  ok      R1 dieselbe Zeilenzahl (4506 / 4506)
+  ok      R1 die Matrixzeilen M-02 und M-81 stehen je genau einmal (Zeilen [471] und [623])
+  ok      R1 keine andere Zeile veraendert
+  ok      R2 M-02 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-02 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-02 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  FEHLER  R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-02 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+  ok      R2 M-81 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-81 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-81 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  FEHLER  R4 M-81 der Zuwachs traegt den datierten Nachtrag und nennt ['15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-81 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+RIEGEL M-67: 11 von 13 ok
+
+--- ZURUECKGESPIELT / GRUEN (erwartet: gruen) -----------------------
+M-67 an Arbeitsbaum, verglichen mit dem Basis-SHA 7b1f38b7
+  ok      R1 dieselbe Zeilenzahl (4506 / 4506)
+  ok      R1 die Matrixzeilen M-02 und M-81 stehen je genau einmal (Zeilen [471] und [623])
+  ok      R1 keine andere Zeile veraendert
+  ok      R2 M-02 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-02 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-02 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  ok      R4 M-02 der Zuwachs traegt den datierten Nachtrag und nennt ['20 bis 23', '15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-02 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+  ok      R2 M-81 gleiche Zellenzahl (7 / 7)
+  ok      R2 M-81 ID-, Zustands-, Zusage- und Statusspalte unveraendert - nur die Nachweisspalte darf wachsen
+  ok      R3 M-81 die Nachweisspalte beginnt unveraendert mit ihrem Bestand (nur Anfuegen)
+  ok      R4 M-81 der Zuwachs traegt den datierten Nachtrag und nennt ['15 bis 23', 'true_peak_matches_ebu_transient_set']
+  ok      R5 M-81 die Statusspalte sagt weiter BELEGT, gemessen - ergaenzt, nie umgeschrieben
+  ok      R6 dokuriegel.py ohne Befund (Exit 0: Dokuriegel: 0 Befund(e), 0 benannt (historisch oder Zielpfad))
+RIEGEL M-67: 14 von 14 ok

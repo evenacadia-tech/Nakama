@@ -28,6 +28,27 @@
 namespace nakama::analyse
 {
 
+/** NAK-283 F07 (§8.1 Feinheit 17): liegt `startSample` noch vor dem naechsten
+    Sample, das `verarbeiteSamples` sehen wird?
+
+    Nur dann trifft der Startmerker den Anfang. Vor dem ersten Block liegt
+    jeder Anfang vorn. Ohne Zeitbeweis des letzten Blocks ist die Lage
+    unbekannt; dann gilt der Anfang als erreicht - das Kurzzeitfenster faellt
+    beim Binden wie vor NAK-283, und der Merker bleibt trotzdem scharf. Der
+    Rand saettigt wie in `blockProjektSpanneGueltig` (M-17). */
+inline bool FeatureEngine::passagenanfangNochVorn (std::int64_t startSample) const noexcept
+{
+    if (! habeVorigen)
+        return true;
+    if ((vorigerBlock.flags & echtzeit::kFlagZeitGueltig) == 0)
+        return false;
+    const std::int64_t kMax = std::numeric_limits<std::int64_t>::max();
+    const auto n = (std::int64_t) vorigerBlock.sampleCount;
+    const std::int64_t b0 = vorigerBlock.projectSampleStart;
+    const std::int64_t naechstes = b0 > kMax - n ? kMax : b0 + n;
+    return startSample >= naechstes;
+}
+
 inline void FeatureEngine::verarbeiteSamples (const echtzeit::StampedBlock& block, const float* daten) noexcept
 {
     const int n = (int) block.sampleCount;
@@ -56,6 +77,12 @@ inline void FeatureEngine::verarbeiteSamples (const echtzeit::StampedBlock& bloc
     // Endet das Fenster IN diesem Block? Nur dann laeuft der Filter unten
     // aus (Luecke B09).
     bool fensterEndetHier = false;
+    // 🔑 NAK-283 F07 (M-49 bis M-52, §8.1 Feinheit 17): das Gegenstueck am
+    // ANFANG. Beginnt die Passage IN diesem Block? `passVon` allein kann das
+    // nicht sagen: es ist blocklokal und in jedem Block, der ganz in der
+    // Passage liegt, erneut 0. Deshalb gilt der Anfang nur, wenn der
+    // Startmerker scharf ist UND der Ausschnitt genau am Startsample beginnt.
+    bool fensterBeginntHier = false;
     if (passagenfenster.gesetzt)
     {
         passVon = passBis = 0;
@@ -81,13 +108,52 @@ inline void FeatureEngine::verarbeiteSamples (const echtzeit::StampedBlock& bloc
                 // `bis` ist bereits auf `endeSample` gekappt: Gleichheit
                 // heisst, dass die Passage genau hier zu Ende ist.
                 fensterEndetHier = bis >= passagenfenster.endeSample;
+                // `von` ist bereits auf `startSample` angehoben: Gleichheit
+                // heisst, dass die Passage genau hier beginnt.
+                fensterBeginntHier = passagenStartScharf
+                                  && von == passagenfenster.startSample;
             }
+            // Liegt der Anfang schon hinter diesem Block, ohne dass ein Block
+            // ihn getroffen hat, feuert der Merker nie mehr (Feinheit 17):
+            // die Passage hat in dieser Epoche keinen beobachteten Anfang,
+            // und `hatSampleAusserhalb` traegt das bereits.
+            if (passagenStartScharf && b0 > passagenfenster.startSample)
+                passagenStartScharf = false;
         }
     }
 
     for (int i = 0; i < n; ++i)
     {
         const bool imPassagenfenster = i >= passVon && i < passBis;
+        // 🔑 NAK-283 F07 (M-49 bis M-52, R-283-5): DER ANFANG IST EIN SAMPLE,
+        // NICHT DER BINDEZEITPUNKT.
+        //
+        // Ein Passagenanfang IST eine Fenstergrenze (§32.3): die 24 Taps je
+        // Phase des Polyphasenfilters reichen zwoelf Samples vor den Anfang
+        // zurueck. Bis NAK-283 wurde der Filter beim BINDEN geleert; wurde eine
+        // spaetere Passage vorab gebunden, fuellte das Material davor ihn
+        // wieder, und der erste Passagenrahmen trug dessen Nachklang - bei
+        // einer lauten Kante vor einer leisen Passage 60 dB daneben (Befund
+        // F07). Hier laeuft der Anfang an der exakten Grenze, VOR dem ersten
+        // Passagensample, und genau einmal je Passage: der Merker faellt danach.
+        //
+        // Reihenfolge wie am Ende (unten), andere Zuordnung (M-51): am Ende
+        // zaehlt der Rest des Filters fuer Rahmen und Passage, am Anfang NUR
+        // fuer den Rahmen - er gehoert zum Material davor, und die Live-Metrik
+        // verliert ihn nicht.
+        //
+        // Mit dem Filter beginnt das Kurzzeitfenster (SONDE-013 R04) an
+        // derselben Grenze: seine 3-s-Zellen gehoeren zur Passage, nicht zum
+        // Material davor (M-52).
+        if (fensterBeginntHier && i == passVon)
+        {
+            const double rest = tp.nachlauf();
+            rahmenTruePeak = std::max (rahmenTruePeak, rest);
+            tp.zuruecksetzen();
+            kurzfensterNeuBeginnen();
+            passagenStartScharf = false;
+            fensterBeginntHier = false;         // genau EINMAL je Passage
+        }
         // 🔑 SONDE-013 Nacharbeit 2 (Befund R05): DER NACHLAUF LAEUFT AM
         // INDEX `passBis`, nicht nach der Schleife.
         //
@@ -138,6 +204,11 @@ inline void FeatureEngine::verarbeiteSamples (const echtzeit::StampedBlock& bloc
             if (rahmenNichtEndlich < 0xFFFFFFFFu) ++rahmenNichtEndlich;
             if (evidenzNichtEndlich < 0xFFFFFFFFu) ++evidenzNichtEndlich;
             ++nichtEndlicheSamplesGesamt;
+            // NAK-283 F10 (R-283-5): WO ersetzt wurde, nicht wie oft - daraus
+            // entsteht die Marke der Zelle, die dieses Sample traegt
+            // (`zelleSchliessen`). Die zwei Zaehler oben saettigen und fallen
+            // mit Rahmen und Evidenzfenster; die Stelle tut beides nicht.
+            letztesErsetztesSample = verarbeiteteSamples;
         }
         if (! stereo) r = l;
 
@@ -357,7 +428,25 @@ inline void FeatureEngine::rechneFenster (Stufe& s) noexcept
     for (int k = 0; k < bins; ++k)
         s.psd[(std::size_t) k] = (s.fftM.leistung (k) + s.fftS.leistung (k)) * norm;
 
-    const double gesamt = summeBereich (s, 0, bins);
+    // 🔑 NAK-283 F06 (R-283-4, §8.1 Feinheiten 5 und 6): ENERGIE GEGEN ENERGIE.
+    //
+    // `s.psd` ist eine einseitige Leistungsdichte (Amplitude^2 je Hz). Das
+    // Aktivgate `kAktivGateDb` ist eine Energie - dieselbe Groesse, die das
+    // Zeitbereichsgate in `zelleSchliessen` gegen dieselbe Konstante haelt.
+    // Deshalb wird die Dichtesumme HIER ueber die Binbreite Δf = fs / punkte
+    // integriert, bevor sie in dB gegen die Schwelle steht. Ohne das lag die
+    // Summe um 10*log10 (fs / punkte) unter dem Energiewert, und die Schwelle
+    // wanderte mit Samplerate und Stufe - 10,32 dB bei 44,1 kHz in der
+    // Hauptstufe, 16,71 dB bei 192 kHz, 6,02 dB zwischen den Stufen -, bis
+    // ein Frame Aktivitaet 1 bei Abdeckung 0 meldete.
+    //
+    // Die Integration steht am GATE, nicht an `s.psd`: Bandakkumulation,
+    // Fluss und Stereo lesen die Dichte unveraendert weiter. Δf entsteht je
+    // Stufe aus ihrer eigenen Punktzahl, die Schwelle bleibt -60,0. Die
+    // Nullpruefung steht vor dem Logarithmus und bleibt: digitale Stille
+    // ergibt 0,0, und `log10 (0)` wird nie gerechnet.
+    const double binBreiteHz = s.fs / (double) s.punkte;
+    const double gesamt = summeBereich (s, 0, bins) * binBreiteHz;
     const bool aktiv = gesamt > 0.0
                     && 10.0 * std::log10 (gesamt) > kAktivGateDb;
 

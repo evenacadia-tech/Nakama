@@ -223,10 +223,153 @@ struct VerteilungsRing
     void leeren() noexcept { stand = 0; gefuellt = 0; }
 };
 
+/** NAK-283 F08 (R-283-5, §8.1 Feinheit 7): Klassenraster der
+    Headroomverteilung einer Passage.
+
+    0,01 dB Klassenbreite - dieselbe Aufloesung wie die Evidenzkodierung
+    `q_db_0p01_i16`. Die Klassenmitte liegt hoechstens 0,005 dB neben dem
+    Rahmenwert, eine Groessenordnung unter dem True-Peak-Budget von
+    +-0,1 dB (§49.3). Bereich [-200, +60) dBTP: darunter liegt kein Audio,
+    das eine Headroomaussage traegt, darueber keines, das ein Float-Host
+    realistisch fuehrt. 26 000 Klassen zu je 4 Byte sind 104 000 Byte je
+    Instanz, einmal in `vorbereiten()` angelegt.
+
+    Wie `kVerteilungPlaetze` eine RESSOURCENGRENZE mit Messfolge (der Rand
+    einer Klasse), kein Kalibrierwert - deshalb nicht Teil von
+    `kFeatureMetricsVersion`. */
+inline constexpr double kHeadroomKlasseUntenDb   = -200.0;
+inline constexpr double kHeadroomKlassenBreiteDb = 0.01;
+inline constexpr int    kHeadroomKlassen         = 26000;
+
+/** Die Headroomverteilung - EIN Traeger, zwei Spannen (NAK-283 F08,
+    R-283-5; U41 vom 13.09.2026).
+
+    **Mit markierter Passage** beschreibt sie die GANZE Passage (Entwurf
+    §39.2 woertlich: "Headroom wird in dBTP und als Verteilung ueber die
+    Passage dargestellt"; SONDE-013 M-03). Jeder publizierte Rahmen der
+    Passage geht als eine dBTP-Klasse in ein speicherfestes Histogramm ein,
+    ganz gleich wie lang die Passage wird. Bis NAK-283 fasste der Traeger
+    nur einen Ring aus `kVerteilungPlaetze` Rahmen - 6,4 s -, und eine
+    14-s-Passage verlor ihre erste Haelfte (Befund F08, P95 um 60 dB daneben).
+
+    **Ohne Passage** bleibt sie das gleitende Fenster der letzten
+    `kVerteilungPlaetze` Rahmen. Das ist die Wahl des Users vom 13.09.2026
+    („Gleitendes Fenster mit sichtbarer Länge",
+    `design/abnahmen/2026-09-13-headroom-ohne-passage-u41.md`), kein Rest
+    des alten Fehlers: ohne markierte Passage gibt es keine Passage, ueber
+    die gesammelt werden koennte, und ein Sammeln seit der Transportgrenze
+    haette er ausdruecklich nicht gewollt.
+
+    Warum ein Histogramm und kein groesserer Ring (§8.1 Feinheit 7):
+    `kVerteilungPlaetze` ist eine Ressourcengrenze, und ein Ring ueber eine
+    beliebig lange Passage haette keine obere Schranke - ein Histogramm hat
+    eine feste. Ein Rahmenwert ausserhalb des Klassenbereichs ist NICHT
+    DARSTELLBAR und wird nie still an den Rand gekappt: die Passage traegt
+    dann bis zu ihrem Neuanfang keine Verteilung - keine Aussage statt einer
+    falschen. */
+struct HeadroomVerteilung
+{
+    /// Ohne Passage: das gleitende Fenster (U41).
+    VerteilungsRing ring {};
+    /// Mit Passage: je Klasse die Zahl der Rahmen. Heap, in `vorbereiten()`.
+    std::vector<std::uint32_t> klassen;
+    /// Eingegangene Rahmen der Passage. Saettigt bei 0xFFFFFFFF; danach nimmt
+    /// das Histogramm nichts mehr auf, damit Klassensumme und Zahl dieselbe
+    /// Spanne beschreiben.
+    std::uint32_t rahmen { 0 };
+    /// Belegter Klassenbereich, -1 heisst leer. Er begrenzt Leerung und Suche.
+    int  kleinste { -1 }, groesste { -1 };
+    /// Ein Rahmenwert lag ausserhalb von [kHeadroomKlasseUntenDb, +60) dBTP.
+    bool nichtDarstellbar { false };
+
+    void vorbereiten()
+    {
+        klassen.assign ((std::size_t) kHeadroomKlassen, 0u);
+        ring.leeren();
+        rahmen = 0;
+        kleinste = groesste = -1;
+        nichtDarstellbar = false;
+    }
+
+    /** Beide Spannen auf Anfang - Grenze, Passagenwechsel, `zuruecksetzen`. */
+    void leeren() noexcept
+    {
+        ring.leeren();
+        if (kleinste >= 0 && klassen.size() == (std::size_t) kHeadroomKlassen)
+            for (int k = kleinste; k <= groesste; ++k)
+                klassen[(std::size_t) k] = 0u;
+        rahmen = 0;
+        kleinste = groesste = -1;
+        nichtDarstellbar = false;
+    }
+
+    /** Ein Rahmen der Passage mit seinem True Peak in dBTP. */
+    void passageSchiebe (double db) noexcept
+    {
+        if (klassen.size() != (std::size_t) kHeadroomKlassen || rahmen == 0xFFFFFFFFu)
+            return;
+        ++rahmen;
+        const double pos = (db - kHeadroomKlasseUntenDb) / kHeadroomKlassenBreiteDb;
+        if (! (pos >= 0.0 && pos < (double) kHeadroomKlassen))    // faengt auch NaN
+        {
+            nichtDarstellbar = true;
+            return;
+        }
+        const int k = (int) pos;
+        ++klassen[(std::size_t) k];
+        kleinste = kleinste < 0 ? k : std::min (kleinste, k);
+        groesste = std::max (groesste, k);
+    }
+
+    /** Klassenmitte des Rahmens am aufsteigenden Rang `rang` (0-basiert). */
+    double klassenwertAmRang (std::uint64_t rang) const noexcept
+    {
+        std::uint64_t lauf = 0;
+        for (int k = kleinste; k >= 0 && k <= groesste; ++k)
+        {
+            lauf += klassen[(std::size_t) k];
+            if (lauf > rang)
+                return kHeadroomKlasseUntenDb + ((double) k + 0.5) * kHeadroomKlassenBreiteDb;
+        }
+        return kHeadroomKlasseUntenDb + ((double) groesste + 0.5) * kHeadroomKlassenBreiteDb;
+    }
+
+    /** Perzentil ueber die Passage - dieselbe Konvention wie
+        `FeatureEngine::perzentil` (Rang p*(n-1), linear zwischen den zwei
+        Nachbarraengen), gerechnet auf Klassenmitten. Nur fuer `rahmen >= 1`
+        und ohne `nichtDarstellbar` aussagekraeftig. */
+    double passagePerzentil (double p) const noexcept
+    {
+        const std::uint64_t n = rahmen;
+        if (n == 0u)
+            return 0.0;
+        const double pos = p * (double) (n - 1u);
+        const auto lo = (std::uint64_t) pos;
+        const auto hi = lo + 1u < n ? lo + 1u : lo;
+        const double f = pos - (double) lo;
+        const double a = klassenwertAmRang (lo);
+        const double b = klassenwertAmRang (hi);
+        return a + f * (b - a);
+    }
+};
+
+
+/** NAK-283 M-59: diese Fassung erklaert `FeatureEngineTestzugang` zum Freund.
+    Ein Test definiert die Struktur nur, wenn der Zugang existiert; das Produkt
+    definiert und ruft sie nie. */
+#define NAKAMA_FEATUREENGINE_TESTZUGANG 1
 
 //==============================================================================
 class FeatureEngine
 {
+    /** NAK-283 M-59: die zwei NaN-Zaehler saettigen bei 0xFFFFFFFF, und die
+        oeffentliche Schnittstelle bringt keinen von beiden je an den Anschlag
+        (der Rahmenzaehler faellt mit jedem Rahmen, der Evidenzzaehler mit
+        jedem Evidenzfenster). Ohne diesen Zugang waere "saettigt, wrappt
+        nicht, und die Zellenmarke haengt nicht am Zaehlerstand" nicht
+        messbar. Definiert nur in `tests/Sonde013DynamicsTest.cpp`. */
+    friend struct FeatureEngineTestzugang;
+
 public:
     // ── Feste Groessen (§53.7 Schlussabsatz: Startwerte, keine ABI) ─────────
     /** Bassstufe: aufloesungsbestimmend unter `kTrennungHz`. */
@@ -339,8 +482,14 @@ public:
         // Lautheit — die K-Gewichtung gehoert nicht hinein).
         kurzTpZellen.assign ((std::size_t) kKurzZellen, 0.0);
         kurzRmsZellen.assign ((std::size_t) kKurzZellen, 0.0);
+        // NAK-283 F10: das Merkmal "enthaelt ersetztes Material" je Zelle,
+        // derselbe Ring und derselbe Stand wie die drei Zellenringe.
+        kurzZellenErsetzt.assign ((std::size_t) kKurzZellen, 0u);
         lraHistogramm.assign ((std::size_t) kLraBins, 0u);
-        headroomRing.assign (1u, VerteilungsRing {});
+        // NAK-283 F08: Ring UND Histogramm der Headroomverteilung, beide hier
+        // angelegt - danach waechst keiner von beiden.
+        headroomRing.assign (1u, HeadroomVerteilung {});
+        headroomRing[0].vorbereiten();
         // SONDE-013 M-11: alle Stereotraeger im Heap, angelegt auf dem
         // Nachrichtenthread. Der Audiothread alloziert weiterhin nie.
         stereoAkku.assign ((std::size_t) Gitter::evidenzBaender, StereoAkku {});
@@ -425,6 +574,10 @@ public:
         rahmenNichtEndlich = 0;
         evidenzNichtEndlich = 0;
         nichtEndlicheSamplesGesamt = 0;
+        // NAK-283 F07 und F10: der Startmerker und die Zellenmarken ebenso.
+        passagenStartScharf = false;
+        letztesErsetztesSample = 0;
+        for (auto& z : kurzZellenErsetzt) z = 0u;
         for (auto& r : headroomRing) r.leeren();
         for (auto& b : lraHistogramm) b = 0u;
         lraGezaehlt = 0;
@@ -578,10 +731,17 @@ public:
 
     /** Bindet die Passagenmetriken an [startSample, endeSample) in Projektzeit.
 
-        Die vier Traeger aus M-03/M-04/M-26 — Passagenmaximum, Headroomring,
-        LRA-Histogramm und Fingerprint — beginnen dabei VON VORN. Genau das war
-        der Fehler ohne Fenster: eine neue Passage erbte die Spitze und die
-        Verteilungen des Materials davor.
+        Die vier Traeger aus M-03/M-04/M-26 — Passagenmaximum,
+        Headroomverteilung, LRA-Histogramm und Fingerprint — beginnen dabei VON
+        VORN. Genau das war der Fehler ohne Fenster: eine neue Passage erbte die
+        Spitze und die Verteilungen des Materials davor. Nichts davor kann in
+        sie hinein, weil sie nur Samples IM Fenster nehmen.
+
+        NAK-283 F07: die zwei Historien, die JEDES Sample sieht — die
+        Verzoegerungskette des True-Peak-Interpolators und die 3-s-Zellen —,
+        beginnen dagegen erst am STARTSAMPLE neu (Startmerker, §8.1 Feinheit
+        17). Beim Binden neu begonnen, fuellte das Material bis zum Anfang sie
+        wieder.
 
         `false`, wenn das Fenster leer oder verdreht ist — dann bleibt der
         vorige Zustand unangetastet, statt eine Passage der Laenge 0 zu
@@ -608,43 +768,45 @@ public:
         passageTruePeak = 0.0;
         passagenTruePeakRahmen = 0.0;
         zelleImFensterSamples = 0;
-        // 🔑 Der Polyphasenfilter wird geleert. Ein Passagenanfang IST eine
-        // Fenstergrenze (§32.3): seine 24 Taps je Phase reichen zwoelf Samples
-        // vor den Anfang zurueck, und ohne diesen Reset trug der erste
-        // Passagenrahmen den Nachklang des Materials DAVOR. Genau daran hing
-        // der Befund B08: eine leise Passage nach einem lauten Abschnitt
-        // uebernahm dessen Spitze — nicht ueber einen Puffer, sondern ueber den
-        // Filterzustand, die subtilste Form desselben Fehlers.
+        // 🔑 NAK-283 F07 (M-49 bis M-52, R-283-5, §8.1 Feinheit 17): der
+        // Polyphasenfilter wird NICHT HIER geleert, sondern am Startsample.
         //
-        // Der Nachlaufwert wird VERWORFEN: er gehoert zum Material vor der
-        // Passage, und die Passage beginnt bei null.
-        (void) tp.nachlauf();
-        tp.zuruecksetzen();
+        // Ein Passagenanfang IST eine Fenstergrenze (§32.3): die 24 Taps je
+        // Phase reichen zwoelf Samples vor den Anfang zurueck. SONDE-013 B08
+        // leerte den Filter deshalb beim Binden - richtig nur, wenn Binden und
+        // Anfang zusammenfallen. Wird eine spaetere Passage vorab gebunden,
+        // fuellte das Material davor den Filter wieder, und der erste
+        // Passagenrahmen trug dessen Nachklang (Befund F07: 60 dB daneben);
+        // der verworfene Nachlauf nahm zugleich der Live-Metrik die Spitze des
+        // laufenden Materials. Jetzt wird hier nur der STARTMERKER scharf
+        // gestellt, das Gegenstueck zum Endmerker `fensterEndetHier`:
+        // `verarbeiteSamples` laesst den Filter genau am Startsample auslaufen
+        // (der Rest zaehlt fuer den Rahmen, nicht fuer die Passage) und leert
+        // ihn dort, einmal je Passage.
+        passagenStartScharf = true;
         for (auto& r : headroomRing) r.leeren();
         for (auto& b : lraHistogramm) b = 0u;
         lraGezaehlt = 0;
         lraZellenSeitHop = 0;
         // 🔑 SONDE-013 Nacharbeit 2 (Befund R04): DAS KURZZEITFENSTER FAELLT
-        // MIT.
+        // MIT DEM PASSAGENANFANG.
         //
         // Die Runde 1 leerte Histogramm und Hop-Zaehler, nicht aber die
         // 3-s-Ringe `kurzZellen`, `kurzTpZellen`, `kurzRmsZellen` und die
         // laufende Zelle. Beginnt eine Passage nach bereits gemessenem
         // Material — und das ist der Normalfall, der User markiert mitten im
         // Stueck —, enthielten ihre ersten LRA-, PSR- und Crest-Fenster bis zu
-        // zwei Sekunden Audio VOR der Passage. Der Fehler ist derselbe wie an
-        // der Transportgrenze eine Bildschirmseite weiter unten, nur an der
-        // anderen Fensterart; deshalb faellt hier dasselbe.
-        zelleStand = 0;
-        zelleKEnergie = 0.0;
-        zelleAktivEnergie = 0.0;
-        zelleTruePeak = 0.0;
-        zelleRmsEnergie = 0.0;
-        kurzStand = 0;
-        kurzGefuellt = 0;
-        for (auto& z : kurzZellen)     z = 0.0;
-        for (auto& z : kurzTpZellen)   z = 0.0;
-        for (auto& z : kurzRmsZellen)  z = 0.0;
+        // zwei Sekunden Audio VOR der Passage.
+        //
+        // NAK-283 F07: derselbe Fehler wie beim Filter, wenn es beim Binden
+        // geschieht - eine vorab gebundene Passage fuellte die Ringe bis zum
+        // Anfang wieder mit dem Material davor, und die Live-Fenster fielen
+        // vorzeitig. Liegt der Anfang noch vorn, beginnt das Kurzzeitfenster
+        // deshalb am Startmerker neu. Liegt er schon zurueck, sieht ihn kein
+        // Merker mehr; dann ist das Binden der einzige beobachtete Anfang, und
+        // das Fenster faellt hier wie bisher.
+        if (! passagenanfangNochVorn (startSample))
+            kurzfensterNeuBeginnen();
         fingerprintLeeren();
         return true;
     }
@@ -655,6 +817,9 @@ public:
     {
         passagenfenster = {};
         passagenfensterGebrochen = false;
+        // NAK-283 F07 (M-52, oeffnen <-> schliessen): ohne Passage gibt es
+        // keinen Anfang, an dem der Merker feuern duerfte.
+        passagenStartScharf = false;
         hatSampleAusserhalb = false;
         zelleImFensterSamples = 0;
         passageTruePeak = 0.0;
@@ -1022,6 +1187,8 @@ private:
 
     void rahmenZeitBelegen (const echtzeit::StampedBlock& block) noexcept;
 
+    bool passagenanfangNochVorn (std::int64_t startSample) const noexcept;
+
     void verarbeiteSamples (const echtzeit::StampedBlock& block, const float* daten) noexcept;
 
     void schiebeStufe (Stufe& s, double m, double side,
@@ -1058,6 +1225,10 @@ private:
     bool kurzLufs (double& heraus) const noexcept;
 
     bool momentanLufs (double& heraus) const noexcept;
+
+    bool zellenFensterSauber (int anzahl) const noexcept;
+
+    void kurzfensterNeuBeginnen() noexcept;
 
     bool kurzTruePeak (double& heraus) const noexcept;
 
@@ -1179,6 +1350,16 @@ private:
     /// Ungewichtete mittlere Energie je Zelle — die RMS-Haelfte des
     /// Crest-Faktors ueber 3 s.
     std::vector<double> kurzRmsZellen;
+    /// NAK-283 F10 (R-283-5, §8.1 Feinheit 8): je Zelle das Merkmal
+    /// "enthaelt ersetztes Material" (1) - derselbe Ring und derselbe Stand
+    /// wie die drei Zellenringe daneben, also dieselbe Spanne wie jeder Wert,
+    /// der aus ihnen entsteht.
+    std::vector<std::uint8_t> kurzZellenErsetzt;
+    /// Stromposition (`verarbeiteteSamples`) des juengsten ersetzten Samples;
+    /// 0 heisst keines. Aus ihr entsteht die Marke der schliessenden Zelle -
+    /// NICHT aus `rahmenNichtEndlich`/`evidenzNichtEndlich`, die saettigen und
+    /// mit Rahmen und Evidenzfenster fallen (M-59).
+    std::uint64_t letztesErsetztesSample { 0 };
     double zelleTruePeak { 0.0 }, zelleRmsEnergie { 0.0 };
     /// Maximum ueber den laufenden 100-ms-Rahmen und ueber die Passage.
     ///
@@ -1216,6 +1397,13 @@ private:
     Passagenfenster passagenfenster {};
     /// Eine Transportgrenze im Fenster macht es unbrauchbar (§32.4).
     bool passagenfensterGebrochen { false };
+    /// NAK-283 F07 (§8.1 Feinheit 17): der STARTMERKER, Gegenstueck zum
+    /// Endmerker `fensterEndetHier` in `verarbeiteSamples`. Scharf beim
+    /// Binden; feuert genau einmal je Passage an ihrem Startsample (Filter
+    /// auslaufen lassen und leeren, Kurzzeitfenster neu); faellt danach, beim
+    /// Loesen, mit `zuruecksetzen` oder wenn der Anfang ungesehen hinter dem
+    /// verarbeiteten Material liegt.
+    bool passagenStartScharf { false };
     /// Monotone Samplezaehlung und die Stelle des juengsten Samples AUSSERHALB
     /// des Fensters. Aus beiden folgt, ob ein Analysefenster der Laenge
     /// `s.punkte` vollstaendig in der Passage lag.
@@ -1230,17 +1418,21 @@ private:
     std::vector<std::uint32_t> lraHistogramm;
     std::uint64_t lraGezaehlt { 0 };
     int           lraZellenSeitHop { 0 };
-    /// Headroomverteilung: ein Ring der Rahmen-True-Peaks in dB.  Er teilt
-    /// die Laenge `kVerteilungPlaetze` mit den Bandringen — dieselbe
-    /// Ressourcengrenze, deshalb bewusst KEINE zweite Konstante, die davon
-    /// abdriften koennte.
+    /// Headroomverteilung der Rahmen-True-Peaks in dB (`HeadroomVerteilung`).
+    /// Ihr Ring ohne Passage teilt die Laenge `kVerteilungPlaetze` mit den
+    /// Bandringen — dieselbe Ressourcengrenze, deshalb bewusst KEINE zweite
+    /// Konstante, die davon abdriften koennte. Seit NAK-283 F08 traegt
+    /// dasselbe Element das Histogramm ueber die Passage; der Name blieb,
+    /// damit jede Stelle, die den Traeger leert (`zuruecksetzen`,
+    /// `grenzeZiehen`, Binden, Loesen), beide Spannen mit EINEM `leeren()`
+    /// trifft.
     ///
     /// Er liegt im HEAP, mit genau einem Element, aus demselben gemessenen
     /// Grund wie `evidenzVerteilung` daneben: B5 haelt zwanzig Engines
     /// gleichzeitig auf dem Stack, und dort summieren sich auch 264 Byte je
     /// Instanz zu einem `STATUS_STACK_OVERFLOW` (Manifest §10.2, Befund 1 —
     /// und ein zweites Mal beim Bau der Etappe C).
-    std::vector<VerteilungsRing> headroomRing;
+    std::vector<HeadroomVerteilung> headroomRing;
 
     // Rahmen (zwischen zwei Live-Frames)
     double rahmenPeak { 0.0 }, rahmenSummeQuadrat { 0.0 };

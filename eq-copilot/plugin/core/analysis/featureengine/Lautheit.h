@@ -33,6 +33,25 @@ inline void FeatureEngine::zelleSchliessen() noexcept
     // durch die Samplezahl, damit aus Σ y² das mean(y²) der Norm wird.
     const double mittel = zelleKEnergie / (double) zellenSamples;
     kurzZellen[(std::size_t) kurzStand] = mittel;
+    // 🔑 NAK-283 F10 (R-283-5, §8.1 Feinheit 8): GUELTIGKEIT JE ZELLE, NICHT
+    // JE ZAEHLER.
+    //
+    // Die Zelle, die hier schliesst, umfasst genau die letzten `zellenSamples`
+    // verarbeiteten Samples: nach jedem Neuanfang (Grenze, Passagenanfang,
+    // `zuruecksetzen`) zaehlt `zelleStand` von 0, eine Zelle beginnt also nie
+    // vor ihm. Liegt das juengste ersetzte Sample darin, traegt die Zelle das
+    // Merkmal "enthaelt ersetztes Material" - und jede Metrik ueber ein
+    // Fenster, das sie enthaelt, bleibt ohne Wert (`zellenFensterSauber`).
+    //
+    // Das Merkmal haengt an der SAMPLESTELLE, nicht an `rahmenNichtEndlich`
+    // oder `evidenzNichtEndlich`: die zwei Zaehler fallen mit Rahmen und
+    // Evidenzfenster und saettigen bei 0xFFFFFFFF (M-59) - beides ist eine
+    // andere Lebensdauer als die der Zelle, und genau daran hing der Befund.
+    const std::uint64_t zellenBeginn =
+        verarbeiteteSamples >= (std::uint64_t) zellenSamples
+            ? verarbeiteteSamples - (std::uint64_t) zellenSamples : 0u;
+    const bool ersetzt = letztesErsetztesSample > zellenBeginn;
+    kurzZellenErsetzt[(std::size_t) kurzStand] = ersetzt ? 1u : 0u;
     // SONDE-013 M-03/M-04: die zwei Nachbarringe wandern MIT demselben
     // Stand, damit ein Kurzzeitfenster ueber alle drei dieselben Zellen
     // sieht.  Zwei Ringe mit eigenem Stand waeren zwei Fenster mit
@@ -91,6 +110,10 @@ inline bool FeatureEngine::kurzLufs (double& heraus) const noexcept
 {
     if (kurzGefuellt < kKurzZellen)
         return false;
+    // NAK-283 F10 (R-283-5): kein Wert, solange eine der 30 Zellen ersetztes
+    // Material traegt - die Verriegelung lebt genau so lange wie das Fenster.
+    if (! zellenFensterSauber (kKurzZellen))
+        return false;
     double su = 0.0;
     for (int i = 0; i < kKurzZellen; ++i)
         su += kurzZellen[(std::size_t) i];
@@ -110,6 +133,12 @@ inline bool FeatureEngine::momentanLufs (double& heraus) const noexcept
 {
     if (kurzGefuellt < kMomentZellen)
         return false;
+    // NAK-283 F10: dieselbe Regel ueber das EIGENE Fenster - die letzten vier
+    // Zellen. Momentary kommt deshalb nach 400 ms wieder, Short-term erst nach
+    // 3 s (M-57); ein gemeinsamer Warnzaehler koennte die zwei Fristen nicht
+    // trennen.
+    if (! zellenFensterSauber (kMomentZellen))
+        return false;
     double summe = 0.0;
     for (int i = 0; i < kMomentZellen; ++i)
     {
@@ -123,11 +152,59 @@ inline bool FeatureEngine::momentanLufs (double& heraus) const noexcept
     return std::isfinite (heraus);
 }
 
+/** NAK-283 F10 (R-283-5, §8.1 Feinheit 8): traegt KEINE der letzten
+    `anzahl` geschlossenen Zellen das Merkmal "enthaelt ersetztes Material"?
+
+    Die Gueltigkeit einer Fenstermetrik haengt an der tatsaechlich
+    verwendeten Historie: `kurzLufs`, `kurzTruePeak` (und damit PSR und Crest)
+    fragen alle 30 Zellen, `momentanLufs` die letzten vier. Die Aufrufer haben
+    vorher geprueft, dass mindestens `anzahl` Zellen gefuellt sind. */
+inline bool FeatureEngine::zellenFensterSauber (int anzahl) const noexcept
+{
+    for (int i = 0; i < anzahl; ++i)
+    {
+        const int idx = (kurzStand - 1 - i + kKurzZellen * 2) % kKurzZellen;
+        if (kurzZellenErsetzt[(std::size_t) idx] != 0u)
+            return false;
+    }
+    return true;
+}
+
+/** Das Kurzzeitfenster beginnt neu: die laufende Zelle, die drei 3-s-Ringe,
+    ihre Zellenmarken und der LRA-Hop.
+
+    SONDE-013 Nacharbeit 2 (Befund R04) liess das beim Binden einer Passage
+    geschehen. Seit NAK-283 F07 laeuft es am STARTSAMPLE der Passage
+    (`verarbeiteSamples`) - und beim Binden nur noch, wenn der Anfang schon
+    zurueckliegt und kein Startmerker ihn mehr sieht (§8.1 Feinheit 17). Die
+    K-Filter bleiben unberuehrt, wie bisher: ihre Vorgeschichte an einer
+    Passage ist ausdruecklich kein Befund dieses Tickets (Uebergabe §5). */
+inline void FeatureEngine::kurzfensterNeuBeginnen() noexcept
+{
+    zelleStand = 0;
+    zelleKEnergie = 0.0;
+    zelleAktivEnergie = 0.0;
+    zelleTruePeak = 0.0;
+    zelleRmsEnergie = 0.0;
+    zelleImFensterSamples = 0;
+    kurzStand = 0;
+    kurzGefuellt = 0;
+    lraZellenSeitHop = 0;
+    for (auto& z : kurzZellen)        z = 0.0;
+    for (auto& z : kurzTpZellen)      z = 0.0;
+    for (auto& z : kurzRmsZellen)     z = 0.0;
+    for (auto& z : kurzZellenErsetzt) z = 0u;
+}
+
 /** True-Peak-Maximum DESSELBEN 3-s-Fensters, gegen das `kurzLufs` rechnet
     (M-03).  Linear, wie der Detektor selbst liefert. */
 inline bool FeatureEngine::kurzTruePeak (double& heraus) const noexcept
 {
     if (kurzGefuellt < kKurzZellen)
+        return false;
+    // NAK-283 F10: ein Maximum ueber ersetzte Samples ist keine Aussage ueber
+    // das Material - PSR und Crest ueber 3 s schweigen mit `lufsS`.
+    if (! zellenFensterSauber (kKurzZellen))
         return false;
     double groesster = 0.0;
     for (int i = 0; i < kKurzZellen; ++i)

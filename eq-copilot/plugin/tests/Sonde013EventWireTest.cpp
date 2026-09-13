@@ -262,6 +262,194 @@ Wirebandsatz verteilungAusWire (const std::string& json, const char* punkt)
     w.ok = true;
     return w;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-283 Etappe 5 - F06 (R-283-4) und F07 (R-283-5): Helfer
+// ═══════════════════════════════════════════════════════════════════════
+
+constexpr double kPi283 = 3.14159265358979323846;
+
+/** Amplitude eines Stereosinus mit der mittleren Kanalenergie
+    `10*log10(mean(x^2)) = db`.
+
+    Das ist die Groesse, gegen die das Zeitbereichsgate (`zelleAktivEnergie`,
+    `Lautheit.h`) und seit R-283-4 auch das ueber Δf integrierte Spektralgate
+    `kAktivGateDb` halten; "dBFS RMS" in M-44 bis M-47 meint genau sie. */
+double amplitudeFuerPegelDb (double db)
+{
+    return std::sqrt (2.0) * std::pow (10.0, db / 20.0);
+}
+
+/** Erstes Band der Hauptstufe - dieselbe Regel wie `trennIndex()` in
+    `featureengine/Zeit.h` (Bandmitte >= `kTrennungHz`), hier nachgebaut, weil
+    die Zuordnung privat ist. Die zwei Stufen teilen sich die Evidenzbaender
+    ueberschneidungsfrei: ein Band darunter beobachtet die Bassstufe. */
+int erstesHauptband()
+{
+    for (int b = 0; b < nakama::analyse::Gitter::evidenzBaender; ++b)
+        if (nakama::analyse::Gitter::evidenzMitte (b) >= FeatureEngine::kTrennungHz)
+            return b;
+    return nakama::analyse::Gitter::evidenzBaender;
+}
+
+/** Was ein Lauf an jedem gewerteten Evidenzframe sieht (M-44 bis M-48).
+
+    Die Stufenentscheidung ist an den BAENDERN beobachtbar (Matrix M-45):
+    `freiheitsgrade` eines Bandes zaehlt die Fenster seiner Stufe, die das Gate
+    genommen haben - ein Fenster unter dem Gate kehrt vor der Bandakkumulation
+    zurueck (`Spektrum.h`, `if (! aktiv) return;`). `abdeckung` zaehlt nur die
+    Hauptstufe. */
+struct GateLauf
+{
+    int    evidenzFrames { 0 };
+    int    ohneAbdeckungsbit { 0 };
+    double abdeckungMin { 2.0 }, abdeckungMax { -1.0 };
+    int    ohneAktivitaetsbit { 0 };
+    double aktivitaetMin { 2.0 }, aktivitaetMax { -1.0 };
+    int    widersprueche { 0 };            ///< aktivitaet > 0 bei abdeckung == 0
+    int    bassMin { 1 << 30 }, bassMax { -1 };      ///< Bassbaender mit Beitrag
+    int    hauptMin { 1 << 30 }, hauptMax { -1 };    ///< Hauptbaender mit Beitrag
+    int    basisMin { 1 << 30 }, basisMax { -1 };    ///< Baender mit Stereobasis
+    int    bitsMin { 1 << 30 }, bitsMax { -1 };      ///< Evidenzbaender mit Bit
+    bool   nichtEndlich { false };
+    double eingangDb { -400.0 };           ///< gemessen am gespeisten Material
+};
+
+juce::String spanneText (int lo, int hi)
+{
+    if (hi < 0) return "kein Frame";
+    return lo == hi ? juce::String (lo) : juce::String (lo) + ".." + juce::String (hi);
+}
+
+juce::String spanneText (double lo, double hi)
+{
+    if (hi < lo) return "kein Bit";
+    return lo == hi ? juce::String (lo, 3) : juce::String (lo, 3) + ".." + juce::String (hi, 3);
+}
+
+/** Faehrt `signal` in 512er-Bloecken durch eine frische Engine und wertet
+    jeden Evidenzframe, der bei Stromsample `abSample` oder spaeter endet. */
+GateLauf fahreGate (double sr, const std::function<float (std::uint64_t)>& signal,
+                    double sekunden, double evidenzIntervallS = 0.0,
+                    std::uint64_t abSample = 0)
+{
+    auto halter = std::make_unique<FeatureEngine>();
+    auto& e = *halter;
+    e.vorbereiten (sr);
+    if (evidenzIntervallS > 0.0)
+        e.evidenzIntervallSetzen (evidenzIntervallS);
+    Speiser s { e };
+    s.sr = sr;
+    s.frames = 512;
+
+    const int trenn = erstesHauptband();
+    GateLauf r;
+    double energie = 0.0;
+    std::uint64_t anzahl = 0;
+    const int bloecke = (int) std::ceil (sekunden * sr / (double) s.frames);
+    for (int i = 0; i < bloecke; ++i)
+    {
+        for (int k = 0; k < s.frames; ++k)
+        {
+            const double v = (double) signal (s.strom + (std::uint64_t) k);
+            energie += v * v;
+        }
+        anzahl += (std::uint64_t) s.frames;
+        if (! s.sende (signal))
+            continue;
+        const auto& f = e.frame();
+        if (! f.evidenzFrisch || s.strom < abSample)
+            continue;
+
+        ++r.evidenzFrames;
+        if (! f.abdeckungGesetzt)
+            ++r.ohneAbdeckungsbit;
+        else
+        {
+            r.abdeckungMin = std::min (r.abdeckungMin, (double) f.abdeckung);
+            r.abdeckungMax = std::max (r.abdeckungMax, (double) f.abdeckung);
+            if (! std::isfinite (f.abdeckung)) r.nichtEndlich = true;
+        }
+        if (! f.aktivitaetGesetzt)
+            ++r.ohneAktivitaetsbit;
+        else
+        {
+            r.aktivitaetMin = std::min (r.aktivitaetMin, (double) f.aktivitaet);
+            r.aktivitaetMax = std::max (r.aktivitaetMax, (double) f.aktivitaet);
+            if (! std::isfinite (f.aktivitaet)) r.nichtEndlich = true;
+        }
+        if (f.aktivitaetGesetzt && f.aktivitaet > 0.0f
+            && f.abdeckungGesetzt && f.abdeckung == 0.0f)
+            ++r.widersprueche;
+
+        int bass = 0, haupt = 0, basis = 0, bits = 0;
+        for (int b = 0; b < nakama::analyse::Gitter::evidenzBaender; ++b)
+        {
+            const auto& w = e.stereoBand (b);
+            if (w.freiheitsgrade > 0u)
+            {
+                if (b < trenn) ++bass;
+                else           ++haupt;
+            }
+            if (w.basisGesetzt)
+                ++basis;
+            if (nakama::analyse::bitmapLies (f.evidenz.bitmap, b))
+                ++bits;
+        }
+        r.bassMin  = std::min (r.bassMin, bass);   r.bassMax  = std::max (r.bassMax, bass);
+        r.hauptMin = std::min (r.hauptMin, haupt); r.hauptMax = std::max (r.hauptMax, haupt);
+        r.basisMin = std::min (r.basisMin, basis); r.basisMax = std::max (r.basisMax, basis);
+        r.bitsMin  = std::min (r.bitsMin, bits);   r.bitsMax  = std::max (r.bitsMax, bits);
+    }
+    if (anzahl > 0 && energie > 0.0)
+        r.eingangDb = 10.0 * std::log10 (energie / (double) anzahl);
+    return r;
+}
+
+/** Ein fs/4-Abschnitt mit 45 Grad Phasenversatz: Samplewerte +-a/sqrt(2),
+    rekonstruierte Amplitude a - die Geometrie des EBU-Falls 16
+    (`TruePeak.h:13-19`). `k` zaehlt ab dem ersten Sample des Abschnitts. */
+double fs4Abschnitt (double a, std::int64_t k)
+{
+    return a * std::sin (kPi283 * 0.5 * (double) k + kPi283 * 0.25);
+}
+
+/** Ergebnis eines Passagenlaufs: das zuletzt veroeffentlichte
+    Passagenmaximum. */
+struct PassagenLauf
+{
+    bool   gebunden { false };
+    bool   passageGesetzt { false };
+    double passageDb { -999.0 };
+};
+
+/** Bindet in einer frischen Engine VOR dem ersten Block das Fenster
+    [start, ende) und faehrt `signal` ab Stromsample `anfang` in Bloecken der
+    Groesse `block` bis `bis`. `anfang == start` ist der isolierte Gegenlauf:
+    die Kette beginnt dort leer. */
+PassagenLauf fahrePassage (const std::function<float (std::uint64_t)>& signal, int block,
+                           std::uint64_t anfang, std::int64_t start, std::int64_t ende,
+                           std::uint64_t bis)
+{
+    auto halter = std::make_unique<FeatureEngine>();
+    auto& e = *halter;
+    e.vorbereiten (48000.0);
+    Speiser s { e };
+    s.frames = block;
+    s.strom = anfang;
+    s.projekt = (std::int64_t) anfang;
+    PassagenLauf r;
+    r.gebunden = e.setzePassagenfenster (start, ende, e.transportEpocheJetzt());
+    while (s.strom < bis)
+        if (s.sende (signal))
+        {
+            const auto& f = e.frame();
+            r.passageGesetzt = f.truePeakPassageGesetzt;
+            if (f.truePeakPassageGesetzt)
+                r.passageDb = (double) f.truePeakPassageDb;
+        }
+    return r;
+}
 } // namespace
 
 int main()
@@ -1857,6 +2045,413 @@ int main()
                         juce::String (wieFixture) + " von " + juce::String (paare));
             }
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · F06 (R-283-4) - Energie gegen Energie am Gate
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Die Pegel sind aus den Konstanten gerechnet (Manifest §5 "Gerechnete
+    // Zahlen"): ohne Integration liegt die Dichtesumme einer Stufe um
+    // 10*log10(fs / punkte) unter dem Energiewert. Jede Zeile nimmt den Pegel,
+    // an dem GENAU ihre Messgroesse kippen wuerde.
+    abschnitt ("NAK-283 M-44  aktivgate_ist_samplerateunabhaengig");
+    {
+        const double pegel = -48.0;
+        bool alleEins = true, buehneStimmt = true;
+        juce::String zeile;
+        for (const double sr : { 44100.0, 48000.0, 96000.0, 192000.0 })
+        {
+            const auto r = fahreGate (sr, sinus (amplitudeFuerPegelDb (pegel), 1000.0, sr), 3.0);
+            const bool eins = r.evidenzFrames >= 3 && r.ohneAbdeckungsbit == 0
+                           && r.abdeckungMin == 1.0 && r.abdeckungMax == 1.0;
+            alleEins = alleEins && eins;
+            buehneStimmt = buehneStimmt && std::abs (r.eingangDb - pegel) < 0.01;
+            zeile << juce::String (sr / 1000.0, 1) << " kHz: abdeckung "
+                  << spanneText (r.abdeckungMin, r.abdeckungMax) << " in "
+                  << r.evidenzFrames << " Evidenzframes, Eingang "
+                  << juce::String (r.eingangDb, 3) << " dB; ";
+        }
+        pruefe (buehneStimmt,
+                "M-44: die Buehne ist die gerechnete - der Eingang liegt bei allen vier Raten "
+                "bei -48,0 dB mittlerer Kanalenergie");
+        pruefe (alleEins,
+                "NAK-283 M-44: aktivgate_ist_samplerateunabhaengig - jedes Hauptstufenfenster "
+                "nimmt bei 44,1 / 48 / 96 / 192 kHz das Gate, abdeckung ist ueberall 1",
+                zeile);
+    }
+
+    abschnitt ("NAK-283 M-45  aktivgate_ist_stufenunabhaengig");
+    {
+        // Zwei eigene Pegel bei 48 kHz: L1 = -52,3 dBFS kippt am Basisstand
+        // (Bass -56,97 dB aktiv, Haupt -62,99 dB nicht), L2 = -63,0 dBFS kippt
+        // die Mutation "Δf fest aus kHauptPunkte" (Bass -56,98 dB aktiv).
+        // Evidenzfenster 1 s: jedes traegt mehrere Bassfenster (Hop 8192).
+        const double sr = 48000.0;
+        const auto l1 = fahreGate (sr, sinus (amplitudeFuerPegelDb (-52.3), 1000.0, sr), 3.0, 1.0);
+        const auto l2 = fahreGate (sr, sinus (amplitudeFuerPegelDb (-63.0), 1000.0, sr), 3.0, 1.0);
+        pruefe (l1.evidenzFrames >= 2 && l2.evidenzFrames >= 2,
+                "M-45: beide Pegel tragen Evidenzframes",
+                juce::String (l1.evidenzFrames) + " / " + juce::String (l2.evidenzFrames));
+        pruefe (l1.evidenzFrames >= 2 && l1.bassMin > 0 && l1.hauptMin > 0,
+                "NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L1 = -52,3 dBFS nehmen "
+                "BEIDE Stufen das Gate (Baender mit Beitrag in beiden Stufen)",
+                "Bassbaender " + spanneText (l1.bassMin, l1.bassMax) + ", Hauptbaender "
+                    + spanneText (l1.hauptMin, l1.hauptMax) + ", abdeckung "
+                    + spanneText (l1.abdeckungMin, l1.abdeckungMax));
+        pruefe (l2.evidenzFrames >= 2 && l2.bassMax == 0 && l2.hauptMax == 0,
+                "NAK-283 M-45: aktivgate_ist_stufenunabhaengig - bei L2 = -63,0 dBFS nimmt "
+                "KEINE Stufe das Gate (kein Band mit Beitrag)",
+                "Bassbaender " + spanneText (l2.bassMin, l2.bassMax) + ", Hauptbaender "
+                    + spanneText (l2.hauptMin, l2.hauptMax) + ", abdeckung "
+                    + spanneText (l2.abdeckungMin, l2.abdeckungMax));
+    }
+
+    abschnitt ("NAK-283 M-46  aktivitaet_und_abdeckung_widersprechen_sich_nicht");
+    {
+        const double sr = 44100.0;
+        const auto a = fahreGate (sr, sinus (amplitudeFuerPegelDb (-58.0), 1000.0, sr), 3.0);
+        const auto b = fahreGate (sr, sinus (amplitudeFuerPegelDb (-62.0), 1000.0, sr), 3.0);
+        pruefe (a.evidenzFrames >= 3 && a.ohneAbdeckungsbit == 0 && a.ohneAktivitaetsbit == 0
+                    && a.aktivitaetMin == 1.0 && a.abdeckungMin == 1.0 && a.widersprueche == 0,
+                "NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (a) -58,0 dBFS "
+                "bei 44,1 kHz: aktivitaet 1 UND abdeckung 1 im selben Frame",
+                "aktivitaet " + spanneText (a.aktivitaetMin, a.aktivitaetMax) + ", abdeckung "
+                    + spanneText (a.abdeckungMin, a.abdeckungMax) + ", Widersprueche "
+                    + juce::String (a.widersprueche) + " in " + juce::String (a.evidenzFrames)
+                    + " Evidenzframes");
+        pruefe (b.evidenzFrames >= 3 && b.ohneAbdeckungsbit == 0 && b.ohneAktivitaetsbit == 0
+                    && b.aktivitaetMax == 0.0 && b.abdeckungMax == 0.0 && b.widersprueche == 0,
+                "NAK-283 M-46: aktivitaet_und_abdeckung_widersprechen_sich_nicht - (b) -62,0 dBFS "
+                "bei 44,1 kHz: aktivitaet 0 UND abdeckung 0 im selben Frame",
+                "aktivitaet " + spanneText (b.aktivitaetMin, b.aktivitaetMax) + ", abdeckung "
+                    + spanneText (b.abdeckungMin, b.abdeckungMax) + ", Widersprueche "
+                    + juce::String (b.widersprueche));
+    }
+
+    abschnitt ("NAK-283 M-47  aktives_fenster_liefert_bandwerte");
+    {
+        const double sr = 96000.0;
+        const auto r = fahreGate (sr, sinus (amplitudeFuerPegelDb (-58.0), 1000.0, sr), 3.0);
+        pruefe (r.evidenzFrames >= 3 && r.abdeckungMin == 1.0 && r.basisMin > 0 && r.bitsMin > 0,
+                "NAK-283 M-47: aktives_fenster_liefert_bandwerte - -58,0 dBFS bei 96 kHz: jedes "
+                "Fenster nimmt das Gate, stereo_bands > 0 und Evidenzbaender mit Bit",
+                "stereo_bands " + spanneText (r.basisMin, r.basisMax) + ", Evidenzbaender mit Bit "
+                    + spanneText (r.bitsMin, r.bitsMax) + ", abdeckung "
+                    + spanneText (r.abdeckungMin, r.abdeckungMax));
+    }
+
+    abschnitt ("NAK-283 M-48  stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert");
+    {
+        const double sr = 48000.0;
+        const auto stille = fahreGate (sr, [] (std::uint64_t) { return 0.0f; }, 2.0);
+        // (b) Fenster mit einer Dichtesumme von exakt 0,0 NACH Material: gewertet
+        // werden nur Evidenzframes, deren Analysefenster ganz in der Stille liegen.
+        const auto nachTon = fahreGate (sr, [sr] (std::uint64_t n)
+        {
+            return n < (std::uint64_t) sr
+                ? (float) (0.25 * std::sin (2.0 * kPi283 * 1000.0 * (double) n / sr))
+                : 0.0f;
+        }, 3.0, 0.0, (std::uint64_t) sr + 2u * (std::uint64_t) FeatureEngine::kBassPunkte);
+        pruefe (stille.evidenzFrames >= 3 && stille.ohneAbdeckungsbit == 0
+                    && stille.abdeckungMax == 0.0 && stille.aktivitaetMax == 0.0
+                    && stille.basisMax == 0 && ! stille.nichtEndlich,
+                "NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) "
+                "- (a) digitale Stille: abdeckung 0, endlich, kein Band mit Stereobasis",
+                "abdeckung " + spanneText (stille.abdeckungMin, stille.abdeckungMax) + ", aktivitaet "
+                    + spanneText (stille.aktivitaetMin, stille.aktivitaetMax) + ", stereo_bands "
+                    + spanneText (stille.basisMin, stille.basisMax) + " in "
+                    + juce::String (stille.evidenzFrames) + " Evidenzframes");
+        pruefe (nachTon.evidenzFrames >= 3 && nachTon.ohneAbdeckungsbit == 0
+                    && nachTon.abdeckungMax == 0.0 && nachTon.basisMax == 0 && ! nachTon.nichtEndlich,
+                "NAK-283 M-48: stille_bleibt_inaktiv_ohne_nichtendlichen_zwischenwert (Regressionswache) "
+                "- (b) Fenster mit Dichtesumme exakt 0 nach einer Sekunde Ton bleiben inaktiv",
+                "abdeckung " + spanneText (nachTon.abdeckungMin, nachTon.abdeckungMax)
+                    + ", stereo_bands " + spanneText (nachTon.basisMin, nachTon.basisMax) + " in "
+                    + juce::String (nachTon.evidenzFrames) + " Evidenzframes");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · F07 (R-283-5, Feinheit 17) - der Anfang ist ein Sample
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-283 M-49  vorab_gebundene_passage_traegt_kein_material_davor");
+    {
+        // Uebergabe §4 F07 woertlich: Fenster 48 000 bis 96 000 bei 48 kHz, vorab
+        // gebunden; davor eine Sekunde 12-kHz-Ton mit Amplitude 1, in der Passage
+        // derselbe Ton mit Amplitude 0,001. 512er-Bloecke: der Anfang liegt im
+        // Blockinneren (48 000 = 93 x 512 + 384).
+        const auto signal = [] (std::uint64_t n) -> float
+        {
+            const double ton = std::sin (kPi283 * 0.5 * (double) n);    // fs/4
+            if (n < 48000u) return (float) ton;
+            if (n < 96000u) return (float) (0.001 * ton);
+            return 0.0f;
+        };
+        const auto vorab    = fahrePassage (signal, 512, 0, 48000, 96000, 120000);
+        const auto isoliert = fahrePassage (signal, 512, 48000, 48000, 96000, 120000);
+        pruefe (vorab.gebunden && isoliert.gebunden && vorab.passageGesetzt && isoliert.passageGesetzt,
+                "M-49: beide Laeufe binden das Fenster und tragen ein Passagenmaximum");
+        pruefe (vorab.passageGesetzt && isoliert.passageGesetzt
+                    && std::abs (vorab.passageDb - isoliert.passageDb) <= 0.1,
+                "NAK-283 M-49: vorab_gebundene_passage_traegt_kein_material_davor - das "
+                "Passagenmaximum gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)",
+                "vorab " + juce::String (vorab.passageDb, 3) + " dBTP, isoliert "
+                    + juce::String (isoliert.passageDb, 3) + " dBTP");
+    }
+
+    abschnitt ("NAK-283 M-50  zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein");
+    {
+        // Eine laute Kante in den zwoelf Samples direkt vor dem Anfang (fs/4 mit
+        // 45 Grad, Amplitude 0,9: -0,92 dBTP), der Anfang im Blockinneren.
+        const auto signal = [] (std::uint64_t n) -> float
+        {
+            if (n >= 47988u && n < 48000u)
+                return (float) fs4Abschnitt (0.9, (std::int64_t) n - 47988);
+            if (n < 72000u)
+                return (float) (0.001 * std::sin (2.0 * kPi283 * 1000.0 * (double) n / 48000.0));
+            return 0.0f;
+        };
+        const auto vorab    = fahrePassage (signal, 512, 0, 48000, 72000, 96000);
+        const auto isoliert = fahrePassage (signal, 512, 48000, 48000, 72000, 96000);
+        pruefe (48000 % 512 == 384,
+                "M-50: der Passagenanfang liegt im Blockinneren (Versatz 384 in einem 512er-Block)");
+        pruefe (vorab.passageGesetzt && isoliert.passageGesetzt
+                    && std::abs (vorab.passageDb - isoliert.passageDb) <= 0.1
+                    && vorab.passageDb < -40.0,
+                "NAK-283 M-50: zwoelf_samples_vor_dem_fensteranfang_gehen_nicht_ein - der erste "
+                "Passagenrahmen traegt keine verzoegerte Antwort der Kante davor",
+                "vorab " + juce::String (vorab.passageDb, 3) + " dBTP, isoliert "
+                    + juce::String (isoliert.passageDb, 3) + " dBTP, Kante davor -0,92 dBTP");
+    }
+
+    abschnitt ("NAK-283 M-51  nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage");
+    {
+        const double samplescheitel = 20.0 * std::log10 (0.5 * std::sin (kPi283 * 0.25));
+
+        // (A) Gebunden wird, WAEHREND die Intersample-Spitze in der Kette steht;
+        // die Passage beginnt erst viel spaeter. 480er-Bloecke: zehn Bloecke sind
+        // genau ein Rahmen, die Spitze liegt am Ende des vierten Blocks des
+        // Rahmens [24 000, 28 800), gebunden wird direkt danach.
+        const auto signalA = [] (std::uint64_t n) -> float
+        {
+            if (n >= 25908u && n < 25920u)
+                return (float) fs4Abschnitt (0.5, (std::int64_t) n - 25908);
+            return (float) (0.001 * std::sin (2.0 * kPi283 * 1000.0 * (double) n / 48000.0));
+        };
+        struct Rahmenwert { bool tp { false }; double tpDb { -999.0 }; bool passage { false }; };
+        const auto laufA = [&signalA] (bool binden)
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (48000.0);
+            Speiser s { e };
+            s.frames = 480;
+            Rahmenwert w;
+            while (s.strom < 28800u)
+            {
+                const bool frame = s.sende (signalA);
+                if (binden && s.strom == 25920u)
+                    e.setzePassagenfenster (96000, 120000, e.transportEpocheJetzt());
+                if (frame && s.strom == 28800u)
+                {
+                    w.tp = e.frame().truePeakGesetzt;
+                    w.tpDb = (double) e.frame().truePeakDb;
+                    w.passage = e.frame().truePeakPassageGesetzt;
+                }
+            }
+            return w;
+        };
+        const auto mitBindung = laufA (true), ohneBindung = laufA (false);
+        pruefe (ohneBindung.tp && ohneBindung.tpDb > samplescheitel + 1.0,
+                "M-51 (A): die Buehne traegt eine Intersample-Spitze ueber dem Samplescheitel "
+                "(Gegenprobe ohne Bindung)",
+                juce::String (ohneBindung.tpDb, 3) + " dBTP gegen Samplescheitel "
+                    + juce::String (samplescheitel, 3));
+        pruefe (mitBindung.tp && ohneBindung.tp && std::abs (mitBindung.tpDb - ohneBindung.tpDb) <= 0.01
+                    && ! mitBindung.passage,
+                "NAK-283 M-51 (A): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - "
+                "das Binden einer spaeteren Passage nimmt dem laufenden Rahmen seine "
+                "Intersample-Spitze nicht",
+                "mit Bindung " + juce::String (mitBindung.tpDb, 3) + " dBTP, ohne "
+                    + juce::String (ohneBindung.tpDb, 3) + " dBTP, Passagenbit "
+                    + (mitBindung.passage ? "gesetzt" : "leer"));
+
+        // (B) Die Spitze steht in den zwoelf Samples direkt vor dem Anfang: der
+        // Nachlauf am Startsample geht in den Rahmen, nicht in die Passage. Der
+        // Rahmen [46 080, 51 200) enthaelt Spitze und Anfang (512er-Bloecke).
+        const auto signalB = [] (std::uint64_t n) -> float
+        {
+            if (n >= 47988u && n < 48000u)
+                return (float) fs4Abschnitt (0.5, (std::int64_t) n - 47988);
+            if (n < 72000u)
+                return (float) (0.001 * std::sin (2.0 * kPi283 * 1000.0 * (double) n / 48000.0));
+            return 0.0f;
+        };
+        const auto rahmenB = [&signalB] (bool binden)
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (48000.0);
+            Speiser s { e };
+            if (binden)
+                e.setzePassagenfenster (48000, 72000, e.transportEpocheJetzt());
+            Rahmenwert w;
+            while (s.strom < 96000u)
+                if (s.sende (signalB) && s.strom == 51200u)
+                {
+                    w.tp = e.frame().truePeakGesetzt;
+                    w.tpDb = (double) e.frame().truePeakDb;
+                }
+            return w;
+        };
+        const auto bGebunden = rahmenB (true), bFrei = rahmenB (false);
+        const auto bPassage  = fahrePassage (signalB, 512, 0, 48000, 72000, 96000);
+        const auto bIsoliert = fahrePassage (signalB, 512, 48000, 48000, 72000, 96000);
+        pruefe (bGebunden.tp && bFrei.tp && std::abs (bGebunden.tpDb - bFrei.tpDb) <= 0.1
+                    && bGebunden.tpDb > samplescheitel + 1.0,
+                "NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - "
+                "am Startsample geht der Nachlauf in den laufenden Rahmen",
+                "Rahmen mit Passage " + juce::String (bGebunden.tpDb, 3) + " dBTP, ohne Passage "
+                    + juce::String (bFrei.tpDb, 3) + " dBTP, Samplescheitel "
+                    + juce::String (samplescheitel, 3));
+        pruefe (bPassage.passageGesetzt && bIsoliert.passageGesetzt
+                    && std::abs (bPassage.passageDb - bIsoliert.passageDb) <= 0.1
+                    && bPassage.passageDb < -40.0,
+                "NAK-283 M-51 (B): nachlauf_beim_binden_geht_in_die_livemetrik_nicht_in_die_passage - "
+                "und NICHT in das Passagenmaximum",
+                "Passage " + juce::String (bPassage.passageDb, 3) + " dBTP, isoliert "
+                    + juce::String (bIsoliert.passageDb, 3) + " dBTP");
+    }
+
+    abschnitt ("NAK-283 M-52  passagenanfang_und_passagenende_wirken_auf_dieselben_historien");
+    {
+        // Eine 14-s-Passage von 3 s bis 17 s, gebunden nach einer Sekunde, waehrend
+        // lautes Material laeuft. Kanten an beiden Grenzen (fs/4 mit 45 Grad,
+        // Amplitude 0,9), in der Passage ein leiser Ton (-40 dBTP) und in ihren
+        // letzten zwoelf Samples eine Spitze (Amplitude 0,05: Samplescheitel
+        // -29,03 dBFS, rekonstruiert -26,02 dBTP). 512er-Bloecke: Anfang und Ende
+        // liegen im Blockinneren.
+        const std::int64_t start = 144000, ende = start + 672000;
+        const auto signal = [start, ende] (std::uint64_t nu) -> float
+        {
+            const auto n = (std::int64_t) nu;
+            const double ton = std::sin (2.0 * kPi283 * 1000.0 * (double) n / 48000.0);
+            if (n >= start - 12 && n < start) return (float) fs4Abschnitt (0.9, n - (start - 12));
+            if (n < start)                    return (float) (0.5 * ton);
+            if (n >= ende - 12 && n < ende)   return (float) fs4Abschnitt (0.05, n - (ende - 12));
+            if (n < ende)                     return (float) (0.01 * ton);
+            if (n < ende + 12)                return (float) fs4Abschnitt (0.9, n - ende);
+            return (float) (0.5 * ton);
+        };
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser s { e };
+        bool gebunden = false;
+        std::uint64_t rahmenAnfang = 0;
+        int rahmenDerPassage = 0, crestZuFrueh = 0;
+        double crestAb = -1.0;
+        float crestWert = 0.0f;
+        FeatureFrame letzter {};
+        while (s.strom < (std::uint64_t) (ende + 4 * 48000))
+        {
+            if (! gebunden && s.strom >= 48000u)
+                gebunden = e.setzePassagenfenster (start, ende, e.transportEpocheJetzt());
+            if (! s.sende (signal))
+                continue;
+            const auto& f = e.frame();
+            const auto rahmenEnde = (std::int64_t) s.strom;
+            if (rahmenEnde > start && (std::int64_t) rahmenAnfang < ende)
+                ++rahmenDerPassage;
+            // Bis 2,9 s nach dem Anfang (139 200 Samples) steht kein 3-s-Crest.
+            if (rahmenEnde > start && rahmenEnde <= start + 139200 && f.crestKurzGesetzt)
+                ++crestZuFrueh;
+            if (rahmenEnde > start && rahmenEnde <= ende && f.crestKurzGesetzt && crestAb < 0.0)
+            {
+                crestAb = (double) (rahmenEnde - start) / 48000.0;
+                crestWert = f.crestKurzDb;
+            }
+            rahmenAnfang = s.strom;
+            letzter = f;
+        }
+        const double endScheitel = 20.0 * std::log10 (0.05 * std::sin (kPi283 * 0.25));
+        pruefe (gebunden && 144000 % 512 != 0 && ende % 512 != 0,
+                "M-52: gebunden nach einer Sekunde, Anfang und Ende im Blockinneren");
+        pruefe (letzter.truePeakPassageGesetzt && letzter.truePeakPassageDb < -20.0f,
+                "NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - "
+                "True-Peak-Kette am Anfang und hinter dem Ende: keine der zwei Kanten geht ein",
+                juce::String (letzter.truePeakPassageDb, 3) + " dBTP (Kanten -0,92 dBTP)");
+        pruefe (letzter.truePeakPassageGesetzt && letzter.truePeakPassageDb > endScheitel + 1.0,
+                "NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - "
+                "True-Peak-Kette am Ende: der Nachlauf an passBis traegt die Spitze der letzten "
+                "zwoelf Passagensamples",
+                juce::String (letzter.truePeakPassageDb, 3) + " dBTP gegen Samplescheitel "
+                    + juce::String (endScheitel, 3));
+        pruefe (letzter.headroomGesetzt
+                    && letzter.headroomFenster == (std::uint32_t) rahmenDerPassage
+                    && std::abs (letzter.headroomP10Db + 40.0f) <= 0.1f
+                    && std::abs (letzter.headroomP95Db + 40.0f) <= 0.1f,
+                "NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - "
+                "Headroom: die Verteilung umfasst genau die Rahmen der Passage, keinen davor "
+                "oder dahinter",
+                "Fenster " + juce::String ((int) letzter.headroomFenster) + " bei "
+                    + juce::String (rahmenDerPassage) + " Rahmen der Passage; P10 "
+                    + juce::String (letzter.headroomP10Db, 3) + ", P50 "
+                    + juce::String (letzter.headroomP50Db, 3) + ", P95 "
+                    + juce::String (letzter.headroomP95Db, 3) + " dBTP");
+        pruefe (crestZuFrueh == 0 && crestAb >= 3.0 && crestWert < 6.0f,
+                "NAK-283 M-52: passagenanfang_und_passagenende_wirken_auf_dieselben_historien - "
+                "3-s-Zellen: das Kurzzeitfenster beginnt am Passagenanfang, nicht beim Binden",
+                juce::String (crestZuFrueh) + " Rahmen mit 3-s-Crest vor 2,9 s; erster ab "
+                    + juce::String (crestAb, 3) + " s mit " + juce::String (crestWert, 3) + " dB");
+    }
+
+    abschnitt ("NAK-283 M-73/M-74  passagenmaximum_haengt_nicht_an_der_blockgroesse / "
+               "passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse");
+    {
+        // Eine Buehne, ein Testaufbau (Bauplan §6.6): Fenster 48 000 bis 96 000,
+        // davor eine Sekunde fs/4 mit Amplitude 1; in der Passage ein Grund mit
+        // 0,001 und ein lauter Abschnitt an den Versaetzen 180 bis 191 (fs/4 mit
+        // 45 Grad: +-0,3536, rekonstruiert 0,5).
+        const auto signal = [] (std::uint64_t n) -> float
+        {
+            const double grund = std::sin (kPi283 * 0.5 * (double) n);
+            if (n < 48000u) return (float) grund;
+            if (n >= 96000u) return 0.0f;
+            const auto rel = (std::int64_t) n - 48000;
+            if (rel >= 180 && rel < 192) return (float) fs4Abschnitt (0.5, rel - 180);
+            return (float) (0.001 * grund);
+        };
+        const int groessen[3] = { 64, 512, 1024 };
+        PassagenLauf laeufe[3];
+        for (int i = 0; i < 3; ++i)
+            laeufe[i] = fahrePassage (signal, groessen[i], 0, 48000, 96000, 120000);
+        const auto isoliert = fahrePassage (signal, 512, 48000, 48000, 96000, 120000);
+
+        bool alle = isoliert.passageGesetzt;
+        double lo = 1e9, hi = -1e9, abweichung = 0.0;
+        juce::String zeile;
+        for (int i = 0; i < 3; ++i)
+        {
+            alle = alle && laeufe[i].passageGesetzt;
+            lo = std::min (lo, laeufe[i].passageDb);
+            hi = std::max (hi, laeufe[i].passageDb);
+            abweichung = std::max (abweichung, std::abs (laeufe[i].passageDb - isoliert.passageDb));
+            zeile << groessen[i] << ": " << juce::String (laeufe[i].passageDb, 3) << " dBTP; ";
+        }
+        pruefe (48000 % 64 == 0 && 48000 % 512 == 384 && 48000 % 1024 == 896,
+                "M-73: der Anfang faellt bei 64 auf einen Blockanfang und liegt bei 512 und 1024 "
+                "im Blockinneren");
+        pruefe (alle && hi - lo <= 0.1,
+                "NAK-283 M-73: passagenmaximum_haengt_nicht_an_der_blockgroesse (Regressionswache) - "
+                "64, 512 und 1024 Samples je Block liefern dasselbe Passagenmaximum (+-0,1 dB)",
+                zeile + "Spanne " + juce::String (hi - lo, 3) + " dB");
+        pruefe (alle && abweichung <= 0.1,
+                "NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - "
+                "jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf "
+                "(+-0,1 dB)",
+                zeile + "isoliert " + juce::String (isoliert.passageDb, 3)
+                    + " dBTP, groesste Abweichung " + juce::String (abweichung, 3) + " dB");
     }
 
     std::cout << "\n-----------------------------------------\n"

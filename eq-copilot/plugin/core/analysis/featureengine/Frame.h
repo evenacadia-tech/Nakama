@@ -102,10 +102,21 @@ inline bool FeatureEngine::baueFrame() noexcept
     // Wert daneben um einen Rahmen hinterher.
     // M-25: der Beitrag ist das Maximum ueber die Samples IM Fenster, nicht
     // ueber den ganzen Rahmen. Ohne gesetztes Fenster sind beide gleich.
+    //
+    // NAK-283 F08 (U41): mit markierter Passage geht der Rahmen in das
+    // Histogramm ueber die GANZE Passage, ohne Passage in das gleitende
+    // Fenster der letzten `kVerteilungPlaetze` Rahmen. Vor dem Anfang und
+    // hinter dem Ende einer Passage liegt kein Sample im Fenster, der Beitrag
+    // ist 0 und geht nirgends ein - die Passagengrenzen wirken hier ueber
+    // `imPassagenfenster` in `verarbeiteSamples`.
     if (passagenTruePeakRahmen > 0.0 && ! headroomRing.empty())
     {
         passageTruePeak = std::max (passageTruePeak, passagenTruePeakRahmen);
-        headroomRing[0].schiebe ((float) (20.0 * std::log10 (passagenTruePeakRahmen)));
+        const double db = 20.0 * std::log10 (passagenTruePeakRahmen);
+        if (passagenfenster.gesetzt)
+            headroomRing[0].passageSchiebe (db);
+        else
+            headroomRing[0].ring.schiebe ((float) db);
     }
 
     fuelleSkalare (f);
@@ -160,6 +171,8 @@ inline void FeatureEngine::rahmenLeeren() noexcept
     passagenTruePeakRahmen = 0.0;
     // M-07: der Rahmenzaehler faellt mit dem Rahmen; der Evidenzzaehler
     // faellt erst mit dem Evidenzfenster, und der Gesamtzaehler nie.
+    // NAK-283 F10: die Zellenmarken fallen HIER nicht - sie leben mit ihrer
+    // Zelle im 3-s-Ring, so lange wie das Fenster, das sie tragen.
     rahmenNichtEndlich = 0;
     rahmenSummeQuadrat = 0.0;
     rahmenSamples = 0;
@@ -540,6 +553,17 @@ inline void FeatureEngine::fuelleSkalare (FeatureFrame& f) const noexcept
     // Rahmen seine sampleabhaengigen Skalare gar nicht erst setzt. Ein
     // Leser sieht dann "nicht gemessen" statt "gemessen und sauber" — der
     // Unterschied, um den es in dieser Invariante geht.
+    //
+    // 🔑 NAK-283 F10 (R-283-5, §8.1 Feinheit 8): diese Verriegelung ist die
+    // ERSTE von zwei Stufen, und sie lebt einen Rahmen. Die zweite haengt am
+    // Fenster jeder Metrik: jede Loudnesszelle traegt das Merkmal "enthaelt
+    // ersetztes Material" (`zelleSchliessen`), und Momentary, Short-term, PSR
+    // und Crest ueber 3 s bleiben ohne Praesenzbit, bis KEINE Zelle ihres
+    // Fensters es mehr traegt (`zellenFensterSauber`). Ohne sie trug schon der
+    // erste saubere Rahmen wieder `lufsS` - aus drei Sekunden, die das
+    // ersetzte Material noch enthielten. Die Praesenzbits fallen damit je
+    // Metrik, nicht pauschal je Rahmen; die zwei Zaehler hier bleiben die
+    // gezaehlte Haelfte und werden fuer die Marke nicht gelesen.
     f.nichtEndlichRahmen  = rahmenNichtEndlich;
     f.nichtEndlichEvidenz = evidenzNichtEndlich;
     if (rahmenNichtEndlich > 0)
@@ -633,16 +657,39 @@ inline void FeatureEngine::fuelleSkalare (FeatureFrame& f) const noexcept
     // SONDE-013 M-03: Headroom als Verteilung.  Vier Rahmen sind die
     // Untergrenze, unter der P10 und P95 derselbe Wert waeren — dieselbe
     // Schwelle wie bei der Bandkonvergenz nebenan.
-    if (! headroomRing.empty() && headroomRing[0].gefuellt >= 4)
+    //
+    // 🔑 NAK-283 F08 (R-283-5, §8.1 Feinheit 7; U41): die Spanne folgt der
+    // Frage. Mit markierter Passage die GANZE Passage aus dem Histogramm
+    // (M-53), `headroomFenster` = eingegangene Rahmen der Passage (M-54).
+    // Ohne Passage das gleitende Fenster der letzten `kVerteilungPlaetze`
+    // Rahmen und seine Belegung (User 13.09.2026). Ein nicht darstellbarer
+    // Rahmenwert laesst die Passage ohne Verteilung, statt ihn an den
+    // Klassenrand zu kappen.
+    if (! headroomRing.empty())
     {
-        float sortiert[kVerteilungPlaetze];
-        const int n = ringInZeitfolge (headroomRing[0], sortiert);
-        std::sort (sortiert, sortiert + n);
-        f.headroomGesetzt = true;
-        f.headroomP10Db = (float) perzentil (sortiert, n, 0.10);
-        f.headroomP50Db = (float) perzentil (sortiert, n, 0.50);
-        f.headroomP95Db = (float) perzentil (sortiert, n, 0.95);
-        f.headroomFenster = (std::uint32_t) n;
+        const auto& h = headroomRing[0];
+        if (passagenfenster.gesetzt)
+        {
+            if (h.rahmen >= 4u && ! h.nichtDarstellbar)
+            {
+                f.headroomGesetzt = true;
+                f.headroomP10Db = (float) h.passagePerzentil (0.10);
+                f.headroomP50Db = (float) h.passagePerzentil (0.50);
+                f.headroomP95Db = (float) h.passagePerzentil (0.95);
+                f.headroomFenster = h.rahmen;
+            }
+        }
+        else if (h.ring.gefuellt >= 4)
+        {
+            float sortiert[kVerteilungPlaetze];
+            const int n = ringInZeitfolge (h.ring, sortiert);
+            std::sort (sortiert, sortiert + n);
+            f.headroomGesetzt = true;
+            f.headroomP10Db = (float) perzentil (sortiert, n, 0.10);
+            f.headroomP50Db = (float) perzentil (sortiert, n, 0.50);
+            f.headroomP95Db = (float) perzentil (sortiert, n, 0.95);
+            f.headroomFenster = (std::uint32_t) n;
+        }
     }
     if (rahmenSamples > 0)
     {

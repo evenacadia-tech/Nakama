@@ -37,14 +37,48 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <new>
+#include <utility>
 #include <vector>
 
 namespace rt = nakama::echtzeit;
 using nakama::analyse::FeatureEngine;
 using nakama::analyse::FeatureFrame;
+
+// NAK-283 M-55 (b), Speicherseite: gezaehlt wird jede Allokation dieses
+// Prozesses, solange `zaehleAllokationen` steht - dieselbe Bauform wie in
+// `LoudnessGoldenTestMain.cpp`. Der Test misst damit, was `vorbereiten()`
+// anlegt, und dass der Lauf danach NICHTS mehr anlegt.
+namespace
+{
+    bool          zaehleAllokationen = false;
+    std::uint64_t allokationen       = 0;
+    std::uint64_t allokierteBytes    = 0;
+}
+
+void* operator new (std::size_t groesse)
+{
+    if (zaehleAllokationen) { ++allokationen; allokierteBytes += groesse; }
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete (void* p) noexcept { std::free (p); }
+void operator delete (void* p, std::size_t) noexcept { std::free (p); }
+void* operator new[] (std::size_t groesse)
+{
+    if (zaehleAllokationen) { ++allokationen; allokierteBytes += groesse; }
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete[] (void* p) noexcept { std::free (p); }
+void operator delete[] (void* p, std::size_t) noexcept { std::free (p); }
 
 namespace
 {
@@ -143,6 +177,30 @@ std::function<float (std::uint64_t)> sinus (double amplitude, double hz, double 
 int bloeckeFuer (double sekunden, double sr, int frames)
 { return (int) std::ceil (sekunden * sr / (double) frames); }
 } // namespace
+
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+namespace nakama::analyse
+{
+/** NAK-283 M-59: der einzige Testzugang dieser Etappe.
+
+    Die zwei NaN-Zaehler sind `uint32` und saettigen bei `0xFFFFFFFF`. Der
+    Rahmenzaehler faellt mit jedem Rahmen (hoechstens rund 5 000 Samples), der
+    Evidenzzaehler mit jedem Evidenzfenster (hoechstens 1 s) - ueber die
+    oeffentliche Schnittstelle erreicht keiner von beiden je seinen Anschlag.
+    Ohne diesen Zugang waere die Zusage "saettigt, wrappt nicht, und die
+    Zellenmarke haengt nicht am Zaehlerstand" nicht messbar. Die Klasse
+    erklaert ihn in `FeatureEngine.h` zum Freund; das Produkt ruft ihn nie. */
+struct FeatureEngineTestzugang
+{
+    static void nichtEndlichZaehlerSetzen (FeatureEngine& e, std::uint32_t rahmen,
+                                           std::uint32_t evidenz) noexcept
+    {
+        e.rahmenNichtEndlich  = rahmen;
+        e.evidenzNichtEndlich = evidenz;
+    }
+};
+} // namespace nakama::analyse
+#endif
 
 int main()
 {
@@ -592,8 +650,15 @@ int main()
         // der Fehler. M-07 verlangt beim Erzeugen "Wert 0 mit `gueltig=false`"
         // UND einen Zaehler; ein Rahmen, der ueber stillgelegte Samples
         // rechnet und seine Skalare trotzdem als gesetzt meldet, sieht aus wie
-        // eine saubere Messung. Der Riegel ist deshalb ein LATCH DES RAHMENS,
-        // kein Dauerschweigen: der naechste saubere Rahmen traegt wieder alles.
+        // eine saubere Messung.
+        //
+        // 🔑 NAK-283 F10 (R-283-5): der Riegel hat ZWEI Stufen. Der Rahmen mit
+        // ersetzten Samples traegt keine sampleabhaengigen Skalare; und jede
+        // Loudnesszelle traegt das Merkmal "enthaelt ersetztes Material", also
+        // bleiben die Fenstermetriken - Momentary (400 ms), Short-term, PSR und
+        // Crest ueber 3 s - ungesetzt, bis ihr Fenster frei davon ist. Kein
+        // Dauerschweigen, aber auch keine Freigabe mit dem naechsten Rahmen: der
+        // Wert kommt genau an seiner Fensterfrist wieder (M-58, unten).
         pruefe (f.nichtEndlichRahmen > 0,
                 "der Rahmen ZAEHLT seine nicht-endlichen Eingangssamples",
                 juce::String ((int) f.nichtEndlichRahmen));
@@ -610,8 +675,60 @@ int main()
             { return (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0)); },
             bloeckeFuer (8.0, fs, s2.frames));
         pruefe (sauber.nichtEndlichRahmen == 0 && sauber.truePeakGesetzt,
-                "ohne NaN traegt derselbe Aufbau seine Skalare - der Riegel ist ein "
-                "Latch des Rahmens, kein Dauerschweigen");
+                "ohne NaN traegt derselbe Aufbau seine Skalare - kein Dauerschweigen");
+
+        // ── NAK-283 M-58: aktivieren <-> abklingen am Fensterrand ─────────
+        //
+        // Die Vergiftung endet mit Block 750 bei Sample 384 000 - einem Zellen-
+        // und Rahmenrand (750 x 512 = 80 x 4800 = 75 x 5120). Ab hier laufen
+        // beide Aufbauten mit 480er-Bloecken: zehn Bloecke sind genau eine
+        // Zelle und genau ein Rahmen, jeder Rahmen faellt also auf einen
+        // Fensterrand. Die vier Messpunkte liegen dort, wo eine Frist eine
+        // Zelle zu frueh oder zu spaet kippen wuerde; eine einzelne Messung
+        // fuenf Sekunden spaeter traefe keine der beiden Richtungen.
+        const auto sauberTon = [] (std::uint64_t n)
+        { return (float) (0.4 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0)); };
+        s.frames = 480;
+        s2.frames = 480;
+        std::vector<FeatureFrame> nach (32), referenz (32);
+        bool takt = s.strom == 384000u && s2.strom == 384000u;
+        for (int k = 1; k <= 31; ++k)
+        {
+            std::uint64_t bei = 0, beiRef = 0;
+            for (int b = 0; b < 10; ++b)
+            {
+                if (s.sende (sauberTon))  { nach[(std::size_t) k] = e.frame();        bei = s.strom; }
+                if (s2.sende (sauberTon)) { referenz[(std::size_t) k] = rein.frame(); beiRef = s2.strom; }
+            }
+            const std::uint64_t soll = 384000u + (std::uint64_t) k * 4800u;
+            takt = takt && bei == soll && beiRef == soll;
+        }
+        pruefe (takt,
+                "M-58: jeder Rahmen der Erholungsstrecke endet auf einem Zellen- und Rahmenrand "
+                "(384 000 + k x 4 800)");
+        pruefe (! nach[3].lufsMGesetzt && nach[4].lufsMGesetzt,
+                "NAK-283 M-58 (M-07, Erholungsstrecke): Momentary - bei 0,3 s nach dem Ende "
+                "der Ersetzung ungesetzt, bei 0,4 s gesetzt",
+                juce::String ("0,3 s ") + (nach[3].lufsMGesetzt ? "gesetzt" : "leer")
+                    + ", 0,4 s " + (nach[4].lufsMGesetzt ? "gesetzt" : "leer"));
+        pruefe (! nach[29].lufsSGesetzt && nach[30].lufsSGesetzt,
+                "NAK-283 M-58 (M-07, Erholungsstrecke): Short-term - bei 2,9 s ungesetzt, bei "
+                "3,0 s gesetzt",
+                juce::String ("2,9 s ") + (nach[29].lufsSGesetzt ? "gesetzt" : "leer")
+                    + ", 3,0 s " + (nach[30].lufsSGesetzt ? "gesetzt" : "leer"));
+        const bool beideDa = nach[30].lufsSGesetzt && nach[30].lufsMGesetzt
+                          && referenz[30].lufsSGesetzt && referenz[30].lufsMGesetzt;
+        const double abstandS = std::abs ((double) nach[30].lufsS - (double) referenz[30].lufsS);
+        const double abstandM = std::abs ((double) nach[30].lufsM - (double) referenz[30].lufsM);
+        pruefe (beideDa && abstandS <= 0.1 && abstandM <= 0.1
+                    && nach[30].nichtEndlichRahmen == 0 && nach[30].nichtEndlichEvidenz == 0,
+                "NAK-283 M-58 (M-07, Erholungsstrecke): bei 3,0 s entsprechen beide Werte der "
+                "sauberen Referenz (+-0,1 LU), und beide Zaehler sind 0",
+                "S " + juce::String (nach[30].lufsS, 4) + " gegen " + juce::String (referenz[30].lufsS, 4)
+                    + " LUFS, M " + juce::String (nach[30].lufsM, 4) + " gegen "
+                    + juce::String (referenz[30].lufsM, 4) + " LUFS, Zaehler "
+                    + juce::String ((int) nach[30].nichtEndlichRahmen) + "/"
+                    + juce::String ((int) nach[30].nichtEndlichEvidenz));
     }
 
     // ── M-75 / M-77: der verworfene Block schliesst auch die neuen Fenster ─
@@ -700,6 +817,339 @@ int main()
         pruefe (! nachher.crestKurzGesetzt && ! nachher.psrGesetzt,
                 "die 3-s-Fenster sind nach zwei Sekunden noch nicht wieder voll - sie "
                 "wurden wirklich geleert, nicht fortgeschrieben");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · F08 (R-283-5, Feinheit 7; U41 vom 13.09.2026)
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-283 M-53/M-54  headroomverteilung_umfasst_die_ganze_passage / "
+               "headroomfenster_nennt_die_passagenlaenge");
+    {
+        // Uebergabe §4 F08 woertlich: 14 s, erste Haelfte 1-kHz-Ton mit
+        // Amplitude 0,5, zweite Haelfte 0,0005 - 60 dB Abstand. 480er-Bloecke:
+        // zehn Bloecke sind genau ein Rahmen, 14 s also genau 140 Rahmen.
+        const std::int64_t ende = 14 * 48000;
+        const auto passage = [ende] (std::uint64_t n)
+        {
+            const double amp = (std::int64_t) n < ende / 2 ? 0.5 : 0.0005;
+            return (float) (amp * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
+        };
+        const auto lauf = [&passage, ende] (bool binden)
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (48000.0);
+            Speiser s { e };
+            s.frames = 480;
+            if (binden)
+                e.setzePassagenfenster (0, ende, e.transportEpocheJetzt());
+            FeatureFrame amEnde {};
+            int rahmen = 0;
+            while (s.projekt < ende)
+                if (s.sende (passage)) { amEnde = e.frame(); ++rahmen; }
+            return std::make_pair (amEnde, rahmen);
+        };
+        const auto [mit, rahmenMit] = lauf (true);
+        const auto [ohne, rahmenOhne] = lauf (false);
+        const auto text = [] (const FeatureFrame& f)
+        {
+            return "P10 " + juce::String (f.headroomP10Db, 3) + ", P50 "
+                 + juce::String (f.headroomP50Db, 3) + ", P95 " + juce::String (f.headroomP95Db, 3)
+                 + " dBTP, headroomFenster " + juce::String ((int) f.headroomFenster)
+                 + (f.headroomGesetzt ? "" : ", KEIN Bit");
+        };
+        pruefe (rahmenMit == 140 && rahmenOhne == 140,
+                "M-53: 14 s bei 10 Hz sind 140 publizierte Rahmen",
+                juce::String (rahmenMit) + " / " + juce::String (rahmenOhne));
+        pruefe (mit.headroomGesetzt && std::abs (mit.headroomP95Db + 6.0206f) <= 0.1f
+                    && std::abs (mit.headroomP10Db + 66.0206f) <= 0.1f,
+                "NAK-283 M-53: headroomverteilung_umfasst_die_ganze_passage - P95 traegt den "
+                "fruehen lauten, P10 den spaeten leisen Abschnitt",
+                text (mit));
+        pruefe (mit.headroomGesetzt && mit.headroomFenster == 140u,
+                "NAK-283 M-54: headroomfenster_nennt_die_passagenlaenge - die Zahl der Rahmen der "
+                "Passage (140), nicht 64",
+                text (mit));
+        pruefe (ohne.headroomGesetzt && ohne.headroomFenster == 64u
+                    && std::abs (ohne.headroomP95Db + 66.0206f) <= 0.1f
+                    && std::abs (ohne.headroomP10Db + 66.0206f) <= 0.1f,
+                "NAK-283 U41 (User 13.09.2026): ohne markierte Passage bleibt die Verteilung das "
+                "gleitende Fenster der letzten 64 Rahmen (6,4 s), headroomFenster nennt seine Belegung",
+                text (ohne));
+    }
+
+    abschnitt ("NAK-283 M-55  headroom_unter_vier_rahmen_bleibt_ungesetzt");
+    {
+        const auto lauf = [] (int rahmen, std::uint32_t& fensterMax)
+        {
+            auto halter = std::make_unique<FeatureEngine>();
+            auto& e = *halter;
+            e.vorbereiten (48000.0);
+            Speiser s { e };
+            s.frames = 480;
+            e.setzePassagenfenster (0, (std::int64_t) rahmen * 4800, e.transportEpocheJetzt());
+            const auto ton = sinus (0.5, 1000.0, 48000.0);
+            bool gesetzt = false;
+            fensterMax = 0;
+            for (int i = 0; i < (rahmen + 10) * 10; ++i)
+                if (s.sende (ton) && e.frame().headroomGesetzt)
+                {
+                    gesetzt = true;
+                    fensterMax = std::max (fensterMax, e.frame().headroomFenster);
+                }
+            return gesetzt;
+        };
+        std::uint32_t fenster3 = 0, fenster4 = 0;
+        const bool drei = lauf (3, fenster3);
+        const bool vier = lauf (4, fenster4);
+        pruefe (! drei,
+                "NAK-283 M-55: headroom_unter_vier_rahmen_bleibt_ungesetzt (Regressionswache) - eine "
+                "Passage mit drei Rahmen traegt keine Headroomverteilung",
+                drei ? "gesetzt, Fenster " + juce::String ((int) fenster3) : juce::String ("kein Bit"));
+        pruefe (vier && fenster4 == 4u,
+                "M-55: Gegenprobe - mit vier Rahmen steht sie, ueber genau vier Rahmen",
+                vier ? "Fenster " + juce::String ((int) fenster4) : juce::String ("kein Bit"));
+
+        // (b) Speicherseite, gemessen: was `vorbereiten()` anlegt, und dass
+        // eine lange Passage danach nichts mehr anlegt - weder die
+        // Bandverteilungen (`kVerteilungPlaetze` bleibt die Ressourcengrenze,
+        // der Riegel ist `git grep`) noch die Headroomverteilung der Passage.
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        allokationen = 0;
+        allokierteBytes = 0;
+        zaehleAllokationen = true;
+        e.vorbereiten (fs);
+        zaehleAllokationen = false;
+        const auto vorbereitungBytes = allokierteBytes;
+        const auto vorbereitungAllokationen = allokationen;
+
+        Speiser s { e };
+        s.frames = 480;
+        const auto ton = sinus (0.5, 1000.0, fs);
+        (void) s.sende (ton);                             // der Speiser legt seinen Puffer an
+        pruefe (e.setzePassagenfenster (0, 60 * 48000, e.transportEpocheJetzt()),
+                "M-55 (b): eine 60-s-Passage wird gebunden");
+        allokationen = 0;
+        zaehleAllokationen = true;
+        std::uint32_t fensterAmEnde = 0;
+        for (int i = 0; i < 20 * 100; ++i)                // 20 s, 200 Rahmen
+            if (s.sende (ton))
+                fensterAmEnde = e.frame().headroomFenster;
+        zaehleAllokationen = false;
+        pruefe (allokationen == 0,
+                "M-55 (b): 20 s Passage legen keinen Speicher an - Band- und Headroomverteilung "
+                "sind fest gedeckelt",
+                juce::String ((int) allokationen) + " Allokationen, headroomFenster am Ende "
+                    + juce::String ((int) fensterAmEnde) + "; vorbereiten() legte "
+                    + juce::String ((juce::int64) vorbereitungBytes) + " Byte in "
+                    + juce::String ((juce::int64) vorbereitungAllokationen) + " Allokationen an");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · F10 (R-283-5, Feinheit 8) - Gueltigkeit je Zelle
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-283 M-56/M-57  kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist / "
+               "momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen");
+    {
+        // Uebergabe §4 F10: drei Sekunden sauber, 0,2 s nicht endlich, danach
+        // sauber. 480er-Bloecke: die Ersetzung endet bei 153 600 - einem
+        // Zellen- und Rahmenrand -, und nach[k] ist der Rahmen, der k x 0,1 s
+        // danach endet.
+        const auto mitErsetzung = [] (std::uint64_t n)
+        {
+            if (n >= 144000u && n < 153600u)
+                return std::numeric_limits<float>::quiet_NaN();
+            return (float) (0.2 * std::sin (kZweiPi * 1000.0 * (double) n / 48000.0));
+        };
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        s.frames = 480;
+        std::vector<FeatureFrame> nach (32);
+        bool takt = true;
+        int ersetzteRahmen = 0;
+        while (s.strom < 153600u + 31u * 4800u)
+        {
+            if (! s.sende (mitErsetzung))
+                continue;
+            if (e.frame().nichtEndlichRahmen > 0)
+                ++ersetzteRahmen;
+            if (s.strom <= 153600u)
+                continue;
+            const std::uint64_t d = s.strom - 153600u;
+            if (d % 4800u != 0u || d / 4800u > 31u)
+                takt = false;
+            else
+                nach[(std::size_t) (d / 4800u)] = e.frame();
+        }
+        const auto bits = [&nach] (int k)
+        {
+            return juce::String (juce::String (k / 10.0, 1)) + " s: M "
+                 + (nach[(std::size_t) k].lufsMGesetzt ? "gesetzt" : "leer") + ", S "
+                 + (nach[(std::size_t) k].lufsSGesetzt ? "gesetzt" : "leer");
+        };
+        pruefe (takt && ersetzteRahmen == 2,
+                "M-56: die Ersetzung liegt in genau zwei Rahmen, und jeder Rahmen danach endet "
+                "auf einem Zellenrand",
+                juce::String (ersetzteRahmen) + " Rahmen mit ersetzten Samples");
+        pruefe (nach[1].nichtEndlichRahmen == 0 && ! nach[1].lufsSGesetzt,
+                "NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - "
+                "der erste saubere Rahmen traegt kein Short-term",
+                bits (1));
+        pruefe (nach[30].lufsSGesetzt,
+                "NAK-283 M-56: kurzzeitlautheit_bleibt_ungesetzt_solange_ihr_fenster_kontaminiert_ist - "
+                "nach genau 3 s sauberem Material ist es wieder gesetzt",
+                bits (30));
+        pruefe (nach[4].lufsMGesetzt && ! nach[4].lufsSGesetzt,
+                "NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 0,4 s "
+                "traegt derselbe Frame Momentary mit und Short-term ohne Praesenzbit",
+                bits (4));
+        pruefe (nach[29].lufsMGesetzt && ! nach[29].lufsSGesetzt,
+                "NAK-283 M-57: momentan_und_kurzzeit_erholen_sich_mit_eigenen_fristen - bei 2,9 s "
+                "gilt das immer noch",
+                bits (29));
+    }
+
+    abschnitt ("NAK-283 M-59  nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt");
+    {
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+        using nakama::analyse::FeatureEngineTestzugang;
+        constexpr std::uint32_t kAnschlag = 0xFFFFFFFFu;
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        s.frames = 480;
+        const auto ton = sinus (0.2, 1000.0, fs);
+        for (int i = 0; i < 400; ++i)                      // 4 s sauber, Strom bei 192 000
+            (void) s.sende (ton);
+        // Zwanzig ersetzte Samples am Anfang jeder 4800er-Zelle - in einem
+        // Rahmen aus zehn 480er-Bloecken trifft das genau den ersten Block.
+        const std::function<float (std::uint64_t)> zwanzigErsetzt = [ton] (std::uint64_t n)
+        {
+            return (n % 4800u) < 20u ? std::numeric_limits<float>::quiet_NaN() : ton (n);
+        };
+
+        // Haelfte 1 - Regressionswache: knapp unter dem Anschlag kommen zwanzig
+        // nicht-endliche Samples. Beide Zaehler bleiben bei 0xFFFFFFFF stehen.
+        FeatureEngineTestzugang::nichtEndlichZaehlerSetzen (e, kAnschlag - 5u, kAnschlag - 5u);
+        FeatureFrame h1 {};
+        bool gab1 = false;
+        for (int i = 0; i < 10; ++i)
+            if (s.sende (i == 0 ? zwanzigErsetzt : ton)) { h1 = e.frame(); gab1 = true; }
+        pruefe (gab1 && h1.nichtEndlichRahmen == kAnschlag && h1.nichtEndlichEvidenz == kAnschlag
+                    && ! h1.truePeakGesetzt && ! h1.lufsMGesetzt,
+                "NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt (Regressionswache "
+                "fuer die Saettigung) - beide Zaehler bleiben bei 0xFFFFFFFF, der Rahmen bleibt verriegelt",
+                juce::String::toHexString ((juce::int64) h1.nichtEndlichRahmen) + " / "
+                    + juce::String::toHexString ((juce::int64) h1.nichtEndlichEvidenz));
+
+        // Haelfte 2 - die Zellenmarke haengt NICHT am Zaehlerstand: beide Zaehler
+        // stehen schon am Anschlag, die Ersetzung laesst sie nicht mehr steigen.
+        FeatureEngineTestzugang::nichtEndlichZaehlerSetzen (e, kAnschlag, kAnschlag);
+        std::vector<FeatureFrame> nach (32);
+        bool takt = true;
+        constexpr std::uint64_t kZellenEnde = 201600u;     // Ende der Zelle mit der Ersetzung
+        for (int i = 0; i < 10 * 32; ++i)
+        {
+            if (! s.sende (i == 0 ? zwanzigErsetzt : ton))
+                continue;
+            if (s.strom < kZellenEnde || (s.strom - kZellenEnde) % 4800u != 0u
+                || (s.strom - kZellenEnde) / 4800u > 31u)
+                takt = false;
+            else
+                nach[(std::size_t) ((s.strom - kZellenEnde) / 4800u)] = e.frame();
+        }
+        pruefe (takt && nach[0].nichtEndlichRahmen == kAnschlag && ! nach[0].lufsMGesetzt,
+                "M-59: der Rahmen mit der Ersetzung haelt den Zaehler am Anschlag und bleibt verriegelt",
+                juce::String::toHexString ((juce::int64) nach[0].nichtEndlichRahmen));
+        pruefe (! nach[1].lufsMGesetzt && ! nach[1].lufsSGesetzt && ! nach[3].lufsMGesetzt
+                    && nach[4].lufsMGesetzt && ! nach[29].lufsSGesetzt && nach[30].lufsSGesetzt,
+                "NAK-283 M-59: nichtendlich_zaehler_saettigen_und_die_verriegelung_bleibt - die Zellenmarke "
+                "steht, obwohl der Zaehler nicht mehr gestiegen ist: Momentary kommt bei 0,4 s, "
+                "Short-term bei 3,0 s wieder",
+                juce::String ("0,1 s M ") + (nach[1].lufsMGesetzt ? "gesetzt" : "leer")
+                    + " S " + (nach[1].lufsSGesetzt ? "gesetzt" : "leer")
+                    + "; 0,3 s M " + (nach[3].lufsMGesetzt ? "gesetzt" : "leer")
+                    + "; 0,4 s M " + (nach[4].lufsMGesetzt ? "gesetzt" : "leer")
+                    + "; 2,9 s S " + (nach[29].lufsSGesetzt ? "gesetzt" : "leer")
+                    + "; 3,0 s S " + (nach[30].lufsSGesetzt ? "gesetzt" : "leer"));
+#else
+        pruefe (false,
+                "M-59: der Testzugang NAKAMA_FEATUREENGINE_TESTZUGANG fehlt - die Zaehler sind ohne "
+                "ihn nicht an den Anschlag zu bringen");
+#endif
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-283 Etappe 5 · Riegel M-60 - jede Historie traegt ihre eigene Spanne
+    // ═══════════════════════════════════════════════════════════════════
+    abschnitt ("NAK-283 M-60  jede_analysehistorie_traegt_ihre_eigene_spanne");
+    {
+        // EIN Lauf, drei Pruefungen: dieselbe 14-s-Passage (2 s bis 16 s,
+        // vorab gebunden) mit einer lauten Kante direkt vor dem Anfang (fs/4
+        // mit 45 Grad, Amplitude 0,9: -0,92 dBTP), einem Pegelsprung in der
+        // Mitte (0,5 auf 0,0005) und einer Ersetzung im letzten Drittel
+        // (10,8 bis 11,0 s der Passage, jedes zweite Sample). Die Ersetzung
+        // laesst jedem Rahmen endliche Samples, damit jeder der 140 Rahmen
+        // einen True Peak traegt.
+        constexpr std::int64_t start = 96000, ende = start + 672000, mitte = start + 336000;
+        constexpr std::uint64_t ersetzungVon = 614400u, ersetzungBis = 624000u;
+        const auto signal = [] (std::uint64_t nu) -> float
+        {
+            const auto n = (std::int64_t) nu;
+            const double ton = std::sin (kZweiPi * 1000.0 * (double) n / 48000.0);
+            if (n >= start - 12 && n < start)
+                return (float) (0.9 * std::sin (kZweiPi * 0.25 * (double) (n - (start - 12))
+                                                + kZweiPi * 0.125));
+            if (n < start) return (float) (0.5 * ton);
+            if (nu >= ersetzungVon && nu < ersetzungBis && (nu % 2u) == 1u)
+                return std::numeric_limits<float>::quiet_NaN();
+            if (n < mitte) return (float) (0.5 * ton);
+            if (n < ende)  return (float) (0.0005 * ton);
+            return 0.0f;
+        };
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        s.frames = 480;
+        const bool gebunden = e.setzePassagenfenster (start, ende, e.transportEpocheJetzt());
+        FeatureFrame amEnde {}, bei03 {}, bei04 {}, bei29 {}, bei30 {};
+        while (s.strom < (std::uint64_t) ende + 48000u)
+        {
+            if (! s.sende (signal))
+                continue;
+            const auto& f = e.frame();
+            if (s.strom == ersetzungBis + 14400u)  bei03 = f;
+            if (s.strom == ersetzungBis + 19200u)  bei04 = f;
+            if (s.strom == ersetzungBis + 139200u) bei29 = f;
+            if (s.strom == ersetzungBis + 144000u) bei30 = f;
+            if (s.strom == (std::uint64_t) ende)   amEnde = f;
+        }
+        pruefe (gebunden && ersetzungBis + 144000u == (std::uint64_t) ende,
+                "M-60: die Passage ist vorab gebunden, und 3,0 s nach der Ersetzung endet sie");
+        pruefe (amEnde.truePeakPassageGesetzt && std::abs (amEnde.truePeakPassageDb + 6.0206f) <= 0.1f,
+                "NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - True-Peak-Kette: das "
+                "Passagenmaximum ist das der Passage, nicht das der Kante davor",
+                juce::String (amEnde.truePeakPassageDb, 3) + " dBTP (Kante -0,92 dBTP)");
+        pruefe (amEnde.headroomGesetzt && amEnde.headroomFenster == 140u
+                    && std::abs (amEnde.headroomP95Db + 6.0206f) <= 0.1f
+                    && std::abs (amEnde.headroomP10Db + 66.0206f) <= 0.1f,
+                "NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Headroom: die Verteilung "
+                "beschreibt beide Haelften der ganzen Passage",
+                "P10 " + juce::String (amEnde.headroomP10Db, 3) + ", P95 "
+                    + juce::String (amEnde.headroomP95Db, 3) + " dBTP, headroomFenster "
+                    + juce::String ((int) amEnde.headroomFenster));
+        pruefe (! bei03.lufsMGesetzt && bei04.lufsMGesetzt && ! bei29.lufsSGesetzt && bei30.lufsSGesetzt,
+                "NAK-283 M-60: jede_analysehistorie_traegt_ihre_eigene_spanne - Loudnesszellen: "
+                "Momentary kommt 0,4 s, Short-term 3,0 s nach der Ersetzung wieder",
+                juce::String ("0,3 s M ") + (bei03.lufsMGesetzt ? "gesetzt" : "leer")
+                    + "; 0,4 s M " + (bei04.lufsMGesetzt ? "gesetzt" : "leer")
+                    + "; 2,9 s S " + (bei29.lufsSGesetzt ? "gesetzt" : "leer")
+                    + "; 3,0 s S " + (bei30.lufsSGesetzt ? "gesetzt" : "leer"));
     }
 
     std::cout << "\n-----------------------------------------" << std::endl;

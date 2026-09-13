@@ -672,10 +672,16 @@ struct FeatureFrame
         dargestellt.  Ein Peak darf nicht als Problem gelten, nur weil er hoch
         ist").
 
-        Die drei Punkte sind P10/P50/P95 der RAHMEN-True-Peaks im laufenden
-        Evidenzfenster; `headroomFenster` sagt, ueber wie viele Rahmen sie
-        gehen — dieselbe Ehrlichkeit wie `evidenzFenster` bei den Bandpegeln.
-        Eine einzelne Spitze hebt P95, laesst P50 aber stehen: genau der
+        Die drei Punkte sind P10/P50/P95 der RAHMEN-True-Peaks, ein Wert je
+        publiziertem Rahmen (10 Hz). NAK-283 F08: mit markierter Passage gehen
+        ALLE Rahmen der Passage ein (speicherfestes Histogramm in
+        0,01-dB-Klassen, `HeadroomVerteilung` in `FeatureEngine.h`); ohne
+        markierte Passage die letzten hoechstens `kVerteilungPlaetze` Rahmen
+        als gleitendes Fenster (6,4 s; User-Entscheid vom 13.09.2026, U41).
+        `headroomFenster` nennt in beiden Faellen die Zahl der Rahmen, die
+        wirklich eingegangen sind — dieselbe Ehrlichkeit wie `evidenzFenster`
+        bei den Bandpegeln; unter vier Rahmen gibt es keine Verteilung. Eine
+        einzelne Spitze hebt P95, laesst P50 aber stehen: genau der
         Unterschied, den ein Einzelwert nicht ausdruecken kann. */
     bool  headroomGesetzt { false };
     float headroomP10Db { 0.0f }, headroomP50Db { 0.0f }, headroomP95Db { 0.0f };
@@ -705,9 +711,14 @@ struct FeatureFrame
 
     /** Abdeckung und Konvergenz des Evidenzfensters, beide in [0, 1].
 
-        `abdeckung` ist der Anteil der Analysefenster, die das Aktivgate
-        genommen haben — die tatsaechlich gemessene Signalabdeckung, nicht
-        die Wanddauer (§48.2). `konvergenz` misst, ob die Verteilung sich
+        `abdeckung` ist der Anteil der Analysefenster der Hauptstufe, die das
+        Aktivgate genommen haben — die tatsaechlich gemessene
+        Signalabdeckung, nicht die Wanddauer (§48.2). Das Gate vergleicht
+        Energie mit Energie (NAK-283 F06, R-283-4): die Leistungsdichte des
+        Fensters wird ueber Δf = fs / punkte integriert, bevor sie gegen
+        `kAktivGateDb` steht — dieselbe Einheit und dieselbe Schwelle wie das
+        Zeitbereichsgate hinter `aktivitaet`. Die Entscheidung haengt deshalb
+        weder an der Samplerate noch an der FFT-Laenge. `konvergenz` misst, ob die Verteilung sich
         noch bewegt: die Uebereinstimmung der Bandmediane zwischen erster
         und zweiter Haelfte des behaltenen Fensters. Beide tragen ein
         Praesenzbit, weil „kein Fenster gesehen" keine 0 ist. */

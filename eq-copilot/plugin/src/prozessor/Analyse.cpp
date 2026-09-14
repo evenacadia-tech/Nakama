@@ -1343,15 +1343,19 @@ juce::var EqCopilotProcessor::snapshotObjektBauen (const MessSnapshot& m, const 
 
 nakama::diagnose::Antwort EqCopilotProcessor::diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage)
 {
-    // F-15: Snapshot, Rahmen, Zaehler und Materialzeit unter DERSELBEN
-    // Steuersperre wie `merkmalFrame()` kopiert - sie beschreiben denselben
-    // Stand. Serialisierung und Datei-I/O laufen danach ohne Sperre.
+    // F-15, §23.2 P-13: Snapshot, Rahmen, `merkmalFrames`, beide Summen, offenes
+    // Fenster und Materialzeit beschreiben denselben Stand und werden in DEMSELBEN
+    // Sperrbereich kopiert, unter dem der Worker sie fortschreibt (Steuersperre
+    // wie `merkmalFrame()`) - auch der atomare Zaehler: hinter dem Block geladen,
+    // zaehlte er womoeglich schon den naechsten Rahmen. Serialisierung und
+    // Datei-I/O laufen danach ohne Sperre.
     MessSnapshot m;
     nakama::diagnose::RahmenAuszug auszug;
     {
         auto l = externerAnalyseSteuerZug();
         m = engine.snapshot();
         auszug.rahmen      = merkmale.frame();
+        auszug.framesGebaut = merkmalFrames.load();
         auszug.summeGesamt = merkmale.summeFensterGesamt();
         auszug.summeAktiv  = merkmale.summeFensterAktiv();
         auszug.offenGesamt = merkmale.evidenzFensterGesamtJetzt();
@@ -1359,11 +1363,13 @@ nakama::diagnose::Antwort EqCopilotProcessor::diagnoseAntwort (const nakama::dia
         auszug.material    = material.festgehalten();
         auszug.bloeckeMax  = material.bloeckeMax();
     }
-    auszug.framesGebaut  = merkmalFrames.load();
     auszug.schwerSamples = m.schwerVerarbeiteteSamples;
     auszug.samplerate    = m.samplerate;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    // M-54, M-82: der Testhaken hinter dem Sperrblock, vor der Serialisierung.
     if (diagnoseHakenFuerTest)
         diagnoseHakenFuerTest();
+#endif
 
     nakama::diagnose::Umschlag u;
     {

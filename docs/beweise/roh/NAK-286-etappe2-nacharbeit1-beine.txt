@@ -1,0 +1,1071 @@
+NAK-286 Etappe 2, Nacharbeit 1 - Beine einzeln (Bauer, 14.09.2026 15:38:26). Stand: HEAD 2267283411a488bcea870847f2c85950fb67d4fb plus Arbeitsstand der Nacharbeit 1 (uncommittet). Arbeitsverzeichnis: Repo-Wurzel.
+Bau vorher: cmake --build eq-copilot/build --config Release --target EqCopBriefkastenTest EqCopNullTest EqCopProbeeqNullTest EqCopGoldenTest EqCopLoudnessGoldenTest EqCopStateMigrationTest EqCopIdentityTest EqCopilot_VST3 NakamaProbeeq_VST3, Exit 0, 106 s; juengste geaenderte Quelle 14.09.2026 15:31:36. Keine Installation (COPY_PLUGIN_AFTER_BUILD FALSE). A33 als Hinweis.
+
+| Bein | Befehl | Exit | Dauer | Binary |
+|---|---|---|---|---|
+| B30 | `eq-copilot/build/plugin/EqCopBriefkastenTest_artefacts/Release/EqCopBriefkastenTest.exe` | 0 | 67,1 s | Binary 14.09.2026 15:31:42 |
+| A1 | `eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe` | 0 | 0,1 s | Binary 14.09.2026 15:33:27 |
+| A16 | `eq-copilot/build/plugin/EqCopProbeeqNullTest_artefacts/Release/EqCopProbeeqNullTest.exe` | 0 | 0,3 s | Binary 14.09.2026 15:33:34 |
+| A2 | `eq-copilot/build/plugin/EqCopGoldenTest_artefacts/Release/EqCopGoldenTest.exe eq-copilot/fixtures` | 0 | 10,1 s | Binary 14.09.2026 10:01:13 |
+| B9 | `eq-copilot/build/plugin/EqCopLoudnessGoldenTest_artefacts/Release/EqCopLoudnessGoldenTest.exe` | 0 | 0,2 s | Binary 12.09.2026 03:37:40 |
+| B2 | `eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe` | 0 | 1,4 s | Binary 14.09.2026 15:33:52 |
+| A14 | `py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py` | 0 | 9,7 s | Binary - |
+| B1 | `eq-copilot/build/plugin/EqCopIdentityTest_artefacts/Release/EqCopIdentityTest.exe` | 0 | 0,1 s | Binary 14.09.2026 15:34:00 |
+| A33 | `py -3.13 tools/plan/tidy.py --mit-selbsttest` | 0 | 112,9 s | Binary - |
+
+=== B30: eq-copilot/build/plugin/EqCopBriefkastenTest_artefacts/Release/EqCopBriefkastenTest.exe (Exit 0, 67,1 s, Binary 14.09.2026 15:31:42) ===
+[ok]  M-39 festhalten_ordner_und_name_wie_knopfweg [C:\Users\phili\AppData\Local\evenacadia\EQ-Copilot\snapshots\snapshot-20260914-153515-NAK286Referenz.json]
+[ok]  M-39 festhalten_test_entfernt_eigene_datei [snapshot-20260914-153515-NAK286Referenz.json]
+[ok]  M-39 festhalten_bytegleich (Knopfweg gegen Referenz, created_utc maskiert) [Referenz 35550 Bytes, Knopfweg 35550 Bytes, Versuche 1]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung vorbedingung (beide gestartet, keine anfrage.json)
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung gen (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung probeeq (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung antwortordner_leer
+[ok]  M-24 anfrage_gen_genau_eine_antwort vorbedingung (Messdaten, gestartet)
+[ok]  M-24 anfrage_gen_genau_eine_antwort genau_eine_datei_im_ersten_takt [Dateien 1, Takte 1, Antworten 1]
+[ok]  M-24 anfrage_gen_genau_eine_antwort jeder_zugriff_an_der_fassade [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-24 anfrage_gen_genau_eine_antwort name (pid, instanz16, laufzeit32) [184154dcef3d4516a920b96c0b782d9b.gen.1880.0d9ff9357d615881.2723ef357f1d4631bce4ea7c9b5fed31.json]
+[ok]  M-24 anfrage_gen_genau_eine_antwort kopf [rolle gen, laufzeit_id 2723ef357f1d4631bce4ea7c9b5fed31, erzeugt_utc 2026-09-14T12:00:00.000Z]
+[ok]  M-24 anfrage_gen_genau_eine_antwort snapshot_v3_frame_und_aggregat_null_mit_grund
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort vorbedingung (erste Antwort auf K)
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort 0_anlegeversuche_0_schreibvorgaenge (300 Takte) [Existenz 303, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Fehler 0]
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort nach_dem_neuschreiben_genau_eine_leseoeffnung [vorher 0, nachher 1]
+[ok]  M-26 neue_kennung_neue_antwort vorbedingung (Antwort auf K)
+[ok]  M-26 neue_kennung_neue_antwort genau_eine_datei_fuer_L [L 1, alle 2]
+[ok]  M-26 neue_kennung_neue_antwort datei_fuer_K_byteweise_erhalten [6da3afa2ff2d12581fa9b99c004f8adeed2ba2b9d7313b9b19298e9695af98da]
+[ok]  M-26 neue_kennung_neue_antwort anfrage_nie_geloescht
+[ok]  M-27 fremde_anfragen_werden_ignoriert (a) 1025 Bytes [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (b) kein JSON [Lese 1+1, Bytes 34, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (c) zusaetzlicher Schluessel [Lese 1+1, Bytes 186, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (d) format falsch [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) Grossbuchstaben [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 31 Zeichen [Lese 1+1, Bytes 172, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 33 Zeichen [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit .. [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit Backslash [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit / [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit NUL [Lese 1+1, Bytes 184, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (f) Verzeichnis [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (g) leere Datei [Lese 1+1, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (h) UTF-8 mit BOM [Lese 1+1, Bytes 180, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert kein_logeintrag [0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt gesperrt_keine_antwort [Existenz 4, Lese 1, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt naechster_takt_liest_und_antwortet [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (a) antwort fehlt [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (b) anlegen scheitert immer [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 3, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (c) ordner erscheint vor dem dritten versuch [Versuche je Takt 1,2,3,3, Antworten 1]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund vorbedingung (keineDaten, 0 Rahmen, beide gestartet)
+[ok]  M-31 ohne_messdaten_antwort_mit_grund gen (im ersten Takt) [Dateien 1, Takte 1, wartend 0]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund probeeq (im Takt nach genau einem wartenden) [Dateien 1, erster wartet ja, wartend 1, Fehler 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 64, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich C:\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 60, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich /x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 57, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 89, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 91, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit : [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit NUL [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 92, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (16 Zeichen, 32 Bytes) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 151, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 247, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 vorbedingung (257 Kennungen je genau einmal beantwortet) [257]
+[ok]  M-51 kennungsring_fifo_256 keine_allokation_je_takt_nach_dem_anlauf (100 Takte) [0]
+[ok]  M-51 kennungsring_fifo_256 zweitjuengste_erneut_0_anlegeversuche [Existenz 6, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 aelteste_verdraengt_genau_ein_anlegen_ein_schreiben_neues_erzeugt_utc [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0, erzeugt_utc 2026-09-14T12:00:00.000Z -> 2026-09-14T12:06:17.000Z]
+[ok]  M-51 kennungsring_fifo_256 loeschzaehler_der_instanz_0 [0]
+[ok]  M-52 uhrsprung_aendert_zuordnung_nicht neue_antwort_nach_ruecksprung_utc_aus_der_uhr [K 2026-09-14T12:00:00.000Z, L 2026-09-14T10:00:00.000Z]
+[ok]  M-53 keine_leere_antwort (a) fehler vor dem ersten byte: keine datei mit antwortnamen [Temp 1 (0 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-53 keine_leere_antwort (b) fehler beim umbenennen: genau eine temp-datei, loeschzaehler 0 [Temp 1 (719 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 vorbedingung (evenacadia ist eine Junction, Anfrage liegt)
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten startfenster (nach dem Konstruktor) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten taktfenster (5 s Nachrichtenschleife) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze vorbedingung (je zwei Abschluesse vor und nach einer Grenze) [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze fallen_nie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze je_evidenzrahmen_genau_dessen_fensterzaehler [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze an_der_grenze_stehen_sie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze aktiv_hoechstens_gesamt [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung vorbedingung (3 s verarbeitet, Queue leer, kein Producer-Frame) [frames_gebaut 28]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung datei_und_kopf (rolle probeeq, laufzeit_id = v3RuntimeNonce) [6633c9c3b29149a58ffb84ab04c31525.probeeq.1880.eeb29b72d4a82daa.721074c9a5404ac2ac624ccb324b9ebb.json]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung frame_aus_der_engine (frames_gebaut, summe > 0, aktivitaet) [frames_gebaut 28, Sequenz ohne NAK-29 28, summe_fenster_gesamt 66, aktivitaet 1.0]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung abdeckung_konvergenz_evidenz_fenster_nur_im_evidenzrahmen [evidenz_frisch 0, abdeckung , konvergenz , evidenz_fenster ]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung snapshot_ohne_befunde_rolle_aus_v2rolle [role sensor, v2Rolle sensor]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (a) 600 takte ohne anfrage: 0 auswertungen, keineDaten [Auswertungen 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) worker wertet im naechsten durchlauf genau einmal aus [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) naechster takt schreibt eine antwort mit snapshot, schwer_sekunden = gesamt_sekunden [gesamt_sekunden 2.997333, schwer_sekunden 2.997333]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) 0 fassadenaufrufe und 0 auswertungen auf dem audiothread [Fassade 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) audio bitgleich, state und parameter unveraendert
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen material_ende = hostende vor der leichten publikation, K = anker [Ende 126208 (soll 126208), K 96000 (soll 96000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 96000, sample_count 30720, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq schwer_sekunden = gesamt_sekunden, K = H [schwer 0.629333 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq rahmen traegt projekt_sample_start, sample_count, spielt [projekt_sample_start 104192, sample_count 17408, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen material_ende = hostende vor der leichten publikation, K = anker [Ende 510208 (soll 510208), K 480000 (soll 480000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 488192, sample_count 17920, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 gen teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 probeeq teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-82 umschlag_kohaerent_gen vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-82 umschlag_kohaerent_gen frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-83 umschlag_kohaerent_probeeq vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-83 umschlag_kohaerent_probeeq frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-33 instanzen_je_eine_datei (a) zwei instanzen, verschiedene kennungen [Dateien 2, instanz16 2, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (b) zwei instanzen, gleiche kennung [Dateien 2, instanz16 1, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (c) zehn instanzen, gleiche kennung [Dateien 10, instanz16 1, laufzeit32 10, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (d) vorbedingung (K1 beantwortet, Markendatei unter dem Zielnamen fuer K2) [33fb32524058469ab6a4f109473f204d.probeeq.1880.bbd039c785adac8a.0d9a2c21081245f18b02e998e381e57b.json]
+[ok]  M-33 instanzen_je_eine_datei (d) keine datei wird je ersetzt [Marke SHA gleich ja, Temp 1, Versuche je Takt 1,2,3,3,3, Fehler 1, Loesch 0]
+[ok]  M-37 state_und_parameter_unveraendert vorbedingung (je 100 beantwortete anfragen) [gen 100, probeeq 100]
+[ok]  M-37 state_und_parameter_unveraendert gen (state-bytes, parameter, kein host-dirty) [State 165 Bytes, Parameter 0, Dirty 0, Parameterereignisse 0]
+[ok]  M-37 state_und_parameter_unveraendert probeeq (state-bytes, 112 parameter, kein host-dirty) [State 3537 Bytes, Parameter 112, Dirty 0, Parameterereignisse 0]
+[ok]  M-40 antwort_feldmenge_wie_schema vorbedingung (schema gelesen: 12 kopf-, 25 rahmen-, 3 grundfelder)
+[ok]  M-40 antwort_feldmenge_wie_schema M-24 gen mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 gen ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 probeeq ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-32 probeeq mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema eq-snapshot und eq-aggregat bytegleich zum basis-sha [7c2a1003edabceb215efe9ed90f9650d34d27ab8135bb651a4ae4e2e38acf7b7, efbd8f12a03e4ad71940a0810b8d1d7e13defaf581a50dfafca1223e1b499a68]
+[ok]  M-40 antwort_feldmenge_wie_schema oberste ebene traegt weiter fuenf schemadateien (A11) [5]
+[ok]  M-49 reparse_punkte_werden_ignoriert (a) antwort ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-49 reparse_punkte_werden_ignoriert (b) diagnose ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[--]  M-49 reparse_punkte_werden_ignoriert (c) symlink auf anfrage.json nicht erzeugbar [Fehler 1314] - Lage (c) ungemessen
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json vorbedingung (label mit ", \, U+0001, \n, 4000 zeichen geladen, messdaten) [Laenge 4000]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json antwort ist gueltiges utf-8-json ohne bom, label unveraendert [Bytes 27292, ohne BOM ja, UTF-8 ja, geparst ja, Label zurueck ja]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json keine rechteaenderung (datei nur geerbte rechte, ordner unveraendert) [ACEs geerbt 9, eigene 0, DACL geschuetzt nein]
+[ok]  M-30 antwort_ohne_editor vorbedingung (timer 1000 ms gestartet, kein editor) [Intervall gen 1000, probeeq 1000]
+[ok]  M-30 antwort_ohne_editor gen antwortet im ersten takt des timers [Takte 1, Antworten 1, ausserhalb Message-Thread 0]
+[ok]  M-30 antwort_ohne_editor probeeq antwortet im takt nach genau einem wartenden [Antworten 1, wartend 1, ausserhalb Message-Thread 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) vorbedingung (takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt [Kern im Halt lebend, abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) kern frei, nachdem der test die nachrichten gepumpt hat; kein takt mehr begonnen [Kern frei ja, begonnen 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt vorbedingung (takt am haken, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt angehaltener takt abgewiesen, kanarienwert unberuehrt [abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt nach der rueckkehr des destruktors beginnt kein takt mehr (2,5 s) [begonnen 1 -> 1, Kern danach frei ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: stopp ist der erste destruktorschritt (timer laeuft, callbackschleuse offen) [Intervall 1000, Schleuse offen ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: auf dem message-thread ist der kern mit dem destruktor frei (ohne nachricht) [Kern nach dem Destruktor frei]
+[ok]  M-34 zerstoerung_bei_laufendem_takt probeeq: stopp ist der erste destruktorschritt (timer laeuft, worker lebt) [Intervall 1000, Worker lebt ja]
+[ok]  M-35 nulltest_mit_briefkasten gen: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [947 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten probeeq: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [947 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten 0 fassadenaufrufe mit der thread-id des audiothreads [gen 0, probeeq 0]
+[ok]  M-35 nulltest_mit_briefkasten die antworten entstehen trotzdem (10 anfragen, je gen und probeeq) [10 von 10]
+[ok]  M-36 kadenz_hoechstens_ein_hertz intervall 1000 ms (getTimerInterval) [1000 ms]
+[roh] M-36 kadenz_hoechstens_ein_hertz takte in 10 s wanduhr: 10 begonnen, 10 existenzpruefungen
+[ok]  M-36 kadenz_hoechstens_ein_hertz barriere: kein zweiter takt (laufend hoechstens 1, begonnen waehrend der barriere 0) [laufend hoechstens 1, begonnen an der Barriere 11, bei der Freigabe 11]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung gen: beim schreiben ist die analyse-steuersperre frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung probeeq: beim schreiben ist analyseSchloss frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung erster durchlauf: audio bitgleich (gen, probeeq) [110 Bloecke]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung zweiter durchlauf: 2,5 s blockierter takt, audio laeuft weiter und bleibt bitgleich [Bloecke waehrend des Gen-Takts 235, waehrend des Probeeq-Takts 235]
+NAK-286 BRIEFKASTEN: 159 bestanden, 0 fehlgeschlagen
+
+=== A1: eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe (Exit 0, 0,1 s, Binary 14.09.2026 15:33:27) ===
+  ok      Latenz ist 0 Samples
+  ok      Tail ist 0 s
+  ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  ok      kein falscher NaN-Alarm bei endlichem Signal
+  ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+  ok      NaN/Inf wurde als Mangel registriert
+  ok      Mono-Layout wird angenommen
+  ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+  ok      Save/Load: Sensor-ID bleibt stabil
+  ok      Save/Load: Rolle und Paar-ID bleiben
+NULLTEST OK
+
+=== A16: eq-copilot/build/plugin/EqCopProbeeqNullTest_artefacts/Release/EqCopProbeeqNullTest.exe (Exit 0, 0,3 s, Binary 14.09.2026 15:33:34) ===
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok        im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 0 abweichend, NaN/Inf roh ja]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 459488 abweichend (das Band ist hoerbar)]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+-- 12. NAK-283 F04 Buslayout (M-27 bis M-29)
+  ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+  ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+  ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+
+SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler
+
+=== A2: eq-copilot/build/plugin/EqCopGoldenTest_artefacts/Release/EqCopGoldenTest.exe eq-copilot/fixtures (Exit 0, 10,1 s, Binary 14.09.2026 10:01:13) ===
+sinus-1k-minus12     32 ok, 0 Fehler
+pink-minus20         39 ok, 0 Fehler
+resonanz-116hz       41 ok, 0 Fehler
+stille-mit-tick       7 ok, 0 Fehler
+diag-scoop-mitte     10 ok, 0 Fehler
+diag-mulm            12 ok, 0 Fehler
+diag-haerte           8 ok, 0 Fehler
+diag-mulm-halb       10 ok, 0 Fehler
+diag-wander-ton      25 ok, 0 Fehler
+stereo-antiphase     10 ok, 0 Fehler
+stereo-nur-links      8 ok, 0 Fehler
+stereo-nur-rechts     5 ok, 0 Fehler
+stereo-dekorr         7 ok, 0 Fehler
+nan-recovery          9 ok, 0 Fehler
+nyquist-32k           4 ok, 0 Fehler
+leicht-publikation    8 ok, 0 Fehler
+konvergenz            4 ok, 0 Fehler
+
+GOLDEN OK — 239 Pruefungen ok, 0 Fehler (metrics m4.1-2026-08-15 · diagnose m4.1-2026-08-15)
+
+=== B9: eq-copilot/build/plugin/EqCopLoudnessGoldenTest_artefacts/Release/EqCopLoudnessGoldenTest.exe (Exit 0, 0,2 s, Binary 12.09.2026 03:37:40) ===
+== Nakama SONDE-008 - EBU-Golden der fixed-memory Loudness ==
+Referenz: die ausgebaute Rechnung (unbegrenzter Vektor + Zweitdurchgang).
+Toleranz: +-0.1 LU (Entwurf §49).
+Feingitter: 10001 Bins a 0.01 LU ueber [-70.00, 30.01) LUFS.
+Oberband:   3070 Bins a 1.00 LU ueber [30.01, 3100.01) LUFS - lautheit(DBL_MAX) = 3081,86.
+
+== A - konstante Pegel (kein Block am Gate) ==
+  ok      konstant z=1.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=1.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=1.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-0.691000 ref=-0.691000 d=0.000000000]
+  ok      konstant z=1.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=1.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=1.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=1.00000: Kurz-LUFS BITGLEICH  [akku=-0.691000000000000 ref=-0.691000000000000]
+  ok      konstant z=0.01000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.01000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.01000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-20.691000 ref=-20.691000 d=0.000000000]
+  ok      konstant z=0.01000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.01000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.01000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.01000: Kurz-LUFS BITGLEICH  [akku=-20.690999999999999 ref=-20.690999999999999]
+  ok      konstant z=0.00001: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=0.00001: kein Block faellt durch das Raster  [0]
+  ok      konstant z=0.00001: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-50.691000 ref=-50.691000 d=0.000000000]
+  ok      konstant z=0.00001: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=0.00001: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=0.00001: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=0.00001: Kurz-LUFS BITGLEICH  [akku=-50.691000000000003 ref=-50.691000000000003]
+  ok      konstant z=100.00000: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      konstant z=100.00000: kein Block faellt durch das Raster  [0]
+  ok      konstant z=100.00000: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=19.309000 ref=19.309000 d=0.000000000]
+  ok      konstant z=100.00000: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      konstant z=100.00000: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      konstant z=100.00000: Kurz-LUFS Gueltigkeit gleich
+  ok      konstant z=100.00000: Kurz-LUFS BITGLEICH  [akku=19.309000000000001 ref=19.309000000000001]
+== B - Rampe, Rauschen, lange Laufzeit ==
+  ok      Rampe 30 dB ueber 90 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Rampe 30 dB ueber 90 s: kein Block faellt durch das Raster  [0]
+  ok      Rampe 30 dB ueber 90 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-7.083701 ref=-7.083701 d=0.000000000]
+  ok      Rampe 30 dB ueber 90 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.007384000]
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Rampe 30 dB ueber 90 s: Kurz-LUFS BITGLEICH  [akku=-1.198087457573391 ref=-1.198087457573391]
+  ok      Pseudo-Zufall 300 s: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Pseudo-Zufall 300 s: kein Block faellt durch das Raster  [0]
+  ok      Pseudo-Zufall 300 s: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-9.750816 ref=-9.750816 d=0.000000000]
+  ok      Pseudo-Zufall 300 s: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.001599230]
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS Gueltigkeit gleich
+  ok      Pseudo-Zufall 300 s: Kurz-LUFS BITGLEICH  [akku=-12.109256046331003 ref=-12.109256046331003]
+  ok      eine Stunde (36 000 Zellen): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      eine Stunde (36 000 Zellen): kein Block faellt durch das Raster  [0]
+  ok      eine Stunde (36 000 Zellen): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-15.230810 ref=-15.230810 d=0.000000000]
+  ok      eine Stunde (36 000 Zellen): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      eine Stunde (36 000 Zellen): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000583]
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS Gueltigkeit gleich
+  ok      eine Stunde (36 000 Zellen): Kurz-LUFS BITGLEICH  [akku=-14.735286948147577 ref=-14.735286948147577]
+== C - Pausen unter dem absoluten Gate (-70 LUFS) ==
+  ok      Musik + echte Stille: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Musik + echte Stille: kein Block faellt durch das Raster  [0]
+  ok      Musik + echte Stille: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=-8.281644 ref=-8.281644 d=0.000000000]
+  ok      Musik + echte Stille: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Musik + echte Stille: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000027]
+  ok      Musik + echte Stille: Kurz-LUFS Gueltigkeit gleich
+  ok      Musik + echte Stille: Kurz-LUFS BITGLEICH  [akku=-12.451912590513381 ref=-12.451912590513381]
+== D - adversarial: 1000 Bloecke im Grenzbin des relativen Gates ==
+  Sweep: 201 Laeufe, groesste Abweichung 2.781360 LU bei Faktor 1.000000, groesste gemeldete Schranke 2.781412 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen (Eingang aendert sich um 1e-5): 2.781403 LU
+  ok      Sweep vollstaendig gefahren  [201/201]
+  ok      Sweep hat den Grenzbin wirklich getroffen (Gegenprobe)  [sonst pruefte D nichts; schranke=2.781412]
+  ok      die selbstgemeldete Schranke deckt JEDEN Lauf  [201/201]
+  ok      wo die Schranke <= 0,1 LU meldet, liegt der Wert auch innerhalb 0,1 LU  [76/76]
+  ok      die Abweichung bleibt unter dem eigenen Sprung der Referenz (Kante, kein Fehler)  [maxD=2.781360 refSprung=2.781403]
+  (Der adversariale Fall geht NICHT in die Toleranzbilanz unten ein - er misst eine Unstetigkeit der Norm, keine Rechengenauigkeit.)
+== E - fixed memory: eine Million Zellen ==
+  Akku:     0 Allokationen, LUFS-I -8.386510, Schranke 0.000000000 LU
+  Referenz: 36 Allokationen, LUFS-I -8.386510
+  ok      1 000 000 Zellen: 0 Allokationen im Akku  [0]
+  ok      Gegenprobe: die alte Rechnung alloziert sehr wohl  [36]
+  ok      1 000 000 Zellen: LUFS-I innerhalb ±0,1 LU  [d=0.000000000]
+  Fester Bedarf laut speicherBytes(): 157122 Byte - haengt an keiner Laufzeitgroesse.
+  ok      speicherBytes() ist eine reine Compile-Time-Groesse
+== F - numerische Raender ==
+  ok      leer: kein LUFS-I (null, nie eine Zahl)
+  ok      leer: kein Kurz-LUFS
+  ok      leer: Schranke 0
+  ok      alles unter -70 LUFS: beide ungueltig (Referenz-JSON: null)
+  ok      l_j == -70,0 exakt: Gueltigkeit wie die Referenz  [akku=0 ref=0]
+  ok      NaN/Inf-Zellen sind gezaehlt  [6]
+  ok      NaN/Inf vergiften das Gating nicht  [-7.680700]
+  ok      Kurz-LUFS meldet einen nichtendlichen Ring nie als gueltig
+  ok      ueber dem Gitter: EIN Pegel bleibt wertgleich  [akku=59.309000 ref=59.309000 ueberGitter=197]
+  ok      Gegenprobe: der Korpus liegt wirklich im Oberband  [197]
+  ok      und kein Block faellt durch das Raster
+  ok      500 Zellen ergeben 497 Bloecke (400 ms, Hop 100 ms)  [500/497]
+  ok      zuruecksetzen(): 0 Allokationen  [0]
+  ok      zuruecksetzen(): der Akku ist danach wirklich leer
+== G - Oberband: zwei Pegel ueber dem Feingitter ==
+  G1: akku=49.302611 ref=49.302611 schranke=0.000000000 ueberGitter=1997
+  ok      G1: alle 1997 Bloecke liegen im Oberband (Gegenprobe)  [1997]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      zwei Pegel ueber dem Gitter (T2-1): kein Block faellt durch das Raster  [0]
+  ok      zwei Pegel ueber dem Gitter (T2-1): lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302611 ref=49.302611 d=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS Gueltigkeit gleich
+  ok      zwei Pegel ueber dem Gitter (T2-1): Kurz-LUFS BITGLEICH  [akku=32.319299956639810 ref=32.319299956639810]
+  ok      Naht, Gamma_r im Oberband: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Oberband: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Oberband: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.302481 ref=49.302481 d=0.000000000]
+  ok      Naht, Gamma_r im Oberband: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Oberband: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Oberband: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  ok      Naht, Gamma_r im Feingitter: Gueltigkeit wie die Referenz  [akku=1 ref=1]
+  ok      Naht, Gamma_r im Feingitter: kein Block faellt durch das Raster  [0]
+  ok      Naht, Gamma_r im Feingitter: lufs_integrated_matches_reference - LUFS-I innerhalb ±0,1 LU  [akku=49.243363 ref=49.243363 d=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: unsicherheitLu() deckt den Fehler  [d=0.000000000 schranke=0.000000000]
+  ok      Naht, Gamma_r im Feingitter: ohne Grenzbin nur Rundungsrest (<= 1e-9 LU)  [d=0.000000000000000]
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS Gueltigkeit gleich
+  ok      Naht, Gamma_r im Feingitter: Kurz-LUFS BITGLEICH  [akku=49.308999999999997 ref=49.308999999999997]
+  G3-Sweep: 201 Laeufe, groesste Abweichung 2.781577 LU bei Faktor 1.001000, groesste gemeldete Schranke 2.781577 LU
+  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen: 2.781401 LU
+  ok      G3: Sweep vollstaendig gefahren  [201/201]
+  ok      G3: JEDER Lauf liegt wirklich im Oberband (Gegenprobe)  [1997]
+  ok      G3: der Grenzbin des Oberbands wurde wirklich getroffen (Gegenprobe)  [sonst pruefte G3 nichts; schranke=2.781577]
+  ok      G3: die selbstgemeldete Schranke deckt JEDEN Lauf auch im Oberband  [201/201]
+  ok      G3: die Abweichung bleibt unter dem eigenen Sprung der Referenz  [maxD=2.781577 refSprung=2.781401]
+  ok      G3: kein Block faellt durch das Raster  [0]
+  (Wie §D misst G3 an der Unstetigkeit der Norm, nicht an 0,1 LU - 1000 Bloecke kippen gemeinsam die Gateseite.)
+  G4: LUFS-I 3038.851, Schranke 0.000000000, ueberGitter 197, ueberOberband 0
+  ok      G4: die lauteste darstellbare Blocklautheit liefert einen endlichen Wert  [3038.851]
+  ok      G4: nichts wird faelschlich als nicht-endlich gezaehlt  [0]
+  ok      G4: auch am aeussersten Rand faellt kein Block durch das Raster  [0]
+  ok      G4: und die Schranke bleibt endlich  [0.000000000]
+
+Schlimmste gemessene Abweichung ueber alle Korpora: 0.000000000 LU (Toleranz 0.1).
+109 Pruefungen, 0 Fehler.
+LOUDNESS-GOLDEN OK
+
+=== B2: eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe (Exit 0, 1,4 s, Binary 14.09.2026 15:33:52) ===
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [4a476aee7d404ca19fa98b0907530959]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638037]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672163]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [f823d76137c6452ebb241f65c59d053f]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [a861d09cbd2949e98921eccb9654f28b]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [9223372036854775807 / 9223372036854775807]
+  ok      M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [9223372036854775807]
+  ok      M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [497 vs. 497 Bytes]
+  ok      M-11: kein abgewiesener Handgriff meldet Host-Dirty  [0]
+  ok      M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  ok      M-11: beide Revisionen kommen als int64max zurueck  [9223372036854775807 / 9223372036854775807]
+  ok      M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [1 Eintrag/Eintraege]
+  ok      == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+
+STATE-MIGRATION-TEST OK - 287 Pruefungen ok, 0 Fehler
+
+=== A14: py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py (Exit 0, 9,7 s, Binary -) ===
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (3727618 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7825920 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 9.1s neu erzeugt (34 Dateien entfernt, 21 Uebersetzungseinheiten, 21 Objekte, Lib neu gelinkt)
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 21 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+25 ok, 0 Fehler
+
+=== B1: eq-copilot/build/plugin/EqCopIdentityTest_artefacts/Release/EqCopIdentityTest.exe (Exit 0, 0,1 s, Binary 14.09.2026 15:34:00) ===
+  ok      Identitaetsmanifest gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\identity\plugin-identities-v1.json]
+  ok      Manifest ist gueltiges JSON
+  ok      Herstellercode im Manifest  [Evna]
+  ok      Viercode ist vier Zeichen lang: hersteller.code  [4 Zeichen]
+  ok      Manifest kennt mindestens ein Ziel  [3]
+  ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+  ok      jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [0 unlesbar]
+  ok      Manifest kennt das heutige Ziel 'main'
+  ok      jedes AKTIVE Ziel im Manifest hat hier eine Zeile  [2 vs 2]
+  ok      jedes STILLGELEGTE Ziel im Manifest hat hier eine Zeile  [1 vs 1]
+  ok      main: steht als AKTIVES Ziel im Manifest
+  ok      active-probe: steht als AKTIVES Ziel im Manifest
+  ok      passive-probe: die Kennung steht weiter im Manifest
+  ok      passive-probe: und ist dort als stillgelegt markiert
+  ok      passive-probe: plugin_code ist nicht geloescht  [NkPr]
+  ok      passive-probe: bundle ist nicht geloescht  [Nakama Suna.vst3]
+  ok      passive-probe: produktname ist nicht geloescht  [Nakama Suna]
+  ok      passive-probe: component_cid ist nicht geloescht  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      passive-probe: controller_cid ist nicht geloescht  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      passive-probe: die Stilllegung nennt Datum und Entscheid  [2026-08-28 / design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md]
+  ok      plugin/CMakeLists.txt gefunden
+  ok      CMake: Zielblock juce_add_plugin(EqCopilot) gefunden
+  ok      CMake: Defineblock von EqCopilot gefunden
+  ok      CMake-Quelle: das Bauskript liest 'main' aus dem Identitaetsmanifest
+  ok      CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: der Viercode steht nicht literal im Zielblock  [Eqcp]
+  ok      CMake-Quelle: der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      CMake-Quelle: der Produktname steht nicht literal im Zielblock
+  ok      CMake-Quelle: JUCE_VST3_CAN_REPLACE_VST2=0 steht im Zielblock
+  ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
+  ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
+  ok      CMake: Zielblock juce_add_plugin(${ziel}) der Sondenfunktion gefunden
+  ok      CMake: Defineblock der Sondenfunktion gefunden
+  ok      CMake-Quelle: die Sondenfunktion liest ihre Identitaet aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      active-probe: der Viercode steht nicht literal im Sonden-Zielblock  [NkAc]
+  ok      active-probe: der Produktname steht nicht literal im Sonden-Zielblock  [Nakama Probeeq]
+  ok      active-probe: NakamaProbeeq entsteht ueber nakama_sonde_ziel()
+  ok      active-probe: der Aufruf uebergibt genau diese Manifest-ID  [nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)]
+  ok      CMake-Quelle (Sonde): JUCE_VST3_CAN_REPLACE_VST2=0 steht im Defineblock
+  ok      NakamaSuna: stillgelegt - kein Aufruf von nakama_sonde_ziel() mehr
+  ok      NakamaSuna: stillgelegt - auch kein eigener juce_add_plugin-Block
+  ok      NakamaSuna: das Bauskript erklaert die Stilllegung an Ort und Stelle
+  ok      main: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
+  ok      main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [14 Sep 2026 3:34:34pm vs 14 Sep 2026 7:44:56am]
+  ok      main: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      main: Produktname wie im Manifest  [EQ-Copilot]
+  ok      main: Vendor wie im Manifest  [evenacadia]
+  ok      main: genau zwei Klassen (Component + Controller)  [2]
+  ok      main: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E6145716370]
+  ok      main: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E6145716370]
+  ok      main: Unterkategorien wie im Manifest
+  ok      main: keine fremde Ziel-CID im Bundle
+  ok      active-probe: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\VST3\Nakama Probeeq.vst3\Contents\Resources\moduleinfo.json]
+  ok      active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [14 Sep 2026 3:35:04pm vs 14 Sep 2026 7:44:56am]
+  ok      active-probe: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      active-probe: Produktname wie im Manifest  [Nakama Probeeq]
+  ok      active-probe: Vendor wie im Manifest  [evenacadia]
+  ok      active-probe: genau zwei Klassen (Component + Controller)  [2]
+  ok      active-probe: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      active-probe: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      active-probe: Unterkategorien wie im Manifest
+  ok      active-probe: keine fremde Ziel-CID im Bundle
+  ok      Viercode ist vier Zeichen lang: main.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: main Component (Eqcp)  [ABCDEF019182FAEB45766E6145716370]
+  ok      CID nachgerechnet: main Controller (Eqcp)  [ABCDEF011234ABCD45766E6145716370]
+  ok      Viercode ist vier Zeichen lang: passive-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: passive-probe Component (NkPr)  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      CID nachgerechnet: passive-probe Controller (NkPr)  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      Viercode ist vier Zeichen lang: active-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: active-probe Component (NkAc)  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      CID nachgerechnet: active-probe Controller (NkAc)  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      VST2-Ersatzpfad wuerde eine ANDERE CID erzeugen - das Define ist aus  [5653544571637065712D636F70696C6F]
+  ok      die echte CID stammt aus dem jucePluginId-Pfad
+  ok      Golden-Ordner vorhanden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\identity]
+  ok      Rolle 'sensor' geladen  [sensor]
+  ok      Rolle 'sensor': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'sensor': Label uebernommen  [Klavier A]
+  ok      Rolle 'sensor': Paar-ID uebernommen
+  ok      Golden 'sensor' gelesen  [state-schema1-sensor.bin]
+  ok      Schema-1-Saat 'sensor' ist bytegleich zum eingefrorenen Golden  [128 Bytes]
+  ok      Rolle 'sensor' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'sensor' laedt in eine frische Instanz zurueck
+  ok      Rolle 'hub' geladen  [hub]
+  ok      Rolle 'hub': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'hub': Label uebernommen  [Leitstand]
+  ok      Rolle 'hub': Paar-ID uebernommen
+  ok      Golden 'hub' gelesen  [state-schema1-hub.bin]
+  ok      Schema-1-Saat 'hub' ist bytegleich zum eingefrorenen Golden  [125 Bytes]
+  ok      Rolle 'hub' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'hub' laedt in eine frische Instanz zurueck
+  ok      Rolle 'pre' geladen  [pre]
+  ok      Rolle 'pre': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'pre': Label uebernommen  [Chor PRE]
+  ok      Rolle 'pre': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'pre' gelesen  [state-schema1-pre.bin]
+  ok      Schema-1-Saat 'pre' ist bytegleich zum eingefrorenen Golden  [133 Bytes]
+  ok      Rolle 'pre' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'pre' laedt in eine frische Instanz zurueck
+  ok      Rolle 'post' geladen  [post]
+  ok      Rolle 'post': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'post': Label uebernommen  [Chor POST]
+  ok      Rolle 'post': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'post' gelesen  [state-schema1-post.bin]
+  ok      Schema-1-Saat 'post' ist bytegleich zum eingefrorenen Golden  [135 Bytes]
+  ok      Rolle 'post' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'post' laedt in eine frische Instanz zurueck
+  ok      fremder ValueTree-Typ wird abgelehnt, Zustand bleibt
+  ok      Muellbytes aendern den Zustand nicht
+  ok      M-83: Gen fuehrt null Hostparameter  [0]
+  ok      M-83: der Prozessor ist Main - nur dort gibt es einen Schritt
+  ok      M-83: ein Assistentenschritt liegt im MainProject
+  ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+
+=== A33: py -3.13 tools/plan/tidy.py --mit-selbsttest (Exit 0, 112,9 s, Binary -) ===
+SELBSTTEST
+  ok   Quelldatei im Plugin liegt im Quellort
+  ok   tests/ ist ausgenommen
+  ok   ein Ordner, der nur mit tests beginnt, ist nicht ausgenommen
+  ok   flatc-Codegen unter vertrag/generiert/ ist ausgenommen
+  ok   vertrag/ selbst zaehlt (Eingabe in Vergleichsform)
+  ok   JUCE unter _deps liegt nicht im Quellort
+  ok   Broker liegt nicht im Quellort
+  ok   fremde Wurzel liegt nicht im Quellort
+  ok   Wurzel mit Schlussstrich ist dieselbe Wurzel
+  ok   norm: Rueckstriche und Grossschreibung verschwinden
+  ok   Filter: eine Datei in zwei Zielen ergibt einen Eintrag, tests und _deps fallen weg
+  ok   Filter: der erste Eintrag gewinnt
+  ok   Filter: relativer Dateipfad wird an directory gehaengt und .. aufgeloest
+  ok   Filter: arguments-Form verliert /MP4 und -showIncludes
+  ok   bereinige: /MD bleibt, /MP faellt
+  ok   bereinige: Kommando ohne die Schalter bleibt gleich
+  ok   parse: drei Diagnosen mit Ort, note und Treiberwarnung nicht
+  ok   parse: Windows-Pfad mit Laufwerk bleibt ganz
+  ok   parse: Zeile und Spalte sind Zahlen
+  ok   parse: Check steht ohne Klammern
+  ok   parse: eckige Klammern im Text gehoeren zum Text
+  ok   parse: Mehrfach-Check bleibt eine Zeichenkette
+  ok   parse: error wird als error erkannt
+  ok   parse: leerer Text liefert nichts
+  ok   dedup: dieselbe Fundstelle aus zwei Einheiten zaehlt einmal
+  ok   dedup: andere Spalte zaehlt zweimal
+  ok   dedup: anderer Check am selben Ort zaehlt zweimal
+  ok   dedup: tests und JUCE zaehlen nicht
+  ok   dedup: Anzeigepfad ist relativ mit Vorwaertsstrichen
+  ok   dedup: sortiert nach Datei, Zeile, Spalte
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze plus eins reisst
+  ok   Null Fundstellen ist OK
+  ok   nicht messbar ist nie rot
+  ok   Ratsche ist nie unter dem Ziel
+  ok   Umgebung: erste Gleichheit trennt
+  ok   Umgebung: INCLUDE kommt an
+  ok   Umgebung: Zeilen ohne Gleichheit und Laufwerksmarken fallen weg
+  ok   je Check: absteigend, dann alphabetisch
+
+Selbsttest: 39/39 bestanden
+
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 11 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 113 s mit 12 Prozess(en)
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  83   0     83      ZIEL  
+
+Uebersetzungseinheiten: 43 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 43
+Langsamste Einheiten: eq-copilot/plugin/src/PluginEditor.cpp 50 s, eq-copilot/plugin/src/prozessor/Analyse.cpp 49 s, eq-copilot/plugin/src/prozessor/Ipc.cpp 46 s, eq-copilot/plugin/src/PluginProcessor.cpp 43 s, eq-copilot/plugin/state/NakamaState.cpp 43 s
+
+Fundstellen je Check:
+     17  bugprone-misplaced-widening-cast
+     17  performance-unnecessary-copy-initialization
+      9  performance-avoid-endl
+      7  bugprone-exception-escape
+      7  bugprone-implicit-widening-of-multiplication-result
+      5  bugprone-suspicious-memory-comparison
+      5  cppcoreguidelines-pro-type-member-init
+      3  performance-move-const-arg
+      2  bugprone-branch-clone
+      2  clang-analyzer-core.NonNullParamChecker
+      2  clang-analyzer-optin.core.EnumCastOutOfRange
+      2  performance-unnecessary-value-param
+      1  bugprone-inc-dec-in-conditions
+      1  bugprone-incorrect-roundings
+      1  cert-err34-c
+      1  clang-analyzer-core.NullDereference
+      1  clang-analyzer-deadcode.DeadStores
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1113:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:393:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:394:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:395:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:397:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:399:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:401:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:96:10 [bugprone-exception-escape] an exception may be thrown in function 'vorbereiten' which should not throw exceptions
+  eq-copilot/plugin/core/analysis/TruePeak.h:251:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:254:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:95:30 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:86:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:272:18 [performance-move-const-arg] passing result of std::move() as a const reference argument; no move will actually happen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:441:73 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+  eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp:230:6 [bugprone-exception-escape] an exception may be thrown in function 'audioGueltig' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/IpcQueues.h:414:10 [bugprone-exception-escape] an exception may be thrown in function 'bestaetigen' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:42:45 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:96:9 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/PipeToken.h:58:13 [bugprone-exception-escape] an exception may be thrown in function 'istProbePipename' which should not throw exceptions
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:281:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:390:75 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+  eq-copilot/plugin/core/ipc/WireEnvelope.cpp:150:27 [clang-analyzer-optin.core.EnumCastOutOfRange] The value provided to the cast expression is not in the valid range of values for 'Kodierung'
+  eq-copilot/plugin/core/ipc/WireEnvelope.cpp:151:27 [clang-analyzer-optin.core.EnumCastOutOfRange] The value provided to the cast expression is not in the valid range of values for 'Familie'
+  eq-copilot/plugin/core/ipc/WireZahl.h:138:28 [cert-err34-c] 'atoi' used to convert a string to an integer value, but function will not report conversion errors; consider using 'strtol' instead
+  eq-copilot/plugin/dsp/DspKern.cpp:63:36 [bugprone-incorrect-roundings] casting (double + 0.5) to integer leads to incorrect rounding; consider using lround (#include <cmath>) instead
+  eq-copilot/plugin/dsp/DspKern.cpp:503:16 [clang-analyzer-deadcode.DeadStores] Value stored to 'y0' during its initialization is never read
+  eq-copilot/plugin/dsp/DspKern.cpp:512:70 [clang-analyzer-core.NullDereference] Access to field 'detektorLaeuft' results in a dereference of a null pointer (loaded from variable 'qb')
+  eq-copilot/plugin/dsp/DspKern.cpp:520:42 [clang-analyzer-core.NonNullParamChecker] Forming reference to null pointer
+  eq-copilot/plugin/dsp/DspKern.cpp:573:38 [clang-analyzer-core.NonNullParamChecker] Forming reference to null pointer
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:99:5 [bugprone-exception-escape] an exception may be thrown in function 'main' which should not throw exceptions
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:113:22 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:118:79 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:137:59 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:147:73 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:166:62 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:168:72 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:174:69 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:179:77 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/probe/PipeProbeMain.cpp:183:83 [performance-avoid-endl] do not use 'std::endl' with streams; use '\n' instead
+  eq-copilot/plugin/src/AnalyseEngine.cpp:413:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/AnalyseEngine.cpp:523:5 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'live'
+  eq-copilot/plugin/src/AnalyseEngine.cpp:636:9 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'k'
+  eq-copilot/plugin/src/AnalyseEngine.cpp:1009:49 [bugprone-misplaced-widening-cast] either cast from 'int' to 'size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/PluginEditor.cpp:1049:5 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'k'
+  eq-copilot/plugin/src/PluginProcessor.cpp:887:12 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/state/NakamaParameter.cpp:139:40 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:159:20 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:604:33 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaParameter.cpp:637:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaParameter.cpp:664:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaParameter.h:87:8 [cppcoreguidelines-pro-type-member-init] constructor does not initialize these fields: typ
+  eq-copilot/plugin/state/NakamaState.cpp:82:35 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+  eq-copilot/plugin/state/NakamaState.cpp:331:16 [performance-unnecessary-copy-initialization] the const qualified variable 'v' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:676:9 [bugprone-branch-clone] switch has 3 consecutive identical branches
+  eq-copilot/plugin/state/NakamaState.cpp:1099:29 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/state/NakamaState.cpp:1306:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1424:24 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1480:16 [performance-unnecessary-copy-initialization] the const qualified variable 'id' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1484:16 [performance-unnecessary-copy-initialization] the const qualified variable 'kindWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1489:16 [performance-unnecessary-copy-initialization] the const qualified variable 'posWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1503:16 [performance-unnecessary-copy-initialization] the const qualified variable 'label' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1506:16 [performance-unnecessary-copy-initialization] the const qualified variable 'pair' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1512:16 [performance-unnecessary-copy-initialization] the const qualified variable 'binding' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1541:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1588:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1655:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1736:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1795:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1845:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:2645:9 [bugprone-branch-clone] switch has 2 consecutive identical branches
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:120:46 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:182:30 [bugprone-suspicious-memory-comparison] comparing object representation of type 'double' which does not have a unique object representation; consider comparing the values manually
+  eq-copilot/plugin/vertrag/NakamaEvidenz.cpp:463:19 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_type' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp:20:16 [bugprone-exception-escape] an exception may be thrown in function 'operator<' which should not throw exceptions
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp:447:11 [cppcoreguidelines-pro-type-member-init] constructor does not initialize these fields: name
+  eq-copilot/plugin/vertrag/NakamaUtf8.h:25:50 [bugprone-inc-dec-in-conditions] incrementing and referencing a variable in a complex condition can cause unintended side-effects due to C++'s order of evaluation, consider moving the modification outside of the condition to avoid misunderstandings
+  eq-copilot/plugin/vertrag/NakamaVertrag.cpp:261:18 [bugprone-exception-escape] an exception may be thrown in function 'operator<' which should not throw exceptions
+  eq-copilot/plugin/vertrag/NakamaVertrag.h:29:45 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+
+URTEIL: Grenze gehalten - 83 Fundstellen von hoechstens 83 (Ziel 0)
+

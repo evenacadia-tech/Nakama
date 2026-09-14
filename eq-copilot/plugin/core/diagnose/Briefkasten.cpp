@@ -464,12 +464,44 @@ std::int64_t EchteUhrFassade::jetztUtcMs()
 
 //== Der Kern ===================================================================
 
-struct Briefkasten::Kern
+/*  Der Kern ist der Timer-Traeger (§23.2 P-12). Der Halter besitzt ihn ueber
+    einen `shared_ptr` und gibt diese Referenz nach `stoppe()` nach
+    `freigeben()` ab; ein Rueckruf, den der Timer vor dem Stopp begonnen hat,
+    faellt damit nie in freigegebenen Speicher. */
+struct Briefkasten::Kern final : juce::Timer
 {
+    /** Die Zaehler in eigenem Besitz: der Zeuge (M-34) haelt nur sie, nie den
+        Kern. Jede Zahl ist fuer sich atomar. */
+    struct Zaehlwerk
+    {
+        std::atomic<std::uint64_t> starts { 0 }, begonnen { 0 }, takte { 0 }, abgewiesen { 0 },
+                                   uebersprungen { 0 }, laufend { 0 }, laufendMax { 0 },
+                                   warteTakte { 0 }, schreibversuche { 0 }, antworten { 0 },
+                                   aufgegeben { 0 }, ausnahmen { 0 };
+
+        Zaehler lesen() const noexcept
+        {
+            Zaehler z;
+            z.starts              = starts.load();
+            z.takteBegonnen       = begonnen.load();
+            z.takte               = takte.load();
+            z.abgewieseneTakte    = abgewiesen.load();
+            z.uebersprungeneTakte = uebersprungen.load();
+            z.laufendMax          = laufendMax.load();
+            z.warteTakte          = warteTakte.load();
+            z.schreibversuche     = schreibversuche.load();
+            z.antworten           = antworten.load();
+            z.fehlerzaehler       = aufgegeben.load();
+            z.ausnahmen           = ausnahmen.load();
+            return z;
+        }
+    };
+
     std::shared_ptr<WurzelFassade>      wurzel;
     std::shared_ptr<DateisystemFassade> fs;
     std::shared_ptr<UhrFassade>         uhr;
     Antwortquelle                       quelle;
+    std::function<void()>               hakenTimerEintritt;
     std::function<void()>               hakenVorSchleuse;
     std::function<void()>               hakenBeimStopp;
 
@@ -477,7 +509,11 @@ struct Briefkasten::Kern
     std::atomic<bool>     taktLaeuft { false };
     std::atomic<bool>     gestartet { false };
     std::atomic<bool>     gestoppt { false };
+    std::atomic<bool>     timerLief { false };   ///< P-12: ab `startTimer` kann ein Rueckruf laufen
     std::atomic<int>      grund { (int) Startgrund::nichtGestartet };
+
+    const std::shared_ptr<Zaehlwerk> zaehlwerk { std::make_shared<Zaehlwerk>() };
+    Zaehlwerk&                       zw { *zaehlwerk };
 
     // Ab dem Start unveraenderlich.
     std::string                 rolle;
@@ -508,11 +544,6 @@ struct Briefkasten::Kern
     std::array<Kennung, kKennungsring> ring {};
     int ringNaechster = 0;
     int ringBelegt = 0;
-
-    std::atomic<std::uint64_t> starts { 0 }, begonnen { 0 }, takte { 0 }, abgewiesen { 0 },
-                               uebersprungen { 0 }, laufend { 0 }, laufendMax { 0 },
-                               warteTakte { 0 }, schreibversuche { 0 }, antworten { 0 },
-                               aufgegeben { 0 }, ausnahmen { 0 };
 
     bool ringEnthaelt (const Kennung& k) const noexcept
     {
@@ -647,73 +678,107 @@ struct Briefkasten::Kern
         if (antwort.wartet)
         {
             // Kein Schreibversuch, kein Fehler, nichts angelegt (F-13).
-            warteTakte.fetch_add (1, std::memory_order_relaxed);
+            zw.warteTakte.fetch_add (1, std::memory_order_relaxed);
             return;
         }
 
         ++offen.versuche;
-        schreibversuche.fetch_add (1, std::memory_order_relaxed);
+        zw.schreibversuche.fetch_add (1, std::memory_order_relaxed);
         if (schreibe (kennung, antwort))
         {
             ringMerke (kennung);
-            antworten.fetch_add (1, std::memory_order_relaxed);
+            zw.antworten.fetch_add (1, std::memory_order_relaxed);
             offen = {};
             return;
         }
         if (offen.versuche >= kSchreibversuche)
         {
             offen.aufgegeben = true;
-            aufgegeben.fetch_add (1, std::memory_order_relaxed);
+            zw.aufgegeben.fetch_add (1, std::memory_order_relaxed);
         }
     }
 
-    static void takt (const std::shared_ptr<Kern>& k)
+    /** Ein Takt. Fasst bis zur Schleuse nur Kernspeicher an; die Antwortquelle
+        des Besitzers erst hinter ihr. */
+    void takt()
     {
-        k->begonnen.fetch_add (1, std::memory_order_relaxed);
-        const auto jetzt = k->laufend.fetch_add (1) + 1;
-        for (auto hoechst = k->laufendMax.load(); jetzt > hoechst
-             && ! k->laufendMax.compare_exchange_weak (hoechst, jetzt);)
+        zw.begonnen.fetch_add (1, std::memory_order_relaxed);
+        const auto jetzt = zw.laufend.fetch_add (1) + 1;
+        for (auto hoechst = zw.laufendMax.load(); jetzt > hoechst
+             && ! zw.laufendMax.compare_exchange_weak (hoechst, jetzt);)
         {
         }
         struct Ende
         {
-            Kern& kern;
-            ~Ende() { kern.laufend.fetch_sub (1); }
-        } ende { *k };
+            Zaehlwerk& werk;
+            ~Ende() { werk.laufend.fetch_sub (1); }
+        } ende { zw };
 
-        if (k->hakenVorSchleuse)
-            k->hakenVorSchleuse();
+        if (hakenVorSchleuse)
+            hakenVorSchleuse();
 
         // F-12: nach `stoppe()` weist die Schleuse jeden Takt ab.
-        const auto zug = k->schleuse.betreten();
+        const auto zug = schleuse.betreten();
         if (! zug)
         {
-            k->abgewiesen.fetch_add (1, std::memory_order_relaxed);
+            zw.abgewiesen.fetch_add (1, std::memory_order_relaxed);
             return;
         }
-        if (! k->gestartet.load())
+        if (! gestartet.load())
             return;
         bool frei = false;
-        if (! k->taktLaeuft.compare_exchange_strong (frei, true))
+        if (! taktLaeuft.compare_exchange_strong (frei, true))
         {
-            k->uebersprungen.fetch_add (1, std::memory_order_relaxed);
+            zw.uebersprungen.fetch_add (1, std::memory_order_relaxed);
             return;
         }
         struct Freigabe
         {
             std::atomic<bool>& laeuft;
             ~Freigabe() { laeuft.store (false); }
-        } freigabe { k->taktLaeuft };
+        } freigabe { taktLaeuft };
 
-        k->takte.fetch_add (1, std::memory_order_relaxed);
+        zw.takte.fetch_add (1, std::memory_order_relaxed);
         try
         {
-            k->rumpf();
+            rumpf();
         }
         catch (...)
         {
-            k->ausnahmen.fetch_add (1, std::memory_order_relaxed);
+            zw.ausnahmen.fetch_add (1, std::memory_order_relaxed);
         }
+    }
+
+    void timerCallback() override
+    {
+        // P-12, M-34 Lage (b): der Testhaken ist die ERSTE Anweisung. Im Produkt leer.
+        if (hakenTimerEintritt)
+            hakenTimerEintritt();
+        takt();
+    }
+
+    /** P-12: die Referenz des Halters, NACH `stoppe()`.
+
+        JUCE ruft `timerCallback()` ueber einen rohen Zeiger mit freigegebener
+        Sperre, und `stopTimer()` nimmt den Timer nur aus der Liste, ohne auf
+        einen laufenden Rueckruf zu warten (juce_Timer.cpp:161-171, :207-224,
+        :395-402). Ein Rueckruf, den der Timer vor dem Stopp begonnen hat, haelt
+        also keinen Kern - auch nicht vor seiner ersten Anweisung. Die Freigabe
+        geht deshalb als Nachricht an den Message-Thread: der bearbeitet sie
+        erst nach dem laufenden Rueckruf, und `Timer::~Timer` laeuft dort
+        (juce_Timer.cpp:359-370). Sofort nur, wenn kein Rueckruf laufen kann: der
+        Timer lief nie, es gibt keinen MessageManager, oder dies ist der
+        Message-Thread. Nie ein Warten auf den Message-Thread. Kann JUCE die
+        Nachricht nicht einstellen (ohne Instanz oder nach `stopDispatchLoop`,
+        juce_MessageManager.cpp:81-92), verwirft es sie samt Referenz hier. */
+    static void freigeben (std::shared_ptr<Kern> k)
+    {
+        if (k == nullptr)
+            return;
+        const auto* mm = juce::MessageManager::getInstanceWithoutCreating();
+        if (! k->timerLief.load() || mm == nullptr || mm->isThisTheMessageThread())
+            return;   // `k` endet hier
+        juce::MessageManager::callAsync ([rest = std::move (k)]() mutable { rest.reset(); });
     }
 };
 
@@ -730,6 +795,7 @@ Briefkasten::Briefkasten()
 Briefkasten::~Briefkasten()
 {
     stoppe();
+    Kern::freigeben (std::move (kern));   // P-12
 }
 
 void Briefkasten::setzeFassaden (std::shared_ptr<WurzelFassade> wurzel,
@@ -746,6 +812,11 @@ void Briefkasten::setzeFassaden (std::shared_ptr<WurzelFassade> wurzel,
 void Briefkasten::setzeAntwortquelle (Antwortquelle quelle)
 {
     kern->quelle = std::move (quelle);
+}
+
+void Briefkasten::setzeHakenTimerEintritt (std::function<void()> haken)
+{
+    kern->hakenTimerEintritt = std::move (haken);
 }
 
 void Briefkasten::setzeHakenVorSchleuse (std::function<void()> haken)
@@ -840,9 +911,12 @@ Startgrund Briefkasten::starte (const Konfiguration& konfiguration, bool mitTime
     k.laufzeit32 = konfiguration.laufzeit32;
     k.pid        = (std::uint32_t) GetCurrentProcessId();
     k.gestartet.store (true);
-    k.starts.fetch_add (1, std::memory_order_relaxed);
+    k.zw.starts.fetch_add (1, std::memory_order_relaxed);
     if (mitTimer)
-        startTimer (kTaktMs);
+    {
+        k.timerLief.store (true);   // P-12: vor dem Start - ab ihm kann ein Rueckruf laufen
+        k.startTimer (kTaktMs);
+    }
     return setze (Startgrund::gestartet);
 }
 
@@ -853,20 +927,14 @@ void Briefkasten::stoppe()
         return;
     if (k.hakenBeimStopp)
         k.hakenBeimStopp();
-    stopTimer();
+    k.stopTimer();
     k.schleuse.schliessen();
 }
 
 void Briefkasten::takt()
 {
     const auto k = kern;
-    Kern::takt (k);
-}
-
-void Briefkasten::timerCallback()
-{
-    const auto k = kern;
-    Kern::takt (k);
+    k->takt();
 }
 
 Startgrund Briefkasten::startgrund() const noexcept
@@ -876,20 +944,12 @@ Startgrund Briefkasten::startgrund() const noexcept
 
 Zaehler Briefkasten::zaehler() const noexcept
 {
-    const auto& k = *kern;
-    Zaehler z;
-    z.starts              = k.starts.load();
-    z.takteBegonnen       = k.begonnen.load();
-    z.takte               = k.takte.load();
-    z.abgewieseneTakte    = k.abgewiesen.load();
-    z.uebersprungeneTakte = k.uebersprungen.load();
-    z.laufendMax          = k.laufendMax.load();
-    z.warteTakte          = k.warteTakte.load();
-    z.schreibversuche     = k.schreibversuche.load();
-    z.antworten           = k.antworten.load();
-    z.fehlerzaehler       = k.aufgegeben.load();
-    z.ausnahmen           = k.ausnahmen.load();
-    return z;
+    return kern->zw.lesen();
+}
+
+int Briefkasten::taktIntervallMs() const noexcept
+{
+    return kern->getTimerInterval();
 }
 
 FassadenStand Briefkasten::dateisystemStand() const noexcept
@@ -904,22 +964,14 @@ std::uint64_t Briefkasten::wurzelabfragen() const noexcept
 
 std::function<Zaehler()> Briefkasten::zaehlerZeuge() const
 {
-    return [k = kern]
-    {
-        Zaehler z;
-        z.starts              = k->starts.load();
-        z.takteBegonnen       = k->begonnen.load();
-        z.takte               = k->takte.load();
-        z.abgewieseneTakte    = k->abgewiesen.load();
-        z.uebersprungeneTakte = k->uebersprungen.load();
-        z.laufendMax          = k->laufendMax.load();
-        z.warteTakte          = k->warteTakte.load();
-        z.schreibversuche     = k->schreibversuche.load();
-        z.antworten           = k->antworten.load();
-        z.fehlerzaehler       = k->aufgegeben.load();
-        z.ausnahmen           = k->ausnahmen.load();
-        return z;
-    };
+    // P-12: nur das Zaehlwerk - ein Zeuge, der den Kern hielte, waere
+    // Mitbesitzer des Timer-Traegers.
+    return [werk = kern->zaehlwerk] { return werk->lesen(); };
+}
+
+std::function<bool()> Briefkasten::kernBeobachter() const
+{
+    return [beobachtet = std::weak_ptr<Kern> (kern)] { return ! beobachtet.expired(); };
 }
 
 } // namespace nakama::diagnose

@@ -29,12 +29,21 @@
     mit dem Zaehler "Wurzelabfragen". Im Produkt sind beide die echten Aufrufe,
     im Test Attrappen (F-14, F-16).
 
-    LEBENSDAUER (F-12): der Takt ist ein `juce::Timer` des Halters (1 000 ms,
-    Message-Thread). `stoppe()` ist der erste Destruktorschritt des Besitzers:
-    Timer aus, danach die Schleuse zu. Ein Takt, der bei einer Zerstoerung von
-    einem Fremdthread noch vor der Schleuse steht, haelt den Kernzustand ueber
-    einen `shared_ptr` am Leben und wird an der Schleuse abgewiesen - er ruft
-    die Antwortquelle des zerstoerten Besitzers nie mehr.
+    LEBENSDAUER (F-12, §23.2 P-12): der Takt ist ein `juce::Timer` des KERNS
+    (1 000 ms, Message-Thread); den Kern haelt der Halter ueber einen
+    `shared_ptr`. `stoppe()` ist der erste Destruktorschritt des Besitzers:
+    Timer aus, danach die Schleuse zu. JUCE ruft einen Timer ueber einen rohen
+    Zeiger, und `stopTimer()` wartet auf keinen laufenden Rueckruf
+    (juce_Timer.cpp:161-171, :207-224). Der Halter gibt seine Referenz deshalb
+    nach `stoppe()` an den Message-Thread ab (`MessageManager::callAsync`), der
+    eine Nachricht erst nach dem laufenden Rueckruf bearbeitet: ein Rueckruf,
+    den der Timer vor dem Stopp begonnen hat - auch vor seiner ersten
+    Anweisung -, fasst nur lebenden Kern an, und `Timer::~Timer` laeuft auf
+    dem Message-Thread. Sofort frei wird der Kern nur, wenn kein Rueckruf
+    laufen kann: der Timer lief nie, es gibt keinen MessageManager, oder der
+    Halter endet auf dem Message-Thread. Kein Weg wartet auf den
+    Message-Thread. Ein Takt, der nach dem Stopp an die Schleuse kommt, wird
+    abgewiesen - er ruft die Antwortquelle des zerstoerten Besitzers nie mehr.
 */
 
 #pragma once
@@ -261,11 +270,12 @@ struct Zaehler
     std::uint64_t ausnahmen = 0;
 };
 
-class Briefkasten final : private juce::Timer
+class Briefkasten final
 {
 public:
     Briefkasten();
-    ~Briefkasten() override;
+    /** `stoppe()`, danach die Referenz auf den Kern nach P-12 freigeben. */
+    ~Briefkasten();
 
     /** Vor dem Start. Ohne Aufruf gelten die echten Fassaden. */
     void setzeFassaden (std::shared_ptr<WurzelFassade> wurzel,
@@ -286,24 +296,30 @@ public:
 
     Startgrund startgrund() const noexcept;
     Zaehler    zaehler() const noexcept;
-    int        taktIntervallMs() const noexcept { return getTimerInterval(); }
+    int        taktIntervallMs() const noexcept;
 
     /** Die Zaehler der Fassaden, die der Halter gerade benutzt (M-38). */
     FassadenStand dateisystemStand() const noexcept;
     std::uint64_t wurzelabfragen() const noexcept;
 
-    /** Liest die Zaehler auch nach dem Ende des Halters: der Leser haelt den
-        Kernzustand am Leben (M-34, Zerstoerung bei laufendem Takt). */
+    /** Liest die Zaehler auch nach dem Ende des Halters (M-34). Der Leser haelt
+        nur das Zaehlwerk, nie den Kern: als Mitbesitzer des Timer-Traegers
+        koennte er ihn sonst auf einem Fremdthread zerstoeren (P-12). */
     std::function<Zaehler()> zaehlerZeuge() const;
 
+    /** Testzugang (M-34 Lage (b), P-12): `true`, solange der Kern lebt -
+        beobachtet ueber einen `weak_ptr`, der ihn nicht haelt. */
+    std::function<bool()> kernBeobachter() const;
+
+    /** Testhaken: ERSTE Anweisung des Timer-Rueckrufs, vor jeder Beruehrung
+        des Kerns (M-34 Lage (b), P-12). */
+    void setzeHakenTimerEintritt (std::function<void()> haken);
     /** Testhaken: VOR dem Eintritt in die Schleuse (M-34, M-36). */
     void setzeHakenVorSchleuse (std::function<void()> haken);
     /** Testhaken: am Anfang von `stoppe()`, vor `stopTimer` (M-34). */
     void setzeHakenBeimStopp (std::function<void()> haken);
 
 private:
-    void timerCallback() override;
-
     struct Kern;
     std::shared_ptr<Kern> kern;
 

@@ -377,6 +377,12 @@ public:
         std::lock_guard<std::mutex> l (analyseSchloss);
         return merkmale.nak29Abgelehnt();
     }
+    /// M-83: der zuletzt gebaute Rahmen, kopiert unter `analyseSchloss`.
+    nakama::analyse::FeatureFrame merkmaleRahmenFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.frame();
+    }
     /// M-80: der publizierte Stand der Analyse (`snapshot()` ist threadsicher).
     eqcop::MessSnapshot analyseSnapshotFuerTest() const           { return analyseEngine.snapshot(); }
     /// M-32, M-80: hat der Worker die Queue geleert? Unter `analyseSchloss`.
@@ -385,7 +391,7 @@ public:
         std::lock_guard<std::mutex> l (analyseSchloss);
         return analyseQueue.spitze() == nullptr;
     }
-    /// M-54: laeuft in der Antwort zwischen der Kopie und dem Schreiben.
+    /// M-54, M-83: laeuft in der Antwort hinter dem Sperrblock, vor dem Schreiben.
     void setzeDiagnoseHakenFuerTest (std::function<void()> haken) { diagnoseHakenFuerTest = std::move (haken); }
     /// M-54: laesst sich `analyseSchloss` binnen `fristMs` nehmen? Nie vom Halter.
     bool analyseSchlossFreiFuerTest (int fristMs) const
@@ -468,7 +474,9 @@ private:
     std::atomic<std::uint64_t> workerDurchlaeufe { 0 };
     std::atomic<std::size_t>   auswertungThread { 0 };
     nakama::diagnose::MaterialZaehler material;                 ///< Worker, unter analyseSchloss
-    std::function<void()>      diagnoseHakenFuerTest;           ///< M-54; im Produkt leer
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    std::function<void()>      diagnoseHakenFuerTest;           ///< M-54, M-83: nur im Testbau
+#endif
     nakama::diagnose::Briefkasten briefkasten;
 
     // ── SONDE-013 M-05: Evidenzpfad ──────────────────────────────────────

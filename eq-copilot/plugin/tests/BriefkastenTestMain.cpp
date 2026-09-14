@@ -1,9 +1,9 @@
 /*  NAK-286 Etappe 2 - der Diagnose-Briefkasten im Plugin (Kanon B30).
 
     Misst die Verhaltensmatrix aus docs/beweise/NAK-286.md, Block 4.3 (M-23 bis
-    M-40, M-77, M-79, M-80, M-81) und die C++-Haelften aus 4.5 und 4.6 (M-48
-    bis M-54), an den ECHTEN Prozessoren Gen (`EqCopilotProcessor`) und
-    Probeeq (`SondeProcessor`).
+    M-40, M-77, M-79 bis M-83) und die C++-Haelften aus 4.5 und 4.6 (M-48 bis
+    M-54), an den ECHTEN Prozessoren Gen (`EqCopilotProcessor`) und Probeeq
+    (`SondeProcessor`).
 
     Aufruf:
       EqCopBriefkastenTest.exe             alle Faelle; Exit 0 gruen, 1 rot
@@ -2126,6 +2126,140 @@ void materialzeitAnkerLeichtUndSchwer()
 }
 
 //==============================================================================
+// M-82 umschlag_kohaerent_gen, M-83 umschlag_kohaerent_probeeq (§23.2 P-13)
+//
+// Erzwungenes Interleaving hinter dem Sperrblock: der Haken zwischen Kopie und
+// Serialisierung laesst den Worker GENAU EINEN weiteren Block verarbeiten, und
+// dieser Block schliesst einen Rahmen. Bei 48 kHz und 512 Samples schliesst jeder
+// zehnte verarbeitete Block einen Rahmen (kLiveIntervallS 0,1 s: 5 120 >= 4 800
+// Samples, FeatureEngine.h:428, :680-682), und die Quarantaene haelt den
+// juengsten Block: nach 100 gefuetterten Bloecken sind 99 verarbeitet und 9
+// Rahmen gebaut, der gehaltene hundertste schliesst beim Freigeben den zehnten.
+// Die Zeugen liest der Test nur an Ruhepunkten (Queue verbraucht, kein Block
+// unterwegs); dort beschreiben sie denselben Stand.
+struct RahmenStand
+{
+    std::uint64_t frames = 0, sequenz = 0, nak29 = 0;
+    bool          startGesetzt = false;
+    std::int64_t  start = 0;
+};
+
+RahmenStand rahmenStand (const nakama::analyse::FeatureFrame& rahmen, std::uint64_t frames, std::uint64_t nak29)
+{
+    RahmenStand s;
+    s.frames       = frames;
+    s.sequenz      = rahmen.transport.sequence;
+    s.nak29        = nak29;
+    s.startGesetzt = rahmen.transport.project_sample_start_gesetzt;
+    s.start        = (std::int64_t) rahmen.transport.project_sample_start;
+    return s;
+}
+
+juce::String rahmenText (const RahmenStand& s)
+{
+    return "frames_gebaut " + zahl (s.frames) + ", Sequenz " + zahl (s.sequenz) + ", NAK-29 " + zahl (s.nak29)
+         + ", projekt_sample_start " + (s.startGesetzt ? juce::String (s.start) : juce::String ("null"));
+}
+
+/** `nachher` ist der Ruhestand nach dem Takt: im Haken hat der Worker genau einen
+    weiteren Rahmen gebaut, danach kam kein Block mehr. */
+void kohaerenzPruefen (const char* zeile, const std::string& name, bool bereit, const RahmenStand& vorher,
+                       const RahmenStand& nachher, bool hakenLief, bool weitererRahmen,
+                       const std::vector<juce::File>& dateien)
+{
+    bool ok = false;
+    const auto u = dateien.size() == 1 ? liesJson (dateien[0], ok) : juce::var();
+    const auto fr = u["frame"];
+    fall (zeile, (name + " vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren)").c_str(),
+          bereit && vorher.frames >= 1 && vorher.startGesetzt && hakenLief && weitererRahmen
+              && nachher.frames == vorher.frames + 1 && nachher.sequenz == vorher.sequenz + 1
+              && nachher.nak29 == vorher.nak29 && nachher.startGesetzt && nachher.start != vorher.start,
+          "vor der Kopie: " + rahmenText (vorher) + "; nach dem Takt: " + rahmenText (nachher));
+    fall (zeile, (name + " frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut").c_str(),
+          dateien.size() == 1 && ok && fr.getDynamicObject() != nullptr
+              && vorher.frames == vorher.sequenz - vorher.nak29
+              && gleichZahl (fr["frames_gebaut"], (juce::int64) vorher.frames)
+              && gleichZahl (fr["projekt_sample_start"], (juce::int64) vorher.start),
+          "Antwort: frames_gebaut " + fr["frames_gebaut"].toString() + ", projekt_sample_start "
+              + fr["projekt_sample_start"].toString() + "; kopierter Rahmen: " + rahmenText (vorher));
+}
+
+void umschlagKohaerentGen()
+{
+    TempWurzel t;
+    GenLauf g;
+    const auto f = fassaden (t);
+    g.bereite (48000.0, 512);
+    const bool start = starteMit (*g.p, f) == dg::Startgrund::gestartet;
+    std::int64_t zeit = 0;
+    const bool gefuettert = g.fuettere (100, zeit);
+    const auto vorher = rahmenStand (g.p->merkmalFrame(), g.p->merkmaleFrames(), g.p->merkmaleNak29Abgelehnt());
+
+    bool hakenLief = false;
+    bool weitererRahmen = false;
+    g.p->setzeDiagnoseHakenFuerTest ([&]
+    {
+        if (hakenLief)
+            return;
+        hakenLief = true;
+        // Genau ein Block: er gibt den gehaltenen hundertsten frei, der den Rahmen schliesst.
+        juce::AudioBuffer<float> puffer (2, g.groesse);
+        fuelle (puffer, zeit, g.rate, g.r);
+        gibBlock (*g.p, puffer, zeit, g.rate);
+        zeit += g.groesse;
+        ++g.gefuettert;
+        // Gewartet wird ohne Sperre, am atomaren Zaehler: haelt ein mutierter Bau
+        // die Sperre ueber den Haken (Rotbeweis M-54), laeuft nur die Frist ab.
+        weitererRahmen = warteBis ([&] { return g.p->merkmaleFrames() == vorher.frames + 1; }, 10000);
+    });
+    const auto id = neueKennung();
+    schreibeAnfrage (t, id);
+    g.p->briefkastenFuerTest().takt();
+    g.p->setzeDiagnoseHakenFuerTest ({});
+    const bool ruhe = g.verbraucht();
+    const auto nachher = rahmenStand (g.p->merkmalFrame(), g.p->merkmaleFrames(), g.p->merkmaleNak29Abgelehnt());
+    kohaerenzPruefen ("M-82", "umschlag_kohaerent_gen", start && gefuettert && ruhe, vorher, nachher, hakenLief,
+                      weitererRahmen, antworten (t, "gen", id));
+}
+
+void umschlagKohaerentProbeeq()
+{
+    TempWurzel t;
+    ProbeeqLauf q;
+    q.bereite (48000.0, 512);
+    const auto f = fassaden (t);
+    const bool start = starteMit (*q.p, f) == dg::Startgrund::gestartet;
+    std::int64_t zeit = 0;
+    const bool gefuettert = q.fuettere (100, zeit);
+    const auto vorher = rahmenStand (q.p->merkmaleRahmenFuerTest(), q.p->framesGebautFuerTest(),
+                                     q.p->nak29AbgelehntFuerTest());
+
+    bool hakenLief = false;
+    bool weitererRahmen = false;
+    q.p->setzeDiagnoseHakenFuerTest ([&]
+    {
+        if (hakenLief)
+            return;
+        hakenLief = true;
+        juce::AudioBuffer<float> puffer (2, q.groesse);
+        fuelle (puffer, zeit, q.rate, q.r);
+        gibBlock (*q.p, puffer, zeit, q.rate);
+        zeit += q.groesse;
+        // Ohne Sperre gewartet, wie in M-82.
+        weitererRahmen = warteBis ([&] { return q.p->framesGebautFuerTest() == vorher.frames + 1; }, 10000);
+    });
+    const auto id = neueKennung();
+    schreibeAnfrage (t, id);
+    const bool paar = q.taktPaar();   // P-9: der zweite Takt kopiert und durchlaeuft den Haken
+    q.p->setzeDiagnoseHakenFuerTest ({});
+    const bool ruhe = q.geleert();
+    const auto nachher = rahmenStand (q.p->merkmaleRahmenFuerTest(), q.p->framesGebautFuerTest(),
+                                      q.p->nak29AbgelehntFuerTest());
+    kohaerenzPruefen ("M-83", "umschlag_kohaerent_probeeq", start && gefuettert && paar && ruhe, vorher, nachher,
+                      hakenLief, weitererRahmen, antworten (t, "probeeq", id));
+}
+
+//==============================================================================
 // M-33 instanzen_je_eine_datei (Lagen a bis d)
 void instanzenJeEineDatei()
 {
@@ -2582,17 +2716,103 @@ void antwortOhneEditor()
 
 //==============================================================================
 // M-34 zerstoerung_bei_laufendem_takt (erzwungenes Interleaving)
+//
+// Der Destruktor laeuft auf einem zweiten Thread, waehrend ein Takt auf dem
+// Message-Thread haelt: in Lage (b) am Eintritt des Timer-Rueckrufs, vor jeder
+// Beruehrung des Kerns (§23.2 P-12), in Lage (a) vor der Schleuse. Lage (b)
+// laeuft zuerst: faellt der Kern dort zu frueh (Rotlauf), endet der Lauf, bevor
+// Lage (a) einen Takt auf freigegebenem Kern fortsetzen koennte. Beide Lagen
+// pumpen die Nachrichten, bis der Kern frei ist, bevor Fassaden und Temp-Wurzel
+// enden.
+struct HaltBarriere
+{
+    std::atomic<bool> scharf { true }, erreicht { false }, zerstoert { false }, abgelaufen { false },
+                      kernLebteImHalt { false };
+};
+
+/// Lage (b): der Zustand des Eintrittshakens liegt ausserhalb des Kerns, und der
+/// Haken faengt nichts. Faellt der Kern waehrend des Halts (Rotlauf), liest der
+/// Haken keinen freigegebenen Speicher - auch keine eigenen Fangwerte.
+HaltBarriere* eintrittsBarriere = nullptr;
+std::function<bool()> eintrittsKernLebt;
+
 void zerstoerungBeiLaufendemTakt()
 {
+    // Keine Anfrage: ein Takt, der die Schleuse passierte, zaehlte eine
+    // Existenzpruefung - der Kanarienwert - und fasste sonst nichts an.
+    using Barriere = HaltBarriere;
     {
-        // Keine Anfrage: ein Takt, der die Schleuse passierte, zaehlte eine
-        // Existenzpruefung - der Kanarienwert - und fasste sonst nichts an.
+        // Lage (b), P-12: JUCE hat den rohen Zeiger schon gelesen, der Rueckruf
+        // hat noch nichts angefasst.
         TempWurzel t;
         auto gen = std::make_unique<Gen>();
         const auto f = fassaden (t);
         const bool start = starteMit (*gen, f, true) == dg::Startgrund::gestartet;
         const auto zeuge = gen->briefkastenFuerTest().zaehlerZeuge();
-        struct Barriere { std::atomic<bool> scharf { true }, erreicht { false }, zerstoert { false }, abgelaufen { false }; };
+        const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
+        const auto b = std::make_shared<Barriere>();
+        eintrittsBarriere = b.get();
+        eintrittsKernLebt = kernLebt;
+        gen->briefkastenFuerTest().setzeHakenTimerEintritt ([]
+        {
+            auto* barriere = eintrittsBarriere;
+            if (barriere == nullptr || ! barriere->scharf.exchange (false))
+                return;
+            barriere->erreicht = true;
+            const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (15);
+            while (! barriere->zerstoert.load() && std::chrono::steady_clock::now() < bis)
+                std::this_thread::sleep_for (std::chrono::milliseconds (1));
+            barriere->abgelaufen = ! barriere->zerstoert.load();
+            const bool lebtNoch = eintrittsKernLebt();
+            barriere->kernLebteImHalt = lebtNoch;
+            if (lebtNoch)
+                return;
+            // Der Kern ist frei, bevor der Takt weiterlaeuft: die Fortsetzung
+            // fasste freigegebenen Speicher an. Der Lauf endet vor ihr.
+            fall ("M-34", "zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt",
+                  false, "weak_ptr waehrend des haltenden Takts abgelaufen; Abbruch vor der Fortsetzung des Takts");
+            std::cout << "NAK-286 BRIEFKASTEN: " << bestanden << " bestanden, " << fehlgeschlagen
+                      << " fehlgeschlagen (abgebrochen in M-34 (b))" << std::endl;
+            std::_Exit (1);
+        });
+        const auto kanarieVorher = f.fs->stand().existenzpruefungen;
+        std::thread zerstoerer ([&gen, b]
+        {
+            const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (5);
+            while (! b->erreicht.load() && std::chrono::steady_clock::now() < bis)
+                std::this_thread::sleep_for (std::chrono::milliseconds (1));
+            gen.reset();   // der Destruktor auf einem zweiten Thread
+            b->zerstoert = true;
+        });
+        const bool zerstoert = pumpe (20000, [&] { return b->zerstoert.load(); });
+        zerstoerer.join();
+        const auto nachFreigabe = zeuge();
+        const auto kanarie = f.fs->stand().existenzpruefungen;
+        const bool kernFrei = pumpe (5000, [&] { return ! kernLebt(); });
+        const auto spaeter = zeuge();
+        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) vorbedingung (takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)",
+              start && b->erreicht.load() && zerstoert && ! b->abgelaufen.load());
+        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt",
+              b->kernLebteImHalt.load() && nachFreigabe.abgewieseneTakte == 1 && kanarie == kanarieVorher
+                  && nachFreigabe.takte == 0,
+              "Kern im Halt " + juce::String (b->kernLebteImHalt.load() ? "lebend" : "frei") + ", abgewiesen "
+                  + zahl (nachFreigabe.abgewieseneTakte) + ", Kanarienwert " + zahl (kanarieVorher) + " -> "
+                  + zahl (kanarie) + ", Takte " + zahl (nachFreigabe.takte));
+        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) kern frei, nachdem der test die nachrichten gepumpt hat; kein takt mehr begonnen",
+              kernFrei && spaeter.takteBegonnen == nachFreigabe.takteBegonnen,
+              "Kern frei " + juce::String (kernFrei ? "ja" : "nein") + ", begonnen " + zahl (nachFreigabe.takteBegonnen)
+                  + " -> " + zahl (spaeter.takteBegonnen));
+        eintrittsBarriere = nullptr;
+        eintrittsKernLebt = {};
+    }
+    {
+        // Lage (a): der Takt haelt VOR der Schleuse.
+        TempWurzel t;
+        auto gen = std::make_unique<Gen>();
+        const auto f = fassaden (t);
+        const bool start = starteMit (*gen, f, true) == dg::Startgrund::gestartet;
+        const auto zeuge = gen->briefkastenFuerTest().zaehlerZeuge();
+        const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
         const auto b = std::make_shared<Barriere>();
         gen->briefkastenFuerTest().setzeHakenVorSchleuse ([b]
         {
@@ -2621,6 +2841,7 @@ void zerstoerungBeiLaufendemTakt()
         const auto kanarie = f.fs->stand().existenzpruefungen;
         pumpe (2500);
         const auto spaeter = zeuge();
+        const bool kernFrei = pumpe (5000, [&] { return ! kernLebt(); });   // vor dem Ende der Fassaden
         fall ("M-34", "zerstoerung_bei_laufendem_takt vorbedingung (takt am haken, destruktor auf zweitem thread zurueck)",
               start && b->erreicht.load() && zerstoert && ! b->abgelaufen.load());
         fall ("M-34", "zerstoerung_bei_laufendem_takt angehaltener takt abgewiesen, kanarienwert unberuehrt",
@@ -2629,15 +2850,18 @@ void zerstoerungBeiLaufendemTakt()
                   + zahl (kanarie) + ", Takte " + zahl (nachFreigabe.takte));
         fall ("M-34", "zerstoerung_bei_laufendem_takt nach der rueckkehr des destruktors beginnt kein takt mehr (2,5 s)",
               spaeter.takteBegonnen == nachFreigabe.takteBegonnen,
-              "begonnen " + zahl (nachFreigabe.takteBegonnen) + " -> " + zahl (spaeter.takteBegonnen));
+              "begonnen " + zahl (nachFreigabe.takteBegonnen) + " -> " + zahl (spaeter.takteBegonnen)
+                  + ", Kern danach frei " + juce::String (kernFrei ? "ja" : "nein"));
     }
     {
-        // Zerstoerung auf dem Message-Thread: der Stopp ist der erste Schritt.
+        // Zerstoerung auf dem Message-Thread: der Stopp ist der erste Schritt, und
+        // der Kern ist sofort frei - ohne Nachricht (P-12).
         TempWurzel t;
         auto gen = std::make_unique<Gen>();
         const auto f = fassaden (t);
         starteMit (*gen, f, true);
         auto* roh = gen.get();
+        const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
         int intervall = -1;
         bool schleuseOffen = false;
         gen->briefkastenFuerTest().setzeHakenBeimStopp ([&]
@@ -2647,9 +2871,12 @@ void zerstoerungBeiLaufendemTakt()
             schleuseOffen = s != nullptr && ! s->istGeschlossen();
         });
         gen.reset();
+        const bool sofortFrei = ! kernLebt();
         fall ("M-34", "zerstoerung_bei_laufendem_takt gen: stopp ist der erste destruktorschritt (timer laeuft, callbackschleuse offen)",
               intervall == 1000 && schleuseOffen,
               "Intervall " + juce::String (intervall) + ", Schleuse offen " + juce::String (schleuseOffen ? "ja" : "nein"));
+        fall ("M-34", "zerstoerung_bei_laufendem_takt gen: auf dem message-thread ist der kern mit dem destruktor frei (ohne nachricht)",
+              sofortFrei, "Kern nach dem Destruktor " + juce::String (sofortFrei ? "frei" : "lebend"));
     }
     {
         TempWurzel t;
@@ -2943,6 +3170,8 @@ int main (int argc, char* argv[])
     probeeqAntwortOhneV3Verbindung();
     probeeqPubliziertAufAnfrage();
     materialzeitAnkerLeichtUndSchwer();
+    umschlagKohaerentGen();
+    umschlagKohaerentProbeeq();
     instanzenJeEineDatei();
     stateUndParameterUnveraendert();
     antwortFeldmengeWieSchema();

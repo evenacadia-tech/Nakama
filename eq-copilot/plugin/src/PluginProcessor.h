@@ -1022,7 +1022,7 @@ public:
     nakama::diagnose::Startgrund briefkastenStartenFuerTest (bool mitTimer) { return briefkastenStarten (mitTimer); }
     /// M-81: die Uhr der Workerkadenz in Nanosekunden; negativ = steady_clock.
     void setzeKadenzUhrFuerTest (std::int64_t ns) { kadenzUhrFuerTestNs.store (ns); weckeWorkerFuerTest(); }
-    /// M-54: laeuft in der Antwort zwischen der Kopie und dem Schreiben.
+    /// M-54, M-82: laeuft in der Antwort hinter dem Sperrblock, vor dem Schreiben.
     void setzeDiagnoseHakenFuerTest (std::function<void()> haken) { diagnoseHakenFuerTest = std::move (haken); }
     /// M-54: laesst sich die Steuersperre binnen `fristMs` nehmen? Nie vom Halter.
     bool analyseSteuerSperreFreiFuerTest (int fristMs) const
@@ -1660,7 +1660,9 @@ private:
     // ── NAK-286 Etappe 2: der Diagnose-Briefkasten (F-5, F-6, F-12, P-10) ───
     nakama::diagnose::MaterialZaehler material;           ///< Worker, unter analyseSteuerMutex
     std::atomic<std::int64_t> kadenzUhrFuerTestNs { -1 }; ///< M-81; negativ = steady_clock
-    std::function<void()> diagnoseHakenFuerTest;          ///< M-54; im Produkt leer
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    std::function<void()> diagnoseHakenFuerTest;          ///< M-54, M-82: nur im Testbau
+#endif
     nakama::diagnose::Briefkasten briefkasten;
 
     // ── Hör-Markierung: DSP + Erlaubnis-Zustand ──

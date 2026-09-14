@@ -912,10 +912,12 @@ bool SondeProcessor::letzterProducerFrameFuerTest (
     Laeuft im Takt auf dem Message-Thread. §13.2 P-9 (praezisiert §16.2):
     der erste Aufruf einer Kennung setzt das Anfrage-Flag und schreibt nicht;
     der Worker wertet in seinem naechsten Durchlauf genau einmal aus und loescht
-    das Flag; der naechste Takt kopiert Snapshot, Rahmen, Zaehler und
-    Materialzeit unter `analyseSchloss` (F-15) und baut die Antwort danach ohne
-    Sperre. Der Rahmen kommt aus `merkmale.frame()`, nie aus
-    `letzterProducerFrame`, der an einer v3-Veroeffentlichung haengt (T-7). */
+    das Flag; der naechste Takt kopiert Snapshot, Rahmen, `framesGebaut`, beide
+    Summen, offenes Fenster und Materialzeit in EINEM Sperrbereich unter
+    `analyseSchloss` - dem, unter dem der Worker sie fortschreibt (F-15, §23.2
+    P-13) - und baut die Antwort danach ohne Sperre. Der Rahmen kommt aus
+    `merkmale.frame()`, nie aus `letzterProducerFrame`, der an einer
+    v3-Veroeffentlichung haengt (T-7). */
 nakama::diagnose::Antwort SondeProcessor::diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage)
 {
     nakama::diagnose::Antwort antwort;
@@ -937,6 +939,7 @@ nakama::diagnose::Antwort SondeProcessor::diagnoseAntwort (const nakama::diagnos
         std::lock_guard<std::mutex> l (analyseSchloss);
         m = analyseEngine.snapshot();
         auszug.rahmen      = merkmale.frame();
+        auszug.framesGebaut = framesGebaut.load();
         auszug.summeGesamt = merkmale.summeFensterGesamt();
         auszug.summeAktiv  = merkmale.summeFensterAktiv();
         auszug.offenGesamt = merkmale.evidenzFensterGesamtJetzt();
@@ -944,11 +947,13 @@ nakama::diagnose::Antwort SondeProcessor::diagnoseAntwort (const nakama::diagnos
         auszug.material    = material.festgehalten();
         auszug.bloeckeMax  = material.bloeckeMax();
     }
-    auszug.framesGebaut  = framesGebaut.load();
     auszug.schwerSamples = m.schwerVerarbeiteteSamples;
     auszug.samplerate    = m.samplerate;
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    // M-54, M-83: der Testhaken hinter dem Sperrblock, vor der Serialisierung.
     if (diagnoseHakenFuerTest)
         diagnoseHakenFuerTest();
+#endif
 
     nakama::diagnose::SnapshotSensor sensor;
     juce::String instanz;

@@ -1,0 +1,13 @@
+URTEIL: NEEDS_WORK — zwei statisch belegte DEFEKTE.
+
+Geprüft: vollständiger Prüfbereich, Vertrags- und Quelltextgleichheit sowie geforderte Rotbelege einschließlich aktueller Rücknahme-Hashes; HEAD und Git-Status blieben unverändert.
+
+Nicht geprüft: eigene Laufzeitreproduktionen, Builds, Tests, Kanon und FL Studio; vorhandene Laufprotokolle wurden ausschließlich gelesen.
+
+Full review comments:
+
+- [P1] Sichere die Timer-Lebensdauer bereits vor der Kernkopie — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/core/diagnose/Briefkasten.cpp:866-869
+  DEFEKT — Beim Fremdthread-Abbau nach M-34 bleibt ein ungeschütztes Eintrittsfenster: Wird `timerCallback` vor Abschluss der Kernkopie angehalten, wartet `stopTimer()` nicht auf ihn; die noch unbetretene Schleuse schließt sofort und der Destruktor kann `Briefkasten::kern` zerstören. Beim Fortsetzen greift die Kopie auf ein zerstörtes `shared_ptr` zu (Use-after-free), auch ohne Anfrage. Der M-34-Testhaken liegt erst hinter dieser Kopie und erfasst dieses Interleaving nicht. Lesereproduktion: `git show a2887462:eq-copilot/plugin/core/diagnose/Briefkasten.cpp | rg -n -A 22 '^void Briefkasten::stoppe'`; Ablauf: Callback-Eintritt → vollständige Zerstörung auf Fremdthread → Fortsetzung der Kopie. Die Lebensdauer muss dieses Fenster ebenfalls schützen; verletzt F-12/M-34 und die Lebenszyklusvorgabe aus [CLAUDE.md:84–86](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L84-L86).
+
+- [P2] Kopiere den Rahmenzähler innerhalb der Analysesperre — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/src/prozessor/Analyse.cpp:1361-1362
+  DEFEKT — Bei laufender Analyse wird `frames_gebaut` erst nach Freigabe der Analysesperre geladen; dasselbe gilt in `SondeProcessor.cpp:947`. Baut der Worker dazwischen einen Evidenzrahmen, enthält die Antwort den alten Rahmen und alte Fenstersummen, aber den neuen Rahmenzähler. Der atomare Einzelzugriff gewährleistet keinen kohärenten Umschlag. Lesereproduktion: `git grep -n -C 4 'auszug.framesGebaut' a2887462 -- eq-copilot/plugin`; Interleaving: Kopierblock verlassen → Worker baut Rahmen und erhöht Zähler → Zähler laden. Beide Ladevorgänge gehören in den jeweiligen Kopier-Sperrbereich; verletzt F-15, §5.5 Punkt 3 und die Snapshot-Invariante aus [CLAUDE.md:186–187](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L186-L187).

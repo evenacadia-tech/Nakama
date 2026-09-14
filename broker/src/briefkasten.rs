@@ -103,10 +103,18 @@ struct AnfrageDokument {
     anfrage_id: String,
 }
 
-/// F-2: UTF-8 ohne BOM, ein JSON-Objekt mit genau den Schluesseln `format` und
+/// F-2, P-15: UTF-8 ohne BOM, ein JSON-Objekt mit genau den Schluesseln `format` und
 /// `anfrage_id`, je einmal. Alles andere ist fremd geformt.
 fn anfrage_lesen(daten: &[u8]) -> Option<Kennung> {
     if daten.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        return None;
+    }
+    // P-15: die Wurzel ist ein Objekt, bevor ein Feld gelesen wird - das erste Byte nach
+    // JSON-Leerraum ist `{` wie in Briefkasten.cpp:185-187. Der abgeleitete Leser traegt das
+    // nicht: serde_json nimmt fuer ein Struct auch ein Array und belegt die Felder positionell,
+    // deny_unknown_fields wirkt nur im Objektzweig (T-37).
+    let erstes = daten.iter().copied().find(|byte| !matches!(byte, b' ' | b'\t' | b'\n' | b'\r'));
+    if erstes != Some(b'{') {
         return None;
     }
     let dokument: AnfrageDokument = serde_json::from_slice(daten).ok()?;
@@ -954,6 +962,7 @@ mod tests {
     use std::cell::Cell;
     use std::collections::BTreeSet;
     use std::sync::atomic::{AtomicI64, AtomicU8};
+    use std::sync::OnceLock;
     use std::time::UNIX_EPOCH;
 
     /// Eine Frist, die in keinem Testlauf ablaeuft: Takte kommen nur ueber Ausloesungen.
@@ -1265,8 +1274,18 @@ mod tests {
         uuid::Uuid::new_v4().simple().to_string()
     }
 
+    /// `format` einer gueltigen Anfrage aus der Vertragsdatei, nie aus der Konstante des Lesers:
+    /// sonst saehe kein Test, dass die Konstante vom Vertrag abweicht (Ursache (l), §34).
+    fn vertrag_format() -> &'static str {
+        static FORMAT: OnceLock<String> = OnceLock::new();
+        FORMAT.get_or_init(|| {
+            let vertrag = schema("diagnose/nakama-diagnose-anfrage-v1.schema.json");
+            vertrag["properties"]["format"]["const"].as_str().expect("format im Anfrageschema").to_string()
+        })
+    }
+
     fn anfrage_text(kennung: &str) -> String {
-        format!("{{\"format\":\"{ANFRAGE_FORMAT}\",\"anfrage_id\":\"{kennung}\"}}")
+        format!("{{\"format\":\"{}\",\"anfrage_id\":\"{kennung}\"}}", vertrag_format())
     }
 
     static AENDERUNGEN: AtomicU64 = AtomicU64::new(0);
@@ -1340,7 +1359,7 @@ mod tests {
         let k = neue_kennung();
         assert_eq!(anfrage_lesen(anfrage_text(&k).as_bytes()).map(|x| kennung_text(&x)), Some(k.clone()));
         assert!(anfrage_lesen(format!(" \r\n\t{} \n", anfrage_text(&k)).as_bytes()).is_some(), "Leerraum ist erlaubt");
-        let doppelt = format!("{{\"format\":\"{ANFRAGE_FORMAT}\",\"anfrage_id\":\"{k}\",\"anfrage_id\":\"{k}\"}}");
+        let doppelt = format!("{{\"format\":\"{}\",\"anfrage_id\":\"{k}\",\"anfrage_id\":\"{k}\"}}", vertrag_format());
         assert!(anfrage_lesen(doppelt.as_bytes()).is_none(), "ein doppelter Schluessel ist fremd");
         let faelle = [
             (BASIS_MS, "2026-09-14T12:00:00.000Z"),
@@ -1590,9 +1609,13 @@ mod tests {
 
     #[test]
     fn kennungsregeln_wie_plugin() {
+        // (F-2) eine Anfrage nach der Vertragsdatei wird gelesen: der Anfragetext der Tests nimmt
+        // `format` aus dem Schema, nicht aus der Konstante des Lesers (Ursache (l)).
+        let k = neue_kennung();
+        let gelesen = anfrage_lesen(anfrage_text(&k).as_bytes()).map(|x| kennung_text(&x));
+        assert_eq!(gelesen, Some(k.clone()), "M-43 kennungsregeln_wie_plugin (F-2) anfrage nach der vertragsdatei gelesen");
         // (M-25) gleiche Kennung, neu geschrieben: keine zweite Antwort, genau eine Leseoeffnung.
         let b = buehne(false, LANG);
-        let k = neue_kennung();
         b.anfrage(&k);
         b.takte(1);
         assert_eq!(b.antworten(&k).len(), 1, "M-43 kennungsregeln_wie_plugin (M-25) vorbedingung");
@@ -1619,9 +1642,11 @@ mod tests {
     }
 
     /// (M-27) je Variante 5 Takte, dann nach einer Aenderung weitere 5: keine Antwort, gelesen
-    /// hoechstens einmal je Stand, die zu grosse nie; kein Logeintrag auf keinem Weg.
+    /// hoechstens einmal je Stand, die zu grosse nie; kein Logeintrag auf keinem Weg; keine
+    /// Kennung im Ring, auch nicht aus einer fremden Wurzelform (P-15).
     fn fremde_anfragen() {
         let b = buehne(false, LANG);
+        let kern = b.griff.kern.as_deref().expect("Briefkasten gestartet");
         let k = neue_kennung();
         let mit_id = |id: &str| Some(anfrage_text(id).into_bytes());
         let mut gross = anfrage_text(&k).into_bytes();
@@ -1629,7 +1654,7 @@ mod tests {
         let varianten = [
             ("(a) 1025 Bytes", Some(gross), 0),
             ("(b) kein JSON", Some(b"das ist kein JSON".to_vec()), 1),
-            ("(c) zusaetzlicher Schluessel", Some(format!("{{\"format\":\"{ANFRAGE_FORMAT}\",\"anfrage_id\":\"{k}\",\"x\":1}}").into_bytes()), 1),
+            ("(c) zusaetzlicher Schluessel", Some(format!("{{\"format\":\"{}\",\"anfrage_id\":\"{k}\",\"x\":1}}", vertrag_format()).into_bytes()), 1),
             ("(d) format falsch", Some(format!("{{\"format\":\"nakama.diagnose.anfrage.v2\",\"anfrage_id\":\"{k}\"}}").into_bytes()), 1),
             ("(e) Grossbuchstaben", mit_id(&format!("ABCDEF{}", &k[6..])), 1),
             ("(e) 31 Zeichen", mit_id(&k[..31]), 1),
@@ -1641,6 +1666,8 @@ mod tests {
             ("(f) Verzeichnis", None, 0),
             ("(g) leere Datei", Some(Vec::new()), 1),
             ("(h) UTF-8 mit BOM", Some([&[0xEF, 0xBB, 0xBF][..], anfrage_text(&k).as_bytes()].concat()), 1),
+            ("(i) JSON-Array mit unbeantworteter Kennung", Some(b"[\"nakama.diagnose.anfrage.v1\",\"00000000000000000000000000000000\"]".to_vec()), 1),
+            ("(j) JSON-Zeichenkette als Wurzel", Some(b"\"nakama.diagnose.anfrage.v1\"".to_vec()), 1),
         ];
         for (fall, inhalt, lesen) in varianten {
             let pfad = b.t.anfrage();
@@ -1661,8 +1688,9 @@ mod tests {
             let d2 = b.stand().seit(s1);
             let lesen_nach_aenderung = if inhalt.is_some() { lesen } else { 0 };
             let gelesen = d1.lese == lesen && d2.lese == lesen_nach_aenderung && (lesen != 0 || d1.bytes + d2.bytes == 0);
-            let ohne = d1.anlegen + d2.anlegen == 0 && dateien_in(&b.t.antwort()).is_empty() && wert(&b.z().schreibversuche) == 0;
-            assert!(gelesen && ohne, "M-43 kennungsregeln_wie_plugin (M-27) fremde anfrage {fall}: {d1:?} {d2:?}");
+            let ring = sperre(&kern.zustand).ring_belegt;
+            let ohne = d1.anlegen + d2.anlegen == 0 && dateien_in(&b.t.antwort()).is_empty() && wert(&b.z().schreibversuche) == 0 && ring == 0;
+            assert!(gelesen && ohne, "M-43 kennungsregeln_wie_plugin (M-27) fremde anfrage {fall}: {d1:?} {d2:?}, Ring {ring}");
         }
         let quelle = include_str!("briefkasten.rs");
         let produkt = &quelle[..quelle.find("\nmod tests {").expect("Testmodul")];
@@ -1833,7 +1861,7 @@ mod tests {
         ];
         for (fall, id) in faelle {
             let s0 = b.stand();
-            schreibe_mit_zeit(&b.t.anfrage(), format!("{{\"format\":\"{ANFRAGE_FORMAT}\",\"anfrage_id\":\"{id}\"}}").as_bytes());
+            schreibe_mit_zeit(&b.t.anfrage(), anfrage_text(&id).as_bytes());
             b.takte(5);
             let d = b.stand().seit(s0);
             let waechter_leer = waechter.iter().all(|ordner| leer(ordner));

@@ -1,0 +1,2412 @@
+NAK-286 Etappe 3 Nacharbeit 1 - Beine einzeln (Bauer, 14.09.2026). Stand: HEAD 23390bca92b0c1f9e98157da294336ef0b6a982b plus Arbeitsstand der Nacharbeit 1 (uncommittet; eq-copilot/plugin/core/diagnose/Briefkasten.cpp nach dem Rotskript bytegleich). Arbeitsverzeichnis: Repo-Wurzel. Reihenfolge wie im Auftrag (Baufolge Punkt 4): B30, A4 voll, Briefkasten-Unittests mit Rohzeilen, Integrationstest, Clippy (Zahl und volle Liste), A32 als Hinweis (NAK-292). Kein voller Kanon (Skill §3.4).
+
+| Bein | Befehl | Exit | Dauer | Beginn |
+|---|---|---|---|---|
+| B30 | `eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe` | 0 | 71,5 s | 23:02:48 |
+| A4 | `cargo test --manifest-path broker/Cargo.toml --color never` | 0 | 1.157,4 s | 23:04:00 |
+| A4 (Briefkasten-Unittests mit Rohzeilen) | `cargo test --manifest-path broker/Cargo.toml --color never --lib -- briefkasten::tests --nocapture --test-threads=1` | 0 | 6,2 s | 23:23:17 |
+| A4 (Integrationstest briefkasten) | `cargo test --manifest-path broker/Cargo.toml --color never --test briefkasten -- --nocapture --test-threads=1` | 0 | 2,2 s | 23:23:23 |
+| Clippy | `py -3.13 tools/plan/gesundheit.py --clippy` | 4 | 17,0 s | 23:23:26 |
+| Clippy (volle Liste) | `py -3.13 tools/plan/gesundheit.py --clippy --json` | 4 | 13,1 s | 23:23:43 |
+| A32 | `py -3.13 tools/plan/gesundheit.py --mit-selbsttest` | 4 | 12,9 s | 23:23:56 |
+
+Uebersicht des Laeufers: HEAD 23390bca92b0c1f9e98157da294336ef0b6a982b ; START 14.09.2026 23:02:48 / B30 | eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe | Exit 0 | 71,5 s | Beginn 23:02:48 / A4 | cargo test --manifest-path broker/Cargo.toml --color never | Exit 0 | 1.157,4 s | Beginn 23:04:00 / A4 (Briefkasten-Unittests mit Rohzeilen) | cargo test --manifest-path broker/Cargo.toml --color never --lib -- briefkasten::tests --nocapture --test-threads=1 | Exit 0 | 6,2 s | Beginn 23:23:17 / A4 (Integrationstest briefkasten) | cargo test --manifest-path broker/Cargo.toml --color never --test briefkasten -- --nocapture --test-threads=1 | Exit 0 | 2,2 s | Beginn 23:23:23 / Clippy | py -3.13 tools/plan/gesundheit.py --clippy | Exit 4 | 17,0 s | Beginn 23:23:26 / Clippy (volle Liste) | py -3.13 tools/plan/gesundheit.py --clippy --json | Exit 4 | 13,1 s | Beginn 23:23:43 / A32 | py -3.13 tools/plan/gesundheit.py --mit-selbsttest | Exit 4 | 12,9 s | Beginn 23:23:56 / ENDE 14.09.2026 23:24:09
+
+=== Basisstand Ursache (l), 14.09.2026 22:46:32 bis 22:46:56: ANFRAGE_FORMAT voruebergehend auf nakama.diagnose.anfrage.v9, Tests und Leser sonst unveraendert ===
+Ersetzung in broker/src/briefkasten.rs:
+  - const ANFRAGE_FORMAT: &str = "nakama.diagnose.anfrage.v1";
+  + const ANFRAGE_FORMAT: &str = "nakama.diagnose.anfrage.v9"; // BASISMESSUNG Ursache (l): Konstante weicht vom Vertrag ab
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 8B8DABC06F2BA0F7BEEFE48DA99509E31FCA102E3D761F9CED6C482FD4859404, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+Befehl 1: cargo test --manifest-path broker/Cargo.toml --color never --lib -- briefkasten::tests --nocapture --test-threads=1 -> Exit 0 (17 bestanden: die Unittests sehen die abweichende Konstante nicht)
+--- Rohausgabe Befehl 1 ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.35s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 17 tests
+test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+test briefkasten::tests::keine_leere_antwort ... ok
+test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+test briefkasten::tests::kennungsring_fifo_256 ... ok
+test briefkasten::tests::nach_stopp_keine_lieferung ... ok
+test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+test briefkasten::tests::reparse_punkte_werden_ignoriert ... [--] M-49 reparse_punkte_werden_ignoriert (c) symlink nicht erzeugbar [Dem Client fehlt ein erforderliches Recht. (os error 1314)] - Lage (c) ungemessen
+ok
+test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... [roh] M-45 stopp_weckt_ohne_wartedurchlauf join_dauer_us=44 join_frist_verfehlt=0
+ok
+test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... ok
+test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 266 filtered out; finished in 5.92s
+
+--- Ende ---
+Befehl 2: cargo test --manifest-path broker/Cargo.toml --color never --test briefkasten -- --nocapture --test-threads=1 -> Exit 101 (nur der Integrationstest mit seinem Literal sieht sie)
+--- Rohausgabe Befehl 2 ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.22s
+     Running tests\briefkasten.rs (broker\target\debug\deps\briefkasten-737140ffd404815b.exe)
+
+running 2 tests
+
+thread 'briefkasten_ende_zu_ende_probe_pipe' (13508) panicked at tests\briefkasten.rs:109:5:
+M-46 briefkasten_ende_zu_ende_probe_pipe: keine Antwort der Rolle broker
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten_ende_zu_ende_probe_pipe ... FAILED
+test probe_lauf_startet_keinen_briefkasten ... ok
+
+failures:
+
+failures:
+    briefkasten_ende_zu_ende_probe_pipe
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.01s
+
+error: test failed, to rerun pass `--test briefkasten`
+--- Ende ---
+
+=== Basisstand des Defekts, 14.09.2026 22:48:01 bis 22:48:05: Rust-Falltabelle mit (i) und (j), Leser unveraendert ===
+SHA-256 briefkasten.rs (Tabelle mit (i), (j), Leser unveraendert): D0404988FFD9A6FD59C92BA2409F8B955E702CD5DF65D1343E6D92F072DBD6C3
+Befehl: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::kennungsregeln_wie_plugin --exact --nocapture -> Exit 101
+--- Rohausgabe ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.72s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::kennungsregeln_wie_plugin' (26024) panicked at src\briefkasten.rs:1670:13:
+M-43 kennungsregeln_wie_plugin (M-27) fremde anfrage (i) JSON-Array mit unbeantworteter Kennung: Stand { existenz: 12, lese: 1, bytes: 65, anlegen: 1, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 } Stand { existenz: 8, lese: 1, bytes: 65, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }, Ring 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::kennungsregeln_wie_plugin ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::kennungsregeln_wie_plugin
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `--lib`
+--- Ende ---
+
+=== Nach dem Umbau (Wurzelpruefung und Anfragetext aus der Vertragsdatei), 14.09.2026 22:49:52 bis 22:50:03 ===
+Befehl: cargo test --manifest-path broker/Cargo.toml --color never --lib -- briefkasten::tests --nocapture --test-threads=1 -> Exit 0
+--- Rohausgabe ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.42s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 17 tests
+test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+test briefkasten::tests::keine_leere_antwort ... ok
+test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+test briefkasten::tests::kennungsring_fifo_256 ... ok
+test briefkasten::tests::nach_stopp_keine_lieferung ... ok
+test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+test briefkasten::tests::reparse_punkte_werden_ignoriert ... [--] M-49 reparse_punkte_werden_ignoriert (c) symlink nicht erzeugbar [Dem Client fehlt ein erforderliches Recht. (os error 1314)] - Lage (c) ungemessen
+ok
+test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... [roh] M-45 stopp_weckt_ohne_wartedurchlauf join_dauer_us=39 join_frist_verfehlt=0
+ok
+test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... ok
+test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 266 filtered out; finished in 6.01s
+
+--- Ende ---
+
+=== Basisstand C++: B30 mit (i) und (j) am unveraenderten C++-Leser ===
+Vorher: kein Bau- oder Testprozess (cargo, rustc, cmake, msbuild, cl, link, EqCop*); BriefkastenTestMain.cpp 0 CR-Bytes, SHA-256 A7990BB0238D0BF34A8453FAB9CB0B8AB36F349A1733F195CF2D7B9289876291; LastWriteTime gesetzt (NAK-230).
+Bau: cmake --build eq-copilot/build --config Release --target EqCopBriefkastenTest, 22:52:01 bis 22:52:47, Exit 0; Binary 22:52:47.661 juenger als die Quelle 22:52:01.122
+--- Bauprotokoll (letzte Zeilen) ---
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopBriefkastenTest.vcxproj]
+  (Quelldatei „../../plugin/sonde/SondeProcessor.cpp“ wird kompiliert)
+      C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  EqCopBriefkastenTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe
+--- Ende ---
+B30: eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe, 22:53:35 bis 22:54:51, Exit 0
+--- Rohausgabe ---
+[ok]  M-39 festhalten_ordner_und_name_wie_knopfweg [C:\Users\phili\AppData\Local\evenacadia\EQ-Copilot\snapshots\snapshot-20260914-225346-NAK286Referenz.json]
+[ok]  M-39 festhalten_test_entfernt_eigene_datei [snapshot-20260914-225346-NAK286Referenz.json]
+[ok]  M-39 festhalten_bytegleich (Knopfweg gegen Referenz, created_utc maskiert) [Referenz 35550 Bytes, Knopfweg 35550 Bytes, Versuche 1]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung vorbedingung (beide gestartet, keine anfrage.json)
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung gen (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung probeeq (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung antwortordner_leer
+[ok]  M-24 anfrage_gen_genau_eine_antwort vorbedingung (Messdaten, gestartet)
+[ok]  M-24 anfrage_gen_genau_eine_antwort genau_eine_datei_im_ersten_takt [Dateien 1, Takte 1, Antworten 1]
+[ok]  M-24 anfrage_gen_genau_eine_antwort jeder_zugriff_an_der_fassade [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-24 anfrage_gen_genau_eine_antwort name (pid, instanz16, laufzeit32) [eaa433a8c4654f0c984fa146f98eb8f1.gen.14996.4278714388375f62.7fbdd75f7cf74fd289d8a2ddd73f769c.json]
+[ok]  M-24 anfrage_gen_genau_eine_antwort kopf [rolle gen, laufzeit_id 7fbdd75f7cf74fd289d8a2ddd73f769c, erzeugt_utc 2026-09-14T12:00:00.000Z]
+[ok]  M-24 anfrage_gen_genau_eine_antwort snapshot_v3_frame_und_aggregat_null_mit_grund
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort vorbedingung (erste Antwort auf K)
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort 0_anlegeversuche_0_schreibvorgaenge (300 Takte) [Existenz 303, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Fehler 0]
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort nach_dem_neuschreiben_genau_eine_leseoeffnung [vorher 0, nachher 1]
+[ok]  M-26 neue_kennung_neue_antwort vorbedingung (Antwort auf K)
+[ok]  M-26 neue_kennung_neue_antwort genau_eine_datei_fuer_L [L 1, alle 2]
+[ok]  M-26 neue_kennung_neue_antwort datei_fuer_K_byteweise_erhalten [565d8c1e0cea5dfc138eba6f9d6b701651c703fcc83cbd619b9fbded65edd3d6]
+[ok]  M-26 neue_kennung_neue_antwort anfrage_nie_geloescht
+[ok]  M-27 fremde_anfragen_werden_ignoriert (a) 1025 Bytes [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (b) kein JSON [Lese 1+1, Bytes 34, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (c) zusaetzlicher Schluessel [Lese 1+1, Bytes 186, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (d) format falsch [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) Grossbuchstaben [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 31 Zeichen [Lese 1+1, Bytes 172, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 33 Zeichen [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit .. [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit Backslash [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit / [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit NUL [Lese 1+1, Bytes 184, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (f) Verzeichnis [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (g) leere Datei [Lese 1+1, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (h) UTF-8 mit BOM [Lese 1+1, Bytes 180, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (i) JSON-Array mit unbeantworteter Kennung [Lese 1+1, Bytes 130, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (j) JSON-Zeichenkette als Wurzel [Lese 1+1, Bytes 56, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert kein_logeintrag [0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt gesperrt_keine_antwort [Existenz 4, Lese 1, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt naechster_takt_liest_und_antwortet [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (a) antwort fehlt [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (b) anlegen scheitert immer [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 3, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (c) ordner erscheint vor dem dritten versuch [Versuche je Takt 1,2,3,3, Antworten 1]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund vorbedingung (keineDaten, 0 Rahmen, beide gestartet)
+[ok]  M-31 ohne_messdaten_antwort_mit_grund gen (im ersten Takt) [Dateien 1, Takte 1, wartend 0]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund probeeq (im Takt nach genau einem wartenden) [Dateien 1, erster wartet ja, wartend 1, Fehler 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 64, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich C:\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 60, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich /x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 57, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 89, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 91, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit : [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit NUL [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 92, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (16 Zeichen, 32 Bytes) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 151, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 247, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 vorbedingung (257 Kennungen je genau einmal beantwortet) [257]
+[ok]  M-51 kennungsring_fifo_256 keine_allokation_je_takt_nach_dem_anlauf (100 Takte) [0]
+[ok]  M-51 kennungsring_fifo_256 zweitjuengste_erneut_0_anlegeversuche [Existenz 6, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 aelteste_verdraengt_genau_ein_anlegen_ein_schreiben_neues_erzeugt_utc [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0, erzeugt_utc 2026-09-14T12:00:00.000Z -> 2026-09-14T12:06:17.000Z]
+[ok]  M-51 kennungsring_fifo_256 loeschzaehler_der_instanz_0 [0]
+[ok]  M-52 uhrsprung_aendert_zuordnung_nicht neue_antwort_nach_ruecksprung_utc_aus_der_uhr [K 2026-09-14T12:00:00.000Z, L 2026-09-14T10:00:00.000Z]
+[ok]  M-53 keine_leere_antwort (a) fehler vor dem ersten byte: keine datei mit antwortnamen [Temp 1 (0 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-53 keine_leere_antwort (b) fehler beim umbenennen: genau eine temp-datei, loeschzaehler 0 [Temp 1 (720 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 vorbedingung (evenacadia ist eine Junction, Anfrage liegt)
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten startfenster (nach dem Konstruktor) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten taktfenster (5 s Nachrichtenschleife) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze vorbedingung (je zwei Abschluesse vor und nach einer Grenze) [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze fallen_nie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze je_evidenzrahmen_genau_dessen_fensterzaehler [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze an_der_grenze_stehen_sie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze aktiv_hoechstens_gesamt [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung vorbedingung (3 s verarbeitet, Queue leer, kein Producer-Frame) [frames_gebaut 28]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung datei_und_kopf (rolle probeeq, laufzeit_id = v3RuntimeNonce) [c8cc3d65eb1548a9a1e2bd8f2d778e03.probeeq.14996.5e8f2b46c3346281.c3f8ac2b03de443b931a91a581211fb0.json]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung frame_aus_der_engine (frames_gebaut, summe > 0, aktivitaet) [frames_gebaut 28, Sequenz ohne NAK-29 28, summe_fenster_gesamt 66, aktivitaet 1.0]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung abdeckung_konvergenz_evidenz_fenster_nur_im_evidenzrahmen [evidenz_frisch 0, abdeckung , konvergenz , evidenz_fenster ]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung snapshot_ohne_befunde_rolle_aus_v2rolle [role sensor, v2Rolle sensor]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (a) 600 takte ohne anfrage: 0 auswertungen, keineDaten [Auswertungen 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) worker wertet im naechsten durchlauf genau einmal aus [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) naechster takt schreibt eine antwort mit snapshot, schwer_sekunden = gesamt_sekunden [gesamt_sekunden 2.997333, schwer_sekunden 2.997333]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) 0 fassadenaufrufe und 0 auswertungen auf dem audiothread [Fassade 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) audio bitgleich, state und parameter unveraendert
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen material_ende = hostende vor der leichten publikation, K = anker [Ende 126208 (soll 126208), K 96000 (soll 96000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 96000, sample_count 30720, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq schwer_sekunden = gesamt_sekunden, K = H [schwer 0.629333 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq rahmen traegt projekt_sample_start, sample_count, spielt [projekt_sample_start 104192, sample_count 17408, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen material_ende = hostende vor der leichten publikation, K = anker [Ende 510208 (soll 510208), K 480000 (soll 480000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 488192, sample_count 17920, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 gen teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 probeeq teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-82 umschlag_kohaerent_gen vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-82 umschlag_kohaerent_gen frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-83 umschlag_kohaerent_probeeq vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-83 umschlag_kohaerent_probeeq frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-33 instanzen_je_eine_datei (a) zwei instanzen, verschiedene kennungen [Dateien 2, instanz16 2, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (b) zwei instanzen, gleiche kennung [Dateien 2, instanz16 1, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (c) zehn instanzen, gleiche kennung [Dateien 10, instanz16 1, laufzeit32 10, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (d) vorbedingung (K1 beantwortet, Markendatei unter dem Zielnamen fuer K2) [221fd331db9344e1af7c226bba5f0679.probeeq.14996.cdb1784a0bfb2de8.d4f317a0abe14aa2960cbf8e4be8f655.json]
+[ok]  M-33 instanzen_je_eine_datei (d) keine datei wird je ersetzt [Marke SHA gleich ja, Temp 1, Versuche je Takt 1,2,3,3,3, Fehler 1, Loesch 0]
+[ok]  M-37 state_und_parameter_unveraendert vorbedingung (je 100 beantwortete anfragen) [gen 100, probeeq 100]
+[ok]  M-37 state_und_parameter_unveraendert gen (state-bytes, parameter, kein host-dirty) [State 165 Bytes, Parameter 0, Dirty 0, Parameterereignisse 0]
+[ok]  M-37 state_und_parameter_unveraendert probeeq (state-bytes, 112 parameter, kein host-dirty) [State 3537 Bytes, Parameter 112, Dirty 0, Parameterereignisse 0]
+[ok]  M-40 antwort_feldmenge_wie_schema vorbedingung (schema gelesen: 12 kopf-, 25 rahmen-, 3 grundfelder)
+[ok]  M-40 antwort_feldmenge_wie_schema M-24 gen mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 gen ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 probeeq ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-32 probeeq mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema eq-snapshot und eq-aggregat bytegleich zum basis-sha [7c2a1003edabceb215efe9ed90f9650d34d27ab8135bb651a4ae4e2e38acf7b7, efbd8f12a03e4ad71940a0810b8d1d7e13defaf581a50dfafca1223e1b499a68]
+[ok]  M-40 antwort_feldmenge_wie_schema oberste ebene traegt weiter fuenf schemadateien (A11) [5]
+[ok]  M-49 reparse_punkte_werden_ignoriert (a) antwort ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-49 reparse_punkte_werden_ignoriert (b) diagnose ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[--]  M-49 reparse_punkte_werden_ignoriert (c) symlink auf anfrage.json nicht erzeugbar [Fehler 1314] - Lage (c) ungemessen
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json vorbedingung (label mit ", \, U+0001, \n, 4000 zeichen geladen, messdaten) [Laenge 4000]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json antwort ist gueltiges utf-8-json ohne bom, label unveraendert [Bytes 27301, ohne BOM ja, UTF-8 ja, geparst ja, Label zurueck ja]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json keine rechteaenderung (datei nur geerbte rechte, ordner unveraendert) [ACEs geerbt 9, eigene 0, DACL geschuetzt nein]
+[ok]  M-30 antwort_ohne_editor vorbedingung (timer 1000 ms gestartet, kein editor) [Intervall gen 1000, probeeq 1000]
+[ok]  M-30 antwort_ohne_editor gen antwortet im ersten takt des timers [Takte 1, Antworten 1, ausserhalb Message-Thread 0]
+[ok]  M-30 antwort_ohne_editor probeeq antwortet im takt nach genau einem wartenden [Antworten 1, wartend 1, ausserhalb Message-Thread 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) vorbedingung (takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt [Kern im Halt lebend, abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) kern frei, nachdem der test die nachrichten gepumpt hat; kein takt mehr begonnen [Kern frei ja, begonnen 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) vorbedingung (uebergabe abgelehnt, takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) abgelehnte uebergabe: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt [Kern im Halt lebend, abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) abgelehnte uebergabe: der halteplatz haelt danach genau diese referenz, auch nach dem pumpen; kein takt mehr begonnen [Halteplatz 0 -> 1, Kern nach dem Pumpen lebend, begonnen 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt vorbedingung (takt am haken, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt angehaltener takt abgewiesen, kanarienwert unberuehrt [abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt nach der rueckkehr des destruktors beginnt kein takt mehr (2,5 s) [begonnen 1 -> 1, Kern danach frei ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) vorbedingung (gueltige anfrage, takt in der antwortquelle hinter der schleuse, stoppe() begonnen, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) halt hinter der schleuse: der destruktor kehrt erst zurueck, nachdem der takt die schleuse verlassen hat [Halt 2000.0 ms nach dem Beginn von stoppe(), Destruktor waehrenddessen nicht zurueck; Wartezeit von stoppe() bis zum Destruktorende 2001.8 ms, davon nach der Freigabe 0.3 ms; Quelle vor dem Destruktorende zurueck ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) kanarienwert unberuehrt (callbackschleuse des prozessors offen, als die quelle weiterlief); takt zugelassen, kein schreibversuch [callbackSchleuse offen ja, abgewiesen 0, Takte 1, wartend 1, Schreibversuche 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) danach ist der kern frei, nachdem der test die nachrichten gepumpt hat (p-12) [Kern frei ja, Halteplatz 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: stopp ist der erste destruktorschritt (timer laeuft, callbackschleuse offen) [Intervall 1000, Schleuse offen ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: auf dem message-thread ist der kern mit dem destruktor frei (ohne nachricht) [Kern nach dem Destruktor frei]
+[ok]  M-34 zerstoerung_bei_laufendem_takt probeeq: stopp ist der erste destruktorschritt (timer laeuft, worker lebt) [Intervall 1000, Worker lebt ja]
+[ok]  M-35 nulltest_mit_briefkasten gen: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [943 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten probeeq: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [943 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten 0 fassadenaufrufe mit der thread-id des audiothreads [gen 0, probeeq 0]
+[ok]  M-35 nulltest_mit_briefkasten die antworten entstehen trotzdem (10 anfragen, je gen und probeeq) [10 von 10]
+[ok]  M-36 kadenz_hoechstens_ein_hertz intervall 1000 ms (getTimerInterval) [1000 ms]
+[roh] M-36 kadenz_hoechstens_ein_hertz takte in 10 s wanduhr: 10 begonnen, 10 existenzpruefungen
+[ok]  M-36 kadenz_hoechstens_ein_hertz barriere: kein zweiter takt (laufend hoechstens 1, begonnen waehrend der barriere 0) [laufend hoechstens 1, begonnen an der Barriere 11, bei der Freigabe 11]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung gen: beim schreiben ist die analyse-steuersperre frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung probeeq: beim schreiben ist analyseSchloss frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung erster durchlauf: audio bitgleich (gen, probeeq) [105 Bloecke]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung zweiter durchlauf: 2,5 s blockierter takt, audio laeuft weiter und bleibt bitgleich [Bloecke waehrend des Gen-Takts 236, waehrend des Probeeq-Takts 235]
+NAK-286 BRIEFKASTEN: 168 bestanden, 0 fehlgeschlagen
+--- Ende ---
+
+=== B30 (eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe; Exit 0; 71,5 s; Beginn 23:02:48) ===
+[ok]  M-39 festhalten_ordner_und_name_wie_knopfweg [C:\Users\phili\AppData\Local\evenacadia\EQ-Copilot\snapshots\snapshot-20260914-230259-NAK286Referenz.json]
+[ok]  M-39 festhalten_test_entfernt_eigene_datei [snapshot-20260914-230259-NAK286Referenz.json]
+[ok]  M-39 festhalten_bytegleich (Knopfweg gegen Referenz, created_utc maskiert) [Referenz 35550 Bytes, Knopfweg 35550 Bytes, Versuche 1]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung vorbedingung (beide gestartet, keine anfrage.json)
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung gen (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung probeeq (600 Takte: 600 Existenzpruefungen, sonst 0) [Existenz 600, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Wurzel 0]
+[ok]  M-23 ohne_anfrage_nur_existenzpruefung antwortordner_leer
+[ok]  M-24 anfrage_gen_genau_eine_antwort vorbedingung (Messdaten, gestartet)
+[ok]  M-24 anfrage_gen_genau_eine_antwort genau_eine_datei_im_ersten_takt [Dateien 1, Takte 1, Antworten 1]
+[ok]  M-24 anfrage_gen_genau_eine_antwort jeder_zugriff_an_der_fassade [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-24 anfrage_gen_genau_eine_antwort name (pid, instanz16, laufzeit32) [dbe9cbfd5d854deaaa9851953d024028.gen.15632.0ffe8cc3665e9cbe.a16c3527dc3b4c6f9939da33e2d12f5a.json]
+[ok]  M-24 anfrage_gen_genau_eine_antwort kopf [rolle gen, laufzeit_id a16c3527dc3b4c6f9939da33e2d12f5a, erzeugt_utc 2026-09-14T12:00:00.000Z]
+[ok]  M-24 anfrage_gen_genau_eine_antwort snapshot_v3_frame_und_aggregat_null_mit_grund
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort vorbedingung (erste Antwort auf K)
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort 0_anlegeversuche_0_schreibvorgaenge (300 Takte) [Existenz 303, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Fehler 0]
+[ok]  M-25 gleiche_kennung_keine_zweite_antwort nach_dem_neuschreiben_genau_eine_leseoeffnung [vorher 0, nachher 1]
+[ok]  M-26 neue_kennung_neue_antwort vorbedingung (Antwort auf K)
+[ok]  M-26 neue_kennung_neue_antwort genau_eine_datei_fuer_L [L 1, alle 2]
+[ok]  M-26 neue_kennung_neue_antwort datei_fuer_K_byteweise_erhalten [df1a19d6b12863828f62f6602317a432926e7514a2c9b018570f775c2478ffac]
+[ok]  M-26 neue_kennung_neue_antwort anfrage_nie_geloescht
+[ok]  M-27 fremde_anfragen_werden_ignoriert (a) 1025 Bytes [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (b) kein JSON [Lese 1+1, Bytes 34, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (c) zusaetzlicher Schluessel [Lese 1+1, Bytes 186, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (d) format falsch [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) Grossbuchstaben [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 31 Zeichen [Lese 1+1, Bytes 172, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) 33 Zeichen [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit .. [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit Backslash [Lese 1+1, Bytes 176, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit / [Lese 1+1, Bytes 174, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (e) mit NUL [Lese 1+1, Bytes 184, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (f) Verzeichnis [Lese 0+0, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (g) leere Datei [Lese 1+1, Bytes 0, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (h) UTF-8 mit BOM [Lese 1+1, Bytes 180, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (i) JSON-Array mit unbeantworteter Kennung [Lese 1+1, Bytes 130, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert (j) JSON-Zeichenkette als Wurzel [Lese 1+1, Bytes 56, Dateien 0, Antworten 0]
+[ok]  M-27 fremde_anfragen_werden_ignoriert kein_logeintrag [0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt gesperrt_keine_antwort [Existenz 4, Lese 1, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-28 gesperrte_anfrage_im_naechsten_takt naechster_takt_liest_und_antwortet [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (a) antwort fehlt [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (b) anlegen scheitert immer [Versuche je Takt 1,2,3,3,3,3, Fehler 1, Existenz 25, Lese 1, Bytes 87, Anlegen 3, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-29 antwortordner_fehlt_drei_versuche (c) ordner erscheint vor dem dritten versuch [Versuche je Takt 1,2,3,3, Antworten 1]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund vorbedingung (keineDaten, 0 Rahmen, beide gestartet)
+[ok]  M-31 ohne_messdaten_antwort_mit_grund gen (im ersten Takt) [Dateien 1, Takte 1, wartend 0]
+[ok]  M-31 ohne_messdaten_antwort_mit_grund probeeq (im Takt nach genau einem wartenden) [Dateien 1, erster wartet ja, wartend 1, Fehler 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 64, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich C:\x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 60, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich /x [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 57, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 89, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich ..\..\..\waechter\ (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 91, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit : [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich 32 Zeichen mit NUL [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 92, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (16 Zeichen, 32 Bytes) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 151, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-48 pfadtraversal_unmoeglich Unicode-Ziffern (32 Zeichen) [Waechter leer ja, sonst nichts ja, Existenz 8, Lese 1, Bytes 247, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 vorbedingung (257 Kennungen je genau einmal beantwortet) [257]
+[ok]  M-51 kennungsring_fifo_256 keine_allokation_je_takt_nach_dem_anlauf (100 Takte) [0]
+[ok]  M-51 kennungsring_fifo_256 zweitjuengste_erneut_0_anlegeversuche [Existenz 6, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-51 kennungsring_fifo_256 aelteste_verdraengt_genau_ein_anlegen_ein_schreiben_neues_erzeugt_utc [Existenz 8, Lese 1, Bytes 87, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 0, erzeugt_utc 2026-09-14T12:00:00.000Z -> 2026-09-14T12:06:17.000Z]
+[ok]  M-51 kennungsring_fifo_256 loeschzaehler_der_instanz_0 [0]
+[ok]  M-52 uhrsprung_aendert_zuordnung_nicht neue_antwort_nach_ruecksprung_utc_aus_der_uhr [K 2026-09-14T12:00:00.000Z, L 2026-09-14T10:00:00.000Z]
+[ok]  M-53 keine_leere_antwort (a) fehler vor dem ersten byte: keine datei mit antwortnamen [Temp 1 (0 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-53 keine_leere_antwort (b) fehler beim umbenennen: genau eine temp-datei, loeschzaehler 0 [Temp 1 (720 Bytes), json 0, Dateien 1, Loesch 0, Fehler 1]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq startfenster [Wurzelabfragen 1, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 3]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 1 (keine wurzel) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 vorbedingung (evenacadia ist eine Junction, Anfrage liegt)
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) gen state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq startfenster [Wurzelabfragen 1, Existenz 1, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Grund 4]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq taktfenster (5 Taktausloesungen: 0 Aufrufe, kein Takt, keine Antwort) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, Starts 0, Takte 0, Intervall 0]
+[ok]  M-77 startfehler_wurzel_ohne_takt durchlauf 2 (evenacadia reparse) probeeq state_parameter_dirty_und_log_unveraendert [Dirty 0, Parameterereignisse 0, Log 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten startfenster (nach dem Konstruktor) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-38 testbau_startet_keinen_briefkasten taktfenster (5 s Nachrichtenschleife) [gen: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0; probeeq: Starts 0, Wurzelabfragen 0, Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze vorbedingung (je zwei Abschluesse vor und nach einer Grenze) [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze fallen_nie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze je_evidenzrahmen_genau_dessen_fensterzaehler [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze an_der_grenze_stehen_sie [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-79 summenzaehler_ueber_abschluesse_und_grenze aktiv_hoechstens_gesamt [Abschluesse 8 vor, 8 nach der Grenze; Grenzen 1; Zuwachs gesamt/aktiv je Abschluss +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6 +6/6 +7/6 +7/7 +7/6 +7/7 +7/6 +7/7 +7/6; Endstand 110/102]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung vorbedingung (3 s verarbeitet, Queue leer, kein Producer-Frame) [frames_gebaut 28]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung datei_und_kopf (rolle probeeq, laufzeit_id = v3RuntimeNonce) [9816d9f13c0d4ac5a4ecde91241f9437.probeeq.15632.84e746a2c27058e0.72f46533ff96452aaa0e29bd4d4864c2.json]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung frame_aus_der_engine (frames_gebaut, summe > 0, aktivitaet) [frames_gebaut 28, Sequenz ohne NAK-29 28, summe_fenster_gesamt 66, aktivitaet 1.0]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung abdeckung_konvergenz_evidenz_fenster_nur_im_evidenzrahmen [evidenz_frisch 0, abdeckung , konvergenz , evidenz_fenster ]
+[ok]  M-32 probeeq_antwort_ohne_v3_verbindung snapshot_ohne_befunde_rolle_aus_v2rolle [role sensor, v2Rolle sensor]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (a) 600 takte ohne anfrage: 0 auswertungen, keineDaten [Auswertungen 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) worker wertet im naechsten durchlauf genau einmal aus [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) naechster takt schreibt eine antwort mit snapshot, schwer_sekunden = gesamt_sekunden [gesamt_sekunden 2.997333, schwer_sekunden 2.997333]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) 0 fassadenaufrufe und 0 auswertungen auf dem audiothread [Fassade 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (b) audio bitgleich, state und parameter unveraendert
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c1) ohne bloecke, gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate erster takt setzt das flag und schreibt nicht [Existenz 4, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate worker bedient das flag ohne block genau einmal [Auswertungen 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate naechster takt schreibt eine antwort ohne messdaten, genau ein wartender takt [Dateien 1, wartend 1]
+[ok]  M-80 probeeq_publiziert_auf_anfrage (c2) ohne bloecke, ohne gueltige rate nach zwei weiteren workerdurchlaeufen weiter 1 auswertung [Auswertungen 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen material_ende = hostende vor der leichten publikation, K = anker [Ende 126208 (soll 126208), K 96000 (soll 96000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 96000, sample_count 30720, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq schwer_sekunden = gesamt_sekunden, K = H [schwer 0.629333 s, gesamt 0.629333 s, n_L 30208, Ende 126208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 1 probeeq rahmen traegt projekt_sample_start, sample_count, spielt [projekt_sample_start 104192, sample_count 17408, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen vorbedingung (schwere, dann leichte Publikation, dann ein Block ohne) [schwer 19968 Samples, leicht 30208 Samples]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen schwer_sekunden = schwere samples / rate, kleiner als gesamt_sekunden [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen material_ende = hostende vor der leichten publikation, K = anker [Ende 510208 (soll 510208), K 480000 (soll 480000)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen fortlaufend = n_L, stillstand 0, bloecke_max 512 [schwer 0.416000 s, gesamt 0.629333 s, n_L 30208, Ende 510208, fortlaufend 30208, Stillstand 0, bloecke_max 512]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 2 (grenze, H2) gen ausschnitt des rahmens aus seinem transportstempel [projekt_sample_start 488192, sample_count 17920, spielt 1]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 gen teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-81 materialzeit_anker_leicht_und_schwer durchlauf 3 probeeq teilbloecke: n_L 512, ende 1280, fortlaufend 256, stillstand 1 [schwer 0.011610 s, gesamt 0.011610 s, n_L 512, Ende 1280, fortlaufend 256, Stillstand 1, bloecke_max 256, K 768 (Kopf 1024)]
+[ok]  M-82 umschlag_kohaerent_gen vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-82 umschlag_kohaerent_gen frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-83 umschlag_kohaerent_probeeq vorbedingung (rahmen n gebaut; im haken baut der worker genau einen weiteren) [vor der Kopie: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384; nach dem Takt: frames_gebaut 10, Sequenz 10, NAK-29 0, projekt_sample_start 32768]
+[ok]  M-83 umschlag_kohaerent_probeeq frames_gebaut gleich der sequenz des kopierten rahmens, auch wenn der worker vor der serialisierung weiterbaut [Antwort: frames_gebaut 9, projekt_sample_start 16384; kopierter Rahmen: frames_gebaut 9, Sequenz 9, NAK-29 0, projekt_sample_start 16384]
+[ok]  M-33 instanzen_je_eine_datei (a) zwei instanzen, verschiedene kennungen [Dateien 2, instanz16 2, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (b) zwei instanzen, gleiche kennung [Dateien 2, instanz16 1, laufzeit32 2, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (c) zehn instanzen, gleiche kennung [Dateien 10, instanz16 1, laufzeit32 10, Fehler 0]
+[ok]  M-33 instanzen_je_eine_datei (d) vorbedingung (K1 beantwortet, Markendatei unter dem Zielnamen fuer K2) [a525435bd54c4d2fad9a46d29b58572c.probeeq.15632.51edff90a9c15b31.13214caa35ee46df817fcd621b183b52.json]
+[ok]  M-33 instanzen_je_eine_datei (d) keine datei wird je ersetzt [Marke SHA gleich ja, Temp 1, Versuche je Takt 1,2,3,3,3, Fehler 1, Loesch 0]
+[ok]  M-37 state_und_parameter_unveraendert vorbedingung (je 100 beantwortete anfragen) [gen 100, probeeq 100]
+[ok]  M-37 state_und_parameter_unveraendert gen (state-bytes, parameter, kein host-dirty) [State 165 Bytes, Parameter 0, Dirty 0, Parameterereignisse 0]
+[ok]  M-37 state_und_parameter_unveraendert probeeq (state-bytes, 112 parameter, kein host-dirty) [State 3537 Bytes, Parameter 112, Dirty 0, Parameterereignisse 0]
+[ok]  M-40 antwort_feldmenge_wie_schema vorbedingung (schema gelesen: 12 kopf-, 25 rahmen-, 3 grundfelder)
+[ok]  M-40 antwort_feldmenge_wie_schema M-24 gen mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 gen ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-31 probeeq ohne messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema M-32 probeeq mit messdaten
+[ok]  M-40 antwort_feldmenge_wie_schema eq-snapshot und eq-aggregat bytegleich zum basis-sha [7c2a1003edabceb215efe9ed90f9650d34d27ab8135bb651a4ae4e2e38acf7b7, efbd8f12a03e4ad71940a0810b8d1d7e13defaf581a50dfafca1223e1b499a68]
+[ok]  M-40 antwort_feldmenge_wie_schema oberste ebene traegt weiter fuenf schemadateien (A11) [5]
+[ok]  M-49 reparse_punkte_werden_ignoriert (a) antwort ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 1, Bytes 87, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[ok]  M-49 reparse_punkte_werden_ignoriert (b) diagnose ist eine junction [Junction ja, Waechter 0, Existenz 20, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+[--]  M-49 reparse_punkte_werden_ignoriert (c) symlink auf anfrage.json nicht erzeugbar [Fehler 1314] - Lage (c) ungemessen
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json vorbedingung (label mit ", \, U+0001, \n, 4000 zeichen geladen, messdaten) [Laenge 4000]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json antwort ist gueltiges utf-8-json ohne bom, label unveraendert [Bytes 27301, ohne BOM ja, UTF-8 ja, geparst ja, Label zurueck ja]
+[ok]  M-50 label_mit_steuerzeichen_bleibt_gueltiges_json keine rechteaenderung (datei nur geerbte rechte, ordner unveraendert) [ACEs geerbt 9, eigene 0, DACL geschuetzt nein]
+[ok]  M-30 antwort_ohne_editor vorbedingung (timer 1000 ms gestartet, kein editor) [Intervall gen 1000, probeeq 1000]
+[ok]  M-30 antwort_ohne_editor gen antwortet im ersten takt des timers [Takte 1, Antworten 1, ausserhalb Message-Thread 0]
+[ok]  M-30 antwort_ohne_editor probeeq antwortet im takt nach genau einem wartenden [Antworten 1, wartend 1, ausserhalb Message-Thread 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) vorbedingung (takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt [Kern im Halt lebend, abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) kern frei, nachdem der test die nachrichten gepumpt hat; kein takt mehr begonnen [Kern frei ja, begonnen 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) vorbedingung (uebergabe abgelehnt, takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) abgelehnte uebergabe: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt [Kern im Halt lebend, abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (b) (4) abgelehnte uebergabe: der halteplatz haelt danach genau diese referenz, auch nach dem pumpen; kein takt mehr begonnen [Halteplatz 0 -> 1, Kern nach dem Pumpen lebend, begonnen 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt vorbedingung (takt am haken, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt angehaltener takt abgewiesen, kanarienwert unberuehrt [abgewiesen 1, Kanarienwert 4 -> 4, Takte 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt nach der rueckkehr des destruktors beginnt kein takt mehr (2,5 s) [begonnen 1 -> 1, Kern danach frei ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) vorbedingung (gueltige anfrage, takt in der antwortquelle hinter der schleuse, stoppe() begonnen, destruktor auf zweitem thread zurueck)
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) halt hinter der schleuse: der destruktor kehrt erst zurueck, nachdem der takt die schleuse verlassen hat [Halt 2000.4 ms nach dem Beginn von stoppe(), Destruktor waehrenddessen nicht zurueck; Wartezeit von stoppe() bis zum Destruktorende 2001.7 ms, davon nach der Freigabe 0.3 ms; Quelle vor dem Destruktorende zurueck ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) kanarienwert unberuehrt (callbackschleuse des prozessors offen, als die quelle weiterlief); takt zugelassen, kein schreibversuch [callbackSchleuse offen ja, abgewiesen 0, Takte 1, wartend 1, Schreibversuche 0]
+[ok]  M-34 zerstoerung_bei_laufendem_takt (c) danach ist der kern frei, nachdem der test die nachrichten gepumpt hat (p-12) [Kern frei ja, Halteplatz 1 -> 1]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: stopp ist der erste destruktorschritt (timer laeuft, callbackschleuse offen) [Intervall 1000, Schleuse offen ja]
+[ok]  M-34 zerstoerung_bei_laufendem_takt gen: auf dem message-thread ist der kern mit dem destruktor frei (ohne nachricht) [Kern nach dem Destruktor frei]
+[ok]  M-34 zerstoerung_bei_laufendem_takt probeeq: stopp ist der erste destruktorschritt (timer laeuft, worker lebt) [Intervall 1000, Worker lebt ja]
+[ok]  M-35 nulltest_mit_briefkasten gen: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [944 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten probeeq: ausgang sample fuer sample gleich dem eingang (10 s rauschen) [944 Bloecke]
+[ok]  M-35 nulltest_mit_briefkasten 0 fassadenaufrufe mit der thread-id des audiothreads [gen 0, probeeq 0]
+[ok]  M-35 nulltest_mit_briefkasten die antworten entstehen trotzdem (10 anfragen, je gen und probeeq) [10 von 10]
+[ok]  M-36 kadenz_hoechstens_ein_hertz intervall 1000 ms (getTimerInterval) [1000 ms]
+[roh] M-36 kadenz_hoechstens_ein_hertz takte in 10 s wanduhr: 10 begonnen, 10 existenzpruefungen
+[ok]  M-36 kadenz_hoechstens_ein_hertz barriere: kein zweiter takt (laufend hoechstens 1, begonnen waehrend der barriere 0) [laufend hoechstens 1, begonnen an der Barriere 11, bei der Freigabe 11]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung gen: beim schreiben ist die analyse-steuersperre frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung probeeq: beim schreiben ist analyseSchloss frei [frei 1]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung erster durchlauf: audio bitgleich (gen, probeeq) [106 Bloecke]
+[ok]  M-54 langsamer_takt_ohne_audiowirkung zweiter durchlauf: 2,5 s blockierter takt, audio laeuft weiter und bleibt bitgleich [Bloecke waehrend des Gen-Takts 235, waehrend des Probeeq-Takts 235]
+NAK-286 BRIEFKASTEN: 168 bestanden, 0 fehlgeschlagen
+--- Ende ---
+
+=== A4 (cargo test --manifest-path broker/Cargo.toml --color never; Exit 0; 1.157,4 s; Beginn 23:04:00) ===
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: method `snapshot` is never used
+   --> tests\sonde014_gegenbeispiele.rs:409:8
+    |
+225 | impl Buehne {
+    | ----------- method in this implementation
+...
+409 |     fn snapshot(&self) -> Value {
+    |        ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:2914:9
+     |
+2914 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4386:9
+     |
+4386 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> tests\sonde013_verdrahtung.rs:4433:9
+     |
+4433 |     let mut haelfte = |kuerzel: &str, instanz: usize, nonce: usize, position: &str| {
+     |         ----^^^^^^^
+     |         |
+     |         help: remove this `mut`
+
+warning: field `clock` is never read
+   --> tests\sonde013_verdrahtung.rs:286:5
+    |
+283 | struct HarnischMitStore {
+    |        ---------------- field in this struct
+...
+286 |     clock: Arc<ManualClock>,
+    |     ^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `sonde_mit_evidenz` is never used
+    --> tests\sonde013_verdrahtung.rs:1913:4
+     |
+1913 | fn sonde_mit_evidenz(h: &HarnischMitStore, anzahl: usize) -> HelloControl {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: `eqcop-broker` (test "sonde014_gegenbeispiele") generated 1 warning
+warning: `eqcop-broker` (test "sonde013_verdrahtung") generated 5 warnings (run `cargo fix --test "sonde013_verdrahtung" -p eqcop-broker` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.50s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 283 tests
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
+test aggregat::tests::schreiben_erzeugt_haltbare_datei ... ok
+test bindung::tests::runde_laden_schreiben_laden ... ok
+test aggregat::tests::alte_temp_restdatei_blockiert_snapshot_nicht ... ok
+test bindung::tests::fremde_temp_restdatei_wird_weder_benutzt_noch_ueberschrieben ... ok
+test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+test aggregat::tests::gleicher_zeitstempel_ueberschreibt_keinen_snapshot ... ok
+test bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand ... ok
+test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+test bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand ... ok
+test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+test briefkasten::tests::keine_leere_antwort ... ok
+test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... ok
+test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+test coordinator::hypothese::befund::tests::finding_id_ist_deterministisch_und_trennt ... ok
+test coordinator::hypothese::befund::tests::sechs_teile_sind_sechs_und_benannt ... ok
+test coordinator::hypothese::determinismus::tests::quantisierung_klemmt_rastet_und_ist_nan_ehrlich ... ok
+test coordinator::hypothese::eingang::tests::band_ohne_bit_traegt_keinen_wert ... ok
+test coordinator::hypothese::klassenwahl::tests::messgruende_sind_genau_die_fuenf_aus_r2 ... ok
+test coordinator::hypothese::messung::tests::alignment_misst_paarweise_ueberlappung ... ok
+test coordinator::hypothese::messung::tests::korrelation_gerichtet_trennt_gemessene_null_von_nicht_messbar ... ok
+test coordinator::hypothese::messung::tests::korrelation_ist_streng ... ok
+test coordinator::hypothese::messung::tests::passagenmaterial_zaehlt_nur_ganz_innenliegende_fenster ... ok
+test coordinator::hypothese::messung::tests::spanne_saettigt_an_den_raendern ... ok
+test coordinator::hypothese::messung::tests::unabhaengige_fenster_verdichten_wiederholungen ... ok
+test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... ok
+test coordinator::hypothese::rechnung::tests::ohne_vollstaendigkeitsmarke_rechnet_das_modul_nicht ... ok
+test coordinator::hypothese::screening::tests::bandraender_fallen_von_beiden_seiten ... ok
+test coordinator::hypothese::rechnung::tests::einzelueberlebender_neben_passagenausschluss ... ok
+test coordinator::hypothese::screening::tests::gate_faellt_in_der_zugesagten_reihenfolge ... ok
+test coordinator::hypothese::screening::tests::passagengates_trennen_verschoben_anders_und_zu_kurz ... ok
+test coordinator::hypothese::screening::tests::screeningrang_misst_auf_der_gruppe ... ok
+test coordinator::hypothese::screening::tests::screeningrang_traegt_die_koinzidenz ... ok
+test coordinator::hypothese::vertrag::tests::geschlossene_mengen_sind_rund ... ok
+test coordinator::hypothese::zusammenhang::tests::belegpraedikate_lesen_vorzeichen ... ok
+test coordinator::hypothese::zusammenhang::tests::bootstrap_einseitig_trennt_die_richtung ... ok
+test coordinator::hypothese::zusammenhang::tests::gemessene_null_trennt_vom_nicht_gemessenen ... ok
+test coordinator::hypothese::zusammenhang::tests::getrennt_verlangt_rang_und_zusammenhang ... ok
+test coordinator::hypothese::zusammenhang::tests::rang_ist_das_quantisierte_mittel_der_sechs ... ok
+test aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten ... ok
+test coordinator::intent::tests::zyklenriegel_trennt_kette_runde_und_gleichrangigkeit ... ok
+test coordinator::maskierung::tests::bandpegel_summiert_leistung_statt_dezibel_zu_mitteln ... ok
+test coordinator::maskierung::tests::der_wert_traegt_keine_zeichenanweisung ... ok
+test coordinator::maskierung::tests::herabgesetzt_misst_die_luecke_und_nicht_den_seek ... ok
+test coordinator::maskierung::tests::ohne_fenster_gibt_es_kein_objekt ... ok
+test coordinator::maskierung::tests::ohne_messung_null_mit_gueltig_falsch ... ok
+test coordinator::maskierung::tests::wert_ist_die_differenz_und_benennt_den_bereich ... ok
+test coordinator::proposal_verdrahtung::tests::paare_bleiben_bei_ihrem_befund ... ok
+test coordinator::proposal_verdrahtung::tests::riegel_trifft_nur_den_unvollstaendigen ... ok
+test coordinator::hypothese::screening::tests::stufe_b_laeuft_hoechstens_fuenfmal ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_2_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::intent::tests::geschlossene_mengen_des_lesers_decken_sich_mit_dem_vertrag ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_liste_deckt_sich_mit_dem_register ... ok
+test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_1_und_0_erben_den_rueckbau_der_fassung_3 ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_3_kennt_die_neuen_gruende_nicht ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_5_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_liste_deckt_sich_mit_dem_register ... ok
+test coordinator::schema::fassungsleiter_tests::geschlossene_mengen_der_fassung_3_stehen_je_einmal_im_vertrag ... ok
+test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+test coordinator::schema::fassungsleiter_tests::minor_0_erbt_den_rueckbau_der_fassung_1 ... ok
+test coordinator::tests::hoermarkierung_tail_sperrt_bis_ende ... ok
+test coordinator::schema::fassungsleiter_tests::unbekannte_fassung_hat_keinen_leser ... ok
+test coordinator::schema::fassungsleiter_tests::fassung_4_kennt_state_report_dsp_nicht ... ok
+test coordinator::tests::heartbeat_ack_meldet_alias_quarantaene_fuer_beide_links ... ok
+test coordinator::tests::hoermarkierung_v2_v3_gleicher_zustand ... ok
+test coordinator::tests::hoermarkierung_vor_evidence_dispatch ... ok
+test coordinator::tests::intervention_control_disconnect_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_falsche_end_id_bleibt_gesperrt ... ok
+test coordinator::tests::intervention_neutral_resync_entsperrt ... ok
+test coordinator::tests::intervention_overflow_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_sequenzluecke_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_unbekanntes_erstes_end_setzt_sticky_unknown ... ok
+test coordinator::tests::intervention_ueberlappung_bleibt_bis_alle_end ... ok
+test coordinator::tests::instance_alias_gleiche_id_in_verschiedenen_sitzungsadressraeumen_kollidiert_nicht ... ok
+test coordinator::zustand::h21_tests::konfliktriegel_greift_auch_bei_anderer_sid_schreibweise ... ok
+test dto::tests::as_f64_liefert_fuer_jede_number_einen_wert ... ok
+test dto::tests::bestand_kommt_aus_dem_vertrag_und_hat_120_eintraege ... ok
+test coordinator::tests::p2_reject_katalog_stimmt_mit_dem_strikten_wire_schema ... ok
+test coordinator::tests::subscription_cleanup_vor_weiterem_push ... ok
+test dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls ... ok
+test dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben ... ok
+test framing::tests::abbruch_mitten_im_frame ... ok
+test dto::tests::zonenleiter_meldet_denselben_ersten_grund_wie_die_anderen_beine ... ok
+test framing::tests::hin_und_zurueck ... ok
+test framing::tests::laengengrenze_beidseitig ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
+test instance_alias::tests::instance_alias_collision_native_dann_abgeleitet_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_address_alias_vectors ... ok
+test instance_alias::tests::instance_alias_collision_zwei_ableitungen_quarantaenisiert_beide ... ok
+test instance_alias::tests::instance_alias_target_recomputed_and_matched ... ok
+test instance_alias::tests::instance_alias_unknown_fail_closed ... ok
+test coordinator::schema::fassungsleiter_tests::minor_2_leser_lehnt_die_fassung_3_ab ... ok
+test briefkasten::tests::reparse_punkte_werden_ignoriert ... ok
+test instance_alias::tests::instance_alias_collision_abgeleitet_dann_native_quarantaenisiert_beide ... ok
+test paar::tests::paar_ausgerichtet_bei_deckungsgleichen_fenstern ... ok
+test instance_alias::tests::instance_address_empty_uses_fresh_uuid ... ok
+test paar::tests::paar_in_verschiedenen_prozessen_hoechstens_wahrscheinlich ... ok
+test paar::tests::paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulaufen ... ok
+test protokoll::tests::fehlende_hoermarkierung_bleibt_fuer_alte_v2_sender_false ... ok
+test paar::tests::paar_mit_v1_partner_bleibt_unklar_mit_klarem_grund ... ok
+test paar::tests::paar_ohne_partner_ist_unvollstaendig ... ok
+test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
+test protokoll::tests::gemeinsame_floatbreiten_akzeptieren_maximum_aber_keinen_overflow ... ok
+test coordinator::schema::fassungsleiter_tests::minor_1_leser_lehnt_die_fassung_2_ab ... ok
+test protokoll::tests::hello_enum_und_audiofelder_werden_semantisch_begrenzt ... ok
+test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
+test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
+test protokoll::tests::hello_textfelder_haben_codepunktgenaue_harte_grenzen ... ok
+test protokoll::tests::messstand_guard_prueft_minima_endlichkeit_und_textcap ... ok
+test paar::tests::paar_wird_bei_teilueberdeckung_herabgestuft_und_ohne_ueberlappung_unklar ... ok
+test protokoll::tests::heartbeat_session_token_hat_dieselbe_codepunktgrenze_wie_das_schema ... ok
+test protokoll::tests::option_felder_akzeptieren_explizites_null_wie_das_schema ... ok
+test protokoll::tests::gemeinsame_integerbreiten_urteilen_an_den_wire_kanten_exakt ... ok
+test paar::tests::paar_wird_bei_spruengen_herabgestuft ... ok
+test protokoll::tests::version_3_bekommt_reject_mit_spanne ... ok
+test protokoll::tests::v1_hello_bleibt_angenommen_und_welcome_spiegelt_v1 ... ok
+test protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz ... ok
+test register::tests::konflikt_kommt_und_geht_mit_der_zweiten_verbindung ... ok
+test protokoll::tests::v2_hello_mit_nonce_wird_angenommen ... ok
+test register::tests::hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false ... ok
+test register::tests::marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset ... ok
+test protokoll::tests::unbekannte_felder_werden_auf_jeder_vertragsebene_abgelehnt ... ok
+test register::tests::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge ... ok
+test register::tests::owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her ... ok
+test register::tests::profilbindung_haelt_ueber_reconnect ... ok
+test register::tests::snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id ... ok
+test register::tests::sechzehn_sensoren_werden_korrekt_benannt ... ok
+test register::tests::v2_sensorpool_gibt_getrennte_ids_zurueck ... ok
+test register::tests::unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt ... ok
+test server::tests::falsche_protokollversion_bekommt_reject ... ok
+test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
+test server::tests::panische_senke_verlaesst_den_v2_destruktor_nicht ... ok
+test server::tests::produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel ... ok
+test server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen ... ok
+test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
+test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
+test server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab ... ok
+test server::tests::bye_braucht_exakt_das_ausgegebene_session_token ... ok
+test server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten ... ok
+test server::tests::user_sid_ist_wohlgeformt ... ok
+test server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung ... ok
+test server::tests::v2_abbau_flusht_die_letzte_antwort ... ok
+test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
+test server::tests::vorhandene_leere_instance_nonce_wird_nicht_als_uuid_umgedeutet ... ok
+test server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch ... ok
+test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
+test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+test sitzung::tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
+test store::tests::konstante_trigger_haben_exakte_grenzen ... ok
+test store::tests::rusqlite_version_0_40_2_ist_exakt_gepinnt ... ok
+test store::tests::rust_version_boden_ist_exakt_gepinnt ... ok
+test coordinator::befehl::tests::ohne_sitzungseintrag_wird_das_urteil_abgewiesen ... ok
+test server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen ... ok
+test transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt ... ok
+test transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser ... ok
+test transport::bootstrap::tests::hex32_riegel ... ok
+test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... ok
+test transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch ... ok
+test transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale ... ok
+test transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt ... ok
+test transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt ... ok
+test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... ok
+test transport::legacy_v2::tests::echtes_v2_json_geht_weiterhin_durch ... ok
+test transport::legacy_v2::tests::v2_json_ist_kein_gueltiger_v3_envelope ... ok
+test transport::legacy_v2::tests::v3_binaerframe_wird_nie_als_v2_json_gedeutet ... ok
+test transport::pipetoken::tests::base32_gegen_rfc_4648 ... ok
+test transport::pipetoken::tests::golden_aus_dem_entwurf ... ok
+test transport::pipetoken::tests::probe_namensraum_laesst_nur_probe_namen_durch ... ok
+test transport::pipetoken::tests::probe_riegel_ist_unempfindlich_gegen_schreibweise_und_praefixform ... ok
+test transport::pipetoken::tests::schreibweise_der_sid_ist_egal ... ok
+test transport::pipetoken::tests::tokenform_ist_stabil ... ok
+test transport::pipetoken::tests::verschiedene_sids_verschiedene_token ... ok
+test transport::server_v3::queues::tests::aelterer_nachzuegler_ersetzt_keinen_neueren_snapshot ... ok
+test transport::server_v3::queues::tests::ersetzung_ans_ende_laesst_die_queue_nicht_wachsen ... ok
+test transport::server_v3::queues::tests::gleiche_marke_ist_kein_nachzuegler ... ok
+test transport::server_v3::queues::tests::hochwassermarke_ueberlebt_die_entnahme ... ok
+test transport::server_v3::queues::tests::koaleszierung_erhaelt_die_ordnung_ueber_schluessel ... ok
+test transport::server_v3::queues::tests::konkurrierendes_einreihen_findet_kein_fenster_ohne_schluessel ... ok
+test transport::server_v3::queues::tests::snapshot_ohne_ordinal_traegt_das_hochwasser_seines_schluessels ... ok
+test transport::server_v3::queues::tests::writerqueue_cap_und_cap_plus_eins ... ok
+test transport::server_v3::queues::tests::writerqueue_messframe_ersetzt_nur_dieselbe_quelle ... ok
+test transport::server_v3::queues::tests::writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust ... ok
+test transport::server_v3::queues::tests::writerqueue_snapshot_koalesziert_nach_objektschluessel ... ok
+test server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben ... ok
+test server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt ... ok
+test server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz ... ok
+test store::writer::tests::group_commit_batchcap_hat_keinen_einzel_fsync_je_event ... ok
+test server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist ... ok
+test server::tests::ungelesenes_welcome_blockiert_connection_ende_nicht ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_befehlssequenz_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_flush_marke_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::ohne_store_laeuft_die_subscribe_marke_am_zahlenrand_nicht_um ... ok
+test transport::server_v3::tests_abonnement::broker_p2_push_nutzt_subscriber_telemetriepipe_und_aktive_minors ... ok
+test coordinator::befehl::tests::state_report_dsp_wird_gegen_den_state_hash_nachgerechnet ... ok
+test transport::server_v3::tests_abonnement::io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator ... ok
+test transport::server_v3::tests_abonnement::sender_vergibt_je_objekt_einen_queue_schluessel ... ok
+test transport::server_v3::tests_abonnement::join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie ... ok
+test transport::server_v3::tests_fristen::bootstrap_und_senkenfrist_minus_eins_und_exakt_sind_inklusive ... ok
+test server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup ... ok
+test transport::server_v3::tests_abonnement::subscription_ist_an_eigenen_control_link_gebunden ... ok
+test transport::server_v3::tests_fristen::transportfassung_p2_bindet_den_sender ... ok
+test transport::server_v3::tests_fristen::transportfassung_und_json_leser_stimmen_ueberein ... ok
+test transport::server_v3::tests_fristen::unbekannter_schema_minor_wird_vor_der_senke_abgewiesen ... ok
+test transport::server_v3::tests_fristen::p0_auf_der_telemetriepipe_wird_abgewiesen ... ok
+test store::tests::rust_version_deckt_alle_gesperrten_abhaengigkeiten ... ok
+test transport::server_v3::tests_fristen::p2_auf_der_controlpipe_wird_abgewiesen ... ok
+test transport::server_v3::tests_kopplung::connect_callbacks_je_kopplung_genau_einmal ... ok
+test transport::server_v3::tests_abonnement::subscription_cleanup_vor_weiterem_push ... ok
+test transport::server_v3::tests_abonnement::aelterer_flush_ueberholt_den_neueren_hinter_dem_echten_sender_nicht ... ok
+test transport::server_v3::tests_abonnement::ruecknahme_und_vollsnapshot_liegen_zugleich_in_der_angehaltenen_queue ... ok
+test transport::server_v3::tests_abonnement::subscribe_snapshot_ueberholt_keinen_neueren_flush ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_je_callback_genau_einmal ... ok
+test transport::server_v3::tests_lebenszyklus::beendete_verbindungen_werden_geerntet ... ok
+test transport::server_v3::tests_abonnement::ohne_store_folgt_die_marke_der_erfassung ... ok
+test transport::server_v3::tests_lebenszyklus::kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins ... ok
+test transport::server_v3::tests_lebenszyklus::acceptor_ueberlebt_die_verbindungsgrenze ... ok
+test transport::server_v3::tests_kopplung::welcome_folgt_dem_abgeschlossenen_control_verbunden ... ok
+test transport::server_v3::tests_rueckstau::blockierende_senke_haelt_den_leser_nicht_auf ... ok
+test transport::server_v3::tests_rueckstau::geschlossener_eingang_liefert_nichts_mehr ... ok
+test transport::server_v3::tests_lebenszyklus::control_ende_beendet_die_telemetrie ... ok
+test transport::server_v3::tests_kopplung::telemetrie_endet_zuerst_control_getrennt_folgt_trotzdem ... ok
+test transport::server_v3::win_handles::d11_tests::stopp_und_verbindungsende_zaehlen_unerwartete_cancel_fehler ... ok
+test transport::v3::tests::crc32c_gegen_bekannte_vektoren ... ok
+test transport::v3::tests::grenzen_des_rahmens ... ok
+test transport::v3::tests::jeder_regelname_ist_rueckuebersetzbar ... ok
+test transport::v3::tests::json_rundlauf ... ok
+test transport::v3::tests::p2_traegt_pflicht_crc ... ok
+test transport::v3::tests::ratengrenze_haelt_das_fenster ... ok
+test transport::v3::tests::stromleser_vertraegt_byteweise_zustellung ... ok
+test transport::v3::tests::stufe_drei_sammelt_und_sortiert ... ok
+test transport::v3::tests::u32_ueberlauf_wird_nicht_akzeptiert ... ok
+test transport::warteschlange::tests::ingress_droppt_p2_zuerst_und_trennt_bei_p0 ... ok
+test transport::warteschlange::tests::ingress_liefert_p0_getrennt_vom_rest ... ok
+test transport::warteschlange::tests::ingress_voll_ohne_p2_trennt_auch_bei_p1 ... ok
+test transport::warteschlange::tests::p0_verwirft_nie_und_meldet_ueberlauf ... ok
+test transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor ... ok
+test transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position ... ok
+test transport::warteschlange::tests::p1_neuzugang_ueberholt_keine_wiederholung ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_fliesst_ohne_reconnect_ab ... ok
+test transport::warteschlange::tests::p1_wiederholpuffer_haelt_den_schluessel ... ok
+test transport::warteschlange::tests::p2_ersetzt_den_aeltesten_ungesendeten ... ok
+test transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus ... ok
+test vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden ... ok
+test vertrag::tests::discriminator_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::discriminator_boolean_falscher_typ ... ok
+test vertrag::tests::discriminator_boolean_fehlt ... ok
+test vertrag::tests::discriminator_boolean_true_false ... ok
+test vertrag::tests::discriminator_json_pointer_boolean ... ok
+test vertrag::tests::discriminator_json_pointer_segment_fehlt ... ok
+test vertrag::tests::fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt ... ok
+test vertrag::tests::haengende_referenz_bricht_das_laden ... ok
+test vertrag::tests::integer_akzeptiert_1punkt0 ... ok
+test vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes ... ok
+test vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden ... ok
+test vertrag::tests::oneof_ohne_discriminator_bricht_das_laden ... ok
+test vertrag::tests::required_mit_nicht_string_bricht_das_laden ... ok
+test vertrag::tests::textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python ... ok
+test vertrag::tests::type_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::typfehler_erzeugt_keine_lawine ... ok
+test vertrag::tests::unbekannter_discriminator_wird_abgelehnt ... ok
+test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
+test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
+test transport::server_v3::tests_rueckstau::p0_wird_beantwortet_waehrend_p1_die_senke_blockiert ... ok
+test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
+test transport::server_v3::tests_lebenszyklus::stop_im_fenster_vor_der_bedienung_haengt_nicht ... ok
+test transport::server_v3::tests_rueckstau::p0_ueberlauf_trennt_die_verbindung ... ok
+test transport::server_v3::tests_kopplung::trennreihenfolge_haelt_im_kopplungs_callback_fenster ... ok
+test transport::server_v3::tests_abonnement::live_snapshot_bei_projektion_none_wird_nach_persistentem_snapshot_nicht_verworfen ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten ... ok
+test transport::server_v3::tests_kopplung::abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf ... ok
+test briefkasten::tests::kennungsring_fifo_256 ... ok
+test briefkasten::tests::nach_stopp_keine_lieferung ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... ok
+test transport::server_v3::tests_lebenszyklus::stoppen_endet_auch_bei_haengender_senke ... ok
+
+test result: ok. 283 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.64s
+
+     Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-ca9e718cafceb3fd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-b88c4dea11911cba.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-sonde012-probe.rs (broker\target\debug\deps\eqcop_broker_sonde012_probe-c5b5f2436e1f9b1a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-broker-v3probe.rs (broker\target\debug\deps\eqcop_broker_v3probe-68d798019699ad16.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\eqcop-store-crash-worker.rs (broker\target\debug\deps\eqcop_store_crash_worker-59d4e14b92d5bd67.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\briefkasten.rs (broker\target\debug\deps\briefkasten-737140ffd404815b.exe)
+
+running 2 tests
+test briefkasten_ende_zu_ende_probe_pipe ... ok
+test probe_lauf_startet_keinen_briefkasten ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s
+
+     Running tests\broker_idle.rs (broker\target\debug\deps\broker_idle-335b469e8f1e1607.exe)
+
+running 5 tests
+test aktiver_fremdclient_verhindert_stop ... ok
+test client_resetet_idlefrist ... ok
+test letzter_client_idle_stop_an_grenze ... ok
+test geordneter_stopp_schliesst_den_store ... ok
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst has been running for over 60 seconds
+test echter_brokerprozess_beendet_sich_nach_letztem_client_selbst ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.56s
+
+     Running tests\contract_cross_language.rs (broker\target\debug\deps\contract_cross_language-c8ce76809755fc6f.exe)
+
+running 10 tests
+test quantisierung_stimmt_mit_den_testvektoren ... ok
+test wirezahl_texte_halten_den_textriegel ... ok
+test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
+test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test korpus_klassifiziert_wie_das_manifest ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+
+     Running tests\coordinator_model.rs (broker\target\debug\deps\coordinator_model-c22cf73cd241058f.exe)
+
+running 51 tests
+test control_vor_welcome ... ok
+test brokerneustart_behaelt_session_epoch ... ok
+test brokerneustart_ohne_mainprojectstate_ingress ... ok
+test brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei ... ok
+test erstes_einziges_main_fuehrt_sonst_bestaetigung ... ok
+test fuehrung_exklusiv_und_uebergabe ... ok
+test fuehrung_exklusiv_und_reconnect_im_selben_lauf ... ok
+test fuehrung_stale_bis_eviction ... ok
+test heartbeat_zwischen_schliessen_und_getrennt_adressiert_den_alten_link_nicht ... ok
+test eviction_loescht_intervention_unknown_nicht ... ok
+test eviction_haelt_dauerhaften_konfliktriegel ... ok
+test abbau_des_verdraengten_links_laesst_den_geteilten_alias_stehen ... ok
+test alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz ... ok
+test eviction_haelt_phase_a_riegel ... ok
+test join_reconnect_disconnect_setzt_sticky_unknown_bis_resync ... ok
+test hello_mit_identischer_nonce_verdraengt_den_alten_link_ohne_den_alias_zu_ziehen ... ok
+test join_nur_bei_eindeutigem_main ... ok
+test neue_nonce_verdraengt_alte_sofort ... ok
+test liveness_nur_instant ... ok
+test konfliktriegel_ueberlebt_eviction ... ok
+test p0_ziel_ist_bei_zwei_links_derselben_adresse_deterministisch ... ok
+test p2_mutiert_erst_nach_flatbuffers_verifikation ... ok
+test reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck ... ok
+test p2_push_haelt_den_standlock_nicht ... ok
+test schreiber_wartet_nicht_unbegrenzt_auf_den_peer ... ok
+test probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed ... ok
+test global_session_cap_weist_am_cap_plus_eins_ab ... ok
+test evidenzsnapshot_fremder_adresse_wird_verworfen ... ok
+test probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung ... ok
+test produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag ... ok
+test session_faellt_mit_dem_letzten_client ... ok
+test kein_expect_mehr_auf_dem_standlock ... ok
+test state_report_erreicht_liveness_ueber_produktive_p1_senke ... ok
+test stale_konstanten_ableitung ... ok
+test evidenzsnapshot_wird_angenommen_und_zusammengefasst ... ok
+test senke_haelt_den_standlock_nicht_ueber_den_push ... ok
+test stale_grenze_exklusiv_und_kontakt_setzt_zurueck ... ok
+test telemetrie_einmalig_gekoppelt ... ok
+test subnormale_samplerate_ergibt_kein_fenster ... ok
+test tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel ... ok
+test verdraengte_nonce_report_sperrt_beide ... ok
+test zwei_projekte_bleiben_getrennt ... ok
+test unverarbeitete_bytes_aendern_den_sessiongraphen_nicht ... ok
+test trennen_bereinigt_vor_join ... ok
+test verdraengung_flusht_den_snapshot_im_trennzyklus ... ok
+test vergifteter_stand_beendet_den_prozess_nicht ... ok
+test evidenzsnapshot_der_fassung_2_faellt_bei_einem_leser_der_fassung_1 ... ok
+test session_und_global_cap ... ok
+test evidenzsnapshot_wird_bei_offener_intervention_gesperrt ... ok
+test caps_stale_first_deterministisch ... ok
+test sichtgrenzen_und_wire_replay_null ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\security_vectors.rs (broker\target\debug\deps\security_vectors-4a68d58de2e43d5b.exe)
+
+running 23 tests
+test freigabe_gegen_reserve_laesst_den_lebenden_worker_stehen ... ok
+test neustart_besetzt_name_vor_bereit ... ok
+test prozesskill_gibt_name_frei ... ok
+test start_belegter_name_scheitert_ohne_zweiten_broker ... ok
+test jeder_unsafe_block_traegt_einen_safety_kommentar ... ok
+test startfehler_nach_erstem_handle_raeumt_handles_threads_und_namen_vor_publish ... ok
+test fremde_sid_revertiert_und_erreicht_keinen_coordinator ... ok
+test accept_bewaffnet_nachfolger_vor_worker_uebergabe_bei_zwei_listenern ... ok
+test impersonation_fehlschlag_schliesst_ohne_serverkontext ... ok
+test control_und_telemetry_durchlaufen_die_identische_sid_kette ... ok
+test nach_revert_bleiben_envelope_und_trennpfade_im_self_kontext ... ok
+test ersatzlistener_fehler_behaelt_besitz_und_meldet_nicht_bereit ... ok
+test gleiche_sid_wird_erst_nach_revert_angenommen ... ok
+test start_freier_name_bewaffnet_zwei_listener_vor_veroeffentlichung ... ok
+test revert_fehlschlag_beendet_testbrokerprozess_fail_fast ... ok
+test stoppen_schliesst_besitzlistener_zuletzt_und_neustart_ist_sofort_moeglich ... ok
+test zwei_verschraenkte_freigaben_lassen_aktive_worker_auf_null ... ok
+test abfluss_vor_dem_schliessen_erreicht_den_peer ... ok
+test tokenabfragefehler_revertiert_und_schliesst_ohne_senke ... ok
+test vollstaendiges_abzulehnendes_hello_impersoniert_prueft_sid_und_revertiert_vor_reject ... ok
+test zwei_listener_plus_96_worker_erhalten_cap_und_namensbesitz ... ok
+test verbindungsgriff_besitzt_handle_und_registereintrag ... ok
+test bootstrap_timeout_und_lesefehler_revertieren_jeweils_ohne_serverweiterlauf ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.52s
+
+     Running tests\sonde012_sources_slice.rs (broker\target\debug\deps\sonde012_sources_slice-9ed9a59636c4c334.exe)
+
+running 26 tests
+test every_loudness_contract_violation_is_removed_without_losing_the_rest ... ok
+test foreign_main_command_is_rejected ... ok
+test invalid_frame_keeps_last_valid_but_marks_measurement_invalid ... ok
+test latest_per_source_no_cross_gap_interpolation ... ok
+test first_valid_p2_changes_only_measurement_axis ... ok
+test eviction_removes_volatile_measurement_projection ... ok
+test join_is_connected_but_measurement_missing ... ok
+test betrieb_suspended_and_offline_reach_snapshot ... ok
+test missing_messpunkt_yields_member_without_descriptor ... ok
+test bridge_pid_change_preserves_membership_but_never_old_control_address ... ok
+test control_end_is_atomic_and_no_push_uses_old_link_after_unlock ... ok
+test nonfinite_loudness_counts_per_source_but_keeps_rest_of_frame ... ok
+test p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement ... ok
+test handover_snapshot_revokes_old_main_before_new_write ... ok
+test store_degraded_travels_only_as_true ... ok
+test json_minor_selects_runtime_contract_and_label_reaches_descriptor ... ok
+test confirm_join_and_unbind_full_roundtrip ... ok
+test loudness_pair_reaches_only_its_source ... ok
+test restart_has_no_old_live_or_measurement_truth ... ok
+test runtime_block_sets_and_updates_descriptor ... ok
+test telemetry_silence_does_not_change_control_liveness ... ok
+test probe_control_end_disconnects_before_next_push ... ok
+test main_subscribe_pushes_absolute_snapshot_and_reconnect_resubscribes ... ok
+test p2_reject_reason_reaches_subscriber_and_keeps_last_valid_frame ... ok
+test unbind_removes_confirmed_membership_from_next_absolute_snapshot ... ok
+test main_link_end_cleans_subscription_before_push ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\sonde013_experiment.rs (broker\target\debug\deps\sonde013_experiment-994d32cd62e1b354.exe)
+
+running 23 tests
+test four_axes_are_reported_separately ... ok
+test gate6_incomparable_never_gets_a_strong_winner ... ok
+test experiment_survives_restart_without_silent_continuation ... ok
+test lower_reproducibility_class_is_explicit ... ok
+test manual_external_begin_locks_baseline ... ok
+test block_bootstrap_weist_nichtendliches_ab ... ok
+test passage_carries_all_six_fields ... ok
+test open_cap_per_project_at_n_and_n_plus_one ... ok
+test offenes_experiment_liefert_seine_passage ... ok
+test match_gain_is_frozen_in_the_immutable_reference ... ok
+test open_cap_global_at_n_and_n_plus_one ... ok
+test manual_result_writes_terminal_event_and_deltas ... ok
+test verdict_vocabulary_is_closed_and_keep_needs_user ... ok
+test abort_writes_terminal_event_for_each_trigger ... ok
+test passage_survives_restart_and_missing_db_degrades_gracefully ... ok
+test blind_order_is_bound_before_the_verdict_and_revealed_after ... ok
+test export_is_complete_and_delete_leaves_no_pcm ... ok
+test zurueckgenommenes_experiment_liefert_keine_passage ... ok
+test block_bootstrap_und_fdr_halten_ihre_zusagen ... ok
+test unbekannte_vergleichbarkeit_liefert_keine_passage ... ok
+test unvergleichbar_ist_nicht_unbekannt ... ok
+test second_change_creates_new_candidate_not_a_new_baseline ... ok
+test manual_external_has_no_state_hash_and_no_revert ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_passage.rs (broker\target\debug\deps\sonde013_passage-1f134177ed15bbcd.exe)
+
+running 12 tests
+test coverage_is_measured_signal_not_wall_duration ... ok
+test fehlender_fingerprint_ist_keine_aehnlichkeit ... ok
+test comparability_needs_all_five_and_hash_alone_never_wins ... ok
+test jaccard_rechnet_ueber_mengen_nicht_ueber_listen ... ok
+test leere_quellensets_sind_nicht_identisch ... ok
+test kein_beleg_wird_still_uebergangen ... ok
+test messpunktklasse_wird_je_quelle_verglichen ... ok
+test suspend_counts_as_missing_coverage ... ok
+test nicht_endliche_abdeckung_ist_fail_closed ... ok
+test zahlenraender_saettigen_statt_umzubrechen ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test each_start_gate_falls_alone_at_its_threshold ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_prepost.rs (broker\target\debug\deps\sonde013_prepost-b89fd89ce4865d4e.exe)
+
+running 23 tests
+test fehlender_teilfenster_lag_stuft_herab ... ok
+test duplicate_half_is_conflict_not_first_wins ... ok
+test jeder_punkt_des_wirkungspraedikats_faellt_fuer_sich ... ok
+test kettenbefund_und_dreifachergebnis_haengen_nicht_am_urteil ... ok
+test hard_exclusions_each_name_their_reason ... ok
+test nicht_endliche_werte_ergeben_keine_stationaere_kette ... ok
+test identisches_paar_liefert_delta_und_gain_exakt_null ... ok
+test flaches_delta_mit_gain_traegt_den_wirkungsbeleg ... ok
+test feature_aligned_mit_bandwirkung_traegt_den_wirkungsbeleg ... ok
+test leere_baender_erzeugen_kein_nan ... ok
+test peak_to_sidelobe_bleibt_endlich ... ok
+test noise_yields_unclear ... ok
+test paar_unter_der_schwelle_traegt_keinen_wirkungsbeleg ... ok
+test each_downgrade_reason_falls_alone ... ok
+test coverage_is_saturating_and_normalised_to_shorter_window ... ok
+test unknown_time_path_can_never_reach_strong ... ok
+test distributed_pair_never_produces_transfer_function ... ok
+test urteil_traegt_seine_kalibrierungsfassung ... ok
+test pairing_requires_exactly_one_pre_and_one_post ... ok
+test feature_aligned_verlangt_den_presentation_nachweis ... ok
+test three_results_are_never_collapsed ... ok
+test feature_alignment_search_space_and_pdc_is_hint_only ... ok
+test alignment_class_has_four_values_and_each_criterion_falls_alone ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests\sonde013_taint.rs (broker\target\debug\deps\sonde013_taint-8f6252999ec5716d.exe)
+
+running 14 tests
+test applied_state_segments_instead_of_tainting ... ok
+test epoch_change_invalidates_open_evidence ... ok
+test downstream_probe_is_tainted_by_upstream_intervention ... ok
+test measurement_position_change_invalidates_dependent_evidence ... ok
+test invalidate_scope_discriminator_rejects_mismatched_payloads ... ok
+test marker_invalidates_overlapping_range_and_unknown_routing_takes_the_session ... ok
+test both_experiment_terminals_close_all_intervals ... ok
+test material_change_invalidates_dependent_evidence ... ok
+test inverse_path_returns_to_zero_after_every_intervention_kind ... ok
+test marker_end_closes_its_interval_only_after_the_tail ... ok
+test only_neutral_resync_clears_sticky_unknown ... ok
+test unknown_routing_widens_to_whole_session ... ok
+test retention_abort_also_closes_intervals ... ok
+test dispatch_lock_ordering_holds_under_concurrent_begin ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+
+running 82 tests
+test bestaetigter_resync_loest_das_sticky_unknown ... ok
+test erste_intervention_nach_resync_wird_angenommen ... ok
+test ergebnis_ohne_resultatmessung_wird_abgelehnt ... ok
+test bootstrap_zieht_zeitfenster_und_rechnet_echte_p_werte ... ok
+test erster_heartbeat_mit_false_loest_das_sticky_unknown ... ok
+test bandsatz_ohne_bit_ist_fail_closed ... ok
+test evidenz_faellt_mit_dem_client ... ok
+test experiment_begin_legt_passage_und_versuch_an ... ok
+test evidenz_ohne_erfolgreiche_ablage_ist_nicht_angenommen ... ok
+test beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt ... ok
+test evidenz_historie_bleibt_und_ist_gedeckelt ... ok
+test drop_invalidiert_als_sequenzluecke ... ok
+test eviction_raeumt_das_paarurteil_und_bildet_neu ... ok
+test evidenz_historie_haelt_ihren_deckel ... ok
+test experimentbefehl_und_wirkung_sind_ein_append ... ok
+test fremdes_projekt_erreicht_den_versuch_nicht ... ok
+test blindreihenfolge_wird_im_eigenen_befehlszweig_gebunden ... ok
+test experimenttransitionen_stehen_im_ereignisindex_mit_vollen_referenzen ... ok
+test invalidierung_aus_dem_produktpfad_haelt_den_vertrag ... ok
+test invalidierung_bildet_das_paarurteil_neu ... ok
+test gleiche_dichte_stuft_nicht_herab ... ok
+test invalidierung_schliesst_gespeicherte_evidenz_aus ... ok
+test invalidierung_serialisiert_ihre_drei_umfaenge ... ok
+test halbe_snapshotdichte_stuft_herab ... ok
+test experimentbefehl_bleibt_in_seinem_projekt ... ok
+test markerinvalidierung_ohne_projektzeit_ist_fail_closed ... ok
+test markerinvalidierung_trifft_genau_ihren_bereich ... ok
+test export_traegt_seine_transitionen_auch_nach_dem_neustart ... ok
+test messpunktwechsel_invalidiert_aus_dem_deskriptorvergleich ... ok
+test nachbericht_behaelt_die_sequenzbasis ... ok
+test nachbericht_greift_nicht_bei_fremdem_intervall_derselben_sitzung ... ok
+test nachlauf_laeuft_in_echtzeit_ab ... ok
+test nachlauf_rechnet_ab_seinem_start ... ok
+test gescheiterter_append_laesst_keinen_ausschluss_stehen ... ok
+test paare_bleiben_in_ihrer_sitzung ... ok
+test genau_ein_snapshot_nach_dem_kandidaten_ist_ein_resultat ... ok
+test invalidierung_laesst_die_sessionprojektion_stehen ... ok
+test invalidierung_projiziert_ihren_grund_in_die_evidenzzeilen ... ok
+test evidenzreihenfolge_ueberdauert_den_neustart ... ok
+test liegengebliebene_ruecknahme_wird_beim_subscribe_nachgespielt ... ok
+test prepost_filtert_ausschluss_und_rechnet_in_einer_konvention ... ok
+test dekodierte_evidenz_findet_gain_mit_intervall ... ok
+test passage_aus_dem_wire_traegt_ihre_messpunktklassen ... ok
+test prepost_join_laeuft_im_produktpfad ... ok
+test r2_backlog_ohne_replay_end_zu_end ... ok
+test materialwechsel_invalidiert_aus_dem_fingerprintvergleich ... ok
+test replay_vor_dem_ersten_heartbeat_nimmt_ihm_den_erstling_nicht ... ok
+test projektspanne_traegt_weiter_den_suchraum ... ok
+test r2_lebenszyklus_mit_verbleibender_sonde_end_zu_end ... ok
+test persistierter_retry_bleibt_idempotent ... ok
+test invalidierung_wird_dem_abonnenten_wirklich_zugestellt ... ok
+test paarurteil_entsteht_beim_neustart_aus_der_evidenz ... ok
+test retry_an_fremde_sitzung_wird_abgewiesen ... ok
+test retry_an_unbekanntes_ziel_wird_abgewiesen ... ok
+test sitzung_ist_zwischen_main_hello_und_erstem_heartbeat_gesperrt ... ok
+test preview_nimmt_die_evidenz_ihrer_sitzung_zurueck ... ok
+test ruecknahme_trifft_nur_den_eigenen_versuch ... ok
+test preview_und_ruecknahme_liegen_in_einem_append ... ok
+test passagenbelege_kommen_aus_den_vertretenen_quellen ... ok
+test sondenhello_aendert_den_taint_nicht ... ok
+test spaeteres_false_loest_das_sticky_unknown_nicht ... ok
+test taint_ist_sitzungsweit ... ok
+test taintmap_haelt_ihren_deckel ... ok
+test sonde014_m73_liegengebliebenes_angebot_traegt_seinen_schluessel ... ok
+test transportbruch_invalidiert_mit_seinem_grund ... ok
+test paarurteil_erreicht_gen_ueber_outbox_und_push ... ok
+test sonde014_m74_zustellschuld_flieszt_ohne_reconnect ... ok
+test resultatmessung_ist_an_versuch_passage_und_grenze_gebunden ... ok
+test wire_experimentintervall_ohne_id_wird_abgelehnt ... ok
+test wire_hoermarkierung_wird_von_keinem_experimentterminal_geschlossen ... ok
+test wire_intervention_traegt_art_und_experiment_bis_zum_terminal ... ok
+test sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen ... ok
+test verdraengter_taint_faellt_in_der_opfersitzung ... ok
+test rollback_nimmt_den_eigenen_ausschluss_vollstaendig_zurueck ... ok
+test terminal_traegt_die_nutzerdaten_und_ueberdauert_den_neustart ... ok
+test verdraengung_bekommt_ihr_eigenes_terminal ... ok
+test sonde014_m48_gelesenes_ziel_schlaegt_die_heuristik ... ok
+test versuchsergebnis_erreicht_gen_ueber_outbox_und_push ... ok
+test rollback_ueber_stabile_evidence_ids_laesst_fremden_ausschluss_stehen ... ok
+test retention_am_deckel_verschiebt_keine_rollbackzuordnung ... ok
+test der_snapshot_haelt_den_versuchsdeckel_des_vertrages ... ok
+test cache_und_projektion_sind_nach_dem_storefehler_gleich ... ok
+
+test result: ok. 82 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.95s
+
+     Running tests\sonde014_befund.rs (broker\target\debug\deps\sonde014_befund-c35ffee8c5e9641a.exe)
+
+running 7 tests
+test sicherheit_wird_auf_drei_zustaende_abgebildet ... ok
+test beleg_ist_zone_und_kein_text ... ok
+test drei_zeilen_sind_datenfelder ... ok
+test hoehere_intent_revision_macht_den_befund_stale ... ok
+test messqualitaet_und_befundsicherheit_sind_zwei_felder ... ok
+test nur_ready_to_send_erlaubt_audition_und_draft ... ok
+test alternative_ist_ein_eigener_befund_mit_eigenem_zustand ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+
+     Running tests\sonde014_gegenbeispiele.rs (broker\target\debug\deps\sonde014_gegenbeispiele-4e737afb3cd092a5.exe)
+
+running 20 tests
+test eigen4_quelle_im_falschen_band ... ok
+test eigen3_antikorrelierte_quelle ... ok
+test a1_intent_rolle_trennt_identische_kandidaten_nicht ... ok
+test eigen5_antikorreliert_neben_korreliert ... ok
+test d4_umklammernde_und_disjunkte_spanne ... ok
+test f4b_drei_sonden_auf_einem_kanal ... ok
+test f8b_master_ohne_fenster ... ok
+test a3_sonde_auf_masterkanal ... ok
+test f8_zwei_master_mit_widersprechendem_befundband ... ok
+test f7_rangdifferenz_am_quantum ... ok
+test d2_fuehrender_wird_gegen_jeden_geprueft ... ok
+test nak214_probables_paar_bleibt_klasse_eins ... ok
+test f4_kanalwechsel_zwischen_den_fenstern ... ok
+test a4_masteranomalie_ausserhalb_der_passage ... ok
+test d3_passage_ohne_masterfenster_ergibt_enthaltung ... ok
+test f5b_gleiche_passage_id_verschobenes_fenster ... ok
+test nak214_zwei_mains_erzeugen_keinen_vorschlag ... ok
+test nak214_juengste_passage_untauglich ... ok
+test einzelueberlebender_neben_passagenausschluss ... ok
+test f5_passagenrandwerte ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.13s
+
+     Running tests\sonde014_hypothese.rs (broker\target\debug\deps\sonde014_hypothese-3c6b314470c00640.exe)
+
+running 37 tests
+test causehypothesis_traegt_die_zehn_felder ... ok
+test behauptung_ohne_existente_evidenz_wird_nicht_sichtbar ... ok
+test ausschlussgruende_sind_geschlossen_und_reisen_mit ... ok
+test bedingter_uplift_braucht_fenster_ohne_die_quelle ... ok
+test enthaltung_ohne_ort_traegt_existente_evidenz_ids ... ok
+test gemessene_nullkoinzidenz_trennt_zwei_kandidaten ... ok
+test jedes_band_liegt_im_intervall_seiner_gruppe ... ok
+test gleichstand_zeigt_beide ... ok
+test gegenbeleg_schliesst_hoch_aus ... ok
+test keine_hypothese_vor_der_vollstaendigkeitsmarke ... ok
+test intent_veto_ist_kein_messausschluss ... ok
+test hoch_verlangt_einen_belegten_zusammenhang ... ok
+test deckel_mit_abstand_erlaubt_weiter_hoch ... ok
+test hoch_verlangt_energie_im_befundband ... ok
+test koinzidenz_allein_traegt_den_zusammenhang ... ok
+test deckel_ohne_abstand_senkt_die_klasse ... ok
+test mehr_daten_ist_ein_ergebnis ... ok
+test master_ohne_verwertbares_band_ergibt_enthaltung ... ok
+test keine_komponente_kompensiert_coverage_oder_alignment ... ok
+test parallele_telemetrie_bleibt_klasse_eins ... ok
+test einzelueberlebender_neben_messausschluss ... ok
+test messausschluss_wirkt_auf_jeden_befund ... ok
+test rollenaenderung_bewegt_die_intent_relevanz ... ok
+test parent_duplikat_erzeugt_keine_zwei_starken ... ok
+test materialmenge_und_bandpassung_trennen_nicht ... ok
+test sechs_teile_im_datenmodell ... ok
+test passage_zu_kurz_traegt_keine_starke_aussage ... ok
+test ursachenklassen_sind_geschlossen_und_sieben ... ok
+test ruecknahme_invalidiert_abhaengige_hypothesen ... ok
+test screening_bezieht_die_koinzidenz_ein ... ok
+test ausschluesse_bleiben_unter_dem_sitzungsdeckel ... ok
+test screening_reicht_hoechstens_fuenf_weiter ... ok
+test ungetrennter_erster_platz_ist_nicht_stark ... ok
+test deckel_greift_vor_stufe_b ... ok
+test enthaltung_ohne_ort_ist_deterministisch ... ok
+test ranking_ist_bytegleich_ueber_hundert_laeufe ... ok
+test screening_ist_deterministisch has been running for over 60 seconds
+test screening_ist_deterministisch ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 150.57s
+
+     Running tests\sonde014_maskierung.rs (broker\target\debug\deps\sonde014_maskierung-36a5a296083f6ed6.exe)
+
+running 5 tests
+test maskierung_haengt_am_finding_und_benennt_einen_frequenzbereich ... ok
+test datenweg_traegt_keine_zeichenanweisung ... ok
+test maskierungswert_ist_hoechstens_ein_evidenzintervall_alt ... ok
+test zone_hat_keine_eigene_schwelle ... ok
+test rueckstau_setzt_das_kennzeichen_herabgesetzt ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.66s
+
+     Running tests\sonde014_nacharbeit1.rs (broker\target\debug\deps\sonde014_nacharbeit1-207edf2a5c77e38c.exe)
+
+running 8 tests
+test intent_bestand_wird_versioniert_gespiegelt ... ok
+test experimentziel_ueberlebt_den_brokerneustart ... ok
+test passagengate_misst_auch_die_fenster_des_masters ... ok
+test befund_mit_geloeschter_evidenzzeile_wird_unsichtbar ... ok
+test user_verdict_wird_persistiert_und_bestaetigt ... ok
+test der_flush_pfad_haelt_die_belege_ebenfalls_gegen_den_store ... ok
+test user_verdict_wiederholt_sich_idempotent_ueber_den_brokerkill ... ok
+test sechs_gate_felder_sind_pflicht_mit_passage ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.68s
+
+     Running tests\sonde014_nacharbeit2.rs (broker\target\debug\deps\sonde014_nacharbeit2-f8f5227563a8d0ca.exe)
+
+running 4 tests
+test user_verdict_haelt_sich_an_die_gemeldete_revision ... ok
+test re_subscribe_haelt_die_belege_gegen_den_store ... ok
+test ohne_passage_entsteht_kein_proposal ... ok
+test verspaeteter_teilbericht_entwertet_abhaengige_befunde ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.11s
+
+     Running tests\sonde014_nacharbeit3.rs (broker\target\debug\deps\sonde014_nacharbeit3-ef08965e24e527e8.exe)
+
+running 3 tests
+test die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel ... ok
+test wire_zahl_haelt_den_textriegel_ueber_drei_baender ... ok
+test ein_befund_kleiner_rangkomponenten_wird_ausgeliefert ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.11s
+
+     Running tests\sonde014_p5_korpus.rs (broker\target\debug\deps\sonde014_p5_korpus-b59f509449eb57a8.exe)
+
+running 1 test
+test korpus_kette_laeuft_durch_den_produktpfad ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.11s
+
+     Running tests\sonde014_proposal.rs (broker\target\debug\deps\sonde014_proposal-7c92fc847c987d9d.exe)
+
+running 21 tests
+test bandmitte_folgt_dem_eingefrorenen_gitter ... ok
+test keine_aenderung_und_mehr_daten_sind_vorschlaege ... ok
+test gate_riegel_faellt_je_feld ... ok
+test geschuetzte_eigenschaft_ist_harte_constraint ... ok
+test jede_zahl_hat_feld_evidenz_und_generatorversion ... ok
+test ein_proposal_ohne_useraktion_bleibt_folgenlos ... ok
+test hard_caps_und_engeres_userbudget_werden_nie_ueberschritten ... ok
+test manueller_busvorschlag_ist_ein_proposal ... ok
+test gate_riegel_greift_im_erzeuger ... ok
+test in_p5_ist_jede_aktion_manual ... ok
+test kein_nicht_endlicher_wert_erreicht_die_leitung ... ok
+test evidenz_ids_und_intent_revision_sind_pflicht ... ok
+test p5_bietet_weiterhin_keinen_draft_an ... ok
+test sechs_gate_felder_sind_pflicht_und_revert_hat_drei_werte ... ok
+test proposal_traegt_die_fuenfzehn_felder ... ok
+test text_entsteht_aus_bausteinen_und_erfindet_keine_zahl ... ok
+test stop_if_auf_nicht_messbarem_guardrail_ist_nicht_handelbar ... ok
+test veraltet_ungueltig_capability_erreichen_keine_probe ... ok
+test zielbereich_kommt_aus_dem_befund_nicht_aus_dem_delta ... ok
+test rollenaenderung_macht_den_vorschlag_stale ... ok
+test derselbe_eingang_erzeugt_denselben_entwurf has been running for over 60 seconds
+test derselbe_eingang_erzeugt_denselben_entwurf ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 759.76s
+
+     Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+
+running 62 tests
+test ausgeschlossenes_paar_setzt_keine_marke ... ok
+test besseres_paar_hebt_die_klasse ... ok
+test fremde_adresse_wird_abgewiesen ... ok
+test entmaskierungsveto_wirkt_im_spiegel_wie_im_main ... ok
+test die_neuen_familien_erben_die_ordnung_von_verbinden_und_trennen ... ok
+test assistant_step_update_koalesziert_je_session ... ok
+test angenommene_und_abgewiesene_meldungen_sind_zaehlbar ... ok
+test ein_frischer_broker_traegt_weder_intent_noch_schritt ... ok
+test die_vollstaendigkeitsmarke_deckt_beide_bestaende ... ok
+test intent_update_koalesziert_je_quelle_und_scope ... ok
+test consumerregeln_des_intents_fallen_einzeln ... ok
+test intent_update_unter_der_fassung_zwei_wird_abgewiesen ... ok
+test kanalwechsel_ohne_belege_sendet_nichts ... ok
+test keine_rechnung_vor_der_vollstaendigkeitsmarke ... ok
+test gleicher_kanal_nimmt_nichts_zurueck ... ok
+test keine_rechnung_ohne_jede_intentmeldung ... ok
+test beitritt_nach_der_rechnung_ersetzt_die_befunde ... ok
+test ohne_jeden_beleg_entsteht_keine_aufnahme ... ok
+test master_ist_das_gefuehrte_main_nicht_das_letzte ... ok
+test neue_evidenz_waehrend_der_rechnung_verwirft_das_aeltere_ergebnis ... ok
+test paar_ohne_gemessene_wirkung_bleibt_klasse_eins ... ok
+test kanalwechsel_invalidiert_nur_diese_quelle ... ok
+test paar_id_ohne_urteil_setzt_keine_marke ... ok
+test partner_ohne_routing_ist_kein_duplikat ... ok
+test probables_paar_bleibt_klasse_eins ... ok
+test rueckzug_und_bestaetigung_geben_die_rechnung_frei ... ok
+test sitzung_ohne_gueltige_evidenz_erzeugt_keinen_befund ... ok
+test sitzungsende_loescht_den_spiegel ... ok
+test spaeter_beitritt_deckelt_ab_der_bestaetigung ... ok
+test spiegel_weicht_dem_neueren_main_schritt ... ok
+test stale_quelle_deckelt_nicht ... ok
+test stumme_quelle_ist_sichtbarer_kandidat ... ok
+test stumme_quelle_setzt_die_duplikatmarke ... ok
+test teilmeldung_mit_mehreren_objekten_wird_abgewiesen ... ok
+test teilupdate_fremden_schluessels_ueberlebt_eine_koaleszierung ... ok
+test kein_rueckschreibeweg_des_coordinators_benennt_sein_ziel_ueber_eine_position ... ok
+test kanalwechsel_ueber_den_heartbeat_befehl ... ok
+test kanalwechsel_ohne_store_append_bleibt_beim_alten_kanal ... ok
+test aelterer_payload_wird_nach_dem_cacheeintrag_nicht_persistiert ... ok
+test annahmeordnung_folgt_der_vergleichsordnung ... ok
+test main_rueckzug_zwischen_befund_und_vorschlag ... ok
+test user_verdict_ohne_sitzungsbefunde_wird_abgewiesen ... ok
+test veraltetes_rechenergebnis_wird_nicht_veroeffentlicht ... ok
+test proposal_traegt_das_fuehrende_main_als_ziel_und_zwei_mains_erzeugen_keinen ... ok
+test ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage ... ok
+test interventionsende_ohne_nachlauf_sperrt_nicht ... ok
+test wirkungsbeleg_aus_ausgerichtetem_paar ... ok
+test wirkungsbeleg_wirkt_je_kandidat ... ok
+test zurueckgenommener_partner_bleibt_duplikat ... ok
+test zweites_main_hebt_bestaetigte_fuehrung_nicht_auf ... ok
+test zweites_main_ohne_sonden_enthaelt_sich_mit_den_belegen_des_ersten ... ok
+test unvollstaendiger_vorschlag_erreicht_weder_store_noch_outbox ... ok
+test user_verdict_auf_stale_wird_angenommen ... ok
+test user_verdict_ohne_befund_wird_abgewiesen ... ok
+test verworfene_rechnung_zieht_genau_eine_neurechnung_nach ... ok
+test unknown_sperrt_das_material_nicht_die_passage ... ok
+test user_verdict_auf_more_data_wird_angenommen ... ok
+test resync_gibt_die_passage_frei ... ok
+test wiederholtes_urteil_bleibt_idempotent_auch_ohne_befund ... ok
+test vorschlaege_bleiben_ihren_befunden_zugeordnet ... ok
+test terminal_laesst_die_nachlaufzuordnung_stehen ... ok
+test getaintetes_experiment_liefert_keine_passage ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.54s
+
+     Running tests\store_crash_matrix.rs (broker\target\debug\deps\store_crash_matrix-4ebee0ee77644d63.exe)
+
+running 90 tests
+test blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft ... ignored, A4-SI: blockierter Storewriter gegen echten Coordinator-Ingress
+test blockierter_writer_haelt_coordinator_und_store_nicht ... ignored, A4-SI: blockierende externe Pusharbeit haelt keine Coordinator-/Storelocks
+test busy_timeout_grenze ... ok
+test descriptor_setzen_verlangt_jedes_pflichtfeld ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test descriptor_setzen_weist_beitragsklasse_ab ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test commit_bei_fenster_oder_batch ... ok
+test degradierter_store_verweigert_annahme_und_tick_trennt_verursacher ... ok
+test disk_full_io_kaputt_neues_schema_degradieren_ohne_brokerstop ... ok
+test alias_deckel_weist_das_hello_ab_statt_ein_welcome_zu_senden ... ok
+test event_uuid_bleibt_aus_ack_und_session_snapshot_wire_fern ... ok
+test domainprojektionen_spalten_keys_und_rebuild ... ok
+test eviction_cleanup_vor_push ... ignored, A4-SI: Eviction und Snapshot-Senke in echter Reihenfolge
+test checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus ... ok
+test event_log_keys_und_append_only ... ok
+test experiment_events_composite_key_und_fks ... ok
+test event_projection_snapshotschuld_command_id_atomare_transaktion ... ok
+test event_log_append_only_und_sequence_eindeutig ... ok
+test guard_aufloesung_raeumt_den_aliaseintrag ... ok
+test guard_aufloesung_wirkt_auch_ohne_lebende_links ... ok
+test cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push ... ok
+test brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion ... ok
+test jeder_resubscribe_liefert_aktuellen_absoluten_snapshot ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test command_id_mappt_intern_auf_genau_eine_event_uuid ... ok
+test command_id_mappt_intern_auf_eine_event_uuid ... ok
+test kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test alter_store_ueberschreibt_plugin_state_nicht ... ok
+test kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht ... ok
+test group_commit_faehrt_echten_batch_bis_commitgrenze ... ok
+test konfliktriegel_deckel_gilt_auch_im_reportpfad_des_verdraengten_links ... ignored, A4-SI: restaurierter Riegelindex, Coordinator und echter Store
+test guard_aufloesung_ohne_treffer_meldet_fehler ... ok
+test guard_aufloesung_faltet_die_sid_schreibweise_wie_der_speicherindex ... ok
+test guard_restore_vor_routing ... ok
+test konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner ... ok
+test nonce_verdraengung_cleanup_vor_altem_report ... ignored, A4-SI: Nonce-Verdrängung bereinigt Subscription vor altem Report
+test migration_1_frisch_und_idempotent ... ok
+test p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot ... ignored, A4-SI: P1-Snapshotpfad ueber echten Store und kontrollierte Writesenke
+test passive_checkpoint_an_dualer_grenze ... ok
+test persistenter_p0_trifft_den_lebenden_link_derselben_adresse ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test pfadwandlung_haelt_ein_ungepaartes_surrogat ... ok
+test phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events ... ignored, A4-SI: Produktgrenze des Snapshot-only-Abflusses
+test migration_1_spalten_und_schluessel_exakt ... ok
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k06-28156-7c8c451a6e014fd88e77ec5dd3358caf\nakama-broker.sqlite3
+Nakama Store: rusqlite Nakama Store: rusqlite 0.40.20.40.2, SQLite , SQLite 3.53.23.53.2, , C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k04-28156-6de86b376060428b975104358ba24aa9\nakama-broker.sqlite3
+C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k07-28156-23f33da0bdd14a258791fcd866a702bb\nakama-broker.sqlite3
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\Users\phili\AppData\Local\Temp\nakama-sonde011-k09-28156-c6cb42520740427890a35a11ef227375\nakama-broker.sqlite3
+test eviction_bewahrt_domainzustand_und_konfliktriegel_bei_vollstaendigem_cleanup ... ok
+test pragmas_exakt ... ok
+test jeder_group_commit_bleibt_bei_hoechstens_64_events ... ok
+test outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt ... ok
+test kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung ... ok
+test kill_vor_snapshot_outbox_kompaktierung ... ok
+test kill_nach_store_commit_vor_snapshot_push ... ok
+test kill_waehrend_wal_replay ... ok
+test leser_haelt_keine_transaktion_ueber_externe_arbeit ... ok
+test reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal ... ignored, A4-SI: Reconnect/Resubscribe mit Store und Snapshot-Senke
+test recovery_unter_testgrenze ... ok
+test remote_volume_degradiert_ohne_db_oder_wal ... ok
+test quarantaene_deckel_weist_ab_statt_zu_wachsen ... ok
+test routing_bleibt_zu_bis_konfliktriegel_restauriert ... ok
+test projects_projection_rebuild_und_fk ... ok
+test session_snapshot_koalesziert_nach_objektschluessel ... ignored, A4-SI: Coordinator schreibt koaleszierte Snapshot-Schuld in echten Store
+test session_snapshot_zeigt_join_kandidat_ohne_neue_familie ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_hat_keinen_event_uuid_wire_traeger ... ok
+test session_subscription_hat_nur_snapshot_push ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test session_subscription_sendet_nur_aktuellen_absoluten_snapshot ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test projektionslesefehler_haelt_subscription_sichtbar_fail_closed ... ok
+test pruefsumme_entscheidet_vor_der_migration ... ok
+test snapshot_marken_sind_store_ordinale_unter_dem_objektschluessel ... ignored, A4-SI: Coordinator, Store und Snapshot-Senke als Server-Integration
+test kill_waehrend_migration_1 ... ok
+test schema_major_1_schreibt_und_major_plus_1_degradiert_read_only ... ok
+test store_pfad_bleibt_bei_nicht_utf8_zeichen_unveraendert ... ok
+test store_pfad_nutzt_folderid_localappdata ... ok
+test projektion_rebuild_ist_deterministisch_und_unter_testgrenze ... ok
+test sessions_projection_composite_key_ohne_fuehrungsrestore ... ok
+test projektion_rebuild_nach_neustart_unter_testgrenze ... ok
+Verbindung erstellt für C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-28156-eef12c10b39649b4ad39e183adad5ccf\verweis <<===>> C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-28156-eef12c10b39649b4ad39e183adad5ccf\echt
+test store_weist_reparse_punkt_im_pfad_ab ... ok
+test store_start_protokolliert_sqlite_version ... ok
+test verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid ... ignored, A4-SI: braucht das frisch gebaute echte EqCopIpcTest-Binary
+test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... ignored, A4-SI: Junction-Umhaengen unter einer offenen SQLite-Datenbank
+test store_kanal_cap_und_naechster_trennt ... ok
+test wiederholter_snapshot_letzter_gewinnt_idempotent ... ignored, A4-SI: absoluter Empfaengerzustand wird real aus Snapshots gesetzt
+test snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht ... ok
+test produkt_coordinator_ackt_keine_wirkung_die_nicht_stattfindet ... ok
+test volumenklassifikation_faellt_am_geoeffneten_objekt ... ok
+test subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent ... ok
+test store_writer_ist_alleiniger_write_connection_besitzer ... ok
+test produkt_coordinator_legt_passage_und_experiment_aus_dem_wire_an ... ok
+test produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries ... ok
+test truncate_nur_in_ruhelage ... ok
+test resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert ... ok
+test gescheiterter_leerlauf_checkpoint_wird_wiederholt ... ok
+test snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton ... ok
+
+test result: ok. 67 passed; 0 failed; 23 ignored; 0 measured; 0 filtered out; finished in 1.53s
+
+     Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-e68c0b23ba7390d0.exe)
+
+running 12 tests
+test ein_kaputter_frame_im_strom_beendet_den_strom ... ok
+test feindliche_laengen_enden_in_der_erwarteten_fehlerklasse ... ok
+test ingress_bytebudget_verwirft_p2_zuerst ... ok
+test ratengrenze_haelt_unter_flut ... ok
+test ingress_bytebudget_greift_am_produktionskonstruktor_vor_der_slotgrenze ... ok
+test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
+test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
+test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test fragmentierung_aendert_das_ergebnis_nie ... ok
+test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
+test panik_im_verbindungsthread_wird_gezaehlt ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+   Doc-tests eqcop_broker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+--- Ende ---
+
+=== A4 (Briefkasten-Unittests mit Rohzeilen) (cargo test --manifest-path broker/Cargo.toml --color never --lib -- briefkasten::tests --nocapture --test-threads=1; Exit 0; 6,2 s; Beginn 23:23:17) ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 17 tests
+test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+test briefkasten::tests::keine_leere_antwort ... ok
+test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+test briefkasten::tests::kennungsring_fifo_256 ... ok
+test briefkasten::tests::nach_stopp_keine_lieferung ... ok
+test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+test briefkasten::tests::reparse_punkte_werden_ignoriert ... [--] M-49 reparse_punkte_werden_ignoriert (c) symlink nicht erzeugbar [Dem Client fehlt ein erforderliches Recht. (os error 1314)] - Lage (c) ungemessen
+ok
+test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... [roh] M-45 stopp_weckt_ohne_wartedurchlauf join_dauer_us=43 join_frist_verfehlt=0
+ok
+test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... ok
+test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 266 filtered out; finished in 6.09s
+
+--- Ende ---
+
+=== A4 (Integrationstest briefkasten) (cargo test --manifest-path broker/Cargo.toml --color never --test briefkasten -- --nocapture --test-threads=1; Exit 0; 2,2 s; Beginn 23:23:23) ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running tests\briefkasten.rs (broker\target\debug\deps\briefkasten-737140ffd404815b.exe)
+
+running 2 tests
+test briefkasten_ende_zu_ende_probe_pipe ... ok
+test probe_lauf_startet_keinen_briefkasten ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s
+
+--- Ende ---
+
+=== Clippy (py -3.13 tools/plan/gesundheit.py --clippy; Exit 4; 17,0 s; Beginn 23:23:26) ===
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 201 Dateien
+  gemessen     broker/src (direkt): 20 Datei(en)
+  gemessen     broker/src/bin: 4 Datei(en)
+  gemessen     broker/src/coordinator: 39 Datei(en)
+  ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+  gemessen     broker/src/store: 5 Datei(en)
+  gemessen     broker/src/transport: 21 Datei(en)
+  gemessen     eq-copilot/plugin/core: 42 Datei(en)
+  gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+  gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+  gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+  gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+  gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+  gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+  gemessen     eq-copilot/plugin/src: 26 Datei(en)
+  gemessen     eq-copilot/plugin/state: 13 Datei(en)
+  ausgenommen  eq-copilot/plugin/tests: 43 Datei(en) - Testcode, kein Produktumfang
+  gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+
+Maass                                Ist    Ziel   Grenze  Status
+-----------------------------------  -----  -----  ------  ------
+Quelldateien ueber 2000 Zeilen       1      0      0       GRENZE
+Quelldateien ueber Ziel 1500 Zeilen  10     0      -       ZIEL  
+Funktionen ueber 200 Zeilen          34     0      28      GRENZE
+Clippy-Fundstellen (broker)          94     0      91      GRENZE
+allow(dead_code) ohne Aufrufer       0      0      0       OK    
+Kommentar-Bezeichner ohne Code       36     0      30      GRENZE
+MEMORY.md (Bytes)                    5338   22528  24986   OK    
+CLAUDE.md (Bytes)                    19434  -      20480   OK    
+Dirigenten-Skill (Bytes)             24465  -      24576   OK    
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK    
+Memory-Dateien ohne Index-Link       0      0      0       OK    
+
+
+GRENZE gerissen: Quelldateien ueber 2000 Zeilen (1 von hoechstens 0)
+  eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (34 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:609 EqCopilotProcessor::processBlock - 409 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:404 Transaktionskern::fuehreAus - 305 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:133 EqCopilotProcessor::workerLauf - 280 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:52 FeatureEngine::verarbeiteSamples - 276 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen
+  ... und 9 weitere
+
+GRENZE gerissen: Clippy-Fundstellen (broker) (94 von hoechstens 91)
+  src/coordinator/befehl.rs:1257:31 clippy::unnecessary_get_then_check
+  src/coordinator/befehl.rs:1327:31 clippy::unnecessary_get_then_check
+  src/coordinator/befehl.rs:264:24 clippy::type_complexity
+  src/coordinator/befehl.rs:269:13 clippy::question_mark
+  src/coordinator/befehl.rs:488:13 clippy::question_mark
+  src/coordinator/befehl.rs:553:21 clippy::op_ref
+  src/coordinator/experiment.rs:1053:12 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/experiment.rs:1596:12 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/experiment.rs:1599:12 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/experiment.rs:1660:12 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/experiment.rs:592:1 clippy::large_enum_variant
+  src/coordinator/experiment_verdrahtung.rs:108:40 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/hypothese/befund.rs:243:32 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/hypothese/screening.rs:82:37 clippy::manual_div_ceil
+  src/coordinator/intervention.rs:123:5 clippy::too_many_arguments
+  src/coordinator/intervention.rs:370:49 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/intervention.rs:633:23 clippy::unnecessary_map_or
+  src/coordinator/intervention.rs:637:16 clippy::unnecessary_map_or
+  src/coordinator/liveness.rs:700:12 clippy::nonminimal_bool
+  src/coordinator/mitgliedschaft.rs:110:29 clippy::op_ref
+  src/coordinator/mitgliedschaft.rs:154:29 clippy::op_ref
+  src/coordinator/mitgliedschaft.rs:193:17 clippy::op_ref
+  src/coordinator/prepost.rs:1063:47 clippy::neg_cmp_op_on_partial_ord
+  src/coordinator/prepost.rs:470:14 clippy::needless_range_loop
+  src/coordinator/prepost.rs:494:14 clippy::needless_range_loop
+  ... und 69 weitere
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+  broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1442 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  ... und 11 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (10 von hoechstens -)
+  broker/src/briefkasten.rs: 1995 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1932 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+  broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+  eq-copilot/plugin/core/analysis/FeatureEngine.h: 1516 Zeilen
+Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+Hinweis: 132 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 4 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Clippy-Fundstellen (broker), Kommentar-Bezeichner ohne Code
+--- Ende ---
+
+=== Clippy (volle Liste) (py -3.13 tools/plan/gesundheit.py --clippy --json; Exit 4; 13,1 s; Beginn 23:23:43) ===
+{
+  "wurzel": "C:\\Users\\phili\\Projekte\\Nakama",
+  "memory": "C:\\Users\\phili\\.claude\\projects\\C--Users-phili-Projekte-Nakama\\memory",
+  "clippy_gemessen": true,
+  "inventar": [
+    {
+      "pfad": "broker/src",
+      "direkt": true,
+      "dateien": 20,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "broker/src/bin",
+      "direkt": false,
+      "dateien": 4,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "broker/src/coordinator",
+      "direkt": false,
+      "dateien": 39,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "broker/src/generiert",
+      "direkt": false,
+      "dateien": 2,
+      "ausgenommen": 2,
+      "grund": "Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich"
+    },
+    {
+      "pfad": "broker/src/store",
+      "direkt": false,
+      "dateien": 5,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "broker/src/transport",
+      "direkt": false,
+      "dateien": 21,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/core",
+      "direkt": false,
+      "dateien": 42,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/dsp",
+      "direkt": false,
+      "dateien": 9,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/hostbridge",
+      "direkt": false,
+      "dateien": 1,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/hostprobe",
+      "direkt": false,
+      "dateien": 5,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/probe",
+      "direkt": false,
+      "dateien": 1,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/sonde",
+      "direkt": false,
+      "dateien": 3,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/spike",
+      "direkt": false,
+      "dateien": 5,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/src",
+      "direkt": false,
+      "dateien": 26,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/state",
+      "direkt": false,
+      "dateien": 13,
+      "ausgenommen": 0,
+      "grund": null
+    },
+    {
+      "pfad": "eq-copilot/plugin/tests",
+      "direkt": false,
+      "dateien": 43,
+      "ausgenommen": 43,
+      "grund": "Testcode, kein Produktumfang"
+    },
+    {
+      "pfad": "eq-copilot/plugin/vertrag",
+      "direkt": false,
+      "dateien": 8,
+      "ausgenommen": 1,
+      "grund": null
+    }
+  ],
+  "maasse": [
+    {
+      "name": "Quelldateien ueber 2000 Zeilen",
+      "ist": 1,
+      "ziel": 0,
+      "grenze": 0,
+      "treffer": [
+        "eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]"
+      ],
+      "hinweise": [
+        "1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig"
+      ],
+      "status": "GRENZE"
+    },
+    {
+      "name": "Quelldateien ueber Ziel 1500 Zeilen",
+      "ist": 10,
+      "ziel": 0,
+      "grenze": null,
+      "treffer": [
+        "broker/src/briefkasten.rs: 1995 Zeilen",
+        "eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen",
+        "eq-copilot/plugin/src/PluginProcessor.h: 1932 Zeilen",
+        "broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen",
+        "broker/src/server.rs: 1841 Zeilen",
+        "broker/src/coordinator/experiment.rs: 1727 Zeilen",
+        "eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen",
+        "eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen",
+        "broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen",
+        "eq-copilot/plugin/core/analysis/FeatureEngine.h: 1516 Zeilen"
+      ],
+      "status": "ZIEL"
+    },
+    {
+      "name": "Funktionen ueber 200 Zeilen",
+      "ist": 34,
+      "ziel": 0,
+      "grenze": 28,
+      "treffer": [
+        "broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen",
+        "eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen",
+        "eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen",
+        "eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen",
+        "broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen",
+        "eq-copilot/plugin/src/PluginProcessor.cpp:609 EqCopilotProcessor::processBlock - 409 Zeilen",
+        "broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen",
+        "broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen",
+        "eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen",
+        "eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen",
+        "broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen",
+        "eq-copilot/plugin/state/NakamaTransaktion.cpp:404 Transaktionskern::fuehreAus - 305 Zeilen",
+        "eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen",
+        "broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen",
+        "broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen",
+        "eq-copilot/plugin/src/prozessor/Analyse.cpp:133 EqCopilotProcessor::workerLauf - 280 Zeilen",
+        "eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen",
+        "eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:52 FeatureEngine::verarbeiteSamples - 276 Zeilen",
+        "broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen",
+        "eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen",
+        "eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen",
+        "broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen",
+        "broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen",
+        "eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen",
+        "eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen",
+        "broker/src/store/writer.rs:176 writer_lauf - 229 Zeilen",
+        "eq-copilot/plugin/src/PluginEditor.cpp:1101 EqCopilotEditor::paintMainFlaeche - 229 Zeilen",
+        "broker/src/coordinator/liveness.rs:317 heartbeat_kontakt - 223 Zeilen",
+        "eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:722 BrokerLifecycle::tick - 218 Zeilen",
+        "eq-copilot/plugin/src/PluginProcessor.cpp:234 (unbenannt) - 213 Zeilen",
+        "eq-copilot/plugin/src/prozessor/Ipc.cpp:851 EqCopilotProcessor::v3ControlLink - 211 Zeilen",
+        "eq-copilot/plugin/vertrag/NakamaVertrag.cpp:474 textriegel - 207 Zeilen",
+        "broker/src/vertrag.rs:826 pruefe_wert - 206 Zeilen",
+        "eq-copilot/plugin/core/analysis/featureengine/Zeit.h:318 FeatureEngine::grenzeZiehen - 203 Zeilen"
+      ],
+      "hinweise": [
+        "132 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt"
+      ],
+      "status": "GRENZE"
+    },
+    {
+      "name": "Clippy-Fundstellen (broker)",
+      "ist": 94,
+      "ziel": 0,
+      "grenze": 91,
+      "treffer": [
+        "src/coordinator/befehl.rs:1257:31 clippy::unnecessary_get_then_check",
+        "src/coordinator/befehl.rs:1327:31 clippy::unnecessary_get_then_check",
+        "src/coordinator/befehl.rs:264:24 clippy::type_complexity",
+        "src/coordinator/befehl.rs:269:13 clippy::question_mark",
+        "src/coordinator/befehl.rs:488:13 clippy::question_mark",
+        "src/coordinator/befehl.rs:553:21 clippy::op_ref",
+        "src/coordinator/experiment.rs:1053:12 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/experiment.rs:1596:12 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/experiment.rs:1599:12 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/experiment.rs:1660:12 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/experiment.rs:592:1 clippy::large_enum_variant",
+        "src/coordinator/experiment_verdrahtung.rs:108:40 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/hypothese/befund.rs:243:32 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/hypothese/screening.rs:82:37 clippy::manual_div_ceil",
+        "src/coordinator/intervention.rs:123:5 clippy::too_many_arguments",
+        "src/coordinator/intervention.rs:370:49 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/intervention.rs:633:23 clippy::unnecessary_map_or",
+        "src/coordinator/intervention.rs:637:16 clippy::unnecessary_map_or",
+        "src/coordinator/liveness.rs:700:12 clippy::nonminimal_bool",
+        "src/coordinator/mitgliedschaft.rs:110:29 clippy::op_ref",
+        "src/coordinator/mitgliedschaft.rs:154:29 clippy::op_ref",
+        "src/coordinator/mitgliedschaft.rs:193:17 clippy::op_ref",
+        "src/coordinator/prepost.rs:1063:47 clippy::neg_cmp_op_on_partial_ord",
+        "src/coordinator/prepost.rs:470:14 clippy::needless_range_loop",
+        "src/coordinator/prepost.rs:494:14 clippy::needless_range_loop",
+        "src/coordinator/prepost.rs:717:14 clippy::needless_range_loop",
+        "src/coordinator/prepost.rs:804:18 clippy::needless_range_loop",
+        "src/coordinator/prepost_verdrahtung.rs:130:29 clippy::type_complexity",
+        "src/coordinator/sicht.rs:318:32 clippy::op_ref",
+        "src/coordinator/subscription.rs:473:9 clippy::question_mark",
+        "src/coordinator/zustand.rs:239:9 clippy::doc_lazy_continuation",
+        "src/coordinator/zustand.rs:240:9 clippy::doc_lazy_continuation",
+        "src/coordinator/zustand.rs:241:9 clippy::doc_lazy_continuation",
+        "src/generiert/nakama_telemetry_v1_generated.rs:1278:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:1476:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:156:13 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:1631:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:165:9 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:2180:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:2309:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:2446:3 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:244:13 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:2453:3 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:253:9 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:332:13 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:341:9 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:390:13 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:399:9 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:443:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:616:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:64:13 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:73:9 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:749:18 clippy::undocumented_unsafe_blocks",
+        "src/generiert/nakama_telemetry_v1_generated.rs:920:18 clippy::undocumented_unsafe_blocks",
+        "src/server.rs:562:33 clippy::undocumented_unsafe_blocks",
+        "src/server.rs:594:21 clippy::undocumented_unsafe_blocks",
+        "src/store/writer.rs:368:40 clippy::unnecessary_unwrap",
+        "src/store/writer.rs:375:40 clippy::unnecessary_unwrap",
+        "src/store/writer.rs:386:40 clippy::unnecessary_unwrap",
+        "src/telemetrie.rs:682:12 clippy::len_zero",
+        "src/transport/legacy_v2.rs:49:48 clippy::useless_vec",
+        "src/transport/server_v3/auth.rs:54:12 clippy::undocumented_unsafe_blocks",
+        "src/transport/server_v3/auth.rs:63:12 clippy::undocumented_unsafe_blocks",
+        "src/transport/server_v3/listener.rs:265:1 clippy::too_many_arguments",
+        "src/transport/server_v3/queues.rs:11:24 clippy::type_complexity",
+        "src/transport/server_v3/tests_abonnement.rs:795:21 clippy::unnecessary_map_or",
+        "src/transport/server_v3/tests_fristen.rs:148:9 clippy::useless_conversion",
+        "src/transport/server_v3/win_handles.rs:386:1 clippy::undocumented_unsafe_blocks",
+        "tests/broker_idle.rs:21:17 clippy::undocumented_unsafe_blocks",
+        "tests/broker_idle.rs:43:9 clippy::undocumented_unsafe_blocks",
+        "tests/security_vectors.rs:34:17 clippy::undocumented_unsafe_blocks",
+        "tests/security_vectors.rs:56:9 clippy::undocumented_unsafe_blocks",
+        "tests/sonde013_prepost.rs:423:9 clippy::unnecessary_map_or",
+        "tests/sonde013_prepost.rs:50:14 clippy::needless_range_loop",
+        "tests/sonde013_prepost.rs:518:9 clippy::unnecessary_map_or",
+        "tests/sonde013_prepost.rs:587:17 clippy::type_complexity",
+        "tests/sonde013_verdrahtung.rs:1913:4 dead_code",
+        "tests/sonde013_verdrahtung.rs:286:5 dead_code",
+        "tests/sonde013_verdrahtung.rs:2914:9 unused_mut",
+        "tests/sonde013_verdrahtung.rs:3037:19 clippy::double_ended_iterator_last",
+        "tests/sonde013_verdrahtung.rs:3095:19 clippy::double_ended_iterator_last",
+        "tests/sonde013_verdrahtung.rs:3443:5 clippy::doc_lazy_continuation",
+        "tests/sonde013_verdrahtung.rs:4386:9 unused_mut",
+        "tests/sonde013_verdrahtung.rs:4433:9 unused_mut",
+        "tests/sonde013_verdrahtung.rs:5762:33 clippy::manual_div_ceil",
+        "tests/sonde013_verdrahtung.rs:6421:9 clippy::needless_borrows_for_generic_args",
+        "tests/sonde014_gegenbeispiele.rs:334:5 clippy::too_many_arguments",
+        "tests/sonde014_gegenbeispiele.rs:409:8 dead_code",
+        "tests/sonde014_hypothese.rs:1340:20 clippy::useless_vec",
+        "tests/sonde014_hypothese.rs:213:1 clippy::too_many_arguments",
+        "tests/sonde014_nacharbeit3.rs:134:26 clippy::needless_range_loop",
+        "tests/sonde014_proposal.rs:644:16 clippy::redundant_pattern_matching",
+        "tests/store_crash_matrix.rs:3424:69 clippy::needless_borrows_for_generic_args",
+        "tests/transport_fuzz.rs:70:17 clippy::manual_range_contains"
+      ],
+      "nicht_messbar": null,
+      "status": "GRENZE"
+    },
+    {
+      "name": "allow(dead_code) ohne Aufrufer",
+      "ist": 0,
+      "ziel": 0,
+      "grenze": 0,
+      "treffer": [],
+      "status": "OK"
+    },
+    {
+      "name": "Kommentar-Bezeichner ohne Code",
+      "ist": 36,
+      "ziel": 0,
+      "grenze": 30,
+      "treffer": [
+        "broker/src/coordinator/befehl.rs:10 `persistenz_p0`",
+        "broker/src/coordinator/befehl.rs:869 `persistenz_p0`",
+        "broker/src/coordinator/evidenz.rs:4 `ed9bbf7`",
+        "broker/src/coordinator/experiment.rs:1468 `Behalten`",
+        "broker/src/coordinator/experiment.rs:1619 `eigen3`",
+        "broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`",
+        "broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`",
+        "broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`",
+        "broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`",
+        "broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`",
+        "broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`",
+        "broker/src/coordinator/intervention.rs:630 `_locked`",
+        "broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`",
+        "broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`",
+        "broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`",
+        "broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`",
+        "broker/src/store/handle.rs:399 `assistant_steps`",
+        "broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`",
+        "broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`",
+        "eq-copilot/plugin/core/analysis/FeatureEngine.h:1442 `STATUS_STACK_OVERFLOW`",
+        "eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`",
+        "eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`",
+        "eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`",
+        "eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`",
+        "eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`",
+        "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:29 `NMPWAIT_USE_DEFAULT_WAIT`",
+        "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp:42 `nDefaultTimeOut`",
+        "eq-copilot/plugin/core/ipc/IpcVerbindung.h:153 `NMPWAIT_USE_DEFAULT_WAIT`",
+        "eq-copilot/plugin/core/ipc/TelemetryClient.h:122 `verbindend`",
+        "eq-copilot/plugin/src/SourcesModel.cpp:575 `uebernehmeSnapshot`",
+        "eq-copilot/plugin/src/SourcesModel.cpp:1719 `uebernehmeSnapshot`",
+        "eq-copilot/plugin/src/prozessor/Ipc.cpp:1421 `bindungId`",
+        "eq-copilot/plugin/state/NakamaTransaktion.h:18 `automation_epoch`",
+        "eq-copilot/plugin/state/NakamaTransaktion.h:154 `automation_epoch`",
+        "eq-copilot/plugin/vertrag/NakamaEvidenz.h:6 `ed9bbf7`",
+        "eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp:161 `stringsGueltig`"
+      ],
+      "hinweise": [
+        "9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt"
+      ],
+      "status": "GRENZE"
+    },
+    {
+      "name": "MEMORY.md (Bytes)",
+      "ist": 5338,
+      "ziel": 22528,
+      "grenze": 24986,
+      "treffer": [],
+      "nicht_messbar": null,
+      "status": "OK"
+    },
+    {
+      "name": "CLAUDE.md (Bytes)",
+      "ist": 19434,
+      "ziel": null,
+      "grenze": 20480,
+      "treffer": [],
+      "nicht_messbar": null,
+      "status": "OK"
+    },
+    {
+      "name": "Dirigenten-Skill (Bytes)",
+      "ist": 24465,
+      "ziel": null,
+      "grenze": 24576,
+      "treffer": [],
+      "nicht_messbar": null,
+      "status": "OK"
+    },
+    {
+      "name": "MEMORY.md: Zeilen ueber 250 Zeichen",
+      "ist": 0,
+      "ziel": 0,
+      "grenze": 0,
+      "treffer": [],
+      "nicht_messbar": null,
+      "status": "OK"
+    },
+    {
+      "name": "Memory-Dateien ohne Index-Link",
+      "ist": 0,
+      "ziel": 0,
+      "grenze": 0,
+      "treffer": [],
+      "nicht_messbar": null,
+      "status": "OK"
+    }
+  ]
+}
+--- Ende ---
+
+=== A32 (py -3.13 tools/plan/gesundheit.py --mit-selbsttest; Exit 4; 12,9 s; Beginn 23:23:56) ===
+SELBSTTEST
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+  ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+  ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+  ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+  ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 129/129 bestanden
+
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 201 Dateien
+  gemessen     broker/src (direkt): 20 Datei(en)
+  gemessen     broker/src/bin: 4 Datei(en)
+  gemessen     broker/src/coordinator: 39 Datei(en)
+  ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+  gemessen     broker/src/store: 5 Datei(en)
+  gemessen     broker/src/transport: 21 Datei(en)
+  gemessen     eq-copilot/plugin/core: 42 Datei(en)
+  gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+  gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+  gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+  gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+  gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+  gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+  gemessen     eq-copilot/plugin/src: 26 Datei(en)
+  gemessen     eq-copilot/plugin/state: 13 Datei(en)
+  ausgenommen  eq-copilot/plugin/tests: 43 Datei(en) - Testcode, kein Produktumfang
+  gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       1      0      0       GRENZE       
+Quelldateien ueber Ziel 1500 Zeilen  10     0      -       ZIEL         
+Funktionen ueber 200 Zeilen          34     0      28      GRENZE       
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       36     0      30      GRENZE       
+MEMORY.md (Bytes)                    5338   22528  24986   OK           
+CLAUDE.md (Bytes)                    19434  -      20480   OK           
+Dirigenten-Skill (Bytes)             24465  -      24576   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+GRENZE gerissen: Quelldateien ueber 2000 Zeilen (1 von hoechstens 0)
+  eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (34 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:609 EqCopilotProcessor::processBlock - 409 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:404 Transaktionskern::fuehreAus - 305 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:133 EqCopilotProcessor::workerLauf - 280 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:52 FeatureEngine::verarbeiteSamples - 276 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen
+  ... und 9 weitere
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+  broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1442 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  ... und 11 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (10 von hoechstens -)
+  broker/src/briefkasten.rs: 1995 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1932 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+  broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+  eq-copilot/plugin/core/analysis/FeatureEngine.h: 1516 Zeilen
+Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+Hinweis: 132 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+--- Ende ---
+

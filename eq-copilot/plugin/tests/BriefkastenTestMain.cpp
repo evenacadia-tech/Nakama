@@ -1154,7 +1154,7 @@ void neueKennungNeueAntwort()
 }
 
 //==============================================================================
-// M-27 fremde_anfragen_werden_ignoriert (acht Unterfaelle)
+// M-27 fremde_anfragen_werden_ignoriert (zehn Unterfaelle; (i) und (j) nach P-15)
 void fremdeAnfragenWerdenIgnoriert()
 {
     TempWurzel t;
@@ -1185,6 +1185,9 @@ void fremdeAnfragenWerdenIgnoriert()
         { "(f) Verzeichnis", {}, true, 0 },
         { "(g) leere Datei", std::string(), false, 1 },
         { "(h) UTF-8 mit BOM", "\xEF\xBB\xBF" + anfrageText (k), false, 1 },
+        { "(i) JSON-Array mit unbeantworteter Kennung",
+          "[\"nakama.diagnose.anfrage.v1\",\"00000000000000000000000000000000\"]", false, 1 },
+        { "(j) JSON-Zeichenkette als Wurzel", "\"nakama.diagnose.anfrage.v1\"", false, 1 },
     };
 
     for (const auto& v : varianten)

@@ -2719,92 +2719,246 @@ void antwortOhneEditor()
 //
 // Der Destruktor laeuft auf einem zweiten Thread, waehrend ein Takt auf dem
 // Message-Thread haelt: in Lage (b) am Eintritt des Timer-Rueckrufs, vor jeder
-// Beruehrung des Kerns (§23.2 P-12), in Lage (a) vor der Schleuse. Lage (b)
-// laeuft zuerst: faellt der Kern dort zu frueh (Rotlauf), endet der Lauf, bevor
-// Lage (a) einen Takt auf freigegebenem Kern fortsetzen koennte. Beide Lagen
-// pumpen die Nachrichten, bis der Kern frei ist, bevor Fassaden und Temp-Wurzel
-// enden.
+// Beruehrung des Kerns (§23.2 P-12), in Lage (b) (4) ebenso bei abgelehnter
+// Uebergabe an den Message-Thread (§26.2 P-14), in Lage (a) vor der Schleuse
+// und in Lage (c) hinter ihr, in der Antwortquelle (§26.2 P-12 praezisiert).
+// Die Lagen (b) und (b) (4) laufen zuerst: faellt der Kern dort zu frueh
+// (Rotlauf), endet der Lauf, bevor ein Takt auf freigegebenem Kern
+// weiterliefe. Lage (c) laeuft nach Lage (a): kehrt ihr Destruktor zurueck,
+// waehrend der Takt noch haelt (Rotlauf), endet der Lauf in der Quelle, bevor
+// der Takt den zerstoerten Prozessor liest. Die Lagen (a), (b) und (c) pumpen
+// die Nachrichten, bis der Kern frei ist, bevor Fassaden und Temp-Wurzel
+// enden; in Lage (b) (4) haelt ihn der Halteplatz bis zum Prozessende, und er
+// beruehrt Fassaden und Temp-Wurzel nie mehr (Timer aus, Schleuse zu).
 struct HaltBarriere
 {
     std::atomic<bool> scharf { true }, erreicht { false }, zerstoert { false }, abgelaufen { false },
                       kernLebteImHalt { false };
 };
 
-/// Lage (b): der Zustand des Eintrittshakens liegt ausserhalb des Kerns, und der
-/// Haken faengt nichts. Faellt der Kern waehrend des Halts (Rotlauf), liest der
-/// Haken keinen freigegebenen Speicher - auch keine eigenen Fangwerte.
+/// Lagen (b) und (b) (4): der Zustand des Eintrittshakens liegt ausserhalb des
+/// Kerns, und der Haken faengt nichts. Faellt der Kern waehrend des Halts
+/// (Rotlauf), liest der Haken keinen freigegebenen Speicher - auch keine
+/// eigenen Fangwerte.
 HaltBarriere* eintrittsBarriere = nullptr;
 std::function<bool()> eintrittsKernLebt;
+const char* eintrittsHalt = "";      ///< die Zeile, die im Rotlauf faellt
+const char* eintrittsAbbruch = "";   ///< die Lage in der Abbruchmeldung
 
-void zerstoerungBeiLaufendemTakt()
+void eintrittsHaken()
 {
-    // Keine Anfrage: ein Takt, der die Schleuse passierte, zaehlte eine
-    // Existenzpruefung - der Kanarienwert - und fasste sonst nichts an.
-    using Barriere = HaltBarriere;
+    auto* barriere = eintrittsBarriere;
+    if (barriere == nullptr || ! barriere->scharf.exchange (false))
+        return;
+    barriere->erreicht = true;
+    const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (15);
+    while (! barriere->zerstoert.load() && std::chrono::steady_clock::now() < bis)
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+    barriere->abgelaufen = ! barriere->zerstoert.load();
+    const bool lebtNoch = eintrittsKernLebt();
+    barriere->kernLebteImHalt = lebtNoch;
+    if (lebtNoch)
+        return;
+    // Der Kern ist frei, bevor der Takt weiterlaeuft: die Fortsetzung
+    // fasste freigegebenen Speicher an. Der Lauf endet vor ihr.
+    fall ("M-34", eintrittsHalt, false, "weak_ptr waehrend des haltenden Takts abgelaufen; Abbruch vor der Fortsetzung des Takts");
+    std::cout << "NAK-286 BRIEFKASTEN: " << bestanden << " bestanden, " << fehlgeschlagen
+              << " fehlgeschlagen (abgebrochen in " << eintrittsAbbruch << ")" << std::endl;
+    std::_Exit (1);
+}
+
+/// Lage (b) und, mit `uebergabeAbgelehnt`, Lage (b) (4): JUCE hat den rohen
+/// Zeiger schon gelesen, der Rueckruf hat noch nichts angefasst. In (b) (4)
+/// behandelt der Testhaken des Kerns die Uebergabe an den Message-Thread als
+/// abgelehnt - gemessen ohne echtes `stopDispatchLoop()`, das jede spaetere
+/// Nachricht des Testprozesses verwerfen liesse (§26.2 P-14).
+void lageEintritt (bool uebergabeAbgelehnt)
+{
+    const std::string lage = uebergabeAbgelehnt ? "zerstoerung_bei_laufendem_takt (b) (4)"
+                                                : "zerstoerung_bei_laufendem_takt (b)";
+    const std::string halt = lage + (uebergabeAbgelehnt ? " abgelehnte uebergabe: kern lebt, solange der takt haelt"
+                                                        : " halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt");
+    TempWurzel t;
+    auto gen = std::make_unique<Gen>();
+    const auto f = fassaden (t);
+    const bool start = starteMit (*gen, f, true) == dg::Startgrund::gestartet;
+    const auto zeuge = gen->briefkastenFuerTest().zaehlerZeuge();
+    const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
+    const auto b = std::make_shared<HaltBarriere>();
+    eintrittsBarriere = b.get();
+    eintrittsKernLebt = kernLebt;
+    eintrittsHalt = halt.c_str();
+    eintrittsAbbruch = uebergabeAbgelehnt ? "M-34 (b) (4)" : "M-34 (b)";
+    gen->briefkastenFuerTest().setzeHakenTimerEintritt (eintrittsHaken);
+    if (uebergabeAbgelehnt)
+        gen->briefkastenFuerTest().setzeHakenUebergabeAbgelehnt ([] { return true; });
+    const auto gehaltenVorher = dg::Briefkasten::gehalteneKerne();
+    const auto kanarieVorher = f.fs->stand().existenzpruefungen;
+    std::thread zerstoerer ([&gen, b]
     {
-        // Lage (b), P-12: JUCE hat den rohen Zeiger schon gelesen, der Rueckruf
-        // hat noch nichts angefasst.
-        TempWurzel t;
-        auto gen = std::make_unique<Gen>();
-        const auto f = fassaden (t);
-        const bool start = starteMit (*gen, f, true) == dg::Startgrund::gestartet;
-        const auto zeuge = gen->briefkastenFuerTest().zaehlerZeuge();
-        const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
-        const auto b = std::make_shared<Barriere>();
-        eintrittsBarriere = b.get();
-        eintrittsKernLebt = kernLebt;
-        gen->briefkastenFuerTest().setzeHakenTimerEintritt ([]
-        {
-            auto* barriere = eintrittsBarriere;
-            if (barriere == nullptr || ! barriere->scharf.exchange (false))
-                return;
-            barriere->erreicht = true;
-            const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (15);
-            while (! barriere->zerstoert.load() && std::chrono::steady_clock::now() < bis)
-                std::this_thread::sleep_for (std::chrono::milliseconds (1));
-            barriere->abgelaufen = ! barriere->zerstoert.load();
-            const bool lebtNoch = eintrittsKernLebt();
-            barriere->kernLebteImHalt = lebtNoch;
-            if (lebtNoch)
-                return;
-            // Der Kern ist frei, bevor der Takt weiterlaeuft: die Fortsetzung
-            // fasste freigegebenen Speicher an. Der Lauf endet vor ihr.
-            fall ("M-34", "zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt",
-                  false, "weak_ptr waehrend des haltenden Takts abgelaufen; Abbruch vor der Fortsetzung des Takts");
-            std::cout << "NAK-286 BRIEFKASTEN: " << bestanden << " bestanden, " << fehlgeschlagen
-                      << " fehlgeschlagen (abgebrochen in M-34 (b))" << std::endl;
-            std::_Exit (1);
-        });
-        const auto kanarieVorher = f.fs->stand().existenzpruefungen;
-        std::thread zerstoerer ([&gen, b]
-        {
-            const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (5);
-            while (! b->erreicht.load() && std::chrono::steady_clock::now() < bis)
-                std::this_thread::sleep_for (std::chrono::milliseconds (1));
-            gen.reset();   // der Destruktor auf einem zweiten Thread
-            b->zerstoert = true;
-        });
-        const bool zerstoert = pumpe (20000, [&] { return b->zerstoert.load(); });
-        zerstoerer.join();
-        const auto nachFreigabe = zeuge();
-        const auto kanarie = f.fs->stand().existenzpruefungen;
-        const bool kernFrei = pumpe (5000, [&] { return ! kernLebt(); });
-        const auto spaeter = zeuge();
-        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) vorbedingung (takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)",
-              start && b->erreicht.load() && zerstoert && ! b->abgelaufen.load());
-        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) halt am eintritt des timer-rueckrufs: kern lebt, solange der takt haelt; abgewiesen, kanarienwert unberuehrt",
-              b->kernLebteImHalt.load() && nachFreigabe.abgewieseneTakte == 1 && kanarie == kanarieVorher
-                  && nachFreigabe.takte == 0,
-              "Kern im Halt " + juce::String (b->kernLebteImHalt.load() ? "lebend" : "frei") + ", abgewiesen "
-                  + zahl (nachFreigabe.abgewieseneTakte) + ", Kanarienwert " + zahl (kanarieVorher) + " -> "
-                  + zahl (kanarie) + ", Takte " + zahl (nachFreigabe.takte));
+        const auto bis = std::chrono::steady_clock::now() + std::chrono::seconds (5);
+        while (! b->erreicht.load() && std::chrono::steady_clock::now() < bis)
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        gen.reset();   // der Destruktor auf einem zweiten Thread
+        b->zerstoert = true;
+    });
+    const bool zerstoert = pumpe (20000, [&] { return b->zerstoert.load(); });
+    zerstoerer.join();
+    const auto nachFreigabe = zeuge();
+    const auto kanarie = f.fs->stand().existenzpruefungen;
+    bool kernFrei = false;
+    if (uebergabeAbgelehnt)
+    {
+        // Keine Nachricht unterwegs: auch nach dem Pumpen haelt der Halteplatz den Kern.
+        pumpe (500);
+        kernFrei = ! kernLebt();
+    }
+    else
+    {
+        kernFrei = pumpe (5000, [&] { return ! kernLebt(); });
+    }
+    const auto gehaltenNachher = dg::Briefkasten::gehalteneKerne();
+    const auto spaeter = zeuge();
+    fall ("M-34", (lage + " vorbedingung (" + (uebergabeAbgelehnt ? "uebergabe abgelehnt, " : "")
+                   + "takt am eintritt des timer-rueckrufs, destruktor auf zweitem thread zurueck)").c_str(),
+          start && b->erreicht.load() && zerstoert && ! b->abgelaufen.load());
+    fall ("M-34", (halt + "; abgewiesen, kanarienwert unberuehrt").c_str(),
+          b->kernLebteImHalt.load() && nachFreigabe.abgewieseneTakte == 1 && kanarie == kanarieVorher
+              && nachFreigabe.takte == 0,
+          "Kern im Halt " + juce::String (b->kernLebteImHalt.load() ? "lebend" : "frei") + ", abgewiesen "
+              + zahl (nachFreigabe.abgewieseneTakte) + ", Kanarienwert " + zahl (kanarieVorher) + " -> "
+              + zahl (kanarie) + ", Takte " + zahl (nachFreigabe.takte));
+    if (! uebergabeAbgelehnt)
         fall ("M-34", "zerstoerung_bei_laufendem_takt (b) kern frei, nachdem der test die nachrichten gepumpt hat; kein takt mehr begonnen",
               kernFrei && spaeter.takteBegonnen == nachFreigabe.takteBegonnen,
               "Kern frei " + juce::String (kernFrei ? "ja" : "nein") + ", begonnen " + zahl (nachFreigabe.takteBegonnen)
                   + " -> " + zahl (spaeter.takteBegonnen));
-        eintrittsBarriere = nullptr;
-        eintrittsKernLebt = {};
+    else
+        fall ("M-34", "zerstoerung_bei_laufendem_takt (b) (4) abgelehnte uebergabe: der halteplatz haelt danach genau diese referenz, auch nach dem pumpen; kein takt mehr begonnen",
+              ! kernFrei && gehaltenNachher == gehaltenVorher + 1 && spaeter.takteBegonnen == nachFreigabe.takteBegonnen,
+              "Halteplatz " + zahl (gehaltenVorher) + " -> " + zahl (gehaltenNachher) + ", Kern nach dem Pumpen "
+                  + juce::String (kernFrei ? "frei" : "lebend") + ", begonnen " + zahl (nachFreigabe.takteBegonnen)
+                  + " -> " + zahl (spaeter.takteBegonnen));
+    eintrittsBarriere = nullptr;
+    eintrittsKernLebt = {};
+    eintrittsHalt = "";
+    eintrittsAbbruch = "";
+}
+
+/// Lage (c), §26.2 P-12 praezisiert: der Zustand der haltenden Antwortquelle
+/// liegt ausserhalb von Kern und Prozessor, und die Quelle faengt nichts.
+struct QuellHalt
+{
+    std::atomic<bool> scharf { true }, erreicht { false }, stoppBegonnen { false }, ohneStopp { false },
+                      zerstoert { false }, quelleZurueck { false }, quelleVorDestruktorEnde { false },
+                      kanarieOffen { false };
+    std::atomic<double> tStopp { 0.0 }, tHaltBeginn { 0.0 }, tFreigabe { 0.0 }, tDestruktorEnde { 0.0 };
+};
+QuellHalt* quellHalt = nullptr;
+Gen* quellProzessor = nullptr;
+constexpr double kQuellHaltMs = 2000.0;   ///< Halt nach dem Beginn von `stoppe()`
+
+/// Die blockierende Antwortquelle (Testbau, ueber `setzeAntwortquelle`): sie haelt
+/// an einer Barriere, bis `stoppe()` auf dem zweiten Thread seit kQuellHaltMs
+/// laeuft, und liest danach den Kanarienwert des Prozessors. Ist der Destruktor
+/// waehrend des Halts zurueck (Rotlauf), endet der Lauf hier, bevor der Takt
+/// weiterlaeuft - er laese den zerstoerten Prozessor.
+dg::Antwort haltendeQuelle (const dg::Anfrage&)
+{
+    dg::Antwort a;
+    a.wartet = true;   // kein Schreibversuch: hinter der Quelle zaehlt der Takt nur noch
+    auto* h = quellHalt;
+    if (h == nullptr || ! h->scharf.exchange (false))
+        return a;
+    h->erreicht = true;
+    h->ohneStopp = ! warteBis ([h] { return h->stoppBegonnen.load(); }, 5000);
+    h->tHaltBeginn = juce::Time::getMillisecondCounterHiRes();
+    while (! h->zerstoert.load() && juce::Time::getMillisecondCounterHiRes() < h->tHaltBeginn.load() + kQuellHaltMs)
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+    if (h->zerstoert.load())
+    {
+        fall ("M-34", "zerstoerung_bei_laufendem_takt (c) halt hinter der schleuse: der destruktor kehrt erst zurueck, nachdem der takt die schleuse verlassen hat",
+              false, "Destruktor zurueck, waehrend der Takt in der Antwortquelle haelt; Abbruch vor der Fortsetzung des Takts");
+        std::cout << "NAK-286 BRIEFKASTEN: " << bestanden << " bestanden, " << fehlgeschlagen
+                  << " fehlgeschlagen (abgebrochen in M-34 (c))" << std::endl;
+        std::_Exit (1);
     }
+    h->tFreigabe = juce::Time::getMillisecondCounterHiRes();
+    // Der Kanarienwert des Prozessors: steht sein Destruktor noch im ersten Schritt,
+    // ist die callbackSchleuse offen - sie schliesst erst nach den drei stop().
+    const auto s = quellProzessor->callbackSchleuseFuerTest();
+    h->kanarieOffen = s != nullptr && ! s->istGeschlossen();
+    h->quelleZurueck = true;
+    return a;
+}
+
+void lageHinterDerSchleuse()
+{
+    // Eine gueltige Anfrage liegt: der erste Takt kommt bis in die Antwortquelle.
+    TempWurzel t;
+    auto gen = std::make_unique<Gen>();
+    const auto f = fassaden (t);
+    const auto h = std::make_shared<QuellHalt>();
+    quellHalt = h.get();
+    quellProzessor = gen.get();
+    gen->briefkastenFuerTest().setzeAntwortquelle (haltendeQuelle);
+    gen->briefkastenFuerTest().setzeHakenBeimStopp ([h]
+    {
+        h->tStopp = juce::Time::getMillisecondCounterHiRes();
+        h->stoppBegonnen = true;
+    });
+    const bool anfrage = schreibeAnfrage (t, neueKennung());
+    const bool start = starteMit (*gen, f, true) == dg::Startgrund::gestartet;
+    const auto zeuge = gen->briefkastenFuerTest().zaehlerZeuge();
+    const auto kernLebt = gen->briefkastenFuerTest().kernBeobachter();
+    const auto gehaltenVorher = dg::Briefkasten::gehalteneKerne();
+    std::thread zerstoerer ([&gen, h]
+    {
+        warteBis ([&h] { return h->erreicht.load(); }, 5000);
+        gen.reset();   // der Destruktor auf einem zweiten Thread
+        h->tDestruktorEnde = juce::Time::getMillisecondCounterHiRes();
+        h->quelleVorDestruktorEnde = h->quelleZurueck.load();
+        h->zerstoert = true;
+    });
+    const bool zerstoert = pumpe (20000, [&] { return h->zerstoert.load(); });
+    zerstoerer.join();
+    quellProzessor = nullptr;
+    const auto nach = zeuge();
+    const bool kernFrei = pumpe (5000, [&] { return ! kernLebt(); });   // vor dem Ende der Fassaden
+    const auto gehaltenNachher = dg::Briefkasten::gehalteneKerne();
+    quellHalt = nullptr;
+    const double gehalten = h->tFreigabe.load() - h->tHaltBeginn.load();
+    const double abStopp = h->tDestruktorEnde.load() - h->tStopp.load();
+    const double nachDerFreigabe = h->tDestruktorEnde.load() - h->tFreigabe.load();
+    const auto ms = [] (double wert) { return juce::String (wert, 1); };
+    fall ("M-34", "zerstoerung_bei_laufendem_takt (c) vorbedingung (gueltige anfrage, takt in der antwortquelle hinter der schleuse, stoppe() begonnen, destruktor auf zweitem thread zurueck)",
+          anfrage && start && h->erreicht.load() && h->stoppBegonnen.load() && ! h->ohneStopp.load() && zerstoert
+              && h->quelleZurueck.load());
+    fall ("M-34", "zerstoerung_bei_laufendem_takt (c) halt hinter der schleuse: der destruktor kehrt erst zurueck, nachdem der takt die schleuse verlassen hat",
+          h->quelleVorDestruktorEnde.load() && gehalten >= kQuellHaltMs && abStopp >= kQuellHaltMs && nachDerFreigabe >= 0.0,
+          "Halt " + ms (gehalten) + " ms nach dem Beginn von stoppe(), Destruktor waehrenddessen nicht zurueck; Wartezeit von stoppe() bis zum Destruktorende "
+              + ms (abStopp) + " ms, davon nach der Freigabe " + ms (nachDerFreigabe) + " ms; Quelle vor dem Destruktorende zurueck "
+              + juce::String (h->quelleVorDestruktorEnde.load() ? "ja" : "nein"));
+    fall ("M-34", "zerstoerung_bei_laufendem_takt (c) kanarienwert unberuehrt (callbackschleuse des prozessors offen, als die quelle weiterlief); takt zugelassen, kein schreibversuch",
+          h->kanarieOffen.load() && nach.abgewieseneTakte == 0 && nach.takte == 1 && nach.warteTakte == 1
+              && nach.schreibversuche == 0,
+          "callbackSchleuse offen " + juce::String (h->kanarieOffen.load() ? "ja" : "nein") + ", abgewiesen "
+              + zahl (nach.abgewieseneTakte) + ", Takte " + zahl (nach.takte) + ", wartend " + zahl (nach.warteTakte)
+              + ", Schreibversuche " + zahl (nach.schreibversuche));
+    fall ("M-34", "zerstoerung_bei_laufendem_takt (c) danach ist der kern frei, nachdem der test die nachrichten gepumpt hat (p-12)",
+          kernFrei,
+          "Kern frei " + juce::String (kernFrei ? "ja" : "nein") + ", Halteplatz " + zahl (gehaltenVorher) + " -> "
+              + zahl (gehaltenNachher));
+}
+
+void zerstoerungBeiLaufendemTakt()
+{
+    // Ohne Anfrage in den Lagen (b), (b) (4) und (a): ein Takt, der die Schleuse
+    // passierte, zaehlte eine Existenzpruefung - der Kanarienwert - und fasste
+    // sonst nichts an.
+    using Barriere = HaltBarriere;
+    lageEintritt (false);   // Lage (b), §23.2 P-12
+    lageEintritt (true);    // Lage (b) (4), §26.2 P-14
     {
         // Lage (a): der Takt haelt VOR der Schleuse.
         TempWurzel t;
@@ -2853,6 +3007,7 @@ void zerstoerungBeiLaufendemTakt()
               "begonnen " + zahl (nachFreigabe.takteBegonnen) + " -> " + zahl (spaeter.takteBegonnen)
                   + ", Kern danach frei " + juce::String (kernFrei ? "ja" : "nein"));
     }
+    lageHinterDerSchleuse();   // Lage (c), §26.2 P-12 praezisiert - nach Lage (a)
     {
         // Zerstoerung auf dem Message-Thread: der Stopp ist der erste Schritt, und
         // der Kern ist sofort frei - ohne Nachricht (P-12).

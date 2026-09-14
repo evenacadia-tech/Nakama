@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
+#include <mutex>
+#include <new>
 
 #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN
@@ -467,7 +469,8 @@ std::int64_t EchteUhrFassade::jetztUtcMs()
 /*  Der Kern ist der Timer-Traeger (§23.2 P-12). Der Halter besitzt ihn ueber
     einen `shared_ptr` und gibt diese Referenz nach `stoppe()` nach
     `freigeben()` ab; ein Rueckruf, den der Timer vor dem Stopp begonnen hat,
-    faellt damit nie in freigegebenen Speicher. */
+    faellt damit nie in freigegebenen Speicher - auch nicht, wenn JUCE die
+    Uebergabe an den Message-Thread ablehnt (§26.2 P-14). */
 struct Briefkasten::Kern final : juce::Timer
 {
     /** Die Zaehler in eigenem Besitz: der Zeuge (M-34) haelt nur sie, nie den
@@ -504,6 +507,7 @@ struct Briefkasten::Kern final : juce::Timer
     std::function<void()>               hakenTimerEintritt;
     std::function<void()>               hakenVorSchleuse;
     std::function<void()>               hakenBeimStopp;
+    std::function<bool()>               hakenUebergabeAbgelehnt;   ///< M-34 (b) (4), P-14
 
     ipc::CallbackSchleuse schleuse;
     std::atomic<bool>     taktLaeuft { false };
@@ -514,6 +518,9 @@ struct Briefkasten::Kern final : juce::Timer
 
     const std::shared_ptr<Zaehlwerk> zaehlwerk { std::make_shared<Zaehlwerk>() };
     Zaehlwerk&                       zw { *zaehlwerk };
+
+    /// P-14: die Kette im Halteplatz - der zuvor gehaltene Kern; sonst leer.
+    std::shared_ptr<Kern> gehaltenNaechster;
 
     // Ab dem Start unveraenderlich.
     std::string                 rolle;
@@ -768,9 +775,13 @@ struct Briefkasten::Kern final : juce::Timer
         erst nach dem laufenden Rueckruf, und `Timer::~Timer` laeuft dort
         (juce_Timer.cpp:359-370). Sofort nur, wenn kein Rueckruf laufen kann: der
         Timer lief nie, es gibt keinen MessageManager, oder dies ist der
-        Message-Thread. Nie ein Warten auf den Message-Thread. Kann JUCE die
-        Nachricht nicht einstellen (ohne Instanz oder nach `stopDispatchLoop`,
-        juce_MessageManager.cpp:81-92), verwirft es sie samt Referenz hier. */
+        Message-Thread. Nie ein Warten auf den Message-Thread.
+
+        P-14: gelingt die Uebergabe nicht - JUCE lehnt die Nachricht ab (kein
+        MessageManager mehr, nach `stopDispatchLoop`, Systemqueue weg;
+        juce_MessageManager.cpp:81-92), oder fuer ihren Kasten ist kein Speicher
+        da -, wird die Referenz nie hier frei: sie liegt bis zum Prozessende im
+        Halteplatz. */
     static void freigeben (std::shared_ptr<Kern> k)
     {
         if (k == nullptr)
@@ -778,7 +789,75 @@ struct Briefkasten::Kern final : juce::Timer
         const auto* mm = juce::MessageManager::getInstanceWithoutCreating();
         if (! k->timerLief.load() || mm == nullptr || mm->isThisTheMessageThread())
             return;   // `k` endet hier
-        juce::MessageManager::callAsync ([rest = std::move (k)]() mutable { rest.reset(); });
+        if (uebergeben (k))
+            return;   // `k` ist leer; der Message-Thread gibt frei
+        halten (std::move (k));   // P-14: abgelehnt - nie auf diesem Thread frei
+    }
+
+    /** P-14: `true` genau dann, wenn JUCE die Nachricht eingestellt hat - dann
+        ist `k` leer. Sonst liegt die Referenz unveraendert in `k`.
+
+        Die Nachricht traegt die Referenz in einem Kasten, den erst ihr Lauf
+        loescht, nicht im Lambda: eine abgelehnte Nachricht zerstoert
+        `MessageBase::post()` synchron auf DIESEM Thread
+        (juce_MessageManager.cpp:85-88), und eine Referenz im Lambda fiele mit
+        ihr. Den Kasten laesst das Verwerfen liegen, die Referenz kommt zurueck.
+        Verwirft der MessageManager bei seinem Ende eine noch liegende Nachricht
+        ohne Lauf (juce_Messaging_windows.cpp:60-64, :257), bleiben Kasten und
+        Kern bis zum Prozessende liegen - auch dann nie frei. */
+    static bool uebergeben (std::shared_ptr<Kern>& k)
+    {
+        // M-34 Lage (b) (4): der Testhaken behandelt die Uebergabe als abgelehnt. Im Produkt leer.
+        if (k->hakenUebergabeAbgelehnt && k->hakenUebergabeAbgelehnt())
+            return false;
+        auto* kasten = new (std::nothrow) std::shared_ptr<Kern>();
+        if (kasten == nullptr)
+            return false;
+        kasten->swap (k);
+        bool eingestellt = false;
+        try
+        {
+            eingestellt = juce::MessageManager::callAsync ([kasten] { delete kasten; });
+        }
+        catch (...)
+        {
+            eingestellt = false;   // keine Nachricht entstanden: der Kasten gehoert weiter hierher
+        }
+        if (eingestellt)
+            return true;
+        k.swap (*kasten);
+        delete kasten;
+        return false;
+    }
+
+    /** P-14: der Halteplatz - prozessweit, unter einer Sperre, nie zerstoert.
+        Der Behaelter liegt auf dem Heap, und kein statischer Destruktor raeumt
+        ihn beim Prozessende oder beim Entladen der DLL ab. Er entsteht mit dem
+        ersten Halter (`Briefkasten::Briefkasten`), damit `halten` im
+        Destruktor nie allokiert; die Kette laeuft durch die gehaltenen Kerne. */
+    struct Halteplatz
+    {
+        std::mutex            sperre;
+        std::shared_ptr<Kern> kopf;         ///< der zuletzt gehaltene Kern
+        std::size_t           anzahl = 0;
+    };
+
+    static Halteplatz& halteplatz()
+    {
+        static Halteplatz* const platz = new Halteplatz();   // nie geloescht (P-14)
+        return *platz;
+    }
+
+    /** P-14: bis zum Prozessende. Der Timer ist seit `stoppe()` aus, und
+        `Timer::~Timer` laeuft fuer diesen Kern nie - also nie auf einem
+        Fremdthread. */
+    static void halten (std::shared_ptr<Kern> k)
+    {
+        auto& platz = halteplatz();
+        const std::lock_guard<std::mutex> l (platz.sperre);
+        k->gehaltenNaechster = std::move (platz.kopf);
+        platz.kopf = std::move (k);
+        ++platz.anzahl;
     }
 };
 
@@ -787,6 +866,7 @@ struct Briefkasten::Kern final : juce::Timer
 Briefkasten::Briefkasten()
     : kern (std::make_shared<Kern>())
 {
+    Kern::halteplatz();   // P-14: der Halteplatz entsteht hier, damit `halten` im Destruktor nie allokiert
     kern->wurzel = std::make_shared<EchteWurzelFassade>();
     kern->fs     = std::make_shared<EchteDateisystemFassade>();
     kern->uhr    = std::make_shared<EchteUhrFassade>();
@@ -795,7 +875,7 @@ Briefkasten::Briefkasten()
 Briefkasten::~Briefkasten()
 {
     stoppe();
-    Kern::freigeben (std::move (kern));   // P-12
+    Kern::freigeben (std::move (kern));   // P-12, P-14
 }
 
 void Briefkasten::setzeFassaden (std::shared_ptr<WurzelFassade> wurzel,
@@ -827,6 +907,11 @@ void Briefkasten::setzeHakenVorSchleuse (std::function<void()> haken)
 void Briefkasten::setzeHakenBeimStopp (std::function<void()> haken)
 {
     kern->hakenBeimStopp = std::move (haken);
+}
+
+void Briefkasten::setzeHakenUebergabeAbgelehnt (std::function<bool()> haken)
+{
+    kern->hakenUebergabeAbgelehnt = std::move (haken);
 }
 
 Startgrund Briefkasten::starte (const Konfiguration& konfiguration, bool mitTimer)
@@ -972,6 +1057,13 @@ std::function<Zaehler()> Briefkasten::zaehlerZeuge() const
 std::function<bool()> Briefkasten::kernBeobachter() const
 {
     return [beobachtet = std::weak_ptr<Kern> (kern)] { return ! beobachtet.expired(); };
+}
+
+std::size_t Briefkasten::gehalteneKerne()
+{
+    auto& platz = Kern::halteplatz();
+    const std::lock_guard<std::mutex> l (platz.sperre);
+    return platz.anzahl;
 }
 
 } // namespace nakama::diagnose

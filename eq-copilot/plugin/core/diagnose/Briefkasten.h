@@ -29,8 +29,8 @@
     mit dem Zaehler "Wurzelabfragen". Im Produkt sind beide die echten Aufrufe,
     im Test Attrappen (F-14, F-16).
 
-    LEBENSDAUER (F-12, §23.2 P-12): der Takt ist ein `juce::Timer` des KERNS
-    (1 000 ms, Message-Thread); den Kern haelt der Halter ueber einen
+    LEBENSDAUER (F-12, §23.2 P-12, §26.2 P-14): der Takt ist ein `juce::Timer`
+    des KERNS (1 000 ms, Message-Thread); den Kern haelt der Halter ueber einen
     `shared_ptr`. `stoppe()` ist der erste Destruktorschritt des Besitzers:
     Timer aus, danach die Schleuse zu. JUCE ruft einen Timer ueber einen rohen
     Zeiger, und `stopTimer()` wartet auf keinen laufenden Rueckruf
@@ -41,9 +41,21 @@
     Anweisung -, fasst nur lebenden Kern an, und `Timer::~Timer` laeuft auf
     dem Message-Thread. Sofort frei wird der Kern nur, wenn kein Rueckruf
     laufen kann: der Timer lief nie, es gibt keinen MessageManager, oder der
-    Halter endet auf dem Message-Thread. Kein Weg wartet auf den
-    Message-Thread. Ein Takt, der nach dem Stopp an die Schleuse kommt, wird
-    abgewiesen - er ruft die Antwortquelle des zerstoerten Besitzers nie mehr.
+    Halter endet auf dem Message-Thread. Lehnt JUCE die Nachricht ab, wird die
+    Referenz nie auf dem aufrufenden Thread frei: sie liegt bis zum
+    Prozessende im Halteplatz (P-14).
+
+    WARTEN (§26.2 P-12 praezisiert): kein Weg wartet ueber den Message-Thread
+    (kein MessageManagerLock, kein Warten auf die Zustellung einer Nachricht)
+    und keiner auf einen Rueckruf, der die Schleuse noch nicht betreten hat.
+    Ein Takt, der nach dem Stopp an die Schleuse kommt, wird abgewiesen - er
+    ruft die Antwortquelle des zerstoerten Besitzers nie mehr. Einen Takt, der
+    beim Schliessen schon hinter der Schleuse ist, wartet `stoppe()` zu Ende
+    (Muster `callbackSchleuse`, NAK-246 R-D2) - begrenzt durch diesen einen
+    Takt, weil er hinter der Schleuse nie auf den zerstoerenden Thread wartet:
+    `stoppe()` ist der erste Destruktorschritt ohne gehaltene Sperre, und die
+    Antwortquelle nimmt nur Sperren des Prozessors, deren Halter nie auf den
+    Destruktor warten (Manifest §7.1 T-35, M-34 Lage (c)).
 */
 
 #pragma once
@@ -274,7 +286,7 @@ class Briefkasten final
 {
 public:
     Briefkasten();
-    /** `stoppe()`, danach die Referenz auf den Kern nach P-12 freigeben. */
+    /** `stoppe()`, danach die Referenz auf den Kern nach P-12 und P-14 abgeben. */
     ~Briefkasten();
 
     /** Vor dem Start. Ohne Aufruf gelten die echten Fassaden. */
@@ -288,7 +300,8 @@ public:
     Startgrund starte (const Konfiguration& konfiguration, bool mitTimer = true);
 
     /** F-12: Timer aus, Schleuse zu. Idempotent; erster Destruktorschritt des
-        Besitzers. */
+        Besitzers. Wartet einen Takt zu Ende, der die Schleuse schon betreten
+        hat, nie einen davor (§26.2 P-12 praezisiert, M-34 Lage (c)). */
     void stoppe();
 
     /** Ein Takt synchron auf dem aufrufenden Thread (Testzugang, F-16). */
@@ -311,6 +324,10 @@ public:
         beobachtet ueber einen `weak_ptr`, der ihn nicht haelt. */
     std::function<bool()> kernBeobachter() const;
 
+    /** Testzugang (M-34 Lage (b) (4), P-14): wie viele Kerne der prozessweite
+        Halteplatz haelt. Er gibt keinen je frei. */
+    static std::size_t gehalteneKerne();
+
     /** Testhaken: ERSTE Anweisung des Timer-Rueckrufs, vor jeder Beruehrung
         des Kerns (M-34 Lage (b), P-12). */
     void setzeHakenTimerEintritt (std::function<void()> haken);
@@ -318,6 +335,9 @@ public:
     void setzeHakenVorSchleuse (std::function<void()> haken);
     /** Testhaken: am Anfang von `stoppe()`, vor `stopTimer` (M-34). */
     void setzeHakenBeimStopp (std::function<void()> haken);
+    /** Testhaken (M-34 Lage (b) (4), P-14): liefert er `true`, behandelt die
+        Freigabe die Uebergabe an den Message-Thread als abgelehnt. */
+    void setzeHakenUebergabeAbgelehnt (std::function<bool()> haken);
 
 private:
     struct Kern;

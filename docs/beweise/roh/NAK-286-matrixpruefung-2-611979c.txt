@@ -1,0 +1,42 @@
+URTEIL: NEEDS_WORK — vollständige Schließungsprüfung einschließlich der zugehörigen Beweisfälle:
+1 nein — F-28/M-67/T-27 korrigieren Loopgrenze, Obergrenze und Wrap-Probe, aber U_unten verletzt P-5;
+2 ja — F-20/M-65 prüfen die Reihenfolge mit lebender FL-Attrappe und getrennten Verweigerungsgründen;
+3 ja — F-24/M-10/T-25 trennen gemäß P-3 Szenario-Exit 5 von Lauf-Exit 3, mit Fortsetzungs- und Exitcode-Proben;
+4 ja — F-19/M-62/M-75 setzen P-4 um, einschließlich positiver und negativer Versätze außerhalb des früheren Suchfensters;
+5 ja — F-6/M-71/M-79 prüfen kumulative Differenzen sowie Abschluss- und Grenzreset, innerhalb P-6;
+6 nein — F-9/F-13 begrenzen Einmaligkeit gemäß P-1 und prüfen Anlegeversuche, aber M-51 kollidiert beim FIFO-Wiederholungsfall;
+7 nein — F-3/F-4/T-3 und M-33(1) beseitigen den Deckel, jedoch trägt M-33(2) die Ersetzungszusage nicht mehr;
+8 ja — F-8/F-14/T-26 und §5.6 definieren den eigenen Schreibweg, M-53(a/b) treffen dessen Fehlerstellen;
+9 nein — F-28/M-67/M-68 entfernen alte Annahmen, erfüllen P-5 mit der neuen Referenzrechnung aber noch nicht;
+10 ja — M-20 klassifiziert den festen Szenario-Timeout anhand der unveränderten Quelle als rot, die MCP-Hälfte als gebaut, M-78 prüft die bestehende einmalige Wiederholung;
+11 ja — F-12/M-45 ersetzen den Zeit-Rotbeweis durch Zähler-, Zustands- und Reihenfolgeproben, die Join-Dauer bleibt roh;
+12 nein — M-53(a/b) schließen den ursprünglichen Injektionsfehler, der hinzugefügte Rotbeweis (c) bleibt wirkungslos;
+13 ja — M-06/M-15 nennen fallende Gegenproben am Bestand, die vier Klassifikationen entsprechen den Kriterien aus §4 und §0;
+14 nein — F-1/F-12/M-76 setzen P-2 instanzlokal um, aber der neue Plugin-Beweis M-77 widerspricht F-14.
+
+Geprüft: ausschließlich der gebundene Fixdiff samt notwendigen Quellenbeziehungen; die neuen Briefkasten- und Messwege sind nach dem Basiskriterium noch nicht messbar, M-10 ist berechtigt zweigeteilt, die 79 eindeutigen Matrixzeilen ergeben exakt 7/10/3/55/4, §3-Nachtrag/§5.5 Punkt 10/§7.3 Punkt 7 halten P-6 ein, `laufzeit_id` betrifft den erst entstehenden Umschlagvertrag, die externe `analyze()`-Repoquelle ist vorhanden, außerhalb der genannten Defekte wurde kein weiterer Bruch von Gate oder Invarianten festgestellt und HEAD blieb vor/nach der Prüfung identisch bei `611979c7a7885947039ed93ff66f303c31238a5a`.
+
+Nicht geprüft: dynamische Rotläufe, Compiler-, Produkt-, Host-, Nulltest-, Golden- oder State-Testausführungen sowie die ausdrücklich ausgeschlossenen Bereiche; alle Beweisbewertungen sind lesende Quellenprüfungen, keine behaupteten Testläufe, und es wurde nichts geschrieben.
+
+Full review comments:
+
+- [P2] Leite U_unten für phasenverschobene Zellen korrekt her — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:412-412
+  DEFEKT an F-28/M-67: Bei verschobenem Zellenraster ist die behauptete Untergrenze nicht gültig. Gegenbeispiel mit Energiegrenze G: 400 Quellzellen tragen abwechselnd die Halbzellenenergien (4G, 0) und (0, 4G); damit sind A=400 und W=0, also U_unten=39,8 s. Um 50 ms versetzt entstehen hingegen abwechselnd stille und aktive Engine-Zellen, insgesamt nur etwa 20 aktive Sekunden. `eq-copilot/plugin/src/AnalyseEngine.cpp:384–391` summiert die tatsächlichen Samples, nicht die Mittelwerte vollständiger Quellzellen. Der Abzug von Wechseln und zwei Randzellen begrenzt diesen Fehler nicht. Damit fehlt die von [P-5](NAK-286.md#L1033) verlangte gültige Herleitung; erforderlich ist eine samplegenaue Phasenprüfung oder eine tatsächlich gültige Schranke.
+
+- [P2] Verschiebe bei negativem v auch den Referenzbeginn — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:413-413
+  DEFEKT an F-28/M-66 bis M-68: Für den ausdrücklich vorgesehenen negativen Versatz, etwa v=−75 600 Frames aus M-75, hört der Host ab Position 0 bereits die Quelle ab 1,714286 s. Seine Referenz ist deshalb nicht das hier festgelegte Präfix [0, p−v), sondern ein Ausschnitt mit ebenfalls verschobenem Beginn. Zusätzlich verlangt eine zulässige späte Positionsklammer Tabellenwerte jenseits von 45,696 s, obwohl R_X nur bis zum Loopende aufgebaut wird. Dadurch vergleicht das fortgesetzte Snapshot-Szenario mit nicht gehörtem Material beziehungsweise außerhalb seiner Referenztabelle. Der nach [P-4](NAK-286.md#L1032) unterstützte negative Versatz muss bei beiden Ausschnittgrenzen und beim Tabellenbereich berücksichtigt werden.
+
+- [P2] Richte die Referenz am publizierten Messstand aus — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:413-413
+  DEFEKT an F-28/M-67/M-68: Eine Antwort zwischen zwei Positionsabfragen enthält nicht zwingend Messwerte dieses Zeitfensters. Der weiterhin vorgesehene Aufruf `engine.snapshot()` liefert lediglich `fertig` (`eq-copilot/plugin/src/AnalyseEngine.cpp:1123–1126`); integrierte Lautheit, Stereo- und Spektralwerte werden bei der schweren Auswertung aktualisiert (`:1059–1066`), deren Kadenz 250 ms beträgt (`eq-copilot/plugin/src/WorkerCadence.h:28–29`). Bei letzter Publikation um 45,0 s und Antwortklammer 45,19–45,22 s umfasst die Referenz nur Rasterpunkte 45,1–45,3 s, nicht den tatsächlichen Messstand. Die leichte Publikation behebt das nicht (`AnalyseEngine.cpp:787–797`). Für ein gültiges Band nach [P-5](NAK-286.md#L1033) muss die Referenz die Materialzeit beziehungsweise nachgewiesene Publikationslatenz berücksichtigen, statt JSON-Lesezeit mit Messzeit gleichzusetzen.
+
+- [P2] Erzwinge für M-33(2) eine echte Zielnamenskollision — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:532-532
+  DEFEKT im zweiten Rotbeweis: In Lage (b) erhalten die beiden Instanzen nun ausdrücklich verschiedene `laufzeit32` und damit verschiedene Zielnamen. Allein das Einschalten von Ersetzen beim Umbenennen lässt deshalb weiterhin zwei Dateien entstehen; die behauptete Reduktion auf eine Datei findet nicht statt. Der UUID-Fix beseitigt den Deckel, macht aber den übernommenen Ersetzungs-Rotbeweis wirkungslos. Für die Zusage „keine Datei wird je ersetzt“ braucht die Probe einen bereits belegten identischen Zielnamen und eine Beobachtung seiner Erhaltung, entsprechend dem [Beweisleitsatz](NAK-286.md#L1045).
+
+- [P2] Trenne in M-77 Startzugriffe und nachfolgende Taktzugriffe — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:538-538
+  DEFEKT im Reparse-Durchlauf: Das Ereignis umfasst die Konstruktion, gleichzeitig verlangt die Zusage insgesamt 0 Fassadenaufrufe. Um `evenacadia` beim Start als Reparse-Punkt zu erkennen, muss jedoch bereits eine Attributprüfung erfolgen; nach [F-14](NAK-286.md#L374) muss auch diese über die gezählte Dateisystem-Fassade laufen. Eine regelkonforme Implementierung verletzt somit schon ohne gestarteten Takt den Nullzähler. Die Startprüfungen müssen getrennt ausgewiesen und die Nullzugriffe als Differenz für die anschließenden fünf Taktauslösungen geprüft werden; ein ungezählter Startzugriff wäre kein zulässiger Ausweg.
+
+- [P2] Bereite den erneuten Antwortpfad im FIFO-Test vor — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:567-567
+  DEFEKT an M-51: Nach den 257 Antworten liegt die Datei der ältesten Kennung weiterhin vor, denn F-9 verbietet der Instanz das Löschen. Bei erneuter Vorlage bleiben Anfragekennung, PID, Instanz- und Laufzeitkennung identisch; anders als vor dem Fix gibt es nach F-3 keine Suffixleiter mehr. Das vorgeschriebene Umbenennen ohne Ersetzen aus F-8 scheitert deshalb am alten Antwortnamen, obwohl die Kennung korrekt aus dem Ring verdrängt wurde. Die zugesagte erneute Antwort kann so nicht entstehen; lediglich die vorhandene Datei zu zählen würde den FIFO-Pfad nicht beweisen. Der Test-Anfragende muss alte Antworten vor der Wiederholung ausdrücklich entfernen oder die Zusage auf den beobachteten neuen Schreibversuch ausrichten, ohne den Geltungsrahmen von [P-1](NAK-286.md#L1029) zu ändern.
+
+- [P2] Verwende für M-53(c) einen wirksamen Größen-Rotbeweis — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md:569-569
+  DEFEKT im neuen Runner-Rotbeweis: Eine 0-Byte-Datei wird nach Entfernung allein des Größenriegels weiterhin nicht als Antwort gewertet, weil sie kein JSON-Objekt und damit keinen gültigen Umschlag nach [F-4](NAK-286.md#L357) enthält. Die nachgelagerte Verarbeitung verwirft sie weiterhin; der behauptete Zustandswechsel tritt nicht ein. Die korrigierten Injektionen (a) und (b) tragen ihre Zusagen, aber (c) braucht beispielsweise eine ansonsten gültige übergroße Antwort oder einen Zähler für das unerlaubte Lesen vor der Größenprüfung, damit tatsächlich der Größenriegel falsifiziert wird.

@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: bbbd4389 -->
+<!-- quellstand: 5e19f53e -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,7 +9,10 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-09-13 · Quellstand `bbbd4389` · **34 von 48 abgenommen** · 1 gebaut · 13 offen
+**Stand:** 2026-09-14 · Quellstand `5e19f53e` · **34 von 48 abgenommen** · 1 gebaut · 13 offen
+
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `5e19f53e` sind.
 
 `████████████████████████████▓░░░░░░░░░░░` 71 % abgenommen · 73 % gebaut
 
@@ -18,10 +21,6 @@
 **Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S25e`
 
 **Bei dir liegen 7 Fragen** — `U11, U13, U24, U25, U26, U40, U43`. Sie werden im Chat gestellt: Skill `/fragen`.
-
-> ⚠️ **Unlesbare Urteilsmarken** — diese Schritte werden vorsichtshalber
-> als *nicht abgenommen* geführt:
-> - NAK-286.md: eine NAKAMA-URTEIL-Zeile ist unlesbar (1 gefunden, 0 lesbar) — Form: <!-- NAKAMA-URTEIL: T2 PASS 2026-08-23 [offen|nachgearbeitet] -->
 
 ## Phasen auf einen Blick
 

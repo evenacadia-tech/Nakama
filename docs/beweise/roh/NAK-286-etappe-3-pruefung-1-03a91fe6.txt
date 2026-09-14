@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — ein DEFEKT.
+
+Geprüft: vollständiger Vier-Dateien-Diff, Aufruf- und Stopppfade, Verträge, Tests sowie alle 19 Mutationen gegen ihre Rohdaten; Quellhashes entsprechen den Rücknahmehashes, Schema-Blobs sind bytegleich, HEAD (03a91fe6bd66a29e7811b2160b940f8d6e086b02) und Arbeitsbaumstatus blieben unverändert.
+
+Nicht geprüft: keine Builds, Tests, Rotläufe, Kanon- oder FL-Läufe gestartet; Laufzeitergebnisse einschließlich Audio-/State-Neutralität wurden ausschließlich gelesen, nicht selbst nachgemessen.
+
+Review comment:
+
+- [P2] Weise JSON-Arrays als Anfrage zurück — C:/Users/phili/Projekte/Nakama/broker/src/briefkasten.rs:112-113
+  DEFEKT gegen R-286-1/F-2: Bei vorhandenen Briefkastenordnern wird `["nakama.diagnose.anfrage.v1","00000000000000000000000000000000"]` für eine noch unbeantwortete Kennung akzeptiert und beantwortet. Vorgeschrieben ist jedoch „ein JSON-Objekt mit genau den Schlüsseln“; das Schema setzt `type: object` (Vertragsinvariante: [CLAUDE.md:182](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L182)). Serdes abgeleiteter Struct-Deserializer akzeptiert auch Sequenzen; `deny_unknown_fields` verhindert das nicht. Lesender Nachweis: `rg -n -A 47 'fn deserialize_struct' C:/Users/phili/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.151/src/de.rs` zeigt den Array-/`visit_seq`-Zweig. Der C++-Leser lehnt denselben Inhalt ab. Die Objektform muss zusätzlich erzwungen und dieser Ablehnungsfall getestet werden.

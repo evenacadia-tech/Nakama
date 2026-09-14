@@ -28,17 +28,6 @@
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
   },
   {
-   "id": "U24",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Bestätigung (ja/nein)",
-   "titel": "Bleiben es die zwölf Kernfunktionen, die der Entwurf führt?",
-   "was": "Der Entwurf sagt an zwei Stellen, es seien „zwölf von zwanzig gewählten Kernfunktionen“. Die Zwanziger-Liste und die Auswahl existieren in keiner Datei des Repos — der Satz stammt aus einer frühen Fassung und ist nicht rekonstruierbar. Die zwölf Funktionen selbst sind benannt (Mix-Landkarte, Ursachenfinder, musikalische Prioritäten, PRE/POST, Dynamik, Stereo/Phase, hörbarer Beweis, Bus-Empfehlungen, Vorher/Nachher, EQ-Fernsteuerung, dynamisches Entmaskieren, Assistent). Frage: bestätigst du diese zwölf als Kernumfang, oder soll etwas raus oder dazu?",
-   "warum": "Register NAK-39 seit dem 21.08.2026 offen. Solange der Satz unbelegt im Entwurf steht, behauptet der Plan eine Auswahl, die niemand nachlesen kann. Am Bau ändert eine Bestätigung nichts; eine Änderung würde Phasen verschieben.",
-   "wo": "docs/FL-Nakama-Sonden-Design-Entwurf.md §0.2 und §22 (Erratum (m)); docs/offene-punkte.md NAK-39",
-   "seit": "02.09.",
-   "status": "offen"
-  },
-  {
    "id": "U25",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (ja/nein)",
@@ -679,6 +668,24 @@
     "warum": "Wie das Zeitfenster ohne Aussage aussieht, ist Produktsache (docs/beweise/NAK-283.md §8.3, P-283-2; Matrixzeilen M-56, M-57, M-58). Die Messung selbst ist durch Regel R-283-5 festgelegt.",
     "wo": "docs/beweise/NAK-283.md §8.3 und §9; Etappe 5; Gen-Oberfläche (S31b)",
     "seit": "12.09.",
+    "status": "offen"
+   }
+  },
+  "U24": {
+   "wahl": "A. Ja, die zwölf bleiben.",
+   "text": "passt so mit den 12 . die weiteren fragen machen wir morgen, ich muss jetzt schlafen",
+   "datum": "2026-09-15 01:33",
+   "status": "eingearbeitet",
+   "ergebnis": "Die zwölf Kernfunktionen 1, 2, 4, 5, 9, 10, 12, 13, 14, 16, 17 und 18 (Entwurf §28) sind bestätigter Kernumfang; die Zwanziger-Liste bleibt unbelegt, der Satz „zwölf von zwanzig“ bleibt als Erratum (m) markiert und trägt in §0.2 und §22 den datierten Entscheid. Register NAK-39 geschlossen. Am Bau ändert sich nichts. Festgehalten in design/abnahmen/2026-09-15-zwoelf-kernfunktionen-u24.md. Gestellt als Text in der Dirigentensitzung 05f5c3c0 (AskUserQuestion im dontAsk-Modus gesperrt) mit zwei Wegen: A „Ja, die zwölf bleiben (Empfohlen)“, B „Etwas soll raus oder dazu“. Mit derselben Antwort hat der User die Fragerunde beendet; die übrigen Karten folgen auf sein Wort am nächsten Tag.",
+   "karte": {
+    "id": "U24",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Bestätigung (ja/nein)",
+    "titel": "Bleiben es die zwölf Kernfunktionen, die der Entwurf führt?",
+    "was": "Der Entwurf sagt an zwei Stellen, es seien „zwölf von zwanzig gewählten Kernfunktionen“. Die Zwanziger-Liste und die Auswahl existieren in keiner Datei des Repos — der Satz stammt aus einer frühen Fassung und ist nicht rekonstruierbar. Die zwölf Funktionen selbst sind benannt (Mix-Landkarte, Ursachenfinder, musikalische Prioritäten, PRE/POST, Dynamik, Stereo/Phase, hörbarer Beweis, Bus-Empfehlungen, Vorher/Nachher, EQ-Fernsteuerung, dynamisches Entmaskieren, Assistent). Frage: bestätigst du diese zwölf als Kernumfang, oder soll etwas raus oder dazu?",
+    "warum": "Register NAK-39 seit dem 21.08.2026 offen. Solange der Satz unbelegt im Entwurf steht, behauptet der Plan eine Auswahl, die niemand nachlesen kann. Am Bau ändert eine Bestätigung nichts; eine Änderung würde Phasen verschieben.",
+    "wo": "docs/FL-Nakama-Sonden-Design-Entwurf.md §0.2 und §22 (Erratum (m)); docs/offene-punkte.md NAK-39",
+    "seit": "02.09.",
     "status": "offen"
    }
   }

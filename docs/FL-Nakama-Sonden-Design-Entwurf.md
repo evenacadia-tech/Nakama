@@ -452,6 +452,12 @@ versionierten Schemata und der reale Quellcode.
 > existiert in einer Datei des Repos. Er gilt als Annahme der Fassung 0.1; der
 > Kernfunktionen-Satz dieses Entwurfs ist damit ein Startwert wie die Zahlen in Erratum (f).
 > Offen als Fragenkarte, Register **NAK-39**.
+>
+> **User-Entscheid 15.09.2026 (Karte U24):** Die zwölf Kernfunktionen 1, 2, 4, 5, 9, 10, 12,
+> 13, 14, 16, 17 und 18 (§28) sind bestätigter Kernumfang — User-Wort wörtlich: „passt so mit
+> den 12". Die Zwanziger-Liste bleibt unbelegt; „zwölf von zwanzig" ist weiterhin nur eine
+> Annahme der Fassung 0.1. NAK-39 geschlossen; Abnahme
+> `design/abnahmen/2026-09-15-zwoelf-kernfunktionen-u24.md`.
 
 Teil I (Abschnitte 1–28) hält das gewählte Produktverhalten fest. Teil II (Abschnitte 29–52)
 entscheidet den bestgeeigneten technischen Ansatz für **alle zwölf Kern- und alle acht
@@ -1402,6 +1408,10 @@ Diese Regeln sind für die aktive Variante nicht optional:
 > **[0.5 · Erratum (m) · Befund 21.08.2026]** „Zwölf von zwanzig gewählt" ist nicht
 > rekonstruierbar (siehe §0.2). Die zwölf Punkte sind ein **Startwert**, kein abgenommener
 > Auswahlentscheid. Register **NAK-39**.
+>
+> **User-Entscheid 15.09.2026 (Karte U24):** Die zwölf Punkte sind seitdem **bestätigter
+> Kernumfang** („passt so mit den 12"); nur die Herkunft „von zwanzig" bleibt unbelegt.
+> NAK-39 geschlossen; Abnahme `design/abnahmen/2026-09-15-zwoelf-kernfunktionen-u24.md`.
 
 Die zwölf gewählten Punkte definieren gemeinsam das Kernprodukt, sind aber zu groß für einen
 einzigen Entwicklungsschritt. Eine sinnvolle Lieferreihenfolge ist:

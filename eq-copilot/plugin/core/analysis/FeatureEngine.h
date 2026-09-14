@@ -868,6 +868,15 @@ public:
     std::uint64_t ereignisseVerworfen() const noexcept     { return zEreignisseVerworfen; }
     std::uint64_t nak29Abgelehnt() const noexcept          { return zNak29Abgelehnt; }
     std::uint64_t bloeckeGesehen() const noexcept          { return zBloecke; }
+    /** NAK-286 P-6 (M-79): das Summenpaar der Evidenzfensterzaehler. Beim Bau
+        jedes Evidenzrahmens steigen beide um genau dessen Fensterzaehler - die
+        Zaehler, aus denen `abdeckung` entsteht (`fuelleAbdeckungUndKonvergenz`).
+        Kumulativ: sie fallen weder in `evidenzLeeren` noch in `grenzeZiehen`
+        noch in `zuruecksetzen`, eine Differenz zweier Staende ist deshalb nie
+        negativ. Keine Analyse liest sie; die Worker kopieren sie unter ihrer
+        bestehenden Sperre in die Antwort des Diagnose-Briefkastens (F-6). */
+    std::uint64_t summeFensterGesamt() const noexcept      { return zSummeFensterGesamt; }
+    std::uint64_t summeFensterAktiv() const noexcept       { return zSummeFensterAktiv; }
     /** Wie oft aus Grund `g` getrennt wurde.
 
         ⚠️ DER BEREICHSRIEGEL IST NICHT ZIERAT (T2-3, 23.08.).  `grundZaehler`
@@ -1487,6 +1496,7 @@ private:
     std::uint64_t zStraddleVerworfen { 0 }, zEreignisseVerworfen { 0 };
     std::uint64_t zNak29Abgelehnt { 0 }, zBloecke { 0 };
     std::uint64_t zVerworfeneBandfenster { 0 };
+    std::uint64_t zSummeFensterGesamt { 0 }, zSummeFensterAktiv { 0 };   // NAK-286 P-6
     std::uint64_t grundZaehler[(std::size_t) Grenzgrund::anzahl] {};
 };
 

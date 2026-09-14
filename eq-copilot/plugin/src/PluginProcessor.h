@@ -41,6 +41,8 @@
 #include "PipeToken.h"
 #include "TelemetryClient.h"
 #include "SourcesModel.h"
+#include "DiagnoseAntwort.h"
+#include "diagnose/Briefkasten.h"
 
 #include <map>
 #include <vector>
@@ -1014,6 +1016,25 @@ public:
     {
         return interventionenGesendet.load (std::memory_order_relaxed);
     }
+
+    // NAK-286 Etappe 2 (F-16): der Diagnose-Briefkasten ohne Produktpfad.
+    nakama::diagnose::Briefkasten& briefkastenFuerTest() noexcept { return briefkasten; }
+    nakama::diagnose::Startgrund briefkastenStartenFuerTest (bool mitTimer) { return briefkastenStarten (mitTimer); }
+    /// M-81: die Uhr der Workerkadenz in Nanosekunden; negativ = steady_clock.
+    void setzeKadenzUhrFuerTest (std::int64_t ns) { kadenzUhrFuerTestNs.store (ns); weckeWorkerFuerTest(); }
+    /// M-54: laeuft in der Antwort zwischen der Kopie und dem Schreiben.
+    void setzeDiagnoseHakenFuerTest (std::function<void()> haken) { diagnoseHakenFuerTest = std::move (haken); }
+    /// M-54: laesst sich die Steuersperre binnen `fristMs` nehmen? Nie vom Halter.
+    bool analyseSteuerSperreFreiFuerTest (int fristMs) const
+    {
+        const auto bis = std::chrono::steady_clock::now() + std::chrono::milliseconds (fristMs);
+        do
+        {
+            if (analyseSteuerMutex.try_lock()) { analyseSteuerMutex.unlock(); return true; }
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        } while (std::chrono::steady_clock::now() < bis);
+        return false;
+    }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     /** NAK-180 R5: die letzte als gueltig befundene Rate - die Zahl, mit der
@@ -1081,6 +1102,10 @@ private:
     explicit EqCopilotProcessor (V3Verdrahtung verdrahtung);
 
     void workerLauf();
+    /// NAK-286 (F-5, F-12): Start und Antwortquelle des Diagnose-Briefkastens.
+    nakama::diagnose::Startgrund briefkastenStarten (bool mitTimer);
+    nakama::diagnose::Antwort diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage);
+    juce::var snapshotObjektBauen (const MessSnapshot& m, const juce::String& createdUtc);
     nakama::ipc::ControlHello v3Hello() const;
     /// SONDE-013 M-37/M-38: leert den Interventionsring und sendet jedes
     /// Ereignis als P0. Laeuft im Worker, nie im Audiothread.
@@ -1631,6 +1656,12 @@ private:
     // Derselbe Single-Writer-Kontrakt wie bei `engine`: nur der Worker.
     nakama::analyse::FeatureEngine merkmale;
     std::atomic<juce::uint64> merkmalFrames { 0 };
+
+    // ── NAK-286 Etappe 2: der Diagnose-Briefkasten (F-5, F-6, F-12, P-10) ───
+    nakama::diagnose::MaterialZaehler material;           ///< Worker, unter analyseSteuerMutex
+    std::atomic<std::int64_t> kadenzUhrFuerTestNs { -1 }; ///< M-81; negativ = steady_clock
+    std::function<void()> diagnoseHakenFuerTest;          ///< M-54; im Produkt leer
+    nakama::diagnose::Briefkasten briefkasten;
 
     // ── Hör-Markierung: DSP + Erlaubnis-Zustand ──
     HoerMarkierungDsp markierung;

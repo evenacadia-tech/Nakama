@@ -157,6 +157,11 @@ struct MessSnapshot
     juce::uint64 revision = 0;
 
     juce::uint64 verarbeiteteSamples = 0;
+    // NAK-286 P-8: die verarbeiteten Samples des zuletzt SCHWER ausgewerteten
+    // Standes. Nur `auswerten()` setzt sie; `auswertenLeicht()` laesst sie
+    // stehen, `zuruecksetzen()` nullt sie mit dem ganzen Stand. Nicht Teil der
+    // Snapshotdatei - der Wert reist im Umschlag des Briefkastens (F-6).
+    juce::uint64 schwerVerarbeiteteSamples = 0;
     // Nicht-endliche Eingangssamples, die die ANALYSE seit dem letzten Reset
     // durch Stille ersetzt hat (das Audio bleibt unberührt — Passthrough).
     juce::uint64 nanErsetzt = 0;

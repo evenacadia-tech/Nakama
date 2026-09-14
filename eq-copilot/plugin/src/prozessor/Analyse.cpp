@@ -86,6 +86,48 @@ std::string jsonText (const juce::String& s)
 {
     return juce::JSON::toString (juce::var (s), true).toStdString();
 }
+
+/** NAK-286 (M-81): die Uhr der Workerkadenz. Im Produkt die steady_clock; ein
+    Bein setzt ueber `setzeKadenzUhrFuerTest` eine Attrappe (WorkerCadence.h
+    nimmt den Zeitpunkt ohnehin als Parameter). */
+detail::WorkerKadenz::Zeitpunkt kadenzJetzt (const std::atomic<std::int64_t>& testUhrNs) noexcept
+{
+    const auto ns = testUhrNs.load (std::memory_order_relaxed);
+    return ns < 0 ? detail::WorkerKadenz::Uhr::now()
+                  : detail::WorkerKadenz::Zeitpunkt (std::chrono::nanoseconds (ns));
+}
+
+/** Die Befundkarten als Feld `befunde` - herausgeloest aus dem Knopfweg,
+    Feldreihenfolge unveraendert (M-39). */
+juce::Array<juce::var> befundeAlsVar (const std::vector<Befund>& befunde)
+{
+    juce::Array<juce::var> bf;
+    for (const auto& b : befunde)
+    {
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("klasse", b.klasse == BefundKlasse::resonanz ? "resonanz"
+                                : b.klasse == BefundKlasse::mittenLoch ? "mitten_loch"
+                                : b.klasse == BefundKlasse::mulm ? "mulm"
+                                : b.klasse == BefundKlasse::haerte ? "haerte"
+                                                                   : "hoehen_hype");
+        o->setProperty ("f_von_hz", b.fVon);
+        o->setProperty ("f_bis_hz", b.fBis);
+        o->setProperty ("f_schwerpunkt_hz", b.fSchwerpunkt);
+        o->setProperty ("staerke_db", b.staerkeDb);
+        o->setProperty ("titel", b.titel);
+        o->setProperty ("gemessen", b.gemessen);
+        o->setProperty ("wirkung", b.wirkung);
+        o->setProperty ("tu", b.tu);
+        o->setProperty ("warum", b.warum);
+        o->setProperty ("hoeren", b.hoeren);
+        o->setProperty ("konfidenz", b.konfidenz == Konfidenz::hoch ? "hoch"
+                                   : b.konfidenz == Konfidenz::mittel ? "mittel" : "niedrig");
+        o->setProperty ("konfidenz_grund", b.konfidenzGrund);
+        o->setProperty ("top_rang", b.topRang);
+        bf.add (juce::var (o));
+    }
+    return bf;
+}
 } // namespace
 
 void EqCopilotProcessor::workerLauf()
@@ -101,7 +143,7 @@ void EqCopilotProcessor::workerLauf()
     quarantaene.vorbereiten();     // einmalige Allokation, im Worker, vor dem ersten Zug
     juce::uint64 unverarbeitet = 0;   // Samples seit der letzten Schwer-Auswertung
     auto workerAnlauf = queue.aktuellerAnlauf();
-    detail::WorkerKadenz kadenz;
+    detail::WorkerKadenz kadenz (kadenzJetzt (kadenzUhrFuerTestNs));
     while (workerLaeuft.load())
     {
         // Explizite Uebergabe statt Fairness-Hoffnung: sobald Prepare, Reset
@@ -141,20 +183,22 @@ void EqCopilotProcessor::workerLauf()
                 // Auch ein same-rate-prepare ist eine Messgrenze. M1 besitzt
                 // keinen Deskriptor und muss sie hier explizit bekommen.
                 engine.zuruecksetzen();
+                material.zuruecksetzen();   // NAK-286 P-10: mit jedem Ruecksetzen der Engine
                 quarantaene.zuruecksetzen();
                 unverarbeitet = 0;
                 workerAnlauf = aktuellerAnlauf;
-                kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                kadenz.zuruecksetzen (kadenzJetzt (kadenzUhrFuerTestNs));
             }
 
             if (messResetWunsch.exchange (false))
             {
                 engine.zuruecksetzen();
+                material.zuruecksetzen();
                 merkmale.zuruecksetzen();
                 // Gegenpfad: was in Quarantäne liegt, gehört zur alten Messung.
                 quarantaene.zuruecksetzen();
                 unverarbeitet = 0;
-                kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                kadenz.zuruecksetzen (kadenzJetzt (kadenzUhrFuerTestNs));
             }
 
             // 🔑 SONDE-013 Nacharbeit 2 (Befund R03, M-03/M-25): DER
@@ -247,8 +291,9 @@ void EqCopilotProcessor::workerLauf()
                     // Deskriptor selbst. M1 sieht nur Samples und braucht den
                     // expliziten Gegenpfad fuer FFT-, K- und Loudness-Zustaende.
                     engine.zuruecksetzen();
+                    material.zuruecksetzen();
                     unverarbeitet = 0;
-                    kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                    kadenz.zuruecksetzen (kadenzJetzt (kadenzUhrFuerTestNs));
                 }
                 if (frei)
                 {
@@ -269,13 +314,17 @@ void EqCopilotProcessor::workerLauf()
                     if (featureGrenze)
                     {
                         engine.zuruecksetzen();
+                        material.zuruecksetzen();
                         unverarbeitet = 0;
-                        kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                        kadenz.zuruecksetzen (kadenzJetzt (kadenzUhrFuerTestNs));
                     }
                     if (! blockVerworfen)
                     {
                         engine.verarbeite (frei.audio, (int) frei.block->sampleCount,
                                            (int) frei.block->kanaele);
+                        // NAK-286 P-10: Materialende und Hostzeitzaehler je in
+                        // die Engine gegebenem Block.
+                        material.blockGegeben (*frei.block);
                         samplesAnalysiert.fetch_add ((juce::uint64) frei.block->sampleCount);
                         unverarbeitet += (juce::uint64) frei.block->sampleCount;
                     }
@@ -291,7 +340,7 @@ void EqCopilotProcessor::workerLauf()
             // faelligen Auswertung. Die Deadline wird dann nicht verbraucht,
             // sondern nach der Uebergabe im naechsten Workerzug bedient.
             const auto faellig = analyseRateGueltig && analyseSteuerWartende.load() == 0
-                ? kadenz.faellig (detail::WorkerKadenz::Uhr::now())
+                ? kadenz.faellig (kadenzJetzt (kadenzUhrFuerTestNs))
                 : detail::WorkerKadenz::Faelligkeit {};
             if (faellig.schwer)
             {
@@ -299,11 +348,15 @@ void EqCopilotProcessor::workerLauf()
                 {
                     unverarbeitet = 0;
                     schwereAuswertungen.fetch_add (1);
+                    // NAK-286 (F-6, P-10): der Materialstand DIESER Publikation,
+                    // unmittelbar davor festgehalten - nie erst beim Kopieren.
+                    material.festhalten();
                     engine.auswerten();
                 }
             }
             else if (faellig.leicht)
             {
+                material.festhalten();
                 engine.auswertenLeicht();
             }
         }
@@ -1265,6 +1318,74 @@ bool EqCopilotProcessor::assistentVersuchStarten (const juce::String& passageId)
     return assistentAenderungMelden (veraendert);
 }
 
+juce::var EqCopilotProcessor::snapshotObjektBauen (const MessSnapshot& m, const juce::String& createdUtc)
+{
+    // NAK-286 (F-5, M-39): die herausgeloeste Rechnung des Knopfwegs. Knopfweg
+    // und Antwort des Diagnose-Briefkastens bauen das Objekt mit derselben
+    // Funktion, in der Feldreihenfolge des Knopfwegs.
+    nakama::diagnose::SnapshotSensor sensor;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        const auto& c = zustand.common;
+        sensor.sensorId = c.instanceId;
+        sensor.rolle    = nakama::state::v2Rolle (c);
+        sensor.label    = c.label;
+        sensor.paarId   = c.pairId;
+    }
+    sensor.kanaele = kanaeleAtomic.load();
+    // M3-Kern: die Befundkarten (deterministisch aus GENAU diesem Messstand -
+    // dieselbe Funktion wie Hinweis-Knopf und Golden-Test).
+    nakama::diagnose::Befundteil befunde;
+    befunde.diagnoseVersion = kDiagnoseVersion;
+    befunde.befunde = befundeAlsVar (diagnose (m, holeRolle()));
+    return nakama::diagnose::snapshotObjekt (m, sensor, createdUtc, &befunde);
+}
+
+nakama::diagnose::Antwort EqCopilotProcessor::diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage)
+{
+    // F-15: Snapshot, Rahmen, Zaehler und Materialzeit unter DERSELBEN
+    // Steuersperre wie `merkmalFrame()` kopiert - sie beschreiben denselben
+    // Stand. Serialisierung und Datei-I/O laufen danach ohne Sperre.
+    MessSnapshot m;
+    nakama::diagnose::RahmenAuszug auszug;
+    {
+        auto l = externerAnalyseSteuerZug();
+        m = engine.snapshot();
+        auszug.rahmen      = merkmale.frame();
+        auszug.summeGesamt = merkmale.summeFensterGesamt();
+        auszug.summeAktiv  = merkmale.summeFensterAktiv();
+        auszug.offenGesamt = merkmale.evidenzFensterGesamtJetzt();
+        auszug.offenAktiv  = merkmale.evidenzFensterAktivJetzt();
+        auszug.material    = material.festgehalten();
+        auszug.bloeckeMax  = material.bloeckeMax();
+    }
+    auszug.framesGebaut  = merkmalFrames.load();
+    auszug.schwerSamples = m.schwerVerarbeiteteSamples;
+    auszug.samplerate    = m.samplerate;
+    if (diagnoseHakenFuerTest)
+        diagnoseHakenFuerTest();
+
+    nakama::diagnose::Umschlag u;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        u.instanzId = zustand.common.instanceId;
+    }
+    u.anfrageId  = anfrage.kennung.text();
+    u.rolle      = "gen";
+    u.laufzeitId = instanceNonce.toStdString();
+    u.pid        = anfrage.pid;
+    u.erzeugtUtc = anfrage.erzeugtUtc;
+    u.version    = juce::String (v3Hello().pluginVersion);
+    const bool daten = m.zustand != MessZustand::keineDaten;
+    nakama::diagnose::fuelleTeile (m, auszug,
+                                   daten ? snapshotObjektBauen (m, juce::String (u.erzeugtUtc)) : juce::var(),
+                                   u);
+    nakama::diagnose::Antwort antwort;
+    antwort.instanzId = u.instanzId.toStdString();
+    antwort.umschlag  = nakama::diagnose::umschlagText (u);
+    return antwort;
+}
+
 bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
 {
     const auto m = engine.snapshot();
@@ -1274,179 +1395,11 @@ bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
         return false;
     }
 
-    auto zahl = [] (double v, bool gueltig = true)
-    {
-        return (gueltig && std::isfinite (v)) ? juce::var (v) : juce::var();
-    };
-    auto* wurzel = new juce::DynamicObject();
-    // v3 (M3a): zusätzlich Band-Perzentile, Zonen-Zeitverlauf und Konvergenz —
-    // v2 brachte die Befundkarten. Ältere Leser ignorieren neue Felder.
-    wurzel->setProperty ("snapshot_version", 3);
-    wurzel->setProperty ("metrics_version", kMetricsVersion);
-    wurzel->setProperty ("diagnose_version", kDiagnoseVersion);
-    wurzel->setProperty ("created_utc", juce::Time::getCurrentTime().toISO8601 (true));
-
-    {
-        auto* sensor = new juce::DynamicObject();
-        std::lock_guard<std::mutex> l (bindungMutex);
-        const auto& c = zustand.common;
-        sensor->setProperty ("sensor_id", c.instanceId);
-        sensor->setProperty ("role", nakama::state::v2Rolle (c));
-        sensor->setProperty ("label", c.label);
-        sensor->setProperty ("pair_id", c.pairId.isEmpty() ? juce::var() : juce::var (c.pairId));
-        sensor->setProperty ("samplerate", m.samplerate);
-        sensor->setProperty ("channels", kanaeleAtomic.load());
-        wurzel->setProperty ("sensor", juce::var (sensor));
-    }
-
-    wurzel->setProperty ("zustand", m.zustand == MessZustand::messbereit ? "messbereit" : "sammelt");
-    wurzel->setProperty ("aktiv_sekunden", m.aktivSekunden);
-    wurzel->setProperty ("gesamt_sekunden", m.gesamtSekunden);
-    // Ehrlichkeits-Ausweis (Paket C): so viele nicht-endliche Eingangssamples
-    // hat die Analyse seit dem Messstart durch Stille ersetzt.
-    wurzel->setProperty ("nan_ersetzt_samples", (juce::int64) m.nanErsetzt);
-
-    {
-        auto* loud = new juce::DynamicObject();
-        loud->setProperty ("lufs_integriert", zahl (m.lufsIntegriert, m.lufsGueltig));
-        loud->setProperty ("lufs_short", zahl (m.lufsShort, m.lufsShortGueltig));
-        loud->setProperty ("true_peak_dbtp", zahl (m.truePeakDb));
-        loud->setProperty ("crest_db", zahl (m.crestDb, m.crestGueltig));
-        wurzel->setProperty ("loudness", juce::var (loud));
-    }
-    {
-        auto* sp = new juce::DynamicObject();
-        sp->setProperty ("centroid_mag_hz", zahl (m.centroidMagHz, m.spektralGueltig));
-        sp->setProperty ("rolloff_hz", zahl (m.rolloffHz, m.spektralGueltig));
-        sp->setProperty ("low_frac", zahl (m.lowFrac, m.spektralGueltig));
-        sp->setProperty ("flatness", zahl (m.flatness, m.spektralGueltig));
-        juce::Array<juce::var> band;
-        for (const double v : m.band8Prozent)
-            band.add (zahl (v, m.spektralGueltig));
-        sp->setProperty ("band_pct", band);
-        wurzel->setProperty ("spektral", juce::var (sp));
-    }
-    {
-        auto* st = new juce::DynamicObject();
-        st->setProperty ("width", zahl (m.width, m.stereoGueltig));
-        st->setProperty ("corr", zahl (m.corr, m.stereoGueltig));
-        st->setProperty ("echt_stereo", m.stereoGueltig);
-        wurzel->setProperty ("stereo", juce::var (st));
-    }
-    {
-        auto* ltas = new juce::DynamicObject();
-        juce::Array<juce::var> zentren, komposit, referenzKurve;
-        for (int b = 0; b < kLtasBaender; ++b)
-        {
-            zentren.add (m.ltasZentrenHz[(size_t) b]);
-            komposit.add (zahl (m.ltasKompositDb[(size_t) b], m.ltasGueltig));
-            referenzKurve.add (zahl (m.ltasReferenzDb[(size_t) b], m.ltasGueltig));
-        }
-        ltas->setProperty ("zentren_hz", zentren);
-        ltas->setProperty ("komposit_db", komposit);
-        ltas->setProperty ("referenz_8192_db", referenzKurve);
-        wurzel->setProperty ("ltas", juce::var (ltas));
-    }
-    {
-        juce::Array<juce::var> ab;
-        for (const auto& a : m.abdeckung)
-        {
-            auto* o = new juce::DynamicObject();
-            o->setProperty ("zentrum_hz", a.zentrumHz);
-            o->setProperty ("anteil", a.anteil);
-            o->setProperty ("klasse", a.klasse == AbdeckungsKlasse::belastbar ? "belastbar"
-                                    : a.klasse == AbdeckungsKlasse::eingeschraenkt ? "eingeschraenkt"
-                                                                                   : "nicht_messbar");
-            ab.add (juce::var (o));
-        }
-        wurzel->setProperty ("abdeckung", ab);
-    }
-    {
-        // M3a: Band-Perzentile (1-dB-Quantisierung, Zuständigkeits-Stufe).
-        auto* pz = new juce::DynamicObject();
-        juce::Array<juce::var> p10, p50, p95;
-        for (int b = 0; b < kLtasBaender; ++b)
-        {
-            p10.add (zahl (m.perzentilP10[(size_t) b], m.perzentileGueltig));
-            p50.add (zahl (m.perzentilP50[(size_t) b], m.perzentileGueltig));
-            p95.add (zahl (m.perzentilP95[(size_t) b], m.perzentileGueltig));
-        }
-        pz->setProperty ("p10_db", p10);
-        pz->setProperty ("p50_db", p50);
-        pz->setProperty ("p95_db", p95);
-        wurzel->setProperty ("perzentile", juce::var (pz));
-    }
-    {
-        // M3a: Zonen-Zeitverlauf (Anteil aktiver 1-s-Ticks jenseits der
-        // Regel-Schwelle; Reihenfolge = ZonenRegeln.h).
-        static const char* zonenNamen[kZonenAnzahl] = { "mitten_loch", "mulm", "haerte", "hoehen_hype" };
-        juce::Array<juce::var> zz;
-        for (int z = 0; z < kZonenAnzahl; ++z)
-        {
-            const auto& w = m.zonenZeit[(size_t) z];
-            auto* o = new juce::DynamicObject();
-            o->setProperty ("zone", zonenNamen[z]);
-            o->setProperty ("gueltig", w.gueltig);
-            o->setProperty ("anteil_jenseits", w.anteil);
-            o->setProperty ("ticks", (int) w.ticks);
-            zz.add (juce::var (o));
-        }
-        wurzel->setProperty ("zonen_zeit", zz);
-    }
-    {
-        // M3a: Konvergenz „Kurve steht" (rein informativ).
-        auto* ko = new juce::DynamicObject();
-        ko->setProperty ("gueltig", m.konvergenzGueltig);
-        ko->setProperty ("mean_db", zahl (m.konvergenzMeanDb, m.konvergenzGueltig));
-        ko->setProperty ("max_db", zahl (m.konvergenzMaxDb, m.konvergenzGueltig));
-        wurzel->setProperty ("konvergenz", juce::var (ko));
-    }
-    {
-        juce::Array<juce::var> res;
-        for (const auto& r : m.resonanzen)
-        {
-            auto* o = new juce::DynamicObject();
-            o->setProperty ("freq_hz", r.freqHz);
-            o->setProperty ("db_over", r.dbOver);
-            o->setProperty ("persistenz", r.persistenzAnteil);
-            o->setProperty ("breite_okt", r.breiteOktaven);
-            o->setProperty ("klasse", r.klasse == ResonanzKlasse::dauerhaft ? "dauerhaft" : "zeitweise");
-            res.add (juce::var (o));
-        }
-        wurzel->setProperty ("resonanzen", res);
-    }
-    {
-        // M3-Kern: die Befundkarten (deterministisch aus GENAU diesem
-        // Messstand — dieselbe Funktion wie Hinweis-Knopf und Golden-Test).
-        const auto befunde = diagnose (m, holeRolle());
-        juce::Array<juce::var> bf;
-        for (const auto& b : befunde)
-        {
-            auto* o = new juce::DynamicObject();
-            o->setProperty ("klasse", b.klasse == BefundKlasse::resonanz ? "resonanz"
-                                    : b.klasse == BefundKlasse::mittenLoch ? "mitten_loch"
-                                    : b.klasse == BefundKlasse::mulm ? "mulm"
-                                    : b.klasse == BefundKlasse::haerte ? "haerte"
-                                                                       : "hoehen_hype");
-            o->setProperty ("f_von_hz", b.fVon);
-            o->setProperty ("f_bis_hz", b.fBis);
-            o->setProperty ("f_schwerpunkt_hz", b.fSchwerpunkt);
-            o->setProperty ("staerke_db", b.staerkeDb);
-            o->setProperty ("titel", b.titel);
-            o->setProperty ("gemessen", b.gemessen);
-            o->setProperty ("wirkung", b.wirkung);
-            o->setProperty ("tu", b.tu);
-            o->setProperty ("warum", b.warum);
-            o->setProperty ("hoeren", b.hoeren);
-            o->setProperty ("konfidenz", b.konfidenz == Konfidenz::hoch ? "hoch"
-                                       : b.konfidenz == Konfidenz::mittel ? "mittel" : "niedrig");
-            o->setProperty ("konfidenz_grund", b.konfidenzGrund);
-            o->setProperty ("top_rang", b.topRang);
-            bf.add (juce::var (o));
-        }
-        wurzel->setProperty ("befunde", bf);
-    }
-    wurzel->setProperty ("raw_audio", juce::var());   // per Vertrag immer null
+    // NAK-286 (F-5, M-39): das Objekt aus der herausgeloesten Rechnung. Ordner,
+    // Name und Schreibweise bleiben; der Inhalt ist nach Maskierung von
+    // `created_utc` bytegleich zur Referenz des Basis-SHA der Etappe 2
+    // (eq-copilot/fixtures/diagnose/festhalten-referenz.json).
+    const auto wurzel = snapshotObjektBauen (m, juce::Time::getCurrentTime().toISO8601 (true));
 
     auto ordner = juce::File::getSpecialLocation (juce::File::windowsLocalAppData)
                       .getChildFile ("evenacadia").getChildFile ("EQ-Copilot")

@@ -65,3 +65,4 @@ eq-copilot/fixtures/p4-korpus/** -text
 # normalisiert git die Zeilenenden beim Checkout, und `--pruefen` faellt auf
 # jedem Rechner anders aus.
 eq-copilot/fixtures/p5-korpus/** -text
+eq-copilot/fixtures/diagnose/** -text

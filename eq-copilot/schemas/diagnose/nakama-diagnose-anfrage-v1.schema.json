@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nakama.diagnose.anfrage.v1",
+  "title": "Nakama Diagnose-Briefkasten: Anfrage v1 (NAK-286, F-2)",
+  "description": "Die Datei %LOCALAPPDATA%\\evenacadia\\nakama\\diagnose\\anfrage.json, die der Anfragende (Runner) schreibt. Sie ist nur ein Ausloeser mit einer Kennung (R-286-1): keine Instanz uebernimmt daraus einen Pfad, einen Befehl oder einen Parameter. UTF-8 ohne BOM, hoechstens 1 024 Bytes (die Instanz prueft die Groesse vor dem Oeffnen); jede andere Form ist fremd und bleibt ohne Antwort und ohne Logeintrag. Der Anfragende legt jede Kennung genau einmal vor (128 Bit Zufall) und raeumt zuerst die Anfrage, dann die Antworten ab; keine Instanz loescht die Anfrage.",
+  "type": "object",
+  "required": ["format", "anfrage_id"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "nakama.diagnose.anfrage.v1" },
+    "anfrage_id": { "type": "string", "pattern": "^[0-9a-f]{32}$", "description": "genau 32 Zeichen aus 0-9a-f" }
+  }
+}

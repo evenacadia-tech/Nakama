@@ -119,6 +119,11 @@ ERWARTETE_OBJEKTE = {
     "DspProgramm.obj",
     "DspBankPool.obj",
     "DspKern.obj",
+    # NAK-286 Etappe 2 (Pfadfreigabe P-11, Manifest §20): der Diagnose-
+    # Briefkasten. Er ist identitaetsfrei - die Ordnernamen unter
+    # %LOCALAPPDATA% gibt der Prozessor als Zeichenkette herein -, und Gen wie
+    # Probeeq brauchen denselben Takt und denselben Schreibweg.
+    "Briefkasten.obj",
 }
 
 # Die Werte, die im gebauten Gen-Bundle stehen MUESSEN (Gegenprobe). Die

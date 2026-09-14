@@ -137,6 +137,7 @@ target_sources(EqCopilot PRIVATE
     src/PipeClient.cpp
     src/PluginFactory.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 
@@ -215,6 +216,7 @@ set(NAKAMA_KERN_QUELLEN
     core/ipc/controlclient/Nachrichten.cpp
     core/ipc/controlclient/Verbindung.cpp
     core/ipc/TelemetryClient.cpp
+    core/diagnose/Briefkasten.cpp
 )
 
 # Kopf-Fassade: JUCE-Koepfe ohne die JUCE-Modulquellen. Warum das noetig ist
@@ -335,7 +337,8 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
     target_sources(${ziel} PRIVATE
         sonde/SondeProcessor.cpp
         sonde/SondeFactory.cpp
-        src/AnalyseEngine.cpp)
+        src/AnalyseEngine.cpp
+        src/DiagnoseAntwort.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE sonde src core hostbridge
         "${NAKAMA_BROKER_BINDING_DIR}")
@@ -396,7 +399,8 @@ function(nakama_sonde_nulltest ziel klassendefine)
     target_sources(${ziel} PRIVATE
         tests/SondeNullTestMain.cpp
         sonde/SondeProcessor.cpp
-        src/AnalyseEngine.cpp)
+        src/AnalyseEngine.cpp
+        src/DiagnoseAntwort.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE sonde src core hostbridge
         "${NAKAMA_BROKER_BINDING_DIR}")
@@ -426,6 +430,7 @@ function(nakama_sonde012_test ziel quelle)
         ${quelle}
         sonde/SondeProcessor.cpp
         src/AnalyseEngine.cpp
+        src/DiagnoseAntwort.cpp
         core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE sonde src core hostbridge vertrag
         "${NAKAMA_BROKER_BINDING_DIR}")
@@ -444,6 +449,29 @@ nakama_sonde012_test(EqCopSonde012HostChannelContextTest
 nakama_sonde012_test(EqCopSonde012LoudnessSourceTest
                      tests/Sonde012LoudnessSourceTest.cpp)
 
+# ── NAK-286 Etappe 2: der Diagnose-Briefkasten im Plugin (Kanon B30) ───────
+# Ein Ziel mit BEIDEN Prozessoren (Gen und Probeeq), weil die Matrix beide
+# Rollen am selben Briefkasten misst. Wie jedes Konsolenbein ohne Produktpfad:
+# NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 kommt aus den Schleifen der Main-Ziele
+# unten, damit startet kein Briefkasten auf dem echten Diagnoseordner (F-16).
+juce_add_console_app(EqCopBriefkastenTest PRODUCT_NAME "eqcop-briefkastentest")
+target_sources(EqCopBriefkastenTest PRIVATE
+    tests/BriefkastenTestMain.cpp
+    ${NAKAMA_PROZESSOR_QUELLEN}
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
+    src/Diagnose.cpp
+    sonde/SondeProcessor.cpp)
+target_include_directories(EqCopBriefkastenTest PRIVATE sonde src core hostbridge vertrag)
+target_compile_definitions(EqCopBriefkastenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_SONDE_AKTIV=1)
+target_link_libraries(EqCopBriefkastenTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopBriefkastenTest)
+
 # ── G3-SOAK: die C++-Haelfte des Dauerlaufbeins A24 ───────────────────────
 # Kein Kanon-Bein fuer sich: tools/eq-copilot/pruefe_session_soak.py faehrt es
 # gegen den echten Rust-Coordinator auf einer Probe-Pipe und besitzt
@@ -457,6 +485,7 @@ target_sources(EqCopSessionSoak PRIVATE
     tests/SessionSoakMain.cpp
     sonde/SondeProcessor.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/SourcesModel.cpp
     core/ipc/PipeToken.cpp)
 target_include_directories(EqCopSessionSoak PRIVATE sonde src core hostbridge vertrag
@@ -503,6 +532,7 @@ target_sources(EqCopSonde014AssistentTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopSonde014AssistentTest PRIVATE src core)
@@ -537,6 +567,7 @@ target_sources(EqCopSonde012ProjectReloadTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp)
 target_include_directories(EqCopSonde012ProjectReloadTest PRIVATE src)
 target_compile_definitions(EqCopSonde012ProjectReloadTest PRIVATE
@@ -600,6 +631,7 @@ target_sources(EqCopNullTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopNullTest PRIVATE src)
@@ -613,6 +645,7 @@ juce_add_console_app(EqCopGoldenTest PRODUCT_NAME "eqcop-goldentest")
 target_sources(EqCopGoldenTest PRIVATE
     tests/GoldenTestMain.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopGoldenTest PRIVATE src)
@@ -629,6 +662,7 @@ target_sources(EqCopMarkierungTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopMarkierungTest PRIVATE src)
@@ -648,6 +682,7 @@ target_sources(EqCopShot PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopShot PRIVATE src)
@@ -664,6 +699,7 @@ target_sources(EqCopPaintBench PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopPaintBench PRIVATE src)
@@ -728,6 +764,7 @@ target_sources(EqCopIdentityTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopIdentityTest PRIVATE src)
@@ -748,6 +785,7 @@ target_sources(EqCopStateMigrationTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopStateMigrationTest PRIVATE src)
@@ -811,6 +849,7 @@ target_sources(EqCopSonde013PassageStateTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopSonde013PassageStateTest PRIVATE src)
@@ -845,6 +884,7 @@ target_sources(EqCopSonde014IntentTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopSonde014IntentTest PRIVATE src core)
@@ -876,6 +916,7 @@ target_sources(EqCopLebenslaufTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopLebenslaufTest PRIVATE src)
@@ -904,6 +945,7 @@ target_sources(EqCopQueueStressTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopQueueStressTest PRIVATE src)
@@ -1082,6 +1124,7 @@ target_sources(EqCopAnalysisGoldenTest PRIVATE
     src/PluginEditor.cpp
     src/PipeClient.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     src/Diagnose.cpp
 )
 target_include_directories(EqCopAnalysisGoldenTest PRIVATE src)
@@ -1121,6 +1164,7 @@ target_sources(EqCopTransactionTest PRIVATE
     tests/TransactionTestMain.cpp
     sonde/SondeProcessor.cpp
     src/AnalyseEngine.cpp
+    src/DiagnoseAntwort.cpp
     core/ipc/PipeToken.cpp)
 target_include_directories(EqCopTransactionTest PRIVATE sonde src core hostbridge
     "${NAKAMA_BROKER_BINDING_DIR}")
@@ -1242,7 +1286,7 @@ foreach(ziel EqCopilot
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
-             EqCopSonde014AssistentTest)
+             EqCopSonde014AssistentTest EqCopBriefkastenTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
 endforeach()
 
@@ -1253,7 +1297,7 @@ foreach(ziel EqCopilot
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
-             EqCopSonde014AssistentTest)
+             EqCopSonde014AssistentTest EqCopBriefkastenTest)
     target_sources(${ziel} PRIVATE src/SourcesModel.cpp)
 endforeach()
 
@@ -1266,7 +1310,7 @@ foreach(ziel EqCopilot
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
-             EqCopSonde014AssistentTest)
+             EqCopSonde014AssistentTest EqCopBriefkastenTest)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE "${NAKAMA_BROKER_BINDING_DIR}")
     target_link_libraries(${ziel} PRIVATE Advapi32)
@@ -1280,7 +1324,7 @@ foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopSonde013PassageStateTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest
              EqCopSonde012ProjectReloadTest EqCopSonde014IntentTest
-             EqCopSonde014AssistentTest)
+             EqCopSonde014AssistentTest EqCopBriefkastenTest)
     target_compile_definitions(${ziel} PRIVATE
         NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 endforeach()
@@ -1314,7 +1358,7 @@ foreach(ziel NakamaKern
              NakamaProbeeq EqCopProbeeqNullTest EqCopTransactionTest
              EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest
              EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
-             EqCopSonde012SourcesLatencyTest EqCopSessionSoak)
+             EqCopSonde012SourcesLatencyTest EqCopSessionSoak EqCopBriefkastenTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

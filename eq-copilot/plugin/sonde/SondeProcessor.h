@@ -70,6 +70,8 @@
 #include "StampedAudioQueue.h"
 #include "TelemetryClient.h"
 #include "analysis/FeatureEngine.h"
+#include "DiagnoseAntwort.h"
+#include "diagnose/Briefkasten.h"
 
 #include <array>
 #include <atomic>
@@ -353,11 +355,57 @@ public:
     {
         return quarantaene.kontinuitaetsbrueche();
     }
+
+    // ── NAK-286 Etappe 2 (F-16): der Diagnose-Briefkasten ohne Produktpfad ──
+    nakama::diagnose::Briefkasten& briefkastenFuerTest() noexcept { return briefkasten; }
+    nakama::diagnose::Startgrund briefkastenStartenFuerTest (bool mitTimer) { return briefkastenStarten (mitTimer); }
+    /// M-80: `analyseEngine.auswerten()` auf Anfrage, und die Workerdurchlaeufe.
+    std::uint64_t auswertungenAufAnfrageFuerTest() const noexcept { return auswertungenAufAnfrage.load(); }
+    std::uint64_t workerDurchlaeufeFuerTest() const noexcept      { return workerDurchlaeufe.load(); }
+    /// M-80: Hash der Thread-ID, auf der die letzte Auswertung lief (0 = keine).
+    std::size_t   auswertungThreadFuerTest() const noexcept       { return auswertungThread.load(); }
+    std::uint64_t framesGebautFuerTest() const noexcept           { return framesGebaut.load(); }
+    /// M-32: die Sequenz des zuletzt gebauten Rahmens und die NAK-29-Ablehnungen -
+    /// der unabhaengige Zeuge fuer `frames_gebaut`. Unter `analyseSchloss`.
+    std::uint64_t merkmaleSequenzFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.frame().transport.sequence;
+    }
+    std::uint64_t nak29AbgelehntFuerTest() const
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return merkmale.nak29Abgelehnt();
+    }
+    /// M-80: der publizierte Stand der Analyse (`snapshot()` ist threadsicher).
+    eqcop::MessSnapshot analyseSnapshotFuerTest() const           { return analyseEngine.snapshot(); }
+    /// M-32, M-80: hat der Worker die Queue geleert? Unter `analyseSchloss`.
+    bool analyseQueueLeerFuerTest()
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        return analyseQueue.spitze() == nullptr;
+    }
+    /// M-54: laeuft in der Antwort zwischen der Kopie und dem Schreiben.
+    void setzeDiagnoseHakenFuerTest (std::function<void()> haken) { diagnoseHakenFuerTest = std::move (haken); }
+    /// M-54: laesst sich `analyseSchloss` binnen `fristMs` nehmen? Nie vom Halter.
+    bool analyseSchlossFreiFuerTest (int fristMs) const
+    {
+        const auto bis = std::chrono::steady_clock::now() + std::chrono::milliseconds (fristMs);
+        do
+        {
+            if (analyseSchloss.try_lock()) { analyseSchloss.unlock(); return true; }
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        } while (std::chrono::steady_clock::now() < bis);
+        return false;
+    }
 #endif
 
 private:
     void workerLauf();
     void producerStandLeeren() noexcept;
+    /// NAK-286 (F-5, F-12, P-9): Start und Antwortquelle des Diagnose-Briefkastens.
+    nakama::diagnose::Startgrund briefkastenStarten (bool mitTimer);
+    nakama::diagnose::Antwort diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage);
     nakama::ipc::ControlHello v3Hello() const;
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
@@ -409,6 +457,19 @@ private:
     nakama::analyse::FeatureFrame letzterProducerFrame;
     bool letzterProducerFrameVorhanden = false;
     std::atomic<std::uint64_t> producerPublikationen { 0 };
+
+    // ── NAK-286 Etappe 2: der Diagnose-Briefkasten (F-5, F-6, F-12, P-9, P-10) ─
+    //
+    // Das Anfrage-Flag setzt der Takt auf dem Message-Thread, der Worker bedient
+    // und loescht es in jedem Durchlauf; die Engine bleibt Single-Writer.
+    std::atomic<bool>          briefkastenAnfrage { false };
+    std::atomic<std::uint64_t> framesGebaut { 0 };              ///< am Rahmenbau, nie genullt
+    std::atomic<std::uint64_t> auswertungenAufAnfrage { 0 };
+    std::atomic<std::uint64_t> workerDurchlaeufe { 0 };
+    std::atomic<std::size_t>   auswertungThread { 0 };
+    nakama::diagnose::MaterialZaehler material;                 ///< Worker, unter analyseSchloss
+    std::function<void()>      diagnoseHakenFuerTest;           ///< M-54; im Produkt leer
+    nakama::diagnose::Briefkasten briefkasten;
 
     // ── SONDE-013 M-05: Evidenzpfad ──────────────────────────────────────
     //

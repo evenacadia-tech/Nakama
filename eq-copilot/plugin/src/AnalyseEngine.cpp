@@ -1057,6 +1057,9 @@ void AnalyseEngine::auswerten()
         s.ltasReferenzDb[(size_t) b] = std::numeric_limits<double>::quiet_NaN();
     }
     fuelleBasis (s);   // Zustand, Sekunden, Live-Kurve, TP/Crest/Kurz-LUFS
+    // NAK-286 P-8: die Materialzeit der schweren Felder, aus demselben
+    // `samplesGesamt`, das `fuelleBasis` eben gelesen hat. Nur hier gesetzt.
+    s.schwerVerarbeiteteSamples = samplesGesamt;
 
     finalisiereLoudness (s);
     finalisiereSkalar (s);

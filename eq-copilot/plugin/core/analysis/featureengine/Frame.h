@@ -84,6 +84,17 @@ inline bool FeatureEngine::baueFrame() noexcept
         // Verteilung waere die halbe Aussage aus §33.2.
         fuelleVerteilung (f);
         fuelleAbdeckungUndKonvergenz (f);
+        // NAK-286 P-6 (M-79): das Summenpaar waechst um GENAU die Fensterzaehler,
+        // aus denen die Abdeckung dieses Evidenzrahmens eben entstanden ist -
+        // vor `evidenzLeeren()`, das sie nullt. Saettigend wie die Zaehler
+        // selbst (`Spektrum.h`, Fensterzaehler der Hauptstufe).
+        {
+            constexpr auto kMax = std::numeric_limits<std::uint64_t>::max();
+            zSummeFensterGesamt = evidenzFensterGesamt > kMax - zSummeFensterGesamt
+                                ? kMax : zSummeFensterGesamt + evidenzFensterGesamt;
+            zSummeFensterAktiv  = evidenzFensterAktiv > kMax - zSummeFensterAktiv
+                                ? kMax : zSummeFensterAktiv + evidenzFensterAktiv;
+        }
         // SONDE-013 M-11: die Stereoevidenz gehoert zu DIESEM
         // Evidenzfenster und wird mit ihm ausgewertet - vor
         // `evidenzLeeren()`, das die Akkus raeumt.

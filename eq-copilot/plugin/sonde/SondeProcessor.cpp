@@ -181,6 +181,10 @@ SondeProcessor::SondeProcessor()
     zustand.hatParameters = (kProduktklasse == nakama::state::Klasse::active_probe);
 
     analyseQueue.vorbereiten();
+    // NAK-286 (F-5, F-12): die Antwortquelle des Diagnose-Briefkastens. Sie
+    // laeuft nur im Takt, und der Takt laeuft nur nach `briefkastenStarten`.
+    briefkasten.setzeAntwortquelle ([this] (const nakama::diagnose::Anfrage& anfrage)
+                                    { return diagnoseAntwort (anfrage); });
     workerLaeuft.store (true);
     worker = std::thread ([this] { workerLauf(); });
 
@@ -190,11 +194,27 @@ SondeProcessor::SondeProcessor()
     // schon seine lokale Adresse ab und beruehrt die Produktionspipe nicht.
     controlV3.start();
     telemetryV3.start();
+    // NAK-286 (F-12, F-13): am ENDE des Produktzweigs, NACH dem Workerstart -
+    // der Briefkasten lebt innerhalb der Lebensdauer des Workers.
+    briefkastenStarten (true);
 #endif
+}
+
+nakama::diagnose::Startgrund SondeProcessor::briefkastenStarten (bool mitTimer)
+{
+    nakama::diagnose::Konfiguration konfiguration;
+    konfiguration.wurzelRelativ = nakama::diagnose::kWurzelRelativ;
+    konfiguration.rolle         = "probeeq";
+    konfiguration.laufzeit32    = v3RuntimeNonce;
+    return briefkasten.starte (konfiguration, mitTimer);
 }
 
 SondeProcessor::~SondeProcessor()
 {
+    // NAK-286 (F-12, M-34): ERSTER Destruktorschritt - Takt aus, Schleuse zu,
+    // noch vor dem Listener-Abbau und lange vor dem Join des Workers.
+    briefkasten.stoppe();
+
     // Gegenstueck zu addListener im Konstruktor: kein Parameterereignis und
     // keine Geste erreicht mehr Kern oder Transaktionskern, waehrend sie
     // abgebaut werden.
@@ -539,6 +559,7 @@ void SondeProcessor::workerLauf()
                 // Auch same-rate prepare ist eine neue Messreihe. Beide
                 // Engines und die Ein-Block-Quarantaene beginnen gemeinsam.
                 analyseEngine.zuruecksetzen();
+                material.zuruecksetzen();   // NAK-286 P-10: mit jedem Ruecksetzen der Engine
                 merkmale.zuruecksetzen();
                 quarantaene.zuruecksetzen();
                 producerStandLeeren();
@@ -584,6 +605,7 @@ void SondeProcessor::workerLauf()
                     // dabei bewusst stehen, weil jedes Ereignis seine Epoche
                     // mittraegt (`FeatureEngine.h:3619-3622`).
                     analyseEngine.zuruecksetzen();
+                    material.zuruecksetzen();
                     producerStandLeeren();
                 }
                 if (! frei || ! rateGueltig)
@@ -597,14 +619,21 @@ void SondeProcessor::workerLauf()
                 if (grenze)
                 {
                     analyseEngine.zuruecksetzen();
+                    material.zuruecksetzen();
                     producerStandLeeren();
                 }
                 if (! blockVerworfen)
+                {
                     analyseEngine.verarbeite (frei.audio, (int) frei.block->sampleCount,
                                                (int) frei.block->kanaele);
+                    // NAK-286 P-10: Materialende und Hostzeitzaehler je in die
+                    // Engine gegebenem Block.
+                    material.blockGegeben (*frei.block);
+                }
 
                 if (! frameBereit)
                     continue;
+                framesGebaut.fetch_add (1, std::memory_order_relaxed);   // NAK-286 F-6: nie genullt
 
                 auto frame = merkmale.frame();
                 const auto lautheit = analyseEngine.lautheitFuerTelemetrie();
@@ -651,6 +680,19 @@ void SondeProcessor::workerLauf()
                 if (frame.evidenzFrisch)
                     evidenzSnapshotSenden (frame);
             }
+            // NAK-286 §13.2 P-9 (praezisiert §16.2, T-30): Publikation NUR auf
+            // Anfrage, in JEDEM Durchlauf - mit oder ohne Block. Das Flag faellt
+            // in jedem Fall, auch wenn `auswerten()` am Rate-Riegel zurueckkehrt;
+            // ohne Anfrage wertet Probeeq nie aus. Nie im Takt, nie im Audiothread.
+            if (briefkastenAnfrage.exchange (false))
+            {
+                material.festhalten();   // P-10: unmittelbar vor der Publikation
+                analyseEngine.auswerten();
+                auswertungenAufAnfrage.fetch_add (1, std::memory_order_relaxed);
+                auswertungThread.store (std::hash<std::thread::id> {} (std::this_thread::get_id()),
+                                        std::memory_order_relaxed);
+            }
+            workerDurchlaeufe.fetch_add (1, std::memory_order_relaxed);
             queueHatRest = analyseQueue.spitze() != nullptr;
         }
 
@@ -864,6 +906,81 @@ bool SondeProcessor::letzterProducerFrameFuerTest (
     return true;
 }
 #endif
+
+/*  NAK-286 Etappe 2: die Antwort des Diagnose-Briefkastens (F-4 bis F-6).
+
+    Laeuft im Takt auf dem Message-Thread. §13.2 P-9 (praezisiert §16.2):
+    der erste Aufruf einer Kennung setzt das Anfrage-Flag und schreibt nicht;
+    der Worker wertet in seinem naechsten Durchlauf genau einmal aus und loescht
+    das Flag; der naechste Takt kopiert Snapshot, Rahmen, Zaehler und
+    Materialzeit unter `analyseSchloss` (F-15) und baut die Antwort danach ohne
+    Sperre. Der Rahmen kommt aus `merkmale.frame()`, nie aus
+    `letzterProducerFrame`, der an einer v3-Veroeffentlichung haengt (T-7). */
+nakama::diagnose::Antwort SondeProcessor::diagnoseAntwort (const nakama::diagnose::Anfrage& anfrage)
+{
+    nakama::diagnose::Antwort antwort;
+    if (anfrage.zyklusNeu)
+    {
+        briefkastenAnfrage.store (true);
+        antwort.wartet = true;
+        return antwort;
+    }
+    if (briefkastenAnfrage.load())
+    {
+        antwort.wartet = true;
+        return antwort;
+    }
+
+    eqcop::MessSnapshot m;
+    nakama::diagnose::RahmenAuszug auszug;
+    {
+        std::lock_guard<std::mutex> l (analyseSchloss);
+        m = analyseEngine.snapshot();
+        auszug.rahmen      = merkmale.frame();
+        auszug.summeGesamt = merkmale.summeFensterGesamt();
+        auszug.summeAktiv  = merkmale.summeFensterAktiv();
+        auszug.offenGesamt = merkmale.evidenzFensterGesamtJetzt();
+        auszug.offenAktiv  = merkmale.evidenzFensterAktivJetzt();
+        auszug.material    = material.festgehalten();
+        auszug.bloeckeMax  = material.bloeckeMax();
+    }
+    auszug.framesGebaut  = framesGebaut.load();
+    auszug.schwerSamples = m.schwerVerarbeiteteSamples;
+    auszug.samplerate    = m.samplerate;
+    if (diagnoseHakenFuerTest)
+        diagnoseHakenFuerTest();
+
+    nakama::diagnose::SnapshotSensor sensor;
+    juce::String instanz;
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        const auto& c = zustand.common;
+        instanz         = c.instanceId;
+        sensor.sensorId = c.instanceId;
+        sensor.rolle    = nakama::state::v2Rolle (c);
+        sensor.label    = c.label;
+        sensor.paarId   = c.pairId;
+    }
+    sensor.kanaele = v3Channels.load();
+
+    nakama::diagnose::Umschlag u;
+    u.anfrageId  = anfrage.kennung.text();
+    u.rolle      = "probeeq";
+    u.instanzId  = instanz;
+    u.laufzeitId = v3RuntimeNonce;
+    u.pid        = anfrage.pid;
+    u.erzeugtUtc = anfrage.erzeugtUtc;
+    u.version    = juce::String (v3Hello().pluginVersion);
+    // T-8: ohne `befunde` und `diagnose_version`.
+    const bool daten = m.zustand != eqcop::MessZustand::keineDaten;
+    nakama::diagnose::fuelleTeile (m, auszug,
+                                   daten ? nakama::diagnose::snapshotObjekt (m, sensor, juce::String (u.erzeugtUtc), nullptr)
+                                         : juce::var(),
+                                   u);
+    antwort.instanzId = instanz.toStdString();
+    antwort.umschlag  = nakama::diagnose::umschlagText (u);
+    return antwort;
+}
 
 void SondeProcessor::getStateInformation (juce::MemoryBlock& ziel)
 {

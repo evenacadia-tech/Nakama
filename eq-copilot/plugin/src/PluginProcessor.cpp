@@ -427,6 +427,11 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
 
     queue.vorbereiten();
 
+    // NAK-286 (F-5, F-12): die Antwortquelle des Diagnose-Briefkastens. Sie
+    // laeuft nur im Takt, und der Takt laeuft nur nach `briefkastenStarten`.
+    briefkasten.setzeAntwortquelle ([this] (const nakama::diagnose::Anfrage& anfrage)
+                                    { return diagnoseAntwort (anfrage); });
+
     workerLaeuft.store (true);
     worker = std::thread ([this] { workerLauf(); });
     pipe.start();
@@ -434,11 +439,26 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
     controlV3.start();
     telemetryV3.start();
     brokerLifecycle.start();
+    // NAK-286 (F-12): am ENDE des Produktzweigs. Der Takt lebt mit dem
+    // Prozessor, nicht mit dem Editor (R-286-2); im Testbau startet keiner.
+    briefkastenStarten (true);
 #endif
+}
+
+nakama::diagnose::Startgrund EqCopilotProcessor::briefkastenStarten (bool mitTimer)
+{
+    nakama::diagnose::Konfiguration konfiguration;
+    konfiguration.wurzelRelativ = nakama::diagnose::kWurzelRelativ;
+    konfiguration.rolle         = "gen";
+    konfiguration.laufzeit32    = instanceNonce.toStdString();
+    return briefkasten.starte (konfiguration, mitTimer);
 }
 
 EqCopilotProcessor::~EqCopilotProcessor()
 {
+    // NAK-286 (F-12, M-34): ERSTER Destruktorschritt - Takt aus, Schleuse zu.
+    // Ein Takt, der danach beginnt, fasst diesen Prozessor nicht mehr an.
+    briefkasten.stoppe();
     brokerLifecycle.stop();
     telemetryV3.stop();
     controlV3.stop();

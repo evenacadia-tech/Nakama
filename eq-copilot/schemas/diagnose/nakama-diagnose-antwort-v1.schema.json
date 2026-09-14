@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nakama.diagnose.antwort.v1",
+  "title": "Nakama Diagnose-Briefkasten: Antwort v1 (NAK-286, F-3, F-4, F-6)",
+  "description": "Eine Antwortdatei im festen Ordner %LOCALAPPDATA%\\evenacadia\\nakama\\diagnose\\antwort\\ mit dem Namen <anfrage_id>.<rolle>.<pid>.<instanz16>.<laufzeit32>.json (instanz16: die ersten 16 Hex-Zeichen von SHA-256 ueber die UTF-8-Bytes von instanz_id; laufzeit32 gleich laufzeit_id). Ein Umschlag, der die bestehenden Dokumente unveraendert traegt (T-1): snapshot nach eq-snapshot.schema.json, aggregat nach eq-aggregat.schema.json, frame als Rahmenauszug. Jedes null nennt in gruende seinen Grund. Geschrieben ueber eine exklusiv angelegte Temp-Datei <Antwortname>.tmp-<pid>, Groessenpruefung und Umbenennen ohne Ersetzen; eine Instanz legt keinen Ordner an und loescht nichts. UTF-8 ohne BOM.",
+  "type": "object",
+  "required": ["format", "anfrage_id", "rolle", "instanz_id", "laufzeit_id", "pid", "erzeugt_utc", "version", "snapshot", "frame", "aggregat", "gruende"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "nakama.diagnose.antwort.v1" },
+    "anfrage_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "rolle": { "enum": ["gen", "probeeq", "broker"] },
+    "instanz_id": { "type": "string", "description": "persistente Instanzkennung (Plugin: zustand.common.instanceId; Broker: session_token)" },
+    "laufzeit_id": { "type": "string", "pattern": "^[0-9a-f]{32}$", "description": "Laufzeitkennung des Instanzobjekts (Gen: instanceNonce, Probeeq: v3RuntimeNonce, Broker: session_token ohne Bindestriche)" },
+    "pid": { "type": "integer", "minimum": 0 },
+    "erzeugt_utc": { "type": "string", "format": "date-time", "description": "ISO-8601 in UTC aus der Uhr der Instanz; die Zuordnung haengt nur an der Kennung, nie an diesem Zeitpunkt" },
+    "version": { "type": "string", "minLength": 1, "description": "Softwarefassung der antwortenden Instanz (Plugin: pluginVersion wie im v3-hello)" },
+    "snapshot": {
+      "anyOf": [ { "type": "null" }, { "$ref": "../eq-snapshot.schema.json" } ],
+      "description": "der Snapshot der Instanz; Probeeq ohne befunde und diagnose_version; null ohne Messdaten oder fuer den Broker"
+    },
+    "frame": {
+      "type": ["object", "null"],
+      "description": "Rahmenauszug nach F-6; null fuer den Broker und fuer ein Plugin ohne Messdaten und ohne gebauten Rahmen. Ein Wert ohne Praesenzbit oder nicht endlich steht als null, nie als 0.",
+      "required": ["frames_gebaut", "summe_fenster_gesamt", "summe_fenster_aktiv", "evidenz_frisch", "samplerate", "aktivitaet", "abdeckung", "konvergenz", "evidenz_fenster", "lufs_m", "lufs_s", "true_peak_db", "peak_db", "integration_samples", "nicht_endlich_rahmen", "offen_fenster_gesamt", "offen_fenster_aktiv", "schwer_sekunden", "material_ende_projektsample", "bloecke_max_samples", "hostzeit_fortlaufend_samples", "hostzeit_stillstand_bloecke", "projekt_sample_start", "sample_count", "spielt"],
+      "additionalProperties": false,
+      "properties": {
+        "frames_gebaut": { "type": "integer", "minimum": 0, "description": "kumulativ seit Instanzstart, faellt nie" },
+        "summe_fenster_gesamt": { "type": "integer", "minimum": 0, "description": "Analysefenster abgeschlossener Evidenzrahmen, kumulativ" },
+        "summe_fenster_aktiv": { "type": "integer", "minimum": 0, "description": "davon ueber dem Aktivgate, kumulativ" },
+        "evidenz_frisch": { "type": ["boolean", "null"] },
+        "samplerate": { "type": ["number", "null"] },
+        "aktivitaet": { "type": ["number", "null"] },
+        "abdeckung": { "type": ["number", "null"], "description": "nur in einem Evidenzrahmen" },
+        "konvergenz": { "type": ["number", "null"], "description": "nur in einem Evidenzrahmen" },
+        "evidenz_fenster": { "type": ["integer", "null"], "description": "nur in einem Evidenzrahmen" },
+        "lufs_m": { "type": ["number", "null"] },
+        "lufs_s": { "type": ["number", "null"] },
+        "true_peak_db": { "type": ["number", "null"] },
+        "peak_db": { "type": ["number", "null"] },
+        "integration_samples": { "type": ["integer", "null"] },
+        "nicht_endlich_rahmen": { "type": ["integer", "null"] },
+        "offen_fenster_gesamt": { "type": "integer", "minimum": 0, "description": "offenes Fenster, live und nur roh; faellt je Evidenzabschluss und an jeder Grenze" },
+        "offen_fenster_aktiv": { "type": "integer", "minimum": 0 },
+        "schwer_sekunden": { "type": ["number", "null"], "description": "Materialzeit des zuletzt schwer ausgewerteten Standes; 0 = seit dem letzten Ruecksetzen kein schwerer Stand" },
+        "material_ende_projektsample": { "type": ["integer", "null"], "description": "Hostende des zuletzt vor der Publikation in die Engine gegebenen Blocks" },
+        "bloecke_max_samples": { "type": "integer", "minimum": 0, "description": "groesster sampleCount seit Instanzstart" },
+        "hostzeit_fortlaufend_samples": { "type": ["integer", "null"], "description": "Summe der Stempeldifferenzen seit dem Ruecksetzen plus Laenge des letzten Blocks" },
+        "hostzeit_stillstand_bloecke": { "type": ["integer", "null"], "description": "Bloecke, deren Stempeldifferenz kleiner ist als die Laenge ihres Vorgaengers" },
+        "projekt_sample_start": { "type": ["integer", "null"] },
+        "sample_count": { "type": ["integer", "null"] },
+        "spielt": { "type": ["boolean", "null"] }
+      }
+    },
+    "aggregat": {
+      "anyOf": [ { "type": "null" }, { "$ref": "../eq-aggregat.schema.json" } ],
+      "description": "das Aggregat des Brokers; fuer Plugins immer null"
+    },
+    "gruende": {
+      "type": "array",
+      "description": "je null in snapshot, frame oder aggregat genau ein Eintrag",
+      "items": {
+        "type": "object",
+        "required": ["feld", "code", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "feld": { "enum": ["snapshot", "frame", "aggregat"] },
+          "code": { "enum": ["rolle_ohne_snapshot", "rolle_ohne_frame", "rolle_ohne_aggregat", "noch_keine_messdaten", "aggregat_gesperrt"] },
+          "text": { "type": "string" }
+        }
+      }
+    }
+  }
+}

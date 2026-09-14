@@ -1,0 +1,34 @@
+=== NAK-286 Etappe 3, Rotbeweis M-48 (14.09.2026 20:55:33) ===
+Mutation: Kennungsmuster auf 32 beliebige Zeichen gelockert
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::pfadtraversal_unmoeglich --exact --nocapture
+Traeger (Muster der Meldung): M-48 pfadtraversal_unmoeglich \.\.\\waechter\\ \(32 Zeichen\)
+Ersetzung in broker/src/briefkasten.rs:
+  -     zeichen.len() == 32 && zeichen.iter().all(|z| matches!(z, b'0'..=b'9' | b'a'..=b'f'))
+  +     zeichen.len() == 32 // ROTBEWEIS M-48: Kennungsmuster auf 32 beliebige Zeichen gelockert
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert FBF7FEC71C9D9708FCBD4AFA0702613D0757975707CDA7C87491325B0C91625A, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-48 pfadtraversal_unmoeglich ..\waechter\ (32 Zeichen): Waechter leer false, sonst nichts true, Stand { existenz: 12, lese: 1, bytes: 89, anlegen: 1, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.63s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::pfadtraversal_unmoeglich' (27580) panicked at src\briefkasten.rs:1843:13:
+M-48 pfadtraversal_unmoeglich ..\waechter\ (32 Zeichen): Waechter leer false, sonst nichts true, Stand { existenz: 12, lese: 1, bytes: 89, anlegen: 1, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::pfadtraversal_unmoeglich ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::pfadtraversal_unmoeglich
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.04s
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -26,6 +26,8 @@ use crate::{bindung, coordinator, protokoll, store, transport};
 // weiter unten anzubieten (NAK-224 D2).
 #[cfg(windows)]
 use crate::server;
+#[cfg(windows)]
+use crate::briefkasten::{briefkasten_starten, BriefkastenGriff};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -94,6 +96,11 @@ pub(crate) struct BrokerLauf {
     /// Brokerlauf nur geteilt aus einer statischen Zelle erreichbar ist.
     #[cfg(windows)]
     store: Mutex<Option<store::StoreWriter>>,
+    /// NAK-286 (F-12): der Diagnose-Briefkasten in derselben Huelle wie die
+    /// Geschwister. Er startet nach beiden Servern und geht im geordneten
+    /// Stopp allen voran (M-45).
+    #[cfg(windows)]
+    briefkasten: Mutex<Option<BriefkastenGriff>>,
     /// Nur Lebensdauerhalter. Seit NAK-123 liest die Idle-Entscheidung die
     /// aktiven Worker am `V3Griff` (auch unvollstaendige Bootstraps zaehlen),
     /// nicht mehr `Coordinator::client_anzahl`. Der Arc muss aber weiter im
@@ -160,6 +167,10 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 broker_epoch,
                 sender,
             )?;
+            // NAK-286 (F-12, M-76): der Diagnose-Briefkasten startet nach beiden
+            // Servern. Ein Startfehler startet keinen Thread und beruehrt das
+            // Register nicht; der Broker laeuft unveraendert weiter.
+            let briefkasten = briefkasten_starten(register.clone(), &session_token);
             let supervisor_stop = Arc::new(AtomicBool::new(false));
             let stop_fuer_thread = supervisor_stop.clone();
             let coordinator_fuer_thread = coordinator.clone();
@@ -183,6 +194,7 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 _griff_v2: Mutex::new(Some(griff_v2)),
                 _griff_v3: Mutex::new(Some(griff_v3)),
                 store: Mutex::new(Some(store)),
+                briefkasten: Mutex::new(Some(briefkasten)),
                 _coordinator: coordinator,
                 register,
                 session_token,
@@ -215,7 +227,8 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
 /// Funktion bliebe die Reihenfolge allein der OS-Prozessbereinigung
 /// ueberlassen. Der v3-Griff faellt bewusst nach Supervisor und v2 und joint
 /// intern erst Acceptor/Wachhund/Worker, bevor er den letzten Besitzlistener
-/// schliesst (NAK-123 A-06/A-09).
+/// schliesst (NAK-123 A-06/A-09). Seit NAK-286 geht der Diagnose-Briefkasten
+/// allen voran; die Reihenfolge traegt `geordnet_stoppen` (M-45).
 pub fn broker_geordnet_stoppen() {
     let Some(Ok(lauf)) = BROKER.get() else {
         return;
@@ -226,35 +239,42 @@ pub fn broker_geordnet_stoppen() {
 
     #[cfg(windows)]
     {
-        let supervisor = lauf
-            ._supervisor
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take();
-        drop(supervisor);
-        let griff_v2 = lauf
-            ._griff_v2
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take();
-        drop(griff_v2);
-        let griff_v3 = lauf
-            ._griff_v3
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take();
-        drop(griff_v3);
-        // H-09: erst Supervisor, dann v2-Handle, dann v3-Handle, DANN Store -
-        // damit kein Weg mehr Auftraege einreicht, wenn der Store zumacht. Der
-        // Destruktor des entnommenen StoreWriter fuehrt seinen Stopp selbst
-        // aus: Shutdown senden, Schreiberthread joinen.
-        let store = lauf
-            .store
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take();
-        drop(store);
+        geordnet_stoppen(
+            &lauf.briefkasten,
+            &lauf._supervisor,
+            &lauf._griff_v2,
+            &lauf._griff_v3,
+            &lauf.store,
+        );
     }
+}
+
+#[cfg(windows)]
+fn entnehmen<T>(huelle: &Mutex<Option<T>>) -> Option<T> {
+    huelle.lock().unwrap_or_else(|e| e.into_inner()).take()
+}
+
+/// Die gemeinsame Stoppfunktion des Brokerlaufs und des Reihenfolgetests
+/// (NAK-286 M-45): jeder Teil wird unter seiner Huelle entnommen und fallen
+/// gelassen, sein Destruktor fuehrt den Stopp aus. Zuerst der
+/// Diagnose-Briefkasten - er liest das Register und soll nichts mehr
+/// beantworten, wenn die Server gehen -, dann Supervisor, v2-Handle,
+/// v3-Handle. H-09: DANN Store, damit kein Weg mehr Auftraege einreicht, wenn
+/// der Store zumacht; der Destruktor des entnommenen StoreWriter sendet den
+/// Shutdown und joint den Schreiberthread.
+#[cfg(windows)]
+pub(crate) fn geordnet_stoppen<B, S, V2, V3, St>(
+    briefkasten: &Mutex<Option<B>>,
+    supervisor: &Mutex<Option<S>>,
+    griff_v2: &Mutex<Option<V2>>,
+    griff_v3: &Mutex<Option<V3>>,
+    store: &Mutex<Option<St>>,
+) {
+    drop(entnehmen(briefkasten));
+    drop(entnehmen(supervisor));
+    drop(entnehmen(griff_v2));
+    drop(entnehmen(griff_v3));
+    drop(entnehmen(store));
 }
 
 pub fn broker_idle_ende_erreicht(idle: Duration, aktive_clients: usize) -> bool {

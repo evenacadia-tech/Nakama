@@ -22,6 +22,7 @@
 //! | `paar` | PRE/POST-Paare und die zwei Sperrgründe |
 //! | `lebenslauf` | starten, laufen, geordnet enden; Status auch im Fehlerfall |
 //! | `probe` | die drei Aufrufe, die von außen hineinreichen |
+//! | `briefkasten` | Diagnose-Briefkasten: beantwortet die Anfragedatei mit dem Aggregat (NAK-286) |
 //!
 //! Sie sind bewusst **privat plus Glob-Reexport** und nicht `pub mod`: ein
 //! öffentliches Untermodul wäre ein zweiter Pfad auf dieselbe Sache.
@@ -41,6 +42,8 @@ pub mod telemetrie;
 pub mod transport;
 pub mod vertrag;
 
+#[cfg(windows)]
+mod briefkasten;
 mod lebenslauf;
 mod paar;
 mod probe;
@@ -50,6 +53,8 @@ mod zeit;
 #[cfg(test)]
 mod testhilfe;
 
+#[cfg(windows)]
+pub use briefkasten::*;
 pub use lebenslauf::*;
 pub use paar::*;
 pub use probe::*;

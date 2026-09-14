@@ -1,0 +1,40 @@
+=== NAK-286 Etappe 3, Rotbeweis M-52 (14.09.2026 20:56:14) ===
+Mutation: Zuordnung ueber "neuer als die letzte Antwort" nach der Uhr
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::uhrsprung_aendert_zuordnung_nicht --exact --nocapture
+Traeger (Muster der Meldung): M-52 uhrsprung_aendert_zuordnung_nicht
+Ersetzung in broker/src/briefkasten.rs:
+  -         zustand.offen.versuche += 1;
+  +         static LETZTE_ANTWORT_MS: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(i64::MIN); // ROTBEWEIS M-52
+  +         let jetzt_uhr = self.fassaden.uhr.jetzt_utc_ms();
+  +         if jetzt_uhr <= LETZTE_ANTWORT_MS.load(Ordering::SeqCst) {
+  +             return; // ROTBEWEIS M-52: nur neuer als die letzte Antwort nach der Uhr
+  +         }
+  +         LETZTE_ANTWORT_MS.store(jetzt_uhr, Ordering::SeqCst);
+  +         zustand.offen.versuche += 1;
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 0B3821A1AE3BA138D0C7379ECE0020DA0F82B81D742929A75F3EB3607D67E588, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-52 uhrsprung_aendert_zuordnung_nicht: K Some("\"2026-09-14T12:00:00.000Z\""), L None
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.53s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::uhrsprung_aendert_zuordnung_nicht' (23900) panicked at src\briefkasten.rs:1951:9:
+M-52 uhrsprung_aendert_zuordnung_nicht: K Some("\"2026-09-14T12:00:00.000Z\""), L None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::uhrsprung_aendert_zuordnung_nicht
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+Ergebnis: ROTBEWEIS GUELTIG
+

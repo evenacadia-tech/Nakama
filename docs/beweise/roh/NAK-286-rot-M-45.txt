@@ -1,0 +1,132 @@
+=== NAK-286 Etappe 3, Rotbeweis M-45 (1) (14.09.2026 20:54:53) ===
+Mutation: Weckruf im Stoppweg entfernt
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::stopp_weckt_ohne_wartedurchlauf --exact --nocapture
+Traeger (Muster der Meldung): M-45 \(1\) stopp_weckt_ohne_wartedurchlauf: Wartedurchlaeufe nach dem Stoppsignal 1 statt 0
+Ersetzung in broker/src/briefkasten.rs:
+  -             kern.weckruf.notify_all(); // der Stoppweg weckt (M-45 (1))
+  +             // ROTBEWEIS M-45 (1): Weckruf im Stoppweg entfernt
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 60E8DB7D106C3F623553ADC5A915DCD8384E9FBB8B3D126D86E83D2C434D2F94, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-45 (1) stopp_weckt_ohne_wartedurchlauf: Wartedurchlaeufe nach dem Stoppsignal 1 statt 0
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.41s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+[roh] M-45 stopp_weckt_ohne_wartedurchlauf join_dauer_us=0 join_frist_verfehlt=1
+
+thread 'briefkasten::tests::stopp_weckt_ohne_wartedurchlauf' (20800) panicked at src\briefkasten.rs:1758:9:
+assertion `left == right` failed: M-45 (1) stopp_weckt_ohne_wartedurchlauf: Wartedurchlaeufe nach dem Stoppsignal 1 statt 0
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::stopp_weckt_ohne_wartedurchlauf
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 3.00s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-45 (2) (14.09.2026 20:55:06) ===
+Mutation: Stoppflag im Takt nicht geprueft
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::nach_stopp_keine_lieferung --exact --nocapture
+Traeger (Muster der Meldung): M-45 \(2\) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp
+Ersetzung in broker/src/briefkasten.rs:
+  -             if weck.stopp {
+  -                 break;
+  -             }
+  +             // ROTBEWEIS M-45 (2): Stoppflag im Takt nicht geprueft
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert D0488FBE987261595378311538CBB374D50684E8A690723FC13330436B0BAC0A, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-45 (2) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp 17 statt 0
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+warning: unreachable statement
+   --> src\briefkasten.rs:579:9
+    |
+550 | /         loop {
+551 | |             // Das Stoppflag vor jedem Takt und nach jedem Wecken (M-45).
+552 | |             // ROTBEWEIS M-45 (2): Stoppflag im Takt nicht geprueft
+553 | |             let jetzt = Instant::now();
+...   |
+578 | |         }
+    | |_________- any code following this expression is unreachable
+579 |           weck.beendet = true;
+    |           ^^^^^^^^^^^^^^^^^^^^ unreachable statement
+    |
+    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `eqcop-broker` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.56s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::nach_stopp_keine_lieferung' (23496) panicked at src\briefkasten.rs:1773:9:
+assertion `left == right` failed: M-45 (2) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp 17 statt 0
+  left: 17
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::nach_stopp_keine_lieferung ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::nach_stopp_keine_lieferung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 2.01s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 3.01s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-45 (3) (14.09.2026 20:55:11) ===
+Mutation: Briefkasten nach dem Store gestoppt (lebenslauf.rs voruebergehend mutiert)
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::stoppreihenfolge_briefkasten_zuerst --exact --nocapture
+Traeger (Muster der Meldung): M-45 \(3\) stoppreihenfolge_briefkasten_zuerst: Protokoll der gemeinsamen Stoppfunktion
+Ersetzung in broker/src/lebenslauf.rs:
+  -     drop(entnehmen(briefkasten));
+  -     drop(entnehmen(supervisor));
+  +     drop(entnehmen(supervisor));
+Ersetzung in broker/src/lebenslauf.rs:
+  -     drop(entnehmen(store));
+  +     drop(entnehmen(store));
+  +     drop(entnehmen(briefkasten)); // ROTBEWEIS M-45 (3): Briefkasten nach dem Store gestoppt
+SHA-256 broker/src/lebenslauf.rs vorher 959D0E2A9B9C8CDF654A38130946A5B78BE5FF6251374966EA7561F4B554F82C, mutiert B10020A8CDB23AF63985ED993B834612F1B9D53355A4783D2DD11FB114B3C962, nach der Ruecknahme 959D0E2A9B9C8CDF654A38130946A5B78BE5FF6251374966EA7561F4B554F82C, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-45 (3) stoppreihenfolge_briefkasten_zuerst: Protokoll der gemeinsamen Stoppfunktion
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.46s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::stoppreihenfolge_briefkasten_zuerst' (15960) panicked at src\briefkasten.rs:1795:9:
+assertion `left == right` failed: M-45 (3) stoppreihenfolge_briefkasten_zuerst: Protokoll der gemeinsamen Stoppfunktion
+  left: ["supervisor", "v2", "v3", "store", "briefkasten"]
+ right: ["briefkasten", "supervisor", "v2", "v3", "store"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::stoppreihenfolge_briefkasten_zuerst
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,74 @@
+=== NAK-286 Etappe 3, Rotbeweis M-53 (a) (14.09.2026 20:56:19) ===
+Mutation: direkt in den Antwortnamen geschrieben
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::keine_leere_antwort --exact --nocapture
+Traeger (Muster der Meldung): M-53 keine_leere_antwort \(a\) fehler vor dem ersten byte
+Ersetzung in broker/src/briefkasten.rs:
+  -         let temp = Pfad::neu(self.ebenen[3].pfad.join(format!("{name}.tmp-{}", self.pid)));
+  +         let temp = Pfad::neu(self.ebenen[3].pfad.join(&name)); // ROTBEWEIS M-53 (a): direkt in den Antwortnamen
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 53E1A8235F38A065A275887EFA92F22D463769C0B5D749E56803F9F5876236FB, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-53 keine_leere_antwort (a) fehler vor dem ersten byte: Temp 0 (None Bytes), json 1, Dateien 1, Loesch 0, Fehler 1
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.48s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::keine_leere_antwort' (7328) panicked at src\briefkasten.rs:1964:13:
+M-53 keine_leere_antwort (a) fehler vor dem ersten byte: Temp 0 (None Bytes), json 1, Dateien 1, Loesch 0, Fehler 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::keine_leere_antwort ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::keine_leere_antwort
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.03s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-53 (b) (14.09.2026 20:56:28) ===
+Mutation: Aufraeumer loescht die Temp-Datei, wenn das Umbenennen scheitert
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::keine_leere_antwort --exact --nocapture
+Traeger (Muster der Meldung): M-53 keine_leere_antwort \(b\) fehler beim umbenennen
+Ersetzung in broker/src/briefkasten.rs:
+  -         dateisystem.benenne_um_ohne_ersetzen(&temp, &ziel)
+  -     }
+  +         if dateisystem.benenne_um_ohne_ersetzen(&temp, &ziel) {
+  +             return true;
+  +         }
+  +         dateisystem.loesche(&temp); // ROTBEWEIS M-53 (b): Aufraeumer loescht die Temp-Datei
+  +         false
+  +     }
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 12F8DD58B8D4DD0B12741ED030E0F042452BFA309EB71A7D5D7717446525174B, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-53 keine_leere_antwort (b) fehler beim umbenennen: Temp 0 (None Bytes), json 1, Dateien 1, Loesch 1, Fehler 0
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.63s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::keine_leere_antwort' (25832) panicked at src\briefkasten.rs:1968:13:
+M-53 keine_leere_antwort (b) fehler beim umbenennen: Temp 0 (None Bytes), json 1, Dateien 1, Loesch 1, Fehler 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::keine_leere_antwort ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::keine_leere_antwort
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+Ergebnis: ROTBEWEIS GUELTIG
+

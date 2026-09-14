@@ -1,0 +1,68 @@
+=== NAK-286 Etappe 3, Rotbeweis M-51 (1) (14.09.2026 20:55:53) ===
+Mutation: Ringgroesse: Ring mit einem Eintrag
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::kennungsring_fifo_256 --exact --nocapture
+Traeger (Muster der Meldung): M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche
+Ersetzung in broker/src/briefkasten.rs:
+  - const KENNUNGSRING: usize = 256;
+  + const KENNUNGSRING: usize = 1; // ROTBEWEIS M-51 (1): Ring mit einem Eintrag
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 32959016B9F24D103AF6F5372036CDD9336877D8D83E50691992119CC5FAD289, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche: Stand { existenz: 10, lese: 1, bytes: 87, anlegen: 1, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.13s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::kennungsring_fifo_256' (16732) panicked at src\briefkasten.rs:1915:9:
+M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche: Stand { existenz: 10, lese: 1, bytes: 87, anlegen: 1, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::kennungsring_fifo_256 ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::kennungsring_fifo_256
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 2.49s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 2.62s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-51 (2) (14.09.2026 20:56:05) ===
+Mutation: Einmaligkeit: Ring vor dem Schreiben nicht gefragt
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::kennungsring_fifo_256 --exact --nocapture
+Traeger (Muster der Meldung): M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche
+Ersetzung in broker/src/briefkasten.rs:
+  -         if zustand.ring_enthaelt(&kennung) {
+  +         if false && zustand.ring_enthaelt(&kennung) { // ROTBEWEIS M-51 (2): Ring vor dem Schreiben nicht gefragt
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 9A6AD53EA2371D3F185F302522E00172E331F64C8E560F499C87D732CDD47440, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche: Stand { existenz: 18, lese: 1, bytes: 87, anlegen: 3, schreiben: 2, groesse: 2, umbenennen: 2, ordner: 0, loeschen: 0 }
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.32s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::kennungsring_fifo_256' (3984) panicked at src\briefkasten.rs:1915:9:
+M-51 kennungsring_fifo_256 zweitjuengste erneut 0 anlegeversuche: Stand { existenz: 18, lese: 1, bytes: 87, anlegen: 3, schreiben: 2, groesse: 2, umbenennen: 2, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::kennungsring_fifo_256 ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::kennungsring_fifo_256
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 2.76s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 2.56s
+Ergebnis: ROTBEWEIS GUELTIG
+

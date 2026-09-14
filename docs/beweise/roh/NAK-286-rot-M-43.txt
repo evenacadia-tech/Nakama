@@ -1,0 +1,68 @@
+=== NAK-286 Etappe 3, Rotbeweis M-43 (1) (14.09.2026 20:54:32) ===
+Mutation: Ringabfrage entfernt
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::kennungsregeln_wie_plugin --exact --nocapture
+Traeger (Muster der Meldung): M-43 kennungsregeln_wie_plugin \(M-25\) gleiche kennung keine zweite antwort
+Ersetzung in broker/src/briefkasten.rs:
+  -         if zustand.ring_enthaelt(&kennung) {
+  +         if false && zustand.ring_enthaelt(&kennung) { // ROTBEWEIS M-43 (1): Ringabfrage entfernt
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert D07D7FF765E120B3EC63526E817CEF9367F940380FFF5ACEF714725A4F532675, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-43 kennungsregeln_wie_plugin (M-25) gleiche kennung keine zweite antwort: Stand { existenz: 315, lese: 1, bytes: 87, anlegen: 3, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.99s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::kennungsregeln_wie_plugin' (23272) panicked at src\briefkasten.rs:1606:9:
+M-43 kennungsregeln_wie_plugin (M-25) gleiche kennung keine zweite antwort: Stand { existenz: 315, lese: 1, bytes: 87, anlegen: 3, schreiben: 1, groesse: 1, umbenennen: 1, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::kennungsregeln_wie_plugin ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::kennungsregeln_wie_plugin
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.15s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-43 (2) (14.09.2026 20:54:38) ===
+Mutation: Umbenennen mit Ersetzen (MOVEFILE_REPLACE_EXISTING)
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::kennungsregeln_wie_plugin --exact --nocapture
+Traeger (Muster der Meldung): M-43 kennungsregeln_wie_plugin \(M-33 \(d\)\) keine datei wird je ersetzt
+Ersetzung in broker/src/briefkasten.rs:
+  -         unsafe { MoveFileExW(von.breit.as_ptr(), nach.breit.as_ptr(), MOVEFILE_WRITE_THROUGH) != 0 }
+  +         unsafe { MoveFileExW(von.breit.as_ptr(), nach.breit.as_ptr(), MOVEFILE_WRITE_THROUGH | windows_sys::Win32::Storage::FileSystem::MOVEFILE_REPLACE_EXISTING) != 0 } // ROTBEWEIS M-43 (2)
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert E0A1373E688699C45684EA2A93765B98F013B4F2927976FA41D0AF961967D950, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-43 kennungsregeln_wie_plugin (M-33 (d)) keine datei wird je ersetzt: Marke unveraendert false, Versuche [1, 1, 1, 1, 1]
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.58s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::kennungsregeln_wie_plugin' (5312) panicked at src\briefkasten.rs:1742:9:
+M-43 kennungsregeln_wie_plugin (M-33 (d)) keine datei wird je ersetzt: Marke unveraendert false, Versuche [1, 1, 1, 1, 1]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::kennungsregeln_wie_plugin ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::kennungsregeln_wie_plugin
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.15s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.14s
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,37 @@
+=== NAK-286 Etappe 3, Rotbeweis M-42 (14.09.2026 20:54:25) ===
+Mutation: aggregat als leeres Objekt im Umschlag
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::antwort_feldmenge_wie_schema --exact --nocapture
+Traeger (Muster der Meldung): M-42 antwort_feldmenge_wie_schema: \[
+Ersetzung in broker/src/briefkasten.rs:
+  -         json!({
+  -             "format": ANTWORT_FORMAT,
+  +         let aggregat = if aggregat.is_null() { aggregat } else { json!({}) }; // ROTBEWEIS M-42: aggregat als leeres Objekt
+  +         json!({
+  +             "format": ANTWORT_FORMAT,
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 6349B3A4525EC3B27FE8D60AE3C5505ECBFD66A2FE782F049C90B040D00C983B, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: M-42 antwort_feldmenge_wie_schema: ["mit aggregat: aggregat: Objekt true, fehlend [\"broker_version\", \"erzeugt_ms\", \"paare\", \"schema\", \"sensoren\", \"warnungen\"], fremd []", "mit aggregat: aggregat.filter: Objekt false, fehlend [], fremd []", "mit aggregat: aggregat.gemeinsames_fenster: Objekt false, fehlend [\"bis_samples\", \"von_samples\"], fremd []", "mit aggregat: aggregat.schema"]
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.65s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::antwort_feldmenge_wie_schema' (7876) panicked at src\briefkasten.rs:1546:9:
+M-42 antwort_feldmenge_wie_schema: ["mit aggregat: aggregat: Objekt true, fehlend [\"broker_version\", \"erzeugt_ms\", \"paare\", \"schema\", \"sensoren\", \"warnungen\"], fremd []", "mit aggregat: aggregat.filter: Objekt false, fehlend [], fremd []", "mit aggregat: aggregat.gemeinsames_fenster: Objekt false, fehlend [\"bis_samples\", \"von_samples\"], fremd []", "mit aggregat: aggregat.schema"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::antwort_feldmenge_wie_schema ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::antwort_feldmenge_wie_schema
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.04s
+Ergebnis: ROTBEWEIS GUELTIG
+

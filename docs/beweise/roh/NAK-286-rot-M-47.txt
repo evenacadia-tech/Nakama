@@ -1,0 +1,38 @@
+=== NAK-286 Etappe 3, Rotbeweis M-47 (14.09.2026 20:55:26) ===
+Mutation: Schreiben innerhalb des Sperrbereichs des Register-Mutex
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::register_sperre_nie_ueber_dateischreiben --exact --nocapture
+Traeger (Muster der Meldung): M-47 register_sperre_nie_ueber_dateischreiben: Register-Mutex im Schreibschritt nicht frei
+Ersetzung in broker/src/briefkasten.rs:
+  -         let (sensoren, token_kurz) = {
+  -             let register = sperre(&self.register);
+  +         let register = sperre(&self.register); // ROTBEWEIS M-47: Schreiben innerhalb des Sperrbereichs
+  +         let (sensoren, token_kurz) = {
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert E8222CC7FCDC57451ADE376EDB54B78A7D31718D39E9E265F443DEEF6884B6CB, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-47 register_sperre_nie_ueber_dateischreiben: Register-Mutex im Schreibschritt nicht frei
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.57s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::register_sperre_nie_ueber_dateischreiben' (23488) panicked at src\briefkasten.rs:1574:9:
+assertion `left == right` failed: M-47 register_sperre_nie_ueber_dateischreiben: Register-Mutex im Schreibschritt nicht frei
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::register_sperre_nie_ueber_dateischreiben
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.01s
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,41 @@
+=== NAK-286 Etappe 3, Rotbeweis M-41 (14.09.2026 20:53:59) ===
+Mutation: Existenzpruefung entfernt, der Takt oeffnet anfrage.json direkt
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::ohne_anfrage_nur_existenzpruefung --exact --nocapture
+Traeger (Muster der Meldung): M-41 ohne_anfrage_nur_existenzpruefung taktfenster
+Ersetzung in broker/src/briefkasten.rs:
+  -         let attribute = self.fassaden.dateisystem.attribute(&self.anfrage);
+  +         // ROTBEWEIS M-41: Existenzpruefung entfernt, der Takt oeffnet anfrage.json direkt
+  +         let mut vorab = [0u8; ANFRAGE_GRENZE_BYTES + 1];
+  +         let attribute = match self.fassaden.dateisystem.lies(&self.anfrage, &mut vorab) {
+  +             Some(gelesen) => DateiAttribute { existiert: true, groesse: gelesen as u64, ..DateiAttribute::default() },
+  +             None => DateiAttribute::default(),
+  +         };
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 9BFA6EE28FEB4C6576DD56D021C294E589FFFA0AF8D65CB41C18C8D283B382FD, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-41 ohne_anfrage_nur_existenzpruefung taktfenster (600 Takte): Leseoeffnungen 600
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.76s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::ohne_anfrage_nur_existenzpruefung' (3884) panicked at src\briefkasten.rs:1399:9:
+assertion `left == right` failed: M-41 ohne_anfrage_nur_existenzpruefung taktfenster (600 Takte): Leseoeffnungen 600
+  left: Stand { existenz: 0, lese: 600, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+ right: Stand { existenz: 600, lese: 0, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... FAILED
+
+error: test failed, to rerun pass `--lib`
+failures:
+
+failures:
+    briefkasten::tests::ohne_anfrage_nur_existenzpruefung
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.01s
+
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.01s
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,37 @@
+=== NAK-286 Etappe 3, Rotbeweis M-46 (14.09.2026 20:55:20) ===
+Mutation: Briefkastenstart in probe_lauf (probe.rs voruebergehend mutiert)
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --test briefkasten --color never -- probe_lauf_startet_keinen_briefkasten --exact --nocapture
+Traeger (Muster der Meldung): M-46 probe_lauf_startet_keinen_briefkasten: Startzaehler 1 statt 0
+Ersetzung in broker/src/probe.rs:
+  -     std::thread::sleep(std::time::Duration::from_secs(sekunden));
+  +     let _briefkasten = crate::briefkasten::briefkasten_starten(register.clone(), &session_token); // ROTBEWEIS M-46: Briefkastenstart in probe_lauf
+  +     std::thread::sleep(std::time::Duration::from_secs(sekunden));
+SHA-256 broker/src/probe.rs vorher 44187D4B447E6225504B9A8EB45C3C1703B1329451BED6BF7A24CF533CC2EB49, mutiert 106AF0CD4A34AD8D8CADD735E1FF4A0F3F9A7ABD60676345DFB5B2F1B701FE25, nach der Ruecknahme 44187D4B447E6225504B9A8EB45C3C1703B1329451BED6BF7A24CF533CC2EB49, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-46 probe_lauf_startet_keinen_briefkasten: Startzaehler 1 statt 0
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.36s
+     Running tests\briefkasten.rs (broker\target\debug\deps\briefkasten-737140ffd404815b.exe)
+
+running 1 test
+
+thread 'probe_lauf_startet_keinen_briefkasten' (26556) panicked at tests\briefkasten.rs:62:5:
+assertion `left == right` failed: M-46 probe_lauf_startet_keinen_briefkasten: Startzaehler 1 statt 0
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test probe_lauf_startet_keinen_briefkasten ... FAILED
+
+failures:
+
+failures:
+    probe_lauf_startet_keinen_briefkasten
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 1.00s
+
+error: test failed, to rerun pass `--test briefkasten`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 1.00s
+Ergebnis: ROTBEWEIS GUELTIG
+

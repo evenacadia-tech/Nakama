@@ -1,0 +1,78 @@
+=== NAK-286 Etappe 3, Rotbeweis M-76 (1) (14.09.2026 20:54:07) ===
+Mutation: Grund ueber fehler_merken ins Register eingetragen
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::startfehler_ohne_registerzeile --exact --nocapture
+Traeger (Muster der Meldung): M-76 startfehler_ohne_registerzeile durchlauf 1 \(LOCALAPPDATA fehlt\): Registerfehlerliste
+Ersetzung in broker/src/briefkasten.rs:
+  -         griff.grund = Startgrund::KeineWurzel;
+  +         sperre(&register).fehler_merken("Briefkasten: LOCALAPPDATA ist nicht gesetzt".to_string()); // ROTBEWEIS M-76 (1)
+  +         griff.grund = Startgrund::KeineWurzel;
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 1DC796422FCBA2DBF2602C5276B8188B33BD9D1E314CA0350C37797A0EB5E879, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-76 startfehler_ohne_registerzeile durchlauf 1 (LOCALAPPDATA fehlt): Registerfehlerliste veraendert
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.53s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::startfehler_ohne_registerzeile' (15472) panicked at src\briefkasten.rs:1404:9:
+assertion `left == right` failed: M-76 startfehler_ohne_registerzeile durchlauf 1 (LOCALAPPDATA fehlt): Registerfehlerliste veraendert
+  left: ["NAK-286 Testbuehne: Fehlerliste vor dem Start", "Briefkasten: LOCALAPPDATA ist nicht gesetzt"]
+ right: ["NAK-286 Testbuehne: Fehlerliste vor dem Start"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::startfehler_ohne_registerzeile ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::startfehler_ohne_registerzeile
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 3, Rotbeweis M-76 (2) (14.09.2026 20:54:16) ===
+Mutation: Ebenenpruefung an der Fassade vorbei (std::fs::symlink_metadata direkt)
+Bein A4 als Einzeltest: cargo test --manifest-path broker/Cargo.toml --lib --color never -- briefkasten::tests::startfehler_ohne_registerzeile --exact --nocapture
+Traeger (Muster der Meldung): M-76 startfehler_ohne_registerzeile durchlauf 2 \(evenacadia reparse\) startfenster
+Ersetzung in broker/src/briefkasten.rs:
+  -         let vorgefunden = fassaden.dateisystem.attribute(ebene);
+  +         // ROTBEWEIS M-76 (2): Ebenenpruefung an der Fassade vorbei (std::fs::symlink_metadata direkt)
+  +         let vorgefunden = std::fs::symlink_metadata(&ebene.pfad).map_or(DateiAttribute::default(), |meta| {
+  +             use std::os::windows::fs::MetadataExt;
+  +             let reparse = meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0;
+  +             DateiAttribute { existiert: true, verzeichnis: meta.is_dir(), reparse, ..DateiAttribute::default() }
+  +         });
+SHA-256 broker/src/briefkasten.rs vorher 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, mutiert 0340D79C04F99BDBA6283EE81C17AB161A4B48741E5CCFAB5A1D9E53B82155EF, nach der Ruecknahme 78B3F43E71848B991248D3620F992A3B0323DFA263941A1FA5E3D915BEC74712, gleich: ja
+A4 rot: Exit 101, Traegerzeilen 1
+  Traeger: assertion `left == right` failed: M-76 startfehler_ohne_registerzeile durchlauf 2 (evenacadia reparse) startfenster: Stand { existenz: 0, lese: 0, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+--- Rohausgabe A4, mutierter Stand ---
+   Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.80s
+     Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+
+running 1 test
+
+thread 'briefkasten::tests::startfehler_ohne_registerzeile' (27256) panicked at src\briefkasten.rs:1410:9:
+assertion `left == right` failed: M-76 startfehler_ohne_registerzeile durchlauf 2 (evenacadia reparse) startfenster: Stand { existenz: 0, lese: 0, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+  left: Stand { existenz: 0, lese: 0, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+ right: Stand { existenz: 1, lese: 0, bytes: 0, anlegen: 0, schreiben: 0, groesse: 0, umbenennen: 0, ordner: 0, loeschen: 0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test briefkasten::tests::startfehler_ohne_registerzeile ... FAILED
+
+failures:
+
+failures:
+    briefkasten::tests::startfehler_ohne_registerzeile
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`
+--- Ende der Rohausgabe ---
+A4 gruen: Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.03s
+Ergebnis: ROTBEWEIS GUELTIG
+

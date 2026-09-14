@@ -83,7 +83,8 @@
    "wo": "docs/beweise/NAK-286.md §2.3 (R-286-3, F-17 bis F-20), §4.8 (M-62 bis M-64), §7.2 (K-286-1); Etappe 4 des Tickets",
    "seit": "13.09.",
    "status": "offen",
-   "stellen_ab": "2026-09-14, 12:00 Uhr — nicht 9:00 Uhr. User-Wort 13.09.2026, 23:2x Uhr, wörtlich: „STELL Die frage um 12 uhr nicht um 9 dieses mal“"
+   "stellen_ab": "2026-09-14, 12:00 Uhr — nicht 9:00 Uhr. User-Wort 13.09.2026, 23:2x Uhr, wörtlich: „STELL Die frage um 12 uhr nicht um 9 dieses mal“",
+   "gestellt": "2026-09-14, 12:04 Uhr in der Dirigentensitzung 3fc9471e (Text mit drei Wegen: erledigt / bleibt liegen / jetzt mit Anleitung; Dateinamen Nakama-Diagnose-Referenz.flp und Nakama-Diagnose-Verarbeitung.flp neben dem Diagnoseprojekt in eq-copilot/fixtures/fl/) und per Push angekündigt; AskUserQuestion ist im dontAsk-Modus gesperrt. Antwort ausstehend beim Session-Neustart am 14.09.2026 nachmittags: die nächste Session stellt die Frage nicht erneut, sondern zeigt sie beim nächsten Kontakt des Users einmal kurz und wartet auf den Wortlaut."
   }
  ],
  "geparkt": [

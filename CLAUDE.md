@@ -301,3 +301,7 @@ drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
   die Probe-Pipenamen: A4 hängt dann bei 0 % CPU bis zum 60-Minuten-Limit
   (NAK-290). Vor einem Kanon in einer Arbeitskopie prüfen, dass im
   sichtbaren Checkout kein Bau- oder Testprozess läuft.
+- Bleibt ein Kanon-Log nach „Baue:" ohne Bein stehen (Runner 0 % CPU, kein
+  Kindprozess), wartet der Runner auf den MSVC-Telemetrieprozess `vctip.exe`
+  als Nachkommen des Bauschritts (NAK-300): Prozess beenden, der Lauf geht
+  weiter.

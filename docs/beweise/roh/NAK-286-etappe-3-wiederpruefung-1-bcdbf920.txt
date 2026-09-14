@@ -1,0 +1,5 @@
+URTEIL: PASS — der Befund geschlossen, nichts gebrochen.
+
+Geprüft: Der Fixdiff erfüllt P-15 durch die Wurzelprüfung vor der Deserialisierung mit exakt dem JSON-Leerraum (broker/src/briefkasten.rs:116–124); beide Falltabellen sind zeichengleich und prüfen die Ablehnungszusagen; F-2 bleibt erhalten, vertrag_format liest ausschließlich im Testbau über OnceLock, Anfragebytes bleiben gleich und der Ringzugriff ist gesperrt; der übrige Produktteil und der C++-Leser sind unverändert; M-43 (3) und M-27 (3) belegen Rot/Grün mit 101/0 beziehungsweise 1/0 und passenden Trägerzeilen (docs/beweise/roh/NAK-286-rot-M-43-nach1.txt:69–101, NAK-286-rot-M-27-nach1.txt:194–411), die Rücknahmehashes entsprechen den aktuellen Quellen, A4/B30 sind laut Rohdaten grün und HEAD bcdbf920c1fe0ea2df0ef3fdba8d2ceba1fa4f03 sowie Arbeitsbaumstatus blieben unverändert.
+
+Nicht geprüft: eigene Builds, Tests, Rotläufe, Kanon oder FL-Laufzeit gemäß lesendem Auftrag; keine erneute Prüfung des übrigen Etappenbereichs oder der ausdrücklich ausgeschlossenen Gegenstände.

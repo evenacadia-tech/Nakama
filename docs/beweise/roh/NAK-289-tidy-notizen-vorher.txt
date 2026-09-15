@@ -1,0 +1,246 @@
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe
+Datenbank : C:\Users\phili\Projekte\Nakama\eq-copilot\build-tidy\tidy-db
+
+==== eq-copilot/plugin/core/ipc/TelemetryClient.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:330:8: warning: declaration uses identifier 'logon_sid__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:331:8: warning: declaration uses identifier 'project_binding_id__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:332:8: warning: declaration uses identifier 'session_epoch__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:333:8: warning: declaration uses identifier 'instance_id__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:334:8: warning: declaration uses identifier 'runtime_nonce__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:838:8: warning: declaration uses identifier 'werte_i16__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:839:8: warning: declaration uses identifier 'werte_f32__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:840:8: warning: declaration uses identifier 'gueltig_bitmap__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:1329:8: warning: declaration uses identifier 'band_dynamic_gain_db__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../../vertrag/generiert/nakama_telemetry_v1_generated.h:1488:8: warning: declaration uses identifier 'eintraege__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis/FeatureEngine.h:1113:25: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\Fft.h:98:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\Fft.h:101:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\Fft.h:102:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\TruePeak.h:96:10: warning: an exception may be thrown in function 'vorbereiten' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\TruePeak.h:251:28: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\TruePeak.h:254:23: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Fingerprint.h:93:58: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Fingerprint.h:94:58: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:393:44: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:394:44: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:395:56: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:397:36: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:399:32: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\../analysis\featureengine/Spektrum.h:401:39: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\IpcQueues.h:414:10: warning: an exception may be thrown in function 'bestaetigen' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\TelemetryClient.cpp:281:37: warning: std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const [performance-move-const-arg]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\TelemetryClient.cpp:390:75: warning: the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+
+==== eq-copilot/plugin/vertrag/NakamaEvidenz.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis/FeatureEngine.h:1113:25: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\Fft.h:98:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\Fft.h:101:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\Fft.h:102:43: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\TruePeak.h:96:10: warning: an exception may be thrown in function 'vorbereiten' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\TruePeak.h:251:28: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\TruePeak.h:254:23: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Fingerprint.h:93:58: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Fingerprint.h:94:58: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:393:44: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:394:44: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:395:56: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:397:36: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:399:32: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/analysis\featureengine/Spektrum.h:401:39: warning: either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion [bugprone-misplaced-widening-cast]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/ipc/WireZahl.h:138:28: warning: 'atoi' used to convert a string to an integer value, but function will not report conversion errors; consider using 'strtol' instead [cert-err34-c]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\../core/ipc\IpcQueues.h:414:10: warning: an exception may be thrown in function 'bestaetigen' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaEvidenz.cpp:463:19: warning: performing an implicit widening conversion to type 'size_type' (aka 'unsigned long long') of a multiplication performed in type 'int' [bugprone-implicit-widening-of-multiplication-result]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaEvidenz.cpp:463:19: note: make conversion explicit to silence this warning
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaEvidenz.cpp:463:19: note: perform multiplication in a wider type
+
+==== eq-copilot/plugin/core/ipc/PipeToken.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:42:45: warning: result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t' [bugprone-implicit-widening-of-multiplication-result]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:42:47: note: make conversion explicit to silence this warning
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:42:47: note: perform multiplication in a wider type
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:96:9: warning: result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t' [bugprone-implicit-widening-of-multiplication-result]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:96:16: note: make conversion explicit to silence this warning
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.cpp:96:16: note: perform multiplication in a wider type
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\PipeToken.h:58:13: warning: an exception may be thrown in function 'istProbePipename' which should not throw exceptions [bugprone-exception-escape]
+
+==== eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\IpcQueues.h:414:10: warning: an exception may be thrown in function 'bestaetigen' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireZahl.h:138:28: warning: 'atoi' used to convert a string to an integer value, but function will not report conversion errors; consider using 'strtol' instead [cert-err34-c]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\controlclient\Vertrag.cpp:230:6: warning: an exception may be thrown in function 'audioGueltig' which should not throw exceptions [bugprone-exception-escape]
+
+==== eq-copilot/plugin/core/ipc/WireEnvelope.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:150:27: warning: The value provided to the cast expression is not in the valid range of values for 'Kodierung' [clang-analyzer-optin.core.EnumCastOutOfRange]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.h:108:12: note: enum declared here
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:242:22: note: Calling 'envelopePruefen'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:9: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:9: note: Left side of '||' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:29: note: Assuming 'laenge' is >= 4
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:101:9: note: Assuming 'frameLen' is not equal to 0
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:101:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:103:9: note: Assuming 'frameLen' is <= 'kMaxFrameBytes'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:103:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:105:9: note: Assuming 'frameLen' is >= 'kKopfBytes'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:105:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:109:9: note: Assuming 'laenge' is >= 'drahtlaenge'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:109:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:121:9: note: Assuming 'ist' is <= 'erwartet'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:121:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:123:9: note: Assuming 'ist' is >= 'erwartet'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:123:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:131:5: note: 'encodingByte' initialized here
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:138:35: note: Assuming 'encodingByte' is > 1
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:139:35: note: Assuming 'familieByte' is <= 2
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:141:11: note: 'encodingBekannt' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:141:5: note: Taking true branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:143:11: note: 'familieBekannt' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:143:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:145:9: note: Assuming 'schemaMajor' is equal to 'kSchemaMajor'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:145:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:147:9: note: Assuming 'flags' is equal to 0
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:147:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:150:27: note: The value provided to the cast expression is not in the valid range of values for 'Kodierung'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:151:27: warning: The value provided to the cast expression is not in the valid range of values for 'Familie' [clang-analyzer-optin.core.EnumCastOutOfRange]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.h:109:12: note: enum declared here
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:242:22: note: Calling 'envelopePruefen'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:9: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:9: note: Left side of '||' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:29: note: Assuming 'laenge' is >= 4
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:97:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:101:9: note: Assuming 'frameLen' is not equal to 0
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:101:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:103:9: note: Assuming 'frameLen' is <= 'kMaxFrameBytes'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:103:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:105:9: note: Assuming 'frameLen' is >= 'kKopfBytes'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:105:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:109:9: note: Assuming 'laenge' is >= 'drahtlaenge'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:109:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:121:9: note: Assuming 'ist' is <= 'erwartet'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:121:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:123:9: note: Assuming 'ist' is >= 'erwartet'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:123:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:132:5: note: 'familieByte' initialized here
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:138:35: note: Assuming 'encodingByte' is <= 1
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:139:35: note: Assuming 'familieByte' is > 2
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:141:11: note: 'encodingBekannt' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:141:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:143:11: note: 'familieBekannt' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:143:5: note: Taking true branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:145:9: note: Assuming 'schemaMajor' is equal to 'kSchemaMajor'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:145:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:147:9: note: Assuming 'flags' is equal to 0
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:147:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\core\ipc\WireEnvelope.cpp:151:27: note: The value provided to the cast expression is not in the valid range of values for 'Familie'
+
+==== eq-copilot/plugin/dsp/DspKern.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:63:36: warning: casting (double + 0.5) to integer leads to incorrect rounding; consider using lround (#include <cmath>) instead [bugprone-incorrect-roundings]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:503:16: warning: Value stored to 'y0' during its initialization is never read [clang-analyzer-deadcode.DeadStores]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:503:16: note: Value stored to 'y0' during its initialization is never read
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:70: warning: Access to field 'detektorLaeuft' results in a dereference of a null pointer (loaded from variable 'qb') [clang-analyzer-core.NullDereference]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:9: note: Assuming field 'aktiv' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:31: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:49: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:5: note: 'qb' initialized to a null pointer value
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:466:23: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:30: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:54: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:9: note: Assuming field 'nutztSvf' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:22: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:479:35: note: Assuming field 'modus' is not equal to stereo
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:21: note: Assuming 'i' is < 'numSamples'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:5: note: Loop condition is true.  Entering loop body
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:488:27: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:494:9: note: Control jumps to 'case right:'  at line 498
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:498:49: note:  Execution continues on line 503
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:15: note: Field 'nutztSvf' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:9: note: Taking true branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:40: note: Assuming field 'detektorLaeuft' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:40: note: Left side of '||' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:61: note: Assuming 'mitte' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:61: note: Left side of '&&' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:70: note: Access to field 'detektorLaeuft' results in a dereference of a null pointer (loaded from variable 'qb')
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:520:42: warning: Forming reference to null pointer [clang-analyzer-core.NonNullParamChecker]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:9: note: Assuming field 'aktiv' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:31: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:49: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:5: note: 'qb' initialized to a null pointer value
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:466:23: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:30: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:54: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:9: note: Assuming field 'nutztSvf' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:22: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:479:35: note: Assuming field 'modus' is not equal to stereo
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:21: note: Assuming 'i' is < 'numSamples'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:5: note: Loop condition is true.  Entering loop body
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:488:27: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:494:9: note: Control jumps to 'case right:'  at line 498
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:498:49: note:  Execution continues on line 503
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:15: note: Field 'nutztSvf' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:9: note: Taking true branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:40: note: Assuming field 'detektorLaeuft' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:512:57: note: Left side of '||' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:516:17: note: 'detektorAktiv' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:516:13: note: Taking true branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:520:34: note: Assuming 'mitte' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:520:34: note: '?' condition is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:520:42: note: Forming reference to null pointer
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:573:38: warning: Forming reference to null pointer [clang-analyzer-core.NonNullParamChecker]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:9: note: Assuming field 'aktiv' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:457:5: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:31: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:49: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:464:5: note: 'qb' initialized to a null pointer value
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:466:23: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:30: note: Assuming the condition is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:475:54: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:9: note: Assuming field 'nutztSvf' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:9: note: Left side of '&&' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:25: note: Assuming field 'statischIstEinheit' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:477:46: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:479:35: note: Assuming field 'modus' is not equal to stereo
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:21: note: Assuming 'i' is < 'numSamples'
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:482:5: note: Loop condition is true.  Entering loop body
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:488:27: note: Left side of '&&' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:494:9: note: Control jumps to 'case right:'  at line 498
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:498:49: note:  Execution continues on line 503
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:15: note: Field 'nutztSvf' is false
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:505:9: note: Taking false branch
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:573:30: note: Assuming 'mitte' is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:573:30: note: '?' condition is true
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\dsp\DspKern.cpp:573:38: note: Forming reference to null pointer
+
+==== eq-copilot/plugin/probe/PipeProbeMain.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:99:5: warning: an exception may be thrown in function 'main' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:113:22: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:118:79: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:137:59: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:147:73: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:166:62: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:168:72: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:174:69: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:179:77: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\probe\PipeProbeMain.cpp:183:83: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+
+==== eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaTelemetrie.cpp:20:16: warning: an exception may be thrown in function 'operator<' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaTelemetrie.cpp:447:11: warning: constructor does not initialize these fields: name [cppcoreguidelines-pro-type-member-init]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:330:8: warning: declaration uses identifier 'logon_sid__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:331:8: warning: declaration uses identifier 'project_binding_id__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:332:8: warning: declaration uses identifier 'session_epoch__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:333:8: warning: declaration uses identifier 'instance_id__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:334:8: warning: declaration uses identifier 'runtime_nonce__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:838:8: warning: declaration uses identifier 'werte_i16__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:839:8: warning: declaration uses identifier 'werte_f32__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:840:8: warning: declaration uses identifier 'gueltig_bitmap__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:1329:8: warning: declaration uses identifier 'band_dynamic_gain_db__', which is a reserved identifier [bugprone-reserved-identifier]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\generiert/nakama_telemetry_v1_generated.h:1488:8: warning: declaration uses identifier 'eintraege__', which is a reserved identifier [bugprone-reserved-identifier]
+
+==== eq-copilot/plugin/vertrag/NakamaVertrag.cpp (clang-tidy Exit 0)
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaUtf8.h:25:50: warning: incrementing and referencing a variable in a complex condition can cause unintended side-effects due to C++'s order of evaluation, consider moving the modification outside of the condition to avoid misunderstandings [bugprone-inc-dec-in-conditions]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaUtf8.h:25:17: note: variable is referenced here
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaVertrag.cpp:261:18: warning: an exception may be thrown in function 'operator<' which should not throw exceptions [bugprone-exception-escape]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaVertrag.h:29:45: warning: performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int' [bugprone-implicit-widening-of-multiplication-result]
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaVertrag.h:29:45: note: make conversion explicit to silence this warning
+C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\vertrag\NakamaVertrag.h:29:45: note: perform multiplication in a wider type
+EXIT=0

@@ -1,0 +1,137 @@
+NAK-289 Etappe 1 - Riegelmessung 2026-09-15 18:39:41, Basis 432f209caf787d818790b6483bc769d54dd3912d, Stand fccb00ebb8fdd92ef5f46480439b0907dec5ca65
+
+== R7 eq-copilot/plugin/.clang-tidy (Inhalt)
+$ git diff 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/plugin/.clang-tidy
+(leer)
+(Exit 0)
+
+== R5 tools/beweise.ps1
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- tools/beweise.ps1
+(leer)
+(Exit 0)
+
+== R5 und R9 eq-copilot/identity
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/identity
+(leer)
+(Exit 0)
+
+== R3 und R5 eq-copilot/schemas
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/schemas
+(leer)
+(Exit 0)
+
+== R3 und R5 eq-copilot/fixtures
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/fixtures
+(leer)
+(Exit 0)
+
+== R5 eq-copilot/install
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/install
+(leer)
+(Exit 0)
+
+== R4 und R5 eq-copilot/plugin/CMakeLists.txt
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/plugin/CMakeLists.txt
+(leer)
+(Exit 0)
+
+== R5 broker
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- broker
+(leer)
+(Exit 0)
+
+== R5 tools ausser tools/plan/tidy.py
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- tools :(exclude)tools/plan/tidy.py
+(leer)
+(Exit 0)
+
+== R5 docs ausser Manifest und Rohdaten
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- docs :(exclude)docs/beweise/NAK-289.md :(exclude)docs/beweise/roh/NAK-289-*
+(leer)
+(Exit 0)
+
+== R5 .claude
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- .claude
+(leer)
+(Exit 0)
+
+== R5 design
+$ git diff --stat 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- design
+(leer)
+(Exit 0)
+
+== R5 fremde Ordner briefing-hub und nimbalyst-local (getrackte Dateien)
+$ git ls-files -- briefing-hub nimbalyst-local
+(leer)
+(Exit 0)
+
+== R8 NOLINT im Plugin am Stand
+$ git grep -n -I NOLINT fccb00ebb8fdd92ef5f46480439b0907dec5ca65 -- eq-copilot/plugin
+(leer)
+(Exit 1)
+
+== R8 NOLINT im Plugin am Basis-SHA
+$ git grep -n -I NOLINT 432f209caf787d818790b6483bc769d54dd3912d -- eq-copilot/plugin
+(leer)
+(Exit 1)
+
+== Ticketpfade wie gebaut (alle Aenderungen Basis bis Stand)
+$ git diff --stat=200 432f209caf787d818790b6483bc769d54dd3912d..fccb00ebb8fdd92ef5f46480439b0907dec5ca65
+ docs/beweise/NAK-289.md                                 |  691 ++++++++++
+ docs/beweise/roh/NAK-289-6c84143-dirty.md               | 9551 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/beweise/roh/NAK-289-a4b-klasse-g.txt               |   45 +
+ docs/beweise/roh/NAK-289-atoi-strtol-beweis.cpp         |  225 ++++
+ docs/beweise/roh/NAK-289-atoi-strtol-beweis.txt         |   88 ++
+ docs/beweise/roh/NAK-289-b6-klasse-e.txt                |  303 +++++
+ docs/beweise/roh/NAK-289-beine-etappe1.ps1              |  135 ++
+ docs/beweise/roh/NAK-289-beine-klasse-h.txt             |  512 ++++++++
+ docs/beweise/roh/NAK-289-beinzahlen-vorher.txt          |   69 +
+ docs/beweise/roh/NAK-289-beinzahlen.ps1                 |   42 +
+ docs/beweise/roh/NAK-289-beweise-bauen.cmd              |   14 +
+ docs/beweise/roh/NAK-289-etappe-1-auftrag.txt           |   38 +
+ docs/beweise/roh/NAK-289-etappe1-beine.txt              |   63 +
+ docs/beweise/roh/NAK-289-riegelmessung.ps1              |   53 +
+ docs/beweise/roh/NAK-289-rot-a.txt                      | 4248 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ docs/beweise/roh/NAK-289-rot-d.txt                      | 1588 +++++++++++++++++++++++
+ docs/beweise/roh/NAK-289-rot-e.txt                      |  619 +++++++++
+ docs/beweise/roh/NAK-289-rot-f.txt                      |  335 +++++
+ docs/beweise/roh/NAK-289-rot-g.txt                      |  121 ++
+ docs/beweise/roh/NAK-289-rot-h.txt                      |  121 ++
+ docs/beweise/roh/NAK-289-rotbeweise-auswertung.ps1      |   79 ++
+ docs/beweise/roh/NAK-289-rotbeweise-auswertung.txt      |   61 +
+ docs/beweise/roh/NAK-289-rotskript-etappe1.ps1          |  193 +++
+ docs/beweise/roh/NAK-289-rundung-beweis.cpp             |  178 +++
+ docs/beweise/roh/NAK-289-rundung-beweis.txt             |   19 +
+ docs/beweise/roh/NAK-289-tidy-etappe1-nachher.txt       |   86 ++
+ docs/beweise/roh/NAK-289-tidy-notizen-vorher.txt        |  246 ++++
+ docs/beweise/roh/NAK-289-tidy-notizen.py                |   40 +
+ docs/beweise/roh/NAK-289-tidy-ratsche-58.txt            |   86 ++
+ docs/beweise/roh/NAK-289-tidy-selbsttest-58.txt         |   41 +
+ docs/beweise/roh/NAK-289-tidy-teil-a.txt                |  138 ++
+ docs/beweise/roh/NAK-289-tidy-teil-b.txt                |   27 +
+ docs/beweise/roh/NAK-289-tidy-teil-c.txt                |   25 +
+ docs/beweise/roh/NAK-289-tidy-teil-d.txt                |   51 +
+ docs/beweise/roh/NAK-289-tidy-teil-e.txt                |   19 +
+ docs/beweise/roh/NAK-289-tidy-teil-f.txt                |   49 +
+ docs/beweise/roh/NAK-289-tidy-teil-g.txt                |   19 +
+ docs/beweise/roh/NAK-289-tidy-teil-h.txt                |   43 +
+ docs/beweise/roh/NAK-289-tidy-vergleich-etappe1.txt     |   61 +
+ docs/beweise/roh/NAK-289-tidy-vorher-432f209c.txt       |  120 ++
+ eq-copilot/plugin/core/analysis/TruePeak.h              |   18 +-
+ eq-copilot/plugin/core/ipc/IpcQueues.h                  |   15 +-
+ eq-copilot/plugin/core/ipc/PipeToken.h                  |   10 +-
+ eq-copilot/plugin/core/ipc/WireEnvelope.cpp             |   10 +-
+ eq-copilot/plugin/core/ipc/WireZahl.h                   |    8 +-
+ eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp    |   21 +-
+ eq-copilot/plugin/dsp/DspKern.cpp                       |   23 +-
+ eq-copilot/plugin/probe/PipeProbeMain.cpp               |   45 +-
+ eq-copilot/plugin/tests/DspGoldenTestMain.cpp           |    8 +
+ eq-copilot/plugin/tests/IpcTestMain.cpp                 |  127 ++
+ eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp |  124 ++
+ eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp          |   12 +-
+ eq-copilot/plugin/vertrag/NakamaUtf8.h                  |    9 +-
+ eq-copilot/plugin/vertrag/NakamaVertrag.cpp             |   15 +-
+ tools/plan/tidy.py                                      |   22 +-
+ 55 files changed, 20863 insertions(+), 46 deletions(-)
+(Exit 0)
+

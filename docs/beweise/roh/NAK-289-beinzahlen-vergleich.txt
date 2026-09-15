@@ -1,0 +1,6 @@
+Beine vorher: 68 | nachher: 68
+A4b | EqCopPipeClientTest: 36 -> 47 (Differenz 11)
+B6 | EqCopDspGoldenTest: 259 -> 261 (Differenz 2)
+B10 | EqCopIpcTest: 432 -> 435 (Differenz 3)
+unveraendert: 65
+ok-Zeilen gesamt: 6136 -> 6152

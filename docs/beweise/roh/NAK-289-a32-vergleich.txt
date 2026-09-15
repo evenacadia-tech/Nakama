@@ -1,0 +1,24 @@
+NAK-289 Etappe 1 - A32 vorher gegen nachher (Abschnitt "#### A32" der Kanon-Rohausgaben)
+vorher : docs/beweise/roh/NAK-289-6c84143-dirty.md (Kanon vorher auf 6c841432)
+nachher: docs/beweise/roh/NAK-289-fccb00e-dirty.md (Kanon nachher auf fccb00eb)
+Befehl : je Datei awk-Auszug von "#### A32 |" bis vor den naechsten "#### "-Kopf, dann diff vorher nachher
+
+3c3
+< **Befehl:** `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | **Exitcode:** 4 | **Dauer:** 17,46 s
+---
+> **Befehl:** `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | **Exitcode:** 4 | **Dauer:** 43,27 s
+206c206
+<   eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen
+---
+>   eq-copilot/plugin/dsp/DspKern.cpp:871 DspKern::verarbeiteStueck - 230 Zeilen
+232c232
+<   eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+---
+>   eq-copilot/plugin/core/analysis/TruePeak.h:135 `STATUS_STACK_OVERFLOW`
+234,235c234,235
+<   eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+<   eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+---
+>   eq-copilot/plugin/core/ipc/IpcQueues.h:73 `_end`
+>   eq-copilot/plugin/core/ipc/IpcQueues.h:78 `hatEreignisAelterAls`
+diff-Exit: 1

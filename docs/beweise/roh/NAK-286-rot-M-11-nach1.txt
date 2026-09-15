@@ -1,0 +1,285 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Kopfzeile Exit 5) (15.09.2026 06:34:59) ===
+Art: Rotbeweis (§5.1, §40): Szenario-Exit 5 aus der Liste der Szenarioexits der Kopfzeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $zusammen = ($ergebnisse | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ','
+  +         $zusammen = ($ergebnisse | Where-Object { $_.Exit -ne 5 } | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ',' # ROTBEWEIS M-11 (Kopfzeile Exit 5)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert E0758FC62374E03FB99462C444FF86A848604853605DF4314F2986B5E52748FE, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c942f8678e1e\roh.md'
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c942f8678e1e\roh.md'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Render) (15.09.2026 06:35:01) ===
+Art: Rotbeweis (§5.1, §40): Renderschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Renderschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund)
+  +     $null = ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund) # ROTBEWEIS M-11 (Protokoll Render)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert FC47CE321D8F9EBE8B671C9CFFDE7BF2C3D17EF7953D4DD1AB15EBE02F13AFC2, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.9 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Briefkasten) (15.09.2026 06:35:02) ===
+Art: Rotbeweis (§5.1, §40): Briefkastenschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt"
+  +     $null = "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt" # ROTBEWEIS M-11 (Protokoll Briefkasten)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 6041EFF09D6004A2538BD8828B8F15D280DD0198B833AEB97AD62B736D74A596, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Szenario) (15.09.2026 06:35:03) ===
+Art: Rotbeweis (§5.1, §40): Abschnittskopf ## Szenario nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Szenario ohne eigenen Abschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     kopf = f"## Szenario `{szenario.get('id', szenario_pfad.stem)}` — {szenario.get('titel', '')}\n"
+  +     kopf = "\n"  # ROTBEWEIS M-11 (Abschnitt Szenario): ohne eigenen Abschnitt
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 4FC1902A8405CC333A3BD19C4B3182DF98E9ADD6371A7A081611B545869D53E2, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Schritt) (15.09.2026 06:35:03) ===
+Art: Rotbeweis (§5.1, §40): Unterabschnitt ### Schritt einer lokalen Aktion nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                 lauf.details += ["", f"### Schritt {nr} `{aktion}`", ""] + zeilen
+  +                 lauf.details += zeilen  # ROTBEWEIS M-11 (Abschnitt Schritt): ohne Unterabschnitt
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 902BC4AC02F6A6388BB37A1D9D09E1EC58993A5CFD2FEC701EEB41EDB0A9AEFF, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Kopfzeile Exit 5) (15.09.2026 06:58:25) ===
+Art: Rotbeweis (§5.1, §40): Szenario-Exit 5 aus der Liste der Szenarioexits der Kopfzeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $zusammen = ($ergebnisse | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ','
+  +         $zusammen = ($ergebnisse | Where-Object { $_.Exit -ne 5 } | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ',' # ROTBEWEIS M-11 (Kopfzeile Exit 5)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert E0758FC62374E03FB99462C444FF86A848604853605DF4314F2986B5E52748FE, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c3ab50c1b8ec\roh.md'
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c3ab50c1b8ec\roh.md'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Render) (15.09.2026 06:58:27) ===
+Art: Rotbeweis (§5.1, §40): Renderschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Renderschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund)
+  +     $null = ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund) # ROTBEWEIS M-11 (Protokoll Render)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert FC47CE321D8F9EBE8B671C9CFFDE7BF2C3D17EF7953D4DD1AB15EBE02F13AFC2, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Briefkasten) (15.09.2026 06:58:29) ===
+Art: Rotbeweis (§5.1, §40): Briefkastenschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt"
+  +     $null = "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt" # ROTBEWEIS M-11 (Protokoll Briefkasten)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 6041EFF09D6004A2538BD8828B8F15D280DD0198B833AEB97AD62B736D74A596, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Szenario) (15.09.2026 06:58:29) ===
+Art: Rotbeweis (§5.1, §40): Abschnittskopf ## Szenario nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Szenario ohne eigenen Abschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     kopf = f"## Szenario `{szenario.get('id', szenario_pfad.stem)}` — {szenario.get('titel', '')}\n"
+  +     kopf = "\n"  # ROTBEWEIS M-11 (Abschnitt Szenario): ohne eigenen Abschnitt
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert E39707D1EB1AD683ECDEF1F96F0D730B20AD04B3213A763D4CA70F62F8C44AB5, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Schritt) (15.09.2026 06:58:29) ===
+Art: Rotbeweis (§5.1, §40): Unterabschnitt ### Schritt einer lokalen Aktion nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                 lauf.details += ["", f"### Schritt {nr} `{aktion}`", ""] + zeilen
+  +                 lauf.details += zeilen  # ROTBEWEIS M-11 (Abschnitt Schritt): ohne Unterabschnitt
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 6D613FE56017F32B6708F4D2378AE00337E4F2EA4932A1A3478F6421F30B686F, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Kopfzeile Exit 5) (15.09.2026 07:26:04) ===
+Art: Rotbeweis (§5.1, §40): Szenario-Exit 5 aus der Liste der Szenarioexits der Kopfzeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $zusammen = ($ergebnisse | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ','
+  +         $zusammen = ($ergebnisse | Where-Object { $_.Exit -ne 5 } | ForEach-Object { "{0}={1}" -f $_.Datei, $_.Exit }) -join ',' # ROTBEWEIS M-11 (Kopfzeile Exit 5)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert E0758FC62374E03FB99462C444FF86A848604853605DF4314F2986B5E52748FE, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-fe5acb0e66e1\roh.md'
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 3 'LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-fe5acb0e66e1\roh.md'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Render) (15.09.2026 07:26:05) ===
+Art: Rotbeweis (§5.1, §40): Renderschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Renderschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund)
+  +     $null = ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund) # ROTBEWEIS M-11 (Protokoll Render)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert FC47CE321D8F9EBE8B671C9CFFDE7BF2C3D17EF7953D4DD1AB15EBE02F13AFC2, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Renderschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Protokoll Briefkasten) (15.09.2026 07:26:07) ===
+Art: Rotbeweis (§5.1, §40): Briefkastenschritt nicht mehr ueber Log ins Protokoll geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_und_protokoll (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 kopfzeile_und_protokoll:.*Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Log "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt"
+  +     $null = "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt" # ROTBEWEIS M-11 (Protokoll Briefkasten)
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 6041EFF09D6004A2538BD8828B8F15D280DD0198B833AEB97AD62B736D74A596, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+--- Rohausgabe, rot ---
+[ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Rohdatei: Briefkastenschritt nicht unter ## Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Szenario) (15.09.2026 07:26:07) ===
+Art: Rotbeweis (§5.1, §40): Abschnittskopf ## Szenario nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Szenario ohne eigenen Abschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     kopf = f"## Szenario `{szenario.get('id', szenario_pfad.stem)}` — {szenario.get('titel', '')}\n"
+  +     kopf = "\n"  # ROTBEWEIS M-11 (Abschnitt Szenario): ohne eigenen Abschnitt
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 6118631B76DAFFF79E45BB524B966F65190A7D6CBD4661A0B67C40F62823B2C8, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Szenario ohne eigenen Abschnitt: erste Zeile ''
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-11 (Abschnitt Schritt) (15.09.2026 07:26:08) ===
+Art: Rotbeweis (§5.1, §40): Unterabschnitt ### Schritt einer lokalen Aktion nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur szenario_abschnitte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-11 szenario_abschnitte:.*Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                 lauf.details += ["", f"### Schritt {nr} `{aktion}`", ""] + zeilen
+  +                 lauf.details += zeilen  # ROTBEWEIS M-11 (Abschnitt Schritt): ohne Unterabschnitt
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 800E6E253D73E1CA359155DEEEE93ACAC93330358D6D9292C6C94B151B2C759B, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+--- Rohausgabe, rot ---
+[ROT] M-11 szenario_abschnitte: Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,346 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotlauf vor der Aenderung M-03 (Render) (15.09.2026 06:04:48) ===
+Art: Rotlauf vor der Aenderung (§5.1, §40): vollstaendige Mutation (Pruefung vor dem Render und Schranke $rest) gegen den unveraenderten Selbsttest
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*Renderprozess trotz fremdem FL gestartet
+Erwartung: ohne Traeger
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $rest = @(FL-Instanzen)
+  +     $rest = @(FL-Instanzen | Where-Object { -not (Ist-Fremd $_) }) # ROTBEWEIS M-03 (Render): redundante Schranke entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert C56A8836664C8DCD1AA733A69E533E82C479FD66EC053A8837EA7EEBFDA52543, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 0
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render trotz fremdem FL erreicht
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: NACHWEIS ERBRACHT
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Render) (15.09.2026 06:13:59) ===
+Art: Rotbeweis (§5.1, §40): Pruefung vor dem Render samt redundanter Schranke $rest entfernt: die Attrappe startet FL64 /R
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem Render\] Renderprozess trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $rest = @(FL-Instanzen)
+  +     $rest = @(FL-Instanzen | Where-Object { -not (Ist-Fremd $_) }) # ROTBEWEIS M-03 (Render): redundante Schranke entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, mutiert 78AA776C0E92F0E5063D2D50124B0049648ABE26795D8BB44DB80A6B6A5050CE, nach der Ruecknahme 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Installation) (15.09.2026 06:14:00) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor der Installation entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor der Installation\] Installation trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" } }
+  +     # ROTBEWEIS M-03 (Installation): Pruefung vor der Installation entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, mutiert F8A6BEAA75DECD052C1E7A5C5AEE03C47626D00494E6B16B9CF46FC3318CC5EA, nach der Ruecknahme 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (FL-Start) (15.09.2026 06:14:02) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor dem FL-Start entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem FL-Start\] FL-Start trotz fremdem FL
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             if ($fremd.Count -gt 0 -and $laufend.Count -eq 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" }
+  +             # ROTBEWEIS M-03 (FL-Start): Pruefung vor dem FL-Start entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, mutiert D7091BD1DCFB51470F826084DF504BD044033461EE1FB34DEA61890DEF06609E, nach der Ruecknahme 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Gegenprobe M-03 (Render, Mutation der Etappe 4) (15.09.2026 06:14:04) ===
+Art: Gegenprobe (§5.1, §40): nur die Pruefung vor dem Render entfernt, Schranke $rest bleibt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*Renderprozess trotz fremdem FL gestartet
+Erwartung: ohne Traeger
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, mutiert 5176CB26353E497D98C442ACD1C363C41E50EE79B509DDEE8A875E22E3372CAB, nach der Ruecknahme 3E6EB305D65586391AC1B1CB9A640E0F531247B87A410F8E6CC9C3A7F46F49BD, gleich: ja
+rot: Exit 4, Dauer 0.7 s, Obergrenze erreicht: nein, Traegerzeilen 0
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: NACHWEIS ERBRACHT
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Render) (15.09.2026 06:34:44) ===
+Art: Rotbeweis (§5.1, §40): Pruefung vor dem Render samt redundanter Schranke $rest entfernt: die Attrappe startet FL64 /R
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem Render\] Renderprozess trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $rest = @(FL-Instanzen)
+  +     $rest = @(FL-Instanzen | Where-Object { -not (Ist-Fremd $_) }) # ROTBEWEIS M-03 (Render): redundante Schranke entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert CA4B1E0D0326CEB977599938283B32561AE62918118FA827AE9B325E88F2B106, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Installation) (15.09.2026 06:34:46) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor der Installation entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor der Installation\] Installation trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" } }
+  +     # ROTBEWEIS M-03 (Installation): Pruefung vor der Installation entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert A9DE8F0ACE6C13DE31582CD0D7320BFB7DF6413F2C72DCCFDBF87F169D041824, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (FL-Start) (15.09.2026 06:34:47) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor dem FL-Start entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem FL-Start\] FL-Start trotz fremdem FL
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             if ($fremd.Count -gt 0 -and $laufend.Count -eq 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" }
+  +             # ROTBEWEIS M-03 (FL-Start): Pruefung vor dem FL-Start entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert BF54C06E31F80B2727D37959A027D7B4F754C8CE680896DCF6AE61434651CC3F, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Gegenprobe M-03 (Render, Mutation der Etappe 4) (15.09.2026 06:35:05) ===
+Art: Gegenprobe (§5.1, §40): nur die Pruefung vor dem Render entfernt, Schranke $rest bleibt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*Renderprozess trotz fremdem FL gestartet
+Erwartung: ohne Traeger
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 5C0638741D81B4B6FEB81198A49F4D5410B24A567A705B91C2F47BCFF4B2D073, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 0
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: NACHWEIS ERBRACHT
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Render) (15.09.2026 06:58:10) ===
+Art: Rotbeweis (§5.1, §40): Pruefung vor dem Render samt redundanter Schranke $rest entfernt: die Attrappe startet FL64 /R
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem Render\] Renderprozess trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $rest = @(FL-Instanzen)
+  +     $rest = @(FL-Instanzen | Where-Object { -not (Ist-Fremd $_) }) # ROTBEWEIS M-03 (Render): redundante Schranke entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert CA4B1E0D0326CEB977599938283B32561AE62918118FA827AE9B325E88F2B106, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Installation) (15.09.2026 06:58:12) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor der Installation entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor der Installation\] Installation trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" } }
+  +     # ROTBEWEIS M-03 (Installation): Pruefung vor der Installation entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert A9DE8F0ACE6C13DE31582CD0D7320BFB7DF6413F2C72DCCFDBF87F169D041824, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (FL-Start) (15.09.2026 06:58:14) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor dem FL-Start entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem FL-Start\] FL-Start trotz fremdem FL
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             if ($fremd.Count -gt 0 -and $laufend.Count -eq 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" }
+  +             # ROTBEWEIS M-03 (FL-Start): Pruefung vor dem FL-Start entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert BF54C06E31F80B2727D37959A027D7B4F754C8CE680896DCF6AE61434651CC3F, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Gegenprobe M-03 (Render, Mutation der Etappe 4) (15.09.2026 06:58:31) ===
+Art: Gegenprobe (§5.1, §40): nur die Pruefung vor dem Render entfernt, Schranke $rest bleibt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*Renderprozess trotz fremdem FL gestartet
+Erwartung: ohne Traeger
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 5C0638741D81B4B6FEB81198A49F4D5410B24A567A705B91C2F47BCFF4B2D073, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.7 s, Obergrenze erreicht: nein, Traegerzeilen 0
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.6 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: NACHWEIS ERBRACHT
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Render) (15.09.2026 07:25:48) ===
+Art: Rotbeweis (§5.1, §40): Pruefung vor dem Render samt redundanter Schranke $rest entfernt: die Attrappe startet FL64 /R
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem Render\] Renderprozess trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $rest = @(FL-Instanzen)
+  +     $rest = @(FL-Instanzen | Where-Object { -not (Ist-Fremd $_) }) # ROTBEWEIS M-03 (Render): redundante Schranke entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert CA4B1E0D0326CEB977599938283B32561AE62918118FA827AE9B325E88F2B106, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Renderprozess trotz fremdem FL gestartet | [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (Installation) (15.09.2026 07:25:50) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor der Installation entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor der Installation\] Installation trotz fremdem FL gestartet
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" } }
+  +     # ROTBEWEIS M-03 (Installation): Pruefung vor der Installation entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert A9DE8F0ACE6C13DE31582CD0D7320BFB7DF6413F2C72DCCFDBF87F169D041824, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor der Installation] Installation trotz fremdem FL gestartet
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-03 (FL-Start) (15.09.2026 07:25:52) ===
+Art: Rotbeweis (§5.1, §40): Pruefung auf ein fremdes FL vor dem FL-Start entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*\[fremdes FL vor dem FL-Start\] FL-Start trotz fremdem FL
+Erwartung: rot
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             if ($fremd.Count -gt 0 -and $laufend.Count -eq 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" }
+  +             # ROTBEWEIS M-03 (FL-Start): Pruefung vor dem FL-Start entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert BF54C06E31F80B2727D37959A027D7B4F754C8CE680896DCF6AE61434651CC3F, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem FL-Start] FL-Start: Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [fremdes FL vor dem FL-Start] FL-Start trotz fremdem FL
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Gegenprobe M-03 (Render, Mutation der Etappe 4) (15.09.2026 07:26:10) ===
+Art: Gegenprobe (§5.1, §40): nur die Pruefung vor dem Render entfernt, Schranke $rest bleibt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-03 fremdes_projekt_nie_beenden:.*Renderprozess trotz fremdem FL gestartet
+Erwartung: ohne Traeger
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03 (Render): Pruefung vor dem Render entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, mutiert 5C0638741D81B4B6FEB81198A49F4D5410B24A567A705B91C2F47BCFF4B2D073, nach der Ruecknahme 1DC746EB2B6E9572BE257368CA1E1002BE10D444CE8A26DC0EEEAFBB6C124956, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 0
+--- Rohausgabe, rot ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render: render.json trotz fremdem FL geschrieben
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: NACHWEIS ERBRACHT
+

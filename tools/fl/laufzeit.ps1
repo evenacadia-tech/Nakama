@@ -995,15 +995,19 @@ Fall 'M-03' 'fremdes_projekt_nie_beenden' {
     $script:K.OhneInstallation = $true
     $fremd = T-Prozess 'Mein Song.flp - FL Studio 2026'
     $e = T-Lauf
+    # P-20: Traeger der Zusage ist die Renderfreigabe, sichtbar als start /R im Protokoll der Attrappe; Meldung
+    # und render.json sind getrennte, nachrangige Pruefungen.
+    Pruefe (-not (T-Hat 'start /R')) 'Renderprozess trotz fremdem FL gestartet'
     Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'vor dem Render') "Render: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
-    Pruefe (-not (T-Hat 'start /R') -and -not (Test-Path -LiteralPath (Join-Path $script:K.RenderOrdner 'render.json'))) 'Render trotz fremdem FL erreicht'
+    Pruefe (-not (Test-Path -LiteralPath (Join-Path $script:K.RenderOrdner 'render.json'))) 'Render: render.json trotz fremdem FL geschrieben'
     Pruefe (-not (T-Hat "beende $fremd")) 'Render: fremdes FL beendet'
     Testfall 'fremdes FL vor dem FL-Start'
     $script:K.OhneInstallation = $true
     $fremd = T-Prozess 'Mein Song.flp - FL Studio 2026'
     $e = T-Lauf
     Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "fremdes FL-Projekt offen: 'Mein Song") "FL-Start: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
-    Pruefe (-not (T-Hat 'start "') -and -not (T-Hat "beende $fremd")) 'FL-Start: gestartet oder fremdes FL beendet'
+    Pruefe (-not (T-Hat 'start "')) 'FL-Start trotz fremdem FL'
+    Pruefe (-not (T-Hat "beende $fremd")) 'FL-Start: fremdes FL beendet'
 }
 
 Fall 'M-04' 'hashen_scheitert_exit3' {
@@ -1179,6 +1183,22 @@ Fall 'M-11' 'kopfzeile_erste_fassung' {
         Pruefe ($roh -match "(?m)^# Laufzeit-Arm SELBSTTEST - $($f.U)" -and $roh -match "(?m)^Kopfzeile: LAUFZEIT SELBSTTEST abcdef12 $($f.U)" -and $roh -match '(?m)^## Protokoll') "$($f.Name): Rohdatei ohne Kopf, Kopfzeile oder Protokoll"
         if ($f.U -eq 'GEMESSEN') { Pruefe ($roh -match '(?m)^## Szenarien') 'gemessen: Rohdatei ohne ## Szenarien' }
     }
+}
+
+Fall 'M-11' 'kopfzeile_und_protokoll' {
+    # M-11 und F-24 an der Zeile: Szenario-Exit 5 steht in der Liste der Szenarioexits der Kopfzeile, nie als
+    # Runner-Exit; Render- und Briefkastenschritt stehen unter ## Protokoll der Rohdatei.
+    Testfall 'KETTE mit Render' $script:FuenfSzenarien
+    $script:T.NulltestUrteil = 'KETTE'
+    $script:T.NulltestCode = 5
+    $script:T.Szenarien['nulltest-host.json'] = $script:NulltestWirkung
+    $e = T-Lauf
+    $zeile = $script:K.Kopfzeilen[$script:K.Kopfzeilen.Count - 1]
+    Pruefe ($e.Code -eq 3 -and $zeile -match '^LAUFZEIT SELBSTTEST abcdef12 VORAUSSETZUNG .*szenarien=5 verfehlt=1 \[[^\]]*nulltest-host\.json=5[^\]]*\]') "Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit $($e.Code) '$zeile'"
+    $roh = [IO.File]::ReadAllText($script:K.Roh)
+    $protokoll = if ($roh -match '(?s)## Protokoll\s+```text\r?\n(.*?)```') { $Matches[1] } else { '' }
+    Pruefe ($protokoll -match '(?m)^\[[^\]]+\] Render: Exit 0, Dauer ') 'Rohdatei: Renderschritt nicht unter ## Protokoll'
+    Pruefe ($protokoll -match '(?m)^\[[^\]]+\] Briefkasten: .* bereit, ') 'Rohdatei: Briefkastenschritt nicht unter ## Protokoll'
 }
 
 Fall 'M-12' 'projekt_unveraendert' {

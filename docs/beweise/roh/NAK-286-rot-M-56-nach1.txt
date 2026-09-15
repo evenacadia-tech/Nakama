@@ -1,0 +1,84 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-56 (15.09.2026 06:13:44) ===
+Art: Rotbeweis (§5.1, §40): PID-Filter entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antworten_auswahl (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-56 antworten_auswahl:.*fremde Antwort gewertet: gen <- [0-9a-f]{32}\.gen\.9999\.
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if pid not in erwartet[rolle]:
+  -                 aus.fremd.append((name, f"fremd: PID {pid} nicht erwartet {sorted(erwartet[rolle])}"))
+  -                 continue
+  +             # ROTBEWEIS M-56: PID-Filter entfernt
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert C00EFFCB3C88E617006306BEAB51FB118528D4BD66DDF0D7845C686DCD13E4FA, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+--- Rohausgabe, rot ---
+[ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-56 (15.09.2026 06:34:30) ===
+Art: Rotbeweis (§5.1, §40): PID-Filter entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antworten_auswahl (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-56 antworten_auswahl:.*fremde Antwort gewertet: gen <- [0-9a-f]{32}\.gen\.9999\.
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if pid not in erwartet[rolle]:
+  -                 aus.fremd.append((name, f"fremd: PID {pid} nicht erwartet {sorted(erwartet[rolle])}"))
+  -                 continue
+  +             # ROTBEWEIS M-56: PID-Filter entfernt
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert B31B66BE26EAF8056C545787979DDD5A0CF838D2C853901E4D94C12C0D293A5A, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+--- Rohausgabe, rot ---
+[ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-56 (15.09.2026 06:57:56) ===
+Art: Rotbeweis (§5.1, §40): PID-Filter entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antworten_auswahl (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-56 antworten_auswahl:.*fremde Antwort gewertet: gen <- [0-9a-f]{32}\.gen\.9999\.
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if pid not in erwartet[rolle]:
+  -                 aus.fremd.append((name, f"fremd: PID {pid} nicht erwartet {sorted(erwartet[rolle])}"))
+  -                 continue
+  +             # ROTBEWEIS M-56: PID-Filter entfernt
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 460882A1DC0BAD7C08C6161C8E0D446BE9EA1AD976CBE3806BEC4BE201A3B769, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+--- Rohausgabe, rot ---
+[ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-56 (15.09.2026 07:25:34) ===
+Art: Rotbeweis (§5.1, §40): PID-Filter entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antworten_auswahl (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-56 antworten_auswahl:.*fremde Antwort gewertet: gen <- [0-9a-f]{32}\.gen\.9999\.
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if pid not in erwartet[rolle]:
+  -                 aus.fremd.append((name, f"fremd: PID {pid} nicht erwartet {sorted(erwartet[rolle])}"))
+  -                 continue
+  +             # ROTBEWEIS M-56: PID-Filter entfernt
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert B7290E8BEE9CA7E0CCA6DE9C097450922E569A65BBBDBC373C01C6080FABB928, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+--- Rohausgabe, rot ---
+[ROT] M-56 antworten_auswahl: gen: gewertet None, mehrdeutig ['11111111111111111111111111111111.gen.4242.ca6ad9cf1eca8b02.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', '11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json'] | fremde PID und alte Kennung nicht roh als fremd: [('22222222222222222222222222222222.probeeq.4242.d2e813faeac83a73.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.json', 'fremd: andere Kennung')] | fremde Antwort gewertet: gen <- 11111111111111111111111111111111.gen.9999.2ac440563ac86c98.cccccccccccccccccccccccccccccccc.json (PID 9999), fehlt [] | Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,596 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (1) (15.09.2026 06:13:46) ===
+Art: Rotbeweis (§5.1, §40): Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(1\) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 0F7538FE414D6689AC85BCA81FB9F8842DD33B7A6A2F224F8626876754F11F26, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (2) (15.09.2026 06:13:47) ===
+Art: Rotbeweis (§5.1, §40): Stelle ohne Versatz in den Host gelegt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(2\) v = \+75 600: setPosition \[\{.position.: 0
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert F143271897DD320D669875943577E069877F75BEB101EDE39E3C5270335C948F, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (3) (15.09.2026 06:13:49) ===
+Art: Rotbeweis (§5.1, §40): null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 45CFD27808CE64B35D7D514C6699197DB2641D664EF9590D6C0FECAC3C5E1232, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.9 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (4) (15.09.2026 06:13:51) ===
+Art: Rotbeweis (§5.1, §40): Ende der Anfragen entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(4\) Position steht nach dem Start: \d+ Anfragen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 43E88FDFA6E80F60594045FF9DF82A6921FA786AC1B6D833022101BA793AC7AA, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (5) (15.09.2026 06:13:53) ===
+Art: Rotbeweis (§5.1, §40): Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*im mittleren Fall
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert ACAC51AB535026037C6D718C8D1883AC8E44BE76779577DA0620766F32846B3A, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (6) (15.09.2026 06:13:54) ===
+Art: Rotbeweis (§5.1, §40): getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Positionierungen \[.*\] statt zweimal 42 462 ms
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 61DCAB7AE2F33896293D227FCC3E35723095D6E6F5E1953D47E2F92C17C93C08, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (7) (15.09.2026 06:13:57) ===
+Art: Rotbeweis (§5.1, §40): erste Anfrage auch waehrend transport.start blockiert zugelassen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*waehrend transport\.start blockiert
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 4212B066F0D862ECDD2057F3D2D4CC384566A6B2A7C3AA77DB8186B60115BA28, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 1.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (1) (15.09.2026 06:34:32) ===
+Art: Rotbeweis (§5.1, §40): Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(1\) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 688541F0709944532B3BEFD35BFAB88D13746FDB31003F9C335F2C0F21F6CB46, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (2) (15.09.2026 06:34:33) ===
+Art: Rotbeweis (§5.1, §40): Stelle ohne Versatz in den Host gelegt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(2\) v = \+75 600: setPosition \[\{.position.: 0
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 68066C3805C1C5A431ABC0A960661B490D0F71E28AC09786FAD12584FF920EA8, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (3) (15.09.2026 06:34:35) ===
+Art: Rotbeweis (§5.1, §40): null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert F39626E1E326DABB34F0DD557B11A9AEF1852B1688001775F655C9D464840E2E, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (4) (15.09.2026 06:34:37) ===
+Art: Rotbeweis (§5.1, §40): Ende der Anfragen entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(4\) Position steht nach dem Start: \d+ Anfragen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 404FB2D8DC3898BEB80E2FC420BF71CD76B35B0AEAA860600D2E7282EB7635CF, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 1.1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (5) (15.09.2026 06:34:39) ===
+Art: Rotbeweis (§5.1, §40): Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*im mittleren Fall
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 06432356A242E8477B3FB98701C994C8424460D8DF3A0489AA47F3E99DC46F0B, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.1 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (6) (15.09.2026 06:34:40) ===
+Art: Rotbeweis (§5.1, §40): getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Positionierungen \[.*\] statt zweimal 42 462 ms
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 1697BAC341033E555043BF9536D3A9BE3C100777D166923992F16E8CCE58C465, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (7) (15.09.2026 06:34:43) ===
+Art: Rotbeweis (§5.1, §40): erste Anfrage auch waehrend transport.start blockiert zugelassen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*waehrend transport\.start blockiert
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 451A52D33298B3D5928B6977AF2FAB04D41899C951B3F941159CF1723A8CC57E, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 1.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.1 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (1) (15.09.2026 06:57:57) ===
+Art: Rotbeweis (§5.1, §40): Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(1\) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 004C9735A797597B2C5A9B95E5B484C74DA891728A8E2638A0213F5BAE915453, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (2) (15.09.2026 06:57:59) ===
+Art: Rotbeweis (§5.1, §40): Stelle ohne Versatz in den Host gelegt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(2\) v = \+75 600: setPosition \[\{.position.: 0
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 5265BB1F14B0B04C8FC1F3A120336FD492FCB055F21CDE1D7AA907D6A4914F02, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (3) (15.09.2026 06:58:01) ===
+Art: Rotbeweis (§5.1, §40): null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert B1B360EA74C72BC8589994D4E1E4B7D4B2082AEF13A2289831F79EE8F0C669B2, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (4) (15.09.2026 06:58:03) ===
+Art: Rotbeweis (§5.1, §40): Ende der Anfragen entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(4\) Position steht nach dem Start: \d+ Anfragen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 3A5558392D54ED7DE28CAFCE990A245F8AB2C6403DDF58B797C6A8D66D3732BA, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 1.1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (5) (15.09.2026 06:58:05) ===
+Art: Rotbeweis (§5.1, §40): Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*im mittleren Fall
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert E5755849D756B90E6B8E816C5DEE762160D8320391235AE706B7113C30FAE5E4, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (6) (15.09.2026 06:58:06) ===
+Art: Rotbeweis (§5.1, §40): getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Positionierungen \[.*\] statt zweimal 42 462 ms
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert E2836DFBFCC1A8CE4ED48BC712F82D5E09B61E04C5ABB08DBC60B1545DA3462E, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (7) (15.09.2026 06:58:09) ===
+Art: Rotbeweis (§5.1, §40): erste Anfrage auch waehrend transport.start blockiert zugelassen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*waehrend transport\.start blockiert
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 8AC5830B6CC6D4EAC3FA5790360818F92F077C88C96B6DC12C62A37ECCADF715, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (1) (15.09.2026 07:25:36) ===
+Art: Rotbeweis (§5.1, §40): Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(1\) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 4F839F238CE80CB4F1ED2BF7061B84566EB3F23DB5E96DFFAAC105D663FE29D5, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (2) (15.09.2026 07:25:38) ===
+Art: Rotbeweis (§5.1, §40): Stelle ohne Versatz in den Host gelegt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(2\) v = \+75 600: setPosition \[\{.position.: 0
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 5D7DCF5EC2359CEDB9BCA31CD936A9D0543009B407E2B618258DC9F6E0A3560B, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (3) (15.09.2026 07:25:39) ===
+Art: Rotbeweis (§5.1, §40): null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert D337D68A4EF3980A2AFC342C77F1844AFF2EEE50DDB99AF6F465776E1F72F41F, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (4) (15.09.2026 07:25:41) ===
+Art: Rotbeweis (§5.1, §40): Ende der Anfragen entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_materialausschnitt:.*\(4\) Position steht nach dem Start: \d+ Anfragen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 71AE4ECA1F5D18F6DA63B08E7EDD731683FBA4A45E3EB8565D8124C8B3007FD0, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.8 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (5) (15.09.2026 07:25:43) ===
+Art: Rotbeweis (§5.1, §40): Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*im mittleren Fall
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert D437FB0BFD2DAB0A22050B9C473B3C2B4C9F6356CE42EDA85EE12C03A498C661, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 1.1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (6) (15.09.2026 07:25:44) ===
+Art: Rotbeweis (§5.1, §40): getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Positionierungen \[.*\] statt zweimal 42 462 ms
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 65A2D14247C355DC2135222E5197BB7AB565D3435D682F0D23653AB1707EF967, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | gen | gemeinsam | 8/16 | `00000000` | gezaehlt | true' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen None): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | None |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | gemeinsam | 8/16 | `00000000` | gezaehlt | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen None): {"antworten": ' | gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-70 (7) (15.09.2026 07:25:47) ===
+Art: Rotbeweis (§5.1, §40): erste Anfrage auch waehrend transport.start blockiert zugelassen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zeitplan:.*waehrend transport\.start blockiert
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert AD8BDDF439229D796935BBC13971804E0D2CD1C20B3D7BA808BE6E2DC8F020B1, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.1 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

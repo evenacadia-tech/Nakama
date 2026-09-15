@@ -1,0 +1,567 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotlauf vor der Aenderung M-67 (Referenzausschnitt) (15.09.2026 06:04:46) ===
+Art: Rotlauf vor der Aenderung (§5.1, §40): neuer Fall referenzausschnitt_rohzeile gegen das unveraenderte lokal.umlauf
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzausschnitt_rohzeile (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 referenzausschnitt_rohzeile:.*Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256
+Erwartung: rot
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, nach dem Lauf AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+--- Rohausgabe, rot ---
+[ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (9) (15.09.2026 06:13:43) ===
+Art: Rotbeweis (§5.1, §40): K und v aus der Rohzeile des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzausschnitt_rohzeile (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 referenzausschnitt_rohzeile:.*Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                           f"K {anker[a['rolle']].get('k')}, v {v}, SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")
+  +                           f"SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")  # ROTBEWEIS M-67 (9): ohne K und v
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 8894DE9A7B66E0F982772C14B61D433340C5AB407ED9AA8DD8C049473DFED30F, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+--- Rohausgabe, rot ---
+[ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (9) (15.09.2026 06:34:29) ===
+Art: Rotbeweis (§5.1, §40): K und v aus der Rohzeile des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzausschnitt_rohzeile (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 referenzausschnitt_rohzeile:.*Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                           f"K {anker[a['rolle']].get('k')}, v {v}, SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")
+  +                           f"SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")  # ROTBEWEIS M-67 (9): ohne K und v
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 652D35443F3EF3E6451933B5D3997DABC738081092449FC7D6BD200D954831D3, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+--- Rohausgabe, rot ---
+[ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (10) (15.09.2026 06:34:50) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Zeile je Anfrage von lokal.umlauf entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anfrage ohne Rohzeile mit Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | {anfrage.p_vor} | {anfrage.p_nach} | "
+  +         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | "  # ROTBEWEIS M-67 (10): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert F325A99782237F26D9411680EB8A24F578469BAA28D8082AE3C5AFD8DB956543, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (11) (15.09.2026 06:34:51) ===
+Art: Rotbeweis (§5.1, §40): Anker aus der Zeile der gewerteten Antwort entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"Anker {_json(anker[rolle])}")
+  +                       f"Anker")  # ROTBEWEIS M-67 (11): ohne Anker
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 20F77AEB6A03FE6C8DC5D70D660CFA4D022B955ED36674D02F14CDEB57F79B03, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (12) (15.09.2026 06:34:52) ===
+Art: Rotbeweis (§5.1, §40): Dauer aus der Rechnungszeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung ohne ihre Dauer in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28: `{_zelle(_json(rechnung))}`")  # ROTBEWEIS M-67 (12): ohne Dauer
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 850A599123852BA1BCDAC642966214E1768573876B5F333B41BA79B64651D431, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (13) (15.09.2026 06:34:53) ===
+Art: Rotbeweis (§5.1, §40): Rechnungszeile wieder auf 8 000 Zeichen gekappt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung nicht vollstaendig in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_kompakt(rechnung, 8000))}`")  # ROTBEWEIS M-67 (13): gekappt
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 4CAD2A2038A52DDDF18B64F3FE9D8181CA999DC2CC6D3F989D94C14215819D5B, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (14) (15.09.2026 06:34:54) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Baender nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Band ohne Rohzeile mit Wert und Status
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     zeilen += [f"- Band {e['kurz']} {e['rolle']}: {_json(e)}" for e in ergebnisse]
+  +     zeilen += []  # ROTBEWEIS M-67 (14): ohne Zeilen der Baender
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 9C2A33C90E927984F97B35B7E8046637718241EA72289D01D677389DCD888F2C, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (15) (15.09.2026 06:34:55) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Rohfelder nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohfeld ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             zeilen.append(f"- {rolle} roh `{feld}` = {_json([w for _, w in werte_an_pfad(antwort.umschlag, feld) if w is not _FEHLT])}")
+  +             pass  # ROTBEWEIS M-67 (15): ohne Zeilen der Rohfelder
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert C809765904420E167A8610B69427816D8EA515A49888EA72C07EE7C9875068DE, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (16) (15.09.2026 06:34:56) ===
+Art: Rotbeweis (§5.1, §40): Zeile Rohvergleich Runde 01 nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohvergleich Runde 01 ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rohvergleich Runde 01 (nur daneben, F-28): {_json(vergleich['rohvergleich_runde01'])}")
+  +         pass  # ROTBEWEIS M-67 (16): ohne Rohvergleich
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 98B97976F70DA60F5BAC9682B494DA9E6947B264D9273F0F0B90D4229BF786EA, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (17) (15.09.2026 06:34:57) ===
+Art: Rotbeweis (§5.1, §40): Zeilen U_unten roh der Vorbedingung nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*U_unten ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen += [f"- {rolle}: {x}" for x in roh]
+  +         zeilen += []  # ROTBEWEIS M-67 (17): ohne Zeilen U_unten
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 579199D4250098E2F26AB8F2F706869234C676CD2990E932848833446596A898, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (9) (15.09.2026 06:57:55) ===
+Art: Rotbeweis (§5.1, §40): K und v aus der Rohzeile des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzausschnitt_rohzeile (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 referenzausschnitt_rohzeile:.*Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                           f"K {anker[a['rolle']].get('k')}, v {v}, SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")
+  +                           f"SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")  # ROTBEWEIS M-67 (9): ohne K und v
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 3CF319BBB666E6DCE4F356CD14A0279AB895261D980013FDD5674C3CB2D00DDA, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+--- Rohausgabe, rot ---
+[ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (10) (15.09.2026 06:58:16) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Zeile je Anfrage von lokal.umlauf entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anfrage ohne Rohzeile mit Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | {anfrage.p_vor} | {anfrage.p_nach} | "
+  +         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | "  # ROTBEWEIS M-67 (10): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert B63AF7BB0EC5360D5504E436AF3E414C2EFED77B02F976D6E90AB9D5150832BD, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (11) (15.09.2026 06:58:17) ===
+Art: Rotbeweis (§5.1, §40): Anker aus der Zeile der gewerteten Antwort entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"Anker {_json(anker[rolle])}")
+  +                       f"Anker")  # ROTBEWEIS M-67 (11): ohne Anker
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert AAC599B96F6E2A8FF4A48F33E4B03655B9EFBA819E94FFD0DC056E3F9FFF5E93, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (12) (15.09.2026 06:58:18) ===
+Art: Rotbeweis (§5.1, §40): Dauer aus der Rechnungszeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung ohne ihre Dauer in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28: `{_zelle(_json(rechnung))}`")  # ROTBEWEIS M-67 (12): ohne Dauer
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert A33DDA62EAA96D8235EA535B32A6BC134059B0B6F81581C404C13763D8A8CA1F, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (13) (15.09.2026 06:58:19) ===
+Art: Rotbeweis (§5.1, §40): Rechnungszeile wieder auf 8 000 Zeichen gekappt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung nicht vollstaendig in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_kompakt(rechnung, 8000))}`")  # ROTBEWEIS M-67 (13): gekappt
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert A1B2E01926D7A21021A27E94C6BF6A908FE60F40FCB808A4F7FC76EDFAA97B40, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (14) (15.09.2026 06:58:20) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Baender nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Band ohne Rohzeile mit Wert und Status
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     zeilen += [f"- Band {e['kurz']} {e['rolle']}: {_json(e)}" for e in ergebnisse]
+  +     zeilen += []  # ROTBEWEIS M-67 (14): ohne Zeilen der Baender
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 9F7610C7760022DA9AB143C0CFCBAE11ACC23FB04A84CAED4BD897512FF2D797, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (15) (15.09.2026 06:58:21) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Rohfelder nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohfeld ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             zeilen.append(f"- {rolle} roh `{feld}` = {_json([w for _, w in werte_an_pfad(antwort.umschlag, feld) if w is not _FEHLT])}")
+  +             pass  # ROTBEWEIS M-67 (15): ohne Zeilen der Rohfelder
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 7101CCE9901CF4537560C5B7AF1004EA97CFAA60B0C56BFDE0DB2C424F1AE3FD, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (16) (15.09.2026 06:58:22) ===
+Art: Rotbeweis (§5.1, §40): Zeile Rohvergleich Runde 01 nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohvergleich Runde 01 ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rohvergleich Runde 01 (nur daneben, F-28): {_json(vergleich['rohvergleich_runde01'])}")
+  +         pass  # ROTBEWEIS M-67 (16): ohne Rohvergleich
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert F0006D1E633973E55DC99A6711D9A5A3A3BA33003A315497E3CDD4AA1CFE9330, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (17) (15.09.2026 06:58:23) ===
+Art: Rotbeweis (§5.1, §40): Zeilen U_unten roh der Vorbedingung nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*U_unten ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen += [f"- {rolle}: {x}" for x in roh]
+  +         zeilen += []  # ROTBEWEIS M-67 (17): ohne Zeilen U_unten
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 95A75D7CE4FBAF551AC94E87CD1B92280DBF12D59F14E613D112577333A30A8C, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (9) (15.09.2026 07:25:34) ===
+Art: Rotbeweis (§5.1, §40): K und v aus der Rohzeile des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzausschnitt_rohzeile (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 referenzausschnitt_rohzeile:.*Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                           f"K {anker[a['rolle']].get('k')}, v {v}, SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")
+  +                           f"SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")  # ROTBEWEIS M-67 (9): ohne K und v
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 695189852AC35C294EEF73D6AF107CDA88DF7712CBBDF110000F02D5AC5FD9CE, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+--- Rohausgabe, rot ---
+[ROT] M-67 referenzausschnitt_rohzeile: Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen leicht: Frames [1023, 1992437), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt gen schwer: Frames [1023, 1968182), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq leicht: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000' | Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '- Referenzausschnitt probeeq schwer: Frames [1023, 1978325), K 1024, v 1, SHA-256 0000000000000000000000000000000000000000000000000000000000000000'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (10) (15.09.2026 07:25:54) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Zeile je Anfrage von lokal.umlauf entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anfrage ohne Rohzeile mit Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | {anfrage.p_vor} | {anfrage.p_nach} | "
+  +         zeilen.append(f"| {nr} | `{anfrage.kennung[:8]}` | "  # ROTBEWEIS M-67 (10): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 33355482B2623057E43E965D7907F8A48720F116FAA3421B33D61E4B62C58EC3, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anfrage ohne Rohzeile mit Positionsklammer: 35 Anfragen, 0 Zeilen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (11) (15.09.2026 07:25:55) ===
+Art: Rotbeweis (§5.1, §40): Anker aus der Zeile der gewerteten Antwort entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"Anker {_json(anker[rolle])}")
+  +                       f"Anker")  # ROTBEWEIS M-67 (11): ohne Anker
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 1A24E103D776CE24D21EDE3FFCE30FC0214ABC0DC0EB3EB1AD3A7FFEBC522004, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: gen [] | Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (12) (15.09.2026 07:25:56) ===
+Art: Rotbeweis (§5.1, §40): Dauer aus der Rechnungszeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung ohne ihre Dauer in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28: `{_zelle(_json(rechnung))}`")  # ROTBEWEIS M-67 (12): ohne Dauer
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 17BC75E26C5ACD8D1B2084690E3FFF992214DCFC53C722F94D36B0E7F83F296C, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung ohne ihre Dauer in der Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (13) (15.09.2026 07:25:57) ===
+Art: Rotbeweis (§5.1, §40): Rechnungszeile wieder auf 8 000 Zeichen gekappt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rechnung nicht vollstaendig in der Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
+  +         zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_kompakt(rechnung, 8000))}`")  # ROTBEWEIS M-67 (13): gekappt
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 2EF94802259BB608A46A0DB99D6096E6C6E504160CE5A0FF4D4D374ACDCC5C4C, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rechnung nicht vollstaendig in der Rohzeile: Schluessel []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (14) (15.09.2026 07:25:58) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Baender nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Band ohne Rohzeile mit Wert und Status
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     zeilen += [f"- Band {e['kurz']} {e['rolle']}: {_json(e)}" for e in ergebnisse]
+  +     zeilen += []  # ROTBEWEIS M-67 (14): ohne Zeilen der Baender
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 91EAEAC5792A578D7F2F200C2AB25FBD0624549064AE68503D73121A41CBADA8, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Band ohne Rohzeile mit Wert und Status: LUFS gen | Band ohne Rohzeile mit Wert und Status: LUFS probeeq | Band ohne Rohzeile mit Wert und Status: TP gen | Band ohne Rohzeile mit Wert und Status: TP probeeq | Band ohne Rohzeile mit Wert und Status: width gen | Band ohne Rohzeile mit Wert und Status: width probeeq | Band ohne Rohzeile mit Wert und Status: resonanzen gen | Band ohne Rohzeile mit Wert und Status: resonanzen probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (15) (15.09.2026 07:25:59) ===
+Art: Rotbeweis (§5.1, §40): Zeilen der Rohfelder nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohfeld ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             zeilen.append(f"- {rolle} roh `{feld}` = {_json([w for _, w in werte_an_pfad(antwort.umschlag, feld) if w is not _FEHLT])}")
+  +             pass  # ROTBEWEIS M-67 (15): ohne Zeilen der Rohfelder
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 750960651E19B8DB6E86CC3C5C5FF61470367683C0C4E8F45DB8E857F9D8DAE5, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohfeld ohne Rohzeile: gen snapshot.spektral.centroid_mag_hz | Rohfeld ohne Rohzeile: probeeq snapshot.spektral.centroid_mag_hz
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (16) (15.09.2026 07:26:00) ===
+Art: Rotbeweis (§5.1, §40): Zeile Rohvergleich Runde 01 nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*Rohvergleich Runde 01 ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Rohvergleich Runde 01 (nur daneben, F-28): {_json(vergleich['rohvergleich_runde01'])}")
+  +         pass  # ROTBEWEIS M-67 (16): ohne Rohvergleich
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert A61E7F6FE9405F6E20157AF4032EA2B7C7917D9A866FD6626C0B1DB2B23DAD67, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: Rohvergleich Runde 01 ohne Rohzeile
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (17) (15.09.2026 07:26:01) ===
+Art: Rotbeweis (§5.1, §40): Zeilen U_unten roh der Vorbedingung nicht geschrieben
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur umlauf_rohzeilen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-67 umlauf_rohzeilen:.*U_unten ohne Rohzeile
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen += [f"- {rolle}: {x}" for x in roh]
+  +         zeilen += []  # ROTBEWEIS M-67 (17): ohne Zeilen U_unten
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 25CEB0F43D02F1C4CFFDF891379BF186C7AC82253F33A0DC0AB7B84146EF8B83, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+--- Rohausgabe, rot ---
+[ROT] M-67 umlauf_rohzeilen: U_unten ohne Rohzeile: gen | U_unten ohne Rohzeile: probeeq
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-67 (18) (15.09.2026 07:26:02) ===
+Art: Rotbeweis (§5.1, §40): Stichprobenspitze je Kanal aus dem Eintrag des Referenzausschnitts entfernt (True Peak, neben R_TP)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rechnung_rohwerte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-68 rechnung_rohwerte:.*Referenzausschnitt ohne Stichprobenspitze je Kanal neben R_TP
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                        "stichprobenspitze": [max(abs(int(teil[:, c].max())), abs(int(teil[:, c].min()))) / (1 << 23)
+  -                                              for c in range(2)] if teil.size else [0.0, 0.0],
+  +                        # ROTBEWEIS M-67 (18): ohne Stichprobenspitze
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 9F10792871814D4C878A75DE5A9DF18B8BB11139FE391FF95696C5F143EF4AFA, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne Stichprobenspitze je Kanal neben R_TP: stichprobenspitze None, tp_dbtp -3.0
+--- Rohausgabe, rot ---
+[ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne Stichprobenspitze je Kanal neben R_TP: stichprobenspitze None, tp_dbtp -3.0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

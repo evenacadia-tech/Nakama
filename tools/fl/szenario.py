@@ -84,7 +84,14 @@ ANTWORT_MAX_BYTES = 16 * 1024 * 1024  # 16 MiB (M-53 (c))
 ANTWORT_FRIST_S = 10.0                # je Anfrage (M-56)
 NACHLAUF_S = 2.2                      # zwei Briefkastentakte (1 000 ms, F-12) plus Schreibzeit: spaete Doppelte sehen
 POSITION_ABSTAND_S = 0.25             # > 2 Audiopuffer (4 096 Samples / 44 100 Hz = 92,9 ms): Gleichstand heisst Stillstand
-FENSTER_FRIST_S = 5.0                 # M-21
+FENSTER_FRIST_S = 5.0                 # M-21, erzwungen ueber den Unterprozess der Erfassung (P-19)
+# Die Erfassung laeuft im Unterprozess (P-19): der Interpreter des Szenarioprozesses - unter dem Runner das Python
+# des MCP-Venvs, laufzeit.ps1 startet szenario.py ueber uv run - ruft nur capture_process_window und schreibt dessen
+# Antwort als eine JSON-Zeile. Argumente: PID, Ziel, Bilderordner, Name, Plugin (leer = keins).
+FENSTER_SKRIPT = ("import json, sys; from pathlib import Path; "
+                  "from fl_studio_mcp.utils.fenster import capture_process_window as erfasse; a = sys.argv[1:6]; "
+                  "print(json.dumps(erfasse(int(a[0]), a[1], Path(a[2]), a[3], plugin=a[4] or None), "
+                  "ensure_ascii=True, default=str))")
 
 RATE = 44100
 ZELLE = 4410                          # 0,1 s bei 44 100 Hz (AnalyseEngine.cpp:270)
@@ -325,17 +332,26 @@ class Umgebung:
         return [int(t[1]) for t in self.tasklist("FL64.exe")
                 if len(t) > 1 and t[0].lower() == "fl64.exe" and t[1].isdigit()]
 
-    def _python313(self, argumente: list[str], frist: float) -> tuple[int, str]:
-        befehl = ["py", "-3.13", *argumente]
+    @staticmethod
+    def _unterprozess(befehl: list[str], frist: float, bezeichnung: str) -> tuple[int, str, str]:
+        """Unterprozess mit erzwungener Frist (P-19): subprocess.run(timeout=frist) beendet ihn bei Ablauf, und der
+        Aufruf kehrt spaetestens dann mit Exit 2 und "Frist <n> s ueberschritten" zurueck. Das traegt nur ein Startweg,
+        bei dem das Beenden des gestarteten Prozesses den arbeitenden beendet: py -3.13 und das Python eines Venvs
+        ja, uv run nicht (gemessen 15.09.2026, Blockade 25 s, Frist 5 s: Rueckkehr nach 5,0 s gegen 25,1 s)."""
         umgebung = dict(os.environ, PYTHONIOENCODING="utf-8")
         try:
             r = subprocess.run(befehl, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=frist, env=umgebung)
         except subprocess.TimeoutExpired:
-            return 2, f"Frist {frist} s ueberschritten: {' '.join(befehl)}"
+            return 2, "", f"Frist {frist:g} s ueberschritten: {bezeichnung}"
         except OSError as e:
-            return 2, f"{' '.join(befehl)}: {e}"
-        return r.returncode, (r.stdout or "") + (r.stderr or "")
+            return 2, "", f"{bezeichnung}: {e}"
+        return r.returncode, r.stdout or "", r.stderr or ""
+
+    def _python313(self, argumente: list[str], frist: float) -> tuple[int, str]:
+        befehl = ["py", "-3.13", *argumente]
+        code, aus, fehler = self._unterprozess(befehl, frist, " ".join(befehl))
+        return code, aus + fehler
 
     def nulltest(self, argumente: list[str]) -> tuple[int, str]:
         return self._python313([str(Path(__file__).with_name("nulltest.py")), *argumente], 900)
@@ -350,10 +366,23 @@ class Umgebung:
                 return {"fehler": f"Rechnung Exit {code}: {text[-1500:]}"}
             return json.loads(aus.read_text(encoding="utf-8"))
 
-    def fenster(self, pid: int, ziel: str, ordner: Path, name: str, plugin: str | None) -> dict:
-        from fl_studio_mcp.utils import fenster as fenstermodul
+    def fenster_befehl(self, pid: int, ziel: str, ordner: Path, name: str, plugin: str | None) -> list[str]:
+        return [sys.executable, "-c", FENSTER_SKRIPT, str(pid), ziel, str(ordner), name, plugin or ""]
 
-        return fenstermodul.capture_process_window(pid, ziel, ordner, name, plugin=plugin)
+    def fenster(self, pid: int, ziel: str, ordner: Path, name: str, plugin: str | None) -> dict:
+        """Fenstererfassung als Unterprozess mit der Frist aus M-21 (P-19); die Antwort ist seine letzte JSON-Zeile."""
+        code, aus, fehler = self._unterprozess(self.fenster_befehl(pid, ziel, ordner, name, plugin),
+                                               frist=FENSTER_FRIST_S, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")
+        zeile = next((z for z in reversed(aus.splitlines()) if z.startswith("{")), None)
+        if zeile is None:
+            return {"success": False, "error": (fehler.strip() or f"Erfassung Exit {code} ohne Antwort")[-600:]}
+        try:
+            antwort = json.loads(zeile)
+        except ValueError as e:
+            return {"success": False, "error": f"Erfassung Exit {code}: Antwort ist kein JSON ({e})"}
+        if not isinstance(antwort, dict):
+            return {"success": False, "error": f"Erfassung Exit {code}: Antwort ist kein JSON-Objekt"}
+        return antwort
 
 
 # ---------------------------------------------------------------- Briefkasten: der Runner als Anfragender und Leser
@@ -801,6 +830,8 @@ def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     name = f"{lauf.head}-{ziel}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     t0 = lauf.umg.jetzt()
     try:
+        # Die Frist erzwingt der Unterprozess der Erfassung (P-19): kehrt er nicht rechtzeitig zurueck, wird er
+        # beendet, und die Antwort traegt "Frist 5 s ueberschritten". dauer_s steht nur roh.
         r = lauf.umg.fenster(int(lauf.diagnose_pid), ziel, lauf.bilder_ordner, name, plugin)
     except Exception as e:  # noqa: BLE001 - ein Erfassungsfehler ist ein verfehlter Schritt
         r = {"success": False, "error": f"{type(e).__name__}: {e}"}
@@ -815,8 +846,6 @@ def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
         maengel.append("einfarbig: das Bild traegt keinen Fensterinhalt")
     if not r.get("success") and not maengel:
         maengel.append("Erfassung ohne Erfolg")
-    if dauer > FENSTER_FRIST_S:
-        maengel.append(f"Frist {FENSTER_FRIST_S:g} s ueberschritten ({dauer:.2f} s)")
     kurz = _json(antwort) + (" · VERFEHLT: " + "; ".join(maengel) if maengel else "")
     return (EXIT_VERFEHLT if maengel else EXIT_OK), kurz, [f"- Antwort {_json(antwort)}"]
 
@@ -1102,10 +1131,18 @@ def lokal_umlauf(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     if auftrag["anker"] or auftrag["u_unten"]:
         t0 = lauf.umg.jetzt()
         rechnung = lauf.umg.rechne(auftrag)
-        zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_kompakt(rechnung, 8000))}`")
+        # F-28: die Rechnung steht vollstaendig roh, ohne Kappung (die Zeile traegt jeden Referenzausschnitt und U_unten).
+        zeilen.append(f"- Rechnung F-28 ({lauf.umg.jetzt() - t0:.1f} s): `{_zelle(_json(rechnung))}`")
         if not isinstance(rechnung, dict) or rechnung.get("fehler"):
             fehler = rechnung.get("fehler") if isinstance(rechnung, dict) else rechnung
             return EXIT_SZENARIO, f"VORAUSSETZUNG: Rechnung aus F-28 entstand nicht: {fehler}", zeilen
+        # F-28, P-7: je Referenzausschnitt (Maschinenartefakt) eine Rohzeile mit Anfangs- und Endframe, K, v und SHA-256.
+        gerechnet = {(x.get("rolle"), x.get("art")): x for x in rechnung.get("anker", []) if isinstance(x, dict)}
+        for a in auftrag["anker"]:
+            x = gerechnet.get((a["rolle"], a["art"])) or {}
+            von, bis = a["ausschnitt"]
+            zeilen.append(f"- Referenzausschnitt {a['rolle']} {a['art']}: Frames [{von}, {bis}), "
+                          f"K {anker[a['rolle']].get('k')}, v {v}, SHA-256 {x.get('sha256')}, Datei {x.get('pfad')}")
     je_ausschnitt = {tuple(x["ausschnitt"]): x for x in rechnung.get("anker", [])}
     je_u_unten = {x["rolle"]: x for x in rechnung.get("u_unten", [])}
     ergebnisse = []
@@ -1320,20 +1357,35 @@ def plausibel(gezaehlt: list[Antwort], delta: dict) -> list[str]:
     return maengel
 
 
-def stellen_zeile(stelle_id: str, rolle: str, antwort: Antwort, urteil: str) -> str:
+STELLEN_KOPF = ("Stelle", "Rolle", "durchlauf", "kombinationen", "Kennung", "Zaehlung", *F23_FELDER, "lage im Host",
+                "p_vor ms", "p_nach ms")
+
+
+def lage_im_host(a_frames: int, b_frames: int, v: int, v_bekannt: bool) -> str:
+    """Lage der Stelle im Host fuer jede ihrer Rohzeilen (F-23): Hostframes und Versatz v; ohne Nulltesturteil
+    steht die Stelle unverschoben, und die Zeile traegt den Vermerk v unbekannt (F-22)."""
+    return f"[{a_frames}, {b_frames}) " + (f"v = {v}" if v_bekannt else "v unbekannt")
+
+
+def stellen_zeile(stelle_id: str, rolle: str, durchlauf: str, kombinationen: str, antwort: Antwort, urteil: str,
+                  lage: str) -> str:
+    """Rohzeile je Antwort in der Spaltenfolge von STELLEN_KOPF: durchlauf und die getragenen Kombinationen seines
+    Zeitplans (P-16), Kennung, Zaehlung, die Felder aus F-23 samt Materialausschnitt, Lage im Host, Positionsklammer."""
     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
     anfrage = antwort.anfrage
     klammer = f"{anfrage.p_vor} | {anfrage.p_nach}" if anfrage else "— | —"
-    return f"| {stelle_id} | {rolle} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | {werte} | {klammer} |"
+    return (f"| {stelle_id} | {rolle} | {durchlauf} | {kombinationen} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "
+            f"{werte} | {_zelle(lage)} | {klammer} |")
 
 
 def stellen_durchlauf(lauf: Lauf, rollen: list[str], phasen: dict[str, float], a_frames: int, b_frames: int,
                       loop_ms: int, zeilen: list[str], name: str, gelesen: dict | None = None,
-                      befehl_s: float = 0.0) -> list[Anfrage]:
+                      befehl_s: float = 0.0) -> tuple[list[Anfrage], int, int]:
     """Ein Durchlauf ueber die Stelle nach F-22: Stopp, Position auf den Anfang in Hostzeit,
     getPosition in einem eigenen Befehl (ausser der Durchlauf beginnt an der schon gesetzten
     Position), Zeitplan, Start, Anfragen bis zu einem Ende, Stopp. Erwartet werden nur die Rollen
-    dieses Durchlaufs."""
+    dieses Durchlaufs. Rueckgabe: die Anfragen und die tragenden und alle Kombinationen seines
+    Zeitplans (P-16: sie stehen in jeder Rohzeile)."""
     bk, umg = lauf.briefkasten, lauf.umg
     if gelesen is None:
         start_ms = round(a_frames * 1000 / RATE)
@@ -1402,11 +1454,11 @@ def stellen_durchlauf(lauf: Lauf, rollen: list[str], phasen: dict[str, float], a
     else:
         ende = f"Deckel von {deckel} Anfragen"
     zeilen.append(f"- {name}: Ende der Anfragen: {ende}; Stopp `{_kompakt(lauf.sende('transport.stop'))}`")
-    return anfragen
+    return anfragen, tragend, alle
 
 
 def messe_stelle(lauf: Lauf, rollen: list[str], stelle: dict, a_frames: int, b_frames: int, loop_ms: int,
-                 vermerk: str) -> tuple[int, list[str], list[str]]:
+                 vermerk: str, lage: str) -> tuple[int, list[str], list[str]]:
     """Eine Stelle nach F-22 bis F-23. Traegt der gemeinsame Zeitplan nicht jede Kombination des
     Zeitmodells (Probeeq liefert hoechstens alle zwei Takte einen Rahmen, ein Rahmen ist bis 0,64 s
     lang), faehrt jede Rolle einen eigenen Durchlauf mit eigener Positionierung (Laufzeitlauf
@@ -1446,14 +1498,18 @@ def messe_stelle(lauf: Lauf, rollen: list[str], stelle: dict, a_frames: int, b_f
                   f"{_json({r: round(t - probe.geschrieben, 3) for r, t in probe.eingang.items()})} s; {plan_text}"
                   + ("; getrennte Durchlaeufe je Rolle" if getrennt else ""))
     gruppen = [[r] for r in rollen] if getrennt else [list(rollen)]
+    durchlauf = "getrennt" if getrennt else "gemeinsam"
     anfragen_je_rolle: dict[str, list[Anfrage]] = {}
+    kombinationen_je_rolle: dict[str, str] = {}
     alle_anfragen: list[Anfrage] = []
     for nummer, gruppe in enumerate(gruppen):
-        anfragen = stellen_durchlauf(lauf, gruppe, phasen, a_frames, b_frames, loop_ms, zeilen,
-                                     "Durchlauf " + " und ".join(gruppe), gelesen if nummer == 0 else None, befehl_s)
+        anfragen, tragend, alle = stellen_durchlauf(lauf, gruppe, phasen, a_frames, b_frames, loop_ms, zeilen,
+                                                    "Durchlauf " + " und ".join(gruppe), gelesen if nummer == 0 else None,
+                                                    befehl_s)
         alle_anfragen += anfragen
         for r in gruppe:
             anfragen_je_rolle[r] = anfragen
+            kombinationen_je_rolle[r] = f"{tragend}/{alle}"
     bk.nachlauf([probe] + alle_anfragen)
     bk.raeume_anfrage_ab()
     for anfrage in [probe] + alle_anfragen:
@@ -1463,8 +1519,7 @@ def messe_stelle(lauf: Lauf, rollen: list[str], stelle: dict, a_frames: int, b_f
         for m in auswahl_maengel(anfrage):
             maengel.append(f"Stelle {sid} Anfrage `{anfrage.kennung[:8]}`: {m}")
             code = schlechter(code, EXIT_VERFEHLT)
-    zeilen += ["", "| Stelle | Rolle | Kennung | Zaehlung | " + " | ".join(F23_FELDER) + " | p_vor ms | p_nach ms |",
-               "|---|---|---|---|" + "---|" * len(F23_FELDER) + "---|---|"]
+    zeilen += ["", "| " + " | ".join(STELLEN_KOPF) + " |", "|" + "---|" * len(STELLEN_KOPF)]
     ergebnisse = {}
     for rolle in rollen:
         anfragen = anfragen_je_rolle.get(rolle, [])
@@ -1472,7 +1527,8 @@ def messe_stelle(lauf: Lauf, rollen: list[str], stelle: dict, a_frames: int, b_f
         for anfrage in anfragen:
             antwort = anfrage.auswahl.gewertet.get(rolle) if anfrage.auswahl else None
             if antwort is not None:
-                zeilen.append(stellen_zeile(sid, rolle, antwort, urteile.get(antwort.name, "—")))
+                zeilen.append(stellen_zeile(sid, rolle, durchlauf, kombinationen_je_rolle.get(rolle, "0/0"), antwort,
+                                            urteile.get(antwort.name, "—"), lage))
         if len(gezaehlt) < 2:
             maengel.append(f"Stelle {sid} {rolle}: nicht gemessen: zu kurz ({len(gezaehlt)} gezaehlte Antwort(en))")
             code = schlechter(code, EXIT_VERFEHLT)
@@ -1484,7 +1540,8 @@ def messe_stelle(lauf: Lauf, rollen: list[str], stelle: dict, a_frames: int, b_f
             code = schlechter(code, EXIT_VERFEHLT)
     zeilen.append("")
     for rolle, delta in ergebnisse.items():
-        zeilen.append(f"- Stelle {sid} {rolle}: {_json(delta)}{vermerk}")
+        zeilen.append(f"- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {kombinationen_je_rolle.get(rolle, '0/0')}): "
+                      f"{_json(delta)}{vermerk}")
     return code, zeilen, maengel
 
 
@@ -1516,7 +1573,8 @@ def lokal_stellen(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
                           f"Szenario-Voraussetzung{vermerk}")
             code = schlechter(code, EXIT_SZENARIO)
             continue
-        c, z, m = messe_stelle(lauf, rollen, stelle, a_frames, b_frames, loop_ms, vermerk)
+        c, z, m = messe_stelle(lauf, rollen, stelle, a_frames, b_frames, loop_ms, vermerk,
+                               lage_im_host(a_frames, b_frames, v, v_bekannt))
         code = schlechter(code, c)
         zeilen += z
         maengel += m
@@ -2294,6 +2352,102 @@ def fall_kein_piano_roll_weg(p: Pruefer) -> None:
     p(not geladen, f"nach dem Attrappenlauf geladen: {geladen}")
 
 
+ERFASSUNG_ATTRAPPE = (
+    "import os\n"
+    "import time\n"
+    "from pathlib import Path\n"
+    "\n"
+    "\n"
+    "def capture_process_window(pid, target, directory, name, plugin=None):\n"
+    "    Path({pid_datei!r}).write_text(str(os.getpid()), encoding='utf-8')\n"
+    "    time.sleep({schlaf!r})\n"
+    "    return {{'success': True, 'path': str(Path(directory) / (name + '.png')), 'width': 640, 'height': 480,\n"
+    "            'sha256': '0' * 64, 'uniform': False, 'window_class': 'TFruityLoopsMainForm', 'window_title': 'Attrappe'}}\n"
+)
+# Nach der Rueckkehr von subprocess.run(timeout) kann der arbeitende Prozess hinter einem Startprogramm (py -3.13) noch
+# enden: gemessen 15.09.2026 unmittelbar danach in 1 von 9 Laeufen am Leben, 0,5 s danach in 3 von 3 Laeufen beendet.
+ENDE_WARTEN_MS = 2000
+
+
+class ErfassungsUmgebung(TestUmgebung):
+    """Attrappen wie TestUmgebung, die Fenstererfassung aber ueber den Weg der echten Umgebung."""
+
+    fenster = Umgebung.fenster
+
+
+def prozess_lebt(pid: int) -> bool:
+    """Laeuft der Prozess nach hoechstens ENDE_WARTEN_MS noch (Windows: OpenProcess, WaitForSingleObject)?"""
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        return True
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.WaitForSingleObject.restype = wintypes.DWORD
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    handle = kernel32.OpenProcess(0x00100000 | 0x1000, False, pid)  # SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return False
+    try:
+        return kernel32.WaitForSingleObject(handle, ENDE_WARTEN_MS) == 0x102  # WAIT_TIMEOUT: laeuft noch
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+@fall("M-21", "fenster_frist_erzwungen")
+def fall_fenster_frist_erzwungen(p: Pruefer) -> None:
+    """P-19: die Frist der Fenstererfassung ist eine erzwungene Obergrenze. Die Attrappe ersetzt nur das
+    Erfassungsmodul fl_studio_mcp.utils.fenster (vorn im Suchpfad) und blockiert 4 x die Frist, wie PrintWindow bei
+    haengendem FL (T-17); Startweg, Argumente und Antwort sind die des Runners. Die Rueckkehr muss vor der Mitte
+    zwischen Frist und Blockade liegen - ohne erzwungene Frist kaeme sie erst mit dem Ende der Blockade."""
+    schlaf = 4 * FENSTER_FRIST_S
+    grenze = (FENSTER_FRIST_S + schlaf) / 2
+    with tempfile.TemporaryDirectory(prefix="nak286-erfassung-", ignore_cleanup_errors=True) as tmp:
+        wurzel = Path(tmp)
+        pid_datei = wurzel / "erfassung.pid"
+        (wurzel / "fl_studio_mcp" / "utils").mkdir(parents=True)
+        (wurzel / "fl_studio_mcp" / "__init__.py").write_text("", encoding="utf-8")
+        (wurzel / "fl_studio_mcp" / "utils" / "__init__.py").write_text("", encoding="utf-8")
+        (wurzel / "fl_studio_mcp" / "utils" / "fenster.py").write_text(
+            ERFASSUNG_ATTRAPPE.format(pid_datei=str(pid_datei), schlaf=schlaf), encoding="utf-8")
+        suchpfad, pythonpath = list(sys.path), os.environ.get("PYTHONPATH")
+        sys.path.insert(0, tmp)
+        os.environ["PYTHONPATH"] = tmp if not pythonpath else tmp + os.pathsep + pythonpath
+        try:
+            umg = ErfassungsUmgebung()
+            umg.conn = TestVerbindung(umg)
+            t0 = time.monotonic()
+            code, roh, _lauf = fahre_attrappe(umg, {"id": "fenster", "schritte": [
+                {"aktion": "lokal.fenster", "params": {"ziel": "fl"}}, {"aktion": "system.ping"}]})
+            dauer = time.monotonic() - t0
+        finally:
+            sys.path[:] = suchpfad
+            if pythonpath is None:
+                os.environ.pop("PYTHONPATH", None)
+            else:
+                os.environ["PYTHONPATH"] = pythonpath
+            for modul in [m for m in sys.modules if m == "fl_studio_mcp" or m.startswith("fl_studio_mcp.")]:
+                del sys.modules[modul]
+        erfasser = int(pid_datei.read_text(encoding="utf-8")) if pid_datei.exists() else None
+    lebt = prozess_lebt(erfasser) if erfasser else None
+    p(dauer < grenze, f"Frist nicht erzwungen: lokal.fenster kehrte nach {dauer:.2f} s zurueck (Frist {FENSTER_FRIST_S:g} s, "
+                      f"die Attrappe blockiert {schlaf:g} s, Grenze {grenze:g} s)")
+    p(erfasser is not None and erfasser != os.getpid() and lebt is False,
+      f"Erfassung nicht als beendeter Unterprozess: PID {erfasser} (Selbsttestprozess {os.getpid()}), lebt {lebt}")
+    zeile = next((z for z in roh.splitlines() if z.startswith("| 1 | `lokal.fenster` |")), "")
+    p(f"Frist {FENSTER_FRIST_S:g} s ueberschritten" in zeile and zeile.rstrip().endswith("| VERFEHLT (Details unten) |"),
+      f"Schritt ohne VERFEHLT mit 'Frist {FENSTER_FRIST_S:g} s ueberschritten': '{zeile[:220]}'")
+    p(umg.conn.zaehle("system.ping") == 1 and code == EXIT_VERFEHLT,
+      f"Szenarioprozess lief nach der Erfassung nicht weiter: system.ping {umg.conn.zaehle('system.ping')}-mal, Exit {code}")
+
+
 @fall("M-55", "anfrage_schreiben_und_abraeumen")
 def fall_anfrage_schreiben_und_abraeumen(p: Pruefer) -> None:
     umg = TestUmgebung()
@@ -2374,6 +2528,21 @@ def fall_antworten_auswahl(p: Pruefer) -> None:
     aus = bk.auswahl(kennung, erwartet)
     p(set(aus.mehrdeutig) == {"gen", "probeeq"} and not aus.gewertet,
       f"mehrdeutig (andere instanz_id; gleiche instanz_id, andere laufzeit_id): {sorted(aus.mehrdeutig)}")
+    # Traeger von "fremde PIDs werden nie gewertet" ist allein der PID-Filter: liegt fuer die Rolle nur die Antwort
+    # einer fremden PID, haelt keine andere Schranke (Mehrdeutigkeit) die Zusage aufrecht (P-20).
+    umg3 = TestUmgebung()
+    bk3 = attrappe_lauf(umg3).briefkasten
+    bk3.bereite()
+    fremd_name = attrappe_name(kennung, "gen", 9999, "gen-fremd", "c" * 32)
+    umg3.lege(bk3.antworten / fremd_name, json.dumps(attrappe_umschlag(
+        kennung, "gen", 9999, "gen-fremd", "c" * 32, attrappe_snapshot(), attrappe_frame())).encode("utf-8"))
+    aus = bk3.auswahl(kennung, {"gen": {4242}})
+    fremde = aus.gewertet.get("gen")
+    p(fremde is None and aus.fehlt == ["gen"],
+      f"fremde Antwort gewertet: gen <- {fremde.name if fremde else None} (PID {fremde.pid if fremde else None}), "
+      f"fehlt {aus.fehlt}")
+    p(any(n == fremd_name and "PID 9999" in g for n, g in aus.fremd),
+      f"Antwort der fremden PID ohne Antwort der Diagnose-PID nicht roh als fremd: {aus.fremd}")
     umg2 = TestUmgebung()
     bk2 = attrappe_lauf(umg2).briefkasten
     anfrage = bk2.frage({"gen": {4242}})
@@ -2449,6 +2618,22 @@ def fall_erwartungsarten_und_punktpfade(p: Pruefer) -> None:
     p(len(fehler) == 5, f"verletzte Erwartungen nicht einzeln gemeldet: {fehler}")
 
 
+@fall("M-11", "szenario_abschnitte")
+def fall_szenario_abschnitte(p: Pruefer) -> None:
+    """M-11 an der Zeile: ein Szenario haengt als eigener Abschnitt an (## Szenario), die Einzelheiten einer lokalen
+    Aktion als eigener Unterabschnitt (### Schritt)."""
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg)
+    umg.instanzen = Skriptinstanzen(lambda rolle, _n, _umg: ({"snapshot": attrappe_snapshot(), "frame": attrappe_frame()}
+                                                             if rolle == "gen" else None))
+    _code, roh, _lauf = fahre_attrappe(umg, {"id": "abschnitt", "titel": "Attrappe", "schritte": [
+        {"aktion": "lokal.briefkasten", "params": {"rollen": ["gen"]}}]})
+    zeilen = roh.splitlines()
+    p(bool(zeilen) and zeilen[0] == "## Szenario `abschnitt` — Attrappe",
+      f"Szenario ohne eigenen Abschnitt: erste Zeile '{zeilen[0] if zeilen else ''}'")
+    p("### Schritt 1 `lokal.briefkasten`" in zeilen, "Einzelheiten einer lokalen Aktion ohne eigenen Unterabschnitt")
+
+
 RES_OFFLINE = (229.8, 354.4, 459.6, 546.6, 688.7, 919.3)
 VERGLEICH_TEST = {"baender": [
     {"kurz": "LUFS", "feld": "snapshot.loudness.lufs_integriert", "anker": "schwer", "referenz": "lufs", "toleranz": 0.07,
@@ -2515,7 +2700,7 @@ class Umlaufmodell:
 
 
 def umlauf_attrappe(modell: Umlaufmodell, urteil: str | None = "BITIDENTISCH", v: int = 0, g: float = 1.0,
-                    positionen=None, ergebnis: dict | None = None):
+                    positionen=None, ergebnis: dict | None = None, vergleich: dict | None = None):
     umg = TestUmgebung()
     umg.conn = TestVerbindung(umg, positionen=positionen)
     if urteil is not None or ergebnis is not None:
@@ -2525,7 +2710,7 @@ def umlauf_attrappe(modell: Umlaufmodell, urteil: str | None = "BITIDENTISCH", v
     umg.rechnung = modell.rechnung
     szenario = {"id": "umlauf", "quelle_sha256": "AB" * 32, "schritte": [
         {"aktion": "transport.getLength"}, {"aktion": "transport.start"},
-        {"aktion": "lokal.umlauf", "params": {"rollen": ["gen", "probeeq"], "vergleich": VERGLEICH_TEST}}]}
+        {"aktion": "lokal.umlauf", "params": {"rollen": ["gen", "probeeq"], "vergleich": vergleich or VERGLEICH_TEST}}]}
     code, roh, lauf = fahre_attrappe(umg, szenario)
     return code, roh, umg
 
@@ -2591,6 +2776,74 @@ def _phasen_attrappe():
         anfang = j * ZELLE + (0 if j % 2 == 0 else halbe)
         k[anfang:anfang + halbe, :] = amplitude
     return k
+
+
+@fall("M-67", "referenzausschnitt_rohzeile")
+def fall_referenzausschnitt_rohzeile(p: Pruefer) -> None:
+    """F-28 an der Zeile: je Referenzausschnitt eine Rohzeile mit Anfangs- und Endframe, K, v und SHA-256
+    (Maschinenartefakt, P-7); K kommt aus dem Anker, v aus dem Nulltesturteil, der SHA-256 aus der Rechnung."""
+    code, roh, umg = umlauf_attrappe(Umlaufmodell(v=1), urteil="VERSATZ", v=1)
+    auftrag = umg.rechne_auftraege[-1] if umg.rechne_auftraege else {"anker": []}
+    p(code == EXIT_OK and len(auftrag["anker"]) == 4, f"Umlauf ohne die vier Anker: Exit {code}, {auftrag['anker']}")
+    for anker in auftrag["anker"]:
+        von, bis = anker["ausschnitt"]
+        soll = f"- Referenzausschnitt {anker['rolle']} {anker['art']}: Frames [{von}, {bis}), K 1024, v 1, SHA-256 {'0' * 64}"
+        p(any(z.startswith(soll) for z in roh.splitlines()),
+          f"Referenzausschnitt ohne Rohzeile mit Frames, K, v und SHA-256: erwartet '{soll}'")
+
+
+@fall("M-67", "umlauf_rohzeilen")
+def fall_umlauf_rohzeilen(p: Pruefer) -> None:
+    """F-28 an der Zeile: lokal.umlauf schreibt je Anfrage eine Zeile mit der Positionsklammer, je gewertete Antwort
+    eine Zeile mit dem Anker samt n_L, E, beiden Fortlaufzaehlern und der Hostblocklaenge - auch fuer eine Rolle,
+    deren Fortlaufbedingung nicht erfuellt ist (Gen mit einem Block stehender Hostzeit) -, die Rechnung mit ihrer
+    Dauer und vollstaendig (hier laenger als 8 000 Zeichen), je Band und Rolle, je Rohfeld und je Rolle U_unten eine
+    Zeile und den Rohvergleich Runde 01."""
+    def stillstand(rolle, _n, eintrag, _umg):
+        if rolle == "gen" and not eintrag.get("nach_wrap"):
+            eintrag["frame"]["hostzeit_stillstand_bloecke"] = 1
+
+    modell = Umlaufmodell(aenderung=stillstand)
+    basis = modell.rechnung
+    modell.rechnung = lambda auftrag: dict(basis(auftrag), notiz="x" * 9000)
+    vergleich = dict(VERGLEICH_TEST, roh=["snapshot.spektral.centroid_mag_hz"],
+                     rohvergleich_runde01={"lufs_integriert_offline": -22.41})
+    _code, roh, _umg = umlauf_attrappe(modell, vergleich=vergleich)
+    zeilen = roh.splitlines()
+    p(any(re.match(r"^- Rechnung F-28 \(\d+\.\d s\): `", z) for z in zeilen), "Rechnung ohne ihre Dauer in der Rohzeile")
+    rechnung: dict = {}
+    for z in zeilen:
+        treffer = re.match(r"^- Rechnung F-28[^`]*`(.*)`$", z)
+        if treffer:
+            try:
+                rechnung = json.loads(treffer.group(1).replace("\\|", "|"))
+            except ValueError:
+                rechnung = {}
+    p(len(rechnung.get("notiz", "")) == 9000 and len(rechnung.get("anker", [])) == 2,
+      f"Rechnung nicht vollstaendig in der Rohzeile: Schluessel {sorted(rechnung)}")
+    for band in vergleich["baender"]:
+        for rolle in ("gen", "probeeq"):
+            kopf = f"- Band {band['kurz']} {rolle}: "
+            zeile = next((z for z in zeilen if z.startswith(kopf)), "")
+            try:
+                werte = json.loads(zeile[len(kopf):]) if zeile else {}
+            except ValueError:
+                werte = {}
+            p("wert" in werte and "status" in werte, f"Band ohne Rohzeile mit Wert und Status: {band['kurz']} {rolle}")
+    for rolle in ("gen", "probeeq"):
+        p(any(z.startswith(f"- {rolle} roh `snapshot.spektral.centroid_mag_hz` = [") for z in zeilen),
+          f"Rohfeld ohne Rohzeile: {rolle} snapshot.spektral.centroid_mag_hz")
+        p(any(z.startswith(f"- {rolle}: U_unten ") for z in zeilen), f"U_unten ohne Rohzeile: {rolle}")
+    p(any(z.startswith("- Rohvergleich Runde 01 (nur daneben, F-28): {") for z in zeilen), "Rohvergleich Runde 01 ohne Rohzeile")
+    folge = re.search(r"^- Ende der Folge: [^;]*; (\d+) Anfragen", roh, re.MULTILINE)
+    klammern = re.findall(r"^\| \d+ \| `[0-9a-f]{8}` \| -?\d+ \| -?\d+ \|", roh, re.MULTILINE)
+    p(folge is not None and len(klammern) == int(folge.group(1)),
+      f"Anfrage ohne Rohzeile mit Positionsklammer: {folge.group(1) if folge else None} Anfragen, {len(klammern)} Zeilen")
+    for rolle, stillstand_soll in (("gen", 1), ("probeeq", 0)):
+        treffer = re.search(rf"^- {rolle}: gewertet `[^`]+` \(p_vor -?\d+ ms\), Anker (\{{.*\}})$", roh, re.MULTILINE)
+        anker = json.loads(treffer.group(1)) if treffer else {}
+        p({"n_l", "e", "fortlaufend", "stillstand", "bloecke_max_samples"} <= set(anker) and anker.get("stillstand") == stillstand_soll,
+          f"Anker ohne Rohzeile mit n_L, E, Fortlaufzaehlern und Hostblocklaenge: {rolle} {sorted(anker)}")
 
 
 @fall("M-68", "f28_nur_hergeleitete_baender")
@@ -2711,8 +2964,9 @@ def stellen_attrappe(frames, v: int = 0, urteil: str | None = "BITIDENTISCH", po
 
 
 def zaehlungen(roh: str, rolle: str, sid: str = "S1") -> list[str]:
-    """Zaehlungsspalte der Rohzeilen einer Rolle, in der Reihenfolge der Anfragen."""
-    return [z.strip() for z in re.findall(rf"^\| {sid} \| {rolle} \| `[0-9a-f]{{8}}` \| ([^|]+) \|", roh, re.MULTILINE)]
+    """Zaehlungsspalte der Rohzeilen einer Rolle (die Spalte hinter der Kennung), in der Reihenfolge der Anfragen."""
+    return [z.strip() for z in re.findall(rf"^\| {sid} \| {rolle} \|(?: [^|`]*? \|)*? `[0-9a-f]{{8}}` \| ([^|]+) \|", roh,
+                                          re.MULTILINE)]
 
 
 def gezaehlt_je_rolle(roh: str, sid: str = "S1") -> dict[str, int]:
@@ -2796,25 +3050,52 @@ def fall_stelle_zeitplan(p: Pruefer) -> None:
 @fall("M-70", "stelle_zwei_durchlaeufe")
 def fall_stelle_zwei_durchlaeufe(p: Pruefer) -> None:
     """Traegt der gemeinsame Zeitplan nicht jede Kombination, misst jede Rolle in einem eigenen
-    Durchlauf mit eigener Positionierung und erwartet nur sich selbst; beide Rollen zaehlen zwei Rahmen."""
+    Durchlauf mit eigener Positionierung und erwartet nur sich selbst; beide Rollen zaehlen zwei Rahmen.
+    P-16 an der Zeile: jede Rohzeile traegt durchlauf (getrennt hier, gemeinsam in S2) und die Zahl der
+    getragenen Kombinationen ihres Durchlaufs."""
     stelle = {"id": "S3", "name": "Ausklang", "von_s": 42.462, "bis_s": 45.596}
     code, roh, umg = stellen_attrappe(lambda rolle, n, anfang: rahmen(anfang, n), stelle=stelle,
                                       verzoegerung={"gen": 0.3, "probeeq": 1.338, "broker": 0.2})
     gesetzt = [pa for a, pa, _t in umg.conn.aufrufe if a == "transport.setPosition"]
     zaehlung = gezaehlt_je_rolle(roh, "S3")
+    rohzeilen_tragen_durchlauf(p, roh, "S3", "getrennt")
     p("getrennte Durchlaeufe je Rolle" in roh, "gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf")
     p(gesetzt == [{"position": 42462, "mode": 0}] * 2, f"Positionierungen {gesetzt} statt zweimal 42 462 ms")
     p('erwartet {"gen": [4242]}' in roh and 'erwartet {"probeeq": [4242]}' in roh,
       "ein Durchlauf erwartet mehr als seine Rolle")
     p(code == EXIT_OK and min(zaehlung.values()) >= 2, f"Exit {code}, gezaehlt {zaehlung}")
+    stelle = {"id": "S2", "name": "ruhige Passage", "von_s": 3.692, "bis_s": 11.077}
+    code, roh, _umg = stellen_attrappe(lambda rolle, n, anfang: rahmen(anfang, n), stelle=stelle)
+    rohzeilen_tragen_durchlauf(p, roh, "S2", "gemeinsam")
+    p(code == EXIT_OK, f"S2 im gemeinsamen Durchlauf: Exit {code}")
+
+
+def rohzeilen_tragen_durchlauf(p: Pruefer, roh: str, sid: str, durchlauf: str) -> None:
+    """P-16 an der Zeile: jede Rohzeile und die Differenzzeile einer Rolle tragen durchlauf und <getragen>/<alle>
+    ihres Durchlaufs; der Zeitplan des Durchlaufs im Begleittext liefert nur den Sollwert."""
+    plaene = {name: f"{tragend}/{alle}" for name, tragend, alle in re.findall(
+        r"^- Durchlauf ([a-z ]+): Zeitplan erste Anfrage [^,]*, (\d+) von (\d+) Kombinationen", roh, re.MULTILINE)}
+    for rolle in ("gen", "probeeq"):
+        plan = plaene.get(rolle if durchlauf == "getrennt" else "gen und probeeq")
+        soll = f"| {sid} | {rolle} | {durchlauf} | {plan} |"
+        zeilen = [z for z in roh.splitlines() if z.startswith(f"| {sid} | {rolle} |")]
+        ohne = [z for z in zeilen if not z.startswith(soll)]
+        p(plan is not None and bool(zeilen) and not ohne,
+          f"Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: {sid} {rolle} erwartet '{soll}', "
+          f"{len(ohne)} von {len(zeilen)} Zeilen ohne, z. B. '{(ohne or zeilen or [''])[0][:60]}'")
+        soll_differenz = f'- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {plan}): {{"antworten": '
+        p(any(z.startswith(soll_differenz) for z in roh.splitlines()),
+          f"Differenzzeile ohne durchlauf und kombinationen: {sid} {rolle} erwartet '{soll_differenz}'")
 
 
 @fall("M-71", "roh_schreibt_null_als_null")
 def fall_roh_schreibt_null_als_null(p: Pruefer) -> None:
     antwort = Antwort("n", "gen", 4242, 10, {"snapshot": None, "frame": attrappe_frame(
         aktivitaet=None, abdeckung=None, lufs_s=None, projekt_sample_start=0, sample_count=4410, spielt=True)}, "0" * 32)
-    zellen = [z.strip() for z in stellen_zeile("S1", "gen", antwort, "gezaehlt").split("|")]
-    wert = {f: zellen[5 + i] for i, f in enumerate(F23_FELDER)}
+    zellen = [z.strip() for z in stellen_zeile("S1", "gen", "gemeinsam", "16/16", antwort, "gezaehlt",
+                                                "[0, 162817) v = 0").split("|")[1:-1]]
+    wert = dict(zip(STELLEN_KOPF, zellen))
+    p(len(zellen) == len(STELLEN_KOPF), f"Rohzeile mit {len(zellen)} Zellen statt {len(STELLEN_KOPF)} nach STELLEN_KOPF")
     p(wert["aktivitaet"] == "null" and wert["abdeckung"] == "null" and wert["lufs_s"] == "null",
       f"null nicht als null geschrieben: {wert}")
     p(wert["projekt_sample_start"] == "0" and wert["spielt"] == "true", f"0 oder true nicht roh: {wert}")
@@ -2833,6 +3114,36 @@ def fall_deltas_ueber_evidenzabschluesse(p: Pruefer) -> None:
       f"Differenzen nicht aus den kumulativen Zaehlern: {delta}")
     maengel = plausibel([erste, letzte], delta)
     p(not maengel, f"korrekter Bau als unplausibel gemeldet (M-72): {maengel}")
+
+
+@fall("M-71", "rohzeile_lage_im_host")
+def fall_rohzeile_lage_im_host(p: Pruefer) -> None:
+    """F-23 und F-22 an der Zeile: jede Rohzeile einer Stelle traegt die Lage der Stelle im Host mit v; ohne
+    Nulltesturteil steht die Stelle unverschoben, und jede Rohzeile traegt den Vermerk v unbekannt."""
+    ende = round(3.692 * RATE)
+    for urteil, v, soll, text in (("VERSATZ", ZELLE, f"[{ZELLE}, {ende + ZELLE}) v = {ZELLE}", "Rohzeile ohne Lage im Host mit v"),
+                                  (None, 0, f"[0, {ende}) v unbekannt", "Rohzeile ohne Vermerk v unbekannt")):
+        _code, roh, _umg = stellen_attrappe(lambda rolle, n, anfang: rahmen(anfang, n), v=v, urteil=urteil)
+        zeilen = [z for z in roh.splitlines() if re.match(r"^\| S1 \| (gen|probeeq) \|", z)]
+        ohne = [z for z in zeilen if f"| {soll} |" not in z]
+        p(bool(zeilen) and not ohne, f"{text}: erwartet '{soll}', {len(ohne)} von {len(zeilen)} Zeilen ohne")
+
+
+@fall("M-71", "stelle_klammer_und_differenzen")
+def fall_stelle_klammer_und_differenzen(p: Pruefer) -> None:
+    """F-23 an der Zeile: jede Rohzeile einer Stelle traegt ihre Positionsklammer, und die Differenzzeile je Stelle
+    und Rolle traegt die Zahl der Antworten, die drei Differenzen und beide Ausschnitte."""
+    _code, roh, _umg = stellen_attrappe(lambda rolle, n, anfang: rahmen(anfang, n))
+    zeilen = [z for z in roh.splitlines() if re.match(r"^\| S1 \| (gen|probeeq) \|", z)]
+    ohne = [z for z in zeilen if not re.search(r"\| -?\d+ \| -?\d+ \|$", z)]
+    p(bool(zeilen) and not ohne, f"Rohzeile ohne Positionsklammer: {len(ohne)} von {len(zeilen)} Zeilen ohne p_vor und p_nach, "
+                                 f"z. B. '{(ohne or [''])[0][-50:]}'")
+    for rolle in ("gen", "probeeq"):
+        treffer = re.search(rf"^- Stelle S1 {rolle} \([^)]*\): (\{{.*\}})", roh, re.MULTILINE)
+        werte = json.loads(treffer.group(1)) if treffer else {}
+        soll = {"antworten", "d_frames_gebaut", "d_summe_fenster_aktiv", "d_summe_fenster_gesamt", "erster_ausschnitt",
+                "letzter_ausschnitt"}
+        p(soll <= set(werte), f"Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 {rolle} {sorted(werte)}")
 
 
 @fall("M-72", "u40_ohne_sollwert")
@@ -2898,6 +3209,32 @@ def fall_low_frac_in_snapshotdefinition(p: Pruefer) -> None:
     p(wert is not None and abs(wert - erwartet) < 0.01,
       f"gegenphasiger Bass: low_frac_kanal {wert!r} statt rund {erwartet:.3f} (im Mid-Mix rund 0)")
     p(low_frac_kanal((k // 20000).astype(np.int32)) is None, "nur Segmente unter -60 dB: low_frac_kanal nicht None")
+
+
+@fall("M-68", "rechnung_rohwerte")
+def fall_rechnung_rohwerte(p: Pruefer) -> None:
+    """F-28 an der Zeile: der Eintrag eines Referenzausschnitts, den die Rechnungszeile schreibt, traegt den Wert
+    low_frac von analyze() roh neben der Referenz low_frac_kanal (F-28 (8); Rauschen, drei Segmente ueber dem Gate)
+    und die Stichprobenspitze je Kanal der Quelle neben R_TP (True Peak, M-62; Spitzen 0,5 und 0,25 gesetzt)."""
+    import numpy as np
+
+    k = np.random.default_rng(28).integers(-(1 << 20), 1 << 20, size=(3 * 8192, 2)).astype(np.int32)
+    k[100, 0], k[200, 1] = -(1 << 22), 1 << 21  # Spitzen 0,5 links und 0,25 rechts, Rauschen unter 0,125
+
+    def analyze(_pfad):
+        return {"lufs": -20.0, "tp_dbtp": -3.0, "width": 0.4, "corr": 0.5, "low_frac": 0.123, "centroid_mag": 900.0,
+                "resonances": []}
+
+    with tempfile.TemporaryDirectory(prefix="nak286-rechnung-", ignore_cleanup_errors=True) as tmp:
+        aus = rechne_auftrag({"ordner": tmp, "head": "t", "v": 0, "urteil": "BITIDENTISCH", "delta_k_db": 0.0, "u_unten": [],
+                              "anker": [{"rolle": "gen", "art": "leicht", "ausschnitt": [0, 3 * 8192], "s_lufs": False}]},
+                             analyze=analyze, quelle_k=k)
+    eintrag = (aus.get("anker") or [{}])[0]
+    p(eintrag.get("low_frac") == 0.123 and isinstance(eintrag.get("low_frac_kanal"), float),
+      f"Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: {sorted(eintrag)}")
+    p(eintrag.get("stichprobenspitze") == [0.5, 0.25] and eintrag.get("tp_dbtp") == -3.0,
+      f"Referenzausschnitt ohne Stichprobenspitze je Kanal neben R_TP: stichprobenspitze {eintrag.get('stichprobenspitze')}, "
+      f"tp_dbtp {eintrag.get('tp_dbtp')}")
 
 
 def selbsttest(nur: list[str]) -> int:

@@ -1,0 +1,57 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-68 (5) (15.09.2026 06:34:57) ===
+Art: Rotbeweis (§5.1, §40): low_frac von analyze() aus dem Eintrag des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rechnung_rohwerte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-68 rechnung_rohwerte:.*Referenzausschnitt ohne low_frac von analyze\(\) neben low_frac_kanal
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                        "corr": float(a["corr"]), "low_frac": float(a["low_frac"]), "low_frac_kanal": low_frac_kanal(teil),
+  +                        "corr": float(a["corr"]), "low_frac_kanal": low_frac_kanal(teil),  # ROTBEWEIS M-68 (5): ohne low_frac von analyze()
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 9F7761912B1DB674658C4F8F0586BEB8BA746E35E19B089364E13FA2D01447D5, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+--- Rohausgabe, rot ---
+[ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-68 (5) (15.09.2026 06:58:24) ===
+Art: Rotbeweis (§5.1, §40): low_frac von analyze() aus dem Eintrag des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rechnung_rohwerte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-68 rechnung_rohwerte:.*Referenzausschnitt ohne low_frac von analyze\(\) neben low_frac_kanal
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                        "corr": float(a["corr"]), "low_frac": float(a["low_frac"]), "low_frac_kanal": low_frac_kanal(teil),
+  +                        "corr": float(a["corr"]), "low_frac_kanal": low_frac_kanal(teil),  # ROTBEWEIS M-68 (5): ohne low_frac von analyze()
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert E7536F0E6AC0ACFCA2322DA1A1BEF0B09341404417647E9C731B00D61427C82B, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+--- Rohausgabe, rot ---
+[ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-68 (5) (15.09.2026 07:26:02) ===
+Art: Rotbeweis (§5.1, §40): low_frac von analyze() aus dem Eintrag des Referenzausschnitts entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rechnung_rohwerte (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-68 rechnung_rohwerte:.*Referenzausschnitt ohne low_frac von analyze\(\) neben low_frac_kanal
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                        "corr": float(a["corr"]), "low_frac": float(a["low_frac"]), "low_frac_kanal": low_frac_kanal(teil),
+  +                        "corr": float(a["corr"]), "low_frac_kanal": low_frac_kanal(teil),  # ROTBEWEIS M-68 (5): ohne low_frac von analyze()
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert DC8ADD244E4E4671CE94B20251304E913806C466D18440D0B43D8DD264CEDA04, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+--- Rohausgabe, rot ---
+[ROT] M-68 rechnung_rohwerte: Referenzausschnitt ohne low_frac von analyze() neben low_frac_kanal: ['analyze_s', 'art', 'ausschnitt', 'centroid_mag', 'corr', 'low_frac_kanal', 'lufs', 'pfad', 'resonanzen', 'rolle', 'sha256', 'stichprobenspitze', 'tp_dbtp', 'width']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

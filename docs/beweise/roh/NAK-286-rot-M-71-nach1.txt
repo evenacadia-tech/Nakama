@@ -1,0 +1,524 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotlauf vor der Aenderung M-71 (P-16) (15.09.2026 06:04:45) ===
+Art: Rotlauf vor der Aenderung (§5.1, §40): Fall stelle_zwei_durchlaeufe prueft die Rohzeile gegen die unveraenderte stellen_zeile
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Rohzeile ohne durchlauf und kombinationen
+Erwartung: rot
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, nach dem Lauf AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotlauf vor der Aenderung M-71 (Lage) (15.09.2026 06:04:46) ===
+Art: Rotlauf vor der Aenderung (§5.1, §40): neuer Fall rohzeile_lage_im_host gegen die unveraenderte stellen_zeile
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Lage im Host mit v.*Rohzeile ohne Vermerk v unbekannt
+Erwartung: rot
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, nach dem Lauf AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, gleich: ja
+rot: Exit 4, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (3) (15.09.2026 06:13:39) ===
+Art: Rotbeweis (§5.1, §40): Spalten durchlauf und kombinationen aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return (f"| {stelle_id} | {rolle} | {durchlauf} | {kombinationen} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "
+  +     return (f"| {stelle_id} | {rolle} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "  # ROTBEWEIS M-71 (3): ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert 8AA8E827B521C18E50C92ACA54DC2038C925CC2418DED8C924B3562073AB5308, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.6 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (6) (15.09.2026 06:13:40) ===
+Art: Rotbeweis (§5.1, §40): Differenzzeile ohne durchlauf und kombinationen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Differenzzeile ohne durchlauf und kombinationen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {kombinationen_je_rolle.get(rolle, '0/0')}): "
+  +         zeilen.append(f"- Stelle {sid} {rolle}: "  # ROTBEWEIS M-71 (6): Differenzzeile ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert B94802B2D9B64EC6D9C5D92A8AB6AD0660E9E463E84E15CAFB19AD9C4C58A45F, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.6 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (4) (15.09.2026 06:13:41) ===
+Art: Rotbeweis (§5.1, §40): Lage im Host aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Lage im Host mit v
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             f"{werte} | {_zelle(lage)} | {klammer} |")
+  +             f"{werte} | {klammer} |")  # ROTBEWEIS M-71 (4): ohne Lage im Host
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert DA55B639B659DB3A10343FDFDE7358149420E6AC5A9E5AB39E0F10BB6ECC80DD, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (5) (15.09.2026 06:13:42) ===
+Art: Rotbeweis (§5.1, §40): Vermerk v unbekannt in lage_im_host entfernt (ohne Nulltesturteil v = 0)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Vermerk v unbekannt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return f"[{a_frames}, {b_frames}) " + (f"v = {v}" if v_bekannt else "v unbekannt")
+  +     return f"[{a_frames}, {b_frames}) " + f"v = {v}"  # ROTBEWEIS M-71 (5): ohne Vermerk v unbekannt
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert D7FCA2E410429B16A4CF2BCB6DC359BB2A7556212339B167A203DB6705DA5301, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (1) (15.09.2026 06:13:42) ===
+Art: Rotbeweis (§5.1, §40): roh schreibt null als 0 (Fall mit neuer Spaltenfolge)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 roh_schreibt_null_als_null:.*null nicht als null geschrieben
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert B46B1DFEAEC022B7B21D74B3B8B4D4E5AB380FB7230C8061415D0284B9879771, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+--- Rohausgabe, rot ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (3) (15.09.2026 06:34:25) ===
+Art: Rotbeweis (§5.1, §40): Spalten durchlauf und kombinationen aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return (f"| {stelle_id} | {rolle} | {durchlauf} | {kombinationen} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "
+  +     return (f"| {stelle_id} | {rolle} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "  # ROTBEWEIS M-71 (3): ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert F8D2167834FBFC367C1111D95DEA554F7850673229ABF17B26FF02477217E302, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (6) (15.09.2026 06:34:26) ===
+Art: Rotbeweis (§5.1, §40): Differenzzeile ohne durchlauf und kombinationen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Differenzzeile ohne durchlauf und kombinationen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {kombinationen_je_rolle.get(rolle, '0/0')}): "
+  +         zeilen.append(f"- Stelle {sid} {rolle}: "  # ROTBEWEIS M-71 (6): Differenzzeile ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 625A2ECEC07BCCD75D3AC4485DB7A5290A33E92DAF94CACB4F47E79974A967E4, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.6 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (4) (15.09.2026 06:34:27) ===
+Art: Rotbeweis (§5.1, §40): Lage im Host aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Lage im Host mit v
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             f"{werte} | {_zelle(lage)} | {klammer} |")
+  +             f"{werte} | {klammer} |")  # ROTBEWEIS M-71 (4): ohne Lage im Host
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 36668284A98E6EF47420DF8E9DA7C48946EDD61A30229A4EBDAE2EB3FD96FC89, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (5) (15.09.2026 06:34:28) ===
+Art: Rotbeweis (§5.1, §40): Vermerk v unbekannt in lage_im_host entfernt (ohne Nulltesturteil v = 0)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Vermerk v unbekannt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return f"[{a_frames}, {b_frames}) " + (f"v = {v}" if v_bekannt else "v unbekannt")
+  +     return f"[{a_frames}, {b_frames}) " + f"v = {v}"  # ROTBEWEIS M-71 (5): ohne Vermerk v unbekannt
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 3DBA7F2620427DA3F0C13168D1D2F7D4F654AB0CF302641A13F3F321A395D315, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (1) (15.09.2026 06:34:28) ===
+Art: Rotbeweis (§5.1, §40): roh schreibt null als 0 (Fall mit neuer Spaltenfolge)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 roh_schreibt_null_als_null:.*null nicht als null geschrieben
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert A2C8250D6B9D817B04F27AC0078B368382B983700483456723FEBE5E0182E78C, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+--- Rohausgabe, rot ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (7) (15.09.2026 06:34:48) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Rohzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Rohzeile ohne Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     klammer = f"{anfrage.p_vor} | {anfrage.p_nach}" if anfrage else "— | —"
+  +     klammer = "— | —"  # ROTBEWEIS M-71 (7): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 6A646E49334B141A269CD6385A18D1BF1EF56406E40F4EDF6F2E3AFBDAB570EE, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.3 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (8) (15.09.2026 06:34:49) ===
+Art: Rotbeweis (§5.1, §40): Differenzen aus der Differenzzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"{_json(delta)}{vermerk}")
+  +                       f"{vermerk}")  # ROTBEWEIS M-71 (8): Differenzzeile ohne Differenzen
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 8098F93CA1FC3972286A03D3AF3B0C40B60A57117F730E02A22724FCC052A71D, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.3 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (3) (15.09.2026 06:57:51) ===
+Art: Rotbeweis (§5.1, §40): Spalten durchlauf und kombinationen aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return (f"| {stelle_id} | {rolle} | {durchlauf} | {kombinationen} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "
+  +     return (f"| {stelle_id} | {rolle} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "  # ROTBEWEIS M-71 (3): ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert BDFD0C0D5F413B23E74735C2A279177784BBC92349FDCFF3F05B951D78506BDF, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (6) (15.09.2026 06:57:52) ===
+Art: Rotbeweis (§5.1, §40): Differenzzeile ohne durchlauf und kombinationen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Differenzzeile ohne durchlauf und kombinationen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {kombinationen_je_rolle.get(rolle, '0/0')}): "
+  +         zeilen.append(f"- Stelle {sid} {rolle}: "  # ROTBEWEIS M-71 (6): Differenzzeile ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 2D72E08C5F7F6B96133FA68DE1F1434CDAC2FF5CA57C3191CD118C48BE5730B2, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (4) (15.09.2026 06:57:53) ===
+Art: Rotbeweis (§5.1, §40): Lage im Host aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Lage im Host mit v
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             f"{werte} | {_zelle(lage)} | {klammer} |")
+  +             f"{werte} | {klammer} |")  # ROTBEWEIS M-71 (4): ohne Lage im Host
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert BA8735AD2574653701CB51CA1D0121F5742A1F6255B27C6D0CC414ECD37FAA11, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (5) (15.09.2026 06:57:54) ===
+Art: Rotbeweis (§5.1, §40): Vermerk v unbekannt in lage_im_host entfernt (ohne Nulltesturteil v = 0)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Vermerk v unbekannt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return f"[{a_frames}, {b_frames}) " + (f"v = {v}" if v_bekannt else "v unbekannt")
+  +     return f"[{a_frames}, {b_frames}) " + f"v = {v}"  # ROTBEWEIS M-71 (5): ohne Vermerk v unbekannt
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert C6BFB04EE5809B8C64676865782EADF81F23DD8AAC28BD7D06ECBE6CACDB462A, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (1) (15.09.2026 06:57:54) ===
+Art: Rotbeweis (§5.1, §40): roh schreibt null als 0 (Fall mit neuer Spaltenfolge)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 roh_schreibt_null_als_null:.*null nicht als null geschrieben
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 13E45D743B5FD1A3A338CED6E0BCA48FEED76D91F213238A1F509A1123208F43, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+--- Rohausgabe, rot ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (7) (15.09.2026 06:58:14) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Rohzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Rohzeile ohne Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     klammer = f"{anfrage.p_vor} | {anfrage.p_nach}" if anfrage else "— | —"
+  +     klammer = "— | —"  # ROTBEWEIS M-71 (7): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert F0EE346731394E10B01EF420BABE02641FA1E8F97D5B7EF9B2B843571BA8685E, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (8) (15.09.2026 06:58:15) ===
+Art: Rotbeweis (§5.1, §40): Differenzen aus der Differenzzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"{_json(delta)}{vermerk}")
+  +                       f"{vermerk}")  # ROTBEWEIS M-71 (8): Differenzzeile ohne Differenzen
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 4CCC19D5554BA749B88BCC8F5C860BD19FBE859BA005D8088D4304A19FE06141, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.3 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (3) (15.09.2026 07:25:29) ===
+Art: Rotbeweis (§5.1, §40): Spalten durchlauf und kombinationen aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return (f"| {stelle_id} | {rolle} | {durchlauf} | {kombinationen} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "
+  +     return (f"| {stelle_id} | {rolle} | `{antwort.kennung[:8]}` | {_zelle(urteil)} | "  # ROTBEWEIS M-71 (3): ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 5A50858F6A97781E00223FB9DD645636765378A729CB64C926FA4B977C9772D8, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 gen erwartet '| S3 | gen | getrennt | 16/16 |', 5 von 5 Zeilen ohne, z. B. '| S3 | gen | `00000000` | Ausschnitt [1868164, 1872574) nich' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S3 probeeq erwartet '| S3 | probeeq | getrennt | 16/16 |', 3 von 3 Zeilen ohne, z. B. '| S3 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 gen erwartet '| S2 | gen | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | gen | `00000000` | Ausschnitt [158407, 162817) nicht ' | Rohzeile ohne durchlauf und kombinationen ihres Durchlaufs: S2 probeeq erwartet '| S2 | probeeq | gemeinsam | 16/16 |', 7 von 7 Zeilen ohne, z. B. '| S2 | probeeq | `00000000` | gezaehlt | true | 0.5 | 0.6 | '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (6) (15.09.2026 07:25:30) ===
+Art: Rotbeweis (§5.1, §40): Differenzzeile ohne durchlauf und kombinationen
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-70 stelle_zwei_durchlaeufe:.*Differenzzeile ohne durchlauf und kombinationen
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -         zeilen.append(f"- Stelle {sid} {rolle} (durchlauf {durchlauf}, kombinationen {kombinationen_je_rolle.get(rolle, '0/0')}): "
+  +         zeilen.append(f"- Stelle {sid} {rolle}: "  # ROTBEWEIS M-71 (6): Differenzzeile ohne durchlauf und kombinationen
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert C1AC82FAD87CF8C1F205C38B834C172FCCBD7DD02B40D45670153053AE943D88, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+--- Rohausgabe, rot ---
+[ROT] M-70 stelle_zwei_durchlaeufe: Differenzzeile ohne durchlauf und kombinationen: S3 gen erwartet '- Stelle S3 gen (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S3 probeeq erwartet '- Stelle S3 probeeq (durchlauf getrennt, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 gen erwartet '- Stelle S2 gen (durchlauf gemeinsam, kombinationen 16/16): {"antworten": ' | Differenzzeile ohne durchlauf und kombinationen: S2 probeeq erwartet '- Stelle S2 probeeq (durchlauf gemeinsam, kombinationen 16/16): {"antworten": '
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (4) (15.09.2026 07:25:31) ===
+Art: Rotbeweis (§5.1, §40): Lage im Host aus stellen_zeile entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Lage im Host mit v
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -             f"{werte} | {_zelle(lage)} | {klammer} |")
+  +             f"{werte} | {klammer} |")  # ROTBEWEIS M-71 (4): ohne Lage im Host
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 32DE0D1F4FC61BF06C416836282E8FD970AAF949FDDCDD8298409D9CEC4A9055, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Lage im Host mit v: erwartet '[4410, 167227) v = 4410', 10 von 10 Zeilen ohne | Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (5) (15.09.2026 07:25:32) ===
+Art: Rotbeweis (§5.1, §40): Vermerk v unbekannt in lage_im_host entfernt (ohne Nulltesturteil v = 0)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur rohzeile_lage_im_host (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 rohzeile_lage_im_host:.*Rohzeile ohne Vermerk v unbekannt
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     return f"[{a_frames}, {b_frames}) " + (f"v = {v}" if v_bekannt else "v unbekannt")
+  +     return f"[{a_frames}, {b_frames}) " + f"v = {v}"  # ROTBEWEIS M-71 (5): ohne Vermerk v unbekannt
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 68981A8C58410FC340C8987012683A6E1A844703AE679D625EA79162E361A15B, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+--- Rohausgabe, rot ---
+[ROT] M-71 rohzeile_lage_im_host: Rohzeile ohne Vermerk v unbekannt: erwartet '[0, 162817) v unbekannt', 10 von 10 Zeilen ohne
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (1) (15.09.2026 07:25:33) ===
+Art: Rotbeweis (§5.1, §40): roh schreibt null als 0 (Fall mit neuer Spaltenfolge)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 roh_schreibt_null_als_null:.*null nicht als null geschrieben
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 6A0DCF592EE5BFCE8E62826F15408A6B7F60A09FD3CA39144E681B3442DD9C02, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+--- Rohausgabe, rot ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'Stelle': 'S1', 'Rolle': 'gen', 'durchlauf': 'gemeinsam', 'kombinationen': '16/16', 'Kennung': '`00000000`', 'Zaehlung': 'gezaehlt', 'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true', 'lage im Host': '[0, 162817) v = 0', 'p_vor ms': '—', 'p_nach ms': '—'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (7) (15.09.2026 07:25:52) ===
+Art: Rotbeweis (§5.1, §40): Positionsklammer aus der Rohzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Rohzeile ohne Positionsklammer
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -     klammer = f"{anfrage.p_vor} | {anfrage.p_nach}" if anfrage else "— | —"
+  +     klammer = "— | —"  # ROTBEWEIS M-71 (7): ohne Positionsklammer
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert C0E32D2FE2CBF4FED7AEE136CBF31EECF65A35018CFE949E3565F6EB3792BB71, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Rohzeile ohne Positionsklammer: 10 von 10 Zeilen ohne p_vor und p_nach, z. B. ' 0 | 0 | 4410 | true | [0, 162817) v = 0 | — | — |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.3 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-71 (8) (15.09.2026 07:25:53) ===
+Art: Rotbeweis (§5.1, §40): Differenzen aus der Differenzzeile der Stelle entfernt
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_klammer_und_differenzen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-71 stelle_klammer_und_differenzen:.*Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                       f"{_json(delta)}{vermerk}")
+  +                       f"{vermerk}")  # ROTBEWEIS M-71 (8): Differenzzeile ohne Differenzen
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert 89B31D98A684FF8F2FA5EFE9C479E0B64D13B5C1DC3C63CD83E2FA4EF0BA8DF3, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 0.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+--- Rohausgabe, rot ---
+[ROT] M-71 stelle_klammer_und_differenzen: Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 gen [] | Differenzzeile ohne Zahl der Antworten, Differenzen und Ausschnitte: S1 probeeq []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.3 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

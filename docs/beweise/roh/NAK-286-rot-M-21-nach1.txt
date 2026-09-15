@@ -1,0 +1,91 @@
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotlauf vor der Aenderung M-21 (P-19) (15.09.2026 06:04:45) ===
+Art: Rotlauf vor der Aenderung (§5.1, §40): neuer Fall fenster_frist_erzwungen gegen die unveraenderte Erfassung in-process
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_frist_erzwungen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_frist_erzwungen:.*Frist nicht erzwungen: lokal\.fenster kehrte nach
+Erwartung: rot
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, nach dem Lauf AB729623951E432250CDAF0F72B01800E914FEA7A4905766F133AC1AE000DF7C, gleich: ja
+rot: Exit 4, Dauer 22.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.01 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Erfassung nicht als beendeter Unterprozess: PID 24108 (Selbsttestprozess 24108), lebt True | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.01 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Erfassung nicht als beendeter Unterprozess: PID 24108 (Selbsttestprozess 24108), lebt True | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-21 (P-19) (15.09.2026 06:13:38) ===
+Art: Rotbeweis (§5.1, §40): Frist der Fenstererfassung an der timeout-Uebergabe entfernt (frist=None)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_frist_erzwungen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_frist_erzwungen:.*Frist nicht erzwungen: lokal\.fenster kehrte nach
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                                                frist=FENSTER_FRIST_S, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")
+  +                                                frist=None, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")  # ROTBEWEIS M-21 (P-19)
+SHA-256 tools/fl/szenario.py vorher 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, mutiert FAAB238BF0667E0EEC0BF95EA639057378D555C3EDCCE71C073CE7F34826625E, nach der Ruecknahme 3AC8C9066338EBEAF54E557A16FE1D14447078C1694EEE66418827F00A17CC4D, gleich: ja
+rot: Exit 4, Dauer 20.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.07 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.07 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 5.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-21 (P-19) (15.09.2026 06:34:24) ===
+Art: Rotbeweis (§5.1, §40): Frist der Fenstererfassung an der timeout-Uebergabe entfernt (frist=None)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_frist_erzwungen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_frist_erzwungen:.*Frist nicht erzwungen: lokal\.fenster kehrte nach
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                                                frist=FENSTER_FRIST_S, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")
+  +                                                frist=None, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")  # ROTBEWEIS M-21 (P-19)
+SHA-256 tools/fl/szenario.py vorher 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, mutiert 38170A34963BFCC81C44CDB9FEB0B5AA6AA396F255325DDB447B37EC88CA7FE7, nach der Ruecknahme 78F57267009051F489C66D40EAB5FEE9B1B829C89F908DDFBD75715D51DFE50E, gleich: ja
+rot: Exit 4, Dauer 20.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.10 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.10 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 5.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-21 (P-19) (15.09.2026 06:57:50) ===
+Art: Rotbeweis (§5.1, §40): Frist der Fenstererfassung an der timeout-Uebergabe entfernt (frist=None)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_frist_erzwungen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_frist_erzwungen:.*Frist nicht erzwungen: lokal\.fenster kehrte nach
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                                                frist=FENSTER_FRIST_S, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")
+  +                                                frist=None, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")  # ROTBEWEIS M-21 (P-19)
+SHA-256 tools/fl/szenario.py vorher 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, mutiert 2DE3EA48AC1AD3984EFAFB9209EE92614217BF1201DC3A7709C73DCC56DA34BB, nach der Ruecknahme 89E6C5C8AE6464283E7C5034DF80F4AD66797E8BEC1DA6C3D1F497524FCBEC81, gleich: ja
+rot: Exit 4, Dauer 20.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.08 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.08 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 5.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4 Nacharbeit 1, Rotbeweis M-21 (P-19) (15.09.2026 07:25:28) ===
+Art: Rotbeweis (§5.1, §40): Frist der Fenstererfassung an der timeout-Uebergabe entfernt (frist=None)
+Nakama HEAD e35e3de504604615457b94bededb03df65e089c9 (Arbeitsstand der Nacharbeit uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_frist_erzwungen (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_frist_erzwungen:.*Frist nicht erzwungen: lokal\.fenster kehrte nach
+Erwartung: rot
+Ersetzung in tools/fl/szenario.py:
+  -                                                frist=FENSTER_FRIST_S, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")
+  +                                                frist=None, bezeichnung=f"Fenstererfassung {ziel} (PID {pid})")  # ROTBEWEIS M-21 (P-19)
+SHA-256 tools/fl/szenario.py vorher F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, mutiert AA89733DCAE8F47A75CE62CCF31B09564B14D852E0D9BDAD897BAB3DE336FB82, nach der Ruecknahme F48BF6CB1BF52B0923EA2959F672919F13635E779FC155A3659FD859DFFBD336, gleich: ja
+rot: Exit 4, Dauer 20.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.07 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_frist_erzwungen: Frist nicht erzwungen: lokal.fenster kehrte nach 20.07 s zurueck (Frist 5 s, die Attrappe blockiert 20 s, Grenze 12.5 s) | Schritt ohne VERFEHLT mit 'Frist 5 s ueberschritten': '| 1 | `lokal.fenster` | `{"ziel": "fl"}` | {"breite": 640, "dauer_s": 0.0, "einfarbig": false, "fenster": "Attrappe", "hoehe": 480, "klasse": "TFruityLoopsMainForm", "pfad": "C:\\Users\\phili\\AppData\\Local\\evenacadia\' | Szenarioprozess lief nach der Erfassung nicht weiter: system.ping 1-mal, Exit 0
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 5.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

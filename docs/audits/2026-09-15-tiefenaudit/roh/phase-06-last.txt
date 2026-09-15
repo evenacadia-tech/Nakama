@@ -1,0 +1,6 @@
+Phase 06 abgeschlossen: **2 Defekte, 1 Lücke**, alle **medium**. Dazu 16 ausgeschiedene Verdachte und 2 Produktfragen.
+
+- [Vollständiger Bericht mit Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-06-messkern.md)
+- [Anhang in BEFUNDE.md](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md:118)
+
+HEAD unverändert, bisheriger Sammelbericht bytegleich erhalten. Keine Tests, Builds oder Commits.

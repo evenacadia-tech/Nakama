@@ -1,0 +1,10 @@
+URTEIL: NEEDS_WORK — wegen des fehlenden R2 im Gesamt-Gate, nicht wegen der ausstehenden U43-Dateien.
+
+Geprüft: gebundener Diff vollständig; P-17 und P-18/M-12 einschließlich Ausnahme und Szenarioabbruch mit Speicherfassaden nachgemessen, P-19 mit Schlaf-Unterprozess nach 5,01 s beendet, M-74 Exit 0; gelesene Rotbelege fallen am Träger, Gate-Belege tragen Bereitschaft 14/14, M-62 BITIDENTISCH (N 2015193, v 0), U40-Rohdaten und Kanon vorher/nachher 66/66 beziehungsweise 68/68; kein Produktcode geändert, nur drei Installerwerte; Repository unverändert und HEAD vorher/nachher identisch 614913b8b0a7ffad24b591349fb57d71a63e9c6c.
+
+Nicht geprüft: neue Kanon-, FL-, Installations- oder echte Referenzrenderläufe; A35 vollständig durch Python-3.13-Startfehler beziehungsweise TEMP-Schreibsperre blockiert, vorhandene Host-, Audio-, State- und Kanonergebnisse nur gelesen.
+
+Review comment:
+
+- [P2] Implementiere R2 vor der Abnahme des Gesamt-Gates — C:/Users/phili/Projekte/Nakama/tools/fl/szenario.py:804-805
+  DEFEKT der Gesamt-Gate-Prüfung: Auch bei vorhandenen U43-Projekten liefern beide Referenzschritte bedingungslos Exit 5, ohne Render oder Vergleich. Reproduktion ohne FL: `python -B -c "import runpy; from types import SimpleNamespace as N; s=runpy.run_path('tools/fl/szenario.py'); print(s['lokal_nulltest'](N(umg=N(existiert=lambda _:True)),{'params':{'vergleich':'verarbeitung_ein','projekt':'Nakama-Diagnose-Verarbeitung.flp'}}))"` ergibt weiterhin „Weg R2 nicht gebaut“. Das [Gate](C:/Users/phili/Projekte/Nakama/docs/plan/plan.json#L313) verlangt ausdrücklich „Render über `FL64.exe /R` mit und ohne Verarbeitung“; [M-64](C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-286.md#L615) verlangt die entsprechenden Vergleiche bei vorhandenen Projekten. U43 liefert lediglich die Dateien; der Handgriff kann die fehlende Implementierung nicht ersetzen. Dass §5.8 und P-18 keinen R2-Bauauftrag enthalten, hebt die Gate-Zusage nicht auf: daher DEFEKT, nicht LÜCKE gemäß [Prüfregel](C:/Users/phili/Projekte/Nakama/.agents/skills/sondenplan-audit/SKILL.md#L82-L85).

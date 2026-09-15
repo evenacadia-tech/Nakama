@@ -487,7 +487,13 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
         double t = 1.0;
         if (qb != nullptr && i < rampeRest)
             t = 1.0 - (double) (rampeRest - i - 1) / (double) kRampeSamples;
-        const bool mitte = t < 1.0;
+        // NAK-289 (NullDereference, NonNullParamChecker): t sinkt nur mit
+        // Quellbank unter 1,0 (Zuweisung darueber). Der ausdrueckliche
+        // Nullcheck waehlt deshalb in jedem Fall denselben Zweig wie t < 1,0
+        // allein und macht die Kopplung fuer den Analyzer sichtbar, der den
+        // double-Vergleich nicht verfolgt.
+        jassert (qb != nullptr || t == 1.0);
+        const bool mitte = qb != nullptr && t < 1.0;
 
         // --- die Kanalkomponente(n) dieses Bandes herausloesen ------------
         double x0 = 0.0, x1 = 0.0, m = 0.0, s = 0.0;

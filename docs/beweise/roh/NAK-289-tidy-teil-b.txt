@@ -1,0 +1,27 @@
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 13 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 28 s mit 12 Prozess(en)
+
+ACHTUNG: TEILMESSUNG (--nur dsp/) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  2    0     83      ZIEL  
+
+Uebersetzungseinheiten: 3 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 3
+Langsamste Einheiten: eq-copilot/plugin/dsp/DspKern.cpp 13 s, eq-copilot/plugin/dsp/DspProgramm.cpp 10 s, eq-copilot/plugin/dsp/DspBankPool.cpp 8 s
+
+Fundstellen je Check:
+      1  bugprone-incorrect-roundings
+      1  clang-analyzer-deadcode.DeadStores
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/dsp/DspKern.cpp:63:36 [bugprone-incorrect-roundings] casting (double + 0.5) to integer leads to incorrect rounding; consider using lround (#include <cmath>) instead
+  eq-copilot/plugin/dsp/DspKern.cpp:509:16 [clang-analyzer-deadcode.DeadStores] Value stored to 'y0' during its initialization is never read
+
+URTEIL: TEILMESSUNG - 2 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+EXIT=0

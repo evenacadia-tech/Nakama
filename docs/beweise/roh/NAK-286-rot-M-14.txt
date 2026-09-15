@@ -1,0 +1,87 @@
+=== NAK-286 Etappe 4, Rotbeweis M-14 (15.09.2026 03:13:21) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: choose_port gibt am Ende den ersten Port zurueck
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_port_selection.py::test_no_fallback_to_first_port tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none tests/test_port_selection.py::test_connect_reports_missing_port_honestly -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::(test_no_fallback_to_first_port|test_env_override_that_matches_nothing_yields_none|test_connect_reports_missing_port_honestly)
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py:
+  -     return candidates[0] if len(candidates) == 1 else None
+  +     return candidates[0] if len(candidates) == 1 else (output_ports[0] if output_ports else None)  # ROTBEWEIS M-14
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py vorher 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, mutiert 610E8233FA2529E5634F3D2F5B663FE87263B40DB50C467A1E5CBB27BECE66DA, nach der Ruecknahme 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, gleich: ja
+rot: Exit 1, Traegerzeilen 3
+  Traeger: FAILED tests/test_port_selection.py::test_no_fallback_to_first_port - Asserti...
+  Traeger: FAILED tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none
+  Traeger: FAILED tests/test_port_selection.py::test_connect_reports_missing_port_honestly
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 3 items
+
+tests\test_port_selection.py FFF                                         [100%]
+
+================================== FAILURES ===================================
+_______________________ test_no_fallback_to_first_port ________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000170A8827200>
+
+    def test_no_fallback_to_first_port(monkeypatch):
+        """A GS synth is not FL Studio; better 'not connected' than a lie."""
+        monkeypatch.delenv(mc.PORT_ENV, raising=False)
+>       assert mc.choose_port(["Microsoft GS Wavetable Synth 0"]) is None
+E       AssertionError: assert 'Microsoft GS Wavetable Synth 0' is None
+E        +  where 'Microsoft GS Wavetable Synth 0' = <function choose_port at 0x00000170A883A700>(['Microsoft GS Wavetable Synth 0'])
+E        +    where <function choose_port at 0x00000170A883A700> = mc.choose_port
+
+tests\test_port_selection.py:33: AssertionError
+_____________ test_env_override_that_matches_nothing_yields_none ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000170A8856CF0>
+
+    def test_env_override_that_matches_nothing_yields_none(monkeypatch):
+        monkeypatch.setenv(mc.PORT_ENV, "does-not-exist")
+>       assert mc.choose_port(["loopMIDI Port 1"]) is None
+E       AssertionError: assert 'loopMIDI Port 1' is None
+E        +  where 'loopMIDI Port 1' = <function choose_port at 0x00000170A883A700>(['loopMIDI Port 1'])
+E        +    where <function choose_port at 0x00000170A883A700> = mc.choose_port
+
+tests\test_port_selection.py:45: AssertionError
+_________________ test_connect_reports_missing_port_honestly __________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000170A88573B0>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-66/test_connect_reports_missing_p0')
+
+    def test_connect_reports_missing_port_honestly(monkeypatch, tmp_path):
+        """connect() must fail with a diagnostic, not open the wrong port."""
+        monkeypatch.delenv(mc.PORT_ENV, raising=False)
+        monkeypatch.setattr(mc, "_get_fl_hardware_dir", lambda: tmp_path)
+    
+        class FakeMido:
+            @staticmethod
+            def get_output_names():
+                return ["Microsoft GS Wavetable Synth 0"]
+    
+            @staticmethod
+            def open_output(name):  # pragma: no cover - must not be reached
+                raise AssertionError(f"must not open {name!r}")
+    
+        monkeypatch.setitem(__import__("sys").modules, "mido", FakeMido)
+        conn = mc.MIDIConnection()
+        assert conn.connect() is False
+        assert conn.is_connected is False
+>       assert "loopMIDI" in (conn.connection_error or "")
+E       assert 'loopMIDI' in (("Failed to open MIDI port 'Microsoft GS Wavetable Synth 0': must not open 'Microsoft GS Wavetable Synth 0'"))
+E        +  where "Failed to open MIDI port 'Microsoft GS Wavetable Synth 0': must not open 'Microsoft GS Wavetable Synth 0'" = <fl_studio_mcp.utils.midi_connection.MIDIConnection object at 0x00000170A8857470>.connection_error
+
+tests\test_port_selection.py:66: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_port_selection.py::test_no_fallback_to_first_port - Asserti...
+FAILED tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none
+FAILED tests/test_port_selection.py::test_connect_reports_missing_port_honestly
+============================== 3 failed in 0.06s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 3 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

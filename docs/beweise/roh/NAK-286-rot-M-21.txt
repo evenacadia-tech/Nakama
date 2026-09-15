@@ -1,0 +1,319 @@
+=== NAK-286 Etappe 4, Rotbeweis M-21 (15.09.2026 03:13:28) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: _focus_fl_studio_windows (fl_trigger.py:91-148) vor der Erfassung gerufen
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_fenster.py::test_capture_never_touches_foreground -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_capture_never_touches_foreground
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py:
+  -     window = windows[0]
+  -     result = capture(window["hwnd"], Path(directory) / f"{name}.png")
+  +     window = windows[0]
+  +     from fl_studio_mcp.utils.fl_trigger import FLStudioTrigger  # ROTBEWEIS M-21
+  +     FLStudioTrigger()._focus_fl_studio_windows()
+  +     result = capture(window["hwnd"], Path(directory) / f"{name}.png")
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py vorher 2CBB943F4CCE61339772FAEFD728C22C92E65946B2589617652535E713BBABCE, mutiert EC6C3D09AF7EFB8E73857BBA18FF70F6AFB2346EDDAC1B94E3378DCF604AFC36, nach der Ruecknahme 2CBB943F4CCE61339772FAEFD728C22C92E65946B2589617652535E713BBABCE, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_fenster.py::test_capture_never_touches_foreground - Asserti...
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_fenster.py F                                                  [100%]
+
+================================== FAILURES ===================================
+____________________ test_capture_never_touches_foreground ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023E7CE3F770>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-72/test_capture_never_touches_for0')
+
+    def test_capture_never_touches_foreground(monkeypatch, tmp_path):
+        user32, gdi32 = FakeUser32(), FakeGdi32()
+        monkeypatch.setattr(ctypes, "windll", FakeWindll(user32, gdi32))
+    
+        main = fenster.capture_process_window(PID, "fl", tmp_path, "fl")
+        plugin = fenster.capture_process_window(PID, "plugin", tmp_path, "plugin",
+                                                plugin="Nakama Probeeq")
+    
+        assert main["success"] is True, main
+        assert main["window_title"] == "Nakama-Diagnose.flp - FL Studio 2026"
+        assert (main["width"], main["height"], main["uniform"]) == (WIDTH, HEIGHT, False)
+        assert plugin["success"] is True, plugin
+        assert plugin["window_title"] == "Nakama Probeeq (Insert 1)"
+        assert user32.calls["PrintWindow"] == 2
+        touched = {name: user32.calls[name] for name in FOREGROUND_CALLS if user32.calls[name]}
+>       assert touched == {}, f"capture touched the foreground: {touched}"
+E       AssertionError: capture touched the foreground: {'SetForegroundWindow': 2, 'ShowWindow': 2, 'keybd_event': 4}
+E       assert {'SetForegrou...ybd_event': 4} == {}
+E         
+E         Left contains 3 more items:
+E         {'SetForegroundWindow': 2, 'ShowWindow': 2, 'keybd_event': 4}
+E         Use -v to get more diff
+
+tests\test_fenster.py:167: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_fenster.py::test_capture_never_touches_foreground - Asserti...
+============================== 1 failed in 0.09s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.03s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotlauf vor der Aenderung M-21 (2) Nacharbeit aus dem Laufzeitlauf (15.09.2026 03:22:45) ===
+Art: der neue Test gegen die unveraenderte Quelle, bevor sie geaendert wird (§5.1): lokal.fenster endete im Laufzeitlauf vom 15.09.2026 03:18 mit "TypeError: unhashable type" (docs/beweise/roh/NAK-286-laufzeit-34bdf159-lauf1.md, Szenario fenster)
+MCP-Repo HEAD ad8981766d20538b23c7d16c12be7fccc17b837a (Zweig evenacadia-local); Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a
+Quelle (unveraendert): src/fl_studio_mcp/utils/fenster.py SHA-256 2CBB943F4CCE61339772FAEFD728C22C92E65946B2589617652535E713BBABCE
+Testdatei mit dem neuen Test: tests/test_fenster.py SHA-256 D315034F6C2D7133B96C6FF944391D2B8CBB931DECE0AE4C349A2B2A35F57D0A
+Bein MCP-pytest einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers -p no:cacheprovider --color=no (PYTHONDONTWRITEBYTECODE=1)
+Exit: 1
+Traeger (Muster der Meldung): unhashable type
+  Traeger:         prototype table keyed by them failed inside FL on 15.09.2026 with "unhashable type",
+  Traeger: E       TypeError: unhashable type
+  Traeger: FAILED tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers
+--- Rohausgabe ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_fenster.py F                                                  [100%]
+
+================================== FAILURES ===================================
+______________ test_declare_accepts_real_win32_function_pointers ______________
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="real Win32 function pointers exist only on Windows")
+    def test_declare_accepts_real_win32_function_pointers():
+        """_declare runs against the real user32/gdi32 exports. Fresh WinDLL handles keep the
+        process-wide ctypes.windll untouched. ctypes function pointers are not hashable: a
+        prototype table keyed by them failed inside FL on 15.09.2026 with "unhashable type",
+        which the counting fakes above never reach (they are no ctypes.CDLL)."""
+        user32, gdi32 = ctypes.WinDLL("user32"), ctypes.WinDLL("gdi32")
+>       fenster._declare(user32, gdi32)
+
+tests\test_fenster.py:219: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+user32 = <WinDLL 'user32', handle 7ffa38590000 at 0x27ecef87e60>
+gdi32 = <WinDLL 'gdi32', handle 7ffa38f00000 at 0x27ecef990d0>
+
+    def _declare(user32: Any, gdi32: Any) -> None:
+        """Pointer-sized handles need explicit prototypes on 64-bit Python."""
+        hwnd, hdc, hbitmap, hgdiobj = wintypes.HWND, wintypes.HDC, wintypes.HBITMAP, wintypes.HGDIOBJ
+>       prototypes = {
+            user32.EnumWindows: ([ENUM_WINDOWS_PROC, wintypes.LPARAM], wintypes.BOOL),
+            user32.GetWindowThreadProcessId: ([hwnd, ctypes.POINTER(wintypes.DWORD)], wintypes.DWORD),
+            user32.GetClassNameW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+            user32.GetWindowTextW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+            user32.IsWindowVisible: ([hwnd], wintypes.BOOL),
+            user32.IsIconic: ([hwnd], wintypes.BOOL),
+            user32.GetWindowRect: ([hwnd, ctypes.POINTER(RECT)], wintypes.BOOL),
+            user32.GetDC: ([hwnd], hdc),
+            user32.ReleaseDC: ([hwnd, hdc], ctypes.c_int),
+            user32.PrintWindow: ([hwnd, hdc, wintypes.UINT], wintypes.BOOL),
+            gdi32.CreateCompatibleDC: ([hdc], hdc),
+            gdi32.CreateCompatibleBitmap: ([hdc, ctypes.c_int, ctypes.c_int], hbitmap),
+            gdi32.SelectObject: ([hdc, hgdiobj], hgdiobj),
+            gdi32.GetDIBits: (
+                [hdc, hbitmap, wintypes.UINT, wintypes.UINT, ctypes.c_void_p,
+                 ctypes.POINTER(BITMAPINFO), wintypes.UINT],
+                ctypes.c_int,
+            ),
+            gdi32.DeleteObject: ([hgdiobj], wintypes.BOOL),
+            gdi32.DeleteDC: ([hdc], wintypes.BOOL),
+        }
+E       TypeError: unhashable type
+
+src\fl_studio_mcp\utils\fenster.py:82: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers
+============================== 1 failed in 0.07s ==============================
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-21 (15.09.2026 03:54:32) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: _focus_fl_studio_windows (fl_trigger.py:91-148) vor der Erfassung gerufen
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_fenster.py::test_capture_never_touches_foreground -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_capture_never_touches_foreground
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py:
+  -     window = windows[0]
+  -     result = capture(window["hwnd"], Path(directory) / f"{name}.png")
+  +     window = windows[0]
+  +     from fl_studio_mcp.utils.fl_trigger import FLStudioTrigger  # ROTBEWEIS M-21
+  +     FLStudioTrigger()._focus_fl_studio_windows()
+  +     result = capture(window["hwnd"], Path(directory) / f"{name}.png")
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py vorher F3AE5F52516BD64FA3748C7A5214092F4FE4EE6498D48F63EBD2E9D5E9D7068E, mutiert 20F298F5E2B13DCB80EBE56AC417C5321BFCADDDC67A766E600C43012DA5D37D, nach der Ruecknahme F3AE5F52516BD64FA3748C7A5214092F4FE4EE6498D48F63EBD2E9D5E9D7068E, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_fenster.py::test_capture_never_touches_foreground - Asserti...
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_fenster.py F                                                  [100%]
+
+================================== FAILURES ===================================
+____________________ test_capture_never_touches_foreground ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000245E90078C0>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-75/test_capture_never_touches_for0')
+
+    def test_capture_never_touches_foreground(monkeypatch, tmp_path):
+        user32, gdi32 = FakeUser32(), FakeGdi32()
+        monkeypatch.setattr(ctypes, "windll", FakeWindll(user32, gdi32))
+    
+        main = fenster.capture_process_window(PID, "fl", tmp_path, "fl")
+        plugin = fenster.capture_process_window(PID, "plugin", tmp_path, "plugin",
+                                                plugin="Nakama Probeeq")
+    
+        assert main["success"] is True, main
+        assert main["window_title"] == "Nakama-Diagnose.flp - FL Studio 2026"
+        assert (main["width"], main["height"], main["uniform"]) == (WIDTH, HEIGHT, False)
+        assert plugin["success"] is True, plugin
+        assert plugin["window_title"] == "Nakama Probeeq (Insert 1)"
+        assert user32.calls["PrintWindow"] == 2
+        touched = {name: user32.calls[name] for name in FOREGROUND_CALLS if user32.calls[name]}
+>       assert touched == {}, f"capture touched the foreground: {touched}"
+E       AssertionError: capture touched the foreground: {'SetForegroundWindow': 2, 'ShowWindow': 2, 'keybd_event': 4}
+E       assert {'SetForegrou...ybd_event': 4} == {}
+E         
+E         Left contains 3 more items:
+E         {'SetForegroundWindow': 2, 'ShowWindow': 2, 'keybd_event': 4}
+E         Use -v to get more diff
+
+tests\test_fenster.py:171: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_fenster.py::test_capture_never_touches_foreground - Asserti...
+============================== 1 failed in 1.85s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 1.37s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-21 (2) (15.09.2026 03:54:54) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Prototypentabelle wieder als dict mit Funktionszeigern als Schluessel
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_declare_accepts_real_win32_function_pointers
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py:
+  -     prototypes = (
+  -         (user32.EnumWindows, [ENUM_WINDOWS_PROC, wintypes.LPARAM], wintypes.BOOL),
+  -         (user32.GetWindowThreadProcessId, [hwnd, ctypes.POINTER(wintypes.DWORD)], wintypes.DWORD),
+  -         (user32.GetClassNameW, [hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+  -         (user32.GetWindowTextW, [hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+  -         (user32.IsWindowVisible, [hwnd], wintypes.BOOL),
+  -         (user32.IsIconic, [hwnd], wintypes.BOOL),
+  -         (user32.GetWindowRect, [hwnd, ctypes.POINTER(RECT)], wintypes.BOOL),
+  -         (user32.GetDC, [hwnd], hdc),
+  -         (user32.ReleaseDC, [hwnd, hdc], ctypes.c_int),
+  -         (user32.PrintWindow, [hwnd, hdc, wintypes.UINT], wintypes.BOOL),
+  -         (gdi32.CreateCompatibleDC, [hdc], hdc),
+  -         (gdi32.CreateCompatibleBitmap, [hdc, ctypes.c_int, ctypes.c_int], hbitmap),
+  -         (gdi32.SelectObject, [hdc, hgdiobj], hgdiobj),
+  -         (gdi32.GetDIBits,
+  -          [hdc, hbitmap, wintypes.UINT, wintypes.UINT, ctypes.c_void_p,
+  -           ctypes.POINTER(BITMAPINFO), wintypes.UINT],
+  -          ctypes.c_int),
+  -         (gdi32.DeleteObject, [hgdiobj], wintypes.BOOL),
+  -         (gdi32.DeleteDC, [hdc], wintypes.BOOL),
+  -     )
+  -     for function, argtypes, restype in prototypes:
+  +     prototypes = {  # ROTBEWEIS M-21 (2): Funktionszeiger als dict-Schluessel
+  +         user32.EnumWindows: ([ENUM_WINDOWS_PROC, wintypes.LPARAM], wintypes.BOOL),
+  +         user32.GetWindowThreadProcessId: ([hwnd, ctypes.POINTER(wintypes.DWORD)], wintypes.DWORD),
+  +         user32.GetClassNameW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+  +         user32.GetWindowTextW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+  +         user32.IsWindowVisible: ([hwnd], wintypes.BOOL),
+  +         user32.IsIconic: ([hwnd], wintypes.BOOL),
+  +         user32.GetWindowRect: ([hwnd, ctypes.POINTER(RECT)], wintypes.BOOL),
+  +         user32.GetDC: ([hwnd], hdc),
+  +         user32.ReleaseDC: ([hwnd, hdc], ctypes.c_int),
+  +         user32.PrintWindow: ([hwnd, hdc, wintypes.UINT], wintypes.BOOL),
+  +         gdi32.CreateCompatibleDC: ([hdc], hdc),
+  +         gdi32.CreateCompatibleBitmap: ([hdc, ctypes.c_int, ctypes.c_int], hbitmap),
+  +         gdi32.SelectObject: ([hdc, hgdiobj], hgdiobj),
+  +         gdi32.GetDIBits: (
+  +             [hdc, hbitmap, wintypes.UINT, wintypes.UINT, ctypes.c_void_p,
+  +              ctypes.POINTER(BITMAPINFO), wintypes.UINT],
+  +             ctypes.c_int,
+  +         ),
+  +         gdi32.DeleteObject: ([hgdiobj], wintypes.BOOL),
+  +         gdi32.DeleteDC: ([hdc], wintypes.BOOL),
+  +     }
+  +     for function, (argtypes, restype) in prototypes.items():
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\fenster.py vorher F3AE5F52516BD64FA3748C7A5214092F4FE4EE6498D48F63EBD2E9D5E9D7068E, mutiert AFBA41C5A3AA96C9F23DDEC2F86AECA22FB9436745247C5E6D3216969B405A37, nach der Ruecknahme F3AE5F52516BD64FA3748C7A5214092F4FE4EE6498D48F63EBD2E9D5E9D7068E, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_fenster.py F                                                  [100%]
+
+================================== FAILURES ===================================
+______________ test_declare_accepts_real_win32_function_pointers ______________
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="real Win32 function pointers exist only on Windows")
+    def test_declare_accepts_real_win32_function_pointers():
+        """_declare runs against the real user32/gdi32 exports. Fresh WinDLL handles keep the
+        process-wide ctypes.windll untouched. ctypes function pointers are not hashable: a
+        prototype table keyed by them failed inside FL on 15.09.2026 with "unhashable type",
+        which the counting fakes above never reach (they are no ctypes.CDLL)."""
+        user32, gdi32 = ctypes.WinDLL("user32"), ctypes.WinDLL("gdi32")
+>       fenster._declare(user32, gdi32)
+
+tests\test_fenster.py:219: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+user32 = <WinDLL 'user32', handle 7ffa38590000 at 0x14f867cf680>
+gdi32 = <WinDLL 'gdi32', handle 7ffa38f00000 at 0x14f88cdc740>
+
+    def _declare(user32: Any, gdi32: Any) -> None:
+        """Pointer-sized handles need explicit prototypes on 64-bit Python."""
+        hwnd, hdc, hbitmap, hgdiobj = wintypes.HWND, wintypes.HDC, wintypes.HBITMAP, wintypes.HGDIOBJ
+        # A tuple of rows, not a dict: ctypes function pointers are not hashable
+        # ("TypeError: unhashable type", measured inside FL Studio on 15.09.2026).
+>       prototypes = {  # ROTBEWEIS M-21 (2): Funktionszeiger als dict-Schluessel
+            user32.EnumWindows: ([ENUM_WINDOWS_PROC, wintypes.LPARAM], wintypes.BOOL),
+            user32.GetWindowThreadProcessId: ([hwnd, ctypes.POINTER(wintypes.DWORD)], wintypes.DWORD),
+            user32.GetClassNameW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+            user32.GetWindowTextW: ([hwnd, wintypes.LPWSTR, ctypes.c_int], ctypes.c_int),
+            user32.IsWindowVisible: ([hwnd], wintypes.BOOL),
+            user32.IsIconic: ([hwnd], wintypes.BOOL),
+            user32.GetWindowRect: ([hwnd, ctypes.POINTER(RECT)], wintypes.BOOL),
+            user32.GetDC: ([hwnd], hdc),
+            user32.ReleaseDC: ([hwnd, hdc], ctypes.c_int),
+            user32.PrintWindow: ([hwnd, hdc, wintypes.UINT], wintypes.BOOL),
+            gdi32.CreateCompatibleDC: ([hdc], hdc),
+            gdi32.CreateCompatibleBitmap: ([hdc, ctypes.c_int, ctypes.c_int], hbitmap),
+            gdi32.SelectObject: ([hdc, hgdiobj], hgdiobj),
+            gdi32.GetDIBits: (
+                [hdc, hbitmap, wintypes.UINT, wintypes.UINT, ctypes.c_void_p,
+                 ctypes.POINTER(BITMAPINFO), wintypes.UINT],
+                ctypes.c_int,
+            ),
+            gdi32.DeleteObject: ([hgdiobj], wintypes.BOOL),
+            gdi32.DeleteDC: ([hdc], wintypes.BOOL),
+        }
+E       TypeError: unhashable type
+
+src\fl_studio_mcp\utils\fenster.py:84: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers
+============================== 1 failed in 0.79s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.09s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

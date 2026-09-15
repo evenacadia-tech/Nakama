@@ -1,0 +1,102 @@
+NAK-286 Etappe 4 - MCP-pytest (Bauer, 15.09.2026). MCP-Repo C:\Users\phili\Projekte\fl-studio-mcp, Zweig evenacadia-local; Endstand = Commit 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (davor ad8981766d20538b23c7d16c12be7fccc17b837a; 'git status --short' danach: leer). Python 3.12 ueber uv run, PYTHONDONTWRITEBYTECODE=1.
+
+=== Endstand: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest -p no:cacheprovider --color=no -v (15.09.2026 03:55:26 bis 03:55:39, Exit 0) ===
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\phili\Projekte\fl-studio-mcp\.venv\Scripts\python.exe
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collecting ... collected 44 items
+
+tests/test_controller_probe_handlers.py::test_song_length_units_are_the_measured_ones PASSED [  2%]
+tests/test_controller_probe_handlers.py::test_set_position_defaults_to_seconds PASSED [  4%]
+tests/test_controller_probe_handlers.py::test_set_position_passes_explicit_mode PASSED [  6%]
+tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds PASSED [  9%]
+tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim PASSED [ 11%]
+tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db PASSED [ 13%]
+tests/test_controller_probe_handlers.py::test_ping_reports_title_and_versions PASSED [ 15%]
+tests/test_controller_probe_handlers.py::test_peaks_use_left_right_max_modes PASSED [ 18%]
+tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track PASSED [ 20%]
+tests/test_controller_probe_handlers.py::test_focus_editor_requires_a_plugin PASSED [ 22%]
+tests/test_controller_probe_handlers.py::test_focus_editor_focuses_and_names_the_plugin PASSED [ 25%]
+tests/test_fenster.py::test_capture_never_touches_foreground PASSED      [ 27%]
+tests/test_fenster.py::test_capture_rejects_uniform_image PASSED         [ 29%]
+tests/test_fenster.py::test_minimized_window_is_a_failure PASSED         [ 31%]
+tests/test_fenster.py::test_capture_needs_exactly_one_window PASSED      [ 34%]
+tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers PASSED [ 36%]
+tests/test_mixer_routing.py::test_rejects_out_of_range_track PASSED      [ 38%]
+tests/test_mixer_routing.py::test_rejects_self_route PASSED              [ 40%]
+tests/test_mixer_routing.py::test_rejects_bool_as_track_index PASSED     [ 43%]
+tests/test_mixer_routing.py::test_rejects_nan_level PASSED               [ 45%]
+tests/test_mixer_routing.py::test_batch_is_all_or_nothing PASSED         [ 47%]
+tests/test_mixer_routing.py::test_level_is_clamped_not_rejected PASSED   [ 50%]
+tests/test_mixer_routing.py::test_set_level_needs_an_existing_route PASSED [ 52%]
+tests/test_mixer_routing.py::test_set_level_on_existing_route PASSED     [ 54%]
+tests/test_mixer_routing.py::test_exclusive_clears_the_direct_master_path PASSED [ 56%]
+tests/test_mixer_routing.py::test_non_exclusive_keeps_existing_routes PASSED [ 59%]
+tests/test_mixer_routing.py::test_ui_is_notified_once_per_batch PASSED   [ 61%]
+tests/test_mixer_routing.py::test_apply_reports_levels_and_names PASSED  [ 63%]
+tests/test_mixer_routing.py::test_route_without_level_keeps_fl_default PASSED [ 65%]
+tests/test_mixer_routing.py::test_get_routing_single_track PASSED        [ 68%]
+tests/test_mixer_routing.py::test_get_routing_scans_everything_when_asked PASSED [ 70%]
+tests/test_port_selection.py::test_prefers_loopmidi_over_gs_synth PASSED [ 72%]
+tests/test_port_selection.py::test_prefers_iac_on_mac PASSED             [ 75%]
+tests/test_port_selection.py::test_no_fallback_to_first_port PASSED      [ 77%]
+tests/test_port_selection.py::test_env_override_matches_substring_case_insensitively PASSED [ 79%]
+tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none PASSED [ 81%]
+tests/test_port_selection.py::test_connect_reports_missing_port_honestly PASSED [ 84%]
+tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected PASSED [ 86%]
+tests/test_port_selection.py::test_send_command_resolves_none_from_env PASSED [ 88%]
+tests/test_port_selection.py::test_default_timeout_from_env[None-2.0] PASSED [ 90%]
+tests/test_port_selection.py::test_default_timeout_from_env[4.5-4.5] PASSED [ 93%]
+tests/test_port_selection.py::test_default_timeout_from_env[abc-2.0] PASSED [ 95%]
+tests/test_port_selection.py::test_default_timeout_from_env[0-2.0] PASSED [ 97%]
+tests/test_port_selection.py::test_default_timeout_from_env[-1-2.0] PASSED [100%]
+
+============================= 44 passed in 3.15s ==============================
+
+=== Basisstand am MCP-Stand 29f6656cdcb04a6628d6712fc416334a1c41a174 vor jeder Aenderung (15.09.2026 01:03; uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest -v) ===
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\phili\Projekte\fl-studio-mcp\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collecting ... collected 34 items
+
+tests/test_controller_probe_handlers.py::test_song_length_units_are_the_measured_ones PASSED [  2%]
+tests/test_controller_probe_handlers.py::test_set_position_defaults_to_seconds PASSED [  5%]
+tests/test_controller_probe_handlers.py::test_set_position_passes_explicit_mode PASSED [  8%]
+tests/test_controller_probe_handlers.py::test_ping_reports_title_and_versions PASSED [ 11%]
+tests/test_controller_probe_handlers.py::test_peaks_use_left_right_max_modes PASSED [ 14%]
+tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track PASSED [ 17%]
+tests/test_controller_probe_handlers.py::test_focus_editor_requires_a_plugin PASSED [ 20%]
+tests/test_controller_probe_handlers.py::test_focus_editor_focuses_and_names_the_plugin PASSED [ 23%]
+tests/test_mixer_routing.py::test_rejects_out_of_range_track PASSED      [ 26%]
+tests/test_mixer_routing.py::test_rejects_self_route PASSED              [ 29%]
+tests/test_mixer_routing.py::test_rejects_bool_as_track_index PASSED     [ 32%]
+tests/test_mixer_routing.py::test_rejects_nan_level PASSED               [ 35%]
+tests/test_mixer_routing.py::test_batch_is_all_or_nothing PASSED         [ 38%]
+tests/test_mixer_routing.py::test_level_is_clamped_not_rejected PASSED   [ 41%]
+tests/test_mixer_routing.py::test_set_level_needs_an_existing_route PASSED [ 44%]
+tests/test_mixer_routing.py::test_set_level_on_existing_route PASSED     [ 47%]
+tests/test_mixer_routing.py::test_exclusive_clears_the_direct_master_path PASSED [ 50%]
+tests/test_mixer_routing.py::test_non_exclusive_keeps_existing_routes PASSED [ 52%]
+tests/test_mixer_routing.py::test_ui_is_notified_once_per_batch PASSED   [ 55%]
+tests/test_mixer_routing.py::test_apply_reports_levels_and_names PASSED  [ 58%]
+tests/test_mixer_routing.py::test_route_without_level_keeps_fl_default PASSED [ 61%]
+tests/test_mixer_routing.py::test_get_routing_single_track PASSED        [ 64%]
+tests/test_mixer_routing.py::test_get_routing_scans_everything_when_asked PASSED [ 67%]
+tests/test_port_selection.py::test_prefers_loopmidi_over_gs_synth PASSED [ 70%]
+tests/test_port_selection.py::test_prefers_iac_on_mac PASSED             [ 73%]
+tests/test_port_selection.py::test_no_fallback_to_first_port PASSED      [ 76%]
+tests/test_port_selection.py::test_env_override_matches_substring_case_insensitively PASSED [ 79%]
+tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none PASSED [ 82%]
+tests/test_port_selection.py::test_connect_reports_missing_port_honestly PASSED [ 85%]
+tests/test_port_selection.py::test_default_timeout_from_env[None-2.0] PASSED [ 88%]
+tests/test_port_selection.py::test_default_timeout_from_env[4.5-4.5] PASSED [ 91%]
+tests/test_port_selection.py::test_default_timeout_from_env[abc-2.0] PASSED [ 94%]
+tests/test_port_selection.py::test_default_timeout_from_env[0-2.0] PASSED [ 97%]
+tests/test_port_selection.py::test_default_timeout_from_env[-1-2.0] PASSED [100%]
+
+============================= 34 passed in 0.21s ==============================

@@ -1,0 +1,57 @@
+=== NAK-286 Etappe 4, Rotbeweis M-58 (15.09.2026 03:08:17) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Vergleich min mit vertauschtem Operator
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur erste_fassung_unveraendert
+Traeger (Muster der Meldung): \[ROT\] M-58 erste_fassung_unveraendert
+Ersetzung in tools/fl/szenario.py:
+  -                 elif art == "min" and (not _ist_zahl(w) or w < soll):
+  +                 elif art == "min" and (not _ist_zahl(w) or w > soll):  # ROTBEWEIS M-58
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 12440ACE308400D24877E526544DE7ED2E8F4DC21785B9861679D49306875536, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-58 (15.09.2026 04:09:25) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Vergleich min mit vertauschtem Operator
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur erste_fassung_unveraendert
+Traeger (Muster der Meldung): \[ROT\] M-58 erste_fassung_unveraendert
+Ersetzung in tools/fl/szenario.py:
+  -                 elif art == "min" and (not _ist_zahl(w) or w < soll):
+  +                 elif art == "min" and (not _ist_zahl(w) or w > soll):  # ROTBEWEIS M-58
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 210319A80F7FDB863B5FD7E37C366A8CAF2F3457F645A6F90FD41C7167AC1DD2, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-58 (15.09.2026 04:14:59) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Vergleich min mit vertauschtem Operator
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur erste_fassung_unveraendert
+Traeger (Muster der Meldung): \[ROT\] M-58 erste_fassung_unveraendert
+Ersetzung in tools/fl/szenario.py:
+  -                 elif art == "min" and (not _ist_zahl(w) or w < soll):
+  +                 elif art == "min" and (not _ist_zahl(w) or w > soll):  # ROTBEWEIS M-58
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 0BCF475F7A6FA1757CCF71FDED42C1356B94DFAA86338C1F11E22B619E6CC2F3, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-58 erste_fassung_unveraendert: bereitschaft.json gegen die Antworten vom 13.09.2026: Exit 4, | 5 | `transport.getLength` | `{}` | `{"bars": 27, "milliseconds": 45696, "seconds": 46, "success": true, "ticks": 10236}` | VERFEHLT: bars: erwartet ≥ 16, ist 27 |; | 11 | `mixer.getPeaks` | `{"track": 1}` | `{"name": "Insert 1", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 1}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 |; | 12 | `mixer.getPeaks` | `{"track": 0}` | `{"name": "Master", "peak_left": 0.4949530065059662, "peak_max": 0.4949530065059662, "peak_right": 0.4754391014575958, "success": true, "track": 0}` | VERFEHLT: peak_max: erwartet ≥ 0.01, ist 0.4949530065059662 | | nicht jede der 13 Aktionen ok
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

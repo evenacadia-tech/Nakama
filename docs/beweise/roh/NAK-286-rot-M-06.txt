@@ -1,0 +1,34 @@
+=== NAK-286 Etappe 4, Rotlauf mit A35 M-06 (15.09.2026 02:25:07) ===
+Art: Rotlauf mit A35 (§5.1): der erste Lauf des neuen Selbsttests gegen die noch unveraenderte Stelle des Runners, bevor sie geaendert wird
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Basis der Etappe 34bdf159872d4bfa725acad94ffe667a70fd066a), Arbeitsstand der Etappe uncommittet
+Quelle tools\fl\laufzeit.ps1 SHA-256 543351CEBDCB9A541F92DD378F1F39DA006A1699BD97C37A7B8A828E283073F8 (Arbeitsstand mit Selbsttest, Traeger unveraendert); am Basis-SHA C9A30A07A383960369768208ADFD94335919B483DCDA07255557E2632DE2837B
+Unveraenderte Stelle: laufzeit.ps1:385 Installiere gibt nach pruefen bei jedem Exit Ok = $true zurueck (erste Fassung :178-180)
+Bein A35, einzelner Selbsttest: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\tools\fl\laufzeit.ps1 -Selbsttest -Nur M-06
+Exit: 4
+Traeger (Muster der Meldung): \[ROT\] M-06 pruefen_nicht_aktuell_exit3
+  Traeger: [ROT] M-06 pruefen_nicht_aktuell_exit3: [pruefen Exit 1] pruefen Exit 1: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 1 szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' statt 3 VORAUSSETZUNG 'installiert, aber nicht aktuell' | [pruefen Exit 1] pruefen Exit 1: FL-Start gegen einen ungeprueften Bau | [pruefen ohne aktuell je Artefakt] nicht installiert: Exit 0 'installation=installiert; pruefen Exit 0 szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+--- Rohausgabe ---
+[ROT] M-06 pruefen_nicht_aktuell_exit3: [pruefen Exit 1] pruefen Exit 1: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 1 szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' statt 3 VORAUSSETZUNG 'installiert, aber nicht aktuell' | [pruefen Exit 1] pruefen Exit 1: FL-Start gegen einen ungeprueften Bau | [pruefen ohne aktuell je Artefakt] nicht installiert: Exit 0 'installation=installiert; pruefen Exit 0 szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-06 (2) (15.09.2026 03:07:29) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Wertung des pruefen-Exits entfernt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur pruefen_nicht_aktuell_exit3
+Traeger (Muster der Meldung): \[ROT\] M-06 pruefen_nicht_aktuell_exit3.*pruefen Exit 1
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     if ($p.Exit -ne 0 -or $p.Zustand -eq 'Running' -or $stand.Count -eq 0 -or $nichtAktuell.Count -gt 0) {
+  +     if ($p.Zustand -eq 'Running' -or $stand.Count -eq 0 -or $nichtAktuell.Count -gt 0) { # ROTBEWEIS M-06 (2)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert E98E339FF6E0B6713DEA89E8D2936C4CC93281B942924CEF01AD2A3EBBB02D2B, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-06 pruefen_nicht_aktuell_exit3: [pruefen Exit 1] pruefen Exit 1: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 1, 1 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' statt 3 VORAUSSETZUNG 'installiert, aber nicht aktuell' | [pruefen Exit 1] pruefen Exit 1: FL-Start gegen einen ungeprueften Bau
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-06 pruefen_nicht_aktuell_exit3: [pruefen Exit 1] pruefen Exit 1: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 1, 1 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' statt 3 VORAUSSETZUNG 'installiert, aber nicht aktuell' | [pruefen Exit 1] pruefen Exit 1: FL-Start gegen einen ungeprueften Bau
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

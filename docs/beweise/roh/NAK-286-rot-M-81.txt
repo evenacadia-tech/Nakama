@@ -513,3 +513,60 @@ Bau gruen: Exit 0, Binary juenger als die Quelle: ja
 B30 gruen: Exit 0, NAK-286 BRIEFKASTEN: 151 bestanden, 0 fehlgeschlagen
 Ergebnis: ROTBEWEIS GUELTIG
 
+=== NAK-286 Etappe 4, Rotbeweis M-81 (3) (15.09.2026 03:09:06) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Fortlaufbedingung in szenario.py entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fortlaufbedingung_teilbloecke
+Traeger (Muster der Meldung): \[ROT\] M-81 fortlaufbedingung_teilbloecke
+Ersetzung in tools/fl/szenario.py:
+  -     if not (isinstance(fortlaufend, int) and isinstance(stillstand, int) and fortlaufend == n_l and stillstand == 0):
+  +     if False:  # ROTBEWEIS M-81 (3): Fortlaufbedingung entfernt
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert BF65B9061E655128C4F58CA58B19CE77732612E18E9E7F8873853984737F96A2, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-81 (3) (15.09.2026 04:12:36) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Fortlaufbedingung in szenario.py entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fortlaufbedingung_teilbloecke
+Traeger (Muster der Meldung): \[ROT\] M-81 fortlaufbedingung_teilbloecke
+Ersetzung in tools/fl/szenario.py:
+  -     if not (isinstance(fortlaufend, int) and isinstance(stillstand, int) and fortlaufend == n_l and stillstand == 0):
+  +     if False:  # ROTBEWEIS M-81 (3): Fortlaufbedingung entfernt
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 31EAD93792B52CA8263040B3E3D1C0FBE52349C64D76D16A05D57D1D2472A6AF, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-81 (3) (15.09.2026 04:15:50) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Fortlaufbedingung in szenario.py entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fortlaufbedingung_teilbloecke
+Traeger (Muster der Meldung): \[ROT\] M-81 fortlaufbedingung_teilbloecke
+Ersetzung in tools/fl/szenario.py:
+  -     if not (isinstance(fortlaufend, int) and isinstance(stillstand, int) and fortlaufend == n_l and stillstand == 0):
+  +     if False:  # ROTBEWEIS M-81 (3): Fortlaufbedingung entfernt
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 596A273D1863B1CD81E11A5C8390C2E7862C7F351282C0221C0C3464E81D31D6, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-81 fortlaufbedingung_teilbloecke: Teilblock (n_L 512, E 1 280, fortlaufend 256, Stillstand 1): Anker {'rate': 44100, 'n_l': 512, 'n_s': 512, 'e': 1280, 'fortlaufend': 256, 'stillstand': 1, 'bloecke_max_samples': 512, 'k': 768, 'leicht': [768, 1280], 'schwer': [768, 1280], 's0': 768} | Teilblock: Ausschnittdatei oder U_unten angefordert ab K = 768: [{'rolle': 'gen', 'art': 'leicht', 'ausschnitt': [768, 1280], 's_lufs': False}, {'rolle': 'gen', 'art': 'schwer', 'ausschnitt': [768, 1280], 's_lufs': True}]
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

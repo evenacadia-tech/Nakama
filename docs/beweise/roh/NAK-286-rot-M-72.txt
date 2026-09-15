@@ -1,0 +1,114 @@
+=== NAK-286 Etappe 4, Rotbeweis M-72 (1) (15.09.2026 03:09:05) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Szenario mit abdeckung min 0,5
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur u40_ohne_sollwert
+Traeger (Muster der Meldung): \[ROT\] M-72 u40_ohne_sollwert
+Ersetzung in docs/gesundheit/szenarien/u40-aktivitaetsgate.json:
+  -   {"aktion": "lokal.stellen", "params": {"rollen": ["gen", "probeeq"], "stellen": [
+  +   {"aktion": "lokal.stellen", "erwarte": {"frame.abdeckung": {"min": 0.5}}, "params": {"rollen": ["gen", "probeeq"], "stellen": [
+SHA-256 docs/gesundheit/szenarien/u40-aktivitaetsgate.json vorher 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, mutiert 68C9BB3988583CBE0431081C1BF63F3B3EB3DE0C055056E18F25881FFB08E347, nach der Ruecknahme 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-72 (2) (15.09.2026 03:09:06) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Plausibilitaet auf die offenen Fenster gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-72 deltas_ueber_evidenzabschluesse|\[ROT\] M-71 deltas_ueber_evidenzabschluesse.*korrekter Bau als unplausibel
+Ersetzung in tools/fl/szenario.py:
+  -     aktiv, gesamt = delta["d_summe_fenster_aktiv"], delta["d_summe_fenster_gesamt"]
+  +     aktiv, gesamt = (gezaehlt[-1].wert("frame.offen_fenster_aktiv") - gezaehlt[0].wert("frame.offen_fenster_aktiv"), gezaehlt[-1].wert("frame.offen_fenster_gesamt") - gezaehlt[0].wert("frame.offen_fenster_gesamt"))  # ROTBEWEIS M-72 (2)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert D503A73E8DD46397B6039700CB3EF03E86196444A83446BF52C543E70ACFB063, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-72 (1) (15.09.2026 04:12:35) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Szenario mit abdeckung min 0,5
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur u40_ohne_sollwert
+Traeger (Muster der Meldung): \[ROT\] M-72 u40_ohne_sollwert
+Ersetzung in docs/gesundheit/szenarien/u40-aktivitaetsgate.json:
+  -   {"aktion": "lokal.stellen", "params": {"rollen": ["gen", "probeeq"], "stellen": [
+  +   {"aktion": "lokal.stellen", "erwarte": {"frame.abdeckung": {"min": 0.5}}, "params": {"rollen": ["gen", "probeeq"], "stellen": [
+SHA-256 docs/gesundheit/szenarien/u40-aktivitaetsgate.json vorher 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, mutiert 68C9BB3988583CBE0431081C1BF63F3B3EB3DE0C055056E18F25881FFB08E347, nach der Ruecknahme 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-72 (2) (15.09.2026 04:12:35) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Plausibilitaet auf die offenen Fenster gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-72 deltas_ueber_evidenzabschluesse|\[ROT\] M-71 deltas_ueber_evidenzabschluesse.*korrekter Bau als unplausibel
+Ersetzung in tools/fl/szenario.py:
+  -     aktiv, gesamt = delta["d_summe_fenster_aktiv"], delta["d_summe_fenster_gesamt"]
+  +     aktiv, gesamt = (gezaehlt[-1].wert("frame.offen_fenster_aktiv") - gezaehlt[0].wert("frame.offen_fenster_aktiv"), gezaehlt[-1].wert("frame.offen_fenster_gesamt") - gezaehlt[0].wert("frame.offen_fenster_gesamt"))  # ROTBEWEIS M-72 (2)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 743E1E2C0D2B3CD43856F223B746251814BFEB42B73B724054053764535699A3, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-72 (1) (15.09.2026 04:15:49) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Szenario mit abdeckung min 0,5
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur u40_ohne_sollwert
+Traeger (Muster der Meldung): \[ROT\] M-72 u40_ohne_sollwert
+Ersetzung in docs/gesundheit/szenarien/u40-aktivitaetsgate.json:
+  -   {"aktion": "lokal.stellen", "params": {"rollen": ["gen", "probeeq"], "stellen": [
+  +   {"aktion": "lokal.stellen", "erwarte": {"frame.abdeckung": {"min": 0.5}}, "params": {"rollen": ["gen", "probeeq"], "stellen": [
+SHA-256 docs/gesundheit/szenarien/u40-aktivitaetsgate.json vorher 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, mutiert 68C9BB3988583CBE0431081C1BF63F3B3EB3DE0C055056E18F25881FFB08E347, nach der Ruecknahme 82AD91657FDD2679835F6D39703F58A843B92CB16374B6B73503CEBDD927BBB5, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-72 u40_ohne_sollwert: Erwartung an aktivitaet oder abdeckung: ['fl_version', 'milliseconds', 'frame.abdeckung'] | lokal.stellen traegt Erwartungen oder weitere Parameter (Sollwert oder Sichtbarkeitsgrenze)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-72 (2) (15.09.2026 04:15:50) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Plausibilitaet auf die offenen Fenster gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-72 deltas_ueber_evidenzabschluesse|\[ROT\] M-71 deltas_ueber_evidenzabschluesse.*korrekter Bau als unplausibel
+Ersetzung in tools/fl/szenario.py:
+  -     aktiv, gesamt = delta["d_summe_fenster_aktiv"], delta["d_summe_fenster_gesamt"]
+  +     aktiv, gesamt = (gezaehlt[-1].wert("frame.offen_fenster_aktiv") - gezaehlt[0].wert("frame.offen_fenster_aktiv"), gezaehlt[-1].wert("frame.offen_fenster_gesamt") - gezaehlt[0].wert("frame.offen_fenster_gesamt"))  # ROTBEWEIS M-72 (2)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert E956E07A940D89AC318D82242F348B49FCFCD2F9B59C0A1BD8ECABB037248630, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

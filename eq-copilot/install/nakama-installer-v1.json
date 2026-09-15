@@ -53,7 +53,7 @@
       "hinweis": "Seit SONDE-011 Phase B startet ausschliesslich ein als Main klassifiziertes Plugin mit offenem Editor den Broker ueber den vorhandenen Lifecycle-Haken. Vor jedem Spawn prueft es diesen Manifest-Hash und bei gesetztem Thumbprint zusaetzlich WinVerifyTrust; das Plugin beendet keinen Brokerprozess, die Idle-Selbstende liegt im Broker."
     }
   ],
-  "hashes_erzeugt_am": "2026-09-14T22:42:01Z",
+  "hashes_erzeugt_am": "2026-09-15T02:02:02Z",
   "hashes_null_bedeutet": "NICHT AUSLIEFERBAR. `sha256: null` heisst 'dieses Artefakt wurde nie gegen einen Bau festgeschrieben'. Install-Nakama.ps1 bricht dann ab, statt irgendetwas zu kopieren - dieselbe Regel wie im Identitaetsleser (cmake/NakamaIdentitaet.cmake): ein Vorgabewert waere eine Auslieferung, die nirgends eingefroren ist. Gefuellt wird per `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen` unmittelbar nach einem gruenen Kanon-Lauf.",
   "rueckweg": {
     "strategie": "vor-dem-tausch-sichern",
@@ -90,6 +90,6 @@
     "Repair ueber die Diagnose hinaus: `-Pruefen` vergleicht den installierten Stand gegen das Manifest und benennt aktuell / ABWEICHEND / nicht installiert. Ein eigener Reparaturdienst ist P9.",
     "Update-Kanal, atomarer Austausch sowie Beschaffung des Code-Signing-Zertifikats und Befuellen von authenticode_thumbprint: S34–35/NAK-119 (§57 ff.). Die SHA-256-/WinVerifyTrust-/Thumbprint-Pruefkette selbst ist seit SONDE-011 Phase B Produktcode.",
     "v2-Kompatibilitaetslistener (P1-Lieferumfang): gehoert zum Broker und kommt mit SONDE-010; hier steht kein Wort darueber, weil es kein Wort dazu zu sagen gibt.",
-    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+    "Die Installation selbst: seit NAK-285 fahren die erhoehten Aufgaben \\Nakama\\installieren, \\Nakama\\pruefen und \\Nakama\\rueckweg das Installerskript mit diesem Manifest automatisch, als derselbe Benutzer mit hoechsten Rechten; der Laufzeit-Arm (tools/fl/laufzeit.ps1) startet sie ohne Klick. Von Hand bleibt es ein Aufruf mit Rechteerhoehung (NAK-32)."
   ]
 }

@@ -1,0 +1,38 @@
+=== NAK-286 Etappe 4, Rotbeweis M-61 (15.09.2026 03:09:08) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Formatpruefung entfernt: Bittiefe nicht geprueft
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur format_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-61 format_ist_voraussetzung.*pcm16: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -     return (w.tag == PCM and w.bits == 24) or (w.tag == IEEE_FLOAT and w.bits == 32)
+  +     return w.tag in (PCM, IEEE_FLOAT)  # ROTBEWEIS M-61: Bittiefe nicht geprueft
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert BB6B9125845C5C391AA471092A331293626F3A181692FBAE693561D05405711F, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-61 format_ist_voraussetzung: pcm16: Urteil ABWEICHUNG Exit 4 statt FORMATFEHLER 5 | pcm16: Grund None
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-61 format_ist_voraussetzung: pcm16: Urteil ABWEICHUNG Exit 4 statt FORMATFEHLER 5 | pcm16: Grund None
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-61 (15.09.2026 03:13:10) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Formatpruefung entfernt: Bittiefe nicht geprueft
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur format_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-61 format_ist_voraussetzung.*pcm16: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -     return (w.tag == PCM and w.bits == 24) or (w.tag == IEEE_FLOAT and w.bits == 32)
+  +     return w.tag in (PCM, IEEE_FLOAT)  # ROTBEWEIS M-61: Bittiefe nicht geprueft
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 61EE6021BDE054DC76C26AED96274C83B210A523BC7FB407242593F49036AB10, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-61 format_ist_voraussetzung: pcm16: Urteil ABWEICHUNG Exit 4 statt FORMATFEHLER 5 | pcm16: Grund None
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-61 format_ist_voraussetzung: pcm16: Urteil ABWEICHUNG Exit 4 statt FORMATFEHLER 5 | pcm16: Grund None
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

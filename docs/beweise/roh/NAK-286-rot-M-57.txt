@@ -1,0 +1,113 @@
+=== NAK-286 Etappe 4, Rotbeweis M-57 (15.09.2026 03:08:17) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Broker immer erwartet
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur ohne_brokerprozess_keine_erwartung
+Traeger (Muster der Meldung): \[ROT\] M-57 ohne_brokerprozess_keine_erwartung
+Ersetzung in tools/fl/szenario.py:
+  -             pids = lauf.umg.broker_pids()
+  -             if pids:
+  +             pids = lauf.umg.broker_pids()
+  +             if True:  # ROTBEWEIS M-57: Broker immer erwartet
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 212771F723750F69652F0EA4C5DC0B1287AE636A8B28DF62AF40F7383EA79F96, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-57 (15.09.2026 04:09:25) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Broker immer erwartet
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur ohne_brokerprozess_keine_erwartung
+Traeger (Muster der Meldung): \[ROT\] M-57 ohne_brokerprozess_keine_erwartung
+Ersetzung in tools/fl/szenario.py:
+  -             pids = lauf.umg.broker_pids()
+  -             if pids:
+  +             pids = lauf.umg.broker_pids()
+  +             if True:  # ROTBEWEIS M-57: Broker immer erwartet
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 7A8ECC21787240B1E0DCC0C27FF5C74E156475C011B277DDF50F9DEEDA070A7A, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-57 (2) tasklist (15.09.2026 04:12:36) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: tasklist wieder mit text=True und ohne Rueckfall fuer stdout None gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur tasklist_oem_ohne_treffer
+Traeger (Muster der Meldung): \[ROT\] M-57 tasklist_oem_ohne_treffer
+Ersetzung in tools/fl/szenario.py:
+  -                                capture_output=True, timeout=15)
+  -         except (OSError, subprocess.SubprocessError):
+  -             return []
+  -         text = (r.stdout or b"").decode("oem" if os.name == "nt" else "utf-8", errors="replace")
+  +                                capture_output=True, text=True, timeout=15)  # ROTBEWEIS M-57 (2)
+  +         except (OSError, subprocess.SubprocessError):
+  +             return []
+  +         text = r.stdout
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 8F9AA6904303C8164B78D767FC34550322F9AFCE4D07C7B8BAF26AACFBDBF15E, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-57 tasklist_oem_ohne_treffer: ohne Brokerprozess (Meldung mit Umlaut in der OEM-Codepage): "AttributeError: 'NoneType' object has no attribute 'splitlines'" statt []
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-57 tasklist_oem_ohne_treffer: ohne Brokerprozess (Meldung mit Umlaut in der OEM-Codepage): "AttributeError: 'NoneType' object has no attribute 'splitlines'" statt []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-57 (15.09.2026 04:14:59) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Broker immer erwartet
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur ohne_brokerprozess_keine_erwartung
+Traeger (Muster der Meldung): \[ROT\] M-57 ohne_brokerprozess_keine_erwartung
+Ersetzung in tools/fl/szenario.py:
+  -             pids = lauf.umg.broker_pids()
+  -             if pids:
+  +             pids = lauf.umg.broker_pids()
+  +             if True:  # ROTBEWEIS M-57: Broker immer erwartet
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 9052506D6D76808906001F41FFC361E11EC0D4E5E34FF2CE882BC0C0E1179E96, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-57 ohne_brokerprozess_keine_erwartung: ohne Brokerprozess: Exit 4 (die Rolle broker darf nicht erwartet werden) | ohne Brokerprozess: Rohzeile 'Broker laeuft nicht' fehlt
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-57 (2) tasklist (15.09.2026 04:15:51) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: tasklist wieder mit text=True und ohne Rueckfall fuer stdout None gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur tasklist_oem_ohne_treffer
+Traeger (Muster der Meldung): \[ROT\] M-57 tasklist_oem_ohne_treffer
+Ersetzung in tools/fl/szenario.py:
+  -                                capture_output=True, timeout=15)
+  -         except (OSError, subprocess.SubprocessError):
+  -             return []
+  -         text = (r.stdout or b"").decode("oem" if os.name == "nt" else "utf-8", errors="replace")
+  +                                capture_output=True, text=True, timeout=15)  # ROTBEWEIS M-57 (2)
+  +         except (OSError, subprocess.SubprocessError):
+  +             return []
+  +         text = r.stdout
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 614D5EE86EBC86E4B9ADE4EB34F9F4159F848F374A67E69BA9150519F23E9AC9, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-57 tasklist_oem_ohne_treffer: ohne Brokerprozess (Meldung mit Umlaut in der OEM-Codepage): "AttributeError: 'NoneType' object has no attribute 'splitlines'" statt []
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-57 tasklist_oem_ohne_treffer: ohne Brokerprozess (Meldung mit Umlaut in der OEM-Codepage): "AttributeError: 'NoneType' object has no attribute 'splitlines'" statt []
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

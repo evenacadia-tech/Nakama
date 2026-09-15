@@ -1,0 +1,120 @@
+=== NAK-286 Etappe 4, Rotbeweis M-71 (1) (15.09.2026 03:09:04) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: roh schreibt null als 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null
+Traeger (Muster der Meldung): \[ROT\] M-71 roh_schreibt_null_als_null
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert DC887B5415FA68C7A66327C58CE84D0A475463E86A44F6B44435030E2039B7E6, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-71 (2) (15.09.2026 03:09:05) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Delta aus den offenen Fenstern statt aus den Summen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-71 deltas_ueber_evidenzabschluesse.*Differenzen nicht aus den kumulativen Zaehlern
+Ersetzung in tools/fl/szenario.py:
+  -             "d_summe_fenster_aktiv": differenz("summe_fenster_aktiv"),
+  -             "d_summe_fenster_gesamt": differenz("summe_fenster_gesamt"),
+  +             "d_summe_fenster_aktiv": differenz("offen_fenster_aktiv"),  # ROTBEWEIS M-71 (2)
+  +             "d_summe_fenster_gesamt": differenz("offen_fenster_gesamt"),
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 6009196AF40263CE232400BCB4E37323D815A4DF29CF61093CB46B09E17AFA4F, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-71 (1) (15.09.2026 04:12:34) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: roh schreibt null als 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null
+Traeger (Muster der Meldung): \[ROT\] M-71 roh_schreibt_null_als_null
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert DA558B6AA3AEC31A75BBDDDA8ADF28A935D63F2D97189FE3D1477A921EE64B38, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-71 (2) (15.09.2026 04:12:35) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Delta aus den offenen Fenstern statt aus den Summen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-71 deltas_ueber_evidenzabschluesse.*Differenzen nicht aus den kumulativen Zaehlern
+Ersetzung in tools/fl/szenario.py:
+  -             "d_summe_fenster_aktiv": differenz("summe_fenster_aktiv"),
+  -             "d_summe_fenster_gesamt": differenz("summe_fenster_gesamt"),
+  +             "d_summe_fenster_aktiv": differenz("offen_fenster_aktiv"),  # ROTBEWEIS M-71 (2)
+  +             "d_summe_fenster_gesamt": differenz("offen_fenster_gesamt"),
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert AF09D313F86AA2E4A41A857DC0CE021C71EFB1F5EE0A5926793A588882D007BC, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-71 (1) (15.09.2026 04:15:49) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: roh schreibt null als 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur roh_schreibt_null_als_null
+Traeger (Muster der Meldung): \[ROT\] M-71 roh_schreibt_null_als_null
+Ersetzung in tools/fl/szenario.py:
+  -     werte = " | ".join(_zelle(_json(antwort.wert(f"frame.{f}"))) for f in F23_FELDER)
+  +     werte = " | ".join(_zelle(_json(0 if antwort.wert(f"frame.{f}") is None else antwort.wert(f"frame.{f}"))) for f in F23_FELDER)  # ROTBEWEIS M-71 (1)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert F36B8D7C64749CB0E537B7B4B8861138B5E8A387C528C7BBAA5E1081DBC538FE, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 roh_schreibt_null_als_null: null nicht als null geschrieben: {'evidenz_frisch': 'true', 'aktivitaet': '0', 'abdeckung': '0', 'konvergenz': '0.4', 'lufs_s': '0', 'true_peak_db': '-8.0', 'peak_db': '-8.5', 'evidenz_fenster': '4', 'summe_fenster_aktiv': '300', 'summe_fenster_gesamt': '400', 'offen_fenster_aktiv': '1', 'offen_fenster_gesamt': '2', 'frames_gebaut': '100', 'integration_samples': '44100', 'nicht_endlich_rahmen': '0', 'projekt_sample_start': '0', 'sample_count': '4410', 'spielt': 'true'}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-71 (2) (15.09.2026 04:15:49) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Delta aus den offenen Fenstern statt aus den Summen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur deltas_ueber_evidenzabschluesse
+Traeger (Muster der Meldung): \[ROT\] M-71 deltas_ueber_evidenzabschluesse.*Differenzen nicht aus den kumulativen Zaehlern
+Ersetzung in tools/fl/szenario.py:
+  -             "d_summe_fenster_aktiv": differenz("summe_fenster_aktiv"),
+  -             "d_summe_fenster_gesamt": differenz("summe_fenster_gesamt"),
+  +             "d_summe_fenster_aktiv": differenz("offen_fenster_aktiv"),  # ROTBEWEIS M-71 (2)
+  +             "d_summe_fenster_gesamt": differenz("offen_fenster_gesamt"),
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert F6E4C159CB2F362A30CCBEF3743F6DCC624B2DF227FFC79BEA4B6C5DB7F7A08E, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-71 deltas_ueber_evidenzabschluesse: Differenzen nicht aus den kumulativen Zaehlern: {'antworten': 2, 'd_frames_gebaut': 12, 'd_summe_fenster_aktiv': -1, 'd_summe_fenster_gesamt': -2, 'erster_ausschnitt': [0, 4410], 'letzter_ausschnitt': [44100, 48510]} | korrekter Bau als unplausibel gemeldet (M-72): ['0 <= Delta summe_fenster_aktiv (-1) <= Delta summe_fenster_gesamt (-2) verletzt']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

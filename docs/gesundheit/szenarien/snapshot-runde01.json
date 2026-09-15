@@ -1,0 +1,33 @@
+{
+ "id": "snapshot-runde01",
+ "titel": "Snapshot beider Rollen ueber den Briefkasten innerhalb eines Umlaufs gegen den Referenzausschnitt der Quelle; die Runde-01-Anker stehen nur als Rohvergleich daneben",
+ "quelle": "Plan S25e (4) Snapshot mit Plausibilitaet gegen Runde 01; docs/beweise/NAK-286.md F-27, F-28, M-66 bis M-68, M-81; eq-copilot/kalibration/KALIBRIER-PROTOKOLL.md:66-73",
+ "frischer_start": true,
+ "quelle_sha256": "D8B851CCF27E8F60B877D4BE3555184F2D5D6A4E7AA047482E4A694ED1F1D0BF",
+ "schritte": [
+  {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
+  {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1, "roh": true}}},
+  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"volume": {"roh": true}, "volume_db": {"roh": true}}},
+  {"aktion": "mixer.getTrackInfo", "params": {"track": 1}, "erwarte": {"volume_db": {"roh": true}}},
+  {"aktion": "mixer.getTrackInfo", "params": {"track": 0}, "erwarte": {"volume_db": {"roh": true}}},
+  {"aktion": "mixer.getRouting", "params": {"track": 1}, "erwarte": {"routes.*.level": {"roh": true}}},
+  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}},
+  {"aktion": "transport.stop"},
+  {"aktion": "transport.setPosition", "params": {"position": 0, "mode": 0}},
+  {"aktion": "transport.getPosition", "erwarte": {"ms": {"roh": true}, "hint": {"roh": true}}},
+  {"aktion": "lokal.briefkasten", "params": {"rollen": ["gen", "probeeq", "broker"]}, "erwarte": {"format": {"gleich": "nakama.diagnose.antwort.v1"}, "version": {"nicht_leer": true}}},
+  {"aktion": "transport.start", "erwarte": {"is_playing": {"gleich": true}}},
+  {"aktion": "lokal.umlauf", "params": {"rollen": ["gen", "probeeq"], "vergleich": {
+   "baender": [
+    {"kurz": "LUFS", "feld": "snapshot.loudness.lufs_integriert", "anker": "schwer", "referenz": "lufs", "toleranz": 0.07, "plus_s_lufs": true, "delta_k": true, "rollen": ["gen", "probeeq"], "rechnung": "F-28 LUFS integriert: R_LUFS + Delta_K +- (0,07 LU + S_LUFS) ueber den Referenzausschnitt des schweren Ankers n_S; 0,07 LU KALIBRIER-PROTOKOLL.md:71"},
+    {"kurz": "TP", "feld": "snapshot.loudness.true_peak_dbtp", "anker": "leicht", "referenz": "tp_dbtp", "toleranz": 0.12, "delta_k": true, "rollen": ["probeeq"], "rechnung": "F-28 True Peak nur Probeeq: R_TP + Delta_K +- 0,12 dB ueber den Referenzausschnitt des leichten Ankers n_L; KALIBRIER-PROTOKOLL.md:71"},
+    {"kurz": "width", "feld": "snapshot.stereo.width", "anker": "schwer", "referenz": "width", "toleranz": 0.01, "rollen": ["gen", "probeeq"], "rechnung": "F-28 width: R_width +- 0,01 ueber den Referenzausschnitt des schweren Ankers n_S; KALIBRIER-PROTOKOLL.md:71-72"},
+    {"kurz": "corr", "feld": "snapshot.stereo.corr", "anker": "schwer", "referenz": "corr", "toleranz": 0.01, "rollen": ["gen", "probeeq"], "rechnung": "F-28 corr: R_corr +- 0,01 ueber den Referenzausschnitt des schweren Ankers n_S; KALIBRIER-PROTOKOLL.md:71-72"},
+    {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac", "anker": "schwer", "referenz": "low_frac_kanal", "toleranz": 0.02, "rollen": ["gen", "probeeq"], "rechnung": "F-28 low_frac: R_low_frac in der Definition des Snapshots (Welch je Kanal, Leistungsmittel, aktive Segmente; AnalyseEngine.cpp:110-154, :838-894) +- 0,02 ueber den Referenzausschnitt des schweren Ankers n_S; KALIBRIER-PROTOKOLL.md:72; Ergaenzung 15.09.2026: analyze() rechnet ueber den Mid-Mix, low_frac von analyze() steht roh daneben"},
+    {"kurz": "resonanzen", "feld": "snapshot.resonanzen.*.freq_hz", "anker": "schwer", "referenz": "resonanzen", "art": "teilmenge", "toleranz": 0.1, "rollen": ["gen", "probeeq"], "rechnung": "F-28 Resonanzen: nicht leer und Teilmenge der Offline-Resonanzen des Referenzausschnitts des schweren Ankers auf 0,1 Hz; KALIBRIER-PROTOKOLL.md:72-73"}
+   ],
+   "roh": ["snapshot.spektral.centroid_mag_hz", "snapshot.loudness.lufs_integriert", "snapshot.loudness.true_peak_dbtp", "snapshot.stereo.width", "snapshot.stereo.corr", "snapshot.spektral.low_frac", "snapshot.resonanzen.*.freq_hz", "snapshot.zustand", "snapshot.aktiv_sekunden", "snapshot.gesamt_sekunden", "frame.schwer_sekunden", "frame.material_ende_projektsample", "frame.hostzeit_fortlaufend_samples", "frame.hostzeit_stillstand_bloecke", "frame.bloecke_max_samples"],
+   "rohvergleich_runde01": {"quelle": "eq-copilot/kalibration/KALIBRIER-PROTOKOLL.md:68-69", "lufs_offline": -22.41, "lufs_plugin": [-22.45, -22.48], "tp_offline": -7.87, "tp_plugin": [-7.75, -6.47], "centroid_offline": 829, "centroid_plugin": [876, 879], "width": [0.33, 0.328], "corr": [0.5, 0.507], "low_frac_offline": 0.78, "resonanzen_offline": [229.8, 354.4, 459.6, 546.6, 688.7, 919.3], "resonanzen_plugin": [688.7, 459.6, 919.3]}
+  }}}
+ ]
+}

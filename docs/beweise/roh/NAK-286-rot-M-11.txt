@@ -1,0 +1,19 @@
+=== NAK-286 Etappe 4, Rotbeweis M-11 (15.09.2026 03:07:44) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Urteilswort GEMESSEN in OK umbenannt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kopfzeile_erste_fassung
+Traeger (Muster der Meldung): \[ROT\] M-11 kopfzeile_erste_fassung
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         Ende 0 'GEMESSEN' $zusatz
+  +         Ende 0 'OK' $zusatz # ROTBEWEIS M-11
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 913706E82BB6E4E81408A0FF8CEB2409B71EA3F11567F30748EB38F852C537F2, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-11 kopfzeile_erste_fassung: [Kopfzeile gemessen] gemessen: Kopfzeile ausser Form: 'LAUFZEIT SELBSTTEST abcdef12 OK installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-057cc6dbcff5\roh.md' | [Kopfzeile gemessen] gemessen: Urteilswort 'OK' statt GEMESSEN | [Kopfzeile gemessen] gemessen: Rohdatei ohne Kopf, Kopfzeile oder Protokoll
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-11 kopfzeile_erste_fassung: [Kopfzeile gemessen] gemessen: Kopfzeile ausser Form: 'LAUFZEIT SELBSTTEST abcdef12 OK installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-057cc6dbcff5\roh.md' | [Kopfzeile gemessen] gemessen: Urteilswort 'OK' statt GEMESSEN | [Kopfzeile gemessen] gemessen: Rohdatei ohne Kopf, Kopfzeile oder Protokoll
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

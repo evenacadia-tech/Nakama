@@ -1,0 +1,57 @@
+=== NAK-286 Etappe 4, Rotbeweis M-78 (15.09.2026 03:08:14) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Wiederholung in einer Schleife bis zum Erfolg
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur timeout_genau_einmal
+Traeger (Muster der Meldung): \[ROT\] M-78 timeout_genau_einmal.*\(b\)
+Ersetzung in tools/fl/szenario.py:
+  -     if not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):
+  +     while not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):  # ROTBEWEIS M-78
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert D1B4383CA08F2E127543647977C4234D816A9465E6201B34CB07754067CCBC35, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-78 (15.09.2026 04:09:22) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Wiederholung in einer Schleife bis zum Erfolg
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur timeout_genau_einmal
+Traeger (Muster der Meldung): \[ROT\] M-78 timeout_genau_einmal.*\(b\)
+Ersetzung in tools/fl/szenario.py:
+  -     if not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):
+  +     while not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):  # ROTBEWEIS M-78
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 19B844002E22DA613A09E193D5407942F95FF74CF79E13F129B57EFB53CDB3CA, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-78 (15.09.2026 04:14:56) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Wiederholung in einer Schleife bis zum Erfolg
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur timeout_genau_einmal
+Traeger (Muster der Meldung): \[ROT\] M-78 timeout_genau_einmal.*\(b\)
+Ersetzung in tools/fl/szenario.py:
+  -     if not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):
+  +     while not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):  # ROTBEWEIS M-78
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 32DCA220B97BACF70785EEE8C61A0E81F1CDC586E0950555A41FB5C661DD11CD, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-78 timeout_genau_einmal: (b) Exit 0 nach 3 Aufrufen statt verfehlt nach genau 2
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

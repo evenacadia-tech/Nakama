@@ -1,0 +1,12 @@
+{
+ "id": "fenster",
+ "titel": "Das FL-Hauptfenster und das Fenster von Nakama Probeeq werden ohne Vordergrundwechsel als Bild erfasst; ein einfarbiges Bild ist verfehlt",
+ "quelle": "Plan S25e (2) Screenshot des FL- oder Plugin-Fensters; docs/beweise/NAK-286.md M-21, §7.1 T-17 und T-20",
+ "schritte": [
+  {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
+  {"aktion": "lokal.fenster", "params": {"ziel": "fl"}},
+  {"aktion": "mixer.focusEditor", "params": {"track": 1, "slot_index": 0}, "erwarte": {"plugin": {"gleich": "Nakama Probeeq"}}},
+  {"warte_s": 1},
+  {"aktion": "lokal.fenster", "params": {"ziel": "plugin", "plugin": "Nakama Probeeq"}}
+ ]
+}

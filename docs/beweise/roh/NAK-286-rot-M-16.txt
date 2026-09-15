@@ -1,0 +1,48 @@
+=== NAK-286 Etappe 4, Rotbeweis M-16 (15.09.2026 03:13:23) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: _check_track in handle_mixer_get_peaks entfernt
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_peaks_reject_out_of_range_track
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py:
+  -     track = _check_track("track", params.get("track", 0), count)
+  -     return {
+  -         "track": track,
+  -         "name": mixer.getTrackName(track),
+  -         "peak_left": mixer.getTrackPeaks(track, PEAK_L),
+  +     track = params.get("track", 0)  # ROTBEWEIS M-16: _check_track entfernt
+  +     return {
+  +         "track": track,
+  +         "name": mixer.getTrackName(track),
+  +         "peak_left": mixer.getTrackPeaks(track, PEAK_L),
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py vorher 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, mutiert 2BA73D12489229EE0E9516CB56E76B31D996FE7AC82E71EF72D4824C831EC1FF, nach der Ruecknahme 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py F                                [100%]
+
+================================== FAILURES ===================================
+____________________ test_peaks_reject_out_of_range_track _____________________
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x000002A6C1617A10>, 'mixer': <test_controller_p...ct at 0x000002A6C164E8D0>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x000002A6C164E930>, ...}
+
+    def test_peaks_reject_out_of_range_track(handlers):
+>       with pytest.raises(ValueError, match="out of range"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests\test_controller_probe_handlers.py:241: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track
+============================== 1 failed in 0.05s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

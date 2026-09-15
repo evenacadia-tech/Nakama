@@ -1,0 +1,162 @@
+=== NAK-286 Etappe 4, Rotlauf mit A35 M-20 (15.09.2026 02:25:10) ===
+Art: Rotlauf mit A35 (§5.1): der erste Lauf des neuen Selbsttests gegen die noch unveraenderte Stelle des Runners, bevor sie geaendert wird
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Basis der Etappe 34bdf159872d4bfa725acad94ffe667a70fd066a), Arbeitsstand der Etappe uncommittet
+Quelle tools\fl\szenario.py SHA-256 2B1EBB5984F83CB23AC017782046CFF5211DB3C31CFE7740FE8C7B0E09F1A9C4 (Arbeitsstand mit Selbsttest, Traeger unveraendert); am Basis-SHA 26D42902FD246BD3F733118F892A0C2A8974B9BD8A56A46DE8E2E95E1E774854
+Unveraenderte Stelle: szenario.py:1717 frist = float(schritt.get("frist_s", 4.0)) (erste Fassung :123): ohne frist_s immer 4,0 statt None
+Bein A35, einzelner Selbsttest: py -3.13 C:\Users\phili\Projekte\Nakama\tools\fl\szenario.py --selbsttest --nur frist_ohne_schrittwert
+Exit: 4
+Traeger (Muster der Meldung): \[ROT\] M-20 frist_ohne_schrittwert
+  Traeger: [ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+Haelfte send_command (gebaut, Test fehlt): tests/test_port_selection.py::test_send_command_resolves_none_from_env am MCP-Stand 29f6656 gegen die unveraenderte midi_connection.py (SHA-256 FB90CEA1B5468404232256756690B883405932C3FFADB79FC6AF78204DD7E265): Exit 0 - 
+[1m============================= test session starts =============================[0m
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_port_selection.py [32m.[0m[32m                                           [100%][0m
+
+[32m============================== [32m[1m1 passed[0m[32m in 0.02s[0m[32m ==============================[0m
+--- Rohausgabe ---
+[ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-20 (2) (15.09.2026 03:08:14) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: fester Vorgabewert 4,0 ohne frist_s wiederhergestellt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur frist_ohne_schrittwert
+Traeger (Muster der Meldung): \[ROT\] M-20 frist_ohne_schrittwert
+Ersetzung in tools/fl/szenario.py:
+  -         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else None
+  +         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else 4.0  # ROTBEWEIS M-20 (2)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert DC03EF2E6EADCB8B3D5921D05A01B7BC0251D20DD320061CDBDFBED01B168C6B, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-20 (3) (15.09.2026 03:13:27) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: MCP: Zweig if timeout is None entfernt
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_port_selection.py::test_send_command_resolves_none_from_env -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_send_command_resolves_none_from_env
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py:
+  -         if timeout is None:
+  -             timeout = default_timeout()
+  +         # ROTBEWEIS M-20 (3): Zweig if timeout is None entfernt
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py vorher 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, mutiert 9FB2625D4BC15974194936329C462132F6FFC99B8BB3A69863F4522054699977, nach der Ruecknahme 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_port_selection.py::test_send_command_resolves_none_from_env
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_port_selection.py F                                           [100%]
+
+================================== FAILURES ===================================
+__________________ test_send_command_resolves_none_from_env ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000015530725D00>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-70/test_send_command_resolves_non0')
+
+    def test_send_command_resolves_none_from_env(monkeypatch, tmp_path):
+        """timeout=None is resolved per call: FL_MCP_TIMEOUT when set, else 2.0."""
+        monkeypatch.delenv(mc.PORT_ENV, raising=False)
+        monkeypatch.setattr(mc, "_get_fl_hardware_dir", lambda: tmp_path)
+    
+        class FakePort:
+            def send(self, message):
+                pass
+    
+        class FakeMido:
+            class Message:
+                def __init__(self, *args, **kwargs):
+                    pass
+    
+            @staticmethod
+            def get_output_names():
+                return ["loopMIDI Port 1"]
+    
+            @staticmethod
+            def open_output(name):
+                return FakePort()
+    
+        monkeypatch.setitem(sys.modules, "mido", FakeMido)
+        conn = mc.MIDIConnection()
+        seen: list[float | None] = []
+    
+        def fake_wait(timeout):
+            seen.append(timeout)
+            return {"success": True}
+    
+        monkeypatch.setattr(conn, "_wait_for_response", fake_wait)
+        monkeypatch.setenv(mc.TIMEOUT_ENV, "4.5")
+        conn.send_command("system.ping")
+        monkeypatch.delenv(mc.TIMEOUT_ENV)
+        conn.send_command("system.ping")
+        conn.send_command("system.ping", timeout=7.0)
+>       assert seen == [4.5, mc.DEFAULT_TIMEOUT, 7.0]
+E       assert [None, None, 7.0] == [4.5, 2.0, 7.0]
+E         
+E         At index 0 diff: None != 4.5
+E         Use -v to get more diff
+
+tests\test_port_selection.py:137: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_port_selection.py::test_send_command_resolves_none_from_env
+============================== 1 failed in 0.06s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-20 (2) (15.09.2026 04:09:21) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: fester Vorgabewert 4,0 ohne frist_s wiederhergestellt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur frist_ohne_schrittwert
+Traeger (Muster der Meldung): \[ROT\] M-20 frist_ohne_schrittwert
+Ersetzung in tools/fl/szenario.py:
+  -         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else None
+  +         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else 4.0  # ROTBEWEIS M-20 (2)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 87F2AECACF7BBBA380CB09A0274E73B508AECEA6277E45540E4B11BB76220D83, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-20 (2) (15.09.2026 04:14:56) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: fester Vorgabewert 4,0 ohne frist_s wiederhergestellt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur frist_ohne_schrittwert
+Traeger (Muster der Meldung): \[ROT\] M-20 frist_ohne_schrittwert
+Ersetzung in tools/fl/szenario.py:
+  -         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else None
+  +         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else 4.0  # ROTBEWEIS M-20 (2)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 060F23578D89F60F7C861D6E20F2DE7B93AE60622C8F85BFBC6EAD6408C6E8FA, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-20 frist_ohne_schrittwert: FL_MCP_TIMEOUT=None: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP) | FL_MCP_TIMEOUT=4.5: uebergebene Fristen [4.0, 7.0] statt [None, 7.0] (ohne frist_s entscheidet der MCP)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

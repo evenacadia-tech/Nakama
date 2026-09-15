@@ -684,3 +684,150 @@ Bau gruen: Exit 0, Binary juenger als die Quelle: ja
 B30 gruen: Exit 0, NAK-286 BRIEFKASTEN: 151 bestanden, 0 fehlgeschlagen
 Ergebnis: ROTBEWEIS GUELTIG
 
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c1) (15.09.2026 03:08:15) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Groessenriegel im Runner entfernt: Name und Groesse, Lesegrenze, Groesse des Gelesenen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Groessenriegel: gen gewertet True
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c1): Groessenriegel vor dem Oeffnen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -                 roh = self.umg.lies(self.antworten / name, ANTWORT_MAX_BYTES)
+  +                 roh = self.umg.lies(self.antworten / name, 1 << 40)  # ROTBEWEIS M-53 (c1): ohne Lesegrenze
+Ersetzung in tools/fl/szenario.py:
+  -         if len(roh) > ANTWORT_MAX_BYTES:
+  -             return None, "beim Lesen groesser als 16 MiB"
+  +         # ROTBEWEIS M-53 (c1): ohne Groessenpruefung des Gelesenen
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert FC6F10E91CDC4E471A0D167518CF3D524F91D711D38F58D1E053985C887E7613, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c2) (15.09.2026 03:08:16) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Groessenpruefung vor dem Oeffnen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Leseoeffnungen vor der Groessenpruefung
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c2): Groessenpruefung vor dem Oeffnen entfernt
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 63AE8E67C9D59EBC47667294220356F79329041D577BCCA86C4239F01B12B81A, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c1) (15.09.2026 04:09:23) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Groessenriegel im Runner entfernt: Name und Groesse, Lesegrenze, Groesse des Gelesenen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Groessenriegel: gen gewertet True
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c1): Groessenriegel vor dem Oeffnen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -                 roh = self.umg.lies(self.antworten / name, ANTWORT_MAX_BYTES)
+  +                 roh = self.umg.lies(self.antworten / name, 1 << 40)  # ROTBEWEIS M-53 (c1): ohne Lesegrenze
+Ersetzung in tools/fl/szenario.py:
+  -         if len(roh) > ANTWORT_MAX_BYTES:
+  -             return None, "beim Lesen groesser als 16 MiB"
+  +         # ROTBEWEIS M-53 (c1): ohne Groessenpruefung des Gelesenen
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 9A1B3DC24344D05A96710A0349FAA239F5843E669BB3789B4199A2926235854C, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c2) (15.09.2026 04:09:23) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Groessenpruefung vor dem Oeffnen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Leseoeffnungen vor der Groessenpruefung
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c2): Groessenpruefung vor dem Oeffnen entfernt
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 06A5985FC44EE4CC33A2B3749C0B3AE9E19A1B2DA761C77A07AA3DD5D80D0C41, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c1) (15.09.2026 04:14:57) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Groessenriegel im Runner entfernt: Name und Groesse, Lesegrenze, Groesse des Gelesenen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Groessenriegel: gen gewertet True
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c1): Groessenriegel vor dem Oeffnen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -                 roh = self.umg.lies(self.antworten / name, ANTWORT_MAX_BYTES)
+  +                 roh = self.umg.lies(self.antworten / name, 1 << 40)  # ROTBEWEIS M-53 (c1): ohne Lesegrenze
+Ersetzung in tools/fl/szenario.py:
+  -         if len(roh) > ANTWORT_MAX_BYTES:
+  -             return None, "beim Lesen groesser als 16 MiB"
+  +         # ROTBEWEIS M-53 (c1): ohne Groessenpruefung des Gelesenen
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert C8DA5C3AC200002D002554D5583674AA6CA7B64E895E050720101E91EED64D2C, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Groessenriegel: gen gewertet True, mehrdeutig False statt fehlt | Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-53 (c2) (15.09.2026 04:14:58) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Groessenpruefung vor dem Oeffnen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur antwortgroessen
+Traeger (Muster der Meldung): \[ROT\] M-53 antwortgroessen.*Leseoeffnungen vor der Groessenpruefung
+Ersetzung in tools/fl/szenario.py:
+  -             if groesse < ANTWORT_MIN_BYTES or groesse > ANTWORT_MAX_BYTES:
+  -                 aus.verworfen.append((name, f"Groesse {groesse} Bytes ausserhalb [2 B, 16 MiB], nie gelesen"))
+  -                 continue
+  +             # ROTBEWEIS M-53 (c2): Groessenpruefung vor dem Oeffnen entfernt
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert E225CE537E42CBEF8307B6703591D84C4735D3E28B552EE8097D441B5E9A1986, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-53 antwortgroessen: Leseoeffnungen vor der Groessenpruefung: {'aaaaaaaaaaaa…son.tmp-4242': 0, 'aaaaaaaaaaaa…ccccccc.json': 1, 'aaaaaaaaaaaa…ddddddd.json': 1, 'aaaaaaaaaaaa…bbbbbbb.json': 1}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

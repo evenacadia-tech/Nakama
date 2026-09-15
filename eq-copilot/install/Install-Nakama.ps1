@@ -63,9 +63,13 @@
     Nur mit -Rueckweg: den NAK-41-Riegel uebergehen. Sichtbar, nie still.
 
 .NOTES
-    Braucht Rechteerhoehung (Program Files). Die Installation bleibt ein
-    Klick des Users - dieses Skript wird von keiner Automatik gefahren
-    (NAK-32).
+    Braucht Rechteerhoehung (Program Files). Automatischer Weg seit NAK-285:
+    die erhoehten Aufgaben \Nakama\installieren, \Nakama\pruefen und
+    \Nakama\rueckweg fahren dieses Skript als derselbe Benutzer mit hoechsten
+    Rechten (einmal registriert ueber
+    tools/dirigent/install-aufgaben-registrieren.ps1); der Laufzeit-Arm
+    tools/fl/laufzeit.ps1 startet sie ohne Klick. Von Hand bleibt es ein
+    Aufruf mit Rechteerhoehung (NAK-32).
 #>
 
 [CmdletBinding()]

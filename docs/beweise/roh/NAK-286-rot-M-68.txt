@@ -1,0 +1,212 @@
+=== NAK-286 Etappe 4, Rotbeweis M-68 (1) (15.09.2026 03:08:56) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Offline-Resonanzmenge ohne ihren letzten Wert (919,3 Hz) gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-68|\[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -         offline = [float(x) for x in referenz["resonanzen"]]
+  +         offline = [float(x) for x in referenz["resonanzen"]][:-1]  # ROTBEWEIS M-68 (1): ohne 919,3 Hz
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert DF57ECAB0A7E049E24CF0677EB8012374F34A1A23D1A17D4A529DBA57016701A, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (2) (15.09.2026 03:08:57) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Szenario mit einer Grenze fuer centroid_mag_hz
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur f28_nur_hergeleitete_baender
+Traeger (Muster der Meldung): \[ROT\] M-68 f28_nur_hergeleitete_baender.*centroid_mag_hz
+Ersetzung in docs/gesundheit/szenarien/snapshot-runde01.json:
+  -     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+  +     {"kurz": "centroid", "feld": "snapshot.spektral.centroid_mag_hz", "anker": "schwer", "referenz": "centroid_mag", "toleranz": 50.0, "rollen": ["gen", "probeeq"], "rechnung": "F-28 ROTBEWEIS M-68 (2)"},
+  +     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+SHA-256 docs/gesundheit/szenarien/snapshot-runde01.json vorher 0D908903D74FF734789C84D95E37360BCFE1D9CF92BF6B653043A4E7CB0B1C70, mutiert 9493FB2D0984DAC45410685C89CB5076F5E96DD99610915300823A4CF299E1A2, nach der Ruecknahme 0D908903D74FF734789C84D95E37360BCFE1D9CF92BF6B653043A4E7CB0B1C70, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (3) (15.09.2026 03:09:00) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: schwere Felder am leichten Anker n_L gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -     for art, n in (("leicht", n_l), ("schwer", n_s)):
+  +     for art, n in (("leicht", n_l), ("schwer", n_l)):  # ROTBEWEIS M-68 (3)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 30288D9658D196E1C3500990A0D398EE357FF9992917431426D64A5D7BB51D49, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (1) (15.09.2026 04:10:03) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Offline-Resonanzmenge ohne ihren letzten Wert (919,3 Hz) gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-68|\[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -         offline = [float(x) for x in referenz["resonanzen"]]
+  +         offline = [float(x) for x in referenz["resonanzen"]][:-1]  # ROTBEWEIS M-68 (1): ohne 919,3 Hz
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 76A062AED8A41D747E60EE8E9E0123904850269F9F675B2355936F62EB23F3E9, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (2) (15.09.2026 04:10:04) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Szenario mit einer Grenze fuer centroid_mag_hz
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur f28_nur_hergeleitete_baender
+Traeger (Muster der Meldung): \[ROT\] M-68 f28_nur_hergeleitete_baender.*centroid_mag_hz
+Ersetzung in docs/gesundheit/szenarien/snapshot-runde01.json:
+  -     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+  +     {"kurz": "centroid", "feld": "snapshot.spektral.centroid_mag_hz", "anker": "schwer", "referenz": "centroid_mag", "toleranz": 50.0, "rollen": ["gen", "probeeq"], "rechnung": "F-28 ROTBEWEIS M-68 (2)"},
+  +     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+SHA-256 docs/gesundheit/szenarien/snapshot-runde01.json vorher 540D0CBBDCCADBCCF2B54188656F0A07250BD9009FEAEB85B9D13106E661A064, mutiert 9130DF6CA5BDBBB3417C02E86B04A2B1F670A3B6109B6570994344BD4C41B978, nach der Ruecknahme 540D0CBBDCCADBCCF2B54188656F0A07250BD9009FEAEB85B9D13106E661A064, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (3) (15.09.2026 04:10:07) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: schwere Felder am leichten Anker n_L gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -     for art, n in (("leicht", n_l), ("schwer", n_s)):
+  +     for art, n in (("leicht", n_l), ("schwer", n_l)):  # ROTBEWEIS M-68 (3)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert DE23F0EC621BD78E5EB106845500EE1F1C67CF889FF4CAC434E9280B05F94E50, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (4) (15.09.2026 04:12:37) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: low_frac-Referenz ueber den Mid-Mix statt ueber die Kanalenergie
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur low_frac_in_snapshotdefinition
+Traeger (Muster der Meldung): \[ROT\] M-68 low_frac_in_snapshotdefinition
+Ersetzung in tools/fl/szenario.py:
+  -         summe += 0.5 * (np.abs(np.fft.rfft(seg[:, 0] * fenster)) ** 2 + np.abs(np.fft.rfft(seg[:, 1] * fenster)) ** 2)
+  +         summe += np.abs(np.fft.rfft(0.5 * (seg[:, 0] + seg[:, 1]) * fenster)) ** 2  # ROTBEWEIS M-68 (4): Mid-Mix
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 523066E80E97BE2DBD2E08941023293AB096212ABBAB677ECA1D5E188DB1153E, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-68 low_frac_in_snapshotdefinition: gegenphasiger Bass: low_frac_kanal 1.789804726879956e-15 statt rund 0.900 (im Mid-Mix rund 0)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-68 low_frac_in_snapshotdefinition: gegenphasiger Bass: low_frac_kanal 1.789804726879956e-15 statt rund 0.900 (im Mid-Mix rund 0)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (1) (15.09.2026 04:15:38) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Offline-Resonanzmenge ohne ihren letzten Wert (919,3 Hz) gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-68|\[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -         offline = [float(x) for x in referenz["resonanzen"]]
+  +         offline = [float(x) for x in referenz["resonanzen"]][:-1]  # ROTBEWEIS M-68 (1): ohne 919,3 Hz
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 5019F19FF466C64089C880D6FD033A21E3151C55DF69C583B75CAE209EC9C14C, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Vergleichsbasis: beide Rollen verfehlen LUFS, resonanzen auf derselben Seite '] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: resonanzen | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (2) (15.09.2026 04:15:38) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Szenario mit einer Grenze fuer centroid_mag_hz
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur f28_nur_hergeleitete_baender
+Traeger (Muster der Meldung): \[ROT\] M-68 f28_nur_hergeleitete_baender.*centroid_mag_hz
+Ersetzung in docs/gesundheit/szenarien/snapshot-runde01.json:
+  -     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+  +     {"kurz": "centroid", "feld": "snapshot.spektral.centroid_mag_hz", "anker": "schwer", "referenz": "centroid_mag", "toleranz": 50.0, "rollen": ["gen", "probeeq"], "rechnung": "F-28 ROTBEWEIS M-68 (2)"},
+  +     {"kurz": "low_frac", "feld": "snapshot.spektral.low_frac",
+SHA-256 docs/gesundheit/szenarien/snapshot-runde01.json vorher 540D0CBBDCCADBCCF2B54188656F0A07250BD9009FEAEB85B9D13106E661A064, mutiert 9130DF6CA5BDBBB3417C02E86B04A2B1F670A3B6109B6570994344BD4C41B978, nach der Ruecknahme 540D0CBBDCCADBCCF2B54188656F0A07250BD9009FEAEB85B9D13106E661A064, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-68 f28_nur_hergeleitete_baender: Baender weichen von F-28 ab: {'LUFS': (0.07, True, True, ['gen', 'probeeq']), 'TP': (0.12, False, True, ['probeeq']), 'width': (0.01, False, False, ['gen', 'probeeq']), 'corr': (0.01, False, False, ['gen', 'probeeq']), 'centroid': (50.0, False, False, ['gen', 'probeeq']), 'low_frac': (0.02, False, False, ['gen', 'probeeq']), 'resonanzen': (0.1, False, False, ['gen', 'probeeq'])} | Band fuer centroid_mag_hz (ohne Referenz derselben Definition)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (3) (15.09.2026 04:15:41) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: schwere Felder am leichten Anker n_L gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur snapshot_messpunkt_und_baender
+Traeger (Muster der Meldung): \[ROT\] M-67 snapshot_messpunkt_und_baender.*Grundlauf
+Ersetzung in tools/fl/szenario.py:
+  -     for art, n in (("leicht", n_l), ("schwer", n_s)):
+  +     for art, n in (("leicht", n_l), ("schwer", n_l)):  # ROTBEWEIS M-68 (3)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 8015AF8600181E3512512FA0AB3BCAF45F0542BD7B21FF6A64E1204C600D6D12, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-67 snapshot_messpunkt_und_baender: Grundlauf (Referenz, Anker n_S, Resonanzen, width): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) | | (7) beide Rollen verfehlen nur LUFS auf derselben Seite: Exit 4, Gruende ['Messung: gen (width)', 'Messung: probeeq (LUFS)'] | (6) v = -75 600 mit spaetem Anker: Exit 4 statt GEMESSEN: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Messung: gen (LUFS); Messung: gen (width) | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-68 (4) (15.09.2026 04:15:51) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: low_frac-Referenz ueber den Mid-Mix statt ueber die Kanalenergie
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur low_frac_in_snapshotdefinition
+Traeger (Muster der Meldung): \[ROT\] M-68 low_frac_in_snapshotdefinition
+Ersetzung in tools/fl/szenario.py:
+  -         summe += 0.5 * (np.abs(np.fft.rfft(seg[:, 0] * fenster)) ** 2 + np.abs(np.fft.rfft(seg[:, 1] * fenster)) ** 2)
+  +         summe += np.abs(np.fft.rfft(0.5 * (seg[:, 0] + seg[:, 1]) * fenster)) ** 2  # ROTBEWEIS M-68 (4): Mid-Mix
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert FF73B5151249FB28754DE64CF41C3DA5423A5AB4F3DA53D466651F40F44F3BE2, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-68 low_frac_in_snapshotdefinition: gegenphasiger Bass: low_frac_kanal 1.789804726879956e-15 statt rund 0.900 (im Mid-Mix rund 0)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-68 low_frac_in_snapshotdefinition: gegenphasiger Bass: low_frac_kanal 1.789804726879956e-15 statt rund 0.900 (im Mid-Mix rund 0)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

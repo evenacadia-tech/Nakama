@@ -1,0 +1,20 @@
+=== NAK-286 Etappe 4, Rotbeweis M-03 (15.09.2026 03:07:24) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Pruefung auf ein fremdes FL vor dem Render entfernt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur fremdes_projekt_nie_beenden
+Traeger (Muster der Meldung): \[ROT\] M-03 fremdes_projekt_nie_beenden.*Render
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
+  -     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+  +     # ROTBEWEIS M-03: Pruefung vor dem Render entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert F10F8F9146AC52A1B14F62D0F7A644C1382FBC403A0368FC121B6E00DACAB00C, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render trotz fremdem FL erreicht
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-03 fremdes_projekt_nie_beenden: [fremdes FL vor dem Render] Render: Exit 0 UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Mein Song.flp - FL Studio 2026'' | [fremdes FL vor dem Render] Render trotz fremdem FL erreicht
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

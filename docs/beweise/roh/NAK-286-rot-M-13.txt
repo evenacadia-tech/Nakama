@@ -1,0 +1,19 @@
+=== NAK-286 Etappe 4, Rotbeweis M-13 (15.09.2026 03:07:48) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: -Beenden beendet jede FL64-Instanz statt nur die Diagnose-Instanz
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur volllauf_erzwingen_beenden
+Traeger (Muster der Meldung): \[ROT\] M-13 volllauf_erzwingen_beenden
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         if ($K.Beenden) { Beende-Diagnose-FL }
+  +         if ($K.Beenden) { foreach ($i in @(FL-Instanzen)) { & $script:U.BeendeProzess $i.Id } } # ROTBEWEIS M-13
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 63CF8ABC3210F100748A239D81C07B8C868714FFD93D3EB02685855579863A52, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-13 volllauf_erzwingen_beenden: [Volllauf] -Beenden hat das fremde FL beendet
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-13 volllauf_erzwingen_beenden: [Volllauf] -Beenden hat das fremde FL beendet
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

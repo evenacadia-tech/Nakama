@@ -1,0 +1,72 @@
+=== NAK-286 Etappe 4, Rotlauf am Basis-SHA M-73 (15.09.2026 01:20:11) ===
+HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a
+Befehl: git grep -n "von keiner Automatik" -- eq-copilot/install
+eq-copilot/install/Install-Nakama.ps1:67:    Klick des Users - dieses Skript wird von keiner Automatik gefahren
+eq-copilot/install/nakama-installer-v1.json:93:    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+Exit git grep: 0 (0 = Treffer = Zusage M-73 am Basis-SHA rot)
+Ergebnis: ROTLAUF GUELTIG (zwei Treffer am Basis-SHA; die Zusage "beide Texte nennen die erhoehten Aufgaben" ist dort nicht erfuellt)
+
+=== NAK-286 Etappe 4, Rotbeweis M-73 (15.09.2026 03:13:28) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Texte der ersten Fassung zurueckgespielt (.NOTES und nicht_teil_dieses_manifests Punkt 4)
+Bein einzeln: git grep -n von keiner Automatik -- eq-copilot/install
+Traeger (Muster der Meldung): von keiner Automatik
+Ersetzung in eq-copilot/install/nakama-installer-v1.json:
+  -     "Die Installation selbst: seit NAK-285 fahren die erhoehten Aufgaben \\Nakama\\installieren, \\Nakama\\pruefen und \\Nakama\\rueckweg das Installerskript mit diesem Manifest automatisch, als derselbe Benutzer mit hoechsten Rechten; der Laufzeit-Arm (tools/fl/laufzeit.ps1) startet sie ohne Klick. Von Hand bleibt es ein Aufruf mit Rechteerhoehung (NAK-32)."
+  +     "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+Ersetzung in eq-copilot/install/Install-Nakama.ps1:
+  -     Braucht Rechteerhoehung (Program Files). Automatischer Weg seit NAK-285:
+  -     die erhoehten Aufgaben \Nakama\installieren, \Nakama\pruefen und
+  -     \Nakama\rueckweg fahren dieses Skript als derselbe Benutzer mit hoechsten
+  -     Rechten (einmal registriert ueber
+  -     tools/dirigent/install-aufgaben-registrieren.ps1); der Laufzeit-Arm
+  -     tools/fl/laufzeit.ps1 startet sie ohne Klick. Von Hand bleibt es ein
+  -     Aufruf mit Rechteerhoehung (NAK-32).
+  +     Braucht Rechteerhoehung (Program Files). Die Installation bleibt ein
+  +     Klick des Users - dieses Skript wird von keiner Automatik gefahren
+  +     (NAK-32).
+SHA-256 eq-copilot/install/nakama-installer-v1.json vorher 4EEA7745CC75AA96327DF36EA7AC3782BBA7F20C0E9EAF0D00CEE417F1AEDEF2, mutiert 8D80C1C2245BEC41C017368A9C9B4605953E93177334C202B34387FEE24A9082, nach der Ruecknahme 4EEA7745CC75AA96327DF36EA7AC3782BBA7F20C0E9EAF0D00CEE417F1AEDEF2, gleich: ja
+SHA-256 eq-copilot/install/Install-Nakama.ps1 vorher 12BDE52080C6B83B2A59AAB48B2ADB8D8455BDF2A95D2D37783592C001DD48A2, mutiert E0205A7BC2F6DD347F2F8E84F87CCDA69DFDDFDE4C67653CA9FA3B478E5086D1, nach der Ruecknahme 12BDE52080C6B83B2A59AAB48B2ADB8D8455BDF2A95D2D37783592C001DD48A2, gleich: ja
+rot: Exit 1, Traegerzeilen 2
+  Traeger: eq-copilot/install/Install-Nakama.ps1:67:    Klick des Users - dieses Skript wird von keiner Automatik gefahren
+  Traeger: eq-copilot/install/nakama-installer-v1.json:93:    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+--- Rohausgabe, mutierter Stand ---
+eq-copilot/install/Install-Nakama.ps1:67:    Klick des Users - dieses Skript wird von keiner Automatik gefahren
+eq-copilot/install/nakama-installer-v1.json:93:    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+--- Ende der Rohausgabe ---
+gruen: Exit 0, git grep ohne Treffer
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-73 (15.09.2026 04:32:00) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Texte der ersten Fassung zurueckgespielt (.NOTES und nicht_teil_dieses_manifests Punkt 4)
+Bein einzeln: git grep -n von keiner Automatik -- eq-copilot/install
+Traeger (Muster der Meldung): von keiner Automatik
+Ersetzung in eq-copilot/install/nakama-installer-v1.json:
+  -     "Die Installation selbst: seit NAK-285 fahren die erhoehten Aufgaben \\Nakama\\installieren, \\Nakama\\pruefen und \\Nakama\\rueckweg das Installerskript mit diesem Manifest automatisch, als derselbe Benutzer mit hoechsten Rechten; der Laufzeit-Arm (tools/fl/laufzeit.ps1) startet sie ohne Klick. Von Hand bleibt es ein Aufruf mit Rechteerhoehung (NAK-32)."
+  +     "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+Ersetzung in eq-copilot/install/Install-Nakama.ps1:
+  -     Braucht Rechteerhoehung (Program Files). Automatischer Weg seit NAK-285:
+  -     die erhoehten Aufgaben \Nakama\installieren, \Nakama\pruefen und
+  -     \Nakama\rueckweg fahren dieses Skript als derselbe Benutzer mit hoechsten
+  -     Rechten (einmal registriert ueber
+  -     tools/dirigent/install-aufgaben-registrieren.ps1); der Laufzeit-Arm
+  -     tools/fl/laufzeit.ps1 startet sie ohne Klick. Von Hand bleibt es ein
+  -     Aufruf mit Rechteerhoehung (NAK-32).
+  +     Braucht Rechteerhoehung (Program Files). Die Installation bleibt ein
+  +     Klick des Users - dieses Skript wird von keiner Automatik gefahren
+  +     (NAK-32).
+SHA-256 eq-copilot/install/nakama-installer-v1.json vorher 8F069BC478BC167FA898B1B95BD6F3215BE1FA5D9BD524925BE75BB628E51A00, mutiert CCBE0467DA0321EE0B382E2302EC70716DE9D901029EB266B84F77E6C5A3F67D, nach der Ruecknahme 8F069BC478BC167FA898B1B95BD6F3215BE1FA5D9BD524925BE75BB628E51A00, gleich: ja
+SHA-256 eq-copilot/install/Install-Nakama.ps1 vorher 12BDE52080C6B83B2A59AAB48B2ADB8D8455BDF2A95D2D37783592C001DD48A2, mutiert E0205A7BC2F6DD347F2F8E84F87CCDA69DFDDFDE4C67653CA9FA3B478E5086D1, nach der Ruecknahme 12BDE52080C6B83B2A59AAB48B2ADB8D8455BDF2A95D2D37783592C001DD48A2, gleich: ja
+rot: Exit 1, Traegerzeilen 2
+  Traeger: eq-copilot/install/Install-Nakama.ps1:67:    Klick des Users - dieses Skript wird von keiner Automatik gefahren
+  Traeger: eq-copilot/install/nakama-installer-v1.json:93:    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+--- Rohausgabe, mutierter Stand ---
+eq-copilot/install/Install-Nakama.ps1:67:    Klick des Users - dieses Skript wird von keiner Automatik gefahren
+eq-copilot/install/nakama-installer-v1.json:93:    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+--- Ende der Rohausgabe ---
+gruen: Exit 0, git grep ohne Treffer
+Ergebnis: ROTBEWEIS GUELTIG
+

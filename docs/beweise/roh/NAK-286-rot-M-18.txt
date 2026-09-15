@@ -1,0 +1,125 @@
+=== NAK-286 Etappe 4, Rotlauf am Basis-SHA M-18 (1) Haelfte transport.setPosition (15.09.2026 01:20) ===
+Art: Rotlauf am Basis-SHA (§5.1): der neue Test gegen die unveraenderte Quelle, bevor sie geaendert wird
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a; MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174 (Zweig evenacadia-local)
+Quelle (unveraendert, MCP 29f6656): fl_controller/device_FLStudioMCP.py SHA-256 FB1532704F2EF53276E408AC2B76A57074C2B7F0E7A4EF70C4DB67F7E9209B49
+Testdatei mit dem neuen Test: tests/test_controller_probe_handlers.py SHA-256 1404BE2285D368FBFEE7751CEDB7E2FAAF250D3D569728D56CA17286204410F0
+Bein MCP-pytest einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim -p no:cacheprovider
+Exit: 1
+Traeger (Muster der Meldung): answer claims a position
+  Traeger: >       [94massert[39;49;00m [33m"[39;49;00m[33mposition[39;49;00m[33m"[39;49;00m [95mnot[39;49;00m [95min[39;49;00m result, [33mf[39;49;00m[33m"[39;49;00m[33manswer claims a position: [39;49;00m[33m{[39;49;00mresult[33m!r}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+  Traeger: [1m[31mE       AssertionError: answer claims a position: {'position': '1:01:00'}[0m
+  Traeger: [31mFAILED[0m tests/test_controller_probe_handlers.py::[1mtest_set_position_makes_no_position_claim[0m - AssertionError: answer claims a position: {'position': '1:01:00'}
+--- Rohausgabe ---
+[1m============================= test session starts =============================[0m
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py [31mF[0m[31m                                [100%][0m
+
+================================== FAILURES ===================================
+[31m[1m__________________ test_set_position_makes_no_position_claim __________________[0m
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x000001F1EB118380>, 'mixer': <test_controller_p...ct at 0x000001F1EE057E00>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x000001F1EE054C50>, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_set_position_makes_no_position_claim[39;49;00m(handlers):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""The answer names only what was requested - never a position read in the[39;49;00m
+    [33m    same call (measured stale on 13.09.2026); the check is a separate command."""[39;49;00m[90m[39;49;00m
+        result = handlers[[33m"[39;49;00m[33mhandle_transport_set_position[39;49;00m[33m"[39;49;00m]({[33m"[39;49;00m[33mposition[39;49;00m[33m"[39;49;00m: [94m2[39;49;00m, [33m"[39;49;00m[33mmode[39;49;00m[33m"[39;49;00m: [94m1[39;49;00m})[90m[39;49;00m
+>       [94massert[39;49;00m [33m"[39;49;00m[33mposition[39;49;00m[33m"[39;49;00m [95mnot[39;49;00m [95min[39;49;00m result, [33mf[39;49;00m[33m"[39;49;00m[33manswer claims a position: [39;49;00m[33m{[39;49;00mresult[33m!r}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: answer claims a position: {'position': '1:01:00'}[0m
+[1m[31mE       assert 'position' not in {'position': '1:01:00'}[0m
+
+[1m[31mtests\test_controller_probe_handlers.py[0m:191: AssertionError
+[36m[1m=========================== short test summary info ===========================[0m
+[31mFAILED[0m tests/test_controller_probe_handlers.py::[1mtest_set_position_makes_no_position_claim[0m - AssertionError: answer claims a position: {'position': '1:01:00'}
+[31m============================== [31m[1m1 failed[0m[31m in 0.08s[0m[31m ==============================[0m
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-18 (2) (15.09.2026 03:13:25) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: transport.setPosition gibt wieder getSongPosHint() zurueck
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_set_position_makes_no_position_claim
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py:
+  -     return {"requested_position": position, "mode": mode}
+  +     return {"position": transport.getSongPosHint()}  # ROTBEWEIS M-18 (2)
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py vorher 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, mutiert 5831BAF8D4E3EFDCE839F7EE7C7AC37E1E3BDF13CBF8E1136D4E87EC243E1DFA, nach der Ruecknahme 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py F                                [100%]
+
+================================== FAILURES ===================================
+__________________ test_set_position_makes_no_position_claim __________________
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x00000226EB7B8620>, 'mixer': <test_controller_p...ct at 0x00000226EE71E960>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x00000226EE71E870>, ...}
+
+    def test_set_position_makes_no_position_claim(handlers):
+        """The answer names only what was requested - never a position read in the
+        same call (measured stale on 13.09.2026); the check is a separate command."""
+        result = handlers["handle_transport_set_position"]({"position": 2, "mode": 1})
+>       assert "position" not in result, f"answer claims a position: {result!r}"
+E       AssertionError: answer claims a position: {'position': '1:01:00'}
+E       assert 'position' not in {'position': '1:01:00'}
+
+tests\test_controller_probe_handlers.py:209: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim
+============================== 1 failed in 0.05s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-18 (3) (15.09.2026 03:13:26) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: transport.getPosition liest getSongPosHint() statt getSongPos
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_get_position_reports_ms_and_seconds
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py:
+  -         "ms": transport.getSongPos(MODE_MS),
+  +         "ms": transport.getSongPosHint(),  # ROTBEWEIS M-18 (3)
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py vorher 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, mutiert 05438AA9E7D100FBCA30D66D0A2A5800AABE1B110CCC44F85F4892ECA8B69B79, nach der Ruecknahme 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py F                                [100%]
+
+================================== FAILURES ===================================
+__________________ test_get_position_reports_ms_and_seconds ___________________
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x000002219C687920>, 'mixer': <test_controller_p...ct at 0x000002219C6C28D0>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x000002219C6C27E0>, ...}
+
+    def test_get_position_reports_ms_and_seconds(handlers):
+        """The position check is its own command, read from getSongPos modes 0 and 1."""
+        result = handlers["handle_transport_get_position"]()
+>       assert result["ms"] == FakeTransport.POSITIONS[0]
+E       AssertionError: assert '1:01:00' == 5020
+
+tests\test_controller_probe_handlers.py:199: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds
+============================== 1 failed in 0.05s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

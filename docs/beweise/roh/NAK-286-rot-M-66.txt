@@ -1,0 +1,114 @@
+=== NAK-286 Etappe 4, Rotbeweis M-66 (1) (15.09.2026 03:08:19) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Delta_K fest 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(1\) KETTE
+Ersetzung in tools/fl/szenario.py:
+  -             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 20.0 * math.log10(abs(g))}
+  +             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (1): Delta_K fest 0
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 5CF9F6611EB2DD80DEE2825EE32ED3391EFE52C583102A6095EE6A597B4B001B, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-66 (2) (15.09.2026 03:08:22) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: fehlendes Nulltesturteil als BITIDENTISCH gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(2\) ohne ergebnis\.json
+Ersetzung in tools/fl/szenario.py:
+  -         return {"fehlt": "ohne Nulltesturteil: ergebnis.json fehlt oder ist fremd"}
+  +         return {"urteil": "BITIDENTISCH", "v": 0, "g": 1.0, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (2)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert DA892437F1A47AA4368598283A6D47A81CD83150DF3CC2C871DE26319C66B901, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-66 (1) (15.09.2026 04:09:27) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Delta_K fest 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(1\) KETTE
+Ersetzung in tools/fl/szenario.py:
+  -             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 20.0 * math.log10(abs(g))}
+  +             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (1): Delta_K fest 0
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 6C712EF9701D188FD6CEC8187939567CA1F933A37CFD175D526FF8BF0225B8A1, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-66 (2) (15.09.2026 04:09:30) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: fehlendes Nulltesturteil als BITIDENTISCH gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(2\) ohne ergebnis\.json
+Ersetzung in tools/fl/szenario.py:
+  -         return {"fehlt": "ohne Nulltesturteil: ergebnis.json fehlt oder ist fremd"}
+  +         return {"urteil": "BITIDENTISCH", "v": 0, "g": 1.0, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (2)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 1D9FFA5007B01E44BE6A0951829C3CB3F23ABF651522D29C64F3D208FBCAD633, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-66 (1) (15.09.2026 04:15:01) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Delta_K fest 0
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(1\) KETTE
+Ersetzung in tools/fl/szenario.py:
+  -             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 20.0 * math.log10(abs(g))}
+  +             return {"urteil": urteil, "v": v, "g": g, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (1): Delta_K fest 0
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 5ABB7690C192FB2ADC972AF5BF389433A382ACDB27BDE1BF19654EBC2971F3D4, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (1) KETTE g = 0,5 (Delta_K -6.02 dB): Exit 4: | 3 | `lokal.umlauf` | `{"rollen": ["gen", "probeeq"], "vergleich": {"baender": [{"anker": "schwer", "delta_k": true, "feld": "snapshot.loudness.lufs_integriert", "kurz": "LUFS", "plus_s_lufs": true, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | Referenz oder Toleranz: LUFS; Referenz oder Toleranz: TP | VERFEHLT (Details unten) |
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-66 (2) (15.09.2026 04:15:04) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: fehlendes Nulltesturteil als BITIDENTISCH gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kettenverschiebung_aus_nulltest
+Traeger (Muster der Meldung): \[ROT\] M-66 kettenverschiebung_aus_nulltest.*\(2\) ohne ergebnis\.json
+Ersetzung in tools/fl/szenario.py:
+  -         return {"fehlt": "ohne Nulltesturteil: ergebnis.json fehlt oder ist fremd"}
+  +         return {"urteil": "BITIDENTISCH", "v": 0, "g": 1.0, "delta_k_db": 0.0}  # ROTBEWEIS M-66 (2)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 651506BEA488A3B7D9884FB43B6A78C48A69D29BA89CBC652922318A855E5AB7, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-66 kettenverschiebung_aus_nulltest: (2) ohne ergebnis.json: Exit 0 statt 5
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,19 @@
+=== NAK-286 Etappe 4, Rotbeweis M-01 (15.09.2026 03:07:22) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Lohnt-Es gibt ohne Produktpfad Ja = $true zurueck
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur lohnt_nicht_ohne_produktpfad
+Traeger (Muster der Meldung): \[ROT\] M-01 lohnt_nicht_ohne_produktpfad
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     return @{ Ja = $false; Grund = "Diff $($K.Basis)..HEAD ($($dateien.Count) Datei(en)) beruehrt keinen Produktpfad" }
+  +     return @{ Ja = $true; Grund = "Diff $($K.Basis)..HEAD ($($dateien.Count) Datei(en)) beruehrt keinen Produktpfad" } # ROTBEWEIS M-01
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert C91192359C0113FC3BD1A17CEA02804DFA01C72FC11E24D52A9EA7B324F0D1CA, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-01 lohnt_nicht_ohne_produktpfad: [Diff ohne Produktpfad] Exit 0 GEMESSEN statt 0 UEBERSPRUNGEN | [Diff ohne Produktpfad] Grund nennt Basis und Dateizahl nicht: 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [Diff ohne Produktpfad] Schritt nach dem Diff-Entscheid: 01:00:00.000 git diff --name-only basis123..HEAD; 01:00:00.000 py pruefe_installer_manifest.py --hashen; 01:00:00.000 aufgabe installieren; 01:00:01.000 aufgabe pruefen; 01:00:02.000 start "C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-787b6939c4ca\arbeit\projekt\Nakama-Diagnose.flp"; 01:00:15.000 ping; 01:00:15.000 szenario bereitschaft.json pid=5000
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-01 lohnt_nicht_ohne_produktpfad: [Diff ohne Produktpfad] Exit 0 GEMESSEN statt 0 UEBERSPRUNGEN | [Diff ohne Produktpfad] Grund nennt Basis und Dateizahl nicht: 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [Diff ohne Produktpfad] Schritt nach dem Diff-Entscheid: 01:00:00.000 git diff --name-only basis123..HEAD; 01:00:00.000 py pruefe_installer_manifest.py --hashen; 01:00:00.000 aufgabe installieren; 01:00:01.000 aufgabe pruefen; 01:00:02.000 start "C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-787b6939c4ca\arbeit\projekt\Nakama-Diagnose.flp"; 01:00:15.000 ping; 01:00:15.000 szenario bereitschaft.json pid=5000
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,57 @@
+=== NAK-286 Etappe 4, Rotbeweis M-10 (1) (15.09.2026 03:07:39) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: nur Szenario-Exit 4 zaehlt als verfehlt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur szenario_exitcodes
+Traeger (Muster der Meldung): \[ROT\] M-10 szenario_exitcodes.*Szenario-Exit 2: Runner-Exit 0
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $verfehlt = @($ergebnisse | Where-Object { $_.Exit -ne 0 })
+  +         $verfehlt = @($ergebnisse | Where-Object { $_.Exit -eq 4 }) # ROTBEWEIS M-10 (1)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert B5E943DEB97C1719E5788AE08E038DF05DA801674274428FEABE6A2C51EA05EA, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-10 szenario_exitcodes: [Szenario-Exit 2] Szenario-Exit 2: Runner-Exit 0 GEMESSEN statt 4 VERFEHLT
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-10 szenario_exitcodes: [Szenario-Exit 2] Szenario-Exit 2: Runner-Exit 0 GEMESSEN statt 4 VERFEHLT
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-10 (2) (15.09.2026 03:07:41) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Abbruch der Folge auch bei Szenario-Exit 5
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kette_erreicht_folgeszenarien
+Traeger (Muster der Meldung): \[ROT\] M-10 kette_erreicht_folgeszenarien.*lief nicht
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         if ($code -eq 3) { break }
+  +         if ($code -eq 3 -or $code -eq 5) { break } # ROTBEWEIS M-10 (2)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert CC7AC29F57264B5DD859432039EA28714A7131D8B80F774A415B84E2886F9F62, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] snapshot-runde01.json lief nicht | [KETTE an Position 3] u40-aktivitaetsgate.json lief nicht
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] snapshot-runde01.json lief nicht | [KETTE an Position 3] u40-aktivitaetsgate.json lief nicht
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-10 (3) (15.09.2026 03:07:43) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Szenario-Exit 5 nur als verfehlt gezaehlt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur kette_erreicht_folgeszenarien
+Traeger (Muster der Meldung): \[ROT\] M-10 kette_erreicht_folgeszenarien.*Gesamturteil 4 VERFEHLT statt 3
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         if ($ergebnisse | Where-Object { $_.Exit -eq 3 -or $_.Exit -eq 5 }) { Ende 3 'VORAUSSETZUNG' $zusatz }
+  +         if ($ergebnisse | Where-Object { $_.Exit -eq 3 }) { Ende 3 'VORAUSSETZUNG' $zusatz } # ROTBEWEIS M-10 (3)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 6856E5AA15F82320AD92814F753F8146B1AD3569A9C0280313A34AE45F8E1572, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] Gesamturteil 4 VERFEHLT statt 3 VORAUSSETZUNG
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] Gesamturteil 4 VERFEHLT statt 3 VORAUSSETZUNG
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

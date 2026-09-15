@@ -1,0 +1,83 @@
+=== NAK-286 Etappe 4, Rotlauf am Basis-SHA M-19 (1) (15.09.2026 01:20) ===
+Art: Rotlauf am Basis-SHA (§5.1): der neue Test gegen die unveraenderte Quelle, bevor sie geaendert wird
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a; MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174 (Zweig evenacadia-local)
+Quelle (unveraendert, MCP 29f6656): fl_controller/device_FLStudioMCP.py SHA-256 FB1532704F2EF53276E408AC2B76A57074C2B7F0E7A4EF70C4DB67F7E9209B49
+Testdatei mit dem neuen Test: tests/test_controller_probe_handlers.py SHA-256 1404BE2285D368FBFEE7751CEDB7E2FAAF250D3D569728D56CA17286204410F0
+Bein MCP-pytest einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db -p no:cacheprovider
+Exit: 1
+Traeger (Muster der Meldung): no volume_db in channels.getInfo
+  Traeger: >       [94massert[39;49;00m [33m"[39;49;00m[33mvolume_db[39;49;00m[33m"[39;49;00m [95min[39;49;00m result, [33mf[39;49;00m[33m"[39;49;00m[33mno volume_db in channels.getInfo: [39;49;00m[33m{[39;49;00mresult[33m!r}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+  Traeger: [1m[31mE       AssertionError: no volume_db in channels.getInfo: {'index': 0, 'name': 'Testtrack', 'color': '-0x7f808a', 'volume': 0.78125, 'pan': 0.0, 'pitch': 0.0, 'is_muted': False, 'is_solo': False, 'is_selected': True, 'target_fx_track': 1}[0m
+  Traeger: [31mFAILED[0m tests/test_controller_probe_handlers.py::[1mtest_channel_info_reports_volume_db[0m - AssertionError: no volume_db in channels.getInfo: {'index': 0, 'name': 'Tes...
+--- Rohausgabe ---
+[1m============================= test session starts =============================[0m
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py [31mF[0m[31m                                [100%][0m
+
+================================== FAILURES ===================================
+[31m[1m_____________________ test_channel_info_reports_volume_db _____________________[0m
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x000002262C78BBF0>, 'mixer': <test_controller_p...ct at 0x000002262C7471D0>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x000002262C7BE600>, ...}
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_channel_info_reports_volume_db[39;49;00m(handlers):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""volume_db comes from FL's dB mode, volume from the normalized mode."""[39;49;00m[90m[39;49;00m
+        result = handlers[[33m"[39;49;00m[33mhandle_channels_get_info[39;49;00m[33m"[39;49;00m]({[33m"[39;49;00m[33mindex[39;49;00m[33m"[39;49;00m: [94m0[39;49;00m, [33m"[39;49;00m[33muse_global[39;49;00m[33m"[39;49;00m: [94mFalse[39;49;00m})[90m[39;49;00m
+>       [94massert[39;49;00m [33m"[39;49;00m[33mvolume_db[39;49;00m[33m"[39;49;00m [95min[39;49;00m result, [33mf[39;49;00m[33m"[39;49;00m[33mno volume_db in channels.getInfo: [39;49;00m[33m{[39;49;00mresult[33m!r}[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: no volume_db in channels.getInfo: {'index': 0, 'name': 'Testtrack', 'color': '-0x7f808a', 'volume': 0.78125, 'pan': 0.0, 'pitch': 0.0, 'is_muted': False, 'is_solo': False, 'is_selected': True, 'target_fx_track': 1}[0m
+[1m[31mE       assert 'volume_db' in {'index': 0, 'name': 'Testtrack', 'color': '-0x7f808a', 'volume': 0.78125, ...}[0m
+
+[1m[31mtests\test_controller_probe_handlers.py[0m:199: AssertionError
+[36m[1m=========================== short test summary info ===========================[0m
+[31mFAILED[0m tests/test_controller_probe_handlers.py::[1mtest_channel_info_reports_volume_db[0m - AssertionError: no volume_db in channels.getInfo: {'index': 0, 'name': 'Tes...
+[31m============================== [31m[1m1 failed[0m[31m in 0.07s[0m[31m ==============================[0m
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-19 (2) (15.09.2026 03:13:27) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: volume_db aus dem normierten Wert gerechnet statt ueber den dB-Modus
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_channel_info_reports_volume_db
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py:
+  -         "volume_db": channels.getChannelVolume(index, True, use_global),
+  +         "volume_db": round(40.0 * __import__("math").log10(max(channels.getChannelVolume(index, False, use_global), 1e-9)), 2),  # ROTBEWEIS M-19 (2)
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\fl_controller\device_FLStudioMCP.py vorher 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, mutiert FE73358B4E9793299318458D85CE10D625335425ED8EC91FA6F99A73F22499D4, nach der Ruecknahme 704DECFF3689D618E48CF0B8F175A67E3B73312C0A9BA1DAE6F5CF9206D834EC, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_controller_probe_handlers.py F                                [100%]
+
+================================== FAILURES ===================================
+_____________________ test_channel_info_reports_volume_db _____________________
+
+handlers = {'transport': <test_controller_probe_handlers.FakeTransport object at 0x0000027387BA7A70>, 'mixer': <test_controller_p...ct at 0x0000027387BDE990>, 'channels': <test_controller_probe_handlers.FakeChannels object at 0x0000027387BDE9F0>, ...}
+
+    def test_channel_info_reports_volume_db(handlers):
+        """volume_db comes from FL's dB mode, volume from the normalized mode."""
+        result = handlers["handle_channels_get_info"]({"index": 0, "use_global": False})
+        assert "volume_db" in result, f"no volume_db in channels.getInfo: {result!r}"
+>       assert result["volume_db"] == FakeChannels.DB
+E       assert -4.29 == -5.25
+E        +  where -5.25 = FakeChannels.DB
+
+tests\test_controller_probe_handlers.py:218: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db
+============================== 1 failed in 0.05s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

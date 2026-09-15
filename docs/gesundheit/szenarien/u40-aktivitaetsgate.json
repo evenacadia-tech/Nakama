@@ -1,0 +1,17 @@
+{
+ "id": "u40-aktivitaetsgate",
+ "titel": "Karte U40 als Messung: Aktivitaet, Abdeckung, LUFS-Short, True Peak und gezaehlte Fenster und Rahmen je leiser Stelle des Testtracks - Rohdaten, keine Deutung",
+ "quelle": "R-286-4; docs/beweise/NAK-286.md F-21 bis F-23, M-69 bis M-72; docs/plan/fragen.json Karte U40",
+ "quelle_sha256": "D8B851CCF27E8F60B877D4BE3555184F2D5D6A4E7AA047482E4A694ED1F1D0BF",
+ "energieprofil": {"zelle_samples": 4410, "boden_db": -300.0, "takt_s": 1.846154, "regel": "Zellenenergie je 100 ms = 10*log10 der mittleren Kanalenergie beider Kanaele; Mittel = arithmetisches Mittel der Zellenenergien in dB; S2 = Vier-Takt-Fenster mit der kleinsten mittleren Zellenenergie unter den Fenstern ab Takt 3 bis Takt 20 (Schritt ein Takt); erzeugt am 15.09.2026 mit py -3.13 tools/fl/szenario.py --energieprofil eq-copilot/kalibration/Testtrack.wav"},
+ "schritte": [
+  {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
+  {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1, "roh": true}}},
+  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}},
+  {"aktion": "lokal.stellen", "params": {"rollen": ["gen", "probeeq"], "stellen": [
+   {"id": "S1", "name": "Intro", "von_s": 0.0, "bis_s": 3.692, "takte": "1-2", "energie": {"zellen": 36, "mittel_db": -25.205, "min_db": -27.205, "max_db": -22.628, "anteil_66_40": 0.0}},
+   {"id": "S2", "name": "ruhige Passage", "von_s": 3.692, "bis_s": 11.077, "takte": "3-6", "energie": {"zellen": 73, "mittel_db": -25.112, "min_db": -27.558, "max_db": -22.147, "anteil_66_40": 0.0}},
+   {"id": "S3", "name": "Ausklang", "von_s": 42.462, "bis_s": 45.596, "takte": "24 bis 0,1 s vor dem Loopende", "energie": {"zellen": 30, "mittel_db": -30.245, "min_db": -48.73, "max_db": -23.655, "anteil_66_40": 0.1667}}
+  ]}}
+ ]
+}

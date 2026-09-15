@@ -1,0 +1,19 @@
+=== NAK-286 Etappe 4, Rotbeweis M-02 (15.09.2026 03:07:23) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: gescheiterter Diff gibt Ja = $false zurueck
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur lohnt_vier_faelle
+Traeger (Muster der Meldung): \[ROT\] M-02 lohnt_vier_faelle.*\(b\)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     if ($r.Exit -ne 0) { return @{ Ja = $true; Grund = "Diff nicht bestimmbar
+  +     if ($r.Exit -ne 0) { return @{ Ja = $false; Grund = "Diff nicht bestimmbar
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 825F05A9492033E843763C973BE3B03240C77365954C20E7EDFFA07DB1266AD1, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-02 lohnt_vier_faelle: [Diff scheitert] (b) False 'Diff nicht bestimmbar (fatal: bad revision): vorsichtshalber ja' | [Diff scheitert] (b) der Lauf endet UEBERSPRUNGEN statt weiterzulaufen
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-02 lohnt_vier_faelle: [Diff scheitert] (b) False 'Diff nicht bestimmbar (fatal: bad revision): vorsichtshalber ja' | [Diff scheitert] (b) der Lauf endet UEBERSPRUNGEN statt weiterzulaufen
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

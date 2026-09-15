@@ -1,0 +1,60 @@
+=== NAK-286 Etappe 4, Rotbeweis M-22 (15.09.2026 03:08:15) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Import von fl_trigger in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kein_piano_roll_weg
+Traeger (Muster der Meldung): \[ROT\] M-22 kein_piano_roll_weg
+Ersetzung in tools/fl/szenario.py:
+  - def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  + def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  +     from fl_studio_mcp.utils import fl_trigger  # noqa: F401 - ROTBEWEIS M-22
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 8F714901513C4E02DAAD3F5FFFD854D2FE3B0169CE8808E3F3EA17233E0D1C77, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:786)']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:786)']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-22 (15.09.2026 04:09:22) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Import von fl_trigger in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kein_piano_roll_weg
+Traeger (Muster der Meldung): \[ROT\] M-22 kein_piano_roll_weg
+Ersetzung in tools/fl/szenario.py:
+  - def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  + def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  +     from fl_studio_mcp.utils import fl_trigger  # noqa: F401 - ROTBEWEIS M-22
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert CD7CBE984C40F2CDB25B4B480CA6CCC5A02CC5628870CB36B180ECB312BEDD93, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:796)']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:796)']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-22 (15.09.2026 04:14:57) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Import von fl_trigger in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur kein_piano_roll_weg
+Traeger (Muster der Meldung): \[ROT\] M-22 kein_piano_roll_weg
+Ersetzung in tools/fl/szenario.py:
+  - def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  + def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
+  +     from fl_studio_mcp.utils import fl_trigger  # noqa: F401 - ROTBEWEIS M-22
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 221C01E29A08EB56C25565EBB8BCBC09C4D6175ECFC01F89A6F8725C3E9BC67A, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:796)']
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-22 kein_piano_roll_weg: Piano-Roll-Weg importiert: ['fl_trigger (szenario.py:796)']
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,142 @@
+=== NAK-286 Etappe 4, Rotbeweis M-55 (1) (15.09.2026 03:07:49) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Entfernen der Anfrage in Ende gestrichen
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur anfrage_lebenszyklus
+Traeger (Muster der Meldung): \[ROT\] M-55 anfrage_lebenszyklus.*anfrage\.json liegt
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     try { Raeume-Anfrage-Ab } catch { Log "Anfrage abraeumen fehlgeschlagen: $($_.Exception.Message)" }
+  +     # ROTBEWEIS M-55 (1): Entfernen der Anfrage in Ende gestrichen
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 62E992DCB9EA1B384755BCC11FEDDEC509056B91D437F95486CCAC3F86C258AE, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] anfrage.json liegt nach dem Ausgang
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] anfrage.json liegt nach dem Ausgang
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-55 (2) Runner (15.09.2026 03:07:51) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Aufraeumen in umgekehrter Reihenfolge: Antworten vor der Anfrage
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur anfrage_lebenszyklus
+Traeger (Muster der Meldung): \[ROT\] M-55 anfrage_lebenszyklus.*Aufraeumen: Anfrage
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     $anfrage = Join-Path $K.DiagnoseOrdner 'anfrage.json'
+  -     if (& $script:U.Existiert $anfrage) {
+  -         & $script:U.Loesche $anfrage
+  -         Log 'Briefkasten: liegende anfrage.json entfernt'
+  -     }
+  -     $n = 0
+  -     foreach ($name in @(& $script:U.Namen $K.AntwortOrdner)) {
+  -         if ($name -match $script:AntwortMuster -or $name -match $script:TempMuster) {
+  -             & $script:U.Loesche (Join-Path $K.AntwortOrdner $name)
+  -             $n++
+  -         }
+  -     }
+  +     $n = 0
+  +     foreach ($name in @(& $script:U.Namen $K.AntwortOrdner)) {
+  +         if ($name -match $script:AntwortMuster -or $name -match $script:TempMuster) {
+  +             & $script:U.Loesche (Join-Path $K.AntwortOrdner $name)
+  +             $n++
+  +         }
+  +     }
+  +     # ROTBEWEIS M-55 (2): Aufraeumen in umgekehrter Reihenfolge
+  +     $anfrage = Join-Path $K.DiagnoseOrdner 'anfrage.json'
+  +     if (& $script:U.Existiert $anfrage) {
+  +         & $script:U.Loesche $anfrage
+  +         Log 'Briefkasten: liegende anfrage.json entfernt'
+  +     }
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert F72BD1730C0AC7E254DA3611A0811FC4C4E299B99376259267112FE51C3BA9DF, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] Aufraeumen: Anfrage (6) vor den Antworten (4) verletzt
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] Aufraeumen: Anfrage (6) vor den Antworten (4) verletzt
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-55 (2) Leser (15.09.2026 03:08:16) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Aufraeumen in umgekehrter Reihenfolge in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur anfrage_schreiben_und_abraeumen
+Traeger (Muster der Meldung): \[ROT\] M-55 anfrage_schreiben_und_abraeumen.*Reihenfolge
+Ersetzung in tools/fl/szenario.py:
+  -         if self.umg.existiert(self.anfrage_pfad):
+  -             self.umg.loesche(self.anfrage_pfad)
+  -         for name, _groesse in self.umg.liste(self.antworten):
+  -             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  -                 self.umg.loesche(self.antworten / name)
+  +         for name, _groesse in self.umg.liste(self.antworten):
+  +             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  +                 self.umg.loesche(self.antworten / name)
+  +         if self.umg.existiert(self.anfrage_pfad):  # ROTBEWEIS M-55 (2): die Anfrage zuletzt
+  +             self.umg.loesche(self.anfrage_pfad)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert C35602B673952EC4AE7F97B13AC9BF7F1B97B8AA1124A674BA37D637C868DF66, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-55 (2) Leser (15.09.2026 04:09:24) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Aufraeumen in umgekehrter Reihenfolge in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur anfrage_schreiben_und_abraeumen
+Traeger (Muster der Meldung): \[ROT\] M-55 anfrage_schreiben_und_abraeumen.*Reihenfolge
+Ersetzung in tools/fl/szenario.py:
+  -         if self.umg.existiert(self.anfrage_pfad):
+  -             self.umg.loesche(self.anfrage_pfad)
+  -         for name, _groesse in self.umg.liste(self.antworten):
+  -             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  -                 self.umg.loesche(self.antworten / name)
+  +         for name, _groesse in self.umg.liste(self.antworten):
+  +             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  +                 self.umg.loesche(self.antworten / name)
+  +         if self.umg.existiert(self.anfrage_pfad):  # ROTBEWEIS M-55 (2): die Anfrage zuletzt
+  +             self.umg.loesche(self.anfrage_pfad)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert EE2DDFBFEDF86C7999951355C9EC2ED660EC9D098221A5505744BDF3DDED7B8E, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-55 (2) Leser (15.09.2026 04:14:58) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Aufraeumen in umgekehrter Reihenfolge in szenario.py
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur anfrage_schreiben_und_abraeumen
+Traeger (Muster der Meldung): \[ROT\] M-55 anfrage_schreiben_und_abraeumen.*Reihenfolge
+Ersetzung in tools/fl/szenario.py:
+  -         if self.umg.existiert(self.anfrage_pfad):
+  -             self.umg.loesche(self.anfrage_pfad)
+  -         for name, _groesse in self.umg.liste(self.antworten):
+  -             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  -                 self.umg.loesche(self.antworten / name)
+  +         for name, _groesse in self.umg.liste(self.antworten):
+  +             if ANTWORT_NAME.match(name) or TEMP_NAME.match(name):
+  +                 self.umg.loesche(self.antworten / name)
+  +         if self.umg.existiert(self.anfrage_pfad):  # ROTBEWEIS M-55 (2): die Anfrage zuletzt
+  +             self.umg.loesche(self.anfrage_pfad)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 0EC4F2B330BBED91704BEE0F542A06999EC6FC1E7C302ED57924798FE9A6610E, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-55 anfrage_schreiben_und_abraeumen: Aufraeumen: Reihenfolge ['ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json', 'ffffffffffffffffffffffffffffffff.gen.4242.3b6a765ede676559.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json.tmp-1', 'anfrage.json'] (zuerst die Anfrage, dann die Antworten)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

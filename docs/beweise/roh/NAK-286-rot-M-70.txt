@@ -1,0 +1,384 @@
+=== NAK-286 Etappe 4, Rotbeweis M-70 (1) (15.09.2026 03:09:01) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(1\) Rahmen aus der Zeit vor dem Start
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 90CD1C2B2B40671F9FE021BB8473A6513D384CC14C9B4B46214DA2FEB7BF3F46, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: Grundlauf: Exit 0, gezaehlte Antworten ['4', '4'] | (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: Grundlauf: Exit 0, gezaehlte Antworten ['4', '4'] | (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (2) (15.09.2026 03:09:02) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Stelle ohne Versatz in den Host gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(2\) v = \+75 600
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert 6D2B293B458EDAD48A9956E66E2C86B6D2F5D05FC1DDBABAA3F63BE9734517D3, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (3) (15.09.2026 03:09:03) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: null als 0 gelesen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(3\) projekt_sample_start null
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert DB33CBB6CB9997DC6639CB5EB282F39F1277AF03409A5C0B81E2F3E88BB57848, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung '(keine Zeile)'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung '(keine Zeile)'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (4) (15.09.2026 03:09:04) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Ende der Anfragen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(4\) Position steht
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, mutiert E0A018DB904A52658C2E2E329F7AB6953A0523A3312359EE2C825AEC70414934, nach der Ruecknahme C05AFA9BE45C2F9D289B4A1E6F89710FD0D59875EE2CFAB221B5737035DC9B0C, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 12 Anfragen
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 12 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (1) (15.09.2026 04:12:28) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(1\) Rahmen aus der Zeit vor dem Start
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 39DF13CD3426B1EAFF8B53A9A016A0F44036EAB39E080C2CA5A2952A39F6A38B, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (2) (15.09.2026 04:12:30) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Stelle ohne Versatz in den Host gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(2\) v = \+75 600
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert A3CD631A7E52839018F26762E02D0241477369C18EC419B4BA0BF5E623F33E57, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (3) (15.09.2026 04:12:32) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 1FAAD37380E08B1FF64CFF84224AC2C22542D3520266455242D32F388B95A458, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (4) (15.09.2026 04:12:34) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Ende der Anfragen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(4\) Position steht
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 39054D1870C17097D88813F2A3959B12BC980595ADB86C9C2B5BD4200FB4102D, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (5) (15.09.2026 04:12:39) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zeitplan
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert D007F5F1E967D68F47B6D1FA78AD00520538C2DD4958A89252ACE05BDB7E5A25, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (6) (15.09.2026 04:12:40) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zwei_durchlaeufe
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert 4BE7E9661BD0ACE907FF92A09E5A5D85E2ED94A2E91CB6AE8529F4040A0539C4, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_zwei_durchlaeufe: gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (7) (15.09.2026 04:12:42) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: erste Anfrage auch waehrend transport.start blockiert zugelassen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zeitplan.*waehrend transport.start blockiert
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, mutiert E4866F7EDCE12D79DDC0B743F129D7D76453E501B9223A790CB313665D5F88F2, nach der Ruecknahme AAEE1946ED54258A4F65901BAC4FA2E65AB5C88A4D9BDB145C19D049BE026446, gleich: ja
+rot: Exit 0, Traegerzeilen 0
+--- Rohausgabe, mutierter Stand ---
+[ok] M-70 stelle_zeitplan
+SELBSTTEST szenario.py: 1 ok, 0 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS UNGUELTIG (Lauf rot Exit 0; Traegerzeilen 0 statt mindestens 1)
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (1) (15.09.2026 04:15:43) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Zaehlung nach der Positionsklammer statt nach dem Materialausschnitt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(1\) Rahmen aus der Zeit vor dem Start
+Ersetzung in tools/fl/szenario.py:
+  -         elif not (a_frames <= start and start + anzahl <= b_frames):
+  +         elif not (anfrage.p_vor is not None and a_frames <= round(anfrage.p_vor * RATE / 1000) <= b_frames):  # ROTBEWEIS M-70 (1)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 1585185343AA82E8D6BA3CBF98AE9696ACE40497588DC2820AB76F80EF7F175D, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (1) Rahmen aus der Zeit vor dem Start bei Klammer in der Stelle: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (2) (15.09.2026 04:15:45) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Stelle ohne Versatz in den Host gelegt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(2\) v = \+75 600
+Ersetzung in tools/fl/szenario.py:
+  -         a = round(float(stelle["von_s"]) * RATE) + v
+  -         b = round(float(stelle["bis_s"]) * RATE) + v
+  +         a = round(float(stelle["von_s"]) * RATE)  # ROTBEWEIS M-70 (2): ohne Versatz
+  +         b = round(float(stelle["bis_s"]) * RATE)
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert D597CE1215B71842F6BC193FDA76D4CA56AD08564EBE699CCCE3E5BFC3E24767, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (2) v = +75 600: setPosition [{'position': 0, 'mode': 0}] statt 1 714 ms (Stellenanfang plus 1,714286 s)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (3) (15.09.2026 04:15:47) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: null als 0 gelesen (Zaehlung und Ausschnitt der Differenzen)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(3\) projekt_sample_start null: Zaehlung 'gezaehlt'
+Ersetzung in tools/fl/szenario.py:
+  -         spielt = antwort.wert("frame.spielt")
+  +         spielt = antwort.wert("frame.spielt")
+  +         start = 0 if start is None else start  # ROTBEWEIS M-70 (3): null als 0
+Ersetzung in tools/fl/szenario.py:
+  -         start, anzahl = antwort.wert("frame.projekt_sample_start"), antwort.wert("frame.sample_count")
+  -         return [start, start + anzahl]
+  +         start, anzahl = antwort.wert("frame.projekt_sample_start") or 0, antwort.wert("frame.sample_count")  # ROTBEWEIS M-70 (3)
+  +         return [start, start + anzahl]
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert ED6FFB30BDADD8E66ABF62E95BD8E6B81D940EA7FEDBFAD64C61CCEFE65F1412, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (3) projekt_sample_start null: Zaehlung 'gezaehlt'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (4) (15.09.2026 04:15:48) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Ende der Anfragen entfernt
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_materialausschnitt
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_materialausschnitt.*\(4\) Position steht
+Ersetzung in tools/fl/szenario.py:
+  -             if vor.ende:
+  -                 ende = vor.ende
+  -                 break
+  +             pass  # ROTBEWEIS M-70 (4): Ende der Anfragen entfernt
+Ersetzung in tools/fl/szenario.py:
+  -         if nach.ende:
+  -             ende = nach.ende
+  -             break
+  -         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+  +         if all(am_stellenende(anfragen, r, b_frames) for r in rollen):
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert 4CDFEED2ED964334376BD76640A8219C85C933390DEA78A28F576E77DD24A371, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_materialausschnitt: (4) Position steht nach dem Start: 23 Anfragen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (5) (15.09.2026 04:15:54) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: Zeitplan ohne Bewertung: der erste Kandidat wird genommen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zeitplan
+Ersetzung in tools/fl/szenario.py:
+  -             if bester is None or (tragend, marge) > (bester[3], bester[2]):
+  +             if bester is None:  # ROTBEWEIS M-70 (5): ohne Bewertung
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert F969A2AE3A31E6AEAE22C841D60AFA1DC4F7FEF0239794B70870E352B5CD60B0, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_zeitplan: S1, Phasenabstand 0.0 s: im mittleren Fall {'gen': 1, 'probeeq': 2} | Phasen aus Lauf 1, Stelle 3.134 s: im mittleren Fall {'gen': 1, 'probeeq': 1}, 0 von 16 Kombinationen | Phasen aus Lauf 1, Stelle 3.692 s: im mittleren Fall {'gen': 1, 'probeeq': 2}, 0 von 16 Kombinationen | S3 mit den Phasen aus Lauf 2: gemeinsam 0 von 16, einzeln {'gen': (16, 16), 'probeeq': (8, 16)}
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (6) (15.09.2026 04:15:54) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: getrennte Durchlaeufe je Rolle entfernt: immer eine gemeinsame Anfragefolge
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zwei_durchlaeufe
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zwei_durchlaeufe
+Ersetzung in tools/fl/szenario.py:
+  -     getrennt = len(rollen) > 1 and gemeinsam is not None and gemeinsam[3] < gemeinsam[4]
+  +     getrennt = False  # ROTBEWEIS M-70 (6): immer gemeinsam
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert C8AA27FB6980EC7E390985AC87521D1D41A56B5A1BA25A52784EB37B077B1DAB, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zwei_durchlaeufe: gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_zwei_durchlaeufe: gemeinsamer Zeitplan traegt nicht jede Kombination, trotzdem ein Durchlauf | Positionierungen [{'position': 42462, 'mode': 0}] statt zweimal 42 462 ms | ein Durchlauf erwartet mehr als seine Rolle
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-70 (7) (15.09.2026 04:15:57) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc
+Mutation: erste Anfrage auch waehrend transport.start blockiert zugelassen
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur stelle_zeitplan
+Traeger (Muster der Meldung): \[ROT\] M-70 stelle_zeitplan.*waehrend transport.start blockiert
+Ersetzung in tools/fl/szenario.py:
+  -             if t1 < jetzt + 0.1 or start - 0.02 <= t1 < start + 2.0 * befehl_s + 0.05:
+  +             if t1 < jetzt + 0.1:  # ROTBEWEIS M-70 (7): Startfenster nicht ausgeschlossen
+SHA-256 tools/fl/szenario.py vorher DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, mutiert CEEA52B2CE3AACC2DEDB9E120A2F05AC0AC5DC71E54B9BDCB82BC3A8F79788E2, nach der Ruecknahme DDE0FBB270D41AB376F1B8ABA8D52A3546E81E716A5BDA371B1558D7F6794684, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-70 stelle_zeitplan: Befehlsdauer 0,05 s: erste Anfrage -0.017 s zum Start (waehrend transport.start blockiert), 16 von 16 Kombinationen
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

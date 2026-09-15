@@ -1,0 +1,92 @@
+=== NAK-286 Etappe 4, Rotlauf am Basis-SHA M-15  (15.09.2026 01:20) ===
+Art: Rotlauf am Basis-SHA (§5.1): der neue Test gegen die unveraenderte Quelle, bevor sie geaendert wird
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a; MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174 (Zweig evenacadia-local)
+Quelle (unveraendert, MCP 29f6656): src/fl_studio_mcp/utils/midi_connection.py SHA-256 FB90CEA1B5468404232256756690B883405932C3FFADB79FC6AF78204DD7E265
+Testdatei mit dem neuen Test: tests/test_port_selection.py SHA-256 4837492657FA5C67602CA34A91E2D8AC5DA5402858F0BAABE86E02D7C5E15E50
+Bein MCP-pytest einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected -p no:cacheprovider
+Exit: 1
+Traeger (Muster der Meldung): ambiguous ports, but 'loopMIDI Port 1' was chosen
+  Traeger: [1m[31mE       AssertionError: ambiguous ports, but 'loopMIDI Port 1' was chosen[0m
+  Traeger: [31mFAILED[0m tests/test_port_selection.py::[1mtest_ambiguous_virtual_ports_are_not_connected[0m - AssertionError: ambiguous ports, but 'loopMIDI Port 1' was chosen
+--- Rohausgabe ---
+[1m============================= test session starts =============================[0m
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_port_selection.py [31mF[0m[31m                                           [100%][0m
+
+================================== FAILURES ===================================
+[31m[1m_______________ test_ambiguous_virtual_ports_are_not_connected ________________[0m
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001FFE82DFB30>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-62/test_ambiguous_virtual_ports_a0')
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_ambiguous_virtual_ports_are_not_connected[39;49;00m(monkeypatch, tmp_path):[90m[39;49;00m
+    [90m    [39;49;00m[33m"""Two loopMIDI ports: the first one is not silently the right one."""[39;49;00m[90m[39;49;00m
+        monkeypatch.delenv(mc.PORT_ENV, raising=[94mFalse[39;49;00m)[90m[39;49;00m
+        ports = [[33m"[39;49;00m[33mloopMIDI Port 1[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mMicrosoft GS Wavetable Synth 0[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mloopMIDI Port 2[39;49;00m[33m"[39;49;00m][90m[39;49;00m
+        chosen = mc.choose_port(ports)[90m[39;49;00m
+>       [94massert[39;49;00m chosen [95mis[39;49;00m [94mNone[39;49;00m, [33mf[39;49;00m[33m"[39;49;00m[33mambiguous ports, but [39;49;00m[33m{[39;49;00mchosen[33m!r}[39;49;00m[33m was chosen[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+[1m[31mE       AssertionError: ambiguous ports, but 'loopMIDI Port 1' was chosen[0m
+[1m[31mE       assert 'loopMIDI Port 1' is None[0m
+
+[1m[31mtests\test_port_selection.py[0m:75: AssertionError
+[36m[1m=========================== short test summary info ===========================[0m
+[31mFAILED[0m tests/test_port_selection.py::[1mtest_ambiguous_virtual_ports_are_not_connected[0m - AssertionError: ambiguous ports, but 'loopMIDI Port 1' was chosen
+[31m============================== [31m[1m1 failed[0m[31m in 0.10s[0m[31m ==============================[0m
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG (Exit ungleich 0, Traegerzeile vorhanden)
+
+=== NAK-286 Etappe 4, Rotbeweis M-15 (2) (15.09.2026 03:13:22) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Mehrdeutigkeitspruefung entfernt: der erste Kandidat wird verbunden
+Bein einzeln: uv run --directory C:\Users\phili\Projekte\fl-studio-mcp pytest tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected -p no:cacheprovider --color=no
+Traeger (Muster der Meldung): FAILED .*::test_ambiguous_virtual_ports_are_not_connected
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py:
+  -         candidates = port_candidates(output_ports)
+  -         if len(candidates) > 1:
+  +         candidates = port_candidates(output_ports)
+  +         if False:  # ROTBEWEIS M-15 (2): Mehrdeutigkeitspruefung entfernt
+Ersetzung in C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py:
+  -     return candidates[0] if len(candidates) == 1 else None
+  +     return candidates[0] if candidates else None  # ROTBEWEIS M-15 (2)
+SHA-256 C:\Users\phili\Projekte\fl-studio-mcp\src\fl_studio_mcp\utils\midi_connection.py vorher 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, mutiert 63A87F1644B10FCD39368CBCE99FC0E57A740AC6A6CE97997874E2F86FF77D9C, nach der Ruecknahme 4622C00F89EC253D953BCCBD7BE0B1E2C153AF29F126384273924F5B37DB4686, gleich: ja
+rot: Exit 1, Traegerzeilen 1
+  Traeger: FAILED tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected
+--- Rohausgabe, mutierter Stand ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\phili\Projekte\fl-studio-mcp
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1 item
+
+tests\test_port_selection.py F                                           [100%]
+
+================================== FAILURES ===================================
+_______________ test_ambiguous_virtual_ports_are_not_connected ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002011C185F10>
+tmp_path = WindowsPath('C:/Users/phili/AppData/Local/Temp/pytest-of-phili/pytest-68/test_ambiguous_virtual_ports_a0')
+
+    def test_ambiguous_virtual_ports_are_not_connected(monkeypatch, tmp_path):
+        """Two loopMIDI ports: the first one is not silently the right one."""
+        monkeypatch.delenv(mc.PORT_ENV, raising=False)
+        ports = ["loopMIDI Port 1", "Microsoft GS Wavetable Synth 0", "loopMIDI Port 2"]
+        chosen = mc.choose_port(ports)
+>       assert chosen is None, f"ambiguous ports, but {chosen!r} was chosen"
+E       AssertionError: ambiguous ports, but 'loopMIDI Port 1' was chosen
+E       assert 'loopMIDI Port 1' is None
+
+tests\test_port_selection.py:75: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected
+============================== 1 failed in 0.06s ==============================
+--- Ende der Rohausgabe ---
+gruen: Exit 0, ============================== 1 passed in 0.02s ==============================
+Ergebnis: ROTBEWEIS GUELTIG
+

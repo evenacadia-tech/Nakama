@@ -1,0 +1,105 @@
+=== NAK-286 Etappe 4, Rotbeweis M-65 (1) (15.09.2026 03:07:59) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Rueckweg auch bei KETTE oder VERSATZ
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur rueckweg_nur_bei_abweichung
+Traeger (Muster der Meldung): \[ROT\] M-65 rueckweg_nur_bei_abweichung.*(KETTE|VERSATZ): Rueckweg gefahren
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         if ($name -eq 'nulltest-host.json' -and (Nulltest-Urteil) -eq 'ABWEICHUNG') { $rueckweg = Fahre-Rueckweg }
+  +         if ($name -eq 'nulltest-host.json' -and (Nulltest-Urteil) -in @('ABWEICHUNG', 'KETTE', 'VERSATZ')) { $rueckweg = Fahre-Rueckweg } # ROTBEWEIS M-65 (1)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 0D9A19295F6D3F481C6A41E20FE7DEC8E738FEF3A59260F55AA93C6DFB51B52E, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-65 rueckweg_nur_bei_abweichung: [KETTE] KETTE: Rueckweg gefahren | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 4 | [VERSATZ] VERSATZ: Rueckweg gefahren | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 4
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-65 rueckweg_nur_bei_abweichung: [KETTE] KETTE: Rueckweg gefahren | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 4 | [VERSATZ] VERSATZ: Rueckweg gefahren | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 4
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-65 (2) (15.09.2026 03:08:02) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Rueckweg bei ABWEICHUNG entfaellt
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur rueckweg_nur_bei_abweichung
+Traeger (Muster der Meldung): \[ROT\] M-65 rueckweg_nur_bei_abweichung.*ABWEICHUNG: kein Rueckweg
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         if ($name -eq 'nulltest-host.json' -and (Nulltest-Urteil) -eq 'ABWEICHUNG') { $rueckweg = Fahre-Rueckweg }
+  +         # ROTBEWEIS M-65 (2): Rueckweg bei ABWEICHUNG entfaellt
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert DD5490A369D99C2BFE11CFE7E03FFA6FC850D61BB0A51334F72675F806FB48F5, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: kein Rueckweg | [ABWEICHUNG] ABWEICHUNG:  FL-Prozess(e) leben waehrend des Rueckwegs | [ABWEICHUNG] ABWEICHUNG: Folgeszenarien liefen | [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe' | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe' | [NAK-41] NAK-41: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: kein Rueckweg | [ABWEICHUNG] ABWEICHUNG:  FL-Prozess(e) leben waehrend des Rueckwegs | [ABWEICHUNG] ABWEICHUNG: Folgeszenarien liefen | [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe' | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe' | [NAK-41] NAK-41: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Attrappe'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-65 (3) (15.09.2026 03:08:05) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Rueckweg vor dem Beenden des Diagnose-FL
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur rueckweg_nur_bei_abweichung
+Traeger (Muster der Meldung): \[ROT\] M-65 rueckweg_nur_bei_abweichung.*FL-Prozess\(e\) leben waehrend des Rueckwegs
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     Beende-Diagnose-FL
+  -     Beende-Restprozesse
+  -     $laufend = @(FL-Instanzen)
+  +     $laufend = @() # ROTBEWEIS M-65 (3): Beenden erst nach dem Rueckwegaufruf
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     try { $r = Aufgabe 'rueckweg' } catch {
+  +     try { $r = Aufgabe 'rueckweg'; Beende-Diagnose-FL; Beende-Restprozesse } catch {
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert F2502F2219A6E8526F1A076FB5CA7BB4697EBD4C7977FD3010D53658E76F3A4C, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: 1 FL-Prozess(e) leben waehrend des Rueckwegs | [FL laeuft beim Rueckweg] FL laeuft: Rueckweg trotzdem gestartet | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: 1 FL-Prozess(e) leben waehrend des Rueckwegs | [FL laeuft beim Rueckweg] FL laeuft: Rueckweg trotzdem gestartet | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-65 (4) (15.09.2026 03:08:08) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Kopfzeile ohne Grund: FL laeuft und NAK-41 ergeben denselben Text
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur rueckweg_nur_bei_abweichung
+Traeger (Muster der Meldung): \[ROT\] M-65 rueckweg_nur_bei_abweichung.*FL laeuft: Kopfzeile
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $grund = 'Rueckweg verweigert (FL laeuft): ' + (($laufend | ForEach-Object { "PID $($_.Id) '$($_.Titel)'" }) -join ', ')
+  +         $grund = 'Rueckweg verweigert' # ROTBEWEIS M-65 (4)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     if ((@($r.Zeilen) -join "`n") -match 'Rueckweg verweigert \(NAK-41\)') { return "Rueckweg verweigert (NAK-41); pruefen Exit $($p.Exit)" }
+  +     if ((@($r.Zeilen) -join "`n") -match 'Rueckweg verweigert \(NAK-41\)') { return 'Rueckweg verweigert' } # ROTBEWEIS M-65 (4)
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 9977DE58C40DE8DAC57558EADDA65A64B0B6A74AE3471BAA6FF400DE5F5B711E, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-65 rueckweg_nur_bei_abweichung: [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg verweigert' | [NAK-41] NAK-41: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg verweigert'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-65 rueckweg_nur_bei_abweichung: [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg verweigert' | [NAK-41] NAK-41: Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg verweigert'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-65 (5) (15.09.2026 03:08:12) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Folgeszenarien nach dem Rueckweg ohne Meldung uebersprungen
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur rueckweg_nur_bei_abweichung
+Traeger (Muster der Meldung): \[ROT\] M-65 rueckweg_nur_bei_abweichung.*Rohdatei ohne Zeilen
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             $entfallen += $name
+  -             Log "Szenario ${name}: entfallen: Rueckweg nach ABWEICHUNG"
+  -             Add-Content -LiteralPath $K.Roh -Value "`n## Szenario ``$name`` - entfallen: Rueckweg nach ABWEICHUNG`n" -Encoding utf8
+  +             # ROTBEWEIS M-65 (5): ohne Meldung uebersprungen
+SHA-256 tools/fl/laufzeit.ps1 vorher 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, mutiert 7EC1D57FD502178CFA02AC842256C4D3B348A5CE99A4B7BF2101BB4E0FFACC17, nach der Ruecknahme 8E4A9A1FA16A6E8257A85305B89E3BAD9A9465152BF114FAF77945A71494C7BC, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

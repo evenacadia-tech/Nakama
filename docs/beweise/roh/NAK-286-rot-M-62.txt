@@ -1,0 +1,76 @@
+=== NAK-286 Etappe 4, Rotbeweis M-62 (a) (15.09.2026 03:09:09) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Vergleich mit Toleranz 1e-6 statt bitgenau: das gekippte LSB faellt nicht auf
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur identisch_null_abweichungen
+Traeger (Muster der Meldung): \[ROT\] M-62 identisch_null_abweichungen.*gekipptes LSB
+Ersetzung in tools/fl/nulltest.py:
+  -     ungleich = r != q
+  +     ungleich = np.abs(r - q) > 1e-6  # ROTBEWEIS M-62 (a): Toleranz statt bitgenau
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert 940083647A9413802B4C2E235991D30937245C6121F93AC0D4BBEE040D8A9037, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-62 identisch_null_abweichungen: gekipptes LSB: Urteil BITIDENTISCH Exit 0 statt ABWEICHUNG 4 | gekipptes LSB an 123457: Abweichungen 0, erste None, letzte None
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-62 identisch_null_abweichungen: gekipptes LSB: Urteil BITIDENTISCH Exit 0 statt ABWEICHUNG 4 | gekipptes LSB an 123457: Abweichungen 0, erste None, letzte None
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-62 (b) (15.09.2026 03:09:10) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Versatzsuche entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur identisch_null_abweichungen
+Traeger (Muster der Meldung): \[ROT\] M-62 identisch_null_abweichungen.*ein Nullframe vor der Quelle
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = 0  # ROTBEWEIS M-62 (b): Versatzsuche entfernt
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert 40DA59AFFB4DE76D157FF859439081C66D07154968F070679696B4CD88CE6298, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-62 identisch_null_abweichungen: ein Nullframe vor der Quelle: Urteil ABWEICHUNG v 0 Abweichungen 399986 Exit 4
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-62 identisch_null_abweichungen: ein Nullframe vor der Quelle: Urteil ABWEICHUNG v 0 Abweichungen 399986 Exit 4
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-62 (a) (15.09.2026 03:13:12) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Vergleich mit Toleranz 1e-6 statt bitgenau: das gekippte LSB faellt nicht auf
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur identisch_null_abweichungen
+Traeger (Muster der Meldung): \[ROT\] M-62 identisch_null_abweichungen.*gekipptes LSB
+Ersetzung in tools/fl/nulltest.py:
+  -     ungleich = r != q
+  +     ungleich = np.abs(r - q) > 1e-6  # ROTBEWEIS M-62 (a): Toleranz statt bitgenau
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 4DF05D5CBF67A0B0BE4C07A84D0F2FB68A71F5565925CB0AB7DDA89E5ACFADB3, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-62 identisch_null_abweichungen: gekipptes LSB: Urteil BITIDENTISCH Exit 0 statt ABWEICHUNG 4 | gekipptes LSB an 123457: Abweichungen 0, erste None, letzte None
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-62 identisch_null_abweichungen: gekipptes LSB: Urteil BITIDENTISCH Exit 0 statt ABWEICHUNG 4 | gekipptes LSB an 123457: Abweichungen 0, erste None, letzte None
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-62 (b) (15.09.2026 03:13:13) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Versatzsuche entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur identisch_null_abweichungen
+Traeger (Muster der Meldung): \[ROT\] M-62 identisch_null_abweichungen.*ein Nullframe vor der Quelle
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = 0  # ROTBEWEIS M-62 (b): Versatzsuche entfernt
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 234C0787BCC13DEED4CD86AE00A2A97D5366F7995F18CC4C721C3BB473D05611, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-62 identisch_null_abweichungen: ein Nullframe vor der Quelle: Urteil ABWEICHUNG v 0 Abweichungen 399986 Exit 4
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-62 identisch_null_abweichungen: ein Nullframe vor der Quelle: Urteil ABWEICHUNG v 0 Abweichungen 399986 Exit 4
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

@@ -1,0 +1,114 @@
+=== NAK-286 Etappe 4, Rotbeweis M-75 (1) (15.09.2026 03:09:12) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Versatzurteil entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 1: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -         ergebnis["urteil"] = "BITIDENTISCH" if v == 0 else "VERSATZ"
+  +         ergebnis["urteil"] = "BITIDENTISCH" if v == 0 else "ABWEICHUNG"  # ROTBEWEIS M-75 (1)
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert 7C810BDB50BC14A05817DDA5F0975E7225FFD70C41EAF6D727CEC785384AA194, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-75 (2) (15.09.2026 03:09:14) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Suche auf +-4 410 Frames begrenzt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 75600: Urteil ABWEICHUNG
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = versatz_kandidat(render, quelle, n, 4410)  # ROTBEWEIS M-75 (2)
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert 47221A66D1C2B07B2F5068F1BD4D03D71D0F2BF64145A518EFAA9BD90252AD6A, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = 2023 (Vorzeichen nach P-7) | v = 75600: 395940 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 2023, 'bis': 199993, 'frames': 197970} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 3170 (Vorzeichen nach P-7) | v = -75600: 393646 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 3170, 'bis': 199993, 'frames': 196823} statt 199993 Frames ab 0
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = 2023 (Vorzeichen nach P-7) | v = 75600: 395940 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 2023, 'bis': 199993, 'frames': 197970} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 3170 (Vorzeichen nach P-7) | v = -75600: 393646 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 3170, 'bis': 199993, 'frames': 196823} statt 199993 Frames ab 0
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-75 (3) (15.09.2026 03:09:15) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Vorzeichen vertauscht: v als der Quellframe, an dem Renderframe 0 liegt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 75600: gemeldet v = -75600
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = -versatz_kandidat(render, quelle, n, suche)  # ROTBEWEIS M-75 (3)
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert F1D125ACBBD212F0DF29CF092B11DAC653D6CDD2D7F86B53E743712C9F29515F, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 1: gemeldet v = -1 (Vorzeichen nach P-7) | v = 1: 399986 Abweichungen nach Ausrichtung | v = 1: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 199992 Frames ab 1 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: gemeldet v = 1 (Vorzeichen nach P-7) | v = -1: 399984 Abweichungen nach Ausrichtung | v = -1: ueberlappend {'von': 1, 'bis': 199993, 'frames': 199992} statt 199993 Frames ab 0 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = -75600 (Vorzeichen nach P-7) | v = 75600: 399986 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 75600 (Vorzeichen nach P-7) | v = -75600: 248786 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 75600, 'bis': 199993, 'frames': 124393} statt 199993 Frames ab 0
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 1: gemeldet v = -1 (Vorzeichen nach P-7) | v = 1: 399986 Abweichungen nach Ausrichtung | v = 1: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 199992 Frames ab 1 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: gemeldet v = 1 (Vorzeichen nach P-7) | v = -1: 399984 Abweichungen nach Ausrichtung | v = -1: ueberlappend {'von': 1, 'bis': 199993, 'frames': 199992} statt 199993 Frames ab 0 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = -75600 (Vorzeichen nach P-7) | v = 75600: 399986 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 75600 (Vorzeichen nach P-7) | v = -75600: 248786 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 75600, 'bis': 199993, 'frames': 124393} statt 199993 Frames ab 0
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-75 (1) (15.09.2026 03:13:15) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Versatzurteil entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 1: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -         ergebnis["urteil"] = "BITIDENTISCH" if v == 0 else "VERSATZ"
+  +         ergebnis["urteil"] = "BITIDENTISCH" if v == 0 else "ABWEICHUNG"  # ROTBEWEIS M-75 (1)
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 9EF9DC729950D03D328C526A120D9730A7C9753DA0AE351A0AD4CACFB88899FE, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-75 (2) (15.09.2026 03:13:16) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Suche auf +-4 410 Frames begrenzt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 75600: Urteil ABWEICHUNG
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = versatz_kandidat(render, quelle, n, 4410)  # ROTBEWEIS M-75 (2)
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 86A46DA0701E44877FC42520F485B2E65570F272993986AA84E1B9ECE2BA5CC8, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = 2023 (Vorzeichen nach P-7) | v = 75600: 395940 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 2023, 'bis': 199993, 'frames': 197970} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 3170 (Vorzeichen nach P-7) | v = -75600: 393646 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 3170, 'bis': 199993, 'frames': 196823} statt 199993 Frames ab 0
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = 2023 (Vorzeichen nach P-7) | v = 75600: 395940 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 2023, 'bis': 199993, 'frames': 197970} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 3170 (Vorzeichen nach P-7) | v = -75600: 393646 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 3170, 'bis': 199993, 'frames': 196823} statt 199993 Frames ab 0
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-75 (3) (15.09.2026 03:13:18) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Vorzeichen vertauscht: v als der Quellframe, an dem Renderframe 0 liegt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur versatz_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-75 versatz_ist_voraussetzung.*v = 75600: gemeldet v = -75600
+Ersetzung in tools/fl/nulltest.py:
+  -     v = versatz_kandidat(render, quelle, n, suche)
+  +     v = -versatz_kandidat(render, quelle, n, suche)  # ROTBEWEIS M-75 (3)
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert ADF343DFA1E0C173F708D74A2F404E183994BA0D4979275565B2DF884C9EC4EF, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 1: gemeldet v = -1 (Vorzeichen nach P-7) | v = 1: 399986 Abweichungen nach Ausrichtung | v = 1: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 199992 Frames ab 1 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: gemeldet v = 1 (Vorzeichen nach P-7) | v = -1: 399984 Abweichungen nach Ausrichtung | v = -1: ueberlappend {'von': 1, 'bis': 199993, 'frames': 199992} statt 199993 Frames ab 0 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = -75600 (Vorzeichen nach P-7) | v = 75600: 399986 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 75600 (Vorzeichen nach P-7) | v = -75600: 248786 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 75600, 'bis': 199993, 'frames': 124393} statt 199993 Frames ab 0
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-75 versatz_ist_voraussetzung: v = 1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 1: gemeldet v = -1 (Vorzeichen nach P-7) | v = 1: 399986 Abweichungen nach Ausrichtung | v = 1: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 199992 Frames ab 1 | v = -1: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -1: gemeldet v = 1 (Vorzeichen nach P-7) | v = -1: 399984 Abweichungen nach Ausrichtung | v = -1: ueberlappend {'von': 1, 'bis': 199993, 'frames': 199992} statt 199993 Frames ab 0 | v = 75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = 75600: gemeldet v = -75600 (Vorzeichen nach P-7) | v = 75600: 399986 Abweichungen nach Ausrichtung | v = 75600: ueberlappend {'von': 0, 'bis': 199993, 'frames': 199993} statt 124393 Frames ab 75600 | v = -75600: Urteil ABWEICHUNG Exit 4 statt VERSATZ 5 | v = -75600: gemeldet v = 75600 (Vorzeichen nach P-7) | v = -75600: 248786 Abweichungen nach Ausrichtung | v = -75600: ueberlappend {'von': 75600, 'bis': 199993, 'frames': 124393} statt 199993 Frames ab 0
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

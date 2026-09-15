@@ -1,0 +1,65 @@
+=== NAK-286 Etappe 4, Rotbeweis M-63 (1) (15.09.2026 03:09:17) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Klassifikation KETTE entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur konstanter_faktor_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-63 konstanter_faktor_ist_voraussetzung.*Faktor 0,5: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -     if erklaert:
+  +     if False:  # ROTBEWEIS M-63 (1): Klassifikation entfernt
+SHA-256 tools/fl/nulltest.py vorher 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, mutiert 3BBCFA3CF3FDA7C6856B62C469F33D70BC17E7AA50EA4DCB5D34A6930D2C6B93, nach der Ruecknahme 8455919123B18D9058AD8ACADDC011DBC0CF510174BD89FCAF97A27E5F6F332B, gleich: ja
+rot: Exit 2, Traegerzeilen 0
+--- Rohausgabe, mutierter Stand ---
+Traceback (most recent call last):
+  File "C:\Users\phili\Projekte\Nakama\tools\fl\nulltest.py", line 523, in main
+    return selbsttest(args.nur)
+  File "C:\Users\phili\Projekte\Nakama\tools\fl\nulltest.py", line 499, in selbsttest
+    funktion(t)
+    ~~~~~~~~^^^
+  File "C:\Users\phili\Projekte\Nakama\tools\fl\nulltest.py", line 442, in fall_konstanter_faktor_ist_voraussetzung
+    t.pruefe(e.get("g") is not None and abs(e["g"] - 0.5) < 1e-9 and abs(e["g_db"] - 20 * math.log10(0.5)) < 1e-6,
+                                                                         ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+NULLTEST WERKZEUGFEHLER
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS UNGUELTIG (Traegerzeilen 0 statt mindestens 1)
+
+=== NAK-286 Etappe 4, Rotbeweis M-63 (1) (15.09.2026 03:13:19) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Klassifikation KETTE entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur konstanter_faktor_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-63 konstanter_faktor_ist_voraussetzung.*Faktor 0,5: Urteil ABWEICHUNG Exit 4
+Ersetzung in tools/fl/nulltest.py:
+  -     if erklaert:
+  +     if False:  # ROTBEWEIS M-63 (1): Klassifikation entfernt
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 3FC99DE821B503DE6544DEFB552186793CEB65A50A43B2A9099250396FE04AA9, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-63 konstanter_faktor_ist_voraussetzung: Faktor 0,5: Urteil ABWEICHUNG Exit 4 statt KETTE 5 | Faktor 0,5: g 0.5 g_db None
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-63 konstanter_faktor_ist_voraussetzung: Faktor 0,5: Urteil ABWEICHUNG Exit 4 statt KETTE 5 | Faktor 0,5: g 0.5 g_db None
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 4, Rotbeweis M-63 (2) (15.09.2026 03:13:21) ===
+Art: Rotbeweis nach dem Bau (§5.1): Mutation am Traeger, Bein einzeln, bytegleiche Ruecknahme, gruen
+Nakama HEAD 34bdf159872d4bfa725acad94ffe667a70fd066a (Arbeitsstand der Etappe uncommittet); MCP-Repo HEAD 29f6656cdcb04a6628d6712fc416334a1c41a174
+Mutation: Restpruefung entfernt
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur konstanter_faktor_ist_voraussetzung
+Traeger (Muster der Meldung): \[ROT\] M-63 konstanter_faktor_ist_voraussetzung.*mit Stoerung: Urteil KETTE Exit 5
+Ersetzung in tools/fl/nulltest.py:
+  -     erklaert = bool(np.all(rest <= toleranz))
+  +     erklaert = True  # ROTBEWEIS M-63 (2): Restpruefung entfernt
+SHA-256 tools/fl/nulltest.py vorher F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, mutiert 4BB05D69529748C6B93E33EDDEC3460A806BC3E5F59FC851C2393CAD5D2DFC2C, nach der Ruecknahme F988C61C8EC7FDB1EE805CFBB142EDA03A2D2DFF600DB74505A2E88528F41A0B, gleich: ja
+rot: Exit 4, Traegerzeilen 1
+  Traeger: [ROT] M-63 konstanter_faktor_ist_voraussetzung: Faktor 0,5 mit Stoerung: Urteil KETTE Exit 5 statt ABWEICHUNG 4
+--- Rohausgabe, mutierter Stand ---
+[ROT] M-63 konstanter_faktor_ist_voraussetzung: Faktor 0,5 mit Stoerung: Urteil KETTE Exit 5 statt ABWEICHUNG 4
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

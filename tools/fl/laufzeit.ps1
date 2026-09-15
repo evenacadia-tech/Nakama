@@ -16,8 +16,10 @@
       3. Bereitschaft: loopMIDI VOR FL (FL sieht nur MIDI-Ports, die beim
          Start existieren), fensterlose FL-Restprozesse beenden, Projektordner
          unter %LOCALAPPDATA%\evenacadia\nakama-laufzeit\projekt aus dem Repo
-         befuellen (Diagnoseprojekt plus Samples\Testtrack.wav), Briefkasten-
-         Ordner aufraeumen (zuerst die Anfrage, dann die Antworten), fuer
+         befuellen (Diagnoseprojekt plus Samples\Testtrack.wav, dazu die
+         Referenzprojekte aus Karte U43 unter den Namen der Szenariodatei;
+         SHA-256 am Anfang und am Ende), Briefkasten-Ordner aufraeumen
+         (zuerst die Anfrage, dann die Antworten), fuer
          nulltest-host den Render ueber FL64.exe /R, FL mit dem Projekt
          starten, auf den Ping des Controller-Skripts warten.
       4. Szenarien: jede JSON-Datei unter docs/gesundheit/szenarien/ alphabetisch
@@ -30,8 +32,8 @@
 
     Exit 0 = gemessen oder begruendet uebersprungen, 3 = Voraussetzung fehlt
     (Hashes, Installation, Port, Ping; ein Szenario mit Exit 3 oder 5),
-    4 = mindestens ein Szenario verfehlt. Das Diagnoseprojekt wird nie
-    gespeichert; FL bleibt danach offen (-Beenden schliesst es, z. B. im
+    4 = mindestens ein Szenario verfehlt. Diagnose- und Referenzprojekte
+    werden nie gespeichert; FL bleibt danach offen (-Beenden schliesst es, z. B. im
     naechtlichen Lauf). Der Runner startet nie den Broker.
 
     -Selbsttest faehrt die Faelle der Matrixzeilen gegen Attrappen fuer
@@ -97,7 +99,7 @@ function Neuer-Kontext([hashtable]$w) {
         Protokoll = (New-Object System.Collections.Generic.List[string])
         Kopfzeilen = (New-Object System.Collections.Generic.List[string])
         FlStart = $null; DiagnosePid = $null; Ping = $null; Installation = ''
-        ProjektHashes = $null; ControllerNeu = $false; ScriptVersion = $null
+        ProjektHashes = $null; ReferenzHashes = [ordered]@{}; ControllerNeu = $false; ScriptVersion = $null
         Ergebnis = $null; EndeLaeuft = $false
     }
 }
@@ -152,9 +154,19 @@ function Pruefe-Projekt {
     $repo = & $script:U.Hash $K.Projekt
     $kopie = & $script:U.Hash (Join-Path $K.ProjektOrdner $K.ProjektName)
     Log ("Diagnoseprojekt am Ende: SHA-256 Repo {0}, Arbeitskopie {1}" -f $repo, $kopie)
+    $gruende = @()
     if ($repo -ne $K.ProjektHashes.Repo -or $kopie -ne $K.ProjektHashes.Kopie) {
-        return "Diagnoseprojekt veraendert (Repo $($K.ProjektHashes.Repo) -> $repo, Arbeitskopie $($K.ProjektHashes.Kopie) -> $kopie)"
+        $gruende += "Diagnoseprojekt veraendert (Repo $($K.ProjektHashes.Repo) -> $repo, Arbeitskopie $($K.ProjektHashes.Kopie) -> $kopie)"
     }
+    # P-18: M-12 gilt fuer alle drei Projekte - jedes kopierte Referenzprojekt wird wie das Diagnoseprojekt verglichen.
+    foreach ($name in @($K.ReferenzHashes.Keys)) {
+        $h = $K.ReferenzHashes[$name]
+        $r = & $script:U.Hash $h.Quelle
+        $c = & $script:U.Hash $h.Ziel
+        Log ("Referenzprojekt {0} am Ende: SHA-256 Repo {1}, Arbeitskopie {2}" -f $name, $r, $c)
+        if ($r -ne $h.Repo -or $c -ne $h.Kopie) { $gruende += "Referenzprojekt $name veraendert (Repo $($h.Repo) -> $r, Arbeitskopie $($h.Kopie) -> $c)" }
+    }
+    if ($gruende.Count -gt 0) { return ($gruende -join '; ') }
     return $null
 }
 
@@ -444,7 +456,22 @@ function Stelle-LoopMidi-Sicher {
     Log 'loopMIDI gestartet (Port aus der Registry wird beim Start angelegt)'
 }
 
-function Bereite-Projekt {
+function Referenzprojekt-Namen([string[]]$liste) {
+    # P-18 (§38.2): die Namen der Referenzprojekte aus Karte U43 stehen in der Szenariodatei (Schritte lokal.nulltest,
+    # params.projekt) - kein anderer Name, kein Suchen nach Mustern.
+    $namen = New-Object System.Collections.Generic.List[string]
+    foreach ($s in @($liste)) {
+        try { $szenario = (& $script:U.LiesText $s) | ConvertFrom-Json } catch { continue }
+        foreach ($schritt in @($szenario.schritte)) {
+            if (-not $schritt -or $schritt.aktion -ne 'lokal.nulltest' -or -not $schritt.params) { continue }
+            $name = [string]$schritt.params.projekt
+            if ($name -and -not $namen.Contains($name)) { $namen.Add($name) }
+        }
+    }
+    return @($namen)
+}
+
+function Bereite-Projekt([string[]]$liste = @()) {
     $K = $script:K
     if (-not (& $script:U.Existiert $K.Projekt)) { throw "Diagnoseprojekt fehlt: $($K.Projekt)" }
     & $script:U.LegeOrdnerAn $K.ProjektOrdner
@@ -468,6 +495,26 @@ function Bereite-Projekt {
     # M-12: SHA-256 beider Projektdateien nach dem Kopieren; jeder Ausgang vergleicht sie (Ende).
     $K.ProjektHashes = @{ Repo = (& $script:U.Hash $K.Projekt); Kopie = (& $script:U.Hash $kopie) }
     Log ("Diagnoseprojekt: SHA-256 Repo {0}, Arbeitskopie {1}" -f $K.ProjektHashes.Repo, $K.ProjektHashes.Kopie)
+    # P-18, M-12 fuer alle drei Projekte: die Referenzprojekte aus Karte U43 unter genau den Namen der Szenariodatei, im
+    # Ordner des Diagnoseprojekts; kopiert wie das Diagnoseprojekt, SHA-256 von Quelle und Arbeitskopie, jeder Ausgang
+    # vergleicht sie (Pruefe-Projekt). Ein fehlendes Projekt wird nicht kopiert; lokal.nulltest meldet es (M-64).
+    $K.ReferenzHashes = [ordered]@{}
+    $ordner = [IO.Path]::GetDirectoryName($K.Projekt)
+    foreach ($name in @(Referenzprojekt-Namen $liste)) {
+        if ([IO.Path]::GetFileName($name) -ne $name -or $name -notlike '*.flp') {
+            Log "Referenzprojekt '$name': kein Projektdateiname im Ordner des Diagnoseprojekts, nicht kopiert"
+            continue
+        }
+        $refQuelle = Join-Path $ordner $name
+        if (-not (& $script:U.Existiert $refQuelle)) {
+            Log "Referenzprojekt ${name}: fehlt neben dem Diagnoseprojekt ($refQuelle; Karte U43), nicht kopiert"
+            continue
+        }
+        $refKopie = Join-Path $K.ProjektOrdner $name
+        & $script:U.Kopiere $refQuelle $refKopie
+        $K.ReferenzHashes[$name] = @{ Quelle = $refQuelle; Ziel = $refKopie; Repo = (& $script:U.Hash $refQuelle); Kopie = (& $script:U.Hash $refKopie) }
+        Log ("Referenzprojekt {0}: SHA-256 Repo {1}, Arbeitskopie {2}" -f $name, $K.ReferenzHashes[$name].Repo, $K.ReferenzHashes[$name].Kopie)
+    }
     return $kopie
 }
 
@@ -696,7 +743,7 @@ function Fahre-Lauf {
 
         try {
             Pruefe-Controller
-            $flp = Bereite-Projekt
+            $flp = Bereite-Projekt $liste
             Bereite-Briefkasten
             if (@($liste | Where-Object { [IO.Path]::GetFileName($_) -eq 'nulltest-host.json' }).Count -gt 0) { Rendere $flp }
             Stelle-LoopMidi-Sicher
@@ -1113,6 +1160,7 @@ $script:NulltestWirkung = {
     $script:T.NulltestCode
 }
 $script:FuenfSzenarien = @('bereitschaft.json', 'fenster.json', 'nulltest-host.json', 'snapshot-runde01.json', 'u40-aktivitaetsgate.json')
+$script:EchteSzenarien = Join-Path $Repo 'docs\gesundheit\szenarien'
 
 Fall 'M-09' 'controller_veraltet_neu_installieren' {
     Testfall 'Controller veraltet'
@@ -1210,6 +1258,56 @@ Fall 'M-12' 'projekt_unveraendert' {
     Testfall 'Arbeitskopie unveraendert'
     $e = T-Lauf
     Pruefe ($e.Code -eq 0 -and $e.Zusatz -notmatch 'veraendert') "unveraendert: Exit $($e.Code) '$($e.Zusatz)'"
+}
+
+Fall 'M-64' 'referenzprojekte_aus_szenariodatei' {
+    # P-18 (§38.2): die Namen der Referenzprojekte stehen in der Szenariodatei nulltest-host.json des Repos - genau die
+    # Namen der Karte U43, im Ordner des Diagnoseprojekts. Der Runner kopiert sie wie das Diagnoseprojekt in seine
+    # Arbeitskopie und vergleicht die SHA-256 am Anfang und am Ende (M-12 fuer alle drei Projekte). Kein anderer Name,
+    # kein Suchen nach Mustern: Attrappen mit den frueheren und aehnlichen Namen liegen daneben.
+    $karte = @('Nakama-Diagnose-Referenz.flp', 'Nakama-Diagnose-Verarbeitung.flp')
+    $koeder = @('Nakama-Diagnose-ohne-Slots.flp', 'Nakama-Diagnose-Verarbeitung-ein.flp', 'Nakama-Diagnose-Referenz-alt.flp')
+    $lege = {
+        param([string[]]$namen)
+        [IO.File]::WriteAllText((Join-Path $script:T.Repo 'docs\gesundheit\szenarien\nulltest-host.json'),
+            [IO.File]::ReadAllText((Join-Path $script:EchteSzenarien 'nulltest-host.json')))
+        foreach ($n in $namen) { [IO.File]::WriteAllText((Join-Path $script:T.Repo "eq-copilot\fixtures\fl\$n"), "FLP-Attrappe $n") }
+    }
+    $kopien = { (@(Get-ChildItem -LiteralPath $script:K.ProjektOrdner -File | ForEach-Object { $_.Name }) | Sort-Object) -join ', ' }
+
+    Testfall 'Projekte der Karte neben Koedern' @('nulltest-host.json')
+    & $lege ($karte + $koeder)
+    $e = T-Lauf
+    $soll = (@(@('Nakama-Diagnose.flp') + $karte) | Sort-Object) -join ', '
+    Pruefe ((& $kopien) -eq $soll) "Arbeitskopie traegt [$(& $kopien)] statt [$soll] (Namen der Karte U43 aus nulltest-host.json, kein Muster)"
+    $protokoll = @($script:K.Protokoll) -join "`n"
+    foreach ($n in $karte) {
+        $h = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $script:T.Repo "eq-copilot\fixtures\fl\$n")).Hash
+        $m = [regex]::Escape($n)
+        Pruefe ($protokoll -match "\] Referenzprojekt ${m}: SHA-256 Repo $h, Arbeitskopie $h") "Referenzprojekt $n ohne SHA-256 von Repo und Arbeitskopie am Anfang"
+        Pruefe ($protokoll -match "\] Referenzprojekt $m am Ende: SHA-256 Repo $h, Arbeitskopie $h") "Referenzprojekt $n ohne SHA-256 von Repo und Arbeitskopie am Ende"
+    }
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "unveraenderte Referenzprojekte: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+
+    Testfall 'Referenzprojekte waehrend des Laufs veraendert' @('nulltest-host.json')
+    & $lege $karte
+    $script:T.Szenarien['nulltest-host.json'] = {
+        [IO.File]::AppendAllText((Join-Path $script:K.ProjektOrdner 'Nakama-Diagnose-Verarbeitung.flp'), 'gespeichert')
+        [IO.File]::AppendAllText((Join-Path $script:T.Repo 'eq-copilot\fixtures\fl\Nakama-Diagnose-Referenz.flp'), 'gespeichert')
+        0
+    }
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 4 -and $e.Urteil -eq 'VERFEHLT' -and $e.Zusatz -match 'Referenzprojekt Nakama-Diagnose-Verarbeitung\.flp veraendert' -and $e.Zusatz -match 'Referenzprojekt Nakama-Diagnose-Referenz\.flp veraendert') "veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)' statt 4 VERFEHLT mit beiden Namen"
+
+    Testfall 'ohne die Projekte der Karte' @('nulltest-host.json')
+    & $lege $koeder
+    $e = T-Lauf
+    Pruefe ((& $kopien) -eq 'Nakama-Diagnose.flp') "ohne die Projekte der Karte: Arbeitskopie traegt [$(& $kopien)]"
+    $protokoll = @($script:K.Protokoll) -join "`n"
+    foreach ($n in $karte) {
+        Pruefe ($protokoll -match "Referenzprojekt $([regex]::Escape($n)): fehlt neben dem Diagnoseprojekt") "ohne die Projekte der Karte: keine Zeile 'Referenzprojekt ${n}: fehlt neben dem Diagnoseprojekt'"
+    }
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "ohne die Projekte der Karte: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
 }
 
 Fall 'M-13' 'volllauf_erzwingen_beenden' {

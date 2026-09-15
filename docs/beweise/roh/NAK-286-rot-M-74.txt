@@ -1,0 +1,228 @@
+=== NAK-286 Etappe 5, Rotlauf vor der Aenderung M-74 (15.09.2026 09:32:20) ===
+Art: Rotlauf vor der Aenderung (§5.1, §43): Markerpruefung (git grep an den Stellen aus §0.6) am Basisstand
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER 
+Erwartung: rot, mindestens 4 Traegerzeile(n)
+SHA-256 docs/gesundheit/KONZEPT.md (Traeger unveraendert) 14E1421B9989A8FEEA8819AB781E422098ABB15A9E916C94BDB38476E6C3C0C3, nach dem Lauf 14E1421B9989A8FEEA8819AB781E422098ABB15A9E916C94BDB38476E6C3C0C3, gleich: ja
+SHA-256 docs/offene-punkte.md (Traeger unveraendert) 84590437127A7C76E9333FAD383607DE72D08BB273C0C1DA573760AC30DB0E76, nach dem Lauf 84590437127A7C76E9333FAD383607DE72D08BB273C0C1DA573760AC30DB0E76, gleich: ja
+SHA-256 docs/gesundheit/szenarien/LIES-MICH.md (Traeger unveraendert) DAA682773188759E15E5BA852B646CC84B870916ADBC0ECBFB6EF1F8B88AE754, nach dem Lauf DAA682773188759E15E5BA852B646CC84B870916ADBC0ECBFB6EF1F8B88AE754, gleich: ja
+SHA-256 tools/fl/LIES-MICH.md (Traeger unveraendert) 41D441656D162AD8223ED90668AC560DE59B88F91CD39A8338EB2B1F202AE117, nach dem Lauf 41D441656D162AD8223ED90668AC560DE59B88F91CD39A8338EB2B1F202AE117, gleich: ja
+rot: Exit 1, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 4
+  Traeger: TREFFER docs/gesundheit/KONZEPT.md:359 (KONZEPT §4.6, Szenarien je Karte): ...`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den...
+  Traeger: TREFFER docs/gesundheit/szenarien/LIES-MICH.md:17 (Szenarien, Absatz Noch anzulegen (S25e)): ...Noch anzulegen (S25e): Nulltest im echten Host (Render...
+  Traeger: TREFFER docs/offene-punkte.md:294 (Register NAK-284): ...chritt 9) rückt vor. Zu bauen: Messszenarien je Karte unter `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den Probe-Pipen...
+  Traeger: TREFFER docs/offene-punkte.md:296 (Register NAK-286): ...30 neu anlegen. Geschlossen mit der Abnahme von S25e (Manifest `docs/beweise/NAK-286.md` (anzulegen): Bereitschaftslauf, Nulltest im echten...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+TREFFER docs/gesundheit/KONZEPT.md:359 (KONZEPT §4.6, Szenarien je Karte): ...`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den...
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+TREFFER docs/gesundheit/szenarien/LIES-MICH.md:17 (Szenarien, Absatz Noch anzulegen (S25e)): ...Noch anzulegen (S25e): Nulltest im echten Host (Render...
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+TREFFER docs/offene-punkte.md:294 (Register NAK-284): ...chritt 9) rückt vor. Zu bauen: Messszenarien je Karte unter `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den Probe-Pipen...
+TREFFER docs/offene-punkte.md:296 (Register NAK-286): ...30 neu anlegen. Geschlossen mit der Abnahme von S25e (Manifest `docs/beweise/NAK-286.md` (anzulegen): Bereitschaftslauf, Nulltest im echten...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 4 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-74 (KONZEPT) (15.09.2026 09:42:21) ===
+Art: Rotbeweis (§5.1, §43): Wort (anzulegen) in docs/gesundheit/KONZEPT.md zurueckgespielt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER docs/gesundheit/KONZEPT\.md:\d+
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/gesundheit/KONZEPT.md:
+  - `docs/gesundheit/szenarien/`, Telemetrie-Leser
+  + `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser
+SHA-256 docs/gesundheit/KONZEPT.md vorher E52169D7F6DFDC6A34EDC4838267BF06A957BB1789769E037FFDB5461DE465F8, mutiert 14E1421B9989A8FEEA8819AB781E422098ABB15A9E916C94BDB38476E6C3C0C3, nach der Ruecknahme E52169D7F6DFDC6A34EDC4838267BF06A957BB1789769E037FFDB5461DE465F8, gleich: ja
+rot: Exit 1, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: TREFFER docs/gesundheit/KONZEPT.md:359 (KONZEPT §4.6, Szenarien je Karte): ...`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+TREFFER docs/gesundheit/KONZEPT.md:359 (KONZEPT §4.6, Szenarien je Karte): ...`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den...
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 1 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-74 (NAK-284) (15.09.2026 09:42:22) ===
+Art: Rotbeweis (§5.1, §43): Wort (anzulegen) in der Registerzeile NAK-284 zurueckgespielt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER docs/offene-punkte\.md:\d+ \(Register NAK-284\)
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/offene-punkte.md:
+  - Messszenarien je Karte unter `docs/gesundheit/szenarien/`, Telemetrie-Leser
+  + Messszenarien je Karte unter `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser
+SHA-256 docs/offene-punkte.md vorher F7C7A7AEFAD3AFF9D4090DEAD433FFAA46CF22D442D0C38194C03F63FECF8185, mutiert 4B4880FFD3013FABA5571AE146AB4969A0A8895CEC22B4966D46E0D1063121C0, nach der Ruecknahme F7C7A7AEFAD3AFF9D4090DEAD433FFAA46CF22D442D0C38194C03F63FECF8185, gleich: ja
+rot: Exit 1, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: TREFFER docs/offene-punkte.md:294 (Register NAK-284): ...chritt 9) rückt vor. Zu bauen: Messszenarien je Karte unter `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den Probe-Pipen...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+TREFFER docs/offene-punkte.md:294 (Register NAK-284): ...chritt 9) rückt vor. Zu bauen: Messszenarien je Karte unter `docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den Probe-Pipen...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 1 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-74 (NAK-286) (15.09.2026 09:42:23) ===
+Art: Rotbeweis (§5.1, §43): Wort (anzulegen) in der Registerzeile NAK-286 zurueckgespielt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER docs/offene-punkte\.md:\d+ \(Register NAK-286\)
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/offene-punkte.md:
+  - Manifest `docs/beweise/NAK-286.md`: Bereitschaftslauf
+  + Manifest `docs/beweise/NAK-286.md` (anzulegen): Bereitschaftslauf
+SHA-256 docs/offene-punkte.md vorher F7C7A7AEFAD3AFF9D4090DEAD433FFAA46CF22D442D0C38194C03F63FECF8185, mutiert 2753AC33A4BF03A1CEC60FC82A17363FD5CB768EB080D54627C5843277593D2E, nach der Ruecknahme F7C7A7AEFAD3AFF9D4090DEAD433FFAA46CF22D442D0C38194C03F63FECF8185, gleich: ja
+rot: Exit 1, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: TREFFER docs/offene-punkte.md:296 (Register NAK-286): ...30 neu anlegen. Geschlossen mit der Abnahme von S25e (Manifest `docs/beweise/NAK-286.md` (anzulegen): Bereitschaftslauf, Nulltest im echten...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+TREFFER docs/offene-punkte.md:296 (Register NAK-286): ...30 neu anlegen. Geschlossen mit der Abnahme von S25e (Manifest `docs/beweise/NAK-286.md` (anzulegen): Bereitschaftslauf, Nulltest im echten...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 1 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-74 (Szenarien) (15.09.2026 09:42:24) ===
+Art: Rotbeweis (§5.1, §43): Absatz Noch anzulegen (S25e) in docs/gesundheit/szenarien/LIES-MICH.md zurueckgespielt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER docs/gesundheit/szenarien/LIES-MICH\.md:\d+
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/gesundheit/szenarien/LIES-MICH.md:
+  - Gebaut in S25e (NAK-286, Etappen 2 bis 5): Nulltest im echten Host
+  + Noch anzulegen (S25e): Nulltest im echten Host
+SHA-256 docs/gesundheit/szenarien/LIES-MICH.md vorher 007AA188966BC55B0963667C68DAD94520E4B7B99275F9940250A25F428FC028, mutiert AFB17FEE0C7E885455A92B398CFB7B3671CF86AFA79D456566B087C5E280DE44, nach der Ruecknahme 007AA188966BC55B0963667C68DAD94520E4B7B99275F9940250A25F428FC028, gleich: ja
+rot: Exit 1, Dauer 0.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: TREFFER docs/gesundheit/szenarien/LIES-MICH.md:17 (Szenarien, Absatz Noch anzulegen (S25e)): ...Noch anzulegen (S25e): Nulltest im echten Host...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+TREFFER docs/gesundheit/szenarien/LIES-MICH.md:17 (Szenarien, Absatz Noch anzulegen (S25e)): ...Noch anzulegen (S25e): Nulltest im echten Host...
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 1 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.5 s, M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-74 (Grenzen) (15.09.2026 09:42:25) ===
+Art: Rotbeweis (§5.1, §43): Grenze der ersten Fassung in tools/fl/LIES-MICH.md zurueckgespielt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Obergrenze 240 s)
+Traeger (Muster des Traegers): ^TREFFER tools/fl/LIES-MICH\.md:\d+
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/LIES-MICH.md:
+  - Screenshot, Nulltest im Host (Auslieferungszustand) und Diagnose-Briefkasten
+  + Grenzen der ersten Fassung: kein Screenshot, kein Nulltest im Host, kein Diagnose-Briefkasten. Screenshot, Nulltest im Host (Auslieferungszustand) und Diagnose-Briefkasten
+SHA-256 tools/fl/LIES-MICH.md vorher 09380835177E1946861A330941A49C9E183F87B8778CE4008BBC8D6BD09C5EC7, mutiert 9315A53F63B9B36E2DBD8427B206CCE7A2823CA6853655B0084F5EC66B9900C1, nach der Ruecknahme 09380835177E1946861A330941A49C9E183F87B8778CE4008BBC8D6BD09C5EC7, gleich: ja
+rot: Exit 1, Dauer 0.4 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: TREFFER tools/fl/LIES-MICH.md:128 (Grenzen der ersten Fassung): ...Grenzen der ersten Fassung: kein Screenshot, kein Nulltest im Host...
+--- Rohausgabe, rot ---
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+TREFFER tools/fl/LIES-MICH.md:128 (Grenzen der ersten Fassung): ...Grenzen der ersten Fassung: kein Screenshot, kein Nulltest im Host...
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 ROT: 1 Treffer an Stellen aus §0.6
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.4 s, M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Markerpruefung M-74 am Endstand nach allen Ruecknahmen (15.09.2026 09:44:41) ===
+Befehl: pwsh -NoProfile -File docs/beweise/roh/NAK-286-rotskript-etappe5.ps1 -PruefeM74 (Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094, Arbeitsstand der Etappe 5 uncommittet)
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/KONZEPT.md
+git grep -n -F -e 'anzulegen' -- docs/gesundheit/szenarien/LIES-MICH.md
+git grep -n -F -e 'anzulegen' -- docs/offene-punkte.md
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:478 ... Regeln R1–R6 in `docs/beweise/G5.md` §11 Nr. 1; Ticketmanifest `docs/beweise/NAK-212.md` anzulegen (Matrix zuerst) **Abgenommen 08.09.2026...
+  nicht S25e (andere Registerzeile, bleibt): docs/offene-punkte.md:488 ...21`; bestätigt den Queue-Key-Teil von NAK-165). Eigenes Ticket `docs/beweise/NAK-246.md` (anzulegen, Etappe 1), Spezifikation vor Code, Eta...
+git grep -n -F -e 'Grenzen der ersten Fassung' -- tools/fl/LIES-MICH.md
+git grep -n -F -e 'Diagnoseprojekt nach NAK-30 neu anzulegen' -- .claude/skills/dirigent/SKILL.md
+BLEIBT .claude/skills/dirigent/SKILL.md:366:  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+M-74 GRUEN: keine Stelle aus §0.6 traegt den Marker; die Skill-Stelle bleibt
+Exit 0
+--- Wortlaut des Auftrags (Baufolge 3 Punkt 5): git grep ueber das ganze Repo ---
+git grep -c anzulegen an den Stellen aus §0.6, Basis-SHA:
+  7e39db9ab14866932cc7ddcfbd132df2bf141094:.claude/skills/dirigent/SKILL.md:1
+  7e39db9ab14866932cc7ddcfbd132df2bf141094:docs/gesundheit/KONZEPT.md:1
+  7e39db9ab14866932cc7ddcfbd132df2bf141094:docs/gesundheit/szenarien/LIES-MICH.md:1
+  7e39db9ab14866932cc7ddcfbd132df2bf141094:docs/offene-punkte.md:4
+git grep -c anzulegen an den Stellen aus §0.6, Endstand:
+  .claude/skills/dirigent/SKILL.md:1
+  docs/offene-punkte.md:2
+Dateien mit dem Wort im ganzen Repo: Basis-SHA 39, Endstand 37; entfallen: docs/gesundheit/KONZEPT.md, docs/gesundheit/szenarien/LIES-MICH.md
+Endstand, alle Dateien mit dem Wort (keine davon ist eine Stelle aus §0.6 ausser der Skill-Stelle und den Registerzeilen NAK-212 und NAK-246, die nicht zu S25e gehoeren):
+  .claude/skills/dirigent/SKILL.md
+  broker/src/coordinator/experiment.rs
+  broker/src/transport/server_v3/queues.rs
+  docs/ANTWORTEN-OFFEN.md
+  docs/PLAN-STAND.md
+  docs/audits/2026-09-10-code-review/evidence/planstand.md
+  docs/beweise/G5.md
+  docs/beweise/NAK-181.md
+  docs/beweise/NAK-182.md
+  docs/beweise/NAK-212.md
+  docs/beweise/NAK-246.md
+  docs/beweise/NAK-283.md
+  docs/beweise/NAK-286.md
+  docs/beweise/SONDE-013.md
+  docs/beweise/SONDE-014.md
+  docs/beweise/SONDE-015.md
+  docs/beweise/roh/NAK-286-etappe-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-2-pruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-2-wiederpruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-2-wiederpruefung-2-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-3-pruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-4-pruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-4-wiederpruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-etappe-5-auftrag.txt
+  docs/beweise/roh/NAK-286-matrixpruefung-1-auftrag.txt
+  docs/beweise/roh/NAK-286-matrixpruefung-2-auftrag.txt
+  docs/beweise/roh/NAK-286-matrixpruefung-3-auftrag.txt
+  docs/beweise/roh/NAK-286-matrixpruefung-4-auftrag.txt
+  docs/beweise/roh/SONDE-013-rot-M-41.txt
+  docs/beweise/roh/SONDE-014-etappe-2-auftrag.txt
+  docs/beweise/roh/SONDE-015-etappe-3-auftrag.txt
+  docs/gesundheit/skill-nachtrag-laufzeit-arm-2026-09-12.md
+  docs/offene-punkte.md
+  docs/plan/fragen.json
+  docs/plan/plan.json
+  tools/plan/dokuriegel.py
+  wissen/LIES-MICH.md
+

@@ -85,6 +85,7 @@ ANTWORT_FRIST_S = 10.0                # je Anfrage (M-56)
 NACHLAUF_S = 2.2                      # zwei Briefkastentakte (1 000 ms, F-12) plus Schreibzeit: spaete Doppelte sehen
 POSITION_ABSTAND_S = 0.25             # > 2 Audiopuffer (4 096 Samples / 44 100 Hz = 92,9 ms): Gleichstand heisst Stillstand
 FENSTER_FRIST_S = 5.0                 # M-21, erzwungen ueber den Unterprozess der Erfassung (P-19)
+PLUGIN_FENSTER_MIN = (200, 100)       # P-17: ein Plugin-Fensterbild unter Breite 200 oder Hoehe 100 ist eingeklappt
 # Die Erfassung laeuft im Unterprozess (P-19): der Interpreter des Szenarioprozesses - unter dem Runner das Python
 # des MCP-Venvs, laufzeit.ps1 startet szenario.py ueber uv run - ruft nur capture_process_window und schreibt dessen
 # Antwort als eine JSON-Zeile. Argumente: PID, Ziel, Bilderordner, Name, Plugin (leer = keins).
@@ -800,8 +801,8 @@ def lokal_nulltest(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
         if not projekt or not lauf.umg.existiert(pfad):
             return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Referenzprojekt fehlt (Karte U43, K-286-1)",
                     [f"- erwartet: `{pfad}` - ohne das Projekt kein Render dieses Zustands (M-64), nie still"])
-        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Weg R2 nicht gebaut (Karte U43 unbeantwortet)",
-                [f"- `{pfad}` liegt, der Render zweier Projekte folgt mit der Antwort auf Karte U43"])
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64)",
+                [f"- `{pfad}` liegt; der Render beider Referenzprojekte und ihr Vergleich (Weg R2, M-64) sind nicht gebaut"])
     ms = lauf.loop_ms()
     if ms is None:
         return EXIT_SZENARIO, "VORAUSSETZUNG: Songlaenge fehlt (transport.getLength vor lokal.nulltest)", []
@@ -846,8 +847,20 @@ def lokal_fenster(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
         maengel.append("einfarbig: das Bild traegt keinen Fensterinhalt")
     if not r.get("success") and not maengel:
         maengel.append("Erfassung ohne Erfolg")
-    kurz = _json(antwort) + (" · VERFEHLT: " + "; ".join(maengel) if maengel else "")
-    return (EXIT_VERFEHLT if maengel else EXIT_OK), kurz, [f"- Antwort {_json(antwort)}"]
+    # P-17 (§38.2): ein Plugin-Fensterbild unter 200 x 100 Pixel (Breite unter 200 oder Hoehe unter 100) ist ein
+    # eingeklappter FL-Wrapper - Szenario-Voraussetzung mit Breite x Hoehe in der Rohzeile, nie gruen (Handgriff K-286-2,
+    # Karte U43). Die Groesse ist das Fensterrechteck der Erfassung; das FL-Hauptfenster bleibt unberuehrt.
+    breite, hoehe = r.get("width"), r.get("height")
+    eingeklappt = (ziel == "plugin" and _ist_zahl(breite) and _ist_zahl(hoehe)
+                   and (breite < PLUGIN_FENSTER_MIN[0] or hoehe < PLUGIN_FENSTER_MIN[1]))
+    kurz = _json(antwort)
+    if eingeklappt:
+        kurz += (f" · VORAUSSETZUNG: eingeklappt: {breite} x {hoehe} Pixel (Plugin-Fenster unter "
+                 f"{PLUGIN_FENSTER_MIN[0]} x {PLUGIN_FENSTER_MIN[1]}; Handgriff K-286-2, Karte U43)")
+    if maengel:
+        kurz += " · VERFEHLT: " + "; ".join(maengel)
+    code = schlechter(EXIT_VERFEHLT if maengel else EXIT_OK, EXIT_SZENARIO if eingeklappt else EXIT_OK)
+    return code, kurz, [f"- Antwort {_json(antwort)}"]
 
 
 # ---------------------------------------------------------------- lokal.umlauf: Messpunkt innerhalb eines Umlaufs (F-28)
@@ -2446,6 +2459,46 @@ def fall_fenster_frist_erzwungen(p: Pruefer) -> None:
       f"Schritt ohne VERFEHLT mit 'Frist {FENSTER_FRIST_S:g} s ueberschritten': '{zeile[:220]}'")
     p(umg.conn.zaehle("system.ping") == 1 and code == EXIT_VERFEHLT,
       f"Szenarioprozess lief nach der Erfassung nicht weiter: system.ping {umg.conn.zaehle('system.ping')}-mal, Exit {code}")
+
+
+@fall("M-21", "fenster_eingeklappt")
+def fall_fenster_eingeklappt(p: Pruefer) -> None:
+    """P-17 (§38.2): ein Plugin-Fensterbild unter 200 x 100 Pixel ist ein eingeklappter FL-Wrapper. Der Schritt endet mit
+    Szenario-Voraussetzung (Exit 5), Grund eingeklappt und Breite x Hoehe in der Rohzeile, nie gruen; das FL-Hauptfenster
+    bleibt unberuehrt. Die Attrappe liefert das Bild aus L-286-1 (67 x 31, TPluginForm) und die Raender der Mindestgroesse."""
+
+    def bild(breite: int, hoehe: int, klasse: str, titel: str) -> dict:
+        return {"success": True, "path": f"C:/attrappe/bilder/{klasse}-{breite}x{hoehe}.png", "width": breite,
+                "height": hoehe, "sha256": "0" * 64, "uniform": False, "window_class": klasse, "window_title": titel}
+
+    def fahre_fenster(fl: tuple[int, int], plugin: tuple[int, int]) -> tuple[int, str, str]:
+        umg = TestUmgebung()
+        umg.conn = TestVerbindung(umg)
+        umg.fenster_ergebnis = lambda _pid, ziel, _plugin: (
+            bild(*plugin, "TPluginForm", "Nakama Probeeq (Insert 1)") if ziel == "plugin"
+            else bild(*fl, "TFruityLoopsMainForm", "Nakama-Diagnose.flp - FL Studio 2026"))
+        code, roh, _lauf = fahre_attrappe(umg, {"id": "fenster", "schritte": [
+            {"aktion": "lokal.fenster", "params": {"ziel": "fl"}},
+            {"aktion": "lokal.fenster", "params": {"ziel": "plugin", "plugin": "Nakama Probeeq"}}]})
+        zeilen = roh.splitlines()
+        return (code, next((z for z in zeilen if z.startswith("| 1 | `lokal.fenster` |")), ""),
+                next((z for z in zeilen if z.startswith("| 2 | `lokal.fenster` |")), ""))
+
+    code, zeile_fl, zeile_plugin = fahre_fenster((1920, 1032), (67, 31))
+    p(code == EXIT_SZENARIO and "eingeklappt: 67 x 31 Pixel" in zeile_plugin
+      and zeile_plugin.rstrip().endswith("| VORAUSSETZUNG (Details unten) |"),
+      f"Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit {code} statt {EXIT_SZENARIO}, Zeile '{zeile_plugin[-160:]}'")
+    p(zeile_fl.rstrip().endswith("| ok (Details unten) |") and "eingeklappt" not in zeile_fl,
+      f"FL-Hauptfenster 1920 x 1032 neben dem eingeklappten Plugin-Fenster nicht ok: '{zeile_fl[-160:]}'")
+    for breite, hoehe, erwartet in ((199, 480, EXIT_SZENARIO), (640, 99, EXIT_SZENARIO), (200, 100, EXIT_OK)):
+        code, _zeile_fl, zeile_plugin = fahre_fenster((1920, 1032), (breite, hoehe))
+        eingeklappt = f"eingeklappt: {breite} x {hoehe} Pixel" in zeile_plugin
+        p(code == erwartet and eingeklappt == (erwartet == EXIT_SZENARIO),
+          f"Mindestgroesse 200 x 100: Plugin-Fensterbild {breite} x {hoehe} endet mit Exit {code} statt {erwartet} "
+          f"(eingeklappt in der Zeile: {eingeklappt})")
+    code, zeile_fl, _zeile_plugin = fahre_fenster((67, 31), (640, 480))
+    p(code == EXIT_OK and "eingeklappt" not in zeile_fl and zeile_fl.rstrip().endswith("| ok (Details unten) |"),
+      f"FL-Hauptfenster 67 x 31 als eingeklappter Wrapper gewertet: Exit {code}, Zeile '{zeile_fl[-160:]}'")
 
 
 @fall("M-55", "anfrage_schreiben_und_abraeumen")

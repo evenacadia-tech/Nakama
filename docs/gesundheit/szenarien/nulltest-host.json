@@ -10,7 +10,7 @@
   {"aktion": "mixer.getTrackInfo", "params": {"track": 0}, "erwarte": {"volume": {"roh": true}, "volume_db": {"roh": true}}},
   {"aktion": "mixer.getRouting", "params": {"track": 1}, "erwarte": {"routes.*.dest": {"roh": true}, "routes.*.level": {"roh": true}}},
   {"aktion": "lokal.nulltest", "params": {"vergleich": "auslieferung"}},
-  {"aktion": "lokal.nulltest", "params": {"vergleich": "verarbeitung_ein", "projekt": "Nakama-Diagnose-Verarbeitung-ein.flp"}},
-  {"aktion": "lokal.nulltest", "params": {"vergleich": "ohne_slots", "projekt": "Nakama-Diagnose-ohne-Slots.flp"}}
+  {"aktion": "lokal.nulltest", "params": {"vergleich": "verarbeitung_ein", "projekt": "Nakama-Diagnose-Verarbeitung.flp"}},
+  {"aktion": "lokal.nulltest", "params": {"vergleich": "ohne_slots", "projekt": "Nakama-Diagnose-Referenz.flp"}}
  ]
 }

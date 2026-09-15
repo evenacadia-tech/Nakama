@@ -18,7 +18,7 @@ pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>
 
 Exit 0 = gemessen oder begründet übersprungen, 3 = Voraussetzung fehlt (auch
 eine Szenario-Voraussetzung: Szenario-Exit 5), 4 = Szenario verfehlt oder
-Diagnoseprojekt verändert (Nacharbeit). Rohdatei
+Diagnose- oder Referenzprojekt verändert (Nacharbeit). Rohdatei
 `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`; die letzte stdout-Zeile
 `LAUFZEIT …` ist die Kopfzeile fürs Manifest. Log:
 `%LOCALAPPDATA%\evenacadia\nakama-laufzeit\laufzeit.log`.
@@ -33,8 +33,11 @@ Diagnoseprojekt verändert (Nacharbeit). Rohdatei
    beenden und eine Boot-Marke mit der `script_version` des Repo-Stands
    verlangen.
 4. Projektordner unter `%LOCALAPPDATA%\evenacadia\nakama-laufzeit\projekt\`
-   mit SHA-256 von Repo-Projekt und Arbeitskopie; jeder Ausgang vergleicht
-   beide.
+   mit SHA-256 von Repo-Projekt und Arbeitskopie; dazu die Referenzprojekte
+   aus Karte U43 unter genau den Namen aus `nulltest-host.json`
+   (`Nakama-Diagnose-Referenz.flp`, `Nakama-Diagnose-Verarbeitung.flp`), wenn
+   sie neben dem Diagnoseprojekt liegen (P-18). Jeder Ausgang vergleicht alle
+   kopierten Projekte; ein verändertes ist Exit 4.
 5. Briefkasten `%LOCALAPPDATA%\evenacadia\nakama\diagnose\` mit `antwort\`:
    zuerst eine liegende Anfrage, dann Antworten früherer Läufe entfernen (nur
    Antwort- und Temp-Namen der Instanzen); jeder Ausgang räumt `anfrage.json`
@@ -55,10 +58,10 @@ Diagnoseprojekt verändert (Nacharbeit). Rohdatei
 | Aktion | Wirkung |
 |---|---|
 | `lokal.briefkasten` | eine Anfrage (128 Bit Zufall), Antworten je Rolle sammeln (Frist 10 s), Auswahl an Name und Größe vor dem Öffnen (2 B bis 16 MiB, keine `.tmp-`), nur aktuelle Kennung und Diagnose-PID; der Broker nur, wenn `eqcop-broker` läuft — der Runner startet ihn nie |
-| `lokal.nulltest` | `nulltest.py` über `render.json`; `verarbeitung_ein` und `ohne_slots` brauchen die Projekte aus Karte U43 |
-| `lokal.fenster` | Bild des FL- oder Plugin-Fensters über `PrintWindow` ohne Vordergrundwechsel unter `…\nakama-laufzeit\bilder\`; einfarbig oder minimiert ist verfehlt |
+| `lokal.nulltest` | `nulltest.py` über `render.json`; `verarbeitung_ein` liest `Nakama-Diagnose-Verarbeitung.flp`, `ohne_slots` liest `Nakama-Diagnose-Referenz.flp`, beide aus Karte U43 im Ordner des Diagnoseprojekts (P-18); fehlt das Projekt, ist das eine Szenario-Voraussetzung, und liegt es, ebenfalls, weil der Render beider Projekte (Weg R2, M-64) nicht gebaut ist |
+| `lokal.fenster` | Bild des FL- oder Plugin-Fensters über `PrintWindow` ohne Vordergrundwechsel unter `…\nakama-laufzeit\bilder\`, als Unterprozess mit erzwungener Frist 5 s (P-19: bei Ablauf beendet, „Frist 5 s ueberschritten", verfehlt); einfarbig oder minimiert ist verfehlt; ein Plugin-Fensterbild unter 200 × 100 Pixel (Breite unter 200 oder Höhe unter 100) ist ein eingeklappter FL-Wrapper: Szenario-Voraussetzung `eingeklappt` mit Breite × Höhe in der Zeile (P-17) |
 | `lokal.umlauf` | Anfragen im Sekundentakt bis zum Wrap; gewertete Antwort je Rolle, Materialzeit, Fortlaufbedingung, Kopfverlust K, Referenzausschnitt, Rechnung aus F-28 (`py -3.13 szenario.py --rechne`), Bänder und Zuordnung |
-| `lokal.stellen` | Karte U40: je Stelle Lage im Host mit v, Zeitplan aus den Takten der Briefkästen, Zählung nach dem Materialausschnitt des Rahmens, Rohzeilen, Differenzen kumulativer Zähler, Plausibilität ohne Sollwert |
+| `lokal.stellen` | Karte U40: je Stelle Lage im Host mit v, Zeitplan aus den Takten der Briefkästen, Zählung nach dem Materialausschnitt des Rahmens, Rohzeilen, Differenzen kumulativer Zähler, Plausibilität ohne Sollwert. Rohzeile je Antwort in der Spaltenfolge `Stelle`, `Rolle`, `durchlauf` (`gemeinsam` oder `getrennt`), `kombinationen` (`<getragen>/<alle>`), `Kennung`, `Zaehlung`, die Felder aus F-23 (`evidenz_frisch` bis `spielt`), `lage im Host` (Hostframes mit `v = …` oder `v unbekannt`), `p_vor ms`, `p_nach ms`; die Differenzzeile je Stelle und Rolle trägt `durchlauf` und `kombinationen` (P-16) |
 
 ## Voraussetzungen je Rechner
 
@@ -111,14 +114,22 @@ Gemessen ab 12.09.2026 mit FL 26.1.4.5589:
   Bytes und dekodiert mit Ersetzung.
 - ctypes-Funktionszeiger sind nicht hashbar: eine Prototypentabelle als `dict`
   scheiterte in FL mit „unhashable type" (MCP `utils/fenster.py`, 15.09.2026).
+- Nach `mixer.focusEditor` erfasste `lokal.fenster` das Fenster von Nakama
+  Probeeq auf Insert 1 im Diagnoseprojekt nur als Kopfleiste des eingeklappten
+  FL-Wrappers (`TPluginForm`, 67 × 31 Pixel, 15.09.2026). Aufklappen und
+  Speichern ist der Handgriff K-286-2 (Karte U43); bis dahin endet der Schritt
+  mit `eingeklappt` (P-17).
 - `Testtrack.wav` ist ein Maschinenartefakt (gitignoriert); der Runner sucht
   es in `eq-copilot/kalibration/` des Repos, im sichtbaren Checkout und im
   Desktop-Projekt des Users, sonst `-Sample <pfad>`.
 
 ## Grenzen
 
-Render mit eingeschalteter Verarbeitung und ohne Nakama-Slots (Weg R2)
-brauchen die Projekte aus Karte U43. Im Diagnoseprojekt antwortet kein Broker,
+Screenshot, Nulltest im Host (Auslieferungszustand) und Diagnose-Briefkasten
+sind gebaut (NAK-286 Etappen 2 bis 4). Der Render mit eingeschalteter
+Verarbeitung und ohne Nakama-Slots (Weg R2, M-64) ist nicht gebaut; er braucht
+die Projekte aus Karte U43, deren Namen `nulltest-host.json` trägt (P-18). Im
+Diagnoseprojekt antwortet kein Broker,
 solange Gen dort `legacy` ist. Der Samplepfad im Projekt ist absolut
 (`eq-copilot/fixtures/fl/LIES-MICH.md`); auf einem zweiten Rechner ist der
 FL-Dialog „Sample nicht gefunden" zu prüfen. Bänder gegen den Referenzausschnitt

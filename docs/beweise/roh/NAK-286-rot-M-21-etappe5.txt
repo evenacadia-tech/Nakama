@@ -1,0 +1,73 @@
+=== NAK-286 Etappe 5, Rotlauf vor der Aenderung M-21 (P-17) (15.09.2026 09:32:18) ===
+Art: Rotlauf vor der Aenderung (§5.1, §43): neuer Fall fenster_eingeklappt gegen das unveraenderte lokal.fenster (ohne Groessenpruefung)
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_eingeklappt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_eingeklappt:.*Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) EBC0B05F79BD6BF369A1C6D72BEA3C8C7C777C3EC43565DBBDDB74B963DA55D9, nach dem Lauf EBC0B05F79BD6BF369A1C6D72BEA3C8C7C777C3EC43565DBBDDB74B963DA55D9, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_eingeklappt: Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5, Zeile 'nForm", "pfad": "C:/attrappe/bilder/TPluginForm-67x31.png", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"} | ok (Details unten) |' | Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_eingeklappt: Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5, Zeile 'nForm", "pfad": "C:/attrappe/bilder/TPluginForm-67x31.png", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"} | ok (Details unten) |' | Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-21 (P-17) (15.09.2026 09:42:09) ===
+Art: Rotbeweis (§5.1, §43): Groessenpruefung in lokal.fenster entfernt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_eingeklappt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_eingeklappt:.*Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -     eingeklappt = (ziel == "plugin" and _ist_zahl(breite) and _ist_zahl(hoehe)
+  -                    and (breite < PLUGIN_FENSTER_MIN[0] or hoehe < PLUGIN_FENSTER_MIN[1]))
+  +     eingeklappt = False  # ROTBEWEIS M-21 (P-17): Groessenpruefung entfernt
+SHA-256 tools/fl/szenario.py vorher 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, mutiert 2516D218E4C8C1A4F59252D10285FE00D43B7F76B8952A73378F23FC47C85917, nach der Ruecknahme 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_eingeklappt: Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5, Zeile 'nForm", "pfad": "C:/attrappe/bilder/TPluginForm-67x31.png", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"} | ok (Details unten) |' | Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_eingeklappt: Plugin-Fensterbild 67 x 31 nicht als eingeklappt: Exit 0 statt 5, Zeile 'nForm", "pfad": "C:/attrappe/bilder/TPluginForm-67x31.png", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"} | ok (Details unten) |' | Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-21 (P-17 Masse) (15.09.2026 09:42:10) ===
+Art: Rotbeweis (§5.1, §43): Groessenpruefung verlangt beide Masse unter der Mindestgroesse statt eines
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_eingeklappt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_eingeklappt:.*Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -                    and (breite < PLUGIN_FENSTER_MIN[0] or hoehe < PLUGIN_FENSTER_MIN[1]))
+  +                    and (breite < PLUGIN_FENSTER_MIN[0] and hoehe < PLUGIN_FENSTER_MIN[1]))  # ROTBEWEIS M-21 (P-17 Masse): beide Masse verlangt
+SHA-256 tools/fl/szenario.py vorher 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, mutiert 63D81EA2CA97D7D7B0F4B66005952C769F36A77CC51B82AB78842BB7BBE93EB6, nach der Ruecknahme 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_eingeklappt: Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_eingeklappt: Mindestgroesse 200 x 100: Plugin-Fensterbild 199 x 480 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False) | Mindestgroesse 200 x 100: Plugin-Fensterbild 640 x 99 endet mit Exit 0 statt 5 (eingeklappt in der Zeile: False)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-21 (P-17 Hauptfenster) (15.09.2026 09:42:10) ===
+Art: Rotbeweis (§5.1, §43): Groessenpruefung auch fuer ziel fl (das FL-Hauptfenster)
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur fenster_eingeklappt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-21 fenster_eingeklappt:.*FL-Hauptfenster 67 x 31 als eingeklappter Wrapper gewertet: Exit 5
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -     eingeklappt = (ziel == "plugin" and _ist_zahl(breite) and _ist_zahl(hoehe)
+  +     eingeklappt = (_ist_zahl(breite) and _ist_zahl(hoehe)  # ROTBEWEIS M-21 (P-17 Hauptfenster): auch ziel fl
+SHA-256 tools/fl/szenario.py vorher 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, mutiert 4D47FBF57BF7179C2EF373025D263E9548AC4969BBCB90954F2938BA28D4062A, nach der Ruecknahme 1C124E7441F4877FCCCBC764ED5C202B092BFC282D6F788C78AFC9BBB2ABD401, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-21 fenster_eingeklappt: FL-Hauptfenster 67 x 31 als eingeklappter Wrapper gewertet: Exit 5, Zeile '00000000000000000"} · VORAUSSETZUNG: eingeklappt: 67 x 31 Pixel (Plugin-Fenster unter 200 x 100; Handgriff K-286-2, Karte U43) | VORAUSSETZUNG (Details unten) |'
+--- Rohausgabe, rot ---
+[ROT] M-21 fenster_eingeklappt: FL-Hauptfenster 67 x 31 als eingeklappter Wrapper gewertet: Exit 5, Zeile '00000000000000000"} · VORAUSSETZUNG: eingeklappt: 67 x 31 Pixel (Plugin-Fenster unter 200 x 100; Handgriff K-286-2, Karte U43) | VORAUSSETZUNG (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

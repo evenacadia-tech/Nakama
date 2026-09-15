@@ -356,7 +356,7 @@ sind (zuerst U40: Aktivitätsgate nach F06, NAK-283 Etappe 5), misst der
 Dirigent selbst — headless auf echtem Material und über den FL-MCP-Server mit
 dem installierten Bau — und legt dem User Messwerte vor, keine Blindwahl. Der
 Laufzeit-Arm rückt damit vor (Register NAK-284): Szenarien je Karte unter
-`docs/gesundheit/szenarien/` (anzulegen), Telemetrie-Leser über den
+`docs/gesundheit/szenarien/`, Telemetrie-Leser über den
 Probe-Pipenamen, MCP-Erweiterungen nach Bedarf. Das Diagnoseprojekt hat der
 User am 12.09.2026 um 15:44 Uhr angelegt; die Instanz startet der Runner
 selbst.

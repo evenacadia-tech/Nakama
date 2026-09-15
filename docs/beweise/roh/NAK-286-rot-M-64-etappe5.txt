@@ -1,0 +1,99 @@
+=== NAK-286 Etappe 5, Rotlauf vor der Aenderung M-64 (P-18) (15.09.2026 09:32:20) ===
+Art: Rotlauf vor der Aenderung (§5.1, §43): neuer Fall referenzprojekte_aus_szenariodatei gegen den unveraenderten Runner und die unveraenderte nulltest-host.json
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzprojekte_aus_szenariodatei (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzprojekte_aus_szenariodatei:.*Arbeitskopie traegt \[Nakama-Diagnose\.flp\] statt \[
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/laufzeit.ps1 (Traeger unveraendert) BB06CDAE7C6F0726F95F3D38D059BDD74136B457126B4EF37F5C056D070C9169, nach dem Lauf BB06CDAE7C6F0726F95F3D38D059BDD74136B457126B4EF37F5C056D070C9169, gleich: ja
+SHA-256 docs/gesundheit/szenarien/nulltest-host.json (Traeger unveraendert) 953DD714073F6340152EF36E9135ADEFA4B3BFA5C11FCFB3DBA0770709F9DFCE, nach dem Lauf 953DD714073F6340152EF36E9135ADEFA4B3BFA5C11FCFB3DBA0770709F9DFCE, gleich: ja
+rot: Exit 4, Dauer 1.1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt' | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt' | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-64 (P-18 Name Referenz) (15.09.2026 09:42:13) ===
+Art: Rotbeweis (§5.1, §43): Schritt ohne_slots nennt statt Nakama-Diagnose-Referenz.flp den frueheren Namen Nakama-Diagnose-ohne-Slots.flp (Koeder im Selbsttest)
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzprojekte_aus_szenariodatei (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzprojekte_aus_szenariodatei:.*Referenzprojekt Nakama-Diagnose-Referenz\.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/gesundheit/szenarien/nulltest-host.json:
+  - "projekt": "Nakama-Diagnose-Referenz.flp"
+  + "projekt": "Nakama-Diagnose-ohne-Slots.flp"
+SHA-256 docs/gesundheit/szenarien/nulltest-host.json vorher 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, mutiert E2B88A382B02042C63BE89767CBFEA01BF7427985295AC0534DEDD01BAFD520A, nach der Ruecknahme 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, gleich: ja
+rot: Exit 4, Dauer 1.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe Referenzprojekt Nakama-Diagnose-Verarbeitung.flp veraendert (Repo ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E -> ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E, Arbeitskopie ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E -> 3C223190F0C2D42505B2213424E4A8326C68BA0012E0E3CA52FFD5BE0D80EE18)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe Referenzprojekt Nakama-Diagnose-Verarbeitung.flp veraendert (Repo ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E -> ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E, Arbeitskopie ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E -> 3C223190F0C2D42505B2213424E4A8326C68BA0012E0E3CA52FFD5BE0D80EE18)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-64 (P-18 Name Verarbeitung) (15.09.2026 09:42:15) ===
+Art: Rotbeweis (§5.1, §43): Schritt verarbeitung_ein nennt statt Nakama-Diagnose-Verarbeitung.flp den frueheren Namen Nakama-Diagnose-Verarbeitung-ein.flp (Koeder im Selbsttest)
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzprojekte_aus_szenariodatei (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzprojekte_aus_szenariodatei:.*Referenzprojekt Nakama-Diagnose-Verarbeitung\.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in docs/gesundheit/szenarien/nulltest-host.json:
+  - "projekt": "Nakama-Diagnose-Verarbeitung.flp"
+  + "projekt": "Nakama-Diagnose-Verarbeitung-ein.flp"
+SHA-256 docs/gesundheit/szenarien/nulltest-host.json vorher 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, mutiert 324FC11AA5968556741FEA6F9DE430BC57CC68FF62E0ADB36D462707FA046919, nach der Ruecknahme 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe Referenzprojekt Nakama-Diagnose-Referenz.flp veraendert (Repo 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0 -> C275C57B3EF7A7FE49315FCA069A1607C0B25B7904117F908F9F23F804493CF6, Arbeitskopie 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0 -> 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Anfang | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 4 VERFEHLT 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe Referenzprojekt Nakama-Diagnose-Referenz.flp veraendert (Repo 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0 -> C275C57B3EF7A7FE49315FCA069A1607C0B25B7904117F908F9F23F804493CF6, Arbeitskopie 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0 -> 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-64 (P-18 Hash am Ende) (15.09.2026 09:42:17) ===
+Art: Rotbeweis (§5.1, §43): Vergleich der Referenzprojekte am Ende (Pruefe-Projekt) entfernt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzprojekte_aus_szenariodatei (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzprojekte_aus_szenariodatei:.*veraenderte Referenzprojekte \(Arbeitskopie, Repo\): Exit 0 GEMESSEN
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     # P-18: M-12 gilt fuer alle drei Projekte - jedes kopierte Referenzprojekt wird wie das Diagnoseprojekt verglichen.
+  -     foreach ($name in @($K.ReferenzHashes.Keys)) {
+  -         $h = $K.ReferenzHashes[$name]
+  -         $r = & $script:U.Hash $h.Quelle
+  -         $c = & $script:U.Hash $h.Ziel
+  -         Log ("Referenzprojekt {0} am Ende: SHA-256 Repo {1}, Arbeitskopie {2}" -f $name, $r, $c)
+  -         if ($r -ne $h.Repo -or $c -ne $h.Kopie) { $gruende += "Referenzprojekt $name veraendert (Repo $($h.Repo) -> $r, Arbeitskopie $($h.Kopie) -> $c)" }
+  -     }
+  +     # ROTBEWEIS M-64 (P-18 Hash am Ende): Vergleich der Referenzprojekte am Ende entfernt
+SHA-256 tools/fl/laufzeit.ps1 vorher D1CC83B19DD34F2F4DD7EB2DBCDB948F4BA5C0BF3C3465A668965BD0FEA025C3, mutiert 051062C1DA2E81A93D0BB8432C2CB5CC17AA18BEBF7D864012C7E2575996870C, nach der Ruecknahme D1CC83B19DD34F2F4DD7EB2DBCDB948F4BA5C0BF3C3465A668965BD0FEA025C3, gleich: ja
+rot: Exit 4, Dauer 1.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' statt 4 VERFEHLT mit beiden Namen
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Referenz.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Projekte der Karte neben Koedern] Referenzprojekt Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 von Repo und Arbeitskopie am Ende | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' statt 4 VERFEHLT mit beiden Namen
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Etappe 5, Rotbeweis M-64 (P-18 Muster) (15.09.2026 09:42:20) ===
+Art: Rotbeweis (§5.1, §43): Namen aus der Szenariodatei durch ein Suchmuster im Ordner des Diagnoseprojekts ersetzt
+Nakama HEAD 7e39db9ab14866932cc7ddcfbd132df2bf141094 (Arbeitsstand der Etappe 5 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzprojekte_aus_szenariodatei (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzprojekte_aus_szenariodatei:.*Arbeitskopie traegt \[[^\]]*Nakama-Diagnose-ohne-Slots\.flp
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -     foreach ($name in @(Referenzprojekt-Namen $liste)) {
+  +     foreach ($name in @(& $script:U.Namen $ordner | Where-Object { $_ -like 'Nakama-Diagnose-*.flp' })) {  # ROTBEWEIS M-64 (P-18 Muster): Suchen nach einem Muster
+SHA-256 tools/fl/laufzeit.ps1 vorher D1CC83B19DD34F2F4DD7EB2DBCDB948F4BA5C0BF3C3465A668965BD0FEA025C3, mutiert A136B9DC31266CE6093FF9E9EC50D7CDAA4DC385EC92FD67759A7A6DD2A7DF7A, nach der Ruecknahme D1CC83B19DD34F2F4DD7EB2DBCDB948F4BA5C0BF3C3465A668965BD0FEA025C3, gleich: ja
+rot: Exit 4, Dauer 1.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Referenz-alt.flp, Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Referenz-alt.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt' | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Referenz-alt.flp, Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] statt [Nakama-Diagnose-Referenz.flp, Nakama-Diagnose-Verarbeitung.flp, Nakama-Diagnose.flp] (Namen der Karte U43 aus nulltest-host.json, kein Muster) | [ohne die Projekte der Karte] ohne die Projekte der Karte: Arbeitskopie traegt [Nakama-Diagnose-ohne-Slots.flp, Nakama-Diagnose-Referenz-alt.flp, Nakama-Diagnose-Verarbeitung-ein.flp, Nakama-Diagnose.flp] | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Referenz.flp: fehlt neben dem Diagnoseprojekt' | [ohne die Projekte der Karte] ohne die Projekte der Karte: keine Zeile 'Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: fehlt neben dem Diagnoseprojekt'
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.2 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

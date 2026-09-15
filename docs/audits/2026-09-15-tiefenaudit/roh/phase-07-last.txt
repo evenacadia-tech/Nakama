@@ -1,0 +1,8 @@
+Phase 07 abgeschlossen: **5 Defekte, 1 Lücke** — 3 high, 3 medium.
+
+- [Vollständiger Bericht mit Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-07-modell.md)
+- [BEFUNDE.md ergänzt](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md)
+
+15 Verdachte verworfen, 4 Produktfragen dokumentiert. Beide Befundtabellen sind identisch; der bisherige Registerinhalt ist bytegleich erhalten.
+
+HEAD unverändert. Nur die zwei erlaubten Auditdateien geschrieben; keine Builds, Tests oder Commits.

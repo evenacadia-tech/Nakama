@@ -1,0 +1,17 @@
+PHASE 04 — LEBENSLAUF UND NEBENLÄUFIGKEIT (K1, K2): Threads, Queues, Pipes, Callbacks im Plugin und an der Naht zum Broker. Kurzname: lebenslauf.
+
+FRAGE: Welcher Thread, Join, Callback, Timer oder Puffer verstößt still gegen Prüfliste A oder B (tools/dirigent/pruefliste.md, hier Kontext), und wo hält eine Zusage nur, weil Konstruktor- und Destruktorreihenfolge zufällig stimmen?
+
+VORLAUF: docs/gesundheit/lebenslauf-audit.md (12.09.2026, Befunde B-1 bis B-8, Register NAK-268) und docs/gesundheit/abdeckungskarte.md K1/K2 sind der Vorlauf; du diffst gegen sie: was ist seitdem dazugekommen (NAK-283 Etappen 2 bis 6, NAK-286 Briefkasten in Plugin und Broker, NAK-289 Etappe 1), was ist geblieben, was fehlt dort?
+
+POPULATION: eq-copilot/plugin/core/ipc/** (ControlClient und controlclient/**, TelemetryClient, BrokerLifecycle, PipeToken, IpcQueues, InterventionsRing, WireEnvelope), core/diagnose/** (Briefkasten), core/StampedAudioQueue.h, src/PipeClient.*, src/prozessor/Ipc.cpp und die übrigen prozessor-Dateien, src/PluginProcessor.* (Konstruktor/Destruktor-Reihenfolge, Editor-Erzeugung, Timer), src/PluginEditor.* und src/SourcesModel.* (Timer, Listener, Snapshot-Übernahme), sonde/** (Sonde-Lebenslauf), spike/**; Broker-Naht: broker/src/lebenslauf.rs, broker/src/server.rs, broker/src/transport/server_v3/** (Trennung, Griff, Listener, Senke), broker/src/briefkasten.rs — nur die Kanten, die das Plugin sieht (Reihenfolge verbinden/trennen, Welcome nach Callback, Reconnect, Session-Ende).
+
+PRÜFFRAGEN:
+1. Je Thread: Startbedingung, Stoppflag vor Join, Join mit Frist oder begründet fristlos, Self-Join ausgeschlossen (threadId-Vergleich) oder von innen erlaubt und getestet, Registrierung im Stoppfenster gemessen, Destruktor-Reihenfolge gegen laufende Callbacks (Callback überlebt Besitzer? NAK-246 D2).
+2. Je Queue/Ring/Puffer: Politik bei voll ausdrücklich je Klasse (abweisen, koaleszieren, ältesten ersetzen), Abflussweg ohne Reconnect, Schlüssel überleben jeden Zwischenpuffer, Close-Flag vor Inhalt, Lesepfad nie hinter „erst alles senden", Zähler ausgewertet.
+3. Je Callback/Hook/Listener: auf welchem Thread, mit welcher Sperre, was darf er rufen (stop von innen?), wie wird er abgemeldet, was passiert mit einem Callback nach stop().
+4. Verbinden/Trennen: Reihenfolge anmelden → Callback verbunden → Welcome; beim Trennen abmelden vor Fristen und Joins; Reconnect-Schleife mit Backoff, Session-Token-Wechsel, Konflikt (Duplikat-Sensor), Broker stirbt mitten im Frame, Pipe voll, Pipe halb geschrieben.
+5. Zustandshoheit: Steuerung über Pipe oder UI wird außerhalb des Audio-Threads übernommen; wo greift ein Pipe-Thread oder der Message-Thread direkt in Audio-Zustand, wo fehlt die Übergabe (Mailbox, Atomic, Ring)?
+6. Editor↔Prozessor: Timer-Kadenz, Snapshot-Revisionen (Editor rendert nur neue Revisionen), Listener-Abmeldung beim Editor-Schließen, Prozessor-Destruktor bei offenem Editor, Message-Thread-Callbacks nach Prozessorende.
+7. Briefkasten (NAK-286): ohne Anfrage nur eine Existenzprüfung je Takt; Kennungsring „genau einmal"; Schreibweg ohne Löschen; Stoppreihenfolge; Thread-Ende — gilt das beidseitig und misst es ein Test je Seite?
+8. Beziehungspaare im selben Änderungssatz (starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg): welches Paar hat eine Hälfte ohne Test?

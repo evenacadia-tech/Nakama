@@ -1,0 +1,13 @@
+PHASE 02 — ZUSTANDSTREUE (K4): jedes persistente Feld von Gen und Probeeq. Kurzname: zustand.
+
+FRAGE: Welches persistente Feld verliert beim nächsten Speichern, Laden, Migrieren oder Abbruch still Daten, meldet keinen Dirty-State, oder liest anders, als es schreibt?
+
+POPULATION: jedes Feld, das in eq-copilot/plugin/state/** geschrieben oder gelesen wird (NakamaState, NakamaParameter, NakamaTransaktion, Migration, Legacy-Leser), die Schemas eq-copilot/schemas/state/**, die Fixtures eq-copilot/fixtures/state/** samt MANIFEST.json und tools/eq-copilot/erzeuge_state_fixtures.py, die Hostkanten getStateInformation/setStateInformation in src/PluginProcessor.cpp und src/prozessor/**, die Parameterdefinitionen (APVTS oder eigene), Preset-/Bank-Pfade, Sitzungszustand, der über Reload geleert werden muss (NAK-283 D6), und die Publikation von State-Snapshots an Broker und Editor (Revision, Dirty).
+
+PRÜFFRAGEN, vier Gänge nach KONZEPT §4.3 /zustandstreue:
+1. Parität: je Feld Schreiber ↔ Leser ↔ Migration ↔ Fixture ↔ Feldmengen-Test. Welche Felder haben Kanon-Roundtrip, aber kein eingefrorenes Fixture (Abdeckungskarte A-3: confirmed_members_v1, manual_passages_v1, assistant_step_v1 — prüfe, ob das noch gilt, und finde weitere)? Welches Feld liest der Leser mit anderer Grenze, anderem Default oder anderem Typ als der Schreiber schreibt?
+2. Signal: jede persistente Änderung meldet Host-Dirty genau einmal — welche Rufstelle ändert Zustand ohne Meldung, welche meldet bei No-op, welche meldet beim Laden?
+3. Migration: jede Version hat ein eingefrorenes Fixture; unbekannte Major bleibt read-only mit Originalbytes und schreibt sie bytegleich zurück; unzulässige Matrizen read-only; unbekannte Felder aus einer späteren Minor überleben Save/Load unverändert (Position, Reihenfolge, Duplikate?). Prüfe die Altstand-Leser (v1/v2, EQ-Copilot-Identität, Replace-V2) auf Felder, die beim Hochziehen still einen Default bekommen.
+4. Lebenszyklus: Schreiben unter Abbruch (Host beendet mitten in getStateInformation, Ausnahme im Writer, Teilpuffer), Laden eines abgeschnittenen Blobs, Laden während Audio läuft (Zustandshoheit, Sperren, Reihenfolge Parameter vor Zustand), Reload leert Sitzungszustand vollständig (welche Container bleiben stehen?), read-only-Stand verweigert jede Änderung UND jede Dirty-Meldung.
+5. Zahlenränder in Feldern: int64-Ränder (Revision, Sample-Positionen, NAK-283 F11), NaN/Inf in double-Feldern, leere Listen (entfällt vs. leeres Array), Bandrand 0/221, Längen von Textfeldern in Zeichen vs. Bytes, UTF-8-Gültigkeit beim Laden fremder Bytes.
+6. Nahtstelle Vertrag: welches State-Feld reist auch über v3 (state_report, Snapshot) und wo unterscheiden sich Wireform und State-Form (Rundung, Einheiten, Präsenzbits)?

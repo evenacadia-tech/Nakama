@@ -1,0 +1,34 @@
+Erstprüfung S25g / Ticket NAK-289 Etappe 1 — gebundener Prüfauftrag des Dirigenten ({{DATUM}}); zugleich Phase 00 des Tiefenaudits 3 (docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md, nur Kontext)
+
+Du bist der frische, lesende Prüfer. Prüfbereich ist ausschließlich der Änderungssatz dieser Etappe:
+`git diff 432f209caf787d818790b6483bc769d54dd3912d...{{ZIEL}} -- eq-copilot/plugin/core/analysis/TruePeak.h eq-copilot/plugin/core/ipc/IpcQueues.h eq-copilot/plugin/core/ipc/PipeToken.h eq-copilot/plugin/core/ipc/WireEnvelope.cpp eq-copilot/plugin/core/ipc/WireZahl.h eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp eq-copilot/plugin/dsp/DspKern.cpp eq-copilot/plugin/probe/PipeProbeMain.cpp eq-copilot/plugin/tests/DspGoldenTestMain.cpp eq-copilot/plugin/tests/IpcTestMain.cpp eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp eq-copilot/plugin/vertrag/NakamaUtf8.h eq-copilot/plugin/vertrag/NakamaVertrag.cpp tools/plan/tidy.py`
+mit BASIS = 432f209caf787d818790b6483bc769d54dd3912d und ZIEL = {{ZIEL}} (HEAD; er muss vor und nach deinem Lauf identisch sein).
+Alles andere, was seit BASIS im Repo geändert wurde, gehört zu anderen Tickets und ist hier nicht Prüfgegenstand. Die Etappen 2 und 3 des Tickets (Weitungen; State und Kopien) sind nicht gebaut und nicht Prüfgegenstand.
+Prüfstufe T2, verlangt vom Plan für S25g.
+
+GATE-TEXT, wörtlich und vollständig (docs/plan/plan.json, Schritt S25g, Ticket NAK-289):
+„INHALT: die 83 Fundstellen des Beins A33 (tools/plan/tidy.py, Iststand docs/beweise/roh/NAK-288-tidy-iststand-83.txt, Regelsatz eq-copilot/plugin/.clang-tidy) verhaltensneutral abbauen und die Ratsche in Teilstücken senken, bis sie auf 0 steht; je Teilstück voller Kanon vorher und nachher (Muster S25c/S25d), Nulltest, Goldens und State-Fixtures bytegleich, Identität unberührt. GRENZE: keine Regel im .clang-tidy zum Wegdrücken einer Fundstelle ohne datierten Grund im Manifest, kein Produktverhalten, keine Legacy-Umbenennung (NAK-30), keine Vermischung mit NAK-292 (Gesundheitsrisse aus dem Quellinventar, S31c). BEWEIS: docs/beweise/NAK-289.md mit Fundstellen je Teilstück vorher/nachher, A33-Rohausgaben, Kanon vorher und nachher GRÜN."
+
+Mehr verlangt das Gate nicht. Das Ticket hat keine Verhaltensmatrix; die Zusage je Fundstelle ist „verhaltensneutral": gleiche Ausgabe auf gleiche Eingabe, gleiches Fehlerverhalten (was std::terminate war, bleibt std::terminate oder wird unmöglich, nie verschluckt), gleiches Flush-Verhalten, keine neue Allokation, Sperre oder Wanduhr auf dem Audio-Thread. Die Regeln je Fundklasse stehen im Auftrag docs/beweise/roh/NAK-289-etappe-1-auftrag.txt (Abschnitt REGELN JE FUNDKLASSE, Kontext, keine Anforderungsquelle über das Gate hinaus).
+Die Riegel/Tests, die es messen: Kanon-Beine in tools/beweise.ps1 (Nulltest, Goldens, State-Fixtures, IPC-, Vertrags- und Wireform-Beine; A33 tidy.py mit Ratsche 58), die Rotbeweise docs/beweise/roh/NAK-289-rot-*.txt mit Skript NAK-289-rotskript-etappe1.ps1, die neuen Regressionstests in IpcTestMain.cpp, PipeClientLifecycleTestMain.cpp und DspGoldenTestMain.cpp. Jüngster Kanon: {{KANON}}.
+
+BEFUNDKLASSEN — du ordnest jeden Befund ein, der Dirigent prüft die Einordnung an der Quelle:
+- DEFEKT: verletzt einen Satz des Gate-Textes oben, einen Test oder eine Invariante aus CLAUDE.md (Identität eingefroren, Audio echtzeitfest, Nulltest bitidentisch, State verlustfrei). Reproduzierbar, mit Kommando; je Defekt: Datei:Zeile und der Satz, der bricht.
+- LÜCKE: Gate und Entwurf sagen zu dem Fall nichts — benennen, keine Nacharbeit.
+- HÄRTUNG: wünschenswert, von keiner Zusage verlangt — benennen, keine Nacharbeit.
+
+AUSDRÜCKLICH AUSGESCHLOSSEN (kein Befund, keine Erwähnung als NEEDS_WORK-Grund):
+1. docs/** — Manifeste, Register, Planstand, Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände, Kommentar-Wortlaute. Manifeste sind Kontext, kein Prüfgegenstand.
+2. Im Register datierte Härtungen: NAK-292 (Gesundheitsrisse, A32 Exit 4), NAK-235, NAK-236, NAK-290 (Runner-Sperre), NAK-300 (vctip); die verbleibenden 58 Fundstellen der Etappen 2 und 3 (NAK-289 selbst). Ein Befund gegen ein Prüfskript, einen Riegel oder den Runner, der absichtliche Sabotage in repo-eigenen Quellen voraussetzt, ist HÄRTUNG — das Bedrohungsmodell der Riegel ist die versehentliche Regression, nicht der Angreifer mit Schreibrecht.
+3. tools/dirigent/pruefliste.md ist eine Arbeitsliste des Workers, keine Anforderungsquelle. §2.4 des Codex-Skills sondenplan-audit („Wiederholung bis lückenlos") gilt für Gate-Audits, nicht für diesen Ticketreview. Kosmetik, Stil, optionale Härtung, theoretische Randfälle, Ticketfremdes: nein.
+
+WAS DU TUST:
+1. Lies den Diff im Prüfbereich.
+2. Prüfe am Zielstand, ob Tests und Riegel messen, was das Gate verlangt: (a) Ist jede der 25 behobenen Fundstellen verhaltensneutral — insbesondere die Ausnahmegrenzen mit std::terminate in TruePeak.h, IpcQueues.h, PipeToken.h, Vertrag.cpp, NakamaTelemetrie.cpp, NakamaVertrag.cpp (kein Verschlucken, kein neuer Pfad), der Nullcheck und die Rundung mit llround in DspKern.cpp (gleicher Zweig, gleicher Wert an allen erreichbaren Eingaben, keine Allokation), die Reihenfolge Bereichsprüfung vor Cast in WireEnvelope.cpp (Ersatzwert erreicht keine Ausgabe), strtol statt atoi in WireZahl.h (gleiches Ergebnis für jede erreichbare Eingabe), '\n' plus flush in PipeProbeMain.cpp, die Auswertungsreihenfolge in NakamaUtf8.h? (b) Fällt je Klasse mit Verhaltensrisiko der Rotbeweis an der Zeile, die die Zusage trägt, und ist die Rücknahme bytegleich (SHA-256 in den Rohdateien)? (c) Ist die Ratsche in tidy.py auf den gemessenen Iststand 58 gesenkt, ohne Regeländerung in .clang-tidy und ohne NOLINT ohne Manifestzeile? (d) Berührt der Diff etwas außerhalb der Ticketpfade oder Identität, Schemas, Fixtures? Du darfst lesen und lesende Kommandos fahren; du schreibst nichts.
+3. Prüfe, ob der Änderungssatz seit BASIS etwas am Produktverhalten gebrochen hat (Identität, Passthrough/Nulltest, State, Audio-Thread) — nenne, was du selbst nachgemessen und was du nur gelesen hast.
+
+URTEIL — genau eine der drei Formen, als erste Zeile:
+URTEIL: PASS — kein DEFEKT (Lücken und Härtungen dürfen benannt sein).
+URTEIL: NEEDS_WORK — mindestens ein DEFEKT; je Defekt: Datei:Zeile, Reproduktion, welcher Satz von Gate oder Test bricht.
+URTEIL: BLOCKED — du konntest den Prüfbereich nicht lesen.
+Danach: geprüft / nicht geprüft, je ein Absatz. Am Ende, für das Tiefenaudit: jeden Befund zusätzlich als Zeile im Format „| T3-00-<nn> | <critical/high/medium/low> | <K1..K8> | <DEFEKT/LÜCKE/HÄRTUNG> | <Datei:Zeile> | <Befund> | <Beleg> | <Bricht> | <Vorschlag> | offen |".

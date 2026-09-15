@@ -1,0 +1,5 @@
+URTEIL: PASS — kein DEFEKT; HEAD vor und nach der Prüfung unverändert c82865829fefb494f25ece828d8f61e24f2e130d.
+
+Geprüft: vollständiger begrenzter Diff; vorhandene Release-Tests für Nulltest, DSP, True Peak, IPC-Lifecycle, Vertrag, Identität und State grün; drei Terminate-Kinder jeweils Exit 71; tidy-Selbsttest 39/39 unter Python 3.14; alle 16 Mutations- und Rücknahme-Hashes bestätigt; Ratsche 58, keine Regeländerung oder neue NOLINT-Ausnahme.
+
+Nicht erneut ausgeführt: Neubau, Vollkanon, A33-Vollmessung, Rotläufe und FL-Laufzeitprüfung; deren vorliegende Belege wurden nur gelesen, Python 3.13 war sandboxbedingt nicht startbar.

@@ -1,0 +1,16 @@
+PHASE 07 — MODELL UND FLÄCHE: Zwecktreue der Modelle, Editor, SourcesModel, Befund- und Assistentzustände; Bedienehrlichkeit technisch (K8, ohne Optik). Kurzname: modell.
+
+FRAGE: Welches Modell, welches Feld, welche Nachricht, welcher Parameter ist vestigial, verwaist, doppelt oder widerspricht dem Wahrheitskern (CLAUDE.md), dem Blueprint (design/docs/funktions-und-bedien-blueprint.md, Stand beim Parken) oder dem Entwurf 0.5 — und welches sichtbare Element der heutigen Oberfläche (Material-Kit-Provisorium) führt keinen Handgriff aus oder meldet einen Zustand, der nicht stimmt?
+
+GRENZE: Designteil geparkt (12.09.2026): keine Optik-, Farb-, Layout- oder Figma-Befunde. Gesetz 1 „keine toten Elemente" und Gesetz 2 „Tasten sind Material" gelten technisch: ein Element ohne Handgriff oder ohne ehrlichen Zustand ist ein Befund; ein Zustand, der Maße ändert, ebenso. Legacy-Bezeichner sind kein Befund.
+
+POPULATION: eq-copilot/plugin/src/PluginEditor.*, src/SourcesModel.*, src/HoerMarkierung.*, src/AnalyseEngine.cpp (Modellseite), die Modelle in vertrag/** und state/** (Befundzustände U21, Assistentschritt 46.1, Intent 37.1, Passagen, Konfliktregeln), src/prozessor/** (Publikation an den Editor), spike/AuxSpikeEditor.*, EqCopShot (Sichtprüfung: welche Zustände zeigt er, welche nicht), design/docs/funktions-und-bedien-blueprint.md und docs/FL-Nakama-Sonden-Design-Entwurf.md nur als Referenz für Zwecke.
+
+PRÜFFRAGEN, nach KONZEPT §4.3 /zwecktreue und /bedienehrlichkeit:
+1. Zwecktreue: jede v3-Nachricht, jedes persistente Feld, jeder Parameter, jede Capability gegen Wahrheitskern, Blueprint und Entwurf — Klassen vestigial (kein Leser), verwaist (kein Schreiber), Modellwiderspruch (zwei Wahrheiten für dieselbe Größe), Duplikat (zwei Felder, ein Zweck), unehrliche Fläche (Anzeige ohne Datenquelle). Empfehle Rückbau als Produktfrage, entscheide nicht.
+2. Engine kennt keine Optik: welche Engine- oder Prozessorstelle enthält Farbe, Achse, Zoom, Layout, Textformatierung; welche Editor-Stelle rechnet Messwerte nach statt Snapshots zu rendern?
+3. Snapshot-Revisionen: rendert der Editor nur neue Revisionen; welche Anzeige liest Zustand am Prozessor vorbei; welche Anzeige bleibt nach Pipe-Trennung, Broker-Ende, Sitzungswechsel oder Reload stehen (veraltete Anzeige, stiller Pipe-Fehler ohne Anzeige)?
+4. Handgriff ohne Rücknahme: jede Aktion der Fläche mit Wirkung auf Zustand oder Broker — gibt es die Gegenaktion, meldet die Fläche Erfolg vor der Bestätigung (ACK-Semantik, NAK-246 D3/D4), was passiert bei Ablehnung?
+5. Message-Thread-Regeln: Timer-Kadenz vs. Datenkadenz (Paint-FPS ist nicht Datenkadenz), Arbeit im paint(), Allokation je Frame, Listener ohne Abmeldung, Zugriff auf Prozessor nach dessen Ende.
+6. Gate der Befundzustände (U21, M-29 bis M-35 in SONDE-014): nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT, Sperre im Modell statt an der Schaltfläche — gilt das an jeder Rufstelle der Fläche?
+7. Demo-Daten sind keine Plugin-Daten: welcher Pfad kann Demo-, Fixture- oder Platzhalterwerte in die Fläche oder in den State bringen?

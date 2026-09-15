@@ -1,0 +1,17 @@
+PHASE 11 — SYNTHESE: Gesamtbild, Priorisierung, Abarbeitungsplan ab 18.09.2026. Kurzname: synthese.
+
+FRAGE: Was sagen die Phasen 01 bis 10 zusammen über die Codebase, welche Befunde teilen eine Ursache, in welcher Reihenfolge werden sie abgearbeitet, und welche Nahtstelle bleibt auch danach ohne Detektor?
+
+POPULATION: BEFUNDE.md vollständig (Phasen 01 bis 10), die Berichte roh/phase-*.md, docs/offene-punkte.md (Register, für Querverweise), docs/plan/plan.json (offene Schritte S25g, S26 bis S35b), docs/gesundheit/KONZEPT.md §10 (Aufbauplan des Prüfsystems, Schritte 2, 4 bis 9 offen).
+
+WAS DU TUST:
+1. Ursachenbündel: fasse Befunde mit gemeinsamer Ursache zu Bündeln zusammen (ein Bündel = ein späterer Ticketauftrag mit Matrix); je Bündel die Mitglieder, die Ursache in einem Satz, der kleinste gemeinsame Fix, die Tests, die ihn beweisen würden, die Beine, die betroffen sind.
+2. Priorität: je Bündel P1 (vor jedem weiteren Bau: Defekt gegen Invariante, Audio, State, Vertrag, Sicherheit), P2 (vor S26 bis S28 EQ-Bau), P3 (vor G6), P4 (Pflegeschritt S31c/S35b oder Registerzeile [Härtung]); Begründung je Bündel in einem Satz.
+3. Reihenfolge: eine geordnete Liste der Bündel mit Abhängigkeiten (was muss vor was), geschätzter Umfang in Ticketpfaden (nicht in Zeit oder Geld), und je Bündel die Prüfstufe (T2 mit Codex-Erstprüfung) — Vorschlag, der Dirigent entscheidet.
+4. Detektorlücken: welche Befundklasse (K1 bis K8) hätte ein heute fehlender Detektor gefangen — Zuordnung zu den Aufbauschritten des Prüfsystems (Prüfgang, Wächter, Echtzeit-Tor, Mutanten) und was das kleinste Bein wäre.
+5. Blind Spots: welche Fläche hat keine Phase gelesen (aus den Scope-Beweisen), welche Nahtstelle wurde nur von einer Seite gelesen; Vorschlag für eine Phase 12, falls nötig.
+6. Produktfragen: sammle alle Produktfragen der Phasen in eine Liste im Kartenformat (Titel, was, Optionen, Default), damit der Dirigent sie als Karten in docs/plan/fragen.json anlegt (du legst sie nicht an).
+
+AUSGABE (abweichend vom Kopf): Bericht roh/phase-11-synthese.md, und in BEFUNDE.md ersetzt du den Abschnitt „## Kopf" oberhalb von „## Phase 01" durch den neuen Kopf: Urteil in drei Sätzen, Zähler über alle Phasen (Befunde je Schwere und Kategorie nach Skeptiker), die Bündeltabelle
+| Bündel | Priorität | Mitglieder | Ursache | Kleinster Fix | Beweis | Ticketpfade |
+die geordnete Abarbeitungsliste, die Detektorlücken, die Blind Spots und die Produktfragen. Alles unterhalb von „## Phase 01" bleibt unverändert. Deine Urteilszeile: „URTEIL: BÜNDEL <n> (P1 <n> · P2 <n> · P3 <n> · P4 <n>) — <ein Satz>".

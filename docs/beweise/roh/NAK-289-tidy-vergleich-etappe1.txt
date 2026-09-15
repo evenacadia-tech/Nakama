@@ -1,0 +1,61 @@
+NAK-289 Etappe 1 - Vergleich der tidy-Vollmessungen vorher (432f209c) und nachher (d5e17242)
+Quellen: docs/beweise/roh/NAK-289-tidy-vorher-432f209c.txt, docs/beweise/roh/NAK-289-tidy-etappe1-nachher.txt
+
+Summe vorher: 83 | nachher: 58
+
+Je Check (vorher -> nachher):
+  bugprone-branch-clone                                     2 ->   2
+  bugprone-exception-escape                                 7 ->   0   (Etappe 1)
+  bugprone-implicit-widening-of-multiplication-result       7 ->   7
+  bugprone-inc-dec-in-conditions                            1 ->   0   (Etappe 1)
+  bugprone-incorrect-roundings                              1 ->   0   (Etappe 1)
+  bugprone-misplaced-widening-cast                         17 ->  17
+  bugprone-suspicious-memory-comparison                     5 ->   5
+  cert-err34-c                                              1 ->   0   (Etappe 1)
+  clang-analyzer-core.NonNullParamChecker                   2 ->   0   (Etappe 1)
+  clang-analyzer-core.NullDereference                       1 ->   0   (Etappe 1)
+  clang-analyzer-deadcode.DeadStores                        1 ->   0   (Etappe 1)
+  clang-analyzer-optin.core.EnumCastOutOfRange              2 ->   0   (Etappe 1)
+  cppcoreguidelines-pro-type-member-init                    5 ->   5
+  performance-avoid-endl                                    9 ->   0   (Etappe 1)
+  performance-move-const-arg                                3 ->   3
+  performance-unnecessary-copy-initialization              17 ->  17
+  performance-unnecessary-value-param                       2 ->   2
+
+Je Datei (vorher -> nachher):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h                  1 ->   1
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h      2 ->   2
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h         6 ->   6
+  eq-copilot/plugin/core/analysis/Fft.h                            3 ->   3
+  eq-copilot/plugin/core/analysis/TruePeak.h                       3 ->   2
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp                   1 ->   1
+  eq-copilot/plugin/core/ipc/ControlClient.cpp                     1 ->   1
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp          2 ->   2
+  eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp             1 ->   0
+  eq-copilot/plugin/core/ipc/IpcQueues.h                           1 ->   0
+  eq-copilot/plugin/core/ipc/PipeToken.cpp                         2 ->   2
+  eq-copilot/plugin/core/ipc/PipeToken.h                           1 ->   0
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp                   2 ->   2
+  eq-copilot/plugin/core/ipc/WireEnvelope.cpp                      2 ->   0
+  eq-copilot/plugin/core/ipc/WireZahl.h                            1 ->   0
+  eq-copilot/plugin/dsp/DspKern.cpp                                5 ->   0
+  eq-copilot/plugin/probe/PipeProbeMain.cpp                       10 ->   0
+  eq-copilot/plugin/src/AnalyseEngine.cpp                          4 ->   4
+  eq-copilot/plugin/src/PluginEditor.cpp                           1 ->   1
+  eq-copilot/plugin/src/PluginProcessor.cpp                        1 ->   1
+  eq-copilot/plugin/state/NakamaParameter.cpp                      5 ->   5
+  eq-copilot/plugin/state/NakamaParameter.h                        1 ->   1
+  eq-copilot/plugin/state/NakamaState.cpp                         19 ->  19
+  eq-copilot/plugin/state/NakamaTransaktion.cpp                    2 ->   2
+  eq-copilot/plugin/vertrag/NakamaEvidenz.cpp                      1 ->   1
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp                   2 ->   1
+  eq-copilot/plugin/vertrag/NakamaUtf8.h                           1 ->   0
+  eq-copilot/plugin/vertrag/NakamaVertrag.cpp                      1 ->   0
+  eq-copilot/plugin/vertrag/NakamaVertrag.h                        1 ->   1
+
+R10 - andere Checks je (Datei, Check), vorher ohne Etappe-1-Checks gegen nachher:
+  gleich: keine neue und keine weggefallene Fundstelle eines anderen Checks
+
+Verschobene Zeilen der anderen Checks (vorher -> nachher, je Datei und Check in Reihenfolge):
+  eq-copilot/plugin/core/analysis/TruePeak.h [bugprone-misplaced-widening-cast]: 251,254 -> 265,268
+  eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp [cppcoreguidelines-pro-type-member-init]: 447 -> 451

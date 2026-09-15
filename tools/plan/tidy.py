@@ -73,10 +73,13 @@ WAS EIN FEHLER IST UND WAS NICHT
 
 HERKUNFT DER SCHWELLE
 ---------------------
-  clang-tidy-Fundstellen   Grenze = Iststand (Ratsche), Ziel 0. Gemessen am
-                           12.09.2026 (siehe TIDY_GRENZE und das Manifest
-                           docs/beweise/NAK-288.md) mit clang-tidy 19.1.5 aus
-                           den Build Tools 2022 (MSVC 14.44). Jede neue
+  clang-tidy-Fundstellen   Grenze = Iststand (Ratsche), Ziel 0. Erstmessung am
+                           12.09.2026 mit 83 (Manifest docs/beweise/NAK-288.md),
+                           gesenkt nach NAK-289 Etappe 1 am 15.09.2026 auf 58
+                           (siehe TIDY_GRENZE und das Manifest
+                           docs/beweise/NAK-289.md), beide Messungen mit
+                           clang-tidy 19.1.5 aus den Build Tools 2022
+                           (MSVC 14.44). Jede neue
                            Fundstelle reisst; gesenkte Zahlen werden
                            nachgezogen, nie erhoeht. Eine Aenderung des
                            Regelsatzes aendert den Iststand und die Ratsche im
@@ -105,11 +108,12 @@ BAUORDNER = "eq-copilot/build-tidy"
 DB_ORDNER = "tidy-db"
 HEADER_FILTER = r"eq-copilot[/\\]plugin[/\\]"
 TIDY_ZIEL = 0
-# Ratsche: Iststand 12.09.2026 mit dem Regelsatz aus eq-copilot/plugin/.clang-tidy
-# und den Ausnahmen oben (Erstmessung NAK-288, 41 Einheiten, clang-tidy 19.1.5;
-# die rohe Erstmessung zaehlte 101: 8 optin.performance.Padding, 10 im Codegen;
-# Manifest docs/beweise/NAK-288.md). Nur senken.
-TIDY_GRENZE = 83
+# Ratsche: Iststand nach NAK-289 Etappe 1 am 15.09.2026 mit dem Regelsatz aus
+# eq-copilot/plugin/.clang-tidy und den Ausnahmen oben (43 Einheiten, clang-tidy
+# 19.1.5; Manifest docs/beweise/NAK-289.md). Erstmessung NAK-288 am 12.09.2026:
+# 83 (die rohe Erstmessung zaehlte 101: 8 optin.performance.Padding, 10 im
+# Codegen; Manifest docs/beweise/NAK-288.md). Nur senken.
+TIDY_GRENZE = 58
 KONFIGURIER_LIMIT_S = 40 * 60      # erste Konfiguration holt JUCE und FlatBuffers
 EINHEIT_LIMIT_S = 20 * 60
 LANGSAMSTE_ZEIGEN = 5

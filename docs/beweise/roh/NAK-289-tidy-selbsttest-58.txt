@@ -1,0 +1,41 @@
+  ok   Quelldatei im Plugin liegt im Quellort
+  ok   tests/ ist ausgenommen
+  ok   ein Ordner, der nur mit tests beginnt, ist nicht ausgenommen
+  ok   flatc-Codegen unter vertrag/generiert/ ist ausgenommen
+  ok   vertrag/ selbst zaehlt (Eingabe in Vergleichsform)
+  ok   JUCE unter _deps liegt nicht im Quellort
+  ok   Broker liegt nicht im Quellort
+  ok   fremde Wurzel liegt nicht im Quellort
+  ok   Wurzel mit Schlussstrich ist dieselbe Wurzel
+  ok   norm: Rueckstriche und Grossschreibung verschwinden
+  ok   Filter: eine Datei in zwei Zielen ergibt einen Eintrag, tests und _deps fallen weg
+  ok   Filter: der erste Eintrag gewinnt
+  ok   Filter: relativer Dateipfad wird an directory gehaengt und .. aufgeloest
+  ok   Filter: arguments-Form verliert /MP4 und -showIncludes
+  ok   bereinige: /MD bleibt, /MP faellt
+  ok   bereinige: Kommando ohne die Schalter bleibt gleich
+  ok   parse: drei Diagnosen mit Ort, note und Treiberwarnung nicht
+  ok   parse: Windows-Pfad mit Laufwerk bleibt ganz
+  ok   parse: Zeile und Spalte sind Zahlen
+  ok   parse: Check steht ohne Klammern
+  ok   parse: eckige Klammern im Text gehoeren zum Text
+  ok   parse: Mehrfach-Check bleibt eine Zeichenkette
+  ok   parse: error wird als error erkannt
+  ok   parse: leerer Text liefert nichts
+  ok   dedup: dieselbe Fundstelle aus zwei Einheiten zaehlt einmal
+  ok   dedup: andere Spalte zaehlt zweimal
+  ok   dedup: anderer Check am selben Ort zaehlt zweimal
+  ok   dedup: tests und JUCE zaehlen nicht
+  ok   dedup: Anzeigepfad ist relativ mit Vorwaertsstrichen
+  ok   dedup: sortiert nach Datei, Zeile, Spalte
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze plus eins reisst
+  ok   Null Fundstellen ist OK
+  ok   nicht messbar ist nie rot
+  ok   Ratsche ist nie unter dem Ziel
+  ok   Umgebung: erste Gleichheit trennt
+  ok   Umgebung: INCLUDE kommt an
+  ok   Umgebung: Zeilen ohne Gleichheit und Laufwerksmarken fallen weg
+  ok   je Check: absteigend, dann alphabetisch
+
+Selbsttest: 39/39 bestanden

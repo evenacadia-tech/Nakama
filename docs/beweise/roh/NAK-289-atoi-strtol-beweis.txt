@@ -1,0 +1,88 @@
+== Locale: C (Programmstart) ==
+1) Exponententexte aus std::to_chars: 4016956 Zerlegungen, 633 verschiedene Texte (kleinster +00, groesster -99), Form [+-]Ziffern{2,3} verletzt: 0, atoi != strtol: 0
+2) (leer)                     atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x20                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x09                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x0A                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +                          atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -                          atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +-1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -+1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) ++1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) --1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x2042                     atoi          42 (errno 0)  strtol          42 (errno 0)  gleich
+2) \x09-42                    atoi         -42 (errno 0)  strtol         -42 (errno 0)  gleich
+2) \x0A7                      atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) \x0B8                      atoi           8 (errno 0)  strtol           8 (errno 0)  gleich
+2) \x0C9                      atoi           9 (errno 0)  strtol           9 (errno 0)  gleich
+2) \x0D10                     atoi          10 (errno 0)  strtol          10 (errno 0)  gleich
+2) 007                        atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) +007                       atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) -007                       atoi          -7 (errno 0)  strtol          -7 (errno 0)  gleich
+2) 12abc                      atoi          12 (errno 0)  strtol          12 (errno 0)  gleich
+2) 0x1A                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) 1e5                        atoi           1 (errno 0)  strtol           1 (errno 0)  gleich
+2) 3.9                        atoi           3 (errno 0)  strtol           3 (errno 0)  gleich
+2) 2147483647                 atoi  2147483647 (errno 0)  strtol  2147483647 (errno 0)  gleich
+2) 2147483648                 atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) -2147483648                atoi -2147483648 (errno 0)  strtol -2147483648 (errno 0)  gleich
+2) -2147483649                atoi -2147483648 (errno 34)  strtol -2147483648 (errno 34)  gleich
+2) 4294967296                 atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) 99999999999999999999       atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) -99999999999999999999      atoi -2147483648 (errno 34)  strtol -2147483648 (errno 34)  gleich
+2) \x20\x20+0042abc           atoi          42 (errno 0)  strtol          42 (errno 0)  gleich
+2) \xC2\xA05                  atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \xEF\xBC\x95               atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \xD9\xA1\xD9\xA2           atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +05                        atoi           5 (errno 0)  strtol           5 (errno 0)  gleich
+2) -307                       atoi        -307 (errno 0)  strtol        -307 (errno 0)  gleich
+2) +308                       atoi         308 (errno 0)  strtol         308 (errno 0)  gleich
+2) -324                       atoi        -324 (errno 0)  strtol        -324 (errno 0)  gleich
+2) +00                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -00                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+3) Zufallstexte: 20000000, atoi != strtol: 0
+== Locale: de-DE ==
+1) Exponententexte aus std::to_chars: 4016956 Zerlegungen, 633 verschiedene Texte (kleinster +00, groesster -99), Form [+-]Ziffern{2,3} verletzt: 0, atoi != strtol: 0
+2) (leer)                     atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x20                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x09                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x0A                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +                          atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -                          atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +-1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -+1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) ++1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) --1                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \x2042                     atoi          42 (errno 0)  strtol          42 (errno 0)  gleich
+2) \x09-42                    atoi         -42 (errno 0)  strtol         -42 (errno 0)  gleich
+2) \x0A7                      atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) \x0B8                      atoi           8 (errno 0)  strtol           8 (errno 0)  gleich
+2) \x0C9                      atoi           9 (errno 0)  strtol           9 (errno 0)  gleich
+2) \x0D10                     atoi          10 (errno 0)  strtol          10 (errno 0)  gleich
+2) 007                        atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) +007                       atoi           7 (errno 0)  strtol           7 (errno 0)  gleich
+2) -007                       atoi          -7 (errno 0)  strtol          -7 (errno 0)  gleich
+2) 12abc                      atoi          12 (errno 0)  strtol          12 (errno 0)  gleich
+2) 0x1A                       atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) 1e5                        atoi           1 (errno 0)  strtol           1 (errno 0)  gleich
+2) 3.9                        atoi           3 (errno 0)  strtol           3 (errno 0)  gleich
+2) 2147483647                 atoi  2147483647 (errno 0)  strtol  2147483647 (errno 0)  gleich
+2) 2147483648                 atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) -2147483648                atoi -2147483648 (errno 0)  strtol -2147483648 (errno 0)  gleich
+2) -2147483649                atoi -2147483648 (errno 34)  strtol -2147483648 (errno 34)  gleich
+2) 4294967296                 atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) 99999999999999999999       atoi  2147483647 (errno 34)  strtol  2147483647 (errno 34)  gleich
+2) -99999999999999999999      atoi -2147483648 (errno 34)  strtol -2147483648 (errno 34)  gleich
+2) \x20\x20+0042abc           atoi          42 (errno 0)  strtol          42 (errno 0)  gleich
+2) \xC2\xA05                  atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \xEF\xBC\x95               atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) \xD9\xA1\xD9\xA2           atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) +05                        atoi           5 (errno 0)  strtol           5 (errno 0)  gleich
+2) -307                       atoi        -307 (errno 0)  strtol        -307 (errno 0)  gleich
+2) +308                       atoi         308 (errno 0)  strtol         308 (errno 0)  gleich
+2) -324                       atoi        -324 (errno 0)  strtol        -324 (errno 0)  gleich
+2) +00                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+2) -00                        atoi           0 (errno 0)  strtol           0 (errno 0)  gleich
+3) Zufallstexte: 5000000, atoi != strtol: 0
+URTEIL: atoi und static_cast<int> (strtol (s, nullptr, 10)) gleich - Wert und errno
+EXIT=0

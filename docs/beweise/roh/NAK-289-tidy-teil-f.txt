@@ -1,0 +1,49 @@
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 13 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 37 s mit 12 Prozess(en)
+
+ACHTUNG: TEILMESSUNG (--nur core/ipc/) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  22   0     83      ZIEL  
+
+Uebersetzungseinheiten: 9 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 9
+Langsamste Einheiten: eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp 22 s, eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp 21 s, eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp 20 s, eq-copilot/plugin/core/ipc/TelemetryClient.cpp 20 s, eq-copilot/plugin/core/ipc/ControlClient.cpp 18 s
+
+Fundstellen je Check:
+     14  bugprone-misplaced-widening-cast
+      3  bugprone-implicit-widening-of-multiplication-result
+      3  performance-move-const-arg
+      2  performance-unnecessary-value-param
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1113:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:393:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:394:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:395:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:397:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:399:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:401:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:265:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:268:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp:95:30 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/core/ipc/ControlClient.cpp:86:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:272:18 [performance-move-const-arg] passing result of std::move() as a const reference argument; no move will actually happen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:441:73 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:42:45 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/PipeToken.cpp:96:9 [bugprone-implicit-widening-of-multiplication-result] result of multiplication in type 'int' is used as a pointer offset after an implicit widening conversion to type 'ptrdiff_t'
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:281:37 [performance-move-const-arg] std::move of the const variable 'meine' has no effect; remove std::move() or make the variable non-const
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:390:75 [performance-unnecessary-value-param] the parameter 'meine' is copied for each invocation but only used as a const reference; consider making it a const reference
+
+URTEIL: TEILMESSUNG - 22 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+EXIT=0

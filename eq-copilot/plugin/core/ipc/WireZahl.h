@@ -135,7 +135,13 @@ inline bool zerlegen (double betrag, int stellen, std::string& ziffern, int& n)
     while (ziffern.size() > 1 && ziffern.back() == '0')
         ziffern.pop_back();
 
-    const int exponent10 = std::atoi (wissenschaftlich.c_str() + ePos + 1);
+    // NAK-289 (cert-err34-c): strtol statt atoi. In der UCRT sind beide derselbe
+    // Aufruf parse_integer_from_string<long> (Text, nullptr, 10, nullptr)
+    // (Windows SDK, ucrt/convert/atox.cpp und strtox.cpp), und long ist unter
+    // Windows 32 Bit breit wie int - fuer jede Eingabe derselbe Wert und
+    // dasselbe errno. Die Eingabe ist hier stets der Exponent, den
+    // std::to_chars geschrieben hat: Vorzeichen und zwei oder drei Ziffern.
+    const int exponent10 = static_cast<int> (std::strtol (wissenschaftlich.c_str() + ePos + 1, nullptr, 10));
     n = exponent10 + 1;   // d.ddd * 10^e == s * 10^(n-k) mit n = e + 1
     return true;
 }

@@ -1,0 +1,121 @@
+
+=============== Rotbeweis g1 (2026-09-15 17:38:59)
+Zusage : jede Ausgabezeile des Probewerkzeugs endet mit Umbruch UND flush
+Datei  : eq-copilot/plugin/probe/PipeProbeMain.cpp
+Alt    : << "..." << '\n' << std::flush;
+Neu    : << "..." << '\n';
+SHA-256 vorher : ED9E4217EBC54752BD9D6624836FA149C551B283ECC1DBD6BF0123262E318988
+Treffer des alten Textes: 1
+SHA-256 mutiert: 0CF8A98DA538F1167BC71E20934AF9CA6C731F04D4051502B0BD4C3B780560CF
+Bau EqCopPipeClientTest mit Mutation: Exit 0
+===== A4b EqCopPipeClientTest | eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe | Exit 1 | 65.68 s
+----- stdout
+PIPECLIENT-LIFECYCLE-TEST
+  ok      nak289_utf8_zwei_byte/c3_ohne_folgebyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_mit_laenge_1  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_28_ungueltiges_folgebyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_c0_folgebyte_ueber_bf  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c2_80_untere_grenze  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/df_bf_obere_grenze  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_gueltig  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_41_weiter_hinter_dem_folgebyte  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_80_naechstes_byte_ist_leitbyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      Fake-Pipe fuer Welcome-Stopp angelegt
+  ok      stop() bricht blockiertes Welcome-Lesen begrenzt ab  [0 ms]
+  ok      SQOS begrenzt den Peer auf SecurityIdentification  [1]
+  ok      Fake-Pipe fuer ACK-Stopp angelegt
+  ok      stop() bricht blockiertes ACK-Lesen begrenzt ab  [0 ms]
+  ok      Reconnect-Fake-Pipe angelegt
+  ok      Reconnect waehrend Welcome verliert keine Konfigurationsgeneration
+  ok      pipeclient_reconnect_verwirft_serverfreigabe
+  ok      pipeclient_sendet_vor_serverauth_keine_bytes
+  ok      ungueltiges UTF-8 wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      rohes NUL wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
+  ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [323 ms]
+  ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
+  ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4018 ms, weitere Versuche 1 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [file_not_found: klass 1, 10 ms, weitere Versuche 2 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [access_denied: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [sonstiger_fehler: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [pipe_busy: 2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [access_denied: 1 Versuche, 0 Serverpruefungen (erwartet 0 — positionsgesteuert)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [welcome_bleibt_aus: Hello gelesen 1, Pruefungen 1, Protokoll 0 (erwartet 0), Status 0 (erwartet nichtGeprueft)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [erwartung_ungueltig: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [server_pid_nicht_ermittelbar: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 496 1004 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 499 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 501 996 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_vor_open: 90 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 1 (v2 setzt nicht zurueck)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_vor_open: 92 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 493 1001 2000 ms (erwartet 500 1000 2000)]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 10 4514 9525 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [verifiziert_ohne_welcome Stempel 10 5508 11510 ms, Pruefungen 3]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [stehende_verbindung_setzt_zurueck: Aufstieg 500 999 ms, Verbindung stand 1, naechste Runde nach 506 ms (erwartet 350..1200, ohne Reset >= 2000)]
+  ok      nak289_probe_main_hat_ausnahmegrenze_mit_exit_70  [Quelltext 9148 Bytes, try-Block ja, std::exception ja, catch-all ja, Exit 70 zweimal ja, stderr in beiden Handlern ja]
+  FEHLER  nak289_probe_jede_ausgabezeile_endet_mit_umbruch_und_flush  [std::endl 0, Umbrueche ohne flush 1 (erster in Zeile 129), std::cout-Anweisungen 9, Enden mit Umbruch und flush 8]
+PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+----- stderr
+
+
+Bein A4b mit Mutation: Exit 2 (erwartet ungleich 0)
+SHA-256 nach Ruecknahme: ED9E4217EBC54752BD9D6624836FA149C551B283ECC1DBD6BF0123262E318988 (bytegleich)
+===== A4b EqCopPipeClientTest | eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe | Exit 0 | 65.69 s
+----- stdout
+PIPECLIENT-LIFECYCLE-TEST
+  ok      nak289_utf8_zwei_byte/c3_ohne_folgebyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_mit_laenge_1  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_28_ungueltiges_folgebyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c3_c0_folgebyte_ueber_bf  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      nak289_utf8_zwei_byte/c2_80_untere_grenze  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/df_bf_obere_grenze  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_gueltig  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_41_weiter_hinter_dem_folgebyte  [erwartet gueltig, Riegel sagt gueltig]
+  ok      nak289_utf8_zwei_byte/c3_a4_80_naechstes_byte_ist_leitbyte  [erwartet ungueltig, Riegel sagt ungueltig]
+  ok      Fake-Pipe fuer Welcome-Stopp angelegt
+  ok      stop() bricht blockiertes Welcome-Lesen begrenzt ab  [0 ms]
+  ok      SQOS begrenzt den Peer auf SecurityIdentification  [1]
+  ok      Fake-Pipe fuer ACK-Stopp angelegt
+  ok      stop() bricht blockiertes ACK-Lesen begrenzt ab  [0 ms]
+  ok      Reconnect-Fake-Pipe angelegt
+  ok      Reconnect waehrend Welcome verliert keine Konfigurationsgeneration
+  ok      pipeclient_reconnect_verwirft_serverfreigabe
+  ok      pipeclient_sendet_vor_serverauth_keine_bytes
+  ok      ungueltiges UTF-8 wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      rohes NUL wird vor der JUCE-Stringkonstruktion abgelehnt
+  ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
+  ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [333 ms]
+  ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
+  ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [pipe_busy: klass 1, 4020 ms, weitere Versuche 1 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [file_not_found: klass 1, 11 ms, weitere Versuche 2 (erwartet >=1)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [access_denied: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_oeffnungsausgaenge_sind_liveness_oder_sicherheit  [sonstiger_fehler: klass 1, 10 ms, weitere Versuche 0 (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [pipe_busy: 2 Versuche, 0 Serverpruefungen (erwartet 0)]
+  ok      pipeclient_zaehlervertrag  [access_denied: 1 Versuche, 0 Serverpruefungen (erwartet 0 — positionsgesteuert)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [welcome_bleibt_aus: Hello gelesen 1, Pruefungen 1, Protokoll 0 (erwartet 0), Status 0 (erwartet nichtGeprueft)]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [erwartung_ungueltig: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_authausgaenge_und_welcome_ausbleiben  [server_pid_nicht_ermittelbar: fiel 1, weitere Versuche 0, Hello gelesen 0 (erwartet 0), Pruefungen 1]
+  ok      pipeclient_parken_uebergeht_den_backoff  [authfehler: Aufstieg 493 1005 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 491 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_parken_uebergeht_den_backoff  [access_denied: Aufstieg 495 1006 ms, dritter Versuch fertig 1, geparkt 1 bei Versuch 4, weitere Versuche 0, Neustart nach 10 ms, Versuch DANACH nach 494 ms (erwartet 350..1200, ohne Reset >= 4000)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_vor_open: 89 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Status 1 (v2 setzt nicht zurueck)]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_vor_open: 94 ms (R5-Frist 1500 ms; die belegte Warteschleife allein kostet >= 4000 ms), Versuche +1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [stop_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_abbruch_vor_und_nach_createfile  [reconnect_nach_open: an der Barriere 1, kein Hello 1]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [file_not_found Abstaende 492 1005 2002 ms (erwartet 500 1000 2000)]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [pipe_busy Stempel 10 4515 9522 ms — vor R1 parkt der Thread nach dem ersten]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [verifiziert_ohne_welcome Stempel 10 5509 11510 ms, Pruefungen 3]
+  ok      pipeclient_backoff_folge_und_deckel_sind_beobachtbar  [stehende_verbindung_setzt_zurueck: Aufstieg 498 1002 ms, Verbindung stand 1, naechste Runde nach 508 ms (erwartet 350..1200, ohne Reset >= 2000)]
+  ok      nak289_probe_main_hat_ausnahmegrenze_mit_exit_70  [Quelltext 9162 Bytes, try-Block ja, std::exception ja, catch-all ja, Exit 70 zweimal ja, stderr in beiden Handlern ja]
+  ok      nak289_probe_jede_ausgabezeile_endet_mit_umbruch_und_flush  [std::endl 0, Umbrueche ohne flush 0, std::cout-Anweisungen 9, Enden mit Umbruch und flush 9]
+PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+----- stderr
+
+
+Bein A4b nach Ruecknahme: Exit 0 (erwartet 0)

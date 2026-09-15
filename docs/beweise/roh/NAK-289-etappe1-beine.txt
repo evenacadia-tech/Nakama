@@ -36,3 +36,28 @@
 2026-09-15 16:34:55 | HEAD 3728c678 (+2 geaenderte Datei(en)) | h) inc-dec-in-conditions | B2 EqCopStateMigrationTest | Exit 0 | 1.54 s | STATE-MIGRATION-TEST OK - 287 Pruefungen ok, 0 Fehler
 2026-09-15 16:34:56 | HEAD 3728c678 (+2 geaenderte Datei(en)) | h) inc-dec-in-conditions | B3c EqCopSchemaTest | Exit 0 | 0.45 s | 152 bestanden, 0 gescheitert
 2026-09-15 16:36:01 | HEAD 3728c678 (+2 geaenderte Datei(en)) | h) inc-dec-in-conditions | A4b EqCopPipeClientTest | Exit 0 | 65.71 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+2026-09-15 16:44:30 | HEAD 8d28d5b3 (+1 geaenderte Datei(en)) | Rotbeweis a1 mit Mutation | B17 EqCopSonde013TruePeakGoldenTest | Exit 1 | 0.29 s | 21 bestanden, 22 gescheitert
+2026-09-15 16:49:22 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweis a2 mit Mutation | B10 EqCopIpcTest | Exit 1 | 220.48 s | FEHLER — 435 Pruefungen, 1 Fehler
+2026-09-15 16:54:09 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a3 mit Mutation | B10 EqCopIpcTest | Exit 1 | 221.67 s | FEHLER — 435 Pruefungen, 6 Fehler
+2026-09-15 16:59:02 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a4 mit Mutation | B10 EqCopIpcTest | Exit 1 | 221.11 s | FEHLER — 435 Pruefungen, 1 Fehler
+2026-09-15 17:03:56 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a5 mit Mutation | B10 EqCopIpcTest | Exit 1 | 220.97 s | FEHLER — 435 Pruefungen, 1 Fehler
+2026-09-15 17:04:03 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a6 mit Mutation | B3c EqCopSchemaTest | Exit 1 | 0.48 s | 150 bestanden, 2 gescheitert
+2026-09-15 17:08:56 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a7 mit Mutation | B10 EqCopIpcTest | Exit 1 | 221.42 s | FEHLER — 435 Pruefungen, 1 Fehler
+2026-09-15 17:09:01 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a8 mit Mutation | B3c EqCopSchemaTest | Exit 1 | 0.44 s | 151 bestanden, 1 gescheitert
+2026-09-15 17:09:05 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a9 mit Mutation | B3c EqCopSchemaTest | Exit 1 | 0.46 s | 151 bestanden, 1 gescheitert
+2026-09-15 17:10:14 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis a10 mit Mutation | A4b EqCopPipeClientTest | Exit 1 | 65.52 s | PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+2026-09-15 17:24:28 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis d1 mit Mutation | B10 EqCopIpcTest | Exit 1 | 852.13 s | FEHLER — 435 Pruefungen, 113 Fehler
+2026-09-15 17:38:41 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis d2 mit Mutation | B10 EqCopIpcTest | Exit 1 | 850.36 s | FEHLER — 435 Pruefungen, 113 Fehler
+2026-09-15 17:38:49 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis e1 mit Mutation | B6 EqCopDspGoldenTest | Exit 1 | 4.9 s | DSP-GOLDEN FEHLGESCHLAGEN
+2026-09-15 17:38:59 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis f1 mit Mutation | B3c EqCopSchemaTest | Exit 1 | 2.47 s | 131 bestanden, 21 gescheitert
+2026-09-15 17:40:09 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis g1 mit Mutation | A4b EqCopPipeClientTest | Exit 1 | 65.68 s | PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+2026-09-15 17:41:21 | HEAD 8d28d5b3 (+3 geaenderte Datei(en)) | Rotbeweis h1 mit Mutation | A4b EqCopPipeClientTest | Exit 1 | 65.72 s | PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 4 Fehler
+2026-09-15 17:42:43 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse a nach Ruecknahme | B17 EqCopSonde013TruePeakGoldenTest | Exit 0 | 0.34 s | 43 bestanden, 0 gescheitert
+2026-09-15 17:46:25 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse a nach Ruecknahme | B10 EqCopIpcTest | Exit 0 | 221.08 s | ALLE PRUEFUNGEN GRUEN — 435 Pruefungen, 0 Fehler
+2026-09-15 17:46:26 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse a nach Ruecknahme | B3c EqCopSchemaTest | Exit 0 | 0.45 s | 152 bestanden, 0 gescheitert
+2026-09-15 17:47:33 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse a nach Ruecknahme | A4b EqCopPipeClientTest | Exit 0 | 66.21 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+2026-09-15 17:51:14 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse d nach Ruecknahme | B10 EqCopIpcTest | Exit 0 | 220.91 s | ALLE PRUEFUNGEN GRUEN — 435 Pruefungen, 0 Fehler
+2026-09-15 17:51:20 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse e nach Ruecknahme | B6 EqCopDspGoldenTest | Exit 0 | 5.42 s | DSP-GOLDEN OK
+2026-09-15 17:51:21 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse f nach Ruecknahme | B3c EqCopSchemaTest | Exit 0 | 0.45 s | 152 bestanden, 0 gescheitert
+2026-09-15 17:52:27 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse g nach Ruecknahme | A4b EqCopPipeClientTest | Exit 0 | 65.69 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+2026-09-15 17:53:33 | HEAD 8d28d5b3 (+2 geaenderte Datei(en)) | Rotbeweise Klasse h nach Ruecknahme | A4b EqCopPipeClientTest | Exit 0 | 65.49 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler

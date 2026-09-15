@@ -37,6 +37,7 @@
 #include "controlclient/Intern.h"
 #include <cmath>
 #include <cctype>
+#include <exception>
 
 namespace nakama::ipc
 {
@@ -240,10 +241,22 @@ bool audioGueltig (double samplerate, int blockSize, int channels) noexcept
     // und der Gegenleser verwuerfe den Handschlag. Ein Client, der wissentlich
     // Unzustellbares sendet, verbindet lieber gar nicht erst.
     std::string verworfen;
-    return std::isfinite (samplerate) && samplerate > 0.0 && samplerate <= 768000.0
-        && nakama::wire::wireZahl (samplerate, verworfen)
-        && blockSize >= 1 && blockSize <= 65536
-        && channels >= 0 && channels <= 64;
+    // NAK-289: wireZahl baut Zeichenketten und kann dabei allozieren
+    // (std::bad_alloc). Ein Wurf aus dieser noexcept-Funktion war schon immer
+    // std::terminate; die Grenze steht jetzt ausdruecklich da. Verschluckt
+    // saehe ein Allokationsfehler aus wie eine riegelwidrige Samplerate und
+    // verschleierte die Ursache.
+    try
+    {
+        return std::isfinite (samplerate) && samplerate > 0.0 && samplerate <= 768000.0
+            && nakama::wire::wireZahl (samplerate, verworfen)
+            && blockSize >= 1 && blockSize <= 65536
+            && channels >= 0 && channels <= 64;
+    }
+    catch (...)
+    {
+        std::terminate();
+    }
 }
 
 bool istHex32 (const std::string& s) noexcept

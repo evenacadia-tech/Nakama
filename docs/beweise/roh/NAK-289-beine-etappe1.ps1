@@ -54,6 +54,9 @@ $beine = @{
     'B6'  = @{ Name = 'EqCopDspGoldenTest';                  Art = 'plugin'; Argumente = @() }
     'B7'  = @{ Name = 'EqCopTransactionTest';                Art = 'plugin'; Argumente = @() }
     'B10' = @{ Name = 'EqCopIpcTest';                        Art = 'plugin'; Argumente = @() }
+    'B11' = @{ Name = 'EqCopSonde012HostChannelContextTest'; Art = 'plugin'; Argumente = @() }
+    'B12' = @{ Name = 'EqCopSonde012LoudnessSourceTest';     Art = 'plugin'; Argumente = @() }
+    'B30' = @{ Name = 'EqCopBriefkastenTest';                Art = 'plugin'; Argumente = @() }
     'B13' = @{ Name = 'EqCopSonde012SourcesModelTest';       Art = 'plugin'; Argumente = @() }
     'B16' = @{ Name = 'EqCopSonde013EventWireTest';          Art = 'plugin'; Argumente = @() }
     'B17' = @{ Name = 'EqCopSonde013TruePeakGoldenTest';     Art = 'plugin'; Argumente = @() }

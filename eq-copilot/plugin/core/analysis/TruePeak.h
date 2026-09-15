@@ -53,6 +53,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <vector>
 
 namespace nakama::analyse
@@ -106,8 +107,21 @@ public:
         // Etappe B schon einmal der 1-MiB-Stack gerissen (Manifest §10.2,
         // Befund 1). Angelegt wird er hier, auf dem Nachrichtenthread;
         // `tick()` allokiert weiterhin nie.
-        verlaufL.assign ((std::size_t) kRing, 0.0);
-        verlaufR.assign ((std::size_t) kRing, 0.0);
+        //
+        // NAK-289: die zwei Allokationen sind die einzigen Aufrufe hier, die
+        // werfen koennen (std::bad_alloc). Ein Wurf aus dieser noexcept-
+        // Funktion war schon immer std::terminate; die Grenze steht jetzt
+        // ausdruecklich da. Verschluckt liesse er einen halb vorbereiteten
+        // Detektor zurueck: bereit() waere false und der True Peak still 0.
+        try
+        {
+            verlaufL.assign ((std::size_t) kRing, 0.0);
+            verlaufR.assign ((std::size_t) kRing, 0.0);
+        }
+        catch (...)
+        {
+            std::terminate();
+        }
         zuruecksetzen();
     }
 

@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -415,7 +416,19 @@ public:
     {
         if (reserviert > 0)
             --reserviert;
-        abfliessen();
+        // NAK-289: abfliessen haengt an die Hauptqueue an und kann dabei
+        // allozieren (std::bad_alloc). Ein Wurf aus dieser noexcept-Funktion
+        // war schon immer std::terminate; die Grenze steht jetzt ausdruecklich
+        // da. Verschluckt blieben angenommene Wiederholungen still liegen
+        // (Matrix A-P1-06).
+        try
+        {
+            abfliessen();
+        }
+        catch (...)
+        {
+            std::terminate();
+        }
     }
 
     /// Gegenstueck zu `entnehmen`: der Sender hat den Eintrag NICHT auf die

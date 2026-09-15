@@ -3,6 +3,7 @@
 #include "generiert/nakama_telemetry_v1_generated.h"
 
 #include <cmath>
+#include <cstring>
 #include <set>
 #include <string>
 
@@ -20,10 +21,13 @@ bool Verstoss::operator== (const Verstoss& a) const noexcept
 bool Verstoss::operator< (const Verstoss& a) const noexcept
 {
     // Byteweise ueber UTF-8: so ordnet auch Rusts String.
-    const std::string ap (pfad.toRawUTF8()), bp (a.pfad.toRawUTF8());
-    if (ap != bp) return ap < bp;
-    const std::string ar (regel.toRawUTF8()), br (a.regel.toRawUTF8());
-    return ar < br;
+    // NAK-289: strcmp statt zweier std::string-Kopien. Dieselbe Ordnung
+    // (Bytes als unsigned char, ein echter Praefix zuerst, Ende am ersten NUL
+    // wie beim Kopieren aus dem C-String) ohne Allokation, damit die
+    // noexcept-Zusage keinen Wurf (std::bad_alloc) enthaelt.
+    const int p = std::strcmp (pfad.toRawUTF8(), a.pfad.toRawUTF8());
+    if (p != 0) return p < 0;
+    return std::strcmp (regel.toRawUTF8(), a.regel.toRawUTF8()) < 0;
 }
 
 namespace

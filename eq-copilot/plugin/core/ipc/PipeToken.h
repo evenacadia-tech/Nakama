@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace nakama::ipc
 {
@@ -57,10 +58,15 @@ inline constexpr const char* kPipePraefixProbe =
 /// ueber eine Zeichenkette.
 inline bool istProbePipename (const std::string& name) noexcept
 {
-    const std::string praefix (kPipePraefixProbe);
+    // NAK-289: der Praefix als string_view statt als std::string - dieselben
+    // Bytes ohne Allokation, damit die noexcept-Zusage keinen Wurf
+    // (std::bad_alloc) enthaelt. Bei name.size() > praefix.size() vergleicht
+    // starts_with genau die Bytes, die compare mit Position 0 und
+    // Praefixlaenge verglich.
+    const std::string_view praefix (kPipePraefixProbe);
     // Der Rest hinter dem Praefix darf nicht leer sein, damit `probe.` allein
     // keine Sammelpipe wird.
-    return name.size() > praefix.size() && name.compare (0, praefix.size(), praefix) == 0;
+    return name.size() > praefix.size() && std::string_view (name).starts_with (praefix);
 }
 
 /// SHA-256 ueber beliebige Bytes; schreibt 32 Bytes nach `digest`.

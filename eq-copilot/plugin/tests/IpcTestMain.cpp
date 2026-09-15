@@ -36,6 +36,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -61,11 +62,21 @@ namespace
 {
     thread_local bool          zaehleAllokationen = false;
     thread_local std::uint64_t allokationen       = 0;
+    // NAK-289 Etappe 1: die naechste Allokation dieses Threads wirft
+    // std::bad_alloc. Nur der Kindprozess der Terminate-Wache setzt das.
+    thread_local bool          naechsteAllokationWirft = false;
+    thread_local bool          allokationGeworfen      = false;
 }
 
 void* operator new (std::size_t groesse)
 {
     if (zaehleAllokationen) ++allokationen;
+    if (naechsteAllokationWirft)
+    {
+        naechsteAllokationWirft = false;
+        allokationGeworfen = true;
+        throw std::bad_alloc();
+    }
     if (groesse == 0) groesse = 1;
     if (void* p = std::malloc (groesse)) return p;
     throw std::bad_alloc();
@@ -75,6 +86,12 @@ void operator delete (void* p, std::size_t) noexcept { std::free (p); }
 void* operator new[] (std::size_t groesse)
 {
     if (zaehleAllokationen) ++allokationen;
+    if (naechsteAllokationWirft)
+    {
+        naechsteAllokationWirft = false;
+        allokationGeworfen = true;
+        throw std::bad_alloc();
+    }
     if (groesse == 0) groesse = 1;
     if (void* p = std::malloc (groesse)) return p;
     throw std::bad_alloc();
@@ -3220,9 +3237,116 @@ void nak246D4Dreiwert()
 } // namespace nak246
 } // namespace
 
+namespace
+{
+/*  NAK-289 Etappe 1 (bugprone-exception-escape): drei noexcept-Funktionen
+    allozieren - TruePeakDetektor::vorbereiten, P1Warteschlange::bestaetigen
+    und audioGueltig. Ein Allokationsfehler darin war schon vor NAK-289 ein
+    Abbruch ueber std::terminate (Wurf aus noexcept); seit NAK-289 steht die
+    Grenze ausdruecklich im Code. Die Zusage "nie verschluckt" misst nur ein
+    Prozess, der wirklich abbricht - deshalb faehrt jeder Fall in einem eigenen
+    Kindprozess dieses Programms. Exitcodes des Kindes:
+
+      71  der Terminate-Handler lief - die Zusage haelt;
+      72  die Allokation hat geworfen, die Funktion kam trotzdem zurueck;
+      73  unbekannter Fall;
+      74  keine Allokation hat geworfen - der Fall misst nichts (fail-closed).
+
+    Der Handler endet mit std::_Exit; abort() und die Windows-Fehler-
+    berichterstattung kommen gar nicht erst zum Zug. */
+int nak289AllokationsfehlerKind (const std::string& fall)
+{
+    _set_abort_behavior (0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+    std::set_terminate ([] { std::_Exit (71); });
+
+    if (fall == "truepeak")
+    {
+        auto detektor = std::make_unique<nakama::analyse::TruePeakDetektor>();
+        naechsteAllokationWirft = true;
+        detektor->vorbereiten (48000.0);
+    }
+    else if (fall == "p1")
+    {
+        // Die Folge legt den naechsten Eintrag der Hauptqueue in einen noch
+        // nicht angelegten deque-Block (MSVC-STL: ein Element je Block ab
+        // 9 Bytes Elementgroesse), damit abfliessen() in bestaetigen()
+        // allozieren muss. Tut es das nicht, meldet der Fall 74.
+        P1Warteschlange q (2, 4);
+        q.einreihen ("", "1");
+        q.einreihen ("", "2");
+        (void) q.einreihen ("", "3");   // geht in den Wiederholpuffer
+        std::string weg;
+        q.entnehmen (weg);
+        naechsteAllokationWirft = true;
+        q.bestaetigen();
+    }
+    else if (fall == "audio")
+    {
+        // 12345,6789012345 ist gueltig, und der wissenschaftliche Text in
+        // wireZahl ist laenger als der Kleinpuffer eines std::string.
+        naechsteAllokationWirft = true;
+        (void) audioGueltig (12345.6789012345, 512, 2);
+    }
+    else
+    {
+        return 73;
+    }
+    naechsteAllokationWirft = false;
+    return allokationGeworfen ? 72 : 74;
+}
+
+/// Faehrt einen Fall in einem Kindprozess und liefert dessen Exitcode
+/// (-1: Start gescheitert, 124: Zeitlimit von 30 s).
+int nak289KindFahren (const std::string& fall)
+{
+    const auto exeText = juce::File::getSpecialLocation (
+        juce::File::currentExecutableFile).getFullPathName();
+    const std::wstring exe (exeText.toWideCharPointer());
+    std::wstring befehl = L"\"" + exe + L"\" --nak289-allokationsfehler "
+                        + std::wstring (fall.begin(), fall.end());
+    STARTUPINFOW start {};
+    start.cb = sizeof (start);
+    PROCESS_INFORMATION info {};
+    if (CreateProcessW (exe.c_str(), befehl.data(), nullptr, nullptr, FALSE,
+                        CREATE_NO_WINDOW, nullptr, nullptr, &start, &info) == FALSE)
+        return -1;
+    CloseHandle (info.hThread);
+    int code = 124;
+    if (WaitForSingleObject (info.hProcess, 30000) == WAIT_TIMEOUT)
+    {
+        TerminateProcess (info.hProcess, 124);
+        WaitForSingleObject (info.hProcess, 5000);
+    }
+    else
+    {
+        DWORD roh = 0;
+        if (GetExitCodeProcess (info.hProcess, &roh) != FALSE)
+            code = static_cast<int> (roh);
+    }
+    CloseHandle (info.hProcess);
+    return code;
+}
+
+void nak289AllokationsfehlerTerminiert()
+{
+    abschnitt ("NAK-289 · Allokationsfehler in noexcept-Funktionen endet in std::terminate");
+    for (const char* fall : { "truepeak", "p1", "audio" })
+    {
+        const int code = nak289KindFahren (fall);
+        pruefe (code == 71,
+                std::string ("nak289_allokationsfehler_terminiert/") + fall,
+                "Exitcode des Kindprozesses " + std::to_string (code)
+                    + " (71 terminate, 72 verschluckt, 74 keine Allokation)");
+    }
+}
+} // namespace
+
 //==============================================================================
 int main (int argc, char** argv)
 {
+    // NAK-289 Etappe 1: Kindprozess der Terminate-Wache (siehe oben).
+    if (argc == 3 && std::string (argv[1]) == "--nak289-allokationsfehler")
+        return nak289AllokationsfehlerKind (argv[2]);
     // NAK-246 D2, Rotlauf: dieselben Faelle in der Alt-Verdrahtung des
     // Basis-SHA. Nur der Abschnitt, damit die Rohausgabe den Fall traegt.
     if (argc == 2 && std::string (argv[1]) == "--nak246-alt")
@@ -7855,6 +7979,9 @@ int main (int argc, char** argv)
                 "kehrt sofort zurueck",
                 std::to_string (dauer2) + " ms");
     }
+
+    // NAK-289 Etappe 1: Allokationsfehler in noexcept-Funktionen (Kindprozesse).
+    nak289AllokationsfehlerTerminiert();
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
               << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;

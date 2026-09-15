@@ -1,0 +1,9 @@
+2026-09-15 16:02:50 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B17 EqCopSonde013TruePeakGoldenTest | Exit 0 | 0.47 s | 43 bestanden, 0 gescheitert
+2026-09-15 16:02:58 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B5 EqCopAnalysisGoldenTest | Exit 0 | 8.1 s | Ergebnis: 248 bestanden, 0 Fehler.
+2026-09-15 16:03:00 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B16 EqCopSonde013EventWireTest | Exit 0 | 2.23 s | 179 bestanden, 0 gescheitert
+2026-09-15 16:06:41 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B10 EqCopIpcTest | Exit 0 | 221.25 s | ALLE PRUEFUNGEN GRUEN — 435 Pruefungen, 0 Fehler
+2026-09-15 16:06:42 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B3c EqCopSchemaTest | Exit 0 | 0.56 s | 152 bestanden, 0 gescheitert
+2026-09-15 16:07:47 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | A4b EqCopPipeClientTest | Exit 0 | 65.57 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+2026-09-15 16:07:48 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | A16 EqCopProbeeqNullTest | Exit 0 | 0.34 s | SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler
+2026-09-15 16:07:48 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | A1 EqCopNullTest | Exit 0 | 0.1 s | NULLTEST OK
+2026-09-15 16:07:48 | HEAD 014827a4 (+11 geaenderte Datei(en)) | a) bugprone-exception-escape | B13 EqCopSonde012SourcesModelTest | Exit 0 | 0.15 s | SONDE-012 SourcesModel: 88/88 gruen

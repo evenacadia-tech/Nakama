@@ -4,7 +4,9 @@
 //   2. heartbeat_ack wird gelesen (sonst bräche die Verbindung nach Heartbeat 1)
 //   3. Kennungs-Konflikt: zweiter Client mit derselben Sensor-ID ⇒ beide sehen
 //      konflikt=true im ACK; nach dessen Ende fällt das Flag wieder.
-// Exit 0 nur, wenn alle drei Stufen bestanden sind.
+// Exit 0 nur, wenn alle drei Stufen bestanden sind; 1, wenn eine Stufe
+// scheitert; 2, wenn die Servererwartung leer ist; 70, wenn eine Ausnahme bis
+// main durchlaeuft (Meldung auf stderr, NAK-289).
 //
 //   eqcop-pipe-probe.exe [pipe-name] [sekunden] [server-binary]
 //
@@ -20,6 +22,8 @@
 #include "EqCopilotIds.h"
 #include "BrokerInstallBinding.h"
 #include <cmath>
+#include <cstdio>
+#include <exception>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -96,7 +100,14 @@ static bool warteAuf (int zehntel, Bedingung ok)
     return false;
 }
 
+/// Exitcode, wenn eine Ausnahme bis main durchlaeuft (NAK-289). Kein
+/// Stufenergebnis wie 0, 1 oder 2, sondern 70 wie EX_SOFTWARE aus sysexits.h:
+/// ein interner Fehler des Werkzeugs. Vorher endete derselbe Fall in
+/// std::terminate, ohne Meldung.
+static constexpr int kExitAusnahme = 70;
+
 int main (int argc, char** argv)
+try
 {
     const juce::String pipeName = argc > 1 ? juce::String (argv[1])
                                            : juce::String (juce::CharPointer_UTF16 (eqcop::kPipeName));
@@ -184,4 +195,18 @@ int main (int argc, char** argv)
 
     a->stop();
     return 0;
+}
+catch (const std::exception& e)
+{
+    // NAK-289: die Ausnahmegrenze des Werkzeugs. Gemeldet wird ueber C-stdio,
+    // damit die Meldung selbst keinen weiteren Wurf ausloesen kann.
+    std::fprintf (stderr, "PROBE ABGEBROCHEN (Ausnahme) · %s\n", e.what());
+    std::fflush (stderr);
+    return kExitAusnahme;
+}
+catch (...)
+{
+    std::fputs ("PROBE ABGEBROCHEN (unbekannte Ausnahme)\n", stderr);
+    std::fflush (stderr);
+    return kExitAusnahme;
 }

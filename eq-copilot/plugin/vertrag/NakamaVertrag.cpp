@@ -262,12 +262,15 @@ bool Verletzung::operator< (const Verletzung& a) const noexcept
 {
     // Byteweise ueber UTF-8: so ordnen Rusts String und - weil UTF-8 die
     // Codepunkt-Ordnung erhaelt - auch Pythons sorted().
-    const std::string ai (instanz.toRawUTF8()),    bi (a.instanz.toRawUTF8());
-    if (ai != bi) return ai < bi;
-    const std::string as (schema.toRawUTF8()),     bs (a.schema.toRawUTF8());
-    if (as != bs) return as < bs;
-    const std::string ak (schluessel.toRawUTF8()), bk (a.schluessel.toRawUTF8());
-    return ak < bk;
+    // NAK-289: strcmp statt dreier std::string-Paare. Dieselbe Ordnung (Bytes
+    // als unsigned char, ein echter Praefix zuerst, Ende am ersten NUL wie
+    // beim Kopieren aus dem C-String) ohne Allokation, damit die
+    // noexcept-Zusage keinen Wurf (std::bad_alloc) enthaelt.
+    const int i = std::strcmp (instanz.toRawUTF8(), a.instanz.toRawUTF8());
+    if (i != 0) return i < 0;
+    const int s = std::strcmp (schema.toRawUTF8(), a.schema.toRawUTF8());
+    if (s != 0) return s < 0;
+    return std::strcmp (schluessel.toRawUTF8(), a.schluessel.toRawUTF8()) < 0;
 }
 
 // ------------------------------------------------------------------ Textriegel

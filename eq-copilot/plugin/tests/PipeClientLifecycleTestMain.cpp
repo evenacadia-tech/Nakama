@@ -4,7 +4,10 @@
 
 #include <atomic>
 #include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <mutex>
 #include <string>
@@ -1400,6 +1403,53 @@ void startStopSerialisiert()
     }
     pruefe (true, "200 konkurrierende start/stop-Paare ohne joinable-Leak");
 }
+
+// NAK-289 Etappe 1: das Probewerkzeug eqcop-pipe-probe.exe
+// (probe/PipeProbeMain.cpp) faehrt kein Bein. Diese Wachen lesen deshalb
+// seinen QUELLTEXT und halten die Zusagen fest, die NAK-289 dort eingefuehrt
+// hat. Der Pfad kommt aus __FILE__, wie in DspGoldenTestMain.cpp.
+std::string probeQuelltext()
+{
+    const auto datei = std::filesystem::path (__FILE__).parent_path().parent_path()
+                     / "probe" / "PipeProbeMain.cpp";
+    std::ifstream ein (datei, std::ios::binary);
+    return std::string ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+}
+
+std::size_t zaehleVorkommen (const std::string& text, const std::string& muster)
+{
+    std::size_t n = 0;
+    for (auto pos = text.find (muster); pos != std::string::npos; pos = text.find (muster, pos + muster.size()))
+        ++n;
+    return n;
+}
+
+// bugprone-exception-escape in main: ein Funktions-try-Block, ein Handler fuer
+// std::exception und ein catch-all, beide mit Meldung auf stderr und dem
+// Exitcode 70 (kExitAusnahme), der kein Stufenergebnis (0, 1, 2) ist.
+void probeAusnahmegrenze()
+{
+    const auto text = probeQuelltext();
+    const std::string signatur = "int main (int argc, char** argv)";
+    const auto kopf = text.find (signatur);
+    const auto danach = kopf == std::string::npos
+                            ? std::string::npos
+                            : text.find_first_not_of (" \t\r\n", kopf + signatur.size());
+    const bool tryBlock  = danach != std::string::npos && text.compare (danach, 3, "try") == 0;
+    const auto handlerAb = kopf == std::string::npos ? std::string::npos : text.find ("catch (", kopf);
+    const std::string handler = handlerAb == std::string::npos ? std::string() : text.substr (handlerAb);
+    const bool ausnahme  = zaehleVorkommen (handler, "catch (const std::exception& e)") == 1;
+    const bool alles     = zaehleVorkommen (handler, "catch (...)") == 1;
+    const bool exitcode  = zaehleVorkommen (text, "static constexpr int kExitAusnahme = 70;") == 1
+                        && zaehleVorkommen (handler, "return kExitAusnahme;") == 2;
+    const bool stderrBeide = zaehleVorkommen (handler, "stderr") >= 4;
+    pruefe (text.size() > 0 && tryBlock && ausnahme && alles && exitcode && stderrBeide,
+            "nak289_probe_main_hat_ausnahmegrenze_mit_exit_70",
+            juce::String ("Quelltext ") + juce::String ((int) text.size()) + " Bytes, try-Block "
+                + (tryBlock ? "ja" : "nein") + ", std::exception " + (ausnahme ? "ja" : "nein")
+                + ", catch-all " + (alles ? "ja" : "nein") + ", Exit 70 zweimal " + (exitcode ? "ja" : "nein")
+                + ", stderr in beiden Handlern " + (stderrBeide ? "ja" : "nein"));
+}
 } // namespace
 
 int main()
@@ -1424,6 +1474,8 @@ int main()
     pipeclient_parken_uebergeht_den_backoff();
     pipeclient_abbruch_vor_und_nach_createfile();
     pipeclient_backoff_folge_und_deckel_sind_beobachtbar();
+    // NAK-289 Etappe 1 - Quelltextwachen des Probewerkzeugs.
+    probeAusnahmegrenze();
     std::cout << (fehler == 0 ? "PIPECLIENT-LIFECYCLE-TEST OK - "
                               : "PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - ")
               << fehler << " Fehler" << std::endl;

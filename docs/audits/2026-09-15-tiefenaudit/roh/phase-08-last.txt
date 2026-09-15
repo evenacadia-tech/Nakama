@@ -1,0 +1,6 @@
+Phase 08 abgeschlossen: **5 Defekte** — 1 critical, 3 high, 1 medium. Zwölf Verdachte verworfen.
+
+- [Vollständiger Bericht mit Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-08-broker.md)
+- [BEFUNDE.md ergänzt](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md)
+
+Tabellen wortgleich, bisheriger Inhalt bytegleich, HEAD unverändert. Ausschließlich statische Herleitungen; keine Builds, Tests, Produktänderungen oder Commits.

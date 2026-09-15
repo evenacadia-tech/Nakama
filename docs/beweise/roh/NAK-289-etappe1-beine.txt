@@ -32,3 +32,4 @@
 2026-09-15 16:26:52 | HEAD bfa86b65 (+4 geaenderte Datei(en)) | f) cert-err34-c | B2 EqCopStateMigrationTest | Exit 0 | 1.49 s | STATE-MIGRATION-TEST OK - 287 Pruefungen ok, 0 Fehler
 2026-09-15 16:26:54 | HEAD bfa86b65 (+4 geaenderte Datei(en)) | f) cert-err34-c | B16 EqCopSonde013EventWireTest | Exit 0 | 1.97 s | 179 bestanden, 0 gescheitert
 2026-09-15 16:30:35 | HEAD bfa86b65 (+4 geaenderte Datei(en)) | f) cert-err34-c | B10 EqCopIpcTest | Exit 0 | 220.93 s | ALLE PRUEFUNGEN GRUEN — 435 Pruefungen, 0 Fehler
+2026-09-15 16:33:07 | HEAD 3d800a94 (+2 geaenderte Datei(en)) | g) avoid-endl | A4b EqCopPipeClientTest | Exit 0 | 65.73 s | PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler

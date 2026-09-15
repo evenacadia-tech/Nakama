@@ -1,0 +1,19 @@
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 14 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 40 s mit 12 Prozess(en)
+
+ACHTUNG: TEILMESSUNG (--nur probe/) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  0    0     83      OK    
+
+Uebersetzungseinheiten: 4 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 4
+Langsamste Einheiten: eq-copilot/plugin/hostprobe/HostProbeEditor.cpp 23 s, eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp 23 s, eq-copilot/plugin/hostprobe/HostProbeFactory.cpp 17 s, eq-copilot/plugin/probe/PipeProbeMain.cpp 16 s
+
+URTEIL: TEILMESSUNG - 0 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+EXIT=0

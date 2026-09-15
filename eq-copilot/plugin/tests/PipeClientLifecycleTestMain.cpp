@@ -1450,6 +1450,41 @@ void probeAusnahmegrenze()
                 + ", catch-all " + (alles ? "ja" : "nein") + ", Exit 70 zweimal " + (exitcode ? "ja" : "nein")
                 + ", stderr in beiden Handlern " + (stderrBeide ? "ja" : "nein"));
 }
+
+// performance-avoid-endl: jede Ausgabezeile endet mit Umbruch UND flush.
+// std::endl ist nach [ostream.manip] put(widen('\n')) und dann flush(); die
+// Form << '\n' << std::flush schreibt dieselben Bytes und flusht an derselben
+// Stelle. Gezaehlt wird: kein std::endl, jedes << '\n' direkt gefolgt von
+// << std::flush, und so viele std::cout-Anweisungen wie Enden mit Umbruch und
+// flush.
+void probeZeilenendeMitFlush()
+{
+    const auto text = probeQuelltext();
+    const std::string umbruch = "<< '\\n'";
+    std::size_t ohneFlush = 0, ersteZeile = 0;
+    for (auto pos = text.find (umbruch); pos != std::string::npos; pos = text.find (umbruch, pos + umbruch.size()))
+    {
+        const auto weiter = text.find_first_not_of (" \t\r\n", pos + umbruch.size());
+        const bool mitFlush = weiter != std::string::npos && text.compare (weiter, 13, "<< std::flush") == 0;
+        if (! mitFlush && ohneFlush++ == 0)
+        {
+            ersteZeile = 1;
+            for (std::size_t k = 0; k < pos; ++k)
+                if (text[k] == '\n')
+                    ++ersteZeile;
+        }
+    }
+    const auto endl     = zaehleVorkommen (text, "std::endl");
+    const auto ausgaben = zaehleVorkommen (text, "std::cout <<");
+    const auto enden    = zaehleVorkommen (text, "<< '\\n' << std::flush;");
+    pruefe (text.size() > 0 && endl == 0 && ohneFlush == 0 && ausgaben > 0 && enden == ausgaben,
+            "nak289_probe_jede_ausgabezeile_endet_mit_umbruch_und_flush",
+            juce::String ("std::endl ") + juce::String ((int) endl) + ", Umbrueche ohne flush "
+                + juce::String ((int) ohneFlush)
+                + (ohneFlush > 0 ? " (erster in Zeile " + juce::String ((int) ersteZeile) + ")" : juce::String())
+                + ", std::cout-Anweisungen " + juce::String ((int) ausgaben)
+                + ", Enden mit Umbruch und flush " + juce::String ((int) enden));
+}
 } // namespace
 
 int main()
@@ -1476,6 +1511,7 @@ int main()
     pipeclient_backoff_folge_und_deckel_sind_beobachtbar();
     // NAK-289 Etappe 1 - Quelltextwachen des Probewerkzeugs.
     probeAusnahmegrenze();
+    probeZeilenendeMitFlush();
     std::cout << (fehler == 0 ? "PIPECLIENT-LIFECYCLE-TEST OK - "
                               : "PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - ")
               << fehler << " Fehler" << std::endl;

@@ -103,7 +103,7 @@ static bool warteAuf (int zehntel, Bedingung ok)
 /// Exitcode, wenn eine Ausnahme bis main durchlaeuft (NAK-289). Kein
 /// Stufenergebnis wie 0, 1 oder 2, sondern 70 wie EX_SOFTWARE aus sysexits.h:
 /// ein interner Fehler des Werkzeugs. Vorher endete derselbe Fall in
-/// std::terminate, ohne Meldung.
+/// std::terminate, ohne Meldung auf stderr.
 static constexpr int kExitAusnahme = 70;
 
 int main (int argc, char** argv)
@@ -121,12 +121,12 @@ try
                   << (serverBinary.isEmpty()
                           ? "installierter Broker nicht lesbar"
                           : ("Server-Binary nicht lesbar: " + serverBinary).toStdString())
-                  << std::endl;
+                  << '\n' << std::flush;
         return 2;
     }
     std::cout << "SERVERERWARTUNG · "
               << juce::String (erwartung.absoluterBrokerPfad.c_str()).toStdString()
-              << " · sha256 " << erwartung.sha256.substr (0, 16) << "..." << std::endl;
+              << " · sha256 " << erwartung.sha256.substr (0, 16) << "..." << '\n' << std::flush;
 
     const auto sensorId = juce::Uuid().toString();
     auto a = baueClient (sensorId, "pipe-probe A", pipeName, erwartung);
@@ -145,7 +145,7 @@ try
                   << (z.status == eqcop::PipeClient::Status::verbindet ? "verbindet" : "getrennt")
                   << " · Protokoll " << z.protokollVersion
                   << " · Versuche " << z.verbindungsVersuche
-                  << " · Fehler: " << z.letzterFehler << std::endl;
+                  << " · Fehler: " << z.letzterFehler << '\n' << std::flush;
         a->stop();
         return 1;
     }
@@ -155,7 +155,7 @@ try
                   << " · token " << z.sessionToken.substring (0, 8) << "..."
                   << " · heartbeats " << z.heartbeatsGesendet
                   << "/" << z.heartbeatsBestaetigt << " bestaetigt"
-                  << " · konflikt " << (z.konflikt ? "ja" : "nein") << std::endl;
+                  << " · konflikt " << (z.konflikt ? "ja" : "nein") << '\n' << std::flush;
     }
 
     // Stufe 3: Duplikat — beide Verbindungen melden dieselbe Sensor-ID.
@@ -174,24 +174,24 @@ try
                       << " · versuche " << z.verbindungsVersuche
                       << " · konflikt " << (z.konflikt ? "ja" : "nein")
                       << " · letztesAck " << z.letztesAck
-                      << " · fehler " << z.letzterFehler << std::endl;
+                      << " · fehler " << z.letzterFehler << '\n' << std::flush;
         };
-        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt kam nicht an)" << std::endl;
+        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt kam nicht an)" << '\n' << std::flush;
         dump ("A", a->snapshot());
         dump ("B", b->snapshot());
         a->stop(); b->stop();
         return 1;
     }
-    std::cout << "KONFLIKT OK · beide Instanzen sehen das Flag" << std::endl;
+    std::cout << "KONFLIKT OK · beide Instanzen sehen das Flag" << '\n' << std::flush;
 
     b->stop();
     if (! warteAuf (100, [&] { return ! a->snapshot().konflikt; }))
     {
-        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt-Ende kam nicht an)" << std::endl;
+        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt-Ende kam nicht an)" << '\n' << std::flush;
         a->stop();
         return 1;
     }
-    std::cout << "KONFLIKT-ENDE OK · Flag faellt nach Trennung des Duplikats" << std::endl;
+    std::cout << "KONFLIKT-ENDE OK · Flag faellt nach Trennung des Duplikats" << '\n' << std::flush;
 
     a->stop();
     return 0;

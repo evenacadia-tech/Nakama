@@ -22,7 +22,14 @@ inline bool istGueltig (const void* daten, size_t laenge) noexcept
             continue;
         if (b0 >= 0xc2 && b0 <= 0xdf)
         {
-            if (i >= laenge || ! fortsetzung (p[i++])) return false;
+            // NAK-289 (inc-dec-in-conditions): dieselbe Reihenfolge wie
+            // "i >= laenge || ! fortsetzung (p[i++])" in drei Anweisungen -
+            // Laengenpruefung, Byte an der alten Position lesen und i
+            // weiterzaehlen, Folgebyte pruefen. i endet in jedem Ausgang
+            // gleich.
+            if (i >= laenge) return false;
+            const auto b1 = p[i++];
+            if (! fortsetzung (b1)) return false;
             continue;
         }
         if (b0 == 0xe0)

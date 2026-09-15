@@ -1,6 +1,7 @@
 // Adversarialer Gegenpfad fuer den echten C++-PipeClient. Jede Pipe traegt
 // PID+Zaehler; dieser Test beruehrt niemals den Produktionsnamen.
 #include "PipeClient.h"
+#include "../vertrag/NakamaUtf8.h"
 
 #include <atomic>
 #include <chrono>
@@ -1485,11 +1486,46 @@ void probeZeilenendeMitFlush()
                 + ", std::cout-Anweisungen " + juce::String ((int) ausgaben)
                 + ", Enden mit Umbruch und flush " + juce::String ((int) enden));
 }
+// NAK-289 Etappe 1 (bugprone-inc-dec-in-conditions, vertrag/NakamaUtf8.h): der
+// Zwei-Byte-Zweig C2..DF des UTF-8-Riegels, den PipeClient vor jedem Frame
+// faehrt. Die Faelle, die die umgestellte Zeile unterscheidet: kein Folgebyte
+// mehr (die Laenge zaehlt, nicht ein Terminator), ungueltiges Folgebyte,
+// gueltiges Folgebyte an beiden Raendern und die Position hinter dem Folgebyte.
+void utf8ZweiByteRiegel()
+{
+    struct Fall
+    {
+        const char* name;
+        std::vector<unsigned char> bytes;
+        std::size_t laenge;
+        bool gueltig;
+    };
+    const Fall faelle[] = {
+        { "c3_ohne_folgebyte",                    { 0xc3 },             1, false },
+        { "c3_a4_mit_laenge_1",                   { 0xc3, 0xa4 },       1, false },
+        { "c3_28_ungueltiges_folgebyte",          { 0xc3, 0x28 },       2, false },
+        { "c3_c0_folgebyte_ueber_bf",             { 0xc3, 0xc0 },       2, false },
+        { "c2_80_untere_grenze",                  { 0xc2, 0x80 },       2, true  },
+        { "df_bf_obere_grenze",                   { 0xdf, 0xbf },       2, true  },
+        { "c3_a4_gueltig",                        { 0xc3, 0xa4 },       2, true  },
+        { "c3_a4_41_weiter_hinter_dem_folgebyte", { 0xc3, 0xa4, 0x41 }, 3, true  },
+        { "c3_a4_80_naechstes_byte_ist_leitbyte", { 0xc3, 0xa4, 0x80 }, 3, false },
+    };
+    for (const auto& f : faelle)
+    {
+        const bool ist = nakama::utf8::istGueltig (f.bytes.data(), f.laenge);
+        pruefe (ist == f.gueltig, (std::string ("nak289_utf8_zwei_byte/") + f.name).c_str(),
+                juce::String ("erwartet ") + (f.gueltig ? "gueltig" : "ungueltig")
+                    + ", Riegel sagt " + (ist ? "gueltig" : "ungueltig"));
+    }
+}
 } // namespace
 
 int main()
 {
     std::cout << "PIPECLIENT-LIFECYCLE-TEST" << std::endl;
+    // NAK-289 Etappe 1 - UTF-8-Riegel, Zwei-Byte-Zweig.
+    utf8ZweiByteRiegel();
     stoppFall (false);
     stoppFall (true);
     reconnectGeneration();

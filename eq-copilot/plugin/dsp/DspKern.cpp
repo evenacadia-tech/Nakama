@@ -506,7 +506,10 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
             case Kanalmodus::side:   m = (L[i] + R[i]) * 0.5; s = (L[i] - R[i]) * 0.5; x0 = s; break;
         }
 
-        double y0 = x0, y1 = x1;
+        // NAK-289 (DeadStores): beide Zweige unten schreiben y0, bevor es
+        // gelesen wird; ein Startwert wuerde nie gelesen. y1 behaelt x1.
+        double y0;
+        double y1 = x1;
 
         if (b.nutztSvf)
         {

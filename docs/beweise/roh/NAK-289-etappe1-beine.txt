@@ -13,3 +13,9 @@
 2026-09-15 16:10:51 | HEAD f674ca3f (+2 geaenderte Datei(en)) | b) NullDereference, NonNullParamChecker | B11 EqCopSonde012HostChannelContextTest | Exit 0 | 0.99 s | SONDE-012 HOST CHANNEL CONTEXT: 21 bestanden, 0 fehlgeschlagen
 2026-09-15 16:10:52 | HEAD f674ca3f (+2 geaenderte Datei(en)) | b) NullDereference, NonNullParamChecker | B12 EqCopSonde012LoudnessSourceTest | Exit 0 | 1.61 s | SONDE-012 LOUDNESS SOURCE: 4 bestanden, 0 fehlgeschlagen
 2026-09-15 16:12:05 | HEAD f674ca3f (+2 geaenderte Datei(en)) | b) NullDereference, NonNullParamChecker | B30 EqCopBriefkastenTest | Exit 0 | 72.3 s | NAK-286 BRIEFKASTEN: 168 bestanden, 0 fehlgeschlagen
+2026-09-15 16:14:18 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B6 EqCopDspGoldenTest | Exit 0 | 5.54 s | DSP-GOLDEN OK
+2026-09-15 16:14:19 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B7 EqCopTransactionTest | Exit 0 | 0.42 s | TRANSAKTION OK
+2026-09-15 16:14:19 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | A16 EqCopProbeeqNullTest | Exit 0 | 0.31 s | SONDE-NULLTEST OK - 65 Pruefungen ok, 0 Fehler
+2026-09-15 16:14:20 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B11 EqCopSonde012HostChannelContextTest | Exit 0 | 1 s | SONDE-012 HOST CHANNEL CONTEXT: 21 bestanden, 0 fehlgeschlagen
+2026-09-15 16:14:22 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B12 EqCopSonde012LoudnessSourceTest | Exit 0 | 1.64 s | SONDE-012 LOUDNESS SOURCE: 4 bestanden, 0 fehlgeschlagen
+2026-09-15 16:15:34 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B30 EqCopBriefkastenTest | Exit 0 | 71.94 s | NAK-286 BRIEFKASTEN: 168 bestanden, 0 fehlgeschlagen

@@ -5,9 +5,9 @@ KONZEPT §4.6). Dateien:
 
 | Datei | Rolle |
 |---|---|
-| `laufzeit.ps1` | Ablauf je Ticket: lohnt es (Diff), Installation über `\Nakama\installieren` mit Wertung von `\Nakama\pruefen`, Controller-Skript gegen das MCP-Repo, Projektordner mit SHA-256, Briefkasten-Ordner, Render für `nulltest-host`, loopMIDI vor FL, Restprozesse, FL-Start mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, Ping, Szenarien, Rückweg nach ABWEICHUNG, Rohdatei und Kopfzeile; `-Selbsttest` gegen Attrappen |
+| `laufzeit.ps1` | Ablauf je Ticket: lohnt es (Diff), Installation über `\Nakama\installieren` mit Wertung von `\Nakama\pruefen`, Controller-Skript gegen das MCP-Repo, Projektordner mit SHA-256, Briefkasten-Ordner, Renders für `nulltest-host` vor dem FL-Start (Diagnoseprojekt und Referenzprojekte, P-21), loopMIDI vor FL, Restprozesse, FL-Start mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, Ping, Szenarien, Rückweg nach ABWEICHUNG, Rohdatei und Kopfzeile; `-Selbsttest` gegen Attrappen |
 | `szenario.py` | fährt eine Szenariodatei aus `docs/gesundheit/szenarien/` über die Bibliothek des FL-Studio-MCP (`C:\Users\phili\Projekte\fl-studio-mcp`) und die lokalen Aktionen `lokal.*`, schreibt jeden Schritt roh; `--selbsttest`, `--rechne` (Rechnung aus F-28), `--energieprofil` (Stellen für U40) |
-| `nulltest.py` | Nulltest im Host: Render gegen `eq-copilot/kalibration/Testtrack.wav` — Format, Versatz über die volle Songlänge, Urteil, `ergebnis.json`; `--selbsttest` |
+| `nulltest.py` | Nulltest im Host: Render gegen `eq-copilot/kalibration/Testtrack.wav` — Format, Versatz über die volle Songlänge, Urteil, `ergebnis.json`; Weg R2 mit `--vergleich verarbeitung_ein` (gegen die Quelle, umgekehrt bewertet) und `--vergleich ohne_slots` (SHA-256 des Datenbereichs gegen den Auslieferungsrender); `--selbsttest` |
 | `selbsttest.py` | Bein A35: die drei Selbsttests ohne FL (Exit 0 grün, 4 rot, 2 Werkzeugfehler) |
 
 Aufruf des Dirigenten nach grünem Kanon (Skill §3.3):
@@ -42,11 +42,16 @@ Diagnose- oder Referenzprojekt verändert (Nacharbeit). Rohdatei
    zuerst eine liegende Anfrage, dann Antworten früherer Läufe entfernen (nur
    Antwort- und Temp-Namen der Instanzen); jeder Ausgang räumt `anfrage.json`
    ab.
-6. Render (nur mit `nulltest-host.json`): `FL64.exe /R /Ewav /O"<render>"
-   "<Arbeitskopie>"` nach dem FL-Handbuch („Exporting Audio & MIDI"), ohne FL
-   mit Fenster, Frist 600 s, danach genau diese PID beendet; `render.json` im
-   Ordner `…\nakama-laufzeit\render\` nennt Datei, Dauer, Exit, Fenstertitel
-   oder Grund.
+6. Renders vor dem FL-Start (nur mit `nulltest-host.json`), die Folge steht
+   vorab im Protokoll: `FL64.exe /R /Ewav /O"<Ordner>" "<Arbeitskopie>"` nach
+   dem FL-Handbuch („Exporting Audio & MIDI"), ohne FL mit Fenster, Frist 600 s
+   je Render, danach genau diese PID beendet; `render.json` im Ordner nennt
+   Projekt, SHA-256 des Projekts, Datei, Dauer, Exit, Fenstertitel oder Grund.
+   Zuerst das Diagnoseprojekt nach `…\nakama-laufzeit\render\`, danach jedes
+   Referenzprojekt aus Karte U43 in der Reihenfolge der Szenariodatei in seinen
+   eigenen Ordner `…\render\referenz\<Name>\` (P-21); ein fehlendes
+   Referenzprojekt bekommt dort einen Renderstatus mit Grund „Referenzprojekt
+   fehlt (Karte U43, K-286-1)" und keinen Render.
 7. loopMIDI, Restprozesse, FL-Start, Boot-Marke, Ping.
 8. Szenarien alphabetisch; `frischer_start` startet das Diagnose-FL vorher neu.
    Szenario-Exit 3 bricht ab, 5 lässt die Folge weiterlaufen. ABWEICHUNG im
@@ -58,7 +63,7 @@ Diagnose- oder Referenzprojekt verändert (Nacharbeit). Rohdatei
 | Aktion | Wirkung |
 |---|---|
 | `lokal.briefkasten` | eine Anfrage (128 Bit Zufall), Antworten je Rolle sammeln (Frist 10 s), Auswahl an Name und Größe vor dem Öffnen (2 B bis 16 MiB, keine `.tmp-`), nur aktuelle Kennung und Diagnose-PID; der Broker nur, wenn `eqcop-broker` läuft — der Runner startet ihn nie |
-| `lokal.nulltest` | `nulltest.py` über `render.json`; `verarbeitung_ein` liest `Nakama-Diagnose-Verarbeitung.flp`, `ohne_slots` liest `Nakama-Diagnose-Referenz.flp`, beide aus Karte U43 im Ordner des Diagnoseprojekts (P-18); fehlt das Projekt, ist das eine Szenario-Voraussetzung, und liegt es, ebenfalls, weil der Render beider Projekte (Weg R2, M-64) nicht gebaut ist |
+| `lokal.nulltest` | `auslieferung`: `nulltest.py` über `render.json` gegen die Quelle (Weg R1). `verarbeitung_ein` (Projekt `Nakama-Diagnose-Verarbeitung.flp`) und `ohne_slots` (Projekt `Nakama-Diagnose-Referenz.flp`), beide aus Karte U43 im Ordner des Diagnoseprojekts (P-18), lesen den Renderstatus ihres Projekts unter `…\render\referenz\<Name>\` (Weg R2, M-64, P-21): ohne Render Szenario-Voraussetzung mit dem Grund aus dem Renderstatus; `verarbeitung_ein` vergleicht wie R1 gegen die Quelle und verlangt Abweichungen (0 Abweichungen ist verfehlt, der Vergleich wäre blind); `ohne_slots` verlangt den SHA-256 des Datenbereichs, den die `ergebnis.json` des Auslieferungsrenders als `sha256_render_bereich` trägt, ohne bitidentischen Auslieferungsrender Szenario-Voraussetzung. Das Ergebnis steht im Ordner des Projekts; kein Rückweg aus diesen Schritten (M-65) |
 | `lokal.fenster` | Bild des FL- oder Plugin-Fensters über `PrintWindow` ohne Vordergrundwechsel unter `…\nakama-laufzeit\bilder\`, als Unterprozess mit erzwungener Frist 5 s (P-19: bei Ablauf beendet, „Frist 5 s ueberschritten", verfehlt); einfarbig oder minimiert ist verfehlt; ein Plugin-Fensterbild unter 200 × 100 Pixel (Breite unter 200 oder Höhe unter 100) ist ein eingeklappter FL-Wrapper: Szenario-Voraussetzung `eingeklappt` mit Breite × Höhe in der Zeile (P-17) |
 | `lokal.umlauf` | Anfragen im Sekundentakt bis zum Wrap; gewertete Antwort je Rolle, Materialzeit, Fortlaufbedingung, Kopfverlust K, Referenzausschnitt, Rechnung aus F-28 (`py -3.13 szenario.py --rechne`), Bänder und Zuordnung |
 | `lokal.stellen` | Karte U40: je Stelle Lage im Host mit v, Zeitplan aus den Takten der Briefkästen, Zählung nach dem Materialausschnitt des Rahmens, Rohzeilen, Differenzen kumulativer Zähler, Plausibilität ohne Sollwert. Rohzeile je Antwort in der Spaltenfolge `Stelle`, `Rolle`, `durchlauf` (`gemeinsam` oder `getrennt`), `kombinationen` (`<getragen>/<alle>`), `Kennung`, `Zaehlung`, die Felder aus F-23 (`evidenz_frisch` bis `spielt`), `lage im Host` (Hostframes mit `v = …` oder `v unbekannt`), `p_vor ms`, `p_nach ms`; die Differenzzeile je Stelle und Rolle trägt `durchlauf` und `kombinationen` (P-16) |
@@ -126,9 +131,13 @@ Gemessen ab 12.09.2026 mit FL 26.1.4.5589:
 ## Grenzen
 
 Screenshot, Nulltest im Host (Auslieferungszustand) und Diagnose-Briefkasten
-sind gebaut (NAK-286 Etappen 2 bis 4). Der Render mit eingeschalteter
-Verarbeitung und ohne Nakama-Slots (Weg R2, M-64) ist nicht gebaut; er braucht
-die Projekte aus Karte U43, deren Namen `nulltest-host.json` trägt (P-18). Im
+sind gebaut (NAK-286 Etappen 2 bis 4), der Render mit eingeschalteter
+Verarbeitung und ohne Nakama-Slots (Weg R2, M-64) seit P-21. Gemessen wird Weg
+R2 im Host erst mit den Projekten aus Karte U43, deren Namen
+`nulltest-host.json` trägt (P-18); bis dahin enden beide Schritte mit
+Szenario-Voraussetzung. Die Trennung Clip-Lage gegen Latenz bei einem Versatz
+leistet Weg R2 nicht: `ohne_slots` verlangt einen bitidentischen
+Auslieferungsrender. Im
 Diagnoseprojekt antwortet kein Broker,
 solange Gen dort `legacy` ist. Der Samplepfad im Projekt ist absolut
 (`eq-copilot/fixtures/fl/LIES-MICH.md`); auf einem zweiten Rechner ist der

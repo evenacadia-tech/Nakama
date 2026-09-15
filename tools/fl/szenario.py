@@ -74,6 +74,8 @@ LOCALAPPDATA = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" /
 ANFRAGE_FORMAT = "nakama.diagnose.anfrage.v1"
 ANTWORT_FORMAT = "nakama.diagnose.antwort.v1"
 NULLTEST_FORMAT = "nakama.laufzeit.nulltest.v1"
+RENDER_FORMAT = "nakama.laufzeit.render.v1"                 # Renderstatus des Runners (laufzeit.ps1, F-18, P-21)
+REFERENZ_FORMAT = "nakama.laufzeit.nulltest.referenz.v1"    # Ergebnis eines Referenzschritts (nulltest.py, M-64)
 UMSCHLAG_SCHLUESSEL = frozenset({"format", "anfrage_id", "rolle", "instanz_id", "laufzeit_id", "pid",
                                  "erzeugt_utc", "version", "snapshot", "frame", "aggregat", "gruende"})
 KENNUNG = re.compile(r"^[0-9a-f]{32}$")
@@ -788,21 +790,86 @@ def lokal_briefkasten(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     return (EXIT_VERFEHLT if maengel else EXIT_OK), kurz, zeilen
 
 
-REFERENZPROJEKT_ORDNER = REPO / "eq-copilot" / "fixtures" / "fl"
+REFERENZ_ORDNER = "referenz"          # P-21 (a): laufzeit.ps1 rendert je Referenzprojekt nach render\referenz\<Projekt>\
+REFERENZ_VERGLEICHE = ("verarbeitung_ein", "ohne_slots")
+
+
+def ist_projektname(name: str) -> bool:
+    """P-18: ein Dateiname ohne Pfadanteil mit Endung .flp (dieselbe Regel wie Ist-Projektname in laufzeit.ps1)."""
+    return bool(name) and Path(name).name == name and name.lower().endswith(".flp")
+
+
+def lokal_referenz(lauf: Lauf, vergleich: str, projekt: str) -> tuple[int, str, list[str]]:
+    """M-64, P-21 (b) bis (f): ein Referenzschritt liest den Renderstatus des Projekts aus params.projekt, den der Runner
+    vor dem FL-Start unter render\\referenz\\<Projekt>\\ schreibt - nicht die Existenz einer Datei im Repo-Ordner. Ohne
+    Render endet der Schritt mit Szenario-Exit 5 und dem Grund aus dem Renderstatus, nie still (P-3); mit Render vergleicht
+    nulltest.py (verarbeitung_ein gegen die Quelle, ohne_slots gegen den Auslieferungsrender). Das Ergebnis steht im Ordner
+    des Projekts, nie in der ergebnis.json des Auslieferungsrenders: ein Referenzschritt loest keinen Rueckweg aus (M-65)."""
+    if not ist_projektname(projekt):
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: kein Projektdateiname {projekt!r} (P-18)",
+                [f"- `params.projekt` {_json(projekt)} ist kein Dateiname mit Endung .flp: kein Renderstatus, kein Render (M-64)"])
+    ordner = lauf.render_ordner / REFERENZ_ORDNER / projekt
+    status_pfad = ordner / "render.json"
+    text = lauf.umg.lies_text(status_pfad)
+    try:
+        status = json.loads(text) if text is not None else None
+    except ValueError:
+        status = None
+    if not isinstance(status, dict) or status.get("format") != RENDER_FORMAT:
+        grund = "kein Renderstatus" if text is None else "Renderstatus unlesbar oder fremd"
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: {grund} fuer {projekt}",
+                [f"- Renderstatus `{status_pfad}`: {grund} - ohne Render dieses Zustands kein Vergleich (M-64), nie still"])
+    if Path(str(status.get("projekt") or "")).name != projekt:
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Renderstatus nennt {status.get('projekt')!r} statt {projekt}",
+                [f"- Renderstatus `{status_pfad}`: projekt `{status.get('projekt')}` statt `{projekt}` - kein Vergleich (M-64)"])
+    if not status.get("datei") or status.get("grund"):
+        grund = status.get("grund") or "Renderstatus nennt keine Renderdatei"
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: {grund}",
+                [f"- Renderstatus `{status_pfad}`: projekt `{status.get('projekt')}`, grund {_json(grund)} - kein Render "
+                 f"dieses Zustands (M-64), nie still"])
+    ms = lauf.loop_ms()
+    if ms is None:
+        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Songlaenge fehlt (transport.getLength vor lokal.nulltest)",
+                [f"- Renderstatus `{status_pfad}` nennt den Render `{status.get('datei')}`; ohne Songlaenge kein N (F-19)"])
+    ergebnis_pfad = ordner / "ergebnis.json"
+    argumente = ["--vergleich", vergleich, "--renderstatus", str(status_pfad), "--songlaenge-ms", str(ms),
+                 "--ergebnis", str(ergebnis_pfad)]
+    if vergleich == "verarbeitung_ein":
+        argumente += ["--quelle", str(lauf.quelle())]
+    else:
+        argumente += ["--auslieferung", str(lauf.render_ordner / "ergebnis.json")]
+    code, text = lauf.umg.nulltest(argumente)
+    zeilen = [f"- Referenzprojekt `{projekt}`: Renderstatus `{status_pfad}`, SHA-256 Projekt {status.get('sha256_projekt')}, "
+              f"Renderdauer {status.get('dauer_s')} s, Render `{status.get('datei')}`",
+              f"- `nulltest.py --vergleich {vergleich}` Exit {code}, Songlaenge {ms} ms"]
+    zeilen += [f"  - {z}" for z in text.splitlines() if z.strip()][-25:]
+    ergebnis = None
+    ergebnis_text = lauf.umg.lies_text(ergebnis_pfad)
+    if ergebnis_text is not None:
+        try:
+            ergebnis = json.loads(ergebnis_text)
+        except ValueError:
+            ergebnis = None
+    if isinstance(ergebnis, dict):
+        zeilen.append(f"- ergebnis.json ({vergleich}): `{_zelle(_kompakt(ergebnis, 4000))}`")
+    if (code not in (EXIT_OK, EXIT_VERFEHLT, EXIT_SZENARIO) or not isinstance(ergebnis, dict)
+            or ergebnis.get("format") != REFERENZ_FORMAT or ergebnis.get("vergleich") != vergleich
+            or ergebnis.get("exit") != code):
+        return EXIT_VERFEHLT, f"VERFEHLT {vergleich}: nulltest.py ohne Urteil (Exit {code})", zeilen
+    wort = {EXIT_OK: "GEMESSEN", EXIT_VERFEHLT: "VERFEHLT", EXIT_SZENARIO: "VORAUSSETZUNG"}[code]
+    kurz = (f"{wort} {vergleich}: {ergebnis.get('befund')} v={ergebnis.get('v')} g_db={ergebnis.get('g_db')} "
+            f"Abweichungen={ergebnis.get('abweichungen')} {ergebnis.get('grund') or ''}").strip()
+    return code, kurz, zeilen
 
 
 def lokal_nulltest(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     p = schritt.get("params") or {}
     vergleich = p.get("vergleich", "auslieferung")
+    if vergleich in REFERENZ_VERGLEICHE:
+        # M-64, P-21: Render "Verarbeitung ein" und "ohne Slots" aus den Projekten der Karte U43 (K-286-1).
+        return lokal_referenz(lauf, vergleich, str(p.get("projekt") or ""))
     if vergleich != "auslieferung":
-        # M-64: Render "Verarbeitung ein" und "ohne Slots" brauchen die Projekte aus Karte U43 (K-286-1).
-        projekt = str(p.get("projekt") or "")
-        pfad = REFERENZPROJEKT_ORDNER / projekt
-        if not projekt or not lauf.umg.existiert(pfad):
-            return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Referenzprojekt fehlt (Karte U43, K-286-1)",
-                    [f"- erwartet: `{pfad}` - ohne das Projekt kein Render dieses Zustands (M-64), nie still"])
-        return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64)",
-                [f"- `{pfad}` liegt; der Render beider Referenzprojekte und ihr Vergleich (Weg R2, M-64) sind nicht gebaut"])
+        return EXIT_VERFEHLT, f"unbekannter Vergleich {vergleich!r} (auslieferung, verarbeitung_ein, ohne_slots)", []
     ms = lauf.loop_ms()
     if ms is None:
         return EXIT_SZENARIO, "VORAUSSETZUNG: Songlaenge fehlt (transport.getLength vor lokal.nulltest)", []
@@ -2112,6 +2179,8 @@ class TestUmgebung(Umgebung):
 
     def nulltest(self, argumente: list[str]) -> tuple[int, str]:
         self.nulltest_aufrufe.append(list(argumente))
+        if callable(self.nulltest_antwort):
+            return self.nulltest_antwort(argumente)
         return self.nulltest_antwort
 
     def rechne(self, auftrag: dict) -> dict:
@@ -2928,6 +2997,106 @@ def fall_kettenverschiebung_aus_nulltest(p: Pruefer) -> None:
     p(code == EXIT_SZENARIO and "ohne Nulltesturteil" in roh, f"(2) Formatfehler: Exit {code} statt 5")
     code, roh, _ = umlauf_attrappe(Umlaufmodell(), urteil=None)
     p(code == EXIT_SZENARIO, f"(2) ohne ergebnis.json: Exit {code} statt 5")
+
+
+@fall("M-64", "referenzschritte_aus_renderstatus")
+def fall_referenzschritte_aus_renderstatus(p: Pruefer) -> None:
+    """P-21 (b), (e), (f): lokal.nulltest liest fuer verarbeitung_ein und ohne_slots den Renderstatus des Projekts aus
+    params.projekt im Render-Ordner des Runners (referenz\\<Projekt>\\render.json), nicht die Existenz einer Datei im
+    Repo-Ordner. Mit Render ruft er nulltest.py mit dem Vergleich und uebernimmt dessen Urteil (gemessen, verfehlt); ohne
+    Render endet der Schritt mit Szenario-Exit 5, dem Grund aus dem Renderstatus und einer Rohzeile, nie still (P-3).
+    Kein Rueckweg: das Ergebnis steht im Ordner des Projekts, die ergebnis.json des Auslieferungsrenders bleibt (M-65)."""
+    render = Path("C:/attrappe/render")
+    fixtures = REPO / "eq-copilot" / "fixtures" / "fl"
+    namen = {"verarbeitung_ein": "Nakama-Diagnose-Verarbeitung.flp", "ohne_slots": "Nakama-Diagnose-Referenz.flp"}
+    befund_gemessen = {"verarbeitung_ein": "ABWEICHUNG", "ohne_slots": "GLEICH"}
+    auslieferung = json.dumps({"format": NULLTEST_FORMAT, "urteil": "BITIDENTISCH", "v": 0, "g": 1.0,
+                               "sha256_render_bereich": "6F" * 32})
+    mit_render = {"format": "nakama.laufzeit.render.v1", "head": "abcdef12", "sha256_projekt": "AB" * 32,
+                  "datei": True, "grund": None, "dauer_s": 4.1, "exit": 0}
+    fehlt = {"format": "nakama.laufzeit.render.v1", "head": "abcdef12", "sha256_projekt": None, "datei": None,
+             "grund": "Referenzprojekt fehlt (Karte U43, K-286-1)"}
+
+    def fahre_referenzen(status: dict | None, urteile: dict | None = None, koeder=("verarbeitung_ein",)):
+        umg = TestUmgebung()
+        umg.conn = TestVerbindung(umg)
+        umg.lege(render / "ergebnis.json", auslieferung.encode("utf-8"))
+        for vergleich, name in namen.items():
+            if vergleich in koeder:  # der fruehere Existenzweg: ein Projekt im Repo-Ordner (vor P-21 "Weg R2 nicht gebaut")
+                umg.lege(fixtures / name, b"FLP-Attrappe im Repo-Ordner")
+            if status is not None:
+                s = dict(status, projekt=f"C:/attrappe/projekt/{name}")
+                if s.get("datei"):
+                    s["datei"] = str(render / "referenz" / name / name.replace(".flp", ".wav"))
+                umg.lege(render / "referenz" / name / "render.json", json.dumps(s).encode("utf-8"))
+
+        def nulltest(argumente: list[str]) -> tuple[int, str]:
+            a = dict(zip(argumente[::2], argumente[1::2]))
+            vergleich = a.get("--vergleich")
+            code, befund = (urteile or {}).get(vergleich, (EXIT_OK, befund_gemessen.get(vergleich)))
+            wort = {EXIT_OK: "GEMESSEN", EXIT_VERFEHLT: "VERFEHLT"}.get(code, "VORAUSSETZUNG")
+            ergebnis = {"format": "nakama.laufzeit.nulltest.referenz.v1", "vergleich": vergleich, "urteil": wort,
+                        "befund": befund, "exit": code, "v": 0, "abweichungen": 7 if code == EXIT_OK else 0, "g_db": -0.5}
+            if a.get("--ergebnis"):
+                umg.lege(Path(a["--ergebnis"]), json.dumps(ergebnis).encode("utf-8"))
+            return code, f"NULLTEST Vergleich {vergleich} · Urteil {wort} · Exit {code} · Befund {befund}"
+
+        umg.nulltest_antwort = nulltest
+        code, roh, _lauf = fahre_attrappe(umg, {"id": "nulltest-host", "schritte": [
+            {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1}}},
+            {"aktion": "lokal.nulltest", "params": {"vergleich": "verarbeitung_ein", "projekt": namen["verarbeitung_ein"]}},
+            {"aktion": "lokal.nulltest", "params": {"vergleich": "ohne_slots", "projekt": namen["ohne_slots"]}}]})
+        zeilen = roh.splitlines()
+        return (code, roh, umg, next((z for z in zeilen if z.startswith("| 2 | `lokal.nulltest` |")), ""),
+                next((z for z in zeilen if z.startswith("| 3 | `lokal.nulltest` |")), ""))
+
+    # (i) mit Render gemessen - auch ohne Projekt im Repo-Ordner (ohne_slots): der Renderstatus entscheidet
+    code, roh, umg, z_ein, z_ohne = fahre_referenzen(mit_render)
+    p(code == EXIT_OK and "| GEMESSEN verarbeitung_ein: ABWEICHUNG" in z_ein and z_ein.rstrip().endswith("| ok (Details unten) |"),
+      f"verarbeitung_ein mit Renderstatus und Render: Exit {code} statt {EXIT_OK}, Zeile '{z_ein[-220:]}'")
+    p("| GEMESSEN ohne_slots: GLEICH" in z_ohne and z_ohne.rstrip().endswith("| ok (Details unten) |"),
+      f"ohne_slots mit Renderstatus und Render (kein Projekt im Repo-Ordner): Zeile '{z_ohne[-220:]}'")
+    aufrufe = {}
+    for argumente in umg.nulltest_aufrufe:
+        a = dict(zip(argumente[::2], argumente[1::2]))
+        aufrufe[a.get("--vergleich")] = a
+    for vergleich, name in namen.items():
+        a = aufrufe.get(vergleich) or {}
+        p(a.get("--renderstatus") == str(render / "referenz" / name / "render.json"),
+          f"{vergleich}: nulltest.py liest den Renderstatus {a.get('--renderstatus')!r} statt den von {name}")
+        p(a.get("--ergebnis") == str(render / "referenz" / name / "ergebnis.json"),
+          f"{vergleich}: Ergebnis nach {a.get('--ergebnis')!r} statt in den Ordner des Referenzprojekts")
+        p(any(z.startswith(f"- Referenzprojekt `{name}`") and "SHA-256 Projekt " + "AB" * 32 in z and "Renderdauer 4.1 s" in z
+              for z in roh.splitlines()),
+          f"{vergleich}: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus")
+        p(f"NULLTEST Vergleich {vergleich} · Urteil GEMESSEN" in roh, f"{vergleich}: Rohzeile von nulltest.py fehlt in den Details")
+    p(bool((aufrufe.get("verarbeitung_ein") or {}).get("--quelle")), "verarbeitung_ein: nulltest.py ohne --quelle")
+    p((aufrufe.get("ohne_slots") or {}).get("--auslieferung") == str(render / "ergebnis.json"),
+      f"ohne_slots: --auslieferung {(aufrufe.get('ohne_slots') or {}).get('--auslieferung')!r} statt der ergebnis.json des "
+      "Auslieferungsrenders")
+    p(umg.lies_text(render / "ergebnis.json") == auslieferung,
+      "ergebnis.json des Auslieferungsrenders durch einen Referenzschritt veraendert (Rueckweg, M-65)")
+    # (ii) verfehlt: nulltest.py meldet fuer verarbeitung_ein 0 Abweichungen
+    code, _roh, _umg, z_ein, _z_ohne = fahre_referenzen(mit_render, urteile={"verarbeitung_ein": (EXIT_VERFEHLT, "BITIDENTISCH")})
+    p(code == EXIT_VERFEHLT and "| VERFEHLT verarbeitung_ein: BITIDENTISCH" in z_ein
+      and z_ein.rstrip().endswith("| VERFEHLT (Details unten) |"),
+      f"verarbeitung_ein mit 0 Abweichungen: Exit {code} statt {EXIT_VERFEHLT}, Zeile '{z_ein[-220:]}'")
+    # (iii) fehlendes Referenzprojekt: Grund aus dem Renderstatus, Szenario-Exit 5 und Rohzeile - auch mit Koeder im Repo-Ordner
+    code, roh, umg, z_ein, z_ohne = fahre_referenzen(fehlt)
+    p(code == EXIT_SZENARIO, f"fehlendes Referenzprojekt: Exit {code} statt {EXIT_SZENARIO}")
+    for vergleich, zeile in (("verarbeitung_ein", z_ein), ("ohne_slots", z_ohne)):
+        erwartet = f"| VORAUSSETZUNG {vergleich}: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |"
+        p(zeile.rstrip().endswith(erwartet), f"fehlendes Referenzprojekt ({vergleich}): Zeile '{zeile[-220:]}' statt '{erwartet}'")
+        status_pfad = render / "referenz" / namen[vergleich] / "render.json"
+        p(any(z.startswith(f"- Renderstatus `{status_pfad}`") and "Referenzprojekt fehlt (Karte U43, K-286-1)" in z
+              for z in roh.splitlines()),
+          f"fehlendes Referenzprojekt ({vergleich}) still: keine Rohzeile mit Renderstatus und Grund")
+    p(not umg.nulltest_aufrufe, f"fehlendes Referenzprojekt: nulltest.py trotzdem gerufen ({len(umg.nulltest_aufrufe)}-mal)")
+    # (iv) ohne Renderstatus (der Runner hat nicht gerendert): Szenario-Exit 5 mit Grund, nie still
+    code, _roh, _umg, z_ein, _z_ohne = fahre_referenzen(None, koeder=())
+    p(code == EXIT_SZENARIO and "| VORAUSSETZUNG verarbeitung_ein: kein Renderstatus" in z_ein
+      and z_ein.rstrip().endswith("| VORAUSSETZUNG (Details unten) |"),
+      f"ohne Renderstatus: Exit {code} statt {EXIT_SZENARIO}, Zeile '{z_ein[-220:]}'")
 
 
 @fall("M-81", "fortlaufbedingung_teilbloecke")

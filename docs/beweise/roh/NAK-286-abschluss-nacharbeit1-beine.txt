@@ -1,0 +1,516 @@
+NAK-286 Nacharbeit 1 der Abschlusspruefung (Weg R2 nach M-64, Regel P-21) - Beine einzeln (Bauer, 15.09.2026). Stand: HEAD d638257175cf00764bbe27420745a7f8b19acac9 plus Arbeitsstand der Nacharbeit 1 (uncommittet; nach jedem Rotskriptlauf bytegleich zurueckgenommen). Arbeitsverzeichnis: Repo-Wurzel. MCP-Repo unveraendert (01f72386), deshalb kein MCP-pytest. A32 als Hinweis (NAK-292). Der Kanon auf dem Endstand laeuft abgekoppelt (Baufolge 6; Rohausgabe schreibt der Kanon-Runner).
+
+| Bein | Befehl | Exit | Dauer | Beginn | Stand |
+|---|---|---|---|---|---|
+| A35 Basis | `py -3.13 tools/fl/selbsttest.py` | 0 | 19,6 s | 12:13:59 | HEAD d6382571 unveraendert: szenario.py 1C124E7441F4, laufzeit.ps1 D1CC83B19DD3, nulltest.py F9B01D9517DF |
+| A35 Endstand | `py -3.13 tools/fl/selbsttest.py` | 0 | 21,9 s | 12:42:56 | szenario.py CF4518469D64, laufzeit.ps1 189FC26D5A0A, nulltest.py 77627BB72595 (nach allen Rotskriptlaeufen) |
+| nulltest.py einzeln | `py -3.13 tools/fl/nulltest.py --selbsttest` | 0 | 2,4 s | 12:43:19 | wie A35 Endstand |
+| A32 (Hinweis) | `py -3.13 tools/plan/gesundheit.py --mit-selbsttest` | 4 | 13,7 s | 12:43:22 | wie A35 Endstand |
+
+=== Referenzprojekte der Karte U43 neben dem Diagnoseprojekt (nur gelesen, 15.09.2026 12:47:37) ===
+eq-copilot/fixtures/fl/Nakama-Diagnose-Referenz.flp: fehlt
+eq-copilot/fixtures/fl/Nakama-Diagnose-Verarbeitung.flp: fehlt
+Ordner eq-copilot/fixtures/fl traegt: LIES-MICH.md (2165 B, SHA-256 BBAE0346CCB83877D31C46DA723D986422132354C9B3FADBCD5BFCE6935F7AD7), Nakama-Diagnose.flp (52556 B, SHA-256 65FA78F821EA03CD944427F5470EA42C8BAF47C1CF65A397DB9B205E5907A335)
+
+=== Rotlaeufe vor der Aenderung (NAK-286-rotskript-abschluss-nacharbeit1.ps1 -Art vorher; Rohdatei NAK-286-rot-M-64-nach1.txt) ===
+Erster Lauf 12:31:16: Eintrag M-64 (c) gueltig, danach Abbruch des Rotskripts an der Rohdatei-Angabe (PowerShell unterscheidet $ROH und $roh nicht; der Pfad wurde verdoppelt, Ausnahme vor dem Anhaengen des zweiten Eintrags, keine Quelle mutiert). Bezeichner in $ROHDATEI umbenannt; zweiter Lauf 12:31:38 mit -Nur fuer die drei uebrigen Eintraege.
+vorher M-64 (c) | rot Exit 4 (0.2 s), Traeger 1 | ohne Gruenlauf (Traeger unveraendert) | nulltest.py 9C35D885160A=9C35D885160A | ROTLAUF GUELTIG
+vorher M-64 (d) | rot Exit 4 (0.7 s), Traeger 1 | ohne Gruenlauf (Traeger unveraendert) | nulltest.py 9C35D885160A=9C35D885160A | ROTLAUF GUELTIG
+vorher M-64 (b) | rot Exit 4 (0.2 s), Traeger 1 | ohne Gruenlauf (Traeger unveraendert) | szenario.py A539DDB89269=A539DDB89269 | ROTLAUF GUELTIG
+vorher M-64 (a) | rot Exit 4 (1.3 s), Traeger 1 | ohne Gruenlauf (Traeger unveraendert) | laufzeit.ps1 E553E33C3E46=E553E33C3E46, nulltest-host.json 29B81BD87D5E=29B81BD87D5E | ROTLAUF GUELTIG
+
+=== Rotbeweise nach dem Bau (-Art nach, 15.09.2026 12:42:08 bis 12:42:35, Exit 0) ===
+nach M-64 (c) | rot Exit 4 (0.9 s), Traeger 1 | gruen Exit 0 (1.1 s) | nulltest.py 77627BB72595=77627BB72595 | ROTBEWEIS GUELTIG
+nach M-64 (d) | rot Exit 4 (0.8 s), Traeger 1 | gruen Exit 0 (0.7 s) | nulltest.py 77627BB72595=77627BB72595 | ROTBEWEIS GUELTIG
+nach M-64 (f) | rot Exit 4 (1.1 s), Traeger 1 | gruen Exit 0 (1 s) | nulltest.py 77627BB72595=77627BB72595 | ROTBEWEIS GUELTIG
+nach M-64 (b) Renderstatus | rot Exit 4 (0.2 s), Traeger 1 | gruen Exit 0 (0.2 s) | szenario.py CF4518469D64=CF4518469D64 | ROTBEWEIS GUELTIG
+nach M-64 (b) Exit 5 | rot Exit 4 (0.2 s), Traeger 1 | gruen Exit 0 (0.2 s) | szenario.py CF4518469D64=CF4518469D64 | ROTBEWEIS GUELTIG
+nach M-64 (b) Rohzeile | rot Exit 4 (0.2 s), Traeger 1 | gruen Exit 0 (0.2 s) | szenario.py CF4518469D64=CF4518469D64 | ROTBEWEIS GUELTIG
+nach M-64 (e) | rot Exit 4 (0.2 s), Traeger 1 | gruen Exit 0 (0.2 s) | szenario.py CF4518469D64=CF4518469D64 | ROTBEWEIS GUELTIG
+nach M-64 (a) vor dem FL-Start | rot Exit 4 (1.8 s), Traeger 1 | gruen Exit 0 (1.7 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+nach M-64 (a) eigene Dateien | rot Exit 4 (1.7 s), Traeger 1 | gruen Exit 0 (1.7 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+nach M-64 (a) Arbeitskopie | rot Exit 4 (1.7 s), Traeger 1 | gruen Exit 0 (1.6 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+nach M-64 (a) Renderstatus fehlt | rot Exit 4 (1.6 s), Traeger 1 | gruen Exit 0 (1.6 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+nach M-64 (a) Rohzeile fehlt | rot Exit 4 (1.6 s), Traeger 1 | gruen Exit 0 (1.5 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+nach M-64 (a) Renderfolge | rot Exit 4 (1.5 s), Traeger 1 | gruen Exit 0 (1.6 s) | laufzeit.ps1 189FC26D5A0A=189FC26D5A0A | ROTBEWEIS GUELTIG
+
+=== Traegertexte am Endstand (-NurPruefen, 15.09.2026 12:4x, je Exit 0) ===
+NAK-286-rotskript-abschluss-nacharbeit1.ps1 -Art nach -NurPruefen: PRUEFUNG OK 13 von 13 (vor dem Lauf -Art nach)
+docs/beweise/roh/NAK-286-rotskript-etappe4.ps1 -NurPruefen: Exit 0, PRUEFUNG OK 83 Zeilen, letzte: ROTSKRIPT ENDE: 0 Mutationen, ungueltig: 0
+docs/beweise/roh/NAK-286-rotskript-etappe4-nacharbeit1.ps1 -Art nach -NurPruefen: Exit 0, PRUEFUNG OK 35 Zeilen, letzte: ROTSKRIPT ENDE (nach): 0 Eintraege, ungueltig: 0
+docs/beweise/roh/NAK-286-rotskript-etappe5.ps1 -Art nach -NurPruefen: Exit 0, PRUEFUNG OK 12 Zeilen, letzte: ROTSKRIPT ENDE (nach): 0 Eintraege, ungueltig: 0
+git grep -n ROTBEWEIS -- tools/fl docs/gesundheit: kein Treffer (Exit 1) nach allen Ruecknahmen
+
+=== R1 unveraendert: ergebnis.json und Rohzeile des Auslieferungsvergleichs gegen nulltest.py am Basis-SHA d6382571 (Attrappen, kein FL; Lauf 15.09.2026 12:40:28, py -3.13, Exit 0) ===
+identisch: Exit alt 0 neu 0, ergebnis gleich True, Rohzeile gleich True
+lsb: Exit alt 4 neu 4, ergebnis gleich True, Rohzeile gleich True
+versatz: Exit alt 5 neu 5, ergebnis gleich True, Rohzeile gleich True
+kette: Exit alt 5 neu 5, ergebnis gleich True, Rohzeile gleich True
+pcm16: Exit alt 5 neu 5, ergebnis gleich True, Rohzeile gleich True
+R1-VERGLEICH: 5 von 5 gleich
+--- Skript (Quelltext wie gefahren) ---
+"""Prueft, dass R1 (Auslieferung) nach der Nacharbeit dieselbe ergebnis.json-Rechnung und dieselbe Rohzeile liefert
+wie nulltest.py am Basis-SHA d6382571 (Attrappen, kein FL)."""
+import importlib.util
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+REPO = Path(r"C:\Users\phili\Projekte\Nakama")
+tmp = Path(tempfile.mkdtemp(prefix="nak286-r1-vergleich-"))
+alt_pfad = tmp / "nulltest_alt.py"
+alt_pfad.write_bytes(subprocess.run(["git", "-C", str(REPO), "show", "d6382571:tools/fl/nulltest.py"],
+                                    capture_output=True, check=True).stdout)
+
+
+def lade(name, pfad):
+    spec = importlib.util.spec_from_file_location(name, pfad)
+    modul = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modul)
+    return modul
+
+
+alt = lade("nulltest_alt", alt_pfad)
+neu = lade("nulltest_neu", REPO / "tools" / "fl" / "nulltest.py")
+import numpy as np  # noqa: E402
+
+q = alt._quelle(400_000)
+faelle = {
+    "identisch": (q[:alt.N_TEST + 300], "pcm24"),
+    "lsb": (None, "float32"),
+    "versatz": (np.concatenate([np.zeros((1, 2), np.float32), q[:alt.N_TEST - 1]]), "pcm24"),
+    "kette": ((q[:alt.N_TEST].astype(np.float64) * 0.5).astype(np.float32), "float32"),
+    "pcm16": (q[:alt.N_TEST], "pcm16"),
+}
+lsb = q[:alt.N_TEST].copy()
+lsb[123_457, 0] += np.float32(2.0 ** -23)
+faelle["lsb"] = (lsb, "float32")
+unterschiede = 0
+for name, (render, art) in faelle.items():
+    ergebnisse = []
+    for modul in (alt, neu):
+        ordner = tmp / modul.__name__ / name
+        ordner.mkdir(parents=True)
+        qpfad = ordner / "quelle.wav"
+        modul._schreibe_wav(qpfad, q, "pcm24")
+        rpfad = ordner / "render.wav"
+        modul._schreibe_wav(rpfad, render, art)
+        spfad = ordner / "render.json"
+        spfad.write_text(json.dumps({"datei": str(rpfad)}), encoding="utf-8")
+        code, e = modul.fahre(spfad, qpfad, alt.MS_TEST, ordner / "ergebnis.json")
+        e = dict(e)
+        e.pop("erzeugt_utc", None)
+        zeile = modul.rohzeile(e)
+        # Pfade unterscheiden sich nur im Ordnernamen des Moduls
+        text = json.dumps(e, sort_keys=True).replace(modul.__name__, "MODUL")
+        ergebnisse.append((code, text, zeile.replace(modul.__name__, "MODUL")))
+    gleich = ergebnisse[0] == ergebnisse[1]
+    unterschiede += 0 if gleich else 1
+    print(f"{name}: Exit alt {ergebnisse[0][0]} neu {ergebnisse[1][0]}, ergebnis gleich {ergebnisse[0][1] == ergebnisse[1][1]}, "
+          f"Rohzeile gleich {ergebnisse[0][2] == ergebnisse[1][2]}")
+    if not gleich:
+        print("  alt:", ergebnisse[0][2][:300])
+        print("  neu:", ergebnisse[1][2][:300])
+print(f"R1-VERGLEICH: {len(faelle) - unterschiede} von {len(faelle)} gleich")
+sys.exit(1 if unterschiede else 0)
+--- Ende des Skripts ---
+
+=== A35 Basis (py -3.13 tools/fl/selbsttest.py), Beginn 15.09.2026 12:13:59, Exit 0, 19,6 s ===
+=== szenario.py: Exit 0 (10.7 s) ===
+[ok] M-20 frist_ohne_schrittwert
+[ok] M-78 timeout_genau_einmal
+[ok] M-22 kein_piano_roll_weg
+[ok] M-21 fenster_frist_erzwungen
+[ok] M-21 fenster_eingeklappt
+[ok] M-55 anfrage_schreiben_und_abraeumen
+[ok] M-53 antwortgroessen
+[ok] M-56 antworten_auswahl
+[ok] M-57 ohne_brokerprozess_keine_erwartung
+[ok] M-58 erste_fassung_unveraendert
+[ok] M-58 erwartungsarten_und_punktpfade
+[ok] M-11 szenario_abschnitte
+[ok] M-67 snapshot_messpunkt_und_baender
+[ok] M-67 referenzausschnitt_rohzeile
+[ok] M-67 umlauf_rohzeilen
+[ok] M-68 f28_nur_hergeleitete_baender
+[ok] M-66 kettenverschiebung_aus_nulltest
+[ok] M-81 fortlaufbedingung_teilbloecke
+[ok] M-69 stellen_aus_energieprofil
+[ok] M-70 stelle_materialausschnitt
+[ok] M-70 stelle_zeitplan
+[ok] M-70 stelle_zwei_durchlaeufe
+[ok] M-71 roh_schreibt_null_als_null
+[ok] M-71 deltas_ueber_evidenzabschluesse
+[ok] M-71 rohzeile_lage_im_host
+[ok] M-71 stelle_klammer_und_differenzen
+[ok] M-72 u40_ohne_sollwert
+[ok] M-57 tasklist_oem_ohne_treffer
+[ok] M-68 low_frac_in_snapshotdefinition
+[ok] M-68 rechnung_rohwerte
+SELBSTTEST szenario.py: 30 ok, 0 rot
+=== nulltest.py: Exit 0 (1.4 s) ===
+[ok] M-62 identisch_null_abweichungen
+[ok] M-75 versatz_ist_voraussetzung
+[ok] M-63 konstanter_faktor_ist_voraussetzung
+[ok] M-61 format_ist_voraussetzung
+[ok] M-60 render_status
+SELBSTTEST nulltest.py: 5 ok, 0 rot
+=== laufzeit.ps1: Exit 0 (7.3 s) ===
+[ok] M-01 lohnt_nicht_ohne_produktpfad
+[ok] M-02 lohnt_vier_faelle
+[ok] M-03 fremdes_projekt_nie_beenden
+[ok] M-04 hashen_scheitert_exit3
+[ok] M-05 installation_verweigert_exit3
+[ok] M-06 pruefen_nicht_aktuell_exit3
+[ok] NAK-297 titel_ohne_haupttitel
+[ok] M-07 loopmidi_und_restprozesse
+[ok] M-08 ping_frist_exit3
+[ok] M-08 schonfrist_vor_trigger
+[ok] M-09 controller_veraltet_neu_installieren
+[ok] M-10 szenario_exitcodes
+[ok] M-10 kette_erreicht_folgeszenarien
+[ok] M-11 kopfzeile_erste_fassung
+[ok] M-11 kopfzeile_und_protokoll
+[ok] M-12 projekt_unveraendert
+[ok] M-64 referenzprojekte_aus_szenariodatei
+[ok] M-13 volllauf_erzwingen_beenden
+[ok] M-55 anfrage_lebenszyklus
+[ok] M-59 frischer_start_schluessel
+[ok] M-60 render_ablauf
+[ok] M-65 rueckweg_nur_bei_abweichung
+SELBSTTEST laufzeit.ps1: 22 ok, 0 rot
+SELBSTTEST A35: GRUEN
+EXIT=0 DAUER=19.6 BEGINN=12:13:59
+
+=== A35 Endstand (py -3.13 tools/fl/selbsttest.py), Beginn 15.09.2026 12:42:56, Exit 0, 21,9 s ===
+=== szenario.py: Exit 0 (10.8 s) ===
+[ok] M-20 frist_ohne_schrittwert
+[ok] M-78 timeout_genau_einmal
+[ok] M-22 kein_piano_roll_weg
+[ok] M-21 fenster_frist_erzwungen
+[ok] M-21 fenster_eingeklappt
+[ok] M-55 anfrage_schreiben_und_abraeumen
+[ok] M-53 antwortgroessen
+[ok] M-56 antworten_auswahl
+[ok] M-57 ohne_brokerprozess_keine_erwartung
+[ok] M-58 erste_fassung_unveraendert
+[ok] M-58 erwartungsarten_und_punktpfade
+[ok] M-11 szenario_abschnitte
+[ok] M-67 snapshot_messpunkt_und_baender
+[ok] M-67 referenzausschnitt_rohzeile
+[ok] M-67 umlauf_rohzeilen
+[ok] M-68 f28_nur_hergeleitete_baender
+[ok] M-66 kettenverschiebung_aus_nulltest
+[ok] M-64 referenzschritte_aus_renderstatus
+[ok] M-81 fortlaufbedingung_teilbloecke
+[ok] M-69 stellen_aus_energieprofil
+[ok] M-70 stelle_materialausschnitt
+[ok] M-70 stelle_zeitplan
+[ok] M-70 stelle_zwei_durchlaeufe
+[ok] M-71 roh_schreibt_null_als_null
+[ok] M-71 deltas_ueber_evidenzabschluesse
+[ok] M-71 rohzeile_lage_im_host
+[ok] M-71 stelle_klammer_und_differenzen
+[ok] M-72 u40_ohne_sollwert
+[ok] M-57 tasklist_oem_ohne_treffer
+[ok] M-68 low_frac_in_snapshotdefinition
+[ok] M-68 rechnung_rohwerte
+SELBSTTEST szenario.py: 31 ok, 0 rot
+=== nulltest.py: Exit 0 (2.3 s) ===
+[ok] M-62 identisch_null_abweichungen
+[ok] M-75 versatz_ist_voraussetzung
+[ok] M-63 konstanter_faktor_ist_voraussetzung
+[ok] M-61 format_ist_voraussetzung
+[ok] M-60 render_status
+[ok] M-64 verarbeitung_ein_umgekehrt
+[ok] M-64 ohne_slots_render_gegen_render
+SELBSTTEST nulltest.py: 7 ok, 0 rot
+=== laufzeit.ps1: Exit 0 (8.5 s) ===
+[ok] M-01 lohnt_nicht_ohne_produktpfad
+[ok] M-02 lohnt_vier_faelle
+[ok] M-03 fremdes_projekt_nie_beenden
+[ok] M-04 hashen_scheitert_exit3
+[ok] M-05 installation_verweigert_exit3
+[ok] M-06 pruefen_nicht_aktuell_exit3
+[ok] NAK-297 titel_ohne_haupttitel
+[ok] M-07 loopmidi_und_restprozesse
+[ok] M-08 ping_frist_exit3
+[ok] M-08 schonfrist_vor_trigger
+[ok] M-09 controller_veraltet_neu_installieren
+[ok] M-10 szenario_exitcodes
+[ok] M-10 kette_erreicht_folgeszenarien
+[ok] M-11 kopfzeile_erste_fassung
+[ok] M-11 kopfzeile_und_protokoll
+[ok] M-12 projekt_unveraendert
+[ok] M-64 referenzprojekte_aus_szenariodatei
+[ok] M-64 referenzrender_vor_fl_start
+[ok] M-13 volllauf_erzwingen_beenden
+[ok] M-55 anfrage_lebenszyklus
+[ok] M-59 frischer_start_schluessel
+[ok] M-60 render_ablauf
+[ok] M-65 rueckweg_nur_bei_abweichung
+SELBSTTEST laufzeit.ps1: 23 ok, 0 rot
+SELBSTTEST A35: GRUEN
+EXIT=0 DAUER=21.9 BEGINN=12:42:56
+
+=== nulltest.py einzeln (py -3.13 tools/fl/nulltest.py --selbsttest), Beginn 15.09.2026 12:43:19, Exit 0, 2,4 s ===
+[ok] M-62 identisch_null_abweichungen
+[ok] M-75 versatz_ist_voraussetzung
+[ok] M-63 konstanter_faktor_ist_voraussetzung
+[ok] M-61 format_ist_voraussetzung
+[ok] M-60 render_status
+[ok] M-64 verarbeitung_ein_umgekehrt
+[ok] M-64 ohne_slots_render_gegen_render
+SELBSTTEST nulltest.py: 7 ok, 0 rot
+EXIT=0 DAUER=2.4 BEGINN=12:43:19
+
+=== A32 (py -3.13 tools/plan/gesundheit.py --mit-selbsttest), Beginn 15.09.2026 12:43:22, Exit 4 (Hinweis, NAK-292), 13,7 s ===
+SELBSTTEST
+  ok   leere Datei = 0
+  ok   eine Zeile ohne Umbruch = 1
+  ok   eine Zeile mit Umbruch = 1
+  ok   zwei Zeilen LF
+  ok   zwei Zeilen ohne Schlussumbruch
+  ok   zwei Zeilen CRLF
+  ok   nur Umbruch = 1
+  ok   2000 Zeilen halten
+  ok   2001 Zeilen reissen
+  ok   BOM zaehlt nicht als Zeile
+  ok   leere Zuordnung ist nie veraltet
+  ok   Eintrag zu einer Datei ueber der Grenze ist aktuell
+  ok   Eintrag zu einer geteilten Datei ist veraltet
+  ok   zwei veraltete Eintraege kommen sortiert
+  ok   Datei ueber der Grenze ohne Eintrag ist kein Werkzeugfehler
+  ok   Ziel verfehlt heisst ZIEL
+  ok   Grenze gehalten heisst OK
+  ok   Grenze gerissen heisst GRENZE
+  ok   Grenze exakt getroffen reisst nicht
+  ok   Grenze getroffen, Ziel verfehlt heisst ZIEL
+  ok   nicht messbar ist nie rot
+  ok   Ratsche 91 haelt
+  ok   Ratsche 92 reisst
+  ok   Klammern im String verschwinden
+  ok   Klammern im Zeilenkommentar verschwinden
+  ok   Klammern im Blockkommentar verschwinden
+  ok   Rust-Blockkommentar verschachtelt
+  ok   Rust-Rohstring maskiert
+  ok   C++-Rohstring maskiert
+  ok   Lebensdauer bricht die Maskierung nicht
+  ok   Ziffernstrenner bricht die Maskierung nicht
+  ok   Zeichenliteral maskiert
+  ok   Maskierung erhaelt Zeilenzahl
+  ok   Kommentarspanne gefunden
+  ok   Rust-Funktion mit exakt 200 Zeilen haelt
+  ok   Rust-Funktion mit 201 Zeilen reisst
+  ok   gemeldete Laenge stimmt
+  ok   gemeldeter Name stimmt
+  ok   C++-Funktion mit exakt 200 Zeilen haelt
+  ok   C++-Funktion mit 201 Zeilen reisst
+  ok   if-Block ist keine eigene Funktion
+  ok   Lambda zaehlt nicht als Funktion
+  ok   Lambda wird gezaehlt und gemeldet
+  ok   Initialisiererliste ist eine Funktion
+  ok   Trait-Methode ohne Rumpf ist keine Funktion
+  ok   Klassenrumpf ist keine Funktion
+  ok   dead_code mit Aufrufer ist kein Befund
+  ok   dead_code ohne Aufrufer ist ein Befund
+  ok   dead_code meldet den Namen
+  ok   anderes allow ist kein Befund
+  ok   inline-Attribut mit verwendetem Typ ist kein Befund
+  ok   dead_code `pub const fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `pub(crate) unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub async fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub async fn helfer() {}` meldet den Namen
+  ok   dead_code `pub async fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `unsafe fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `unsafe fn helfer() {}` meldet den Namen
+  ok   dead_code `unsafe fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const extern "C" fn helfer() {}` meldet den Namen
+  ok   dead_code `pub const extern "C" fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `pub const HELFER: u8 = 1;` meldet den Namen
+  ok   dead_code `pub const HELFER: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` ohne Verwendung ist ein Befund
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` meldet den Namen
+  ok   dead_code `static mut ZAEHLER: u8 = 0;` mit Verwendung ist kein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` ohne Verwendung ist ein Befund
+  ok   dead_code `pub unsafe trait Helfer {}` meldet den Namen
+  ok   dead_code `pub unsafe trait Helfer {}` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where u8: Copy;` ohne Verwendung ist ein Befund
+  ok   dead_code `struct union where u8: Copy;` meldet den Namen
+  ok   dead_code `struct union where u8: Copy;` mit Verwendung ist kein Befund
+  ok   dead_code `union Foo { a: u8 }` ohne Verwendung ist ein Befund
+  ok   dead_code `union Foo { a: u8 }` meldet den Namen
+  ok   dead_code `union Foo { a: u8 }` mit Verwendung ist kein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` ohne Verwendung ist ein Befund
+  ok   dead_code `fn default() -> u8 { 1 }` meldet den Namen
+  ok   dead_code `fn default() -> u8 { 1 }` mit Verwendung ist kein Befund
+  ok   dead_code `default fn helfer() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `default fn helfer() {}` meldet den Namen
+  ok   dead_code `default fn helfer() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const fn name() {}` ohne Verwendung ist ein Befund
+  ok   dead_code `const fn name() {}` meldet den Namen
+  ok   dead_code `const fn name() {}` mit Verwendung ist kein Befund
+  ok   dead_code `const NAME: u8 = 1;` ohne Verwendung ist ein Befund
+  ok   dead_code `const NAME: u8 = 1;` meldet den Namen
+  ok   dead_code `const NAME: u8 = 1;` mit Verwendung ist kein Befund
+  ok   dead_code `struct union where` bleibt trotz fremder where-Klausel ein Befund
+  ok   dead_code `struct union where` meldet den Namen neben der fremden where-Klausel
+  ok   clippy: Abbruch MIT Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch MIT Diagnosen liefert keine Zahl
+  ok   clippy: Abbruch OHNE Diagnosen ist ein Werkzeugfehler
+  ok   clippy: Abbruch ohne stderr sagt genau das
+  ok   clippy: sauberer Lauf mit 3 Warnungen zaehlt 3
+  ok   clippy: sauberer Lauf ohne Diagnosen zaehlt 0
+  ok   clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)
+  ok   clippy: ohne Schalter bleibt derselbe Baum unberuehrt
+  ok   clippy: fehlender Messort ist ein Werkzeugfehler
+  ok   clippy: fehlendes cargo bleibt NICHT MESSBAR
+  ok   existenter Bezeichner ist kein Befund
+  ok   fehlender Bezeichner ist ein Befund
+  ok   Befund nennt den Namen
+  ok   ohne Historienmarker wird nichts ausgenommen
+  ok   zu kurzer Kandidat wird uebergangen
+  ok   Stoppwort wird uebergangen
+  ok   Backtick im String ist kein Kandidat
+  ok   markierte Historie ist kein Befund
+  ok   markierte Historie wird gezaehlt
+  ok   dieselbe Luecke als Gegenwart ist ein Befund
+  ok   Indexzeile mit 250 Zeichen haelt
+  ok   Indexzeile mit 251 Zeichen reisst
+  ok   vollstaendige Messorte liefern Dateien
+  ok   fehlender Messort wirft statt still 0 zu messen
+  ok   kein_quellbaum_bleibt_ungemessen: jede nicht ausgenommene Quelldatei wird gemessen, auch im neuen Unterbaum
+  ok   kein_quellbaum_bleibt_ungemessen: der Inventarriegel findet keine Luecke
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - ein still fehlender Unterbaum ist ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Gegenteil - fehlen die Dateien direkt in der Wurzel, ist das ein Befund
+  ok   kein_quellbaum_bleibt_ungemessen: Codegen und Tests sind ausgenommen, nicht ungemessen
+  ok   kein_quellbaum_bleibt_ungemessen: leerer Ordner und Doku-Ordner stehen nicht im Inventar
+  ok   kein_quellbaum_bleibt_ungemessen: geschachtelter Codegen zaehlt im gemessenen Unterbaum als ausgenommen
+  ok   kein_quellbaum_bleibt_ungemessen: verliert die Ableitung einen Unterbaum, wirft der Inventarriegel
+  ok   eingespeister Wert wird im Kopf angesagt
+  ok   ohne Einspeisung keine Warnzeile
+
+Selbsttest: 129/129 bestanden
+
+NAKAMA-GESUNDHEIT
+Wurzel : C:\Users\phili\Projekte\Nakama
+Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 201 Dateien
+  gemessen     broker/src (direkt): 20 Datei(en)
+  gemessen     broker/src/bin: 4 Datei(en)
+  gemessen     broker/src/coordinator: 39 Datei(en)
+  ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+  gemessen     broker/src/store: 5 Datei(en)
+  gemessen     broker/src/transport: 21 Datei(en)
+  gemessen     eq-copilot/plugin/core: 42 Datei(en)
+  gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+  gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+  gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+  gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+  gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+  gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+  gemessen     eq-copilot/plugin/src: 26 Datei(en)
+  gemessen     eq-copilot/plugin/state: 13 Datei(en)
+  ausgenommen  eq-copilot/plugin/tests: 43 Datei(en) - Testcode, kein Produktumfang
+  gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+
+Maass                                Ist    Ziel   Grenze  Status       
+-----------------------------------  -----  -----  ------  -------------
+Quelldateien ueber 2000 Zeilen       1      0      0       GRENZE       
+Quelldateien ueber Ziel 1500 Zeilen  10     0      -       ZIEL         
+Funktionen ueber 200 Zeilen          34     0      28      GRENZE       
+Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+allow(dead_code) ohne Aufrufer       0      0      0       OK           
+Kommentar-Bezeichner ohne Code       36     0      30      GRENZE       
+MEMORY.md (Bytes)                    5338   22528  24986   OK           
+CLAUDE.md (Bytes)                    19677  -      20480   OK           
+Dirigenten-Skill (Bytes)             24465  -      24576   OK           
+MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+Memory-Dateien ohne Index-Link       0      0      0       OK           
+
+nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+
+GRENZE gerissen: Quelldateien ueber 2000 Zeilen (1 von hoechstens 0)
+  eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [OHNE PFLEGETICKET]
+
+GRENZE gerissen: Funktionen ueber 200 Zeilen (34 von hoechstens 28)
+  broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp:621 SourcesModel::uebernehmeSessionSnapshot - 744 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen
+  eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+  broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.cpp:609 EqCopilotProcessor::processBlock - 409 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+  broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp:1331 EqCopilotEditor::paint - 333 Zeilen
+  broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+  eq-copilot/plugin/state/NakamaTransaktion.cpp:404 Transaktionskern::fuehreAus - 305 Zeilen
+  eq-copilot/plugin/src/PipeClient.cpp:340 PipeClient::eineVerbindung - 298 Zeilen
+  broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+  broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+  eq-copilot/plugin/src/prozessor/Analyse.cpp:133 EqCopilotProcessor::workerLauf - 280 Zeilen
+  eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:52 FeatureEngine::verarbeiteSamples - 276 Zeilen
+  broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+  eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+  eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen
+  broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+  broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+  eq-copilot/plugin/dsp/DspKern.cpp:856 DspKern::verarbeiteStueck - 230 Zeilen
+  eq-copilot/plugin/src/HoerMarkierung.h:431 verarbeite - 230 Zeilen
+  ... und 9 weitere
+
+GRENZE gerissen: Kommentar-Bezeichner ohne Code (36 von hoechstens 30)
+  broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+  broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+  broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+  broker/src/coordinator/experiment.rs:1468 `Behalten`
+  broker/src/coordinator/experiment.rs:1619 `eigen3`
+  broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+  broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+  broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+  broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+  broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+  broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+  broker/src/coordinator/intervention.rs:630 `_locked`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+  broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+  broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+  broker/src/store/handle.rs:399 `assistant_steps`
+  broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+  broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1442 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+  eq-copilot/plugin/core/analysis/TruePeak.h:121 `STATUS_STACK_OVERFLOW`
+  eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:72 `_end`
+  eq-copilot/plugin/core/ipc/IpcQueues.h:77 `hatEreignisAelterAls`
+  ... und 11 weitere
+
+Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (10 von hoechstens -)
+  broker/src/briefkasten.rs: 1995 Zeilen
+  eq-copilot/plugin/src/SourcesModel.cpp: 1947 Zeilen
+  eq-copilot/plugin/src/PluginProcessor.h: 1932 Zeilen
+  broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+  broker/src/server.rs: 1841 Zeilen
+  broker/src/coordinator/experiment.rs: 1727 Zeilen
+  eq-copilot/plugin/src/PluginEditor.cpp: 1665 Zeilen
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+  broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+  eq-copilot/plugin/core/analysis/FeatureEngine.h: 1516 Zeilen
+Hinweis: 1 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+Hinweis: 132 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+
+URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code
+EXIT=4 DAUER=13.7 BEGINN=12:43:22

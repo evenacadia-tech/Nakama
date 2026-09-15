@@ -19,8 +19,12 @@
          befuellen (Diagnoseprojekt plus Samples\Testtrack.wav, dazu die
          Referenzprojekte aus Karte U43 unter den Namen der Szenariodatei;
          SHA-256 am Anfang und am Ende), Briefkasten-Ordner aufraeumen
-         (zuerst die Anfrage, dann die Antworten), fuer
-         nulltest-host den Render ueber FL64.exe /R, FL mit dem Projekt
+         (zuerst die Anfrage, dann die Antworten), vor dem FL-Start die
+         Renders ueber FL64.exe /R aus der Arbeitskopie, Folge im Protokoll -
+         fuer nulltest-host drei: das Diagnoseprojekt nach render\, danach
+         jedes der zwei Referenzprojekte nach render\referenz\<Name>\ mit
+         eigenem render.json (P-21; ein fehlendes bekommt dort einen
+         Renderstatus mit Grund und keinen Render) -, FL mit dem Projekt
          starten, auf den Ping des Controller-Skripts warten.
       4. Szenarien: jede JSON-Datei unter docs/gesundheit/szenarien/ alphabetisch
          ueber tools/fl/szenario.py; `frischer_start` startet das Diagnose-FL
@@ -75,6 +79,7 @@ $script:Produktpfade = @('eq-copilot/plugin/', 'eq-copilot/schemas/', 'broker/sr
 $script:AntwortMuster = '^[0-9a-f]{32}\.(gen|probeeq|broker)\.[0-9]+\.[0-9a-f]{16}\.[0-9a-f]{32}\.json$'
 $script:TempMuster = '^[0-9a-f]{32}\.(gen|probeeq|broker)\.[0-9]+\.[0-9a-f]{16}\.[0-9a-f]{32}\.json\.tmp-[0-9]+$'
 $script:EndeMarke = '__LAUFZEIT_ENDE__'
+$script:ReferenzFehlt = 'Referenzprojekt fehlt (Karte U43, K-286-1)'
 $script:K = $null
 $script:U = $null
 
@@ -456,6 +461,12 @@ function Stelle-LoopMidi-Sicher {
     Log 'loopMIDI gestartet (Port aus der Registry wird beim Start angelegt)'
 }
 
+function Ist-Projektname([string]$name) {
+    # P-18: ein Dateiname ohne Pfadanteil mit Endung .flp - dieselbe Regel fuer Kopie (Bereite-Projekt), Render
+    # (Rendere-Referenzprojekte) und Referenzschritt (szenario.py, ist_projektname).
+    return ([bool]$name -and [IO.Path]::GetFileName($name) -eq $name -and $name -like '*.flp')
+}
+
 function Referenzprojekt-Namen([string[]]$liste) {
     # P-18 (§38.2): die Namen der Referenzprojekte aus Karte U43 stehen in der Szenariodatei (Schritte lokal.nulltest,
     # params.projekt) - kein anderer Name, kein Suchen nach Mustern.
@@ -501,7 +512,7 @@ function Bereite-Projekt([string[]]$liste = @()) {
     $K.ReferenzHashes = [ordered]@{}
     $ordner = [IO.Path]::GetDirectoryName($K.Projekt)
     foreach ($name in @(Referenzprojekt-Namen $liste)) {
-        if ([IO.Path]::GetFileName($name) -ne $name -or $name -notlike '*.flp') {
+        if (-not (Ist-Projektname $name)) {
             Log "Referenzprojekt '$name': kein Projektdateiname im Ordner des Diagnoseprojekts, nicht kopiert"
             continue
         }
@@ -540,13 +551,13 @@ function Bereite-Briefkasten {
     Log "Briefkasten: $($K.DiagnoseOrdner) bereit, $n Antwortdatei(en) frueherer Laeufe entfernt"
 }
 
-function Rendere([string]$flp) {
-    # M-60, F-18: Render des Diagnoseprojekts ueber die Kommandozeile des FL-Handbuchs
-    # (/R, /E, /O), nur ohne FL mit Fenster; Frist, danach genau diese PID beenden.
+function Rendere([string]$flp, [string]$ordner = $script:K.RenderOrdner, [string]$bezeichnung = 'Render') {
+    # M-60, F-18: Render ueber die Kommandozeile des FL-Handbuchs (/R, /E, /O), nur ohne FL mit Fenster; Frist, danach
+    # genau diese PID beenden. P-21 (a): dieselbe Folge fuer das Diagnoseprojekt (Ordner render\, Bezeichnung Render)
+    # und jedes Referenzprojekt (Ordner render\referenz\<Name>\, Bezeichnung "Referenzrender <Name>").
     $K = $script:K
-    $ordner = $K.RenderOrdner
     & $script:U.LegeOrdnerAn $ordner
-    $wav = Join-Path $ordner ([IO.Path]::ChangeExtension($K.ProjektName, '.wav'))
+    $wav = Join-Path $ordner ([IO.Path]::ChangeExtension([IO.Path]::GetFileName($flp), '.wav'))
     foreach ($alt in @($wav, (Join-Path $ordner 'ergebnis.json'), (Join-Path $ordner 'render.json'))) {
         if (& $script:U.Existiert $alt) { & $script:U.Loesche $alt }
     }
@@ -554,7 +565,7 @@ function Rendere([string]$flp) {
     if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
     Beende-Diagnose-FL
     Beende-Restprozesse
-    $status = [ordered]@{ format = 'nakama.laufzeit.render.v1'; head = $K.Head; projekt = $flp; datei = $null; grund = $null }
+    $status = [ordered]@{ format = 'nakama.laufzeit.render.v1'; head = $K.Head; projekt = $flp; sha256_projekt = (& $script:U.Hash $flp); datei = $null; grund = $null }
     $rest = @(FL-Instanzen)
     if ($rest.Count -gt 0) {
         $status.grund = 'FL laeuft vor dem Render: ' + (($rest | ForEach-Object { "PID $($_.Id) '$($_.Titel)'" }) -join ', ')
@@ -563,13 +574,13 @@ function Rendere([string]$flp) {
         $argumente = '/R /Ewav /O"' + $ordner + '" "' + $flp + '"'
         $t0 = & $script:U.Jetzt
         $renderPid = & $script:U.StarteProzess $exe $argumente
-        Log "Render gestartet: PID $renderPid ($exe $argumente)"
+        Log "$bezeichnung gestartet: PID $renderPid ($exe $argumente)"
         while ((& $script:U.ProzessLaeuft $renderPid) -and ((& $script:U.Jetzt) - $t0).TotalSeconds -lt $K.RenderFristSekunden) { & $script:U.Schlafe 1 }
         $titel = ''
         $haengt = [bool](& $script:U.ProzessLaeuft $renderPid)
         if ($haengt) {
             $titel = (@(& $script:U.Fenster $renderPid | Where-Object { $_.Sichtbar -and $_.Titel } | ForEach-Object { "$($_.Klasse): $($_.Titel)" }) -join ' | ')
-            Log "Render haengt nach $($K.RenderFristSekunden) s: genau PID $renderPid beenden (Fenster: '$titel'; eigenes Diagnoseprojekt, nie gespeichert)"
+            Log "$bezeichnung haengt nach $($K.RenderFristSekunden) s: genau PID $renderPid beenden (Fenster: '$titel'; eigene Arbeitskopie, nie gespeichert)"
             & $script:U.BeendeProzess $renderPid
         }
         $status.pid = $renderPid
@@ -583,7 +594,49 @@ function Rendere([string]$flp) {
     }
     $status.zeit = Zeit
     & $script:U.SchreibeText (Join-Path $ordner 'render.json') ($status | ConvertTo-Json -Depth 4)
+    if ($bezeichnung -ne 'Render') {
+        Log ("{0}: Exit {1}, Dauer {2} s, Datei {3}, SHA-256 {4}, SHA-256 Projekt {5}, Grund {6}" -f $bezeichnung, $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.sha256_projekt, $status.grund)
+        return
+    }
     Log ("Render: Exit {0}, Dauer {1} s, Datei {2}, SHA-256 {3}, Grund {4}" -f $status.exit, $status.dauer_s, $status.datei, $status.sha256, $status.grund)
+}
+
+function Nenne-Renderfolge([string[]]$liste) {
+    # P-21 (a): die Reihenfolge der Renders vor dem FL-Start steht vorab im Protokoll - zuerst das Diagnoseprojekt im
+    # Auslieferungszustand (nur mit nulltest-host.json), danach die Referenzprojekte in der Reihenfolge der Szenariodatei.
+    $K = $script:K
+    $folge = New-Object System.Collections.Generic.List[string]
+    if (@($liste | Where-Object { [IO.Path]::GetFileName($_) -eq 'nulltest-host.json' }).Count -gt 0) { $folge.Add("$($K.ProjektName) (Auslieferungszustand)") }
+    foreach ($projektname in @(Referenzprojekt-Namen $liste)) {
+        if (-not (Ist-Projektname $projektname)) { $folge.Add("'$projektname' (kein Projektdateiname, kein Render)") }
+        elseif ($K.ReferenzHashes.Contains($projektname)) { $folge.Add("$projektname (Referenzprojekt)") }
+        else { $folge.Add("$projektname (Referenzprojekt fehlt, kein Render)") }
+    }
+    if ($folge.Count -eq 0) { return }
+    Log ('Renderfolge vor dem FL-Start: ' + ((0..($folge.Count - 1) | ForEach-Object { "$($_ + 1) $($folge[$_])" }) -join ', '))
+}
+
+function Rendere-Referenzprojekte([string[]]$liste) {
+    # P-21 (a) (§44.3): nach dem Render des Diagnoseprojekts und vor dem FL-Start jedes kopierte Referenzprojekt aus Karte
+    # U43 in der Reihenfolge der Szenariodatei wie das Diagnoseprojekt (F-18) aus der Arbeitskopie rendern, je Projekt in
+    # einen eigenen Ordner render\referenz\<Name>\ mit eigenem render.json und eigener Renderdatei - Ort und Name des
+    # Auslieferungsrenders, seines render.json und seiner ergebnis.json bleiben (F-26). Ein fehlendes Referenzprojekt
+    # bekommt dort einen Renderstatus mit Grund und keinen Render; lokal.nulltest liest ihn (M-64).
+    $K = $script:K
+    foreach ($projektname in @(Referenzprojekt-Namen $liste)) {
+        if (-not (Ist-Projektname $projektname)) { Log "Referenzrender '$projektname': kein Projektdateiname, kein Renderstatus"; continue }
+        $ordner = Join-Path $K.RenderOrdner "referenz\$projektname"
+        $kopie = Join-Path $K.ProjektOrdner $projektname
+        if ($K.ReferenzHashes.Contains($projektname)) { Rendere $kopie $ordner "Referenzrender $projektname"; continue }
+        & $script:U.LegeOrdnerAn $ordner
+        foreach ($frueher in @((Join-Path $ordner ([IO.Path]::ChangeExtension($projektname, '.wav'))), (Join-Path $ordner 'ergebnis.json'), (Join-Path $ordner 'render.json'))) {
+            if (& $script:U.Existiert $frueher) { & $script:U.Loesche $frueher }
+        }
+        $statusDatei = Join-Path $ordner 'render.json'
+        $fehlend = [ordered]@{ format = 'nakama.laufzeit.render.v1'; head = $K.Head; projekt = $kopie; sha256_projekt = $null; datei = $null; grund = $script:ReferenzFehlt; zeit = (Zeit) }
+        & $script:U.SchreibeText $statusDatei ($fehlend | ConvertTo-Json -Depth 4)
+        Log "Referenzrender ${projektname}: kein Render - $($script:ReferenzFehlt); Renderstatus $statusDatei"
+    }
 }
 
 function Starte-FL([string]$flp) {
@@ -745,7 +798,9 @@ function Fahre-Lauf {
             Pruefe-Controller
             $flp = Bereite-Projekt $liste
             Bereite-Briefkasten
+            Nenne-Renderfolge $liste
             if (@($liste | Where-Object { [IO.Path]::GetFileName($_) -eq 'nulltest-host.json' }).Count -gt 0) { Rendere $flp }
+            Rendere-Referenzprojekte $liste
             Stelle-LoopMidi-Sicher
             Beende-Restprozesse
             $laufend = @(FL-Instanzen | Where-Object { Ist-Diagnose $_ })
@@ -827,7 +882,7 @@ function Neuer-Testfall([string]$name) {
         BootNach = 5; BootVersion = '2026-09-15'; BootMarkeZeit = $null
         Ping = $null
         Szenarien = @{}
-        Render = @{ Dauer = 20; Exit = 0; SchreibtDatei = $true; Haengt = $false; Fenster = @() }
+        Render = @{ Dauer = 20; Exit = 0; SchreibtDatei = $true; Haengt = $false; HaengtBei = $null; Fenster = @() }
         SetupLocal = @{ Exit = 0 }
         StartTitel = 'Nakama-Diagnose.flp - FL Studio 2026'
         Pings = (New-Object System.Collections.Generic.List[datetime])
@@ -885,9 +940,13 @@ function T-Tick {
     $T = $script:T
     if ($T.Render.Haengt) { return }
     foreach ($p in @($T.Prozesse | Where-Object { $_.Render })) {
+        # HaengtBei: nur der Render dieses Projekts haengt (P-21, Referenzrender); die Renderdatei traegt den Namen des
+        # gerenderten Projekts und seinen Namen als Inhalt.
+        if ($T.Render.HaengtBei -and $p.Argumente -like "*$($T.Render.HaengtBei)*") { continue }
         if (($T.Uhr - $p.Start).TotalSeconds -ge $T.Render.Dauer) {
-            if ($T.Render.SchreibtDatei -and $p.Argumente -match '/O"([^"]+)"') {
-                [IO.File]::WriteAllText((Join-Path $Matches[1] 'Nakama-Diagnose.wav'), 'RENDER-Attrappe')
+            if ($T.Render.SchreibtDatei -and $p.Argumente -match '/O"([^"]+)" "([^"]+)"') {
+                $projekt = [IO.Path]::GetFileName($Matches[2])
+                [IO.File]::WriteAllText((Join-Path $Matches[1] ([IO.Path]::ChangeExtension($projekt, '.wav'))), "RENDER-Attrappe $projekt")
             }
             $p.Fertig = $true
             [void]$T.Prozesse.Remove($p)
@@ -1154,6 +1213,10 @@ function T-LetzterIndex([string]$muster) {
     for ($i = $script:T.Protokoll.Count - 1; $i -ge 0; $i--) { if ($script:T.Protokoll[$i] -match $muster) { return $i } }
     return -1
 }
+function K-Index([string]$muster) {
+    for ($i = 0; $i -lt $script:K.Protokoll.Count; $i++) { if ($script:K.Protokoll[$i] -match $muster) { return $i } }
+    return -1
+}
 $script:NulltestWirkung = {
     [IO.File]::WriteAllText((Join-Path $script:K.RenderOrdner 'ergebnis.json'),
         ('{"format":"nakama.laufzeit.nulltest.v1","urteil":"' + $script:T.NulltestUrteil + '","v":0,"g":1.0}'))
@@ -1308,6 +1371,95 @@ Fall 'M-64' 'referenzprojekte_aus_szenariodatei' {
         Pruefe ($protokoll -match "Referenzprojekt $([regex]::Escape($n)): fehlt neben dem Diagnoseprojekt") "ohne die Projekte der Karte: keine Zeile 'Referenzprojekt ${n}: fehlt neben dem Diagnoseprojekt'"
     }
     Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "ohne die Projekte der Karte: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+}
+
+Fall 'M-64' 'referenzrender_vor_fl_start' {
+    # P-21 (a) (§44.3): vor dem Start des Diagnose-FL rendert der Runner jedes kopierte Referenzprojekt wie das
+    # Diagnoseprojekt (F-18) aus der Arbeitskopie in einen eigenen Ordner render\referenz\<Name>\ mit eigenem render.json
+    # (Format nakama.laufzeit.render.v1, Feld projekt) und eigener Renderdatei; Ort und Name des Auslieferungsrenders,
+    # seines render.json und seiner ergebnis.json bleiben (F-26). Ein fehlendes Referenzprojekt bekommt einen Renderstatus
+    # mit Grund und keinen Render; die Reihenfolge der Renders steht im Protokoll.
+    $karte = @('Nakama-Diagnose-Verarbeitung.flp', 'Nakama-Diagnose-Referenz.flp')
+    $fehlt = 'Referenzprojekt fehlt (Karte U43, K-286-1)'
+    $lege = {
+        param([string[]]$namen)
+        [IO.File]::WriteAllText((Join-Path $script:T.Repo 'docs\gesundheit\szenarien\nulltest-host.json'),
+            [IO.File]::ReadAllText((Join-Path $script:EchteSzenarien 'nulltest-host.json')))
+        foreach ($n in $namen) { [IO.File]::WriteAllText((Join-Path $script:T.Repo "eq-copilot\fixtures\fl\$n"), "FLP-Attrappe $n") }
+    }
+    $status = {
+        param([string]$ordner)
+        $datei = Join-Path $ordner 'render.json'
+        if (Test-Path -LiteralPath $datei) { [IO.File]::ReadAllText($datei) | ConvertFrom-Json } else { $null }
+    }
+    $renders = { @($script:T.Protokoll | Where-Object { $_ -match ' start /R ' }) }
+
+    Testfall 'drei Renders vor dem FL-Start' @('nulltest-host.json')
+    & $lege $karte
+    $e = T-Lauf
+    $iStart = T-Index 'start "'
+    Pruefe ((& $renders).Count -eq 3) "Renders vor dem FL-Start: $((& $renders).Count) statt 3 (Diagnoseprojekt und die zwei Referenzprojekte der Karte)"
+    $soll = @([pscustomobject]@{ Name = 'Nakama-Diagnose.flp'; Ordner = $script:K.RenderOrdner }) +
+        @($karte | ForEach-Object { [pscustomobject]@{ Name = $_; Ordner = (Join-Path $script:K.RenderOrdner "referenz\$_") } })
+    $voriger = -1
+    for ($i = 0; $i -lt $soll.Count; $i++) {
+        $s = $soll[$i]
+        $idx = T-Index ([regex]::Escape(' start /R /Ewav /O"' + $s.Ordner + '" "' + (Join-Path $script:K.ProjektOrdner $s.Name) + '"'))
+        Pruefe ($idx -ge 0) "Render $($i + 1) $($s.Name) nicht aus der Arbeitskopie in $($s.Ordner) gestartet"
+        Pruefe ($idx -lt 0 -or $idx -lt $iStart) "Render $($i + 1) $($s.Name) nach dem FL-Start (Index $idx, FL-Start $iStart)"
+        Pruefe ($idx -lt 0 -or $idx -gt $voriger) "Render $($i + 1) $($s.Name) nicht nach Render $i (Reihenfolge der Szenariodatei)"
+        if ($idx -ge 0) { $voriger = $idx }
+    }
+    $a = & $status $script:K.RenderOrdner
+    $wavA = Join-Path $script:K.RenderOrdner 'Nakama-Diagnose.wav'
+    Pruefe ($null -ne $a -and $a.projekt -eq (Join-Path $script:K.ProjektOrdner 'Nakama-Diagnose.flp') -and $a.datei -eq $wavA -and -not $a.grund) "render.json des Auslieferungsrenders nennt projekt '$($a.projekt)', datei '$($a.datei)', grund '$($a.grund)' statt Nakama-Diagnose.flp und $wavA"
+    $inhaltA = if (Test-Path -LiteralPath $wavA) { [IO.File]::ReadAllText($wavA) } else { '(fehlt)' }
+    Pruefe ($inhaltA -eq 'RENDER-Attrappe Nakama-Diagnose.flp') "Renderdatei des Auslieferungsrenders traegt '$inhaltA' statt den Render von Nakama-Diagnose.flp"
+    foreach ($n in $karte) {
+        $ordner = Join-Path $script:K.RenderOrdner "referenz\$n"
+        $r = & $status $ordner
+        $wav = Join-Path $ordner ([IO.Path]::ChangeExtension($n, '.wav'))
+        $kopie = Join-Path $script:K.ProjektOrdner $n
+        $hash = if (Test-Path -LiteralPath $kopie) { (Get-FileHash -Algorithm SHA256 -LiteralPath $kopie).Hash } else { '(keine Arbeitskopie)' }
+        Pruefe ($null -ne $r -and $r.format -eq 'nakama.laufzeit.render.v1' -and $r.projekt -eq $kopie -and $r.datei -eq $wav -and -not $r.grund -and $r.exit -eq 0) "Renderstatus ${n} in $ordner fehlt oder nennt projekt '$($r.projekt)', datei '$($r.datei)', grund '$($r.grund)', exit '$($r.exit)'"
+        Pruefe ($null -ne $r -and $r.sha256_projekt -eq $hash) "Renderstatus ${n} ohne SHA-256 der Arbeitskopie ('$($r.sha256_projekt)' statt $hash)"
+        $inhalt = if (Test-Path -LiteralPath $wav) { [IO.File]::ReadAllText($wav) } else { '(fehlt)' }
+        Pruefe ($inhalt -eq "RENDER-Attrappe $n") "Renderdatei ${n} in ihrem Ordner traegt '$inhalt'"
+    }
+    Pruefe ((K-Index 'Renderfolge vor dem FL-Start: 1 Nakama-Diagnose\.flp .*, 2 Nakama-Diagnose-Verarbeitung\.flp .*, 3 Nakama-Diagnose-Referenz\.flp') -ge 0) 'Protokoll ohne Renderfolge vor dem FL-Start (1 Diagnoseprojekt, 2 Verarbeitung, 3 Referenz)'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "drei Renders: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+
+    Testfall 'Referenzprojekte fehlen' @('nulltest-host.json')
+    & $lege @()
+    $alt = Join-Path $script:K.RenderOrdner 'referenz\Nakama-Diagnose-Referenz.flp'
+    New-Item -ItemType Directory -Force -Path $alt | Out-Null
+    [IO.File]::WriteAllText((Join-Path $alt 'render.json'), '{"format":"nakama.laufzeit.render.v1","datei":"frueher.wav","grund":null}')
+    [IO.File]::WriteAllText((Join-Path $alt 'Nakama-Diagnose-Referenz.wav'), 'RENDER eines frueheren Laufs')
+    $e = T-Lauf
+    Pruefe ((& $renders).Count -eq 1) "fehlende Referenzprojekte: $((& $renders).Count) Renders statt 1 (nur das Diagnoseprojekt)"
+    $iFl = K-Index 'FL gestartet: PID'
+    foreach ($n in $karte) {
+        $ordner = Join-Path $script:K.RenderOrdner "referenz\$n"
+        $r = & $status $ordner
+        Pruefe ($null -ne $r -and $r.format -eq 'nakama.laufzeit.render.v1' -and $r.grund -eq $fehlt -and -not $r.datei -and $r.projekt -eq (Join-Path $script:K.ProjektOrdner $n)) "fehlendes Referenzprojekt ${n}: Renderstatus fehlt oder nennt grund '$($r.grund)', datei '$($r.datei)', projekt '$($r.projekt)' statt '$fehlt' ohne Datei"
+        Pruefe (-not (Test-Path -LiteralPath (Join-Path $ordner ([IO.Path]::ChangeExtension($n, '.wav'))))) "fehlendes Referenzprojekt ${n}: Renderdatei eines frueheren Laufs liegt noch"
+        $iKein = K-Index ([regex]::Escape("Referenzrender ${n}: kein Render - $fehlt"))
+        Pruefe ($iKein -ge 0 -and $iKein -lt $iFl) "fehlendes Referenzprojekt ${n}: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile $iKein, FL-Start $iFl)"
+    }
+    Pruefe ($e.Code -eq 0) "fehlende Referenzprojekte: Exit $($e.Code) '$($e.Zusatz)'"
+
+    Testfall 'Referenzrender haengt' @('nulltest-host.json')
+    & $lege $karte
+    $script:T.Render.HaengtBei = 'Nakama-Diagnose-Verarbeitung.flp'
+    $e = T-Lauf
+    $haengend = @($script:T.Gestartet.Values | Where-Object { $_.Render -and $_.Argumente -like '*Nakama-Diagnose-Verarbeitung.flp*' })
+    $beendet = @($script:T.Protokoll | Where-Object { $_ -match ' beende ' })
+    Pruefe ($haengend.Count -eq 1 -and $beendet.Count -eq 1 -and (T-Hat "beende $($haengend[0].Id)$")) "haengender Referenzrender: nicht genau seine PID beendet ($($beendet -join '; '))"
+    $r = & $status (Join-Path $script:K.RenderOrdner 'referenz\Nakama-Diagnose-Verarbeitung.flp')
+    Pruefe ($null -ne $r -and $r.grund -match 'haengt' -and -not $r.datei -and $r.dauer_s -ge 600) "haengender Referenzrender: Renderstatus grund '$($r.grund)', Dauer $($r.dauer_s) s statt Grund 'haengt' nach 600 s"
+    $weiter = & $status (Join-Path $script:K.RenderOrdner 'referenz\Nakama-Diagnose-Referenz.flp')
+    $iWeiter = T-Index ([regex]::Escape('\Nakama-Diagnose-Referenz.flp"'))
+    Pruefe ($null -ne $weiter -and $weiter.datei -and $iWeiter -ge 0 -and $iWeiter -lt (T-Index 'start "')) 'nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start'
 }
 
 Fall 'M-13' 'volllauf_erzwingen_beenden' {

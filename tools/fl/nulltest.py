@@ -1,11 +1,17 @@
-"""Nulltest im echten Host (Plan S25e (4), Register NAK-286, Manifest F-17 bis F-19).
+"""Nulltest im echten Host (Plan S25e (4), Register NAK-286, Manifest F-17 bis F-19, M-64, P-21).
 
 Vergleicht den Render des Diagnoseprojekts im Auslieferungszustand
 (`FL64.exe /R`, geschrieben von tools/fl/laufzeit.ps1) Sample fuer Sample mit
 der Quelle des Audioclips, `eq-copilot/kalibration/Testtrack.wav` (Weg R1).
+Weg R2 (M-64, P-21) vergleicht die Renders der Referenzprojekte aus Karte U43,
+die der Runner in ihren eigenen Ordner `render\\referenz\\<Projekt>\\` schreibt.
 
     py -3.13 tools/fl/nulltest.py --renderstatus <render.json> --quelle <Testtrack.wav> \
         --songlaenge-ms <ms> --ergebnis <ergebnis.json>
+    py -3.13 tools/fl/nulltest.py --vergleich verarbeitung_ein --renderstatus <referenz\\...\\render.json> \
+        --quelle <Testtrack.wav> --songlaenge-ms <ms> --ergebnis <referenz\\...\\ergebnis.json>
+    py -3.13 tools/fl/nulltest.py --vergleich ohne_slots --renderstatus <referenz\\...\\render.json> \
+        --auslieferung <render\\ergebnis.json> --songlaenge-ms <ms> --ergebnis <referenz\\...\\ergebnis.json>
     py -3.13 tools/fl/nulltest.py --selbsttest [--nur <fall>]
 
 Ablauf: Renderstatus lesen (kein Render -> KEIN_RENDER), `fmt `-Chunks pruefen
@@ -29,6 +35,20 @@ Float-32-Rundung fuer KETTE: |r_i - g*q_i| <= 2 * ulp32(g*q_i) + h, h = 2^-24 be
 einem PCM-24-Render (halbe Quantisierungsstufe), sonst 0 - zwei Rundungsstufen
 im Float-32-Pfad. Ein Faktor g, der die Abweichungen nicht erklaert (etwa g = 1
 bei einem gekippten Bit), ergibt ABWEICHUNG.
+
+Weg R2, Urteil und Szenario-Exit des Schritts: GEMESSEN 0 · VERFEHLT 4 ·
+VORAUSSETZUNG 5 (auch KEIN_RENDER und FORMATFEHLER). Das Ergebnis steht in der
+`ergebnis.json` im Ordner des Referenzprojekts, nie in der des
+Auslieferungsrenders - ein Referenzschritt loest keinen Rueckweg aus (M-65).
+`verarbeitung_ein`: derselbe Vergleich gegen die Quelle wie R1, umgekehrt
+bewertet - Abweichungen nach Ausrichtung GEMESSEN (auch mit v != 0 oder Faktor
+g), 0 Abweichungen (BITIDENTISCH, VERSATZ) VERFEHLT, der Vergleich waere blind.
+`ohne_slots`: SHA-256 des Datenbereichs des Referenzrenders ueber denselben
+Framebereich und in derselben Float-32-Darstellung wie `sha256_render_bereich`
+der ergebnis.json des Auslieferungsrenders - gleich GEMESSEN, ungleich
+VERFEHLT (mit Abweichungszahl und erster Abweichung gegen den
+Auslieferungsrender); ohne diese ergebnis.json oder ohne BITIDENTISCH fehlt die
+Voraussetzung.
 """
 
 from __future__ import annotations
@@ -295,18 +315,202 @@ def fahre(renderstatus: Path, quelle: Path, songlaenge_ms: int, ergebnis_pfad: P
     return ergebnis["exit"], ergebnis
 
 
+# ---------------------------------------------------------------- Weg R2: Referenzschritte (M-64, P-21)
+
+REFERENZ_FORMAT = "nakama.laufzeit.nulltest.referenz.v1"
+REFERENZ_VERGLEICHE = ("verarbeitung_ein", "ohne_slots")
+EXIT_JE_SCHRITT = {"GEMESSEN": EXIT_OK, "VERFEHLT": EXIT_VERFEHLT, "VORAUSSETZUNG": EXIT_SZENARIO_VORAUSSETZUNG}
+
+
+def lies_renderstatus(pfad: Path) -> dict | None:
+    """Renderstatus des Runners (nakama.laufzeit.render.v1) als dict; None ohne lesbare Datei."""
+    try:
+        status = json.loads(pfad.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return status if isinstance(status, dict) else None
+
+
+def renderangaben(status: dict | None) -> dict:
+    """Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus (P-21 (f))."""
+    s = status or {}
+    projekt = s.get("projekt")
+    return {"projekt": Path(projekt).name if isinstance(projekt, str) and projekt else None,
+            "sha256_projekt": s.get("sha256_projekt"), "renderdauer_s": s.get("dauer_s")}
+
+
+def referenzrender(status: dict | None) -> Path:
+    """Renderdatei eines Referenzschritts; ohne Render KEIN_RENDER mit dem Grund aus dem Renderstatus."""
+    if not status or not status.get("datei") or status.get("grund"):
+        grund = (status or {}).get("grund")
+        raise NulltestFehler("KEIN_RENDER", f"kein Render: {grund or 'render.json fehlt oder nennt keine Datei'}")
+    pfad = Path(status["datei"])
+    if not pfad.exists():
+        raise NulltestFehler("KEIN_RENDER", f"kein Render: {pfad} fehlt")
+    return pfad
+
+
+def bewerte_verarbeitung(e: dict) -> dict:
+    """M-64 (c), P-21: der Render mit eingeschalteter Verarbeitung muss nach Ausrichtung von der Quelle abweichen.
+    Abweichungszahl groesser 0 -> GEMESSEN, auch mit v != 0 oder einem Faktor g (beide in der Rohzeile); 0 Abweichungen
+    (BITIDENTISCH, VERSATZ) -> VERFEHLT, der Vergleich waere blind; ohne ueberlappende Frames kein Vergleich (Exit 5)."""
+    e["befund"] = e["urteil"]
+    g = e.get("g")
+    if e.get("g_db") is None and isinstance(g, float) and math.isfinite(g) and g != 0:
+        e["g_db"] = 20.0 * math.log10(abs(g))
+    abweichungen = e.get("abweichungen")
+    if abweichungen is None:
+        e["urteil"] = "VORAUSSETZUNG"
+        e["grund"] = f"kein Vergleich: {e.get('grund') or 'keine ueberlappenden Frames'}"
+    elif abweichungen > 0:
+        e["urteil"] = "GEMESSEN"
+    else:
+        e["urteil"] = "VERFEHLT"
+        e["grund"] = (f"Render mit eingeschalteter Verarbeitung nach Ausrichtung wertgleich zur Quelle ({e['befund']}, "
+                      f"v {e.get('v')}): der Vergleich waere blind")
+    return e
+
+
+def lies_auslieferung(pfad: Path, n: int) -> dict:
+    """ergebnis.json des Auslieferungsrenders als Bezug fuer ohne_slots (P-21 (d)): vorhanden, Format von R1, BITIDENTISCH,
+    fuer dasselbe N, mit Framebereich und sha256_render_bereich; sonst fehlt die Voraussetzung (Exit 5)."""
+    try:
+        a = json.loads(pfad.read_text(encoding="utf-8"))
+    except OSError:
+        raise NulltestFehler("OHNE_AUSLIEFERUNG", f"ergebnis.json des Auslieferungsrenders fehlt: {pfad}") from None
+    except ValueError as e:
+        raise NulltestFehler("OHNE_AUSLIEFERUNG", f"ergebnis.json des Auslieferungsrenders unlesbar: {e}") from None
+    if not isinstance(a, dict) or a.get("format") != ERGEBNIS_FORMAT:
+        raise NulltestFehler("OHNE_AUSLIEFERUNG", f"ergebnis.json des Auslieferungsrenders ist fremd: {pfad}")
+    if a.get("urteil") != "BITIDENTISCH":
+        raise NulltestFehler("OHNE_AUSLIEFERUNG",
+                             f"Auslieferungsschritt endete {a.get('urteil')}, nicht BITIDENTISCH ({a.get('grund') or 'ohne Grund'}): "
+                             "die Zusage vergleicht gegen einen bitidentischen Auslieferungsrender")
+    u = a.get("ueberlappend") if isinstance(a.get("ueberlappend"), dict) else {}
+    von, bis, sha = u.get("von"), u.get("bis"), a.get("sha256_render_bereich")
+    if not (isinstance(von, int) and isinstance(bis, int) and 0 <= von < bis) or not (
+            isinstance(sha, str) and len(sha) == 64 and all(z in "0123456789ABCDEF" for z in sha)):
+        raise NulltestFehler("OHNE_AUSLIEFERUNG", f"ergebnis.json des Auslieferungsrenders ohne Framebereich oder SHA-256: {pfad}")
+    if a.get("N") != n:
+        raise NulltestFehler("OHNE_AUSLIEFERUNG",
+                             f"ergebnis.json des Auslieferungsrenders gilt fuer N = {a.get('N')}, die Songlaenge ergibt N = {n}")
+    return a
+
+
+def abweichungen_gegen_auslieferung(r, a: dict, von: int, bis: int) -> dict:
+    """Abweichungszahl, erste und letzte Abweichung und g des Referenzrenders gegen den Auslieferungsrender ueber denselben
+    Bereich, bitgenau auf der Float-32-Darstellung wie der SHA-256 - nur gegen die Renderdatei, die der Auslieferungsschritt
+    verglichen hat (SHA-256 der Datei aus seiner ergebnis.json); sonst steht der Grund in der Rohzeile."""
+    import numpy as np
+
+    angaben = a.get("render") if isinstance(a.get("render"), dict) else {}
+    pfad = Path(angaben["pfad"]) if isinstance(angaben.get("pfad"), str) else None
+    if pfad is None or not pfad.exists():
+        return {"abweichungen_grund": f"Renderdatei des Auslieferungsrenders fehlt: {angaben.get('pfad')}"}
+    if sha256_datei(pfad) != angaben.get("sha256_datei"):
+        return {"abweichungen_grund": "Renderdatei des Auslieferungsrenders seit ihrem Vergleich veraendert (SHA-256 der Datei)"}
+    try:
+        w = lies_kopf(pfad)
+    except NulltestFehler as e:
+        return {"abweichungen_grund": f"Renderdatei des Auslieferungsrenders unlesbar: {e.grund}"}
+    if not render_format_haelt_quelle(w) or w.frames < bis:
+        return {"abweichungen_grund": f"Renderdatei des Auslieferungsrenders nicht vergleichbar: {w.beschreibung()}"}
+    d = np.ascontiguousarray(lade_float32(w, bis)[von:bis])
+    verschieden = r.view(np.uint32) != d.view(np.uint32)
+    anzahl = int(np.count_nonzero(verschieden))
+    aus: dict = {"abweichungen": anzahl, "erste": None, "letzte": None, "g": None, "g_db": None}
+    if anzahl:
+        idx = np.argwhere(verschieden)
+        aus["erste"] = {"frame": int(idx[0][0]) + von, "kanal": int(idx[0][1])}
+        aus["letzte"] = {"frame": int(idx[-1][0]) + von, "kanal": int(idx[-1][1])}
+    rd, dd = r.astype(np.float64), d.astype(np.float64)
+    nenner = float(np.sum(dd * dd))
+    if nenner > 0:
+        aus["g"] = float(np.sum(rd * dd) / nenner)
+        aus["g_db"] = 20.0 * math.log10(abs(aus["g"])) if aus["g"] != 0 else None
+    return aus
+
+
+def ohne_slots(renderstatus: Path, auslieferung: Path, songlaenge_ms: int) -> dict:
+    """M-64 (d), P-21: der Render des Referenzprojekts ohne Nakama-Slots traegt dieselben SHA-256 der Datenbereiche wie der
+    Render im Auslieferungszustand. Gehasht wird derselbe Framebereich in derselben Float-32-Darstellung wie
+    sha256_render_bereich der ergebnis.json des Auslieferungsrenders (bei v = 0 die Frames [0, N)); gleich -> GEMESSEN,
+    ungleich -> VERFEHLT, mit Abweichungszahl und erster Abweichung gegen den Auslieferungsrender in der Rohzeile. Keine
+    Versatzsuche: der Bezug ist bitidentisch."""
+    import numpy as np
+
+    status = lies_renderstatus(renderstatus)
+    render_pfad = referenzrender(status)
+    n = songlaenge_ms * RATE // 1000
+    a = lies_auslieferung(auslieferung, n)
+    von, bis = a["ueberlappend"]["von"], a["ueberlappend"]["bis"]
+    w = lies_kopf(render_pfad)
+    if not render_format_haelt_quelle(w):
+        raise NulltestFehler("FORMATFEHLER", f"Renderformat haelt die Quelle nicht verlustfrei: {w.beschreibung()}")
+    if w.frames < bis:
+        raise NulltestFehler("FORMATFEHLER", f"Render kuerzer als der verglichene Bereich: {w.frames} < {bis} Frames")
+    r = np.ascontiguousarray(lade_float32(w, bis)[von:bis])
+    sha = hashlib.sha256(r.astype("<f4").tobytes()).hexdigest().upper()
+    gleich = sha == a["sha256_render_bereich"]
+    aus: dict = {"renderstatus": status,
+                 "render": {"pfad": str(render_pfad), "sha256_datei": sha256_datei(render_pfad), "format": w.beschreibung()},
+                 "auslieferung": {"ergebnis": str(auslieferung), "render": a.get("render")},
+                 "N": n, "v": a.get("v"), "ueberlappend": {"von": von, "bis": bis, "frames": bis - von},
+                 "sha256_render_bereich": sha, "sha256_auslieferung_bereich": a["sha256_render_bereich"],
+                 "spitzen_bereich": {"render": [float(np.max(np.abs(r[:, c]))) for c in range(2)],
+                                     "auslieferung": (a.get("spitzen_bereich") or {}).get("render")}}
+    aus.update(abweichungen_gegen_auslieferung(r, a, von, bis))
+    if gleich:
+        aus["urteil"], aus["befund"] = "GEMESSEN", "GLEICH"
+    else:
+        aus["urteil"], aus["befund"] = "VERFEHLT", "UNGLEICH"
+        aus["grund"] = (f"SHA-256 des Datenbereichs [{von}, {bis}) {sha} ungleich {a['sha256_render_bereich']} des "
+                        "Auslieferungsrenders: der Render ohne Nakama-Slots traegt nicht dieselben Daten")
+    return aus
+
+
+def fahre_referenz(vergleich: str, renderstatus: Path, songlaenge_ms: int, ergebnis_pfad: Path,
+                   quelle: Path | None = None, auslieferung: Path | None = None) -> tuple[int, dict]:
+    """Ein Referenzschritt (M-64, P-21): Urteil GEMESSEN, VERFEHLT oder VORAUSSETZUNG mit Exit 0, 4 oder 5 in der
+    ergebnis.json im Ordner des Referenzprojekts - nie in der des Auslieferungsrenders (F-26; kein Rueckweg, M-65)."""
+    if vergleich not in REFERENZ_VERGLEICHE:
+        raise ValueError(f"unbekannter Vergleich {vergleich!r}")
+    status = lies_renderstatus(renderstatus)
+    try:
+        if vergleich == "verarbeitung_ein":
+            if quelle is None:
+                raise ValueError("verarbeitung_ein braucht die Quelle")
+            ergebnis = bewerte_verarbeitung(nulltest(renderstatus, quelle, songlaenge_ms))
+            ergebnis.pop("hinweis", None)
+        else:
+            if auslieferung is None:
+                raise ValueError("ohne_slots braucht die ergebnis.json des Auslieferungsrenders")
+            ergebnis = ohne_slots(renderstatus, auslieferung, songlaenge_ms)
+    except NulltestFehler as e:
+        ergebnis = {"urteil": "VORAUSSETZUNG", "befund": e.urteil, "grund": e.grund, "N": None, "v": None, "g": None,
+                    "g_db": None, "renderstatus": status}
+    ergebnis.update(format=REFERENZ_FORMAT, vergleich=vergleich, songlaenge_ms=songlaenge_ms, **renderangaben(status))
+    ergebnis["exit"] = EXIT_JE_SCHRITT[ergebnis["urteil"]]
+    schreibe_ergebnis(ergebnis_pfad, ergebnis)
+    return ergebnis["exit"], ergebnis
+
+
 def rohzeile(e: dict) -> str:
     teile = [f"Urteil {e['urteil']}", f"Exit {e.get('exit')}"]
+    if e.get("vergleich"):
+        teile = [f"Vergleich {e['vergleich']}", *teile, f"Befund {e.get('befund')}"]
     for schluessel in ("grund", "N", "v", "abweichungen", "g", "g_db"):
         if e.get(schluessel) is not None:
             teile.append(f"{schluessel} {e[schluessel]}")
+    if e.get("abweichungen_grund"):
+        teile.append(f"Abweichungszahl nicht bestimmt: {e['abweichungen_grund']}")
     if e.get("ueberlappend"):
         u = e["ueberlappend"]
         teile.append(f"ueberlappend {u['frames']} Frames [{u['von']}, {u['bis']})")
     for schluessel in ("erste", "letzte"):
         if e.get(schluessel):
             teile.append(f"{schluessel} Abweichung Frame {e[schluessel]['frame']} Kanal {e[schluessel]['kanal']}")
-    for schluessel in ("sha256_render_bereich", "sha256_quelle_bereich"):
+    for schluessel in ("sha256_render_bereich", "sha256_quelle_bereich", "sha256_auslieferung_bereich"):
         if e.get(schluessel):
             teile.append(f"{schluessel} {e[schluessel]}")
     if e.get("spitzen_datei"):
@@ -315,6 +519,8 @@ def rohzeile(e: dict) -> str:
         teile.append(f"Stichprobenspitzen Bereich {e['spitzen_bereich']}")
     if e.get("render"):
         teile.append(f"Render {e['render']['format']} SHA-256 {e['render']['sha256_datei']}")
+    if e.get("vergleich"):
+        teile += [f"Projekt {e.get('projekt')}", f"SHA-256 Projekt {e.get('sha256_projekt')}", f"Renderdauer {e.get('renderdauer_s')} s"]
     if e["urteil"] in ("VERSATZ", "KETTE"):
         teile.append(e.get("hinweis", HINWEIS_LATENZ))
     return " · ".join(str(t) for t in teile)
@@ -377,6 +583,29 @@ class Selbsttest:
         s = {"datei": str(rpfad) if render is not None else None} if status is None else status
         spfad.write_text(json.dumps(s), encoding="utf-8")
         return fahre(spfad, qpfad, songlaenge_ms, self.ordner / f"{name}-ergebnis.json")
+
+    def referenz(self, name: str, vergleich: str, render, art: str, songlaenge_ms: int, quelle=None,
+                 auslieferung: Path | None = None, status: dict | None = None, rate: int = RATE):
+        """Referenzschritt (M-64, P-21) wie im Runner: Renderdatei und render.json im eigenen Ordner
+        referenz\\<Projekt>\\, das Ergebnis ebenda."""
+        import numpy as np
+
+        projekt = f"{name}.flp"
+        ordner = self.ordner / "referenz" / projekt
+        ordner.mkdir(parents=True, exist_ok=True)
+        rpfad = ordner / f"{name}.wav"
+        if render is not None:
+            _schreibe_wav(rpfad, np.asarray(render), art, rate)
+        qpfad = self.ordner / "quelle.wav"
+        if quelle is not None:
+            _schreibe_wav(qpfad, quelle, "pcm24")
+        s = ({"format": "nakama.laufzeit.render.v1", "projekt": str(self.ordner / "projekt" / projekt),
+              "sha256_projekt": "AB" * 32, "datei": str(rpfad) if render is not None else None, "grund": None,
+              "dauer_s": 4.2} if status is None else status)
+        spfad = ordner / "render.json"
+        spfad.write_text(json.dumps(s), encoding="utf-8")
+        return fahre_referenz(vergleich, spfad, songlaenge_ms, ordner / "ergebnis.json", quelle=qpfad,
+                              auslieferung=auslieferung)
 
 
 MS_TEST = 4535
@@ -479,12 +708,128 @@ def fall_render_status(t: Selbsttest) -> None:
     t.pruefe(e["urteil"] == "KEIN_RENDER" and code == 5, f"render.json fehlt: Urteil {e['urteil']} Exit {code}")
 
 
+def fall_verarbeitung_ein_umgekehrt(t: Selbsttest) -> None:
+    """M-64 (c), P-21: verarbeitung_ein vergleicht wie R1 gegen die Quelle und bewertet umgekehrt - Abweichungen nach
+    Ausrichtung sind GEMESSEN (auch mit v != 0 oder Faktor g), 0 Abweichungen VERFEHLT (der Vergleich waere blind),
+    Formatfehler und kein Render Szenario-Exit 5. Die Rohzeile traegt die Werte aus M-62 und dazu Projektname, SHA-256
+    des Projekts und Renderdauer aus dem Renderstatus (P-21 (f))."""
+    import numpy as np
+
+    q = _quelle(400_000)
+    band = q[:N_TEST].copy()
+    band[50_000:60_000] = (band[50_000:60_000].astype(np.float64) * 2.0).astype(np.float32)  # Bandaenderung als Attrappe
+    code, e = t.referenz("band", "verarbeitung_ein", band, "pcm24", MS_TEST, quelle=q)
+    t.pruefe(code == 0 and e.get("urteil") == "GEMESSEN" and e.get("befund") == "ABWEICHUNG"
+             and (e.get("abweichungen") or 0) > 0 and e.get("v") == 0,
+             f"Bandaenderung: Urteil {e.get('urteil')} Befund {e.get('befund')} Abweichungen {e.get('abweichungen')} "
+             f"v {e.get('v')} Exit {code} statt GEMESSEN 0")
+    zeile = rohzeile(e)
+    for teil in ("Vergleich verarbeitung_ein", "Urteil GEMESSEN", "Befund ABWEICHUNG", f"N {N_TEST}", "v 0",
+                 "abweichungen ", "erste Abweichung Frame 50000", "letzte Abweichung Frame 59999", "ueberlappend ",
+                 "sha256_render_bereich ", "sha256_quelle_bereich ", "Stichprobenspitzen Bereich", "g_db ",
+                 "Projekt band.flp", "SHA-256 Projekt " + "AB" * 32, "Renderdauer 4.2 s"):
+        t.pruefe(teil in zeile, f"Rohzeile verarbeitung_ein ohne '{teil}': {zeile[:400]}")
+    t.pruefe((t.ordner / "referenz" / "band.flp" / "ergebnis.json").exists(),
+             "Ergebnis von verarbeitung_ein nicht im Ordner des Referenzprojekts")
+    verschoben = np.concatenate([np.zeros((1, 2), np.float32), band[:N_TEST - 1]])
+    code, e = t.referenz("band-plus1", "verarbeitung_ein", verschoben, "pcm24", MS_TEST, quelle=q)
+    t.pruefe(code == 0 and e.get("urteil") == "GEMESSEN" and e.get("v") == 1 and "v 1" in rohzeile(e),
+             f"Bandaenderung mit v = +1: Urteil {e.get('urteil')} v {e.get('v')} Exit {code} statt GEMESSEN 0 mit v 1")
+    halb = (q[:N_TEST].astype(np.float64) * 0.5).astype(np.float32)
+    code, e = t.referenz("faktor", "verarbeitung_ein", halb, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 0 and e.get("urteil") == "GEMESSEN" and e.get("befund") == "KETTE" and e.get("g_db") is not None
+             and abs(e["g_db"] - 20 * math.log10(0.5)) < 1e-6 and "g_db -6.02" in rohzeile(e),
+             f"Faktor 0,5: Urteil {e.get('urteil')} Befund {e.get('befund')} g_db {e.get('g_db')} Exit {code} statt GEMESSEN 0 "
+             "mit g in der Rohzeile")
+    for name, render, befund, v in (("identisch", q[:N_TEST], "BITIDENTISCH", 0),
+                                    ("versatz", np.concatenate([np.zeros((1, 2), np.float32), q[:N_TEST - 1]]), "VERSATZ", 1)):
+        code, e = t.referenz(name, "verarbeitung_ein", render, "pcm24", MS_TEST, quelle=q)
+        t.pruefe(code == 4 and e.get("urteil") == "VERFEHLT" and e.get("befund") == befund and e.get("abweichungen") == 0
+                 and e.get("v") == v,
+                 f"0 Abweichungen ({befund}, v {v}): Urteil {e.get('urteil')} Befund {e.get('befund')} Exit {code} statt "
+                 "VERFEHLT 4 - der Vergleich waere blind")
+        t.pruefe("blind" in (e.get("grund") or ""), f"0 Abweichungen ({befund}): Grund {e.get('grund')!r} nennt den blinden Vergleich nicht")
+    code, e = t.referenz("pcm16", "verarbeitung_ein", q[:N_TEST], "pcm16", MS_TEST, quelle=q)
+    t.pruefe(code == 5 and e.get("urteil") == "VORAUSSETZUNG" and e.get("befund") == "FORMATFEHLER",
+             f"16 Bit: Urteil {e.get('urteil')} Befund {e.get('befund')} Exit {code} statt VORAUSSETZUNG 5 FORMATFEHLER")
+    code, e = t.referenz("haengt", "verarbeitung_ein", None, "pcm24", MS_TEST, quelle=q,
+                         status={"format": "nakama.laufzeit.render.v1", "datei": None, "dauer_s": 600.0,
+                                 "grund": "Prozess haengt (Frist 600 s), Fenster 'Missing samples'"})
+    t.pruefe(code == 5 and e.get("urteil") == "VORAUSSETZUNG" and e.get("befund") == "KEIN_RENDER"
+             and "Prozess haengt" in (e.get("grund") or ""),
+             f"ohne Render: Urteil {e.get('urteil')} Befund {e.get('befund')} Grund {e.get('grund')!r} Exit {code} statt 5")
+
+
+def fall_ohne_slots_render_gegen_render(t: Selbsttest) -> None:
+    """M-64 (d), P-21: ohne_slots hasht den Datenbereich des Referenzrenders - derselbe Framebereich und dieselbe
+    Float-32-Darstellung wie sha256_render_bereich der ergebnis.json des Auslieferungsrenders - und vergleicht mit diesem
+    Wert: gleich GEMESSEN, ungleich VERFEHLT mit beiden SHA-256, der Abweichungszahl und der ersten Abweichung. Ohne
+    ergebnis.json oder ohne bitidentischen Auslieferungsschritt, ohne Render und bei Formatfehler Szenario-Exit 5."""
+    import numpy as np
+
+    q = _quelle(400_000)
+    code, a = t.fall("auslieferung", q[:N_TEST + 400], "pcm24", MS_TEST, quelle=q)
+    t.pruefe(code == 0 and a["urteil"] == "BITIDENTISCH", f"Attrappe des Auslieferungsrenders: Urteil {a['urteil']} Exit {code}")
+    auslieferung = t.ordner / "auslieferung-ergebnis.json"
+    # andere Laenge und anderes Format, in [0, N) dieselben Daten
+    gleiche_daten = np.concatenate([q[:N_TEST], np.full((250, 2), np.float32(0.25))])
+    code, e = t.referenz("ohne-slots", "ohne_slots", gleiche_daten, "float32", MS_TEST, auslieferung=auslieferung)
+    t.pruefe(code == 0 and e.get("urteil") == "GEMESSEN" and e.get("sha256_render_bereich") == a.get("sha256_render_bereich")
+             and e.get("sha256_auslieferung_bereich") == a.get("sha256_render_bereich") and e.get("abweichungen") == 0,
+             f"dieselben Daten in [0, N): Urteil {e.get('urteil')} Exit {code}, SHA-256 {e.get('sha256_render_bereich')} gegen "
+             f"{a.get('sha256_render_bereich')}, Abweichungen {e.get('abweichungen')} statt GEMESSEN 0")
+    k = 98_765
+    gekippt = q[:N_TEST].copy()
+    gekippt[k, 1] = q[k, 1] + np.float32(2.0 ** -23)
+    code, e = t.referenz("ohne-slots-lsb", "ohne_slots", gekippt, "pcm24", MS_TEST, auslieferung=auslieferung)
+    t.pruefe(code == 4 and e.get("urteil") == "VERFEHLT",
+             f"ein gekipptes LSB an Frame {k}: Urteil {e.get('urteil')} Exit {code} statt VERFEHLT 4")
+    t.pruefe(e.get("abweichungen") == 1 and (e.get("erste") or {}).get("frame") == k and (e.get("erste") or {}).get("kanal") == 1
+             and e.get("sha256_render_bereich") not in (None, a.get("sha256_render_bereich")),
+             f"ein gekipptes LSB an Frame {k}: Abweichungen {e.get('abweichungen')}, erste {e.get('erste')}, "
+             f"SHA-256 {e.get('sha256_render_bereich')}")
+    zeile = rohzeile(e)
+    for teil in ("Vergleich ohne_slots", "Urteil VERFEHLT", f"sha256_render_bereich {e.get('sha256_render_bereich')}",
+                 f"sha256_auslieferung_bereich {a.get('sha256_render_bereich')}", "abweichungen 1",
+                 f"erste Abweichung Frame {k} Kanal 1", f"N {N_TEST}", "v 0", "Stichprobenspitzen Bereich", "g_db ",
+                 "Projekt ohne-slots-lsb.flp", "SHA-256 Projekt " + "AB" * 32, "Renderdauer 4.2 s"):
+        t.pruefe(teil in zeile, f"Rohzeile ohne_slots ohne '{teil}': {zeile[:400]}")
+    verschoben = np.concatenate([np.zeros((1, 2), np.float32), q[:N_TEST - 1]])
+    code, e = t.referenz("ohne-slots-versatz", "ohne_slots", verschoben, "pcm24", MS_TEST, auslieferung=auslieferung)
+    t.pruefe(code == 4 and e.get("urteil") == "VERFEHLT" and (e.get("abweichungen") or 0) > 0,
+             f"um 1 Frame verschobener Render ohne Slots: Urteil {e.get('urteil')} Exit {code} statt VERFEHLT 4 "
+             "(keine Versatzsuche gegen den Auslieferungsrender)")
+    code, e = t.referenz("ohne-slots-ohne-ergebnis", "ohne_slots", gleiche_daten, "float32", MS_TEST,
+                         auslieferung=t.ordner / "nie-geschrieben-ergebnis.json")
+    t.pruefe(code == 5 and e.get("urteil") == "VORAUSSETZUNG" and "fehlt" in (e.get("grund") or ""),
+             f"ohne ergebnis.json des Auslieferungsrenders: Urteil {e.get('urteil')} Grund {e.get('grund')!r} Exit {code} statt 5")
+    code, kette = t.fall("auslieferung-kette", (q[:N_TEST].astype(np.float64) * 0.5).astype(np.float32), "float32", MS_TEST,
+                         quelle=q)
+    code, e = t.referenz("ohne-slots-kette", "ohne_slots", gleiche_daten, "float32", MS_TEST,
+                         auslieferung=t.ordner / "auslieferung-kette-ergebnis.json")
+    t.pruefe(kette["urteil"] == "KETTE" and code == 5 and e.get("urteil") == "VORAUSSETZUNG"
+             and "nicht BITIDENTISCH" in (e.get("grund") or ""),
+             f"Auslieferungsschritt KETTE: Urteil {e.get('urteil')} Grund {e.get('grund')!r} Exit {code} statt VORAUSSETZUNG 5")
+    for name, render, art, grund in (("ohne-slots-pcm16", q[:N_TEST], "pcm16", "Renderformat"),
+                                     ("ohne-slots-kurz", q[:N_TEST - 10], "pcm24", "kuerzer")):
+        code, e = t.referenz(name, "ohne_slots", render, art, MS_TEST, auslieferung=auslieferung)
+        t.pruefe(code == 5 and e.get("befund") == "FORMATFEHLER" and grund in (e.get("grund") or ""),
+                 f"{name}: Befund {e.get('befund')} Grund {e.get('grund')!r} Exit {code} statt FORMATFEHLER 5")
+    code, e = t.referenz("ohne-slots-fehlt", "ohne_slots", None, "pcm24", MS_TEST, auslieferung=auslieferung,
+                         status={"format": "nakama.laufzeit.render.v1", "datei": None,
+                                 "grund": "Referenzprojekt fehlt (Karte U43, K-286-1)"})
+    t.pruefe(code == 5 and e.get("befund") == "KEIN_RENDER" and "Referenzprojekt fehlt" in (e.get("grund") or ""),
+             f"ohne Render: Befund {e.get('befund')} Grund {e.get('grund')!r} Exit {code} statt KEIN_RENDER 5")
+
+
 FAELLE = [
     ("M-62", "identisch_null_abweichungen", fall_identisch_null_abweichungen),
     ("M-75", "versatz_ist_voraussetzung", fall_versatz_ist_voraussetzung),
     ("M-63", "konstanter_faktor_ist_voraussetzung", fall_konstanter_faktor_ist_voraussetzung),
     ("M-61", "format_ist_voraussetzung", fall_format_ist_voraussetzung),
     ("M-60", "render_status", fall_render_status),
+    ("M-64", "verarbeitung_ein_umgekehrt", fall_verarbeitung_ein_umgekehrt),
+    ("M-64", "ohne_slots_render_gegen_render", fall_ohne_slots_render_gegen_render),
 ]
 
 
@@ -520,12 +865,23 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--quelle", type=Path)
     ap.add_argument("--songlaenge-ms", type=int)
     ap.add_argument("--ergebnis", type=Path)
+    ap.add_argument("--vergleich", choices=("auslieferung", *REFERENZ_VERGLEICHE), default="auslieferung")
+    ap.add_argument("--auslieferung", type=Path, help="ergebnis.json des Auslieferungsrenders (ohne_slots)")
     ap.add_argument("--selbsttest", action="store_true")
     ap.add_argument("--nur", action="append", default=[])
     args = ap.parse_args(argv)
     try:
         if args.selbsttest:
             return selbsttest(args.nur)
+        if args.vergleich in REFERENZ_VERGLEICHE:
+            bezug = args.quelle if args.vergleich == "verarbeitung_ein" else args.auslieferung
+            if not (args.renderstatus and args.songlaenge_ms is not None and args.ergebnis and bezug):
+                ap.error("--vergleich verarbeitung_ein braucht --renderstatus, --quelle, --songlaenge-ms und --ergebnis; "
+                         "ohne_slots statt --quelle --auslieferung")
+            code, ergebnis = fahre_referenz(args.vergleich, args.renderstatus, args.songlaenge_ms, args.ergebnis,
+                                            quelle=args.quelle, auslieferung=args.auslieferung)
+            print("NULLTEST " + rohzeile(ergebnis))
+            return code
         if not (args.renderstatus and args.quelle and args.songlaenge_ms is not None and args.ergebnis):
             ap.error("--renderstatus, --quelle, --songlaenge-ms und --ergebnis oder --selbsttest")
         code, ergebnis = fahre(args.renderstatus, args.quelle, args.songlaenge_ms, args.ergebnis)

@@ -1,0 +1,316 @@
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotlauf vor der Aenderung M-64 (c) (15.09.2026 12:31:17) ===
+Art: Rotlauf vor der Aenderung (§5.1, P-21 (g), §45): neuer Fall verarbeitung_ein_umgekehrt gegen das unveraenderte nulltest.py (nur Render gegen Quelle, Bewertung R1)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur verarbeitung_ein_umgekehrt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 verarbeitung_ein_umgekehrt:.*fahre_referenz
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/nulltest.py (Traeger unveraendert) 9C35D885160A448B8E211015329673CEEA2AD5CE038579C6FDA8471ED5B49FE3, nach dem Lauf 9C35D885160A448B8E211015329673CEEA2AD5CE038579C6FDA8471ED5B49FE3, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 verarbeitung_ein_umgekehrt: Ausnahme NameError: name 'fahre_referenz' is not defined (nulltest.py:401)
+--- Rohausgabe, rot ---
+[ROT] M-64 verarbeitung_ein_umgekehrt: Ausnahme NameError: name 'fahre_referenz' is not defined (nulltest.py:401)
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotlauf vor der Aenderung M-64 (d) (15.09.2026 12:31:39) ===
+Art: Rotlauf vor der Aenderung (§5.1, P-21 (g), §45): neuer Fall ohne_slots_render_gegen_render gegen das unveraenderte nulltest.py (kein Render-gegen-Render-Vergleich)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur ohne_slots_render_gegen_render (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 ohne_slots_render_gegen_render:.*fahre_referenz
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/nulltest.py (Traeger unveraendert) 9C35D885160A448B8E211015329673CEEA2AD5CE038579C6FDA8471ED5B49FE3, nach dem Lauf 9C35D885160A448B8E211015329673CEEA2AD5CE038579C6FDA8471ED5B49FE3, gleich: ja
+rot: Exit 4, Dauer 0.7 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 ohne_slots_render_gegen_render: Ausnahme NameError: name 'fahre_referenz' is not defined (nulltest.py:401)
+--- Rohausgabe, rot ---
+[ROT] M-64 ohne_slots_render_gegen_render: Ausnahme NameError: name 'fahre_referenz' is not defined (nulltest.py:401)
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotlauf vor der Aenderung M-64 (b) (15.09.2026 12:31:40) ===
+Art: Rotlauf vor der Aenderung (§5.1, P-21 (g), §45): neuer Fall referenzschritte_aus_renderstatus gegen das unveraenderte lokal.nulltest (Attrappe mit vorhandenem Referenzprojekt)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzschritte_aus_renderstatus (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzschritte_aus_renderstatus:.*verarbeitung_ein mit Renderstatus und Render: Exit 5 statt 0.*Weg R2 nicht gebaut
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/szenario.py (Traeger unveraendert) A539DDB892691485E8285AB4C0D7C7B14DC17BAF4E0FACE2F380535602EB8F67, nach dem Lauf A539DDB892691485E8285AB4C0D7C7B14DC17BAF4E0FACE2F380535602EB8F67, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein mit Renderstatus und Render: Exit 5 statt 0, Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' | ohne_slots mit Renderstatus und Render (kein Projekt im Repo-Ordner): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | verarbeitung_ein: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Verarbeitung.flp | verarbeitung_ein: Ergebnis nach None statt in den Ordner des Referenzprojekts | verarbeitung_ein: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | verarbeitung_ein: Rohzeile von nulltest.py fehlt in den Details | ohne_slots: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Referenz.flp | ohne_slots: Ergebnis nach None statt in den Ordner des Referenzprojekts | ohne_slots: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | ohne_slots: Rohzeile von nulltest.py fehlt in den Details | verarbeitung_ein: nulltest.py ohne --quelle | ohne_slots: --auslieferung None statt der ergebnis.json des Auslieferungsrenders | verarbeitung_ein mit 0 Abweichungen: Exit 5 statt 4, Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein): Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein) still: keine Rohzeile mit Renderstatus und Grund | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund | ohne Renderstatus: Exit 5 statt 5, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein mit Renderstatus und Render: Exit 5 statt 0, Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' | ohne_slots mit Renderstatus und Render (kein Projekt im Repo-Ordner): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | verarbeitung_ein: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Verarbeitung.flp | verarbeitung_ein: Ergebnis nach None statt in den Ordner des Referenzprojekts | verarbeitung_ein: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | verarbeitung_ein: Rohzeile von nulltest.py fehlt in den Details | ohne_slots: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Referenz.flp | ohne_slots: Ergebnis nach None statt in den Ordner des Referenzprojekts | ohne_slots: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | ohne_slots: Rohzeile von nulltest.py fehlt in den Details | verarbeitung_ein: nulltest.py ohne --quelle | ohne_slots: --auslieferung None statt der ergebnis.json des Auslieferungsrenders | verarbeitung_ein mit 0 Abweichungen: Exit 5 statt 4, Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein): Zeile 'l.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Weg R2 nicht gebaut (Render der Referenzprojekte, M-64) | VORAUSSETZUNG (Details unten) |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein) still: keine Rohzeile mit Renderstatus und Grund | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund | ohne Renderstatus: Exit 5 statt 5, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotlauf vor der Aenderung M-64 (a) (15.09.2026 12:31:41) ===
+Art: Rotlauf vor der Aenderung (§5.1, P-21 (g), §45): neuer Fall referenzrender_vor_fl_start gegen den unveraenderten Runner (ein Render statt drei)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*Renders vor dem FL-Start: 1 statt 3
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+SHA-256 tools/fl/laufzeit.ps1 (Traeger unveraendert) E553E33C3E466F3ADF047B9155D3718279E6EBC4DB911565CBFAA7A53A4D912A, nach dem Lauf E553E33C3E466F3ADF047B9155D3718279E6EBC4DB911565CBFAA7A53A4D912A, gleich: ja
+SHA-256 docs/gesundheit/szenarien/nulltest-host.json (Traeger unveraendert) 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, nach dem Lauf 29B81BD87D5E27487EDC81EFB7C32822A5443328AEB1E63E3355A259B424AA2C, gleich: ja
+rot: Exit 4, Dauer 1.3 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Renders vor dem FL-Start: 1 statt 3 (Diagnoseprojekt und die zwei Referenzprojekte der Karte) | [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 der Arbeitskopie ('' statt ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Verarbeitung.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp ohne SHA-256 der Arbeitskopie ('' statt 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Referenz.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Protokoll ohne Renderfolge vor dem FL-Start (1 Diagnoseprojekt, 2 Verarbeitung, 3 Referenz) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 16) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei 'frueher.wav', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderdatei eines frueheren Laufs liegt noch | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 16) | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet () | [Referenzrender haengt] haengender Referenzrender: Renderstatus grund '', Dauer  s statt Grund 'haengt' nach 600 s | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Renders vor dem FL-Start: 1 statt 3 (Diagnoseprojekt und die zwei Referenzprojekte der Karte) | [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 der Arbeitskopie ('' statt ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Verarbeitung.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-c458dc651ec2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp ohne SHA-256 der Arbeitskopie ('' statt 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Referenz.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Protokoll ohne Renderfolge vor dem FL-Start (1 Diagnoseprojekt, 2 Verarbeitung, 3 Referenz) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 16) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei 'frueher.wav', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderdatei eines frueheren Laufs liegt noch | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 16) | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet () | [Referenzrender haengt] haengender Referenzrender: Renderstatus grund '', Dauer  s statt Grund 'haengt' nach 600 s | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+Ergebnis: ROTLAUF GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (c) (15.09.2026 12:42:10) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): verarbeitung_ein: 0 Abweichungen (BITIDENTISCH, VERSATZ) als GEMESSEN bewertet
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur verarbeitung_ein_umgekehrt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 verarbeitung_ein_umgekehrt:.*0 Abweichungen \(BITIDENTISCH, v 0\): Urteil GEMESSEN
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/nulltest.py:
+  -     elif abweichungen > 0:
+  +     elif abweichungen >= 0:  # ROTBEWEIS M-64 (c): 0 Abweichungen gilt als gemessen
+SHA-256 tools/fl/nulltest.py vorher 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, mutiert 284D704E4433B636CEC613166E5C19E44B4BD93015BBEC90A527AF5B087A8DFB, nach der Ruecknahme 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, gleich: ja
+rot: Exit 4, Dauer 0.9 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 verarbeitung_ein_umgekehrt: 0 Abweichungen (BITIDENTISCH, v 0): Urteil GEMESSEN Befund BITIDENTISCH Exit 0 statt VERFEHLT 4 - der Vergleich waere blind | 0 Abweichungen (BITIDENTISCH): Grund None nennt den blinden Vergleich nicht | 0 Abweichungen (VERSATZ, v 1): Urteil GEMESSEN Befund VERSATZ Exit 0 statt VERFEHLT 4 - der Vergleich waere blind | 0 Abweichungen (VERSATZ): Grund None nennt den blinden Vergleich nicht
+--- Rohausgabe, rot ---
+[ROT] M-64 verarbeitung_ein_umgekehrt: 0 Abweichungen (BITIDENTISCH, v 0): Urteil GEMESSEN Befund BITIDENTISCH Exit 0 statt VERFEHLT 4 - der Vergleich waere blind | 0 Abweichungen (BITIDENTISCH): Grund None nennt den blinden Vergleich nicht | 0 Abweichungen (VERSATZ, v 1): Urteil GEMESSEN Befund VERSATZ Exit 0 statt VERFEHLT 4 - der Vergleich waere blind | 0 Abweichungen (VERSATZ): Grund None nennt den blinden Vergleich nicht
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.1 s, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (d) (15.09.2026 12:42:12) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): ohne_slots: SHA-256 des Referenzrenders nicht gegen sha256_render_bereich des Auslieferungsrenders verglichen
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur ohne_slots_render_gegen_render (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 ohne_slots_render_gegen_render:.*ein gekipptes LSB an Frame 98765: Urteil GEMESSEN Exit 0 statt VERFEHLT 4
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/nulltest.py:
+  -     gleich = sha == a["sha256_render_bereich"]
+  +     gleich = True  # ROTBEWEIS M-64 (d): SHA-256 nicht verglichen
+SHA-256 tools/fl/nulltest.py vorher 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, mutiert BDEF6B84E530893A2B99ADC93CBA763746969E8FC54C3309FEB8E23386B0DE5D, nach der Ruecknahme 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, gleich: ja
+rot: Exit 4, Dauer 0.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 ohne_slots_render_gegen_render: ein gekipptes LSB an Frame 98765: Urteil GEMESSEN Exit 0 statt VERFEHLT 4 | Rohzeile ohne_slots ohne 'Urteil VERFEHLT': Vergleich ohne_slots · Urteil GEMESSEN · Exit 0 · Befund GLEICH · N 199993 · v 0 · abweichungen 1 · g 1.000000000000061 · g_db 5.303801066042918e-13 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 98765 Kanal 1 · letzte Abweichung Frame 98765 Kanal 1 · sha256_render_bereich 1B7BEB25F47158959324678DC823B348F1DBE2BDAE2D7B30043A26CDF934847B · sha256_auslieferung_bereich E9F11C107068 | um 1 Frame verschobener Render ohne Slots: Urteil GEMESSEN Exit 0 statt VERFEHLT 4 (keine Versatzsuche gegen den Auslieferungsrender)
+--- Rohausgabe, rot ---
+[ROT] M-64 ohne_slots_render_gegen_render: ein gekipptes LSB an Frame 98765: Urteil GEMESSEN Exit 0 statt VERFEHLT 4 | Rohzeile ohne_slots ohne 'Urteil VERFEHLT': Vergleich ohne_slots · Urteil GEMESSEN · Exit 0 · Befund GLEICH · N 199993 · v 0 · abweichungen 1 · g 1.000000000000061 · g_db 5.303801066042918e-13 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 98765 Kanal 1 · letzte Abweichung Frame 98765 Kanal 1 · sha256_render_bereich 1B7BEB25F47158959324678DC823B348F1DBE2BDAE2D7B30043A26CDF934847B · sha256_auslieferung_bereich E9F11C107068 | um 1 Frame verschobener Render ohne Slots: Urteil GEMESSEN Exit 0 statt VERFEHLT 4 (keine Versatzsuche gegen den Auslieferungsrender)
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.7 s, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (f) (15.09.2026 12:42:14) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Rohzeile eines Referenzschritts ohne Projektname, SHA-256 des Projekts und Renderdauer
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/nulltest.py --selbsttest --nur verarbeitung_ein_umgekehrt (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 verarbeitung_ein_umgekehrt:.*Rohzeile verarbeitung_ein ohne 'Projekt band\.flp'
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/nulltest.py:
+  -         teile += [f"Projekt {e.get('projekt')}", f"SHA-256 Projekt {e.get('sha256_projekt')}", f"Renderdauer {e.get('renderdauer_s')} s"]
+  +         pass  # ROTBEWEIS M-64 (f): Projektname, SHA-256 des Projekts und Renderdauer nicht in der Rohzeile
+SHA-256 tools/fl/nulltest.py vorher 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, mutiert 2F49B769E438643DACD19AEC1F48AE2A6D064684D031D29D4A1F0363EAEBA478, nach der Ruecknahme 77627BB725950ECFAD83BC1902574929B44D060ADE8143F014F51F76A46F051A, gleich: ja
+rot: Exit 4, Dauer 1.1 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 verarbeitung_ein_umgekehrt: Rohzeile verarbeitung_ein ohne 'Projekt band.flp': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C | Rohzeile verarbeitung_ein ohne 'SHA-256 Projekt ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C | Rohzeile verarbeitung_ein ohne 'Renderdauer 4.2 s': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C
+--- Rohausgabe, rot ---
+[ROT] M-64 verarbeitung_ein_umgekehrt: Rohzeile verarbeitung_ein ohne 'Projekt band.flp': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C | Rohzeile verarbeitung_ein ohne 'SHA-256 Projekt ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C | Rohzeile verarbeitung_ein ohne 'Renderdauer 4.2 s': Vergleich verarbeitung_ein · Urteil GEMESSEN · Exit 0 · Befund ABWEICHUNG · N 199993 · v 0 · abweichungen 20000 · g 1.0497011854855605 · g_db 0.4213137535121104 · ueberlappend 199993 Frames [0, 199993) · erste Abweichung Frame 50000 Kanal 0 · letzte Abweichung Frame 59999 Kanal 1 · sha256_render_bereich AED1028BC0E26A01BC48CBF46E42B50A0BB3E3A32284DF3E623A03EDF051B45A · sha256_quelle_bereich E9F11C
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1 s, SELBSTTEST nulltest.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (b) Renderstatus (15.09.2026 12:42:14) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): lokal.nulltest prueft wieder die Existenz des Projekts im Repo-Ordner statt den Renderstatus zu lesen
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzschritte_aus_renderstatus (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzschritte_aus_renderstatus:.*ohne_slots mit Renderstatus und Render \(kein Projekt im Repo-Ordner\)
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -     ordner = lauf.render_ordner / REFERENZ_ORDNER / projekt
+  +     if not lauf.umg.existiert(REPO / "eq-copilot" / "fixtures" / "fl" / projekt):  # ROTBEWEIS M-64 (b): Existenz im Repo-Ordner statt Renderstatus
+  +         return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: Referenzprojekt fehlt (Karte U43, K-286-1)", [f"- erwartet: `{projekt}`"])
+  +     ordner = lauf.render_ordner / REFERENZ_ORDNER / projekt
+SHA-256 tools/fl/szenario.py vorher CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, mutiert 115D2C08B7F57E1CD38A0DF824BABBA1F62AC8C60162DD00A87406EB31DB099F, nach der Ruecknahme CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein mit Renderstatus und Render: Exit 5 statt 0, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | GEMESSEN verarbeitung_ein: ABWEICHUNG v=0 g_db=-0.5 Abweichungen=7 | ok (Details unten) |' | ohne_slots mit Renderstatus und Render (kein Projekt im Repo-Ordner): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | ohne_slots: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Referenz.flp | ohne_slots: Ergebnis nach None statt in den Ordner des Referenzprojekts | ohne_slots: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | ohne_slots: Rohzeile von nulltest.py fehlt in den Details | ohne_slots: --auslieferung None statt der ergebnis.json des Auslieferungsrenders | verarbeitung_ein mit 0 Abweichungen: Exit 5 statt 4, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VERFEHLT verarbeitung_ein: BITIDENTISCH v=0 g_db=-0.5 Abweichungen=0 | VERFEHLT (Details unten) |' | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund | ohne Renderstatus: Exit 5 statt 5, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein mit Renderstatus und Render: Exit 5 statt 0, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | GEMESSEN verarbeitung_ein: ABWEICHUNG v=0 g_db=-0.5 Abweichungen=7 | ok (Details unten) |' | ohne_slots mit Renderstatus und Render (kein Projekt im Repo-Ordner): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | ohne_slots: nulltest.py liest den Renderstatus None statt den von Nakama-Diagnose-Referenz.flp | ohne_slots: Ergebnis nach None statt in den Ordner des Referenzprojekts | ohne_slots: Rohzeile ohne Projektname, SHA-256 des Projekts und Renderdauer aus dem Renderstatus | ohne_slots: Rohzeile von nulltest.py fehlt in den Details | ohne_slots: --auslieferung None statt der ergebnis.json des Auslieferungsrenders | verarbeitung_ein mit 0 Abweichungen: Exit 5 statt 4, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VERFEHLT verarbeitung_ein: BITIDENTISCH v=0 g_db=-0.5 Abweichungen=0 | VERFEHLT (Details unten) |' | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund | ohne Renderstatus: Exit 5 statt 5, Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (b) Exit 5 (15.09.2026 12:42:15) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): ohne Render endet der Referenzschritt mit Exit 0 statt 5
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzschritte_aus_renderstatus (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzschritte_aus_renderstatus:.*fehlendes Referenzprojekt: Exit 0 statt 5
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -         return (EXIT_SZENARIO, f"VORAUSSETZUNG {vergleich}: {grund}",
+  +         return (EXIT_OK, f"VORAUSSETZUNG {vergleich}: {grund}",  # ROTBEWEIS M-64 (b): ohne Render Exit 0 statt 5
+SHA-256 tools/fl/szenario.py vorher CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, mutiert EDB1841128D0F3C12A8A85868CCB00B64E823D647535505CB234CDE9774BD1E3, nach der Ruecknahme CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzschritte_aus_renderstatus: fehlendes Referenzprojekt: Exit 0 statt 5 | fehlendes Referenzprojekt (verarbeitung_ein): Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | ok (Details unten) |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (ohne_slots): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | ok (Details unten) |' statt '| VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzschritte_aus_renderstatus: fehlendes Referenzprojekt: Exit 0 statt 5 | fehlendes Referenzprojekt (verarbeitung_ein): Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | ok (Details unten) |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (ohne_slots): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | ok (Details unten) |' statt '| VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (b) Rohzeile (15.09.2026 12:42:15) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): ohne Render endet der Referenzschritt ohne Rohzeile
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzschritte_aus_renderstatus (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzschritte_aus_renderstatus:.*fehlendes Referenzprojekt \(verarbeitung_ein\) still: keine Rohzeile
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -                 [f"- Renderstatus `{status_pfad}`: projekt `{status.get('projekt')}`, grund {_json(grund)} - kein Render "
+  -                  f"dieses Zustands (M-64), nie still"])
+  +                 [])  # ROTBEWEIS M-64 (b): ohne Render ohne Rohzeile
+SHA-256 tools/fl/szenario.py vorher CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, mutiert 76D33BB190BB75136975DFD4768FCC923FA5665ABD3C8290A501DF62BF04EA2E, nach der Ruecknahme CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzschritte_aus_renderstatus: fehlendes Referenzprojekt (verarbeitung_ein): Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein) still: keine Rohzeile mit Renderstatus und Grund | fehlendes Referenzprojekt (ohne_slots): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG |' statt '| VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzschritte_aus_renderstatus: fehlendes Referenzprojekt (verarbeitung_ein): Zeile '| 2 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Verarbeitung.flp", "vergleich": "verarbeitung_ein"}` | VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG |' statt '| VORAUSSETZUNG verarbeitung_ein: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (verarbeitung_ein) still: keine Rohzeile mit Renderstatus und Grund | fehlendes Referenzprojekt (ohne_slots): Zeile '| 3 | `lokal.nulltest` | `{"projekt": "Nakama-Diagnose-Referenz.flp", "vergleich": "ohne_slots"}` | VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG |' statt '| VORAUSSETZUNG ohne_slots: Referenzprojekt fehlt (Karte U43, K-286-1) | VORAUSSETZUNG (Details unten) |' | fehlendes Referenzprojekt (ohne_slots) still: keine Rohzeile mit Renderstatus und Grund
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (e) (15.09.2026 12:42:16) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Ergebnis des Referenzschritts in die ergebnis.json des Auslieferungsrenders (die der Runner fuer den Rueckweg liest)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: py -3.13 tools/fl/szenario.py --selbsttest --nur referenzschritte_aus_renderstatus (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzschritte_aus_renderstatus:.*ergebnis\.json des Auslieferungsrenders durch einen Referenzschritt veraendert
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/szenario.py:
+  -     ergebnis_pfad = ordner / "ergebnis.json"
+  +     ergebnis_pfad = lauf.render_ordner / "ergebnis.json"  # ROTBEWEIS M-64 (e): Ergebnis in die ergebnis.json des Auslieferungsrenders
+SHA-256 tools/fl/szenario.py vorher CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, mutiert 98B1A5E79A0C8C5109A4AD9347DBC17E3EDDA0014FCCE62FD7575FB495CF21B9, nach der Ruecknahme CF4518469D64C534EAD568ACF398E9E4EA25F8C3E4FC027FEA8D01FA7A608D0A, gleich: ja
+rot: Exit 4, Dauer 0.2 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein: Ergebnis nach 'C:\\attrappe\\render\\ergebnis.json' statt in den Ordner des Referenzprojekts | ohne_slots: Ergebnis nach 'C:\\attrappe\\render\\ergebnis.json' statt in den Ordner des Referenzprojekts | ergebnis.json des Auslieferungsrenders durch einen Referenzschritt veraendert (Rueckweg, M-65)
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzschritte_aus_renderstatus: verarbeitung_ein: Ergebnis nach 'C:\\attrappe\\render\\ergebnis.json' statt in den Ordner des Referenzprojekts | ohne_slots: Ergebnis nach 'C:\\attrappe\\render\\ergebnis.json' statt in den Ordner des Referenzprojekts | ergebnis.json des Auslieferungsrenders durch einen Referenzschritt veraendert (Rueckweg, M-65)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 0.2 s, SELBSTTEST szenario.py: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) vor dem FL-Start (15.09.2026 12:42:19) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Rendere-Referenzprojekte nach Warte-Ping verschoben (Referenzrender nach dem FL-Start)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*Render 2 Nakama-Diagnose-Verarbeitung\.flp nach dem FL-Start
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             Rendere-Referenzprojekte $liste
+  -             Stelle-LoopMidi-Sicher
+  +             Stelle-LoopMidi-Sicher
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             $K.Ping = Warte-Ping
+  +             $K.Ping = Warte-Ping
+  +             Rendere-Referenzprojekte $liste # ROTBEWEIS M-64 (a): Referenzrender nach dem FL-Start
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 3D35233F77EBFADD4A62A52B0BDBFCF756818639D4EF26CBE2C0614E43AF71AB, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.8 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nach dem FL-Start (Index 8, FL-Start 5) | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nach dem FL-Start (Index 9, FL-Start 5) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile 20, FL-Start 17) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile 21, FL-Start 17) | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet (01:00:35.000 beende 5001; 01:10:35.000 beende 5002) | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nach dem FL-Start (Index 8, FL-Start 5) | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nach dem FL-Start (Index 9, FL-Start 5) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile 20, FL-Start 17) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile 21, FL-Start 17) | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet (01:00:35.000 beende 5001; 01:10:35.000 beende 5002) | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) eigene Dateien (15.09.2026 12:42:23) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Referenzrender in den Ordner render\ statt render\referenz\<Name>\ (render.json des Auslieferungsrenders ueberschrieben)
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*render\.json des Auslieferungsrenders nennt projekt
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $ordner = Join-Path $K.RenderOrdner "referenz\$projektname"
+  +         $ordner = $K.RenderOrdner  # ROTBEWEIS M-64 (a): Referenzrender in den Ordner und die Dateien des Auslieferungsrenders
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 4A680824757814B57750531C61EE96A4703D0565959D9775A15287F2981982AA, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.7 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] render.json des Auslieferungsrenders nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\projekt\Nakama-Diagnose-Referenz.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\Nakama-Diagnose-Referenz.wav', grund '' statt Nakama-Diagnose.flp und C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\Nakama-Diagnose.wav | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 der Arbeitskopie ('' statt ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Verarbeitung.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp ohne SHA-256 der Arbeitskopie ('' statt 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Referenz.flp in ihrem Ordner traegt '(fehlt)' | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei 'frueher.wav', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderdatei eines frueheren Laufs liegt noch | [Referenzrender haengt] haengender Referenzrender: Renderstatus grund '', Dauer  s statt Grund 'haengt' nach 600 s | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] render.json des Auslieferungsrenders nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\projekt\Nakama-Diagnose-Referenz.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\Nakama-Diagnose-Referenz.wav', grund '' statt Nakama-Diagnose.flp und C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\Nakama-Diagnose.wav | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp ohne SHA-256 der Arbeitskopie ('' statt ED142D1AE313EAC4B824C3EE66114B0431F2A485AF3C2F42AD977999184D392E) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Verarbeitung.flp in ihrem Ordner traegt '(fehlt)' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-1c167f62cb81\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt '', datei '', grund '', exit '' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp ohne SHA-256 der Arbeitskopie ('' statt 917FC8EB22E5C18F578D3FD37847AC5AD2F3EC3ABBEB0CF634774DAC24B2E5D0) | [drei Renders vor dem FL-Start] Renderdatei Nakama-Diagnose-Referenz.flp in ihrem Ordner traegt '(fehlt)' | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei 'frueher.wav', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderdatei eines frueheren Laufs liegt noch | [Referenzrender haengt] haengender Referenzrender: Renderstatus grund '', Dauer  s statt Grund 'haengt' nach 600 s | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.7 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) Arbeitskopie (15.09.2026 12:42:26) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Referenzrender aus dem Ordner des Diagnoseprojekts im Repo statt aus der Arbeitskopie
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*Render 2 Nakama-Diagnose-Verarbeitung\.flp nicht aus der Arbeitskopie
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         $kopie = Join-Path $K.ProjektOrdner $projektname
+  +         $kopie = Join-Path ([IO.Path]::GetDirectoryName($K.Projekt)) $projektname  # ROTBEWEIS M-64 (a): Render aus dem Repo-Ordner statt aus der Arbeitskopie
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 74F873504BC1506C66945B320CAAF1FA1701616D326C8E5E2E7E9F9362954B6E, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.7 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Verarbeitung.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp\Nakama-Diagnose-Verarbeitung.wav', grund '', exit '0' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Referenz.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp\Nakama-Diagnose-Referenz.wav', grund '', exit '0' | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund 'Referenzprojekt fehlt (Karte U43, K-286-1)', datei '', projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-7807268a9a08\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Verarbeitung.flp' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund 'Referenzprojekt fehlt (Karte U43, K-286-1)', datei '', projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-7807268a9a08\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Referenz.flp' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Render 2 Nakama-Diagnose-Verarbeitung.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp gestartet | [drei Renders vor dem FL-Start] Render 3 Nakama-Diagnose-Referenz.flp nicht aus der Arbeitskopie in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp gestartet | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Verarbeitung.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp fehlt oder nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Verarbeitung.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Verarbeitung.flp\Nakama-Diagnose-Verarbeitung.wav', grund '', exit '0' | [drei Renders vor dem FL-Start] Renderstatus Nakama-Diagnose-Referenz.flp in C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp fehlt oder nennt projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Referenz.flp', datei 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-ec1177c05ff2\arbeit\render\referenz\Nakama-Diagnose-Referenz.flp\Nakama-Diagnose-Referenz.wav', grund '', exit '0' | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund 'Referenzprojekt fehlt (Karte U43, K-286-1)', datei '', projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-7807268a9a08\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Verarbeitung.flp' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund 'Referenzprojekt fehlt (Karte U43, K-286-1)', datei '', projekt 'C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-7807268a9a08\repo\eq-copilot\fixtures\fl\Nakama-Diagnose-Referenz.flp' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.6 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) Renderstatus fehlt (15.09.2026 12:42:29) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): fehlendes Referenzprojekt ohne Renderstatus
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung\.flp: Renderstatus fehlt
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         & $script:U.SchreibeText $statusDatei ($fehlend | ConvertTo-Json -Depth 4)
+  +         # ROTBEWEIS M-64 (a): kein Renderstatus fuer ein fehlendes Referenzprojekt
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 56B87B3F376884E926E1A5D7835F76FBDD23CF3845BA708DEC379D784D1B110E, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.6 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: Renderstatus fehlt oder nennt grund '', datei '', projekt '' statt 'Referenzprojekt fehlt (Karte U43, K-286-1)' ohne Datei
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.6 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) Rohzeile fehlt (15.09.2026 12:42:32) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): fehlendes Referenzprojekt ohne Protokollzeile
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung\.flp: keine Protokollzeile 'kein Render'
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -         Log "Referenzrender ${projektname}: kein Render - $($script:ReferenzFehlt); Renderstatus $statusDatei"
+  +         # ROTBEWEIS M-64 (a): keine Protokollzeile fuer ein fehlendes Referenzprojekt
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 0518F6CB70423747AA5F48446B6FC105FBB4C116A7089109586711B248A9346F, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.6 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 17) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 17)
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Verarbeitung.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 17) | [Referenzprojekte fehlen] fehlendes Referenzprojekt Nakama-Diagnose-Referenz.flp: keine Protokollzeile 'kein Render' vor dem FL-Start (Zeile -1, FL-Start 17)
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.5 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+
+=== NAK-286 Nacharbeit 1 der Abschlusspruefung, Rotbeweis M-64 (a) Renderfolge (15.09.2026 12:42:35) ===
+Art: Rotbeweis (§5.1, P-21 (g), §45): Renderfolge vor dem FL-Start nicht protokolliert
+Nakama HEAD d638257175cf00764bbe27420745a7f8b19acac9 (Arbeitsstand der Nacharbeit 1 uncommittet); MCP-Repo HEAD 01f72386bfc7eab507a40b9c96ef9e2e2a0265cc (unveraendert)
+Bein einzeln: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur referenzrender_vor_fl_start (Obergrenze 240 s)
+Traeger (Muster des Traegers): \[ROT\] M-64 referenzrender_vor_fl_start:.*Protokoll ohne Renderfolge vor dem FL-Start
+Erwartung: rot, mindestens 1 Traegerzeile(n)
+Ersetzung in tools/fl/laufzeit.ps1:
+  -             Nenne-Renderfolge $liste
+  +             # ROTBEWEIS M-64 (a): Renderfolge nicht im Protokoll
+SHA-256 tools/fl/laufzeit.ps1 vorher 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, mutiert 0524C2720B799A62321F62C1C641644C1B628CC9403BEF44BB16081B1B59C82E, nach der Ruecknahme 189FC26D5A0A615287AD01F78283C85290A1C213DDC07B874DC7BBC8F23CA24A, gleich: ja
+rot: Exit 4, Dauer 1.5 s, Obergrenze erreicht: nein, Traegerzeilen 1
+  Traeger: [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Protokoll ohne Renderfolge vor dem FL-Start (1 Diagnoseprojekt, 2 Verarbeitung, 3 Referenz)
+--- Rohausgabe, rot ---
+[ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] Protokoll ohne Renderfolge vor dem FL-Start (1 Diagnoseprojekt, 2 Verarbeitung, 3 Referenz)
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+--- Ende der Rohausgabe ---
+gruen: Exit 0, Dauer 1.6 s, SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Ergebnis: ROTBEWEIS GUELTIG
+

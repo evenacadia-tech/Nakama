@@ -2047,6 +2047,14 @@ int main()
                         + (f.ton ? zahl (maxResHold, 0) + " Samples" : std::string ("ungemessen (kein Anstieg)"))
                         + "; Leistung beim Wechsel "
                         + zahl (l0 / pss, 4) + " Pss");
+                // NAK-289 Etappe 1 (bugprone-incorrect-roundings): die Haltezeit
+                // der Rampe ist auf das Sample genau die gerundete Mischung.
+                // Die Zeile darueber laesst einen Holdzaehler Abstand zu; ein
+                // Abschneiden statt Runden faellt erst hier.
+                if (f.ton)
+                    pruefe (maxResHold == 0.0,
+                            std::string ("huellkurvenwert_") + f.name + "_holdzaehler_rundet_exakt (NAK-289)",
+                            "groesster Abstand zu llround der Idealrampe: " + zahl (maxResHold, 0) + " Samples");
             }
         }
 

@@ -1,0 +1,19 @@
+0) holdSamples (hold_ms 500, fs 768000) = 384000; Annahme kHoldMax = 384000
+1) x = m/256 fuer m in [0, 98304000]: 98304001 Werte, 0 abweichend
+2) Randtripel: 1249500 Tripel, 0 abweichend, 0 nicht exakt (Mischwert != m/256), 0 mit t >= 1
+2b) A=0 B=1 j=128 t=0.5 x=0.5: alt 1, neu 1  [x = 0,5 (Halbwert, steigend)]
+2b) A=1 B=0 j=128 t=0.5 x=0.5: alt 1, neu 1  [x = 0,5 (Halbwert, fallend)]
+2b) A=1 B=2 j=128 t=0.5 x=1.5: alt 2, neu 2  [x = 1,5]
+2b) A=383999 B=384000 j=128 t=0.5 x=383999.5: alt 384000, neu 384000  [x = 383999,5 (Halbwert am oberen Rand)]
+2b) A=0 B=1 j=255 t=0.00390625 x=0.00390625: alt 0, neu 0  [x = 1/256 (erstes Rampensample)]
+2b) A=0 B=1 j=1 t=0.99609375 x=0.99609375: alt 1, neu 1  [x = 255/256 (letztes Rampensample vor dem Ziel)]
+2b) A=384000 B=0 j=1 t=0.99609375 x=1500: alt 1500, neu 1500  [x = 384000 * 1/256 (fallend, letztes Rampensample)]
+2b) A=0 B=384000 j=255 t=0.00390625 x=1500: alt 1500, neu 1500  [x = 384000 * 1/256 (steigend, erstes Rampensample)]
+2b) A=19200 B=4800 j=127 t=0.50390625 x=11943.75: alt 11944, neu 11944  [Faelle aus B6 W-2 (400 ms -> 100 ms bei 48 kHz)]
+3) Zufallstripel (Seed 0x4E414B323839): 200000000 Tripel, 0 abweichend, 0 nicht exakt (Mischwert != m/256), 0 mit t >= 1
+4) ausserhalb: x = 0.49999999999999994: alt 1, neu 0
+4) ausserhalb: x = -0.5: alt 0, neu -1
+4) ausserhalb: x = -1.25: alt 0, neu -1
+4) ausserhalb: x = 4503599627370497: alt 4503599627370498, neu 4503599627370497
+URTEIL: gleich fuer den ganzen Wertebereich des Aufrufers
+EXIT=0

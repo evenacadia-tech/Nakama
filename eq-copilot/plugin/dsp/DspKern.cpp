@@ -60,8 +60,14 @@ HuellkurveKoeffizienten mische (const HuellkurveKoeffizienten& a, const Huellkur
     HuellkurveKoeffizienten c;
     c.attackPol   = a.attackPol  + (b.attackPol  - a.attackPol)  * t;
     c.releasePol  = a.releasePol + (b.releasePol - a.releasePol) * t;
-    c.holdSamples = (std::int64_t) ((double) a.holdSamples
-                                    + ((double) b.holdSamples - (double) a.holdSamples) * t + 0.5);
+    // NAK-289 (incorrect-roundings): llround statt Abschneiden nach + 0,5.
+    // Fuer jede Eingabe dieses Aufrufers derselbe Wert: beide Haltezeiten
+    // liegen in [0, 384000] Samples (hold_ms 0..500 bei hoechstens 768 kHz),
+    // t ist k/256 mit k 1..255, der Mischwert damit exakt ein nicht negatives
+    // Vielfaches von 1/256 - dort ist Abschneiden von x + 0,5 gleich llround (x).
+    // Beweis mit Randwerten: docs/beweise/NAK-289.md, Fundklasse e.
+    c.holdSamples = (std::int64_t) std::llround ((double) a.holdSamples
+                                                 + ((double) b.holdSamples - (double) a.holdSamples) * t);
     return c;
 }
 

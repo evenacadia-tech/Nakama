@@ -1,0 +1,6 @@
+Phase 05 abgeschlossen: **3 Defekte, alle high**, davon eine Erweiterung von NAK-127. **12 Verdachte verworfen.**
+
+- [Vollständiger Bericht mit Scope-Beweis](/C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-05-hostkante.md)
+- [Anhang in BEFUNDE.md](/C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md:106)
+
+HEAD unverändert. Tabellen identisch, bisheriger Anhang bytegleich erhalten. Keine Builds, Tests oder Git-Schreiboperationen.

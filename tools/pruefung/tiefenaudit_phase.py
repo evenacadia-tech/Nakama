@@ -80,10 +80,14 @@ def main():
     origin = sh("git", "rev-parse", "--short", "origin/master").stdout.strip()
     print(f"Phase {nn}: {kurz} ({sv}); Thread {tid}; {', '.join(zeiten)}; commit {head[:8]} origin {origin}")
     if a.naechste:
-        subprocess.Popen(["pwsh", "-NoProfile", "-WindowStyle", "Hidden", "-File", "tools/pruefung/codex-audit-lauf.ps1",
-                          "-Phase", a.naechste, "-HeadSha", head, "-Model", a.modell],
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Start ueber Start-Process (bewaehrt); ein Popen mit DETACHED_PROCESS
+        # startete am 15.09.2026 keinen Lauf (kein Startlog, kein Prozess).
+        befehl = ("Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList "
+                  f"'-NoProfile','-File','tools/pruefung/codex-audit-lauf.ps1','-Phase','{a.naechste}',"
+                  f"'-HeadSha','{head}','-Model','{a.modell}'")
+        r = sh("pwsh", "-NoProfile", "-Command", befehl)
+        if r.returncode != 0:
+            print("Start fehlgeschlagen:", r.stderr.strip()[-300:]); return 2
         print(f"Phase {a.naechste} gestartet auf {head} mit {a.modell}")
     return 0
 

@@ -1,8 +1,8 @@
 PHASE 11 — SYNTHESE: Gesamtbild, Priorisierung, Abarbeitungsplan ab 18.09.2026. Kurzname: synthese.
 
-FRAGE: Was sagen die Phasen 01 bis 10 zusammen über die Codebase, welche Befunde teilen eine Ursache, in welcher Reihenfolge werden sie abgearbeitet, und welche Nahtstelle bleibt auch danach ohne Detektor?
+FRAGE: Was sagen die Phasen 01 bis 10 und 12 zusammen über die Codebase, welche Befunde teilen eine Ursache, in welcher Reihenfolge werden sie abgearbeitet, und welche Nahtstelle bleibt auch danach ohne Detektor?
 
-POPULATION: BEFUNDE.md vollständig (Phasen 01 bis 10), die Berichte roh/phase-*.md, docs/offene-punkte.md (Register, für Querverweise), docs/plan/plan.json (offene Schritte S25g, S26 bis S35b), docs/gesundheit/KONZEPT.md §10 (Aufbauplan des Prüfsystems, Schritte 2, 4 bis 9 offen).
+POPULATION: BEFUNDE.md vollständig (Phasen 01 bis 10 und 12; Phase 12 ist die Pipe-Sicherheit mit anderem Modell, ihre Befunde bündelst du mit, ohne ihre Schwere zu ändern), die Berichte roh/phase-*.md, docs/offene-punkte.md (Register, für Querverweise), docs/plan/plan.json (offene Schritte S25g, S26 bis S35b), docs/gesundheit/KONZEPT.md §10 (Aufbauplan des Prüfsystems, Schritte 2, 4 bis 9 offen).
 
 WAS DU TUST:
 1. Ursachenbündel: fasse Befunde mit gemeinsamer Ursache zu Bündeln zusammen (ein Bündel = ein späterer Ticketauftrag mit Matrix); je Bündel die Mitglieder, die Ursache in einem Satz, der kleinste gemeinsame Fix, die Tests, die ihn beweisen würden, die Beine, die betroffen sind.

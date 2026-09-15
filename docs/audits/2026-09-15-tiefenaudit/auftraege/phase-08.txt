@@ -1,17 +1,19 @@
-PHASE 08 — BROKER (Rust): Transport, Store, Coordinator, Persistenz, Sicherheit an den Pipes. Kurzname: broker.
+PHASE 08 — BROKER (Rust): Transport, Store, Coordinator, Persistenz, Nebenläufigkeit, unsafe. Kurzname: broker.
 
-FRAGE: Welcher Pfad im Broker verliert, vertauscht oder verdoppelt Daten (Store, Snapshot, Rücknahme, Heilung), welcher unsafe-Block oder Windows-Handle-Pfad ist nicht durch seine SAFETY-Begründung gedeckt, und welche Pipe-Kante nimmt einen fremden oder halben Client fail-open an?
+ABGRENZUNG: Die Sicherheit an den Pipes (ACLs, Security-Descriptor, Impersonation, Session-Token und Client-Identität als Angriffsfläche, Signaturen, Broker-Spawn-Pfad) ist NICHT Teil dieser Phase; sie läuft als Phase 12 mit einem anderen Modell (User-Entscheid 15.09.2026). Du liest diese Kanten nur, soweit sie Korrektheit und Lebensdauer betreffen (Frame-Prüfung, Fristen, Ratengrenze als Rückstau-Politik), und bewertest sie nicht als Sicherheitsbefund.
 
-VORLAUF: NAK-283 Etappe 3 (F02, F03, F14; R-283-7), NAK-287 (a) bis (e) Nachbefunde der Rückschreibenaht, NAK-237 (undocumented_unsafe_blocks = deny von keinem Bein gefahren), Abdeckungskarte K1/K2 (Broker-Seite), lebenslauf-audit.md B-1 bis B-4. Sicherheitsarbeit ist an dich delegiert (User 01.09.2026): Impersonation, Pipe-ACLs, Session-Token, Signaturen gehören hierher.
+FRAGE: Welcher Pfad im Broker verliert, vertauscht oder verdoppelt Daten (Store, Snapshot, Rücknahme, Heilung), welcher unsafe-Block oder Windows-Handle-Pfad ist nicht durch seine SAFETY-Begründung gedeckt, und welche Nebenläufigkeitszusage hält nur durch Aufrufreihenfolge?
+
+VORLAUF: NAK-283 Etappe 3 (F02, F03, F14; R-283-7), NAK-287 (a) bis (e) Nachbefunde der Rückschreibenaht, NAK-237 (undocumented_unsafe_blocks = deny von keinem Bein gefahren), Abdeckungskarte K1/K2 (Broker-Seite), lebenslauf-audit.md B-1 bis B-4.
 
 POPULATION: broker/src/** ohne generiert/ (transport/**, transport/server_v3/**, store/**, coordinator/**, persistenz.rs, lebenslauf.rs, server.rs, register.rs, briefkasten.rs, vertrag.rs, dto.rs, lib.rs, bin/**), broker/tests/**, broker/Cargo.toml (Lints, Abhängigkeiten, deny-Regeln), broker/src/generiert nur als Bezug.
 
 PRÜFFRAGEN:
 1. Ordnung und Atomarität: Publikationsreihenfolge (Vollsnapshot, Rücknahme, Koaleszierung je Objektschlüssel, Hochwassermarke), Zustellung nach Commit, ältere Rechnung überschreibt neuere (F02-Klasse), Heilungstakt und stale-Befunde (NAK-287 (a), (e)), Merker je Sitzung; welche Zusage misst ein Test, welche nur Prosa?
 2. Store und Persistenz: SQLite-Transaktionen, Checkpoint, Abbruchmatrix (store_crash_matrix.rs), Umbenennen ohne Ersetzen, Teilschreiben, Wiederanlauf mit halbem Journal, Schemaversion der Datenbank, Migration, Größenwachstum, Löschregeln (nichts Ungefragtes), Evidenz-IDs doppelt (NAK-287 (c)).
-3. Nebenläufigkeit: jede Mutex/RwLock-Ordnung (Sperrenordnung dokumentiert? NAK-Lehre 12.09.2026: Zuordnung und Operation unter derselben Sperre), Kanäle mit Politik bei voll, Threads mit Stoppflag und Join-Frist, Self-Join, Deadlock-Kandidaten zwischen Store-Writer, Coordinator und Transport; Zeitgeber (Fristen) unter Last.
-4. Sicherheit an den Pipes: Pipe-Namen (Probe vs. Produktion, Präfix), ACL/Security-Descriptor, Impersonation-Level, Client-Identität (Session-Token, Sensor-ID, Duplikat), Ratengrenze, Bytebudget, Bootstrap-Fristen, Frames mit falscher Familie, halbe Frames, Reconnect-Sturm; Broker-Spawn aus dem Plugin (Pfad, Signatur, Hash, Program Files).
+3. Nebenläufigkeit: jede Mutex/RwLock-Ordnung (Sperrenordnung dokumentiert? Lehre 12.09.2026: Zuordnung und Operation unter derselben Sperre), Kanäle mit Politik bei voll, Threads mit Stoppflag und Join-Frist, Self-Join, Deadlock-Kandidaten zwischen Store-Writer, Coordinator und Transport; Zeitgeber (Fristen) unter Last.
+4. Frames und Rückstau (Korrektheit, nicht Sicherheit): Frames mit falscher Familie, halbe Frames, Überlänge, Reconnect-Sturm, Ratengrenze, Bytebudget, Bootstrap-Fristen — Politik ausdrücklich, Zähler ausgewertet, kein stilles Verwerfen angenommener Daten.
 5. unsafe und FFI: jeder unsafe-Block mit SAFETY-Kommentar, der die Invariante wirklich trägt; Windows-Handles (Besitz, Doppelschließen, Leck bei Fehlerpfad), Overlapped-I/O, Puffer-Lebensdauer.
 6. Zahlenränder und Vertrag auf der Rust-Seite: NaN/Inf über PartialEq (NAK-287 (b)), u64/i64-Ränder, Revisionen, Zeitstempel, leere Listen, Schema-Engine (vertrag.rs) gegen die Schemas — Grenze fehlt oder anders als im Schema.
-7. Beobachtbarkeit ohne Geheimnisse: Logging (kein Audio-Bezug, aber: Geheimnisse, Pfade, Tokens im Log?), Registerdatei, Fehler-Merker (fehler_merken), Diagnose-Umschlag (Aggregat ohne Filter: enthält er etwas, das nicht reisen darf?).
+7. Beobachtbarkeit: Logging, Registerdatei, Fehler-Merker (fehler_merken), Diagnose-Umschlag (Aggregat ohne Filter) — Vollständigkeit und Konsistenz; ob dort etwas reist, das nicht reisen darf, prüft Phase 12.
 8. Clippy-Ratsche 91 (gesundheit.py) und Lints in Cargo.toml: welche Regel ist abgeschaltet, ohne dass der Grund an der Stelle steht?

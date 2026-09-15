@@ -228,7 +228,10 @@ sondern `tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <datei> -HeadSha
 
 **Modell:** jede Codex-Aufgabe `gpt-6-astra`, Effort `max` oder `xhigh`
 (User 10.09.2026); `ultra` delegiert an Unteragenten und ist ausgeschlossen,
-`gpt-5.6-sol` wird nicht mehr verwendet. Codex-CLI ≥ 0.153.4, sonst `codex
+`gpt-5.6-sol` wird nicht mehr verwendet — Ausnahme (User 15.09.2026):
+sicherheitsnahe Prüfungen (Pipe-ACLs, Impersonation, Token, Signaturen,
+Spawn-Pfad) fahren mit `gpt-5.6-sol` max, weil Astra dort wie Fable hart
+reguliert ist. Codex-CLI ≥ 0.153.4, sonst `codex
 update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer
 Astra-Thread; wiederholte Kapazitäts-/API-Fehler → frischer Opus-Thread prüft
 (nie der Bauer). Nacharbeit behält Modell und Effort; Wiederprüfung senkt nie

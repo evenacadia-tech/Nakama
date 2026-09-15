@@ -1,8 +1,8 @@
-PHASE 10 — SKEPTIKER: jeden Befund der Phasen 01 bis 09 widerlegen. Kurzname: skeptiker.
+PHASE 10 — SKEPTIKER: jeden Befund der Phasen 01 bis 09 und 12 widerlegen. Kurzname: skeptiker.
 
 FRAGE: Welcher Befund in docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md hält einer zweiten, feindlichen Lesung an der Quelle nicht stand — weil ein Test, ein Riegel, ein Absichtskommentar, eine Registerzeile, eine Matrixzeile oder eine erreichbare Eingabe fehlt, die ihn trägt?
 
-POPULATION: jede Befundzeile der Abschnitte Phase 01 bis 09 in BEFUNDE.md und die zugehörigen Berichte roh/phase-01-*.md bis roh/phase-09-*.md. Du liest jeden Befund an seiner Quelle (Datei:Zeile am Stand HEAD) neu.
+POPULATION: jede Befundzeile der Abschnitte Phase 01 bis 09 und Phase 12 in BEFUNDE.md und die zugehörigen Berichte roh/phase-01-*.md bis roh/phase-09-*.md und roh/phase-12-*.md. Du liest jeden Befund an seiner Quelle (Datei:Zeile am Stand HEAD) neu. Befunde der Phase 12 (Pipe-Sicherheit) prüfst du nur auf Reproduzierbarkeit an der Quelle und auf Duplikate; ihre Schwere änderst du nicht.
 
 JE BEFUND genau ein Urteil:
 - BESTÄTIGT: reproduzierbar oder zwingend herleitbar; die genannte Zusage bricht wirklich (zitiere sie); Schwere und Klasse passen (sonst korrigierter Vorschlag).
@@ -13,4 +13,4 @@ JE BEFUND genau ein Urteil:
 
 AUSGABE (abweichend vom Kopf): Bericht roh/phase-10-skeptiker.md mit einer Tabelle
 | ID | Urteil | Grund | Beleg | Schwere neu | Kategorie neu |
-und den Zählern (bestätigt, herabgestuft, widerlegt, Duplikat, unentschieden). In BEFUNDE.md ergänzt du jeden geprüften Befund NICHT in seiner Zeile, sondern schreibst einen Abschnitt „## Phase 10 — Skeptiker" mit derselben Tabelle; die Phasenabschnitte 01 bis 09 bleiben unverändert. Deine Urteilszeile: „URTEIL: BESTÄTIGT <n> · HERABGESTUFT <n> · WIDERLEGT <n> · DUPLIKAT <n> · UNENTSCHIEDEN <n>".
+und den Zählern (bestätigt, herabgestuft, widerlegt, Duplikat, unentschieden). In BEFUNDE.md ergänzt du jeden geprüften Befund NICHT in seiner Zeile, sondern schreibst einen Abschnitt „## Phase 10 — Skeptiker" mit derselben Tabelle; die Phasenabschnitte 01 bis 09 und 12 bleiben unverändert. Deine Urteilszeile: „URTEIL: BESTÄTIGT <n> · HERABGESTUFT <n> · WIDERLEGT <n> · DUPLIKAT <n> · UNENTSCHIEDEN <n>".

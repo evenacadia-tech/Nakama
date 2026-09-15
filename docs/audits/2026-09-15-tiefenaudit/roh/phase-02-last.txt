@@ -1,0 +1,8 @@
+Phase 02 abgeschlossen: **4 Defekte, 2 Lücken, 1 Härtung** — davon 2 critical.
+
+- [Vollbericht mit Feldinventur und Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-02-zustand.md)
+- [Befunde angehängt](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md)
+
+Tabellen wortgleich; bisheriger `BEFUNDE.md`-Inhalt bytegleich erhalten. 12 Verdachte widerlegt, 1 Produktfrage dokumentiert.
+
+HEAD unverändert bei `3f2619c7`. Keine Builds, Tests oder Commits; fremde Änderungen unberührt. Die Befunde beruhen auf Quellenbeweisen, nicht auf Laufzeitreproduktionen.

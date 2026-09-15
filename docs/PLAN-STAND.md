@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 2f133cfa -->
+<!-- quellstand: aadec052 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,16 +9,16 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-09-15 · Quellstand `2f133cfa` · **35 von 48 abgenommen** · 0 gebaut · 13 offen
+**Stand:** 2026-09-15 · Quellstand `aadec052` · **35 von 48 abgenommen** · 0 gebaut · 13 offen
 
 > ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
-> oder `tools/plan/` liegen Änderungen, die noch nicht in `2f133cfa` sind.
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `aadec052` sind.
 
 `█████████████████████████████░░░░░░░░░░░` 73 % abgenommen · 73 % gebaut
 
 **Als Nächstes:** **S25g** `NAK-289` — ANGELEGT 13.09.2026 (Register NAK-289; Übergabe der NAK-288-Session vom 13.09.2026 an den Dirigenten: „eigener verhaltensneutraler Pflegeschritt im Plan, kein Rest dieses Auftrags“; Codebase-Gesundheit ist Planbestandteil, User 08.09.2026). INHALT: die 83 Fundstellen des Beins A33 (`tools/plan/tidy.py`, Iststand `docs/beweise/roh/NAK-288-tidy-iststand-83.txt`, Regelsatz `eq-copilot/plugin/.clang-tidy`) verhaltensneutral abbauen und die Ratsche in Teilstücken senken, bis sie auf 0 steht; je Teilstück voller Kanon vorher und nachher (Muster S25c/S25d), Nulltest, Goldens und State-Fixtures bytegleich, Identität unberührt. GRENZE: keine Regel im `.clang-tidy` zum Wegdrücken einer Fundstelle ohne datierten Grund im Manifest, kein Produktverhalten, keine Legacy-Umbenennung (NAK-30), keine Vermischung mit NAK-292 (Gesundheitsrisse aus dem Quellinventar, S31c). BEWEIS: `docs/beweise/NAK-289.md` mit Fundstellen je Teilstück vorher/nachher, A33-Rohausgaben, Kanon vorher und nachher GRÜN.
 
-**Bei dir liegen 5 Fragen** — `U11, U13, U25, U26, U43`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 4 Fragen** — `U11, U13, U25, U26`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 

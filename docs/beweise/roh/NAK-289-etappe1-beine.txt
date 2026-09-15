@@ -19,3 +19,5 @@
 2026-09-15 16:14:20 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B11 EqCopSonde012HostChannelContextTest | Exit 0 | 1 s | SONDE-012 HOST CHANNEL CONTEXT: 21 bestanden, 0 fehlgeschlagen
 2026-09-15 16:14:22 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B12 EqCopSonde012LoudnessSourceTest | Exit 0 | 1.64 s | SONDE-012 LOUDNESS SOURCE: 4 bestanden, 0 fehlgeschlagen
 2026-09-15 16:15:34 | HEAD 6a7daf4b (+2 geaenderte Datei(en)) | c) DeadStores | B30 EqCopBriefkastenTest | Exit 0 | 71.94 s | NAK-286 BRIEFKASTEN: 168 bestanden, 0 fehlgeschlagen
+2026-09-15 16:20:43 | HEAD 46d76132 (+3 geaenderte Datei(en)) | d) EnumCastOutOfRange | B10 EqCopIpcTest | Exit 0 | 221.21 s | ALLE PRUEFUNGEN GRUEN — 435 Pruefungen, 0 Fehler
+2026-09-15 16:20:53 | HEAD 46d76132 (+3 geaenderte Datei(en)) | d) EnumCastOutOfRange | A22 pruefe_ipc_last.py | Exit 0 | 10.1 s | GRUEN

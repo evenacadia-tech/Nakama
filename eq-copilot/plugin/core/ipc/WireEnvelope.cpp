@@ -147,8 +147,14 @@ Urteil envelopePruefen (const std::uint8_t* daten, std::size_t laenge) noexcept
     if (flags != 0)
         menge |= alsBit (Verstoss::flagsReserviert);
 
-    const auto encoding = static_cast<Kodierung> (encodingByte);
-    const auto familie  = static_cast<Familie> (familieByte);
+    // NAK-289 (EnumCastOutOfRange): gecastet wird nur ein Byte im Wertebereich
+    // der Aufzaehlung; die Bereichspruefung auf dem Ganzzahlwert steht davor
+    // (encodingBekannt, familieBekannt). Der Ersatzwert eines unbekannten
+    // Bytes wird nie gelesen: jede Verwendung unten steht hinter
+    // encodingBekannt beziehungsweise familieBekannt, und u.kopf wird nur bei
+    // leerer Verstossmenge befuellt.
+    const auto encoding = encodingBekannt ? static_cast<Kodierung> (encodingByte) : Kodierung::json;
+    const auto familie  = familieBekannt  ? static_cast<Familie> (familieByte)    : Familie::p0;
 
     if (encodingBekannt && familieBekannt && encoding != erwarteteKodierung (familie))
         menge |= alsBit (Verstoss::encodingPasstNichtZurFamilie);

@@ -1,0 +1,7 @@
+59 Befunde geprüft: **56 bestätigt, 3 herabgestuft**, keine widerlegt, keine Duplikate, keine unentschieden.
+
+Herabgestuft: **T3-04-04, T3-07-03, T3-07-05**.
+
+[Bericht mit Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-10-skeptiker.md) und [Sammelbericht](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md) enthalten identische Urteilstabellen. Der bisherige Sammelbericht blieb bytegleich erhalten.
+
+HEAD unverändert: `2c3a4b0a806d74aeb22b7f01ac2927266bf38c2f`. Ausschließlich Quellenprüfung; nichts gebaut, getestet oder committet.

@@ -1,0 +1,47 @@
+Tiefenaudit 3 — Phase 10. Gebundener Prüfauftrag des Dirigenten, 2026-09-16 03:27, Stand HEAD 2c3a4b0a806d74aeb22b7f01ac2927266bf38c2f (muss vor und nach deinem Lauf identisch sein; du committest nichts).
+
+AUFTRAG DES USERS (15.09.2026, wörtlich): „ich will dass du stattdessen einen umfassenden codex prüfungslauf machst. aber ich rede nicht von einem, sondern mehrphasig, das gesamte plugin, blind spots, nahtstellen, alles was eben dazu gehört um eine astreine codebase zu garantieren. alle funde werden dann nach und nach in einem MD file festgehalten, welches wir dann ab freitag wenn claude wieder resetet wurde abarbeiten."
+
+ROLLE. Du bist ein frischer, lesender Prüfer (Codex; Modell und Effort stehen im Startlog des Laufs) im Repo C:\Users\phili\Projekte\Nakama (Branch master). Du liest Quellen und fährst nur lesende Kommandos (git, grep, rg, Get-Content, python -c ohne Schreiben). Du baust nichts, fährst keine Tests, keinen Kanon, keine Installation, änderst keinen Produktcode, kein Dokument außerhalb des Auditordners und legst keine Dateien außerhalb von docs/audits/2026-09-15-tiefenaudit/ an. Du stagst, committest und pushst nie.
+
+WAS DAS PROJEKT IST (Kontext, zuerst lesen): CLAUDE.md (Wahrheitskern, tragende Invarianten, Maschinen-Landminen), docs/plugin-wissen.md (Plugin heute), docs/gesundheit/KONZEPT.md §3 (Befundklassen K1 bis K8) und §4.3 (Spezialaudit-Mechanik: Population statt Stichprobe, Skeptiker, Scope-Beweis), docs/gesundheit/abdeckungskarte.md (welche Zusage hat welchen Detektor; Befunde A-1 bis A-7), docs/gesundheit/lebenslauf-audit.md (Befunde B-1 bis B-8), docs/offene-punkte.md (Register: jeder bekannte Punkt hat eine NAK-Nummer; ein Fund, der dort schon steht, ist BEKANNT, kein neuer Befund — du nennst dann die Nummer und nur, was darüber hinausgeht), docs/FL-Nakama-Sonden-Design-Entwurf.md (Entwurf 0.5, Zusagen je Phase), die Verhaltensmatrizen der abgenommenen Tickets in docs/beweise/*.md (Zusagen; gezielt per Suche, nicht vollständig lesen), docs/audits/2026-09-12-code-review-2/UEBERGABE-AN-CLAUDE.md (die 14 Befundgruppen des Vorgängeraudits sind über NAK-283 geschlossen; ihre Reproduktionsformen sind ein Muster für Belegtiefe). Manifeste und Register sind Kontext, nie Prüfgegenstand.
+
+INVARIANTEN, an denen du misst (CLAUDE.md): Verarbeitung nur, wenn der User sie einschaltet; ausgeschaltet bitidentisch, sonst Passthrough sampleidentisch ohne Latenz oder Tail. Audio-Thread ohne Sperren, Allokationen, Datei-, Pipe-, Netzzugriffe, ohne Logging; Überlast verwirft Analyseframes, nie Audio. Schemas sind Verträge (versionieren, Altstände laden, unbekannte Felder zerstören keinen Consumer, Save und Load gemeinsam; v3-Discriminator, Zieladresse, Revision, Capability nicht additiv erweiterbar). Engine kennt keine Optik. Zeit ist aktive Musikzeit; Zonen-Ticks deterministisch. NaN-Ehrlichkeit (verriegeln und zählen, Nyquist kappen, ohne genügend endliche Nachbarn keine Basislinie). State bleibt verlustfrei (unbekannte Major read-only mit Originalbytes; jede persistente Änderung meldet Dirty-State). Identität eingefroren bis NAK-30. Probe-Pipe ist nie Produktions-Pipe; Paint-FPS ist nicht Datenkadenz; Demo-Daten sind keine Plugin-Daten; FL zeigt MIDI 60 als C5.
+
+BEFUNDKLASSEN (du ordnest ein; die Einordnung prüft der Dirigent ab dem 18.09.2026 an der Quelle):
+- DEFEKT: verletzt eine Invariante oben, einen Satz eines Gate-Textes (docs/plan/plan.json), eine Zeile einer Verhaltensmatrix eines abgenommenen Tickets oder einen bestehenden Test. Reproduzierbar oder an der Quelle zwingend herleitbar; je Defekt Datei:Zeile und der Satz, der bricht.
+- LÜCKE: keine Zusage sagt etwas zu dem Fall, das Verhalten ist aber unbestimmt oder überraschend; benennen mit der Regel, die fehlen würde.
+- HÄRTUNG: von keiner Zusage verlangt, aber nachweislich nützlich (Struktur, Test, Wache). Kosmetik, Stil, Umbenennung, theoretische Randfälle ohne erreichbare Eingabe: nein.
+SCHWERE: critical (Daten-/State-Verlust, Sicherheitsbruch, Audio-Aussetzer oder Nulltest-Bruch), high (Vertrag, Gate, Normalpfad falsch), medium (konkreter Funktionsfehler im Sonderpfad), low (Härtung mit Beleg). KLASSE: K1 Rückstau und Ordnung, K2 Lebenslauf und Besitz, K3 Vertrag und Zahlenränder, K4 Zustand und Paarung, K5 Behauptung ≤ Messung, K6 Echtzeit, K7 Größe und Kontext, K8 Bedienehrlichkeit, oder „K-neu: <Vorschlag>".
+
+AUSDRÜCKLICH AUSGESCHLOSSEN: docs/** als Befundfläche (Prosa, Zeilenverweise, Trefferzahlen); Legacy-Bezeichner EQ-Copilot/EqCop*/Eqcp (bleiben bis NAK-30); Design und Optik (Designteil geparkt seit 12.09.2026); geparkte Studien (Prisma, Hörkompass, Glas/Licht, Tiefenfeld, Bauplan 2.0, Kunstwerk, Feld-Alphabet); im Register datierte Härtungen (nur nennen, wenn du mehr weißt als die Zeile); Befunde gegen Prüfskripte, Riegel oder Runner, die absichtliche Sabotage in repo-eigenen Quellen voraussetzen (Bedrohungsmodell ist die versehentliche Regression); tools/dirigent/pruefliste.md ist Arbeitsliste, keine Anforderungsquelle. Produktfragen (was das Produkt tun SOLL) stellst du nicht; du benennst sie als „Produktfrage" in einer eigenen Liste am Ende deines Berichts.
+
+METHODE: Population, nicht Stichprobe — zähle die ganze Population des Musters, das die Phase nennt (jede Funktion, jedes Feld, jeden Aufruf), und liefere Datei:Zeile. Je Befund suchst du selbst nach dem Test, dem Riegel, dem Absichtskommentar oder der Registerzeile, die ihn schon abdeckt (Skeptikerpass); nur Überlebende werden Befund, Widerlegtes steht mit Beleg in einer eigenen Liste, damit spätere Phasen es nicht neu finden. Jeder Bericht endet mit einem Scope-Beweis: gelesene Pfade mit Dateizahl, nicht gelesene Pfade, fehlende Pfade. Ohne Scope-Beweis gilt der Lauf als nicht gelaufen.
+
+AUSGABE — genau zwei Schreibziele:
+1. Vollständiger Bericht docs/audits/2026-09-15-tiefenaudit/roh/phase-10-<kurzname>.md mit: Kopf (Phase, Datum, HEAD, Modell, Dauer), Urteil in einem Satz, Befundtabelle, Liste „Widerlegte Verdachte" mit Beleg, Liste „Produktfragen", Liste „Nicht geprüft", Scope-Beweis.
+2. Anhang an docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md: ein neuer Abschnitt „## Phase 10 — <Name> (2026-09-16 03:27, HEAD 2c3a4b0a806d74aeb22b7f01ac2927266bf38c2f)" mit einer Zeile Urteil, dann die Befundtabelle wortgleich wie im Bericht, dann die Zähler (Befunde je Schwere, widerlegte Verdachte, Produktfragen). Nichts oberhalb deines Abschnitts änderst du; Abschnitte anderer Phasen bleiben unberührt.
+BEFUNDTABELLE, feste Spalten, eine Zeile je Befund, Pipe-Zeichen im Text als \|:
+| ID | Schwere | Klasse | Kategorie | Ort | Befund | Beleg | Bricht | Vorschlag | Status |
+ID = T3-10-<nn> fortlaufend ab 01. Kategorie = DEFEKT, LÜCKE oder HÄRTUNG. Ort = Datei:Zeile (mehrere durch „; "). Beleg = Kommando, Herleitung oder Reproduktionsweg (nur lesend). Bricht = wörtlich der Satz aus Invariante, Gate, Matrix oder Test, oder „keine Zusage". Vorschlag = kleinster Fix oder kleinste Wache in einem Satz. Status = offen. Bekannte Register-Punkte tragen im Befund vorn „bekannt NAK-nnn:" und nur das, was neu ist.
+
+URTEIL — erste Zeile deines Berichts und deines BEFUNDE-Abschnitts, genau eine Form:
+URTEIL: DEFEKTE <n> · LÜCKEN <n> · HÄRTUNGEN <n> — <ein Satz, was diese Phase über die Codebase sagt>
+URTEIL: BLOCKED — <was du nicht lesen konntest>
+
+PHASE 10 — SKEPTIKER: jeden Befund der Phasen 01 bis 09 und 12 widerlegen. Kurzname: skeptiker.
+
+FRAGE: Welcher Befund in docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md hält einer zweiten, feindlichen Lesung an der Quelle nicht stand — weil ein Test, ein Riegel, ein Absichtskommentar, eine Registerzeile, eine Matrixzeile oder eine erreichbare Eingabe fehlt, die ihn trägt?
+
+POPULATION: jede Befundzeile der Abschnitte Phase 01 bis 09 und Phase 12 in BEFUNDE.md und die zugehörigen Berichte roh/phase-01-*.md bis roh/phase-09-*.md und roh/phase-12-*.md. Du liest jeden Befund an seiner Quelle (Datei:Zeile am Stand HEAD) neu. Befunde der Phase 12 (Pipe-Sicherheit) prüfst du nur auf Reproduzierbarkeit an der Quelle und auf Duplikate; ihre Schwere änderst du nicht.
+
+JE BEFUND genau ein Urteil:
+- BESTÄTIGT: reproduzierbar oder zwingend herleitbar; die genannte Zusage bricht wirklich (zitiere sie); Schwere und Klasse passen (sonst korrigierter Vorschlag).
+- HERABGESTUFT: der Fall ist real, aber die Zusage bricht nicht (dann LÜCKE oder HÄRTUNG mit Grund) oder die Schwere ist zu hoch (mit Grund).
+- WIDERLEGT: Test, Riegel, Kommentar, Registerzeile oder Unerreichbarkeit der Eingabe deckt ihn; Beleg Datei:Zeile.
+- DUPLIKAT von T3-xx-yy oder bekannt NAK-nnn: Verweis, kein eigener Punkt.
+- UNENTSCHIEDEN: nur mit Bau oder Lauf entscheidbar — nenne das kleinste Experiment (Kommando, Erwartung), das der Dirigent ab 18.09.2026 fahren lässt.
+
+AUSGABE (abweichend vom Kopf): Bericht roh/phase-10-skeptiker.md mit einer Tabelle
+| ID | Urteil | Grund | Beleg | Schwere neu | Kategorie neu |
+und den Zählern (bestätigt, herabgestuft, widerlegt, Duplikat, unentschieden). In BEFUNDE.md ergänzt du jeden geprüften Befund NICHT in seiner Zeile, sondern schreibst einen Abschnitt „## Phase 10 — Skeptiker" mit derselben Tabelle; die Phasenabschnitte 01 bis 09 und 12 bleiben unverändert. Deine Urteilszeile: „URTEIL: BESTÄTIGT <n> · HERABGESTUFT <n> · WIDERLEGT <n> · DUPLIKAT <n> · UNENTSCHIEDEN <n>".

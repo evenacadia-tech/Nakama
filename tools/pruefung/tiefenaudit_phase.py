@@ -64,7 +64,11 @@ def main():
     if not zeile:
         print(f"Tabellenzeile {nn} fehlt"); return 2
     c = zeile.split("|")
-    c[4] = f" **gelaufen** {zeiten[0].split('–')[0] and '15.09.2026'} {', '.join(zeiten)}, Thread `{tid}`: {kurz} ({sv}) "
+    # Phasen ohne eigene Befundzeilen (Skeptiker, Synthese): Urteilstext statt Schwerezaehler.
+    detail = f"{kurz} ({sv})" if zahlen else urteil.replace("URTEIL:", "").strip()
+    datum = re.search(r"START (\d{4})-(\d\d)-(\d\d)", io.open(logs[0], encoding="utf-8").read()) if logs else None
+    tag = f"{datum[3]}.{datum[2]}.{datum[1]}" if datum else "?"
+    c[4] = f" **gelaufen** {tag} {', '.join(zeiten)}, Thread `{tid}`: {detail} "
     c[5] = f" `{head_sha[:8]}` "
     s = s.replace(zeile, "|".join(c))
     io.open(BEF, "w", encoding="utf-8", newline="").write(s)
@@ -78,7 +82,7 @@ def main():
     sh("git", "push", "-q", "origin", "master")
     head = sh("git", "rev-parse", "HEAD").stdout.strip()
     origin = sh("git", "rev-parse", "--short", "origin/master").stdout.strip()
-    print(f"Phase {nn}: {kurz} ({sv}); Thread {tid}; {', '.join(zeiten)}; commit {head[:8]} origin {origin}")
+    print(f"Phase {nn}: {detail}; Thread {tid}; {', '.join(zeiten)}; commit {head[:8]} origin {origin}")
     if a.naechste:
         # Start ueber Start-Process (bewaehrt); ein Popen mit DETACHED_PROCESS
         # startete am 15.09.2026 keinen Lauf (kein Startlog, kein Prozess).

@@ -1,0 +1,6 @@
+Phase 11 abgeschlossen: **59 Befunde → 36 Bündel** (24 P1, je 4 P2–P4), mit Abhängigkeiten, Beweisaufträgen, Detektorlücken und 17 Kartenentwürfen.
+
+- [Synthesebericht](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-11-synthese.md)
+- [Neuer BEFUNDE-Kopf](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md)
+
+HEAD unverändert bei `d53e0a370b9976d8ebe87e87eed25096237b8e53`. Bestehende Phasenabschnitte bytegleich erhalten; Zuordnungen, Zähler und `git diff --check` geprüft. Keine Builds, Tests oder Commits.

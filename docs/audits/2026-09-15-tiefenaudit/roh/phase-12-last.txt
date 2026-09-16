@@ -1,0 +1,10 @@
+URTEIL: **3 Defekte · 2 Lücken · 0 Härtungen** — davon 2 critical, 1 high und 2 medium.
+
+Erstellt:
+
+- [Vollständiger Rohbericht](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-12-pipesicherheit.md:1)
+- [Phase-12-Anhang in BEFUNDE.md](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md:176)
+
+Die Hauptbefunde betreffen die erhöhte Checkout-Aufgabe, fälschbare Drahtidentitäten, die v2-Pipe als Startblockade, den ungeschützten Diagnose-Briefkasten und fehlende v2-Fristen/Ratengrenzen.
+
+Geprüft wurden 61/61 Populationsdateien mit 27.951 physischen Zeilen. Befundtabellen sind wortgleich; Markdown- und Diff-Prüfung bestanden. Keine Builds, Tests, Installationen oder Commits ausgeführt. HEAD blieb unverändert bei `d20b8c156a21b52e93ad31a58bcda706e0439ecb`. Fremde Worktree-Pfade blieben unberührt.

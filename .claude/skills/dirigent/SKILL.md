@@ -140,12 +140,12 @@ pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
 Er meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und alte oder
 kritische Telemetrie und endet mit dem Worker. „Statusquelle unbekannt"
 einmalig unter Last ist Fehlalarm; stirbt er durch Speichermangel eines
-Builds, neu setzen. Dazu genau ein Cron-Loop; solange ein Monitor scharf
-ist, läuft er stündlich, sonst im Aufsichtsintervall; ein Tick ohne Befund
-wird mit einem Wort beantwortet:
+Builds, neu setzen. Dazu genau ein Cron-Job per `CronCreate` (nie `/loop`:
+dessen Skilltext käme je Tick zurück und fragte nach Cloud); stündlich bei
+scharfem Monitor, sonst im Aufsichtsintervall; Tick ohne Befund = ein Wort:
 
 ```text
-/loop <1h> Prüfe den laufenden Nakama-Worker <id> und seinen Ereignisbeobachter.
+Prüfe den laufenden Nakama-Worker <id> und seinen Ereignisbeobachter.
 Gesund: Spurlage mit einem Wort bestätigen. Fertig, fehlgeschlagen, blockiert
 oder Beobachter tot: Loop beenden, Mess-, Nacharbeits- oder Haltpfad fahren.
 ```

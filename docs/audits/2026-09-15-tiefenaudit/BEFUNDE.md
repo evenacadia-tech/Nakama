@@ -160,7 +160,7 @@ Planbasis: `docs/plan/plan.json`, Schritte S25g, S26–28, S28b, G6, S29–31, S
 ### Detektorlücken und Aufbauplan des Prüfsystems
 
 `docs/gesundheit/KONZEPT.md:606` ordnet die Arbeiten: **2 Prüfgang/NAK-260 → 5 Mutanten/NAK-263 und 7 Echtzeit-Tor/NAK-265**; **4 Zustand/Vertrag/NAK-262 vor S26–28**; **6 Wächter/NAK-264**, **8 Zwecktreue/NAK-266**, **9 Bedien-/Laufzeit-/Gate-Audit**.
-Der Befundscan dieses Laufs findet unter `tools/pruefung/` nur `codex-audit-lauf.ps1`, `tiefenaudit_phase.py`, `auftrag-lebenslauf-audit.md`; der dort geplante `pruefgang.py` und `.claude/agents/` fehlen.
+Der Befundscan dieses Laufs findet unter `tools/pruefung/` nur `codex-audit-lauf.ps1`, `tiefenaudit_phase.py`, `auftrag-lebenslauf-audit.md`; der dort geplante `pruefgang.py` und der Wächterordner `.claude/agents/` sind noch nicht angelegt (KONZEPT §10 Schritte 2 und 6).
 Damit ist ein Auditstarter vorhanden, aber die geplante Detektorkette nicht vollständig eingebaut.
 Schritt 9 ist **teilweise vorhanden**: der Laufzeit-Arm NAK-286 ist abgenommen; die noch fehlende Verbindung seiner Messungen mit den folgenden Gegenfällen bleibt eigener Auftrag.
 Phasen 02/03/07 liefern bereits inhaltliche Populationen für Schritte 4/8, sind aber allein kein regelmäßig laufendes Tor.

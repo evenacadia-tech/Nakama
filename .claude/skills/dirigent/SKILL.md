@@ -186,8 +186,7 @@ Kein Selbstbericht zählt:
   (Diff ohne Produktpfad, fremdes FL-Projekt offen), Exit 4 = Szenario
   verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
   `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest.
-  FL-Start, Installation und Messung sind nie Haltgrund und nie Frage. FL-Zugriff,
-  MCP-Server und Diagnoseprojekt: `tools/fl/LIES-MICH.md`.
+  FL-Zugriff, MCP-Server und Diagnoseprojekt: `tools/fl/LIES-MICH.md`.
 
 Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
 `origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler
@@ -228,10 +227,9 @@ sondern `tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <datei> -HeadSha
 
 **Modell:** jede Codex-Aufgabe `gpt-6-astra`, Effort `max` oder `xhigh`
 (User 10.09.2026); `ultra` delegiert an Unteragenten und ist ausgeschlossen,
-`gpt-5.6-sol` wird nicht mehr verwendet — Ausnahme (User 15.09.2026):
-sicherheitsnahe Prüfungen (Pipe-ACLs, Impersonation, Token, Signaturen,
-Spawn-Pfad) fahren mit `gpt-5.6-sol` max, weil Astra dort wie Fable hart
-reguliert ist. Codex-CLI ≥ 0.153.4, sonst `codex
+`gpt-5.6-sol` nur für sicherheitsnahe Prüfungen (Pipes, Impersonation,
+Token, Signaturen; User 15.09.2026, Astra reguliert dort hart), Effort
+max. Codex-CLI ≥ 0.153.4, sonst `codex
 update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer
 Astra-Thread; wiederholte Kapazitäts-/API-Fehler → frischer Opus-Thread prüft
 (nie der Bauer). Nacharbeit behält Modell und Effort; Wiederprüfung senkt nie

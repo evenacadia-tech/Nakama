@@ -1,0 +1,8 @@
+Phase 13 abgeschlossen: **3 Defekte, 2 Lücken, 1 Härtung**, dazu 14 widerlegte Verdachte.
+
+Kritisch: Eine Namenskollision kann zum erzwungenen Beenden eines fremden FL-Projekts führen.
+
+- [Vollständiger Bericht mit Scope-Beweis](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-13-bauhostkette.md)
+- [Anhang in BEFUNDE.md](C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md:558)
+
+Beide HEADs unverändert. Vorheriger BEFUNDE-Inhalt bytegleich erhalten. Kein Bau, Test, Hoststart oder Commit.

@@ -76,7 +76,8 @@ def main():
     io.open(msg, "w", encoding="utf-8").write(
         f"Tiefenaudit 3 Phase {nn} gelaufen: {kurz}\n\n{urteil}\n\nCodex {a.modell}, Thread {tid}, HEAD {head_sha[:8]} vor und nach dem Lauf; "
         f"Zeiten {', '.join(zeiten)}; Schwere {sv}.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\n"
-        "Claude-Session: https://claude.ai/code/session_01NX21t2VgLcVJPWNUCGkDy3\n")
+        # Session-Zeile der startenden Dirigentensession, nie fest verdrahtet (16.09.2026).
+        + (f"Claude-Session: {os.environ['CLAUDE_SESSION_URL']}\n" if os.environ.get("CLAUDE_SESSION_URL") else ""))
     sh("git", "add", AUDIT, "tools/pruefung/tiefenaudit_phase.py")
     sh("git", "commit", "-q", "-F", msg, "--", AUDIT, "tools/pruefung/tiefenaudit_phase.py")
     sh("git", "push", "-q", "origin", "master")

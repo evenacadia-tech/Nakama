@@ -23,6 +23,7 @@
 | 09 | Beweislücken: welcher Bug käme an allen Beinen vorbei | K5 | **gelaufen** 15.09.2026 01:54–02:42, Thread `01a0a77e`: 2 Defekte, 2 Lücken, 1 Härtungen (1 high, 3 medium, 1 low) | `176cd0f9` | `roh/phase-09-beweisluecken.md` |
 | 10 | Skeptiker: jeden Befund widerlegen | alle | **gelaufen** 16.09.2026 03:27–04:03, Thread `01a0a7d3`: BESTÄTIGT 56 · HERABGESTUFT 3 · WIDERLEGT 0 · DUPLIKAT 0 · UNENTSCHIEDEN 0 | `2c3a4b0a` | `roh/phase-10-skeptiker.md` |
 | 11 | Synthese: Bündel, Priorität, Abarbeitungsplan | alle | **gelaufen** 16.09.2026 04:04–04:40, Thread siehe `roh/phase-11-last.txt`: BÜNDEL 36 (P1 24 · P2 4 · P3 4 · P4 4); 59 Befunde nach Skeptiker = 40 Defekte, 15 Lücken, 4 Härtungen (8 critical, 24 high, 23 medium, 4 low); 17 Kartenvorschläge; Kopf unten ersetzt | `d53e0a37` | `roh/phase-11-synthese.md` |
+| 13 | Bau- und Hostnachweiskette: Cargo.lock, CMake-Helfer, PipeProbeMain, FL-MCP-Naht beidseitig (Restfläche aus Phase 11, Blind Spots Punkt 3 und 4; Dirigent 16.09.2026) | K5, Naht | **geplant** | – | `roh/phase-13-bauhostkette.md` |
 
 ## Kopf
 

@@ -282,7 +282,15 @@ SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 # reisst, den Lauf als WERKZEUGFEHLER beendet — die Liste kann also gar nicht
 # still veralten. Der naechste Treffer ueber der Grenze traegt
 # „OHNE PFLEGETICKET" und ist damit sichtbar neue Schuld.
-PFLEGETICKETS: dict[str, str] = {}
+#
+# NAK-283 Etappe 6 (M-69, 13.09.2026) hat das Inventar auf das ganze Plugin
+# ausgedehnt; seitdem reisst `eq-copilot/plugin/state/NakamaState.cpp` (2 911
+# Zeilen) die Grenze. Ihr Pflegeticket ist NAK-292 (Pflegeschritt S31c);
+# Zuordnung nachgezogen am 16.09.2026, davor meldete der Lauf sie faelschlich
+# als „OHNE PFLEGETICKET".
+PFLEGETICKETS: dict[str, str] = {
+    "eq-copilot/plugin/state/NakamaState.cpp": "NAK-292",
+}
 
 TREFFER_ZEIGEN = 25   # laengere Listen werden gekappt, mit Restzahl
 
@@ -1098,7 +1106,11 @@ def drucke_bericht(maasse, wurzel, memory, ueberschrieben, inv=None):
 # ------------------------------------------------------------------- Messung
 
 
-def miss(wurzel: pathlib.Path, memory: pathlib.Path, mit_clippy: bool):
+def miss(wurzel: pathlib.Path, memory: pathlib.Path, mit_clippy: bool,
+         pflegetickets: dict[str, str] | None = None):
+    # Die Zuordnung gehoert zum echten Repo; der Selbsttest misst Attrappen und
+    # uebergibt {} (16.09.2026), sonst meldete er die echte Schuld als veraltet.
+    tickets = PFLEGETICKETS if pflegetickets is None else pflegetickets
     quellen = sammle_quellen(wurzel)
     if not quellen:
         raise RuntimeError(f"kein Messort gefunden unter {wurzel} ({', '.join(INVENTARWURZELN)})")
@@ -1111,14 +1123,14 @@ def miss(wurzel: pathlib.Path, memory: pathlib.Path, mit_clippy: bool):
     for rel, _ in quellen:
         n = zeilen_zaehlen(texte[rel])
         if n > ZEILEN_GRENZE:
-            ticket = PFLEGETICKETS.get(rel, "OHNE PFLEGETICKET")
+            ticket = tickets.get(rel, "OHNE PFLEGETICKET")
             ueber_grenze.append((n, f"{rel}: {n} Zeilen [{ticket}]"))
         elif n > ZEILEN_ZIEL:
             ueber_ziel.append((n, f"{rel}: {n} Zeilen"))
     ohne_ticket = sum(1 for _, t in ueber_grenze if "OHNE PFLEGETICKET" in t)
     veraltet = veraltete_tickets([rel for rel, _ in quellen
                                   if zeilen_zaehlen(texte[rel]) > ZEILEN_GRENZE],
-                                 PFLEGETICKETS)
+                                 tickets)
     if veraltet:
         raise RuntimeError(
             "Pflegeticket-Zuordnung veraltet - diese Datei(en) reissen die "
@@ -1420,7 +1432,7 @@ def selbsttest() -> int:
         subprocess.run = lambda *a, **k: antwort
         shutil.which = lambda _: "cargo"
         try:
-            miss(w, kein_memory, True)
+            miss(w, kein_memory, True, {})
             geerbt = "(nicht geworfen)"
         except RuntimeError as e:
             geerbt = str(e)
@@ -1429,7 +1441,7 @@ def selbsttest() -> int:
         pruefe("clippy: Gesamtlauf erbt den Werkzeugfehler (Weg zu Exit 2)",
                geerbt, "cargo clippy Exit 101 - error: linker failed")
         pruefe("clippy: ohne Schalter bleibt derselbe Baum unberuehrt",
-               [m.get("nicht_messbar") for m in miss(w, kein_memory, False)
+               [m.get("nicht_messbar") for m in miss(w, kein_memory, False, {})
                 if m["name"].startswith("Clippy")],
                ["nicht angefordert (Schalter --clippy)"])
 

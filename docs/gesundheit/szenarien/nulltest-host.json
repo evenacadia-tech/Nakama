@@ -5,7 +5,7 @@
  "schritte": [
   {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
   {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1, "roh": true}}},
-  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"name": {"gleich": "Testtrack"}, "volume": {"roh": true}, "volume_db": {"roh": true}}},
+  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"index": {"gleich": 0}, "name": {"gleich": "Testtrack"}, "volume": {"roh": true}, "volume_db": {"roh": true}}},
   {"aktion": "mixer.getTrackInfo", "params": {"track": 1}, "erwarte": {"volume": {"roh": true}, "volume_db": {"roh": true}}},
   {"aktion": "mixer.getTrackInfo", "params": {"track": 0}, "erwarte": {"volume": {"roh": true}, "volume_db": {"roh": true}}},
   {"aktion": "mixer.getRouting", "params": {"track": 1}, "erwarte": {"routes.*.dest": {"roh": true}, "routes.*.level": {"roh": true}}},

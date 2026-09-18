@@ -7,11 +7,11 @@
  "schritte": [
   {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
   {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1, "roh": true}}},
-  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"volume": {"roh": true}, "volume_db": {"roh": true}}},
+  {"aktion": "channels.getInfo", "params": {"index": 0, "use_global": false}, "erwarte": {"index": {"gleich": 0}, "volume": {"roh": true}, "volume_db": {"roh": true}}},
   {"aktion": "mixer.getTrackInfo", "params": {"track": 1}, "erwarte": {"volume_db": {"roh": true}}},
   {"aktion": "mixer.getTrackInfo", "params": {"track": 0}, "erwarte": {"volume_db": {"roh": true}}},
   {"aktion": "mixer.getRouting", "params": {"track": 1}, "erwarte": {"routes.*.level": {"roh": true}}},
-  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}},
+  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}, "erwarte": {"mode": {"gleich": "song"}}},
   {"aktion": "transport.stop"},
   {"aktion": "transport.setPosition", "params": {"position": 0, "mode": 0}},
   {"aktion": "transport.getPosition", "erwarte": {"ms": {"roh": true}, "hint": {"roh": true}}},

@@ -14,10 +14,12 @@ Aufruf (aus dem MCP-Repo heraus, damit `fl_studio_mcp` importierbar ist):
     py -3.13 tools/fl/szenario.py --rechne <auftrag.json> --ausgabe <ergebnis.json>
     py -3.13 tools/fl/szenario.py --energieprofil <Testtrack.wav>
 
-Exitcodes: 0 bestanden · 3 Voraussetzung des Laufs fehlt (kein Port, kein Ping) ·
+Exitcodes: 0 bestanden · 3 Voraussetzung des Laufs fehlt (kein Port, kein Ping,
+Ping ohne passende Anforderungskennung, Piano-Roll-Weg im Importgraphen) ·
 4 mindestens eine Erwartung verfehlt · 2 Szenariodatei unbrauchbar ·
 5 Voraussetzung dieses Szenarios fehlt (KETTE, Formatfehler, VERSATZ, fehlendes
-Nulltesturteil, fehlende Rechnung aus F-28, Umlauf ohne Wrap, fremde Quelle).
+Nulltesturteil, fehlende Rechnung aus F-28, Umlauf ohne Wrap, fremde Quelle,
+UNGEMESSEN: eine MCP-Antwort ohne passende Anforderungskennung).
 Innerhalb eines Szenarios gilt der Vorrang 3 vor 5 vor 4 (VORAUSSETZUNG vor
 VERFEHLT); der Runner fährt nach 5 weiter und bricht nur nach 3 ab.
 
@@ -39,6 +41,15 @@ Feldname ohne Punkt liest das oberste Feld wie bisher. `frist_s` je Schritt;
 ohne `frist_s` entscheidet der MCP (`FL_MCP_TIMEOUT`, sonst 2 s). Ein Timeout
 wird genau einmal wiederholt, mit derselben Frist (FL verschluckt gelegentlich
 einen MIDI-Trigger); ein zweiter Timeout ist ein verfehlter Schritt.
+
+Antwortzuordnung (NAK-309, R-309-2): jeder Versuch trägt eine neue
+Anforderungskennung (`request_id`, 32 Hex-Zeichen), die Wiederholung eine
+eigene. Nur eine Antwort mit genau dieser Kennung ist eine Messung; eine mit
+fremder oder ohne Kennung heißt UNGEMESSEN, wird verworfen und gezählt, und der
+Schritt misst nichts. Die Szenariodateien fragen dazu das Echo ab (`track`,
+`index`, `mode`). Den Importweg des MCP-Pakets hält `lade_mcp_modul`:
+`fl_studio_mcp/utils/__init__.py` läuft nie, und `fl_trigger` oder `pynput` im
+Prozess ist Exit 3 (NAK-286 M-22).
 
 Lokale Aktionen gehen nie an FL: lokal.briefkasten, lokal.nulltest,
 lokal.fenster, lokal.umlauf, lokal.stellen (Beschreibung in tools/fl/LIES-MICH.md).
@@ -90,11 +101,14 @@ FENSTER_FRIST_S = 5.0                 # M-21, erzwungen ueber den Unterprozess d
 PLUGIN_FENSTER_MIN = (200, 100)       # P-17: ein Plugin-Fensterbild unter Breite 200 oder Hoehe 100 ist eingeklappt
 # Die Erfassung laeuft im Unterprozess (P-19): der Interpreter des Szenarioprozesses - unter dem Runner das Python
 # des MCP-Venvs, laufzeit.ps1 startet szenario.py ueber uv run - ruft nur capture_process_window und schreibt dessen
-# Antwort als eine JSON-Zeile. Argumente: PID, Ziel, Bilderordner, Name, Plugin (leer = keins).
-FENSTER_SKRIPT = ("import json, sys; from pathlib import Path; "
-                  "from fl_studio_mcp.utils.fenster import capture_process_window as erfasse; a = sys.argv[1:6]; "
+# Antwort als eine JSON-Zeile. Argumente: PID, Ziel, Bilderordner, Name, Plugin (leer = keins). Das Modul kommt ueber
+# lade_mcp_modul aus dieser Datei (NAK-309 M-51): derselbe Stellvertreter wie im Szenarioprozess, dieselbe Wache - steht
+# der Piano-Roll-Weg danach im Prozess, endet das Skript vor der Erfassung.
+FENSTER_SKRIPT = ("import json, sys; from pathlib import Path; sys.path.insert(0, {hier!r}); "
+                  "from szenario import lade_mcp_modul; "
+                  "erfasse = lade_mcp_modul('fl_studio_mcp.utils.fenster').capture_process_window; a = sys.argv[1:6]; "
                   "print(json.dumps(erfasse(int(a[0]), a[1], Path(a[2]), a[3], plugin=a[4] or None), "
-                  "ensure_ascii=True, default=str))")
+                  "ensure_ascii=True, default=str))").format(hier=str(Path(__file__).resolve().parent))
 
 RATE = 44100
 ZELLE = 4410                          # 0,1 s bei 44 100 Hz (AnalyseEngine.cpp:270)
@@ -223,6 +237,59 @@ def _pruefe(erwartung: dict, antwort: dict) -> tuple[list[str], list[str]]:
     return fehler, roh
 
 
+# ---------------------------------------------------------------- Importweg des MCP-Pakets (NAK-286 M-22, NAK-309)
+
+MCP_UTILS = "fl_studio_mcp.utils"
+PIANO_ROLL_WEG = ("fl_studio_mcp.utils.fl_trigger", "pynput")
+
+
+class ImportgraphFehler(RuntimeError):
+    """Nach dem Import steht der Piano-Roll-Weg (fl_trigger, pynput) im Prozess."""
+
+
+def piano_roll_module() -> list[str]:
+    return sorted(m for m in sys.modules if any(m == w or m.startswith(w + ".") for w in PIANO_ROLL_WEG))
+
+
+def lade_mcp_modul(name: str):
+    """Ein Modul aus fl_studio_mcp.utils laden, ohne dass dessen __init__.py laeuft (NAK-309 M-50, M-51).
+
+    Python laedt vor fl_studio_mcp.utils.connection das Elternpaket fl_studio_mcp.utils, und dessen __init__.py
+    importiert fl_trigger (Nachbarrepo). Ein Modul, das schon in sys.modules steht, erfuellt den Import, ohne
+    ausgefuehrt zu werden, und ein Unterpaket wird ueber das __path__ seines Elternpakets gefunden
+    (Python-Sprachreferenz "The import system", 5.3, 5.3.1, 5.3.4). Deshalb steht vor dem Import ein Stellvertreter
+    mit dem echten __path__ in sys.modules. Danach prueft eine Wache sys.modules; steht der Piano-Roll-Weg dort -
+    auch weil ein anderer ihn vorher geladen hat -, wirft sie ImportgraphFehler mit dem Modulnamen."""
+    import importlib
+    import importlib.machinery
+    import importlib.util
+
+    if MCP_UTILS not in sys.modules:
+        paket = importlib.import_module("fl_studio_mcp")
+        if MCP_UTILS not in sys.modules:
+            spec = importlib.machinery.ModuleSpec(MCP_UTILS, None, is_package=True)
+            spec.submodule_search_locations = [str(Path(p) / "utils") for p in paket.__path__]
+            stellvertreter = importlib.util.module_from_spec(spec)
+            sys.modules[MCP_UTILS] = stellvertreter
+            paket.utils = stellvertreter
+    modul = importlib.import_module(name)
+    geladen = piano_roll_module()
+    if geladen:
+        raise ImportgraphFehler(f"Piano-Roll-Weg geladen: {', '.join(geladen)} (NAK-286 M-22)")
+    return modul
+
+
+def _nimmt_kennung(funktion) -> bool:
+    """Nimmt send_command eine Anforderungskennung an (MCP-Stand ab NAK-309, M-49)?"""
+    import inspect
+
+    try:
+        parameter = inspect.signature(funktion).parameters
+    except (TypeError, ValueError):
+        return False
+    return "request_id" in parameter or any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameter.values())
+
+
 # ---------------------------------------------------------------- Umgebung
 
 class Umgebung:
@@ -238,13 +305,18 @@ class Umgebung:
 
     def verbindung(self):
         try:
-            from fl_studio_mcp.utils.connection import get_connection
+            verbindung_modul = lade_mcp_modul("fl_studio_mcp.utils.connection")
+        except ImportgraphFehler as e:
+            return None, f"Importgraph: {e}"
         except ImportError as e:
             raise SystemExit(
                 f"fl_studio_mcp nicht importierbar ({e}); aus dem MCP-Repo starten: "
                 "uv run --directory <fl-studio-mcp> python szenario.py ..."
             ) from e
-        conn = get_connection()
+        conn = verbindung_modul.get_connection()
+        if not _nimmt_kennung(conn.send_command):
+            return None, ("MCP-Bibliothek ohne Anforderungskennung (send_command ohne request_id): Stand gegen "
+                          "tools/fl/mcp-stand.json pruefen (NAK-309 M-49)")
         try:
             conn.ensure_connected()
         except RuntimeError as e:
@@ -298,6 +370,10 @@ class Umgebung:
 
     def kennung(self) -> str:
         """128 Bit Zufall als 32 Hex-Zeichen (F-2)."""
+        return secrets.token_hex(16)
+
+    def mcp_kennung(self) -> str:
+        """Anforderungskennung je MCP-Versuch (NAK-309, R-309-2): 128 Bit Zufall als 32 Hex-Zeichen."""
         return secrets.token_hex(16)
 
     def sha256(self, pfad: Path) -> str | None:
@@ -612,20 +688,50 @@ def erwartete_rollen(lauf: "Lauf", rollen: list[str]) -> tuple[dict[str, set[int
     return erwartet, notizen
 
 
-def _sende(conn, aktion: str, params: dict | None, frist: float | None, umg: Umgebung) -> dict:
-    """Ein Timeout wird genau einmal wiederholt, mit derselben Frist (M-78)."""
+def _sende(conn, aktion: str, params: dict | None, frist: float | None, umg: Umgebung,
+           verworfen: list | None = None) -> dict:
+    """Ein Timeout wird genau einmal wiederholt, mit derselben Frist (M-78).
+
+    NAK-309 (R-309-2): jeder Versuch traegt eine neue Anforderungskennung, auch die Wiederholung. Nur eine Antwort
+    mit genau dieser Kennung ist eine Messung; jede andere - fremde Kennung, keine Kennung (Controller alten
+    Stands), die verspaetete Antwort des ersten Versuchs bei der Wiederholung (M-46) - kommt als UNGEMESSEN zurueck
+    und landet in `verworfen`."""
     def einmal() -> dict:
+        kennung = umg.mcp_kennung()
         try:
-            return conn.send_command(aktion, params or {}, frist)
+            antwort = conn.send_command(aktion, params or {}, frist, request_id=kennung)
         except RuntimeError as e:
-            return {"success": False, "error": str(e)}
+            antwort = {"success": False, "error": str(e), "request_id": kennung}
+        return _zuordnen(aktion, kennung, antwort, verworfen)
 
     antwort = einmal()
-    if not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):
+    if not antwort.get("_ungemessen") and not antwort.get("success") and "Timeout" in str(antwort.get("error", "")):
         umg.schlafe(0.5)
         antwort = einmal()
         antwort["_wiederholt"] = True
     return antwort
+
+
+def _zuordnen(aktion: str, kennung: str, antwort, verworfen: list | None) -> dict:
+    """R-309-2: gehoert die Antwort zu diesem Versuch? Sonst ist sie keine Messung - verworfen und gezaehlt."""
+    erhalten = antwort.get("request_id") if isinstance(antwort, dict) else None
+    if erhalten == kennung:
+        return antwort
+    if verworfen is not None:
+        verworfen.append({"aktion": aktion, "gesendet": kennung, "erhalten": erhalten})
+    return {"success": False, "_ungemessen": True, "_verworfen": antwort,
+            "error": (f"UNGEMESSEN (Antwort ohne passende Kennung: gesendet {kennung}, "
+                      f"erhalten {erhalten if erhalten is not None else 'keine'})")}
+
+
+def _antwort_zelle(antwort) -> str:
+    """Rohzelle einer MCP-Antwort. Die Anforderungskennung steht vorn, damit die Kuerzung sie nie abschneidet
+    (NAK-309 M-41)."""
+    if not isinstance(antwort, dict):
+        return _kompakt(antwort)
+    kennung = antwort.get("request_id")
+    rest = {k: v for k, v in antwort.items() if k != "request_id"}
+    return (f"request_id={kennung} " if kennung is not None else "") + _kompakt(rest)
 
 
 class Lauf:
@@ -644,6 +750,8 @@ class Lauf:
         self.szenario: dict = {}
         self.details: list[str] = []
         self.briefkasten = Briefkasten(umg, self.diagnose_ordner)
+        # NAK-309 (R-309-2): verworfene MCP-Antworten ohne passende Kennung, ueber alle Szenarien dieses Laufs
+        self.verworfen: list[dict] = []
 
     def quelle(self) -> Path:
         kandidaten = [REPO / "eq-copilot" / "kalibration" / "Testtrack.wav",
@@ -651,7 +759,7 @@ class Lauf:
         return next((k for k in kandidaten if self.umg.existiert(k)), kandidaten[0])
 
     def sende(self, aktion: str, params: dict | None = None, frist: float | None = None) -> dict:
-        return _sende(self.conn, aktion, params, frist, self.umg)
+        return _sende(self.conn, aktion, params, frist, self.umg, self.verworfen)
 
     def loop_ms(self) -> int | None:
         wert = (self.letzte.get("transport.getLength") or {}).get("milliseconds")
@@ -1954,6 +2062,8 @@ def fahre(szenario_pfad: Path, roh: list[str], lauf: Lauf) -> int:
 
     roh.append("| # | Aktion | Parameter | Antwort | Urteil |\n|---|---|---|---|---|")
     verfehlt = 0
+    ungemessen = 0
+    verworfen_vorher = len(lauf.verworfen)
     ergebnis = EXIT_OK
     for nr, schritt in enumerate(schritte, 1):
         if "warte_s" in schritt:
@@ -1970,6 +2080,7 @@ def fahre(szenario_pfad: Path, roh: list[str], lauf: Lauf) -> int:
         p = _kompakt(params).replace("|", "\\|")
         if aktion.startswith("lokal."):
             funktion = LOKALE_AKTIONEN.get(aktion)
+            vorher = len(lauf.verworfen)
             try:
                 if funktion is None:
                     code, kurz, zeilen = EXIT_VERFEHLT, f"unbekannte lokale Aktion {aktion}", []
@@ -1983,6 +2094,14 @@ def fahre(szenario_pfad: Path, roh: list[str], lauf: Lauf) -> int:
                 except OSError:
                     pass
             urteil = {EXIT_OK: "ok", EXIT_SZENARIO: "VORAUSSETZUNG"}.get(code, "VERFEHLT")
+            # NAK-309 (R-309-2): hat die lokale Aktion eine MCP-Antwort ohne passende Kennung verworfen (etwa eine
+            # Positionsabfrage), misst dieser Schritt nichts - UNGEMESSEN, Szenario-Exit 5.
+            neu_verworfen = len(lauf.verworfen) - vorher
+            if neu_verworfen:
+                code = schlechter(code, EXIT_SZENARIO)
+                urteil = "UNGEMESSEN"
+                kurz = f"{kurz} · UNGEMESSEN: {neu_verworfen} MCP-Antwort(en) ohne passende Kennung verworfen"
+                ungemessen += 1
             if code != EXIT_OK:
                 verfehlt += 1
             ergebnis = schlechter(ergebnis, code)
@@ -1991,7 +2110,19 @@ def fahre(szenario_pfad: Path, roh: list[str], lauf: Lauf) -> int:
                 lauf.details += ["", f"### Schritt {nr} `{aktion}`", ""] + zeilen
             continue
         frist = float(schritt["frist_s"]) if schritt.get("frist_s") is not None else None
-        antwort = _sende(conn, aktion, params, frist, lauf.umg)
+        antwort = _sende(conn, aktion, params, frist, lauf.umg, lauf.verworfen)
+        if antwort.get("_ungemessen"):
+            # NAK-309 (R-309-2, M-42, M-44): keine Messung - der Schritt wird nie an einer fremden Antwort bewertet.
+            ungemessen += 1
+            verfehlt += 1
+            ergebnis = EXIT_VORAUSSETZUNG if aktion == "system.ping" else schlechter(ergebnis, EXIT_SZENARIO)
+            a = _antwort_zelle(antwort.get("_verworfen")).replace("|", "\\|")
+            roh.append(f"| {nr} | `{aktion}` | `{p}` | `{a}` | {_zelle(antwort['error'])} |")
+            if ergebnis == EXIT_VORAUSSETZUNG:
+                roh.append("\nAbbruch: Ping ohne passende Anforderungskennung — der Controller in FL trägt keine "
+                           "Kennung (Stand vor 2026-09-18) oder die Antwort gehört zu einem anderen Befehl.\n")
+                return ergebnis
+            continue
         if antwort.get("success"):
             lauf.letzte[aktion] = antwort
         maengel, rohwerte = _pruefe(schritt.get("erwarte") or {}, antwort)
@@ -2003,24 +2134,35 @@ def fahre(szenario_pfad: Path, roh: list[str], lauf: Lauf) -> int:
         if maengel:
             verfehlt += 1
             ergebnis = schlechter(ergebnis, EXIT_VERFEHLT)
-        a = _kompakt(antwort).replace("|", "\\|")
+        a = _antwort_zelle(antwort).replace("|", "\\|")
         roh.append(f"| {nr} | `{aktion}` | `{p}` | `{a}` | {_zelle(urteil)} |")
         if ergebnis == EXIT_VORAUSSETZUNG:
             roh.append("\nAbbruch: kein Ping — FL läuft nicht oder der Controller antwortet nicht.\n")
             return ergebnis
 
-    roh.append(f"\n**Ergebnis:** {len(schritte) - verfehlt} von {len(schritte)} Schritten bestanden.\n")
+    ergebnis_zeile = f"\n**Ergebnis:** {len(schritte) - verfehlt} von {len(schritte)} Schritten bestanden."
+    verworfen = lauf.verworfen[verworfen_vorher:]
+    if verworfen:
+        ergebnis_zeile += (f" {ungemessen} Schritt(e) UNGEMESSEN; {len(verworfen)} MCP-Antwort(en) ohne passende "
+                           "Kennung verworfen (NAK-309 R-309-2).")
+        lauf.details += ["", "### Verworfene MCP-Antworten (ohne passende Kennung)", ""] + [
+            f"- `{v['aktion']}`: gesendet {v['gesendet']}, erhalten {v['erhalten'] if v['erhalten'] is not None else 'keine'}"
+            for v in verworfen]
+    roh.append(ergebnis_zeile + "\n")
     roh += lauf.details
     return ergebnis
 
 
 def ping(umg: Umgebung) -> int:
     conn, fehler = umg.verbindung()
+    # NAK-309 (M-50): der echte Importgraph des Laufs steht in der Ping-Zeile; laufzeit.ps1 protokolliert ihn.
+    module = sorted(m for m in sys.modules if m == "fl_studio_mcp" or m.startswith("fl_studio_mcp."))
     if conn is None:
-        print(json.dumps({"success": False, "error": fehler}, ensure_ascii=False))
+        print(json.dumps({"success": False, "error": fehler, "fl_studio_mcp_module": module}, ensure_ascii=False))
         return EXIT_VORAUSSETZUNG
     antwort = _sende(conn, "system.ping", {}, 3.0, umg)
     antwort["port_name"] = conn.get_status().get("port_name")
+    antwort["fl_studio_mcp_module"] = module
     print(json.dumps(antwort, ensure_ascii=False))
     return EXIT_OK if antwort.get("success") else EXIT_VORAUSSETZUNG
 
@@ -2096,6 +2238,7 @@ class TestUmgebung(Umgebung):
         self.anfragen: list[dict] = []
         self.anfrage_bytes: list[bytes] = []
         self.kennungen = 0
+        self.mcp_kennungen = 0
         self.conn = None
         self.instanzen = None
         self.broker: list[int] = []
@@ -2163,6 +2306,11 @@ class TestUmgebung(Umgebung):
         self.kennungen += 1
         return f"{self.kennungen:032x}"
 
+    def mcp_kennung(self) -> str:
+        """Anforderungskennungen der Attrappe: c000...1, c000...2, ... - vorhersagbar je Versuch (NAK-309)."""
+        self.mcp_kennungen += 1
+        return f"c{self.mcp_kennungen:031x}"
+
     def sha256(self, pfad: Path) -> str | None:
         eintrag = self.dateien.get(pfad)
         return hashlib.sha256(self.daten(pfad)).hexdigest().upper() if eintrag else None
@@ -2195,14 +2343,22 @@ class TestUmgebung(Umgebung):
 
 class TestVerbindung:
     """Verbindungsattrappe mit Transport: die Position laeuft mit der Uhr-Attrappe
-    und springt am Loopende auf 0; Vorgaben je Aktion ueberschreiben das."""
+    und springt am Loopende auf 0; Vorgaben je Aktion ueberschreiben das.
 
-    def __init__(self, umg: TestUmgebung, loop_ms: int = 45696, antworten: dict | None = None, positionen=None):
+    Anforderungskennung (NAK-309): `kennung` sagt, was die Attrappe zurueckgibt - "echo" wie der Controller ab
+    2026-09-18, "ohne" wie ein Controller alten Stands, "fremd", oder eine Funktion (aktion, request_id, frueher
+    gesendete Kennungen) -> Kennung oder None. Eine Vorgabe, die selbst eine Kennung traegt (verspaetete Antwort),
+    behaelt sie."""
+
+    def __init__(self, umg: TestUmgebung, loop_ms: int = 45696, antworten: dict | None = None, positionen=None,
+                 kennung="echo"):
         self.umg = umg
         self.loop_ms = loop_ms
         self.antworten = antworten or {}
         self.positionen = positionen
+        self.kennung = kennung
         self.aufrufe: list[tuple[str, dict, float | None]] = []
+        self.kennungen: list[str | None] = []
         self.spielt = False
         self.basis_ms = 0.0
         self.start_t = umg.t
@@ -2214,7 +2370,25 @@ class TestVerbindung:
             return self.basis_ms
         return (self.basis_ms + (self.umg.t - self.start_t) * 1000.0) % self.loop_ms
 
-    def send_command(self, aktion: str, params: dict | None = None, timeout: float | None = None) -> dict:
+    def send_command(self, aktion: str, params: dict | None = None, timeout: float | None = None,
+                     request_id: str | None = None) -> dict:
+        frueher = list(self.kennungen)
+        self.kennungen.append(request_id)
+        antwort = self._antwort(aktion, params, timeout)
+        if not isinstance(antwort, dict) or "request_id" in antwort:
+            return antwort
+        antwort = dict(antwort)
+        art = self.kennung(aktion, request_id, frueher) if callable(self.kennung) else self.kennung
+        if art == "echo":
+            if request_id is not None:
+                antwort["request_id"] = request_id
+        elif art == "fremd":
+            antwort["request_id"] = "f" * 32
+        elif isinstance(art, str) and art != "ohne":
+            antwort["request_id"] = art
+        return antwort
+
+    def _antwort(self, aktion: str, params: dict | None, timeout: float | None) -> dict:
         params = dict(params or {})
         self.aufrufe.append((aktion, params, timeout))
         vorgabe = self.antworten.get(aktion)
@@ -3457,6 +3631,275 @@ def fall_rechnung_rohwerte(p: Pruefer) -> None:
     p(eintrag.get("stichprobenspitze") == [0.5, 0.25] and eintrag.get("tp_dbtp") == -3.0,
       f"Referenzausschnitt ohne Stichprobenspitze je Kanal neben R_TP: stichprobenspitze {eintrag.get('stichprobenspitze')}, "
       f"tp_dbtp {eintrag.get('tp_dbtp')}")
+
+
+# ---------------------------------------------------------------- NAK-309 Etappe 3: Antwortzuordnung und Importweg
+
+ECHO_FELDER = {"mixer.getPeaks": "track", "channels.getInfo": "index", "transport.setLoopMode": "mode"}
+
+
+def _mcp_kennung_nr(n: int) -> str:
+    """Die n-te Anforderungskennung der TestUmgebung (ab 1), wie mcp_kennung() sie vergibt."""
+    return f"c{n:031x}"
+
+
+@fall("309/M-41", "antwort_mit_kennung_gemessen")
+def fall_antwort_mit_kennung_gemessen(p: Pruefer) -> None:
+    """Eine Antwort mit der gesendeten Kennung ist eine Messung; jeder Versuch traegt eine eigene Kennung aus 32
+    Hex-Zeichen, und die Rohzeile nennt sie."""
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg)
+    code, roh, lauf = fahre_attrappe(umg, {"id": "kennung", "schritte": [
+        {"aktion": "system.ping"}, {"aktion": "transport.getStatus"}]})
+    gesendet = umg.conn.kennungen
+    p(code == EXIT_OK and not lauf.verworfen, f"zugeordnete Antworten: Exit {code}, verworfen {lauf.verworfen}")
+    p(len(gesendet) == 2 and len(set(gesendet)) == 2 and all(k and KENNUNG.match(k) for k in gesendet),
+      f"je Versuch eine eigene Kennung aus 32 Hex-Zeichen: {gesendet}")
+    p(all(f"request_id={k}" in roh for k in gesendet if k), f"die Rohzeile nennt die Kennung nicht: {roh[-300:]}")
+    p("**Ergebnis:** 2 von 2 Schritten bestanden." in roh, "Ergebnis nicht 2 von 2")
+
+
+@fall("309/M-42", "fremde_oder_fehlende_kennung_ungemessen")
+def fall_fremde_oder_fehlende_kennung_ungemessen(p: Pruefer) -> None:
+    """Eine Antwort mit fremder und eine ohne Kennung (Controller alten Stands) sind keine Messung: der Schritt heisst
+    UNGEMESSEN, wird gezaehlt und nie bewertet; das Szenario endet mit Exit 5, nie mit 0. Der Vorrang 3 vor 5 vor 4
+    bleibt: ein verfehlter Schritt daneben aendert Exit 5 nicht, ein Ping ohne Kennung ist Exit 3."""
+    schritte = [{"aktion": "transport.getStatus", "erwarte": {"is_playing": {"gleich": True}}},
+                {"aktion": "mixer.getPeaks", "params": {"track": 1}, "erwarte": {"peak_max": {"min": 0.0}}}]
+    vorgaben = {"transport.getStatus": {"success": True, "is_playing": True},
+                "mixer.getPeaks": {"success": True, "track": 1, "peak_max": 0.5}}
+    for art, erhalten in (("fremd", "f" * 32), ("ohne", "keine")):
+        umg = TestUmgebung()
+        umg.conn = TestVerbindung(umg, kennung=art, antworten=dict(vorgaben))
+        code, roh, lauf = fahre_attrappe(umg, {"id": art, "schritte": schritte})
+        p(code == EXIT_SZENARIO, f"{art}: Exit {code} statt {EXIT_SZENARIO}")
+        p(len(lauf.verworfen) == 2 and all(v["erhalten"] == (None if art == "ohne" else erhalten) for v in lauf.verworfen),
+          f"{art}: verworfen {lauf.verworfen}")
+        p(roh.count("UNGEMESSEN (Antwort ohne passende Kennung: gesendet") == 2 and f"erhalten {erhalten})" in roh,
+          f"{art}: Rohzeilen ohne UNGEMESSEN mit gesendeter und erhaltener Kennung")
+        p("| ok |" not in roh and ("0 von 2 Schritten bestanden. 2 Schritt(e) UNGEMESSEN; 2 MCP-Antwort(en) ohne "
+                                   "passende Kennung verworfen") in roh,
+          f"{art}: Ergebniszeile zaehlt die verworfenen Antworten nicht")
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg, antworten={"transport.getStatus": {"success": True, "is_playing": False},
+                                              "mixer.getPeaks": {"success": True, "track": 1, "peak_max": 0.5}},
+                              kennung=lambda aktion, rid, _frueher: rid if aktion == "transport.getStatus" else None)
+    code, roh, _lauf = fahre_attrappe(umg, {"id": "vorrang", "schritte": schritte})
+    p(code == EXIT_SZENARIO and "VERFEHLT: is_playing" in roh,
+      f"verfehlt neben ungemessen: Exit {code} statt {EXIT_SZENARIO} (Vorrang 5 vor 4)")
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg, kennung="ohne")
+    code, roh, _lauf = fahre_attrappe(umg, {"id": "ping", "schritte": [
+        {"aktion": "system.ping"}, {"aktion": "transport.getStatus"}]})
+    p(code == EXIT_VORAUSSETZUNG and "Abbruch: Ping ohne passende Anforderungskennung" in roh
+      and umg.conn.zaehle("transport.getStatus") == 0,
+      f"Ping ohne Kennung: Exit {code} statt {EXIT_VORAUSSETZUNG}, Aufrufe nach dem Ping "
+      f"{umg.conn.zaehle('transport.getStatus')}")
+    # Eine lokale Aktion, die intern sendet (wie die Positionsabfrage in lokal.umlauf und lokal.stellen): wurde dabei
+    # eine Antwort ohne passende Kennung verworfen, misst der Schritt nichts - auch wenn die Aktion selbst ok meldet.
+    def lokal_attrappe(lauf: Lauf, _schritt: dict) -> tuple[int, str, list[str]]:
+        antwort = lauf.sende("transport.getPosition")
+        return EXIT_OK, f"Position {antwort.get('ms')}", []
+
+    LOKALE_AKTIONEN["lokal.attrappe"] = lokal_attrappe
+    try:
+        umg = TestUmgebung()
+        umg.conn = TestVerbindung(umg, kennung=lambda aktion, rid, _frueher: None if aktion == "transport.getPosition" else rid)
+        code, roh, lauf = fahre_attrappe(umg, {"id": "lokal", "schritte": [{"aktion": "lokal.attrappe"}]})
+    finally:
+        del LOKALE_AKTIONEN["lokal.attrappe"]
+    zeile = next((z for z in roh.splitlines() if z.startswith("| 1 | `lokal.attrappe`")), "")
+    p(code == EXIT_SZENARIO and zeile.rstrip().endswith("| UNGEMESSEN |") and len(lauf.verworfen) == 1,
+      f"lokale Aktion mit verworfener Antwort: Exit {code}, Zeile '{zeile[-200:]}', verworfen {lauf.verworfen}")
+
+
+@fall("309/M-43", "echo_abweichung_verfehlt")
+def fall_echo_abweichung_verfehlt(p: Pruefer) -> None:
+    """Kennung passt, das Echo widerspricht: der zweite mixer.getPeaks-Schritt der echten bereitschaft.json (track 0)
+    erhaelt track 1 - verfehlt, nicht bestanden."""
+    szenario = json.loads((REPO / "docs" / "gesundheit" / "szenarien" / "bereitschaft.json").read_text(encoding="utf-8"))
+    antworten: dict[str, list[dict]] = {}
+    for aktion, antwort in BEREITSCHAFT_13_09:
+        antworten.setdefault(aktion, []).append(dict(antwort))
+    antworten["mixer.getPeaks"][1]["track"] = 1
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg, antworten=antworten)
+    code, roh, lauf = fahre_attrappe(umg, szenario)
+    zeile = next((z for z in roh.splitlines() if z.startswith("| 12 | `mixer.getPeaks`")), "")
+    p(code == EXIT_VERFEHLT and "track: erwartet gleich 0, ist 1" in zeile and not lauf.verworfen,
+      f"Echo abweichend: Exit {code}, Zeile '{zeile[-220:]}'")
+
+
+@fall("309/M-44", "spaete_antwort_ohne_kette")
+def fall_spaete_antwort_ohne_kette(p: Pruefer) -> None:
+    """Schritt A laeuft zweimal ins Timeout (verfehlt, NAK-286 M-78); danach bringt die Verbindung fuer B die
+    verspaetete Antwort von A (Kennung des zweiten A-Versuchs), fuer C deren eigene. B wird nie an den Werten von A
+    gemessen (UNGEMESSEN, gezaehlt), C ist wieder gemessen, das Szenario endet mit Exit 5. Die Attrappe vergibt die
+    Kennungen in der Folge der Versuche: A1, A2, B, C."""
+    timeout = {"success": False, "error": "Timeout waiting for FL Studio response after 2.0s."}
+    spaet_a = {"success": True, "track": 1, "name": "Insert 1", "peak_max": 0.49, "request_id": _mcp_kennung_nr(2)}
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg, antworten={"mixer.getPeaks": [timeout, timeout, spaet_a],
+                                              "transport.getStatus": {"success": True, "is_playing": True}})
+    code, roh, lauf = fahre_attrappe(umg, {"id": "kette", "schritte": [
+        {"aktion": "mixer.getPeaks", "params": {"track": 1}, "erwarte": {"peak_max": {"min": 0.01}}},
+        {"aktion": "mixer.getPeaks", "params": {"track": 0}, "erwarte": {"peak_max": {"min": 0.01}}},
+        {"aktion": "transport.getStatus", "erwarte": {"is_playing": {"gleich": True}}}]})
+    zeilen = roh.splitlines()
+    a, b, c = (next((z for z in zeilen if z.startswith(f"| {n} |")), "") for n in (1, 2, 3))
+    p("VERFEHLT" in a and "Timeout" in a, f"A nicht verfehlt nach zwei Timeouts: '{a[-160:]}'")
+    p(f"UNGEMESSEN (Antwort ohne passende Kennung: gesendet {_mcp_kennung_nr(3)}, erhalten {_mcp_kennung_nr(2)})" in b
+      and "| ok |" not in b, f"B an der verspaeteten Antwort von A gemessen: '{b[-220:]}'")
+    p(c.rstrip().endswith("| ok |"), f"C nach der verworfenen Antwort nicht wieder gemessen: '{c[-160:]}'")
+    p(code == EXIT_SZENARIO and len(lauf.verworfen) == 1, f"Exit {code} statt {EXIT_SZENARIO}, verworfen {lauf.verworfen}")
+
+
+@fall("309/M-46", "wiederholung_mit_neuer_kennung")
+def fall_wiederholung_mit_neuer_kennung(p: Pruefer) -> None:
+    """Die Wiederholung nach einem Timeout traegt eine neue Kennung; kommt bei ihr die verspaetete Antwort des ersten
+    Versuchs an, zaehlt sie nicht als ihre Antwort (UNGEMESSEN). Genau zwei Aufrufe, Pause 0,5 s (M-78)."""
+    timeout = {"success": False, "error": "Timeout waiting for FL Studio response after 3.0s."}
+    spaet = {"success": True, "is_playing": True, "request_id": _mcp_kennung_nr(1)}
+    umg = TestUmgebung()
+    umg.conn = TestVerbindung(umg, antworten={"transport.getStatus": [timeout, spaet]})
+    code, _roh, lauf = fahre_attrappe(umg, {"id": "wdh", "schritte": [
+        {"aktion": "transport.getStatus", "frist_s": 3, "erwarte": {"is_playing": {"gleich": True}}}]})
+    gesendet = umg.conn.kennungen
+    p(len(gesendet) == 2 and gesendet[0] != gesendet[1], f"Wiederholung ohne neue Kennung: {gesendet}")
+    p(code == EXIT_SZENARIO and lauf.verworfen == [{"aktion": "transport.getStatus", "gesendet": _mcp_kennung_nr(2),
+                                                    "erhalten": _mcp_kennung_nr(1)}],
+      f"verspaetete Antwort des ersten Versuchs als Antwort der Wiederholung gewertet: Exit {code}, "
+      f"verworfen {lauf.verworfen}")
+    p(abs(umg.t - 1000.5) < 1e-9, f"Pause {umg.t - 1000.0:.3f} s statt 0,5 s auf der Uhr-Attrappe")
+
+
+@fall("309/M-48", "echo_in_jeder_szenariodatei")
+def fall_echo_in_jeder_szenariodatei(p: Pruefer) -> None:
+    """Jeder Schritt mixer.getPeaks, channels.getInfo und transport.setLoopMode in jeder Szenariodatei fragt das Echo
+    ab, das die Aufnahme vom 13.09.2026 traegt (track, index, mode), mit `gleich` auf den gesendeten Wert."""
+    ordner = REPO / "docs" / "gesundheit" / "szenarien"
+    gezaehlt, fehlt = 0, []
+    for datei in sorted(ordner.glob("*.json")):
+        szenario = json.loads(datei.read_text(encoding="utf-8"))
+        for nr, schritt in enumerate(szenario.get("schritte", []), 1):
+            feld = ECHO_FELDER.get(schritt.get("aktion"))
+            if feld is None:
+                continue
+            gezaehlt += 1
+            soll = (schritt.get("params") or {}).get(feld)
+            regel = (schritt.get("erwarte") or {}).get(feld) or {}
+            if "gleich" not in regel or regel["gleich"] != soll:
+                fehlt.append(f"{datei.name} Schritt {nr} {schritt['aktion']} ({feld})")
+    p(gezaehlt > 0 and not fehlt, f"{gezaehlt} Echo-Schritte, ohne Echo-Erwartung: {fehlt}")
+
+
+ATTRAPPE_UTILS_INIT = ("from fl_studio_mcp.utils.connection import get_connection\n"
+                       "from fl_studio_mcp.utils import fl_trigger\n")
+ATTRAPPE_FL_TRIGGER = "from pathlib import Path\nPath({marke!r}).write_text('geladen', encoding='utf-8')\n"
+ATTRAPPE_CONNECTION = (
+    "{vorspann}"
+    "class _Verbindung:\n"
+    "    def ensure_connected(self):\n"
+    "        pass\n"
+    "    def send_command(self, action, params=None, timeout=None, request_id=None):\n"
+    "        return {{'success': True, 'request_id': request_id, 'program_title': 'FL Studio 2026',\n"
+    "                'fl_version': 'Attrappe'}}\n"
+    "    def get_status(self):\n"
+    "        return {{'port_name': 'Attrappe'}}\n"
+    "_verbindung = _Verbindung()\n"
+    "def get_connection():\n"
+    "    return _verbindung\n")
+ATTRAPPE_FENSTER = (
+    "{vorspann}"
+    "from pathlib import Path\n"
+    "def capture_process_window(pid, target, directory, name, plugin=None):\n"
+    "    Path({marke!r}).write_text('erfasst', encoding='utf-8')\n"
+    "    return {{'success': True, 'path': str(Path(directory) / (name + '.png')), 'width': 640, 'height': 480,\n"
+    "            'sha256': '0' * 64, 'uniform': False, 'window_class': 'TFruityLoopsMainForm',\n"
+    "            'window_title': 'Attrappe'}}\n")
+
+
+def attrappe_mcp_paket(wurzel: Path, *, trigger_in_connection: bool = False, trigger_in_fenster: bool = False) -> dict:
+    """Ein Paket fl_studio_mcp wie im Nachbarrepo: utils/__init__.py laedt connection und fl_trigger, fl_trigger
+    schreibt beim Import eine Marke. Wahlweise laedt schon connection.py oder fenster.py fl_trigger (Gegenteil)."""
+    utils = wurzel / "fl_studio_mcp" / "utils"
+    utils.mkdir(parents=True)
+    marken = {"trigger": wurzel / "fl_trigger.geladen", "erfasst": wurzel / "fenster.erfasst"}
+    vorspann = "from fl_studio_mcp.utils import fl_trigger\n"
+    (wurzel / "fl_studio_mcp" / "__init__.py").write_text("", encoding="utf-8")
+    (utils / "__init__.py").write_text(ATTRAPPE_UTILS_INIT, encoding="utf-8")
+    (utils / "fl_trigger.py").write_text(ATTRAPPE_FL_TRIGGER.format(marke=str(marken["trigger"])), encoding="utf-8")
+    (utils / "connection.py").write_text(ATTRAPPE_CONNECTION.format(vorspann=vorspann if trigger_in_connection else ""),
+                                         encoding="utf-8")
+    (utils / "fenster.py").write_text(ATTRAPPE_FENSTER.format(vorspann=vorspann if trigger_in_fenster else "",
+                                                              marke=str(marken["erfasst"])), encoding="utf-8")
+    return marken
+
+
+def unterprozess_mit_attrappe(befehl: list[str], wurzel: Path) -> tuple[int, str, str]:
+    """Unterprozess unter diesem Python mit dem Attrappenpaket vorn im Suchpfad (A35 bleibt ohne MCP-Repo)."""
+    umgebung = dict(os.environ, PYTHONPATH=str(wurzel), PYTHONIOENCODING="utf-8")
+    r = subprocess.run(befehl, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+                       env=umgebung)
+    return r.returncode, r.stdout or "", r.stderr or ""
+
+
+def letzte_json_zeile(text: str) -> dict:
+    zeile = next((z for z in reversed(text.splitlines()) if z.startswith("{")), None)
+    try:
+        wert = json.loads(zeile) if zeile else {}
+    except ValueError:
+        return {}
+    return wert if isinstance(wert, dict) else {}
+
+
+@fall("309/M-50", "importgraph_ohne_fl_trigger")
+def fall_importgraph_ohne_fl_trigger(p: Pruefer) -> None:
+    """Der echte Importweg der Szenarien (Umgebung.verbindung ueber `szenario.py --ping`) in einem Unterprozess unter
+    diesem Python mit einem Attrappenpaket fl_studio_mcp, dessen utils/__init__.py fl_trigger laedt: der
+    Stellvertreter haelt __init__.py draussen, fl_trigger wird nie geladen, und die Ping-Zeile nennt die geladenen
+    fl_studio_mcp-Module. Gegenteil: laedt connection.py selbst fl_trigger, endet der Ping mit Exit 3 und nennt das
+    Modul."""
+    befehl = [sys.executable, str(Path(__file__).resolve()), "--ping"]
+    with tempfile.TemporaryDirectory(prefix="nak309-import-", ignore_cleanup_errors=True) as tmp:
+        marken = attrappe_mcp_paket(Path(tmp))
+        code, aus, fehler = unterprozess_mit_attrappe(befehl, Path(tmp))
+        antwort = letzte_json_zeile(aus)
+        module = antwort.get("fl_studio_mcp_module") or []
+        p(code == EXIT_OK and antwort.get("success") is True,
+          f"Ping ueber das Attrappenpaket: Exit {code}, Antwort {antwort}, stderr {fehler[-300:]}")
+        p("fl_studio_mcp.utils.connection" in module and not any("fl_trigger" in m for m in module),
+          f"Importgraph der Ping-Zeile: {module}")
+        p(not marken["trigger"].exists(), "fl_trigger wurde geladen (utils/__init__.py lief)")
+    with tempfile.TemporaryDirectory(prefix="nak309-import-", ignore_cleanup_errors=True) as tmp:
+        attrappe_mcp_paket(Path(tmp), trigger_in_connection=True)
+        code, aus, fehler = unterprozess_mit_attrappe(befehl, Path(tmp))
+        antwort = letzte_json_zeile(aus)
+        p(code == EXIT_VORAUSSETZUNG and "Importgraph" in str(antwort.get("error"))
+          and "fl_studio_mcp.utils.fl_trigger" in str(antwort.get("error")),
+          f"Gegenteil (connection.py laedt fl_trigger): Exit {code}, Antwort {antwort}, stderr {fehler[-300:]}")
+
+
+@fall("309/M-51", "fensterskript_ohne_fl_trigger")
+def fall_fensterskript_ohne_fl_trigger(p: Pruefer) -> None:
+    """Der zweite Importweg: das Skript der Fenstererfassung (Befehl aus fenster_befehl) laedt fenster ueber denselben
+    Stellvertreter - fl_trigger wird nie geladen, die Erfassung laeuft. Gegenteil: laedt fenster.py selbst
+    fl_trigger, bricht das Skript vor der Erfassung ab."""
+    with tempfile.TemporaryDirectory(prefix="nak309-fenster-", ignore_cleanup_errors=True) as tmp:
+        marken = attrappe_mcp_paket(Path(tmp))
+        befehl = Umgebung().fenster_befehl(4242, "fl", Path(tmp) / "bilder", "m51", None)
+        code, aus, fehler = unterprozess_mit_attrappe(befehl, Path(tmp))
+        antwort = letzte_json_zeile(aus)
+        p(code == 0 and antwort.get("success") is True and marken["erfasst"].exists(),
+          f"Erfassung ueber das Attrappenpaket: Exit {code}, Antwort {antwort}, stderr {fehler[-300:]}")
+        p(not marken["trigger"].exists(), "fl_trigger wurde im Erfassungsskript geladen (utils/__init__.py lief)")
+    with tempfile.TemporaryDirectory(prefix="nak309-fenster-", ignore_cleanup_errors=True) as tmp:
+        marken = attrappe_mcp_paket(Path(tmp), trigger_in_fenster=True)
+        befehl = Umgebung().fenster_befehl(4242, "fl", Path(tmp) / "bilder", "m51", None)
+        code, aus, fehler = unterprozess_mit_attrappe(befehl, Path(tmp))
+        p(code != 0 and not marken["erfasst"].exists() and "Piano-Roll-Weg geladen" in fehler,
+          f"Gegenteil (fenster.py laedt fl_trigger): Exit {code}, erfasst {marken['erfasst'].exists()}, "
+          f"stderr {fehler[-300:]}")
 
 
 def selbsttest(nur: list[str]) -> int:

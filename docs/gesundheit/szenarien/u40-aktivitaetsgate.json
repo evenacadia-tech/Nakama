@@ -7,7 +7,7 @@
  "schritte": [
   {"aktion": "system.ping", "erwarte": {"fl_version": {"nicht_leer": true}}},
   {"aktion": "transport.getLength", "erwarte": {"milliseconds": {"min": 1, "roh": true}}},
-  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}},
+  {"aktion": "transport.setLoopMode", "params": {"mode": "song"}, "erwarte": {"mode": {"gleich": "song"}}},
   {"aktion": "lokal.stellen", "params": {"rollen": ["gen", "probeeq"], "stellen": [
    {"id": "S1", "name": "Intro", "von_s": 0.0, "bis_s": 3.692, "takte": "1-2", "energie": {"zellen": 36, "mittel_db": -25.205, "min_db": -27.205, "max_db": -22.628, "anteil_66_40": 0.0}},
    {"id": "S2", "name": "ruhige Passage", "von_s": 3.692, "bis_s": 11.077, "takte": "3-6", "energie": {"zellen": 73, "mittel_db": -25.112, "min_db": -27.558, "max_db": -22.147, "anteil_66_40": 0.0}},

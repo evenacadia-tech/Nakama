@@ -2,8 +2,8 @@
   "format": "nakama.laufzeit.mcp-stand.v1",
   "repo": "https://github.com/evenacadia-tech/fl-studio-mcp",
   "zweig": "evenacadia-local",
-  "revision": "0e6912db9fdbe375260daca0f6523fd537aa2f23",
-  "stand_vom": "2026-09-18",
+  "revision": "15b3b1a133ad37aa75e63e2d98a7aac0b74a62ae",
+  "stand_vom": "2026-09-19",
   "ticket": "NAK-309",
   "dateien": {
     "setup-local.ps1": "4e327166347a6cd4865312e2622fbdbfd1d6ad96",

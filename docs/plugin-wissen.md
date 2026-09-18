@@ -870,11 +870,31 @@ Werkzeugfehler (Exit 2), fehlendes clang-tidy/ninja/cmake ist `[FEHLT]`
 Iststand und Verteilung je Check stehen im Manifest `docs/beweise/NAK-288.md`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
-[-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3
-Voraussetzung fehlt · 4 Läufe grün, aber Binaries älter als Quellen.
-Baustand-Scan (`:421-469`): EIN globaler „neueste
-Quelle"-Zeitstempel über alle Quellorte gegen jedes Prüfbinary — ohne
-`-Bauen` zu grob (NAK-25), mit `-Bauen` zählt das Urteil des Buildsystems.
+[-Anhaengen] -Titel '…'`. Exitcodes (Skriptkopf): 0 grün · 2 ein Bein rot · 3
+Voraussetzung fehlt, auch ein nicht ableitbarer Frischebaum · 4 Läufe grün, aber
+ein Binary ist älter als eine seiner Quellen oder der Frischebaum deckt nicht
+jede Quelle.
+
+**Baustand seit NAK-309 (Etappe 2, 18.09.2026).**
+`tools/eq-copilot/pruefe_beweisrunner.py --baustand` leitet je Prüfbinary den
+Frischebaum aus den MSBuild-Tracking-Logs ab: die Leselogs seines
+Zwischenordners, jede Bibliothek (etwa `NakamaKern.lib`) über die Logs ihres
+Erzeugers statt über den eigenen Zeitstempel (A14 baut sie in jedem Lauf
+neu), die Projektdatei `<Ziel>.vcxproj` und den Konfigurationsstand
+(`generate.stamp` gegen seine Eingaben, dieselbe Sicht wie ZERO_CHECK);
+Eingaben außerhalb der Arbeitskopie zählen nicht. Danach die Kreuzprobe gegen
+den CMake-Export `eq-copilot/build/plugin/nakama-frischebaum-<Konfig>.json`
+(jeder Kernverbraucher erreicht die Kernquellen) und das Inventar über
+`git ls-files eq-copilot/plugin` (Ausnahmen mit Grund im Werkzeugkopf).
+Verglichen werden Zeitstempel, keine Inhalte (Grenze, NAK-230). Mit `-Bauen`
+zählt für den Zeitvergleich das Urteil des Buildsystems; Kreuzprobe und
+Inventar laufen trotzdem. Bein A36 misst die Ableitung an einem
+Attrappen-Baubaum. Die globale Ordnerliste von vorher (NAK-25, zu grob, und ohne
+`dsp/`, Befund T3-09-01) gibt es nicht mehr. `-Bauen` baut in der Folge
+Release-Broker → `pruefe_installer_manifest.py --broker-pin` → `cmake --build`
+(Broker→Manifest→Plugin); A17 prüft die Folge (`[3e]`) und den Pin im Header
+gegen die gebaute Brokerdatei (`[4c+]`), und `--hashen` fährt nach dem
+Schreiben die Startbindung gegen die geschriebene Datei (Exit 2 bei altem Pin).
 
 **Nicht im Kanon:** `EqCopAuxSpikeTest` (41, NAK-37) · `EqCopShot <ziel.png>
 [breite]` (echte Messung offscreen) · `EqCopPaintBench [breite] [frames]`
@@ -911,7 +931,7 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
   NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · Codesigning-Zertifikat
   und befüllter Installer-Thumbprint — NAK-119 · `MainProjectState`-Ingress und
   Führungsrestore nach Brokerneustart — NAK-120 · Sensorübersicht (`.svelte` ohne Zuhause; NAK-12 am 21.08. geschlossen: Hub-App kein Produktteil) —
-  NAK-12 · Baustand-Riegel zu grob — NAK-25 · `pluginval` nur in `%TEMP%` —
+  NAK-12 · `pluginval` nur in `%TEMP%` —
   NAK-26. **`hatTransport` Tautologie (NAK-24) und das Markierungs-fail-open
   (NAK-35) sind seit SONDE-008 geschlossen.**
 - **Neu offen aus SONDE-008:** ob FL die Projektzeit über die Teilstücke eines

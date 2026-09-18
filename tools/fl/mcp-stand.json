@@ -1,0 +1,20 @@
+{
+  "format": "nakama.laufzeit.mcp-stand.v1",
+  "repo": "https://github.com/evenacadia-tech/fl-studio-mcp",
+  "zweig": "evenacadia-local",
+  "revision": "0e6912db9fdbe375260daca0f6523fd537aa2f23",
+  "stand_vom": "2026-09-18",
+  "ticket": "NAK-309",
+  "dateien": {
+    "setup-local.ps1": "4e327166347a6cd4865312e2622fbdbfd1d6ad96",
+    "pyproject.toml": "8fc18855ef22a76482b335a658f8d8cae76984d0",
+    "fl_controller/device_FLStudioMCP.py": "0be2601a696474a7c98b22572d30e4df2ece3c53",
+    "src/fl_studio_mcp/__init__.py": "042b6a04e039327a1af31dcd1062f932e118fa88",
+    "src/fl_studio_mcp/utils/__init__.py": "921b810603efc50ff35a8c9b4abe2fa3c36a79d6",
+    "src/fl_studio_mcp/utils/connection.py": "c3c6cb7701bb2eb81d6c5ac9c657a59542253946",
+    "src/fl_studio_mcp/utils/midi_connection.py": "685340f2194439ae5fde48620ad88742047dcd81",
+    "src/fl_studio_mcp/utils/fl_paths.py": "89021f0d3e2bd582b389f78d8eedfb7c37ee4228",
+    "src/fl_studio_mcp/utils/fenster.py": "526d34d31e00779c5750845957149ecb277adbb3",
+    "src/fl_studio_mcp/utils/fl_trigger.py": "40377416e1902edfe7a3f49063b73212c241a1ad"
+  }
+}

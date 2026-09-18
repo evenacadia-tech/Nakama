@@ -11,8 +11,11 @@
          (pruefe_installer_manifest.py --hashen), Diagnose-FL beenden, erhoehte
          Aufgabe \Nakama\installieren (NAK-285) starten und auf ihr Ergebnis
          warten, danach \Nakama\pruefen fuer das Urteil "aktuell".
-         Ein FL mit fremdem Projekt im Fenster heisst: uebersprungen, Exit 0 -
-         ein fremdes FL wird nie beendet.
+         Fremd ist jeder FL-Prozess, den dieser Runner nicht gestartet hat
+         oder der ein fremdes Projekt zeigt - auch mit Nakama-Diagnose.flp im
+         Titel und auch ohne Fenster (NAK-309, R-309-1'). Ein fremdes FL
+         heisst: uebersprungen, Exit 0 - es wird nie beendet, und neben ihm
+         wird nicht gemessen.
       3. Bereitschaft: loopMIDI VOR FL (FL sieht nur MIDI-Ports, die beim
          Start existieren), fensterlose FL-Restprozesse beenden, Projektordner
          unter %LOCALAPPDATA%\evenacadia\nakama-laufzeit\projekt aus dem Repo
@@ -35,15 +38,35 @@
          gehoert ins Manifest. Jeder Ausgang raeumt anfrage.json ab.
 
     Exit 0 = gemessen oder begruendet uebersprungen, 3 = Voraussetzung fehlt
-    (Hashes, Installation, Port, Ping; ein Szenario mit Exit 3 oder 5),
-    4 = mindestens ein Szenario verfehlt. Diagnose- und Referenzprojekte
-    werden nie gespeichert; FL bleibt danach offen (-Beenden schliesst es, z. B. im
-    naechtlichen Lauf). Der Runner startet nie den Broker.
+    (Hashes, Installation, Port, Ping, MCP-Stand; ein Szenario mit Exit 3
+    oder 5), 4 = mindestens ein Szenario verfehlt. Diagnose- und
+    Referenzprojekte werden nie gespeichert; FL bleibt danach offen (-Beenden
+    schliesst es, z. B. im naechtlichen Lauf). Der Runner startet nie den
+    Broker.
+
+    Besitz (NAK-309, R-309-1'): eigen ist nur ein FL-Prozess, den dieser
+    Runner gestartet hat - ein Eintrag in
+    %LOCALAPPDATA%\evenacadia\nakama-laufzeit\eigene-prozesse.json mit PID,
+    Startzeit und Befehlszeile aus Win32_Process, die alle drei gleichen, die
+    PID allein nie -, dessen Befehlszeile ein Projekt der Arbeitskopie nennt
+    (FL: das Diagnoseprojekt; Render: ein Projekt der Arbeitskopie) und dessen
+    Hauptfenster leer ist oder mit "<Projektdatei> - " beginnt. Eingetragen
+    wird direkt nach dem Start, ausgetragen nach bestaetigtem Ende; der
+    Laufstart entfernt Eintraege ohne passenden lebenden Prozess. Ohne
+    lesbare Befehlszeile oder mit unlesbarer Liste ist nichts eigen. Jedes
+    Beenden prueft den Besitz selbst.
+
+    MCP-Stand (NAK-309, T3-13-06): vor der Installation, vor setup-local.ps1
+    und vor dem ersten uv run gleicht der Runner die MCP-Arbeitskopie gegen
+    tools/fl/mcp-stand.json ab (Commit, sauberer Arbeitsbaum, Git-Blob-Kennung
+    je gepinnter Datei); jede Abweichung und eine fehlende oder unlesbare
+    Pin-Datei ist Exit 3. Den Pin aendert nur ein Commit, nie der Runner.
 
     -Selbsttest faehrt die Faelle der Matrixzeilen gegen Attrappen fuer
-    FL-Instanzen, Prozessliste, Aufgaben, Uhr, py, git, FL64 und Dateien - ohne
-    FL und ohne Installation; Exit 0 gruen, 4 rot, 2 Werkzeugfehler. -Nur <fall>
-    faehrt einzelne Faelle.
+    FL-Instanzen, Prozessliste und Prozessinfo, Besitzliste, Aufgaben, Uhr,
+    py, git gegen beide Repos, FL64 und Dateien - ohne FL und ohne
+    Installation; Exit 0 gruen, 4 rot, 2 Werkzeugfehler. -Nur <fall> faehrt
+    einzelne Faelle.
 
 .EXAMPLE
     pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket NAK-286 -Basis 467e4534
@@ -98,6 +121,8 @@ function Neuer-Kontext([hashtable]$w) {
         RenderFristSekunden = $w.RenderFristSekunden
         Arbeit = $arbeit; ProjektOrdner = (Join-Path $arbeit 'projekt'); RenderOrdner = (Join-Path $arbeit 'render')
         LogDatei = (Join-Path $arbeit 'laufzeit.log')
+        BesitzDatei = (Join-Path $arbeit 'eigene-prozesse.json'); BesitzMeldungen = @{}
+        McpStand = (Join-Path $w.Repo 'tools\fl\mcp-stand.json')
         DiagnoseOrdner = $w.DiagnoseOrdner; AntwortOrdner = (Join-Path $w.DiagnoseOrdner 'antwort')
         SzenarioPy = (Join-Path $w.Repo 'tools\fl\szenario.py')
         Leise = [bool]$w.Leise
@@ -248,6 +273,28 @@ function Neue-Umgebung {
         @([NakamaFensterliste]::Liste([uint32]$id) | ForEach-Object { [pscustomobject]@{ Klasse = $_[0]; Titel = $_[1]; Sichtbar = ($_[2] -eq '1') } })
     }
     $u.BeendeProzess = { param([int]$id) Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
+    $u.ProzessInfo = {
+        # R-309-1' (F-13): Startzeit (UTC-Ticks) und Befehlszeile aus Win32_Process. Die PID allein vergibt Windows
+        # nach dem Ende neu (MS Learn, Win32_Process, ProcessId); ohne lesbare Befehlszeile ist nichts eigen.
+        param([int]$id)
+        $p = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $id" -ErrorAction SilentlyContinue
+        if (-not $p) { return $null }
+        $start = if ($p.CreationDate) { ([datetime]$p.CreationDate).ToUniversalTime().Ticks } else { $null }
+        @{ Id = $id; Startzeit = $start; Befehlszeile = [string]$p.CommandLine }
+    }
+    $u.Besitzliste = { param([string]$tun, [string]$text) Besitzliste-Datei $tun $text }
+    $u.McpGit = {
+        # Nur lesend gegen die MCP-Arbeitskopie; stdout und stderr getrennt, damit eine Git-Warnung nie als
+        # geaenderte Datei zaehlt.
+        param([string[]]$argumente)
+        try {
+            $ausgabe = @(& git -C $script:K.McpRepo @argumente 2>&1)
+            $code = $LASTEXITCODE
+        } catch { return @{ Exit = 127; Zeilen = @(); Fehler = @($_.Exception.Message) } }
+        @{ Exit = $code
+           Zeilen = @($ausgabe | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" })
+           Fehler = @($ausgabe | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) }
+    }
     $u.Git = {
         param([string[]]$argumente)
         $zeilen = @(& git -C $script:K.Repo @argumente 2>&1 | ForEach-Object { "$_" })
@@ -315,7 +362,7 @@ function Neue-Umgebung {
         if (-not $zeile) { return @{ Ok = $false; Fehler = ($ausgabe -join ' ').Trim() } }
         try { $j = $zeile | ConvertFrom-Json } catch { return @{ Ok = $false; Fehler = $zeile } }
         if (-not $j.success) { return @{ Ok = $false; Fehler = $j.error } }
-        @{ Ok = $true; Titel = $j.program_title; Version = $j.fl_version; Port = $j.port_name }
+        @{ Ok = $true; Titel = $j.program_title; Version = $j.fl_version; Port = $j.port_name; Module = @($j.fl_studio_mcp_module) }
     }
     $u.FahreSzenario = {
         param([string]$pfad)
@@ -347,24 +394,171 @@ function FL-Instanzen {
         [pscustomobject]@{ Id = $p.Id; Name = $p.Name; Titel = $titel; Fenster = ($haupt.Count -gt 0 -or [int64]$p.MainWindowHandle -ne 0) }
     }
 }
-function Ist-Diagnose($inst) { $inst.Fenster -and $inst.Titel -like "*$($script:K.ProjektName)*" }
-function Ist-Fremd($inst)    { $inst.Fenster -and $inst.Titel -and -not ($inst.Titel -like "*$($script:K.ProjektName)*") }
+# ---------------------------------------------------------------- Besitz (NAK-309, R-309-1')
+# Eigen ist nur ein FL-Prozess, den dieser Runner gestartet hat. Die Besitzliste haelt je Prozess PID, Startzeit
+# (UTC-Ticks), Befehlszeile und Zweck (fl oder render); Besitz gilt nur, wenn der laufende Prozess in allen drei
+# Merkmalen gleicht - die PID allein vergibt Windows nach dem Ende neu. Dazu nennt die Befehlszeile ein Projekt der
+# Arbeitskopie dieses Laufs, und ein FL mit Fenster zeigt keinen fremden Projekttitel. Alles andere ist fremd und wird
+# nie beendet - auch mit Nakama-Diagnose.flp im Titel, auch ohne Fenster.
+$script:BesitzFormat = 'nakama.laufzeit.besitz.v1'
+
+function Besitzliste-Datei([string]$tun, [string]$text) {
+    # Lesen oder atomar schreiben: temporaere Datei im selben Ordner, dann Umbenennen mit Ersetzen (MoveFileEx) - nie
+    # eine halbe Liste.
+    $pfad = $script:K.BesitzDatei
+    if ($tun -eq 'lies') {
+        if (Test-Path -LiteralPath $pfad) { return [IO.File]::ReadAllText($pfad) }
+        return $null
+    }
+    $tmp = "$pfad.tmp-$PID"
+    [IO.File]::WriteAllText($tmp, $text, (New-Object System.Text.UTF8Encoding($false)))
+    [IO.File]::Move($tmp, $pfad, $true)
+}
+
+function Melde-Besitz([string]$text) {
+    if ($script:K.BesitzMeldungen.ContainsKey($text)) { return }
+    $script:K.BesitzMeldungen[$text] = $true
+    Log $text
+}
+
+function Lies-Besitz {
+    # Eine unlesbare Liste gilt als leer - nichts ist eigen, nie "alles eigen" (M-38 (e)); gemeldet einmal je Lauf.
+    $text = $null
+    try { $text = & $script:U.Besitzliste 'lies' } catch { Melde-Besitz "Besitzliste nicht lesbar ($($_.Exception.Message)): gilt als leer, nichts ist eigen"; return @() }
+    if (-not $text) { return @() }
+    $j = $null
+    try { $j = $text | ConvertFrom-Json -ErrorAction Stop } catch { }
+    if (-not $j -or $j.format -ne $script:BesitzFormat -or $null -eq $j.eintraege) {
+        Melde-Besitz "Besitzliste unlesbar (kein JSON oder fremdes Format): gilt als leer, nichts ist eigen"
+        return @()
+    }
+    $liste = @()
+    foreach ($e in @($j.eintraege)) {
+        $gut = $e -and ($e.pid -is [int] -or $e.pid -is [long]) -and ($e.startzeit -is [int] -or $e.startzeit -is [long]) -and
+               $e.befehlszeile -is [string] -and $e.befehlszeile -and @('fl', 'render') -contains $e.zweck
+        if (-not $gut) { Melde-Besitz 'Besitzliste: unbrauchbarer Eintrag verworfen'; continue }
+        $liste += [pscustomobject]@{ Pid = [int]$e.pid; Startzeit = [long]$e.startzeit; Befehlszeile = [string]$e.befehlszeile
+                                     Zweck = [string]$e.zweck; Eingetragen = [string]$e.eingetragen }
+    }
+    return $liste
+}
+
+function Schreibe-Besitz($liste) {
+    $eintraege = @($liste | ForEach-Object { [ordered]@{ pid = [long]$_.Pid; startzeit = [long]$_.Startzeit; befehlszeile = [string]$_.Befehlszeile; zweck = [string]$_.Zweck; eingetragen = [string]$_.Eingetragen } })
+    & $script:U.Besitzliste 'schreibe' ([ordered]@{ format = $script:BesitzFormat; eintraege = $eintraege } | ConvertTo-Json -Depth 4)
+}
+
+function Trage-Ein([int]$id, [string]$zweck) {
+    # Direkt nach dem Start, bevor auf den Prozess gewartet wird (M-38 (a)).
+    $info = & $script:U.ProzessInfo $id
+    if (-not $info -or -not $info.Startzeit -or -not $info.Befehlszeile) {
+        Log "Besitz: PID $id ($zweck) nicht eingetragen - Startzeit oder Befehlszeile nicht lesbar; der Prozess gilt als fremd"
+        return
+    }
+    $liste = @(@(Lies-Besitz) | Where-Object { $_.Pid -ne $id })
+    $liste += [pscustomobject]@{ Pid = $id; Startzeit = [long]$info.Startzeit; Befehlszeile = [string]$info.Befehlszeile; Zweck = $zweck; Eingetragen = (Zeit) }
+    Schreibe-Besitz $liste
+    Log "Besitz: PID $id ($zweck) eingetragen"
+}
+
+function Trage-Aus([int]$id, [string]$grund) {
+    # Nach bestaetigtem Ende (M-38 (b)).
+    $alt = @(Lies-Besitz)
+    $neu = @($alt | Where-Object { $_.Pid -ne $id })
+    if ($neu.Count -eq $alt.Count) { return }
+    Schreibe-Besitz $neu
+    Log "Besitz: PID $id ausgetragen ($grund)"
+}
+
+function Bereinige-Besitz {
+    # Zu Beginn jedes Laufs (M-35, M-38 (d)): ein Eintrag ohne lebenden Prozess mit derselben Startzeit und Befehlszeile
+    # ist veraltet - der Prozess endete, oder Windows hat die PID neu vergeben.
+    $alt = @(Lies-Besitz)
+    $bleibt = @()
+    foreach ($e in $alt) {
+        $info = & $script:U.ProzessInfo $e.Pid
+        if ($info -and $info.Startzeit -and [long]$info.Startzeit -eq $e.Startzeit -and [string]$info.Befehlszeile -eq $e.Befehlszeile) { $bleibt += $e; continue }
+        $grund = if (-not $info) { 'Prozess lebt nicht mehr' } elseif (-not $info.Startzeit -or -not $info.Befehlszeile) { 'Startzeit oder Befehlszeile nicht lesbar' } elseif ([long]$info.Startzeit -ne $e.Startzeit) { 'PID neu vergeben (andere Startzeit)' } else { 'Befehlszeile weicht ab' }
+        Log "Besitz: veralteter Eintrag PID $($e.Pid) ($($e.Zweck)) entfernt - $grund"
+    }
+    if ($bleibt.Count -ne $alt.Count) { Schreibe-Besitz $bleibt }
+}
+
+function Projekt-Der-Befehlszeile([string]$befehlszeile) {
+    # Das letzte Argument, wie Starte-FL und Rendere es setzen: der gequotete volle Pfad einer .flp-Datei.
+    if ($befehlszeile -match '"([^"]+\.flp)"\s*$') { return $Matches[1] }
+    return $null
+}
+
+function Gleicher-Pfad([string]$a, [string]$b) {
+    if (-not $a -or -not $b) { return $false }
+    try { return [string]::Equals([IO.Path]::GetFullPath($a).TrimEnd('\'), [IO.Path]::GetFullPath($b).TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase) } catch { return $false }
+}
+
+function Besitz-Urteil($inst) {
+    $K = $script:K
+    $info = & $script:U.ProzessInfo $inst.Id
+    if (-not $info) { return @{ Eigen = $false; Grund = 'Prozess nicht lesbar' } }
+    if (-not $info.Befehlszeile -or -not $info.Startzeit) { return @{ Eigen = $false; Grund = 'Befehlszeile nicht lesbar' } }
+    $eintrag = @(@(Lies-Besitz) | Where-Object { $_.Pid -eq $inst.Id -and $_.Startzeit -eq [long]$info.Startzeit -and $_.Befehlszeile -eq [string]$info.Befehlszeile }) | Select-Object -First 1
+    if (-not $eintrag) { return @{ Eigen = $false; Grund = 'nicht von diesem Runner gestartet' } }
+    $projekt = Projekt-Der-Befehlszeile $info.Befehlszeile
+    $inArbeitskopie = if ($eintrag.Zweck -eq 'fl') { Gleicher-Pfad $projekt (Join-Path $K.ProjektOrdner $K.ProjektName) } else { [bool]$projekt -and (Gleicher-Pfad ([IO.Path]::GetDirectoryName($projekt)) $K.ProjektOrdner) -and (Ist-Projektname ([IO.Path]::GetFileName($projekt))) }
+    if (-not $inArbeitskopie) { return @{ Eigen = $false; Grund = 'Befehlszeile nennt kein Projekt der Arbeitskopie dieses Laufs' } }
+    if ($eintrag.Zweck -eq 'fl' -and $inst.Fenster -and $inst.Titel -and -not ([string]$inst.Titel).StartsWith(([IO.Path]::GetFileName($projekt) + ' - '), [StringComparison]::OrdinalIgnoreCase)) {
+        return @{ Eigen = $false; EigenesFl = $true; Grund = 'eigenes FL zeigt ein fremdes Projekt' }
+    }
+    return @{ Eigen = $true; Grund = 'eigen'; Zweck = [string]$eintrag.Zweck }
+}
+
+function Ist-Eigen($inst) { return [bool](Besitz-Urteil $inst).Eigen }
+function Ist-Fremd($inst) { return -not (Ist-Eigen $inst) }
+function Ist-Eigenes-Diagnose-FL($inst) { $u = Besitz-Urteil $inst; return ([bool]$u.Eigen -and $u.Zweck -eq 'fl' -and [bool]$inst.Fenster) }
+function Fremde-FL { return @(FL-Instanzen | Where-Object { Ist-Fremd $_ }) }
+
+function Fremd-Text($inst, [string]$wo = '') {
+    # Der Grund eines Uebersprungs nennt PID, Titel und warum der Prozess fremd ist.
+    $u = Besitz-Urteil $inst
+    $bei = if ($wo) { " $wo" } else { '' }
+    if ($u.EigenesFl) { return "eigenes FL zeigt ein fremdes Projekt${bei}: '$($inst.Titel)' (PID $($inst.Id))" }
+    if (-not $inst.Fenster) { return "fremder FL-Prozess ohne Fenster${bei}: PID $($inst.Id) ($($u.Grund))" }
+    return "fremdes FL-Projekt offen${bei}: '$($inst.Titel)' (PID $($inst.Id), $($u.Grund))"
+}
+
+function Beende-Eigenen($inst, [string]$was) {
+    # Die Fremdpruefung steht am Beenden selbst: kein Aufrufer beendet einen Prozess, den dieser Runner nicht gestartet
+    # hat (H-3, M-30 bis M-39).
+    $u = Besitz-Urteil $inst
+    if (-not $u.Eigen) { Log ("{0} PID {1} nicht beendet - {2}" -f $was, $inst.Id, $u.Grund); return $false }
+    & $script:U.BeendeProzess $inst.Id
+    return $true
+}
+
+function Warte-Ende([int[]]$ids, [double]$frist) {
+    # Bestaetigung ueber die Prozessliste; zurueck kommen die PIDs, die nicht mehr laufen.
+    $t0 = & $script:U.Jetzt
+    while (@(FL-Instanzen | Where-Object { $ids -contains $_.Id }).Count -gt 0 -and ((& $script:U.Jetzt) - $t0).TotalSeconds -lt $frist) { & $script:U.Schlafe 1 }
+    $laufend = @(FL-Instanzen | ForEach-Object { $_.Id })
+    return @($ids | Where-Object { $laufend -notcontains $_ })
+}
 
 function Beende-Diagnose-FL {
-    foreach ($i in @(FL-Instanzen | Where-Object { Ist-Diagnose $_ })) {
-        Log "Diagnose-FL beenden: PID $($i.Id) '$($i.Titel)' (Projekt wird nie gespeichert)"
-        & $script:U.BeendeProzess $i.Id
+    $beendet = @()
+    foreach ($i in @(FL-Instanzen | Where-Object { Ist-Eigenes-Diagnose-FL $_ })) {
+        Log "Diagnose-FL beenden: PID $($i.Id) '$($i.Titel)' (eigen, Projekt wird nie gespeichert)"
+        if (Beende-Eigenen $i 'Diagnose-FL') { $beendet += $i.Id }
     }
-    $t0 = & $script:U.Jetzt
-    while (@(FL-Instanzen | Where-Object { Ist-Diagnose $_ }).Count -gt 0 -and ((& $script:U.Jetzt) - $t0).TotalSeconds -lt 30) { & $script:U.Schlafe 1 }
+    if ($beendet.Count -eq 0) { return }
+    foreach ($id in @(Warte-Ende $beendet 30)) { Trage-Aus $id 'Ende bestaetigt' }
 }
 function Beende-Restprozesse {
     foreach ($i in @(FL-Instanzen | Where-Object { -not $_.Fenster })) {
-        & $script:U.BeendeProzess $i.Id
+        if (-not (Beende-Eigenen $i 'FL-Restprozess')) { continue }
         & $script:U.Schlafe 0.5
         # Get-Process -Id schweigt bei Zugriffsverweigerung; die Liste luegt nicht.
         $weg = -not (@(FL-Instanzen) | Where-Object { $_.Id -eq $i.Id })
         Log ("FL-Restprozess PID {0}: {1}" -f $i.Id, $(if ($weg) { 'beendet' } else { 'nicht beendbar (Zugriff), ignoriert' }))
+        if ($weg) { Trage-Aus $i.Id 'Ende bestaetigt' }
     }
 }
 
@@ -400,8 +594,8 @@ function Aufgabe([string]$name) {
 }
 
 function Installiere {
-    $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
-    if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" } }
+    $fremd = @(Fremde-FL)
+    if ($fremd.Count -gt 0) { return @{ Ok = $false; Ueberspringen = $true; Grund = (Fremd-Text $fremd[0]) } }
     Beende-Diagnose-FL
     Beende-Restprozesse
     Log 'Manifest-Hashes nachziehen (--hashen)'
@@ -440,8 +634,8 @@ function Pruefe-Controller {
     $K.ScriptVersion = if ($treffer.Success) { $treffer.Groups[1].Value } else { $null }
     Log ("Controller-Skript: SHA-256 Repo {0}, installiert {1} ({2}), script_version {3}" -f $hRepo, $hInstalliert, $installiert, $K.ScriptVersion)
     if ($hRepo -eq $hInstalliert) { return }
-    $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
-    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor der Neuinstallation des Controllers: '$($fremd[0].Titel)'" }
+    $fremd = @(Fremde-FL)
+    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' (Fremd-Text $fremd[0] 'vor der Neuinstallation des Controllers') }
     Beende-Diagnose-FL
     $r = & $script:U.SetupLocal
     foreach ($z in @($r.Zeilen)) { Log "  setup-local: $z" }
@@ -561,8 +755,8 @@ function Rendere([string]$flp, [string]$ordner = $script:K.RenderOrdner, [string
     foreach ($alt in @($wav, (Join-Path $ordner 'ergebnis.json'), (Join-Path $ordner 'render.json'))) {
         if (& $script:U.Existiert $alt) { & $script:U.Loesche $alt }
     }
-    $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
-    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem Render: '$($fremd[0].Titel)'" }
+    $fremd = @(Fremde-FL)
+    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' (Fremd-Text $fremd[0] 'vor dem Render') }
     Beende-Diagnose-FL
     Beende-Restprozesse
     $status = [ordered]@{ format = 'nakama.laufzeit.render.v1'; head = $K.Head; projekt = $flp; sha256_projekt = (& $script:U.Hash $flp); datei = $null; grund = $null }
@@ -574,6 +768,7 @@ function Rendere([string]$flp, [string]$ordner = $script:K.RenderOrdner, [string
         $argumente = '/R /Ewav /O"' + $ordner + '" "' + $flp + '"'
         $t0 = & $script:U.Jetzt
         $renderPid = & $script:U.StarteProzess $exe $argumente
+        Trage-Ein $renderPid 'render'
         Log "$bezeichnung gestartet: PID $renderPid ($exe $argumente)"
         while ((& $script:U.ProzessLaeuft $renderPid) -and ((& $script:U.Jetzt) - $t0).TotalSeconds -lt $K.RenderFristSekunden) { & $script:U.Schlafe 1 }
         $titel = ''
@@ -581,8 +776,11 @@ function Rendere([string]$flp, [string]$ordner = $script:K.RenderOrdner, [string
         if ($haengt) {
             $titel = (@(& $script:U.Fenster $renderPid | Where-Object { $_.Sichtbar -and $_.Titel } | ForEach-Object { "$($_.Klasse): $($_.Titel)" }) -join ' | ')
             Log "$bezeichnung haengt nach $($K.RenderFristSekunden) s: genau PID $renderPid beenden (Fenster: '$titel'; eigene Arbeitskopie, nie gespeichert)"
-            & $script:U.BeendeProzess $renderPid
-        }
+            $inst = @(FL-Instanzen | Where-Object { $_.Id -eq $renderPid }) | Select-Object -First 1
+            if ($inst -and (Beende-Eigenen $inst $bezeichnung)) {
+                foreach ($id in @(Warte-Ende @($renderPid) 30)) { Trage-Aus $id 'Ende bestaetigt' }
+            }
+        } else { Trage-Aus $renderPid 'Render beendet' }
         $status.pid = $renderPid
         $status.aufruf = "$exe $argumente"
         $status.dauer_s = [math]::Round(((& $script:U.Jetzt) - $t0).TotalSeconds, 1)
@@ -643,6 +841,7 @@ function Starte-FL([string]$flp) {
     $exe = & $script:U.FlPfad
     $script:K.FlStart = & $script:U.Jetzt
     $id = & $script:U.StarteProzess $exe ('"' + $flp + '"')
+    Trage-Ein $id 'fl'
     $script:K.DiagnosePid = $id
     Log "FL gestartet: PID $id ($exe) mit $flp"
 }
@@ -672,19 +871,23 @@ function Warte-Boot {
 function Warte-Ping {
     # ui.getProgTitle() liefert nur "FL Studio 2026" (gemessen 12.09.2026);
     # welches Projekt offen ist, sagt das Hauptfenster der Instanz (FL-Instanzen).
+    # NAK-309 (M-37, NB-3): die Diagnose-PID ist nur die selbst gestartete - nie die erste Titeluebereinstimmung; laeuft
+    # beim Ping ein fremdes FL mit, wird nicht gemessen (Exit 0 UEBERSPRUNGEN).
     $K = $script:K
     $t0 = & $script:U.Jetzt
     $letzter = ''
     while (((& $script:U.Jetzt) - $t0).TotalSeconds -lt $K.PingFristSekunden) {
         $r = & $script:U.Ping
         if ($r.Ok) {
-            $inst = @(FL-Instanzen | Where-Object { Ist-Diagnose $_ })
+            $alle = @(FL-Instanzen)
+            $fremd = @($alle | Where-Object { Ist-Fremd $_ })
+            if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' ('fremdes FL beim Ping: ' + (Fremd-Text $fremd[0])) }
+            $inst = @($alle | Where-Object { $_.Id -eq $K.DiagnosePid -and (Ist-Eigenes-Diagnose-FL $_) -and ([string]$_.Titel).StartsWith("$($K.ProjektName) - ", [StringComparison]::OrdinalIgnoreCase) })
             if ($inst.Count -gt 0) {
-                $K.DiagnosePid = $inst[0].Id
-                Log ("Ping ok: FL {0} ('{1}'), Fenster '{2}', Port {3}, Diagnose-PID {4}" -f $r.Version, $r.Titel, $inst[0].Titel, $r.Port, $inst[0].Id)
+                Log ("Ping ok: FL {0} ('{1}'), Fenster '{2}', Port {3}, Diagnose-PID {4}, Module {5}" -f $r.Version, $r.Titel, $inst[0].Titel, $r.Port, $inst[0].Id, (@($r.Module) -join ', '))
                 return $r
             }
-            $letzter = "Ping antwortet, aber kein Fenster mit $($K.ProjektName)"
+            $letzter = "Ping antwortet, aber das eigene FL (PID $($K.DiagnosePid)) zeigt $($K.ProjektName) nicht"
         } else { $letzter = $r.Fehler }
         & $script:U.Schlafe 5
     }
@@ -694,8 +897,8 @@ function Warte-Ping {
 function Frischer-Start([string]$name) {
     # M-59: das Szenario braucht eine frische Messung (K5, T-13); nie gespeichert.
     Log "Szenario ${name}: frischer_start - Diagnose-FL neu starten"
-    $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
-    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen vor dem frischen Start: '$($fremd[0].Titel)'" }
+    $fremd = @(Fremde-FL)
+    if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' (Fremd-Text $fremd[0] 'vor dem frischen Start') }
     Beende-Diagnose-FL
     Beende-Restprozesse
     Starte-FL (Join-Path $script:K.ProjektOrdner $script:K.ProjektName)
@@ -710,8 +913,9 @@ function Nulltest-Urteil {
 }
 
 function Fahre-Rueckweg {
-    # M-65, F-20: der Rueckweg fasst bei laufendem FL nichts an (Install-Nakama.ps1).
-    Log 'Rueckweg nach ABWEICHUNG: (1) Diagnose-FL beenden (nie speichern) und fensterlose Restprozesse'
+    # M-65, F-20: der Rueckweg fasst bei laufendem FL nichts an (Install-Nakama.ps1). NAK-309 (M-39): beendet wird nur
+    # Eigenes; ein fremdes FL wird nie beendet, um den Rueckweg zu ermoeglichen - laeuft es noch, verweigert er.
+    Log 'Rueckweg nach ABWEICHUNG: (1) eigenes Diagnose-FL beenden (nie speichern) und eigene fensterlose Restprozesse'
     Beende-Diagnose-FL
     Beende-Restprozesse
     $laufend = @(FL-Instanzen)
@@ -774,14 +978,65 @@ function Fahre-Szenarien([string[]]$liste) {
     return @{ Ergebnisse = $ergebnisse; Entfallen = $entfallen; Rueckweg = $rueckweg; Abbruch = $abbruch }
 }
 
+function Erste-Zeile($r) {
+    $z = @($r.Zeilen | Where-Object { "$_".Trim() })
+    if ($z.Count -gt 0) { return "$($z[0])".Trim() }
+    return ''
+}
+
+function Pruefe-McpStand {
+    # T3-13-06 (NAK-309 M-52 bis M-56): der Laufzeit-Arm faehrt nur den gepinnten Stand des MCP-Repos. Die Pin-Datei
+    # tools/fl/mcp-stand.json nennt Commit und Git-Blob-Kennungen der Erstcode-Dateien (unabhaengig von den Zeilenenden
+    # auf PC oder Laptop); geprueft vor der Installation, vor setup-local.ps1 und vor dem ersten uv run. Jede Abweichung
+    # und jede fehlende oder unlesbare Angabe ist Exit 3 - nie ein Lauf ohne geprueften Pin. Den Pin aendert nur ein
+    # datierter Nakama-Commit; der Runner schreibt die Datei nie. uv.lock ist im MCP-Repo ungetrackt und je Rechner
+    # eigen: protokolliert, nicht verglichen.
+    $K = $script:K
+    $text = & $script:U.LiesText $K.McpStand
+    if (-not $text) { Ende 3 'VORAUSSETZUNG' "MCP-Stand: Pin-Datei fehlt ($($K.McpStand))" }
+    $pin = $null
+    try { $pin = $text | ConvertFrom-Json -AsHashtable -ErrorAction Stop } catch { }
+    if ($pin -isnot [System.Collections.IDictionary]) { Ende 3 'VORAUSSETZUNG' "MCP-Stand: Pin-Datei ist kein JSON-Objekt ($($K.McpStand))" }
+    if ($pin['format'] -ne 'nakama.laufzeit.mcp-stand.v1') { Ende 3 'VORAUSSETZUNG' "MCP-Stand: Pin-Datei mit fremdem format '$($pin['format'])'" }
+    $soll = [string]$pin['revision']
+    $dateien = $pin['dateien']
+    if ($soll -notmatch '^[0-9a-f]{40}$' -or $dateien -isnot [System.Collections.IDictionary] -or $dateien.Count -eq 0 -or
+        @($dateien.Values | Where-Object { [string]$_ -notmatch '^[0-9a-f]{40}$' }).Count -gt 0) {
+        Ende 3 'VORAUSSETZUNG' 'MCP-Stand: Pin-Datei unvollstaendig (revision oder dateien fehlt oder ist keine Git-Kennung)'
+    }
+    $kopf = & $script:U.McpGit @('rev-parse', 'HEAD')
+    $ist = Erste-Zeile $kopf
+    if ($kopf.Exit -ne 0 -or $ist -notmatch '^[0-9a-f]{40}$') {
+        Ende 3 'VORAUSSETZUNG' "MCP-Stand: git gegen $($K.McpRepo) scheitert (Exit $($kopf.Exit)): $((@($kopf.Fehler) + @($kopf.Zeilen) -join ' ').Trim())"
+    }
+    if ($ist -ne $soll) { Ende 3 'VORAUSSETZUNG' "MCP-Stand weicht ab: Soll $soll, Ist $ist" }
+    $status = & $script:U.McpGit @('status', '--porcelain', '--untracked-files=no')
+    if ($status.Exit -ne 0) { Ende 3 'VORAUSSETZUNG' "MCP-Stand: git status scheitert (Exit $($status.Exit)): $((@($status.Fehler) -join ' ').Trim())" }
+    $geaendert = @($status.Zeilen | Where-Object { "$_".Trim() })
+    if ($geaendert.Count -gt 0) {
+        Ende 3 'VORAUSSETZUNG' ("MCP-Stand weicht ab: getrackte Datei geaendert: {0}{1}" -f "$($geaendert[0])".Trim(), $(if ($geaendert.Count -gt 1) { " (und $($geaendert.Count - 1) weitere)" } else { '' }))
+    }
+    foreach ($pfad in @($dateien.Keys | Sort-Object)) {
+        $blob = & $script:U.McpGit @('rev-parse', "HEAD:$pfad")
+        $istBlob = Erste-Zeile $blob
+        if ($blob.Exit -ne 0 -or -not $istBlob) { Ende 3 'VORAUSSETZUNG' "MCP-Stand weicht ab: $pfad fehlt im Commit $ist" }
+        if ($istBlob -ne [string]$dateien[$pfad]) { Ende 3 'VORAUSSETZUNG' "MCP-Stand weicht ab: $pfad Blob Soll $($dateien[$pfad]), Ist $istBlob (Pin-Datei in sich widerspruechlich)" }
+    }
+    $zweig = Erste-Zeile (& $script:U.McpGit @('rev-parse', '--abbrev-ref', 'HEAD'))
+    $lock = & $script:U.Hash (Join-Path $K.McpRepo 'uv.lock')
+    Log ("MCP-Stand: Revision {0}, Zweig {1} (Pin {2}), sauber, {3} gepinnte Datei(en) gleich, uv.lock SHA-256 {4}" -f $ist, $(if ($zweig) { $zweig } else { '?' }), $pin['zweig'], $dateien.Count, $(if ($lock) { $lock } else { 'fehlt' }))
+}
+
 # ---------------------------------------------------------------- Ablauf
 function Fahre-Lauf {
     $K = $script:K
     try {
         Log "Laufzeit-Arm $($K.Ticket) auf $($K.Head) (Basis $($K.Basis)), Repo $($K.Repo)"
+        Bereinige-Besitz
         $lohnt = Lohnt-Es
         Log "Lohnt es? $($lohnt.Ja) - $($lohnt.Grund)"
         if (-not $lohnt.Ja) { Ende 0 'UEBERSPRUNGEN' $lohnt.Grund }
+        Pruefe-McpStand
         $liste = @(Szenarienliste)
 
         $installation = 'keine (-OhneInstallation)'
@@ -802,12 +1057,13 @@ function Fahre-Lauf {
             if (@($liste | Where-Object { [IO.Path]::GetFileName($_) -eq 'nulltest-host.json' }).Count -gt 0) { Rendere $flp }
             Rendere-Referenzprojekte $liste
             Stelle-LoopMidi-Sicher
+            # NAK-309 (R-309-1'): neben einem fremden FL - mit oder ohne Fenster - wird weder beendet noch gemessen.
+            $fremd = @(Fremde-FL)
+            if ($fremd.Count -gt 0) { Ende 0 'UEBERSPRUNGEN' (Fremd-Text $fremd[0]) }
             Beende-Restprozesse
-            $laufend = @(FL-Instanzen | Where-Object { Ist-Diagnose $_ })
-            $fremd = @(FL-Instanzen | Where-Object { Ist-Fremd $_ })
-            if ($fremd.Count -gt 0 -and $laufend.Count -eq 0) { Ende 0 'UEBERSPRUNGEN' "fremdes FL-Projekt offen: '$($fremd[0].Titel)'" }
+            $laufend = @(FL-Instanzen | Where-Object { Ist-Eigenes-Diagnose-FL $_ })
             if ($K.Neustart -and $laufend.Count -gt 0) { Beende-Diagnose-FL; $laufend = @() }
-            if ($laufend.Count -eq 0) { Starte-FL $flp; Warte-Boot } else { $K.DiagnosePid = $laufend[0].Id; Log "Diagnose-FL laeuft bereits: PID $($laufend[0].Id)" }
+            if ($laufend.Count -eq 0) { Starte-FL $flp; Warte-Boot } else { $K.DiagnosePid = $laufend[0].Id; Log "Diagnose-FL laeuft bereits (eigen): PID $($laufend[0].Id)" }
             $K.Ping = Warte-Ping
         } catch {
             if (Ist-Ende $_) { throw }
@@ -866,6 +1122,13 @@ function Neuer-Testfall([string]$name) {
     [IO.File]::WriteAllText($installiert, "SCRIPT_VERSION = `"2026-09-15`"`n")
     $loopMidi = Join-Path $wurzel 'loopMIDI.exe'
     [IO.File]::WriteAllText($loopMidi, 'Attrappe')
+    # NAK-309 (M-52): Pin und MCP-Arbeitskopie stimmen ueberein, solange ein Fall nichts anderes setzt.
+    New-Item -ItemType Directory -Force -Path (Join-Path $repo 'tools\fl') | Out-Null
+    $blobs = @{ 'fl_controller/device_FLStudioMCP.py' = ('2' * 40); 'src/fl_studio_mcp/utils/connection.py' = ('3' * 40) }
+    [IO.File]::WriteAllText((Join-Path $repo 'tools\fl\mcp-stand.json'), ([ordered]@{
+        format = 'nakama.laufzeit.mcp-stand.v1'; repo = 'https://github.com/evenacadia-tech/fl-studio-mcp'; zweig = 'evenacadia-local'
+        revision = ('1' * 40); stand_vom = 'Attrappe'; ticket = 'SELBSTTEST'; dateien = $blobs } | ConvertTo-Json -Depth 4))
+    [IO.File]::WriteAllText((Join-Path $mcp 'uv.lock'), 'uv.lock-Attrappe')
     $script:T = @{
         Name = $name; Wurzel = $wurzel; Repo = $repo; Mcp = $mcp; ControllerInstalliert = $installiert
         Uhr = [datetime]'2026-09-15T01:00:00'
@@ -887,15 +1150,51 @@ function Neuer-Testfall([string]$name) {
         StartTitel = 'Nakama-Diagnose.flp - FL Studio 2026'
         Pings = (New-Object System.Collections.Generic.List[datetime])
         FlBeiRueckweg = $null
+        McpGit = @{ Kopf = ('1' * 40); KopfExit = 0; Status = @(); StatusExit = 0; Blobs = $blobs.Clone(); Zweig = 'evenacadia-local' }
     }
     $script:U = Neue-Testumgebung
+    T-Kontext
+}
+
+function T-Kontext {
+    # Ein Kontext ueber derselben Testwurzel; ein zweiter Aufruf ist ein weiterer Lauf mit denselben Dateien, Prozessen
+    # und derselben Uhr (M-38 (c)).
+    $T = $script:T
     $script:K = Neuer-Kontext @{
-        Ticket = 'SELBSTTEST'; Basis = 'basis123'; Head = 'abcdef12'; Repo = $repo; McpRepo = $mcp
-        Roh = (Join-Path $wurzel 'roh.md'); LoopMidi = $loopMidi
+        Ticket = 'SELBSTTEST'; Basis = 'basis123'; Head = 'abcdef12'; Repo = $T.Repo; McpRepo = $T.Mcp
+        Roh = (Join-Path $T.Wurzel 'roh.md'); LoopMidi = (Join-Path $T.Wurzel 'loopMIDI.exe')
         PingFristSekunden = 150; InstallFristSekunden = 900; RenderFristSekunden = 600
-        Arbeit = (Join-Path $wurzel 'arbeit'); DiagnoseOrdner = (Join-Path $wurzel 'diagnose'); Leise = $true
+        Arbeit = (Join-Path $T.Wurzel 'arbeit'); DiagnoseOrdner = (Join-Path $T.Wurzel 'diagnose'); Leise = $true
     }
     New-Item -ItemType Directory -Force -Path $script:K.Arbeit | Out-Null
+}
+
+function T-Besitz([int]$id, [string]$zweck = 'fl', $startzeit = $null, [string]$befehlszeile = '') {
+    # Ein Besitzeintrag, wie ihn ein frueherer Lauf dieses Runners geschrieben haette - direkt in die Datei, unabhaengig
+    # vom Schreibweg des Runners; ein vorhandener Eintrag derselben PID wird ersetzt.
+    $p = $script:T.Gestartet[$id]
+    $datei = $script:K.BesitzDatei
+    $liste = @()
+    if (Test-Path -LiteralPath $datei) { try { $liste = @(([IO.File]::ReadAllText($datei) | ConvertFrom-Json).eintraege | Where-Object { $_ -and $_.pid -ne $id }) } catch { $liste = @() } }
+    $liste += [pscustomobject]@{ pid = $id; startzeit = $(if ($null -ne $startzeit) { [long]$startzeit } else { [long]$p.Startzeit })
+                                 befehlszeile = $(if ($befehlszeile) { $befehlszeile } else { $p.Befehlszeile }); zweck = $zweck; eingetragen = 'Attrappe' }
+    [IO.File]::WriteAllText($datei, ([ordered]@{ format = 'nakama.laufzeit.besitz.v1'; eintraege = @($liste) } | ConvertTo-Json -Depth 4))
+}
+
+function T-Besitzliste {
+    $datei = $script:K.BesitzDatei
+    if (-not (Test-Path -LiteralPath $datei)) { return @() }
+    return @(([IO.File]::ReadAllText($datei) | ConvertFrom-Json).eintraege)
+}
+
+function T-Doppel([string]$variante = 'anderer Ordner') {
+    # Ein Titel-Doppel: FL mit Nakama-Diagnose.flp im Titel, von diesem Runner nie gestartet (kein Besitzeintrag).
+    $fl = '"C:\Program Files\Image-Line\FL Studio 2026\FL64.exe" '
+    switch ($variante) {
+        'Kopie' { return (T-Prozess 'Kopie Nakama-Diagnose.flp - FL Studio 2026' -Befehlszeile ($fl + '"D:\Musik\Kopie Nakama-Diagnose.flp"')) }
+        'Repo'  { return (T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Befehlszeile ($fl + '"' + (Join-Path $script:T.Repo 'eq-copilot\fixtures\fl\Nakama-Diagnose.flp') + '"')) }
+        default { return (T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Befehlszeile ($fl + '"D:\Musik\Nakama-Diagnose.flp"')) }
+    }
 }
 
 function T-Szenario([string]$name, [hashtable]$kopf = @{}) {
@@ -904,16 +1203,26 @@ function T-Szenario([string]$name, [hashtable]$kopf = @{}) {
     [IO.File]::WriteAllText((Join-Path $script:T.Repo "docs\gesundheit\szenarien\$name"), ($inhalt | ConvertTo-Json -Depth 5))
 }
 
-function T-Prozess([string]$titel, [string]$mainTitel = $null, [bool]$fenster = $true, [bool]$beendbar = $true) {
+function T-Prozess([string]$titel, [string]$mainTitel = $null, [bool]$fenster = $true, [bool]$beendbar = $true,
+                   [switch]$Eigen, [string]$Zweck = 'fl', [string]$Befehlszeile = '') {
+    # Ein FL-Prozess, den der Lauf vorfindet. Ohne -Eigen hat ihn dieser Runner nie gestartet (fremd: kein
+    # Besitzeintrag, Befehlszeile mit einem Projekt ausserhalb der Arbeitskopie); mit -Eigen stammt er aus einem
+    # frueheren Lauf dieses Runners (Befehlszeile mit dem Diagnoseprojekt der Arbeitskopie und Besitzeintrag).
     $T = $script:T
     $id = $T.NaechstePid
     $T.NaechstePid += 1
     $haupt = if ($fenster) { @([pscustomobject]@{ Klasse = 'TFruityLoopsMainForm'; Titel = $titel; Sichtbar = $true }) } else { @() }
     $mt = if ($null -ne $mainTitel) { $mainTitel } else { $titel }
+    if (-not $Befehlszeile) {
+        $Befehlszeile = if ($Eigen) { '"C:\Attrappe\FL64.exe" "' + (Join-Path $script:K.ProjektOrdner $script:K.ProjektName) + '"' }
+                        else { '"C:\Program Files\Image-Line\FL Studio 2026\FL64.exe" "C:\Users\fremd\Musik\' + $(if ($titel -match '^(.+?\.flp) - ') { $Matches[1] } else { 'Unbenannt.flp' }) + '"' }
+    }
     $p = [pscustomobject]@{ Id = $id; Name = 'FL64'; MainWindowTitle = $(if ($fenster) { $mt } else { '' }); MainWindowHandle = [int64]$(if ($fenster) { 1 } else { 0 })
-        Fenster = $haupt; Beendbar = $beendbar; Beendet = $false; Render = $false; Start = $T.Uhr; Fertig = $false; ExitCode = $null; Argumente = '' }
+        Fenster = $haupt; Beendbar = $beendbar; Beendet = $false; Render = $false; Start = $T.Uhr; Fertig = $false; ExitCode = $null; Argumente = ''
+        Startzeit = $T.Uhr.ToUniversalTime().Ticks; Befehlszeile = $Befehlszeile }
     $T.Prozesse.Add($p)
     $T.Gestartet[$id] = $p
+    if ($Eigen) { T-Besitz $id $Zweck }
     return $id
 }
 
@@ -922,13 +1231,17 @@ function T-Starte([string]$exe, [string]$argumente) {
     $id = $T.NaechstePid
     $T.NaechstePid += 1
     T-Protokoll "start $argumente"
+    # Win32_Process.CommandLine eines ueber Start-Process gestarteten Programms: gequotetes Programm, dann die Argumente.
+    $befehlszeile = '"' + $exe + '" ' + $argumente
     if ($argumente -like '/R*') {
         $p = [pscustomobject]@{ Id = $id; Name = 'FL64'; MainWindowTitle = ''; MainWindowHandle = [int64]0; Fenster = @($T.Render.Fenster)
-            Beendbar = $true; Beendet = $false; Render = $true; Start = $T.Uhr; Fertig = $false; ExitCode = $T.Render.Exit; Argumente = $argumente }
+            Beendbar = $true; Beendet = $false; Render = $true; Start = $T.Uhr; Fertig = $false; ExitCode = $T.Render.Exit; Argumente = $argumente
+            Startzeit = $T.Uhr.ToUniversalTime().Ticks; Befehlszeile = $befehlszeile }
     } else {
         $p = [pscustomobject]@{ Id = $id; Name = 'FL64'; MainWindowTitle = $T.StartTitel; MainWindowHandle = [int64]1
             Fenster = @([pscustomobject]@{ Klasse = 'TFruityLoopsMainForm'; Titel = $T.StartTitel; Sichtbar = $true })
-            Beendbar = $true; Beendet = $false; Render = $false; Start = $T.Uhr; Fertig = $false; ExitCode = $null; Argumente = $argumente }
+            Beendbar = $true; Beendet = $false; Render = $false; Start = $T.Uhr; Fertig = $false; ExitCode = $null; Argumente = $argumente
+            Startzeit = $T.Uhr.ToUniversalTime().Ticks; Befehlszeile = $befehlszeile }
         if ($null -ne $T.BootNach) { $T.BootMarkeZeit = $T.Uhr.AddSeconds($T.BootNach) }
     }
     $T.Prozesse.Add($p)
@@ -965,6 +1278,30 @@ function Neue-Testumgebung {
         T-Protokoll "beende $id"
         $p = @($script:T.Prozesse | Where-Object { $_.Id -eq $id })
         if ($p.Count -gt 0 -and $p[0].Beendbar) { $p[0].Beendet = $true; [void]$script:T.Prozesse.Remove($p[0]) }
+    }
+    $u.ProzessInfo = {
+        param([int]$id)
+        $p = @($script:T.Prozesse | Where-Object { $_.Id -eq $id })
+        if ($p.Count -eq 0) { return $null }
+        @{ Id = $id; Startzeit = $p[0].Startzeit; Befehlszeile = $p[0].Befehlszeile }
+    }
+    $u.Besitzliste = { param([string]$tun, [string]$text) Besitzliste-Datei $tun $text }
+    $u.McpGit = {
+        param([string[]]$a)
+        T-Protokoll "mcpstand $($a -join ' ')"
+        $g = $script:T.McpGit
+        if ($a[0] -eq 'rev-parse' -and $a[1] -eq 'HEAD') {
+            if ($g.KopfExit -ne 0) { return @{ Exit = $g.KopfExit; Zeilen = @(); Fehler = @("fatal: cannot change to '$($script:K.McpRepo)': No such file or directory") } }
+            return @{ Exit = 0; Zeilen = @($g.Kopf); Fehler = @() }
+        }
+        if ($a[0] -eq 'rev-parse' -and $a[1] -eq '--abbrev-ref') { return @{ Exit = 0; Zeilen = @($g.Zweig); Fehler = @() } }
+        if ($a[0] -eq 'status') { return @{ Exit = $g.StatusExit; Zeilen = @($g.Status); Fehler = @() } }
+        if ($a[0] -eq 'rev-parse' -and $a[1] -like 'HEAD:*') {
+            $pfad = $a[1].Substring(5)
+            if ($g.Blobs.ContainsKey($pfad)) { return @{ Exit = 0; Zeilen = @($g.Blobs[$pfad]); Fehler = @() } }
+            return @{ Exit = 128; Zeilen = @(); Fehler = @("fatal: path '$pfad' does not exist in 'HEAD'") }
+        }
+        return @{ Exit = 1; Zeilen = @(); Fehler = @("Attrappe kennt den Aufruf nicht: $($a -join ' ')") }
     }
     $u.Git = { param([string[]]$a) T-Protokoll "git $($a -join ' ')"; $script:T.Git }
     $u.Py = { param([string[]]$a) T-Protokoll ("py " + (($a | ForEach-Object { [IO.Path]::GetFileName($_) }) -join ' ')); $script:T.Py }
@@ -1008,7 +1345,7 @@ function Neue-Testumgebung {
     $u.Ping = {
         $script:T.Pings.Add($script:T.Uhr)
         T-Protokoll 'ping'
-        if ($script:T.Ping) { & $script:T.Ping } else { @{ Ok = $true; Titel = 'FL Studio 2026'; Version = 'Attrappe'; Port = 'loopMIDI Port 1' } }
+        if ($script:T.Ping) { & $script:T.Ping } else { @{ Ok = $true; Titel = 'FL Studio 2026'; Version = 'Attrappe'; Port = 'loopMIDI Port 1'; Module = @('fl_studio_mcp', 'fl_studio_mcp.utils', 'fl_studio_mcp.utils.connection') } }
     }
     $u.FahreSzenario = {
         param([string]$pfad)
@@ -1156,16 +1493,23 @@ Fall 'M-06' 'pruefen_nicht_aktuell_exit3' {
 }
 
 Fall 'NAK-297' 'titel_ohne_haupttitel' {
-    Testfall 'Diagnose-FL mit leerem MainWindowTitle'
-    $diagnose = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' ''
+    # NAK-309 (M-32): das vorgefundene Diagnose-FL traegt einen Besitzeintrag; eigen ist, was dieser Runner startete.
+    # Ein leerer Titel macht ein FL weder fremd noch eigen.
+    Testfall 'eigenes Diagnose-FL mit leerem MainWindowTitle'
+    $diagnose = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' '' -Eigen
     $e = T-Lauf
-    Pruefe (-not ($e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'fremdes')) "leerer MainWindowTitle als Fremdprojekt gewertet: $($e.Urteil) '$($e.Zusatz)'"
-    Pruefe (T-Hat "beende $diagnose") 'das eigene Diagnose-FL (Titel im Hauptfenster) nicht beendet'
-    Testfall 'FL-Fenster ohne lesbaren Titel'
-    $ohne = T-Prozess '' ''
+    Pruefe (-not ($e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'fremd')) "leerer MainWindowTitle als fremd gewertet: $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe (T-Hat "beende $diagnose$") 'das eigene Diagnose-FL (Titel im Hauptfenster) nicht beendet'
+    Testfall 'eigenes FL-Fenster ohne lesbaren Titel'
+    $ohne = T-Prozess '' '' -Eigen
     $e = T-Lauf
-    Pruefe (-not ($e.Zusatz -match "fremdes FL-Projekt offen: ''")) "leerer Titel als fremdes Projekt: '$($e.Zusatz)'"
-    Pruefe (-not (T-Hat "beende $ohne")) 'FL ohne lesbaren Titel beendet'
+    Pruefe (-not ($e.Zusatz -match 'fremd')) "leerer Titel eines eigenen FL als fremd gewertet: '$($e.Zusatz)'"
+    Pruefe ($e.Code -eq 0) "eigenes FL ohne lesbaren Titel: Exit $($e.Code) '$($e.Zusatz)'"
+    Testfall 'fremdes FL-Fenster ohne lesbaren Titel'
+    $fremd = T-Prozess '' ''
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "PID $fremd") "fremdes FL ohne lesbaren Titel: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat "beende $fremd$")) 'fremdes FL ohne lesbaren Titel beendet'
 }
 
 Fall 'M-07' 'loopmidi_und_restprozesse' {
@@ -1182,8 +1526,9 @@ Fall 'M-07' 'loopmidi_und_restprozesse' {
     Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'loopMIDI fehlt') "fehlt: Exit $($e.Code) '$($e.Zusatz)'"
     Testfall 'Restprozesse'
     $script:K.OhneInstallation = $true
-    $rest1 = T-Prozess '' '' $false $true
-    $rest2 = T-Prozess '' '' $false $false
+    # NAK-309 (M-33): beide Restprozesse hat dieser Runner hinterlassen (Besitzeintrag).
+    $rest1 = T-Prozess '' '' $false $true -Eigen
+    $rest2 = T-Prozess '' '' $false $false -Eigen
     $e = T-Lauf
     Pruefe (T-Hat "beende $rest1") 'beendbarer Restprozess nicht beendet'
     Pruefe ((@($script:K.Protokoll) -join "`n") -match "FL-Restprozess PID ${rest2}: nicht beendbar") 'nicht beendbarer Restprozess nicht geloggt'
@@ -1239,7 +1584,8 @@ Fall 'M-09' 'controller_veraltet_neu_installieren' {
     Testfall 'Diagnose-FL laeuft, Controller veraltet'
     $script:K.OhneInstallation = $true
     [IO.File]::WriteAllText($script:T.ControllerInstalliert, 'alt')
-    $diagnose = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026'
+    # NAK-309 (M-32): das laufende Diagnose-FL stammt aus einem frueheren Lauf dieses Runners (Besitzeintrag).
+    $diagnose = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Eigen
     $null = T-Lauf
     $iBeende = T-Index "beende $diagnose"
     $iSetup = T-Index 'setup-local'
@@ -1575,7 +1921,8 @@ Fall 'M-65' 'rueckweg_nur_bei_abweichung' {
     Testfall 'FL laeuft beim Rueckweg' $script:FuenfSzenarien
     $script:T.NulltestUrteil = 'ABWEICHUNG'
     $script:T.NulltestCode = 4
-    $script:T.Szenarien['nulltest-host.json'] = { $script:T.Haengend = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' $null $true $false; & $script:NulltestWirkung }
+    # NAK-309 (M-39 (c)): ein eigenes, nicht beendbares FL (Besitzeintrag).
+    $script:T.Szenarien['nulltest-host.json'] = { $script:T.Haengend = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' $null $true $false -Eigen; & $script:NulltestWirkung }
     $e = T-Lauf
     $textFl = $e.Zusatz
     Pruefe (-not (T-Hat 'aufgabe rueckweg')) 'FL laeuft: Rueckweg trotzdem gestartet'
@@ -1588,6 +1935,322 @@ Fall 'M-65' 'rueckweg_nur_bei_abweichung' {
     $e = T-Lauf
     Pruefe ($e.Zusatz -match 'Rueckweg verweigert \(NAK-41\)') "NAK-41: Kopfzeile '$($e.Zusatz)'"
     Pruefe ($textFl -notmatch 'NAK-41' -and $e.Zusatz -notmatch 'FL laeuft\)') 'FL laeuft und NAK-41 ergeben denselben Grund'
+}
+
+# ---------------------------------------------------------------- Selbsttest: NAK-309 Etappe 3 (Besitz, MCP-Stand)
+function T-Eigenes-Fl { return @($script:T.Gestartet.Values | Where-Object { -not $_.Render -and $_.Argumente -like '"*' }) }
+$script:NichtsGestartet = 'py |aufgabe |setup-local|\d ping$|start '
+
+Fall '309/M-30' 'namensgleiches_fremdes_projekt_nie_beenden' {
+    # R-309-1': ein FL mit Nakama-Diagnose.flp im Titel, das dieser Runner nicht gestartet hat, ist fremd - gleicher
+    # Dateiname aus einem anderen Ordner, eine Kopie im Namen oder das von Hand geoeffnete Diagnoseprojekt des Repos
+    # (Handgriff K-286-2). An jeder Stelle vor einem Beenden: Exit 0 UEBERSPRUNGEN mit PID, Titel und Grund, nie beenden.
+    foreach ($v in @('anderer Ordner', 'Kopie', 'Repo')) {
+        Testfall "(a) vor der Installation, $v"
+        $doppel = T-Doppel $v
+        $e = T-Lauf
+        Pruefe (-not (T-Hat "beende $doppel$")) "(a) ${v}: Titel-Doppel beendet"
+        Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "PID $doppel" -and $e.Zusatz -match 'Nakama-Diagnose\.flp - FL Studio 2026' -and $e.Zusatz -match 'nicht von diesem Runner gestartet') "(a) ${v}: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+        Pruefe (-not (T-Hat 'aufgabe installieren')) "(a) ${v}: Installation neben dem Titel-Doppel"
+    }
+    Testfall '(b) vor der Neuinstallation des Controllers'
+    $script:K.OhneInstallation = $true
+    [IO.File]::WriteAllText($script:T.ControllerInstalliert, 'alt')
+    $doppel = T-Doppel
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $doppel$") -and -not (T-Hat 'setup-local')) '(b) Titel-Doppel beendet oder Controller daneben neu installiert'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'vor der Neuinstallation des Controllers' -and $e.Zusatz -match "PID $doppel") "(b) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Testfall '(c) vor dem Render' @('nulltest-host.json')
+    $script:K.OhneInstallation = $true
+    $doppel = T-Doppel
+    $e = T-Lauf
+    Pruefe (-not (T-Hat 'start /R') -and -not (T-Hat "beende $doppel$")) '(c) Render neben dem Titel-Doppel oder Doppel beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'vor dem Render' -and $e.Zusatz -match "PID $doppel") "(c) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Testfall '(d) vor dem FL-Start'
+    $script:K.OhneInstallation = $true
+    $doppel = T-Doppel
+    $e = T-Lauf
+    Pruefe (-not (T-Hat 'start "') -and -not (T-Hat "beende $doppel$")) '(d) FL neben dem Titel-Doppel gestartet oder Doppel beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "PID $doppel") "(d) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Testfall '(e) vor einem frischer_start' @('a.json')
+    T-Szenario 'b.json' @{ frischer_start = $true }
+    $script:K.OhneInstallation = $true
+    $script:T.Szenarien['a.json'] = { $script:T.DoppelPid = T-Doppel; 0 }
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $($script:T.DoppelPid)$")) '(e) Titel-Doppel beim frischen Start beendet'
+    Pruefe (-not (T-Hat 'szenario b\.json')) '(e) Szenario neben dem Titel-Doppel gefahren'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'vor dem frischen Start' -and $e.Zusatz -match "PID $($script:T.DoppelPid)") "(e) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+}
+
+Fall '309/M-31' 'beenden_und_neustart_nur_eigene' {
+    Testfall '(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios'
+    $script:K.Erzwingen = $true
+    $script:K.Beenden = $true
+    $script:T.Szenarien['bereitschaft.json'] = { $script:T.DoppelPid = T-Doppel; 0 }
+    $e = T-Lauf
+    $eigen = @(T-Eigenes-Fl)
+    Pruefe (-not (T-Hat "beende $($script:T.DoppelPid)$")) '(a) -Beenden hat das Titel-Doppel beendet'
+    Pruefe ($eigen.Count -gt 0 -and $eigen[-1].Beendet) '(a) -Beenden hat das eigene Diagnose-FL nicht beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "(a) Exit $($e.Code) $($e.Urteil) statt des Szenarienurteils 0 GEMESSEN"
+    Testfall '(b) -Neustart mit einem Titel-Doppel vor dem FL-Start'
+    $script:K.OhneInstallation = $true
+    $script:K.Neustart = $true
+    $doppel = T-Doppel
+    $e = T-Lauf
+    Pruefe (-not (T-Hat ' beende ')) '(b) der Neustart hat etwas beendet'
+    Pruefe (-not (T-Hat 'start "')) '(b) ein zweites FL gestartet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "PID $doppel") "(b) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+}
+
+Fall '309/M-34' 'fremder_restprozess_bleibt' {
+    Testfall 'fensterloser fremder FL-Prozess vor der Installation'
+    $fremd = T-Prozess '' '' $false $true
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $fremd$")) 'fremder fensterloser Prozess beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "fremder FL-Prozess ohne Fenster: PID $fremd ") "Installation: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat 'aufgabe installieren')) 'Installation neben einem fremden FL-Prozess'
+    Testfall 'fensterloser fremder FL-Prozess vor dem FL-Start'
+    $script:K.OhneInstallation = $true
+    $fremd = T-Prozess '' '' $false $true
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $fremd$") -and -not (T-Hat 'start "')) 'fremder fensterloser Prozess beendet oder FL daneben gestartet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "fremder FL-Prozess ohne Fenster: PID $fremd ") "FL-Start: Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    # Am Beenden selbst: Beende-Restprozesse beendet einen fremden fensterlosen Prozess nie, einen eigenen schon.
+    Testfall 'Beende-Restprozesse beendet nur Eigenes'
+    $fremd = T-Prozess '' '' $false $true
+    $eigen = T-Prozess '' '' $false $true -Eigen
+    Beende-Restprozesse
+    Pruefe (-not (T-Hat "beende $fremd$")) 'Beende-Restprozesse hat den fremden Prozess beendet'
+    Pruefe (T-Hat "beende $eigen$") 'Beende-Restprozesse hat den eigenen Prozess nicht beendet'
+    Pruefe (@(T-Besitzliste | Where-Object { $_.pid -eq $eigen }).Count -eq 0) 'eigener Restprozess nach bestaetigtem Ende nicht ausgetragen'
+}
+
+Fall '309/M-35' 'pid_wiederverwendung_ist_fremd' {
+    Testfall '(a) gleiche PID, andere Startzeit'
+    $p = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Eigen
+    T-Besitz $p 'fl' ($script:T.Gestartet[$p].Startzeit - [TimeSpan]::FromHours(1).Ticks)
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $p$")) '(a) die PID allein als Besitz gewertet: beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "PID $p") "(a) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe ((K-Index "veralteter Eintrag PID $p \(fl\) entfernt - PID neu vergeben") -ge 0) '(a) veralteter Eintrag beim Laufstart nicht entfernt und protokolliert'
+    Testfall '(b) gleiche PID und Startzeit, andere Befehlszeile'
+    $p = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Eigen
+    T-Besitz $p 'fl' $null '"C:\Attrappe\FL64.exe" "C:\anderswo\Nakama-Diagnose.flp"'
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $p$")) '(b) beendet trotz anderer Befehlszeile'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN') "(b) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe ((K-Index "veralteter Eintrag PID $p \(fl\) entfernt - Befehlszeile") -ge 0) '(b) veralteter Eintrag nicht entfernt und protokolliert'
+    Testfall '(c) Befehlszeile nicht lesbar'
+    $p = T-Prozess 'Nakama-Diagnose.flp - FL Studio 2026' -Eigen
+    $script:T.Gestartet[$p].Befehlszeile = $null
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $p$")) '(c) ohne lesbare Befehlszeile beendet (fail-closed verletzt)'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'Befehlszeile nicht lesbar') "(c) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+}
+
+Fall '309/M-36' 'eigenes_fl_mit_fremdem_projekt' {
+    Testfall 'eigenes FL zeigt Mein Song vor der Installation'
+    $p = T-Prozess 'Mein Song.flp - FL Studio 2026' -Eigen
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $p$")) 'eigenes FL mit fremdem Projekt beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match "eigenes FL zeigt ein fremdes Projekt: 'Mein Song\.flp - FL Studio 2026' \(PID $p\)") "Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Testfall 'eigenes FL zeigt waehrend der Szenarien Mein Song, -Beenden am Ende'
+    $script:K.OhneInstallation = $true
+    $script:K.Beenden = $true
+    $script:T.Szenarien['bereitschaft.json'] = {
+        $d = @(T-Eigenes-Fl)[0]
+        $d.Fenster = @([pscustomobject]@{ Klasse = 'TFruityLoopsMainForm'; Titel = 'Mein Song.flp - FL Studio 2026'; Sichtbar = $true })
+        $d.MainWindowTitle = 'Mein Song.flp - FL Studio 2026'
+        $script:T.EigenPid = $d.Id
+        0
+    }
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $($script:T.EigenPid)$")) '-Beenden hat das eigene FL mit fremdem Projekt beendet'
+    Pruefe ($e.Code -eq 0) "-Beenden: Exit $($e.Code) '$($e.Zusatz)'"
+}
+
+Fall '309/M-37' 'ping_nur_eigene_pid' {
+    Testfall 'Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste'
+    $script:K.OhneInstallation = $true
+    $script:T.Ping = {
+        if (-not $script:T.DoppelPid) {
+            $script:T.DoppelPid = T-Doppel
+            $d = $script:T.Prozesse[$script:T.Prozesse.Count - 1]
+            [void]$script:T.Prozesse.Remove($d)
+            $script:T.Prozesse.Insert(0, $d)
+        }
+        @{ Ok = $true; Titel = 'FL Studio 2026'; Version = 'Attrappe'; Port = 'loopMIDI Port 1'; Module = @() }
+    }
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN' -and $e.Zusatz -match 'fremdes FL beim Ping' -and $e.Zusatz -match "PID $($script:T.DoppelPid)") "Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat "pid=$($script:T.DoppelPid)$")) 'die fremde PID erscheint als --diagnose-pid'
+    Pruefe (-not (T-Hat 'szenario ')) 'Szenario neben dem fremden FL gefahren'
+    Pruefe (-not (T-Hat "beende $($script:T.DoppelPid)$")) 'fremdes FL beendet'
+    Testfall 'ohne Doppel: Diagnose-PID ist die selbst gestartete'
+    $script:K.OhneInstallation = $true
+    $null = T-Lauf
+    $eigen = @(T-Eigenes-Fl)
+    Pruefe ($eigen.Count -eq 1 -and (T-Hat "pid=$($eigen[0].Id)$")) "Diagnose-PID nicht die selbst gestartete ($(@($script:T.Protokoll | Where-Object { $_ -match 'szenario ' }) -join '; '))"
+}
+
+Fall '309/M-38' 'besitzliste_lebenslauf' {
+    Testfall '(a) und (b) Eintrag direkt nach dem Start, Austrag nach bestaetigtem Ende' @('nulltest-host.json')
+    $script:K.OhneInstallation = $true
+    $e = T-Lauf
+    $render = @($script:T.Gestartet.Values | Where-Object { $_.Render })[0].Id
+    $fl = @(T-Eigenes-Fl)[0].Id
+    $iRenderEin = K-Index "Besitz: PID $render \(render\) eingetragen"
+    $iRenderStart = K-Index "Render gestartet: PID $render "
+    $iRenderAus = K-Index "Besitz: PID $render ausgetragen \(Render beendet\)"
+    $iFlEin = K-Index "Besitz: PID $fl \(fl\) eingetragen"
+    $iBoot = K-Index 'Boot-Marke nach'
+    Pruefe ($iRenderEin -ge 0 -and $iRenderEin -lt $iRenderStart -and $iRenderStart -lt $iRenderAus) "(a/b) Render: eingetragen $iRenderEin, gestartet $iRenderStart, ausgetragen $iRenderAus"
+    Pruefe ($iFlEin -ge 0 -and $iFlEin -lt $iBoot) "(a) FL-Eintrag $iFlEin nicht vor dem Warten auf die Boot-Marke ($iBoot)"
+    $liste = @(T-Besitzliste)
+    Pruefe (@($liste | Where-Object { $_.pid -eq $fl -and $_.zweck -eq 'fl' }).Count -eq 1 -and @($liste | Where-Object { $_.pid -eq $render }).Count -eq 0) "(a/b) Liste nach dem Lauf: $(($liste | ForEach-Object { "$($_.pid)/$($_.zweck)" }) -join ', ')"
+    Pruefe ($e.Code -eq 0) "(a/b) Exit $($e.Code) '$($e.Zusatz)'"
+    Testfall '(b) -Beenden traegt nach bestaetigtem Ende aus'
+    $script:K.OhneInstallation = $true
+    $script:K.Beenden = $true
+    $null = T-Lauf
+    $fl = @(T-Eigenes-Fl)[0].Id
+    Pruefe ((K-Index "Besitz: PID $fl ausgetragen \(Ende bestaetigt\)") -ge 0 -and @(T-Besitzliste | Where-Object { $_.pid -eq $fl }).Count -eq 0) '(b) beendetes FL nicht ausgetragen'
+    Testfall '(c) ein FL bleibt nach dem Lauf offen und ist im naechsten Lauf eigen'
+    $script:K.OhneInstallation = $true
+    $e1 = T-Lauf
+    $fl = @(T-Eigenes-Fl)[0].Id
+    $marke = $script:T.Protokoll.Count
+    T-Kontext
+    $script:K.OhneInstallation = $true
+    $e2 = T-Lauf
+    $danach = @($script:T.Protokoll | Select-Object -Skip $marke)
+    Pruefe ((K-Index "Diagnose-FL laeuft bereits \(eigen\): PID $fl$") -ge 0) '(c) im zweiten Lauf nicht als eigenes FL erkannt'
+    Pruefe (@($danach | Where-Object { $_ -match 'start "' -or $_ -match ' beende ' }).Count -eq 0) "(c) zweiter Lauf hat gestartet oder beendet: $($danach -join '; ')"
+    Pruefe ($e1.Code -eq 0 -and $e2.Code -eq 0) "(c) Exit $($e1.Code), $($e2.Code)"
+    Testfall '(d) ein Eintrag ohne lebenden Prozess wird beim Laufstart entfernt'
+    $tot = T-Prozess '' '' $false $true -Eigen
+    [void]$script:T.Prozesse.Remove($script:T.Gestartet[$tot])
+    $e = T-Lauf
+    Pruefe ((K-Index "veralteter Eintrag PID $tot \(fl\) entfernt - Prozess lebt nicht mehr") -ge 0) '(d) toter Eintrag beim Laufstart nicht entfernt und protokolliert'
+    Pruefe (@(T-Besitzliste | Where-Object { $_.pid -eq $tot }).Count -eq 0) '(d) toter Eintrag steht nach dem Lauf in der Liste'
+    Testfall '(e) unlesbare Liste gilt als leer, nie als alles eigen'
+    [IO.File]::WriteAllText($script:K.BesitzDatei, '{ kaputt')
+    $doppel = T-Doppel
+    $e = T-Lauf
+    Pruefe (-not (T-Hat "beende $doppel$")) '(e) unlesbare Liste als alles eigen gewertet: Titel-Doppel beendet'
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'UEBERSPRUNGEN') "(e) Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe ((K-Index 'Besitzliste unlesbar') -ge 0) '(e) unlesbare Liste nicht protokolliert'
+    Testfall '(e) die Liste wird atomar geschrieben'
+    $script:K.OhneInstallation = $true
+    $null = T-Lauf
+    $ordner = Split-Path $script:K.BesitzDatei
+    $reste = @(Get-ChildItem -LiteralPath $ordner -File | Where-Object { $_.Name -like 'eigene-prozesse.json.tmp-*' })
+    $j = $null
+    try { $j = [IO.File]::ReadAllText($script:K.BesitzDatei) | ConvertFrom-Json } catch { }
+    Pruefe ($reste.Count -eq 0 -and $j -and $j.format -eq 'nakama.laufzeit.besitz.v1') "(e) Temp-Datei $($reste.Count), Format '$($j.format)'"
+}
+
+Fall '309/M-39' 'rueckweg_nur_eigene' {
+    Testfall '(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG' $script:FuenfSzenarien
+    $script:T.NulltestUrteil = 'ABWEICHUNG'
+    $script:T.NulltestCode = 4
+    $script:T.Szenarien['nulltest-host.json'] = { $script:T.DoppelPid = T-Doppel; & $script:NulltestWirkung }
+    $e = T-Lauf
+    $eigen = @(T-Eigenes-Fl)
+    Pruefe (-not (T-Hat "beende $($script:T.DoppelPid)$")) '(b) der Rueckweg hat das Titel-Doppel beendet'
+    Pruefe (-not (T-Hat 'aufgabe rueckweg')) '(b) Rueckweg neben einem fremden FL gestartet'
+    Pruefe ($e.Zusatz -match "Rueckweg verweigert \(FL laeuft\): PID $($script:T.DoppelPid) 'Nakama-Diagnose") "(b) Kopfzeile '$($e.Zusatz)'"
+    Pruefe ($eigen.Count -gt 0 -and $eigen[-1].Beendet) '(b) das eigene Diagnose-FL wurde vor dem Rueckweg nicht beendet'
+    Pruefe ($e.Code -eq 4 -and $e.Urteil -eq 'VERFEHLT') "(b) Exit $($e.Code) $($e.Urteil)"
+}
+
+Fall '309/M-50' 'ping_zeile_nennt_module' {
+    # Den echten Importgraphen nennt szenario.py --ping (fl_studio_mcp_module); der Runner schreibt ihn in die Ping-Zeile.
+    Testfall 'Ping mit Importgraph'
+    $script:K.OhneInstallation = $true
+    $null = T-Lauf
+    Pruefe ((K-Index 'Ping ok: .*Module fl_studio_mcp, fl_studio_mcp\.utils, fl_studio_mcp\.utils\.connection$') -ge 0) 'Ping-Zeile ohne die geladenen fl_studio_mcp-Module'
+}
+
+Fall '309/M-52' 'mcp_stand_gepinnt' {
+    Testfall 'gepinnter Stand'
+    $e = T-Lauf
+    $iStand = K-Index '\] MCP-Stand: Revision 1{40}, Zweig evenacadia-local \(Pin evenacadia-local\), sauber, 2 gepinnte Datei\(en\) gleich, uv\.lock SHA-256 [0-9A-F]{64}$'
+    $iHashen = K-Index 'Manifest-Hashes nachziehen'
+    $iPing = K-Index 'Ping ok'
+    Pruefe ($iStand -ge 0) 'keine Zeile MCP-Stand mit Revision, Zweig, Sauberkeit, Dateizahl und uv.lock'
+    Pruefe ($iStand -ge 0 -and $iStand -lt $iHashen -and $iStand -lt $iPing) "MCP-Stand nicht vor Installation und erstem uv run (Stand $iStand, hashen $iHashen, Ping $iPing)"
+    Pruefe ($e.Code -eq 0 -and $e.Urteil -eq 'GEMESSEN') "Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Testfall 'gepinnter Stand vor setup-local.ps1'
+    $script:K.OhneInstallation = $true
+    [IO.File]::WriteAllText($script:T.ControllerInstalliert, 'alt')
+    $null = T-Lauf
+    $iKopf = T-Index 'mcpstand rev-parse HEAD$'
+    $iSetup = T-Index 'setup-local'
+    Pruefe ($iKopf -ge 0 -and $iSetup -gt $iKopf) "Pin nicht vor setup-local.ps1 geprueft (Pin $iKopf, setup-local $iSetup)"
+}
+
+Fall '309/M-53' 'mcp_revision_weicht_ab' {
+    Testfall 'anderer Commit'
+    $script:T.McpGit.Kopf = ('2' * 40)
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Urteil -eq 'VORAUSSETZUNG' -and $e.Zusatz -match 'MCP-Stand weicht ab: Soll 1{40}, Ist 2{40}') "Exit $($e.Code) $($e.Urteil) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) "nach abweichendem Stand gelaufen: $($script:T.Protokoll -join '; ')"
+}
+
+Fall '309/M-54' 'mcp_datei_weicht_ab' {
+    Testfall '(a) getrackte Datei geaendert'
+    $script:T.McpGit.Status = @(' M src/fl_studio_mcp/utils/midi_connection.py')
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'getrackte Datei geaendert: M src/fl_studio_mcp/utils/midi_connection\.py') "(a) Exit $($e.Code) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) '(a) nach geaenderter Datei gelaufen'
+    Testfall '(b) gepinnter Pfad fehlt im Commit'
+    $script:T.McpGit.Blobs.Remove('src/fl_studio_mcp/utils/connection.py')
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'src/fl_studio_mcp/utils/connection\.py fehlt im Commit') "(b) Exit $($e.Code) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) '(b) nach fehlendem Pfad gelaufen'
+    Testfall '(c) Blob-Kennung weicht vom Pin ab'
+    $script:T.McpGit.Blobs['fl_controller/device_FLStudioMCP.py'] = ('4' * 40)
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'fl_controller/device_FLStudioMCP\.py Blob Soll 2{40}, Ist 4{40}') "(c) Exit $($e.Code) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) '(c) nach abweichendem Blob gelaufen'
+}
+
+Fall '309/M-55' 'mcp_stand_unlesbar' {
+    $pin = { Join-Path $script:T.Repo 'tools\fl\mcp-stand.json' }
+    Testfall 'Pin-Datei fehlt'
+    [IO.File]::Delete((& $pin))
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Urteil -eq 'VORAUSSETZUNG' -and $e.Zusatz -match 'Pin-Datei fehlt') "fehlt: Exit $($e.Code) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) 'fehlt: ohne Pin gelaufen'
+    Testfall 'Pin-Datei ist kein JSON'
+    [IO.File]::WriteAllText((& $pin), '{ kaputt')
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'kein JSON-Objekt') "kein JSON: Exit $($e.Code) '$($e.Zusatz)'"
+    Testfall 'fremdes format'
+    [IO.File]::WriteAllText((& $pin), ([IO.File]::ReadAllText((& $pin)) -replace 'mcp-stand\.v1', 'mcp-stand.v0'))
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match "fremdem format 'nakama\.laufzeit\.mcp-stand\.v0'") "format: Exit $($e.Code) '$($e.Zusatz)'"
+    Testfall 'kein Repo'
+    $script:T.McpGit.KopfExit = 128
+    $e = T-Lauf
+    Pruefe ($e.Code -eq 3 -and $e.Zusatz -match 'git gegen .* scheitert \(Exit 128\)') "kein Repo: Exit $($e.Code) '$($e.Zusatz)'"
+    Pruefe (-not (T-Hat $script:NichtsGestartet)) 'kein Repo: ohne geprueften Pin gelaufen'
+}
+
+Fall '309/M-56' 'pin_nur_per_commit' {
+    $pin = { Join-Path $script:T.Repo 'tools\fl\mcp-stand.json' }
+    Testfall 'abweichende Revision'
+    $vorher = (Get-FileHash -Algorithm SHA256 -LiteralPath (& $pin)).Hash
+    $script:T.McpGit.Kopf = ('2' * 40)
+    $e = T-Lauf
+    $nachher = (Get-FileHash -Algorithm SHA256 -LiteralPath (& $pin)).Hash
+    Pruefe ($e.Code -eq 3 -and $vorher -eq $nachher) "abweichend: Exit $($e.Code), Pin $vorher -> $nachher"
+    Testfall 'gepinnter Lauf'
+    $vorher = (Get-FileHash -Algorithm SHA256 -LiteralPath (& $pin)).Hash
+    $e = T-Lauf
+    $nachher = (Get-FileHash -Algorithm SHA256 -LiteralPath (& $pin)).Hash
+    Pruefe ($e.Code -eq 0 -and $vorher -eq $nachher) "gepinnt: Exit $($e.Code), Pin $vorher -> $nachher"
 }
 
 # ---------------------------------------------------------------- Einstieg

@@ -1,0 +1,14 @@
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+
+  Checking File Globs
+  Audit16Last_rc_lib.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16Last_rc_lib.dir\Release\Audit16Last_rc_lib.lib
+  flatbuffers.vcxproj -> C:\na-audit16-aff2d818\build-root\_deps\flatbuffers-build\Release\flatbuffers.lib
+  NakamaKern.vcxproj -> C:\na-audit16-aff2d818\build-root\produkt\plugin\Release\NakamaKern.lib
+  last_probe.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../../Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/e/last_probe.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  juce_graphics_Sheenbidi.c
+  Audit16Last.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16Last_artefacts\Release\Audit16Last.exe

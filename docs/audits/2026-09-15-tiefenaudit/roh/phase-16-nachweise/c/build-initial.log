@@ -1,0 +1,128 @@
+
+  Checking File Globs
+  1>Checking Build System
+  Generating Audit16State_artefacts/JuceLibraryCode/Audit16State_resources.rc
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  Audit16State_rc_lib.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16State_rc_lib.dir\Release\Audit16State_rc_lib.lib
+  Building Custom Rule C:/na-audit16-aff2d818/deps/flatbuffers-src/CMakeLists.txt
+  file_manager.cpp
+  file_name_manager.cpp
+  idl_parser.cpp
+  idl_gen_text.cpp
+  reflection.cpp
+  util.cpp
+  Code wird generiert...
+  flatbuffers.vcxproj -> C:\na-audit16-aff2d818\build-root\_deps\flatbuffers-build\Release\flatbuffers.lib
+  Building Custom Rule C:/na-audit16-aff2d818/eq-copilot/plugin/CMakeLists.txt
+  DspProgramm.cpp
+  DspBankPool.cpp
+  DspKern.cpp
+  NakamaKanon.cpp
+  NakamaLebenslauf.cpp
+  NakamaParameter.cpp
+  NakamaPreset.cpp
+  NakamaState.cpp
+  NakamaTransaktion.cpp
+  NakamaVertrag.cpp
+  NakamaTelemetrie.cpp
+  NakamaEvidenz.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\produkt\plugin\NakamaKern.vcxproj]
+  (Quelldatei „../../../eq-copilot/plugin/vertrag/NakamaEvidenz.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  WireEnvelope.cpp
+  IpcVerbindung.cpp
+  BrokerLifecycle.cpp
+  ControlClient.cpp
+  Vertrag.cpp
+  Nachrichten.cpp
+  Verbindung.cpp
+  TelemetryClient.cpp
+  Briefkasten.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\produkt\plugin\NakamaKern.vcxproj]
+  (Quelldatei „../../../eq-copilot/plugin/core/ipc/TelemetryClient.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  NakamaKern.vcxproj -> C:\na-audit16-aff2d818\build-root\produkt\plugin\Release\NakamaKern.lib
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  state_probe.cpp
+  SondeProcessor.cpp
+  PluginProcessor.cpp
+  Hostbruecke.cpp
+  State.cpp
+  Ipc.cpp
+  Analyse.cpp
+  PluginEditor.cpp
+  AnalyseEngine.cpp
+  DiagnoseAntwort.cpp
+  Diagnose.cpp
+  SourcesModel.cpp
+  PipeToken.cpp
+  PipeClientIsoliert.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/DiagnoseAntwort.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  juce_audio_utils.cpp
+  juce_audio_processors.cpp
+  juce_audio_processors_ara.cpp
+  juce_audio_processors_lv2_libs.cpp
+  juce_gui_extra.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Analyse.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/sonde/SondeProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Ipc.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/State.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Hostbruecke.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginEditor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  juce_gui_basics.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+C:\na-audit16-aff2d818\deps\juce-src\modules\juce_gui_basics\juce_gui_basics.cpp(61): warning : This version of JUCE does not use the splash screen, the flag JUCE_DISPLAY_SPLASH_SCREEN is ignored [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_basics.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  juce_graphics_Sheenbidi.c
+NakamaKern.lib(Briefkasten.obj) : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: __cdecl juce::SHA256::~SHA256(void)" (??1SHA256@juce@@QEAA@XZ)" in Funktion ""public: bool __cdecl nakama::diagnose::Briefkasten::Kern::schreibe(struct nakama::diagnose::Kennung const &,struct nakama::diagnose::Antwort const &)" (?schreibe@Kern@Briefkasten@diagnose@nakama@@QEAA_NAEBUKennung@34@AEBUAntwort@34@@Z)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+NakamaKern.lib(NakamaKanon.obj) : error LNK2001: Nicht aufgelöstes externes Symbol ""public: __cdecl juce::SHA256::~SHA256(void)" (??1SHA256@juce@@QEAA@XZ)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+NakamaKern.lib(Briefkasten.obj) : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: __cdecl juce::SHA256::SHA256(void const *,unsigned __int64)" (??0SHA256@juce@@QEAA@PEBX_K@Z)" in Funktion ""public: bool __cdecl nakama::diagnose::Briefkasten::Kern::schreibe(struct nakama::diagnose::Kennung const &,struct nakama::diagnose::Antwort const &)" (?schreibe@Kern@Briefkasten@diagnose@nakama@@QEAA_NAEBUKennung@34@AEBUAntwort@34@@Z)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+NakamaKern.lib(NakamaKanon.obj) : error LNK2001: Nicht aufgelöstes externes Symbol ""public: __cdecl juce::SHA256::SHA256(void const *,unsigned __int64)" (??0SHA256@juce@@QEAA@PEBX_K@Z)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+NakamaKern.lib(Briefkasten.obj) : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: class juce::String __cdecl juce::SHA256::toHexString(void)const " (?toHexString@SHA256@juce@@QEBA?AVString@2@XZ)" in Funktion ""public: bool __cdecl nakama::diagnose::Briefkasten::Kern::schreibe(struct nakama::diagnose::Kennung const &,struct nakama::diagnose::Antwort const &)" (?schreibe@Kern@Briefkasten@diagnose@nakama@@QEAA_NAEBUKennung@34@AEBUAntwort@34@@Z)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+NakamaKern.lib(NakamaKanon.obj) : error LNK2001: Nicht aufgelöstes externes Symbol ""public: class juce::String __cdecl juce::SHA256::toHexString(void)const " (?toHexString@SHA256@juce@@QEBA?AVString@2@XZ)". [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]
+C:\na-audit16-aff2d818\build-root\Audit16State_artefacts\Release\Audit16State.exe : fatal error LNK1120: 3 nicht aufgelöste Externe [C:\na-audit16-aff2d818\build-root\Audit16State.vcxproj]

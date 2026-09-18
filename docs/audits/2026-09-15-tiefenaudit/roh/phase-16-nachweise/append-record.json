@@ -1,0 +1,11 @@
+{
+  "utc": "2026-09-18T01:11:42.212528+00:00",
+  "operation": "append-only binary write",
+  "historical_bytes": 243364,
+  "historical_sha256": "3d20a6e7ab6a1e19d60eb5cdb6ade378daa60242b62a2c96e95555d4065e7b7d",
+  "appended_bytes": 66978,
+  "appended_sha256": "13444f47999b13cd63b1dd02021588a795f04cfef0e7e3139993296b43717ae1",
+  "result_bytes": 310342,
+  "result_sha256": "95ebbe1f4809a34572b705f05109c18b6e031883202d5117d31a393e179d9316",
+  "historical_prefix_byte_equal": true
+}

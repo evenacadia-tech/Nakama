@@ -1,0 +1,252 @@
+
+  Checking File Globs
+  Generating Audit16Last_artefacts/JuceLibraryCode/Audit16Last_resources.rc
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  Audit16Last_rc_lib.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16Last_rc_lib.dir\Release\Audit16Last_rc_lib.lib
+  flatbuffers.vcxproj -> C:\na-audit16-aff2d818\build-root\_deps\flatbuffers-build\Release\flatbuffers.lib
+  NakamaKern.vcxproj -> C:\na-audit16-aff2d818\build-root\produkt\plugin\Release\NakamaKern.lib
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  last_probe.cpp
+  SondeProcessor.cpp
+  PluginProcessor.cpp
+  Hostbruecke.cpp
+  State.cpp
+  Ipc.cpp
+  Analyse.cpp
+  PluginEditor.cpp
+  AnalyseEngine.cpp
+  DiagnoseAntwort.cpp
+  Diagnose.cpp
+  SourcesModel.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/DiagnoseAntwort.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  PipeToken.cpp
+  PipeClientIsoliert.cpp
+  juce_audio_utils.cpp
+  juce_audio_processors.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginEditor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Ipc.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../../Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/e/last_probe.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Hostbruecke.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/State.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Analyse.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/sonde/SondeProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(121,99): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(121,99): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(161,94): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(161,94): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(198,155): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(198,155): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,62): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,62): error C3329: Syntaxfehler: "}" erwartet, nicht ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,101): error C2143: Syntaxfehler: Es fehlt ")" vor "}" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,17): error C2661: "std::vector<`anonymous-namespace'::Timing,std::allocator<`anonymous-namespace'::Timing>>::push_back": Keine überladene Funktion akzeptiert 2 Argumente [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,17):
+      bei Anpassung der Argumentliste "(initializer list, const bool)"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,101): error C2143: Syntaxfehler: Es fehlt ";" vor "}" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(200,102): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(203,58): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(203,58): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29): error C2065: "n": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29): error C2660: "juce::AudioBuffer<float>::getSample": Funktion akzeptiert keine 1 Argumente [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\na-audit16-aff2d818\deps\juce-src\modules\juce_audio_basics\buffers\juce_AudioSampleBuffer.h(654,10):
+      Siehe Deklaration von "juce::AudioBuffer<float>::getSample"
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29):
+      bei Anpassung der Argumentliste "(int)"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29): error C2065: "original": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(204,29): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(205,26): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(205,26): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(206,54): error C2065: "n": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(207,48): error C2065: "n": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(207,36): error C2660: "juce::AudioBuffer<float>::getSample": Funktion akzeptiert keine 1 Argumente [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\na-audit16-aff2d818\deps\juce-src\modules\juce_audio_basics\buffers\juce_AudioSampleBuffer.h(654,10):
+      Siehe Deklaration von "juce::AudioBuffer<float>::getSample"
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(207,36):
+      bei Anpassung der Argumentliste "(int)"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(209,19): error C2065: "n": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(211,37): error C2065: "begin": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(211,16): error C2737: "`anonymous-namespace'::wall": Das Objekt "const" muss initialisiert werden. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(213,5): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(213,5): error C2365: "`anonymous-namespace'::messages": Erneute Definition; vorherige Definition war "Funktion". [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(37,6):
+      Siehe Deklaration von "`anonymous-namespace'::messages"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,23): error C2065: "dir": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,31): error C2065: "name": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,48): error C2143: Syntaxfehler: Es fehlt ";" vor "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,45): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,45): error C2371: "`anonymous-namespace'::csv": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,19):
+      Siehe Deklaration von "`anonymous-namespace'::csv"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,35): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,36): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,37): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,35): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,35): error C2371: "`anonymous-namespace'::t": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,25):
+      Siehe Deklaration von "`anonymous-namespace'::t"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,37): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "reserve" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,61): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,67): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,68): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,61): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,61): error C2371: "`anonymous-namespace'::ratios": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,27):
+      Siehe Deklaration von "`anonymous-namespace'::ratios"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,68): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "reserve" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,23): error C2065: "timings": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,5): error C2059: Syntaxfehler: "for" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,30): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,23): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,32): error C2059: Syntaxfehler: "const" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,70): error C2143: Syntaxfehler: Es fehlt ";" vor "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,67): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,67): error C2371: "`anonymous-namespace'::csv": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(214,19):
+      Siehe Deklaration von "`anonymous-namespace'::csv"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,182): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,183): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,184): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,182): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,182): error C2371: "`anonymous-namespace'::t": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,25):
+      Siehe Deklaration von "`anonymous-namespace'::t"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,184): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "push_back" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,205): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,211): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,212): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,205): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,205): error C2371: "`anonymous-namespace'::ratios": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(215,27):
+      Siehe Deklaration von "`anonymous-namespace'::ratios"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,212): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "push_back" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,242): error C2059: Syntaxfehler: "if" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,273): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,273): error C2371: "`anonymous-namespace'::worst": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(216,28):
+      Siehe Deklaration von "`anonymous-namespace'::worst"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,284): error C2589: "(": Ungültiges Token auf der rechten Seite von "::" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,284): error C2065: "v": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,284): error C2065: "deadline": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(217,284): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(218,14): error C2143: Syntaxfehler: Es fehlt ";" vor "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(218,10): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(218,10): error C2371: "std::cout": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\iostream(40,75):
+      Siehe Deklaration von "std::cout"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(218,14): error C2059: Syntaxfehler: "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,5): error C2059: Syntaxfehler: "for" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,19): error C2143: Syntaxfehler: Es fehlt ")" vor ";" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,24): error C2143: Syntaxfehler: Es fehlt ">" vor ";" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,20): error C7568: Nach der angenommenen Funktionsvorlage "k" fehlt die Argumentliste. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,20): warning C4091: "": Ignoriert auf der linken Seite von "<error type>", wenn keine Variable deklariert wurde [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,25): error C2059: Syntaxfehler: "++" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,28): error C2059: Syntaxfehler: ")" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,29): error C2143: Syntaxfehler: Es fehlt ";" vor "{" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(220,29): error C2447: "{": Funktionsheader fehlt - Parameterliste im alten Stil? [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(225,14): error C2143: Syntaxfehler: Es fehlt ";" vor "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(225,10): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(225,10): error C2371: "std::cout": Neudefinition; unterschiedliche Basistypen [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\iostream(40,75):
+      Siehe Deklaration von "std::cout"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(225,14): error C2059: Syntaxfehler: "<<" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(226,5): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(226,45): error C2065: "nonfinite": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(226,58): error C2065: "name": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(227,5): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(227,5): error C2374: "require": Neudefinition; Mehrfachinitialisierung [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(226,5):
+      Siehe Deklaration von "require"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(227,5): error C2086: "int require": Neudefinition [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(226,5):
+      Siehe Deklaration von "require"
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(227,30): error C2065: "gen": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(227,54): error C2065: "name": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,5): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,11): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,12): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,5): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,12): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "clear" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,20): error C3927: "->": Ein nachstehender Rückgabetyp ist nach einem Nichtfunktionsdeklarator nicht zulässig. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,23): error C3484: Syntaxfehler: "->" wird vor dem Rückgabetyp erwartet. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,24): error C3613: Rückgabetyp nach '"->" (Annahme: "int") fehlt [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,20): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,24): error C2146: Syntaxfehler: Fehlendes ";" vor Bezeichner "reset" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,32): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,45): error C4430: Fehlender Typspezifizierer - int wird angenommen. Hinweis: "default-int" wird von C++ nicht unterstützt. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,58): error C2065: "resources": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,68): error C2065: "name": nichtdeklarierter Bezeichner [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,57): error C2440: "Initialisierung": "initializer list" kann nicht in "int" konvertiert werden [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+      C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(228,57):
+      Der Initialisierer enthält zu viele Elemente.
+  
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(229,1): error C2059: Syntaxfehler: "}" [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+C:\Users\phili\Projekte\Nakama\docs\audits\2026-09-15-tiefenaudit\roh\phase-16-nachweise\e\last_probe.cpp(229,1): error C1003: Mehr als 100 Fehler gefunden; Kompilierung wird abgebrochen. [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]
+  juce_audio_processors_ara.cpp
+  juce_audio_processors_lv2_libs.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_basics.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+  juce_dsp.cpp
+  juce_cryptography.cpp
+C:\na-audit16-aff2d818\deps\juce-src\modules\juce_gui_basics\juce_gui_basics.cpp(61): warning : This version of JUCE does not use the splash screen, the flag JUCE_DISPLAY_SPLASH_SCREEN is ignored [C:\na-audit16-aff2d818\build-root\Audit16Last.vcxproj]

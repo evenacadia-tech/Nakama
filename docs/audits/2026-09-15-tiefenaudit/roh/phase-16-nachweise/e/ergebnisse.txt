@@ -1,0 +1,114 @@
+Audit16Last build=Sep 18 2026 02:29:28 pid=7684 logical_processors=12
+EVIDENCE processor-component; normal process priority; scheduled chain service time includes host stamp and QueryPerformanceCounter overhead; synthetic deterministic input; no real VST3 host, ASIO device, installed plugin or live broker
+RESOURCE initial cycle=-1 handles=200 threads=4 private_bytes=2641920 working_set=14905344
+SECTION lifecycle: echte Callbackeintritte; keine Host-Wrapper-Simulation behauptet
+PASS reset: aktive 8-Band-Historie endet; Stille exakt null; State bytegleich
+PASS release ohne prepare: bitgleicher Rueckfall
+PASS release/prepare: Rate96k Mono aktiv endlich
+PASS offline: Preview endet und Hoermatrix Processed
+PASS JUCE-Prozessor-Hostbypass: bitgleich, ohne DSP-Callback
+PASS Block333 bei prepare64: Audio endlich, Analyseverlust gezaehlt
+PASS Lifecycle/Reload/Offline/Bypass veraendern bestaetigte Statebytes nicht
+RESOURCE lifecycle_destroyed cycle=-1 handles=200 threads=4 private_bytes=3084288 working_set=16580608
+SECTION load stereo48k64 rate=48000 channels=2 offline=0
+RESOURCE stereo48k64_active cycle=-1 handles=215 threads=17 private_bytes=47095808 working_set=59482112
+TIMING stereo48k64 blocks=2250 audio_seconds=3 wall_seconds=3.0005026 mean_us=81.8359111111 p50_us=77.6 p99_us=163.9 p999_us=251.4 max_us=271.2 misses=0 max_deadline_ratio=0.2034 p99_deadline_ratio=0.122925 automation_rounds=150 nonfinite=0 checksum=0.173085397373
+PROBE stereo48k64 index=0 delta_max=0.0610056966543 dynamic_max_db=5.94727504106 peak=0.104682713747 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=1 delta_max=0.0642055682838 dynamic_max_db=5.92601368544 peak=0.105982072651 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=2 delta_max=0.0598114877939 dynamic_max_db=5.97459172417 peak=0.101349838078 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=3 delta_max=0.063807034865 dynamic_max_db=6 peak=0.101171039045 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=4 delta_max=0.0630738884211 dynamic_max_db=6 peak=0.100381523371 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=5 delta_max=0.0648323446512 dynamic_max_db=5.9962268452 peak=0.100067093968 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=6 delta_max=0.0636041425169 dynamic_max_db=5.9473600522 peak=0.0990910381079 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=7 delta_max=0.0650722403079 dynamic_max_db=5.91736614986 peak=0.0984646901488 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=8 delta_max=0.0629529813305 dynamic_max_db=5.85127524097 peak=0.0971859619021 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k64 index=9 delta_max=0.0657581910491 dynamic_max_db=5.79320882718 peak=0.0997567474842 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+GEN stereo48k64 accepted_blocks=2250 feature_frames=29 overflow=0 oversize=0 snapshot_samples=143936
+PASS stereo48k64: alle zehn DSP-Ausgaenge aktiv, dynamisch ausgelenkt und endlich
+PASS stereo48k64: alle elf Analyseproducer tatsaechlich aktiv
+RESOURCE stereo48k64_destroyed cycle=-1 handles=201 threads=4 private_bytes=13930496 working_set=19103744
+SECTION load stereo96k64 rate=96000 channels=2 offline=0
+RESOURCE stereo96k64_active cycle=-1 handles=215 threads=17 private_bytes=47902720 working_set=60239872
+TIMING stereo96k64 blocks=4500 audio_seconds=3 wall_seconds=3.0002022 mean_us=76.1335111111 p50_us=70 p99_us=177.9 p999_us=308 max_us=491.2 misses=0 max_deadline_ratio=0.7368 p99_deadline_ratio=0.26685 automation_rounds=150 nonfinite=0 checksum=0.841708404382
+PROBE stereo96k64 index=0 delta_max=0.0648930650204 dynamic_max_db=5.95397397323 peak=0.104216918349 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=1 delta_max=0.0678657479584 dynamic_max_db=5.93755933768 peak=0.108486704528 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=2 delta_max=0.0621890900657 dynamic_max_db=5.98072320629 peak=0.102387465537 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=3 delta_max=0.0657616816461 dynamic_max_db=6 peak=0.103131748736 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=4 delta_max=0.0659039001912 dynamic_max_db=6 peak=0.101618587971 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=5 delta_max=0.0648330487311 dynamic_max_db=6 peak=0.102063126862 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=6 delta_max=0.0652819443494 dynamic_max_db=5.96164914423 peak=0.100320257246 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=7 delta_max=0.0647074310109 dynamic_max_db=5.9239970262 peak=0.100446976721 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=8 delta_max=0.0660974904895 dynamic_max_db=5.84263039637 peak=0.0984853282571 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo96k64 index=9 delta_max=0.0677491053939 dynamic_max_db=5.79603589709 peak=0.103941589594 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+GEN stereo96k64 accepted_blocks=4500 feature_frames=29 overflow=0 oversize=0 snapshot_samples=287936
+PASS stereo96k64: alle zehn DSP-Ausgaenge aktiv, dynamisch ausgelenkt und endlich
+PASS stereo96k64: alle elf Analyseproducer tatsaechlich aktiv
+RESOURCE stereo96k64_destroyed cycle=-1 handles=201 threads=4 private_bytes=14254080 working_set=19906560
+SECTION load stereo48k_mixed rate=48000 channels=2 offline=0
+RESOURCE stereo48k_mixed_active cycle=-1 handles=215 threads=17 private_bytes=48730112 working_set=60669952
+TIMING stereo48k_mixed blocks=1424 audio_seconds=3.00375 wall_seconds=2.9988853 mean_us=121.518609551 p50_us=59.1 p99_us=506.7 p999_us=659.1 max_us=673.7 misses=93 max_deadline_ratio=5.5248 p99_deadline_ratio=1.5744 automation_rounds=119 nonfinite=0 checksum=1.62568509492
+PROBE stereo48k_mixed index=0 delta_max=0.0621247855015 dynamic_max_db=5.93110541219 peak=0.104682713747 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=1 delta_max=0.0619213953614 dynamic_max_db=5.95018215195 peak=0.105982072651 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=2 delta_max=0.0594966821373 dynamic_max_db=5.99155945175 peak=0.101349838078 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=3 delta_max=0.0619594827294 dynamic_max_db=6 peak=0.101171039045 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=4 delta_max=0.0633855108172 dynamic_max_db=6 peak=0.100381523371 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=5 delta_max=0.0611596275121 dynamic_max_db=5.99269214974 peak=0.100067093968 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=6 delta_max=0.0631454437971 dynamic_max_db=5.97183966977 peak=0.0990910381079 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=7 delta_max=0.0645472221076 dynamic_max_db=5.91936080195 peak=0.0984646901488 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=8 delta_max=0.0629151170142 dynamic_max_db=5.87451590867 peak=0.0971859619021 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE stereo48k_mixed index=9 delta_max=0.0639030952007 dynamic_max_db=5.82252704278 peak=0.0997567474842 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+GEN stereo48k_mixed accepted_blocks=1424 feature_frames=29 overflow=0 oversize=0 snapshot_samples=143847
+PASS stereo48k_mixed: alle zehn DSP-Ausgaenge aktiv, dynamisch ausgelenkt und endlich
+PASS stereo48k_mixed: alle elf Analyseproducer tatsaechlich aktiv
+RESOURCE stereo48k_mixed_destroyed cycle=-1 handles=201 threads=4 private_bytes=16019456 working_set=19943424
+SECTION load mono48k64 rate=48000 channels=1 offline=0
+RESOURCE mono48k64_active cycle=-1 handles=215 threads=17 private_bytes=47886336 working_set=60268544
+TIMING mono48k64 blocks=2250 audio_seconds=3 wall_seconds=2.9997967 mean_us=81.4785333333 p50_us=77 p99_us=193.9 p999_us=420.7 max_us=605.6 misses=0 max_deadline_ratio=0.4542 p99_deadline_ratio=0.145425 automation_rounds=150 nonfinite=0 checksum=0.285527655575
+PROBE mono48k64 index=0 delta_max=0.0610698591918 dynamic_max_db=5.58463773971 peak=0.0957646369934 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=1 delta_max=0.0621917955577 dynamic_max_db=5.62519716337 peak=0.0965187624097 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=2 delta_max=0.0616514794528 dynamic_max_db=5.76969168172 peak=0.0965334251523 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=3 delta_max=0.0621137432754 dynamic_max_db=5.80335304134 peak=0.0968869253993 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=4 delta_max=0.0617221836001 dynamic_max_db=5.79645107635 peak=0.096494153142 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=5 delta_max=0.0632741078734 dynamic_max_db=5.7783984887 peak=0.0964406505227 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=6 delta_max=0.0614215172827 dynamic_max_db=5.86462989194 peak=0.0956812500954 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=7 delta_max=0.062455996871 dynamic_max_db=5.95494185683 peak=0.0953294560313 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=8 delta_max=0.0612138267606 dynamic_max_db=6 peak=0.0942674353719 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE mono48k64 index=9 delta_max=0.0630597993731 dynamic_max_db=6 peak=0.0935281142592 producer_publications=29 frames_built=29 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+GEN mono48k64 accepted_blocks=2250 feature_frames=29 overflow=0 oversize=0 snapshot_samples=143936
+PASS mono48k64: alle zehn DSP-Ausgaenge aktiv, dynamisch ausgelenkt und endlich
+PASS mono48k64: alle elf Analyseproducer tatsaechlich aktiv
+RESOURCE mono48k64_destroyed cycle=-1 handles=201 threads=4 private_bytes=14376960 working_set=19836928
+SECTION load offline48k333 rate=48000 channels=2 offline=1
+RESOURCE offline48k333_active cycle=-1 handles=215 threads=17 private_bytes=48726016 working_set=60919808
+TIMING offline48k333 blocks=433 audio_seconds=3.0039375 wall_seconds=0.2144103 mean_us=374.915473441 p50_us=394.5 p99_us=618.7 p999_us=1725.6 max_us=1725.6 misses=0 max_deadline_ratio=0.248735135135 p99_deadline_ratio=0.089181981982 automation_rounds=145 nonfinite=0 checksum=-0.157731067849
+PROBE offline48k333 index=0 delta_max=0.0569675713778 dynamic_max_db=6 peak=0.104682713747 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=1 delta_max=0.0609923694283 dynamic_max_db=6 peak=0.105982072651 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=2 delta_max=0.0590063594282 dynamic_max_db=6 peak=0.101349838078 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=3 delta_max=0.0600887509063 dynamic_max_db=6 peak=0.101171039045 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=4 delta_max=0.0605144314468 dynamic_max_db=6 peak=0.100381523371 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=5 delta_max=0.0617217347026 dynamic_max_db=6 peak=0.100067093968 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=6 delta_max=0.0592056587338 dynamic_max_db=6 peak=0.0990910381079 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=7 delta_max=0.0664167497307 dynamic_max_db=6 peak=0.0984646901488 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=8 delta_max=0.0647280751728 dynamic_max_db=6 peak=0.0971859619021 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+PROBE offline48k333 index=9 delta_max=0.0642727253726 dynamic_max_db=6 peak=0.0997567474842 producer_publications=28 frames_built=28 evidence_built=5 evidence_not_sent=2 overflow=0 oversize=0 lost_frames=0 automation_epoch=1 state_revision=1
+GEN offline48k333 accepted_blocks=433 feature_frames=28 overflow=0 oversize=0 snapshot_samples=143856
+PASS offline48k333: alle zehn DSP-Ausgaenge aktiv, dynamisch ausgelenkt und endlich
+PASS offline48k333: alle elf Analyseproducer tatsaechlich aktiv
+RESOURCE offline48k333_destroyed cycle=-1 handles=201 threads=4 private_bytes=15097856 working_set=19521536
+SECTION resources: 12 Zyklen, je 1 Gen+2 aktive Probes, 3 Editorobjekte, 3 Reloads, reset/release/prepare
+RESOURCE cycle_before cycle=-1 handles=200 threads=4 private_bytes=5726208 working_set=19292160
+RESOURCE cycle_destroyed cycle=0 handles=251 threads=16 private_bytes=66580480 working_set=67936256
+RESOURCE cycle_destroyed cycle=1 handles=251 threads=17 private_bytes=71065600 working_set=77602816
+RESOURCE cycle_destroyed cycle=2 handles=251 threads=17 private_bytes=71143424 working_set=80920576
+RESOURCE cycle_destroyed cycle=3 handles=251 threads=18 private_bytes=72683520 working_set=83906560
+RESOURCE cycle_destroyed cycle=4 handles=251 threads=19 private_bytes=72376320 working_set=85639168
+RESOURCE cycle_destroyed cycle=5 handles=251 threads=19 private_bytes=72933376 working_set=85250048
+RESOURCE cycle_destroyed cycle=6 handles=251 threads=19 private_bytes=72482816 working_set=85610496
+RESOURCE cycle_destroyed cycle=7 handles=251 threads=19 private_bytes=72888320 working_set=85700608
+RESOURCE cycle_destroyed cycle=8 handles=251 threads=19 private_bytes=72978432 working_set=86786048
+RESOURCE cycle_destroyed cycle=9 handles=251 threads=19 private_bytes=100950016 working_set=114683904
+RESOURCE cycle_destroyed cycle=10 handles=251 threads=19 private_bytes=101019648 working_set=115027968
+RESOURCE cycle_destroyed cycle=11 handles=251 threads=19 private_bytes=100970496 working_set=114855936
+RESOURCE final_200ms cycle=-1 handles=251 threads=19 private_bytes=100970496 working_set=114855936
+RESOURCE final_2s cycle=-1 handles=251 threads=19 private_bytes=100970496 working_set=114855936
+ASSERTION_FAILURES=0

@@ -1,0 +1,88 @@
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+
+  Checking File Globs
+  Generating Audit16LastResources_artefacts/JuceLibraryCode/Audit16LastResources_resources.rc
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  Audit16LastResources_rc_lib.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16LastResources_rc_lib.dir\Release\Audit16LastResources_rc_lib.lib
+  flatbuffers.vcxproj -> C:\na-audit16-aff2d818\build-root\_deps\flatbuffers-build\Release\flatbuffers.lib
+  NakamaKern.vcxproj -> C:\na-audit16-aff2d818\build-root\produkt\plugin\Release\NakamaKern.lib
+  Building Custom Rule C:/Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/c/CMakeLists.txt
+  resources_probe.cpp
+  SondeProcessor.cpp
+  PluginProcessor.cpp
+  Hostbruecke.cpp
+  State.cpp
+  Ipc.cpp
+  Analyse.cpp
+  PluginEditor.cpp
+  AnalyseEngine.cpp
+  DiagnoseAntwort.cpp
+  Diagnose.cpp
+  SourcesModel.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/DiagnoseAntwort.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  PipeToken.cpp
+  PipeClientIsoliert.cpp
+  juce_audio_utils.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Analyse.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  juce_audio_processors.cpp
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../../Users/phili/Projekte/Nakama/docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/e/resources_probe.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/sonde/SondeProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/State.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginProcessor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/PluginEditor.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Ipc.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\featureengine\Stereo.h(70,26): warning C4458: Deklaration von "sr" blendet Klassenmember aus [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  (Quelldatei „../eq-copilot/plugin/src/prozessor/Hostbruecke.cpp“ wird kompiliert)
+      C:\na-audit16-aff2d818\eq-copilot\plugin\core\analysis\FeatureEngine.h(1281,12):
+      Siehe Deklaration von "nakama::analyse::FeatureEngine::sr"
+  
+  juce_audio_processors_ara.cpp
+  juce_audio_processors_lv2_libs.cpp
+  juce_gui_extra.cpp
+  juce_gui_basics.cpp
+  juce_graphics.cpp
+  juce_graphics_Harfbuzz.cpp
+  juce_events.cpp
+  juce_core.cpp
+  juce_core_CompilationTime.cpp
+  juce_data_structures.cpp
+  juce_audio_basics.cpp
+  juce_audio_formats.cpp
+  juce_audio_devices.cpp
+C:\na-audit16-aff2d818\deps\juce-src\modules\juce_gui_basics\juce_gui_basics.cpp(61): warning : This version of JUCE does not use the splash screen, the flag JUCE_DISPLAY_SPLASH_SCREEN is ignored [C:\na-audit16-aff2d818\build-root\Audit16LastResources.vcxproj]
+  juce_dsp.cpp
+  juce_cryptography.cpp
+  juce_graphics_Sheenbidi.c
+  Audit16LastResources.vcxproj -> C:\na-audit16-aff2d818\build-root\Audit16LastResources_artefacts\Release\Audit16LastResources.exe

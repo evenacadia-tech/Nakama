@@ -1,0 +1,136 @@
+{
+  "SchemaVersion": 1,
+  "ProjectRoot": "C:\\na-audit16-aff2d818",
+  "Revision": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "Branch": "master",
+  "Upstream": {
+    "Name": "origin/master",
+    "Ahead": 0,
+    "Behind": 0,
+    "Note": "Local tracking state only; preflight does not fetch."
+  },
+  "Scope": {
+    "BaseRef": "e008811efa7650f3e0cc2332cc21f9e268cdd125",
+    "BaseCommit": "e008811efa7650f3e0cc2332cc21f9e268cdd125",
+    "WorkingTreeDirty": true,
+    "Status": [
+      "?? audit16-original-BEFUNDE.bin"
+    ],
+    "ChangedPaths": [
+      "audit16-original-BEFUNDE.bin",
+      "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-14-blindspots.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-gegenpruefung-paket1.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-gegenpruefung-paket2.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-gegenpruefung-paket3.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-paket1-verspaetete-ergebnisse.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-paket2-dsp-numerik.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-paket3-teilfehler.md",
+      "docs/audits/2026-09-15-tiefenaudit/roh/phase-15-zentral.md",
+      "docs/PLAN-STAND.md"
+    ],
+    "Tags": [
+      "other",
+      "plan"
+    ]
+  },
+  "Canonical": {
+    "ContextReady": true,
+    "CanonicalRunnerInvocable": true,
+    "Paths": [
+      {
+        "Role": "Instructions",
+        "RelativePath": "AGENTS.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:22.3414166Z"
+      },
+      {
+        "Role": "ProductContext",
+        "RelativePath": "CLAUDE.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:22.3429095Z"
+      },
+      {
+        "Role": "PlanStatus",
+        "RelativePath": "docs/PLAN-STAND.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:23.2978710Z"
+      },
+      {
+        "Role": "ProbePlan",
+        "RelativePath": "docs/FL-Nakama-Sonden-Design-Entwurf.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:23.2978710Z"
+      },
+      {
+        "Role": "Architecture",
+        "RelativePath": "docs/plugin-wissen.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:24.3671293Z"
+      },
+      {
+        "Role": "EvidenceRunner",
+        "RelativePath": "tools/beweise.ps1",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:25.2296743Z"
+      },
+      {
+        "Role": "KnowledgeIndex",
+        "RelativePath": "wissen/INDEX.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:25.2654138Z"
+      },
+      {
+        "Role": "SkillEntrypoint",
+        "RelativePath": ".agents/skills/nakama-plugin-quality/SKILL.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:22.3356702Z"
+      },
+      {
+        "Role": "QualityModel",
+        "RelativePath": ".agents/skills/nakama-plugin-quality/references/quality-model.md",
+        "Exists": true,
+        "LastWriteTimeUtc": "2026-09-17T23:59:22.3356702Z"
+      }
+    ]
+  },
+  "Tools": [
+    {
+      "Name": "git",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files\\Git\\cmd\\git.exe"
+    },
+    {
+      "Name": "py",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\WINDOWS\\py.exe"
+    },
+    {
+      "Name": "pwsh",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+    },
+    {
+      "Name": "cargo",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Users\\phili\\.cargo\\bin\\cargo.exe"
+    },
+    {
+      "Name": "python",
+      "Required": false,
+      "Available": true,
+      "Path": "C:\\Python314\\python.exe"
+    },
+    {
+      "Name": "cmake",
+      "Required": true,
+      "Available": true,
+      "Path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe"
+    }
+  ],
+  "Findings": []
+}

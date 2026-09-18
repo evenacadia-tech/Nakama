@@ -1,0 +1,54 @@
+     Locking 66 packages to latest compatible versions
+      Adding windows-sys v0.60.2 (available: v0.61.2)
+   Compiling version_check v0.9.5
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling find-msvc-tools v0.1.12
+   Compiling shlex v2.0.1
+   Compiling typenum v1.20.1
+   Compiling semver v1.0.28
+   Compiling zmij v1.0.23
+   Compiling pkg-config v0.3.34
+   Compiling windows_x86_64_msvc v0.53.1
+   Compiling vcpkg v0.2.15
+   Compiling rustc_version v0.4.1
+   Compiling generic-array v0.14.7
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling cc v1.4.6
+   Compiling cfg-if v1.0.5
+   Compiling getrandom v0.4.3
+   Compiling flatbuffers v25.12.19
+   Compiling bitflags v2.13.2
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling windows-targets v0.53.5
+   Compiling cpufeatures v0.2.17
+   Compiling ryu-js v1.0.3
+   Compiling fallible-iterator v0.3.0
+   Compiling smallvec v1.16.1
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling syn v3.0.6
+   Compiling digest v0.10.7
+   Compiling uuid v1.26.1
+   Compiling windows-sys v0.60.2
+   Compiling sha2 v0.10.9
+   Compiling libsqlite3-sys v0.38.2
+   Compiling serde_derive v1.0.229
+   Compiling rusqlite v0.40.2
+   Compiling serde_json_canonicalizer v0.3.2
+   Compiling eqcop-broker v0.1.0 (C:\na-audit16-aff2d818\broker)
+   Compiling audit16-b v0.0.0 (C:\na-audit16-aff2d818\build-b\harness)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 28.97s
+     Running `build-b\target\debug\audit16-b.exe`
+Nakama Store: rusqlite 0.40.2, SQLite 3.53.2, C:\na-audit16-aff2d818\build-b\data-8bfb885abfbb49a1b9d5d31f29831e54\healthy\store.sqlite3
+
+thread 'main' (254112) panicked at components.rs:32:67:
+heartbeat_ack
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `build-b\target\debug\audit16-b.exe` (exit code: 101)
+EXIT=101

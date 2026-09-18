@@ -1,0 +1,12 @@
+[package]
+name = "nakama-phase16-audit-a"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eqcop-broker = { path = "C:/na-audit16-aff2d818/broker" }
+serde_json = "1"
+
+[[test]]
+name = "verdrahtung"
+path = "verdrahtung.rs"

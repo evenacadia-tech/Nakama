@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-09-18T00:19:07.625006+00:00",
+  "source_root": "C:\\na-audit16-aff2d818",
+  "source_head": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "product_diff": "",
+  "dependency_removed_or_changed": [],
+  "dependency_added": [
+    [
+      "nakama-phase16-audit-a",
+      "0.1.0",
+      null,
+      null
+    ]
+  ],
+  "sources": {
+    "broker/src/coordinator/hypothese_verdrahtung.rs": "85b6a36de7532ebe7269a089aee99059ff4659e7ef78a6b9a2d5bbeae747ef5b",
+    "broker/src/coordinator/hypothese/rechnung.rs": "199dd0dcc6790082c611969c89909eb6183e80f4a1ce52fdb0e891ecc7d90b4f",
+    "broker/src/coordinator/hypothese/enthaltung.rs": "221023911a2f26398482e0435199eb439eea1aeb2d4216260544762bc5d695e8",
+    "broker/src/coordinator/proposal_verdrahtung.rs": "a4b309cc6ec421e695cb58827cdaaa80c9d49b067794b359560f56a9f7cec5dc",
+    "broker/src/coordinator/proposal.rs": "f552d5f5a318e753e6d0fd1c3c2f48aace1b4a644337d30e6bd38d71a6792e2c",
+    "broker/src/coordinator/experiment_verdrahtung.rs": "2dfbe2d1350d350e835980945a088dc0e5109acf61c98c3fce2c4021bf4f46ad",
+    "broker/src/coordinator/prepost_verdrahtung.rs": "f728d216fa94961d5c91369c3eab58bd88e93897fb62f25e97db75a05f9fc87f",
+    "broker/src/coordinator/link.rs": "40832a5f8b62b02c77f9e85fb4d6700aff4ca7c25ae01f4fdcc8f4a952fd3230",
+    "broker/src/coordinator/liveness.rs": "b73c25b20281ec4e6e1dbfb63467f1520b1b31f62096ee47b1f574eeaa33a65a",
+    "broker/src/coordinator/evidenz.rs": "b4409f82fc881106744520450e82dcc270cdc469678d3a82a9fa539209472111",
+    "broker/src/coordinator/invalidierung_verdrahtung.rs": "276d5f532bc7f5a7f2b87d89a4fc09c42203084449530de44e59a2eff8644719",
+    "eq-copilot/plugin/src/prozessor/Analyse.cpp": "cd589bee158fa54e787e54d75425a57136b0011e888230ad9427145df015df16",
+    "eq-copilot/plugin/src/prozessor/Ipc.cpp": "b74ac525ad97ceec36a0e0f56aa24599ecf7782b617164845a2b562c947b4b97",
+    "eq-copilot/plugin/sonde/SondeProcessor.cpp": "821b73d79fa74bfcddb37d15398b40fd1d5921e6c20ae77c3b5521af1a001405",
+    "eq-copilot/plugin/core/ipc/controlclient/Intern.h": "33195f01e64d6197dea805fc930e9272daf3d0c0a4fda0e81a1d8efb66303288",
+    "eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp": "e9fa3da02bb472d40de853b34ddbc5e5bcfb426bef14df5fffd3fc31de2bb8aa",
+    "broker/Cargo.lock": "d5b54137827f5c953ad4a34bb1130982c756de24d110e538121b94541e05beb8"
+  },
+  "audit_artifacts": {
+    "Cargo.lock": "d4b8919afd0ff8269073ad808da8f50425766cf88ef2ce5b0ac0da6a5929c559",
+    "Cargo.toml": "8a5a5010478a3a7832a3bab4bc6977d7902b1471167b8606d00e7bc06369712a",
+    "lauf-pinned.txt": "9f322b2d4cfa156ff79ffe8e160514a15fadb39eafe72962f3328e0227188ab3",
+    "verdrahtung.rs": "c7b4f48edb7ccd49543f93a20fec05c257f45c80ff1d46e0ce639ff0909886fd"
+  }
+}

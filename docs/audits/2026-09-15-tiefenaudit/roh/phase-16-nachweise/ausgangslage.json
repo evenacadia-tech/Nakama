@@ -1,0 +1,22 @@
+{
+  "utc": "2026-09-18T00:02:34.180179+00:00",
+  "repo": "C:\\Users\\phili\\Projekte\\Nakama",
+  "snapshot": "C:\\na-audit16-aff2d818",
+  "head": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "snapshot_head": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "status": "?? briefing-hub/\n?? docs/audits/2026-09-15-tiefenaudit/roh/phase-16-nachweise/\n?? docs/audits/2026-09-15-tiefenaudit/roh/phase-16-plan.md\n?? nimbalyst-local/",
+  "historical_phase15_head": "e008811efa7650f3e0cc2332cc21f9e268cdd125",
+  "since_phase15": "docs/PLAN-STAND.md                                 |   4 +-\n docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md      | 127 ++++++\n .../roh/phase-14-blindspots.md                     | 136 ++++++\n .../roh/phase-15-gegenpruefung-paket1.md           | 348 +++++++++++++++\n .../roh/phase-15-gegenpruefung-paket2.md           | 453 ++++++++++++++++++++\n .../roh/phase-15-gegenpruefung-paket3.md           | 467 +++++++++++++++++++++\n .../roh/phase-15-paket1-verspaetete-ergebnisse.md  | 411 ++++++++++++++++++\n .../roh/phase-15-paket2-dsp-numerik.md             | 351 ++++++++++++++++\n .../roh/phase-15-paket3-teilfehler.md              | 389 +++++++++++++++++\n .../2026-09-15-tiefenaudit/roh/phase-15-zentral.md | 202 +++++++++\n 10 files changed, 2886 insertions(+), 2 deletions(-)",
+  "product_diff_since_phase15": "",
+  "product_worktree_diff": "",
+  "product_tree_objects": "040000 tree d0595fab33c1acc28c65e5b5a9d9d6f8521d99dd\tbroker\n040000 tree 4c19bf65667799637afdbcf0d01044f102574388\teq-copilot\n040000 tree 09f1745e490b75d4d7a653195432dfe3b5b775a2\ttools",
+  "befunde_original": {
+    "bytes": 243364,
+    "sha256": "3d20a6e7ab6a1e19d60eb5cdb6ade378daa60242b62a2c96e95555d4065e7b7d",
+    "lines": 702,
+    "backup": "C:\\na-audit16-aff2d818\\audit16-original-BEFUNDE.bin"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.13.14",
+  "tracked_instructions": "AGENTS.md\nwissen/AGENTS.md"
+}

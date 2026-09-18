@@ -1,0 +1,70 @@
+   Compiling audit16-b v0.0.0 (C:\na-audit16-aff2d818\build-b\harness)
+warning: function `beat` is never used
+  --> components.rs:34:8
+   |
+34 | pub fn beat(c: &Coordinator, link: &str, a: &Adresse, seq: u64) -> Value {
+   |        ^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `register` is never used
+  --> components.rs:37:8
+   |
+37 | pub fn register(c: &Coordinator, link: &str, h: &HelloControl) {
+   |        ^^^^^^^^
+
+warning: function `subscribe` is never used
+  --> components.rs:40:8
+   |
+40 | pub fn subscribe(c: &Coordinator, link: &str, a: &Adresse) {
+   |        ^^^^^^^^^
+
+warning: struct `Push` is never constructed
+  --> components.rs:65:12
+   |
+65 | pub struct Push { pub snapshots:Mutex<Vec<Value>>, pub frames:Mutex<usize> }
+   |            ^^^^
+
+warning: function `store_rounds` is never used
+  --> components.rs:76:4
+   |
+76 | fn store_rounds(degraded:bool) {
+   |    ^^^^^^^^^^^^
+
+warning: function `command` is never used
+   --> components.rs:110:4
+    |
+110 | fn command(c:&Coordinator,link:&str,target:&Adresse,id:usize)->Value {
+    |    ^^^^^^^
+
+warning: function `replay_after_eviction` is never used
+   --> components.rs:115:4
+    |
+115 | fn replay_after_eviction() {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `two_mains` is never used
+   --> components.rs:132:4
+    |
+132 | fn two_mains() {
+    |    ^^^^^^^^^
+
+warning: function `collisions` is never used
+   --> components.rs:151:4
+    |
+151 | fn collisions() {
+    |    ^^^^^^^^^^
+
+warning: function `run` is never used
+   --> components.rs:166:8
+    |
+166 | pub fn run() { store_rounds(false); store_rounds(true); replay_after_eviction(); two_mains(); collisions(); }
+    |        ^^^
+
+warning: `audit16-b` (bin "audit16-b") generated 10 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.16s
+     Running `build-b\target\debug\audit16-b.exe`
+{"case":"F13-real-listener-late-old-close","observed":{"control_heartbeat_after":"heartbeat_ack","coordinator_coupled_after":[0,1],"coordinator_coupled_before":[1,1],"coordinator_p2_frames":1,"coupled_callbacks":2,"old_close_callbacks":1,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.audit16-b-f13-aff2d818","telemetry2_still_open":true,"transport_p2_calls":4}}
+{"case":"F13-clean-reconnect-countercase","observed":{"coordinator_p2_frames":2,"couplings":[1,2]}}
+{"case":"F15-real-listener-written-P1-loss","observed":{"before_reconnect_new_evidence":["000000000000000000000000000003e8"],"first_link_p1_calls":1,"history_after_new_evidence":["000000000000000000000000000003e8","000000000000000000000000000003ec"],"ingress_overflow":0,"pipe":"\\\\.\\pipe\\evenacadia.nakama.v3.probe.audit16-b-f15-aff2d818","server_ingress_high_watermark":3,"successfully_written_evidence_frames":4}}
+EXIT=0

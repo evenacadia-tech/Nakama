@@ -1,0 +1,41 @@
+Audit16State: Reproduktionsassertions sind kein Produkt-PASS.
+PASS Trim-ID aus Vertrag
+PASS Commit/Retry: genau ein Dirty und eine Revision
+PASS Veraltete Revision ohne Dirty abgelehnt
+PASS Klon: persistente ID gleich, Laufnonce verschieden
+PASS Klon: Undo-Ring und Hash verlustfrei
+PASS Undo/Redo nach Reload erhalten gespeicherte Geschichte
+PASS Preview aufgebaut
+PASS Same-Instance: Preview beendet, Nonce bleibt, kein Dirty
+PASS Eigenes Preset geschrieben
+PASS DSP-Preset erhaelt Empfaengeridentitaet, Label und eq_enabled
+PASS T3-05-01 Setup +3 dB committed
+T3-05-01 committed=3 effective=-9 output_db=-8.99999944679
+PASS T3-05-01 reproduziert: ausstehender Hostwert ueberschreibt Recall-Audio
+PASS Fremd-Major Fixture gelesen
+T3-05-02 neutral_db=1.29429840644e-07 automated_db=6.00000017258
+PASS T3-05-02 reproduziert: Originalbytes erhalten, Read-only-Audio aktiviert
+Gen runtime.gemeldet=0
+PASS A-01 Gegenpruefung: echter Gen-Status ohne Runtime-Descriptor
+PASS Intent erste Rolle gesetzt
+PASS Intent zweite Rolle gesetzt
+T3-15-03 older=1 newer=2 reloaded=1 full={"type":"intent_update","adresse":{"logon_sid":"S-1-5-21-369263037-1611576211-2081231688-1001","project_binding_id":"3ad87ed78b9c4c8c9b4b2525fb1b8032","session_epoch":"5df18b1a420e4305aaa9742450a12cca","instance_id":"aff45cdc880042efaf2305d35ce90a6d","runtime_nonce":"005aa02b2e564fbaa943437285561ec3"},"session_epoch":"5df18b1a420e4305aaa9742450a12cca","bestand_revision":1,"vollstaendig":true,"intents":[{"quelle_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","rolle":"traegt","revision":1,"herkunft":"user","konfidenz":1.000000}]}
+PASS T3-15-03 Eingang: aelterer Vollbestand, gleiche Session/Nonce
+PASS Gen Main initialisiert
+PASS Gen isolierte Probe-Pipe gesetzt
+PASS Gen echter ControlClient verbunden
+FAIL Produkt-Join mit expliziter Sichtfixture eingereiht
+FAIL Server erster P0-Entscheidungspunkt erreicht
+PASS P0-Endergebnis vom echten Client konsumiert
+F02 reload=0 wire_commands=0 members=0 dirty=0 replays=0
+FAIL F02 Gegenprobe ohne Reload: Mitgliedschaft und Dirty
+PASS Gen Main initialisiert
+PASS Gen isolierte Probe-Pipe gesetzt
+PASS Gen echter ControlClient verbunden
+FAIL Produkt-Join mit expliziter Sichtfixture eingereiht
+FAIL Server erster P0-Entscheidungspunkt erreicht
+FAIL Vor Reload wartet ein echter InFlight-Auftrag
+PASS P0-Endergebnis vom echten Client konsumiert
+F02 reload=1 wire_commands=0 members=0 dirty=0 replays=0
+FAIL NAK-278 reproduziert: gleiche ID wiederholt, ACK-Erfolg ohne lokale Mitgliedschaft
+checks=33 failures=7

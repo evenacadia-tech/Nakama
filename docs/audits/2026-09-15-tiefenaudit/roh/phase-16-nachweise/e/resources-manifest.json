@@ -1,0 +1,42 @@
+{
+  "product_head": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "product_tree": "4c19bf65667799637afdbcf0d01044f102574388",
+  "evidence_level": "actual processor/editor object cycles in one process; no host or connected broker",
+  "recorded_utc": "2026-09-18T00:39:48.3164197Z",
+  "record_existing_run": true,
+  "run_exit_code": 0,
+  "completed_cycles": 36,
+  "processor_instances": 108,
+  "editor_instances": 108,
+  "binary": "C:\\na-audit16-aff2d818\\build-root\\Audit16LastResources_artefacts\\Release\\Audit16LastResources.exe",
+  "binary_sha256": "1b5fe39340f3e386ccc35fdc5e03e8c2c075d19b9546dd287ed0a89f8a0059de",
+  "binary_last_write_utc": "2026-09-18T00:37:48.2523641Z",
+  "shared_cmake_sha256": "c35ee2492250d92e715e16ff49611f95080c5ed5b570519f972d3c3e8f4d429a",
+  "evidence": [
+    {
+      "name": "last_probe.cpp",
+      "sha256": "7af68ff721cca9dc935e84662442cae3b1213bb95546bd552df811acce3b7063",
+      "bytes": 18677
+    },
+    {
+      "name": "resources_probe.cpp",
+      "sha256": "8d4d4daa9180884dff5ed9e14cbeb2ea3d6b2ef7eb8a7b38265b21b6ffa81892",
+      "bytes": 1239
+    },
+    {
+      "name": "resources-run.txt",
+      "sha256": "b07cc15e3bd0a2deb497ce52e3ff145e0db5a50e02e60805fa8fb58985391587",
+      "bytes": 5219
+    },
+    {
+      "name": "resources-extended.csv",
+      "sha256": "e5f66b1e29381e19fffa1e9f797e65c152f99c76fb40f887919e6be3d7db1262",
+      "bytes": 2141
+    },
+    {
+      "name": "resources-run.ps1",
+      "sha256": "8a142957a023b3ed0b6668af57ab2dde665e1fd3760a80877378adac7f12a305",
+      "bytes": 3113
+    }
+  ]
+}

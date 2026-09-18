@@ -1,0 +1,54 @@
+Audit16LastResources build=Sep 18 2026 02:37:11 pid=367428
+RESOURCE initial cycle=-1 handles=200 threads=4 private_bytes=2641920 working_set=14909440
+SERIES=0 cumulative_cycles_begin=0
+RESOURCE series_0_before cycle=0 handles=200 threads=4 private_bytes=2641920 working_set=14925824
+SECTION resources: 12 Zyklen, je 1 Gen+2 aktive Probes, 3 Editorobjekte, 3 Reloads, reset/release/prepare
+RESOURCE cycle_before cycle=-1 handles=200 threads=4 private_bytes=2641920 working_set=14925824
+RESOURCE cycle_destroyed cycle=0 handles=251 threads=16 private_bytes=66805760 working_set=77533184
+RESOURCE cycle_destroyed cycle=1 handles=251 threads=17 private_bytes=72327168 working_set=88621056
+RESOURCE cycle_destroyed cycle=2 handles=251 threads=17 private_bytes=73023488 working_set=91586560
+RESOURCE cycle_destroyed cycle=3 handles=251 threads=18 private_bytes=72568832 working_set=93720576
+RESOURCE cycle_destroyed cycle=4 handles=251 threads=18 private_bytes=76980224 working_set=97947648
+RESOURCE cycle_destroyed cycle=5 handles=251 threads=18 private_bytes=78532608 working_set=100347904
+RESOURCE cycle_destroyed cycle=6 handles=251 threads=18 private_bytes=78761984 working_set=101212160
+RESOURCE cycle_destroyed cycle=7 handles=251 threads=18 private_bytes=78086144 working_set=101330944
+RESOURCE cycle_destroyed cycle=8 handles=251 threads=18 private_bytes=78802944 working_set=101834752
+RESOURCE cycle_destroyed cycle=9 handles=251 threads=18 private_bytes=78876672 working_set=101785600
+RESOURCE cycle_destroyed cycle=10 handles=251 threads=18 private_bytes=78671872 working_set=102039552
+RESOURCE cycle_destroyed cycle=11 handles=251 threads=18 private_bytes=78532608 working_set=101376000
+RESOURCE series_0_after2s cycle=12 handles=251 threads=18 private_bytes=78209024 working_set=101052416
+SERIES=1 cumulative_cycles_begin=12
+RESOURCE series_1_before cycle=12 handles=251 threads=18 private_bytes=78209024 working_set=101052416
+SECTION resources: 12 Zyklen, je 1 Gen+2 aktive Probes, 3 Editorobjekte, 3 Reloads, reset/release/prepare
+RESOURCE cycle_before cycle=-1 handles=251 threads=18 private_bytes=78209024 working_set=101052416
+RESOURCE cycle_destroyed cycle=0 handles=251 threads=18 private_bytes=79122432 working_set=101646336
+RESOURCE cycle_destroyed cycle=1 handles=251 threads=18 private_bytes=77877248 working_set=101150720
+RESOURCE cycle_destroyed cycle=2 handles=251 threads=18 private_bytes=78356480 working_set=101744640
+RESOURCE cycle_destroyed cycle=3 handles=251 threads=18 private_bytes=102457344 working_set=125509632
+RESOURCE cycle_destroyed cycle=4 handles=251 threads=18 private_bytes=102281216 working_set=125554688
+RESOURCE cycle_destroyed cycle=5 handles=251 threads=18 private_bytes=102449152 working_set=125526016
+RESOURCE cycle_destroyed cycle=6 handles=251 threads=18 private_bytes=102227968 working_set=125558784
+RESOURCE cycle_destroyed cycle=7 handles=251 threads=18 private_bytes=103231488 working_set=126353408
+RESOURCE cycle_destroyed cycle=8 handles=251 threads=18 private_bytes=78950400 working_set=102162432
+RESOURCE cycle_destroyed cycle=9 handles=251 threads=18 private_bytes=102912000 working_set=125972480
+RESOURCE cycle_destroyed cycle=10 handles=251 threads=18 private_bytes=102408192 working_set=125788160
+RESOURCE cycle_destroyed cycle=11 handles=251 threads=18 private_bytes=102891520 working_set=126152704
+RESOURCE series_1_after2s cycle=24 handles=251 threads=18 private_bytes=102891520 working_set=126152704
+SERIES=2 cumulative_cycles_begin=24
+RESOURCE series_2_before cycle=24 handles=251 threads=18 private_bytes=102891520 working_set=126152704
+SECTION resources: 12 Zyklen, je 1 Gen+2 aktive Probes, 3 Editorobjekte, 3 Reloads, reset/release/prepare
+RESOURCE cycle_before cycle=-1 handles=251 threads=18 private_bytes=102891520 working_set=126152704
+RESOURCE cycle_destroyed cycle=0 handles=251 threads=18 private_bytes=102739968 working_set=126091264
+RESOURCE cycle_destroyed cycle=1 handles=251 threads=18 private_bytes=103043072 working_set=126267392
+RESOURCE cycle_destroyed cycle=2 handles=251 threads=18 private_bytes=102682624 working_set=126091264
+RESOURCE cycle_destroyed cycle=3 handles=251 threads=18 private_bytes=102993920 working_set=126291968
+RESOURCE cycle_destroyed cycle=4 handles=251 threads=18 private_bytes=102608896 working_set=125992960
+RESOURCE cycle_destroyed cycle=5 handles=251 threads=18 private_bytes=102834176 working_set=126181376
+RESOURCE cycle_destroyed cycle=6 handles=251 threads=18 private_bytes=102490112 working_set=125960192
+RESOURCE cycle_destroyed cycle=7 handles=251 threads=18 private_bytes=102998016 working_set=126316544
+RESOURCE cycle_destroyed cycle=8 handles=251 threads=18 private_bytes=102756352 working_set=126177280
+RESOURCE cycle_destroyed cycle=9 handles=251 threads=18 private_bytes=80183296 working_set=102998016
+RESOURCE cycle_destroyed cycle=10 handles=251 threads=18 private_bytes=102617088 working_set=125702144
+RESOURCE cycle_destroyed cycle=11 handles=251 threads=18 private_bytes=102801408 working_set=126099456
+RESOURCE series_2_after2s cycle=36 handles=251 threads=18 private_bytes=102539264 working_set=125837312
+RESOURCE_RUN_COMPLETE=36

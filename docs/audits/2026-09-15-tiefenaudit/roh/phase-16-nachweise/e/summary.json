@@ -1,0 +1,310 @@
+{
+  "stereo48k64": {
+    "64": {
+      "count": 2250,
+      "deadline_us": 1333.33333333,
+      "p50_us": 77.6,
+      "p99_us": 163.9,
+      "maximum_us": 271.2,
+      "maximum_ratio": 0.2034000000005085,
+      "service_overruns": 0,
+      "max_start_lateness_us": 2386.934
+    }
+  },
+  "stereo96k64": {
+    "64": {
+      "count": 4500,
+      "deadline_us": 666.666666667,
+      "p50_us": 70.0,
+      "p99_us": 177.9,
+      "maximum_us": 491.2,
+      "maximum_ratio": 0.7367999999996316,
+      "service_overruns": 0,
+      "max_start_lateness_us": 2373.367
+    }
+  },
+  "stereo48k_mixed": {
+    "1": {
+      "count": 356,
+      "deadline_us": 20.8333333333,
+      "p50_us": 17.6,
+      "p99_us": 49.7,
+      "maximum_us": 115.1,
+      "maximum_ratio": 5.524800000008839,
+      "service_overruns": 92,
+      "max_start_lateness_us": 2214.0
+    },
+    "7": {
+      "count": 356,
+      "deadline_us": 145.833333333,
+      "p50_us": 17.9,
+      "p99_us": 103.3,
+      "maximum_us": 207.3,
+      "maximum_ratio": 1.4214857142889634,
+      "service_overruns": 1,
+      "max_start_lateness_us": 2211.567
+    },
+    "64": {
+      "count": 356,
+      "deadline_us": 1333.33333333,
+      "p50_us": 77.7,
+      "p99_us": 128.0,
+      "maximum_us": 153.0,
+      "maximum_ratio": 0.11475000000028687,
+      "service_overruns": 0,
+      "max_start_lateness_us": 2102.934
+    },
+    "333": {
+      "count": 356,
+      "deadline_us": 6937.5,
+      "p50_us": 357.9,
+      "p99_us": 608.6,
+      "maximum_us": 673.7,
+      "maximum_ratio": 0.09710990990990992,
+      "service_overruns": 0,
+      "max_start_lateness_us": 2282.6
+    }
+  },
+  "mono48k64": {
+    "64": {
+      "count": 2250,
+      "deadline_us": 1333.33333333,
+      "p50_us": 77.0,
+      "p99_us": 193.9,
+      "maximum_us": 605.6,
+      "maximum_ratio": 0.45420000000113553,
+      "service_overruns": 0,
+      "max_start_lateness_us": 2444.334
+    }
+  },
+  "offline48k333": {
+    "333": {
+      "count": 433,
+      "deadline_us": 6937.5,
+      "p50_us": 394.5,
+      "p99_us": 618.7,
+      "maximum_us": 1725.6,
+      "maximum_ratio": 0.24873513513513512,
+      "service_overruns": 0,
+      "max_start_lateness_us": 95.1
+    }
+  },
+  "resources": [
+    {
+      "stage": "initial",
+      "cycle": "-1",
+      "handles": "200",
+      "threads": "4",
+      "private_bytes": "2641920",
+      "working_set_bytes": "14905344"
+    },
+    {
+      "stage": "lifecycle_destroyed",
+      "cycle": "-1",
+      "handles": "200",
+      "threads": "4",
+      "private_bytes": "3084288",
+      "working_set_bytes": "16580608"
+    },
+    {
+      "stage": "stereo48k64_active",
+      "cycle": "-1",
+      "handles": "215",
+      "threads": "17",
+      "private_bytes": "47095808",
+      "working_set_bytes": "59482112"
+    },
+    {
+      "stage": "stereo48k64_destroyed",
+      "cycle": "-1",
+      "handles": "201",
+      "threads": "4",
+      "private_bytes": "13930496",
+      "working_set_bytes": "19103744"
+    },
+    {
+      "stage": "stereo96k64_active",
+      "cycle": "-1",
+      "handles": "215",
+      "threads": "17",
+      "private_bytes": "47902720",
+      "working_set_bytes": "60239872"
+    },
+    {
+      "stage": "stereo96k64_destroyed",
+      "cycle": "-1",
+      "handles": "201",
+      "threads": "4",
+      "private_bytes": "14254080",
+      "working_set_bytes": "19906560"
+    },
+    {
+      "stage": "stereo48k_mixed_active",
+      "cycle": "-1",
+      "handles": "215",
+      "threads": "17",
+      "private_bytes": "48730112",
+      "working_set_bytes": "60669952"
+    },
+    {
+      "stage": "stereo48k_mixed_destroyed",
+      "cycle": "-1",
+      "handles": "201",
+      "threads": "4",
+      "private_bytes": "16019456",
+      "working_set_bytes": "19943424"
+    },
+    {
+      "stage": "mono48k64_active",
+      "cycle": "-1",
+      "handles": "215",
+      "threads": "17",
+      "private_bytes": "47886336",
+      "working_set_bytes": "60268544"
+    },
+    {
+      "stage": "mono48k64_destroyed",
+      "cycle": "-1",
+      "handles": "201",
+      "threads": "4",
+      "private_bytes": "14376960",
+      "working_set_bytes": "19836928"
+    },
+    {
+      "stage": "offline48k333_active",
+      "cycle": "-1",
+      "handles": "215",
+      "threads": "17",
+      "private_bytes": "48726016",
+      "working_set_bytes": "60919808"
+    },
+    {
+      "stage": "offline48k333_destroyed",
+      "cycle": "-1",
+      "handles": "201",
+      "threads": "4",
+      "private_bytes": "15097856",
+      "working_set_bytes": "19521536"
+    },
+    {
+      "stage": "cycle_before",
+      "cycle": "-1",
+      "handles": "200",
+      "threads": "4",
+      "private_bytes": "5726208",
+      "working_set_bytes": "19292160"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "0",
+      "handles": "251",
+      "threads": "16",
+      "private_bytes": "66580480",
+      "working_set_bytes": "67936256"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "1",
+      "handles": "251",
+      "threads": "17",
+      "private_bytes": "71065600",
+      "working_set_bytes": "77602816"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "2",
+      "handles": "251",
+      "threads": "17",
+      "private_bytes": "71143424",
+      "working_set_bytes": "80920576"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "3",
+      "handles": "251",
+      "threads": "18",
+      "private_bytes": "72683520",
+      "working_set_bytes": "83906560"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "4",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "72376320",
+      "working_set_bytes": "85639168"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "5",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "72933376",
+      "working_set_bytes": "85250048"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "6",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "72482816",
+      "working_set_bytes": "85610496"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "7",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "72888320",
+      "working_set_bytes": "85700608"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "8",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "72978432",
+      "working_set_bytes": "86786048"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "9",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "100950016",
+      "working_set_bytes": "114683904"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "10",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "101019648",
+      "working_set_bytes": "115027968"
+    },
+    {
+      "stage": "cycle_destroyed",
+      "cycle": "11",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "100970496",
+      "working_set_bytes": "114855936"
+    },
+    {
+      "stage": "final_200ms",
+      "cycle": "-1",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "100970496",
+      "working_set_bytes": "114855936"
+    },
+    {
+      "stage": "final_2s",
+      "cycle": "-1",
+      "handles": "251",
+      "threads": "19",
+      "private_bytes": "100970496",
+      "working_set_bytes": "114855936"
+    }
+  ]
+}

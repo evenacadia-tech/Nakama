@@ -1,0 +1,6 @@
+# Preserve the exact bytes hashed by the evidence manifests on every checkout.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Command output is retained verbatim, including compiler/printer whitespace.
+# Source code and Markdown remain subject to normal whitespace checks.
+*.log -whitespace
+*.txt -whitespace

@@ -1,0 +1,136 @@
+PRODUCT_HEAD=aff2d8188f33a9525aec1869449773bfdbe305a6
+TRIM old=24 new=0 firstChunk=1 reset=0 maxRatio=4.68323135375977 maxDb=13.4109122531407 maxAt=127 jump=0.0287752151489258 finalRatio=1 
+REGRESSION_ORACLE neutral_reenable_peak_le_1=EXPECTED_FAIL
+ASSERT T3_15_05_reproduction_and_unity_end=PASS
+TRIM old=24 new=0 firstChunk=64 reset=0 maxRatio=4.68323135375977 maxDb=13.4109122531407 maxAt=127 jump=0.0287752151489258 finalRatio=1 
+REGRESSION_ORACLE neutral_reenable_peak_le_1=EXPECTED_FAIL
+ASSERT T3_15_05_reproduction_and_unity_end=PASS
+TRIM old=24 new=0 firstChunk=333 reset=0 maxRatio=4.68323135375977 maxDb=13.4109122531407 maxAt=127 jump=0.0287752151489258 finalRatio=1 
+REGRESSION_ORACLE neutral_reenable_peak_le_1=EXPECTED_FAIL
+ASSERT T3_15_05_reproduction_and_unity_end=PASS
+TRIM old=24 new=0 firstChunk=1 reset=0 maxRatio=4.68323135375977 maxDb=13.4109122531407 maxAt=127 jump=0.0287752151489258 finalRatio=1 
+REGRESSION_ORACLE neutral_reenable_peak_le_1=EXPECTED_FAIL
+ASSERT T3_15_05_reproduction_and_unity_end=PASS
+TRIM old=24 new=0 firstChunk=64 reset=1 maxRatio=4.68323135375977 maxDb=13.4109122531407 maxAt=127 jump=0.0287752151489258 finalRatio=1 
+REGRESSION_ORACLE neutral_reenable_peak_le_1=EXPECTED_FAIL
+ASSERT T3_15_05_reproduction_and_unity_end=PASS
+TRIM old=0 new=0 firstChunk=64 reset=0 maxRatio=1 maxDb=0 maxAt=0 jump=0 finalRatio=1 
+ASSERT T3_15_05_no_old_gain_control=PASS
+TRIM old=-24 new=0 firstChunk=64 reset=0 maxRatio=1 maxDb=0 maxAt=0 jump=0.00181558728218079 finalRatio=1 
+MONO mode=0 channels=1 derivedDb=-11.9171808316522 withoutDb=11.9999999240151 withDb=0.0828191083119396 
+MONO mode=0 channels=2 derivedDb=-11.9171808316522 withoutDb=11.9999999240151 withDb=0.0828191083119396 
+MONO mode=1 channels=1 derivedDb=-9.17756436078613 withoutDb=11.9999999240151 withDb=2.82243559542436 
+MONO mode=1 channels=2 derivedDb=-9.17756436078613 withoutDb=11.9999999240151 withDb=2.82243559542436 
+MONO mode=2 channels=1 derivedDb=-9.17756436078613 withoutDb=-6.46516900930182e-08 withDb=-9.17756441581387 
+MONO mode=2 channels=2 derivedDb=-9.17756436078613 withoutDb=-6.46516900930182e-08 withDb=-9.17756441581387 
+MONO mode=3 channels=1 derivedDb=-7.83990471124057 withoutDb=11.9999999240151 withDb=4.16009522701007 
+MONO mode=3 channels=2 derivedDb=-7.83990471124057 withoutDb=11.9999999240151 withDb=4.16009522701007 
+MONO mode=4 channels=1 derivedDb=-7.83990471124057 withoutDb=-6.46516900930182e-08 withDb=-7.8399047818824 
+MONO mode=4 channels=2 derivedDb=-7.83990471124057 withoutDb=-6.46516900930182e-08 withDb=-7.8399047818824 
+RATE fs=32000 q=1 derivedDb=-1.44717102484091 realIrFullGridDb=-1.44717102484091 realIrBelowNyquistDb=-0.940514679343612 pointsAboveNyquist=4 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=32000 q=4 derivedDb=-0.39711306081389 realIrFullGridDb=-0.397113060813891 realIrBelowNyquistDb=-0.234376456735227 pointsAboveNyquist=4 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=22050 q=1 derivedDb=-1.19405325646351 realIrFullGridDb=-1.19405325646351 realIrBelowNyquistDb=-0.830330948478008 pointsAboveNyquist=11 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=22050 q=4 derivedDb=-0.235530218439373 realIrFullGridDb=-0.235530218439376 realIrBelowNyquistDb=-0.196914643448628 pointsAboveNyquist=11 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=44100 q=1 derivedDb=-2.2471767923033 realIrFullGridDb=-2.24717679230331 realIrBelowNyquistDb=-2.24717679230331 pointsAboveNyquist=0 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=44100 q=4 derivedDb=-0.75937366895842 realIrFullGridDb=-0.759373668958421 realIrBelowNyquistDb=-0.759373668958421 pointsAboveNyquist=0 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=48000 q=1 derivedDb=-2.47260618858129 realIrFullGridDb=-2.47260618858129 realIrBelowNyquistDb=-2.47260618858129 pointsAboveNyquist=0 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+RATE fs=48000 q=4 derivedDb=-0.853206521982678 realIrFullGridDb=-0.853206521982678 realIrBelowNyquistDb=-0.853206521982678 pointsAboveNyquist=0 
+ASSERT autogain_agrees_with_actual_impulse_full_grid=PASS
+SHELF type=1 q=0.707106781186548 irPeakDb=11.9999974229825 peakHz=20 actualAudioDb=11.999997415225 
+SHELF type=1 q=8 irPeakDb=27.6254672501189 peakHz=703.2898601621 actualAudioDb=27.6262977585419 
+SHELF type=1 q=24 irPeakDb=37.0733237239018 peakHz=706.77103808355 actualAudioDb=37.0738611883602 
+SHELF type=2 q=0.707106781186548 irPeakDb=11.9999984589853 peakHz=20000 actualAudioDb=11.9999981697353 
+SHELF type=2 q=8 irPeakDb=27.6243728522505 peakHz=1417.87378359107 actualAudioDb=27.6247117609228 
+SHELF type=2 q=24 irPeakDb=37.0980657986731 peakHz=1410.89009206316 actualAudioDb=37.0982832536356 
+BLOCK fs=44100 phase=0 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=0 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=0 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=0 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=1 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=1 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=1 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=1 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=7 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=7 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=7 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=44100 phase=7 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=0 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=0 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=0 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=0 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=1 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=1 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=1 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=1 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=7 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=7 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=7 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=48000 phase=7 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=0 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=0 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=0 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=0 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=1 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=1 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=1 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=1 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=7 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=7 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=7 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=96000 phase=7 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=0 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=0 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=0 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=0 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=1 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=1 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=1 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=1 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=7 pattern=7 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=7 pattern=64 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=7 pattern=333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+BLOCK fs=192000 phase=7 pattern=1764333 floatBitSame=1 tapBitSame=1 maxDiff=0 
+HISTORY before=-12 reoccupiedWithoutAudio=-12 peakAfterReoccupy=0.102507740259171 
+ASSERT T3_14_02_foreign_history_reproduced=PASS
+ASSERT T3_14_02_fresh_silence_control=PASS
+HISTORY legitimateGlobalOnly=-12 
+HISTORY unrelatedSlotAndGlobal=0 
+ASSERT transaction_initial_load_valid=PASS
+ASSERT transaction_initial_publish=PASS
+ASSERT remove_and_reoccupy_really_committed=PASS
+TRANSACTION_HISTORY removeRevision=1 addRevision=2 slot=0 dynamicDb=-12 audioPeak=0.102507740259171 
+ASSERT T3_14_02_real_transaction_path_reproduced=PASS
+ASSERT warm_reload_initial_ladestart=PASS
+ASSERT warm_reload_initial_publish=PASS
+ASSERT warm_reload_same_ladestart=PASS
+ASSERT warm_reload_forced_republish=PASS
+SAME_INSTANCE_LADESTART audioAndTapBitSame=1 
+ASSERT same_topology_ladestart_keeps_legitimate_dynamic_history=PASS
+TELEMETRY_TARGET phase=0 firstNonzeroAt=64 reportedDb=-0.182875178271537 tapMinusInput=0 
+ASSERT first_reported_dynamic_target_precedes_applied_audio=PASS
+ASSERT dynamic_target_was_observed=PASS
+TELEMETRY_TARGET phase=1 firstNonzeroAt=71 reportedDb=-1.8235001781425 tapMinusInput=0 
+ASSERT first_reported_dynamic_target_precedes_applied_audio=PASS
+ASSERT dynamic_target_was_observed=PASS
+TELEMETRY_TARGET phase=7 firstNonzeroAt=65 reportedDb=-0.417250178142501 tapMinusInput=0 
+ASSERT first_reported_dynamic_target_precedes_applied_audio=PASS
+ASSERT dynamic_target_was_observed=PASS
+TOPOLOGY_AUDIO minPeriodRmsDb=-8.00286464823756 periodStartsMs=0 within1DbAfterMs=200 
+ASSERT T3_15_08_unrelated_topology_loses_warm_history=PASS
+RELOAD_COMPONENT threshold=-15 attack=0.1 settledDynamicDb=-5.96910006909183 maxAudioDifference=0.24851331114769 first10msRatioDb=2.42650722016055 last1sRatioDb=0 
+RELOAD_COMPONENT threshold=-15 attack=10 settledDynamicDb=-5.96910005908726 maxAudioDifference=0.24851331114769 first10msRatioDb=4.81410194771484 last1sRatioDb=0 
+RELOAD_COMPONENT threshold=-15 attack=500 settledDynamicDb=-5.96890243769093 maxAudioDifference=0.248509049415588 first10msRatioDb=5.96890448914035 last1sRatioDb=0.267720239924859 
+RELOAD_COMPONENT threshold=-40 attack=0.1 settledDynamicDb=-12 maxAudioDifference=0.369370847940445 first10msRatioDb=6.24027745181755 last1sRatioDb=0 
+ASSERT reload_fixture_really_in_dynamic_plateau=PASS
+RELOAD_COMPONENT threshold=-40 attack=10 settledDynamicDb=-12 maxAudioDifference=0.373967260122299 first10msRatioDb=6.2474363671724 last1sRatioDb=0 
+ASSERT reload_fixture_really_in_dynamic_plateau=PASS
+RELOAD_COMPONENT threshold=-40 attack=500 settledDynamicDb=-12 maxAudioDifference=0.374405682086945 first10msRatioDb=7.26768150164232 last1sRatioDb=0 
+ASSERT reload_fixture_really_in_dynamic_plateau=PASS
+HARNESS_FINISHED

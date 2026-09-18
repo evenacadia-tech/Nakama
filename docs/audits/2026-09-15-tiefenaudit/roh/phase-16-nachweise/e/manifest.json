@@ -1,0 +1,707 @@
+{
+  "product_head": "aff2d8188f33a9525aec1869449773bfdbe305a6",
+  "evidence_level": "actual processor component; no VST3/FL/ASIO host; no connected broker",
+  "source_root": "C:\\na-audit16-aff2d818",
+  "product_tree": "4c19bf65667799637afdbcf0d01044f102574388",
+  "build_root": "C:\\na-audit16-aff2d818\\build-root",
+  "configuration": "MSVC x64 Release, C++20",
+  "recording_started_utc": "2026-09-18T00:32:26.7355328Z",
+  "record_existing_run": true,
+  "run_exit_code": 0,
+  "binary": "C:\\na-audit16-aff2d818\\build-root\\Audit16Last_artefacts\\Release\\Audit16Last.exe",
+  "binary_sha256": "3873c3f0a3ce90cc10e5ddfd84c3fdefdf56da96add9f575489aae31b71a9914",
+  "binary_last_write_utc": "2026-09-18T00:29:33.1945966Z",
+  "cpu": [
+    {
+      "Name": "AMD Ryzen 5 7500F 6-Core Processor             ",
+      "NumberOfCores": 6,
+      "NumberOfLogicalProcessors": 12
+    }
+  ],
+  "isolation": "NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3; Gen v2 CreateFileW/WaitNamedPipeW redirected to PID probe name in c/PipeClientIsoliert.cpp",
+  "shared_cmake_sha256": "1d9e226de1ab2276f09055d12a27c858bc056f729c1c45b5e3f1fa0d1c71240c",
+  "pipe_seam_sha256": "26bc209027dbf572f79e0be320196af7ecc5e06a6afd63d5188a085e25d11a56",
+  "evidence": [
+    {
+      "name": "last_probe.cpp",
+      "sha256": "7af68ff721cca9dc935e84662442cae3b1213bb95546bd552df811acce3b7063",
+      "bytes": 18677
+    },
+    {
+      "name": "ergebnisse.txt",
+      "sha256": "6ac488d8136b56c0fd73b18e52c4a5b9e8780b40a03e614414def90dc096d416",
+      "bytes": 19072
+    },
+    {
+      "name": "resources.csv",
+      "sha256": "9b6ea13edd011bf907b9c4704b87e6f650eff12cc4165e5c628f325fcf5638a8",
+      "bytes": 1300
+    },
+    {
+      "name": "stereo48k64.csv",
+      "sha256": "20ab831f09d5383fe89f8235191ded56d86be1797af0f635f25661dd0efa309d",
+      "bytes": 93280
+    },
+    {
+      "name": "stereo96k64.csv",
+      "sha256": "fcb2b0b475fb3157d73af7039032bf50984f797ea9bdab0207d64581464927e8",
+      "bytes": 186419
+    },
+    {
+      "name": "stereo48k_mixed.csv",
+      "sha256": "078b5d0e4a2211da22331198acfbfbc5f193be79f02c591381101374aa19587b",
+      "bytes": 55490
+    },
+    {
+      "name": "mono48k64.csv",
+      "sha256": "88058fff66874a92139fd7e4cf9bed285951ee95cf6c3af90206cbb8ff5b522b",
+      "bytes": 93261
+    },
+    {
+      "name": "offline48k333.csv",
+      "sha256": "99e8c0902744df5792d6ad2daefc40546466389c1efafcacf5d9ed2c9a61c764",
+      "bytes": 13230
+    },
+    {
+      "name": "summary.json",
+      "sha256": "0ba54c62faff43c42b800335e9584bacdc4ee76503dd9dc67618254cb26fb80b",
+      "bytes": 7612
+    },
+    {
+      "name": "summarize.py",
+      "sha256": "20fa0855270ddbd7f1d6ed93bf9b6f1b7576b7001a479e37f3b09cb06a4f366c",
+      "bytes": 1591
+    },
+    {
+      "name": "run.ps1",
+      "sha256": "1cb0f5b87a319edbccc7ea59719d66535a3217188dea396227ebf6b81deb6392",
+      "bytes": 4375
+    }
+  ],
+  "product_sources": [
+    {
+      "path": "eq-copilot/plugin/core/StampedAudioQueue.h",
+      "sha256": "cf3a29f3fdb8c17567abc58e22da10a84b91cf687a5eaaaba0e7fbed038140a9"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/BandGrid.h",
+      "sha256": "d966aae3765be93121762d6a382df6d4f28ba43506d93e3043e83f6c5beba1c5"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/BandGridZahlen.h",
+      "sha256": "0dfbb4813e5f28b78b3341601f89caed7a85d841b28f4b96ce9d1ec5656800eb"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Blindvergleich.h",
+      "sha256": "7c802e7857fc480f8e91bf13ac6933cc3c0003e0291c0594e22f0748444645c8"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+      "sha256": "d8fe15b5931fa72993f431da8bac96f2c9a1ec07b1789175b20cb6300ed51150"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Fft.h",
+      "sha256": "1b28b4d7cbf870f7c7935e50a2e332a2e61c04484e807b808502a6f108728228"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/KGewichtung.h",
+      "sha256": "11d4c9b52f335f4be240c6b4368c0ff796f40fb61f43f43464a6422eb2b3840c"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+      "sha256": "8ad63b6278b05b07130c5249d3c00d4a89d273d2219c3483b720cf2d1289fa6f"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/LoudnessAccumulator.h",
+      "sha256": "85dc9a278623298b0e50d012479e967d2fe0f355ea451156761d683dd56f9af4"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Statistik.h",
+      "sha256": "3648b11a0b217fd294c84d751ee9da632262f3ed28b893c9329f529881141c42"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/TruePeak.h",
+      "sha256": "c5b1fd07accb50db981eb4b50e3aeb3938ff43c42215b83562c309b944dbbb28"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/Vergleichspegel.h",
+      "sha256": "c3f226f7c2717050beb6af2a481a6267b12cb89c164b72e5973fc60db18243c8"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h",
+      "sha256": "4a4e17135a68bdaf69e5e82fafddf5364b615d9c2d006f05d37d3e73553c774e"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Frame.h",
+      "sha256": "faea82e7ef2f44719a3ef1a88a6fa7f8f134e5bf27e82e6740c4d7b006f8e0ff"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Lautheit.h",
+      "sha256": "7da9740fb8fff98ebffc5f33aed23b6bdc2bc96a2c6d5cc9cae0914cb18978bd"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Spektrum.h",
+      "sha256": "1d1e5ca27aee5647ae2df7b41ee0e3f888e799ea546079934ba350bd6ae36bba"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Stereo.h",
+      "sha256": "51a9c85ce7c29ef95f271ab93a18f77d434eaf3b12a87dcdb40ea59de7135fa0"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Vertrag.h",
+      "sha256": "0e411c87d8af679fe5a9bf012b433dea63ab434b5123d9d201d12b5c292973d4"
+    },
+    {
+      "path": "eq-copilot/plugin/core/analysis/featureengine/Zeit.h",
+      "sha256": "1b4ca39c298c7bbe964b55b1b636e4cc09aab6cf08b61be03f0d2777edd0fb53"
+    },
+    {
+      "path": "eq-copilot/plugin/core/diagnose/Briefkasten.cpp",
+      "sha256": "c4b6e641ed0ad4f6e1d1342bba855430331a9dfe5fcfa1c8783553e054aba2c6"
+    },
+    {
+      "path": "eq-copilot/plugin/core/diagnose/Briefkasten.h",
+      "sha256": "a1a637e9946821952359e8dabd9967bbab1c384b4ed51b99daca7cb35906f2af"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp",
+      "sha256": "fefa4febab0af1531c60459dde7e4bdcc83b2c875acdebcb67eb7d4f3cf3c282"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/BrokerLifecycle.h",
+      "sha256": "62634c2c8e243941add3f804a08c73d9ad7af9e0a7116d3c6b48b3bfaadb3896"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/ControlClient.cpp",
+      "sha256": "28857293cc3c890a12bce09b0729275497f5993cf70a7216fb9f2b6fcb62f992"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/ControlClient.h",
+      "sha256": "5a606501559110f6ed71e877db6a53f0ea34a1c5688974fb3ae84e71600adb29"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/InterventionsRing.h",
+      "sha256": "3784f16db5803b84cb8fefcef6f097bcaa11b6032d5b0c8b2dea9efaa3ac1c0f"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcQueues.h",
+      "sha256": "6bec580fa35e1b7f3491a1cefa7a14af5e83f305d5cf87d4c739a9a77cc18093"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp",
+      "sha256": "d2e0bc6a9c6f96efcdb88c085c5e01c7c130d0c542cb8e65da870460b40a7143"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/IpcVerbindung.h",
+      "sha256": "f626623361372a0158cb702feb0cef7aae27f3dc00add0154ba1b7a0318a331d"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/PipeToken.cpp",
+      "sha256": "dfea81eeac29cc471b95cb05529285dafeae3af1c7615455c571a7f7334c7500"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/PipeToken.h",
+      "sha256": "a701a6538c10ff416d253109246118834a32af1f7c0033460f29f000b07e6bed"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/TelemetryClient.cpp",
+      "sha256": "fd1a62a75fe5c74c921d0b71e1b862f099b7287aaf567a71a6e173418ff86b0f"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/TelemetryClient.h",
+      "sha256": "7dca5b60d888f20ef4e6221ae7cb9ad4603689ec944ab6736d43a70ecb0e41c3"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireEnvelope.cpp",
+      "sha256": "449c600d44f314af2ed5da01dbaf0955d2555eda9d830ef7da17a4ac55978ce6"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireEnvelope.h",
+      "sha256": "ff34146ae772cd9bb753f243f34bd371ff8d3254bb82216c3d7c4afeacbe9430"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/WireZahl.h",
+      "sha256": "73b84be4f486ced4bd8d0d90b8b53cd9e1241738c576288edc393fb8d52b5da1"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Intern.h",
+      "sha256": "33195f01e64d6197dea805fc930e9272daf3d0c0a4fda0e81a1d8efb66303288"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Laufzeit.h",
+      "sha256": "d3779f749b0aa6cc7bb64631bac783a0262169d24330fe7d2d2cc9d2456f5a4a"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp",
+      "sha256": "3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Schleuse.h",
+      "sha256": "dc63b1180a5eb8c4eac6d517c6a831011d14a38b125dea0dbfd9cfb26b34d0c5"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp",
+      "sha256": "5cf32c77c91d01edd872ebb85363ec738263d95b297ea84b8cb854a82100f014"
+    },
+    {
+      "path": "eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp",
+      "sha256": "e9fa3da02bb472d40de853b34ddbc5e5bcfb426bef14df5fffd3fc31de2bb8aa"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspBankPool.cpp",
+      "sha256": "c7481325728a32e9e7a142b8e64e9ee13b6d1e37d523c5fc50878088780e3592"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspBankPool.h",
+      "sha256": "e4a56aea42f99743b65a9a46284586ba5d03b2b785c761b106fdd03c5a450b37"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspFilter.h",
+      "sha256": "c8e3919c048b6b6705daa701bfc5b30f6dcb12cc2b0dc9d2a2613de2a5a95610"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspKern.cpp",
+      "sha256": "a12b25fa9a866a65f390fcfb4702c5dd927bea10815cfbe46ed41054866066f5"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspKern.h",
+      "sha256": "98ff88117ba52154d23ec24a47951788150dcea152cf62df31ac9a1f073c1461"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspProgramm.cpp",
+      "sha256": "17e6abd056b21a41c4f8a24bb8582be9a10fc4a5f476d879d7ce600aef86b21d"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspProgramm.h",
+      "sha256": "05c8aea9da7becfeca9f3f59e372249c9ccbc13837a7a792cf6f790e714134f1"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspRtWache.h",
+      "sha256": "b89f1b1181432bb0e7a67a5dacc6cc4c2220f04918f7d259d82b38d4bdf1d2d6"
+    },
+    {
+      "path": "eq-copilot/plugin/dsp/DspSvf.h",
+      "sha256": "01da7fb3177f4c54e3381910029181b58ea52369bc77c394a1b9f3491cf9d155"
+    },
+    {
+      "path": "eq-copilot/plugin/hostbridge/NakamaHostBridge.h",
+      "sha256": "e05037ec3926ea795c87011fcfb04ec37f588f014c2a586e4591ad3a9efa0694"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeEditor.cpp",
+      "sha256": "cf40d23c7f058327f8bd8a84d57b093b6e0a82845f46433796d783819c527bcb"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeEditor.h",
+      "sha256": "e4cb6f8bff0c57a68860eaee2a4a2107a6f8d6082dda06061401649ccaab82f5"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeFactory.cpp",
+      "sha256": "256ea09f5bf8aa5913361d2e98258b4c479197cfbed86c70069f3cb68ecffdf2"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp",
+      "sha256": "b7eebc4a4446f5cf51f657f70ceec171d42a78f7d21a277493ec82703c6801d0"
+    },
+    {
+      "path": "eq-copilot/plugin/hostprobe/HostProbeProcessor.h",
+      "sha256": "a1c694fb4d5ab309ced3cfabf59391b753aad9845e4795393f2fd7293a4c4543"
+    },
+    {
+      "path": "eq-copilot/plugin/probe/PipeProbeMain.cpp",
+      "sha256": "921031259de4cdfab1f79f5dd276fcddabd095716d45f6528401336adae62b5b"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeFactory.cpp",
+      "sha256": "1741930a83db8a86f14dee981dcf10406e7516af7f62583c99961dd1714e2b3a"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeProcessor.cpp",
+      "sha256": "821b73d79fa74bfcddb37d15398b40fd1d5921e6c20ae77c3b5521af1a001405"
+    },
+    {
+      "path": "eq-copilot/plugin/sonde/SondeProcessor.h",
+      "sha256": "725bffd11d58f9653b32f1f7f72d9ff00be2df91775575ec4fe52eecfff3e6c3"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeEditor.cpp",
+      "sha256": "1b75905e82e8c37b10d9603522ea2a090bf74837383aae1f6b6c67a22b31d0f2"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeEditor.h",
+      "sha256": "f0d6a9cd2f33abb52a71a4dcdab144baff05739d21b51b3ac0fad12cbe7ca0d7"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeFactory.cpp",
+      "sha256": "e19c1394180c1626683540575ba7dfc33774d28623bfcadbe4bd7dc066345716"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeProcessor.cpp",
+      "sha256": "9802653b0085f7b8ed813709ed58eff60547bfd24eac768b72ecdba71ece086d"
+    },
+    {
+      "path": "eq-copilot/plugin/spike/AuxSpikeProcessor.h",
+      "sha256": "c7e287c79293a2ab4dbcbd54367082c99d5c287af5f75abec8f1d07caea0aa53"
+    },
+    {
+      "path": "eq-copilot/plugin/src/AnalyseEngine.cpp",
+      "sha256": "f03f9dbe92ead61a1e76e53e31ed974c16cc37a9f29d3cb0becc25ccd5cd5d18"
+    },
+    {
+      "path": "eq-copilot/plugin/src/AnalyseEngine.h",
+      "sha256": "723a35a4c7e0e663065cc97ff3a20864271853cd3cee2405a6b57c79cc45c2e3"
+    },
+    {
+      "path": "eq-copilot/plugin/src/Diagnose.cpp",
+      "sha256": "c791dac9fab95b35ef21ae314d3d02a89e26acda025d4bdbc004cc430cb057c3"
+    },
+    {
+      "path": "eq-copilot/plugin/src/Diagnose.h",
+      "sha256": "561e1ac314509464e4cd68f3a4ebeb05fd1260ad0de9f802ed55761aa3b08ea5"
+    },
+    {
+      "path": "eq-copilot/plugin/src/DiagnoseAntwort.cpp",
+      "sha256": "5981a10ed37bc62d75eedaa214b289c373166055767f395a09c59bcb15103125"
+    },
+    {
+      "path": "eq-copilot/plugin/src/DiagnoseAntwort.h",
+      "sha256": "a0b66a951c8ba8275ce26a97e11f243b20e0606a746e43cb2b08507b570c9d29"
+    },
+    {
+      "path": "eq-copilot/plugin/src/EqCopilotAssetKit.h",
+      "sha256": "d60b32a64200324214e5d91af5bdc123fa1cda77136053bbce63db41b830ee3f"
+    },
+    {
+      "path": "eq-copilot/plugin/src/EqCopilotIds.h",
+      "sha256": "8d9aacb2e7122e1e1acb6e858e4945da4efa06573d90aad0ed365ce41356c39c"
+    },
+    {
+      "path": "eq-copilot/plugin/src/HoerMarkierung.h",
+      "sha256": "ce040b43bd2639a579a4afb660a95f89ad932192f54efea676fc232aa54fdaa8"
+    },
+    {
+      "path": "eq-copilot/plugin/src/LeitstandTokens.h",
+      "sha256": "c114d70c60af9e41eca8ebd6c96a6cb5a4672fceec18e7d71e2632ffadcc1b44"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PipeClient.cpp",
+      "sha256": "344420a5c3f45529143cd662f744d3e9effe1e6e25ca649da05f6bad46ded473"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PipeClient.h",
+      "sha256": "283c56197627a0138319c710128eb0989f03a16c7c5c5ce9881b8220e6a6b98f"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginEditor.cpp",
+      "sha256": "8466e40188d0e2c6f4b61b1f27b00d65c9e5a3bda20306d51df9f0152a3ccc18"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginEditor.h",
+      "sha256": "cfda15037439f86c30408b6317b9ba445ce757ad45068ddc9959ba48c353cad6"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginFactory.cpp",
+      "sha256": "0b647b8355e0bdaf4aa23810a3f0d84a2eb741855478332bec7a2ec1efe290a7"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginProcessor.cpp",
+      "sha256": "3ddd0e74ffd7fba384a26d06400972c9dcf5f78864978fdd13cc8d0e896c38c3"
+    },
+    {
+      "path": "eq-copilot/plugin/src/PluginProcessor.h",
+      "sha256": "61a6c581428a60106fc6d4cf9f4c53e09b2362b40da8f280cdf79e45cd5b9077"
+    },
+    {
+      "path": "eq-copilot/plugin/src/SourcesModel.cpp",
+      "sha256": "520a727382aaf6c0a8e1aa65d9ba973cc9e87b75825c8d2eb16cedcb412373b3"
+    },
+    {
+      "path": "eq-copilot/plugin/src/SourcesModel.h",
+      "sha256": "6de2d174247c36cd576405139cda293de61abd8f054676d3e99b63c36105cdbf"
+    },
+    {
+      "path": "eq-copilot/plugin/src/WorkerCadence.h",
+      "sha256": "6b07bee468e55c3a83dd2db7ec20881be2a47874e6b10f834e281552e8058ebd"
+    },
+    {
+      "path": "eq-copilot/plugin/src/ZonenRegeln.h",
+      "sha256": "fd81c0c1978152a57c753765bd2f8c8f807ecc3e3bad1cc7dec208c95741c78d"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Analyse.cpp",
+      "sha256": "cd589bee158fa54e787e54d75425a57136b0011e888230ad9427145df015df16"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Hostbruecke.cpp",
+      "sha256": "c8da333ea182ce53d76fcc192dc1e6845cc7979a121a5af4660fd810af3f19ae"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Intern.h",
+      "sha256": "8fc9b3eaf97ac788a1e3c39b068b23e9b8a558fa69a634d0b1008b06e3ee5c14"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/Ipc.cpp",
+      "sha256": "b74ac525ad97ceec36a0e0f56aa24599ecf7782b617164845a2b562c947b4b97"
+    },
+    {
+      "path": "eq-copilot/plugin/src/prozessor/State.cpp",
+      "sha256": "c9a136d91e8b216b5b4fc8c266e28514d1cf8971f08d88d9e444a49a54dc158c"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKanon.cpp",
+      "sha256": "3c95debdf102741111ebb59295949cee83cb8d2e8188ae9ee9961bbe1868f1fb"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKanon.h",
+      "sha256": "dfe5548173e5d0c7c47971f243739a144dfb6f5b0a541961b4486374840ab96c"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaKernRiegel.h",
+      "sha256": "335428b95c3f053fda33830dfcfc5593779961cc7e9cb258a50e05ae18b779f7"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaLebenslauf.cpp",
+      "sha256": "de2508473cd890beb881e3a094440bf3e24a9ccf8a8927a230992ec9487023be"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaLebenslauf.h",
+      "sha256": "6ab41608970e6bcb0ff7af16e93f31a8c2c1612595824f4c90502d796a19a960"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaParameter.cpp",
+      "sha256": "e1fbe3d494b2c4518babb1d6c8ede2228db2747eb56bad344b550ddabf43a97f"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaParameter.h",
+      "sha256": "f46a7ecf8c18e3582ad9d173a46ebed9d24de394d6bcf50c0004688ec80ce476"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaPreset.cpp",
+      "sha256": "8d722467e8250b07377724264c8b9e6f048125b8feacadff50914d162105f11a"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaPreset.h",
+      "sha256": "487a1fc94a34576fe24c2163ba8323e09496d3d356a1903302ec8c224f3016c3"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaState.cpp",
+      "sha256": "31826ee84861b8d2a5a36a4e534edd505eb4643c1e7dc2b7e919a5116db3cd88"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaState.h",
+      "sha256": "9c66b6115d605f5d1702d3a5965edebd87d036e930ebdbd431d2ffef74e0841e"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaTransaktion.cpp",
+      "sha256": "2a922be6bf0d7f2ef9c35556025d19de1f17103710620bdc2ebc850f44cc3a1f"
+    },
+    {
+      "path": "eq-copilot/plugin/state/NakamaTransaktion.h",
+      "sha256": "e63fc100795c80e90b47f64cbd453cbac12e3d53f087c465e328a7f71b955982"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp",
+      "sha256": "deadf88149870cbb602a1cdc64225be49d94bf2bfcdf033251722fa444db06a9"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/AuxSpikeTestMain.cpp",
+      "sha256": "373d69bfd7ee76f7b14eeb57f3f58dd0fc50cc166e0ed24e26ff6d16196cc954"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/BriefkastenTestMain.cpp",
+      "sha256": "a45f1bd5843f720e66bc5aae0090e8512d2d9853ce01d4a50acf883db06171f7"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/DspGoldenTestMain.cpp",
+      "sha256": "4dfd00b355dde71520d9d86e5d793a9f0dba27cb4a00fb7243e01032c107cb2c"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/GoldenTestMain.cpp",
+      "sha256": "c971df81e853cab22c34d1417d11e3471ebecf5a264a8ccace49287986c7ba08"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/HostContextTestMain.cpp",
+      "sha256": "d58de79dff267dcd8158c907d2335a88f12e6bb8561a14090445cb1995818fd3"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/HostProbeTestMain.cpp",
+      "sha256": "7a2cd7929000e4d5592bfa66d800fa2851e00902bce68e241189429059e5aa09"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IdentityTestMain.cpp",
+      "sha256": "bab80cfe0fcb36b25441c4773675baa2ad0e66e11271c5f7effd260b57b70391"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IpcLastMain.cpp",
+      "sha256": "46f9102629c6c2307dee8ebc840a0d92dbed54c85a4fce1c0a5b340a26d4dc68"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/IpcTestMain.cpp",
+      "sha256": "9603c797ed26c7c30ad8ec29f8225b8d3d01e3ef59bba01c8e599744ef67a074"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
+      "sha256": "645e279b9d74bcc315e5552016d330038df3cd750703010a7059d5ac0c32a107"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp",
+      "sha256": "7429e213c53f24d531b426612d73e360e632e1a776d9d8af537493ec15a46233"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/MarkierungTestMain.cpp",
+      "sha256": "68ca432b5007549d4fb2036c6732972fbaedd2073b5ffa4c7de2ef31f01689e2"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/NullTestMain.cpp",
+      "sha256": "f93acbc1211fee68143709873fd770b8bab28be897f83d5439e2ee0f7accc753"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/PaintBenchMain.cpp",
+      "sha256": "b22839ba5713bb6878d84dbf250f17df85af0400b7ff96aa6fcc460db9e66278"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp",
+      "sha256": "c386e2e14aee5034e7e1b108b03a210ba0c4181e4a7861bd49489fe9c2b8938f"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/QueueStressTestMain.cpp",
+      "sha256": "a21b2416ba3fd1752e08f2604a82ecbcb50d0cc60194d663af310162500e3ce7"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SchemaTestMain.cpp",
+      "sha256": "414ed400a7c418eafc775010a746aa99fad52307c17c1ef836f5324902535bd0"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SessionSoakMain.cpp",
+      "sha256": "a69f6f131aef754af9b90803b4b5b8b6ca4312041d8ce10f5a4ef1a87604aadc"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/ShotTestMain.cpp",
+      "sha256": "30eafa65c2c5dddcb99a04ba029988dc1322036c4d5dae056c6a36b92febf45d"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp",
+      "sha256": "bc54fb7e87169eb1730852e124696ebb882809ad2fc97eb2fd9a600034a19960"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012LoudnessSourceTest.cpp",
+      "sha256": "e4bd69e8e9f82cbbbaa5cc89e506a9a8831830c1f9d7a5cb54cfe324dd45e81c"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp",
+      "sha256": "6865f6ed9055a458f68e2a223d8638c4b98273d482fbb53b515f5262e027aecd"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp",
+      "sha256": "5f5aa55c144f9268b8e37b3c1c2591be316cee8c56156a100017d52d37c9d282"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp",
+      "sha256": "e39011ed02a1cd68b996743b3d63f2f00a450bf8901a04028534c6ef96b5c55c"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp",
+      "sha256": "31d1581d61890d4601551415dd3e5c194a406c6e6fefbeced7231cb8dceeb7c6"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013EventWireTest.cpp",
+      "sha256": "cc4607a6b9360123f3e2f9963afc4b058d5fbea85af92b8566a976ae9f24a395"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013ExperimentGoldenTest.cpp",
+      "sha256": "8aade045c032a51d8f527efb0e00ef350b880abb62514fe93a3d339ef11edde0"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013ExperimentUiTest.cpp",
+      "sha256": "59c59c7c9bc40018d4f2668307e8c27725ca0d7fb82dc9f22135c55c69b5fb7b"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp",
+      "sha256": "cc2ecf64d5db014e2eba81b60fefa8f3566760adfdf57399174c67aca3636217"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013InterventionRingTest.cpp",
+      "sha256": "6741f89738e400bf6095d4b14537d7c22df6bf4f1dfbfb0ed8004675654f01f4"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp",
+      "sha256": "9b6a2dd55466364121f206286f5c9cc46357fbab1ff39e5919f6f3b31a160838"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp",
+      "sha256": "a73c7c5405f35f6a24ee17871ebe93e90b4f59d1a35879ee48ef1af2fab4600a"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013QualityClassTest.cpp",
+      "sha256": "384ceff041d4cd3fa1f6ce55e18da73aaa7cc91a6d69c43bd1e7e2002e4b1bc0"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp",
+      "sha256": "3e17b8295fb520d86bf8b1b6f6c088a5eb6cbbd07a28878dbf3858d26b0d1863"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp",
+      "sha256": "1c5ecb5f87f5a762c295f2e3e16905bbefeb0b18a3a0ba0656ed494a3756e418"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014AssistentTest.cpp",
+      "sha256": "ccaaf23c8ad6daba900821b4ca69e4eb6bec8c27155a92865ac92252d14a2b59"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014BefundTest.cpp",
+      "sha256": "262ba0d57f3a8782662c6ee29ddc8702f6c61dd56828b50a0063c9cd75b2dda3"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/Sonde014IntentTest.cpp",
+      "sha256": "9ab338291468f6647d6d5f1e719bbdb7d087946811af798ad24e1e8e371c9cdb"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/SondeNullTestMain.cpp",
+      "sha256": "b246aeb699a4feb4f5933a60e706368bf3f583adebe9f9877808e5e36b649b08"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/StateMigrationTestMain.cpp",
+      "sha256": "c4dfa091e2176686d88eeb827a31fad2fd3d59e93df78d3855898e0ca8b1fe33"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/TransactionTestMain.cpp",
+      "sha256": "823ff230ad419fae06cbc5500643292a6c63e25714b9e4b3e6bb1e34b4e91e80"
+    },
+    {
+      "path": "eq-copilot/plugin/tests/V3TestServer.h",
+      "sha256": "c4523f685c98851e16ed59a3eacbb8f3b0d10f617090d1915cdc25ce8b9ff88a"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaEvidenz.cpp",
+      "sha256": "60c74d100fea32410d79bba809258ca101b43ca8c061ea2a802ef5fbbf417c8a"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaEvidenz.h",
+      "sha256": "92d8497df8d8a78547a187725c1caacc4eef998cee8bc17a9b2285c3454fac02"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp",
+      "sha256": "f84a8a48ea7b061e41e2f4d4f85ceade87cdd78ee013337aaa50087d3a51ca0f"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaTelemetrie.h",
+      "sha256": "37710bbaba0c00d1988141eb789944fe36e4dc951f3a26ae2c2d10fcc0582863"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaUtf8.h",
+      "sha256": "b96ca71f83cce0ee9e5c1abe43f21df8aff6e3c322b27a2dbce9b8068008a739"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaVertrag.cpp",
+      "sha256": "3068bcd0da4fbf472803237456b0d0dfa9e5fe82b1780274ae920a81511f5847"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/NakamaVertrag.h",
+      "sha256": "5fd9ea075e347a000a79958a6a54c0ca211d2a63c8bc4047918c7c00ab283c66"
+    },
+    {
+      "path": "eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h",
+      "sha256": "ecbd4e35a9ae5abd6aeee7dd97d3891460d0eebaa9bd80b4c6b654a9269fccd3"
+    }
+  ]
+}

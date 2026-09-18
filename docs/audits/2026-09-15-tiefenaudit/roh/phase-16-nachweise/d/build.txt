@@ -1,0 +1,5 @@
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+
+  Checking File Globs
+  dsp_probe.cpp
+  audit16d.vcxproj -> C:\na-audit16-aff2d818\build-d\Release\audit16d.exe

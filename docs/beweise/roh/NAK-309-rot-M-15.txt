@@ -1,0 +1,155 @@
+NAK-309 Etappe 2 - Rotbeweis M-15 (T3-05-03 erzeugen<->pruefen: --broker-pin ist idempotent)
+Stand:  2026-09-18 20:10
+Zusage: (a) unveraenderter Broker: keine Schreiboperation, Manifestbytes gleich; (b) geaenderter Broker: genau das Feld sha256 des Broker-Artefakts aendert sich, hashes_erzeugt_am und die Zeilenenden bleiben.
+Bein:   A17 pruefe_installer_manifest.py
+Datei:  tools/eq-copilot/pruefe_installer_manifest.py:1320
+SHA-256 vorher: 73CC4FB508F5B4B5F8763ECA0AD9A730155FA288881A719B8594606B121E1E82
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher:
+        if alt == ist:  # M-15 (a): unveraendert heisst keine Schreiboperation
+            print(f"  ok      unveraendert {ist} - keine Schreiboperation")
+            return 0
+        broker[0]["sha256"] = ist
+nachher:
+        manifest["hashes_erzeugt_am"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")  # MUTATION: schreibt immer, mit Zeitstempel
+        broker[0]["sha256"] = ist
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_installer_manifest.py
+Exitcode: 2
+    - broker_pin_idempotent (a): unveraenderter Broker -> keine Schreiboperation, Bytes und Zeitstempel gleich (M-15)  [Exit 0; innen: ]
+    - broker_pin_idempotent (b): geaenderter Broker -> genau die Zeile sha256 des Brokers aendert sich, hashes_erzeugt_am und CRLF bleiben (M-15)  [Exit 0, 2 geaenderte Zeile(n); innen: ]
+
+Gefallene Pruefungen:
+  FEHLER  broker_pin_idempotent (a): unveraenderter Broker -> keine Schreiboperation, Bytes und Zeitstempel gleich (M-15)  [Exit 0; innen: ]
+  FEHLER  broker_pin_idempotent (b): geaenderter Broker -> genau die Zeile sha256 des Brokers aendert sich, hashes_erzeugt_am und CRLF bleiben (M-15)  [Exit 0, 2 geaenderte Zeile(n); innen: ]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: broker_pin_idempotent (a)  -> gefallen
+
+Mitgefallen:
+  FEHLER  broker_pin_idempotent (b): geaenderter Broker -> genau die Zeile sha256 des Brokers aendert sich, hashes_erzeugt_am und CRLF bleiben (M-15)  [Exit 0, 2 geaenderte Zeile(n); innen: ]
+      Grund: dieselbe Zusage (M-15): mit Zeitstempel aendern sich zwei Zeilen statt einer
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 111
+  ok      Manifest traegt das Vertragsschema nakama.installer/v1  [nakama.installer/v1]
+  ok      es zeigt auf die eingefrorene Identitaetsdatei  [eq-copilot/identity/plugin-identities-v1.json]
+  ok      jede `art` ist vst3 oder broker - eine geschlossene Menge
+  ok      Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag  [2 vs 2 aktiv (3 Kennungen gesamt); identity=ok]
+  ok      jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+  ok      jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet
+  ok      kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)
+  ok      genau ein Broker-Artefakt, aus dem Release-Pfad der Crate  [broker/target/release/eqcop-broker.exe]
+  ok      der Broker-Binaername kommt aus broker/Cargo.toml  [eqcop-broker]
+  ok      VST3 nach Common Files, Broker geschuetzt unter Program Files  [C:/Program Files/Common Files/VST3 | C:/Program Files/evenacadia/Nakama]
+  ok      die Signaturzeile behauptet keine Pruefung ohne Mittel  [kein Zertifikat, Grund steht da]
+  ok      jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben
+  ok      jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema
+  ok      der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)
+  ok      faellt an verdorbener Eingabe: Manifest traegt das Vertragsschema nakama.installer/v1
+  ok      faellt an verdorbener Eingabe: es zeigt auf die eingefrorene Identitaetsdatei
+  ok      faellt an verdorbener Eingabe: jede `art` ist vst3 oder broker - eine geschlossene Menge
+  ok      faellt an verdorbener Eingabe: Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag
+  ok      faellt an verdorbener Eingabe: jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      faellt an verdorbener Eingabe: jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+  ok      faellt an verdorbener Eingabe: jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet
+  ok      faellt an verdorbener Eingabe: kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)
+  ok      faellt an verdorbener Eingabe: genau ein Broker-Artefakt, aus dem Release-Pfad der Crate
+  ok      faellt an verdorbener Eingabe: der Broker-Binaername kommt aus broker/Cargo.toml
+  ok      faellt an verdorbener Eingabe: VST3 nach Common Files, Broker geschuetzt unter Program Files
+  ok      faellt an verdorbener Eingabe: die Signaturzeile behauptet keine Pruefung ohne Mittel
+  ok      faellt an verdorbener Eingabe: jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben
+  ok      faellt an verdorbener Eingabe: jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema
+  ok      faellt an verdorbener Eingabe: der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)
+  ok      faellt an einer Bundle-Zielkollision
+  ok      faellt an Identity-state_schema 1
+  ok      faellt an Identity-state_schema Text
+  ok      faellt an Identity-state_schema fehlend
+  ok      faellt, wenn ein stillgelegtes Ziel doch ausgeliefert wird
+  ok      faellt, wenn ein stillgelegtes Ziel nirgends benannt ist
+  ok      faellt, wenn die Stilllegungsmarke null ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke null ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zeichenkette ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zeichenkette ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Array ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Array ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zahl ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zahl ist
+  ok      faellt, wenn die Stilllegungsmarke ein Boolean ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Boolean ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Objekt ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Objekt ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt mit leerem `am` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt mit leerem `am` ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt ohne `entscheid` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt ohne `entscheid` ist
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Liste
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist ein Objekt
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Zeichenkette
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist nur Leerraum
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine Zahl
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id fehlt ganz
+  ok      faellt kontrolliert bei gemischten ziel_id-Typen in einer Liste
+  ok      faellt, wenn `seit` null ist
+  ok      faellt, wenn `seit` ein leeres Array ist
+  ok      faellt, wenn `seit` ein leeres Objekt ist
+  ok      faellt, wenn `seit` leer ist
+  ok      faellt, wenn `seit` nur Leerraum ist
+  ok      faellt, wenn `seit` eine Zahl ist
+  ok      faellt, wenn `warum` null ist
+  ok      faellt, wenn `warum` ein leeres Array ist
+  ok      faellt, wenn `warum` ein leeres Objekt ist
+  ok      faellt, wenn `warum` leer ist
+  ok      faellt, wenn `warum` nur Leerraum ist
+  ok      faellt, wenn `warum` eine Zahl ist
+  ok      faellt, wenn `umgang_mit_altbestand` null ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Array ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Objekt ist
+  ok      faellt, wenn `umgang_mit_altbestand` leer ist
+  ok      faellt, wenn `umgang_mit_altbestand` nur Leerraum ist
+  ok      faellt, wenn `umgang_mit_altbestand` eine Zahl ist
+  ok      faellt, wenn `kennung_bleibt` null ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Array ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Objekt ist
+  ok      faellt, wenn `kennung_bleibt` leer ist
+  ok      faellt, wenn `kennung_bleibt` nur Leerraum ist
+  ok      faellt, wenn `kennung_bleibt` eine Zahl ist
+  ok      faellt, wenn ein aktives Ziel still aus der Auslieferung faellt
+  ok      faellt an einem Produktnamen ausserhalb der Pfade
+  ok      faellt an einem Bundlenamen ausserhalb der Pfade
+  ok      faellt an kanonischem Broker-Zieltraversal
+  ok      faellt an cmake_ziel-Quelltraversal
+  ok      faellt an benutzerbeschreibbaren Rueckweg-Backups
+  ok      tools/beweise.ps1 baut eqcop-broker-v3probe UND eqcop-broker
+  ok      Rotmutation: ohne Produkt --bin faellt der Runner-Riegel
+  ok      tools/beweise.ps1 baut den Release-Broker und pinnt ihn ins Manifest, bevor die C++-Ziele gebaut werden  [cargo build --release -> --broker-pin -> cmake --build]
+  ok      Rotmutation: C++-Bau vor dem Release-Broker faellt am Riegel
+  ok      Rotmutation: ohne --broker-pin faellt der Riegel
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [CA85733027ACCEF5]
+  ok      generierter Produktheader entspricht Pfad, Hash und Thumbprint des Manifests  [ist=('C:/Program Files/evenacadia/Nakama/eqcop-broker.exe', 'CA85733027ACCEF5E7D98EA4FBCFFD12E7BCFECAE3DA3E2284834D759AD2B306', '') soll=('C:/Program Files/evenacadia/Nakama/eqcop-broker.exe', 'CA85733027ACCEF5E7D98EA4FBCFFD12E7BCFECAE3DA3E2284834D759AD2B306', '')]
+  ok      Installer-Manifest ist CMake-Configure-Dependency
+  ok      Broker-Pin im erzeugten Header entspricht dem SHA-256 der gebauten Release-Broker-Datei  [Header CA85733027ACCEF5E7D98EA4FBCFFD12E7BCFECAE3DA3E2284834D759AD2B306 | Datei CA85733027ACCEF5E7D98EA4FBCFFD12E7BCFECAE3DA3E2284834D759AD2B306]
+  ok      hashen_mit_altem_pin_scheitert: Header-Pin H0, gebauter Broker H1 -> --hashen Exit 2 mit Hinweis, das geschriebene Manifest traegt H1 (M-12)  [Exit 2]
+  ok      hashen_mit_gleichem_pin_akzeptiert: Header-Pin = gebauter Broker = H1, Manifest vorher H0 -> Exit 0 (M-13)  [Exit 0]
+  ok      hashen_prueft_die_geschriebene_datei: die Datei wird nach dem Schreiben auf H0 gesetzt -> Exit 2, gemessen wird die Datei, nicht das Objekt im Speicher (M-14)  [Exit 2]
+  ok      pin_ungleich_datei_faellt: [4c+] faellt bei Header H0 und Datei H1 und bleibt gruen bei Header = Datei (M-16)  [rot 1 Befund(e), gruen 0]
+  ok      main: installierter Stand = Manifest  [80DC42C37858ADFA]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  ok      active-probe: installierter Stand = Manifest  [BB19FAFF2643DA8E]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  ok      eqcop-broker.exe: installierter Stand = Manifest  [CA85733027ACCEF5]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+  ok      die PowerShell-Haelfte laeuft durch
+  ok      Python liefert einen SHA-256  [9DF0E95A3747AFBA]
+  ok      beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash  [py 9DF0E95A3747AFBA | ps 9DF0E95A3747AFBA]
+  ok      Nicht-ASCII im Pfad bricht ab (Python)
+  ok      Nicht-ASCII im Pfad bricht ab (PowerShell)  [Exit 1]
+  ok      Windows-Signaturfixture: WinVerifyTrust gueltig/fehlend/falsch  [phase_b_binary_verify result=signaturFehltOderUngueltig expected=signaturFehltOderUngueltig hash_checked=1 signature_checked=1 signer=
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 73CC4FB508F5B4B5F8763ECA0AD9A730155FA288881A719B8594606B121E1E82); LastWriteTime auf jetzt gesetzt
+Aufruf: py -3.13 tools/eq-copilot/pruefe_installer_manifest.py
+Exitcode: 0
+  phase_b_binary_verify result=ok expected=ok hash_checked=1 signature_checked=1 signer=DC91E564D5BC1E3A8E02D6A8508682ABEA8A2443]
+  110 ok, 0 Fehler
+
+Bein nach Ruecknahme gruen: ja

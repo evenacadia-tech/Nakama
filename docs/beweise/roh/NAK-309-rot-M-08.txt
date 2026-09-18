@@ -1,0 +1,91 @@
+NAK-309 Etappe 2 - Rotbeweis M-08 (T3-09-01, R-309-6: Inventarluecke faellt)
+Stand:  2026-09-18 20:07
+Zusage: Die Beglaubigung wird verweigert: eine getrackte Datei ohne Frischebaum und ohne Ausnahme ergibt Exit 4, 'Frischebaum unvollstaendig: <Datei>'.
+Bein:   A36 pruefe_beweisrunner.py --selbsttest
+Datei:  tools/eq-copilot/pruefe_beweisrunner.py:709
+SHA-256 vorher: 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher:
+                geprueft = [d for d in dateien if d.lower().endswith(INVENTAR_ENDUNGEN)]  # M-08: das Inventar
+nachher:
+                geprueft = []  # MUTATION: Inventar uebersprungen
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur inventarluecke_faellt
+Exitcode: 4
+        ok   Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  Selbsttest: 0 von 1 Faellen bestanden
+
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 4
+        ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Selbsttest: 10 von 11 Faellen bestanden
+
+Gefallene Pruefungen:
+  ROT     [M-08 inventarluecke_faellt] Inventar: eine Datei ohne Frischebaum faellt
+  ROT  eine getrackte Datei ohne Frischebaum und ohne Ausnahme verweigert die Beglaubigung (Exit 4)  [Exit 0, Luecken []]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: [M-08 inventarluecke_faellt]  -> gefallen
+  erwartet: eine getrackte Datei ohne Frischebaum und ohne Ausnahme  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 43
+  ok   Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 0]
+  ok   Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  ok      [M-01 dsp_aenderung_ohne_bau_verweigert] Nur eine DSP-Quelle geaendert -> VERALTET ueber NakamaKern.lib
+  ok   Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 0, B6 frisch]
+  ok   nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  ok   nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  ok   die Beglaubigung wird verweigert (Exit 4)  [Exit 4]
+  ok      [M-02 frischer_bau_akzeptiert] Frischer Bau wird angenommen; Vergleich je Binary gegen den eigenen Frischebaum
+  ok   frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 0]
+  ok   eine juengere Quelle ausserhalb ihres Frischebaums laesst B6 und B7 frisch  [B6 frisch, B7 frisch]
+  ok   Gegenteil: B15, dessen Frischebaum sie enthaelt, ist VERALTET  [B15 VERALTET, eq-copilot/plugin/tests/ShotTestMain.cpp]
+  ok      [M-03 gleichstand_und_ein_tick] Zahlenrand: Gleichstand ist frisch, ein Tick darueber veraltet
+  ok   (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 0]
+  ok   (b) ein Tick (100 ns) juenger: VERALTET  [VERALTET, Exit 4]
+  ok      [M-04 copy_item_ruecknahme_ist_grenze] Copy-Item-Ruecknahme ist die dokumentierte Grenze
+  ok   Ruecknahme mit altem Zeitstempel gilt als frisch (Grenze, keine Zusage)  [frisch]
+  ok   die Ausgabe nennt die Grenze  [Grenze: Zeitstempel, kein Inhalt]
+  ok      [M-05 stillgelegt_bleibt_draussen] Stillgelegtes Bein bleibt draussen
+  ok   stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 0]
+  ok   Gegenteil: dasselbe Binary ohne Marke ist VERALTET (Exit 4)  [VERALTET, Exit 4]
+  ok      [M-06 kernverbraucher_ohne_kern_faellt] Jedes gebundene Kernziel ist gedeckt (Kreuzprobe gegen den CMake-Export)
+  ok   Gegenteil: Verbraucher mit Kern und statischer Verbraucher ueber sein Endziel sind gedeckt, Exit 0  [B6 gedeckt, EqCopilot gedeckt, Exit 0]
+  ok   ein Verbraucher, den der Kanon nicht baut, wird genannt, nicht beurteilt  [nicht im Kanon, nicht beurteilt]
+  ok   Kernverbraucher, dessen Link-Leselog den Kern nicht nennt: 'Frischebaum deckt ... nicht', Exit 4  [NICHT GEDECKT, Exit 4]
+  ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  ok      [M-07 ohne_ableitung_kein_gruen] Ohne Ableitung kein Gruen
+  ok   Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 0]
+  ok   (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  ok   (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  ok   (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  ok   (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  ok   (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  ok   (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  ok      [M-10 configure_ausstehend_ist_veraltet] Konfiguration ausstehend ist veraltet (Sicht wie ZERO_CHECK)
+  ok   Manifest juenger als generate.stamp: jedes Binary VERALTET 'Konfiguration ausstehend', Exit 4  [Exit 4, VERALTET Konfiguration ausstehend: eq-copilot/install/nakama-installer-v1.json]
+  ok   Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 0]
+  ok      [M-10 configure_ohne_inhaltsaenderung_bleibt_frisch] Konfiguration ohne Inhaltsaenderung bleibt frisch
+  ok   nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 0, frisch]
+  ok   Gegenteil: geaenderte Projektdatei (Uebersetzeroptionen) macht nur ihr Binary VERALTET  [B6 VERALTET eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  ok   Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 VERALTET eq-copilot/build/plugin/generated/nakama/BrokerInstallBinding.h]
+  ok      [--bau-bestaetigt bau_bestaetigt_prueft_deckung] Bau bestaetigt: Kreuzprobe und Inventar laufen weiter
+  ok   nach bestaetigtem Bau folgt der Zeitvergleich dem Buildsystem  [frisch (Bau bestaetigt)]
+  ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF); LastWriteTime auf jetzt gesetzt
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur inventarluecke_faellt
+Exitcode: 0
+        ok   Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  Selbsttest: 1 von 1 Faellen bestanden
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0
+        ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Selbsttest: 11 von 11 Faellen bestanden
+
+Bein nach Ruecknahme gruen: ja

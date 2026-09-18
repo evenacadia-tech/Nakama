@@ -1,0 +1,342 @@
+NAK-309 Etappe 2 - Rotbeweis M-06 (T3-09-01, R-309-6: jedes gebundene Kernziel ist gedeckt (Aufloesung))
+Stand:  2026-09-18 20:09
+Zusage: Jedes gebundene Ziel deckt der Frischebaum: fehlt eine Kernquelle, 'Frischebaum deckt <Ziel> nicht', Exit 4.
+Bein:   A36 pruefe_beweisrunner.py --selbsttest
+Datei:  tools/eq-copilot/pruefe_beweisrunner.py:407
+SHA-256 vorher: 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher:
+                    # M-01, M-06: ein fremdes Erzeugnis zaehlt ueber den Frischebaum seines Erzeugers.
+                    unter = self.fuer_ordner(erzeuger)
+                    baum.eingaben.update(unter.eingaben)
+                    baum.extern += unter.extern
+                    return
+nachher:
+                    # M-01, M-06: ein fremdes Erzeugnis zaehlt ueber den Frischebaum seines Erzeugers.
+                    return  # MUTATION: Aufloesung aus link.read entfernt, nur eigene Leselog-Zeilen
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur kernverbraucher_ohne_kern_faellt
+Exitcode: 4
+        ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Selbsttest: 0 von 1 Faellen bestanden
+
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 4
+        ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Selbsttest: 2 von 11 Faellen bestanden
+
+Gefallene Pruefungen:
+  ROT     [M-06 kernverbraucher_ohne_kern_faellt] Jedes gebundene Kernziel ist gedeckt (Kreuzprobe gegen den CMake-Export)
+  ROT  Gegenteil: Verbraucher mit Kern und statischer Verbraucher ueber sein Endziel sind gedeckt, Exit 0  [B6 NICHT GEDECKT, EqCopilot NICHT GEDECKT, Exit 4]
+  ROT     [M-01 dsp_aenderung_ohne_bau_verweigert] Nur eine DSP-Quelle geaendert -> VERALTET ueber NakamaKern.lib
+  ROT  Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 4, B6 frisch]
+  ROT  nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [frisch, eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  ROT  nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [frisch, eq-copilot/build/plugin/EqCopTransactionTest.vcxproj]
+  ROT     [M-02 frischer_bau_akzeptiert] Frischer Bau wird angenommen; Vergleich je Binary gegen den eigenen Frischebaum
+  ROT  frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 4]
+  ROT     [M-03 gleichstand_und_ein_tick] Zahlenrand: Gleichstand ist frisch, ein Tick darueber veraltet
+  ROT  (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 4]
+  ROT  (b) ein Tick (100 ns) juenger: VERALTET  [frisch, Exit 4]
+  ROT     [M-05 stillgelegt_bleibt_draussen] Stillgelegtes Bein bleibt draussen
+  ROT  stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 4]
+  ROT     [M-07 ohne_ableitung_kein_gruen] Ohne Ableitung kein Gruen
+  ROT  Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 4]
+  ROT     [M-08 inventarluecke_faellt] Inventar: eine Datei ohne Frischebaum faellt
+  ROT  Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 4]
+  ROT  Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 4]
+  ROT     [M-10 configure_ausstehend_ist_veraltet] Konfiguration ausstehend ist veraltet (Sicht wie ZERO_CHECK)
+  ROT  Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 4]
+  ROT     [M-10 configure_ohne_inhaltsaenderung_bleibt_frisch] Konfiguration ohne Inhaltsaenderung bleibt frisch
+  ROT  nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 4, frisch]
+  ROT  Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 frisch eq-copilot/build/plugin/EqCopTransactionTest.vcxproj]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: [M-06 kernverbraucher_ohne_kern_faellt]  -> gefallen
+  erwartet: Gegenteil: Verbraucher mit Kern und statischer Verbraucher  -> gefallen
+
+Mitgefallen:
+  ROT     [M-01 dsp_aenderung_ohne_bau_verweigert] Nur eine DSP-Quelle geaendert -> VERALTET ueber NakamaKern.lib
+      Grund: dieselbe Aufloesung (M-01)
+  ROT  Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 4, B6 frisch]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [frisch, eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+      Grund: dieselbe Aufloesung (M-01)
+  ROT  nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [frisch, eq-copilot/build/plugin/EqCopTransactionTest.vcxproj]
+      Grund: dieselbe Zusage (M-01) fuer B7
+  ROT     [M-02 frischer_bau_akzeptiert] Frischer Bau wird angenommen; Vergleich je Binary gegen den eigenen Frischebaum
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT     [M-03 gleichstand_und_ein_tick] Zahlenrand: Gleichstand ist frisch, ein Tick darueber veraltet
+      Grund: misst mit einer Eingabe, die das Binary nur ueber NakamaKern.lib erreicht (dsp/DspKern.cpp oder den erzeugten Header) - dieselbe Aufloesung
+  ROT  (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  (b) ein Tick (100 ns) juenger: VERALTET  [frisch, Exit 4]
+      Grund: misst mit einer Eingabe, die das Binary nur ueber NakamaKern.lib erreicht (dsp/DspKern.cpp oder den erzeugten Header) - dieselbe Aufloesung
+  ROT     [M-05 stillgelegt_bleibt_draussen] Stillgelegtes Bein bleibt draussen
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT     [M-07 ohne_ableitung_kein_gruen] Ohne Ableitung kein Gruen
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT     [M-08 inventarluecke_faellt] Inventar: eine Datei ohne Frischebaum faellt
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT     [M-10 configure_ausstehend_ist_veraltet] Konfiguration ausstehend ist veraltet (Sicht wie ZERO_CHECK)
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 4]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT     [M-10 configure_ohne_inhaltsaenderung_bleibt_frisch] Konfiguration ohne Inhaltsaenderung bleibt frisch
+      Grund: misst mit einer Eingabe, die das Binary nur ueber NakamaKern.lib erreicht (dsp/DspKern.cpp oder den erzeugten Header) - dieselbe Aufloesung
+  ROT  nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 4, frisch]
+      Grund: Kreuzprobe (M-06) und Inventar (M-08) melden unter derselben Mutation jeden Kernverbraucher ungedeckt, weil die Aufloesung auch dort fehlt - Exit 4 statt 0; beabsichtigte Tiefe derselben Zeile
+  ROT  Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 frisch eq-copilot/build/plugin/EqCopTransactionTest.vcxproj]
+      Grund: misst mit einer Eingabe, die das Binary nur ueber NakamaKern.lib erreicht (dsp/DspKern.cpp oder den erzeugten Header) - dieselbe Aufloesung
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 22
+  ok   ein Verbraucher, den der Kanon nicht baut, wird genannt, nicht beurteilt  [nicht im Kanon, nicht beurteilt]
+  ok   Kernverbraucher, dessen Link-Leselog den Kern nicht nennt: 'Frischebaum deckt ... nicht', Exit 4  [NICHT GEDECKT, Exit 4]
+  ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  ok   die Beglaubigung wird verweigert (Exit 4)  [Exit 4]
+  ok   eine juengere Quelle ausserhalb ihres Frischebaums laesst B6 und B7 frisch  [B6 frisch, B7 frisch]
+  ok   Gegenteil: B15, dessen Frischebaum sie enthaelt, ist VERALTET  [B15 VERALTET, eq-copilot/plugin/tests/ShotTestMain.cpp]
+  ok      [M-04 copy_item_ruecknahme_ist_grenze] Copy-Item-Ruecknahme ist die dokumentierte Grenze
+  ok   Ruecknahme mit altem Zeitstempel gilt als frisch (Grenze, keine Zusage)  [frisch]
+  ok   die Ausgabe nennt die Grenze  [Grenze: Zeitstempel, kein Inhalt]
+  ok   Gegenteil: dasselbe Binary ohne Marke ist VERALTET (Exit 4)  [VERALTET, Exit 4]
+  ok   (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  ok   (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  ok   (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  ok   (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  ok   (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  ok   (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  ok   eine getrackte Datei ohne Frischebaum und ohne Ausnahme verweigert die Beglaubigung (Exit 4)  [Exit 4, Luecken ['Frischebaum deckt EqCopDspGoldenTest nicht', 'Frischebaum deckt EqCopTransactionTest nicht', 'Frischebaum deckt EqCopShot nicht', 'Frischebaum deckt EqCopilot nicht', 'Frischebaum unvollstaendig: eq-copilot/plugin/src/PluginProcessor.cpp', 'Frischebaum unvollstaendig: eq-copilot/plugin/tests/VergessenTest.cpp']]
+  ok   Manifest juenger als generate.stamp: jedes Binary VERALTET 'Konfiguration ausstehend', Exit 4  [Exit 4, VERALTET Konfiguration ausstehend: eq-copilot/install/nakama-installer-v1.json]
+  ok   Gegenteil: geaenderte Projektdatei (Uebersetzeroptionen) macht nur ihr Binary VERALTET  [B6 VERALTET eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  ok      [--bau-bestaetigt bau_bestaetigt_prueft_deckung] Bau bestaetigt: Kreuzprobe und Inventar laufen weiter
+  ok   nach bestaetigtem Bau folgt der Zeitvergleich dem Buildsystem  [frisch (Bau bestaetigt)]
+  ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF); LastWriteTime auf jetzt gesetzt
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur kernverbraucher_ohne_kern_faellt
+Exitcode: 0
+        ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Selbsttest: 1 von 1 Faellen bestanden
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0
+        ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Selbsttest: 11 von 11 Faellen bestanden
+
+Bein nach Ruecknahme gruen: ja
+
+==============================================================================
+NAK-309 Etappe 2 - Rotbeweis M-06 (T3-09-01: die Kreuzprobe selbst traegt die Zusage)
+Stand:  2026-09-18 20:09
+Zusage: Jedes gebundene Ziel deckt der Frischebaum: fehlt eine Kernquelle, 'Frischebaum deckt <Ziel> nicht', Exit 4.
+Bein:   A36 pruefe_beweisrunner.py --selbsttest
+Datei:  tools/eq-copilot/pruefe_beweisrunner.py:663
+SHA-256 vorher: 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher:
+                        if ohne:  # M-06: die Kreuzprobe traegt die Zusage
+nachher:
+                        if False:  # MUTATION: Kreuzprobe uebersprungen
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur kernverbraucher_ohne_kern_faellt
+Exitcode: 4
+        ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Selbsttest: 0 von 1 Faellen bestanden
+
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 4
+        ROT  Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 0]
+  Selbsttest: 9 von 11 Faellen bestanden
+
+Gefallene Pruefungen:
+  ROT     [M-06 kernverbraucher_ohne_kern_faellt] Jedes gebundene Kernziel ist gedeckt (Kreuzprobe gegen den CMake-Export)
+  ROT  Kernverbraucher, dessen Link-Leselog den Kern nicht nennt: 'Frischebaum deckt ... nicht', Exit 4  [gedeckt, Exit 0]
+  ROT     [--bau-bestaetigt bau_bestaetigt_prueft_deckung] Bau bestaetigt: Kreuzprobe und Inventar laufen weiter
+  ROT  Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 0]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: [M-06 kernverbraucher_ohne_kern_faellt]  -> gefallen
+  erwartet: Kernverbraucher, dessen Link-Leselog den Kern nicht nennt  -> gefallen
+
+Mitgefallen:
+  ROT     [--bau-bestaetigt bau_bestaetigt_prueft_deckung] Bau bestaetigt: Kreuzprobe und Inventar laufen weiter
+      Grund: misst dieselbe Kreuzprobe nach bestaetigtem Bau
+  ROT  Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 0]
+      Grund: misst dieselbe Kreuzprobe nach bestaetigtem Bau
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 41
+  ok   Gegenteil: Verbraucher mit Kern und statischer Verbraucher ueber sein Endziel sind gedeckt, Exit 0  [B6 gedeckt, EqCopilot gedeckt, Exit 0]
+  ok   ein Verbraucher, den der Kanon nicht baut, wird genannt, nicht beurteilt  [nicht im Kanon, nicht beurteilt]
+  ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  ok      [M-01 dsp_aenderung_ohne_bau_verweigert] Nur eine DSP-Quelle geaendert -> VERALTET ueber NakamaKern.lib
+  ok   Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 0, B6 frisch]
+  ok   nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  ok   nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  ok   die Beglaubigung wird verweigert (Exit 4)  [Exit 4]
+  ok      [M-02 frischer_bau_akzeptiert] Frischer Bau wird angenommen; Vergleich je Binary gegen den eigenen Frischebaum
+  ok   frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 0]
+  ok   eine juengere Quelle ausserhalb ihres Frischebaums laesst B6 und B7 frisch  [B6 frisch, B7 frisch]
+  ok   Gegenteil: B15, dessen Frischebaum sie enthaelt, ist VERALTET  [B15 VERALTET, eq-copilot/plugin/tests/ShotTestMain.cpp]
+  ok      [M-03 gleichstand_und_ein_tick] Zahlenrand: Gleichstand ist frisch, ein Tick darueber veraltet
+  ok   (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 0]
+  ok   (b) ein Tick (100 ns) juenger: VERALTET  [VERALTET, Exit 4]
+  ok      [M-04 copy_item_ruecknahme_ist_grenze] Copy-Item-Ruecknahme ist die dokumentierte Grenze
+  ok   Ruecknahme mit altem Zeitstempel gilt als frisch (Grenze, keine Zusage)  [frisch]
+  ok   die Ausgabe nennt die Grenze  [Grenze: Zeitstempel, kein Inhalt]
+  ok      [M-05 stillgelegt_bleibt_draussen] Stillgelegtes Bein bleibt draussen
+  ok   stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 0]
+  ok   Gegenteil: dasselbe Binary ohne Marke ist VERALTET (Exit 4)  [VERALTET, Exit 4]
+  ok      [M-07 ohne_ableitung_kein_gruen] Ohne Ableitung kein Gruen
+  ok   Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 0]
+  ok   (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  ok   (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  ok   (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  ok   (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  ok   (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  ok   (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  ok      [M-08 inventarluecke_faellt] Inventar: eine Datei ohne Frischebaum faellt
+  ok   Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 0]
+  ok   eine getrackte Datei ohne Frischebaum und ohne Ausnahme verweigert die Beglaubigung (Exit 4)  [Exit 4, Luecken ['Frischebaum unvollstaendig: eq-copilot/plugin/tests/VergessenTest.cpp']]
+  ok   Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  ok      [M-10 configure_ausstehend_ist_veraltet] Konfiguration ausstehend ist veraltet (Sicht wie ZERO_CHECK)
+  ok   Manifest juenger als generate.stamp: jedes Binary VERALTET 'Konfiguration ausstehend', Exit 4  [Exit 4, VERALTET Konfiguration ausstehend: eq-copilot/install/nakama-installer-v1.json]
+  ok   Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 0]
+  ok      [M-10 configure_ohne_inhaltsaenderung_bleibt_frisch] Konfiguration ohne Inhaltsaenderung bleibt frisch
+  ok   nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 0, frisch]
+  ok   Gegenteil: geaenderte Projektdatei (Uebersetzeroptionen) macht nur ihr Binary VERALTET  [B6 VERALTET eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  ok   Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 VERALTET eq-copilot/build/plugin/generated/nakama/BrokerInstallBinding.h]
+  ok   nach bestaetigtem Bau folgt der Zeitvergleich dem Buildsystem  [frisch (Bau bestaetigt)]
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF); LastWriteTime auf jetzt gesetzt
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur kernverbraucher_ohne_kern_faellt
+Exitcode: 0
+        ok   ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Selbsttest: 1 von 1 Faellen bestanden
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0
+        ok   Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Selbsttest: 11 von 11 Faellen bestanden
+
+Bein nach Ruecknahme gruen: ja
+
+==============================================================================
+REALBAUM - M-06 Realbaum: Aufloesung aus link.read entfernt (Population B6 und B7, DspKern.cpp beruehrt) - UNTER MUTATION (tools/eq-copilot/pruefe_beweisrunner.py:                 return  # MUTATION: Aufloesung aus link.read entfernt, nur eigene Leselog-Zeilen)
+Stand:  2026-09-18 20:10:21
+HEAD:   9c9543706a28815ef280d35d1f3503e196ee3d54
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --baustand C:\Users\phili\.claude\jobs\86067ece\tmp\population-b6-b7.json  (Population: C:\Users\phili\.claude\jobs\86067ece\tmp\population-b6-b7.json)
+Exitcode: 4
+
+[Baustand] Frischebaum je Pruefbinary aus den MSBuild-Tracking-Logs (eq-copilot/build, Release)
+  Grenze: Zeitstempel, kein Inhalt - eine per Copy-Item mit altem Zeitstempel zurueckgespielte Quelle gilt als frisch (NAK-230).
+
+  Bein   Pruefbinary                            Stand                          juengste Eingabe
+  B6     EqCopDspGoldenTest                     frisch                         eq-copilot/plugin/tests/DspGoldenTestMain.cpp (2026-09-15 15:52:48)
+  B7     EqCopTransactionTest                   frisch                         eq-copilot/plugin/core/ipc/PipeToken.h (2026-09-15 17:03:56)
+
+  Konfiguration: 7 Stempel, 29 Eingaben der Arbeitskopie, keine ausstehend
+
+[Kreuzprobe] gebundene Ziele laut CMake-Export: 40 (2 statisch ueber ihre Endziele); gedeckt 0, NICHT GEDECKT 38, nicht gebaut 0, nicht im Kanon 2, nicht ableitbar 0; 21 Kernquellen
+  EqCopilot                              NICHT GEDECKT  [EqCopilot_VST3: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  NakamaProbeeq                          NICHT GEDECKT  [NakamaProbeeq_VST3: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopProbeeqNullTest                   NICHT GEDECKT  [EqCopProbeeqNullTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde012HostChannelContextTest    NICHT GEDECKT  [EqCopSonde012HostChannelContextTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde012LoudnessSourceTest        NICHT GEDECKT  [EqCopSonde012LoudnessSourceTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopBriefkastenTest                   NICHT GEDECKT  [EqCopBriefkastenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSessionSoak                       NICHT GEDECKT  [EqCopSessionSoak: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde012SourcesModelTest          NICHT GEDECKT  [EqCopSonde012SourcesModelTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde014AssistentTest             NICHT GEDECKT  [EqCopSonde014AssistentTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde014BefundTest                NICHT GEDECKT  [EqCopSonde014BefundTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde012ProjectReloadTest         NICHT GEDECKT  [EqCopSonde012ProjectReloadTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde012SourcesLatencyTest        NICHT GEDECKT  [EqCopSonde012SourcesLatencyTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopPipeProbe                         nicht im Kanon, nicht beurteilt
+  EqCopPipeClientTest                    NICHT GEDECKT  [EqCopPipeClientTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopNullTest                          NICHT GEDECKT  [EqCopNullTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopMarkierungTest                    NICHT GEDECKT  [EqCopMarkierungTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopShot                              NICHT GEDECKT  [EqCopShot: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopPaintBench                        nicht im Kanon, nicht beurteilt
+  EqCopIdentityTest                      NICHT GEDECKT  [EqCopIdentityTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopStateMigrationTest                NICHT GEDECKT  [EqCopStateMigrationTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013ExperimentGoldenTest      NICHT GEDECKT  [EqCopSonde013ExperimentGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013ExperimentUiTest          NICHT GEDECKT  [EqCopSonde013ExperimentUiTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013PrePostGoldenTest         NICHT GEDECKT  [EqCopSonde013PrePostGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013PassageStateTest          NICHT GEDECKT  [EqCopSonde013PassageStateTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde014IntentTest                NICHT GEDECKT  [EqCopSonde014IntentTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopLebenslaufTest                    NICHT GEDECKT  [EqCopLebenslaufTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopQueueStressTest                   NICHT GEDECKT  [EqCopQueueStressTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopIpcTest                           NICHT GEDECKT  [EqCopIpcTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopIpcLast                           NICHT GEDECKT  [EqCopIpcLast: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013EventWireTest             NICHT GEDECKT  [EqCopSonde013EventWireTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013DynamicsTest              NICHT GEDECKT  [EqCopSonde013DynamicsTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013FingerprintGoldenTest     NICHT GEDECKT  [EqCopSonde013FingerprintGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013InterventionRingTest      NICHT GEDECKT  [EqCopSonde013InterventionRingTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013QualityClassTest          NICHT GEDECKT  [EqCopSonde013QualityClassTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013StereoGoldenTest          NICHT GEDECKT  [EqCopSonde013StereoGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSonde013TruePeakGoldenTest        NICHT GEDECKT  [EqCopSonde013TruePeakGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopAnalysisGoldenTest                NICHT GEDECKT  [EqCopAnalysisGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopDspGoldenTest                     NICHT GEDECKT  [EqCopDspGoldenTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopTransactionTest                   NICHT GEDECKT  [EqCopTransactionTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+  EqCopSchemaTest                        NICHT GEDECKT  [EqCopSchemaTest: ohne eq-copilot/plugin/dsp/DspProgramm.cpp und 20 weitere]
+
+[Inventar] 158 getrackte Dateien unter eq-copilot/plugin mit Endung .cpp .h .hpp .c .inl .in: im Frischebaum 147, ausgenommen mit Grund 9, Luecken 2
+  ausgenommen: eq-copilot/plugin/hostprobe/HostProbeFactory.cpp - nur das VST3-Ziel EqCopHostProbe, das der Kanon nicht baut (B3b misst EqCopHostProbeTest)
+  ausgenommen: eq-copilot/plugin/probe/PipeProbeMain.cpp - nur EqCopPipeProbe, ein Handwerkzeug ausserhalb des Kanons
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeEditor.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeEditor.h - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeFactory.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeProcessor.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeProcessor.h - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/tests/AuxSpikeTestMain.cpp - nur EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/tests/PaintBenchMain.cpp - nur EqCopPaintBench, ein Messwerkzeug ausserhalb des Kanons
+  Frischebaum unvollstaendig: eq-copilot/plugin/sonde/SondeFactory.cpp
+  Frischebaum unvollstaendig: eq-copilot/plugin/src/PluginFactory.cpp
+
+Baustand: NICHT FRISCH (Exit 4) - 40 Luecke(n)
+Ruecknahme: tools/eq-copilot/pruefe_beweisrunner.py bytegleich zurueck, SHA-256 vorher 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF, nachher 561924431A3E0155BB26E6537D5E655F1DBD21AF97F35EA0A42975BEFAE444BF, gleich: True; LastWriteTime auf jetzt
+
+==============================================================================
+REALBAUM - M-06 Realbaum nach der Ruecknahme (Population B6 und B7)
+Stand:  2026-09-18 20:10:22
+HEAD:   9c9543706a28815ef280d35d1f3503e196ee3d54
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --baustand C:\Users\phili\.claude\jobs\86067ece\tmp\population-b6-b7.json  (Population: C:\Users\phili\.claude\jobs\86067ece\tmp\population-b6-b7.json)
+Exitcode: 4
+
+[Baustand] Frischebaum je Pruefbinary aus den MSBuild-Tracking-Logs (eq-copilot/build, Release)
+  Grenze: Zeitstempel, kein Inhalt - eine per Copy-Item mit altem Zeitstempel zurueckgespielte Quelle gilt als frisch (NAK-230).
+
+  Bein   Pruefbinary                            Stand                          juengste Eingabe
+  B6     EqCopDspGoldenTest                     VERALTET                       eq-copilot/plugin/dsp/DspKern.cpp (2026-09-18 20:10:06)
+  B7     EqCopTransactionTest                   VERALTET                       eq-copilot/plugin/dsp/DspKern.cpp (2026-09-18 20:10:06)
+
+  Konfiguration: 7 Stempel, 29 Eingaben der Arbeitskopie, keine ausstehend
+
+[Kreuzprobe] gebundene Ziele laut CMake-Export: 40 (2 statisch ueber ihre Endziele); gedeckt 38, NICHT GEDECKT 0, nicht gebaut 0, nicht im Kanon 2, nicht ableitbar 0; 21 Kernquellen
+  EqCopPipeProbe                         nicht im Kanon, nicht beurteilt
+  EqCopPaintBench                        nicht im Kanon, nicht beurteilt
+
+[Inventar] 158 getrackte Dateien unter eq-copilot/plugin mit Endung .cpp .h .hpp .c .inl .in: im Frischebaum 149, ausgenommen mit Grund 9, Luecken 0
+  ausgenommen: eq-copilot/plugin/hostprobe/HostProbeFactory.cpp - nur das VST3-Ziel EqCopHostProbe, das der Kanon nicht baut (B3b misst EqCopHostProbeTest)
+  ausgenommen: eq-copilot/plugin/probe/PipeProbeMain.cpp - nur EqCopPipeProbe, ein Handwerkzeug ausserhalb des Kanons
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeEditor.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeEditor.h - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeFactory.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeProcessor.cpp - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/spike/AuxSpikeProcessor.h - nur EqCopAuxSpike und EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/tests/AuxSpikeTestMain.cpp - nur EqCopAuxSpikeTest, nicht im Kanon (NAK-37)
+  ausgenommen: eq-copilot/plugin/tests/PaintBenchMain.cpp - nur EqCopPaintBench, ein Messwerkzeug ausserhalb des Kanons
+
+Baustand: NICHT FRISCH (Exit 4)

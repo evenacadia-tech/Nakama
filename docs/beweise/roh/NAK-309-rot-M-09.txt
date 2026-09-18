@@ -72,3 +72,70 @@ alte Riegel im Basislauf als VERALTET fuehrte. Kreuzprobe: 40 gebundene Ziele la
 2 nicht im Kanon; Inventar: 158 Dateien, 149 im Frischebaum, 9 mit Grund ausgenommen, 0 Luecken;
 Konfiguration: 7 Stempel, keine ausstehend. Der Runner urteilt damit mit derselben Ableitung, die A36
 misst (Zusage M-09), und das Urteil haengt jetzt an DspKern.cpp.
+
+==============================================================================
+LAEUFE 3 BIS 5 - ROTBEWEIS AN DER ZUSAGEZEILE (Zusatz nach dem Kanon nachher)
+Grund:       Das Urteil des Basislaufs (Lauf 1) fiel an NAK-25 (B3, B3b, B9), nicht an der Zusage; der
+             Defekt stand nur in der Baustandtabelle (B6, B7 "frisch"). Deshalb ist M-09 zusaetzlich an
+             der Zeile gebrochen, die das Werkzeugurteil in das Runnerurteil uebersetzt.
+Zusagezeile: tools/beweise.ps1:1050 (Stand d1676a63; HEAD 23b592d7, Code gleich), im Block
+               :1049     if ($baustandLauf.ExitCode -eq 4 -or $baustandDaten.veraltet -or @($baustandDaten.luecken).Count -gt 0) {
+               :1050         $veraltet = $true
+Mutation:    wortwoertlich, nur in der beinfreien Probelauf-Kopie (die Arbeitskopie traegt keine Mutation):
+               -         $veraltet = $true
+               +         $veraltet = $false  # ROTBEWEIS M-09: Werkzeugurteil VERALTET verworfen
+             Probelauf-Kopie: tools/beweise.ps1 wortgleich bis auf die Beinschleife (Bauschritt, Baustand,
+             Urteil und Manifest unveraendert; Zeilennummern bis :1071 gleich), $Wurzel fest auf die
+             Arbeitskopie, Rohausgaben nach docs/beweise/roh. Erzeugt aus tools/beweise.ps1 mit
+             SHA-256 C7F5E783D86455F496B40BB665ABFA42A89E041FFCA37D184625CEA8C761603D (vorher und nachher
+             gleich); Kopie klar 9F3BEF08C31CBE06CC1EBDC6A36FFF3DD31D64E07F785464BC4687304E6D5108,
+             Kopie mutiert DE5EC703AD8FC74BB04706EFB3F35CA9B763B4263F153D76E7BC85E1917AB2A9 (genau eine
+             Zeile verschieden).
+Stand:       HEAD 23b592d75acc1390ec5dcf7cfb66ef353b2b6ddd (Kanon nachher GRUEN 69/69 committet),
+             git status --short: nur briefing-hub/ und nimbalyst-local/; kein Bau- oder Testprozess.
+             Baubaum frisch vom Kanon nachher (-Bauen, 21:24).
+DspKern.cpp: SHA-256 A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5 (unveraendert in
+             allen Laeufen); LastWriteTime vorher 2026-09-18 20:46:40.7986334 (FileTime 134342308007986334).
+
+Kontrolle vor Lauf 3 (unmutierte Kopie, 22:07:26 bis 22:07:28):
+             GRUEN - 0/0 Kanon-Laeufe bestanden | Exitcode 0; Baustandtabelle 37 Zeilen, 37 frisch;
+             Werkzeug Baustand: FRISCH (Exit 0).
+Danach:      (Get-Item eq-copilot/plugin/dsp/DspKern.cpp).LastWriteTime = Get-Date
+             -> 2026-09-18 22:07:28.9251132 (FileTime 134342356489251132), SHA-256 gleich.
+
+LAUF 3 - Zusage gebrochen (mutierte Kopie, 22:07:28 bis 22:07:31)
+Erwartet:    GRUEN, Exit 0 (die Zusage faellt)
+GEMESSEN:    GRUEN - 0/0 Kanon-Laeufe bestanden | Exitcode 0
+             Werkzeug im selben Lauf: Baustand: NICHT FRISCH (Exit 4); Baustandtabelle 37 Zeilen,
+             33 VERALTET, jede mit juengster Eingabe eq-copilot/plugin/dsp/DspKern.cpp (22:07:28),
+             darunter EqCopDspGoldenTest (B6) und EqCopTransactionTest (B7); frisch A2, B3, B3b, B9.
+Die Zusage faellt an der erwarteten Pruefung: JA - das Runnerurteil (GRUEN) widerspricht dem
+             Werkzeugurteil desselben Laufs (Exit 4, 33 VERALTET); gefallen ist nur die Zeile :1050.
+Mitgefallen: keine.
+Gruen geblieben (Beleg gegen den Nebeneffekt): Baustandtabelle mit Stand und juengster Eingabe je
+             Binary (zweiter Teil der Zusage), Kreuzprobe (40 gebundene Ziele, 38 gedeckt, 2 nicht im
+             Kanon), Inventar (158 Dateien, 149 im Frischebaum, 9 mit Grund ausgenommen, 0 Luecken),
+             Konfiguration (7 Stempel, keiner ausstehend).
+
+LAUF 4 - Zusage zurueck (unmutierte Kopie, derselbe Baum, 22:07:31 bis 22:07:33)
+Erwartet:    NICHT BEGLAUBIGT, Exit 4
+GEMESSEN:    NICHT BEGLAUBIGT - 0/0 gruen, aber Pruefbinaries sind aelter als die Quellen | Exitcode 4
+             Baustandtabelle wie in Lauf 3 (33 VERALTET mit DspKern.cpp, 4 frisch).
+
+Ruecknahme:  [IO.File]::SetLastWriteTimeUtc(DspKern.cpp, FileTime 134342308007986334)
+             -> LastWriteTime 2026-09-18 20:46:40.7986334, gleich vorher: True; SHA-256 gleich: True.
+             Der Inhalt hat sich in keinem Lauf geaendert; die Binaries des Kanons nachher sind aus genau
+             diesem Inhalt gebaut.
+
+LAUF 5 - nach der Ruecknahme (unmutierte Kopie, 22:07:33 bis 22:07:36)
+Erwartet:    GRUEN, Exit 0 (Baubaum frisch wie nach dem Kanon)
+GEMESSEN:    GRUEN - 0/0 Kanon-Laeufe bestanden | Exitcode 0; Baustandtabelle 37 frisch;
+             Werkzeug Baustand: FRISCH (Exit 0). tools/beweise.ps1 SHA-256 danach unveraendert.
+
+Dateien (Manifest und Rohausgabe je Lauf, geschrieben vom Runner):
+             docs/beweise/roh/NAK-309-rot-M-09-lauf3-vorher.md, ...-lauf3-vorher-23b592d-dirty.md
+             docs/beweise/roh/NAK-309-rot-M-09-lauf3-gebrochen.md, ...-lauf3-gebrochen-23b592d-dirty.md
+             docs/beweise/roh/NAK-309-rot-M-09-lauf4-zurueck.md, ...-lauf4-zurueck-23b592d-dirty.md
+             docs/beweise/roh/NAK-309-rot-M-09-lauf5-frisch.md, ...-lauf5-frisch-23b592d-dirty.md
+             Dieselbe Folge lief um 22:04 einmal mit Ausgaben im Temp-Ordner des Jobs (HEAD 67e60dd3,
+             Kanonabschnitt noch nicht committet); gleiche Urteile und Exitcodes (0, 0, 4, 0).

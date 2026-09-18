@@ -48,6 +48,105 @@
    "wo": "docs/offene-punkte.md NAK-122 und NAK-106; docs/plan/plan.json S18–19; eq-copilot/identity/host-capabilities-fl-v1.json",
    "seit": "02.09.",
    "status": "offen"
+  },
+  {
+   "id": "U44",
+   "dringlichkeit": "jetzt",
+   "art": "Produktentscheid (Klangverhalten)",
+   "titel": "Großer EQ-Sprung: weich überblenden oder sofort umschalten?",
+   "was": "Wenn ein Band in einem Schritt weit springt — etwa ein Höhenregler (Shelf) von 5 kHz auf 50 Hz, oder beim Laden einer Voreinstellung — kann der Klang für einen kurzen Moment lauter oder anders sein als vorher und nachher (eine Übergangsspitze). Heute glättet Nakama kleine Änderungen sanft über eine kurze Rampe; große Sprünge sind nicht geregelt. Zwei Wege: (1) Empfohlen: große Sprünge kurz überblenden — der alte Klang blendet in wenigen Millisekunden in den neuen, ohne Spitze; das kostet einen zweiten Filterlauf nur für diesen Moment. (2) Sofort umschalten und die kurze Spitze in Kauf nehmen.",
+   "warum": "Audit-Befund T3-15-07 (Nachrechnung: die Übergangsenergie liegt deutlich über beiden Endzuständen). Ohne Entscheid bleibt es beim heutigen Verhalten; der Dirigent nimmt für den Bau des Audio-Kerns (Planschritt S25j, Ticket NAK-311) Weg 1 als Vorschlag. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-07 und Arbeitsübersicht W07; docs/offene-punkte.md NAK-311",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U45",
+   "dringlichkeit": "jetzt",
+   "art": "Produktentscheid (Klangverhalten)",
+   "titel": "Dynamischer EQ: soll die Schwelle auf Spitzen oder auf die Durchschnittslautstärke reagieren?",
+   "was": "Ein dynamisches Band greift, sobald der Pegel in seinem Frequenzbereich eine Schwelle (Threshold) überschreitet. Offen ist, was „Pegel“ dabei heißt: (1) Empfohlen: der Durchschnittspegel über einen kurzen Zeitraum (RMS) — greift gleichmäßig und reagiert weniger nervös auf einzelne Schläge. (2) Der Spitzenpegel (Peak) — greift sofort auf Transienten wie Snare-Schläge, kann bei perkussivem Material flattern. Attack, Hold und Release bleiben in beiden Fällen so einstellbar wie heute.",
+   "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. Ohne Entscheid baut der Dirigent Weg 1 mit einem kurzen Messfenster; die Fensterlänge ist Technik.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-06 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U46",
+   "dringlichkeit": "jetzt",
+   "art": "Produktentscheid (Klangverhalten)",
+   "titel": "Höhen-Korrektur des digitalen EQ (Decramping): einbauen, verwerfen oder vertagen?",
+   "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
+   "warum": "Audit-Befund T3-15-10: ein alter Prüfauftrag nennt die Korrektur als zu prüfen, aber es gibt keinen Entscheid und keine Matrixzeile dazu. Ohne Antwort bleibt es beim Vertagen; nichts am Kern ändert sich dadurch.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-10 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U47",
+   "dringlichkeit": "jetzt",
+   "art": "Produktentscheid (ja/nein)",
+   "titel": "Projekte mit weniger als 44,1 kHz: unterstützen oder ausschließen?",
+   "was": "FL-Projekte laufen fast immer mit 44,1 oder 48 kHz oder mehr. Nakamas Regeln nennen 44,1 kHz als kleinste unterstützte Abtastrate; trotzdem nimmt der EQ heute auch 22,05 oder 32 kHz an, und dann liegen einige Stützpunkte der automatischen Lautstärke-Angleichung (Auto-Gain) oberhalb des Bereichs, den es bei dieser Rate überhaupt gibt. (1) Empfohlen: unter 44,1 kHz nicht unterstützen — der EQ bleibt neutral und meldet den Grund ehrlich in der Anzeige. (2) Unterstützen, mit einem an die Rate angepassten Gitter.",
+   "warum": "Audit-Feld F08 (Phase 16, tatsächlich mit 32 und 22,05 kHz gemessen: 4 von 11 Stützpunkten oberhalb der Grenze). Ohne Antwort bleibt Weg 1 der Vorschlag für den Audio-Kern (Planschritt S25j, NAK-311).",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/roh/phase-16-abdeckung.md F08; docs/offene-punkte.md NAK-311",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U48",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Klangverhalten)",
+   "titel": "FLs eigener Bypass-Schalter: genauso weich wie Nakamas Schalter?",
+   "was": "FL hat einen eigenen Bypass je Plugin-Slot. Nakamas eigener EQ-Schalter blendet weich über und behält den inneren Zustand. (1) Empfohlen: der FL-Bypass verhält sich genauso — weich, Zustand bleibt erhalten, danach geht es nahtlos weiter. (2) Der FL-Bypass schaltet hart um.",
+   "warum": "Audit-Befunde T3-01-09 und T3-01-10 (Kartenentwurf PF11-01): der Host-Bypass umgeht heute die innere Klanghistorie. Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25k, Ticket NAK-312).",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-09, T3-01-10, PF11-01, Arbeitsübersicht W06; docs/offene-punkte.md NAK-312",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U49",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Verhalten)",
+   "titel": "Rollenwechsel einer Gen-Instanz: bleiben die gesammelten Daten erhalten?",
+   "was": "Eine Gen-Instanz kann vom Hauptprogramm zum reinen Messpunkt und zurück wechseln. Wechselt sie live, bleiben Quellen, Befunde und Vergleiche heute erhalten; nach Speichern und Neuladen sind sie weg — ein Widerspruch. (1) Empfohlen: die Daten bleiben in beiden Fällen erhalten; gelöscht wird nur durch einen ausdrücklichen Handgriff. (2) Der Wechsel löscht die Daten bewusst, in beiden Fällen gleich.",
+   "warum": "Audit-Befund T3-02-06 (Kartenentwurf PF11-03). Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25k, NAK-312); unbekannte gespeicherte Felder bleiben in jedem Fall erhalten.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-02-06, PF11-03, Arbeitsübersicht W22; docs/offene-punkte.md NAK-312",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U50",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Verhalten)",
+   "titel": "Spur mit Probeeq in FL klonen: wer bleibt die bekannte Quelle?",
+   "was": "Klonst du in FL eine Spur samt Probeeq, tragen beide Instanzen dieselbe Kennung; heute sperren sie sich gegenseitig, bis eine verschwindet. (1) Empfohlen: die zuerst verbundene bleibt die bekannte Quelle; der Klon bekommt automatisch eine neue Kennung und erscheint als neue Quelle mit gleichem Namen, den du danach ändern kannst. (2) Beide bleiben gesperrt, bis du in Gen eine der beiden auswählst.",
+   "warum": "Audit-Befund T3-15-15 (Klonkonflikt ohne Auflösung, in Phase 16 am echten Prozessor und Broker bestätigt). Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25m, Ticket NAK-314).",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-15, Arbeitsübersicht W17; docs/offene-punkte.md NAK-314",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U51",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Umfang)",
+   "titel": "Mehr als 20 Probeeq-Instanzen in einem Projekt: begrenzen oder erreichbar halten?",
+   "was": "Gens Quellenliste ist für 16 Zeilen zugesagt, heute passen 20; intern nimmt Nakama bis zu 64 Quellen an. Ab der 21. wäre eine Quelle zwar angenommen, aber nicht bedienbar. (1) Empfohlen: die Annahme auf 20 begrenzen — eine weitere Probeeq meldet ehrlich „Liste voll“ und misst nicht mit, bis Platz ist. (2) Alle bis 64 annehmen und erreichbar halten — das braucht später eine blätterbare Liste (gehört zum geparkten Designteil).",
+   "warum": "Audit-Befund T3-07-05 (Kartenentwurf PF11-17). Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25k, NAK-312). Bereits gespeicherte Quellen werden in keinem Fall gelöscht.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-05, PF11-17, Arbeitsübersicht W24; docs/offene-punkte.md NAK-312",
+   "seit": "18.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U52",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Anzeigeverhalten)",
+   "titel": "Lautheit nach einer nachträglich ungültigen Messung: alten Wert mit Alter zeigen oder ausblenden?",
+   "was": "Wird eine laufende Messung nachträglich ungültig (Sprung im Transport, Verbindung kurz weg), zeigt Gen heute die zuletzt gültige Lautheit (LUFS) weiter, mit Altersangabe. (1) Empfohlen: ausblenden, bis neue gültige Daten da sind — die Anzeige sagt „keine gültige Messung“. (2) Den alten Wert mit Altersangabe stehen lassen.",
+   "warum": "Audit-Befund T3-07-03 (Kartenentwurf PF11-16). Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25o, Ticket NAK-316).",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-03, PF11-16, Arbeitsübersicht W27; docs/offene-punkte.md NAK-316",
+   "seit": "18.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

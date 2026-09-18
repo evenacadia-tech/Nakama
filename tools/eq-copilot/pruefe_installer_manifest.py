@@ -27,6 +27,13 @@ DIE BLOECKE
                     wieder ausgeliefert oder still verschwunden, unlesbare
                     Stilllegungsmarke, ungueltige ziel_id-Typen, Literale
                     ausserhalb der Pfade, Pfadtraversal.
+  [3d] Runner       tools/beweise.ps1 baut im Release-Cargo-Aufruf Probe UND
+                    Produktbroker (eingebaute Rotmutation).
+  [3e] Bauordnung   tools/beweise.ps1 baut mit -Bauen zuerst den Release-
+                    Broker, schreibt dann mit --broker-pin dessen SHA-256 ins
+                    Manifest und baut erst danach die C++-Ziele: Broker ->
+                    Manifest -> Plugin (NAK-309 M-11). Eingebaute
+                    Rotmutationen: vertauschte Folge, fehlender Pin-Schritt.
   [4] Auslieferung  gebautes Artefakt gegen den festgeschriebenen Hash. Im
                     Kanon ist eine Abweichung ein HINWEIS (ein Relink aendert
                     Bytes - seit A14 den Kern neu baut, der Normalfall);
@@ -36,6 +43,16 @@ DIE BLOECKE
   [4c] Startbindung  der von CMake erzeugte Produktheader stimmt in Pfad,
                     SHA-256 und optionalem Thumbprint mit dem Manifest
                     ueberein; Manifest-Aenderungen sind Configure-Depends.
+  [4c+] Brokerpin   der Pin im erzeugten Header ist der SHA-256 der gebauten
+                    Release-Broker-Datei, HART in beiden Modi (NAK-309 M-16).
+                    Fehlt Header oder Datei, ist A17 schon ueber [4c] bzw.
+                    [4] rot; [4c+] zaehlt keinen zweiten Befund.
+  [4d] Attrappe     --hashen und --broker-pin an Temp-Manifest, Temp-Header
+                    und Temp-Broker (NAK-309 M-12 bis M-16): alter Pin mit
+                    neuem Broker endet mit Exit 2, gleicher Pin wird
+                    angenommen, gemessen wird die geschriebene Datei,
+                    --broker-pin ist idempotent und aendert sonst genau das
+                    Feld sha256 des Brokers, Header ungleich Datei faellt.
   [4b] Installiert  Bericht ohne Urteil, der nie abbricht: entspricht der
                     installierte Stand (install-ergebnis.json) dem Manifest?
                     `ok` nur bei Journalstatus OK; Status vor Liste.
@@ -67,19 +84,32 @@ WAS DIESES BEIN NICHT MEHR TUT (NAK-100, 30.08.2026)
 
 AUFRUF
 
-  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py            # Kanon
-  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --release  # hart
-  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen   # festschreiben
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py              # Kanon
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --release    # hart
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen     # festschreiben
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --broker-pin # Bauschritt
 
   Exit 0 gruen, 2 rot oder kontrollierter Abbruch, 3 --hashen ohne
-  vollstaendige Artefakte.
+  vollstaendige Artefakte bzw. --broker-pin ohne Release-Broker.
+
+  --hashen schreibt die Artefakthashes, liest das geschriebene Manifest neu und
+  faehrt die Startbindung ([4c], [4c+]) dagegen. Passt der Pin im gebauten
+  Header nicht, endet es mit Exit 2 ("Kanon mit -Bauen erneut fahren, danach
+  --hashen"); das geschriebene Manifest bleibt, es traegt die wahren Hashes
+  (NAK-309 M-12 bis M-14). --broker-pin ist der zweite Schreiber (NAK-309
+  A-1): tools/beweise.ps1 ruft ihn mit -Bauen zwischen Release-Broker und
+  C++-Bau; er schreibt nur das Feld sha256 des Brokers und nur bei
+  Abweichung, alle anderen Felder samt hashes_erzeugt_am und die Zeilenenden
+  der Arbeitskopie bleiben (M-15).
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import hashlib
+import io
 import json
 import ntpath
 import os
@@ -104,6 +134,8 @@ IPC_TEST_EXE = (WURZEL / "eq-copilot" / "build" / "plugin"
                 / "EqCopIpcTest_artefacts" / "Release" / "EqCopIpcTest.exe")
 BROKER_BINDING = (WURZEL / "eq-copilot" / "build" / "plugin" / "generated"
                   / "nakama" / "BrokerInstallBinding.h")
+BROKER_VORLAGE = (WURZEL / "eq-copilot" / "plugin" / "core" / "ipc"
+                  / "BrokerInstallBinding.h.in")
 PLUGIN_CMAKE = WURZEL / "eq-copilot" / "plugin" / "CMakeLists.txt"
 BEWEIS_RUNNER = WURZEL / "tools" / "beweise.ps1"
 
@@ -151,6 +183,14 @@ class Strukturhalt(Exception):
     die dieses Bein liest. Klartext statt Traceback."""
 
 
+def _kurz(pfad: pathlib.Path) -> str:
+    """Pfad relativ zur Arbeitskopie; ausserhalb (Temp-Attrappe [4d]) voll."""
+    try:
+        return pfad.relative_to(WURZEL).as_posix()
+    except ValueError:
+        return str(pfad)
+
+
 def _lies_geprueft(weg: pathlib.Path, pruefung) -> dict:
     """Liest eine JSON-Datei und gibt sie NUR strukturgeprueft heraus.
 
@@ -158,7 +198,7 @@ def _lies_geprueft(weg: pathlib.Path, pruefung) -> dict:
     von diesem Bein gelesene Grobform. Jede Stufe wirft `Strukturhalt`; der
     Aufrufer macht daraus ein rotes Urteil oder einen Abbruch - nie einen
     Traceback."""
-    kurz = weg.relative_to(WURZEL).as_posix()
+    kurz = _kurz(weg)
     try:
         rohe = weg.read_text(encoding="utf-8")
     except OSError as fehler:
@@ -721,6 +761,58 @@ def runner_baut_produktbroker() -> None:
            "Rotmutation: ohne Produkt --bin faellt der Runner-Riegel")
 
 
+# NAK-309 Etappe 2 (T3-05-03, M-11): die Bauordnung Broker -> Manifest ->
+# Plugin. Bis NAK-309 baute der Runner die C++-Ziele VOR dem Release-Broker:
+# der Pin, den configure_file in BrokerInstallBinding.h einbrennt, stammte aus
+# dem Manifest der vorigen Brokergeneration. Die drei Anker sind Codezeilen
+# des Bauschritts, keine Kommentare; jeder steht genau einmal da, und der
+# Bauschritt ist geradliniger Code - Reihenfolge im Text ist Reihenfolge im
+# Lauf.
+_BAUORDNUNG = (
+    ("cargo build --release",
+     re.compile(r"^[ \t]*\$cargoRelease\s*=\s*Fuehre-Aus\s+-Datei\s+'cargo'", re.MULTILINE)),
+    ("--broker-pin",
+     re.compile(r"^[ \t]*\$brokerPin\s*=\s*Fuehre-Aus\s+-Datei\s+'py'[^\n]*'--broker-pin'", re.MULTILINE)),
+    ("cmake --build",
+     re.compile(r"^[ \t]*\$b\s*=\s*Fuehre-Aus\s+-Datei\s+\$cmakeBefehl\s+-Argumente\s+\(@\('--build'",
+                re.MULTILINE)),
+)
+
+
+def _runner_bauordnung(text: str) -> tuple[bool, str]:
+    stellen = []
+    for name, muster in _BAUORDNUNG:
+        treffer = list(muster.finditer(text))
+        if len(treffer) != 1:
+            return False, f"{name}: {len(treffer)} Stellen statt genau einer"
+        stellen.append((treffer[0].start(), name))
+    folge = [name for _, name in sorted(stellen)]
+    return folge == [name for name, _ in _BAUORDNUNG], " -> ".join(folge)
+
+
+def runner_bauordnung() -> None:
+    """[3e] A17-Riegel plus eingebaute Rotmutationen (Muster [3d])."""
+    print("\n[3e] Bauordnung im Runner: Release-Broker, --broker-pin, dann C++-Bau")
+    text = BEWEIS_RUNNER.read_text(encoding="utf-8")
+    passt, folge = _runner_bauordnung(text)
+    pruefe(passt, "tools/beweise.ps1 baut den Release-Broker und pinnt ihn ins Manifest, "
+                  "bevor die C++-Ziele gebaut werden", folge)
+    zeilen = text.splitlines(keepends=True)
+    cargo = next((i for i, z in enumerate(zeilen) if _BAUORDNUNG[0][1].search(z)), None)
+    pin = next((i for i, z in enumerate(zeilen) if _BAUORDNUNG[1][1].search(z)), None)
+    cmake = next((i for i, z in enumerate(zeilen) if _BAUORDNUNG[2][1].search(z)), None)
+    if None in (cargo, pin, cmake):
+        pruefe(False, "Rotmutationen der Bauordnung bildbar", "Anker fehlt")
+        return
+    alte_folge = [z for i, z in enumerate(zeilen) if i != cmake]
+    alte_folge.insert(cargo, zeilen[cmake])
+    pruefe(not _runner_bauordnung("".join(alte_folge))[0],
+           "Rotmutation: C++-Bau vor dem Release-Broker faellt am Riegel")
+    ohne_pin = "".join(z for i, z in enumerate(zeilen) if i != pin)
+    pruefe(not _runner_bauordnung(ohne_pin)[0],
+           "Rotmutation: ohne --broker-pin faellt der Riegel")
+
+
 def r_zielverzeichnisse(m: dict, _i: dict):
     """Der Broker liegt geschuetzt. §53.9 nennt Installationspfad und
     Betriebssystemschutz massgeblich; ein per-User-Pfad waere ein Spawn-Ziel,
@@ -1169,6 +1261,232 @@ def hashen(manifest: dict, ziel: pathlib.Path | None = None) -> int:
     return 0
 
 
+def hashen_und_binden(manifest: dict, ziel: pathlib.Path | None = None,
+                      header: pathlib.Path | None = None, nach_schreiben=None) -> int:
+    """Der Zweig --hashen (NAK-309 T3-05-03, M-12 bis M-14).
+
+    Bis NAK-309 kehrte der Zweig direkt nach hashen() zurueck: ein Manifest mit
+    dem Hash eines neuen Brokers galt als ausliefer-bar, waehrend die gebauten
+    Plugins den alten Pin trugen und den neuen Broker beim Start verwarfen
+    (hashFalsch, BrokerLifecycle.cpp). Jetzt: schreiben, die GESCHRIEBENE Datei
+    mit Strukturvertrag neu lesen, die Startbindung [4c] und [4c+] dagegen
+    fahren; weicht sie ab, Exit 2. Das geschriebene Manifest bleibt, es traegt
+    die wahren Hashes. `nach_schreiben` setzt nur die Attrappe [4d] (M-14)."""
+    ziel = ziel or MANIFEST
+    code = hashen(manifest, ziel)
+    if code != 0:
+        return code
+    if nach_schreiben is not None:
+        nach_schreiben(ziel)
+    print("\n[hashen] Startbindung gegen das geschriebene Manifest ([4c], [4c+])")
+    geschrieben = _lies_geprueft(ziel, _installermanifest_struktur)  # M-14: die Datei, nie das Objekt
+    vorher = len(fehler)
+    cmake_broker_startbindung(geschrieben, header)
+    broker_pin_gegen_datei(geschrieben, header)
+    if len(fehler) > vorher:
+        print("\nABGEBROCHEN - die gebauten Plugins tragen einen anderen Broker-Pin als das geschriebene "
+              "Manifest.\nKanon mit -Bauen erneut fahren, danach --hashen. Das geschriebene Manifest "
+              "bleibt: es traegt die wahren Hashes.")
+        return 2
+    return 0
+
+
+def broker_pin(ziel: pathlib.Path | None = None) -> int:
+    """Der Bauschritt --broker-pin (NAK-309 A-1, M-11, M-15).
+
+    tools/beweise.ps1 ruft ihn mit -Bauen nach `cargo build --release` und vor
+    `cmake --build`: so brennt configure_file den Pin des Brokers ein, der in
+    diesem Lauf gebaut wurde (Bauordnung Broker -> Manifest -> Plugin). Er
+    schreibt nur das Feld sha256 des Broker-Artefakts und nur bei Abweichung -
+    ein unveraenderter Broker laesst die Datei unberuehrt und loest keine
+    Neukonfiguration aus. hashes_erzeugt_am bleibt, denn die Bundlehashes
+    friert erst --hashen ein; die Zeilenenden der Arbeitskopie bleiben."""
+    ziel = ziel or MANIFEST
+    print("[broker-pin] Brokerhash im Installer-Manifest gegen die gebaute Release-Datei")
+    manifest = _lies_geprueft(ziel, _installermanifest_struktur)
+    broker = [a for a in manifest["artefakte"] if a.get("art") == "broker"]
+    if len(broker) != 1:
+        print(f"  FEHLER  {len(broker)} Broker-Artefakte statt genau einem")
+        return 2
+    pfad = (WURZEL / str(broker[0].get("quelle", ""))).resolve()
+    if not pfad.is_relative_to(WURZEL):
+        print(f"  FEHLER  Brokerquelle verlaesst die Repo-Wurzel ({pfad})")
+        return 2
+    if not pfad.is_file():
+        print(f"  FEHLT   {_kurz(pfad)} - erst cargo build --release")
+        return 3
+    ist = datei_hash(pfad)
+    alt = broker[0].get("sha256")
+    if alt == ist:  # M-15 (a): unveraendert heisst keine Schreiboperation
+        print(f"  ok      unveraendert {ist} - keine Schreiboperation")
+        return 0
+    broker[0]["sha256"] = ist
+    zeilenende = "\r\n" if b"\r\n" in ziel.read_bytes() else "\n"
+    zwischen = ziel.with_name(ziel.name + ".broker-pin.tmp")
+    with open(zwischen, "w", encoding="utf-8", newline=zeilenende) as f:
+        f.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+    os.replace(zwischen, ziel)
+    print(f"  ok      geschrieben: {_kurz(ziel)}  sha256 des Brokers {alt} -> {ist}")
+    return 0
+
+
+# ── [4d] Attrappe fuer --hashen und --broker-pin (NAK-309 M-12 bis M-16) ───
+
+
+@contextlib.contextmanager
+def _abgeschirmt(wurzel: pathlib.Path):
+    """Ein innerer Lauf der Attrappe zaehlt nicht als A17-Befund: ok, fehler
+    und WURZEL werden gesichert und wiederhergestellt, die Ausgabe
+    eingesammelt. WURZEL zeigt waehrenddessen auf die Temp-Arbeitskopie, denn
+    hashen() liest die Artefakte relativ zu WURZEL, und seine Signatur bleibt
+    (NAK-309 H-2: nur `ziel` ist Parameter)."""
+    global ok, fehler, WURZEL
+    alt = (ok, fehler, WURZEL)
+    ok, fehler, WURZEL = 0, [], wurzel
+    puffer = io.StringIO()
+    stand: dict = {"fehler": [], "ausgabe": ""}
+    try:
+        with contextlib.redirect_stdout(puffer):
+            yield stand
+    finally:
+        stand["fehler"] = list(fehler)
+        stand["ausgabe"] = puffer.getvalue()
+        ok, fehler, WURZEL = alt
+
+
+def _attrappe_4d(wurzel: pathlib.Path, manifest: dict, broker_bytes: bytes, manifest_hash: str,
+                 header_hash: str) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path]:
+    """Temp-Arbeitskopie: Release-Broker und Bundle-Ordner an den Quellpfaden
+    des echten Manifests, eine Kopie des Manifests (Brokerhash =
+    manifest_hash, CRLF wie die Arbeitskopie) und der Header aus der echten
+    Vorlage BrokerInstallBinding.h.in, so gefuellt wie configure_file @ONLY
+    (Pin = header_hash)."""
+    m = copy.deepcopy(manifest)
+    broker_pfad = None
+    for a in m["artefakte"]:
+        pfad = wurzel / str(a.get("quelle", ""))
+        if a.get("art") == "broker":
+            pfad.parent.mkdir(parents=True, exist_ok=True)
+            pfad.write_bytes(broker_bytes)
+            a["sha256"] = manifest_hash
+            broker_pfad = pfad
+        else:
+            innen = pfad / "Contents" / "x86_64-win"
+            innen.mkdir(parents=True, exist_ok=True)
+            (innen / "modul.bin").write_bytes(str(a.get("ziel_id")).encode("ascii"))
+    ziel = wurzel / "nakama-installer-v1.json"
+    with open(ziel, "w", encoding="utf-8", newline="\r\n") as f:
+        f.write(json.dumps(m, ensure_ascii=False, indent=2) + "\n")
+    broker = [a for a in m["artefakte"] if a.get("art") == "broker"][0]
+    vorlage = BROKER_VORLAGE.read_text(encoding="utf-8")
+    werte = {
+        "@NAKAMA_BROKER_INSTALL_PFAD@": (m["ziele"].get("broker_verzeichnis", "").rstrip("/\\")
+                                         + "/" + str(broker.get("name", ""))),
+        "@NAKAMA_BROKER_SHA256@": header_hash,
+        "@NAKAMA_BROKER_THUMBPRINT@": m.get("signatur", {}).get("authenticode_thumbprint") or "",
+    }
+    for platzhalter, wert in werte.items():
+        if platzhalter not in vorlage:
+            raise RuntimeError(f"{_kurz(BROKER_VORLAGE)} ohne {platzhalter}")
+        vorlage = vorlage.replace(platzhalter, wert)
+    header = wurzel / "BrokerInstallBinding.h"
+    header.write_text(vorlage, encoding="utf-8")
+    return ziel, header, broker_pfad
+
+
+def hashen_attrappe(manifest: dict) -> None:
+    """[4d] --hashen und --broker-pin an einer Temp-Arbeitskopie (M-12 bis
+    M-16). Jeder Fall laeuft durch dieselben Funktionen wie die Aufrufe
+    --hashen und --broker-pin; ihre inneren Befunde zaehlen nicht als A17-
+    Befund, gemessen wird ihr Ausgang."""
+    print("\n[4d] Attrappe: --hashen und --broker-pin an Temp-Manifest, Temp-Header und Temp-Broker")
+    alt_bytes, neu_bytes, dritt_bytes = b"alter Broker\n", b"neuer Broker\n", b"dritter Broker\n"
+    h0, h1, h2 = (hashlib.sha256(b).hexdigest().upper() for b in (alt_bytes, neu_bytes, dritt_bytes))
+
+    def broker_sha(pfad: pathlib.Path) -> str | None:
+        daten = json.loads(pfad.read_text(encoding="utf-8"))
+        return next((a.get("sha256") for a in daten["artefakte"] if a.get("art") == "broker"), None)
+
+    def auszug(bedingung: bool, stand: dict, kopf: str) -> str:
+        """Kurz, wenn der Fall haelt; bei einem roten Fall die inneren Befunde."""
+        if bedingung:
+            return kopf
+        innen = " | ".join(z.strip() for z in stand["ausgabe"].splitlines()
+                           if "FEHLER" in z or "FEHLT" in z or "ABGEBROCHEN" in z)
+        return f"{kopf}; innen: {innen[:400]}"
+
+    with tempfile.TemporaryDirectory(prefix="nakama-a17-4d-") as tmp:
+        w = pathlib.Path(tmp).resolve() / "m12"
+        with _abgeschirmt(w) as stand:
+            ziel, header, _ = _attrappe_4d(w, manifest, neu_bytes, h0, h0)
+            code = hashen_und_binden(_lies_geprueft(ziel, _installermanifest_struktur), ziel=ziel, header=header)
+        gut = code == 2 and "Kanon mit -Bauen erneut fahren" in stand["ausgabe"] and broker_sha(ziel) == h1
+        pruefe(gut, "hashen_mit_altem_pin_scheitert: Header-Pin H0, gebauter Broker H1 -> --hashen Exit 2 mit "
+                    "Hinweis, das geschriebene Manifest traegt H1 (M-12)",
+               auszug(gut, stand, f"Exit {code}"))
+
+        w = pathlib.Path(tmp).resolve() / "m13"
+        with _abgeschirmt(w) as stand:
+            ziel, header, _ = _attrappe_4d(w, manifest, neu_bytes, h0, h1)
+            code = hashen_und_binden(_lies_geprueft(ziel, _installermanifest_struktur), ziel=ziel, header=header)
+        gut = code == 0 and not stand["fehler"] and broker_sha(ziel) == h1
+        pruefe(gut, "hashen_mit_gleichem_pin_akzeptiert: Header-Pin = gebauter Broker = H1, Manifest vorher H0 "
+                    "-> Exit 0 (M-13)", auszug(gut, stand, f"Exit {code}"))
+
+        def zurueck_auf_h0(pfad: pathlib.Path) -> None:
+            daten = json.loads(pfad.read_text(encoding="utf-8"))
+            for a in daten["artefakte"]:
+                if a.get("art") == "broker":
+                    a["sha256"] = h0
+            with open(pfad, "w", encoding="utf-8", newline="\r\n") as f:
+                f.write(json.dumps(daten, ensure_ascii=False, indent=2) + "\n")
+
+        w = pathlib.Path(tmp).resolve() / "m14"
+        with _abgeschirmt(w) as stand:
+            ziel, header, _ = _attrappe_4d(w, manifest, neu_bytes, h0, h1)
+            code = hashen_und_binden(_lies_geprueft(ziel, _installermanifest_struktur), ziel=ziel, header=header,
+                                     nach_schreiben=zurueck_auf_h0)
+        gut = code == 2 and broker_sha(ziel) == h0
+        pruefe(gut, "hashen_prueft_die_geschriebene_datei: die Datei wird nach dem Schreiben auf H0 gesetzt -> "
+                    "Exit 2, gemessen wird die Datei, nicht das Objekt im Speicher (M-14)",
+               auszug(gut, stand, f"Exit {code}"))
+
+        w = pathlib.Path(tmp).resolve() / "m15"
+        with _abgeschirmt(w) as stand:
+            ziel, _, broker = _attrappe_4d(w, manifest, neu_bytes, h1, h1)
+            vorher_bytes, vorher_ns = ziel.read_bytes(), ziel.stat().st_mtime_ns
+            code_a = broker_pin(ziel)
+            nach_a_bytes, nach_a_ns = ziel.read_bytes(), ziel.stat().st_mtime_ns
+            broker.write_bytes(dritt_bytes)
+            code_b = broker_pin(ziel)
+            nach_b = ziel.read_bytes()
+        alt_zeilen, neu_zeilen = vorher_bytes.split(b"\r\n"), nach_b.split(b"\r\n")
+        anders = [(a, b) for a, b in zip(alt_zeilen, neu_zeilen) if a != b]
+        gut = code_a == 0 and nach_a_bytes == vorher_bytes and nach_a_ns == vorher_ns
+        pruefe(gut, "broker_pin_idempotent (a): unveraenderter Broker -> keine Schreiboperation, Bytes und "
+                    "Zeitstempel gleich (M-15)", auszug(gut, stand, f"Exit {code_a}"))
+        gut = (code_b == 0 and len(alt_zeilen) == len(neu_zeilen) and len(anders) == 1
+               and h2.encode() in anders[0][1] and b"\"sha256\"" in anders[0][1]
+               and nach_b.count(b"\r\n") == nach_b.count(b"\n"))
+        pruefe(gut, "broker_pin_idempotent (b): geaenderter Broker -> genau die Zeile sha256 des Brokers "
+                    "aendert sich, hashes_erzeugt_am und CRLF bleiben (M-15)",
+               auszug(gut, stand, f"Exit {code_b}, {len(anders)} geaenderte Zeile(n)"))
+
+        w = pathlib.Path(tmp).resolve() / "m16"
+        with _abgeschirmt(w) as stand_rot:
+            ziel, header, _ = _attrappe_4d(w, manifest, neu_bytes, h1, h0)
+            broker_pin_gegen_datei(_lies_geprueft(ziel, _installermanifest_struktur), header)
+        w = pathlib.Path(tmp).resolve() / "m16g"
+        with _abgeschirmt(w) as stand_gruen:
+            ziel, header, _ = _attrappe_4d(w, manifest, neu_bytes, h1, h1)
+            broker_pin_gegen_datei(_lies_geprueft(ziel, _installermanifest_struktur), header)
+        pruefe(any("Broker-Pin im erzeugten Header" in f for f in stand_rot["fehler"])
+               and not stand_gruen["fehler"],
+               "pin_ungleich_datei_faellt: [4c+] faellt bei Header H0 und Datei H1 und bleibt gruen bei "
+               "Header = Datei (M-16)",
+               f"rot {len(stand_rot['fehler'])} Befund(e), gruen {len(stand_gruen['fehler'])}")
+
+
 # ── Kreuzprobe: Python gegen PowerShell (Vertrag §2.1) ─────────────────────
 
 
@@ -1349,25 +1667,30 @@ def installierter_stand(manifest: dict) -> None:
         print(f"  hinweis install-ergebnis.json nicht auswertbar: {e!r}")
 
 
-def cmake_broker_startbindung(manifest: dict) -> None:
+def _header_literal(text: str, name: str) -> str | None:
+    treffer = re.search(rf"\b{re.escape(name)}\s*=\s*L?\"([^\"]*)\"\s*;", text)
+    return treffer.group(1) if treffer else None
+
+
+def cmake_broker_startbindung(manifest: dict, header: pathlib.Path | None = None) -> None:
     """Der tatsaechlich kompilierte Header folgt dem Installer-Manifest.
 
     Der Vergleich ist absichtlich NACH dem CMake-Lauf: eine bloss richtige
     Template-Datei beweist nicht, dass ein geaenderter Manifesthash den Build
     erreicht hat. `CMAKE_CONFIGURE_DEPENDS` schliesst genau dieses Stalefenster.
+    `header` nennt nur die Attrappe [4d] (NAK-309); sonst der gebaute Header.
     """
+    header = header or BROKER_BINDING
     print("\n[4c] Manifestgebundene Broker-Startwerte")
     broker = [a for a in manifest["artefakte"] if a.get("art") == "broker"]
-    if len(broker) != 1 or not BROKER_BINDING.is_file():
-        pruefe(False, "generierter BrokerInstallBinding-Header liegt vor",
-               str(BROKER_BINDING.relative_to(WURZEL)))
+    if len(broker) != 1 or not header.is_file():
+        pruefe(False, "generierter BrokerInstallBinding-Header liegt vor", _kurz(header))
         return
 
-    text = BROKER_BINDING.read_text(encoding="utf-8")
+    text = header.read_text(encoding="utf-8")
 
     def literal(name: str) -> str | None:
-        treffer = re.search(rf"\b{re.escape(name)}\s*=\s*L?\"([^\"]*)\"\s*;", text)
-        return treffer.group(1) if treffer else None
+        return _header_literal(text, name)
 
     artefakt = broker[0]
     erwartet = (
@@ -1386,6 +1709,37 @@ def cmake_broker_startbindung(manifest: dict) -> None:
     pruefe("CMAKE_CONFIGURE_DEPENDS" in cmake
                and '"${NAKAMA_INSTALLER_MANIFEST}"' in cmake,
            "Installer-Manifest ist CMake-Configure-Dependency")
+
+
+def broker_pin_gegen_datei(manifest: dict, header: pathlib.Path | None = None) -> None:
+    """[4c+] Der Pin im gebauten Header ist der SHA-256 der gebauten
+    Release-Broker-Datei - HART, in beiden Modi (NAK-309 T3-05-03, M-16).
+
+    [4c] beweist, dass der Header dem Manifest folgt; erst dieser Block
+    beweist, dass Manifest und Header den Broker tragen, der wirklich gebaut
+    wurde. Fehlt Header oder Datei, ist A17 schon ueber [4c] bzw. [4] rot
+    (ein fehlendes Artefakt bleibt in beiden Modi Fehler, NAK-94); dann zaehlt
+    [4c+] keinen zweiten Befund. Ist bis dahin nichts rot, faellt [4c+]
+    selbst: nie Gruen ueber eine ungepruefte Bindung."""
+    header = header or BROKER_BINDING
+    print("\n[4c+] Broker-Pin im Header gegen die gebaute Release-Broker-Datei (hart)")
+    broker = [a for a in manifest["artefakte"] if a.get("art") == "broker"]
+    datei = (WURZEL / str(broker[0].get("quelle", ""))) if len(broker) == 1 else None
+    grund = ("kein eindeutiges Broker-Artefakt" if datei is None
+             else f"Header {_kurz(header)} fehlt" if not header.is_file()
+             else f"Release-Broker {_kurz(datei)} fehlt" if not datei.is_file()
+             else "")
+    if grund:
+        if fehler:
+            print(f"  hinweis [4c+] nicht vergleichbar ({grund}) - A17 ist schon rot, kein zweiter Befund")
+        else:
+            pruefe(False, "Broker-Pin im Header ist gegen die gebaute Release-Broker-Datei pruefbar", grund)
+        return
+    ist = _header_literal(header.read_text(encoding="utf-8"), "brokerSha256")
+    soll = datei_hash(datei)
+    pruefe(ist is not None and ist.upper() == soll,  # M-16: hart, nie nur ein Hinweis
+           "Broker-Pin im erzeugten Header entspricht dem SHA-256 der gebauten Release-Broker-Datei",
+           f"Header {ist} | Datei {soll}")
 
 
 def _installierter_stand(manifest: dict) -> None:
@@ -1566,6 +1920,9 @@ def _argumente(argv=None):
                    help="Auslieferungsschritt: [4] vergleicht HART gegen die festgeschriebenen "
                         "Hashes (Exit 2 bei Abweichung). Ohne dieses Flag ist eine Abweichung "
                         "ein Hinweis - nach einem Relink ist sie der Normalfall (NAK-94).")
+    g.add_argument("--broker-pin", action="store_true",
+                   help="Bauschritt von tools/beweise.ps1 -Bauen zwischen Release-Broker und "
+                        "C++-Bau: sha256 des Brokers festschreiben, nur bei Abweichung (NAK-309)")
     p.add_argument("--debug", action="store_true",
                    help="bei einer unerwarteten Ausnahme zusaetzlich den Traceback "
                         "zeigen; ohne dieses Flag gibt es nur die Klartextzeile")
@@ -1647,12 +2004,13 @@ def _lauf(args) -> int:
         print(f"ABGEBROCHEN - {halt}")
         return 2
 
-    if args.hashen:
-        # Auch der mutierende Release-Aufruf muss erst denselben Strukturvertrag
-        # bestehen. Sonst koennte er ausgerechnet die Pfad- und Zielregeln
+    if args.hashen or args.broker_pin:
+        # Auch die mutierenden Aufrufe muessen erst denselben Strukturvertrag
+        # bestehen. Sonst koennten sie ausgerechnet die Pfad- und Zielregeln
         # umgehen, die der normale Kanonlauf prueft, und beliebige `quelle`-
         # Eintraege mit einem gueltigen Hash adeln.
-        print("[0] Struktur vor dem mutierenden Release-Schritt")
+        print("[0] Struktur vor dem mutierenden Schritt "
+              + ("--hashen" if args.hashen else "--broker-pin"))
         for regel, text in REGELN:
             try:
                 bedingung, zusatz = regel(manifest, identitaet)
@@ -1662,7 +2020,9 @@ def _lauf(args) -> int:
         if fehler:
             print("\nABGEBROCHEN - ein strukturell ungueltiges Manifest wird nicht gehasht.")
             return 2
-        return hashen(manifest)
+        if args.broker_pin:
+            return broker_pin()
+        return hashen_und_binden(manifest)
 
     print("[1] Struktur - eine Identitaet, ein Ort")
     for regel, text in REGELN:
@@ -1688,9 +2048,12 @@ def _lauf(args) -> int:
 
     adversariale_strukturproben(manifest, identitaet)
     runner_baut_produktbroker()
+    runner_bauordnung()
 
     auslieferungsstand(manifest, hart=args.release)
     cmake_broker_startbindung(manifest)
+    broker_pin_gegen_datei(manifest)
+    hashen_attrappe(manifest)
     installierter_stand(manifest)
 
     kreuzprobe()

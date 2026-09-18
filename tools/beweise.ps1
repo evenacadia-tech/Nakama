@@ -34,9 +34,12 @@
     Der Wortlaut der Lauf-Zeile ist fest: tools/plan/planstand.py liest daraus
     die Kanon-Zahl zurueck (Regex KANON). Nur anhaengen, nie umformulieren.
 
-    Er misst ausserdem den BAUSTAND - sind die Pruefbinaries aelter als die
-    Quellen, verweigert er die Beglaubigung (Exitcode 4), statt eine veraltete
-    Messung als Basislinie auszugeben.
+    Er misst ausserdem den BAUSTAND - ist ein Pruefbinary aelter als eine
+    Datei, aus der es entsteht, verweigert er die Beglaubigung (Exitcode 4),
+    statt eine veraltete Messung als Basislinie auszugeben. Welche Dateien das
+    sind, leitet tools/eq-copilot/pruefe_beweisrunner.py je Binary aus den
+    MSBuild-Tracking-Logs ab (NAK-309); ist das nicht ableitbar, fehlt eine
+    Voraussetzung (Exitcode 3). Bein A36 misst diese Ableitung selbst.
 
     Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
     git den Index auf, legt .git/index.lock an, und ein unter Last
@@ -58,7 +61,10 @@
 
 .PARAMETER Bauen
     Baut die Kanon-Ziele vorher neu (Release), damit der Lauf den aktuellen
-    Quellstand beweist.
+    Quellstand beweist - in der Bauordnung Broker -> Manifest -> Plugin
+    (NAK-309): erst der Release-Broker (cargo build --release), dann schreibt
+    pruefe_installer_manifest.py --broker-pin dessen SHA-256 ins
+    Installer-Manifest, erst danach die C++-Ziele (cmake --build).
 
 .PARAMETER Titel
     Ueberschrift des Manifests bzw. des angehaengten Abschnitts.
@@ -80,8 +86,10 @@
     Exitcodes
       0  alles gruen
       2  mindestens ein Kanon-Lauf rot
-      3  Voraussetzung fehlt (nicht gebaut, keine Fixtures, kein cargo)
-      4  Laeufe gruen, aber Binaries aelter als die Quellen (nicht beglaubigt)
+      3  Voraussetzung fehlt (nicht gebaut, keine Fixtures, kein cargo,
+         Frischebaum nicht ableitbar)
+      4  Laeufe gruen, aber ein Binary ist aelter als eine seiner Quellen
+         oder der Frischebaum deckt nicht jede Quelle (nicht beglaubigt)
       5  Rohausgabe nicht reservierbar (Namen belegt) - nichts geschrieben
     Ein Bein ueber dem Zeitlimit endet mit Exit 124 (Prozessbaum beendet) und
     zaehlt als rot; der Grund steht als [Zeitlimit]-Zeile in seinem stderr.
@@ -616,6 +624,9 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='A34'; Name='pruefe_session_soak.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='P3'; Behauptung='Der Selbsttest des Soak-Orakels (NAK-283 F13, Muster A27). Er laeuft OHNE Repo-Fixture und ohne Lauf: vier Faelle bauen ihre Berichte im Speicher und laufen durch dieselben Funktionen wie A24 - Messstelle, Speicherpunkt, Urteil. Eine fehlende RSS-Messung endet mit MESSUNG FEHLT und Exit 3, nie im Budget; ein nicht abfragbarer Prozess und ein Prozess mit 0 Bytes Working Set sind im Bericht verschieden; ein Fehlerpunkt direkt vor oder nach dem Neustartfenster faellt, obwohl das Fenster die Kurve filtert; ein Altbericht ohne Gueltigkeitsmerkmal bleibt ueber --bericht auswertbar, derselbe Bericht als Livelauf ist rot. Jede Erwartung laeuft mit ihrem Gegenteil.' }
     # NAK-286 Etappe 4 (15.09.2026): der Selbsttest des Laufzeit-Arms (Plan S25e), Muster A34.
     [pscustomobject]@{ Kuerzel='A35'; Name='selbsttest.py'; Art='python'; Ordner='tools\fl'; Argumente=@(); AbPhase='P3'; Behauptung='Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor und Abweichung; Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil.' }
+    # NAK-309 Etappe 2 (18.09.2026, T3-09-01, R-309-6): der Selbsttest der
+    # Frischepruefung, Muster A34. Bis dahin mass kein Bein den Runner selbst.
+    [pscustomobject]@{ Kuerzel='A36'; Name='pruefe_beweisrunner.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='jetzt'; Behauptung='Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebundene Kernziel ist gedeckt. Verglichen werden Zeitstempel, keine Inhalte. Jede Erwartung laeuft mit ihrem Gegenteil.' }
     [pscustomobject]@{ Kuerzel='A28'; Name='erzeuge_p5_korpus.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='P5'; Behauptung='Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett.' }
     [pscustomobject]@{ Kuerzel='A29'; Name='pruefe_p5_korpus.py'; Art='python'; Argumente=@(); AbPhase='P5'; Behauptung='Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1).' }
     [pscustomobject]@{ Kuerzel='A30'; Name='pruefe_p5_korpus.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='P5'; Behauptung='Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen.' }
@@ -859,11 +870,53 @@ function Bau-Abbruch {
            -f $Lauf.ExitCode, (RelativZurWurzel $logDatei))
 }
 
+# Die Ziele, die -Bauen baut. Sie stehen ausserhalb des Bauzweigs, weil die
+# Frischepruefung ihr Inventar auch ohne -Bauen an genau dieser Menge misst
+# (NAK-309 M-08). Nur Ziele, die es im CMakeLists wirklich gibt (geplante
+# Tests noch nicht).
+$cmakeText = Get-Content -LiteralPath (Join-Path $Wurzel 'eq-copilot\plugin\CMakeLists.txt') -Raw
+# `Ist-Stillgelegt` steht VOR dem Textvergleich, nicht dahinter: ein
+# stillgelegtes Bein darf auch dann nicht gebaut werden, wenn sein Name im
+# CMakeLists noch in einem Kommentar steht (S9b/SONDE-007c). Sonst suchte
+# der Bau ein Ziel, das es nicht mehr gibt, und braeche ab.
+$zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
+$zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
+
 if ($Bauen) {
     $cmakeBefehl = Finde-CMake
     if (-not $cmakeBefehl) {
         throw 'cmake nicht gefunden - weder im PATH noch unter Visual Studio 2022. -Bauen ist ohne cmake nicht moeglich.'
     }
+
+    # NAK-309 Etappe 2 (T3-05-03, M-11): Bauordnung Broker -> Manifest -> Plugin.
+    # Den Pin, den das Plugin vor jedem Brokerstart prueft, brennt configure_file
+    # aus dem Installer-Manifest in BrokerInstallBinding.h. Bis NAK-309 baute
+    # dieser Schritt die C++-Ziele VOR dem Release-Broker: ein neuer Broker kam
+    # erst mit dem naechsten Bau ins Plugin, und ein --hashen dazwischen fror
+    # einen Broker ein, den das installierte Plugin beim Start verwarf
+    # (hashFalsch). Jetzt: (1) Release-Broker bauen, (2) --broker-pin schreibt
+    # dessen SHA-256 ins Manifest (nur bei Abweichung - ein unveraenderter Broker
+    # laesst die Datei unberuehrt), (3) cmake --build: ZERO_CHECK konfiguriert
+    # neu, weil das Manifest CMAKE_CONFIGURE_DEPENDS ist. A17 prueft die Folge
+    # am Text ([3e]) und das Ergebnis am Header ([4c+]).
+    #
+    # S14-15/SONDE-010: derselbe Release-Cargo-Aufruf baut das Probe-Binary,
+    # gegen das A22 die C++-Clients am ECHTEN Rust-Listener faehrt. Es entsteht
+    # nicht beim `cargo test` von A4 (das baut nur Debug-Testbinaries); ohne ihn
+    # pruefte A22 gegen ein altes Release-Artefakt oder gar nicht.
+    Write-Host 'Baue Release-Broker (cargo build --release) ...' -ForegroundColor DarkGray
+    $cargoRelease = Fuehre-Aus -Datei 'cargo' -Argumente @(
+        'build', '--release', '--manifest-path', 'broker/Cargo.toml',
+        '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker-sonde012-probe',
+        '--bin', 'eqcop-broker',
+        '--color', 'never') -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
+    $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
+    if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }
+
+    Write-Host 'Pinne den Release-Broker ins Installer-Manifest (--broker-pin) ...' -ForegroundColor DarkGray
+    $brokerPin = Fuehre-Aus -Datei 'py' -Argumente @('-3.13', (Join-Path $Wurzel 'tools\eq-copilot\pruefe_installer_manifest.py'), '--broker-pin')
+    $bauProtokoll += [pscustomobject]@{ Schritt = 'broker-pin'; ExitCode = $brokerPin.ExitCode; StdOut = $brokerPin.StdOut; StdErr = $brokerPin.StdErr; Sekunden = $brokerPin.Sekunden }
+    if ($brokerPin.ExitCode -ne 0) { Bau-Abbruch -Schritt 'broker-pin' -Lauf $brokerPin }
 
     $bauVerzeichnis = Join-Path $Wurzel 'eq-copilot\build'
     $loesung = Join-Path $bauVerzeichnis 'EqCopilotSuite.sln'
@@ -874,31 +927,10 @@ if ($Bauen) {
         if ($k.ExitCode -ne 0) { Bau-Abbruch -Schritt 'configure' -Lauf $k }
     }
 
-    # Nur Ziele bauen, die es im CMakeLists wirklich gibt (geplante Tests noch nicht).
-    $cmakeText = Get-Content -LiteralPath (Join-Path $Wurzel 'eq-copilot\plugin\CMakeLists.txt') -Raw
-    # `Ist-Stillgelegt` steht VOR dem Textvergleich, nicht dahinter: ein
-    # stillgelegtes Bein darf auch dann nicht gebaut werden, wenn sein Name im
-    # CMakeLists noch in einem Kommentar steht (S9b/SONDE-007c). Sonst suchte
-    # der Bau ein Ziel, das es nicht mehr gibt, und braeche ab.
-    $zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
-    $zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
     Write-Host ('Baue: ' + ($zuBauen -join ', ')) -ForegroundColor DarkGray
     $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen) -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
     $bauProtokoll += [pscustomobject]@{ Schritt = 'build'; ExitCode = $b.ExitCode; StdOut = $b.StdOut; StdErr = $b.StdErr; Sekunden = $b.Sekunden }
     if ($b.ExitCode -ne 0) { Bau-Abbruch -Schritt 'build' -Lauf $b }
-
-    # S14-15/SONDE-010: das Lastbein A22 faehrt die C++-Clients gegen den
-    # ECHTEN Rust-Listener. Dessen Probe-Binary entsteht nicht beim `cargo
-    # test` von A4 (das baut nur Debug-Testbinaries), also wird es hier
-    # ausdruecklich mitgebaut. Ohne diese Zeile pruefte A22 gegen ein altes
-    # Release-Artefakt oder gar nicht - beides waere ein stiller Verlust.
-    $cargoRelease = Fuehre-Aus -Datei 'cargo' -Argumente @(
-        'build', '--release', '--manifest-path', 'broker/Cargo.toml',
-        '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker-sonde012-probe',
-        '--bin', 'eqcop-broker',
-        '--color', 'never') -ZeitlimitMinuten (3 * $BeinZeitlimitMinuten)
-    $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
-    if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }
 }
 
 # ------------------------------------------------------------------ Kopfdaten
@@ -953,74 +985,86 @@ if ($Bauen -and $cmakeBefehl) { $kopf['cmake'] = (Einzeilig $cmakeBefehl @('--ve
 
 # ------------------------------------------------------------------ Baustand
 
-# Vollstaendig halten: JEDE Quelle, aus der eine Pruefbinaerdatei entsteht.
-# Fehlt ein Ort, beglaubigt der Runner eine veraltete Messung als frisch -
-# genau der T2-Befund vom 20.08., nur eine Ebene tiefer. hostbridge/, spike/,
-# probe/, cmake/ und der JUCE-Bridge-Patch kamen mit SONDE-003/004a dazu,
-# vertrag/ mit SONDE-005a.
+# Vollstaendig halten: JEDE Datei, aus der ein Pruefbinary entsteht. Bis
+# NAK-309 stand hier eine handgepflegte Ordnerliste mit EINEM globalen
+# Zeitstempel - dreimal fehlte ein Ort (T2-Befund 20.08.; Selbstaudit 23.08.:
+# core/, state/, sonde/; Befund T3-09-01: dsp/, der aktive DSP-Kern in
+# NakamaKern.lib), und fremde Dateien machten Binaries veraltet, die sie nie
+# lasen (NAK-25). Seit NAK-309 leitet tools/eq-copilot/pruefe_beweisrunner.py
+# den Frischebaum je Binary aus dem ab, was der Bau tatsaechlich gelesen hat:
+# den MSBuild-Tracking-Logs seines Zwischenordners, jede Bibliothek ueber die
+# Logs ihres Erzeugers (NakamaKern.lib also ueber die Kernquellen, nie ueber
+# ihren eigenen Zeitstempel - A14 baut sie in jedem Lauf neu), der
+# Projektdatei und dem Konfigurationsstand (generate.stamp gegen seine
+# Eingaben, dieselbe Sicht wie ZERO_CHECK). Danach die Kreuzprobe gegen den
+# CMake-Export (jeder Kernverbraucher erreicht die Kernquellen) und das
+# Inventar ueber git ls-files eq-copilot/plugin (jede Quelle steht in einem
+# Frischebaum oder mit Grund in der Ausnahmeliste). Die Ableitung misst Bein
+# A36 an einem Attrappen-Baubaum; die Grenze (Zeitstempel, kein Inhalt) steht
+# im Werkzeugkopf.
 #
-# ⚠️ Nachgezogen am 23.08. (S10-11/SONDE-008, Selbstaudit): DREI Orte fehlten.
-# `core/` ist neu in diesem Ticket - aber `state/` (seit SONDE-006, seit S8 der
-# halbe NakamaKern) und `sonde/` (seit S9 die Quelle BEIDER neuen Bundles)
-# fehlten seit ihrem jeweiligen Ticket. Der Riegel haette eine Aenderung an
-# `NakamaState.cpp` oder `SondeProcessor.cpp` nicht bemerkt und einen veralteten
-# Lauf als frisch beglaubigt - genau der Fehler, gegen den er errichtet wurde.
-# Der Kommentar oben sagt "JEDE Quelle"; zwei Tickets lang stimmte das nicht.
-$quellOrte = @(
-    (Join-Path $Wurzel 'eq-copilot\plugin\src'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\core'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\state'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\sonde'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\tests'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\hostbridge'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\vertrag'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\hostprobe'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\spike'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\probe'),
-    (Join-Path $Wurzel 'eq-copilot\cmake'),
-    (Join-Path $Wurzel 'third_party\patches'),
-    (Join-Path $Wurzel 'eq-copilot\plugin\CMakeLists.txt'),
-    (Join-Path $Wurzel 'eq-copilot\CMakeLists.txt')
-)
-$neuesteQuelle = $null
-foreach ($ort in $quellOrte) {
-    if (-not (Test-Path -LiteralPath $ort)) { continue }
-    $dateien = if ((Get-Item -LiteralPath $ort) -is [IO.DirectoryInfo]) {
-        Get-ChildItem -LiteralPath $ort -Recurse -File -ErrorAction SilentlyContinue
-    } else {
-        @(Get-Item -LiteralPath $ort)
-    }
-    foreach ($d in $dateien) {
-        if ($null -eq $neuesteQuelle -or $d.LastWriteTime -gt $neuesteQuelle) { $neuesteQuelle = $d.LastWriteTime }
-    }
-}
-
-# Hat -Bauen soeben erfolgreich gebaut, ist die Frage entschieden: das
+# Exit des Werkzeugs: 0 frisch; 4 veraltet oder Luecke -> NICHT BEGLAUBIGT;
+# 3 nicht ableitbar und jeder andere Ausgang zaehlen als fehlende
+# Voraussetzung -> UNVOLLSTAENDIG, nie GRUEN (M-07). Stillgelegte Beine
+# uebergibt der Runner mit ihrer Marke, das Werkzeug beurteilt sie nicht
+# (S9b/SONDE-007c, M-05).
+#
+# Hat -Bauen soeben erfolgreich gebaut, ist die Zeitfrage entschieden: das
 # Buildsystem hat die Abhaengigkeiten geprueft, und sein Urteil schlaegt den
-# Zeitstempelvergleich. Ohne -Bauen bleibt die mtime die ehrliche Heuristik.
-# (Sonst meldete jede fremde Datei im tests-Ordner die Binaries dauerhaft als
-#  veraltet, obwohl ein No-op-Bau die Zeitstempel gar nicht anfasst.)
+# Zeitstempelvergleich (--bau-bestaetigt). Ableitung, Kreuzprobe und Inventar
+# laufen trotzdem.
 $bauBestaetigt = $Bauen -and (@($bauProtokoll | Where-Object { $_.Schritt -eq 'build' -and $_.ExitCode -eq 0 }).Count -gt 0)
 
 $baustand = @()
 $veraltet = $false
-foreach ($eintrag in ($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) })) {
-    # Stillgelegte Beine bleiben hier draussen (S9b/SONDE-007c): ihre alte
-    # .exe liegt nach dem letzten Bau noch im Baumverzeichnis und waere ab
-    # sofort dauerhaft "aelter als die Quellen" - der Runner verweigerte dann
-    # jede Beglaubigung wegen eines Binaerbildes, das gar nicht mehr gemessen
-    # wird.
-    $exe = Pruefbinaer $eintrag.Name
-    if (-not (Test-Path -LiteralPath $exe)) { continue }
-    $datei = Get-Item -LiteralPath $exe
-    $istVeraltet = (-not $bauBestaetigt) `
-                   -and ($null -ne $neuesteQuelle -and $datei.LastWriteTime -lt $neuesteQuelle)
-    if ($istVeraltet) { $veraltet = $true }
-    $baustand += [pscustomobject]@{
-        Name   = $eintrag.Name
-        Gebaut = $datei.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss')
-        Hash   = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.Substring(0, 16)
-        Stand  = $(if ($istVeraltet) { 'VERALTET' } elseif ($bauBestaetigt) { 'frisch (Bau bestaetigt)' } else { 'frisch' })
+$veraltetText = 'Pruefbinaries sind aelter als die Quellen'
+$baustandFehlt = $false
+$baustandGrund = ''
+$baustandDaten = $null
+$populationDatei = Join-Path ([IO.Path]::GetTempPath()) ('nakama-baustand-{0}.json' -f [guid]::NewGuid().ToString('N'))
+$population = @($kanon | Where-Object { $_.Art -eq 'plugin' } | ForEach-Object {
+    [ordered]@{
+        kuerzel     = $_.Kuerzel
+        name        = $_.Name
+        binary      = (Pruefbinaer $_.Name)
+        stillgelegt = $(if (Ist-Stillgelegt $_) { $_.Stillgelegt } else { $null })
+    }
+})
+[ordered]@{ konfiguration = 'Release'; population = $population; bau_ziele = @($zuBauen) } |
+    ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $populationDatei -Encoding utf8
+$baustandArgumente = @('-3.13', (Join-Path $Wurzel 'tools\eq-copilot\pruefe_beweisrunner.py'), '--baustand', $populationDatei)
+if ($bauBestaetigt) { $baustandArgumente += '--bau-bestaetigt' }
+$baustandLauf = Fuehre-Aus -Datei 'py' -Argumente $baustandArgumente
+Remove-Item -LiteralPath $populationDatei -Force -ErrorAction SilentlyContinue
+$jsonZeile = @($baustandLauf.StdOut -split "`r?`n" | Where-Object { $_.StartsWith('BAUSTAND-JSON ') }) | Select-Object -Last 1
+if ($jsonZeile) {
+    try { $baustandDaten = $jsonZeile.Substring('BAUSTAND-JSON '.Length) | ConvertFrom-Json } catch { $baustandDaten = $null }
+}
+if ($null -eq $baustandDaten -or $baustandLauf.ExitCode -notin @(0, 3, 4)) {
+    $baustandFehlt = $true
+    $baustandGrund = 'Frischepruefung ohne Urteil (Werkzeug Exit {0})' -f $baustandLauf.ExitCode
+}
+else {
+    $staende = @($baustandDaten.binaries | ForEach-Object { $_.stand })
+    if ($baustandLauf.ExitCode -eq 4 -or $baustandDaten.veraltet -or @($baustandDaten.luecken).Count -gt 0) {
+        $veraltet = $true
+        if ($staende -notcontains 'VERALTET') { $veraltetText = 'der Frischebaum deckt nicht jede Quelle (Kreuzprobe oder Inventar)' }
+    }
+    if ($baustandLauf.ExitCode -eq 3 -or $baustandDaten.nicht_ableitbar) {
+        $baustandFehlt = $true
+        $baustandGrund = 'Frischebaum nicht ableitbar'
+    }
+    foreach ($b in @($baustandDaten.binaries)) {
+        $exe = Pruefbinaer $b.name
+        if (-not (Test-Path -LiteralPath $exe)) { continue }
+        $datei = Get-Item -LiteralPath $exe
+        $baustand += [pscustomobject]@{
+            Name     = $b.name
+            Gebaut   = $datei.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss')
+            Hash     = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.Substring(0, 16)
+            Stand    = $(if ($b.grund) { '{0} ({1})' -f $b.stand, $b.grund } else { $b.stand })
+            Juengste = $(if ($b.juengste_eingabe) { '{0} ({1})' -f $b.juengste_eingabe, $b.juengste_zeit } else { '-' })
+        }
     }
 }
 
@@ -1195,6 +1239,12 @@ $nachsatz = if ($geplant.Count -gt 0) { " | $($geplant.Count) geplante Pruefung(
 # Und eine gesunkene Zahl ohne Erklaerung waere die andere Schoenung: das
 # Urteil sagt selbst, wie viele Beine stillgelegt sind (S9b/SONDE-007c).
 if ($stillgelegt.Count -gt 0) { $nachsatz += " | $($stillgelegt.Count) stillgelegte(s) Bein(e), siehe Uebersicht" }
+# NAK-309 M-07: ein nicht ableitbarer Baustand ist eine fehlende
+# Voraussetzung - nie GRUEN; ROT geht weiter vor, NICHT BEGLAUBIGT danach.
+if ($baustandFehlt) {
+    $fehlendeVoraussetzung++
+    $nachsatz += " | Baustand: $baustandGrund, siehe Rohausgabe"
+}
 
 $exitcode = 0
 if ($rot -gt 0) {
@@ -1207,7 +1257,7 @@ elseif ($fehlendeVoraussetzung -gt 0) {
 }
 elseif ($veraltet) {
     $exitcode = 4
-    $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+    $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber $veraltetText$nachsatz"
 }
 else {
     $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
@@ -1304,7 +1354,7 @@ $z.Add('')
 
 if ($veraltet) {
     $z.Add('> **VERALTET - dieser Lauf beweist NICHT den aktuellen Quellstand.**')
-    $z.Add('> Mindestens eine Pruefbinaerdatei ist aelter als die Quellen. Neu fahren mit `-Bauen`.')
+    $z.Add("> Baustand: $veraltetText (Tabelle in der Rohausgabe). Neu fahren mit ``-Bauen``.")
     $z.Add('')
 }
 
@@ -1347,28 +1397,35 @@ if ($schmutzigeDateien.Count -gt 0) {
 
 $roh.Add('### Baustand der Pruefbinaries')
 $roh.Add('')
-if ($baustand.Count -eq 0) {
+if ($null -eq $baustandDaten) {
+    $roh.Add("_Kein Baustand: $($baustandGrund)._")
+}
+elseif ($baustand.Count -eq 0) {
     $roh.Add('_Keine Pruefbinaries vorhanden._')
 }
 else {
-    $roh.Add('| Binaerdatei | gebaut am | SHA-256 (16) | Stand |')
-    $roh.Add('|---|---|---|---|')
-    foreach ($b in $baustand) { $roh.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
-    $roh.Add('')
-    # Die Liste kommt aus $quellOrte selbst, statt danebengeschrieben zu werden:
-    # eine abgeschriebene Aufzaehlung altert genau dann, wenn ein Ort dazukommt -
-    # also in dem Moment, in dem sie wichtig waere (Selbstaudit 23.08.).
-    $orteText = (($quellOrte | ForEach-Object { '`' + (RelativZurWurzel $_).Replace('\', '/').Replace('eq-copilot/', '') + '`' }) -join ', ')
-    $roh.Add("Neueste Quelldatei ($orteText): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
-    if ($bauBestaetigt) {
-        $roh.Add('')
-        $roh.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')
-    }
+    $roh.Add('| Binaerdatei | gebaut am | SHA-256 (16) | Stand | juengste Eingabe |')
+    $roh.Add('|---|---|---|---|---|')
+    foreach ($b in $baustand) { $roh.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $(Zellentext $b.Stand) | $(Zellentext $b.Juengste) |") }
 }
+$roh.Add('')
+# Die Ableitung steht nicht hier, sondern im Werkzeug, das sie misst (A36);
+# hier steht, was es an diesem Baum gesehen hat.
+$roh.Add("Frischebaum je Binary aus den MSBuild-Tracking-Logs (``tools/eq-copilot/pruefe_beweisrunner.py --baustand``, Exit $($baustandLauf.ExitCode)): Leselogs des Zwischenordners, jede Bibliothek ueber die Logs ihres Erzeugers, Projektdatei und Konfigurationsstand; Kreuzprobe gegen den CMake-Export, Inventar ueber ``git ls-files eq-copilot/plugin``. Verglichen werden Zeitstempel, keine Inhalte. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+if ($bauBestaetigt) {
+    $roh.Add('')
+    $roh.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft. Kreuzprobe und Inventar sind trotzdem gelaufen.')
+}
+$roh.Add('')
+$roh.Add('<details><summary>Ausgabe der Frischepruefung</summary>')
+$roh.Add('')
+$roh.Add((Block ($baustandLauf.StdOut + "`n" + $baustandLauf.StdErr)))
+$roh.Add('')
+$roh.Add('</details>')
 $roh.Add('')
 if ($veraltet) {
     $roh.Add('> **VERALTET - dieser Lauf beweist NICHT den aktuellen Quellstand.**')
-    $roh.Add('> Mindestens eine Pruefbinaerdatei ist aelter als die Quellen. Neu fahren mit `-Bauen`.')
+    $roh.Add("> Baustand: $veraltetText. Neu fahren mit ``-Bauen``.")
     $roh.Add('')
 }
 

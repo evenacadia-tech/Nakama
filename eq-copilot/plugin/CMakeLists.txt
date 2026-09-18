@@ -1384,3 +1384,51 @@ foreach(verbraucher IN LISTS NAKAMA_KERN_VERBRAUCHER)
 endforeach()
 message(STATUS
     "Nakama-Kern: K2b/K2c gegen alle ${NAKAMA_KERN_VERBRAUCHER_ANZAHL} Verbraucher gemessen.")
+
+# ── NAK-309 Etappe 2 (T3-09-01, R-309-6): Export fuer die Frischepruefung ────
+# tools/eq-copilot/pruefe_beweisrunner.py leitet den Frischebaum jedes
+# Pruefbinaries aus den MSBuild-Tracking-Logs ab. Diese Datei gibt ihm, was
+# nur CMake weiss: die Kernquellen, jeden Kernverbraucher samt Art (ein
+# statischer JUCE-SharedCode-Verbraucher erreicht den Kern erst ueber seine
+# Endziele, JUCE_ACTIVE_PLUGIN_TARGETS) und je Ziel dieses Verzeichnisses die
+# Zieldatei. Daran misst das Werkzeug die Kreuzprobe "jedes gebundene Ziel
+# deckt der Frischebaum" (M-06) - gegen diesen Export, nie gegen eine Zahl im
+# Skript. Kein Ziel, keine Quelle und keine Option aendert sich; file(GENERATE)
+# schreibt je Konfiguration eine Datei, nachdem alle CMakeLists gelesen sind.
+get_filename_component(NAKAMA_FRISCHE_REPO "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+set(NAKAMA_FRISCHE_QUELLEN "")
+foreach(nakama_quelle IN LISTS NAKAMA_KERN_QUELLEN)
+    file(RELATIVE_PATH nakama_rel "${NAKAMA_FRISCHE_REPO}"
+         "${CMAKE_CURRENT_SOURCE_DIR}/${nakama_quelle}")
+    list(APPEND NAKAMA_FRISCHE_QUELLEN "\"${nakama_rel}\"")
+endforeach()
+list(JOIN NAKAMA_FRISCHE_QUELLEN ",\n    " NAKAMA_FRISCHE_QUELLEN)
+set(NAKAMA_FRISCHE_VERBRAUCHER "")
+foreach(verbraucher IN LISTS NAKAMA_KERN_VERBRAUCHER)
+    get_target_property(nakama_typ ${verbraucher} TYPE)
+    set(nakama_ende "")
+    if(nakama_typ STREQUAL "STATIC_LIBRARY")
+        get_target_property(nakama_endziele ${verbraucher} JUCE_ACTIVE_PLUGIN_TARGETS)
+        if(nakama_endziele)
+            foreach(nakama_endziel IN LISTS nakama_endziele)
+                list(APPEND nakama_ende "\"${nakama_endziel}\"")
+            endforeach()
+        endif()
+    endif()
+    list(JOIN nakama_ende ", " nakama_ende)
+    list(APPEND NAKAMA_FRISCHE_VERBRAUCHER
+         "{\"name\": \"${verbraucher}\", \"typ\": \"${nakama_typ}\", \"endziele\": [${nakama_ende}]}")
+endforeach()
+list(JOIN NAKAMA_FRISCHE_VERBRAUCHER ",\n    " NAKAMA_FRISCHE_VERBRAUCHER)
+get_property(nakama_alle_ziele DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+set(NAKAMA_FRISCHE_ZIELE "")
+foreach(nakama_ziel IN LISTS nakama_alle_ziele)
+    get_target_property(nakama_typ ${nakama_ziel} TYPE)
+    if(nakama_typ MATCHES "^(EXECUTABLE|STATIC_LIBRARY|MODULE_LIBRARY|SHARED_LIBRARY)$")
+        list(APPEND NAKAMA_FRISCHE_ZIELE
+             "\"${nakama_ziel}\": {\"typ\": \"${nakama_typ}\", \"datei\": \"$<TARGET_FILE:${nakama_ziel}>\"}")
+    endif()
+endforeach()
+list(JOIN NAKAMA_FRISCHE_ZIELE ",\n    " NAKAMA_FRISCHE_ZIELE)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/nakama-frischebaum-$<CONFIG>.json"
+     CONTENT "{\n  \"schema\": \"nakama.frischebaum/v1\",\n  \"konfiguration\": \"$<CONFIG>\",\n  \"kern\": \"NakamaKern\",\n  \"kern_quellen\": [\n    ${NAKAMA_FRISCHE_QUELLEN}\n  ],\n  \"verbraucher\": [\n    ${NAKAMA_FRISCHE_VERBRAUCHER}\n  ],\n  \"ziele\": {\n    ${NAKAMA_FRISCHE_ZIELE}\n  }\n}\n")

@@ -5,7 +5,8 @@ KONZEPT §4.6). Dateien:
 
 | Datei | Rolle |
 |---|---|
-| `laufzeit.ps1` | Ablauf je Ticket: lohnt es (Diff), Installation über `\Nakama\installieren` mit Wertung von `\Nakama\pruefen`, Controller-Skript gegen das MCP-Repo, Projektordner mit SHA-256, Briefkasten-Ordner, Renders für `nulltest-host` vor dem FL-Start (Diagnoseprojekt und Referenzprojekte, P-21), loopMIDI vor FL, Restprozesse, FL-Start mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, Ping, Szenarien, Rückweg nach ABWEICHUNG, Rohdatei und Kopfzeile; `-Selbsttest` gegen Attrappen |
+| `laufzeit.ps1` | Ablauf je Ticket: lohnt es (Diff), MCP-Stand gegen den Pin `mcp-stand.json`, Installation über `\Nakama\installieren` mit Wertung von `\Nakama\pruefen`, Controller-Skript gegen das MCP-Repo, Projektordner mit SHA-256, Briefkasten-Ordner, Renders für `nulltest-host` vor dem FL-Start (Diagnoseprojekt und Referenzprojekte, P-21), loopMIDI vor FL, eigene Restprozesse, FL-Start mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, Ping, Szenarien, Rückweg nach ABWEICHUNG, Rohdatei und Kopfzeile; beendet nur Eigenes (Besitzliste); `-Selbsttest` gegen Attrappen |
+| `mcp-stand.json` | Pin des MCP-Repos: Zweig, Commit und Git-Blob-Kennung je Erstcode-Datei; ändert sich nur per Commit (Abschnitt MCP-Stand) |
 | `szenario.py` | fährt eine Szenariodatei aus `docs/gesundheit/szenarien/` über die Bibliothek des FL-Studio-MCP (`C:\Users\phili\Projekte\fl-studio-mcp`) und die lokalen Aktionen `lokal.*`, schreibt jeden Schritt roh; `--selbsttest`, `--rechne` (Rechnung aus F-28), `--energieprofil` (Stellen für U40) |
 | `nulltest.py` | Nulltest im Host: Render gegen `eq-copilot/kalibration/Testtrack.wav` — Format, Versatz über die volle Songlänge, Urteil, `ergebnis.json`; Weg R2 mit `--vergleich verarbeitung_ein` (gegen die Quelle, umgekehrt bewertet) und `--vergleich ohne_slots` (SHA-256 des Datenbereichs gegen den Auslieferungsrender); `--selbsttest` |
 | `selbsttest.py` | Bein A35: die drei Selbsttests ohne FL (Exit 0 grün, 4 rot, 2 Werkzeugfehler) |
@@ -25,38 +26,101 @@ Diagnose- oder Referenzprojekt verändert (Nacharbeit). Rohdatei
 
 ## Ablauf
 
-1. Diff-Entscheid: ohne Produktpfad `UEBERSPRUNGEN`.
-2. Installation: `--hashen`, `\Nakama\installieren`, `\Nakama\pruefen`; nur
+1. Diff-Entscheid: ohne Produktpfad `UEBERSPRUNGEN`. Vorher bereinigt der
+   Runner seine Besitzliste (Abschnitt Besitz).
+2. MCP-Stand gegen `tools/fl/mcp-stand.json` (Abschnitt MCP-Stand); jede
+   Abweichung, eine fehlende oder unlesbare Pin-Datei: Exit 3 vor
+   Installation, `setup-local.ps1` und dem ersten `uv run`.
+3. Installation: `--hashen`, `\Nakama\installieren`, `\Nakama\pruefen`; nur
    „aktuell" für jedes Artefakt lässt den Lauf weiter, sonst Exit 3.
-3. Controller-Skript: SHA-256 von `fl_controller/device_FLStudioMCP.py` gegen
-   die installierte Kopie; bei Abweichung `setup-local.ps1`, Diagnose-FL
-   beenden und eine Boot-Marke mit der `script_version` des Repo-Stands
-   verlangen.
-4. Projektordner unter `%LOCALAPPDATA%\evenacadia\nakama-laufzeit\projekt\`
+4. Controller-Skript: SHA-256 von `fl_controller/device_FLStudioMCP.py` gegen
+   die installierte Kopie; bei Abweichung `setup-local.ps1`, das eigene
+   Diagnose-FL beenden und eine Boot-Marke mit der `script_version` des
+   Repo-Stands verlangen.
+5. Projektordner unter `%LOCALAPPDATA%\evenacadia\nakama-laufzeit\projekt\`
    mit SHA-256 von Repo-Projekt und Arbeitskopie; dazu die Referenzprojekte
    aus Karte U43 unter genau den Namen aus `nulltest-host.json`
    (`Nakama-Diagnose-Referenz.flp`, `Nakama-Diagnose-Verarbeitung.flp`), wenn
    sie neben dem Diagnoseprojekt liegen (P-18). Jeder Ausgang vergleicht alle
    kopierten Projekte; ein verändertes ist Exit 4.
-5. Briefkasten `%LOCALAPPDATA%\evenacadia\nakama\diagnose\` mit `antwort\`:
+6. Briefkasten `%LOCALAPPDATA%\evenacadia\nakama\diagnose\` mit `antwort\`:
    zuerst eine liegende Anfrage, dann Antworten früherer Läufe entfernen (nur
    Antwort- und Temp-Namen der Instanzen); jeder Ausgang räumt `anfrage.json`
    ab.
-6. Renders vor dem FL-Start (nur mit `nulltest-host.json`), die Folge steht
+7. Renders vor dem FL-Start (nur mit `nulltest-host.json`), die Folge steht
    vorab im Protokoll: `FL64.exe /R /Ewav /O"<Ordner>" "<Arbeitskopie>"` nach
    dem FL-Handbuch („Exporting Audio & MIDI"), ohne FL mit Fenster, Frist 600 s
-   je Render, danach genau diese PID beendet; `render.json` im Ordner nennt
+   je Render, danach genau diese eigene PID beendet; `render.json` im Ordner nennt
    Projekt, SHA-256 des Projekts, Datei, Dauer, Exit, Fenstertitel oder Grund.
    Zuerst das Diagnoseprojekt nach `…\nakama-laufzeit\render\`, danach jedes
    Referenzprojekt aus Karte U43 in der Reihenfolge der Szenariodatei in seinen
    eigenen Ordner `…\render\referenz\<Name>\` (P-21); ein fehlendes
    Referenzprojekt bekommt dort einen Renderstatus mit Grund „Referenzprojekt
    fehlt (Karte U43, K-286-1)" und keinen Render.
-7. loopMIDI, Restprozesse, FL-Start, Boot-Marke, Ping.
-8. Szenarien alphabetisch; `frischer_start` startet das Diagnose-FL vorher neu.
-   Szenario-Exit 3 bricht ab, 5 lässt die Folge weiterlaufen. ABWEICHUNG im
-   Nulltest: Diagnose-FL beenden, messen, dass kein FL läuft, `\Nakama\rueckweg`,
-   `\Nakama\pruefen`; die Folgeszenarien entfallen mit Meldung, Exit 4.
+8. loopMIDI, eigene Restprozesse, FL-Start, Boot-Marke, Ping; die
+   Diagnose-PID ist nur die selbst gestartete.
+9. Szenarien alphabetisch; `frischer_start` startet das eigene Diagnose-FL
+   vorher neu. Szenario-Exit 3 bricht ab, 5 lässt die Folge weiterlaufen.
+   ABWEICHUNG im Nulltest: eigenes Diagnose-FL beenden, messen, dass kein FL
+   läuft, `\Nakama\rueckweg`, `\Nakama\pruefen`; die Folgeszenarien entfallen
+   mit Meldung, Exit 4. Läuft danach noch ein FL (fremd oder nicht
+   beendbar), verweigert der Rückweg mit PID und Titel.
+
+## Besitz: der Runner beendet nur Eigenes (NAK-309, R-309-1')
+
+Eigen ist nur ein FL-Prozess, den dieser Runner gestartet hat. Die Liste
+`%LOCALAPPDATA%\evenacadia\nakama-laufzeit\eigene-prozesse.json` hält je
+Prozess PID, Startzeit, Befehlszeile (aus `Win32_Process`) und Zweck (`fl`
+oder `render`); Besitz gilt nur, wenn der laufende Prozess in allen drei
+Merkmalen gleicht — die PID allein vergibt Windows neu. Dazu nennt die
+Befehlszeile ein Projekt der Arbeitskopie dieses Laufs (FL: das
+Diagnoseprojekt; Render: ein Projekt der Arbeitskopie), und das Hauptfenster
+ist leer (NAK-297) oder beginnt mit `<Projektdatei> - `. Eingetragen wird
+direkt nach dem Start, ausgetragen nach bestätigtem Ende; der Laufstart
+entfernt Einträge ohne passenden lebenden Prozess. Ein FL, das nach einem
+Lauf ohne `-Beenden` offen bleibt, ist im nächsten Lauf eigen.
+
+Alles andere ist fremd — auch mit `Nakama-Diagnose.flp` im Titel, auch ohne
+Fenster, auch ohne lesbare Befehlszeile, auch bei unlesbarer Liste — und wird
+nie beendet. Neben einem fremden FL wird weder beendet noch gemessen: Exit 0
+`UEBERSPRUNGEN`, der Grund nennt PID, Titel und warum. Jedes Beenden prüft den
+Besitz selbst. Handgriff K-286-2 unter dieser Regel: ein von Hand geöffnetes
+Diagnoseprojekt (auch `eq-copilot/fixtures/fl/Nakama-Diagnose.flp` aus dem
+Repo) ist fremd; der Runner überspringt, solange es offen ist, und beendet es
+nie.
+
+## Antwortzuordnung (NAK-309, R-309-2)
+
+`szenario.py` gibt jedem MCP-Versuch eine neue Anforderungskennung
+(`request_id`, 32 Hex-Zeichen), auch der Wiederholung nach einem Timeout. Nur
+eine Antwort mit genau dieser Kennung ist eine Messung; eine mit fremder oder
+ohne Kennung heißt `UNGEMESSEN`, wird verworfen und gezählt (Szenario-Exit 5,
+der Runner macht daraus Exit 3); ein Ping ohne passende Kennung ist Exit 3.
+Die Szenariodateien fragen zusätzlich das Echo ab (`track`, `index`,
+`mode`). Die Kennung braucht das MCP-Repo ab `0e6912db` (Controller
+`SCRIPT_VERSION` 2026-09-18): der Client schreibt sie in den Auftrag und
+übergeht Antworten mit fremder Kennung, der Controller kopiert sie in jede
+Antwort. Ein Controller alten Stands antwortet ohne Kennung — jeder Schritt
+endet dann `UNGEMESSEN`, nie mit einer fremden Messung; `Pruefe-Controller`
+installiert den neuen vor dem ersten Trigger. Den Importweg hält
+`szenario.py` selbst: `fl_studio_mcp/utils/__init__.py` (lädt `fl_trigger`)
+läuft nie, ein Piano-Roll-Modul im Prozess ist Exit 3, und die Ping-Zeile
+nennt die geladenen `fl_studio_mcp`-Module.
+
+## MCP-Stand (NAK-309, T3-13-06)
+
+`tools/fl/mcp-stand.json` pinnt das MCP-Repo: Zweig, Commit (`revision`) und
+die Git-Blob-Kennung jeder Erstcode-Datei (unabhängig von den Zeilenenden auf
+PC oder Laptop). Vor Installation, `setup-local.ps1` und dem ersten `uv run`
+verlangt der Runner genau diesen Commit, einen sauberen Arbeitsbaum
+(`git status --porcelain --untracked-files=no`) und je Datei dieselbe
+Blob-Kennung; die Zeile `MCP-Stand:` im Protokoll nennt Revision, Zweig,
+Sauberkeit, Dateizahl und den SHA-256 von `uv.lock` (im MCP-Repo ungetrackt,
+je Rechner eigen: protokolliert, nicht verglichen). Der Runner schreibt die
+Pin-Datei nie. Nachzug nur per Commit: MCP-Commit auf `evenacadia-local`
+nach `origin` pushen (der Laptop prüft denselben Pin), die Blob-Kennungen mit
+`git -C <MCP-Repo> rev-parse HEAD:<pfad>` lesen und `revision`, `dateien`,
+`stand_vom` und `ticket` in einem datierten Nakama-Commit nachziehen.
 
 ## Lokale Aktionen
 
@@ -75,8 +139,9 @@ loopMIDI installiert, Aufgaben `\Nakama\*` registriert
 2026 mit dem Controller „FL Studio MCP Controller" auf dem loopMIDI-Port
 (Registry, einmalig), `uv` im Pfad, das MCP-Repo unter dem Standardpfad
 (`-McpRepo` sonst): privates Repo `https://github.com/evenacadia-tech/fl-studio-mcp`,
-Zweig `evenacadia-local`, nach `C:\Users\phili\Projekte\fl-studio-mcp` klonen
-und dort einmal `setup-local.ps1` ausführen (Controller-Skript in FLs
+Zweig `evenacadia-local`, nach `C:\Users\phili\Projekte\fl-studio-mcp` klonen,
+auf der Revision aus `tools/fl/mcp-stand.json` und ohne Änderung an getrackten
+Dateien, und dort einmal `setup-local.ps1` ausführen (Controller-Skript in FLs
 Settings-Ordner). Für die Rechnung aus F-28
 Python 3.13 mit numpy, scipy, soundfile, pyloudnorm und librosa sowie
 `C:\Users\phili\FL-Studio\tools\analyze-track.py`.

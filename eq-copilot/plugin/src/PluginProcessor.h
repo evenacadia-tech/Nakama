@@ -769,6 +769,13 @@ public:
     /// Der Pipename, den beide v3-Clients bei der Konstruktion bekommen
     /// haben (Testkonstruktor: der Probe-Name; sonst der Produktname).
     const std::string& v3PipeNameFuerTest() const noexcept { return v3PipeName; }
+    /// NAK-309 (M-74, R-309-7): die Namenswahl des v2-Clients in diesem Bau,
+    /// OHNE einen Prozessor zu bauen - ein Bein misst sie, bevor der erste
+    /// Konstruktor den v2-Client startet.
+    static juce::String v2PipeNameDesBausFuerTest();
+    /// Der Pipename, den der v2-Client dieses Prozessors bei der Konstruktion
+    /// bekommen hat (M-74).
+    const juce::String& v2PipeNameFuerTest() const noexcept { return pipe.pipeNameFuerTest(); }
 
     /** NAK-246 D2 (Paragraph 5.2, Feinheit 7): der Haken IM Produkt-Callback
         `v3Antwort`, VOR seinem ersten Zustandszugriff und INNERHALB des Zugs
@@ -1096,6 +1103,9 @@ private:
     {
         std::string logonSid;
         std::string pipeName;
+        /// NAK-309 (M-24, R-309-7): der Name des v2-Clients, derselbe Weg wie
+        /// der v3-Name. Produkt: kPipeName; Testbau: ein Probe-Name.
+        juce::String v2PipeName;
         nakama::ipc::ServerErwartung erwartung;
     };
     static V3Verdrahtung produktVerdrahtung();

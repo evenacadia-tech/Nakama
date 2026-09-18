@@ -134,6 +134,11 @@ public:
 
     Snapshot snapshot() const;
 
+    /// NAK-309 (M-23, M-74): der Pipename, wie ihn die Konstruktion gesetzt hat -
+    /// nur lesend, fuer Tests und Wachen. Er aendert sich danach nie; ein leerer
+    /// Name verbindet nie (`start()` meldet "kein Pipename").
+    const juce::String& pipeNameFuerTest() const noexcept { return pipeName; }
+
 private:
     using IoDeadline = std::chrono::steady_clock::time_point;
 

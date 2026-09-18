@@ -36,6 +36,7 @@
 
 #include "PluginProcessor.h"
 #include "BrokerInstallBinding.h"
+#include "EqCopilotIds.h"
 #include "PipeToken.h"
 #include "prozessor/Intern.h"
 #include <algorithm>
@@ -82,6 +83,21 @@ nakama::ipc::ServerErwartung brokerServerErwartung()
              nakama::ipc::installbindung::brokerSha256,
              nakama::ipc::installbindung::authenticodeThumbprint };
 }
+
+/// NAK-309 (M-24, R-309-7, M-74): der Name des v2-Clients, gewaehlt zur
+/// Uebersetzungszeit am bestehenden Testschalter - nie an einer
+/// Laufzeitbedingung. Das Produkt nennt die Produktions-Pipe ausdruecklich
+/// (bis NAK-309 kam sie ueber einen Rueckfall in PipeClient); der Testbau nennt
+/// einen Probe-Namen, auf dem kein Server lauscht: ein Test, der den Prozessor
+/// baut, oeffnet die Produktions-Pipe nie.
+juce::String v2PipeNameDesBaus()
+{
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    return juce::String ("\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.testbau");
+#else
+    return juce::String (juce::CharPointer_UTF16 (kPipeName));
+#endif
+}
 } // namespace
 
 // ── NAK-246 D2 (Paragraph 5.2, Feinheit 5): EIN Konstruktor, zwei Zugaenge ──
@@ -96,6 +112,7 @@ EqCopilotProcessor::V3Verdrahtung EqCopilotProcessor::produktVerdrahtung()
     V3Verdrahtung v;
     v.logonSid = nakama::ipc::aktuelleLogonSid();
     v.pipeName = nakama::ipc::pipeNameV3 (v.logonSid);
+    v.v2PipeName = v2PipeNameDesBaus();
     v.erwartung = brokerServerErwartung();
     return v;
 }
@@ -118,10 +135,16 @@ EqCopilotProcessor::EqCopilotProcessor (const std::string& probePipename,
           // `v3PipeNameFuerTest()`.
           v.pipeName = nakama::ipc::istProbePipename (probePipename) ? probePipename
                                                                       : std::string();
+          v.v2PipeName = v2PipeNameDesBaus();
           v.erwartung = std::move (erwartung);
           return v;
       }())
 {
+}
+
+juce::String EqCopilotProcessor::v2PipeNameDesBausFuerTest()
+{
+    return v2PipeNameDesBaus();
 }
 #endif
 
@@ -148,7 +171,10 @@ EqCopilotProcessor::EqCopilotProcessor (V3Verdrahtung verdrahtung)
                 return h;
             },
             [this] { return statsSnapshot(); },
-            [this] { return messKompakt(); }, {},
+            [this] { return messKompakt(); },
+            // NAK-309 (M-24, M-74): der Name aus der Verdrahtung - im Produkt
+            // kPipeName, im Testbau ein Probe-Name (v2PipeNameDesBaus).
+            verdrahtung.v2PipeName,
             std::chrono::milliseconds { 5000 }, brokerServerErwartung()),
       // 🔑 NAK-246 D2 (R-D2, Paragraph 5.2 Feinheiten 2 und 4): die sechs
       // Konstruktor-Lambdas der beiden v3-Clients fangen `this` UND die

@@ -19,10 +19,17 @@
     oeffnet nie einen Editor. Genau diese Sequenz faehrt P1 und misst sie,
     statt sie zu behaupten.
 
+    TEIL 0 (NAK-309 M-74, R-309-7) steht VOR allem anderen: ein Test, der den
+    Prozessor baut, oeffnet die Produktions-Pipe nie. Der Konstruktor startet
+    den v2-Client sofort; deshalb misst das Bein die Namenswahl des Testbaus
+    zuerst ohne Prozessor und endet bei einem Verstoss dort - vor jeder
+    Konstruktion, also ohne einen einzigen Pipezugriff.
+
     Aufruf: EqCopLebenslaufTest.exe        Exit 0 gruen, 1 rot.
 */
 
 #include "PluginProcessor.h"
+#include "ProbePipeRegel.h"
 #include "../core/ipc/PipeToken.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -36,9 +43,16 @@
 
 #include <pluginterfaces/vst/ivstprocesscontext.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <vector>
 
 using namespace eqcop;
 using nakama::state::Klasse;
@@ -241,6 +255,57 @@ bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
     return gefaerbt;
 }
 
+// ── NAK-309 M-74 (c): welche Ziele den Prozessor uebersetzen ────────────────
+// Quelltextwache ueber eq-copilot/plugin/CMakeLists.txt (Pfad aus __FILE__,
+// Muster NAK-289): jedes Ziel, dessen target_sources die Prozessorquellen
+// nennen, ausser dem Produkt EqCopilot, steht in der Schleife, die den
+// Testschalter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 setzt; EqCopilot nicht.
+// Ein fehlender Anker ist rot, nie gruen.
+struct ProzessorZiele
+{
+    std::vector<std::string> mitQuellen;   // Ziele mit ${NAKAMA_PROZESSOR_QUELLEN}
+    std::vector<std::string> schleife;     // Ziele der Testschalter-Schleife
+    bool schleifeSetztSchalter = false;
+    bool unzuordenbar = false;             // Quellnennung ohne target_sources davor
+};
+
+ProzessorZiele leseProzessorZiele()
+{
+    ProzessorZiele z;
+    const auto datei = std::filesystem::path (__FILE__).parent_path().parent_path() / "CMakeLists.txt";
+    std::ifstream ein (datei, std::ios::binary);
+    const std::string text ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+    constexpr auto npos = std::string::npos;
+    const std::string marke = "${NAKAMA_PROZESSOR_QUELLEN}";
+    const std::string quellen = "target_sources(";
+    for (auto pos = text.find (marke); pos != npos; pos = text.find (marke, pos + marke.size()))
+    {
+        const auto kopf = text.rfind (quellen, pos);
+        if (kopf == npos)
+        {
+            z.unzuordenbar = true;
+            continue;
+        }
+        const auto start = kopf + quellen.size();
+        const auto ende = text.find_first_of (" \t\r\n)", start);
+        z.mitQuellen.push_back (text.substr (start, ende == npos ? npos : ende - start));
+    }
+    const auto anker = text.find ("# Die Konsolentests instanziieren den echten Prozessor");
+    const std::string schleife = "foreach(ziel";
+    const auto kopf = anker == npos ? npos : text.find (schleife, anker);
+    const auto listenEnde = kopf == npos ? npos : text.find (')', kopf);
+    const auto koerperEnde = listenEnde == npos ? npos : text.find ("endforeach()", listenEnde);
+    if (koerperEnde != npos)
+    {
+        std::istringstream woerter (text.substr (kopf + schleife.size(), listenEnde - kopf - schleife.size()));
+        for (std::string wort; woerter >> wort;)
+            z.schleife.push_back (wort);
+        z.schleifeSetztSchalter = text.substr (listenEnde, koerperEnde - listenEnde)
+                                      .find ("NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1") != npos;
+    }
+    return z;
+}
+
 } // namespace
 
 int main()
@@ -254,6 +319,65 @@ int main()
     const auto nkac = nakama::state::Bundle::nkac();
 
     std::cout << "LEBENSLAUF-TEST — §53.5 Lifecycle-Klassifikation" << std::endl;
+
+    // ═══ TEIL 0 — NAK-309 M-74 (R-309-7): vor dem ersten Prozessor ══════════
+    std::cout << "\n[0] NAK-309 M-74: der Testbau oeffnet die Produktions-Pipe nie" << std::endl;
+    {
+        // (a) die Namenswahl des Baus, ohne einen Prozessor zu bauen.
+        const auto name = EqCopilotProcessor::v2PipeNameDesBausFuerTest();
+        const auto urteil = eqcop::probe::probePipeUrteil (name);
+        const bool produktion = name.equalsIgnoreCase (juce::String (juce::CharPointer_UTF16 (kPipeName)));
+        const bool probe = urteil == eqcop::probe::PipeUrteil::zugelassen && ! produktion;
+        pruefe (probe,
+                "M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/namenswahl: der Testbau nennt dem "
+                "v2-Client einen Probe-Namen, nie die Produktions-Pipe",
+                name + " (Urteil " + eqcop::probe::urteilWort (urteil) + ")");
+        if (! probe)
+        {
+            std::cout << "\nLEBENSLAUF-TEST FEHLGESCHLAGEN - Abbruch vor dem ersten Prozessor (M-74): "
+                         "der Testbau naennte dem v2-Client '" << name << "'" << std::endl;
+            return 1;
+        }
+
+        // (b) genau dieser Name steht nach Produkt- und Testkonstruktor am Client.
+        {
+            EqCopilotProcessor produkt;
+            EqCopilotProcessor test ("\\\\.\\pipe\\evenacadia.nakama.v3.probe.m74-"
+                                         + std::to_string (GetCurrentProcessId()),
+                                     nakama::ipc::ServerErwartung {});
+            pruefe (produkt.v2PipeNameFuerTest() == name && test.v2PipeNameFuerTest() == name,
+                    "M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/client: derselbe Probe-Name am "
+                    "v2-Client nach Produkt- und Testkonstruktor",
+                    "Produktkonstruktor '" + produkt.v2PipeNameFuerTest() + "', Testkonstruktor '"
+                        + test.v2PipeNameFuerTest() + "'");
+        }
+
+        // (c) jedes Ziel mit den Prozessorquellen ausser EqCopilot traegt den Testschalter.
+        const auto ziele = leseProzessorZiele();
+        const auto inSchleife = [&ziele] (const std::string& ziel)
+        {
+            return std::find (ziele.schleife.begin(), ziele.schleife.end(), ziel) != ziele.schleife.end();
+        };
+        std::string ohneSchalter;
+        bool produktGefunden = false;
+        for (const auto& ziel : ziele.mitQuellen)
+        {
+            if (ziel == "EqCopilot")
+                produktGefunden = true;
+            else if (! inSchleife (ziel))
+                ohneSchalter += (ohneSchalter.empty() ? "" : ", ") + ziel;
+        }
+        const auto tests = ziele.mitQuellen.size() - (produktGefunden ? 1u : 0u);
+        pruefe (produktGefunden && tests > 0 && ohneSchalter.empty() && ziele.schleifeSetztSchalter
+                    && ! inSchleife ("EqCopilot") && ! ziele.unzuordenbar,
+                "M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/cmake: jedes Ziel mit den "
+                "Prozessorquellen ausser EqCopilot traegt den Testschalter",
+                std::to_string (ziele.mitQuellen.size()) + " Ziele mit Prozessorquellen, davon "
+                    + std::to_string (tests) + " Testziele; ohne Schalter: ["
+                    + ohneSchalter + "]; Schleife setzt den Schalter "
+                    + (ziele.schleifeSetztSchalter ? "ja" : "nein") + ", EqCopilot in der Schleife "
+                    + (inSchleife ("EqCopilot") ? "ja" : "nein"));
+    }
 
     // ═══ TEIL 1 — der Automat pur ═══════════════════════════════════════════
     std::cout << "\n[1] Der Automat (nakama::state::Lebenslauf)" << std::endl;

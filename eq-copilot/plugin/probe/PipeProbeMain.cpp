@@ -3,12 +3,24 @@
 //   1. v2-Handshake + Heartbeats MIT kompaktem Messstand (LTAS + Projektfenster)
 //   2. heartbeat_ack wird gelesen (sonst bräche die Verbindung nach Heartbeat 1)
 //   3. Kennungs-Konflikt: zweiter Client mit derselben Sensor-ID ⇒ beide sehen
-//      konflikt=true im ACK; nach dessen Ende fällt das Flag wieder.
+//      konflikt=true im ACK; nach dessen Ende bestätigt der Broker A ein NEUES
+//      ACK ohne Konflikt auf derselben Verbindung (NAK-309, R-309-3). Ein
+//      Abbruch oder Neuaufbau von A löscht das Flag auch und ist kein
+//      Konfliktende.
 // Exit 0 nur, wenn alle drei Stufen bestanden sind; 1, wenn eine Stufe
-// scheitert; 2, wenn die Servererwartung leer ist; 70, wenn eine Ausnahme bis
-// main durchlaeuft (Meldung auf stderr, NAK-289).
+// scheitert; 2, wenn die Servererwartung leer ist; 64 (EX_USAGE), wenn der
+// Pipename abgelehnt ist; 70, wenn eine Ausnahme bis main durchlaeuft
+// (Meldung auf stderr, NAK-289).
 //
 //   eqcop-pipe-probe.exe [pipe-name] [sekunden] [server-binary]
+//
+// Pipename (NAK-309, R-309-5, src/ProbePipeRegel.h): ohne erstes Argument der
+// v2-Probename `\\.\pipe\evenacadia.eq-copilot.m2probe`, nie die Produktion.
+// Zugelassen sind nur Probenamen (der v2-Probename, er mit einem Suffix aus
+// Punkt und [A-Za-z0-9_-], der v3-Probenamensraum); der Produktionsname in
+// jeder Gross- und Kleinschreibung, ein leerer und jeder fremde Name enden vor
+// der Servererwartung und vor dem ersten Client mit
+// `PROBE ABGELEHNT (Pipename <urteil>)` und Exit 64.
 //
 // Das dritte Argument nennt das Binary, dem der Server auf dieser Pipe
 // gehört — beim dokumentierten Ablauf `eqcop-broker-probe.exe [s] [pipe]`
@@ -21,6 +33,7 @@
 #include "PipeClient.h"
 #include "EqCopilotIds.h"
 #include "BrokerInstallBinding.h"
+#include "ProbePipeRegel.h"
 #include <cmath>
 #include <cstdio>
 #include <exception>
@@ -106,11 +119,23 @@ static bool warteAuf (int zehntel, Bedingung ok)
 /// std::terminate, ohne Meldung auf stderr.
 static constexpr int kExitAusnahme = 70;
 
+/// Exitcode, wenn der Pipename abgelehnt ist (NAK-309, R-309-5): 64 wie
+/// EX_USAGE aus sysexits.h. Die 2 heisst hier schon "Servererwartung leer".
+static constexpr int kExitPipename = 64;
+
 int main (int argc, char** argv)
 try
 {
-    const juce::String pipeName = argc > 1 ? juce::String (argv[1])
-                                           : juce::String (juce::CharPointer_UTF16 (eqcop::kPipeName));
+    // NAK-309 (R-309-5): der Name entscheidet sich VOR der Servererwartung und
+    // vor dem ersten Client. Ohne erstes Argument gilt der v2-Probename.
+    const juce::String pipeName = eqcop::probe::probePipeName (argc, argv);
+    const auto urteil = eqcop::probe::probePipeUrteil (pipeName);
+    if (urteil != eqcop::probe::PipeUrteil::zugelassen)
+    {
+        std::cout << "PROBE ABGELEHNT (Pipename " << eqcop::probe::urteilWort (urteil) << ") · "
+                  << pipeName.toStdString() << '\n' << std::flush;
+        return kExitPipename;
+    }
     const int sekunden = argc > 2 ? juce::jlimit (1, 60, juce::String (argv[2]).getIntValue()) : 5;
     const juce::String serverBinary = argc > 3 ? juce::String (argv[3]) : juce::String();
 
@@ -185,13 +210,22 @@ try
     std::cout << "KONFLIKT OK · beide Instanzen sehen das Flag" << '\n' << std::flush;
 
     b->stop();
-    if (! warteAuf (100, [&] { return ! a->snapshot().konflikt; }))
+    // NAK-309 (R-309-3): Konfliktende nur mit einem NEUEN ACK derselben
+    // Verbindung ohne Konflikt - `vorher` ist der Stand direkt nach dem Stopp.
+    const auto vorher = a->snapshot();
+    if (! warteAuf (100, [&] { return eqcop::probe::konfliktEndeBestaetigt (vorher, a->snapshot()); }))
     {
-        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt-Ende kam nicht an)" << '\n' << std::flush;
+        const auto z = a->snapshot();
+        std::cout << "PROBE FEHLGESCHLAGEN (Konflikt-Ende ohne bestaetigtes ACK) · Status "
+                  << (z.status == eqcop::PipeClient::Status::verbunden ? "verbunden"
+                      : z.status == eqcop::PipeClient::Status::verbindet ? "verbindet" : "getrennt")
+                  << " · Versuche " << vorher.verbindungsVersuche << " -> " << z.verbindungsVersuche
+                  << " · bestaetigt " << vorher.heartbeatsBestaetigt << " -> " << z.heartbeatsBestaetigt
+                  << " · konflikt " << (z.konflikt ? "ja" : "nein") << '\n' << std::flush;
         a->stop();
         return 1;
     }
-    std::cout << "KONFLIKT-ENDE OK · Flag faellt nach Trennung des Duplikats" << '\n' << std::flush;
+    std::cout << "KONFLIKT-ENDE OK · neues ACK ohne Konflikt nach Trennung des Duplikats" << '\n' << std::flush;
 
     a->stop();
     return 0;

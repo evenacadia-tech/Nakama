@@ -218,7 +218,10 @@ PipeClient::PipeClient (std::function<HelloInfo()> hp,
     : helloProvider (std::move (hp)),
       statsProvider (std::move (sp)),
       messProvider (std::move (mp)),
-      pipeName (name.isNotEmpty() ? name : juce::String (juce::CharPointer_UTF16 (kPipeName))),
+      // NAK-309 (R-309-5, M-23): der Name, wie er kommt. Der fruehere Rueckfall
+      // eines leeren Namens auf kPipeName ist entfallen; das Produkt nennt die
+      // Produktions-Pipe ausdruecklich (PluginProcessor.cpp, M-24).
+      pipeName (name),
       ioTimeout (begrenzeIoTimeout (timeout)),
       serverErwartung (std::move (serverErwartungIn))
 {
@@ -231,6 +234,14 @@ void PipeClient::start()
     std::lock_guard<std::mutex> lebenslauf (lebenslaufMutex);
     if (laeuft.load())
         return;
+    // NAK-309 (M-23): ohne Pipenamen kein Verbindungsversuch und kein Thread.
+    if (pipeName.isEmpty())
+    {
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.status = Status::getrennt;
+        zustand.letzterFehler = "kein Pipename";
+        return;
+    }
     if (thread.joinable())
         thread.join();
 

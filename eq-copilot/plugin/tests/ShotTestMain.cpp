@@ -4,9 +4,10 @@
 // PNG — Kurve, Marker, Messleisten und Statuszellen sind dann echt belegt.
 //
 // Aufruf:  EqCopShot <ziel.png> [breitePx] [--state <datei.bin>]
-// Läuft der Broker, verbindet sich der echte PipeClient (LED grün; der
-// Sensor erscheint kurz in der Übersicht und meldet sich sauber ab) — ohne
-// Broker zeigt die LED ehrlich „App aus" (rot). Beides ist Betriebsrealität.
+// Seit NAK-309 (M-74, R-309-7) trägt der v2-Client im Testbau einen
+// Probe-Namen, auf dem kein Broker lauscht: auch neben einem laufenden
+// Broker verbindet er sich nie mit der Produktions-Pipe, und die LED zeigt
+// ehrlich „App aus" (rot).
 // --state laedt vor dem Render einen Host-State (z. B. den read-only-Fall
 // fixtures/state/schema2/fremdes-major-3.bin, SONDE-006) — der Sichtbeweis,
 // dass der Editor einen Zustand zeigt, den es gibt.

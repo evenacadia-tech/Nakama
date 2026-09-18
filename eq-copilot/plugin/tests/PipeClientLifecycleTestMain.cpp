@@ -1,6 +1,8 @@
 // Adversarialer Gegenpfad fuer den echten C++-PipeClient. Jede Pipe traegt
 // PID+Zaehler; dieser Test beruehrt niemals den Produktionsnamen.
 #include "PipeClient.h"
+#include "EqCopilotIds.h"
+#include "ProbePipeRegel.h"
 #include "../vertrag/NakamaUtf8.h"
 
 #include <atomic>
@@ -1486,6 +1488,305 @@ void probeZeilenendeMitFlush()
                 + ", std::cout-Anweisungen " + juce::String ((int) ausgaben)
                 + ", Enden mit Umbruch und flush " + juce::String ((int) enden));
 }
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-309 Etappe 3 (R-309-5, R-309-3): die Regeln des Probewerkzeugs aus
+// src/ProbePipeRegel.h (M-18 bis M-28). Gemessen werden die reinen Funktionen
+// und ihre Verdrahtung in main per Quelltextwache (Muster NAK-289 oben). Kein
+// Fall startet einen Client mit einem anderen als einem leeren Namen - auch
+// unter einer Rotmutation erreicht dieses Bein die Produktions-Pipe nie
+// (Gate S25h).
+
+juce::String produktionsName()
+{
+    return juce::String (juce::CharPointer_UTF16 (eqcop::kPipeName));
+}
+
+std::string pluginQuelltext (const std::filesystem::path& relativ)
+{
+    const auto datei = std::filesystem::path (__FILE__).parent_path().parent_path() / relativ;
+    std::ifstream ein (datei, std::ios::binary);
+    return std::string ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+}
+
+/// Der Quelltext von main in PipeProbeMain.cpp, ab der Signatur.
+std::string probeMainText()
+{
+    const auto text = probeQuelltext();
+    const auto kopf = text.find ("int main (int argc, char** argv)");
+    return kopf == std::string::npos ? std::string() : text.substr (kopf);
+}
+
+const char* urteilText (eqcop::probe::PipeUrteil u)
+{
+    return eqcop::probe::urteilWort (u);
+}
+
+// M-18: ohne erstes Argument der v2-Probename, nie kPipeName; mit Argument
+// genau das Argument, auch leer (das entscheidet dann das Urteil, M-21).
+void probe_pipe_ohne_argument_waehlt_probe_namen()
+{
+    const char* nurProgramm[] = { "eqcop-pipe-probe.exe", nullptr };
+    const auto name = eqcop::probe::probePipeName (1, nurProgramm);
+    const bool probe = name == "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe";
+    const bool nichtProduktion = ! name.equalsIgnoreCase (produktionsName());
+    const auto urteil = eqcop::probe::probePipeUrteil (name);
+    pruefe (probe && nichtProduktion && urteil == eqcop::probe::PipeUrteil::zugelassen,
+            "probe_pipe_ohne_argument_waehlt_probe_namen",
+            name + " (Urteil " + urteilText (urteil) + ")");
+    const char* mitArgument[] = { "eqcop-pipe-probe.exe", "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.rot", nullptr };
+    const char* leeresArgument[] = { "eqcop-pipe-probe.exe", "", nullptr };
+    const auto genannt = eqcop::probe::probePipeName (2, mitArgument);
+    const auto leer = eqcop::probe::probePipeName (2, leeresArgument);
+    pruefe (genannt == "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.rot" && leer.isEmpty(),
+            "probe_pipe_ohne_argument_waehlt_probe_namen/mit_argument_gilt_das_argument",
+            genannt + " | leer: '" + leer + "'");
+}
+
+struct NamensFall
+{
+    const char* bezeichnung;
+    const char* name;
+    eqcop::probe::PipeUrteil erwartet;
+};
+
+void pruefeNamensfaelle (const char* test, const NamensFall* faelle, std::size_t anzahl)
+{
+    for (std::size_t i = 0; i < anzahl; ++i)
+    {
+        const auto& f = faelle[i];
+        const auto ist = eqcop::probe::probePipeUrteil (juce::String (f.name));
+        pruefe (ist == f.erwartet, (std::string (test) + "/" + f.bezeichnung).c_str(),
+                juce::String ("'") + f.name + "': erwartet " + urteilText (f.erwartet)
+                    + ", Regel sagt " + urteilText (ist));
+    }
+}
+
+// M-19 (Produktionsname in beiden Schreibweisen), M-21 (leer), M-22 (fremd:
+// Erlaubnisliste statt Sperrliste). Die Rueckkehr mit Exit 64 vor dem ersten
+// Client haelt die Quelltextwache probe_main_prueft_pipenamen_vor_dem_client.
+void probe_pipe_lehnt_produktionsnamen_ab()
+{
+    using U = eqcop::probe::PipeUrteil;
+    static const NamensFall faelle[] = {
+        { "produktion_genau",                "\\\\.\\pipe\\evenacadia.eq-copilot.v1",                       U::produktion },
+        { "produktion_grossgeschrieben",     "\\\\.\\PIPE\\EVENACADIA.EQ-COPILOT.V1",                       U::produktion },
+        { "produktion_gemischt",             "\\\\.\\Pipe\\Evenacadia.EQ-Copilot.v1",                       U::produktion },
+        { "m21_leer",                        "",                                                           U::leer },
+        { "m22_v3_produktionsform",          "\\\\.\\pipe\\evenacadia.nakama.v3.ABCDEFGHIJKLMNOPQRSTUVWXYZ", U::fremd },
+        { "m22_traversal_v2",                "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe\\..\\evenacadia.eq-copilot.v1", U::fremd },
+        { "m22_traversal_v3",                "\\\\.\\pipe\\evenacadia.nakama.v3.probe.x\\..\\evenacadia.eq-copilot.v1", U::fremd },
+        { "m22_traversal_schraegstrich",     "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe/../evenacadia.eq-copilot.v1", U::fremd },
+        { "m22_produktion_mit_punkt",        "\\\\.\\pipe\\evenacadia.eq-copilot.v1.",                      U::fremd },
+        { "m22_beliebig",                    "\\\\.\\pipe\\irgendein.name",                                 U::fremd },
+        { "m22_kein_pipepfad",               "C:\\temp\\evenacadia.eq-copilot.m2probe",                     U::fremd },
+        { "m22_probe_ohne_suffixzeichen",    "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.",                 U::fremd },
+        { "m22_probe_suffix_mit_punkt",      "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.a.b",              U::fremd },
+        { "m22_probe_suffix_mit_leerzeichen","\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.a b",              U::fremd },
+    };
+    pruefeNamensfaelle ("probe_pipe_lehnt_produktionsnamen_ab", faelle, std::size (faelle));
+}
+
+// M-20: die Probenamen bleiben zugelassen - v2 genau, v2 mit Suffix (darunter
+// der Name aus den NAK-123-Laeufen und der Testbau-Name aus M-74) und der
+// v3-Probenamensraum ueber das unveraenderte istProbePipename.
+void probe_pipe_laesst_probe_namen_zu()
+{
+    using U = eqcop::probe::PipeUrteil;
+    static const NamensFall faelle[] = {
+        { "v2_genau",           "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe",           U::zugelassen },
+        { "v2_suffix_rot",      "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.rot",       U::zugelassen },
+        { "v2_suffix_nak123r1", "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.nak123r1",  U::zugelassen },
+        { "v2_suffix_testbau",  "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.testbau",   U::zugelassen },
+        { "v2_suffix_zeichen",  "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.A-z_09",    U::zugelassen },
+        { "v3_probe",           "\\\\.\\pipe\\evenacadia.nakama.v3.probe.a4b-4242",     U::zugelassen },
+    };
+    pruefeNamensfaelle ("probe_pipe_laesst_probe_namen_zu", faelle, std::size (faelle));
+}
+
+// Quelltextwache M-18/M-19: main bestimmt den Namen ueber probePipeName, prueft
+// ihn mit probePipeUrteil und kehrt bei Ablehnung mit Exit 64 zurueck - vor der
+// Servererwartung und vor dem ersten baueClient; main nennt kPipeName nicht.
+void probe_main_prueft_pipenamen_vor_dem_client()
+{
+    const auto text = probeQuelltext();
+    const auto hauptteil = probeMainText();
+    constexpr auto npos = std::string::npos;
+    const auto name      = hauptteil.find ("eqcop::probe::probePipeName (argc, argv)");
+    const auto urteil    = hauptteil.find ("eqcop::probe::probePipeUrteil (pipeName)");
+    const auto bedingung = hauptteil.find ("if (urteil != eqcop::probe::PipeUrteil::zugelassen)");
+    const auto ablehnen  = hauptteil.find ("return kExitPipename;");
+    const auto erwartung = hauptteil.find ("serverErwartungFuer (serverBinary)");
+    const auto client    = hauptteil.find ("baueClient (");
+    const bool gefunden = name != npos && urteil != npos && bedingung != npos && ablehnen != npos
+                       && erwartung != npos && client != npos;
+    const bool reihenfolge = gefunden && name < urteil && urteil < bedingung && bedingung < ablehnen
+                          && ablehnen < erwartung && erwartung < client;
+    const bool exit64 = zaehleVorkommen (text, "static constexpr int kExitPipename = 64;") == 1
+                     && zaehleVorkommen (hauptteil, "return kExitPipename;") == 1;
+    const bool meldung = zaehleVorkommen (hauptteil, "\"PROBE ABGELEHNT (Pipename \"") == 1;
+    const bool ohneProduktion = hauptteil.find ("kPipeName") == npos;
+    pruefe (hauptteil.size() > 0 && reihenfolge && exit64 && meldung && ohneProduktion,
+            "probe_main_prueft_pipenamen_vor_dem_client",
+            juce::String ("Anker gefunden ") + (gefunden ? "ja" : "nein") + ", Reihenfolge Name < Urteil < "
+                + "Bedingung < Exit 64 < Servererwartung < baueClient " + (reihenfolge ? "ja" : "nein")
+                + ", Exit 64 genau einmal " + (exit64 ? "ja" : "nein") + ", Meldung " + (meldung ? "ja" : "nein")
+                + ", kein kPipeName in main " + (ohneProduktion ? "ja" : "nein"));
+}
+
+// M-23: ein leerer Name bleibt leer (kein Rueckfall auf kPipeName), und start()
+// versucht keine Verbindung. Gestartet wird der Client NUR, wenn sein Name
+// leer ist - so erreicht auch die Rotmutation (Rueckfall zurueck) nie die
+// Produktions-Pipe. "kein Pipename" setzt nur der Leerzweig von start(); ohne
+// ihn fehlt die Meldung unmittelbar nach start(), ohne Wettlauf mit einem Thread.
+void pipeclient_ohne_namen_verbindet_nicht()
+{
+    auto c = client ({}, [] { return hello ("99999999999999999999999999999999"); });
+    const auto name = c->pipeNameFuerTest();
+    pruefe (name.isEmpty(), "pipeclient_ohne_namen_verbindet_nicht/name_bleibt_leer",
+            "Name '" + name + "'");
+    if (name.isNotEmpty())
+        return;
+    c->start();
+    const auto s = c->snapshot();
+    pruefe (s.verbindungsVersuche == 0 && s.status == eqcop::PipeClient::Status::getrennt
+                && s.letzterFehler == "kein Pipename",
+            "pipeclient_ohne_namen_verbindet_nicht/start_versucht_nichts",
+            juce::String ("Versuche ") + juce::String (s.verbindungsVersuche) + ", Fehler '"
+                + s.letzterFehler + "'");
+    c->stop();
+    const auto nachStopp = c->snapshot();
+    pruefe (nachStopp.verbindungsVersuche == 0,
+            "pipeclient_ohne_namen_verbindet_nicht/nach_stop_kein_versuch",
+            juce::String ("Versuche ") + juce::String (nachStopp.verbindungsVersuche));
+}
+
+// Quelltextwache M-24: das Produkt nennt die v2-Pipe ausdruecklich. Die
+// Namenswahl v2PipeNameDesBaus() liefert ausserhalb des Testbaus kPipeName,
+// produktVerdrahtung() setzt sie, und der v2-Client bekommt den Namen aus der
+// Verdrahtung statt `{}` (sonst verloere Gen mit M-23 still seine v2-Verbindung).
+void produkt_nennt_v2_pipe_ausdruecklich()
+{
+    const auto text = pluginQuelltext ("src/PluginProcessor.cpp");
+    constexpr auto npos = std::string::npos;
+    const auto funktion = text.find ("juce::String v2PipeNameDesBaus()");
+    const auto testzweig = funktion == npos ? npos : text.find ("#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)", funktion);
+    const auto sonst = testzweig == npos ? npos : text.find ("#else", testzweig);
+    const auto produkt = sonst == npos ? npos
+                                       : text.find ("return juce::String (juce::CharPointer_UTF16 (kPipeName));", sonst);
+    const auto ende = produkt == npos ? npos : text.find ("#endif", produkt);
+    const bool namenswahl = ende != npos
+        && text.substr (sonst, produkt - sonst).find ("return") == npos;
+    const auto verdrahtung = text.find ("EqCopilotProcessor::V3Verdrahtung EqCopilotProcessor::produktVerdrahtung()");
+    const auto zuweisung = verdrahtung == npos ? npos : text.find ("v.v2PipeName = v2PipeNameDesBaus();", verdrahtung);
+    const auto rueckgabe = verdrahtung == npos ? npos : text.find ("return v;", verdrahtung);
+    const bool gesetzt = zuweisung != npos && rueckgabe != npos && zuweisung < rueckgabe;
+    const auto mess = text.find ("[this] { return messKompakt(); },");
+    const auto frist = mess == npos ? npos : text.find ("std::chrono::milliseconds { 5000 }, brokerServerErwartung())", mess);
+    const auto argument = (mess == npos || frist == npos) ? std::string() : text.substr (mess, frist - mess);
+    const bool client = argument.find ("verdrahtung.v2PipeName,") != npos && argument.find ("{}") == npos;
+    pruefe (namenswahl && gesetzt && client, "produkt_nennt_v2_pipe_ausdruecklich",
+            juce::String ("Namenswahl mit kPipeName im Produktzweig ") + (namenswahl ? "ja" : "nein")
+                + ", produktVerdrahtung setzt sie " + (gesetzt ? "ja" : "nein")
+                + ", v2-Client bekommt verdrahtung.v2PipeName statt {} " + (client ? "ja" : "nein"));
+}
+
+eqcop::PipeClient::Snapshot ackStand (eqcop::PipeClient::Status status, int protokoll, int versuche,
+                                      juce::int64 bestaetigt, bool konflikt)
+{
+    eqcop::PipeClient::Snapshot s;
+    s.status = status;
+    s.protokollVersion = protokoll;
+    s.verbindungsVersuche = versuche;
+    s.heartbeatsBestaetigt = bestaetigt;
+    s.konflikt = konflikt;
+    return s;
+}
+
+juce::String standText (const eqcop::PipeClient::Snapshot& s)
+{
+    return juce::String (s.status == eqcop::PipeClient::Status::verbunden ? "verbunden"
+                         : s.status == eqcop::PipeClient::Status::verbindet ? "verbindet" : "getrennt")
+         + "/v" + juce::String (s.protokollVersion) + "/Versuche " + juce::String (s.verbindungsVersuche)
+         + "/bestaetigt " + juce::String (s.heartbeatsBestaetigt) + "/konflikt " + (s.konflikt ? "ja" : "nein");
+}
+
+void pruefeKonfliktende (const char* test, const eqcop::PipeClient::Snapshot& vorher,
+                         const eqcop::PipeClient::Snapshot& jetzt, bool erwartet)
+{
+    const bool ist = eqcop::probe::konfliktEndeBestaetigt (vorher, jetzt);
+    pruefe (ist == erwartet, test,
+            standText (vorher) + " -> " + standText (jetzt) + ": erwartet "
+                + (erwartet ? "Konfliktende" : "kein Konfliktende") + ", Praedikat sagt "
+                + (ist ? "Konfliktende" : "kein Konfliktende"));
+}
+
+// M-25: A verbunden, ein neues ACK ohne Konflikt nach dem Stopp von B.
+void konfliktende_mit_neuem_ack_bestaetigt()
+{
+    using S = eqcop::PipeClient::Status;
+    const auto vorher = ackStand (S::verbunden, 2, 1, 5, true);
+    pruefeKonfliktende ("konfliktende_mit_neuem_ack_bestaetigt", vorher, ackStand (S::verbunden, 2, 1, 6, false), true);
+    pruefeKonfliktende ("konfliktende_mit_neuem_ack_bestaetigt/ohne_neues_ack", vorher,
+                        ackStand (S::verbunden, 2, 1, 5, false), false);
+}
+
+// M-26: A verliert nach b->stop() die Verbindung. Der Abbau in PipeClient
+// setzt getrennt, Protokoll 0 und konflikt falsch; die Zaehler bleiben. Der
+// zweite Stand trennt die Statusbedingung von der Protokollbedingung.
+void konfliktende_nicht_bei_abbruch()
+{
+    using S = eqcop::PipeClient::Status;
+    const auto vorher = ackStand (S::verbunden, 2, 1, 5, true);
+    pruefeKonfliktende ("konfliktende_nicht_bei_abbruch/abbau", vorher, ackStand (S::getrennt, 0, 1, 6, false), false);
+    pruefeKonfliktende ("konfliktende_nicht_bei_abbruch/nur_status", vorher, ackStand (S::getrennt, 2, 1, 6, false), false);
+}
+
+// M-27: Neuaufbau - Versuche 1 -> 2, der neu ab 0 gezaehlte ACK-Zaehler (5)
+// ueberholt den alten Wert (3).
+void konfliktende_nicht_nach_neuaufbau()
+{
+    using S = eqcop::PipeClient::Status;
+    pruefeKonfliktende ("konfliktende_nicht_nach_neuaufbau", ackStand (S::verbunden, 2, 1, 3, true),
+                        ackStand (S::verbunden, 2, 2, 5, false), false);
+}
+
+// M-28: das erste ACK nach dem Stopp traegt noch konflikt (der Broker hat B
+// noch nicht abgemeldet), erst das folgende nicht.
+void konfliktende_wartet_auf_ack_ohne_konflikt()
+{
+    using S = eqcop::PipeClient::Status;
+    const auto vorher = ackStand (S::verbunden, 2, 1, 5, true);
+    pruefeKonfliktende ("konfliktende_wartet_auf_ack_ohne_konflikt/erstes_ack_mit_konflikt", vorher,
+                        ackStand (S::verbunden, 2, 1, 6, true), false);
+    pruefeKonfliktende ("konfliktende_wartet_auf_ack_ohne_konflikt/folgendes_ack_ohne_konflikt", vorher,
+                        ackStand (S::verbunden, 2, 1, 7, false), true);
+}
+
+// Quelltextwache M-25: main zieht den Stand direkt nach b->stop() und wartet
+// auf das Praedikat statt auf das blosse Fallen des Flags; bei Fristende
+// meldet es "Konflikt-Ende ohne bestaetigtes ACK" und endet mit Exit 1.
+void probe_main_wartet_auf_konfliktende_praedikat()
+{
+    const auto hauptteil = probeMainText();
+    constexpr auto npos = std::string::npos;
+    const auto vorher  = hauptteil.find ("const auto vorher = a->snapshot();");
+    const auto stopp   = vorher == npos ? npos : hauptteil.rfind ("b->stop();", vorher);
+    const auto warten  = hauptteil.find ("warteAuf (100, [&] { return eqcop::probe::konfliktEndeBestaetigt (vorher, a->snapshot()); })");
+    const auto meldung = hauptteil.find ("PROBE FEHLGESCHLAGEN (Konflikt-Ende ohne bestaetigtes ACK)");
+    const auto exit1   = meldung == npos ? npos : hauptteil.find ("return 1;", meldung);
+    const auto ok      = hauptteil.find ("KONFLIKT-ENDE OK");
+    const bool reihenfolge = stopp != npos && warten != npos && meldung != npos && exit1 != npos && ok != npos
+                          && stopp < vorher && vorher < warten && warten < meldung && meldung < exit1 && exit1 < ok;
+    const bool direkt = reihenfolge
+        && hauptteil.substr (stopp + std::string ("b->stop();").size(), vorher - stopp - std::string ("b->stop();").size())
+               .find (';') == npos;
+    const bool altesPraedikatWeg = hauptteil.find ("! a->snapshot().konflikt") == npos;
+    pruefe (reihenfolge && direkt && altesPraedikatWeg, "probe_main_wartet_auf_konfliktende_praedikat",
+            juce::String ("Reihenfolge Stopp < Stand < Praedikat < Meldung < Exit 1 < OK ")
+                + (reihenfolge ? "ja" : "nein") + ", Stand direkt nach dem Stopp " + (direkt ? "ja" : "nein")
+                + ", altes Flagpraedikat entfernt " + (altesPraedikatWeg ? "ja" : "nein"));
+}
+
 // NAK-289 Etappe 1 (bugprone-inc-dec-in-conditions, vertrag/NakamaUtf8.h): der
 // Zwei-Byte-Zweig C2..DF des UTF-8-Riegels, den PipeClient vor jedem Frame
 // faehrt. Die Faelle, die die umgestellte Zeile unterscheidet: kein Folgebyte
@@ -1548,6 +1849,19 @@ int main()
     // NAK-289 Etappe 1 - Quelltextwachen des Probewerkzeugs.
     probeAusnahmegrenze();
     probeZeilenendeMitFlush();
+    // NAK-309 Etappe 3 - Regeln des Probewerkzeugs (R-309-5, R-309-3), der
+    // leere Name des PipeClient und der v2-Name des Produkts (M-18 bis M-28).
+    probe_pipe_ohne_argument_waehlt_probe_namen();
+    probe_pipe_lehnt_produktionsnamen_ab();
+    probe_pipe_laesst_probe_namen_zu();
+    probe_main_prueft_pipenamen_vor_dem_client();
+    pipeclient_ohne_namen_verbindet_nicht();
+    produkt_nennt_v2_pipe_ausdruecklich();
+    konfliktende_mit_neuem_ack_bestaetigt();
+    konfliktende_nicht_bei_abbruch();
+    konfliktende_nicht_nach_neuaufbau();
+    konfliktende_wartet_auf_ack_ohne_konflikt();
+    probe_main_wartet_auf_konfliktende_praedikat();
     std::cout << (fehler == 0 ? "PIPECLIENT-LIFECYCLE-TEST OK - "
                               : "PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - ")
               << fehler << " Fehler" << std::endl;

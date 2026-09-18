@@ -42,3 +42,33 @@ Der Defekt T3-09-01 ist in der Baustandtabelle desselben Laufs sichtbar:
   B7 EqCopTransactionTest  2026-09-18 18:26:00  frisch    die Quelle ist seit 19:08:51 juenger)
   Beide Binaries sind aelter als eine ihrer Quellen und stehen als "frisch" da; die Beglaubigung
   scheitert nur zufaellig an drei anderen Binaries.
+
+==============================================================================
+LAUF 2 - NACH DEM BAU
+Stand-SHA:   d421239f0368f46838aa95f2d18ddd4fce1c47dc (Code gleich d1676a63: Frischepruefung 48163d63,
+             Runner und A17 d1676a63; danach nur Dokumente und Rohdateien)
+Vorbedingung: Baubaum frisch gebaut mit dem Bauschritt des neuen Runners (beinfreier Probelauf mit -Bauen
+             20:36:46 bis 20:40, Folge cargo-release -> broker-pin -> build); Baustand ohne -Bauen davor
+             FRISCH (Probelauf 20:46, Exit 0); danach
+             (Get-Item eq-copilot/plugin/dsp/DspKern.cpp).LastWriteTime = Get-Date
+             SHA-256 vorher  A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5
+             SHA-256 nachher A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5
+             LastWriteTime 2026-09-18 20:10:06.8994184 -> 2026-09-18 20:46:40.7986334; git status sauber
+Aufruf:      pwsh -NoProfile -File tools/beweise.ps1 -Ziel docs/beweise/roh/NAK-309-rot-M-09-nach-bau.md
+             -Titel 'NAK-309 Etappe 2 M-09 Lauf nach dem Bau ohne -Bauen'   (abgekoppelt, 20:46:40 bis 21:21:59)
+Erwartet:    NICHT BEGLAUBIGT, Exit 4
+GEMESSEN:    NICHT BEGLAUBIGT - 69/69 gruen, aber Pruefbinaries sind aelter als die Quellen
+             | 1 stillgelegte(s) Bein(e), siehe Uebersicht; Exitcode 4
+Dateien:     docs/beweise/roh/NAK-309-rot-M-09-nach-bau.md (Lesetext),
+             docs/beweise/roh/NAK-309-rot-M-09-nach-bau-d421239-dirty.md (Rohausgabe, Baustandtabelle)
+
+Baustandtabelle (Rohausgabe): 33 Binaries VERALTET, jedes mit juengster Eingabe
+eq-copilot/plugin/dsp/DspKern.cpp (2026-09-18 20:46:40) - alle Plugin-Beine, die NakamaKern.lib linken,
+darunter B6 EqCopDspGoldenTest (gebaut 20:33:40) und B7 EqCopTransactionTest (20:38:12). Frisch am
+eigenen Frischebaum bleiben die vier, die den Kern nicht lesen: A2 EqCopGoldenTest (TruePeak.h,
+15.09.), B3 EqCopHostContextTest und B3b EqCopHostProbeTest (Projektdateien, 31.08.), B9
+EqCopLoudnessGoldenTest (LoudnessGoldenTestMain.cpp, 07.09.) - dieselben drei 12.09.-Binaries, die der
+alte Riegel im Basislauf als VERALTET fuehrte. Kreuzprobe: 40 gebundene Ziele laut Export, 38 gedeckt,
+2 nicht im Kanon; Inventar: 158 Dateien, 149 im Frischebaum, 9 mit Grund ausgenommen, 0 Luecken;
+Konfiguration: 7 Stempel, keine ausstehend. Der Runner urteilt damit mit derselben Ableitung, die A36
+misst (Zusage M-09), und das Urteil haengt jetzt an DspKern.cpp.

@@ -903,7 +903,14 @@ Broker, immer `…m2probe`; das dritte Argument nennt das Binary, dem der Server
 auf dieser Pipe gehört — beim Ablauf gegen `eqcop-broker-probe.exe` also dessen
 Pfad, aus dem der SHA-256 zur Laufzeit gerechnet wird; ohne das Argument bleibt
 der installierte Broker aus `BrokerInstallBinding.h` die Erwartung, und die
-Serverauthentisierung wird in keinem Fall abgeschaltet)
+Serverauthentisierung wird in keinem Fall abgeschaltet. Namensregel seit
+NAK-309, 18.09.2026 (`src/ProbePipeRegel.h`, gemessen in A4b): ohne erstes
+Argument gilt `\\.\pipe\evenacadia.eq-copilot.m2probe`; zugelassen sind nur
+Probenamen — dieser, er mit einem Suffix aus Punkt und `[A-Za-z0-9_-]` und der
+v3-Probenamensraum über `istProbePipename`; der Produktionsname in jeder
+Groß- und Kleinschreibung, ein leerer Name, ein Trenner hinter `\\.\pipe\` und
+jeder andere Name enden vor dem ersten Pipezugriff mit
+`PROBE ABGELEHNT (Pipename <urteil>)` und Exit 64)
 · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
 **Python-Werkzeuge (`tools/eq-copilot/`; Zahl dort lesen), unter anderem:** `pruefe_host_capabilities.py`

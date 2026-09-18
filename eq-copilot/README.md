@@ -57,10 +57,16 @@ Pipe Ende-zu-Ende (immer der eigene Probe-Pipename, nie die Produktion):
 ```powershell
 # Terminal 1 (Broker-Probe, 30 s):
 ..\broker\target\release\eqcop-broker-probe.exe 30
-# Terminal 2 (C++-Client-Probe gegen den Probe-Namen):
-build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"
+# Terminal 2 (C++-Client-Probe gegen den Probe-Namen; das dritte Argument nennt
+# das Server-Binary der Probe - ohne es erwartet die Probe den installierten
+# Broker und endet vor dem ersten Byte mit dateiidentitaetFalsch, NAK-123):
+build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe" 5 ..\broker\target\release\eqcop-broker-probe.exe
 # Erwartet: PROBE OK v2 · KONFLIKT OK · KONFLIKT-ENDE OK (Exit 0)
 ```
+
+Die Probe öffnet nur Probenamen (NAK-309): ohne erstes Argument gilt
+`…m2probe`; der Produktionsname, ein leerer und jeder fremde Name enden mit
+`PROBE ABGELEHNT (Pipename <urteil>)` und Exit 64.
 
 ## Meilensteine (Verlauf der EQ-Copilot-Linie bis 0.3.0 — Beweisgeschichte, keine Roadmap)
 

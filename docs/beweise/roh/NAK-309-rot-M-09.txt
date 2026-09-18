@@ -1,0 +1,44 @@
+NAK-309 Etappe 2 - Rotbeweis M-09 nach R-309-8 (T3-09-01, Beinbilanz)
+Zusage: Der Runner urteilt mit derselben Ableitung, die A36 misst: Urteil NICHT BEGLAUBIGT, Exit 4; die
+        Baustandtabelle der Rohausgabe nennt je Binary Stand und juengste Eingabe.
+Test:   voller Runnerlauf ohne -Bauen nach LastWriteTime-Setzen an eq-copilot/plugin/dsp/DspKern.cpp
+        (Bytes unveraendert), einmal am Basisstand, einmal nach dem Bau.
+
+==============================================================================
+LAUF 1 - BASISSTAND (vor jeder Aenderung der Etappe 2)
+Stand-SHA:   e116741096744259edc24518f2f84d6ca776c9a2 (Commit des Kanons vorher; Code gleich d616beb9:
+             git diff --stat d616beb9..e1167410 -- eq-copilot broker tools ist leer)
+Vorbedingung: gruener Kanon mit -Bauen (Kanon vorher, 18:24 bis 19:07); danach
+             (Get-Item eq-copilot/plugin/dsp/DspKern.cpp).LastWriteTime = Get-Date
+             SHA-256 vorher  A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5
+             SHA-256 nachher A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5
+             LastWriteTime 2026-09-15 17:38:49.5011349 -> 2026-09-18 19:08:51.1411642; git status sauber
+Aufruf:      pwsh -NoProfile -File tools/beweise.ps1 -Ziel docs/beweise/roh/NAK-309-rot-M-09-basis.md
+             -Titel 'NAK-309 Etappe 2 M-09 Basislauf ohne -Bauen'   (abgekoppelt, 19:08:51 bis 19:44:39)
+Erwartet (§5 M-09, R-309-8): GRUEN (der Defekt)
+GEMESSEN:    NICHT BEGLAUBIGT - 68/68 gruen, aber Pruefbinaries sind aelter als die Quellen
+             | 1 stillgelegte(s) Bein(e), siehe Uebersicht; Exitcode 4
+Dateien:     docs/beweise/roh/NAK-309-rot-M-09-basis.md (Lesetext des Runners),
+             docs/beweise/roh/NAK-309-rot-M-09-basis-e116741-dirty.md (Rohausgabe, Baustandtabelle)
+
+Abweichung von der Erwartung - Ursache an der Quelle (tools/beweise.ps1 @ e1167410, :985-1018):
+  Der alte Baustand vergleicht jedes Binary mit EINEM globalen Zeitstempel $neuesteQuelle ueber
+  $quellOrte (ohne plugin/dsp/). Gemessen: $neuesteQuelle = 2026-09-15 17:41:21 aus
+  eq-copilot/plugin/vertrag/NakamaUtf8.h. Drei Binaries hat der Kanon vorher mit -Bauen nicht neu
+  gelinkt, weil keine ihrer Eingaben sich geaendert hatte (MSBuild: aktuell):
+    B3  EqCopHostContextTest     2026-09-12 03:36:28  -> VERALTET
+    B3b EqCopHostProbeTest       2026-09-12 03:36:55  -> VERALTET
+    B9  EqCopLoudnessGoldenTest  2026-09-12 03:37:40  -> VERALTET
+  Keines der drei liest NakamaUtf8.h (am Baubaum abgeleitet, Probe des Werkzeugs vom 18.09.:
+  juengste Eingaben EqCopHostContextTest.vcxproj und EqCopHostProbeTest.vcxproj vom 31.08.,
+  tests/LoudnessGoldenTestMain.cpp vom 07.09.). Das ist der zu grobe Riegel aus NAK-25: fremde
+  Dateien machen Binaries veraltet, die sie nie lasen. Dieses Urteil haengt NICHT an DspKern.cpp -
+  es stuende ohne das Zeitstempelsetzen genauso da, denn plugin/dsp/ ist kein Ort in $quellOrte.
+  Die Erwartung "GRUEN" aus §5 M-09 (Etappe 1, gelesen, nicht gemessen) uebersah, dass der Kanon
+  vorher nur ueber -Bauen gruen war ($bauBestaetigt schaltet den Zeitvergleich ab).
+
+Der Defekt T3-09-01 ist in der Baustandtabelle desselben Laufs sichtbar:
+  B6 EqCopDspGoldenTest    2026-09-18 18:25:58  frisch   (liest dsp/DspKern.cpp ueber NakamaKern.lib;
+  B7 EqCopTransactionTest  2026-09-18 18:26:00  frisch    die Quelle ist seit 19:08:51 juenger)
+  Beide Binaries sind aelter als eine ihrer Quellen und stehen als "frisch" da; die Beglaubigung
+  scheitert nur zufaellig an drei anderen Binaries.

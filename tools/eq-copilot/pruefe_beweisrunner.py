@@ -1446,10 +1446,10 @@ RUNNER = WURZEL / "tools" / "beweise.ps1"
 URTEILSFOLGE = (
     r"\$gruen = @\(\$gelaufen \| Where-Object \{ \$_\.Symbol -in @\('\[OK\]', '\[HINWEIS\]'\) \}\)",
     r"\$exitcode = 0",
-    r"if \(\$rot -gt 0\) \{",
+    r"(?:else)?if \(\$rot -gt 0\) \{",
     r"\$exitcode = 2",
     r'\$urteil = "ROT - .*"',
-    r"elseif \(\$fehlendeVoraussetzung -gt 0\) \{",
+    r"(?:else)?if \(\$fehlendeVoraussetzung -gt 0\) \{",
     r"\$exitcode = 3",
     r'\$urteil = "UNVOLLSTAENDIG - \$\(\$gruen\.Count\) gruen, .*"',
     r"elseif \(\$veraltet\) \{",
@@ -1474,7 +1474,7 @@ def urteilsvorrang(text: str) -> list[str]:
         return treffer[0]
 
     folge = [einmal(m) for m in URTEILSFOLGE]
-    if all(i >= 0 for i in folge) and folge != sorted(folge):
+    if all(i >= 0 for i in folge) and (folge != sorted(folge) or not zeilen[folge[2]].startswith("if ")):
         befunde.append("Reihenfolge des Urteilsblocks verletzt (ROT vor Voraussetzung vor NICHT BEGLAUBIGT)")
     if sum(1 for z in zeilen if z.startswith("$gruen =")) != 1:
         befunde.append("die Gruenzaehlung ist nicht genau eine Zuweisung")

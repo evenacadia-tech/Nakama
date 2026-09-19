@@ -300,6 +300,9 @@ drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
 - Ein laufender Dirigenten-Starterprozess lädt sein Skript beim
   Marker-Neustart nicht neu (NAK-257); Skriptänderungen greifen erst nach
   Fensterneustart.
+- Workerstart: `--bg` ist das letzte Wort eines eigenen Befehls. Folgt `;` mit
+  einem weiteren Kommando, erkennt `tools/dirigent/cockpit.ps1` den Start
+  nicht („Startbeleg fehlt"; `docs/beweise/NAK-311.md` §23).
 - Zwei Kanons auf einem Rechner (Worker-Checkout und Arbeitskopie) teilen
   die Probe-Pipenamen: A4 hängt dann bei 0 % CPU bis zum 60-Minuten-Limit
   (NAK-290). Vor einem Kanon in einer Arbeitskopie prüfen, dass im

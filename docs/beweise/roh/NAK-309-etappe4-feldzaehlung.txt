@@ -1,0 +1,58 @@
+== Feldzaehlung K4 - vorher (vor dem Golden main-binding-v1.bin) ==
+Stand: 2026-09-19 04:56:53, HEAD 7519c387; Werkzeug docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py (SHA-256 F71D2956223467A9E53ABE5128CB8C7918CEE8AAA44A00F9E8B012E6B8DEC760)
+Aufruf: py -3.13 docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py
+Population: 136 Felder (NakamaState 1, Common 7, MainProject 8, Parameters 114, Dsp 6)
+
+Byte-Bilder unter eq-copilot/fixtures/state/schema2/: 8
+  schema2/aus-schema1-hub.bin  205 Bytes  SHA-256 22C8047FE00B90E4A8B2F06040BA235A231463582F6F4482D6340B350D4C703C  Eigenschaften je Knoten: NakamaState 1, Common 5, MainProject 1
+  schema2/aus-schema1-post.bin  197 Bytes  SHA-256 3106A5225ECA23C99C6B7CA84989BFCD32574CA87EB878724B861D0AC3DFD681  Eigenschaften je Knoten: NakamaState 1, Common 6
+  schema2/aus-schema1-pre.bin  195 Bytes  SHA-256 0A93D242D3DEBEF6C1BAEEBF05C351952D83D50E3AE0AA3D11F08CAB72C2AB8B  Eigenschaften je Knoten: NakamaState 1, Common 6
+  schema2/aus-schema1-sensor.bin  178 Bytes  SHA-256 7C2356391842AEF108D18E77E414DE4A6F49F4FC8AB6D51F5541408BD2367A59  Eigenschaften je Knoten: NakamaState 1, Common 5
+  schema2/dsp-v2-voll.bin  4802 Bytes  SHA-256 B41C9260A12C3C3E68153EA46CD425E90891817F6421D1AD5C3E7E94D1FD7E95  Eigenschaften je Knoten: NakamaState 1, Common 5, Parameters 114, Dsp 6
+  schema2/fremdes-major-3.bin  186 Bytes  SHA-256 4CD4A87F5A88E58B18618F10D2F1982B657A12D8E9276317D7662945D51BBE33  Eigenschaften je Knoten: NakamaState 1, Common 5
+  schema2/layout-v1.bin  3458 Bytes  SHA-256 ACA3B83D05D2230873617DD79A6A61E367E96DABB675A58760AFC5D5662B0681  Eigenschaften je Knoten: NakamaState 1, Common 5, Parameters 110
+  schema2/main-intent-v1.bin  972 Bytes  SHA-256 9B79F87DC3AE33DAF2189E033D7E126E2BC628C1B2A5525A4FCEDBC8A948B1EC  Eigenschaften je Knoten: NakamaState 1, Common 5, MainProject 5
+Nicht gezaehlt (keine State-v2-Byte-Bilder, eigene Vertraege): jcs/ 14 Datei(en), dto/ 36 Datei(en), preset/ 20 Datei(en), MANIFEST.json
+
+  NakamaState    1 von   1 Feldern mit eingefrorenem Fixture
+  Common         6 von   7 Feldern mit eingefrorenem Fixture
+  MainProject    5 von   8 Feldern mit eingefrorenem Fixture
+  Parameters   114 von 114 Feldern mit eingefrorenem Fixture
+  Dsp            6 von   6 Feldern mit eingefrorenem Fixture
+  Summe        132 von 136
+Ohne eingefrorenes Fixture: Common.project_binding_id, MainProject.confirmed_members_v1, MainProject.manual_passages_v1, MainProject.assistant_step_v1
+Eigenschaften oder Kinder ausserhalb der Population (nicht gezaehlt): keine
+
+Karte (docs/gesundheit/abdeckungskarte.md, K4 Population) nennt: 133; KONZEPT (docs/gesundheit/KONZEPT.md, StateMigrationTest) nennt: 133; gezaehlt: 132
+Karte oder KONZEPT widerspricht der Zaehlung: JA
+Exit 4
+
+== Feldzaehlung K4 - nachher (mit dem Golden main-binding-v1.bin) ==
+Stand: 2026-09-19 04:58:27, HEAD 7519c387; Werkzeug docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py (SHA-256 F71D2956223467A9E53ABE5128CB8C7918CEE8AAA44A00F9E8B012E6B8DEC760)
+Aufruf: py -3.13 docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py
+Population: 136 Felder (NakamaState 1, Common 7, MainProject 8, Parameters 114, Dsp 6)
+
+Byte-Bilder unter eq-copilot/fixtures/state/schema2/: 9
+  schema2/aus-schema1-hub.bin  205 Bytes  SHA-256 22C8047FE00B90E4A8B2F06040BA235A231463582F6F4482D6340B350D4C703C  Eigenschaften je Knoten: NakamaState 1, Common 5, MainProject 1
+  schema2/aus-schema1-post.bin  197 Bytes  SHA-256 3106A5225ECA23C99C6B7CA84989BFCD32574CA87EB878724B861D0AC3DFD681  Eigenschaften je Knoten: NakamaState 1, Common 6
+  schema2/aus-schema1-pre.bin  195 Bytes  SHA-256 0A93D242D3DEBEF6C1BAEEBF05C351952D83D50E3AE0AA3D11F08CAB72C2AB8B  Eigenschaften je Knoten: NakamaState 1, Common 6
+  schema2/aus-schema1-sensor.bin  178 Bytes  SHA-256 7C2356391842AEF108D18E77E414DE4A6F49F4FC8AB6D51F5541408BD2367A59  Eigenschaften je Knoten: NakamaState 1, Common 5
+  schema2/dsp-v2-voll.bin  4802 Bytes  SHA-256 B41C9260A12C3C3E68153EA46CD425E90891817F6421D1AD5C3E7E94D1FD7E95  Eigenschaften je Knoten: NakamaState 1, Common 5, Parameters 114, Dsp 6
+  schema2/fremdes-major-3.bin  186 Bytes  SHA-256 4CD4A87F5A88E58B18618F10D2F1982B657A12D8E9276317D7662945D51BBE33  Eigenschaften je Knoten: NakamaState 1, Common 5
+  schema2/layout-v1.bin  3458 Bytes  SHA-256 ACA3B83D05D2230873617DD79A6A61E367E96DABB675A58760AFC5D5662B0681  Eigenschaften je Knoten: NakamaState 1, Common 5, Parameters 110
+  schema2/main-binding-v1.bin  256 Bytes  SHA-256 C77ECEC2A3A5FE87A0377128D9CF6B374D3866F7656C4D1D48E59BBDE24B2F21  Eigenschaften je Knoten: NakamaState 1, Common 6, MainProject 1
+  schema2/main-intent-v1.bin  972 Bytes  SHA-256 9B79F87DC3AE33DAF2189E033D7E126E2BC628C1B2A5525A4FCEDBC8A948B1EC  Eigenschaften je Knoten: NakamaState 1, Common 5, MainProject 5
+Nicht gezaehlt (keine State-v2-Byte-Bilder, eigene Vertraege): jcs/ 14 Datei(en), dto/ 36 Datei(en), preset/ 20 Datei(en), MANIFEST.json
+
+  NakamaState    1 von   1 Feldern mit eingefrorenem Fixture
+  Common         7 von   7 Feldern mit eingefrorenem Fixture
+  MainProject    5 von   8 Feldern mit eingefrorenem Fixture
+  Parameters   114 von 114 Feldern mit eingefrorenem Fixture
+  Dsp            6 von   6 Feldern mit eingefrorenem Fixture
+  Summe        133 von 136
+Ohne eingefrorenes Fixture: MainProject.confirmed_members_v1, MainProject.manual_passages_v1, MainProject.assistant_step_v1
+Eigenschaften oder Kinder ausserhalb der Population (nicht gezaehlt): keine
+
+Karte (docs/gesundheit/abdeckungskarte.md, K4 Population) nennt: 133; KONZEPT (docs/gesundheit/KONZEPT.md, StateMigrationTest) nennt: 133; gezaehlt: 133
+Karte oder KONZEPT widerspricht der Zaehlung: NEIN
+Exit 0

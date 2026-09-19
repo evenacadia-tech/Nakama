@@ -1129,6 +1129,61 @@ int main (int argc, char* argv[])
             pruefe (gleich (bytes, nochmal), "Save nach Load des Intent-Goldens ist bytegleich");
         }
 
+        /*  NAK-309 Etappe 4 (T3-02-07, M-57 bis M-59): ein Writer-Golden fuer
+            `Common.project_binding_id`. Bis hierher trug kein eingefrorenes
+            Fixture eine gesetzte Bindung; gemessen war sie nur am frischen
+            Roundtrip, der auf demselben Writer steht, der sie schreibt.
+
+            Deshalb liest dieser Block die Datei von der PLATTE und prueft den
+            Leser (M-57) getrennt vom Schreiber (M-58): bricht der Writer, bleibt
+            der Leser am eingefrorenen Byte-Bild gruen, und umgekehrt. Die Bytes
+            kommen aus `state::speichere`, nie aus der Hand (Pruefliste E). */
+        {
+            const juce::String bindung ("0123456789abcdef0123456789abcdef");
+            state::Zustand z = state::frisch (juce::String::repeatedString ("2", 32));
+            z.common.klasse = state::Klasse::main;
+            z.common.position = state::Messposition::insert;
+            z.common.label = "Leitstand";
+            z.common.projectBindingId = bindung;
+
+            juce::MemoryBlock bytes;
+            state::speichere (z, bytes);
+            const auto datei = goldenOrdner.getChildFile ("main-binding-v1.bin");
+            if (schreibeGoldens)
+            {
+                datei.replaceWithData (bytes.getData(), bytes.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock platte;
+            const bool gelesen = datei.existsAsFile() && datei.loadFileAsData (platte);
+            pruefe (gelesen, "main-binding-v1.bin liegt eingefroren auf der Platte", datei.getFileName());
+
+            // M-57: der Leser am eingefrorenen Byte-Bild, nicht an frisch
+            // geschriebenen Bytes.
+            state::Zustand geladen;
+            const auto erg = gelesen ? state::lade (platte.getData(), platte.getSize(),
+                                                    state::Bundle::eqcp(), geladen)
+                                     : state::LadeErgebnis::ignoriert;
+            pruefe (erg == state::LadeErgebnis::geladen && ! geladen.nurLesen
+                        && geladen.common.projectBindingId == bindung,
+                    "M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht "
+                    "read-only, und traegt die Bindung unveraendert",
+                    juce::String (ladeErgebnisWort (erg)) + ", Bindung '"
+                        + geladen.common.projectBindingId + "'");
+
+            // M-58: der heutige Writer erzeugt genau diese Bytes, und Speichern
+            // nach dem Laden des Goldens ist bytegleich.
+            pruefe (gelesen && gleich (platte, bytes),
+                    "M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes",
+                    juce::String ((int) bytes.getSize()) + " Bytes vom Writer, "
+                        + juce::String ((int) platte.getSize()) + " auf der Platte");
+            juce::MemoryBlock nochmal;
+            if (erg == state::LadeErgebnis::geladen)
+                state::speichere (geladen, nochmal);
+            pruefe (gelesen && gleich (platte, nochmal),
+                    "M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich");
+        }
+
         /*  SONDE-015 (M-89, M-90, M-93): zwei Writer-Goldens fuer das Kind
             `Dsp` und fuer das Layout v1.
 

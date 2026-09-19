@@ -1081,8 +1081,11 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
     # SONDE-015: zwei weitere Writer-Goldens - ein Stand mit vollem Kind `Dsp`
     # und ein Stand im LAYOUT V1 (kein `dsp_schema_version`, 109 Werte), an dem
     # die Migration nach R5 gemessen wird.
+    # NAK-309 Etappe 4 (T3-02-07, M-59): `main-binding-v1.bin` aus demselben
+    # Writer traegt `Common.project_binding_id`; bis dahin trug kein
+    # eingefrorenes Fixture eine gesetzte Bindung.
     for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post",
-                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1"):
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1"):
         pfad = FIXTURES / "schema2" / f"{datei}.bin"
         if pfad.exists():
             b = pfad.read_bytes()
@@ -1131,9 +1134,13 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
 def main() -> int:
     pruefen = "--pruefen" in sys.argv[1:]
     v = pruefe_vertrag()
-    dateien, _ = baue(v)
+    dateien, manifest = baue(v)
 
-    verwaltet = {"MANIFEST.json"} | set(dateien)
+    # Die Schema-2-Goldens schreibt der C++-Writer, registriert sind sie hier:
+    # auch sie gehoeren zur Waisenpruefung (NAK-309 Etappe 4, M-59). Vorher
+    # blieb ein Golden unter schema2/, das in keiner Liste stand, unbemerkt.
+    verwaltet = ({"MANIFEST.json"} | set(dateien)
+                 | {g["datei"] for g in manifest["schema2_goldens"]})
     if pruefen:
         fehler = 0
         for rel, inhalt in dateien.items():
@@ -1143,7 +1150,7 @@ def main() -> int:
             elif pfad.read_bytes() != inhalt:
                 print("ABWEICHUNG:", rel); fehler += 1
         # Verwaiste Dateien in den von diesem Erzeuger verwalteten Ordnern.
-        for ordner in ("jcs", "dto", "preset"):
+        for ordner in ("jcs", "dto", "preset", "schema2"):
             if not (FIXTURES / ordner).exists():
                 continue
             for p in sorted((FIXTURES / ordner).rglob("*")):

@@ -135,7 +135,14 @@ Feld; das ist der Auftrag des Vertragstreue-Audits. A-2 bleibt.
 **Population:** State v2 mit 136 persistenten Feldern (Common 7, MainProject
 8, Parameters 114, Dsp 6, Wurzel 1), 133 mit eingefrorenem Fixture, 19 mit
 Migrationszweig; Preset 4 Top-Level plus 119 Kennungen, alle mit Fixture;
-79 Fixture-Dateien unter `eq-copilot/fixtures/state/`.
+80 Fixture-Dateien unter `eq-copilot/fixtures/state/`. Die 133 ist gemessen
+am 19.09.2026 in NAK-309 Etappe 4: jedes Byte-Bild unter
+`eq-copilot/fixtures/state/schema2/` als JUCE-ValueTree geladen und je Feld
+geprüft, ob es an seinem Ort steht
+(`docs/beweise/roh/NAK-309-etappe4-feldzaehlung.txt`). Verlauf: die frühere
+Angabe 133 stand um eins zu hoch; gemessen waren es vor dem Golden
+`main-binding-v1.bin` 132, weil kein Fixture `Common.project_binding_id`
+trug; die Dateizahl war 79.
 
 | Zusage | Besitzer | Stärke |
 |---|---|---|

@@ -108,7 +108,7 @@ variadisch ist (ein Auftrag dahinter wird Werkzeugeintrag, der Worker startet
 „idle"):
 
 ```powershell
-claude "<selbsttragender Ticketauftrag>" --model opus --effort max --permission-mode dontAsk `
+claude "<selbsttragender Ticketauftrag>" --model opus --effort xhigh --permission-mode dontAsk `
   --name "nakama-<ticket>-<basis-kurz>-bau" --allowed-tools <liste, keine Wildcard> --bg
 ```
 
@@ -129,12 +129,12 @@ eine gemeinsame Ursache, ist die Ursache der Auftrag, nicht die
 Punktkorrektur.
 
 Beobachter als Hintergrundkommando derselben Session, mit `Monitor`
-(`persistent: true`):
+(30 min, dann neu setzen):
 
 ```powershell
 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
   -WorkerId <id> -BaseSha <sha> -Aufsicht <LOCKER|NORMAL|ENG> `
-  -StartModel Opus -StartEffort max -DirigentSessionId <session-id>
+  -StartModel Opus -StartEffort xhigh -DirigentSessionId <session-id>
 ```
 
 Er meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und alte oder
@@ -157,7 +157,7 @@ belegen.
 bereinigt). Der User wird nicht gefragt. Eine erwartete, nicht destruktive
 Aktion gibt der Dirigent frei: Worker stoppen, Session-ID aus `claude agents
 --json --all`, fortsetzen mit `claude "<Zusatz>" --resume <session-id>
---model opus --effort max --permission-mode dontAsk --name <gleicher Name>
+--model opus --effort xhigh --permission-mode dontAsk --name <gleicher Name>
 --allowed-tools … --bg`; die `deny`-Regel bleibt, der Zusatz nennt den
 zulässigen Ersatzweg. Produktentscheid → Frage an den User, sofort anderes
 Ticket. Destruktiv, ticketfremd, unerklärlich → stoppen, Ersatzworker mit
@@ -336,13 +336,13 @@ löschen, `claude rm <worker-id>`, mit beendetem Beobachter, `CronList` und
 ### 3.6 Bauer und Prüfer
 
 Opus baut, Codex prüft (User 01.09.2026): Der Bauer ist ein frischer
-Opus-Worker (max), kompiliert, fährt Tests und Kanon selbst (§3.5,
-abgekoppelt) und übergibt nie `NOT RUN`. Der Prüfer ist ein frischer
-Codex-Thread (§3.4); Bauer und Prüfer sind nie derselbe Thread. Codex als
-Bauer (`workspace-write`, Astra max) nur als Fallback ab 85 % Claude-
-Wochennutzung; der Dirigent committet dessen Stand nach eigenem Kanonlauf
-als Zwischenstand (§3.1). Stößt Codex als Prüfer an seine Grenze, prüft ein
-frischer Opus-Thread.
+Opus-Worker, Effort `xhigh` (User 19.09.2026, NAK-335), kompiliert, fährt
+Tests und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der
+Prüfer ist ein frischer Codex-Thread (§3.4); Bauer und Prüfer sind nie
+derselbe Thread. Codex als Bauer (`workspace-write`, Astra max) nur als
+Fallback ab 85 % Claude-Wochennutzung; der Dirigent committet dessen Stand
+nach eigenem Kanonlauf als Zwischenstand (§3.1). Codex an der Grenze →
+frischer Opus-Thread prüft; Opus-Prüfer und -Validierer immer `max`.
 
 ### 3.7 Phasengate-Prüfung
 
@@ -351,8 +351,8 @@ Dirigent als ersten Torschritt die Torläufe aus `docs/gesundheit/KONZEPT.md`
 §6.6 als Prüfsessions (§7): Tiefenaudit, fällige Spezialaudits,
 Mutanten-Vollmodus, voller `/freshen`-Lauf. Kein Worker auf diesem Stand,
 bis ihre Köpfe gelesen sind. Ultra-Review und Astra-Audit sind kein
-Torschritt, der User tut am Tor nichts (User 12.09.2026, Karte U39; die
-Erinnerung vom 10.09.2026 ist überholt). Ergebnisse und jeder vom User
+Torschritt, der User tut am Tor nichts (User 12.09.2026, Karte U39).
+Ergebnisse und jeder vom User
 selbst angesetzte externe Audit werden wie NAK-246 behandelt
 (`docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
 

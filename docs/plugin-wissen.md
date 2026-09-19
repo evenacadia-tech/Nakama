@@ -871,9 +871,24 @@ Iststand und Verteilung je Check stehen im Manifest `docs/beweise/NAK-288.md`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
 [-Anhaengen] -Titel '…'`. Exitcodes (Skriptkopf): 0 grün · 2 ein Bein rot · 3
-Voraussetzung fehlt, auch ein nicht ableitbarer Frischebaum · 4 Läufe grün, aber
-ein Binary ist älter als eine seiner Quellen oder der Frischebaum deckt nicht
-jede Quelle.
+Voraussetzung fehlt, auch ein nicht ableitbarer Frischebaum oder ein Bein mit
+NOT RUN · 4 Läufe grün, aber ein Binary ist älter als eine seiner Quellen oder
+der Frischebaum deckt nicht jede Quelle.
+
+**NOT RUN seit NAK-309 (Etappe 4, 19.09.2026).** Fehlt einem Test von A4 oder
+A4-SI eine Voraussetzung (heute: das Junction-Recht der zwei Reparse-Tests in
+`broker/tests/store_crash_matrix.rs`), legt er eine Marke `<Test>: <Grund>` in
+den Meldeordner seines Beins; den Ordner legt der Runner je Bein frisch an und
+nennt ihn nur dem Kindprozess (`NAKAMA_NICHT_GELAUFEN`, `Start-Process
+-Environment`, PowerShell 7.4). Nach dem Bein liest
+`pruefe_beweisrunner.py --nicht-gelaufen` den Ordner: eine Marke macht das Bein
+`[NOT RUN]` mit Test und Grund, der Lauf wird `UNVOLLSTAENDIG` mit dem Nachsatz
+„k Bein(e) NOT RUN" (Exit 3), nie grün; ROT geht vor; ein unlesbarer Ordner ist
+rot. Fehlt die Voraussetzung ohne Meldeweg (direkter `cargo test`), scheitert
+der Test mit „NOT RUN ohne Meldeweg". `NAKAMA_TEST_JUNCTION_VERWEIGERN=1`
+erzwingt den Fall für einen Beleglauf. Seit derselben Etappe bekommt jedes Ziel aus `$gemesseneZiele`
+(Frischeregel R-309-9) dasselbe Urteil wie ein Prüfbinary; seine Datei kommt
+aus dem CMake-Export.
 
 **Baustand seit NAK-309 (Etappe 2, 18.09.2026).**
 `tools/eq-copilot/pruefe_beweisrunner.py --baustand` leitet je Prüfbinary den

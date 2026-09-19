@@ -30,6 +30,10 @@
       - das Buslayout folgt der Regel von Gen: Mono und Stereo mit gleichem
         Ein- und Ausgang sind angenommen, Mehrkanal-, ungleiche und
         deaktivierte Busse bekommen ein Nein (M-27 bis M-29).
+    Seit NAK-311 Etappe 2 (Manifest NAK-311 §6.1, M-01) zusaetzlich die
+    DAZ/FTZ-Messung 311/M-01: sie gibt fuer das Bitmuster aus Subnormals, +-0
+    und kleinsten Normalen die Ein- und Ausgangsbits aus und prueft nur, dass
+    alle Zustaende, Layouts und Raten liefen - keine Bitgleichheit.
     Ein eingeschalteter resonanter Filter klingt naturgemaess aus; das ist
     kein Tail im Sinne des Hostvertrags, und dieses Bein behauptet dazu
     nichts.
@@ -46,11 +50,19 @@
 #include "SondeProcessor.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <string>
+
+#if defined (_M_X64) || defined (__x86_64__)
+ #include <xmmintrin.h>
+#endif
 
 namespace
 {
@@ -80,6 +92,22 @@ void fuelle (juce::AudioBuffer<float>& puffer, juce::Random& wuerfel)
     for (int k = 0; k < puffer.getNumChannels(); ++k)
         for (int n = 0; n < puffer.getNumSamples(); ++n)
             puffer.setSample (k, n, wuerfel.nextFloat() * 1.8f - 0.9f);
+}
+
+/** NAK-311 §6.1: das Bitmuster, je Kanal derselbe Block - kleinster
+    positiver Subnormal, groesster Subnormal und kleinster Normal, je mit
+    beiden Vorzeichen, dazu +0 und -0. An genau diesen Werten entscheidet
+    sich, ob die Rueckwandlung float -> double -> float unter FTZ und DAZ
+    (`juce::ScopedNoDenormals` in `SondeProcessor::processBlock`) bittreu
+    ist; 311/M-01 misst es. */
+const std::uint32_t kBitmuster[] = { 0x00000001u, 0x80000001u, 0x007FFFFFu, 0x807FFFFFu,
+                                     0x00800000u, 0x80800000u, 0x00000000u, 0x80000000u };
+
+std::string hex32 (std::uint32_t bits)
+{
+    char text[11];
+    std::snprintf (text, sizeof (text), "0x%08X", (unsigned) bits);
+    return text;
 }
 
 bool istHex (const std::string& text, std::size_t laenge)
@@ -877,6 +905,123 @@ int main()
                         + ", aus->Stereo " + jaNein (ausStereo) + ", Stereo->aus " + jaNein (stereoAus)
                         + ", aus->aus " + jaNein (beideAus));
         }
+    }
+
+    // -- 13. NAK-311 M-01: DAZ/FTZ-Messung mit dem Bitmuster ---------------
+    // Messung nach R-311-2 (Manifest NAK-311 §6.1, §7.2 Punkt 2), KEIN
+    // Rotbeweis und KEINE Bitgleichheitspruefung: der echte Prozessor faehrt
+    // die Zustaende (a) eq an, sonst Default (SONDE-015 M-02), (b) eq an,
+    // Mix 0, Output-Trim 0 dB, Input-Trim +9 dB, +12-dB-Bell (SONDE-015 M-33)
+    // und (c) eq aus als Gegenprobe, je Stereo und Mono bei 44,1, 48 und
+    // 96 kHz. Nach kFadeSamples + kRampeSamples Samples Rauschen - Engagier-
+    // Fade und Rampen sind vorbei - folgt ein Block aus dem Bitmuster; je
+    // Muster stehen Eingangs- und Ausgangsbits in der Ausgabe. Geprueft wird
+    // nur, dass jede Kombination in ihrem Zustand lief (Wache); ob Muster
+    // veraendert herauskommen, haelt das Manifest fest (Ausgang (a) oder (b)).
+    abschnitt ("13. NAK-311 311/M-01 daz_ftz_messung_bitmuster");
+    {
+#if defined (_M_X64) || defined (__x86_64__)
+        {
+            juce::ScopedNoDenormals keineDenormals;
+            const auto csr = (std::uint32_t) _mm_getcsr();
+            std::cout << "  311/M-01 MXCSR unter juce::ScopedNoDenormals " << hex32 (csr) << " (FTZ " << ((csr >> 15) & 1u)
+                      << ", DAZ " << ((csr >> 6) & 1u) << ")" << std::endl;
+        }
+#endif
+        const std::int64_t einschwingen = nakama::dsp::kFadeSamples + nakama::dsp::kRampeSamples;
+        const int musterZahl = (int) std::size (kBitmuster);
+        int kombinationen = 0;
+        int veraendertJeZustand[3] = { 0, 0, 0 };
+        for (const char zustand : { 'a', 'b', 'c' })
+            for (const int kanaele : { 2, 1 })
+                for (const double rate : { 44100.0, 48000.0, 96000.0 })
+                {
+                    auto p = std::make_unique<Prozessor>();
+                    const auto satz = kanaele == 1 ? juce::AudioChannelSet::mono() : juce::AudioChannelSet::stereo();
+                    juce::AudioProcessor::BusesLayout layout;
+                    layout.inputBuses.add (satz);
+                    layout.outputBuses.add (satz);
+                    const bool layoutGesetzt = p->setBusesLayout (layout);
+                    p->setRateAndBufferSizeDetails (rate, 2048);
+                    p->prepareToPlay (rate, 2048);
+
+                    bool eingestellt = true;
+                    if (zustand != 'c')
+                    {
+                        auto z = p->bestaetigterZustand();
+                        z.werte[(size_t) param::kIndexEqEnabled].b = true;
+                        if (zustand == 'b')
+                        {
+                            setzeHoerbaresBand (z);
+                            z.werte[(size_t) iGlobal ("v1.global.input_trim_db")].zahl = 9.0;
+                            z.werte[(size_t) param::kIndexMix].zahl = 0.0;
+                        }
+                        eingestellt = setze (*p, z).ausgang == tx::Ausgang::commit;
+                    }
+
+                    juce::MidiBuffer midi;
+                    juce::Random wuerfel (311 + (juce::int64) rate + kanaele);
+                    std::int64_t gefahren = 0;
+                    while (gefahren < einschwingen)
+                    {
+                        juce::AudioBuffer<float> rauschen (kanaele, 256);
+                        fuelle (rauschen, wuerfel);
+                        p->processBlock (rauschen, midi);
+                        gefahren += rauschen.getNumSamples();
+                    }
+                    juce::AudioBuffer<float> block (kanaele, musterZahl);
+                    for (int k = 0; k < kanaele; ++k)
+                        for (int n = 0; n < musterZahl; ++n)
+                            block.setSample (k, n, std::bit_cast<float> (kBitmuster[n]));
+                    p->processBlock (block, midi);
+
+                    int aktiv = -1, quelle = -1, kandidat = -1, kandidatQuelle = -1;
+                    auto& kern = p->dspKernFuerTest();
+                    kern.gefahreneSlots (aktiv, quelle, kandidat, kandidatQuelle);
+                    bool imZustand = false;
+                    if (zustand == 'c')
+                        imZustand = aktiv < 0 && ! p->bestaetigterZustand().werte[(size_t) param::kIndexEqEnabled].b;
+                    else if (aktiv >= 0)
+                    {
+                        const auto& pr = kern.pool().bank (aktiv).programm;
+                        imZustand = eingestellt && pr.eqEngagiert && ! pr.hardBypass
+                                 && (zustand == 'a' ? (pr.mix == 1.0 && pr.inputTrimLin == 1.0)
+                                                    : (pr.mix == 0.0 && pr.inputTrimLin > 1.0 && pr.outputTrimLin == 1.0));
+                    }
+
+                    const std::string name = std::string (1, zustand) + (kanaele == 2 ? " stereo " : " mono ")
+                                           + std::to_string ((int) rate) + " Hz";
+                    int veraendert = 0;
+                    for (int n = 0; n < musterZahl; ++n)
+                    {
+                        std::string aus;
+                        bool anders = false;
+                        for (int k = 0; k < kanaele; ++k)
+                        {
+                            const auto bits = std::bit_cast<std::uint32_t> (block.getSample (k, n));
+                            aus += " K" + std::to_string (k) + " " + hex32 (bits);
+                            anders = anders || bits != kBitmuster[n];
+                        }
+                        if (anders) ++veraendert;
+                        std::cout << "  311/M-01 " << name << " ab Sample " << gefahren << ": ein " << hex32 (kBitmuster[n])
+                                  << " aus" << aus << (anders ? "  VERAENDERT" : "  bytegleich") << std::endl;
+                    }
+                    veraendertJeZustand[zustand - 'a'] += veraendert;
+
+                    const bool lief = layoutGesetzt && p->getTotalNumInputChannels() == kanaele
+                                   && p->getTotalNumOutputChannels() == kanaele && imZustand && gefahren >= einschwingen;
+                    if (lief) ++kombinationen;
+                    pruefe (lief, "311/M-01 lief: Zustand " + juce::String (name) + ", Bitmuster ab Sample "
+                                      + juce::String (gefahren),
+                            juce::String (veraendert) + " von " + juce::String (musterZahl) + " Mustern veraendert");
+                }
+        std::cout << "  311/M-01 Summe veraenderter Muster je Zustand (je 6 Kombinationen zu " << musterZahl
+                  << " Mustern): a " << veraendertJeZustand[0] << ", b " << veraendertJeZustand[1] << ", c "
+                  << veraendertJeZustand[2] << std::endl;
+        pruefe (kombinationen == 18,
+                "daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo "
+                "und Mono; 44,1, 48 und 96 kHz; je " + juce::String (musterZahl) + " Muster ausgegeben",
+                juce::String (kombinationen) + " von 18");
     }
 
     std::cout << std::endl

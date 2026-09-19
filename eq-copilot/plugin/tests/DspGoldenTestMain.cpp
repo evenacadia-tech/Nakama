@@ -7,7 +7,9 @@
     (Abschnitt O) - beides seit der Audit-Nacharbeit vom 10.09.2026. Seit
     NAK-311 Etappe 2 dazu die Neutralpruefung des Kerns (Manifest NAK-311
     §6.1: 311/M-12, M-13 mit M-14, M-18, der neutrale Schritt in M-22 und die
-    Tapvergleiche M-90, M-91).
+    Tapvergleiche M-90, M-91). Seit NAK-311 Etappe 3 (W01) Abschnitt P: die
+    Pfadrampen in der Ruhe gegen einen frischen Kern als Orakel (§6.2:
+    311/M-23 bis M-38; M-34 misst B7 am Prozessor).
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -4932,6 +4934,645 @@ int main()
                 "Slot 5 zwischen " + zahl (auslenkungMin, 2) + " und " + zahl (auslenkungMax, 2) + " dB");
         pruefe (verlaufGleich,
                 "realtime_und_offline_gleich (M-120): derselbe Parameterverlauf - Auslenkungen und Auto-Gain je Block bitgleich");
+    }
+
+    //==========================================================================
+    std::cout << std::endl << "== P - Pfadrampen in der Ruhe (NAK-311 W01) ==" << std::endl;
+    {
+        // NAK-311 T3-15-05 (Manifest NAK-311 §6.2, M-23 bis M-38): ein Pfad, der
+        // in die Ruhe geht, traegt danach die Rampen des Ruheprogramms, also
+        // 1,0 - dieselben Werte wie nach `bereiteVor`. Das Einschalten aus der
+        // Ruhe ist damit das Einschalten eines frischen Kerns (SONDE-015 M-07:
+        // die Sonde beginnt neu). Das ORAKEL ist deshalb ein frischer Kern
+        // (`neuerKern`), der dasselbe Zielprogramm am selben Blockrand uebernimmt
+        // und ab dort denselben Eingang in derselben Blockteilung bekommt;
+        // verglichen wird der float-Ausgang (beim Candidate der Tap
+        // post_candidate) bytegleich. Das Verhaeltnis Ausgang/Eingang und das
+        // Sprungmass E-31 schreibt der Test selbst aus, nie aus dem Kern gelesen.
+        // Gemeinsamer Aufbau (§6.2): 48 kHz, Blockgroesse 64, DC 0,5 auf beiden
+        // Kanaelen.
+        static_assert (kFadeSamples == 256 && kRampeSamples == 256,
+                       "311/M-28, M-29 und M-35 schreiben ihre Kurven fuer K = 256 aus");
+        const double fs  = 48000.0;
+        const int    bs  = 64;
+        const int    mb  = 512;
+        const double x   = 0.5;
+        const double K   = (double) kFadeSamples;
+        const double g24 = std::pow (10.0, 24.0 / 20.0);
+
+        const auto dc = [] (long long, float& l, float& r) { l = 0.5f; r = 0.5f; };
+
+        // Faehrt `samples` Samples aus `quelle` in Bloecken zu `blockGroesse`
+        // (der letzte kuerzer) und liefert den Ausgang, L und R verschraenkt.
+        const auto fahre = [] (DspKern& k, const auto& quelle, long long& n0, int samples, int blockGroesse)
+        {
+            std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse), aus;
+            aus.reserve ((size_t) samples * 2u);
+            float* kan[2] = { a.data(), b.data() };
+            for (int rest = samples; rest > 0;)
+            {
+                const int m = std::min (rest, blockGroesse);
+                for (int i = 0; i < m; ++i) quelle (n0 + i, a[(size_t) i], b[(size_t) i]);
+                k.verarbeite (kan, 2, m);
+                for (int i = 0; i < m; ++i) { aus.push_back (a[(size_t) i]); aus.push_back (b[(size_t) i]); }
+                n0 += m;
+                rest -= m;
+            }
+            return aus;
+        };
+
+        // Wie `fahre`, liefert aber die Taps post_committed und post_candidate
+        // beider Kanaele (verschraenkt, double) aus DEMSELBEN Lauf. Fehlt ein
+        // Tap, steht dort NaN - `endlich` unten faengt das.
+        struct TapLauf { std::vector<double> committed, candidate; };
+        const auto fahreTaps = [] (DspKern& k, const auto& quelle, long long& n0, int samples, int blockGroesse)
+        {
+            std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
+            TapLauf aus;
+            float* kan[2] = { a.data(), b.data() };
+            const auto haenge = [&k] (std::vector<double>& v, Tap t, int m)
+            {
+                const double* l = k.tap (t, 0);
+                const double* r = k.tap (t, 1);
+                for (int i = 0; i < m; ++i)
+                {
+                    v.push_back (l != nullptr ? l[i] : std::nan (""));
+                    v.push_back (r != nullptr ? r[i] : std::nan (""));
+                }
+            };
+            for (int rest = samples; rest > 0;)
+            {
+                const int m = std::min (rest, blockGroesse);
+                for (int i = 0; i < m; ++i) quelle (n0 + i, a[(size_t) i], b[(size_t) i]);
+                k.verarbeite (kan, 2, m);
+                haenge (aus.committed, Tap::postCommitted, m);
+                haenge (aus.candidate, Tap::postCandidate, m);
+                n0 += m;
+                rest -= m;
+            }
+            return aus;
+        };
+
+        // Der Eingang derselben Quelle ab `n0`, verschraenkt wie `fahre`.
+        const auto eingang = [] (const auto& quelle, long long n0, int samples)
+        {
+            std::vector<float> ein;
+            ein.reserve ((size_t) samples * 2u);
+            for (int i = 0; i < samples; ++i)
+            {
+                float l = 0.0f, r = 0.0f;
+                quelle (n0 + i, l, r);
+                ein.push_back (l);
+                ein.push_back (r);
+            }
+            return ein;
+        };
+
+        // Das Orakel: ein frischer Kern uebernimmt `ziel` am Blockrand und
+        // bekommt ab dort denselben Eingang in derselben Blockteilung.
+        const auto frischerKern = [&] (double rate, int maxBlock, const param::DspSatz& ziel, const auto& quelle,
+                                       long long n0, int samples, int blockGroesse)
+        {
+            auto k = neuerKern (rate, maxBlock);
+            k->uebernehmeZustand (ziel);
+            return fahre (*k, quelle, n0, samples, blockGroesse);
+        };
+
+        const auto ohneEq = [] (param::DspSatz s)
+        {
+            s.werte[(size_t) param::kIndexEqEnabled].b = false;
+            return s;
+        };
+
+        struct Wiedereinschalten
+        {
+            std::vector<float> aus, frisch, ein;   ///< ab dem Umschaltblock, L und R verschraenkt
+            double    vorher   = 0.0;              ///< der letzte Ausgang (L) vor dem Umschaltblock
+            long long umschalt = 0;                ///< Index des Umschaltsamples in der Quelle
+        };
+
+        // Der Aufbau aus M-23: `vorher` 1024 Samples eingeschwungen,
+        // ausgeschaltet, Ausblenden und 512 Samples Ruhe; in der Ruhe jede
+        // Publikation aus `inDerRuhe` (ENDE-Marken), je gefolgt von 256
+        // Samples, damit ein Blockrand sie nimmt; dann `ziel` aus der Ruhe und
+        // `laenge` Samples ab diesem Umschaltblock.
+        const auto ausUndEin = [&] (double rate, int blockGroesse, int maxBlock, const param::DspSatz& vorher,
+                                    const std::vector<param::DspSatz>& inDerRuhe, const param::DspSatz& ziel,
+                                    const auto& quelle, int laenge)
+        {
+            Wiedereinschalten w;
+            auto k = neuerKern (rate, maxBlock);
+            long long n = 0;
+            k->uebernehmeZustand (vorher);
+            fahre (*k, quelle, n, 1024, blockGroesse);
+            k->pflege();
+            k->uebernehmeZustand (ohneEq (vorher));
+            auto lauf = fahre (*k, quelle, n, kFadeSamples + 512, blockGroesse);
+            k->pflege();
+            for (const auto& s : inDerRuhe)
+            {
+                k->uebernehmeZustand (s);
+                lauf = fahre (*k, quelle, n, 256, blockGroesse);
+                k->pflege();
+            }
+            w.vorher   = (double) lauf[lauf.size() - 2];
+            w.umschalt = n;
+            k->uebernehmeZustand (ziel);
+            w.aus    = fahre (*k, quelle, n, laenge, blockGroesse);
+            w.frisch = frischerKern (rate, maxBlock, ziel, quelle, w.umschalt, laenge, blockGroesse);
+            w.ein    = eingang (quelle, w.umschalt, laenge);
+            return w;
+        };
+
+        // Erste bytegleich abweichende Stelle (Sample), -1 bei Gleichheit.
+        const auto ersteAbweichung = [] (const std::vector<float>& a, const std::vector<float>& b) -> long long
+        {
+            if (a.size() != b.size() || a.empty()) return 0;
+            for (size_t i = 0; i < a.size(); ++i)
+                if (std::memcmp (&a[i], &b[i], sizeof (float)) != 0) return (long long) (i / 2);
+            return -1;
+        };
+        const auto ersteTapAbweichung = [] (const std::vector<double>& a, const std::vector<double>& b) -> long long
+        {
+            if (a.size() != b.size() || a.empty()) return 0;
+            for (size_t i = 0; i < a.size(); ++i)
+                if (std::memcmp (&a[i], &b[i], sizeof (double)) != 0) return (long long) (i / 2);
+            return -1;
+        };
+        const auto endlich = [] (const std::vector<double>& v)
+        {
+            return std::all_of (v.begin(), v.end(), [] (double d) { return std::isfinite (d); });
+        };
+        const auto abweichungText = [] (long long abw)
+        {
+            return abw < 0 ? std::string ("ja") : "nein, erste Abweichung an Sample " + std::to_string (abw);
+        };
+
+        // Groesstes Verhaeltnis |Ausgang/Eingang| und groesste Abweichung des
+        // Verhaeltnisses von 1,0 (beide Kanaele, nur wo der Eingang nicht 0 ist).
+        const auto spitzeVerhaeltnis = [] (const std::vector<float>& aus, const std::vector<float>& ein)
+        {
+            double m = 0.0;
+            for (size_t i = 0; i < aus.size() && i < ein.size(); ++i)
+                if (ein[i] != 0.0f) m = std::max (m, std::abs ((double) aus[i] / (double) ein[i]));
+            return m;
+        };
+        const auto abweichungVonEins = [] (const std::vector<float>& aus, const std::vector<float>& ein)
+        {
+            double m = 0.0;
+            for (size_t i = 0; i < aus.size() && i < ein.size(); ++i)
+                if (ein[i] != 0.0f) m = std::max (m, std::abs ((double) aus[i] / (double) ein[i] - 1.0));
+            return m;
+        };
+
+        // Groesster Nachbarsprung auf L ueber die ersten `bis` Samples, der
+        // erste gegen `vorher`.
+        const auto sprungL = [] (const std::vector<float>& aus, double vorher, size_t bis)
+        {
+            double m = 0.0, v = vorher;
+            for (size_t i = 0; i < bis && 2 * i < aus.size(); ++i)
+            {
+                m = std::max (m, std::abs ((double) aus[2 * i] - v));
+                v = (double) aus[2 * i];
+            }
+            return m;
+        };
+        const auto betragMax = [] (const std::vector<float>& aus)
+        {
+            double m = 0.0;
+            for (float v : aus) m = std::max (m, std::abs ((double) v));
+            return m;
+        };
+
+        // E-31 (W-4): die Rundungstoleranz einer Nachbarsample-Differenz am
+        // float-Ausgang ist zwei Rasterschritte des float-Rasters. Unter 1,0 ist
+        // das `kRundungFloat` (2^-23), wie die Matrix es nennt; ueber 1,0 waechst
+        // das Raster mit dem Betrag - bei +24 dB und x = 0,5 liegen die
+        // Ausgaenge bis 7,92, Raster 2^-21. Dieselbe Herleitung, am groessten
+        // Betrag des Laufs.
+        const auto rundung = [] (double betrag)
+        {
+            return betrag < 1.0 ? kRundungFloat : std::ldexp (1.0, std::ilogb (betrag) - 22);
+        };
+
+        auto an0  = machSatz (true);                              // Ziel: 0 dB, sonst nichts
+        auto an24 = machSatz (true);
+        setzeGlobal (an24, "v1.global.output_trim_db", 24.0);
+
+        // Die Zusage aus M-23 (auch M-24): ab dem Umschaltblock bytegleich zum
+        // frischen Kern, Ausgang/Eingang 1,0 an jedem Sample, E-31 mit
+        // Fadeschrittweite 0 am Umschaltsample und ueber den ganzen Lauf.
+        const auto pruefeWieM23 = [&] (const Wiedereinschalten& w, const std::string& name, const std::string& aufbau)
+        {
+            const long long abw  = ersteAbweichung (w.aus, w.frisch);
+            const double spitze  = spitzeVerhaeltnis (w.aus, w.ein);
+            const double vonEins = abweichungVonEins (w.aus, w.ein);
+            const double amUmschalt = std::abs ((double) w.aus[0] - w.vorher);
+            const double ueberAlles = sprungL (w.aus, w.vorher, w.aus.size() / 2);
+            pruefe (abw < 0 && spitze <= 1.0 + 1e-6 && vonEins <= 1e-6
+                        && amUmschalt <= kRundungFloat && ueberAlles <= kRundungFloat,
+                    name, aufbau + ": bytegleich zum frischen Kern: " + abweichungText (abw)
+                    + ", Spitze Ausgang/Eingang " + zahl (spitze, 7) + ", groesste Abweichung von 1,0 " + zahl (vonEins, 9)
+                    + ", Sprung am Umschaltsample " + zahl (amUmschalt, 9) + ", groesster Sprung ueber "
+                    + std::to_string (w.aus.size() / 2) + " Samples " + zahl (ueberAlles, 9) + " gegen 0 + 2^-23");
+        };
+
+        // M-23 Output-Trim, mit den Zahlenraendern der Rampenlaenge (M-35).
+        {
+            const auto w = ausUndEin (fs, bs, mb, an24, { ohneEq (an0) }, an0, dc, 1024);
+            pruefeWieM23 (w, "311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)",
+                          "Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein");
+
+            bool exakt = true;
+            std::string werte;
+            for (const int i : { 0, 1, 127, 128, 255, 256 })
+            {
+                const double l = (double) w.aus[(size_t) (2 * i)] / x;
+                const double r = (double) w.aus[(size_t) (2 * i + 1)] / x;
+                exakt = exakt && l == 1.0 && r == 1.0;
+                werte += (werte.empty() ? "" : " / ") + zahl (l, 7);
+            }
+            pruefe (exakt, "311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)",
+                    "Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: " + werte + " - verlangt exakt 1,0");
+        }
+
+        // M-24 Input-Trim.
+        {
+            auto in24 = machSatz (true);
+            setzeGlobal (in24, "v1.global.input_trim_db", 24.0);
+            const auto w = ausUndEin (fs, bs, mb, in24, { ohneEq (an0) }, an0, dc, 1024);
+            pruefeWieM23 (w, "311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)",
+                          "Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein");
+        }
+
+        // M-25 Mix: +12-dB-Bell 1 kHz Q 1, Mix 0, 1-kHz-Sinus 0,25; in der Ruhe
+        // Mix 1. Am Umschaltsample zaehlt der Sprung, den der Kern ZUSAETZLICH
+        // zum Eigensprung des Sinus macht; die Fadeschrittweite ist der Abstand
+        // des eingeblendeten Programms zum Eingang durch K, gemessen am frischen
+        // Kern nach dem Fade.
+        {
+            const auto sinus = [fs] (long long n, float& l, float& r)
+            {
+                l = r = (float) (0.25 * std::sin (2.0 * kPiRef * 1000.0 * (double) n / fs));
+            };
+            auto band = machSatz (true);
+            belege (band, 0, Filtertyp::bell, 1000.0, 1.0, 12.0);
+            auto mix0 = band;
+            setzeGlobal (mix0, "v2.global.mix", 0.0);
+            const auto w = ausUndEin (fs, bs, mb, mix0, { ohneEq (band) }, band, sinus, 1024);
+
+            float lv = 0.0f, rv = 0.0f;
+            sinus (w.umschalt - 1, lv, rv);
+            const double zusatz = std::abs (((double) w.aus[0] - w.vorher) - ((double) w.ein[0] - (double) lv));
+            double abstand = 0.0;
+            for (size_t i = (size_t) kFadeSamples; i < 2 * (size_t) kFadeSamples; ++i)
+                abstand = std::max (abstand, std::abs ((double) w.frisch[2 * i] - (double) w.ein[2 * i]));
+            const double stufe = abstand / K;
+            const long long abw = ersteAbweichung (w.aus, w.frisch);
+            pruefe (abw < 0 && zusatz <= stufe + rundung (betragMax (w.aus)) && abstand > 0.5,
+                    "311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)",
+                    "Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: "
+                    + abweichungText (abw) + ", Zusatzsprung am Umschaltsample " + zahl (zusatz, 9)
+                    + " gegen Fadeschritt " + zahl (stufe, 9) + " (Abstand Programm zu Eingang " + zahl (abstand, 5) + ")");
+        }
+
+        // M-26 Width: 2,0 auf reinem Seitensignal (L = 0,5 sin, R = -L); in der
+        // Ruhe Width 1,0.
+        {
+            const auto seite = [fs] (long long n, float& l, float& r)
+            {
+                l = (float) (0.5 * std::sin (2.0 * kPiRef * 1000.0 * (double) n / fs));
+                r = -l;
+            };
+            auto breit = machSatz (true);
+            setzeGlobal (breit, "v1.global.width", 2.0);
+            const auto w = ausUndEin (fs, bs, mb, breit, { ohneEq (an0) }, an0, seite, 1024);
+            const long long abw = ersteAbweichung (w.aus, w.frisch);
+            const double spitze = betragMax (w.aus);
+            pruefe (abw < 0 && spitze <= 0.5 + 1e-6,
+                    "311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)",
+                    "Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: "
+                    + abweichungText (abw) + ", Spitze " + zahl (spitze, 7) + " gegen 0,5 + 1e-6");
+        }
+
+        // M-27 Auto-Gain: High-Shelf 20 Hz Q 1 -12 dB (Ausgleich rund +12 dB,
+        // Spiegel des M-37-Pruefllings aus H); in der Ruhe gain_db 0 - die
+        // flache Kurve, Ausgleich 0 dB (M-36).
+        {
+            auto ag = machSatz (true);
+            setzeGlobalBool (ag, "v2.global.auto_gain", true);
+            belege (ag, 0, Filtertyp::highShelf, 20.0, 1.0, -12.0);
+            auto flach = ag;
+            flach.werte[(size_t) param::indexBandV1 (0, param::kGainDb)].zahl = 0.0;
+            auto probe = neuerKern (fs, mb);
+            probe->uebernehmeZustand (ag);
+            const double ausgleichVorher = probe->autoGainDb();
+            probe->uebernehmeZustand (flach);
+            const double ausgleichFlach = probe->autoGainDb();
+
+            const auto w = ausUndEin (fs, bs, mb, ag, { ohneEq (flach) }, flach, dc, 1024);
+            const long long abw  = ersteAbweichung (w.aus, w.frisch);
+            const double spitze  = spitzeVerhaeltnis (w.aus, w.ein);
+            const double vonEins = abweichungVonEins (w.aus, w.ein);
+            pruefe (abw < 0 && spitze <= 1.0 + 1e-6 && vonEins <= 1e-6 && ausgleichVorher > 11.0
+                        && std::abs (ausgleichFlach) <= 1e-9,
+                    "311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)",
+                    "Ausgleich vorher " + zahl (ausgleichVorher, 4) + " dB, flach " + zahl (ausgleichFlach, 4)
+                    + " dB; bytegleich zum frischen Kern mit der flachen Kurve: " + abweichungText (abw)
+                    + ", Spitze Ausgang/Eingang " + zahl (spitze, 7) + ", groesste Abweichung von 1,0 " + zahl (vonEins, 9));
+        }
+
+        // M-28 Rueckweg auf den alten Wert: in der Ruhe erst 0 dB, dann wieder
+        // +24 dB; ein mit +24 dB. Die Kurve des frischen Kerns, ausgeschrieben:
+        // Rampe ab 1,0 (erster Tick 1 + (g - 1)/K) mit dem Crossfade t = n/K,
+        // also Ausgang/Eingang 1 + n(n + 1)(g - 1)/K^2 fuer n < K, danach g.
+        {
+            const auto w = ausUndEin (fs, bs, mb, an24, { ohneEq (an0), ohneEq (an24) }, an24, dc, 1024);
+            const double tol = rundung (betragMax (w.aus));
+
+            const double amUmschalt = std::abs ((double) w.aus[0] - w.vorher);
+            const double schranke   = 2.0 * (K - 1.0) * (g24 - 1.0) * x / (K * K);
+            const double ueberAlles = sprungL (w.aus, w.vorher, w.aus.size() / 2);
+            pruefe (amUmschalt <= kRundungFloat && ueberAlles <= schranke + tol,
+                    "311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: E-31-Mass (Teilfall von 311/M-23)",
+                    "Sprung am Umschaltsample " + zahl (amUmschalt, 9) + " gegen 2^-23, groesster Sprung ueber den Lauf "
+                    + zahl (ueberAlles, 9) + " gegen 2(K-1)(g-1)x/K^2 = " + zahl (schranke, 9) + " + Rundung " + zahl (tol, 9));
+
+            const long long abw = ersteAbweichung (w.aus, w.frisch);
+            double kurve = 0.0;
+            for (size_t i = 0; i < w.aus.size(); ++i)
+            {
+                const double n = (double) (i / 2);
+                const double soll = n < K ? 1.0 + n * (n + 1.0) * (g24 - 1.0) / (K * K) : g24;
+                kurve = std::max (kurve, std::abs ((double) w.aus[i] - x * soll));
+            }
+            pruefe (abw < 0 && kurve <= tol,
+                    "311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)",
+                    "in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: " + abweichungText (abw)
+                    + ", groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) " + zahl (kurve, 9) + " gegen " + zahl (tol, 9)
+                    + "; Ausgang/Eingang bei n = 1: " + zahl ((double) w.aus[2] / x, 7) + " (Kurve 1,000453)");
+        }
+
+        // M-29 Ausschalten im laufenden Crossfade: aus der Ruhe ein mit +24 dB,
+        // 64 Samples spaeter aus (die ENDE-Marke wartet, E-17), nach dem
+        // Ausblenden in der Ruhe 0 dB, dann ein mit 0 dB. Die Kurve des ganzen
+        // Laufs ist hier ausgeschrieben: Einblenden 1 + n(n + 1)(g - 1)/K^2,
+        // ab K das Ausblenden g(1 - m/K) + m/K mit m = n - K, ab 2K der Eingang.
+        {
+            auto k = neuerKern (fs, mb);
+            long long n = 0;
+            fahre (*k, dc, n, 512, bs);
+            k->uebernehmeZustand (an24);
+            auto lauf = fahre (*k, dc, n, 64, bs);
+            k->uebernehmeZustand (ohneEq (an24));
+            const auto weiter = fahre (*k, dc, n, 1024 - 64, bs);
+            lauf.insert (lauf.end(), weiter.begin(), weiter.end());
+            k->pflege();
+            k->uebernehmeZustand (ohneEq (an0));
+            const auto ruhe = fahre (*k, dc, n, 256, bs);
+            k->pflege();
+            const double vorher = (double) ruhe[ruhe.size() - 2];
+            const long long umschalt = n;
+            k->uebernehmeZustand (an0);
+            const auto wieder = fahre (*k, dc, n, 1024, bs);
+            const auto frisch = frischerKern (fs, mb, an0, dc, umschalt, 1024, bs);
+
+            const double tol   = rundung (betragMax (lauf));
+            const double stufe = (g24 - 1.0) * x / K;                       // Fadeschritt von Ein- und Ausblenden
+            double kurve = 0.0;
+            for (size_t i = 0; i < lauf.size(); ++i)
+            {
+                const double s = (double) (i / 2);
+                double soll = 1.0;
+                if (s < K)            soll = 1.0 + s * (s + 1.0) * (g24 - 1.0) / (K * K);
+                else if (s < 2.0 * K) soll = g24 * (1.0 - (s - K) / K) + (s - K) / K;
+                kurve = std::max (kurve, std::abs ((double) lauf[i] - x * soll));
+            }
+            const size_t k1 = (size_t) kFadeSamples, k2 = 2 * (size_t) kFadeSamples;
+            const double amEinblenden  = std::abs ((double) lauf[0] - x);
+            const double amAusblenden  = std::abs ((double) lauf[2 * k1] - (double) lauf[2 * k1 - 2]);
+            const double amRuhebeginn  = std::abs ((double) lauf[2 * k2] - (double) lauf[2 * k2 - 2]);
+            const double amWiederein   = std::abs ((double) wieder[0] - vorher);
+            const double ueberAlles    = sprungL (lauf, x, lauf.size() / 2);
+            const double wache         = std::max (2.0 * (K - 1.0) * (g24 - 1.0) * x / (K * K), stufe);
+            pruefe (amEinblenden <= stufe + tol && amAusblenden <= stufe + tol && amRuhebeginn <= stufe + tol
+                        && amWiederein <= kRundungFloat && ueberAlles <= wache + tol && kurve <= tol,
+                    "311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)",
+                    "Spruenge am Umschaltsample: Einblenden " + zahl (amEinblenden, 9) + ", Ende Einblenden = Beginn Ausblenden "
+                    + zahl (amAusblenden, 9) + ", Ruhebeginn " + zahl (amRuhebeginn, 9) + " gegen Fadeschritt " + zahl (stufe, 9)
+                    + " + " + zahl (tol, 9) + "; Wiedereinschalten " + zahl (amWiederein, 9) + " gegen 2^-23; groesster Sprung "
+                    + zahl (ueberAlles, 9) + " gegen " + zahl (wache, 9) + "; das Ausblenden beginnt bei Sample 256 "
+                    "(groesste Abweichung von der ausgeschriebenen Kurve " + zahl (kurve, 9) + ")");
+
+            const long long abw = ersteAbweichung (wieder, frisch);
+            const double spitze = spitzeVerhaeltnis (wieder, eingang (dc, umschalt, 1024));
+            pruefe (abw < 0 && spitze <= 1.0 + 1e-6,
+                    "311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)",
+                    "ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: " + abweichungText (abw)
+                    + ", Spitze Ausgang/Eingang " + zahl (spitze, 7));
+        }
+
+        // M-30 Gegenfall Hard-Bypass (M-06 unveraendert): im Hard-Bypass bleibt
+        // eine Bank aktiv; der Trimwechsel dort ist ein Crossfade zwischen zwei
+        // Passthrough-Baenken, und die Rampen laufen auf das neue Ziel, weil der
+        // nicht rechnende Pfad sie tickt.
+        {
+            auto k = neuerKern (fs, mb);
+            long long n = 0;
+            k->uebernehmeZustand (an24);
+            fahre (*k, dc, n, 1024, bs);
+            k->pflege();
+            auto by24 = an24;
+            setzeGlobalBool (by24, "v1.global.bypass", true);
+            k->uebernehmeZustand (by24);
+            fahre (*k, dc, n, kFadeSamples + 512, bs);
+            k->pflege();
+            auto by0 = an0;
+            setzeGlobalBool (by0, "v1.global.bypass", true);
+            k->uebernehmeZustand (by0);
+            const auto imBypass = fahre (*k, dc, n, kFadeSamples + 512, bs);
+            k->pflege();
+            const double vorher = (double) imBypass[imBypass.size() - 2];
+            const long long umschalt = n;
+            k->uebernehmeZustand (an0);
+            const auto aus = fahre (*k, dc, n, 1024, bs);
+            const double spitze = spitzeVerhaeltnis (aus, eingang (dc, umschalt, 1024));
+            const double amUmschalt = std::abs ((double) aus[0] - vorher);
+            pruefe (spitze <= 1.0 + 1e-6 && amUmschalt <= kRundungFloat,
+                    "311/M-30 trimwechsel_im_hard_bypass (Gegenfall M-06, E-7)",
+                    "+24 dB, Hard-Bypass, im Bypass 0 dB, Bypass aus: Spitze Ausgang/Eingang " + zahl (spitze, 7)
+                    + " gegen 1 + 1e-6, Sprung am Umschaltsample " + zahl (amUmschalt, 9) + " gegen 0 + 2^-23");
+        }
+
+        // M-31 Gegenfall Hoermatrix-Halt (E-33, M-55 unveraendert): der Aufbau
+        // der X-1-Faelle aus L (Committed und Candidate Output-Trim +6 dB, DC
+        // 0,3, Blockgroesse 64), Candidate-Ende 64 Samples in das Einblenden der
+        // Hoermatrix (Fall (a)). Im Halt klingt die endende Bank mit IHREN Rampen
+        // - der Tap post_candidate gleicht post_committed. Nach dem Ausdienen
+        // kommt ein zweiter Candidate mit 0 dB aus der Ruhe.
+        {
+            const auto dc3 = [] (long long, float& l, float& r) { l = 0.3f; r = 0.3f; };
+            auto laut = machSatz (true);
+            setzeGlobal (laut, "v1.global.output_trim_db", 6.0);
+            auto k = neuerKern (fs, 64);
+            long long n = 0;
+            k->uebernehmeZustand (laut);
+            k->uebernehmeZustand (laut, Pfad::candidate);
+            fahre (*k, dc3, n, 4096, 64);
+            k->pflege();
+            k->setzeHoermatrix (Hoermatrix::candidate);
+            fahre (*k, dc3, n, 64, 64);
+            k->beendeCandidate();
+
+            const auto halt = fahreTaps (*k, dc3, n, 32, 64);
+            double haltAbw = 0.0;
+            for (size_t i = 0; i < halt.candidate.size() && i < halt.committed.size(); ++i)
+                haltAbw = std::max (haltAbw, std::abs (halt.candidate[i] - halt.committed[i]));
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const bool gehalten = kA == -1 && kQ >= 0;
+            pruefe (gehalten && endlich (halt.candidate) && endlich (halt.committed) && haltAbw <= 1e-12,
+                    "311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: Hoerhalt (Gegenfall E-33)",
+                    std::string ("32 Samples nach dem Candidate-Ende gehalten: ") + (gehalten ? "ja" : "nein")
+                    + ", groesste Abweichung post_candidate zu post_committed " + zahl (haltAbw, 12)
+                    + " - die endende Bank klingt mit ihren Rampen (+6 dB)");
+
+            fahre (*k, dc3, n, 2048, 64);
+            k->pflege();
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const bool ausgedient = kA == -1 && kQ == -1;
+            auto kand0 = machSatz (true);
+            const long long umschalt = n;
+            k->uebernehmeZustand (kand0, Pfad::candidate);
+            const auto tap = fahreTaps (*k, dc3, n, 1024, 64).candidate;
+
+            auto frisch = neuerKern (fs, 64);
+            frisch->uebernehmeZustand (laut);
+            frisch->uebernehmeZustand (kand0, Pfad::candidate);
+            long long nf = umschalt;
+            const auto tapFrisch = fahreTaps (*frisch, dc3, nf, 1024, 64).candidate;
+            const long long abw = ersteTapAbweichung (tap, tapFrisch);
+            pruefe (ausgedient && endlich (tap) && abw < 0,
+                    "311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: zweiter Candidate",
+                    std::string ("nach dem Halt ausgedient: ") + (ausgedient ? "ja" : "nein")
+                    + "; zweiter Candidate 0 dB aus der Ruhe, Tap post_candidate bytegleich zum frischen Kern: "
+                    + abweichungText (abw) + (tap.size() > 2 ? ", Sample 1: " + zahl (tap[2] / 0.3, 7) + " x Eingang" : std::string()));
+        }
+
+        // M-32 und M-33: `beendeAudiohistorie` 64 Samples in das Ausblenden - der
+        // Uebergang endet dort, der Pfad ruht. M-32 publiziert danach in der Ruhe
+        // eine Aenderung (ENDE-Marke), M-33 schaltet gleich wieder ein.
+        for (int fall = 0; fall < 2; ++fall)
+        {
+            auto k = neuerKern (fs, mb);
+            long long n = 0;
+            k->uebernehmeZustand (an24);
+            fahre (*k, dc, n, 1024, bs);
+            k->pflege();
+            k->uebernehmeZustand (ohneEq (an24));
+            fahre (*k, dc, n, 64, bs);
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const bool ausblendend = cA == -1 && cQ >= 0;
+            k->beendeAudiohistorie();
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const bool ruht = cA == -1 && cQ == -1;
+            if (fall == 0)
+            {
+                fahre (*k, dc, n, 512, bs);
+                k->pflege();
+                k->uebernehmeZustand (ohneEq (an0));
+                fahre (*k, dc, n, 256, bs);
+                k->pflege();
+            }
+            const long long umschalt = n;
+            k->uebernehmeZustand (an0);
+            const auto aus    = fahre (*k, dc, n, 1024, bs);
+            const auto frisch = frischerKern (fs, mb, an0, dc, umschalt, 1024, bs);
+            const long long abw = ersteAbweichung (aus, frisch);
+            const double spitze = spitzeVerhaeltnis (aus, eingang (dc, umschalt, 1024));
+            pruefe (ausblendend && ruht && abw < 0 && spitze <= 1.0 + 1e-6,
+                    fall == 0 ? "311/M-32 wiedereinschalten_nach_ruhe_wie_frischer_kern_aenderung_in_der_ruhe_nach_beende_audiohistorie (Teilfall von 311/M-23)"
+                              : "311/M-33 wiedereinschalten_nach_ruhe_wie_frischer_kern_beende_audiohistorie_im_ausblenden (Teilfall von 311/M-23)",
+                    std::string ("Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ")
+                    + (ausblendend ? "ja" : "nein") + ", danach ruhend: " + (ruht ? "ja" : "nein")
+                    + (fall == 0 ? "), 512 Samples Ruhe, in der Ruhe 0 dB, ein mit 0 dB" : "), gleich ein mit 0 dB")
+                    + ": bytegleich zum frischen Kern: " + abweichungText (abw) + ", Spitze Ausgang/Eingang " + zahl (spitze, 7));
+        }
+
+        // M-36 Blockgroessen 1, 255, 256, 257, 180 und 4096 (maxBlock 512, 4096
+        // in Stuecken): ab dem Umschaltblock 4096 Samples, bytegleich zum
+        // frischen Kern derselben Blockteilung und zur Blockgroesse 1.
+        {
+            std::vector<float> ersteAus;
+            for (const int b : { 1, 255, 256, 257, 180, 4096 })
+            {
+                const auto w = ausUndEin (fs, b, mb, an24, { ohneEq (an0) }, an0, dc, 4096);
+                if (ersteAus.empty()) ersteAus = w.aus;
+                const long long abw  = ersteAbweichung (w.aus, w.frisch);
+                const long long abw1 = ersteAbweichung (w.aus, ersteAus);
+                pruefe (abw < 0 && abw1 < 0,
+                        "311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse "
+                        + std::to_string (b),
+                        "bytegleich zum frischen Kern: " + abweichungText (abw) + ", zur Blockgroesse 1: " + abweichungText (abw1)
+                        + ", Spitze Ausgang/Eingang " + zahl (spitzeVerhaeltnis (w.aus, w.ein), 7));
+            }
+        }
+
+        // M-37 Sampleraten 44,1, 48 und 96 kHz: die Rampe zaehlt Samples.
+        for (const double rate : { 44100.0, 48000.0, 96000.0 })
+        {
+            const auto w = ausUndEin (rate, bs, mb, an24, { ohneEq (an0) }, an0, dc, 1024);
+            const long long abw = ersteAbweichung (w.aus, w.frisch);
+            pruefe (abw < 0,
+                    "311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): " + zahl (rate / 1000.0, 1) + " kHz",
+                    "bytegleich zum frischen Kern: " + abweichungText (abw) + ", Spitze Ausgang/Eingang "
+                    + zahl (spitzeVerhaeltnis (w.aus, w.ein), 7));
+        }
+
+        // M-38 Candidate-Pfad (E-16): Candidate +24 dB bei Hoermatrix Processed,
+        // `beendeCandidate` blendet ihn in die Ruhe; ein neuer Candidate mit
+        // 0 dB. Der Committed-Pfad (+6 dB) laeuft daneben unberuehrt: sein Tap
+        // bleibt ueber den ganzen Candidate-Wechsel bytegleich auf dem Wert davor.
+        {
+            auto com = machSatz (true);
+            setzeGlobal (com, "v1.global.output_trim_db", 6.0);
+            auto k = neuerKern (fs, mb);
+            long long n = 0;
+            k->uebernehmeZustand (com);
+            k->uebernehmeZustand (an24, Pfad::candidate);
+            fahre (*k, dc, n, 2048, bs);
+            k->pflege();
+            const double* pk = k->tap (Tap::postCommitted, 0);
+            const double comVorher = pk != nullptr ? pk[bs - 1] : std::nan ("");
+            k->beendeCandidate();
+            auto comLauf = fahreTaps (*k, dc, n, kFadeSamples + 512, bs).committed;
+            k->pflege();
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            const bool ruht = kA == -1 && kQ == -1;
+            const long long umschalt = n;
+            k->uebernehmeZustand (an0, Pfad::candidate);
+            const auto wieder = fahreTaps (*k, dc, n, 1024, bs);
+            const auto& tap = wieder.candidate;
+            comLauf.insert (comLauf.end(), wieder.committed.begin(), wieder.committed.end());
+            bool comUnberuehrt = std::isfinite (comVorher);
+            for (double v : comLauf) if (std::memcmp (&v, &comVorher, sizeof (double)) != 0) comUnberuehrt = false;
+
+            auto frisch = neuerKern (fs, mb);
+            frisch->uebernehmeZustand (com);
+            frisch->uebernehmeZustand (an0, Pfad::candidate);
+            long long nf = umschalt;
+            const auto tapFrisch = fahreTaps (*frisch, dc, nf, 1024, bs).candidate;
+            const long long abw = ersteTapAbweichung (tap, tapFrisch);
+            pruefe (ruht && endlich (tap) && abw < 0 && comUnberuehrt,
+                    "311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)",
+                    std::string ("Candidate +24 dB beendet, ruhend: ") + (ruht ? "ja" : "nein")
+                    + "; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: " + abweichungText (abw)
+                    + (tap.size() > 2 ? " (Sample 1: " + zahl (tap[2] / x, 7) + " x Eingang)" : std::string())
+                    + "; Committed-Tap ueber " + std::to_string (comLauf.size() / 2) + " Samples bytegleich auf "
+                    + zahl (comVorher, 9) + ": " + (comUnberuehrt ? "ja" : "nein"));
+        }
     }
 
     //==========================================================================

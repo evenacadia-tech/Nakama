@@ -18,7 +18,8 @@
          Tap, gemeinsame Zaehler, ruhender Passthrough, float-Kante der
          Analysekopie (M-35 bis M-37, M-41). Die Analysefaelle halten den
          Worker ueber `mitAngehaltenerAnalyseFuerTest` an und lesen die Queue
-         selbst - deterministisch, ohne auf Zeit zu warten.
+         selbst - deterministisch, ohne auf Zeit zu warten. Seit NAK-311
+         Etappe 3 (W01) der Host-Reset im Ausblenden (311/M-34, Abschnitt R).
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -2589,6 +2590,76 @@ void nak283Analysezufuehrung()
     }
 }
 
+/** Ein Block DC ueber den echten processBlock; liefert den Ausgang beider
+    Kanaele. */
+std::vector<float> dcBlock (Prozessor& p, int groesse, float wert)
+{
+    juce::AudioBuffer<float> b (2, groesse);
+    for (int k = 0; k < 2; ++k)
+        for (int n = 0; n < groesse; ++n)
+            b.setSample (k, n, wert);
+    juce::MidiBuffer midi;
+    p.processBlock (b, midi);
+    std::vector<float> aus;
+    aus.reserve ((size_t) groesse * 2u);
+    for (int k = 0; k < 2; ++k)
+        for (int n = 0; n < groesse; ++n)
+            aus.push_back (b.getSample (k, n));
+    return aus;
+}
+
+void nak311Pfadrampen()
+{
+    abschnitt ("R - NAK-311 W01: Host-Reset im Ausblenden friert kein Rampenziel ein (311/M-34)");
+    // Manifest NAK-311 §6.2 M-34: DC 0,5, Blockgroesse 64. Eq an mit
+    // Output-Trim +24 dB und eingeschwungen; eq aus und genau EIN Block (das
+    // Ausblenden laeuft, Rest 192); reset() - der Uebergang endet in
+    // beendeAudiohistorie, der Pfad ruht -; in der Ruhe Output-Trim 0 dB (die
+    // ENDE-Marke aendert keine Rampe) und Audio; dann eq an mit 0 dB. Ein
+    // ruhender Pfad steht nach reset() auf den Ruhewerten 1,0: das
+    // Wiedereinschalten mit 0 dB traegt Ausgang/Eingang 1,0.
+    auto p = prozessor (48000.0, 64);
+    const int iTrim = param::indexVonId ("v1.global.output_trim_db");
+    auto an = mitEq (true);
+    an.werte[(size_t) iTrim].zahl = 24.0;
+    const auto e1 = setze (*p, an);
+    for (int i = 0; i < 32; ++i) dcBlock (*p, 64, 0.5f);          // Engagier-Fade und Rampe vorbei
+
+    auto aus = an;
+    aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+    const auto e2 = setze (*p, aus);
+    dcBlock (*p, 64, 0.5f);                                        // das Ausblenden laeuft, Rest 192
+    int cA = -1, cQ = -1, kA = -1, kQ = -1;
+    p->dspKernFuerTest().gefahreneSlots (cA, cQ, kA, kQ);
+    const bool ausblendend = cA == -1 && cQ >= 0;
+
+    p->reset();
+    p->dspKernFuerTest().gefahreneSlots (cA, cQ, kA, kQ);
+    const bool ruht = cA == -1 && cQ == -1;
+
+    auto ausNull = aus;
+    ausNull.werte[(size_t) iTrim].zahl = 0.0;
+    const auto e3 = setze (*p, ausNull);                           // ENDE-Marke in der Ruhe
+    for (int i = 0; i < 8; ++i) dcBlock (*p, 64, 0.5f);
+
+    const auto e4 = setze (*p, mitEq (true));                      // eq an mit 0 dB
+    double spitze = 0.0;
+    for (int i = 0; i < 16; ++i)
+        for (float v : dcBlock (*p, 64, 0.5f))
+            spitze = std::max (spitze, std::abs ((double) v) / 0.5);
+
+    const bool commits = e1.ausgang == tx::Ausgang::commit && e2.ausgang == tx::Ausgang::commit
+                      && e3.ausgang == tx::Ausgang::commit && e4.ausgang == tx::Ausgang::commit;
+    std::ostringstream d;
+    d << std::setprecision (9) << "vier Commits " << (commits ? "ja" : "nein") << ", vor reset ausblendend "
+      << (ausblendend ? "ja" : "nein") << ", nach reset ruhend " << (ruht ? "ja" : "nein")
+      << ", Spitze Ausgang/Eingang ueber 1024 Samples des Wiedereinschaltens " << spitze;
+    pruefe (commits && ausblendend && ruht && spitze <= 1.0 + 1e-6,
+            "311/M-34 reset_im_ausblenden_friert_kein_ziel_ein (NAK-311 T3-15-05): Output-Trim +24 dB, eq aus, ein Block, "
+            "reset(), in der Ruhe 0 dB, eq an mit 0 dB - Ausgang/Eingang an jedem Sample hoechstens 1 + 1e-6",
+            d.str());
+}
+
 } // namespace
 
 int main()
@@ -2618,6 +2689,9 @@ int main()
     // NAK-283 Etappe 4: Host-Reset, Lebenszyklus-Trio und Analysezufuehrung
     nak283Hosteintritte();
     nak283Analysezufuehrung();
+
+    // NAK-311 Etappe 3 (W01): Host-Reset im Ausblenden
+    nak311Pfadrampen();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

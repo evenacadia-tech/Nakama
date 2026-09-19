@@ -1,0 +1,222 @@
+NAK-311 Etappe 3 Teil a (W01) - Rotbeweis M-26
+Stand:  2026-09-19 (Bauer Teil a)
+Zeile:  M-26 (T3-15-05, Width)
+Etikett: heute rot
+Zusage: Ausgang bitgleich zum frischen Kern mit Width 1,0; Spitze hoechstens 0,5 + 1e-6
+Bein:   B6 EqCopDspGoldenTest, 311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)
+
+Abschnitt 1 - HEUTE ROT (die Zeile): der neue Test gegen den unveraenderten Kern (Basis 024d686f, Kernquellen bytegleich zur Basis: DspKern.cpp C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, DspKern.h 904559D94BCBB9FA119E39C749B4952E4DDD17F96878A503C37D1061FC45FBE6; Testquellen eq-copilot/plugin/tests/DspGoldenTestMain.cpp 0E5A49B82CE7166E57AD1CE756F6F2DD47FC58B9A9CF3BB4D5813EB504FEB421, eq-copilot/plugin/tests/TransactionTestMain.cpp EDB7A0DC535B1705C339EDE3DE37D836D285554D25E55AC016FE84FBDE7E91FD).
+--- LAUF GEGEN DEN UNVERAENDERTEN KERN: ROT ---
+Bein-Ausgabe: b6-rot-final.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary EqCopDspGoldenTest 22:59:42, juengste Quelle DspGoldenTestMain.cpp 22:58:50, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (21):
+  [B6]   FEHLER  311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)  [Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+  [B6]   FEHLER  311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)  [Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: 1.0000000 / 1.0575504 / 4.6832314 / 4.6832314 / 1.0000000 / 1.0000000 - verlangt exakt 1,0]
+  [B6]   FEHLER  311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)  [Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+  [B6]   FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: nein, erste Abweichung an Sample 1, Zusatzsprung am Umschaltsample 0.000000000 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+  [B6]   FEHLER  311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)  [Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze 0.6239319 gegen 0,5 + 1e-6]
+  [B6]   FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 11.7758 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 1.7142826, groesste Abweichung von 1,0 0.714282632]
+  [B6]   FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.841615773 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.0580037 (Kurve 1,000453)]
+  [B6]   FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)  [ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: zweiter Candidate  [nach dem Halt ausgedient: ja; zweiter Candidate 0 dB aus der Ruhe, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Sample 1: 1.0038574 x Eingang]
+  [B6]   FEHLER  311/M-32 wiedereinschalten_nach_ruhe_wie_frischer_kern_aenderung_in_der_ruhe_nach_beende_audiohistorie (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), 512 Samples Ruhe, in der Ruhe 0 dB, ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-33 wiedereinschalten_nach_ruhe_wie_frischer_kern_beende_audiohistorie_im_ausblenden (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), gleich ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 1  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 255  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 256  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 257  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 180  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 4096  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 44.1 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 48.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 96.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)  [Candidate +24 dB beendet, ruhend: ja; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1 (Sample 1: 1.0575505 x Eingang); Committed-Tap ueber 1792 Samples bytegleich auf 0.997631157: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: [B6]   FEHLER  311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)  [Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze 0.6239319 gegen 0,5 + 1e-6]
+
+Mitgefallen (deklariert, mit Grund):
+  [B6]   FEHLER  311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)  [Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+      Grund: heute rot, eigene Zeile (Rohdatei M-23)
+  [B6]   FEHLER  311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)  [Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: 1.0000000 / 1.0575504 / 4.6832314 / 4.6832314 / 1.0000000 / 1.0000000 - verlangt exakt 1,0]
+      Grund: heute rot, eigene Zeile (Rohdatei M-35)
+  [B6]   FEHLER  311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)  [Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+      Grund: heute rot, eigene Zeile (Rohdatei M-24)
+  [B6]   FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: nein, erste Abweichung an Sample 1, Zusatzsprung am Umschaltsample 0.000000000 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+      Grund: heute rot, eigene Zeile (Rohdatei M-25)
+  [B6]   FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 11.7758 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 1.7142826, groesste Abweichung von 1,0 0.714282632]
+      Grund: heute rot, eigene Zeile (Rohdatei M-27)
+  [B6]   FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.841615773 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.0580037 (Kurve 1,000453)]
+      Grund: heute rot, eigene Zeile (Rohdatei M-28)
+  [B6]   FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)  [ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-29)
+  [B6]   FEHLER  311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: zweiter Candidate  [nach dem Halt ausgedient: ja; zweiter Candidate 0 dB aus der Ruhe, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Sample 1: 1.0038574 x Eingang]
+      Grund: heute rot, eigene Zeile (Rohdatei M-31)
+  [B6]   FEHLER  311/M-32 wiedereinschalten_nach_ruhe_wie_frischer_kern_aenderung_in_der_ruhe_nach_beende_audiohistorie (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), 512 Samples Ruhe, in der Ruhe 0 dB, ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-32)
+  [B6]   FEHLER  311/M-33 wiedereinschalten_nach_ruhe_wie_frischer_kern_beende_audiohistorie_im_ausblenden (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), gleich ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-33)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 1  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 255  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 256  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 257  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 180  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 4096  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-36)
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 44.1 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-37)
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 48.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-37)
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 96.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: heute rot, eigene Zeile (Rohdatei M-37)
+  [B6]   FEHLER  311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)  [Candidate +24 dB beendet, ruhend: ja; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1 (Sample 1: 1.0575505 x Eingang); Committed-Tap ueber 1792 Samples bytegleich auf 0.997631157: ja]
+      Grund: heute rot, eigene Zeile (Rohdatei M-38)
+
+Unter demselben Stand weiter gruen (Beleg gegen den Nebeneffekt):
+  [B6]   ok      311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 0 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 6 von 6 Stellen, Riegel +6]
+  [B6]   ok      engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.01821 gegen Eigensprung 0.01440]
+  [B6]   ok      bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284123 gegen Fadeschritt 0.00284122]
+  [B6]   ok      bypasswechsel_endet_bitgleich (M-06)
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  [B6]   ok      311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.000000015, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000000000000]
+  [B6]   ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 81 Blockrand-Uebernahmen, 60 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  [B6]   ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: E-31-Mass (Teilfall von 311/M-23)  [Sprung am Umschaltsample 0.000000000 gegen 2^-23, groesster Sprung ueber den Lauf 0.029002190 gegen 2(K-1)(g-1)x/K^2 = 0.057777064 + Rundung 0.000000954]
+  [B6]   ok      311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.000000000, Ende Einblenden = Beginn Ausblenden 0.029002190, Ruhebeginn 0.029001832 gegen Fadeschritt 0.029001820 + 0.000000954; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 0.057776928 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 0.000000238)]
+  [B6]   ok      311/M-30 trimwechsel_im_hard_bypass (Gegenfall M-06, E-7)  [+24 dB, Hard-Bypass, im Bypass 0 dB, Bypass aus: Spitze Ausgang/Eingang 1.0000000 gegen 1 + 1e-6, Sprung am Umschaltsample 0.000000000 gegen 0 + 2^-23]
+  [B6]   ok      311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: Hoerhalt (Gegenfall E-33)  [32 Samples nach dem Candidate-Ende gehalten: ja, groesste Abweichung post_candidate zu post_committed 0.000000000000 - die endende Bank klingt mit ihren Rampen (+6 dB)]
+
+Abschnitt 2 - MUTATION NACH DEM BAU (die Zeile, heute rot): Mutation A
+--- MUTATION: Ruhezuweisung am Uebergangsende in verarbeitePfad entfernt ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:841 (Zeilen zum Endstand der Reparatur)
+SHA-256 vorher (Endstand der Reparatur): 1CA0F7C85793B67A4B09D1468E9388D0A53B0F68608C53975F15C6D46A31768C
+Sicherungskopie: C:\Users\phili\.claude\jobs\1a6a3f4c\tmp\rot\sicherung\DspKern.cpp.vor-A (ausserhalb des Repos)
+vorher:
+        if (z.aktiv < 0) z.rampen.setzeSofort (1.0);
+nachher:
+        // ROTBEWEIS NAK-311 M-23: Ruhezuweisung am Uebergangsende entfernt
+SHA-256 mutiert: 88E8EF5D1D6FF293ECB8ADFC0547B3DB9C14335839D5FF12EFF9338DEBC44ABF
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 0E5A49B82CE7166E57AD1CE756F6F2DD47FC58B9A9CF3BB4D5813EB504FEB421, eq-copilot/plugin/tests/TransactionTestMain.cpp EDB7A0DC535B1705C339EDE3DE37D836D285554D25E55AC016FE84FBDE7E91FD (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern)
+
+--- LAUF UNTER MUTATION: ROT ---
+B6: Bein-Ausgabe mut-A-EqCopDspGoldenTest.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0 (ein Bauaufruf fuer B6, B7); Binary 23:04:01, mutierte Quelle 23:03:59, Binary juenger: ja; Exitcode 1; 304 geprueft, 18 Fehler
+B7: Bein-Ausgabe mut-A-EqCopTransactionTest.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0 (ein Bauaufruf fuer B6, B7); Binary 23:04:03, mutierte Quelle 23:03:59, Binary juenger: ja; Exitcode 0; 175 geprueft, 0 Fehler
+
+Gefallene Pruefungen (18):
+  [B6]   FEHLER  311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)  [Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+  [B6]   FEHLER  311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)  [Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: 1.0000000 / 1.0575504 / 4.6832314 / 4.6832314 / 1.0000000 / 1.0000000 - verlangt exakt 1,0]
+  [B6]   FEHLER  311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)  [Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+  [B6]   FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: nein, erste Abweichung an Sample 1, Zusatzsprung am Umschaltsample 0.000000000 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+  [B6]   FEHLER  311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)  [Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze 0.6239319 gegen 0,5 + 1e-6]
+  [B6]   FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 11.7758 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 1.7142826, groesste Abweichung von 1,0 0.714282632]
+  [B6]   FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.841615773 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.0580037 (Kurve 1,000453)]
+  [B6]   FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)  [ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 1  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 255  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 256  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 257  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 180  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 4096  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 44.1 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 48.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 96.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+  [B6]   FEHLER  311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)  [Candidate +24 dB beendet, ruhend: ja; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1 (Sample 1: 1.0575505 x Eingang); Committed-Tap ueber 1792 Samples bytegleich auf 0.997631157: ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: [B6]   FEHLER  311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)  [Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze 0.6239319 gegen 0,5 + 1e-6]
+
+Mitgefallen (deklariert, mit Grund):
+  [B6]   FEHLER  311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)  [Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-23 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-23
+  [B6]   FEHLER  311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)  [Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: 1.0000000 / 1.0575504 / 4.6832314 / 4.6832314 / 1.0000000 / 1.0000000 - verlangt exakt 1,0]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-35 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-35
+  [B6]   FEHLER  311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)  [Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314, groesste Abweichung von 1,0 3.683231354, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.028775215 gegen 0 + 2^-23]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-24 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-24
+  [B6]   FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: nein, erste Abweichung an Sample 1, Zusatzsprung am Umschaltsample 0.000000000 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-25 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-25
+  [B6]   FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 11.7758 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 1.7142826, groesste Abweichung von 1,0 0.714282632]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-27 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-27
+  [B6]   FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.841615773 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.0580037 (Kurve 1,000453)]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-28 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-28
+  [B6]   FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)  [ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-29 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-29
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 1  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 255  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 256  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 257  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 180  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 4096  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, zur Blockgroesse 1: ja, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-36 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-36
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 44.1 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-37 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-37
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 48.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-37 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-37
+  [B6]   FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 96.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1, Spitze Ausgang/Eingang 4.6832314]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-37 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-37
+  [B6]   FEHLER  311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)  [Candidate +24 dB beendet, ruhend: ja; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 1 (Sample 1: 1.0575505 x Eingang); Committed-Tap ueber 1792 Samples bytegleich auf 0.997631157: ja]
+      Grund: dieselbe Mutation belegt laut Rotbeweisspalte auch M-38 ("Rotbeweis wie M-23"): ohne die Ruhezuweisung am Uebergangsende beginnt jedes Einschalten aus der Ruhe bei den Rampen aus der Zeit vor der Ruhe; eigene Rohdatei M-38
+
+Unter demselben Stand weiter gruen (Beleg gegen den Nebeneffekt):
+  [B6]   ok      311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 0 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 6 von 6 Stellen, Riegel +6]
+  [B6]   ok      engagieren_ist_klickfrei_und_endet_deterministisch (M-03)  [max Sprung 0.01821 gegen Eigensprung 0.01440]
+  [B6]   ok      bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284123 gegen Fadeschritt 0.00284122]
+  [B6]   ok      bypasswechsel_endet_bitgleich (M-06)
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  [B6]   ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  [B6]   ok      311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.000000015, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  [B6]   ok      ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000000000000]
+  [B6]   ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 81 Blockrand-Uebernahmen, 60 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+  [B6]   ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 2144, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3104, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.000000000 an Sample 0 von 3168, Toleranz 0.000000119]
+  [B6]   ok      candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: ja, ACK dort 0, danach geerntet 1, belegt 1, Candidate-Slots -1/-1]
+  [B6]   ok      311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: E-31-Mass (Teilfall von 311/M-23)  [Sprung am Umschaltsample 0.000000000 gegen 2^-23, groesster Sprung ueber den Lauf 0.029002190 gegen 2(K-1)(g-1)x/K^2 = 0.057777064 + Rundung 0.000000954]
+  [B6]   ok      311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.000000000, Ende Einblenden = Beginn Ausblenden 0.029002190, Ruhebeginn 0.029001832 gegen Fadeschritt 0.029001820 + 0.000000954; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 0.057776928 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 0.000000238)]
+  [B6]   ok      311/M-30 trimwechsel_im_hard_bypass (Gegenfall M-06, E-7)  [+24 dB, Hard-Bypass, im Bypass 0 dB, Bypass aus: Spitze Ausgang/Eingang 1.0000000 gegen 1 + 1e-6, Sprung am Umschaltsample 0.000000000 gegen 0 + 2^-23]
+  [B6]   ok      311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: Hoerhalt (Gegenfall E-33)  [32 Samples nach dem Candidate-Ende gehalten: ja, groesste Abweichung post_candidate zu post_committed 0.000000000000 - die endende Bank klingt mit ihren Rampen (+6 dB)]
+  [B6]   ok      311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: zweiter Candidate  [nach dem Halt ausgedient: ja; zweiter Candidate 0 dB aus der Ruhe, Tap post_candidate bytegleich zum frischen Kern: ja, Sample 1: 1.0000000 x Eingang]
+  [B6]   ok      311/M-32 wiedereinschalten_nach_ruhe_wie_frischer_kern_aenderung_in_der_ruhe_nach_beende_audiohistorie (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), 512 Samples Ruhe, in der Ruhe 0 dB, ein mit 0 dB: bytegleich zum frischen Kern: ja, Spitze Ausgang/Eingang 1.0000000]
+  [B6]   ok      311/M-33 wiedereinschalten_nach_ruhe_wie_frischer_kern_beende_audiohistorie_im_ausblenden (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: ja, danach ruhend: ja), gleich ein mit 0 dB: bytegleich zum frischen Kern: ja, Spitze Ausgang/Eingang 1.0000000]
+  [B7]   ok      host_reset_beendet_die_audiohistorie (M-30): Resonator 1 kHz, +12 dB, Q 10, Impuls am Blockende, reset() - der erste Block aus Stille ist auf beiden Kanaelen exakt 0; ohne reset klingt derselbe Aufbau nach  [Peak nach reset 0, ohne reset 0.0192088876]
+  [B7]   ok      die_drei_hosteintritte_enden_in_derselben_audiohistorie (M-32): releaseResources->prepareToPlay, reset und prepareToPlay allein - nach demselben Impuls je ein Block Stille, Peak exakt 0, untereinander bitgleich  [Peaks 0 / 0 / 0, a=b 1, b=c 1]
+  [B7]   ok      311/M-34 reset_im_ausblenden_friert_kein_ziel_ein (NAK-311 T3-15-05): Output-Trim +24 dB, eq aus, ein Block, reset(), in der Ruhe 0 dB, eq an mit 0 dB - Ausgang/Eingang an jedem Sample hoechstens 1 + 1e-6  [vier Commits ja, vor reset ausblendend ja, nach reset ruhend ja, Spitze Ausgang/Eingang ueber 1024 Samples des Wiedereinschaltens 1]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 1CA0F7C85793B67A4B09D1468E9388D0A53B0F68608C53975F15C6D46A31768C, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller neun Mutationen dieses Teils: DspKern.cpp SHA-256 1CA0F7C85793B67A4B09D1468E9388D0A53B0F68608C53975F15C6D46A31768C (Endstand), LastWriteTime 23:05:23; ein Bauaufruf B6 und B7, Exit 0; Binaries B6 23:06:26 und B7 23:06:27, juenger als die Quelle; B6 Exit 0 "304 geprueft, 0 Fehler", B7 Exit 0 "175 geprueft, 0 Fehler") ---
+
+Ergebnis je Haelfte:
+  die Zeile, heute rot: faellt an der Zusagezeile: JA
+  die Zeile, Mutation A: faellt an der Zusagezeile: JA

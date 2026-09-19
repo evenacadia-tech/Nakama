@@ -179,10 +179,16 @@ void DspKern::beendeAudiohistorie() noexcept
             z.rest      = 0;
         }
 
-        // Die Rampen stehen auf ihrem Ziel - das Ziel ist das Programm, der
-        // Weg dorthin ist Historie.
-        for (auto* r : { &z.rampen.input, &z.rampen.output, &z.rampen.mix, &z.rampen.width, &z.rampen.autoGain })
-            r->setzeSofort (r->ziel);
+        // Die Rampen eines Pfades mit aktiver Bank stehen auf ihrem Ziel - das
+        // Ziel ist das Programm, der Weg dorthin ist Historie. Ein Pfad, der
+        // danach ruht, steht auf den Ruhewerten 1,0 wie nach `bereiteVor`
+        // (NAK-311, T3-15-05): sein Ziel stammt aus der Zeit vor der Ruhe, und
+        // eine Aenderung, die erst in der Ruhe kommt, setzt kein Ziel.
+        if (z.aktiv < 0)
+            z.rampen.setzeSofort (1.0);
+        else
+            for (auto* r : { &z.rampen.input, &z.rampen.output, &z.rampen.mix, &z.rampen.width, &z.rampen.autoGain })
+                r->setzeSofort (r->ziel);
 
         for (auto& a : z.auslenkungen) a.store (0.0, std::memory_order_relaxed);
     }
@@ -351,6 +357,11 @@ void DspKern::beendeHoerHalt() noexcept
     z.quelle    = -1;
     z.uebergang = Uebergang::keiner;
     z.rest      = 0;
+
+    // NAK-311 (T3-15-05): der Pfad ruht jetzt und steht auf den Ruhewerten
+    // 1,0 wie nach `bereiteVor`. Waehrend des Halts blieben die Rampen
+    // unberuehrt - die gehaltene Bank klang mit ihnen (E-33).
+    z.rampen.setzeSofort (1.0);
 }
 
 //==============================================================================
@@ -821,6 +832,13 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
         z.quelle    = -1;
         z.uebergang = Uebergang::keiner;
         z.rest      = 0;
+
+        // NAK-311 (T3-15-05): endet der Uebergang in der Ruhe, stehen die fuenf
+        // Rampen auf den Ruhewerten 1,0 wie nach `bereiteVor`. Ausgeblendet hat
+        // die Bank mit IHREN Gains (M-06); das naechste Einschalten aus der
+        // Ruhe rampt wie ein frischer Kern von 1,0 aus (M-07), nie von einem
+        // Ziel aus der Zeit vor der Ruhe.
+        if (z.aktiv < 0) z.rampen.setzeSofort (1.0);
     }
 }
 

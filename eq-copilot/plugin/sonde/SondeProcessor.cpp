@@ -296,8 +296,14 @@ void SondeProcessor::reset()
     // processBlock laeuft), dann das Zustandsschloss (der Worker pflegt
     // dieselben Baenke) - nie umgekehrt (NAK-283 §8.1 Feinheit 4).
     //
-    // Zurueck geht nur die Audiohistorie des Kerns: Filterzustaende, Rampen,
-    // Crossfades. Programm, Parameter, bestaetigter Zustand und
+    // Zurueck geht nur die Audiohistorie des Kerns: Filterzustaende starten
+    // kalt, laufende Uebergaenge (Crossfade, Rampe, Hoerhalt) enden. Die
+    // Rampen eines Pfades mit aktiver Bank stehen danach auf ihrem Ziel, die
+    // eines ruhenden Pfades auf den Ruhewerten 1,0 (NAK-311, T3-15-05) - ein
+    // Einschalten danach beginnt wie in einem frischen Kern, nie bei einem
+    // Ziel aus der Zeit vor der Ruhe.
+    //
+    // Programm, Parameter, bestaetigter Zustand und
     // `publikationOffen` bleiben, ebenso die Hostwert-Mailbox (`hostWert`,
     // `hostEreignis`): sie traegt Hostwerte, keine Audiohistorie. Kein
     // `vergissLetztePublikation` - anders als nach releaseResources laeuft der

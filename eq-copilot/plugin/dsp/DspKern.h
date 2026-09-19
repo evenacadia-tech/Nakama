@@ -59,6 +59,11 @@
     - Ausschalten und Candidate-Ende laufen ueber den regulaeren Weg: die
       ENDE-Marke wird publiziert, am Blockrand genommen, die Bank blendet aus
       und dient mit ACK aus; reserviert wird dafuer nichts (B-8, B-10, E-18).
+    - Ein ruhender Pfad traegt die Ruhewerte 1,0 seiner fuenf Rampen (NAK-311,
+      T3-15-05): gesetzt am Ende des Ausblendens, am Ende des Hoerhalts und
+      in `beendeAudiohistorie`. Das Ausblenden selbst klingt mit den Gains
+      der ausblendenden Bank (M-06); das Einschalten aus der Ruhe ist das
+      Einschalten eines frischen Kerns (M-07).
     - Kein A/B-Wechsel laeuft ueber einen zweiten Fade nach Dry (M-55): mischt
       die Hoermatrix beim Candidate-Ende noch Candidate-Anteile, ist IHRE
       Rueckblende die einzige Blende - die Candidate-Bank klingt bis zu deren
@@ -109,9 +114,12 @@ public:
         Huellkurvenzustaende der gefahrenen Baenke starten kalt wie eine frisch
         publizierte Bank, jeder laufende Uebergang (Crossfade, Rampe,
         Hoerhalt) endet auf seinem Ziel und dient seine Quellbank ueber den
-        regulaeren ACK aus, die Rampen stehen auf ihrem Zielwert, der Fade der
-        Hoermatrix endet. Danach erzeugt Stille am Eingang exakt Stille am
-        Ausgang. Allokiert nicht und sperrt nicht; nur rufen, waehrend kein
+        regulaeren ACK aus, der Fade der Hoermatrix endet. Die Rampen eines
+        Pfades mit aktiver Bank (auch im Hard-Bypass) stehen danach auf ihrem
+        Zielwert, die eines ruhenden Pfades auf den Ruhewerten 1,0 (NAK-311,
+        T3-15-05) - ein ruhender Pfad schaltet danach wie ein frischer Kern
+        ein. Danach erzeugt Stille am Eingang exakt Stille am Ausgang.
+        Allokiert nicht und sperrt nicht; nur rufen, waehrend kein
         `verarbeite` laeuft (im Prozessor unter dem Callback-Schloss). */
     void beendeAudiohistorie() noexcept;
 

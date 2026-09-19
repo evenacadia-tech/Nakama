@@ -549,6 +549,30 @@ Einheitsbiquad (b1 = a1 ≠ 0, B6 311/F-4). Dry mit einem wirksamen Programm
 schreibt weiter (aus der Quelle, nicht eigens gemessen; Registerpunkt zu
 SONDE-015 M-53). Die Etappen 3 und 4 von NAK-311 ergänzen diesen Abschnitt.
 
+**Ruhewerte der Pfadrampen (19.09.2026, NAK-311 Etappe 3, W01).** Jeder Pfad
+führt fünf eigene Rampen (Input-Trim, Width, Auto-Gain, Mix, Output-Trim;
+SONDE-015 E-16). Ruht ein Pfad — keine aktive Bank, kein Übergang —, stehen sie
+auf den Ruhewerten 1,0, denselben wie nach `bereiteVor`. Gesetzt werden sie am
+Ende des Ausblendens in die Ruhe (`verarbeitePfad`), am Ende des Hörhalts
+(`beendeHoerHalt`) und in `beendeAudiohistorie` für einen danach ruhenden Pfad;
+ein Pfad mit aktiver Bank, auch im Hard-Bypass, steht dort wie bisher auf seinem
+Ziel. Das Ausblenden klingt mit den Gains der ausblendenden Bank aus (M-06), der
+Hörhalt mit denen der gehaltenen Bank (E-33). Das Einschalten aus der Ruhe ist
+damit das Einschalten eines frischen Kerns (SONDE-015 M-07).
+
+Warum: vorher behielt ein ruhender Pfad die Rampenwerte aus der Zeit vor der
+Ruhe, und eine Änderung in der Ruhe kam nicht an. Nach Output-Trim +24 dB, Aus,
+0 dB in der Ruhe und Ein rampte der Ausgang von +24 dB herunter: Spitze
+Ausgang/Eingang 4,6832 (+13,41 dB, T3-15-05, im Rotlauf von 311/M-23
+gemessen); `beendeAudiohistorie` fror den alten Wert ein, statt ihn
+zurückzusetzen. Gemessen in B6 Abschnitt P (311/M-23 bis M-38 ohne M-34; Orakel
+ist ein frischer Kern mit demselben Programm am selben Blockrand) und B7
+Abschnitt R (311/M-34, `reset()` am Prozessor im Ausblenden); Manifest
+`docs/beweise/NAK-311.md` §6.2 und §26. Nach Aus und Wiedereinschalten eines
+neutralen Programms stehen die fünf Rampen damit sofort in Ruhe auf 1,0, und
+die Neutralprüfung oben greift ab dem Ende des Crossfades (aus der Quelle,
+nicht eigens gemessen).
+
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 
 ### 2.1 Hostbrücke (SONDE-003)

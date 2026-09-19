@@ -208,3 +208,12 @@ solange Gen dort `legacy` ist. Der Samplepfad im Projekt ist absolut
 (`eq-copilot/fixtures/fl/LIES-MICH.md`); auf einem zweiten Rechner ist der
 FL-Dialog „Sample nicht gefunden" zu prüfen. Bänder gegen den Referenzausschnitt
 lösen Exit 4 nur mit einer Rechnung aus F-28 aus; ohne sie stehen die Werte roh.
+
+## Uhrzeit
+
+Der Laufzeit-Arm darf zu jeder Uhrzeit laufen, auch nachts und unbeaufsichtigt
+(User 19.09.2026, Karte U53, Wortlaut in `docs/plan/fragen.json` unter
+`beantwortet.U53`; Register NAK-325). FL Studio startet sichtbar und ist dabei
+möglicherweise über das Audiogerät zu hören; am Audiogerät stellt der Runner
+und der Dirigent nichts um. Fragen und Handgriffe an den User bleiben auf 9 bis
+23 Uhr beschränkt (User 11.09.2026).

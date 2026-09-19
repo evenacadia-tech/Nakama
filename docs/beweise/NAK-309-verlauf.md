@@ -1,0 +1,2508 @@
+# NAK-309 — Rundenverlauf §9 bis §21
+
+Append-only. Diese Datei trägt die Abschnitte **§9 bis §21** des Manifests
+`docs/beweise/NAK-309.md` **unverändert** (Messungen, Matrixprüfung 1, Erstprüfungen 2
+bis 4, Einordnungen, die Etappenabschnitte §11, §14 und §18 der Bauer mit den
+Matrixzeilen M-74 und M-75, die Regeln R-309-8 bis R-309-11, die Kanonläufe der
+Etappen 2 und 3, den Laufzeit-Arm §21). Sie sind ausgelagert, weil der Lesetext des
+Manifests über 3 000 Zeilen lag; Kopf, Übernahme und Einordnung (§0, §1), Regeln
+(§2), Etappenplan (§3), Zusagen (§4), Matrix (§5), Bauplan (§6), Prüfliste (§7),
+offene Punkte der Etappe 1 (§8), der jüngste Kanonlauf und der Abschluss (§22)
+bleiben dort, weil `tools/plan/planstand.py` die Kanonbilanz genau dort liest.
+Rohausgaben liegen unverändert unter `docs/beweise/roh/`. §18.14 steht im Manifest
+hinter dem Kanonabschnitt der Etappe 4 und folgt hier auf §18.13.
+
+Ausgelagert am 2026-09-19 mit dem Ticketabschluss (Urteil T2 PASS).
+
+---
+
+## 9. Messung der Etappe 1 und Entscheide zu den Abweichungen (Dirigent, 18.09.2026, 18:0x Uhr)
+
+**Gemessen.** Worker `ff22fb62` (Opus max), Start 16:03 Uhr, Ende 17:52 Uhr.
+`git log efb20bb4..HEAD`: genau ein Commit `f2320ba3` („NAK-309 Etappe 1:
+Verhaltensmatrix M-01 bis M-73 und Bauplan der Etappen 2 bis 4"), HEAD =
+`origin/master`, Basis `efb20bb4` Vorfahr, `git status --short` nur die zwei
+fremden Ordner. `git diff --stat efb20bb4..HEAD`: nur `docs/beweise/NAK-309.md`
+(+1 339/−2). Rundenbilanz `py -3.13 tools/dirigent/rundenbilanz.py
+efb20bb4..HEAD`: Doku 1 Datei +1339/−2, ohne Produktfortschritt (Matrixrunde,
+zählt null). Zählung §5.9: 73 Zeilen, 48 Gegenfallzeilen, 11 Zahlenränder,
+Etiketten heute rot 31 · heute nicht messbar 16 · Regressionswache 16 ·
+erlaubtes Verhalten gemessen 6 · zwei Hälften 4. Produktfragen (§8.3): keine.
+
+**Entscheide zu §8.4 (Technik, innerhalb Ticket, Invarianten und Regeln):**
+
+| Abweichung | Entscheid | Grenze |
+|---|---|---|
+| A-1 `--broker-pin`-Schreiber im Installer-Manifest | genehmigt | schreibt nur den Brokerhash und nur bei Abweichung; dieselbe Manifestprüfung (A17) misst ihn; `--hashen` bleibt der einzige Vollschreiber |
+| A-2 `docs/plugin-wissen.md` nachziehen | genehmigt | nur die genannten Absätze (Baustand, Probe-Namensregel), datiert; `CLAUDE.md` verlangt es |
+| A-3 `PluginProcessor.cpp:151` und `PipeClient.h` | genehmigt | Gens v2-Name bleibt `kPipeName`, Verhalten gleich (M-24 misst Gleichheit); der lesende Zugriff für M-23 ändert keinen Zustand |
+| A-4 Behauptung A35 in `tools/beweise.ps1` | genehmigt | nur der Wortlaut der Behauptung; Runnerlogik unverändert außer den Etappe-2-Pfaden |
+| A-5 keine Minorwache, nur Messung (B10) | genehmigt | entspricht §1 (Härtung: Messung des erlaubten Verhaltens); die Formulierung „Minorwache" in §3 ist damit überholt |
+| A-6 `pruefe_beweisrunner.py --nicht-gelaufen` und Bein A36 | genehmigt | NOT RUN wird am Bein gemessen, nicht als ungetesteter Runnercode |
+| A-7 eigener Commit im Nachbarrepo (Anforderungskennung) mit Pin-Nachzug | genehmigt mit Grenze | Commit auf `evenacadia-local`, SHA und Diff-Stat im Manifest, Pin in `tools/fl/mcp-stand.json` im selben Änderungssatz; die Nakama-Seite muss mit einem alten Controller ohne Kennung sicher bleiben (Echo-Weg oder Exit 3 „Voraussetzung fehlt"), nie stille Fehlzuordnung |
+| A-8 Nachtrag in `NAK-286.md` breiter (M-03, M-07 (c), M-13, M-22, FL-Zustände, R-286-5, K-286-2) | genehmigt | append-only, datiert, nie durch Löschen; die alten Zeilen bleiben stehen und werden als überholt markiert |
+| A-9 40 statt 41 gebundene Ziele | zur Kenntnis | §1 bleibt (append-only); der Wert 40 gilt (§8.2 Nr. 1) |
+| A-10 Rotbeweis-Mutationen außerhalb der Ticketpfade | genehmigt | nur vorübergehend, SHA-256 vorher und nachher in der Rohdatei, nie in einem Commit; `git status --short` nach der Rücknahme leer für diese Pfade |
+| A-11 Lesart von R-309-1 („Arbeitsordner" = Arbeitskopie; Renderprozesse der Referenzkopien eigen, weil vom Runner gestartet) | genehmigt, R-309-1 präzisiert | siehe R-309-1' unten |
+
+**Regelpräzisierungen (Dirigent):**
+
+- **R-309-1' (ersetzt die Ortsangabe in R-309-1, Rest unverändert):** „Eigen"
+  ist ein FL-Prozess, den der Runner selbst gestartet hat (PID und Startzeit in
+  seiner Liste, einschließlich der Render-Prozesse der Referenzkopien) und
+  dessen geöffnetes Projekt der vollständige Pfad der Arbeitskopie ist, die der
+  Runner für diesen Lauf angelegt hat. Jeder andere FL-Prozess ist fremd, auch
+  mit gleichem Dateinamen im Titel, und wird nie beendet.
+- **R-309-7 (neu, für NB-309-1, §8.6):** Ein Test, der den Prozessor baut,
+  startet seinen v2-Client nie auf dem Produktionsnamen; der Testbau setzt einen
+  Probe-Namen (derselbe Weg wie für v3 über `V3Verdrahtung`), und ein Bein misst,
+  dass kein Testprozess die Produktions-Pipe öffnet. NB-309-1 wird als
+  Registerpunkt NAK-317 geführt und in Etappe 3 im selben Änderungssatz wie
+  M-24 gebaut; der Bauer der Etappe 3 legt dafür die Matrixzeile M-74 an
+  (Zusage, Test, Rotbeweis an der Zeile, die den Namen setzt), die Erstprüfung 3
+  prüft sie mit. Die Matrixprüfung 1 prüft M-74 nicht (existiert noch nicht).
+
+**Hinweise §8.5:** NAK-25 wird nach Etappe 2 am Manifest geprüft und
+gegebenenfalls geschlossen; NAK-307 bekommt den Nachtrag mit Etappe 3; NAK-267
+A-3 und NAK-154 Punkt 2, NAK-133 bleiben Registerpunkte (kein Teil dieses
+Tickets).
+
+**Nächster Schritt.** Matrixprüfung 1 durch einen frischen, lesenden Prüfer
+(Codex-Woche 94 % → Opus-Thread, Skill §3.6) mit dem Auftrag
+`docs/beweise/roh/NAK-309-matrixpruefung-1-auftrag.txt` über `git diff
+efb20bb4...f2320ba3 -- docs/beweise/NAK-309.md`. Diese Session (Kontext über
+500k) startet keine neue Prüfrunde; die nächste Dirigentensession beginnt
+damit.
+
+## 10. Matrixprüfung 1: Urteil, Einordnung und Regel R-309-8 (Dirigent, 18.09.2026, 18:3x Uhr)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Frischer, lesender Opus-Thread (Agent der Dirigentensession, Modell Opus; Codex-Woche 94 %, Skill §3.6); nie der Bauer. 96 Werkzeugaufrufe, nichts geschrieben, nichts gebaut. |
+| Auftrag | `docs/beweise/roh/NAK-309-matrixpruefung-1-auftrag.txt` (Vorlage A, gebunden), Prüfbereich `git diff efb20bb4...f2320ba3 -- docs/beweise/NAK-309.md`. |
+| HEAD | `589051fa65b047be5e6f6dd9737b3b816a407bcc` vor und nach dem Lauf (gegenüber dem Auftrag nur ein gerechnetes `docs/PLAN-STAND.md` mehr); der Lauf ist gültig. |
+| Urteil | **PASS** — kein DEFEKT; eine LÜCKE (L-1), fünf HÄRTUNGEN (H-1 bis H-5). Rohbericht wörtlich: `docs/beweise/roh/NAK-309-matrixpruefung-1-urteil.md`. |
+| Rundenbilanz | Matrixrunde, zählt null (kein Produkt-, Test- oder Werkzeugdiff seit `efb20bb4`). |
+
+**Einordnung (Dirigent, an der Quelle gelesen: §5 Etikettdefinition, §6.1 letzter Absatz, M-09, M-29, §6.3 „Rotbeweise").**
+
+| Befund | Klasse | Entscheid |
+|---|---|---|
+| L-1 „heute rot" ohne Mutation nach dem Bau (M-09, M-29) | LÜCKE | Regel **R-309-8** unten; keine Nacharbeit an der Matrix. |
+| H-1 §5 nennt zwei berührte Produktquellen, es sind drei | Textpräzisierung | Es gelten drei Stellen, alle ohne Verhaltensänderung: Rückfall `PipeClient.cpp:221` entfällt, `PluginProcessor.cpp:151` nennt den Namen ausdrücklich, `PipeClient.h` bekommt den lesenden Zugriff (A-3, §9). §5 bleibt stehen (append-only); der Auftrag der Etappe 3 nennt die drei Stellen. |
+| H-2 §6.3 plant einen Parameter, den `hashen()` schon hat | Textpräzisierung | `tools/eq-copilot/pruefe_installer_manifest.py:1117` trägt `ziel` bereits; der Bauer der Etappe 2 nutzt ihn und ändert die Signatur nicht (steht im Auftrag der Etappe 2). |
+| H-3 §1 zählt sechs Fremdprüfungen, es sind fünf | Textpräzisierung | Es gilt die Matrix: fünf Aufrufstellen von `Ist-Fremd` (M-30), `Fahre-Rueckweg` ohne Fremdprüfung als eigene rote Zeile (M-39). §1 bleibt stehen (append-only). |
+| H-4 M-24 misst die Verhaltensgleichheit nur über bestehende Beine | HÄRTUNG | Register **NAK-318** (datiert); kein Teil dieses Tickets, §9 A-3 bleibt die Grenze. |
+| H-5 M-62 ordnet den Control-Fall G7 zu, er gehört zu G10 | Textpräzisierung | Control-Handschlag = Abschnitt G10 (`IpcTestMain.cpp:4866`), G7 (`:4681`) ist der TelemetryClient; Zusage und Rotbeweis von M-62 bleiben. Der Auftrag der Etappe 4 nennt es. |
+
+**R-309-8 (neu, Technik, schließt L-1).** Für eine „heute rot"-Zeile, deren Test
+ein voller Runnerlauf oder ein Handlauf ist (M-09 und M-29, sonst keine), ist der
+Rotbeweis der in der Zeile genannte Gegenlauf, mit Stand-SHA, Aufruf, Urteil und
+Exitcode in einer Rohdatei. M-09: derselbe Runnerlauf ohne `-Bauen` am Basisstand
+der Etappe 2, nach dem grünen Kanon vorher und nach gesetzter LastWriteTime an
+`eq-copilot/plugin/dsp/DspKern.cpp` (erwartet `GRUEN`, das ist der Defekt),
+danach derselbe Lauf nach dem Bau (erwartet `NICHT BEGLAUBIGT`, Exit 4); weicht
+der Basislauf von der Erwartung ab, steht das gemessene Ergebnis in der Rohdatei
+und im Etappenbericht, nie das erwartete. M-29: der Aufruf ohne drittes Argument
+nach dem Bau in derselben Rohdatei (Exit 1); er ist die Mutation der Zusagezeile
+`eq-copilot/README.md:61` zurück auf ihren alten Wortlaut. Die Pflicht aus §6.1
+(„Für ‚heute rot' ist die Mutation nach dem Bau Pflicht") gilt für diese zwei
+Zeilen damit als erfüllt; eine zusätzliche Quellmutation entfällt, weil die
+Zeile, die die Zusage von M-09 trägt (die Frischeableitung), unter M-01 an A36
+nach dem Bau mutiert wird und M-09 darüber hinaus nur misst, dass der Runner mit
+dieser Ableitung urteilt. Für jede andere „heute rot"-Zeile bleibt §6.1
+unverändert. Die beiden M-09-Läufe schreiben nicht ins Manifest, sondern nach
+`docs/beweise/roh/NAK-309-rot-M-09-basis.md` und `-nach-bau.md` (Zielpfade,
+noch nicht angelegt; Parameter `-Ziel`), damit
+der jüngste Kanon-Abschnitt des Manifests immer ein Lauf mit `-Bauen` ist.
+
+**Nächster Schritt.** Etappe 2 (Frische und Bauordnung, M-01 bis M-17): frischer
+Opus-Worker (max, `dontAsk`), Aufsicht NORMAL, Auftrag
+`docs/beweise/roh/NAK-309-etappe-2-auftrag.txt`; danach Messung (§3.3 des
+Skills) und Erstprüfung 2 (frischer Prüfer, nie der Bauer). Der Laufzeit-Arm
+läuft erst nach Etappe 3.
+
+---
+
+## Kanon-Lauf - NAK-309 Etappe 2 Kanon vorher
+
+**Lauf:** 2026-09-18 18:24 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 68/68 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/NAK-309-d616beb-dirty.md](roh/NAK-309-d616beb-dirty.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-09-18 18:24:53 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | d616beb9 NAK-309 Matrixpruefung 1 PASS: Urteil, Einordnung, Regel R-309-8, Register NAK-318, Auftrag Etappe 2 |
+| Commit (voll) | d616beb97dd86f956d8116c4b5a059a9b46fd650 |
+| Arbeitsbaum | 2 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.6 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,12 s | [A1](roh/NAK-309-d616beb-dirty.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 11,43 s | [A2](roh/NAK-309-d616beb-dirty.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). Seit NAK-283 (F12) erzeugt ein endlicher Eingang keinen nicht endlichen Wet-Ausgang: im Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX ist jedes Ausgangssample endlich, und nach dem Einblenden steigt der Wet-Zaehler um genau die verriegelten Samples. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 7,64 s | [A3](roh/NAK-309-d616beb-dirty.md#a3) |
+| A4 | Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 1.261,87 s | [A4](roh/NAK-309-d616beb-dirty.md#a4) |
+| A4-SI | SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. | `cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1` | [OK] Exit 0 | 12,89 s | [A4-SI](roh/NAK-309-d616beb-dirty.md#a4-si) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 65,54 s | [A4b](roh/NAK-309-d616beb-dirty.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. Seit SONDE-013 zusaetzlich der Fassungsschritt: der aus dem Register zurueckgebaute Leser der Fassung 1 LEHNT jede Neuerung der Fassung 2 ab (drei Experimentfamilien, evidence_snapshot.ereignisse/.stereo, zwei neue Invalidierungsgruende), und die Summe der registrierten Familien stimmt mit dem oneOf ueberein. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 4,80 s | [A5](roh/NAK-309-d616beb-dirty.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,25 s | [A6](roh/NAK-309-d616beb-dirty.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,16 s | [A7](roh/NAK-309-d616beb-dirty.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,54 s | [A8](roh/NAK-309-d616beb-dirty.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID, keine ist verbrannt oder wiederverwendet, und jedes Offsetfeld steht im Rust-Strukturriegel. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,46 s | [A9](roh/NAK-309-d616beb-dirty.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen, integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) und seit SONDE-015 band_dynamic_gain_db ID 22 (acht Werte, leerer Vektor, Altsender ohne Feld, vier falsche Laengen, NaN und Inf) sind in beiden Lesern gedeckt. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 4,45 s | [A10](roh/NAK-309-d616beb-dirty.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,33 s | [A11](roh/NAK-309-d616beb-dirty.md#a11) |
+| A12 | Parameterbestand Layout v2 (120 Kennungen, 112 Host-Parameter als Praefix) haelt den Vertrag, und die 109 v1-Kennungen sind aus der eingefrorenen v1-Datei woertlich abgeleitet; Zonen-, Preset- und Ablehnungsregeln stimmen mit dem Vertrag ueberein; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State- und Presetkorpus samt MANIFEST bytegleich zur Neuerzeugung, keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,38 s | [A12](roh/NAK-309-d616beb-dirty.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,28 s | [A13](roh/NAK-309-d616beb-dirty.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 12,88 s | [A14](roh/NAK-309-d616beb-dirty.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen fallen einzeln. [4] vergleicht Artefakthashes im Kanon weich und mit --release hart; [4b] berichtet den installierten Stand; [5] kreuzprueft den Ordner-Hash; [6] faehrt die produktive C++-WinVerifyTrust-/Thumbprint-Kette mit dem OS-vertrauenswuerdigen Signerzertifikat einer signierten Windows-Fixture fuer gueltig und falsch sowie einer unsigned Temp-Kopie fuer fehlend, ohne den Zertifikatsspeicher zu aendern. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft; unerwartete Ausnahmen enden kontrolliert. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,59 s | [A17](roh/NAK-309-d616beb-dirty.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 42,32 s | [A18](roh/NAK-309-d616beb-dirty.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,16 s | [A19](roh/NAK-309-d616beb-dirty.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,35 s | [A20](roh/NAK-309-d616beb-dirty.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,37 s | [A21](roh/NAK-309-d616beb-dirty.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,09 s | [A22](roh/NAK-309-d616beb-dirty.md#a22) |
+| A24 | G3-SOAK Dauerlauf ueber eine ausschliessliche Probe-Pipe: 1 Main mit subscribe_session und echtem SourcesModel plus 16 Sondenpaare und 16 echte SondeProcessor am Ganzblockpfad laufen gegen den echten Rust-Coordinator, waehrend ein Viertel der Sonden langsam liest und der Broker mitten im Lauf getoetet und neu gestartet wird. Gemessen: Mitgliedschaft und fuehrendes_main driften nie, kein P0 geht ausserhalb der Neustartfenster verloren und seine ACK-p95 bleibt unter 1.000 ms, kein Mitglied wird ausserhalb der Fenster stale oder evicted, der Snapshot ist nach jedem Neustart binnen 60 s wieder vollstaendig und die alte broker_epoch kommt nie wieder, Working Set beider Prozesse waechst je Generation um hoechstens max(10 %, 16 MiB), und der Sondenpfad verliert keinen Ganzblock. Beide Programme verweigern Produktions- und Golden-Pipename mit Exit 3, gefahren vor dem Lauf. Seit SONDE-013 laeuft dabei der Evidenzpfad mit: jede Sonde baut oberhalb einer kleinen P1-Fuellstandsschwelle GAR KEINEN evidence_snapshot mehr und zaehlt den verworfenen Analyseframe, statt die in EINTRAEGEN gedeckelte P1-Queue mit 10-KiB-Nachrichten zu fuellen. Eine fehlende Messung ist kein PASS (NAK-283 F13): jeder Speicherpunkt traegt das Gueltigkeitsmerkmal seiner Windows-Abfrage, und fehlt ausserhalb der Neustartfenster eine gueltige Messung, endet S07 mit dem eigenen Status MESSUNG FEHLT (Exit 3) statt im Budget. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1` | [OK] Exit 0 | 148,84 s | [A24](roh/NAK-309-d616beb-dirty.md#a24) |
+| A34 | Der Selbsttest des Soak-Orakels (NAK-283 F13, Muster A27). Er laeuft OHNE Repo-Fixture und ohne Lauf: vier Faelle bauen ihre Berichte im Speicher und laufen durch dieselben Funktionen wie A24 - Messstelle, Speicherpunkt, Urteil. Eine fehlende RSS-Messung endet mit MESSUNG FEHLT und Exit 3, nie im Budget; ein nicht abfragbarer Prozess und ein Prozess mit 0 Bytes Working Set sind im Bericht verschieden; ein Fehlerpunkt direkt vor oder nach dem Neustartfenster faellt, obwohl das Fenster die Kurve filtert; ein Altbericht ohne Gueltigkeitsmerkmal bleibt ueber --bericht auswertbar, derselbe Bericht als Livelauf ist rot. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest` | [OK] Exit 0 | 0,18 s | [A34](roh/NAK-309-d616beb-dirty.md#a34) |
+| A35 | Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor und Abweichung; Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\fl\selbsttest.py` | [OK] Exit 0 | 32,14 s | [A35](roh/NAK-309-d616beb-dirty.md#a35) |
+| A28 | Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett. | `py -3.13 tools\eq-copilot\erzeuge_p5_korpus.py --pruefen` | [OK] Exit 0 | 0,18 s | [A28](roh/NAK-309-d616beb-dirty.md#a28) |
+| A29 | Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1). | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py` | [OK] Exit 0 | 0,16 s | [A29](roh/NAK-309-d616beb-dirty.md#a29) |
+| A30 | Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen. | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py --selbsttest` | [OK] Exit 0 | 0,23 s | [A30](roh/NAK-309-d616beb-dirty.md#a30) |
+| A31 | Die adversarialen Gegenbeispiele des Phasengates G5 am PRODUKTPFAD - genau die Faelle, die das Korpusformat nicht ausdruecken kann. Eine Intent-Rolle trennt zwei messtechnisch identische Kandidaten NICHT, auch nicht bei rolle=fuehrt, und bei drei sichtbaren Kandidaten wird der Fuehrende gegen JEDEN geprueft, nicht nur gegen den Zweitplatzierten. Eine Quelle, die ihre Energie in einem ganz anderen Band traegt als der Masterbefund, erreicht keine starke Aussage. Zwei Kandidaten, deren Raenge sich nur durch ein Band WEIT ausserhalb des Befundintervalls unterscheiden, sind ungetrennt. Umklammernde und disjunkte Fensterspannen fallen am Alignment mit Grund, obwohl die Ueberdeckung ihrer SPANNEN 1,0 meldet. Und die Passage laeuft ueber den echten Produktpfad samt Store: zwoelf und acht Fensterlaengen tragen die Aussage, sieben nicht, und eine Passage ohne ein einziges Masterfenster ergibt eine ENTHALTUNG mit ungueltiger Beobachtung statt Schweigen (M-27). Seit der Nacharbeit 1 (07.09.2026) faehrt das Bein ALLE 15 vereinbarten Ketteneingaben durch denselben Produktpfad und DRUCKT je Eingabe ihr Ergebnis: vier Passagenrandwerte (12, 11, 8 und 7 Fensterlaengen), den zweiten experiment_begin mit gleicher passage_id, zwei Master, den Master ohne Fenster, den Kanalwechsel vor und nach dem Deskriptorwechsel, drei Sonden auf einem Kanal, die antikorrelierte Quelle allein und neben der korrelierten, dazu die Masteranomalie in einem Fenster HINTER der Passage. Seit NAK-213 (08.09.2026) traegt KEINE der sieben frueher gedruckten NAK-213-Luecken mehr eine Luecke: zwei Master ergeben eine Enthaltung OHNE ORT statt eines stillen Gewinners, ein Master ohne Fenster ebenfalls statt Schweigen, der Kanalwechsel nimmt die Belege GENAU DER wechselnden Quelle zurueck und entfernt ihren Befund, drei Sonden auf einem Kanal werden ueber ALLE Quellen der Sitzung erkannt - eine vierte, stumme Sonde desselben Kanals setzt die Duplikatmarke mit. Seit NAK-214 (08.09.2026) fahren drei Faelle dieses Tickets mit: zwei bestaetigte Mains erzeugen KEINEN Vorschlag (Vorschlaege 0, keine proposal-Zeile im Store), ein PRE/POST-Paar unterhalb der Alignmentschwelle bleibt Aussageklasse 1 mit next_test prepost_paar_messen, und eine zurueckgenommene juengste Passage laesst die AELTERE rechnen - jeder druckt sein Ergebnis. Keine Luecke bleibt gedruckt, und der aufruferlose Helfer `luecke()` ist mit seinem letzten Aufrufer gegangen. | `cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1` | [OK] Exit 0 | 113,78 s | [A31](roh/NAK-309-d616beb-dirty.md#a31) |
+| A25 | Der P4-Referenzkorpus ist reproduzierbar (M-80): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt MANIFEST und meldet jede verwaiste Datei. Dasselbe Muster wie A6, A7, A8, A10, A12 und A20; die gitattributes-Regel haelt die Zeilenenden. Seit NAK-182 weist der Erzeuger ausserdem ab, was der Korpus nicht tragen darf: eine Wahrheit ausserhalb der geschlossenen Menge, eine fehlende `quelle` und einen Bezeichner, der in der genannten Datei nicht woertlich steht. Die zwei Mengen KEINE_BEHAUPTUNG und KEINE_STARKE sowie die Zeile `nicht_gemessen` reisen im MANIFEST mit, damit der Pruefer sie von dort liest statt aus einer zweiten Kopie. | `py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen` | [OK] Exit 0 | 0,25 s | [A25](roh/NAK-309-d616beb-dirty.md#a25) |
+| A26 | Das Sammelbein des P4-Exit-Gates (§58, §49.4, M-79/M-81 bis M-85): vier Klassen - Referenzkorpus, Loop-/Seek-/PDC-Goldens, adversariale Vergleichsfixtures und Stereo-Goldens -, alle muessen bestehen, und jedes genannte Bein steht wirklich im Kanon-Runner. Neben Precision und Recall zaehlen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl FALSCHER Behauptungen; die muss null sein. Eine Enthaltung ist dabei kein Fehler - §49.4 woertlich: ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache. Seit NAK-182 liest das Bein zwei geschlossene Wahrheitsmengen AUS DEM MANIFEST: auf KEINE_BEHAUPTUNG (unbekannt, unvergleichbar, zeitvariabel) ist jede Aussage falsch, auch die schwache; auf den zwei Werten, die nur in KEINE_STARKE stehen (nicht_kausal, nicht_exakt), ist es die starke. Zaehler und Nenner von Recall lesen dieselbe Menge, Precision und Recall sind als Quoten geriegelt, jeder Korpusfall nennt eine Quelldatei samt woertlichem Bezeichner und wird dort gesucht, die fuenf geschlossenen Mengen des v3-Vertrags werden auf kausale Bezeichner geprueft (Entscheid G4 §8), und die in P4 NICHT gemessene Zusage M-85 Ziel 1 wird im Kopf gedruckt statt still zu fehlen. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py` | [OK] Exit 0 | 0,27 s | [A26](roh/NAK-309-d616beb-dirty.md#a26) |
+| A27 | Der Selbsttest des Exit-Gate-Beins (NAK-182 R1, MP1-6). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch dieselben Funktionen, die A26 fuehrt. Auf dem Korpusweg fallen eine STARKE Aussage auf jedem Wert aus KEINE_STARKE und eine SCHWACHE auf jedem Wert aus KEINE_BEHAUPTUNG; eine schwache Aussage auf nicht_kausal oder nicht_exakt bleibt gruen - genau das trennt die zwei Mengen. Auf dem Kennzahlweg bekommt die Riegelfunktion synthetische Kennzahlen direkt eingespeist, weil Recall und Precision ueber 1 nach der Zweimengenlogik strukturell unerreichbar sind und die Wachen trotzdem einen Weg zu fallen brauchen. Dazu ein erfundener Bezeichner, ein Pfad ins Leere, eine fehlende Vertragsmenge und ein kausaler Enumwert. Seit Nacharbeit 1 laeuft auch S-07 durch die echte Validierung: ein synthetischer Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN geht durch dieselbe Funktion _pruefe_wahrheiten, die A26 auf den geladenen Korpus anwendet, und muss genau eine rote Zeile mit dem Fallnamen ergeben; sein Gegenteil keine. Jede Erwartung laeuft MIT ihrem Gegenteil - sonst waere der Selbsttest auch dann gruen, wenn ein Riegel immer rot meldete. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest` | [OK] Exit 0 | 0,17 s | [A27](roh/NAK-309-d616beb-dirty.md#a27) |
+| A23 | SONDE-012 E-L06 integriert ueber eine ausschliessliche Probe-Pipe: synthetische C++-Quellen senden vollstaendige Messfenster durch den echten Rust-Coordinator an das echte Main-SourcesModel. Der Endpunkt ist dessen Revision samt Anzeige-Invalidierung. Bei 16 und 32 Quellen liegt p95 fuer 2048/4096 Samples unter 300 ms und fuer 16384 Samples unter 750 ms, jeweils ab dem ersten Sample des Fensters. | `py -3.13 tools\eq-copilot\pruefe_sonde012_sources_latency.py` | [OK] Exit 0 | 4,68 s | [A23](roh/NAK-309-d616beb-dirty.md#a23) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Seit NAK-283 (F04, F05) bleibt der Nulltest bitgleich, wenn reset() vor jedem dritten Block laeuft - ausgeschaltet bei 44,1 / 48 / 96 / 192 kHz, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen, und im Hard-Bypass auch mit NaN, +Inf und -Inf zwischen zwei reset(); Mono und Stereo mit gleichem Ein- und Ausgang werden angenommen (im Monobus bleibt der Passthrough bitgleich, und das Band rechnet endlich), Quadrophonie, 5.1, vier diskrete Kanaele, Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus bekommen ein Nein, setBusesLayout auf Quadrophonie scheitert, und der Prozessor bleibt bei zwei Kanaelen. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,41 s | [A16](roh/NAK-309-d616beb-dirty.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,21 s | [B1](roh/NAK-309-d616beb-dirty.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend. Seit SONDE-015 zusaetzlich das Kind Dsp: 120 Werte bit-exakt durch den Roundtrip, flache Arrays statt Kindknoten, voller Undo-Ring aus 32 Schnappschuessen bytegleich und unter 16 MiB, der 33. Eintrag read-only; die Layoutmigration v1 nach v2 setzt occupied bitgenau aus enabled und den Werten; das Preset traegt zwei getrennte Versionen, weist jedes der sechs verbotenen Identitaetsfelder ab, ignoriert unbekannte Top-Level-Felder und laesst eq_enabled beim Laden unberuehrt. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 1,58 s | [B2](roh/NAK-309-d616beb-dirty.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,10 s | [B3](roh/NAK-309-d616beb-dirty.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,16 s | [B3b](roh/NAK-309-d616beb-dirty.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler. Seit SONDE-015 zusaetzlich der Fassungsschritt P1 5: der aus der committeten Fassung zurueckgebaute Leser der Fassung 4 lehnt state_report.dsp ab, ein Bericht ohne dsp bleibt in beiden Fassungen gueltig, und der Empfaenger rechnet SHA-256(dsp.jcs) gegen state_hash nach - ein schemagueltiger Bericht mit abweichendem Hash wird GANZ abgewiesen. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,55 s | [B3c](roh/NAK-309-d616beb-dirty.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten UND ueber 2000 weitere mit wechselnder Hoer-Markierung, Ein- und Ausfade und Interventionsring (SONDE-013 M-74), und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,45 s | [B4](roh/NAK-309-d616beb-dirty.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,22 s | [B9](roh/NAK-309-d616beb-dirty.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen -, waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, und ein Drop zaehlt als Segment, nicht als Epoche. Seit NAK-182 misst ein Sweep zusaetzlich die ZEITLAGE: ein bekannter Impuls bei Stromsample 206336 laeuft ueber die fuenf Blockgroessen 1, 333, 512, 2048 und 16384 mal die fuenf Sampleraten 44,1 / 48 / 88,2 / 96 und 192 kHz, und der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH und liegt innerhalb einer Fensterlaenge (4096 Samples) vor dem Impuls. Die Auswahl des Ereignisses kennt die Sollzeit NICHT - gemessen wird das staerkste Flussereignis des Laufs, und dass es unzweifelhaft das staerkste ist, ist eine eigene Zusage. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 6,47 s | [B5](roh/NAK-309-d616beb-dirty.md#b5) |
+| B6 | Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht. Ein Block ueber maxBlock (1024 Samples bei 256) verwirft den Analyse-Tap und gleicht auf beiden Kanaelen sample-exakt dem Lauf ohne Ueberlast in 4 x 256. Seit NAK-283 (F12) die float-Kante des Ausgangs: ein endlicher double ueber FLT_MAX (Output-Trim +6 dB auf 0,75 und 0,25 x FLT_MAX) kommt auf 0 verriegelt und im Eingangszaehler gezaehlt heraus, und kein Ausgangswert ist nicht endlich; auf endlichem Material in +/-1,0 (Bell +9 dB und Output-Trim +6 dB, 204 800 Werte, auch mit Betrag >= 1) ist jeder float bitgleich die Verengung des double-Taps, und der Zaehler bleibt stehen. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [OK] Exit 0 | 6,09 s | [B6](roh/NAK-309-d616beb-dirty.md#b6) |
+| B7 | Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang. Seit NAK-283 (F05, F09, F12) am echten SondeProcessor: reset() beendet die Audiohistorie - nach einem Impuls in den Resonator (1 kHz, +12 dB, Q 10) ist der erste Block Stille auf beiden Kanaelen exakt 0, ohne reset() klingt er nach - und laesst getStateInformation bytegleich, die Revision, das bestaetigte eq_enabled und die engagierte Bank im Kern stehen (1 kHz danach mehr als 6 dB lauter); releaseResources->prepareToPlay, reset() und prepareToPlay allein enden in derselben Audiohistorie (Stille exakt 0, untereinander bitgleich). Ein Block ueber maxBlock bei rechnendem Kern hinterlaesst in der Analysequeue eine Luecke (der naechste Block beginnt bei 192 mit kFlagLueckeDavor, Segment +1), und Kern und Queue beschreiben dieselbe verworfene Zeitspanne (ein verworfener Tap, ein Block ohne Audio mit 128 Frames, oversize und Ueberlauf +0); ruht der Committed-Pfad im Hard-Bypass, wird derselbe Block ohne Luecke angenommen. Endliche double ueber FLT_MAX am Tap kommen in der Analysekopie als endliche floats an, und der Kernzaehler steigt um genau diese 1024 Werte. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [OK] Exit 0 | 0,65 s | [B7](roh/NAK-309-d616beb-dirty.md#b7) |
+| B10 | C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. Seit SONDE-013 nimmt die C++-Vertragsengine die drei Experimentfamilien aus den committeten Fixtures an, lehnt einen fremden execution_mode an derselben Engine ab, und ein experiment_manual_result laeuft als persistenzpflichtiger P0-Befehl durch das In-Flight-Register wie jede andere steuernde Nachricht. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 221,57 s | [B10](roh/NAK-309-d616beb-dirty.md#b10) |
+| B11 | Probeeq uebernimmt JUCE updateTrackProperties ausschliesslich auf dem Message-Thread; gueltige Hostnamen reisen codepointgetreu in heartbeat.runtime, leer/Whitespace/121 Codepoints/C0/C1 gelten als Fehlen; Hostvorrang veraendert das gespeicherte User-Label nicht, Clear stellt dessen Rueckfall her. Persistierte Messpunkte insert/pre/post und Betrieb active/suspended/offline reisen ohne Synthese; der lokale C++-Pfad behauptet nicht, dass FL den Callback liefert. | `eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest_artefacts\Release\EqCopSonde012HostChannelContextTest.exe` | [OK] Exit 0 | 1,04 s | [B11](roh/NAK-309-d616beb-dirty.md#b11) |
+| B12 | Probeeq fuehrt Audio ueber die vorallokierte Ganzblockqueue zum Analyseworker und P2: LUFS-I reist nur atomar mit endlicher unsicherheitLu und ohne Status; collecting/gated reisen ohne Zahlenpaar; halbe, nichtendliche oder statusbehaftete Paare werden nicht serialisiert. Seek, Loop, Oversize-Drop und Kontinuitaetsbruch starten eine leere Reihe; der gemessene Audiopfad alloziert dabei 0-mal und verwirft bei Ueberlast nur Analyse. | `eq-copilot\build\plugin\EqCopSonde012LoudnessSourceTest_artefacts\Release\EqCopSonde012LoudnessSourceTest.exe` | [OK] Exit 0 | 1,65 s | [B12](roh/NAK-309-d616beb-dirty.md#b12) |
+| B13 | Gen/Main ersetzt sein Quellenmodell durch absolute session_snapshot-Sichten und haelt Mitgliedschaft, Control, Messung, Namensherkunft und Capability-Evidenz getrennt; Frischegrenzen, Messpunkte, Betrieb, Fehlerkanal, Lautheitspaar, Hostvorrang, Sortierung und Hauptziel werden einzeln gemessen. Die integrierte 16-/32-Quellen-Zeitmessung gehoert A23. | `eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe` | [OK] Exit 0 | 0,14 s | [B13](roh/NAK-309-d616beb-dirty.md#b13) |
+| B14 | MainProject Save/Load erhaelt bestaetigte Quellidentitaet und User-Label, aber weder Control-Liveness noch Runtime-Nonce oder Messframe; Join, Benennen und Unbind melden je echte persistente Aenderung Host-Dirty, No-op, Save und Load nicht; Reload baut einen frischen subscribe_session-Auftrag. | `eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe` | [OK] Exit 0 | 8,50 s | [B14](roh/NAK-309-d616beb-dirty.md#b14) |
+| B15 | EqCopShot rendert den deklarierten SONDE-012-Sichtsatz bei exakt 760x430: 0/1/16 Quellen, fresh/partial/stale/disconnected/invalid, Namens- und Lautheitsgegenpfade, alle Diagnosezustaende, Label-/Unnamed-Rueckfall, Findings, genau ein Hauptziel mit Referenzen sowie das deaktivierte Label-Feld eines nicht fuehrenden Main. | `eq-copilot\build\plugin\EqCopShot_artefacts\Release\EqCopShot.exe --sonde012-suite eq-copilot/build/sonde012-shots` | [OK] Exit 0 | 3,22 s | [B15](roh/NAK-309-d616beb-dirty.md#b15) |
+| B20 | Gesamtklasse nach §34.3 (M-06): die vier Klassen sind geordnet, und `deckeln` ist ein Minimum, kein Mittelwert. Jeder der vier harten Maengel deckelt EINZELN auf schwach, ohne gegen die drei guten Nachbarquellen verrechnet zu werden; zwei Maengel ergeben in allen zwoelf Paarungen unbrauchbar. Was ein Erzeuger nicht beurteilen kann, deckelt ebenso auf mittel - eine Sonde mit PERFEKTER Abdeckung kommt deshalb nur auf mittel, weil sie Session, Passage und Alignment nicht sieht; das ist die Regel hinter dem Literal, das Etappe B an einer Stelle gesetzt hatte. Die zwei Abdeckungsschwellen und die Fensterschwelle fallen je an ihrer Kante und knapp darunter (Muster C-09). Die tragende Zusage ist eine INVARIANTE ueber den ganzen Raum: in 1536 Uebergaengen ueber alle 256 Bitkombinationen in drei Basislagen hebt ein zusaetzlicher harter Mangel die Klasse NIE - und alle vier Klassen kommen darin wirklich vor, die Invariante ist also nicht trivial erfuellt. Ein Mittelwert koennte diese Zusage nicht halten. | `eq-copilot\build\plugin\EqCopSonde013QualityClassTest_artefacts\Release\EqCopSonde013QualityClassTest.exe` | [OK] Exit 0 | 0,09 s | [B20](roh/NAK-309-d616beb-dirty.md#b20) |
+| B22 | Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und alle drei Verlaeufe sind Energien ohne Phase. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts. | `eq-copilot\build\plugin\EqCopSonde013FingerprintGoldenTest_artefacts\Release\EqCopSonde013FingerprintGoldenTest.exe` | [OK] Exit 0 | 1,23 s | [B22](roh/NAK-309-d616beb-dirty.md#b22) |
+| B23 | Die manuelle Passage als Projektintent im MainProjectState (§33.5, M-25/M-69). Das neue persistente Feld `manual_passages_v1` traegt seine Fassung im Namen; ein Altstand ohne das Feld laedt normal, ein unbekanntes Zusatzfeld aus einer spaeteren Fassung zerstoert den Leser nicht und steht unveraendert im naechsten Save, und Save/Load ist ueber zwei Runden bytegleich - auch am oberen int64-Rand und mit leerer Liste (die Eigenschaft entfaellt dann, statt als leeres Array zu reisen). Jede persistente Aenderung meldet GENAU einmal Host-Dirty, das Vergessen wie das Merken; ein read-only-Stand verweigert beides und gibt seine Originalbytes zurueck. Was hier NICHT reist, ist Absicht: Fingerprint, Quellenset, Abdeckung und Epoche sind Messergebnisse und bleiben im Store, sonst behauptete ein Projekt nach dem Loeschen der Datenbank weiter, es gebe Evidenz. Jede Grenze wird von beiden Seiten gefahren - was die Produkt-API ablehnt, lehnt auch der Leser ab, und zwar fail-closed als read-only statt still korrigiert. | `eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe` | [OK] Exit 0 | 11,81 s | [B23](roh/NAK-309-d616beb-dirty.md#b23) |
+| B24 | PRE/POST auf der Audioseite (§38.3/§38.4, M-18/M-20/M-24). Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist: identische Kette, reiner Gain von +15 dB und ein linearer Tiefpass bleiben fast ueberall ueber der 0,8-Schwelle aus §38.3 - Kompression, Modulation, Saturation und wechselnde Latenz fallen darunter, und die beiden Gruppen ueberlappen nicht. Deshalb traegt keine der vier adversarialen Ketten eine statische EQ-Behauptung. Der Vergleichspegel wird vorab gemessen und eingefroren: sechs Sekunden mit +18 dB und zwei Sekunden Stille aendern ihn um kein Tausendstel, denn eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor; ohne genug Material friert er gar nicht erst ein, und NaN/Inf verriegeln statt ihn zu vergiften. Hoerbares Delta ist ohne nachgewiesenes Compare-Routing gesperrt - der Raum aus drei binaeren Nachweisen wird VOLLSTAENDIG abgefahren, genau eine der acht Kombinationen ist frei, und in P4 gibt es kein Compare-Routing. | `eq-copilot\build\plugin\EqCopSonde013PrePostGoldenTest_artefacts\Release\EqCopSonde013PrePostGoldenTest.exe` | [OK] Exit 0 | 1,24 s | [B24](roh/NAK-309-d616beb-dirty.md#b24) |
+| B25 | Unsicherheit und Mehrfachtestung (§43.2, M-45). Der Block-Bootstrap ist deterministisch, enthaelt den Mittelwert und liefert bei bloeckigem Material ein BREITERES Intervall als ein Bootstrap ueber Einzelwerte - benachbarte Deltas sind korreliert, und wer Unabhaengigkeit annimmt, macht aus Rauschen eine belastbare Aenderung. Leere oder unmoegliche Eingaben ergeben KEIN Intervall statt eines um null. Bei 221 gleichverteilten p-Werten meldet der naive Scan zweistellig viele Baender und die FDR-Korrektur kein einziges, waehrend 20 klare Treffer durchkommen; die Grenze p_(k) = k/m*q faellt inklusiv an ihrem Wert. Cluster verlangen zusammenhaengende Baender - drei verstreute ergeben keinen, vier benachbarte schon, und auch am linken und rechten Rand. | `eq-copilot\build\plugin\EqCopSonde013ExperimentGoldenTest_artefacts\Release\EqCopSonde013ExperimentGoldenTest.exe` | [OK] Exit 0 | 0,13 s | [B25](roh/NAK-309-d616beb-dirty.md#b25) |
+| B26 | Die zwei Kanten des Blindvergleichs (§43.1, §15, M-43/M-44). Ohne eingefrorenen Vergleichspegel wird KEIN Klangurteil angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das; ein noch laufender Pegel zaehlt nicht als Abgleich. Die Blindreihenfolge wird vor dem Urteil gebunden und laesst sich nicht drehen; vor dem Urteil gibt der Typ sie GAR NICHT heraus, und der Ausgabeparameter bleibt unberuehrt statt still einen lesbaren Wert zu tragen. Erst das Urteil deckt genau die gebundene Reihenfolge auf, in beide Richtungen geprueft. Ein zweites Urteil und ein spaeterer Pegel aendern nichts mehr; jede Sperre traegt ein Wort, und der Passagenwechsel raeumt Urteil, Abgleich und Bindung gemeinsam ab. | `eq-copilot\build\plugin\EqCopSonde013ExperimentUiTest_artefacts\Release\EqCopSonde013ExperimentUiTest.exe` | [OK] Exit 0 | 0,51 s | [B26](roh/NAK-309-d616beb-dirty.md#b26) |
+| B21 | RT→Control-Ring fuer hoerbare Eingriffe (M-37 bis M-39, §34.2): ein Begin steht SOFORT zur Abholung bereit, ohne Kadenzfenster - der Unterschied zum 1-Hz-Heartbeat-Bit, das ein 380-Sample-Ereignispaar nie gesehen haette. Ein Ende traegt einen Nachlauf, der mindestens so lang ist wie der Eingriff selbst, UND dessen Dauer, damit ein Empfaenger die Konservativitaet pruefen statt sie glauben kann. Der Ueberlauf ist die schaerfste Zusage: dieser Ring verwendet KEIN drop-oldest, das aelteste Ereignis steht unveraendert an erster Stelle, der Ueberlauf ist sticky gemeldet und gezaehlt, der Rest kommt lueckenlos aufsteigend heraus, und das Sticky-Bit heilt nicht von selbst - nur resync() loescht es. 200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen, mit Zaehler gemessen statt behauptet (M-74). Sequenzen am u64-Rand kommen unveraendert zurueck, und zuruecksetzen() leert Ring, Sticky-Bit und Zaehler gemeinsam. | `eq-copilot\build\plugin\EqCopSonde013InterventionRingTest_artefacts\Release\EqCopSonde013InterventionRingTest.exe` | [OK] Exit 0 | 0,09 s | [B21](roh/NAK-309-d616beb-dirty.md#b21) |
+| B19 | Bandweise Stereoevidenz (§40.1, §40.3, M-08/M-10/M-11/M-12): die fuenf Klassen aus §40.3 treffen ihre ANALYTISCH bekannte Antwort - Mono ergibt Korrelation 1, Kohaerenz 1, Phase 0 und Folddown 0 dB innerhalb der 0,25 dB aus §40.3; Polaritaetsinvertierung ergibt Korrelation -1 bei Kohaerenz 1 (die Kohaerenz misst den Zusammenhang, nicht das Vorzeichen) und eine Monosumme, die an die Vertragsgrenze laeuft statt zu schweigen; eine bekannte Laufzeit ergibt eine Phase, die der Formel +2*pi*f*tau folgt, an drei Traegerfrequenzen gemessen; unkorrelierte Kanaele fallen in Korrelation und Kohaerenz, und bei niedriger Kohaerenz entsteht keine Lag- oder Polaritaetsempfehlung. Seit NAK-182 faehrt ein Sweep dieselben fuenf Klassen und den Folddown ueber die 18 Blockgroessen 1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345 und 16384 - je Blockgroesse dieselbe Antwort, je Blockgroesse ein wirklich entstandenes Evidenzfenster und vergleichbar viele gemittelte Fenster (Freiheitsgrade innerhalb 20 Prozent des Medians). Das ist eine AUSWAHL aus 1 bis 16384 und keine Erschoepfung: die Obergrenze ist die Slotkapazitaet des Layouts, 256 zum Beispiel bleibt ungemessen. Seit Nacharbeit 1 wertet der Sweep bei bekannter Laufzeit ALLE DREI Traeger aus - 300, 900 und 2000 Hz, je Blockgroesse mit Praesenzbit und Phasenfehler gegen +2*pi*f*tau innerhalb 0,25 rad -, und der Unkorreliert-Fall misst je Blockgroesse zusaetzlich, dass KEIN Band mit Basis eine Phase traegt; das sind dieselben Felder, die der 512er-Abschnitt fuer M-12 nutzt. | `eq-copilot\build\plugin\EqCopSonde013StereoGoldenTest_artefacts\Release\EqCopSonde013StereoGoldenTest.exe` | [OK] Exit 0 | 2,22 s | [B19](roh/NAK-309-d616beb-dirty.md#b19) |
+| B17 | True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht fuer 15 bis 19 keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt auf 1e-9 genau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten. Seit NAK-283 (N01) zusaetzlich die vier transienten Faelle 20 bis 23 aus EBU Tech 3341 (Versatz 0 bis 3): jeder trifft eine im Test gerechnete, vorher an 15 bis 19 auf +/-0,01 dB validierte 64-fach-Referenz innerhalb +/-0,1 dB und liegt zusaetzlich in der Normtoleranz 0,0 +0,2/-0,4 dBTP. Insgesamt 43 Pruefungen. | `eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe` | [OK] Exit 0 | 0,35 s | [B17](roh/NAK-309-d616beb-dirty.md#b17) |
+| B18 | Loudnessfenster, Headroom und Dynamik (M-01, M-03, M-04, M-07, M-09): Momentary (400 ms) und Short-term (3 s) sind wirklich zwei Fenster - bei stehendem Pegel gleich, 0,8 s nach einem Pegelsprung mehr als 5 LU auseinander, danach wieder beieinander; nach 0,6 s traegt der Frame Momentary und KEIN Short-term. integration_samples passt im Dauerbetrieb zur 10-Hz-Kadenz und faellt beim ersten Rahmen nach einer Grenze messbar kleiner aus. PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, nicht gegen den Sample-Peak des 100-ms-Rahmens; die Engine setzt selbst kein PLR, weil LUFS-I erst im Sondenprozessor zugemischt wird. Headroom ist eine Verteilung: zwei Signale mit gleichem Maximum trennen sich um mehr als 10 dB im P50. Crest steht in zwei Fenstern und trennt dichte kleine Spitzen von einer einzelnen grossen. LRA gibt es nach 30 s NICHT, nach 75 s mit passender Spanne, bei Material ohne Dynamik nahe null und nach 90 s Stille gar nicht - die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr. NaN und Inf im Eingang erzeugen in keiner der neun neuen Metrikstellen einen nichtendlichen Wert. Ein verworfener Analyseblock schliesst auch die neuen Fenster, und keines von ihnen ueberbrueckt eine Transportgrenze. | `eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe` | [OK] Exit 0 | 6,40 s | [B18](roh/NAK-309-d616beb-dirty.md#b18) |
+| B16 | Evidenzpfad (§33.2): der aus einem echten FeatureFrame erzeugte evidence_snapshot passiert Textriegel und dieselbe Vertragsengine wie B3c; P10/P50/P95 trennen ein springendes von einem ruhigen Signal gleicher mittlerer Lautheit (Spanne P95-P10 um mehr als 6 dB verschieden) und halten in JEDEM Band mit Bit die Ordnung P10<=P50<=P95; die Abdeckung faellt messbar, sobald ganze Analysefenster in Stille liegen, und die Konvergenz faellt bei wanderndem Pegel; der Ereignisstrom traegt Fluss- und Peakbit getrennt samt Verlustzaehler, ein Ereignis fremder Epoche oder ohne Anker entsteht gar nicht. Seit NAK-182 misst dasselbe Bein die C++-Haelfte der fokussierten 0,01-dB-Evidenz (M-83 Satz 2), seit Nacharbeit 1 vollstaendig am SERIALISIERTEN Snapshot: PRE und POST laufen durch den echten Serialisierer, und jede Zahl kommt aus verteilung.p50 des eigenen Wire-Textes - Encoding-Wort, Ganzzahlen und Praesenzbits. Daraus kommt ein bekannter Gain von 3,00 dB je Band mit Bit innerhalb 0,1 dB zurueck, und eine Leiter aus 20 Pegeln im Abstand 0,01 dB - je ein eigener Enginelauf samt Serialisierung - ergibt 20 streng monotone Ganzzahlen, deren Nachbarn sich um genau 1 unterscheiden. Material (Frequenz, Samplerate, Amplitude, Blockgroesse, Laufbegrenzung), Pegel, Gain und Aufloesung kommen aus den ZAHLEN der Fixture evidenz-0p01-paar-wire-v1.json, nicht aus ihren Bytes und nicht aus lokalen Konstanten. | `eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe` | [OK] Exit 0 | 2,09 s | [B16](roh/NAK-309-d616beb-dirty.md#b16) |
+| B27 | Der musikalische Intent als Projektintent im MainProjectState (§37.1, U22, M-01 bis M-09/M-11). Die Rollenmenge ist GESCHLOSSEN und hat genau fuenf Werte; ein sechster faellt in der Produkt-API UND im Leser, statt still auf einen bekannten Zweig abgebildet zu werden. Die §37.1-Belegung ist ABGELEITET und damit total und injektiv: alle fuenf Rollen kommen ueber den Roundtrip zurueck, keine zwei teilen sich eine Belegung (alle zwanzig geordneten Paare), und eine fremde Belegung gehoert zu keiner Rolle. Schutzangaben sind ORTHOGONAL zur Rolle - eine Quelle ohne Rolle kann Attack geschuetzt haben, und keiner der fuenf Rollenwechsel loescht einen Schutzbereich. Die Rolle bewusst-verschmolzen ist ein globales Veto gegen Entmaskierung; eine ausdrueckliche gerichtete Beziehung hebt es NUR fuer dieses Paar auf, nicht fuer ein drittes. Die Konfliktregeln sind eine geordnete Liste, kein Score: alle zehn Paarungen der fuenf Stufen fallen in beiden Leserichtungen, hundert Vermutungen schlagen die Schutzgrenze nie, und innerhalb Stufe 2 gewinnt das Spezifischere. Ein Zyklus im fuehrt_vor-Graphen erreicht die Persistenz NIE unmarkiert - die Pruefung laeuft beim Speichern, der Leser weist einen von Hand gebauten Zyklus als read-only ab, und derselbe Schluss als gleichrangig gespeichert laedt und kommt als gleichrangig zurueck. Eine abgeleitete Vermutung ueberschreibt einen Userwert nie, der umgekehrte Weg gilt. Derselbe Bus traegt verschiedene Rollen in zwei Passagen ohne Datenverlust, passagespezifisch vor global. Dazu die fuenf Teile der State-Invariante: Fassung im Namen, Altstand ohne die Felder laedt bytegleich, eine unbekannte Eigenschaft ueberlebt, Save/Load ueber zwei Runden bytegleich, und jede echte Aenderung meldet GENAU einmal Host-Dirty, waehrend No-op, abgewiesener Wert, Laden und read-only schweigen. Jede Grenze faellt von BEIDEN Seiten (17 Leserfaelle samt NaN/Inf-Konfidenz, Revision 0, Bandrand 0/221 und Selbstbeziehung), und die volle 256er-Liste, die die API erzeugt, laedt der eigene Leser. Zuletzt M-11 am Produktpfad: zwei echte Prozessoren mit demselben Strom, einer mit vollem Intent, liefern bitgleiche Evidenzbaender, Perzentile, Livebaender, metrics_version und NaN-Zaehler - mit Gegenprobe, dass die Baender wirklich Werte tragen. | `eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe` | [OK] Exit 0 | 0,51 s | [B27](roh/NAK-309-d616beb-dirty.md#b27) |
+| B29 | Die Zustandsmaschine des AssistantStep im Main (46.1, E-07/E-08, M-55 bis M-62). Die Zustandsmenge hat ACHT Werte, jeder kommt ueber seinen eigenen Rueckweg zurueck, ein neunter faellt. Nach preview fuehrt KEINE Kante - weder hin noch zurueck -, ein gespeicherter preview-Schritt ist ein Lesefehler statt eines stillen Sprungs, und die Produkt-API setzt ihn nicht; die Gegenprobe mit proposal laedt normal. Jeder der acht Zustaende traegt fuenf Angaben (Eintritt, Evidenz, Useraktion, Timeout ueber 0, sichere Rueckkante), auch preview - der erste Zustand ist seine eigene Rueckkante. Der Deckel ist STRUKTURELL: ein zweiter Startversuch bei offenem Schritt wird abgewiesen, nicht eingereiht, und erst nach dem terminalen Abbruch beginnt ein neuer. Die vier Gegenpfade laufen einzeln: Zurueck geht auf die Rueckkante, Ueberspringen auf den naechsten Zustand, Resume ist eine FRAGE ohne Revisionssprung, und Verwerfen ist terminal statt geloescht - danach gibt es kein Resume mehr. Die drei benannten Ergebnisse aus 46.2 sind eigene Ergebnisse mit Objekt; dasselbe zweimal hebt keine Revision. Die harten Gates greifen VOR der Gewichtung: drei Kandidaten mit perfektem Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt. Verdrahtet am echten Prozessor mit Host-Dirty genau einmal je echter Aenderung, Rekonstruktion aus dem gespeicherten MainProject und bytegleichem Save/Load; jede Grenze faellt von beiden Seiten, und ein Altstand ohne die Eigenschaft laedt normal und schreibt sie nicht. | `eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe` | [OK] Exit 0 | 0,91 s | [B29](roh/NAK-309-d616beb-dirty.md#b29) |
+| B30 | Diagnose-Briefkasten im Plugin (Plan S25e (3), R-286-1 und R-286-2): ohne anfrage.json nur eine Existenzpruefung je Takt (hoechstens 1 Hz, Message-Thread) und nichts Messbares - Audio, State, Parameter und der Snapshot des Knopfwegs bleiben bytegleich. Eine gueltige Anfrage beantworten Gen und Probeeq je Kennung genau einmal, solange sie im Ring der letzten 256 steht, ueber den eigenen Schreibweg (exklusive Temp-Datei, Groessenpruefung, Umbenennen ohne Ersetzen, nie Ordneranlage oder Loeschung) mit einem Umschlag nach nakama.diagnose.antwort.v1; fremde oder zu grosse Anfragen und solche hinter einer Junction bleiben ohne Antwort, eine beim Lesen gesperrte wird im naechsten Takt beantwortet. | `eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe` | [OK] Exit 0 | 71,59 s | [B30](roh/NAK-309-d616beb-dirty.md#b30) |
+| B28 | Die Befundzustaende auf der Gen-Seite (Abnahme U21, M-29 bis M-35). Die drei Sicherheitsstufen sind auf GENAU DREI Zustaende abgebildet, und die Abbildung ist ein FELD: ein vierter Wert macht den ganzen Snapshot ungueltig, statt still auf einen bekannten zu fallen. Nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT - die Sperre liegt am Befund im Modell, nicht an einer ausgegrauten Schaltflaeche. Messqualitaet der Passage und Sicherheit des Befunds bleiben zwei Felder aus zwei Quellen: ein Befund mit confidence.class hoch, dessen Zustand more_data sagt, bleibt nicht handelbar. Alternativen sind EIGENE Befunde mit eigenem Zustand und reisen als IDs; ein Freitext faellt. Der Beleg ist die markierte Zone - Bandrand 0 und 221 gueltig, leeres Intervall und 222 nicht -, und ein Belegtextfeld gibt es nicht. Die drei Anzeigezeilen sind drei eigene Felder; eine vierte oder eine leere faellt. Die acht Ausschlussgruende kommen mit ihrem Grund an, ein neunter faellt. Jede Zahl faellt an ihrer Grenze und nicht erst danach. Zuletzt die Fassungsleiter: ein Leser der Fassung 2 lehnt findings ab, Abwesenheit heisst keine Befunde, und ein Sitzungswechsel raeumt sie ab. Seit Etappe E dazu der Maskierungswert AM Befund: er benennt Frequenzbereich und beide Quellen, gueltig und herabgesetzt sind zwei eigene Bits, Abwesenheit ist etwas anderes als ein ungueltiger Wert, und ein Objekt beliebiger Form faellt - sechs Formen einzeln geprueft. Eine Zeichenanweisung (Achse, Zoom, Farbe) faellt am Vertrag, auch im Maskierungswert. | `eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe` | [OK] Exit 0 | 0,15 s | [B28](roh/NAK-309-d616beb-dirty.md#b28) |
+| B8 | Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,29 s | [B8](roh/NAK-309-d616beb-dirty.md#b8) |
+| A32 | Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook. Der Quellumfang kommt seit NAK-283 (M-69) aus einem pruefbaren Inventar: jede Datei mit Endung .rs, .cpp, .h oder .hpp unter broker/src und eq-copilot/plugin samt allen Unterbaeumen, mit Grund ausgenommen nur der flatc-Codegen (broker/src/generiert, eq-copilot/plugin/vertrag/generiert) und der Testbaum eq-copilot/plugin/tests; der Bericht druckt das Inventar, und eine Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als WERKZEUGFEHLER (Inventarriegel, Exit 2). Gemessen werden Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Grenzen - Zeilen je Datei, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner - werden ehrlich gemeldet, auch wenn sie reissen (Pflegeticket NAK-292). Jeder neue Treffer ueber der Zeilengrenze meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 129 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung; das Inventar mit neuem Unterbaum, Codegen, Tests und einer Ableitung, die still einen Unterbaum verliert). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 heisst gerissen und ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest, eine fehlende Inventarwurzel oder der Inventarriegel, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen, und ein ungemessener Unterbaum machte jedes andere Mass falsch. | `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | [HINWEIS] Exit 4 - Befund, nicht blockierend (siehe Rohausgabe) | 13,53 s | [A32](roh/NAK-309-d616beb-dirty.md#a32) |
+| A33 | clang-tidy ueber alle Uebersetzungseinheiten von eq-copilot/plugin ohne tests/ und ohne den flatc-Codegen vertrag/generiert/ (Bein A9 haelt ihn bytegleich; Regelsatz eq-copilot/plugin/.clang-tidy: bugprone, clang-analyzer, concurrency, performance sowie eine cert-, cppcoreguidelines- und misc-Auswahl; keine Stilregeln, Ausnahmen dort mit Grund) in einem eigenen Ninja-Baum eq-copilot/build-tidy mit denselben cl.exe-Schaltern wie der Produktbau. Gezaehlt werden eindeutige Fundstellen (Datei, Zeile, Spalte, Check) gegen die Ratsche in tools/plan/tidy.py: Grenze = Iststand der Erstmessung NAK-288, Ziel 0, nur gesenkt, nie erhoeht; eine Aenderung des Regelsatzes zieht die Ratsche im selben Commit nach. Vorangestellt der Selbsttest (Einordnung in den Quellort, Datenbankfilter, Diagnoseparser, Deduplizierung, Ratschenrand, Umgebungsleser). Nicht blockierend: Exit 4 ist ein Hinweis. ROT ist Exit 2: eine Uebersetzungseinheit mit error-Diagnose oder ein abgestuerzter clang-tidy heisst NICHT gemessen, denn eine halb geparste Einheit meldet weniger Funde und saehe wie Fortschritt aus. FEHLT (Exit 3) ohne Visual Studio 2022 mit C++-Werkzeugen und Clang-Komponente, cmake oder ninja. | `py -3.13 tools\plan\tidy.py --mit-selbsttest` | [OK] Exit 0 | 110,78 s | [A33](roh/NAK-309-d616beb-dirty.md#a33) |
+
+
+---
+
+## Kanon-Lauf - NAK-309 Etappe 2 Kanon nachher
+
+**Lauf:** 2026-09-18 21:24 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 69/69 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/NAK-309-67e60dd-dirty.md](roh/NAK-309-67e60dd-dirty.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-09-18 21:24:11 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | 67e60dd3 NAK-309 Etappe 2: M-09 nach dem Bau gemessen - NICHT BEGLAUBIGT Exit 4 an DspKern.cpp |
+| Commit (voll) | 67e60dd36a5108c92c8b47c180de23c87648dbca |
+| Arbeitsbaum | 2 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.6 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,10 s | [A1](roh/NAK-309-67e60dd-dirty.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,66 s | [A2](roh/NAK-309-67e60dd-dirty.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). Seit NAK-283 (F12) erzeugt ein endlicher Eingang keinen nicht endlichen Wet-Ausgang: im Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX ist jedes Ausgangssample endlich, und nach dem Einblenden steigt der Wet-Zaehler um genau die verriegelten Samples. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 7,74 s | [A3](roh/NAK-309-67e60dd-dirty.md#a3) |
+| A4 | Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 1.210,62 s | [A4](roh/NAK-309-67e60dd-dirty.md#a4) |
+| A4-SI | SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. | `cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1` | [OK] Exit 0 | 34,39 s | [A4-SI](roh/NAK-309-67e60dd-dirty.md#a4-si) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 65,78 s | [A4b](roh/NAK-309-67e60dd-dirty.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. Seit SONDE-013 zusaetzlich der Fassungsschritt: der aus dem Register zurueckgebaute Leser der Fassung 1 LEHNT jede Neuerung der Fassung 2 ab (drei Experimentfamilien, evidence_snapshot.ereignisse/.stereo, zwei neue Invalidierungsgruende), und die Summe der registrierten Familien stimmt mit dem oneOf ueberein. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 3,04 s | [A5](roh/NAK-309-67e60dd-dirty.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,14 s | [A6](roh/NAK-309-67e60dd-dirty.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,20 s | [A7](roh/NAK-309-67e60dd-dirty.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,37 s | [A8](roh/NAK-309-67e60dd-dirty.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID, keine ist verbrannt oder wiederverwendet, und jedes Offsetfeld steht im Rust-Strukturriegel. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,27 s | [A9](roh/NAK-309-67e60dd-dirty.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen, integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) und seit SONDE-015 band_dynamic_gain_db ID 22 (acht Werte, leerer Vektor, Altsender ohne Feld, vier falsche Laengen, NaN und Inf) sind in beiden Lesern gedeckt. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 2,40 s | [A10](roh/NAK-309-67e60dd-dirty.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,30 s | [A11](roh/NAK-309-67e60dd-dirty.md#a11) |
+| A12 | Parameterbestand Layout v2 (120 Kennungen, 112 Host-Parameter als Praefix) haelt den Vertrag, und die 109 v1-Kennungen sind aus der eingefrorenen v1-Datei woertlich abgeleitet; Zonen-, Preset- und Ablehnungsregeln stimmen mit dem Vertrag ueberein; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State- und Presetkorpus samt MANIFEST bytegleich zur Neuerzeugung, keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,28 s | [A12](roh/NAK-309-67e60dd-dirty.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,21 s | [A13](roh/NAK-309-67e60dd-dirty.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 8,90 s | [A14](roh/NAK-309-67e60dd-dirty.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen fallen einzeln. [4] vergleicht Artefakthashes im Kanon weich und mit --release hart; [4b] berichtet den installierten Stand; [5] kreuzprueft den Ordner-Hash; [6] faehrt die produktive C++-WinVerifyTrust-/Thumbprint-Kette mit dem OS-vertrauenswuerdigen Signerzertifikat einer signierten Windows-Fixture fuer gueltig und falsch sowie einer unsigned Temp-Kopie fuer fehlend, ohne den Zertifikatsspeicher zu aendern. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft; unerwartete Ausnahmen enden kontrolliert. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,34 s | [A17](roh/NAK-309-67e60dd-dirty.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 34,94 s | [A18](roh/NAK-309-67e60dd-dirty.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,13 s | [A19](roh/NAK-309-67e60dd-dirty.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,31 s | [A20](roh/NAK-309-67e60dd-dirty.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,34 s | [A21](roh/NAK-309-67e60dd-dirty.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,02 s | [A22](roh/NAK-309-67e60dd-dirty.md#a22) |
+| A24 | G3-SOAK Dauerlauf ueber eine ausschliessliche Probe-Pipe: 1 Main mit subscribe_session und echtem SourcesModel plus 16 Sondenpaare und 16 echte SondeProcessor am Ganzblockpfad laufen gegen den echten Rust-Coordinator, waehrend ein Viertel der Sonden langsam liest und der Broker mitten im Lauf getoetet und neu gestartet wird. Gemessen: Mitgliedschaft und fuehrendes_main driften nie, kein P0 geht ausserhalb der Neustartfenster verloren und seine ACK-p95 bleibt unter 1.000 ms, kein Mitglied wird ausserhalb der Fenster stale oder evicted, der Snapshot ist nach jedem Neustart binnen 60 s wieder vollstaendig und die alte broker_epoch kommt nie wieder, Working Set beider Prozesse waechst je Generation um hoechstens max(10 %, 16 MiB), und der Sondenpfad verliert keinen Ganzblock. Beide Programme verweigern Produktions- und Golden-Pipename mit Exit 3, gefahren vor dem Lauf. Seit SONDE-013 laeuft dabei der Evidenzpfad mit: jede Sonde baut oberhalb einer kleinen P1-Fuellstandsschwelle GAR KEINEN evidence_snapshot mehr und zaehlt den verworfenen Analyseframe, statt die in EINTRAEGEN gedeckelte P1-Queue mit 10-KiB-Nachrichten zu fuellen. Eine fehlende Messung ist kein PASS (NAK-283 F13): jeder Speicherpunkt traegt das Gueltigkeitsmerkmal seiner Windows-Abfrage, und fehlt ausserhalb der Neustartfenster eine gueltige Messung, endet S07 mit dem eigenen Status MESSUNG FEHLT (Exit 3) statt im Budget. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1` | [OK] Exit 0 | 148,64 s | [A24](roh/NAK-309-67e60dd-dirty.md#a24) |
+| A34 | Der Selbsttest des Soak-Orakels (NAK-283 F13, Muster A27). Er laeuft OHNE Repo-Fixture und ohne Lauf: vier Faelle bauen ihre Berichte im Speicher und laufen durch dieselben Funktionen wie A24 - Messstelle, Speicherpunkt, Urteil. Eine fehlende RSS-Messung endet mit MESSUNG FEHLT und Exit 3, nie im Budget; ein nicht abfragbarer Prozess und ein Prozess mit 0 Bytes Working Set sind im Bericht verschieden; ein Fehlerpunkt direkt vor oder nach dem Neustartfenster faellt, obwohl das Fenster die Kurve filtert; ein Altbericht ohne Gueltigkeitsmerkmal bleibt ueber --bericht auswertbar, derselbe Bericht als Livelauf ist rot. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest` | [OK] Exit 0 | 0,16 s | [A34](roh/NAK-309-67e60dd-dirty.md#a34) |
+| A35 | Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor und Abweichung; Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\fl\selbsttest.py` | [OK] Exit 0 | 20,87 s | [A35](roh/NAK-309-67e60dd-dirty.md#a35) |
+| A36 | Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebundene Kernziel ist gedeckt. Verglichen werden Zeitstempel, keine Inhalte. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_beweisrunner.py --selbsttest` | [OK] Exit 0 | 4,91 s | [A36](roh/NAK-309-67e60dd-dirty.md#a36) |
+| A28 | Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett. | `py -3.13 tools\eq-copilot\erzeuge_p5_korpus.py --pruefen` | [OK] Exit 0 | 0,25 s | [A28](roh/NAK-309-67e60dd-dirty.md#a28) |
+| A29 | Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1). | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py` | [OK] Exit 0 | 0,15 s | [A29](roh/NAK-309-67e60dd-dirty.md#a29) |
+| A30 | Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen. | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py --selbsttest` | [OK] Exit 0 | 0,14 s | [A30](roh/NAK-309-67e60dd-dirty.md#a30) |
+| A31 | Die adversarialen Gegenbeispiele des Phasengates G5 am PRODUKTPFAD - genau die Faelle, die das Korpusformat nicht ausdruecken kann. Eine Intent-Rolle trennt zwei messtechnisch identische Kandidaten NICHT, auch nicht bei rolle=fuehrt, und bei drei sichtbaren Kandidaten wird der Fuehrende gegen JEDEN geprueft, nicht nur gegen den Zweitplatzierten. Eine Quelle, die ihre Energie in einem ganz anderen Band traegt als der Masterbefund, erreicht keine starke Aussage. Zwei Kandidaten, deren Raenge sich nur durch ein Band WEIT ausserhalb des Befundintervalls unterscheiden, sind ungetrennt. Umklammernde und disjunkte Fensterspannen fallen am Alignment mit Grund, obwohl die Ueberdeckung ihrer SPANNEN 1,0 meldet. Und die Passage laeuft ueber den echten Produktpfad samt Store: zwoelf und acht Fensterlaengen tragen die Aussage, sieben nicht, und eine Passage ohne ein einziges Masterfenster ergibt eine ENTHALTUNG mit ungueltiger Beobachtung statt Schweigen (M-27). Seit der Nacharbeit 1 (07.09.2026) faehrt das Bein ALLE 15 vereinbarten Ketteneingaben durch denselben Produktpfad und DRUCKT je Eingabe ihr Ergebnis: vier Passagenrandwerte (12, 11, 8 und 7 Fensterlaengen), den zweiten experiment_begin mit gleicher passage_id, zwei Master, den Master ohne Fenster, den Kanalwechsel vor und nach dem Deskriptorwechsel, drei Sonden auf einem Kanal, die antikorrelierte Quelle allein und neben der korrelierten, dazu die Masteranomalie in einem Fenster HINTER der Passage. Seit NAK-213 (08.09.2026) traegt KEINE der sieben frueher gedruckten NAK-213-Luecken mehr eine Luecke: zwei Master ergeben eine Enthaltung OHNE ORT statt eines stillen Gewinners, ein Master ohne Fenster ebenfalls statt Schweigen, der Kanalwechsel nimmt die Belege GENAU DER wechselnden Quelle zurueck und entfernt ihren Befund, drei Sonden auf einem Kanal werden ueber ALLE Quellen der Sitzung erkannt - eine vierte, stumme Sonde desselben Kanals setzt die Duplikatmarke mit. Seit NAK-214 (08.09.2026) fahren drei Faelle dieses Tickets mit: zwei bestaetigte Mains erzeugen KEINEN Vorschlag (Vorschlaege 0, keine proposal-Zeile im Store), ein PRE/POST-Paar unterhalb der Alignmentschwelle bleibt Aussageklasse 1 mit next_test prepost_paar_messen, und eine zurueckgenommene juengste Passage laesst die AELTERE rechnen - jeder druckt sein Ergebnis. Keine Luecke bleibt gedruckt, und der aufruferlose Helfer `luecke()` ist mit seinem letzten Aufrufer gegangen. | `cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1` | [OK] Exit 0 | 105,08 s | [A31](roh/NAK-309-67e60dd-dirty.md#a31) |
+| A25 | Der P4-Referenzkorpus ist reproduzierbar (M-80): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt MANIFEST und meldet jede verwaiste Datei. Dasselbe Muster wie A6, A7, A8, A10, A12 und A20; die gitattributes-Regel haelt die Zeilenenden. Seit NAK-182 weist der Erzeuger ausserdem ab, was der Korpus nicht tragen darf: eine Wahrheit ausserhalb der geschlossenen Menge, eine fehlende `quelle` und einen Bezeichner, der in der genannten Datei nicht woertlich steht. Die zwei Mengen KEINE_BEHAUPTUNG und KEINE_STARKE sowie die Zeile `nicht_gemessen` reisen im MANIFEST mit, damit der Pruefer sie von dort liest statt aus einer zweiten Kopie. | `py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen` | [OK] Exit 0 | 0,15 s | [A25](roh/NAK-309-67e60dd-dirty.md#a25) |
+| A26 | Das Sammelbein des P4-Exit-Gates (§58, §49.4, M-79/M-81 bis M-85): vier Klassen - Referenzkorpus, Loop-/Seek-/PDC-Goldens, adversariale Vergleichsfixtures und Stereo-Goldens -, alle muessen bestehen, und jedes genannte Bein steht wirklich im Kanon-Runner. Neben Precision und Recall zaehlen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl FALSCHER Behauptungen; die muss null sein. Eine Enthaltung ist dabei kein Fehler - §49.4 woertlich: ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache. Seit NAK-182 liest das Bein zwei geschlossene Wahrheitsmengen AUS DEM MANIFEST: auf KEINE_BEHAUPTUNG (unbekannt, unvergleichbar, zeitvariabel) ist jede Aussage falsch, auch die schwache; auf den zwei Werten, die nur in KEINE_STARKE stehen (nicht_kausal, nicht_exakt), ist es die starke. Zaehler und Nenner von Recall lesen dieselbe Menge, Precision und Recall sind als Quoten geriegelt, jeder Korpusfall nennt eine Quelldatei samt woertlichem Bezeichner und wird dort gesucht, die fuenf geschlossenen Mengen des v3-Vertrags werden auf kausale Bezeichner geprueft (Entscheid G4 §8), und die in P4 NICHT gemessene Zusage M-85 Ziel 1 wird im Kopf gedruckt statt still zu fehlen. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py` | [OK] Exit 0 | 0,15 s | [A26](roh/NAK-309-67e60dd-dirty.md#a26) |
+| A27 | Der Selbsttest des Exit-Gate-Beins (NAK-182 R1, MP1-6). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch dieselben Funktionen, die A26 fuehrt. Auf dem Korpusweg fallen eine STARKE Aussage auf jedem Wert aus KEINE_STARKE und eine SCHWACHE auf jedem Wert aus KEINE_BEHAUPTUNG; eine schwache Aussage auf nicht_kausal oder nicht_exakt bleibt gruen - genau das trennt die zwei Mengen. Auf dem Kennzahlweg bekommt die Riegelfunktion synthetische Kennzahlen direkt eingespeist, weil Recall und Precision ueber 1 nach der Zweimengenlogik strukturell unerreichbar sind und die Wachen trotzdem einen Weg zu fallen brauchen. Dazu ein erfundener Bezeichner, ein Pfad ins Leere, eine fehlende Vertragsmenge und ein kausaler Enumwert. Seit Nacharbeit 1 laeuft auch S-07 durch die echte Validierung: ein synthetischer Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN geht durch dieselbe Funktion _pruefe_wahrheiten, die A26 auf den geladenen Korpus anwendet, und muss genau eine rote Zeile mit dem Fallnamen ergeben; sein Gegenteil keine. Jede Erwartung laeuft MIT ihrem Gegenteil - sonst waere der Selbsttest auch dann gruen, wenn ein Riegel immer rot meldete. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest` | [OK] Exit 0 | 0,13 s | [A27](roh/NAK-309-67e60dd-dirty.md#a27) |
+| A23 | SONDE-012 E-L06 integriert ueber eine ausschliessliche Probe-Pipe: synthetische C++-Quellen senden vollstaendige Messfenster durch den echten Rust-Coordinator an das echte Main-SourcesModel. Der Endpunkt ist dessen Revision samt Anzeige-Invalidierung. Bei 16 und 32 Quellen liegt p95 fuer 2048/4096 Samples unter 300 ms und fuer 16384 Samples unter 750 ms, jeweils ab dem ersten Sample des Fensters. | `py -3.13 tools\eq-copilot\pruefe_sonde012_sources_latency.py` | [OK] Exit 0 | 4,64 s | [A23](roh/NAK-309-67e60dd-dirty.md#a23) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Seit NAK-283 (F04, F05) bleibt der Nulltest bitgleich, wenn reset() vor jedem dritten Block laeuft - ausgeschaltet bei 44,1 / 48 / 96 / 192 kHz, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen, und im Hard-Bypass auch mit NaN, +Inf und -Inf zwischen zwei reset(); Mono und Stereo mit gleichem Ein- und Ausgang werden angenommen (im Monobus bleibt der Passthrough bitgleich, und das Band rechnet endlich), Quadrophonie, 5.1, vier diskrete Kanaele, Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus bekommen ein Nein, setBusesLayout auf Quadrophonie scheitert, und der Prozessor bleibt bei zwei Kanaelen. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,32 s | [A16](roh/NAK-309-67e60dd-dirty.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,13 s | [B1](roh/NAK-309-67e60dd-dirty.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend. Seit SONDE-015 zusaetzlich das Kind Dsp: 120 Werte bit-exakt durch den Roundtrip, flache Arrays statt Kindknoten, voller Undo-Ring aus 32 Schnappschuessen bytegleich und unter 16 MiB, der 33. Eintrag read-only; die Layoutmigration v1 nach v2 setzt occupied bitgenau aus enabled und den Werten; das Preset traegt zwei getrennte Versionen, weist jedes der sechs verbotenen Identitaetsfelder ab, ignoriert unbekannte Top-Level-Felder und laesst eq_enabled beim Laden unberuehrt. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 1,31 s | [B2](roh/NAK-309-67e60dd-dirty.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [B3](roh/NAK-309-67e60dd-dirty.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,14 s | [B3b](roh/NAK-309-67e60dd-dirty.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler. Seit SONDE-015 zusaetzlich der Fassungsschritt P1 5: der aus der committeten Fassung zurueckgebaute Leser der Fassung 4 lehnt state_report.dsp ab, ein Bericht ohne dsp bleibt in beiden Fassungen gueltig, und der Empfaenger rechnet SHA-256(dsp.jcs) gegen state_hash nach - ein schemagueltiger Bericht mit abweichendem Hash wird GANZ abgewiesen. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,40 s | [B3c](roh/NAK-309-67e60dd-dirty.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten UND ueber 2000 weitere mit wechselnder Hoer-Markierung, Ein- und Ausfade und Interventionsring (SONDE-013 M-74), und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,54 s | [B4](roh/NAK-309-67e60dd-dirty.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,13 s | [B9](roh/NAK-309-67e60dd-dirty.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen -, waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, und ein Drop zaehlt als Segment, nicht als Epoche. Seit NAK-182 misst ein Sweep zusaetzlich die ZEITLAGE: ein bekannter Impuls bei Stromsample 206336 laeuft ueber die fuenf Blockgroessen 1, 333, 512, 2048 und 16384 mal die fuenf Sampleraten 44,1 / 48 / 88,2 / 96 und 192 kHz, und der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH und liegt innerhalb einer Fensterlaenge (4096 Samples) vor dem Impuls. Die Auswahl des Ereignisses kennt die Sollzeit NICHT - gemessen wird das staerkste Flussereignis des Laufs, und dass es unzweifelhaft das staerkste ist, ist eine eigene Zusage. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 5,39 s | [B5](roh/NAK-309-67e60dd-dirty.md#b5) |
+| B6 | Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht. Ein Block ueber maxBlock (1024 Samples bei 256) verwirft den Analyse-Tap und gleicht auf beiden Kanaelen sample-exakt dem Lauf ohne Ueberlast in 4 x 256. Seit NAK-283 (F12) die float-Kante des Ausgangs: ein endlicher double ueber FLT_MAX (Output-Trim +6 dB auf 0,75 und 0,25 x FLT_MAX) kommt auf 0 verriegelt und im Eingangszaehler gezaehlt heraus, und kein Ausgangswert ist nicht endlich; auf endlichem Material in +/-1,0 (Bell +9 dB und Output-Trim +6 dB, 204 800 Werte, auch mit Betrag >= 1) ist jeder float bitgleich die Verengung des double-Taps, und der Zaehler bleibt stehen. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [OK] Exit 0 | 5,16 s | [B6](roh/NAK-309-67e60dd-dirty.md#b6) |
+| B7 | Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang. Seit NAK-283 (F05, F09, F12) am echten SondeProcessor: reset() beendet die Audiohistorie - nach einem Impuls in den Resonator (1 kHz, +12 dB, Q 10) ist der erste Block Stille auf beiden Kanaelen exakt 0, ohne reset() klingt er nach - und laesst getStateInformation bytegleich, die Revision, das bestaetigte eq_enabled und die engagierte Bank im Kern stehen (1 kHz danach mehr als 6 dB lauter); releaseResources->prepareToPlay, reset() und prepareToPlay allein enden in derselben Audiohistorie (Stille exakt 0, untereinander bitgleich). Ein Block ueber maxBlock bei rechnendem Kern hinterlaesst in der Analysequeue eine Luecke (der naechste Block beginnt bei 192 mit kFlagLueckeDavor, Segment +1), und Kern und Queue beschreiben dieselbe verworfene Zeitspanne (ein verworfener Tap, ein Block ohne Audio mit 128 Frames, oversize und Ueberlauf +0); ruht der Committed-Pfad im Hard-Bypass, wird derselbe Block ohne Luecke angenommen. Endliche double ueber FLT_MAX am Tap kommen in der Analysekopie als endliche floats an, und der Kernzaehler steigt um genau diese 1024 Werte. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [OK] Exit 0 | 0,39 s | [B7](roh/NAK-309-67e60dd-dirty.md#b7) |
+| B10 | C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. Seit SONDE-013 nimmt die C++-Vertragsengine die drei Experimentfamilien aus den committeten Fixtures an, lehnt einen fremden execution_mode an derselben Engine ab, und ein experiment_manual_result laeuft als persistenzpflichtiger P0-Befehl durch das In-Flight-Register wie jede andere steuernde Nachricht. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 221,61 s | [B10](roh/NAK-309-67e60dd-dirty.md#b10) |
+| B11 | Probeeq uebernimmt JUCE updateTrackProperties ausschliesslich auf dem Message-Thread; gueltige Hostnamen reisen codepointgetreu in heartbeat.runtime, leer/Whitespace/121 Codepoints/C0/C1 gelten als Fehlen; Hostvorrang veraendert das gespeicherte User-Label nicht, Clear stellt dessen Rueckfall her. Persistierte Messpunkte insert/pre/post und Betrieb active/suspended/offline reisen ohne Synthese; der lokale C++-Pfad behauptet nicht, dass FL den Callback liefert. | `eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest_artefacts\Release\EqCopSonde012HostChannelContextTest.exe` | [OK] Exit 0 | 1,02 s | [B11](roh/NAK-309-67e60dd-dirty.md#b11) |
+| B12 | Probeeq fuehrt Audio ueber die vorallokierte Ganzblockqueue zum Analyseworker und P2: LUFS-I reist nur atomar mit endlicher unsicherheitLu und ohne Status; collecting/gated reisen ohne Zahlenpaar; halbe, nichtendliche oder statusbehaftete Paare werden nicht serialisiert. Seek, Loop, Oversize-Drop und Kontinuitaetsbruch starten eine leere Reihe; der gemessene Audiopfad alloziert dabei 0-mal und verwirft bei Ueberlast nur Analyse. | `eq-copilot\build\plugin\EqCopSonde012LoudnessSourceTest_artefacts\Release\EqCopSonde012LoudnessSourceTest.exe` | [OK] Exit 0 | 1,60 s | [B12](roh/NAK-309-67e60dd-dirty.md#b12) |
+| B13 | Gen/Main ersetzt sein Quellenmodell durch absolute session_snapshot-Sichten und haelt Mitgliedschaft, Control, Messung, Namensherkunft und Capability-Evidenz getrennt; Frischegrenzen, Messpunkte, Betrieb, Fehlerkanal, Lautheitspaar, Hostvorrang, Sortierung und Hauptziel werden einzeln gemessen. Die integrierte 16-/32-Quellen-Zeitmessung gehoert A23. | `eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe` | [OK] Exit 0 | 0,11 s | [B13](roh/NAK-309-67e60dd-dirty.md#b13) |
+| B14 | MainProject Save/Load erhaelt bestaetigte Quellidentitaet und User-Label, aber weder Control-Liveness noch Runtime-Nonce oder Messframe; Join, Benennen und Unbind melden je echte persistente Aenderung Host-Dirty, No-op, Save und Load nicht; Reload baut einen frischen subscribe_session-Auftrag. | `eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe` | [OK] Exit 0 | 8,40 s | [B14](roh/NAK-309-67e60dd-dirty.md#b14) |
+| B15 | EqCopShot rendert den deklarierten SONDE-012-Sichtsatz bei exakt 760x430: 0/1/16 Quellen, fresh/partial/stale/disconnected/invalid, Namens- und Lautheitsgegenpfade, alle Diagnosezustaende, Label-/Unnamed-Rueckfall, Findings, genau ein Hauptziel mit Referenzen sowie das deaktivierte Label-Feld eines nicht fuehrenden Main. | `eq-copilot\build\plugin\EqCopShot_artefacts\Release\EqCopShot.exe --sonde012-suite eq-copilot/build/sonde012-shots` | [OK] Exit 0 | 2,20 s | [B15](roh/NAK-309-67e60dd-dirty.md#b15) |
+| B20 | Gesamtklasse nach §34.3 (M-06): die vier Klassen sind geordnet, und `deckeln` ist ein Minimum, kein Mittelwert. Jeder der vier harten Maengel deckelt EINZELN auf schwach, ohne gegen die drei guten Nachbarquellen verrechnet zu werden; zwei Maengel ergeben in allen zwoelf Paarungen unbrauchbar. Was ein Erzeuger nicht beurteilen kann, deckelt ebenso auf mittel - eine Sonde mit PERFEKTER Abdeckung kommt deshalb nur auf mittel, weil sie Session, Passage und Alignment nicht sieht; das ist die Regel hinter dem Literal, das Etappe B an einer Stelle gesetzt hatte. Die zwei Abdeckungsschwellen und die Fensterschwelle fallen je an ihrer Kante und knapp darunter (Muster C-09). Die tragende Zusage ist eine INVARIANTE ueber den ganzen Raum: in 1536 Uebergaengen ueber alle 256 Bitkombinationen in drei Basislagen hebt ein zusaetzlicher harter Mangel die Klasse NIE - und alle vier Klassen kommen darin wirklich vor, die Invariante ist also nicht trivial erfuellt. Ein Mittelwert koennte diese Zusage nicht halten. | `eq-copilot\build\plugin\EqCopSonde013QualityClassTest_artefacts\Release\EqCopSonde013QualityClassTest.exe` | [OK] Exit 0 | 0,06 s | [B20](roh/NAK-309-67e60dd-dirty.md#b20) |
+| B22 | Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und alle drei Verlaeufe sind Energien ohne Phase. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts. | `eq-copilot\build\plugin\EqCopSonde013FingerprintGoldenTest_artefacts\Release\EqCopSonde013FingerprintGoldenTest.exe` | [OK] Exit 0 | 0,91 s | [B22](roh/NAK-309-67e60dd-dirty.md#b22) |
+| B23 | Die manuelle Passage als Projektintent im MainProjectState (§33.5, M-25/M-69). Das neue persistente Feld `manual_passages_v1` traegt seine Fassung im Namen; ein Altstand ohne das Feld laedt normal, ein unbekanntes Zusatzfeld aus einer spaeteren Fassung zerstoert den Leser nicht und steht unveraendert im naechsten Save, und Save/Load ist ueber zwei Runden bytegleich - auch am oberen int64-Rand und mit leerer Liste (die Eigenschaft entfaellt dann, statt als leeres Array zu reisen). Jede persistente Aenderung meldet GENAU einmal Host-Dirty, das Vergessen wie das Merken; ein read-only-Stand verweigert beides und gibt seine Originalbytes zurueck. Was hier NICHT reist, ist Absicht: Fingerprint, Quellenset, Abdeckung und Epoche sind Messergebnisse und bleiben im Store, sonst behauptete ein Projekt nach dem Loeschen der Datenbank weiter, es gebe Evidenz. Jede Grenze wird von beiden Seiten gefahren - was die Produkt-API ablehnt, lehnt auch der Leser ab, und zwar fail-closed als read-only statt still korrigiert. | `eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe` | [OK] Exit 0 | 11,65 s | [B23](roh/NAK-309-67e60dd-dirty.md#b23) |
+| B24 | PRE/POST auf der Audioseite (§38.3/§38.4, M-18/M-20/M-24). Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist: identische Kette, reiner Gain von +15 dB und ein linearer Tiefpass bleiben fast ueberall ueber der 0,8-Schwelle aus §38.3 - Kompression, Modulation, Saturation und wechselnde Latenz fallen darunter, und die beiden Gruppen ueberlappen nicht. Deshalb traegt keine der vier adversarialen Ketten eine statische EQ-Behauptung. Der Vergleichspegel wird vorab gemessen und eingefroren: sechs Sekunden mit +18 dB und zwei Sekunden Stille aendern ihn um kein Tausendstel, denn eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor; ohne genug Material friert er gar nicht erst ein, und NaN/Inf verriegeln statt ihn zu vergiften. Hoerbares Delta ist ohne nachgewiesenes Compare-Routing gesperrt - der Raum aus drei binaeren Nachweisen wird VOLLSTAENDIG abgefahren, genau eine der acht Kombinationen ist frei, und in P4 gibt es kein Compare-Routing. | `eq-copilot\build\plugin\EqCopSonde013PrePostGoldenTest_artefacts\Release\EqCopSonde013PrePostGoldenTest.exe` | [OK] Exit 0 | 1,04 s | [B24](roh/NAK-309-67e60dd-dirty.md#b24) |
+| B25 | Unsicherheit und Mehrfachtestung (§43.2, M-45). Der Block-Bootstrap ist deterministisch, enthaelt den Mittelwert und liefert bei bloeckigem Material ein BREITERES Intervall als ein Bootstrap ueber Einzelwerte - benachbarte Deltas sind korreliert, und wer Unabhaengigkeit annimmt, macht aus Rauschen eine belastbare Aenderung. Leere oder unmoegliche Eingaben ergeben KEIN Intervall statt eines um null. Bei 221 gleichverteilten p-Werten meldet der naive Scan zweistellig viele Baender und die FDR-Korrektur kein einziges, waehrend 20 klare Treffer durchkommen; die Grenze p_(k) = k/m*q faellt inklusiv an ihrem Wert. Cluster verlangen zusammenhaengende Baender - drei verstreute ergeben keinen, vier benachbarte schon, und auch am linken und rechten Rand. | `eq-copilot\build\plugin\EqCopSonde013ExperimentGoldenTest_artefacts\Release\EqCopSonde013ExperimentGoldenTest.exe` | [OK] Exit 0 | 0,06 s | [B25](roh/NAK-309-67e60dd-dirty.md#b25) |
+| B26 | Die zwei Kanten des Blindvergleichs (§43.1, §15, M-43/M-44). Ohne eingefrorenen Vergleichspegel wird KEIN Klangurteil angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das; ein noch laufender Pegel zaehlt nicht als Abgleich. Die Blindreihenfolge wird vor dem Urteil gebunden und laesst sich nicht drehen; vor dem Urteil gibt der Typ sie GAR NICHT heraus, und der Ausgabeparameter bleibt unberuehrt statt still einen lesbaren Wert zu tragen. Erst das Urteil deckt genau die gebundene Reihenfolge auf, in beide Richtungen geprueft. Ein zweites Urteil und ein spaeterer Pegel aendern nichts mehr; jede Sperre traegt ein Wort, und der Passagenwechsel raeumt Urteil, Abgleich und Bindung gemeinsam ab. | `eq-copilot\build\plugin\EqCopSonde013ExperimentUiTest_artefacts\Release\EqCopSonde013ExperimentUiTest.exe` | [OK] Exit 0 | 0,49 s | [B26](roh/NAK-309-67e60dd-dirty.md#b26) |
+| B21 | RT→Control-Ring fuer hoerbare Eingriffe (M-37 bis M-39, §34.2): ein Begin steht SOFORT zur Abholung bereit, ohne Kadenzfenster - der Unterschied zum 1-Hz-Heartbeat-Bit, das ein 380-Sample-Ereignispaar nie gesehen haette. Ein Ende traegt einen Nachlauf, der mindestens so lang ist wie der Eingriff selbst, UND dessen Dauer, damit ein Empfaenger die Konservativitaet pruefen statt sie glauben kann. Der Ueberlauf ist die schaerfste Zusage: dieser Ring verwendet KEIN drop-oldest, das aelteste Ereignis steht unveraendert an erster Stelle, der Ueberlauf ist sticky gemeldet und gezaehlt, der Rest kommt lueckenlos aufsteigend heraus, und das Sticky-Bit heilt nicht von selbst - nur resync() loescht es. 200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen, mit Zaehler gemessen statt behauptet (M-74). Sequenzen am u64-Rand kommen unveraendert zurueck, und zuruecksetzen() leert Ring, Sticky-Bit und Zaehler gemeinsam. | `eq-copilot\build\plugin\EqCopSonde013InterventionRingTest_artefacts\Release\EqCopSonde013InterventionRingTest.exe` | [OK] Exit 0 | 0,06 s | [B21](roh/NAK-309-67e60dd-dirty.md#b21) |
+| B19 | Bandweise Stereoevidenz (§40.1, §40.3, M-08/M-10/M-11/M-12): die fuenf Klassen aus §40.3 treffen ihre ANALYTISCH bekannte Antwort - Mono ergibt Korrelation 1, Kohaerenz 1, Phase 0 und Folddown 0 dB innerhalb der 0,25 dB aus §40.3; Polaritaetsinvertierung ergibt Korrelation -1 bei Kohaerenz 1 (die Kohaerenz misst den Zusammenhang, nicht das Vorzeichen) und eine Monosumme, die an die Vertragsgrenze laeuft statt zu schweigen; eine bekannte Laufzeit ergibt eine Phase, die der Formel +2*pi*f*tau folgt, an drei Traegerfrequenzen gemessen; unkorrelierte Kanaele fallen in Korrelation und Kohaerenz, und bei niedriger Kohaerenz entsteht keine Lag- oder Polaritaetsempfehlung. Seit NAK-182 faehrt ein Sweep dieselben fuenf Klassen und den Folddown ueber die 18 Blockgroessen 1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345 und 16384 - je Blockgroesse dieselbe Antwort, je Blockgroesse ein wirklich entstandenes Evidenzfenster und vergleichbar viele gemittelte Fenster (Freiheitsgrade innerhalb 20 Prozent des Medians). Das ist eine AUSWAHL aus 1 bis 16384 und keine Erschoepfung: die Obergrenze ist die Slotkapazitaet des Layouts, 256 zum Beispiel bleibt ungemessen. Seit Nacharbeit 1 wertet der Sweep bei bekannter Laufzeit ALLE DREI Traeger aus - 300, 900 und 2000 Hz, je Blockgroesse mit Praesenzbit und Phasenfehler gegen +2*pi*f*tau innerhalb 0,25 rad -, und der Unkorreliert-Fall misst je Blockgroesse zusaetzlich, dass KEIN Band mit Basis eine Phase traegt; das sind dieselben Felder, die der 512er-Abschnitt fuer M-12 nutzt. | `eq-copilot\build\plugin\EqCopSonde013StereoGoldenTest_artefacts\Release\EqCopSonde013StereoGoldenTest.exe` | [OK] Exit 0 | 1,84 s | [B19](roh/NAK-309-67e60dd-dirty.md#b19) |
+| B17 | True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht fuer 15 bis 19 keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt auf 1e-9 genau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten. Seit NAK-283 (N01) zusaetzlich die vier transienten Faelle 20 bis 23 aus EBU Tech 3341 (Versatz 0 bis 3): jeder trifft eine im Test gerechnete, vorher an 15 bis 19 auf +/-0,01 dB validierte 64-fach-Referenz innerhalb +/-0,1 dB und liegt zusaetzlich in der Normtoleranz 0,0 +0,2/-0,4 dBTP. Insgesamt 43 Pruefungen. | `eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe` | [OK] Exit 0 | 0,34 s | [B17](roh/NAK-309-67e60dd-dirty.md#b17) |
+| B18 | Loudnessfenster, Headroom und Dynamik (M-01, M-03, M-04, M-07, M-09): Momentary (400 ms) und Short-term (3 s) sind wirklich zwei Fenster - bei stehendem Pegel gleich, 0,8 s nach einem Pegelsprung mehr als 5 LU auseinander, danach wieder beieinander; nach 0,6 s traegt der Frame Momentary und KEIN Short-term. integration_samples passt im Dauerbetrieb zur 10-Hz-Kadenz und faellt beim ersten Rahmen nach einer Grenze messbar kleiner aus. PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, nicht gegen den Sample-Peak des 100-ms-Rahmens; die Engine setzt selbst kein PLR, weil LUFS-I erst im Sondenprozessor zugemischt wird. Headroom ist eine Verteilung: zwei Signale mit gleichem Maximum trennen sich um mehr als 10 dB im P50. Crest steht in zwei Fenstern und trennt dichte kleine Spitzen von einer einzelnen grossen. LRA gibt es nach 30 s NICHT, nach 75 s mit passender Spanne, bei Material ohne Dynamik nahe null und nach 90 s Stille gar nicht - die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr. NaN und Inf im Eingang erzeugen in keiner der neun neuen Metrikstellen einen nichtendlichen Wert. Ein verworfener Analyseblock schliesst auch die neuen Fenster, und keines von ihnen ueberbrueckt eine Transportgrenze. | `eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe` | [OK] Exit 0 | 5,62 s | [B18](roh/NAK-309-67e60dd-dirty.md#b18) |
+| B16 | Evidenzpfad (§33.2): der aus einem echten FeatureFrame erzeugte evidence_snapshot passiert Textriegel und dieselbe Vertragsengine wie B3c; P10/P50/P95 trennen ein springendes von einem ruhigen Signal gleicher mittlerer Lautheit (Spanne P95-P10 um mehr als 6 dB verschieden) und halten in JEDEM Band mit Bit die Ordnung P10<=P50<=P95; die Abdeckung faellt messbar, sobald ganze Analysefenster in Stille liegen, und die Konvergenz faellt bei wanderndem Pegel; der Ereignisstrom traegt Fluss- und Peakbit getrennt samt Verlustzaehler, ein Ereignis fremder Epoche oder ohne Anker entsteht gar nicht. Seit NAK-182 misst dasselbe Bein die C++-Haelfte der fokussierten 0,01-dB-Evidenz (M-83 Satz 2), seit Nacharbeit 1 vollstaendig am SERIALISIERTEN Snapshot: PRE und POST laufen durch den echten Serialisierer, und jede Zahl kommt aus verteilung.p50 des eigenen Wire-Textes - Encoding-Wort, Ganzzahlen und Praesenzbits. Daraus kommt ein bekannter Gain von 3,00 dB je Band mit Bit innerhalb 0,1 dB zurueck, und eine Leiter aus 20 Pegeln im Abstand 0,01 dB - je ein eigener Enginelauf samt Serialisierung - ergibt 20 streng monotone Ganzzahlen, deren Nachbarn sich um genau 1 unterscheiden. Material (Frequenz, Samplerate, Amplitude, Blockgroesse, Laufbegrenzung), Pegel, Gain und Aufloesung kommen aus den ZAHLEN der Fixture evidenz-0p01-paar-wire-v1.json, nicht aus ihren Bytes und nicht aus lokalen Konstanten. | `eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe` | [OK] Exit 0 | 1,73 s | [B16](roh/NAK-309-67e60dd-dirty.md#b16) |
+| B27 | Der musikalische Intent als Projektintent im MainProjectState (§37.1, U22, M-01 bis M-09/M-11). Die Rollenmenge ist GESCHLOSSEN und hat genau fuenf Werte; ein sechster faellt in der Produkt-API UND im Leser, statt still auf einen bekannten Zweig abgebildet zu werden. Die §37.1-Belegung ist ABGELEITET und damit total und injektiv: alle fuenf Rollen kommen ueber den Roundtrip zurueck, keine zwei teilen sich eine Belegung (alle zwanzig geordneten Paare), und eine fremde Belegung gehoert zu keiner Rolle. Schutzangaben sind ORTHOGONAL zur Rolle - eine Quelle ohne Rolle kann Attack geschuetzt haben, und keiner der fuenf Rollenwechsel loescht einen Schutzbereich. Die Rolle bewusst-verschmolzen ist ein globales Veto gegen Entmaskierung; eine ausdrueckliche gerichtete Beziehung hebt es NUR fuer dieses Paar auf, nicht fuer ein drittes. Die Konfliktregeln sind eine geordnete Liste, kein Score: alle zehn Paarungen der fuenf Stufen fallen in beiden Leserichtungen, hundert Vermutungen schlagen die Schutzgrenze nie, und innerhalb Stufe 2 gewinnt das Spezifischere. Ein Zyklus im fuehrt_vor-Graphen erreicht die Persistenz NIE unmarkiert - die Pruefung laeuft beim Speichern, der Leser weist einen von Hand gebauten Zyklus als read-only ab, und derselbe Schluss als gleichrangig gespeichert laedt und kommt als gleichrangig zurueck. Eine abgeleitete Vermutung ueberschreibt einen Userwert nie, der umgekehrte Weg gilt. Derselbe Bus traegt verschiedene Rollen in zwei Passagen ohne Datenverlust, passagespezifisch vor global. Dazu die fuenf Teile der State-Invariante: Fassung im Namen, Altstand ohne die Felder laedt bytegleich, eine unbekannte Eigenschaft ueberlebt, Save/Load ueber zwei Runden bytegleich, und jede echte Aenderung meldet GENAU einmal Host-Dirty, waehrend No-op, abgewiesener Wert, Laden und read-only schweigen. Jede Grenze faellt von BEIDEN Seiten (17 Leserfaelle samt NaN/Inf-Konfidenz, Revision 0, Bandrand 0/221 und Selbstbeziehung), und die volle 256er-Liste, die die API erzeugt, laedt der eigene Leser. Zuletzt M-11 am Produktpfad: zwei echte Prozessoren mit demselben Strom, einer mit vollem Intent, liefern bitgleiche Evidenzbaender, Perzentile, Livebaender, metrics_version und NaN-Zaehler - mit Gegenprobe, dass die Baender wirklich Werte tragen. | `eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe` | [OK] Exit 0 | 0,40 s | [B27](roh/NAK-309-67e60dd-dirty.md#b27) |
+| B29 | Die Zustandsmaschine des AssistantStep im Main (46.1, E-07/E-08, M-55 bis M-62). Die Zustandsmenge hat ACHT Werte, jeder kommt ueber seinen eigenen Rueckweg zurueck, ein neunter faellt. Nach preview fuehrt KEINE Kante - weder hin noch zurueck -, ein gespeicherter preview-Schritt ist ein Lesefehler statt eines stillen Sprungs, und die Produkt-API setzt ihn nicht; die Gegenprobe mit proposal laedt normal. Jeder der acht Zustaende traegt fuenf Angaben (Eintritt, Evidenz, Useraktion, Timeout ueber 0, sichere Rueckkante), auch preview - der erste Zustand ist seine eigene Rueckkante. Der Deckel ist STRUKTURELL: ein zweiter Startversuch bei offenem Schritt wird abgewiesen, nicht eingereiht, und erst nach dem terminalen Abbruch beginnt ein neuer. Die vier Gegenpfade laufen einzeln: Zurueck geht auf die Rueckkante, Ueberspringen auf den naechsten Zustand, Resume ist eine FRAGE ohne Revisionssprung, und Verwerfen ist terminal statt geloescht - danach gibt es kein Resume mehr. Die drei benannten Ergebnisse aus 46.2 sind eigene Ergebnisse mit Objekt; dasselbe zweimal hebt keine Revision. Die harten Gates greifen VOR der Gewichtung: drei Kandidaten mit perfektem Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt. Verdrahtet am echten Prozessor mit Host-Dirty genau einmal je echter Aenderung, Rekonstruktion aus dem gespeicherten MainProject und bytegleichem Save/Load; jede Grenze faellt von beiden Seiten, und ein Altstand ohne die Eigenschaft laedt normal und schreibt sie nicht. | `eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe` | [OK] Exit 0 | 0,85 s | [B29](roh/NAK-309-67e60dd-dirty.md#b29) |
+| B30 | Diagnose-Briefkasten im Plugin (Plan S25e (3), R-286-1 und R-286-2): ohne anfrage.json nur eine Existenzpruefung je Takt (hoechstens 1 Hz, Message-Thread) und nichts Messbares - Audio, State, Parameter und der Snapshot des Knopfwegs bleiben bytegleich. Eine gueltige Anfrage beantworten Gen und Probeeq je Kennung genau einmal, solange sie im Ring der letzten 256 steht, ueber den eigenen Schreibweg (exklusive Temp-Datei, Groessenpruefung, Umbenennen ohne Ersetzen, nie Ordneranlage oder Loeschung) mit einem Umschlag nach nakama.diagnose.antwort.v1; fremde oder zu grosse Anfragen und solche hinter einer Junction bleiben ohne Antwort, eine beim Lesen gesperrte wird im naechsten Takt beantwortet. | `eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe` | [OK] Exit 0 | 71,57 s | [B30](roh/NAK-309-67e60dd-dirty.md#b30) |
+| B28 | Die Befundzustaende auf der Gen-Seite (Abnahme U21, M-29 bis M-35). Die drei Sicherheitsstufen sind auf GENAU DREI Zustaende abgebildet, und die Abbildung ist ein FELD: ein vierter Wert macht den ganzen Snapshot ungueltig, statt still auf einen bekannten zu fallen. Nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT - die Sperre liegt am Befund im Modell, nicht an einer ausgegrauten Schaltflaeche. Messqualitaet der Passage und Sicherheit des Befunds bleiben zwei Felder aus zwei Quellen: ein Befund mit confidence.class hoch, dessen Zustand more_data sagt, bleibt nicht handelbar. Alternativen sind EIGENE Befunde mit eigenem Zustand und reisen als IDs; ein Freitext faellt. Der Beleg ist die markierte Zone - Bandrand 0 und 221 gueltig, leeres Intervall und 222 nicht -, und ein Belegtextfeld gibt es nicht. Die drei Anzeigezeilen sind drei eigene Felder; eine vierte oder eine leere faellt. Die acht Ausschlussgruende kommen mit ihrem Grund an, ein neunter faellt. Jede Zahl faellt an ihrer Grenze und nicht erst danach. Zuletzt die Fassungsleiter: ein Leser der Fassung 2 lehnt findings ab, Abwesenheit heisst keine Befunde, und ein Sitzungswechsel raeumt sie ab. Seit Etappe E dazu der Maskierungswert AM Befund: er benennt Frequenzbereich und beide Quellen, gueltig und herabgesetzt sind zwei eigene Bits, Abwesenheit ist etwas anderes als ein ungueltiger Wert, und ein Objekt beliebiger Form faellt - sechs Formen einzeln geprueft. Eine Zeichenanweisung (Achse, Zoom, Farbe) faellt am Vertrag, auch im Maskierungswert. | `eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe` | [OK] Exit 0 | 0,15 s | [B28](roh/NAK-309-67e60dd-dirty.md#b28) |
+| B8 | Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,29 s | [B8](roh/NAK-309-67e60dd-dirty.md#b8) |
+| A32 | Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook. Der Quellumfang kommt seit NAK-283 (M-69) aus einem pruefbaren Inventar: jede Datei mit Endung .rs, .cpp, .h oder .hpp unter broker/src und eq-copilot/plugin samt allen Unterbaeumen, mit Grund ausgenommen nur der flatc-Codegen (broker/src/generiert, eq-copilot/plugin/vertrag/generiert) und der Testbaum eq-copilot/plugin/tests; der Bericht druckt das Inventar, und eine Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als WERKZEUGFEHLER (Inventarriegel, Exit 2). Gemessen werden Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Grenzen - Zeilen je Datei, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner - werden ehrlich gemeldet, auch wenn sie reissen (Pflegeticket NAK-292). Jeder neue Treffer ueber der Zeilengrenze meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 129 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung; das Inventar mit neuem Unterbaum, Codegen, Tests und einer Ableitung, die still einen Unterbaum verliert). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 heisst gerissen und ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest, eine fehlende Inventarwurzel oder der Inventarriegel, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen, und ein ungemessener Unterbaum machte jedes andere Mass falsch. | `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | [HINWEIS] Exit 4 - Befund, nicht blockierend (siehe Rohausgabe) | 12,94 s | [A32](roh/NAK-309-67e60dd-dirty.md#a32) |
+| A33 | clang-tidy ueber alle Uebersetzungseinheiten von eq-copilot/plugin ohne tests/ und ohne den flatc-Codegen vertrag/generiert/ (Bein A9 haelt ihn bytegleich; Regelsatz eq-copilot/plugin/.clang-tidy: bugprone, clang-analyzer, concurrency, performance sowie eine cert-, cppcoreguidelines- und misc-Auswahl; keine Stilregeln, Ausnahmen dort mit Grund) in einem eigenen Ninja-Baum eq-copilot/build-tidy mit denselben cl.exe-Schaltern wie der Produktbau. Gezaehlt werden eindeutige Fundstellen (Datei, Zeile, Spalte, Check) gegen die Ratsche in tools/plan/tidy.py: Grenze = Iststand der Erstmessung NAK-288, Ziel 0, nur gesenkt, nie erhoeht; eine Aenderung des Regelsatzes zieht die Ratsche im selben Commit nach. Vorangestellt der Selbsttest (Einordnung in den Quellort, Datenbankfilter, Diagnoseparser, Deduplizierung, Ratschenrand, Umgebungsleser). Nicht blockierend: Exit 4 ist ein Hinweis. ROT ist Exit 2: eine Uebersetzungseinheit mit error-Diagnose oder ein abgestuerzter clang-tidy heisst NICHT gemessen, denn eine halb geparste Einheit meldet weniger Funde und saehe wie Fortschritt aus. FEHLT (Exit 3) ohne Visual Studio 2022 mit C++-Werkzeugen und Clang-Komponente, cmake oder ninja. | `py -3.13 tools\plan\tidy.py --mit-selbsttest` | [OK] Exit 0 | 104,14 s | [A33](roh/NAK-309-67e60dd-dirty.md#a33) |
+
+---
+
+## 11. Etappe 2 — Frische und Bauordnung (Bauer, 18.09.2026)
+
+Auftrag `docs/beweise/roh/NAK-309-etappe-2-auftrag.txt`; Grundlage §5.1, §5.2
+(M-01 bis M-17), §6.3 und die Präzisierungen H-2, R-309-8 und A-9 aus §10.
+Zeilennummern in diesem Abschnitt gelten zum Stand des Codecommits, den die
+Zeile nennt.
+
+### 11.1 Start und Kanon vorher
+
+- **Basis-SHA** `d616beb97dd86f956d8116c4b5a059a9b46fd650` (Kopfzeile
+  Basis-SHA). `git pull --ff-only`: „Already up to date"; `git status --short`:
+  nur `briefing-hub/` und `nimbalyst-local/`; `Get-Process cmake, MSBuild, cl,
+  cargo, link, vctip, EqCop*`: leer, kein fremder Bau- oder Testprozess.
+- **Kanon vorher** (mit `-Bauen`, abgekoppelt, 18:24 bis 19:07 Uhr, auf
+  `d616beb9`): **GRUEN - 68/68 Kanon-Laeufe bestanden | 1 stillgelegte(s)
+  Bein(e) | Exitcode 0**; Abschnitt „Kanon-Lauf - NAK-309 Etappe 2 Kanon
+  vorher", Rohausgabe `docs/beweise/roh/NAK-309-d616beb-dirty.md` („dirty"
+  nur wegen der zwei fremden untracked Ordner). Nach „Baue:" hing der Runner
+  an `vctip.exe` ohne Elternprozess (NAK-300); der Prozess wurde beendet, der
+  Lauf ging weiter. Commit `e1167410` (Kanonabschnitt, Rohausgabe, Kopfzeilen
+  Basis-SHA und Kanon vorher).
+- **Bestand vor dem Bau, gemessen:** Brokerpin im erzeugten Header =
+  Brokerhash im Manifest = SHA-256 von `broker/target/release/eqcop-broker.exe`
+  = `CA85733027ACCEF5…` (Datei vom 14.09.2026); die Konfiguration war vor dem
+  Kanon ausstehend (Manifest vom 15.09. 18:47 jünger als der Stempel von 18:24,
+  §8.2 Nr. 10) und wurde von ZERO_CHECK im Kanon neu erzeugt (Stempel
+  18.09. 18:25).
+
+### 11.2 Änderungen je Datei
+
+- **`tools/eq-copilot/pruefe_beweisrunner.py`** (neu, LF). `--baustand
+  <population.json> [--bau-bestaetigt]` leitet je Prüfbinary den Frischebaum ab:
+  der Tracking-Ordner, dessen Link-Schreiblog das Binary nennt (genau einer im
+  Zwischenordner), alle Einträge seiner Leselogs ohne die
+  CMake-Regenerationsregel, die Projektdatei `<Ziel>.vcxproj`, und jede Eingabe, die ein anderes
+  Schreiblog des Baubaums als Ausgabe nennt, über den Frischebaum ihres
+  Erzeugers; Einträge außerhalb der Arbeitskopie zählen nicht (D-1, D-2, D-3).
+  Konfigurationsstand über `CMakeFiles/generate.stamp.list`. Urteil je Binary
+  auf 100-ns-Ticks (`st_mtime_ns`): frisch, VERALTET mit jüngster Eingabe,
+  NICHT ABLEITBAR mit Grund, „stillgelegt, nicht beurteilt", „nicht gebaut,
+  nicht beurteilt". Danach Kreuzprobe gegen den CMake-Export und Inventar über
+  `git ls-files eq-copilot/plugin` mit fünf gemessenen Ausnahmen (je ein Grund:
+  `probe/`, `spike/`, `tests/AuxSpikeTestMain.cpp`, `tests/PaintBenchMain.cpp`,
+  `hostprobe/HostProbeFactory.cpp` — nur Ziele, die der Kanon nicht baut).
+  Ausgabe als Tabelle, Grenzzeile und eine Zeile `BAUSTAND-JSON {…}`; Exit 0
+  frisch, 4 veraltet oder Lücke, 3 nicht ableitbar, 2 Werkzeugfehler.
+  `--selbsttest [--nur <fall>]` ist Bein A36: elf Fälle (M-01 bis M-08, zwei
+  M-10, `--bau-bestaetigt`) an einem Attrappen-Baubaum im Temp-Ordner, dessen
+  Wurzel ein Leerzeichen trägt, mit Großbuchstaben-Pfaden in UTF-16-Leselogs mit
+  BOM und UTF-8-CustomBuild-Logs wie MSBuild; jede Erwartung mit ihrem
+  Gegenteil.
+- **`eq-copilot/plugin/CMakeLists.txt`** (LF): am Dateiende ein
+  `file(GENERATE)` für `nakama-frischebaum-$<CONFIG>.json` im Binärordner
+  (Kernquellen repo-relativ, Kernverbraucher mit Art und JUCE-Endzielen,
+  Zieltabelle des Verzeichnisses mit `$<TARGET_FILE>`; D-4). Kein Ziel, keine
+  Quelle, keine Option ändert sich.
+- **`tools/beweise.ps1`** (CRLF): Bauschritt in der Folge Release-Broker →
+  `pruefe_installer_manifest.py --broker-pin` → erste Konfiguration (nur ohne
+  Lösungsdatei) → `cmake --build`, jeder Schritt mit eigenem Eintrag im
+  Bauprotokoll und Abbruch über `Bau-Abbruch`; `$zuBauen` vor dem Bauzweig
+  (D-8). Baustand: Population samt Marke und die Ziele von `-Bauen` als JSON in
+  den Temp-Ordner, Aufruf des Werkzeugs (nach bestätigtem Bau mit
+  `--bau-bestaetigt`); Exit 4 setzt VERALTET, Exit 3 und jeder andere Ausgang
+  zählen als fehlende Voraussetzung (D-9). Die Baustandtabelle der Rohausgabe
+  trägt „jüngste Eingabe" und die Ausgabe des Werkzeugs; Kommentar,
+  Skriptkopf (BAUSTAND, `-Bauen`, Exitcodes) und Urteilstexte ziehen nach. Neues
+  Bein A36 (Muster A34).
+- **`tools/eq-copilot/pruefe_installer_manifest.py`** (CRLF): `--broker-pin`
+  (A-1; D-6); der Zweig `--hashen` ruft `hashen_und_binden()`: schreiben, die
+  geschriebene Datei mit `_lies_geprueft` neu lesen, [4c] und [4c+] dagegen,
+  Abweichung Exit 2 mit Hinweis. Neu im Kanonlauf: [3e] Textprobe der
+  Bauordnung mit zwei eingebauten Rotmutationen (vertauschte Folge, fehlender
+  Pin-Schritt), [4c+] Header-Pin gegen die gebaute Release-Broker-Datei (hart;
+  fehlt Header oder Datei, kein zweiter Befund, ohne vorherigen Befund selbst
+  rot), [4d] sechs Attrappenprüfungen zu M-12 bis M-16 (D-7). Skriptkopf nennt
+  [3d], [3e], [4c+], [4d] und `--broker-pin`.
+- **`docs/plugin-wissen.md`** (CRLF, A-2): der Absatz zum Runner beschreibt
+  Baustand, Kreuzprobe, Inventar, A36 und die Bauordnung, datiert; in der
+  Lückenliste entfällt „Baustand-Riegel zu grob — NAK-25".
+- **`eq-copilot/install/nakama-installer-v1.json`**: im Etappenergebnis unverändert. Im Kanon nachher meldete
+  `--broker-pin` `ok      unveraendert CA857330… - keine Schreiboperation`; der
+  Realbaumlauf zu M-11 schrieb die Zeile `sha256` auf H1, der Bauschritt mit
+  Broker H0 schrieb sie zurück, bytegleich zum Commit.
+  `git diff --stat d616beb9..HEAD -- eq-copilot/install/nakama-installer-v1.json`
+  ist leer.
+
+**Commits** (je mit Pathspec, je gepusht): `e1167410` Kanon vorher und Kopfzeilen, `4f3f0060`
+M-09 Basislauf, `48163d63` Werkzeug, A36 und CMake-Export, `d1676a63` Runner
+und A17 (letzter Codecommit), `9c954370` `plugin-wissen.md`, `d421239f`
+Rotbeweise und Einzelbeine, `67e60dd3` M-09 nach dem Bau, `23b592d7` Kanon
+nachher, `032eed1b` M-09 Läufe 3 bis 5; dieser Abschnitt und der Kopf folgen
+im Abschlusscommit.
+
+### 11.3 Matrixzeilen M-01 bis M-17
+
+Rotbeweise nach §6.1 (Mutation genau an der Stelle, dann nur das betroffene
+Bein — bei A36 `--selbsttest --nur <fall>` und der volle Selbsttest für
+„mitgefallen" und „weiter grün" —, Rücknahme bytegleich mit SHA-256,
+LastWriteTime auf jetzt, Bein grün). Gefahren mit Hilfsskripten im
+Job-Temp-Ordner; sie sind nicht Teil der Lieferung, denn jede Rohdatei trägt
+Kopf, SHA-256 vorher, Mutation wörtlich, Befehle, gefallene, mitgefallene (mit
+Grund) und grün gebliebene Prüfungen und den Lauf nach der Rücknahme. Zeilen
+der Mutation zum Stand `d1676a63`.
+
+| Zeile | Test (Datei, Name, Bein) | Ergebnis | Rotbeweis (Rohdatei, Mutation) | fällt an der Zusagezeile |
+|---|---|---|---|---|
+| M-01 | `pruefe_beweisrunner.py --selbsttest`, `dsp_aenderung_ohne_bau_verweigert`, A36; Realbaum `--baustand` (B6, B7) | grün; Realbaum frisch nach dem Bau (Exit 0), nach Berühren von `dsp/DspKern.cpp` B6 und B7 VERALTET mit dieser jüngsten Eingabe (Exit 4) | `NAK-309-rot-M-01.txt`: Auflösung über den Erzeuger entfernt (`:407-411`) → B6 frisch | JA |
+| M-02 | A36 `frischer_bau_akzeptiert` | grün | `…-M-02.txt`: Vergleich gegen die jüngste Eingabe aller Bäume (`:594`) → B6 VERALTET | JA |
+| M-03 | A36 `gleichstand_und_ein_tick` | grün | `…-M-03.txt`: `>` → `>=` (`:595`) → (a) fällt; auf Sekunden gerundet (`:165`) → (b) fällt (Regressionswache) | JA |
+| M-04 | A36 `copy_item_ruecknahme_ist_grenze` | grün | `…-M-04.txt`: Grenzzeile entfernt (`:527`) (Regressionswache) | JA |
+| M-05 | A36 `stillgelegt_bleibt_draussen` | grün | `…-M-05.txt`: Filter entfernt (`:544`) (Regressionswache) | JA |
+| M-06 | A36 `kernverbraucher_ohne_kern_faellt`; Realbaum Kreuzprobe | grün; Realbaum: 40 gebundene Ziele laut Export, 38 gedeckt, 2 nicht im Kanon (`EqCopPipeProbe`, `EqCopPaintBench`) | `…-M-06.txt`: Auflösung entfernt (`:407-411`) → Attrappe und Realbaum (0 gedeckt, 38 NICHT GEDECKT); Kreuzprobe übersprungen (`:663`) | JA |
+| M-07 | A36 `ohne_ableitung_kein_gruen` (sechs Teilfälle a, a, b, c, c, d) | grün | `…-M-07.txt`: fehlendes Leselog als leere Menge (`:341`) → (a) frisch | JA |
+| M-08 | A36 `inventarluecke_faellt`; Realbaum Inventar | grün; Realbaum 158 Dateien, 149 im Frischebaum, 9 mit Grund ausgenommen, 0 Lücken | `…-M-08.txt`: Inventar übersprungen (`:709`) | JA |
+| M-09 | zwei volle Runnerläufe ohne `-Bauen` (R-309-8); dazu zwei beinfreie Läufe an der Urteilszeile | Basis: **NICHT BEGLAUBIGT, Exit 4** (erwartet GRUEN, Ursache NAK-25; §11.4); nach dem Bau: **NICHT BEGLAUBIGT, Exit 4** wie erwartet, 33 VERALTET mit jüngster Eingabe `dsp/DspKern.cpp` | `…-M-09.txt` mit allen Läufen; Lauf 3 bricht `tools/beweise.ps1:1050` (`$veraltet = $false`) → GRUEN - 0/0, Exit 0, obwohl das Werkzeug im selben Lauf Exit 4 mit 33 VERALTET meldet; Lauf 4 unmutiert → NICHT BEGLAUBIGT - 0/0, Exit 4 | JA an Lauf 3; der Basislauf fiel an NAK-25, nicht an der Zusage (§11.4) |
+| M-10 | A36 `configure_ausstehend_ist_veraltet`, `configure_ohne_inhaltsaenderung_bleibt_frisch` | grün | `…-M-10.txt`: Stempelvergleich übersprungen (`:463`) → (a) frisch; Regenerationsregel mitgezählt (`:389`) → (b) VERALTET | JA |
+| M-11 | A17 [3e]; Realbaum Bauschritt | grün; Realbaum mit geändertem Broker H1: Folge `cargo-release` → `broker-pin` → `build`, `--broker-pin` schreibt genau die Zeile `sha256`, danach Datei = Manifest = Header = H1, A17 grün; Rücknahme auf H0, Manifest bytegleich zum Commit | `…-M-11.txt`: Pin-Zeile entfernt (`tools/beweise.ps1:917`), C++-Bau vor `cargo` (`:931`, `:907`) → [3e]; Realbaum Datei H1 ohne Neubau → [4c+] fällt | JA |
+| M-12 | A17 [4d] `hashen_mit_altem_pin_scheitert` | grün | `…-M-12.txt`: Zweig endet direkt nach `hashen()` (`pruefe_installer_manifest.py:1276`) → Exit 0 | JA |
+| M-13 | A17 [4d] `hashen_mit_gleichem_pin_akzeptiert` | grün | `…-M-13.txt`: Startbindung gegen das Manifest vor dem Schreiben (`:1276`, `:1282`) → Exit 2 | JA |
+| M-14 | A17 [4d] `hashen_prueft_die_geschriebene_datei` | grün | `…-M-14.txt`: Prüfung gegen das Objekt im Speicher (`:1282`) → Exit 0 | JA |
+| M-15 | A17 [4d] `broker_pin_idempotent` (a) und (b); Realbaum `--broker-pin` | grün; im Realbaum ändert `--broker-pin` bei neuem Broker genau die Zeile `sha256` (M-11) und schreibt bei gleichem Hash nicht („unveraendert … keine Schreiboperation", erster Probelauf mit `-Bauen`, Manifest-Zeitstempel unverändert) | `…-M-15.txt`: schreibt immer, mit Zeitstempel (`:1320`) → (a) und (b) fallen | JA |
+| M-16 | A17 [4c+] im Kanon; [4d] `pin_ungleich_datei_faellt`; Realbaum fehlende Brokerdatei | grün; fehlende Datei: [4] rot, [4c+] Hinweis ohne zweiten Befund, A17 Exit 2 | `…-M-16.txt`: Vergleich nur als Hinweis (`:1740`) → [4d] fällt | JA |
+| M-17 | B10 `EqCopIpcTest`, A18, B8 (bestehend) | grün (einzeln, §11.5) | `…-M-17.txt`: Vergleich in `BrokerLifecycle.cpp:309` umgekehrt → B10 Exit 1, 120 Fehler, darunter `thumbprint_null_erlaubt_nur_passenden_hash`; Rücknahme bytegleich, B10 grün (Regressionswache) | JA |
+
+### 11.4 M-09: die Runnerläufe ohne `-Bauen` (R-309-8)
+
+| Lauf | Stand | Vorbedingung | Urteil (gemessen) | Exit | Dateien |
+|---|---|---|---|---|---|
+| 1 Basis | `e1167410` (Code gleich `d616beb9`) | Kanon vorher mit `-Bauen` grün, danach LastWriteTime von `dsp/DspKern.cpp` auf 19:08:51 (SHA-256 gleich) | **NICHT BEGLAUBIGT - 68/68 gruen, aber Pruefbinaries sind aelter als die Quellen** | 4 | `docs/beweise/roh/NAK-309-rot-M-09-basis.md`, `…-basis-e116741-dirty.md` |
+| 2 nach dem Bau | `d421239f` (Code gleich `d1676a63`) | Baubaum mit dem Bauschritt des neuen Runners gebaut (beinfreier Probelauf mit `-Bauen`, 20:36 bis 20:40), Baustand danach frisch (Exit 0), dann LastWriteTime von `dsp/DspKern.cpp` auf 20:46:40 (SHA-256 gleich) | **NICHT BEGLAUBIGT - 69/69 gruen, aber Pruefbinaries sind aelter als die Quellen** | 4 | `docs/beweise/roh/NAK-309-rot-M-09-nach-bau.md`, `…-nach-bau-d421239-dirty.md` |
+| 3 Zusage gebrochen | `23b592d7` (Code gleich `d1676a63`), beinfreie Kopie mit Mutation `:1050` | Kanon nachher mit `-Bauen` grün; Kontrolle ohne Mutation GRUEN - 0/0, Exit 0; dann LastWriteTime von `dsp/DspKern.cpp` auf 22:07:28 (SHA-256 gleich) | **GRUEN - 0/0 Kanon-Laeufe bestanden**; das Werkzeug meldet im selben Lauf NICHT FRISCH (Exit 4), 33 VERALTET mit `dsp/DspKern.cpp` | 0 | `docs/beweise/roh/NAK-309-rot-M-09-lauf3-gebrochen.md`, `…-lauf3-gebrochen-23b592d-dirty.md` |
+| 4 Zusage zurück | `23b592d7`, beinfreie Kopie ohne Mutation | wie Lauf 3, unmutierte Kopie | **NICHT BEGLAUBIGT - 0/0 gruen, aber Pruefbinaries sind aelter als die Quellen** | 4 | `docs/beweise/roh/NAK-309-rot-M-09-lauf4-zurueck.md`, `…-lauf4-zurueck-23b592d-dirty.md` |
+
+**Der Basislauf weicht von der Erwartung ab** (erwartet GRUEN, §5 M-09;
+gemessen NICHT BEGLAUBIGT, Exit 4). Ursache an der Quelle
+(`tools/beweise.ps1` am Basisstand, `$neuesteQuelle` über `$quellOrte`,
+`:985-1018`): der alte Baustand vergleicht jedes Binary mit einem globalen
+Zeitstempel, hier `eq-copilot/plugin/vertrag/NakamaUtf8.h` vom 15.09. 17:41:21.
+B3 `EqCopHostContextTest`, B3b `EqCopHostProbeTest` und B9
+`EqCopLoudnessGoldenTest` stammen vom 12.09.; der Kanon vorher hat sie mit
+`-Bauen` nicht neu gelinkt, weil sich keine ihrer Eingaben geändert hatte, und
+keines liest `NakamaUtf8.h` (abgeleitete jüngste Eingaben: Projektdateien vom
+31.08. bzw. `tests/LoudnessGoldenTestMain.cpp` vom 07.09.). Das ist NAK-25; das
+Urteil hängt nicht an `DspKern.cpp`. Der Defekt T3-09-01 steht in derselben
+Baustandtabelle: B6 (18:25:58) und B7 (18:26:00) lesen `dsp/DspKern.cpp` über
+`NakamaKern.lib`, sind älter als die Datei (19:08:51) und heißen „frisch". Die
+Erwartung „GRUEN" aus Etappe 1 übersah, dass der Kanon vorher nur über
+`-Bauen` grün war (`$bauBestaetigt` schaltet den Zeitvergleich ab).
+
+**Der Lauf nach dem Bau trifft die Erwartung.** Die Baustandtabelle führt 33
+Binaries VERALTET, jedes mit jüngster Eingabe `eq-copilot/plugin/dsp/DspKern.cpp`
+(20:46:40), darunter B6 (gebaut 20:33:40) und B7 (20:38:12); frisch bleiben A2,
+B3, B3b und B9, die den Kern nicht lesen — B3, B3b und B9 sind dieselben
+Binaries vom 12.09., die der alte Riegel im Basislauf VERALTET nannte.
+Kreuzprobe: 40 gebundene Ziele laut Export, 38 gedeckt, 2 nicht im Kanon;
+Inventar: 158 Dateien, 149 im Frischebaum, 9 mit Grund ausgenommen, 0 Lücken;
+Konfiguration: 7 Stempel, keiner ausstehend.
+
+**Läufe 3 und 4: Rotbeweis an der Zusagezeile.** Das Urteil des Basislaufs fiel
+an NAK-25, nicht an der Zusage. Deshalb ist M-09 zusätzlich an der Zeile
+gebrochen, die das Werkzeugurteil in das Runnerurteil übersetzt:
+`tools/beweise.ps1:1050` (Stand `d1676a63`), `$veraltet = $true` →
+`$veraltet = $false`. Gefahren in einer beinfreien Probelauf-Kopie des Runners.
+Die Kopie ist wortgleich bis auf die Beinschleife: Bauschritt, Baustand, Urteil
+und Manifest bleiben unverändert, die Zeilennummern bis zur Beinschleife
+ebenso. Die Arbeitskopie selbst trägt keine Mutation. Lauf 3 trifft die Erwartung: das
+Runnerurteil GRUEN widerspricht dem Werkzeugurteil desselben Laufs (Exit 4, 33
+VERALTET an `dsp/DspKern.cpp`). Baustandtabelle, Kreuzprobe, Inventar und
+Konfiguration bleiben unverändert; gefallen ist nur `:1050`. Lauf 4 ohne
+Mutation: NICHT BEGLAUBIGT, Exit 4. Danach ist die LastWriteTime von
+`DspKern.cpp` exakt auf den Wert vor Lauf 3 zurückgesetzt (FileTime gleich,
+SHA-256 gleich; der Inhalt war in keinem Lauf verändert). Lauf 5 zeigt GRUEN -
+0/0, Exit 0: der Baubaum ist wieder frisch wie nach dem Kanon nachher.
+Kontrolle und Lauf 5 liegen als `…-lauf3-vorher` und `…-lauf5-frisch` im selben
+Ordner; Commit `032eed1b`.
+
+Alle Läufe stehen in `docs/beweise/roh/NAK-309-rot-M-09.txt`.
+
+### 11.5 Einzeln gefahrene Beine
+
+Auf dem Stand nach dem Bauschritt des neuen Runners (HEAD `9c954370`, Code
+gleich `d1676a63`, 18.09.2026, 20:41 Uhr; Broker H0, Header H0), mit
+denselben Befehlen wie `tools/beweise.ps1`; Rohdatei
+`docs/beweise/roh/NAK-309-etappe2-einzelbeine.txt` (volle Ausgaben):
+
+| Bein | Befehl | Exit | Ergebnis |
+|---|---|---|---|
+| A36 | `py -3.13 tools\eq-copilot\pruefe_beweisrunner.py --selbsttest` | 0 | 11 von 11 Fällen bestanden (4,8 s) |
+| A17 | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | 0 | 110 ok, 0 Fehler (1,1 s) |
+| A14 | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | 0 | 25 ok, 0 Fehler (8,9 s) |
+| B8 | `EqCopLebenslaufTest.exe` | 0 | 79 Prüfungen ok, 0 Fehler (0,3 s) |
+| B10 | `EqCopIpcTest.exe` | 0 | 435 Prüfungen, 0 Fehler (221,2 s) |
+| A18 | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | 0 | 127 ok, 0 Fehler (37,5 s) |
+
+### 11.6 Kanon nachher
+
+**GRUEN - 69/69 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe
+Uebersicht | Exitcode 0** auf `67e60dd3` (Code gleich `d1676a63`), mit
+`-Bauen`, abgekoppelt, 18.09.2026, 21:24 bis 22:02 Uhr; Abschnitt
+„Kanon-Lauf - NAK-309 Etappe 2 Kanon nachher" oben, Rohausgabe
+`docs/beweise/roh/NAK-309-67e60dd-dirty.md` („dirty" nur wegen der zwei fremden
+untracked Ordner), Commit `23b592d7`. A36 ist als neues Bein grün (11 von 11
+Fällen); A17 110 ok, A14 25 ok, A18 127 ok, jeweils 0 Fehler. Der Bauschritt lief
+in der neuen Folge `cargo-release` → `broker-pin` → `build`; `--broker-pin`
+meldete `ok      unveraendert CA857330… - keine Schreiboperation`. Nach „Baue:"
+hing der Runner an `vctip.exe` ohne Elternprozess (NAK-300); der Prozess wurde
+um 21:26 Uhr beendet, der Lauf ging weiter. Baustand mit bestätigtem Bau: alle
+37 Zeilen der Baustandtabelle „frisch (Bau bestaetigt)", Kreuzprobe 40
+gebundene Ziele, 38 gedeckt, 2 nicht im Kanon, Inventar 158/149/9/0,
+Konfiguration 7 Stempel, keiner ausstehend, `Baustand: FRISCH (Exit 0)`.
+
+**A32 und A33 vorher und nachher.** Vorher (Kanon vorher): A32 `[HINWEIS]`
+Exit 4 — Grenzen gerissen: Quelldateien über 2 000 Zeilen 1 (Grenze 0),
+Funktionen über 200 Zeilen 34 (Grenze 28), Kommentar-Bezeichner ohne Code 36
+(Grenze 30); Ziel verfehlt: Dateien über 1 500 Zeilen 10; 201 Dateien
+gemessen; MEMORY.md 5 395 B, CLAUDE.md 19 677 B, Skill 24 537 B. A33 `[OK]`
+Exit 0 — 58 Fundstellen bei Grenze 58. Nachher: unverändert. A32 `[HINWEIS]` Exit 4 mit denselben Zahlen
+(1/0, 34/28, 36/30; 10 Dateien über 1 500 Zeilen; 201 Dateien gemessen;
+MEMORY.md 5 395 B, CLAUDE.md 19 677 B, Skill 24 537 B), A33 `[OK]` Exit 0 mit
+58 Fundstellen bei Grenze 58. Die Etappe ändert keine C++-Quelle; die neue
+Werkzeugdatei zählt A32 nicht (201 Dateien vorher und nachher).
+
+### 11.7 Abweichungen vom Bauplan §6.3 (Technikentscheide mit Begründung)
+
+- **D-1 Eingaben außerhalb der Arbeitskopie zählen nicht** (Plan Schritt 4:
+  „Jede andere genannte Datei zählt mit ihrem Zeitstempel"). Gemessen: das
+  Leselog von `NakamaKern.lib` nennt `C:\WINDOWS\SYSTEM32\TZRES.DLL` und
+  `SORTDEFAULT.NLS`, die CL-Leselogs die Include-Ordner von MSVC und Windows
+  SDK. MSBuild nimmt diese selbst aus seinem Vergleich:
+  `ExcludePath = $(CommonExcludePath);$(VC_ExecutablePath_x64);$(VC_LibraryPath_x64)`
+  mit `CommonExcludePath` = VC-Include, SDK-Include, Werkzeugpfade und
+  `$(SystemRoot)` (gelesen in `Microsoft.Cpp.MSVC.Toolset.Common.props:56` und
+  `Microsoft.Cpp.MSVC.Toolset.x64.props:20` der installierten Build Tools), und
+  FileTracker schließt AppData, LocalAppData, LocalLow, Temp und ProgramData aus
+  (`FileTracker.FileIsExcludedFromDependencies`, MSBuild-Quelle). Mit diesen
+  Einträgen machte jedes Windows-Update jedes Binary dauerhaft veraltet, weil
+  ein No-op-Bau nicht neu linkt (NAK-25). Grenze, im Werkzeugkopf genannt: eine
+  Änderung an Werkzeugkette oder SDK außerhalb der Arbeitskopie sieht die
+  Prüfung nicht.
+- **D-2 Auflösung über den Erzeuger, allgemein** (Plan Schritt 3 nennt die
+  `.LIB` aus `link.read`). Jede Eingabe unter dem Baubaum, die ein anderes
+  Schreiblog als Ausgabe nennt, zählt über den Frischebaum ihres Erzeugers,
+  auch Objekte und Ressourcen; eigene Zwischenprodukte zählen über die Quellen
+  desselben Ordners. Grund, gemessen: `Lib-link.read.1.tlog` des Kerns nennt die
+  21 Kernobjekte, und A14 baut Objekte und Bibliothek in jedem Lauf neu — ihr
+  Zeitstempel machte sonst jedes Binary veraltet (F-2 gilt für die Objekte
+  genauso); die `.RES` der `_rc_lib`-Ziele stehen im `link.read` der Binaries.
+  Eine `.lib`, `.obj` oder `.res` unter dem Baubaum ohne Erzeuger ist nicht
+  ableitbar (M-07 b).
+- **D-3 Alle Leselogs, ohne die Regenerationsregel.** Gelesen werden alle
+  `*.read.*.tlog` (CL, link, Lib-link, rc, Lib-link-cvtres, CustomBuild); der
+  CustomBuild-Abschnitt, dessen Schreiblog `CMakeFiles/generate.stamp` nennt
+  (die Regel `CMakeLists.txt`), fällt heraus — seine Eingaben (Manifest,
+  Identitätsdatei, `.h.in`) zählen über den Konfigurationsstand (F-4). Gemessen:
+  103 solcher Abschnitte im Baubaum, 63 weitere CustomBuild-Abschnitte (die
+  `resources.rc`-Regeln der `_rc_lib`-Ziele) zählen mit.
+- **D-4 Form des CMake-Exports** (Plan: je Verbraucher Name und
+  `$<TARGET_FILE>`). Der Export nennt je Verbraucher Name, Art und bei einer
+  statischen Bibliothek die JUCE-Endziele (`JUCE_ACTIVE_PLUGIN_TARGETS`), dazu
+  eine Zieltabelle aller Ziele des Verzeichnisses mit `$<TARGET_FILE>`. Grund:
+  zwei der 40 Verbraucher (`EqCopilot`, `NakamaProbeeq`) sind JUCE-SharedCode-
+  Bibliotheken; sie linken den Kern nicht selbst, erst ihre `_VST3`-Endziele
+  (gemessen: `link.read` von `EqCopilot_VST3` nennt `EQ-COPILOT_SHAREDCODE.LIB`
+  und `NAKAMAKERN.LIB`). Die Zieldateien der gemessenen Ziele (VST3,
+  `NakamaKern`) braucht das Inventar, auch wo sie keine Verbraucher sind.
+- **D-5 Kreuzprobe nur über Ziele, die der Kanon baut.** Ein Verbraucher, den
+  `-Bauen` nicht baut (heute `EqCopPipeProbe`), heißt „nicht im Kanon, nicht
+  beurteilt" — derselbe Satz wie „ein nicht gebautes Ziel wird genannt, nicht
+  beurteilt" (M-06), damit ein alter Baurest außerhalb des Kanons keine
+  Beglaubigung verweigert (Prüfliste D: was der Kanon nicht baut, bezeugt er
+  nicht).
+- **D-6 `--broker-pin` erhält die Zeilenenden ausdrücklich und schreibt
+  atomar** (Plan: derselbe Schreibweg wie `hashen()`). Er liest das Zeilenende
+  der Datei und schreibt über eine Temp-Datei mit `os.replace`; `hashen()`
+  schreibt mit `write_text` (unter Windows CRLF). Grund: M-15 sagt
+  „Zeilenenden wie die Arbeitskopie", und der Schritt läuft in jedem `-Bauen`.
+  Vor dem Schreiben fährt er denselben Strukturvertrag wie `--hashen` (die 15
+  Regeln).
+- **D-7 [4d] setzt `WURZEL` für die Attrappe auf eine Temp-Arbeitskopie.**
+  `hashen()` liest die Artefakte relativ zu `WURZEL`; seine Signatur bleibt (H-2).
+  `cmake_broker_startbindung()` bekommt dafür den optionalen Parameter
+  `header`, `_lies_geprueft()` nennt Pfade außerhalb der Arbeitskopie voll
+  (`_kurz`). Der Temp-Header entsteht aus der echten Vorlage
+  `BrokerInstallBinding.h.in` wie bei `configure_file @ONLY`.
+- **D-8 `$zuBauen` steht vor dem Bauzweig**, weil das Inventar die Menge der
+  Ziele, die `-Bauen` baut, auch ohne `-Bauen` braucht; die erste
+  Konfiguration (fehlende Lösungsdatei) steht nach `--broker-pin`, damit schon
+  sie das endgültige Manifest liest.
+- **D-9 Urteilstexte folgen dem Grund.** Ein nicht ableitbarer Baustand zählt
+  als fehlende Voraussetzung mit dem Nachsatz „Baustand: …, siehe Rohausgabe";
+  bei einer Deckungs- oder Inventarlücke ohne veraltetes Binary heißt es
+  „NICHT BEGLAUBIGT - n/m gruen, aber der Frischebaum deckt nicht jede Quelle";
+  die VERALTET-Hinweise in Manifest und Rohausgabe nennen denselben Grund. Das
+  Präfix, das `tools/plan/planstand.py` liest, bleibt.
+- **D-10 Werkzeugoption `--wurzel`** (Vorgabe: zwei Ebenen über dem Skript)
+  für Probeläufe; der Runner nutzt sie nicht.
+
+### 11.8 Prüfliste (`tools/dirigent/pruefliste.md`)
+
+| Abschnitt | Etappe 2 |
+|---|---|
+| A Rückstau | nicht zutreffend (keine Queue). |
+| B Lebenszyklus | nicht zutreffend; der Runner ruft beide Werkzeuge synchron über `Fuehre-Aus` mit Frist. |
+| C Verträge und Längen | Population-JSON und CMake-Export werden vor dem ersten Zugriff auf ihre Form geprüft (Export: `konfiguration`, `kern_quellen`, `verbraucher`, `ziele`); Tracking-Logs auf Kodierung (BOM, NUL), `^`-Struktur und volle Pfade; jeder Verstoß ist NICHT ABLEITBAR oder Werkzeugfehler, nie grün. |
+| D Bau- und Prüfriegel | fail-closed: fehlendes Log, Export oder Stempel, Erzeugnis ohne Erzeuger, mehrdeutiger Erzeuger, zwei Tracking-Ordner, Zyklus → NICHT ABLEITBAR, Exit 3, im Runner fehlende Voraussetzung (UNVOLLSTAENDIG), nie grün (M-07); Frische der Eingaben je Binary (M-01 bis M-10); was der Kanon nicht baut, wird genannt, nicht bezeugt (Kreuzprobe „nicht im Kanon", Inventar-Ausnahmen mit Grund). [3e] ist eine Textprobe an drei Codeankern mit eingebauten Rotmutationen; ein fehlender Anker ist rot. `--broker-pin` schreibt nur den Brokerhash und nur, wenn die gebaute Datei ihn ändert; Bundlehashes bleiben Sache von `--hashen` für eine Auslieferung (NAK-94). |
+| E Behauptung ≤ Messung | A36-Behauptung in drei Sätzen, gemessen von elf Fällen; Runnerkopf, Skriptkopf von A17, `plugin-wissen.md` und der lebende Kopf dieses Manifests ziehen nach; Zahlen gemessen (40 aus dem Export, 158/149/9/0 aus dem Inventar, 38 gedeckt); jede neue Prüfung einmal gebrochen (M-01 bis M-17, M-09 zusätzlich an der Urteilszeile), Regressionswachen als solche benannt (M-03, M-04, M-05, M-17); die Deklaration in `NAK-309-rot-M-17.txt` ist nach dem Nachzählen berichtigt (die `autostart_*`-Fälle blieben grün). Writer-Form: die Attrappe von A36 ist handgeschrieben in der Form, die MSBuild schreibt (am Baubaum gemessen: CL-, link- und rc-Logs UTF-16 LE mit BOM, CustomBuild-Logs UTF-8, Pfade in Großbuchstaben, `^`-Zeilen mit `\|`). Eingefrorene echte Tracking-Logs trügen absolute Pfade dieses Rechners und verlören die Leerzeichen-Wurzel. Die Writer-Form misst stattdessen jeder Runnerlauf am echten Baubaum; eine Abweichung ergibt NICHT ABLEITBAR, nie grün. |
+| F Änderungssatz | bauen↔beurteilen (Bauschritt und Baustand) und erzeugen↔prüfen (`--hashen`↔Startbindung, `--broker-pin`↔[3e]/[4c+]/[4d]) im selben Commit `d1676a63`; installieren↔Rückweg: A18 grün (einzeln und im Kanon nachher). |
+
+### 11.9 Offene Punkte
+
+- **Produktfragen: keine.** Die Etappe ändert kein Produktverhalten; die
+  Bauordnung ist die im Gate genannte Ausnahme.
+- **NAK-25** ist technisch erledigt: der M-09-Basislauf zeigt den zu groben
+  Riegel, der Lauf nach dem Bau zeigt B3, B3b und B9 frisch an ihrem eigenen
+  Frischebaum. Den Registerschluss macht der Dirigent (Vorschlag §8.5).
+- **Grenze Projektdatei:** schreibt CMake eine `<Ziel>.vcxproj` ohne
+  wirksame Optionsänderung neu, heißt ihr Binary bis zum nächsten Link
+  VERALTET (der Plan zählt die Projektdatei als Eingabe, §6.3 Schritt 4); ein
+  Lauf mit `-Bauen` ist davon nicht betroffen. Gemessen: CMake schreibt die
+  Projektdateien nur bei geändertem Inhalt (§6.3), der Export dieser Etappe
+  hat keine berührt.
+- **Hinweis an den Dirigenten (außerhalb der Etappe):** `Add-Content` im
+  Runner hängt den Kanonabschnitt ohne vorangestellte Leerzeile an; endet das
+  Manifest mit einem Absatz, wird die Trennlinie `---` zur
+  Setext-Unterstreichung dieses Absatzes. In diesem Manifest von Hand behoben
+  (Commit `e1167410`; beim Kanon nachher endete der vorige Abschnitt
+  mit einer Leerzeile), im Runner nicht (nicht in den Ticketpfaden der
+  Etappe 2).
+- **NAK-300 trat in beiden Kanonläufen auf** (`vctip.exe` ohne Elternprozess
+  nach „Baue:", Runner bei 0 % CPU; Kanon vorher, Kanon nachher um 21:26 Uhr);
+  jeweils beendet, der Lauf ging weiter.
+
+## 12. Messung der Etappe 2, Entscheide zu D-1 bis D-10 und Regelpräzisierung R-309-8' (Dirigent, 18.09.2026, 22:3x Uhr)
+
+**Berichtigung zu §10.** Die Überschrift von §10 nennt „18:3x Uhr". Richtig ist
+18:2x Uhr: §10 lag im Commit `d616beb9` (Commitzeit 18:23:21 Uhr), der Worker
+der Etappe 2 startete danach um 18:23:36 Uhr (`claude agents --json`, Feld
+`startedAt`). Der Dirigent hat nicht bei laufendem Worker geschrieben.
+
+**Ablauf, gemessen.** Worker `86067ece` (`nakama-nak309-d616beb-etappe2`, Opus
+max, `dontAsk`), Start 18:23:36 Uhr, letzter Commit `7b5f4a6d` um 22:13:00 Uhr.
+Um 22:17 Uhr stand er in der Agentenliste auf `working` mit Status `idle` (am
+Eingabeprompt), ohne eigenen Kindprozess außer MCP-Servern und ohne Bau- oder
+Runnerprozess (22:20 Uhr); der Dirigent hat ihn um 22:20 Uhr mit `claude stop`
+beendet, danach `CronList` leer, kein Beobachterprozess (Beobachter-Exit 5 ist
+laut `tools/dirigent/cockpit.ps1` der vorgesehene Code für `stopped`). Laufzeit
+rund 3 h 50 min.
+
+**Endzustand, gemessen (22:13 bis 22:29 Uhr).** Basis
+`d616beb97dd86f956d8116c4b5a059a9b46fd650` ist Vorfahr von HEAD (`git merge-base
+--is-ancestor`, Exit 0); HEAD `7b5f4a6d` = `origin/master` nach `git fetch`;
+`git status --short` nur `briefing-hub/` und `nimbalyst-local/`. Zehn Commits,
+alle vom Worker, alle „NAK-309 Etappe 2". `git diff --stat d616beb9..7b5f4a6d`
+ohne `docs/beweise/roh`: `docs/beweise/NAK-309.md`, `docs/plugin-wissen.md`,
+`eq-copilot/plugin/CMakeLists.txt`, `tools/beweise.ps1`,
+`tools/eq-copilot/pruefe_beweisrunner.py` (neu),
+`tools/eq-copilot/pruefe_installer_manifest.py`; dazu 32 Rohdateien. Alle Pfade
+liegen in der Ticketgrenze des Auftrags. `git log d616beb9..7b5f4a6d --name-only
+-- eq-copilot/plugin broker eq-copilot/install` nennt nur `48163d63` mit
+`eq-copilot/plugin/CMakeLists.txt`: keine Rotbeweis-Mutation lag je in einem
+Commit (A-10).
+
+**Rundenbilanz** (`py -3.13 tools/dirigent/rundenbilanz.py d616beb9..7b5f4a6d`):
+Produkt 1 Datei(en) +48/-0, Pruefwerkzeug 3 Datei(en) +1834/-122, Doku 34
+Datei(en) +43492/-11. Bauetappe mit Produkt- und Werkzeugzeilen.
+
+**Kanon.** Im Manifest gelesen: „Kanon vorher" 18:24 Uhr GRUEN 68/68, Exit 0;
+„Kanon nachher" 21:24 Uhr GRUEN 69/69, Exit 0, gelaufen auf `67e60dd3`.
+`git diff --stat d1676a63 67e60dd3 -- eq-copilot broker tools` und `git diff
+--stat 67e60dd3 7b5f4a6d -- eq-copilot broker tools` sind leer: der Kanon
+nachher deckt den End-Codestand. `py -3.13 tools/plan/planstand.py` liest den
+Abschnitt des neuen Runners („Kanon 69/69 grün" in der Zeile S25h,
+Planstand-Commit `83b5b780`). Die Einzelbeine aus §11.5 hat der Dirigent nicht
+erneut gefahren; maßgeblich ist der Kanon nachher.
+
+**Stichproben an der Quelle (22:22 bis 22:27 Uhr).**
+
+- Broker: SHA-256 von `broker/target/release/eqcop-broker.exe`, Feld `sha256`
+  des Broker-Artefakts im Installer-Manifest und der Pin im erzeugten
+  `BrokerInstallBinding.h` sind gleich (`CA857330…`); `git status --short --
+  broker eq-copilot/install` leer. Der abweichende Broker für M-11 entstand
+  durch 21 angehängte Bytes an der gebauten Datei, nicht durch eine
+  Quelländerung unter `broker/` (gelesen in `NAK-309-rot-M-11.txt`, nur die
+  Trefferzeilen, nicht die ganze Datei).
+- M-17: `eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp` trägt den SHA-256-Wert,
+  den `NAK-309-rot-M-17.txt` als „vorher" und „nach der Rücknahme" nennt
+  (`1C0F7F95…`).
+- `eq-copilot/plugin/dsp/DspKern.cpp`: LastWriteTime 2026-09-18 20:46:40.7986334
+  und SHA-256 `A12B25FA…` wie in `NAK-309-rot-M-09.txt` für die Rücknahme
+  notiert. Ob der Baubaum damit frisch ist, hat der Dirigent nicht selbst
+  gemessen.
+- Rohdateien `NAK-309-rot-M-01.txt` bis `-M-17.txt`: alle 17 vorhanden, jede mit
+  mindestens einer Zeile „Die Zusage fällt an der erwarteten Prüfung: JA" und
+  mindestens zwei SHA-256-Angaben; M-03, M-06, M-10 und M-11 mit zwei solchen
+  Zeilen, wie §11.3 sagt. Das ist eine Prüfung auf Vorhandensein und Form; ob
+  die Mutation je an der Zeile sitzt, die die Zusage trägt, beurteilt die
+  Erstprüfung 2 am Code.
+- `_abgeschirmt` in `tools/eq-copilot/pruefe_installer_manifest.py` sichert
+  `ok`, `fehler` und `WURZEL` und stellt sie im `finally`-Zweig wieder her (D-7).
+
+**M-09 und R-309-8' (Präzisierung, ersetzt die Erwartung „GRUEN" für den
+Basislauf in R-309-8, Rest unverändert).** Der Basislauf endete mit NICHT
+BEGLAUBIGT, Exit 4, nicht mit GRUEN; die Ursache steht in §11.4 (NAK-25: drei
+Binaries vom 12.09. veraltet gegen einen globalen Zeitstempel). Der Rotbeweis
+von M-09 liegt deshalb an den Zeilen von B6 und B7 in der Baustandtabelle, nicht
+am Gesamturteil. Vom Dirigenten in den committeten Rohausgaben des echten
+Runners gelesen: Basislauf (`NAK-309-rot-M-09-basis-e116741-dirty.md`)
+`EqCopDspGoldenTest` 18:25:58 und `EqCopTransactionTest` 18:26:00 „frisch",
+`EqCopHostContextTest` und `EqCopLoudnessGoldenTest` VERALTET; Lauf nach dem Bau
+(`NAK-309-rot-M-09-nach-bau-d421239-dirty.md`) B6 und B7 VERALTET mit jüngster
+Eingabe `eq-copilot/plugin/dsp/DspKern.cpp` (20:46:40), B3 und B9 „frisch" mit
+eigener jüngster Eingabe; die Tabelle trägt die Spalte „jüngste Eingabe".
+Grenze: dass `DspKern.cpp` im Basislauf jünger war als B6 und B7, belegt dort nur
+die vom Worker notierte Uhrzeit 19:08:51, weil die alte Tabelle keine
+Eingabespalte hat.
+
+**Läufe 3 bis 5 sind Zusatzbeleg mit Einschränkung.** Die Mutation an
+`tools/beweise.ps1:1050` lief nur in einer beinfreien Kopie des Runners; die
+Kopie und die übrigen Hilfsskripte sind nach §11.3 nicht Teil der Lieferung.
+Die Aussagen „wortgleich bis auf die Beinschleife" und „genau eine Zeile
+verschieden" sind Angaben des Workers mit zwei SHA-256-Werten und vom
+Dirigenten nicht nachprüfbar: zwei Suchen unter `$env:TEMP` (bis Tiefe 7, nur
+`*.ps1` über 20 KB, 23 Dateien gehasht; der Scratchpad-Ordner des Workers ohne
+Skript- oder Textdatei) fanden keine Datei mit einem der beiden Werte. Ob die
+Kopien gelöscht wurden oder außerhalb des Suchbereichs liegen, ist nicht
+gemessen. Gemessen ist: `tools/beweise.ps1` trägt den SHA-256-Wert, den die
+Rohdatei als „vorher und nachher gleich" nennt (`C7F5E783…`). Kein
+Fortsetzungsauftrag, weil M-09 über die Läufe 1 und 2 belegt ist.
+
+**Entscheide zu §11.7 (Technik, innerhalb Ticket, Invarianten und Regeln).**
+
+| Abweichung | Entscheid | Grenze |
+|---|---|---|
+| D-1 Eingaben außerhalb der Arbeitskopie zählen nicht | genehmigt | Ausschluss nur über „außerhalb der Arbeitskopie", nie über eine Namensliste; eine Änderung an Werkzeugkette oder SDK sieht die Prüfung nicht (wie der alte Riegel); im Werkzeugkopf genannt |
+| D-2 Auflösung über den Erzeuger, auch Objekte und Ressourcen | genehmigt | ein Erzeugnis unter dem Baubaum ohne Erzeuger ist nicht ableitbar, nie grün (M-07) |
+| D-3 alle Leselogs ohne die CMake-Regenerationsregel | genehmigt | deren Eingaben zählen über den Konfigurationsstand (M-10) |
+| D-4 Form des CMake-Exports | genehmigt | nur `file(GENERATE)`; kein Ziel, keine Quelle, keine Option ändert sich |
+| D-5 Kreuzprobe nur über Ziele, die der Kanon baut | genehmigt | folgt der Zusagezelle von M-06 wörtlich („für jedes gebaute gebundene Ziel", „Ein nicht gebautes Ziel wird genannt, nicht beurteilt"; an der Matrixzeile gelesen) |
+| D-6 `--broker-pin` erhält Zeilenenden, schreibt atomar | genehmigt | A-1 bleibt: nur das Feld `sha256` des Broker-Artefakts, nur bei Abweichung (gelesen: Rückkehr vor jedem Schreibzugriff bei gleichem Hash) |
+| D-7 [4d] setzt `WURZEL` auf eine Temp-Arbeitskopie | genehmigt | Wiederherstellung im `finally`-Zweig (gelesen); Signatur von `hashen()` unverändert (H-2) |
+| D-8 `$zuBauen` vor dem Bauzweig, erste Konfiguration nach `--broker-pin` | genehmigt | Folge Broker, Manifest, Plugin bleibt |
+| D-9 Urteilstexte folgen dem Grund | genehmigt | die Präfixe bis „gruen" beziehungsweise „Kanon" bleiben, wie das Muster `KANON` in `tools/plan/planstand.py` sie liest (beide Seiten gelesen; GRUEN am Lauf belegt, die zwei verweigernden Wortlaute nur durch Lesen; die ROT-Zeile nicht angesehen) |
+| D-10 Werkzeugoption `--wurzel` | genehmigt | der Runner nutzt sie nicht |
+
+**Beobachtung des Dirigenten, keine Einordnung.** Die Behauptung von Bein A36 in
+`tools/beweise.ps1` endet mit „… ein nicht ableitbarer Baum ist nie gruen, und
+jedes gebundene Kernziel ist gedeckt." Grammatisch hängt der Satz an „an einem
+Attrappen-Baubaum" und stimmt dort. Im Manifest eines echten Kanonlaufs kann er
+auf den echten Baum bezogen werden, wo 38 von 40 gebundenen Zielen gedeckt und
+zwei nicht im Kanon sind; M-06 sagt genauer „jedes gebaute gebundene Ziel". Der
+Wortlaut ist wörtlich der aus §6.3. Die Einordnung liegt bei der Erstprüfung 2;
+nennt sie ihn nicht als Defekt, ist die Korrektur ein Wort und kann in Etappe 4
+mitlaufen, die Behauptungszeilen des Runners ändert.
+
+**Hinweise aus §11.9.** NAK-25 wird nach einem PASS der Erstprüfung 2
+geschlossen, nicht vorher. Der Hinweis zum fehlenden Leerzeilen-Vorlauf von
+`Add-Content` im Runner und die Werkzeugbefunde des Dirigentenbetriebs dieser
+Etappe stehen als NAK-319 bis NAK-321 im Register. Ob `tools/plan/gesundheit.py`
+die neue Werkzeugdatei misst, prüft der Dirigent im Abschlussfenster des Tickets.
+
+**Nächster Schritt.** Erstprüfung 2 durch einen frischen, lesenden Prüfer (nie
+der Bauer; Codex-Woche 94 %, gemessen 22:02 Uhr, deshalb Opus-Thread, Skill
+§3.6), Vorlage A aus `tools/dirigent/pruefauftrag-vorlage.md`, Auftrag
+`docs/beweise/roh/NAK-309-erstpruefung-2-auftrag.txt`, Prüfbereich `git diff
+d616beb9...7b5f4a6d` über die vier Code- und Werkzeugpfade. Der Laufzeit-Arm
+läuft erst nach Etappe 3.
+## 13. Erstprüfung 2: Urteil, Einordnung und Regel R-309-9 (Dirigent, 18.09.2026, 22:5x Uhr)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Frischer, lesender Opus-Thread (Agent der Dirigentensession, Modell Opus; Codex-Woche 94 %, gemessen 22:36 Uhr, Skill §3.6); nie der Bauer. 46 Werkzeugaufrufe, 725 Sekunden, nichts geschrieben. |
+| Auftrag | `docs/beweise/roh/NAK-309-erstpruefung-2-auftrag.txt` (Vorlage A; Gate-Text programmatisch aus `docs/plan/plan.json` eingefügt), Prüfbereich `git diff d616beb9...7b5f4a6d` über `tools/beweise.ps1`, `tools/eq-copilot/pruefe_beweisrunner.py`, `tools/eq-copilot/pruefe_installer_manifest.py`, `eq-copilot/plugin/CMakeLists.txt`. |
+| HEAD | `2fe0e2da3b529262ce7d246680f5d3b995dbc6fa` vor und nach dem Lauf (vom Prüfer gemeldet; nach dem Lauf vom Dirigenten nachgemessen, `git status --short` nur die zwei fremden Ordner). Über dem Prüfziel `7b5f4a6d` liegen nur vier Dokumente, der Code-Diff ist leer (vor dem Start gemessen). |
+| Urteil | **PASS** — kein DEFEKT; zwei LÜCKEN (L-1, L-2), drei HÄRTUNGEN (H-1 bis H-3). Rohbericht wörtlich: `docs/beweise/roh/NAK-309-erstpruefung-2-urteil.md`. |
+| Abweichung des Prüfers | Er hat nach eigener Angabe zweimal `python -c` als Dateileser benutzt (UTF-16-Tracking-Logs, JSON-Export), entgegen „kein Python". Kein Werkzeug des Prüfbereichs lief; HEAD und Arbeitsbaum sind unverändert (gemessen). Der Lauf bleibt gültig. |
+| Rundenbilanz | unverändert §12 (eine Baurunde: Produkt 1 Datei +48/-0, Prüfwerkzeug 3 Dateien +1834/-122); keine Nacharbeitsrunde. |
+
+**Einordnung (Dirigent, L-1 und L-2 an der Quelle nachgelesen).**
+
+| Befund | Klasse | Entscheid |
+|---|---|---|
+| L-1 Frischeurteil nur für Beine der Art `plugin`, nicht für die gemessenen Ziele | LÜCKE | bestätigt: `tools/beweise.ps1:1025` filtert auf `Art -eq 'plugin'`, `$gemesseneZiele` (`:782`) läuft getrennt; an der Basis dieselbe Schleife, keine Rückentwicklung. Regel **R-309-9** unten. |
+| L-2 `third_party/patches/**` fällt aus dem Frischemodell | HÄRTUNG (vom Dirigenten herabgestuft) | bestätigt, dass der alte Runner den Ordner führte und der neue nicht. Gelesen in `eq-copilot/cmake/NakamaBruecke.cmake` (Trefferzeilen, nicht die ganze Datei): der Patch wird beim Konfigurieren angewandt und über den festgeschriebenen SHA-256-Wert der gepatchten Datei gegatet; „schon gepatcht" heißt nichts tun. Eine geänderte Patchdatei ändert ohne neuen Hashwert kein gebautes Byte; das Modul ist Konfigurationseingabe und die gepatchte Datei liegt im Baubaum, beides sieht die Frischeprüfung. Register NAK-322 (d). |
+| H-1 Sprengweite eines defekten Tracking-Logs | HÄRTUNG | Register NAK-322 (a); fail-closed bleibt richtig. |
+| H-2 [3e] ist ein Textriegel | HÄRTUNG | Register NAK-322 (b). |
+| H-3 [4d] misst `--broker-pin` nur gegen eigene Attrappen; Inventar-Ausnahmen präfixbasiert | HÄRTUNG | Register NAK-322 (c). |
+| Beobachtung des Dirigenten aus §12 (Wortlaut der A36-Behauptung) | vom Prüfer nicht erhoben | wie in §12 angekündigt: Korrektur auf „jedes gebaute gebundene Kernziel" läuft in Etappe 4 mit, die Behauptungszeilen des Runners ändert. |
+
+**R-309-9 (neu, Technik, schließt L-1).** Jede Binärdatei, die ein Kanon-Bein
+ausführt oder misst, bekommt dasselbe Frischeurteil wie ein Prüfbinary der Art
+`plugin`: die Ziele aus `$gemesseneZiele` gehen mit ihrem Frischebaum in den
+Zeitvergleich, VERALTET verweigert die Beglaubigung, nicht ableitbar ist nie
+grün. Gebaut in Etappe 4, die `tools/beweise.ps1` und
+`tools/eq-copilot/pruefe_beweisrunner.py` ohnehin ändert (§9 A-6); der Bauer der
+Etappe 4 legt dafür die Matrixzeile M-75 an (Zusage, Fall in A36 mit Gegenteil,
+Rotbeweis an der Zeile, die die Population bildet), die Erstprüfung 4 prüft sie
+mit. Muster wie R-309-7 und M-74.
+
+**Etappe 2 ist mit PASS erstgeprüft.** NAK-25 (zu grober Baustand-Riegel) ist
+geschlossen: der M-09-Basislauf zeigt den alten Riegel an B3, B3b und B9, der
+Lauf nach dem Bau zeigt sie frisch an ihrem eigenen Frischebaum (§12, vom
+Dirigenten in den Rohausgaben gelesen).
+
+**Nächster Schritt (nächste Dirigentensession).** Etappe 3 (Hostbeweiswerkzeuge,
+T3-13-01 bis T3-13-06, M-18 bis M-56, dazu M-74 für NAK-317 nach R-309-7).
+Der Auftrag entsteht aus §6.4, §9 (A-3, A-7, A-8, R-309-1', R-309-7) und §10 (H-1:
+drei berührte Produktquellen, alle ohne Verhaltensänderung). Aufsicht ENG, weil
+die Etappe eine Produktquelle und einen Runner berührt, der Prozesse beendet.
+Der Workername endet auf `-bau`, damit das Cockpit den Startbeleg erkennt
+(NAK-319 a). Für Etappe 4 vorgemerkt: R-309-9 mit M-75, das Wort in der
+A36-Behauptung, H-5 aus §10 und der Entscheid zu NAK-321. Der Laufzeit-Arm läuft
+erst nach Etappe 3. Diese Session beginnt Etappe 3 nicht: der Dirigentenkontext
+stand um 22:36 Uhr bei 40 %, die Messung der Etappe 2 allein hat 14 Punkte
+gekostet.
+**Hygiene im Abschlussfenster (22:5x Uhr, per Kommando).** `py -3.13
+tools/plan/dokuriegel.py` über Register und Manifest: 0 Befunde. `py -3.13
+tools/plan/gesundheit.py`: Exit 4 mit den drei bekannten gerissenen Grenzen aus
+NAK-292 (Quelldateien über 2 000 Zeilen 1 von 0, Funktionen über 200 Zeilen 34
+von 28, Kommentar-Bezeichner ohne Code 36 von 30), dieselben Zahlen wie A32 im
+Kanon nachher; Kontextfläche unter den Grenzen (MEMORY.md 5 395 B, CLAUDE.md
+19 677 von 20 480 B, Skill 24 537 von 24 576 B, keine Indexzeile über 250
+Zeichen, keine Memory-Datei ohne Indexlink). `tools/plan/tidy.py` nicht erneut
+gefahren; A33 lief im Kanon nachher auf demselben Codestand mit 58 Fundstellen
+bei Grenze 58. Die in §12 vorgemerkte Frage ist nur halb beantwortet: das
+Gesundheitsmaß zählt 201 Dateien vorher wie nachher, die neue Werkzeugdatei
+`tools/eq-copilot/pruefe_beweisrunner.py` (rund 1 300 Zeilen) wird also nicht
+gemessen; ob das Absicht des Inventars (NAK-249) ist, hat der Dirigent nicht
+nachgelesen.
+
+## 14. Etappe 3 — Hostbeweiswerkzeuge (Bauer, 18.09.2026)
+
+Auftrag `docs/beweise/roh/NAK-309-etappe-3-auftrag.txt`; Grundlage §5.3 bis
+§5.6 (M-18 bis M-56), §6.4 und die Präzisierungen R-309-1', R-309-7 (§9), H-1,
+H-3 und R-309-8 (§10). Zeilennummern in diesem Abschnitt gelten zum Stand des
+Commits, den die Zeile nennt; ohne Nennung zum Basis-SHA `7a510701`.
+
+### 14.1 Start und Ausgangswert des Kanons
+
+- **Basis-SHA** `7a510701b75016a5f64dc4759d6f4fe032f85508` (Kopfzeile
+  Basis-SHA). `git pull --ff-only`: „Already up to date"; `git status
+  --short`: nur `briefing-hub/` und `nimbalyst-local/`. Prozesse um 23:1x Uhr:
+  kein `cmake`, `MSBuild`, `cl`, `cargo`, `link`, `vctip`, `FL64`, `FL` oder
+  `EqCop*`; es laufen drei MCP-Server `fl-studio-mcp.exe` aus dem Venv des
+  Nachbarrepos (Sitzungswerkzeuge, kein FL) und die Dirigenten-Shells. Kein
+  FL-Prozess, also keine Einschränkung für die Etappe.
+- **Nachbarrepo** `C:\Users\phili\Projekte\fl-studio-mcp`: `## evenacadia-local...origin/evenacadia-local`,
+  HEAD `01f72386bfc7eab507a40b9c96ef9e2e2a0265cc`, Arbeitsbaum sauber.
+- **Kanon vorher entfällt** (Auftrag Schritt 2): `git diff --stat
+  67e60dd3..HEAD -- eq-copilot broker tools` ist beim Start leer (Exit 0;
+  dazwischen liegen nur Dokumentcommits von `23b592d7` bis `7a510701`).
+  Ausgangswert ist der Kanon nachher der Etappe 2: **GRUEN - 69/69
+  Kanon-Laeufe bestanden, 1 stillgelegtes Bein, Exit 0** auf `67e60dd3`
+  (18.09.2026, 21:24 Uhr; Abschnitt „Kanon-Lauf - NAK-309 Etappe 2 Kanon
+  nachher", Rohausgabe `docs/beweise/roh/NAK-309-67e60dd-dirty.md`), darin
+  A4b, A35, A1, B8 und B14 je `[OK]` Exit 0. A32 `[HINWEIS]` Exit 4
+  (Quelldateien über 2 000 Zeilen 1 bei Grenze 0, Funktionen über 200 Zeilen
+  34 bei Grenze 28, Kommentar-Bezeichner ohne Code 36 bei Grenze 30; Dateien
+  über 1 500 Zeilen 10; 201 Dateien gemessen), A33 `[OK]` Exit 0 mit 58
+  Fundstellen bei Grenze 58 (§11.6).
+
+### 14.2 Matrixzeile M-74 (R-309-7, NB-309-1, Register NAK-317)
+
+§5 bleibt unverändert (append-only); M-74 ist eine Zeile dieses Manifests wie
+M-01 bis M-73.
+
+| ID | Befund | Zustand und Vorbedingung | Ereignis | Zusage | Reihenfolge und Frist | Test | Rotbeweis | Quelle | Etappe |
+|---|---|---|---|---|---|---|---|---|---|
+| M-74 | NB-309-1 · R-309-7 · Register NAK-317 | Testbau: jedes Ziel, das `NAKAMA_PROZESSOR_QUELLEN` übersetzt, außer dem Produkt `EqCopilot`, trägt `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` (`eq-copilot/plugin/CMakeLists.txt`, Schleife nach „Die Konsolentests instanziieren den echten Prozessor"); der Prozessor entsteht über den Produkt- oder den Testkonstruktor, sein Konstruktor startet den v2-Client (`eq-copilot/plugin/src/PluginProcessor.cpp:437`) | Konstruktion des Prozessors | **Ein Test, der den Prozessor baut, öffnet die Produktions-Pipe nie:** im Testbau trägt der v2-Client einen Probe-Namen, auf dem kein Server lauscht (`\\.\pipe\evenacadia.eq-copilot.m2probe.testbau`), nie `kPipeName` in irgendeiner Schreibweise, und derselbe Name steht nach Produkt- und Testkonstruktor am Client; jedes Ziel mit den Prozessorquellen außer `EqCopilot` trägt den Testschalter. Der Produktbau nennt `kPipeName` (M-24) | Die Namenswahl fällt zur Übersetzungszeit am bestehenden Testschalter, nie an einer Laufzeitbedingung im Produkt; das Bein misst sie vor dem ersten Prozessor und endet bei einem Verstoß vor jeder Konstruktion | B8 **NEU** `m74_testbau_oeffnet_die_produktions_pipe_nie` (`eq-copilot/plugin/tests/LebenslaufTestMain.cpp`, Teil 0 vor dem ersten Prozessor): (a) die Namenswahl des Testbaus ist ein Probe-Name nach `probePipeUrteil` (`eq-copilot/plugin/src/ProbePipeRegel.h`) und nicht der Produktionsname; (b) der v2-Client trägt nach Produkt- und Testkonstruktor genau diesen Namen; (c) Quelltextwache über `CMakeLists.txt`: jedes Ziel mit den Prozessorquellen außer `EqCopilot` steht in der Testschalter-Schleife, `EqCopilot` nicht | **heute rot** — Gegenprobe `eq-copilot/plugin/src/PluginProcessor.cpp:151` (Argument `{}`) mit dem Rückfall `eq-copilot/plugin/src/PipeClient.cpp:221` auf `kPipeName` (§8.6, gelesen); Rotbeweis nach dem Bau an der Zeile, die den Namen setzt: der Testzweig von `v2PipeNameDesBaus()` in `PluginProcessor.cpp` liefert `kPipeName` → (a) rot, B8 endet vor dem ersten Prozessor (kein Pipezugriff); zusätzlich (c): ein Ziel aus der Schleife genommen → rot | R-309-7 (§9); §8.6 NB-309-1; Gate S25h („keine Produktions-Pipe im Test"); `CLAUDE.md` „Probe-Pipe ist nie Produktions-Pipe" | 3 |
+
+Etikett: heute rot (Zählung §5.9 damit 74 Zeilen, heute rot 32).
+
+### 14.3 Dateien für M-74 außerhalb der Ticketpfade (vor der Änderung genannt)
+
+Der Auftrag lässt für M-74 die Stelle zu, über die der Testbau seinen
+v3-Probenamen bekommt (`V3Verdrahtung`), und verlangt jede weitere Datei hier
+mit Begründung, bevor sie sich ändert:
+
+- `eq-copilot/plugin/src/PluginProcessor.h` (CRLF): `V3Verdrahtung` bekommt
+  das Feld `v2PipeName` (derselbe Weg wie der v3-Name, R-309-7); im
+  bestehenden Testblock `#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)` stehen
+  zwei lesende Testzugriffe: die Namenswahl des Baus ohne Prozessor (M-74 (a),
+  damit das Bein vor jeder Konstruktion misst) und der Name am v2-Client eines
+  Prozessors (M-74 (b)). Kein Produktverhalten; der Produktbau sieht nur das
+  zusätzliche Feld.
+- `eq-copilot/plugin/tests/LebenslaufTestMain.cpp` (LF): der Fall aus M-74 in
+  Bein B8. Grund: B8 baut den echten Prozessor und misst dessen
+  Brokerlebenslauf; A4b übersetzt den Prozessor nicht.
+- `tools/beweise.ps1` (CRLF): die Kanonzeile von B8 (Behauptung um M-74
+  ergänzt), nach dem Auftrag zulässig („falls M-74 … einen Fall in einem
+  bestehenden Bein braucht, dessen Kanonzeile").
+- `eq-copilot/plugin/tests/ShotTestMain.cpp` (LF): nur der Kopfkommentar
+  (`:7-9`, „Läuft der Broker, verbindet sich der echte PipeClient (LED grün;
+  der Sensor erscheint kurz in der Übersicht …)"). `EqCopShot` trägt den
+  Testschalter; mit M-74 verbindet sich sein v2-Client nie mehr mit dem
+  Produktionsbroker, und der Kommentar behauptete sonst ein Verhalten, das
+  M-74 verbietet (`tools/dirigent/pruefliste.md` E).
+
+`eq-copilot/plugin/CMakeLists.txt` bleibt unverändert: der Testschalter steht
+bereits an jedem Ziel, das den Prozessor übersetzt (gemessen: 16 Nennungen von
+`NAKAMA_PROZESSOR_QUELLEN`, die Definition, das Produkt `EqCopilot` und 14
+Testziele; alle 14 in der Schleife `:1323-1330`).
+
+### 14.4 Änderungen je Datei
+
+Commits auf `master`, je mit Pathspec und gepusht: `7385e06a` (Start,
+Matrixzeile M-74), `e7ce4199` (Code zu M-18 bis M-28 und M-74), `e203490b`
+(README, `plugin-wissen.md`), `e131796c` (`szenario.py`, Szenariodateien),
+`afc6fe60` (`laufzeit.ps1`, Pin), `0882980f` (LIES-MICH, NAK-286 §48,
+Behauptung A35), `48fc736a` (Pin auf den zweiten Nachbarcommit, §14.5),
+`3d3c8ce5` (Rotbeweise, Handlauf, Einzelbeine, Werkzeug). Die Zeilenenden sind
+je Datei vor dem Schreiben gemessen und erhalten: CRLF bei `PipeClient.cpp`,
+`PluginProcessor.cpp`, `PluginProcessor.h`, `README.md`, `laufzeit.ps1`,
+`szenario.py`, `LIES-MICH.md`, den vier Szenariodateien, `NAK-286.md`,
+`beweise.ps1` und `plugin-wissen.md`; LF bei `PipeProbeMain.cpp`,
+`PipeClient.h`, `PipeClientLifecycleTestMain.cpp`, `LebenslaufTestMain.cpp`,
+`ShotTestMain.cpp` und den neuen Dateien.
+
+- **`eq-copilot/plugin/src/ProbePipeRegel.h`** (neu): die Regeln des
+  Probewerkzeugs als reine Funktionen. `probePipeName` wählt ohne erstes
+  Argument den v2-Probenamen `\\.\pipe\evenacadia.eq-copilot.m2probe`, nie
+  `kPipeName`; ein leeres Argument bleibt leer. `probePipeUrteil` ist eine
+  Erlaubnisliste: der v2-Probename, er mit einem Suffix aus Punkt und
+  `[A-Za-z0-9_-]`, sonst entscheidet das unveränderte `istProbePipename`
+  (v3-Probenamensraum); den Produktionsnamen erkennt sie ohne Groß- und
+  Kleinschreibung (`produktion`), ein leerer Name heißt `leer`, alles andere
+  `fremd`, auch jeder Name mit `\` oder `/` hinter `\\.\pipe\` (E3-1).
+  `konfliktEndeBestaetigt` ist das Prädikat aus R-309-3.
+- **`eq-copilot/plugin/probe/PipeProbeMain.cpp`**: `main` bestimmt Name und
+  Urteil vor der Servererwartung und vor dem ersten Client; ein abgelehnter Name
+  endet mit `PROBE ABGELEHNT (Pipename <Urteil>) · <Name>` und Exit 64. Das
+  Konfliktende nimmt den Stand von A direkt nach `b->stop()` und wartet auf
+  `konfliktEndeBestaetigt`; ohne bestätigtes ACK endet es mit `PROBE
+  FEHLGESCHLAGEN (Konflikt-Ende ohne bestaetigtes ACK)` samt Status, Versuchen
+  und ACK-Zählern, Exit 1.
+- **`eq-copilot/plugin/src/PipeClient.cpp`**, **`PipeClient.h`**: Der Rückfall
+  eines leeren Namens auf `kPipeName` entfällt; `start()` ohne Namen setzt
+  `getrennt` und „kein Pipename" und startet keinen Thread. `PipeClient.h`
+  bekommt nur den lesenden Zugriff `pipeNameFuerTest()`.
+- **`eq-copilot/plugin/src/PluginProcessor.cpp`**, **`PluginProcessor.h`**:
+  Der v2-Name kommt wie der v3-Name über `V3Verdrahtung` (Feld `v2PipeName`)
+  aus `v2PipeNameDesBaus()`: im Produkt ausdrücklich `kPipeName` (M-24, Ziel
+  und Verhalten der v2-Verbindung gleich), im Testbau am bestehenden Schalter
+  `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` der Probe-Name
+  `\\.\pipe\evenacadia.eq-copilot.m2probe.testbau`, auf dem kein Server
+  lauscht (M-74). Zwei lesende Testzugriffe im Testblock.
+- **`eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp`** (A4b): die
+  Fälle zu M-18 bis M-28 und drei Quelltextwachen (Namenswahl in `main`,
+  Produkt nennt die v2-Pipe, Konfliktende-Prädikat in `main`).
+- **`eq-copilot/plugin/tests/LebenslaufTestMain.cpp`** (B8): Teil 0 zu M-74
+  vor dem ersten Prozessor, bei einem Verstoß Abbruch vor jeder Konstruktion;
+  **`tools/beweise.ps1`**: Behauptung von B8 um M-74 ergänzt;
+  **`eq-copilot/plugin/tests/ShotTestMain.cpp`**: Kopfkommentar (§14.3).
+- **`eq-copilot/README.md`**, **`docs/plugin-wissen.md`**: Der dokumentierte
+  Probe-Ablauf nennt das Server-Binary der Probe als drittes Argument (M-29,
+  NB-1) und die Namensregel mit Exit 64; `plugin-wissen.md` nennt die
+  Namensregel, datiert.
+- **`tools/fl/szenario.py`**: `_sende` gibt jedem Versuch eine neue
+  Anforderungskennung (`secrets.token_hex(16)`), auch der Wiederholung. Nur eine
+  Antwort mit genau dieser Kennung ist eine Messung; jede andere heißt
+  `UNGEMESSEN`, wird verworfen und gezählt (Szenario-Exit 5, Vorrang 3 vor 5 vor
+  4; ein Ping ohne passende Kennung ist Exit 3). Die Rohzelle nennt die Kennung
+  vorn, die Ergebniszeile die Zahl verworfener Antworten. `lade_mcp_modul` legt
+  vor dem Import einen Stellvertreter `fl_studio_mcp.utils` in `sys.modules` und
+  prüft danach auf `fl_trigger` und `pynput` (Exit 3 mit Modulnamen);
+  `Umgebung.verbindung` und das Erfassungsskript nutzen ihn; `--ping` nennt die
+  geladenen `fl_studio_mcp`-Module.
+- **`docs/gesundheit/szenarien/*.json`**: Echo-Erwartungen (`track`, `index`,
+  `mode` mit `gleich` auf den gesendeten Wert) in `bereitschaft.json`,
+  `nulltest-host.json`, `snapshot-runde01.json` und `u40-aktivitaetsgate.json`;
+  die erste Fassung besteht gegen die Aufnahme vom 13.09.2026 weiter mit 14 von
+  14 Schritten.
+- **`tools/fl/laufzeit.ps1`**: Besitz nach R-309-1'. Fassaden `ProzessInfo`
+  (Startzeit und Befehlszeile aus `Win32_Process`) und `Besitzliste`
+  (`%LOCALAPPDATA%\evenacadia\nakama-laufzeit\eigene-prozesse.json`, atomar
+  geschrieben); `Starte-FL` und `Rendere` tragen direkt nach dem Start ein, ein
+  bestätigtes Ende trägt aus, der Laufstart bereinigt. Eigen ist nur ein
+  Prozess, dessen PID, Startzeit und Befehlszeile dem Eintrag gleichen, dessen
+  Befehlszeile ein Projekt der Arbeitskopie nennt und dessen Titel leer ist oder
+  mit `<Projektdatei> - ` beginnt; ohne lesbare Befehlszeile oder bei
+  unlesbarer Liste ist nichts eigen. Jedes Beenden prüft den Besitz selbst
+  (`Beende-Eigenen`), die fünf Aufrufstellen prüfen vorher auf fremde
+  FL-Prozesse (H-3), der Rückweg beendet nur Eigenes und verweigert neben einem
+  fremden FL (M-39); `Warte-Ping` nimmt nur die selbst gestartete PID. Pin:
+  Fassade `McpGit`, `Pruefe-McpStand` vor Installation, `setup-local.ps1` und
+  dem ersten `uv run`, jede Abweichung Exit 3, Protokollzeile `MCP-Stand:`. Die
+  Ping-Zeile nennt die geladenen `fl_studio_mcp`-Module.
+- **`tools/fl/mcp-stand.json`** (neu): Pin auf `fl-studio-mcp`
+  (`evenacadia-local`), zehn Erstcode-Dateien mit Git-Blob-Kennung; Revision
+  `0e6912db` in `afc6fe60`, `15b3b1a1` in `48fc736a`.
+- **`tools/fl/LIES-MICH.md`**, **`docs/beweise/NAK-286.md`** (§48,
+  append-only), **`tools/beweise.ps1`** (Behauptung A35): Commit `0882980f`.
+- **`docs/beweise/roh/NAK-309-etappe3-rot.ps1`** (neu): das Werkzeug der
+  Rotbeweise, des Handlaufs M-29 und der Einzelbeine; Lehre der Etappe 2: jede
+  Hilfsdatei eines Belegs liegt committet, und jede Rohdatei nennt den SHA-256
+  des Werkzeugstands, der sie schrieb.
+
+### 14.5 Nachbarrepo `fl-studio-mcp` (A-7)
+
+| Angabe | Wert |
+|---|---|
+| Commit 1 | `0e6912db9fdbe375260daca0f6523fd537aa2f23` auf `evenacadia-local`, Elter `01f72386`, 18.09.2026, 23:39 Uhr: `fl_controller/device_FLStudioMCP.py` (13), `src/fl_studio_mcp/utils/connection.py` (5), `src/fl_studio_mcp/utils/midi_connection.py` (92), `tests/test_request_id.py` (neu, 240); 4 files changed, 323 insertions(+), 27 deletions(-) |
+| Commit 2 | `15b3b1a133ad37aa75e63e2d98a7aac0b74a62ae`, 19.09.2026, 01:48 Uhr: nur `tests/test_request_id.py`, 10 insertions(+), 3 deletions(-) — die Uhr-Attrappe von `test_frist_absolut` bekommt eine Obergrenze (E3-12) |
+| Pytest | 54 passed am Stand `15b3b1a1`, Arbeitsbaum sauber (`docs/beweise/roh/NAK-309-etappe3-mcp-tests.txt`) |
+| Push | `git -C C:\Users\phili\Projekte\fl-studio-mcp push origin evenacadia-local`: `01f7238..0e6912d` und `0e6912d..15b3b1a`; `git ls-remote origin evenacadia-local` = `15b3b1a133ad37aa75e63e2d98a7aac0b74a62ae` |
+| Pin | `tools/fl/mcp-stand.json`: `0e6912db` in `afc6fe60`, `15b3b1a1` in `48fc736a` (`stand_vom` 2026-09-19); die Blob-Kennungen der zehn gepinnten Dateien sind am neuen Stand gemessen gleich |
+| Nicht berührt | `src/fl_studio_mcp/utils/__init__.py`; der Arbeitsbaum ist nach jedem Rotbeweis sauber (`git status --short` leer) |
+
+### 14.6 Matrixzeilen M-18 bis M-56 und M-74
+
+Rotbeweise nach §6.1 mit dem committeten Werkzeug
+`docs/beweise/roh/NAK-309-etappe3-rot.ps1` (SHA-256 `6A8D2B48…`, in jeder
+Rohdatei ausgeschrieben), ein Lauf über alle 49 Teile am 19.09.2026, 01:55 bis
+02:56 Uhr, Stand HEAD `48fc736a`, Nachbarrepo `15b3b1a1`. Je Teil: Datei gleich
+HEAD, SHA-256 vorher, Mutation wörtlich an der Zeile, die die Zusage trägt, nur
+das betroffene Bein (C++: nur sein Ziel bauen, Zeitstempel des Binaries gegen
+die mutierte Quelle; A35: der Fall über `-Nur` beziehungsweise `--nur`, dazu das
+ganze Bein; Nachbarrepo: der Testfall, dazu die ganze Suite), gefallene,
+mitgefallene (mit Grund) und grün gebliebene Prüfungen, Rücknahme bytegleich
+mit SHA-256, LastWriteTime auf jetzt, `git diff` leer, neu bauen, Bein grün.
+Mutationen, die einen Pipenamen ändern, sind nie in ein Binary übersetzt, das
+eine Pipe öffnet: M-18 (2), M-19 (2) und M-24 misst eine Quelltextwache, die die
+Quelle zur Laufzeit liest; M-74 (a) baut nur B8, und B8 endet vor dem ersten
+Prozessor; M-23 startet den Client nur mit leerem Namen. Kein Lauf berührt FL,
+eine Installation oder die Aufgaben `\Nakama\*`. Für die „heute rot"-Zeilen im
+Nachbarrepo (M-45, M-49) steht zusätzlich der Lauf des neuen Tests gegen den
+Basisstand `01f72386` in der Rohdatei (`git archive`, rot mit `TypeError`); für
+C++ und A35 ist das ohne Umbau nicht möglich (Test und Code im selben Binary
+beziehungsweise in derselben Datei), jede Rohdatei sagt es. Zeilennummern der
+Mutationen zum Stand `48fc736a` (Code gleich `0882980f`).
+
+| Zeile | Test (Datei, Name, Bein) | Ergebnis | Rotbeweis (Rohdatei `docs/beweise/roh/NAK-309-rot-M-NN.txt`, Mutation) | fällt an der Zusagezeile |
+|---|---|---|---|---|
+| M-18 | A4b `probe_pipe_ohne_argument_waehlt_probe_namen` (mit Teilfall `mit_argument_gilt_das_argument`), Quelltextwache `probe_main_prueft_pipenamen_vor_dem_client` (`PipeClientLifecycleTestMain.cpp`) | grün | (1) `probePipeName` ohne Argument → `kPipeName` (`ProbePipeRegel.h:59`) → Fall rot; (2) Namenswahl in `main` wie am Basis-SHA (`PipeProbeMain.cpp:131`) → Wache rot | JA |
+| M-19 | A4b `probe_pipe_lehnt_produktionsnamen_ab` (`produktion_genau`, `_grossgeschrieben`, `_gemischt`), Wache aus M-18 | grün | (1) Vergleich groß- und kleinschreibungsgenau (`ProbePipeRegel.h:67`) → `produktion_grossgeschrieben` und `produktion_gemischt` rot (Urteil `fremd` statt `produktion`, E3-10); (2) Rücksprung mit Exit 64 entfernt (`PipeProbeMain.cpp:137`) → Wache rot | JA |
+| M-20 | A4b `probe_pipe_laesst_probe_namen_zu` (sechs Namen, darunter `….m2probe.nak123r1` und `….m2probe.testbau`) | grün (Regressionswache) | v2-Zweig entfernt (`ProbePipeRegel.h:74-83`) → alle v2-Namen rot, mit `v2_suffix_nak123r1`; mitgefallen der Vorgabename ohne Argument | JA |
+| M-21 | A4b Teilfälle `m21_leer` und `probe_pipe_ohne_argument_waehlt_probe_namen/mit_argument_gilt_das_argument` | grün | leeres Argument wie ohne Argument (`ProbePipeRegel.h:59`) → `mit_argument_gilt_das_argument` rot | JA |
+| M-22 | A4b `probe_pipe_lehnt_produktionsnamen_ab/m22_*` (zehn Namen: v3-Produktionsform, drei Traversalen, Produktionsname mit Punkt, beliebiger Name, ohne Pipepfad, drei ungültige v2-Suffixe) | grün | (1) Sperrliste an beiden `fremd`-Zeilen (`ProbePipeRegel.h:71-72`, `:84-85`) → alle `m22_*` rot; (2) Trennerregel entfernt (`:71`) → nur `m22_traversal_v3` rot (E3-1) | JA |
+| M-23 | A4b `pipeclient_ohne_namen_verbindet_nicht` (`name_bleibt_leer`, `start_versucht_nichts`, `nach_stop_kein_versuch`) | grün | (1) Rückfall auf `kPipeName` (`PipeClient.cpp:224`) → `name_bleibt_leer` rot, kein Start; (2) Leerzweig in `start()` entfernt (`:238-244`) → `start_versucht_nichts` rot | JA |
+| M-24 | A4b Quelltextwache `produkt_nennt_v2_pipe_ausdruecklich`; A1, B14, B8 als Regressionswachen des Prozessors (§14.8) | grün | `{}` am v2-Client wie am Basis-SHA (`PluginProcessor.cpp:177`) → Wache rot | JA |
+| M-25 | A4b `konfliktende_mit_neuem_ack_bestaetigt` (mit `ohne_neues_ack`), Quelltextwache `probe_main_wartet_auf_konfliktende_praedikat` | grün (Regressionswache) | (1) Prädikat verlangt zehn neue ACKs (`ProbePipeRegel.h:97`) → Fall rot; (2) altes Flagprädikat in `main` (`PipeProbeMain.cpp:216`) → Wache rot | JA |
+| M-26 | A4b `konfliktende_nicht_bei_abbruch` (`abbau`, `nur_status`) | grün | Statusbedingung entfernt (`ProbePipeRegel.h:94`) → `nur_status` rot; `abbau` hält die Protokollbedingung | JA |
+| M-27 | A4b `konfliktende_nicht_nach_neuaufbau` | grün | Versuchsbedingung entfernt (`ProbePipeRegel.h:96`) → rot | JA |
+| M-28 | A4b `konfliktende_wartet_auf_ack_ohne_konflikt` (zwei Stände) | grün (Regressionswache) | Konfliktbedingung entfernt (`ProbePipeRegel.h:98`) → `erstes_ack_mit_konflikt` rot | JA |
+| M-29 | Handlauf nach `eq-copilot/README.md` (§14.7) | Lauf 1 Exit 0 | Lauf 2 ohne drittes Argument (R-309-8): Exit 1, `dateiidentitaetFalsch`; Rohdatei `NAK-309-etappe3-pipeprobe.txt` | JA |
+| M-30 | A35 `309/M-30 namensgleiches_fremdes_projekt_nie_beenden` (Teilfälle a bis e, (a) in drei Varianten) | grün | Titeltest statt Besitz (`laufzeit.ps1:504`) → (a) „Titel-Doppel beendet" in allen drei Varianten, (b) bis (e) rot | JA |
+| M-31 | A35 `309/M-31 beenden_und_neustart_nur_eigene` | grün | `-Beenden` über den Titeltest wie am Basis-SHA (`laufzeit.ps1:1076`) → (a) rot | JA |
+| M-32 | A35 `M-59 frischer_start_schluessel`, `M-13 volllauf_erzwingen_beenden`, angepasst `M-09`, `NAK-297` | grün (Regressionswache) | Besitzurteil immer fremd (`laufzeit.ps1:511`) → `M-59` rot; 23 Fälle mit eigenem FL mitgefallen | JA |
+| M-33 | A35 `M-07 loopmidi_und_restprozesse`, Teilfall Restprozesse (angepasst: beide mit Besitzeintrag) | grün (Regressionswache) | `Beende-Restprozesse` überspringt auch Eigenes (`laufzeit.ps1:556`) → `M-07` rot | JA |
+| M-34 | A35 `309/M-34 fremder_restprozess_bleibt` (vor der Installation, vor dem FL-Start, `Beende-Restprozesse` direkt) | grün | (1) Besitzprüfung in `Beende-Restprozesse` entfernt (`laufzeit.ps1:556`) → dritter Teilfall rot; (2) fensterlose Prozesse nicht fremd (`:517`) → erster und zweiter Teilfall rot (E3-10) | JA |
+| M-35 | A35 `309/M-35 pid_wiederverwendung_ist_fremd` (a, b, c) | grün | Vergleich nur über die PID an Bereinigung und Besitzurteil (`laufzeit.ps1:480`, `:503`) → (a) und (b) rot, (c) bleibt fail-closed grün | JA |
+| M-36 | A35 `309/M-36 eigenes_fl_mit_fremdem_projekt` | grün (Regressionswache) | zweite Sicherheit entfernt (`laufzeit.ps1:508`) → rot | JA |
+| M-37 | A35 `309/M-37 ping_nur_eigene_pid` | grün | (1) erste Titelübereinstimmung als Diagnose-PID (`laufzeit.ps1:883-885`) → fremde PID als `--diagnose-pid`; (2) Übersprung beim Ping entfernt (`:884`) → Szenario neben dem fremden FL | JA |
+| M-38 | A35 `309/M-38 besitzliste_lebenslauf` (a bis e) | grün | (d) Bereinigung beim Laufstart entfernt (`laufzeit.ps1:1034-1035`) → (d) rot; (e) unlesbare Liste als „alles eigen" (`:504`) → (e) rot | JA |
+| M-39 | A35 `M-65 rueckweg_nur_bei_abweichung` (angepasst, (c)), `309/M-39 rueckweg_nur_eigene` (b) | grün | alter Weg ohne Besitzprüfung (`laufzeit.ps1:918-920`) → (b) rot | JA |
+| M-40 | A35 `M-10`, `M-11` (bestehend), Exitprüfungen der Fälle `309/M-30` bis `309/M-56` | grün (Regressionswache) | Übersprung eines fremden FL mit Exit 3 (`laufzeit.ps1:1045`) → `309/M-30` (a) rot | JA |
+| M-41 | A35 `309/M-41 antwort_mit_kennung_gemessen` | grün | Kennungsvergleich invertiert (`szenario.py:718`) → rot | JA |
+| M-42 | A35 `309/M-42 fremde_oder_fehlende_kennung_ungemessen` (fremd, ohne, Vorrang, Ping, lokal) | grün | Kennungsprüfung entfernt (`szenario.py:718`) → rot | JA |
+| M-43 | A35 `309/M-43 echo_abweichung_verfehlt` (echte `bereitschaft.json`) | grün | Echo-Erwartung aus `bereitschaft.json:17` genommen → rot | JA |
+| M-44 | A35 `309/M-44 spaete_antwort_ohne_kette` | grün | Kennungsvergleich entfernt (`szenario.py:718`) → B an A gemessen, rot | JA |
+| M-45 | Nachbarrepo `tests/test_request_id.py::test_zwei_spaete_antworten` (Pytest) | grün (54 passed) | Übergehen fremder Kennungen entfernt (`midi_connection.py:301`) → rot; gegen den Basisstand `01f72386` rot (`TypeError`) | JA |
+| M-46 | A35 `M-78 timeout_genau_einmal` (bestehend), `309/M-46 wiederholung_mit_neuer_kennung` | grün | (a) Wiederholung in einer Schleife (`szenario.py:708`) → `M-78` (b) rot (Regressionswache); (b) Wiederholung mit derselben Kennung (`:700`) → `309/M-46` rot | JA |
+| M-47 | Nachbarrepo `tests/test_request_id.py::test_frist_absolut` (Uhr-Attrappe mit Obergrenze seit `15b3b1a1`) | grün | Frist nach jeder übergangenen Antwort neu gestartet (`midi_connection.py:304-305`) → rot (E3-12) | JA |
+| M-48 | A35 `309/M-48 echo_in_jeder_szenariodatei`, `M-58 erste_fassung_unveraendert` (14 von 14) | grün | Echo-Erwartung aus `snapshot-runde01.json:14` genommen → rot | JA |
+| M-49 | Nachbarrepo `tests/test_request_id.py` (Controllerhälfte über den AST-Lader) | grün | Kopierzeile im Controller entfernt (`device_FLStudioMCP.py:168`) → `test_controller_kopiert_kennung_in_erfolg_und_fehler` rot; gegen den Basisstand rot | JA |
+| M-50 | A35 `309/M-50 importgraph_ohne_fl_trigger` (`szenario.py`, Attrappenpaket), `309/M-50 ping_zeile_nennt_module` (`laufzeit.ps1`) | grün | Stellvertreter entfernt (`szenario.py:267-268`) → Ping über das Attrappenpaket Exit 3 (`fl_trigger` geladen) | JA |
+| M-51 | A35 `309/M-51 fensterskript_ohne_fl_trigger` | grün | Stellvertreter im Erfassungsskript entfernt (`szenario.py:108-109`) → rot | JA |
+| M-52 | A35 `309/M-52 mcp_stand_gepinnt` | grün | Abgleich übersprungen (`laufzeit.ps1:1038-1039`) → keine Zeile `MCP-Stand:`, rot | JA |
+| M-53 | A35 `309/M-53 mcp_revision_weicht_ab` | grün | Revisionsvergleich entfernt (`laufzeit.ps1:1012`) → rot | JA |
+| M-54 | A35 `309/M-54 mcp_datei_weicht_ab` (a bis c) | grün | nur der Revisionsvergleich (`laufzeit.ps1:1013-1024`) → (a), (b), (c) rot | JA |
+| M-55 | A35 `309/M-55 mcp_stand_unlesbar` | grün | fehlende Pin-Datei als „kein Pin, weiter" (`laufzeit.ps1:996`) → rot | JA |
+| M-56 | A35 `309/M-56 pin_nur_per_commit` | grün | die Pinprüfung schreibt den Iststand zurück (`laufzeit.ps1:1012`) → Hash der Pin-Datei ändert sich, rot | JA |
+| M-74 | B8 `m74_testbau_oeffnet_die_produktions_pipe_nie` (`LebenslaufTestMain.cpp`, Teil 0: `namenswahl`, `client`, `cmake`) | grün | (a) Testzweig von `v2PipeNameDesBaus()` nennt `kPipeName` (`PluginProcessor.cpp:96`, gebaut nur B8) → `namenswahl` rot, Abbruch vor dem ersten Prozessor; (c) ein Ziel aus der Testschalter-Schleife (`CMakeLists.txt:1327-1329`, ohne Bau) → `cmake` rot | JA |
+
+Mitgefallene Prüfungen stehen je Rohdatei mit Grund; alle sind vorhergesagt
+(Grund aus dem Werkzeug), keine heißt „nicht vorhergesagt". Größte Gruppen:
+M-32 (23 Fälle, die ein eigenes FL starten, beenden oder als laufend erkennen)
+und M-41 (18 Fälle, deren richtig zugeordnete Antwort unter der Invertierung
+verworfen wird).
+
+### 14.7 Handlauf M-29 (R-309-8)
+
+Rohdatei `docs/beweise/roh/NAK-309-etappe3-pipeprobe.txt`, 19.09.2026, 02:56
+Uhr, HEAD `48fc736a`. Vorher gebaut: `cmake --build eq-copilot/build --config
+Release --target EqCopPipeProbe` (Exit 0; Binary jünger als `PipeProbeMain.cpp`,
+`ProbePipeRegel.h`, `PipeClient.cpp` und `PipeClient.h`) und `cargo build
+--release --bin eqcop-broker-probe` (Exit 0). Nur der Probe-Name; der
+Broker der Probe lauscht ohne Pipeargument auf ihm.
+
+| Lauf | Aufruf (Arbeitsordner `eq-copilot`) | Exit | Urteil |
+|---|---|---|---|
+| 1 (Ablauf der README) | Terminal 1 `..\broker\target\release\eqcop-broker-probe.exe 30`; Terminal 2 `build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe" 5 ..\broker\target\release\eqcop-broker-probe.exe` | 0 | `PROBE OK v2`, `KONFLIKT OK`, `KONFLIKT-ENDE OK · neues ACK ohne Konflikt nach Trennung des Duplikats`; Broker der Probe Exit 0 |
+| 2 (Rotbeweis R-309-8) | derselbe Aufruf ohne drittes Argument | 1 | `PROBE FEHLGESCHLAGEN (Stufe 1) · … Server nicht verifiziert: dateiidentitaetFalsch` — Servererwartung ist der installierte Broker `C:/Program Files/evenacadia/Nakama/eqcop-broker.exe`; wie erwartet |
+
+### 14.8 Einzeln gefahrene Beine
+
+Rohdatei `docs/beweise/roh/NAK-309-etappe3-einzelbeine.txt`, 19.09.2026, 02:58
+Uhr, HEAD `48fc736a`, nach allen Rotbeweisen. Vorher je Ziel gebaut
+(`cmake --build eq-copilot/build --config Release --target <Ziel>`, je Exit 0;
+jedes Binary jünger als jede Quelle dieser Etappe, die es übersetzt).
+
+| Bein | Befehl | Exit | Ergebnis |
+|---|---|---|---|
+| A4b | `EqCopPipeClientTest.exe` | 0 | 82 Prüfungen ok, 0 Fehler |
+| A35 | `py -3.13 tools/fl/selbsttest.py` | 0 | `szenario.py` 39 ok, `nulltest.py` 7 ok, `laufzeit.ps1` 37 ok, GRUEN |
+| A1 | `EqCopNullTest.exe` | 0 | `NULLTEST OK` |
+| B14 | `EqCopSonde012ProjectReloadTest.exe` | 0 | 231/231 grün |
+| B8 | `EqCopLebenslaufTest.exe` | 0 | 82 Prüfungen ok, darin M-74 `namenswahl`, `client`, `cmake` |
+| Pytest | `python -m pytest -v --color=no -p no:cacheprovider` im Nachbarrepo | 0 | 54 passed (`NAK-309-etappe3-mcp-tests.txt`) |
+
+Dazu nach dem Code-Commit `e7ce4199` (18.09.2026): Einzelbau `EqCopPipeProbe`
+und `EqCopilot_VST3` grün; A33 `tools/plan/tidy.py` 58 Fundstellen bei Grenze
+58.
+
+### 14.9 Selbstaudit
+
+Der Diff `7a510701..48fc736a` ist adversarial gelesen. C++: im Produkt gibt es
+genau einen v2-Client (`EqCopilotProcessor::pipe`); beide Wege zu
+`V3Verdrahtung` (`produktVerdrahtung`, Testkonstruktor) setzen `v2PipeName`,
+der Produktname bleibt `kPipeName` (vorher über den Rückfall, jetzt
+ausdrücklich); `start()` ohne Namen setzt den Zustand unter `zustandMutex`,
+`stop()` danach macht keinen Versuch (A4b); die Ablehnung in `main` liegt vor
+jedem Pipezugriff. Laufzeit-Arm: in den echten Läufen vom 15.09.2026 ist die von
+`Start-Process` gemeldete FL-PID dieselbe wie die Diagnose-PID beim Ping, und
+der Fenstertitel beginnt mit `Nakama-Diagnose.flp - `
+(`docs/beweise/roh/NAK-286-laufzeit-c0d0526b.md`, `…-7e39db9a.md`,
+`…-d6382571.md`, `…-e11dcfcb.md`); die Besitzregel erkennt das selbst gestartete
+FL also als eigen, Startzeit und Befehlszeile kommen bei Eintrag und Prüfung aus
+derselben Quelle (`Win32_Process`). Importweg: im Nachbarrepo lädt nur
+`utils/__init__.py` `fl_trigger`; `connection.py` zieht `midi_connection.py` und
+`fl_paths.py`, `fenster.py` nur die Standardbibliothek,
+`fl_studio_mcp/__init__.py` nichts. Zahlenränder: Kennung aus 32 Hex-Zeichen,
+Vergleich exakt; Frist absolut (M-47); Versuchs- und ACK-Zähler im
+Konfliktende-Prädikat (M-27). Keine Produkttexte geändert. Kein Befund.
+
+### 14.10 Abweichungen vom Bauplan §6.4 (Technikentscheide mit Begründung)
+
+- **E3-1 Trennerregel in `probePipeUrteil`.** §6.4 nennt die Erlaubnisliste
+  (v2-Probename mit Suffix, sonst das unveränderte `istProbePipename`).
+  Gelesen: `istProbePipename` prüft nur den Präfix des v3-Probenamensraums
+  (`eq-copilot/plugin/core/ipc/PipeToken.h:59-70`); der Name
+  `\\.\pipe\evenacadia.nakama.v3.probe.x\..\evenacadia.eq-copilot.v1` wäre
+  zugelassen, und Win32 löst `..` in `\\.\`-Pfaden auf — das Werkzeug öffnete
+  die v2-Produktions-Pipe. Deshalb ist jeder Name mit `\` oder `/` hinter
+  `\\.\pipe\` fremd; `istProbePipename` bleibt unverändert. Fall
+  `m22_traversal_v3`, Rotbeweis M-22 (2): ohne die Regel fällt genau dieser
+  Fall.
+- **E3-2 M-74 in B8 mit drei Teilen** (§14.2, §14.3): (a) Namenswahl ohne
+  Prozessor, (b) Name am v2-Client nach Produkt- und Testkonstruktor,
+  (c) Quelltextwache über `CMakeLists.txt`. Grund für (c): die Zusage „jedes
+  Ziel, das den Prozessor übersetzt" hängt am Testschalter in CMake; ein neues
+  Testziel ohne Schalter ginge sonst still auf die Produktions-Pipe.
+- **E3-3 Ping ohne passende Kennung ist Szenario-Exit 3** (§6.4 nennt für
+  Schritte `UNGEMESSEN` mit Exit 5). Der Ping ist die Voraussetzung des Laufs:
+  antwortet der Controller ohne Kennung (alter Stand), wäre jeder Folgeschritt
+  ungemessen; Exit 3 sagt das direkt, und die Folge bricht ab (M-42, Teilfall
+  Ping).
+- **E3-4 `Umgebung.verbindung` verlangt ein `send_command` mit `request_id`**
+  und meldet sonst Exit 3 „MCP-Bibliothek ohne Anforderungskennung". Ein
+  MCP-Stand ohne Kennung bräche beim ersten Senden mit `TypeError`; die Meldung
+  nennt Ursache und Pin.
+- **E3-5 Eigene Fehler des MCP-Clients tragen die Kennung** (§6.4: „Antworten
+  ohne Kennung reicht der Client unverändert durch"). Ein Timeout oder
+  Schreibfehler des Clients ist eine Aussage über den eigenen Befehl; ohne
+  Kennung hieße jeder Client-Timeout `UNGEMESSEN`, und die Wiederholung aus
+  NAK-286 M-78 griffe nie. Antworten des Controllers ohne Kennung bleiben
+  unverändert (`test_antwort_ohne_kennung_unveraendert`), ohne eigene Kennung
+  verhält sich der Client wie bisher (`test_ohne_kennung_wie_bisher`).
+- **E3-6 Lokale Aktionen mit verworfener Antwort messen nichts.**
+  `lokal.umlauf` und `lokal.stellen` senden intern (Positionsabfrage); wurde
+  dabei eine Antwort verworfen, heißt der Schritt `UNGEMESSEN`, auch wenn die
+  Aktion selbst ok meldet (M-42, Teilfall lokal).
+- **E3-7 Zusätzlicher Laufzeit-Fall `309/M-50 ping_zeile_nennt_module`**: die
+  Runnerhälfte der Zusage aus M-50 (Importgraph in der Ping-Zeile); die
+  `szenario.py`-Hälfte misst `309/M-50 importgraph_ohne_fl_trigger`.
+- **E3-8 `Warte-Ping` verlangt am selbst gestarteten FL zusätzlich den Titel
+  `<Projektdatei> - `** (zweite Sicherheit wie bei jedem Besitzurteil).
+- **E3-9 NAK-286 §48 ergänzt zusätzlich M-78** (A-8 nennt M-03, M-07 (c),
+  M-13, M-22, FL-Zustände, R-286-5, K-286-2): R-309-2 gibt der Wiederholung
+  eine neue Kennung; als Ergänzung markiert, nicht als Ersatz.
+- **E3-10 Rotbeweise an mehr als einer Stelle.** Wo zwei Schichten dieselbe
+  Zusage tragen, bricht der Rotbeweis jede Schicht einzeln oder beide: M-34
+  (Schutz am Beenden und Fremdprüfung der Aufrufstelle), M-35 (Bereinigung und
+  Besitzurteil), M-37 (Diagnose-PID und Übersprung beim Ping), M-38 (e)
+  (Mutation am Besitzurteil, weil eine synthetische „alles eigen"-Liste am
+  zweiten Merkmal scheitert: die Befehlszeile des Titel-Doppels nennt kein
+  Projekt der Arbeitskopie), M-22 (1) (Sperrliste an beiden `fremd`-Zeilen);
+  zusätzliche Teile an der Verdrahtung für M-18, M-19, M-23 und M-25. M-19 (1)
+  fällt als `fremd` statt als `zugelassen` (die Erlaubnisliste kennt den
+  Großbuchstabennamen nicht). Je Rohdatei begründet.
+- **E3-11 Behauptung A4b unverändert.** Die Ticketgrenze erlaubt in
+  `tools/beweise.ps1` nur den Wortlaut von A35 und die Kanonzeile für M-74; die
+  A4b-Behauptung nennt die Probe-Regeln (M-18 bis M-28) daher nicht (§14.13).
+- **E3-12 Zweiter Nachbarcommit `15b3b1a1`** (nur `tests/test_request_id.py`,
+  innerhalb der vier erlaubten Pfade). Unter der Rotmutation von M-47 lief
+  `test_frist_absolut` endlos: die fremde Antwortdatei bleibt liegen, jede
+  Abfrage setzte die Frist neu, und die Uhr-Attrappe rückt nur beim Warten vor.
+  `FakeClock(stop_after=…)` beendet ein Warten über 10 s mit `AssertionError`;
+  ohne Mutation endet der Fall wie bisher nach 2 s. Pin in `48fc736a`
+  nachgezogen.
+- **E3-13 Erster Lauf des Werkzeugs verworfen.** Ein erster vollständiger Lauf
+  (19.09.2026, 00:40 bis 01:46 Uhr) ergab für die 46 Nakama-Teile dasselbe wie
+  der zweite, für M-45 und M-49 aber `NEIN` (die Auswertung erkannte die farbigen
+  Pytest-Zeilen nicht) und für M-47 den Hänger aus E3-12 (Pytest-Prozess nach
+  rund drei Minuten von Hand beendet, die Rücknahme lief im `finally`, Arbeitsbaum danach
+  sauber). Nach der Korrektur von Werkzeug (`--color=no`, Farbcodes entfernt,
+  geteiltes Lesen, Frist 300 s für Pytest) und Test lief der vollständige Satz
+  neu; alle Rohdateien stammen aus diesem zweiten Lauf.
+
+### 14.11 Prüfliste (`tools/dirigent/pruefliste.md`)
+
+| Abschnitt | Etappe 3 |
+|---|---|
+| A Rückstau | nicht zutreffend (keine Queue); der MCP-Client übergeht fremde Antworten, ohne die Datei zu löschen, zählt sie je Kennung einmal (M-45) und hält die Frist absolut (M-47). |
+| B Lebenszyklus | starten↔beenden: Besitzeintrag direkt nach dem Start, Austrag nach bestätigtem Ende, Bereinigung beim Laufstart (M-38); `PipeClient::start()` ohne Namen startet keinen Thread, `stop()` danach ohne Versuch (M-23). |
+| C Verträge und Längen | Kennung aus 32 Hex-Zeichen, Vergleich exakt; Pin-Datei: `format`, 40-stellige Revision und Blob-Kennungen vor dem ersten Zugriff geprüft, sonst Exit 3 (M-55); Besitzliste: Format und Feldtypen je Eintrag, unbrauchbare Einträge verworfen und gemeldet. |
+| D Bau- und Prüfriegel | fail-closed: ohne lesbare Befehlszeile nichts eigen (M-35 (c)), unlesbare Liste nie „alles eigen" (M-38 (e)), fehlender, unlesbarer oder abweichender Pin Exit 3 (M-53 bis M-55), Ping ohne Kennung Exit 3; Erlaubnisliste statt Sperrliste (M-22). `EqCopPipeProbe` baut der Kanon nicht (NB-4): Einzelbau vor dem Handlauf, Zeitstempel gemessen. |
+| E Behauptung ≤ Messung | Behauptungen A35 und B8 nennen nur Gemessenes; LIES-MICH, NAK-286 §48 und die Skriptköpfe ziehen nach; jede neue Prüfung einmal gebrochen (39 Rohdateien `NAK-309-rot-M-NN.txt`, Handlauf M-29), Regressionswachen als solche benannt (M-20, M-25, M-28, M-32, M-33, M-36, M-40, M-46 (a)); Zahlen gemessen (Einzelbeine, Kanon). |
+| F Änderungssatz | starten↔beenden (Besitz in `afc6fe60`), senden↔empfangen (Kennung in Client und Controller im Nachbarcommit `0e6912db`, Szenariopfad in `e131796c`), pinnen↔prüfen (Pin und `Pruefe-McpStand` in `afc6fe60`, Pin-Nachzug `48fc736a` mit dem Nachbarcommit `15b3b1a1`), behaupten↔messen (A35 in `0882980f`, B8 in `e7ce4199`). |
+
+### 14.12 Offene Punkte
+
+- **Produktfragen: keine.** Kein Produktverhalten geändert: M-24 misst
+  `kPipeName` im Produkt; A1, B14 und B8 sind grün.
+- **Vor dem ersten Laufzeit-Arm-Lauf** (der Dirigent fährt ihn): (1) ein FL,
+  das ein früherer Runner ohne Besitzliste gestartet hat und das noch offen ist,
+  gilt jetzt als fremd — der Lauf überspringt, bis es geschlossen ist (am
+  19.09.2026 um 00:40 Uhr lief kein FL-Prozess); (2) der erste Lauf installiert
+  den Controller neu (`SCRIPT_VERSION` 2026-09-18, `Pruefe-Controller`) und
+  verlangt danach die Boot-Marke dieser Version; (3) der Pin verlangt
+  `fl-studio-mcp` auf `15b3b1a1` ohne Änderung an getrackten Dateien — auf dem
+  Laptop vorher `git pull` im Nachbarrepo.
+- **Werkzeuggröße:** `tools/fl/laufzeit.ps1` hat 2 276 Zeilen (Basis 1 613),
+  `tools/fl/szenario.py` 3 935 (Basis 3 492); A32 misst nur `.rs`, `.cpp`,
+  `.h` und `.hpp` und zählt sie nicht. Hinweis für den Pflegeschritt der Phase,
+  kein Befund dieses Tickets.
+- **Beobachtung F-23 bleibt:** die Wiederholung nicht idempotenter Aktionen
+  (`transport.start` schaltet um), Hinweis NAK-307.
+
+### 14.13 Hinweise an den Dirigenten (Register, kein Entscheid des Bauers)
+
+- **NAK-307** (u40 Ping-Timeout), Nachtrag zu T3-13-03: seit Etappe 3 trägt
+  jeder MCP-Versuch eine eigene Kennung; eine verspätete oder fremde Antwort
+  wird verworfen und gezählt (`UNGEMESSEN`, Szenario-Exit 5), nie gemessen; ein
+  Ping ohne passende Kennung ist Exit 3. Ein zweiter MIDI-Client wird im Lauf
+  als verworfene Antwort in der Ergebniszeile sichtbar; die Ursache des
+  u40-Timeouts bleibt zu messen. Dazu F-23: `transport.start` schaltet um, eine
+  Wiederholung nach einem Timeout kann die Wiedergabe wieder anhalten
+  (Beobachtung, keine Regel dieses Tickets).
+- **NAK-317** gebaut in `e7ce4199` (M-74): der Testbau nennt dem v2-Client
+  `\\.\pipe\evenacadia.eq-copilot.m2probe.testbau`; B8 misst Namenswahl,
+  Client und Testschalter vor dem ersten Prozessor; Rotbeweis
+  `docs/beweise/roh/NAK-309-rot-M-74.txt`. Vorschlag: schließen nach PASS der
+  Erstprüfung 3.
+- **A4b-Behauptung** (`tools/beweise.ps1`, Kanonzeile A4b) nennt die Probe-Regeln
+  M-18 bis M-28 nicht; Nachzug in einem Ticket mit dieser Zeile im Pfad
+  (Prüfliste E, E3-11).
+- **Kopfzeile Grenze** sagt „das Nachbarrepo `fl-studio-mcp` wird nur gelesen";
+  seit A-7 (§9) trägt es zwei Commits dieser Etappe (§14.5). Die Zeile gehört
+  nicht zu den Kopfzeilen, die der Auftrag dem Bauer öffnet.
+
+
+---
+
+## Kanon-Lauf - NAK-309 Etappe 3 Kanon nachher
+
+**Lauf:** 2026-09-19 03:05 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 69/69 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/NAK-309-ec419a7-dirty.md](roh/NAK-309-ec419a7-dirty.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-09-19 03:05:07 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | ec419a71 NAK-309 Etappe 3: Manifest §14.4 bis §14.13 (Aenderungen, Nachbarrepo, Matrixtabelle, Handlauf, Einzelbeine, Selbstaudit, Abweichungen, Pruefliste, offene Punkte, Hinweise) |
+| Commit (voll) | ec419a71481aea0e32bb2933634751f7c4dd868c |
+| Arbeitsbaum | 2 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.6 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,06 s | [A1](roh/NAK-309-ec419a7-dirty.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,77 s | [A2](roh/NAK-309-ec419a7-dirty.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). Seit NAK-283 (F12) erzeugt ein endlicher Eingang keinen nicht endlichen Wet-Ausgang: im Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX ist jedes Ausgangssample endlich, und nach dem Einblenden steigt der Wet-Zaehler um genau die verriegelten Samples. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 7,71 s | [A3](roh/NAK-309-ec419a7-dirty.md#a3) |
+| A4 | Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 1.179,71 s | [A4](roh/NAK-309-ec419a7-dirty.md#a4) |
+| A4-SI | SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. | `cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1` | [OK] Exit 0 | 12,92 s | [A4-SI](roh/NAK-309-ec419a7-dirty.md#a4-si) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 66,18 s | [A4b](roh/NAK-309-ec419a7-dirty.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. Seit SONDE-013 zusaetzlich der Fassungsschritt: der aus dem Register zurueckgebaute Leser der Fassung 1 LEHNT jede Neuerung der Fassung 2 ab (drei Experimentfamilien, evidence_snapshot.ereignisse/.stereo, zwei neue Invalidierungsgruende), und die Summe der registrierten Familien stimmt mit dem oneOf ueberein. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 3,03 s | [A5](roh/NAK-309-ec419a7-dirty.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,14 s | [A6](roh/NAK-309-ec419a7-dirty.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,13 s | [A7](roh/NAK-309-ec419a7-dirty.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,36 s | [A8](roh/NAK-309-ec419a7-dirty.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID, keine ist verbrannt oder wiederverwendet, und jedes Offsetfeld steht im Rust-Strukturriegel. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,27 s | [A9](roh/NAK-309-ec419a7-dirty.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen, integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) und seit SONDE-015 band_dynamic_gain_db ID 22 (acht Werte, leerer Vektor, Altsender ohne Feld, vier falsche Laengen, NaN und Inf) sind in beiden Lesern gedeckt. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 2,81 s | [A10](roh/NAK-309-ec419a7-dirty.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,25 s | [A11](roh/NAK-309-ec419a7-dirty.md#a11) |
+| A12 | Parameterbestand Layout v2 (120 Kennungen, 112 Host-Parameter als Praefix) haelt den Vertrag, und die 109 v1-Kennungen sind aus der eingefrorenen v1-Datei woertlich abgeleitet; Zonen-, Preset- und Ablehnungsregeln stimmen mit dem Vertrag ueberein; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State- und Presetkorpus samt MANIFEST bytegleich zur Neuerzeugung, keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,28 s | [A12](roh/NAK-309-ec419a7-dirty.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,21 s | [A13](roh/NAK-309-ec419a7-dirty.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 8,92 s | [A14](roh/NAK-309-ec419a7-dirty.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen fallen einzeln. [4] vergleicht Artefakthashes im Kanon weich und mit --release hart; [4b] berichtet den installierten Stand; [5] kreuzprueft den Ordner-Hash; [6] faehrt die produktive C++-WinVerifyTrust-/Thumbprint-Kette mit dem OS-vertrauenswuerdigen Signerzertifikat einer signierten Windows-Fixture fuer gueltig und falsch sowie einer unsigned Temp-Kopie fuer fehlend, ohne den Zertifikatsspeicher zu aendern. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft; unerwartete Ausnahmen enden kontrolliert. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,28 s | [A17](roh/NAK-309-ec419a7-dirty.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 34,74 s | [A18](roh/NAK-309-ec419a7-dirty.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,14 s | [A19](roh/NAK-309-ec419a7-dirty.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,30 s | [A20](roh/NAK-309-ec419a7-dirty.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,34 s | [A21](roh/NAK-309-ec419a7-dirty.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,05 s | [A22](roh/NAK-309-ec419a7-dirty.md#a22) |
+| A24 | G3-SOAK Dauerlauf ueber eine ausschliessliche Probe-Pipe: 1 Main mit subscribe_session und echtem SourcesModel plus 16 Sondenpaare und 16 echte SondeProcessor am Ganzblockpfad laufen gegen den echten Rust-Coordinator, waehrend ein Viertel der Sonden langsam liest und der Broker mitten im Lauf getoetet und neu gestartet wird. Gemessen: Mitgliedschaft und fuehrendes_main driften nie, kein P0 geht ausserhalb der Neustartfenster verloren und seine ACK-p95 bleibt unter 1.000 ms, kein Mitglied wird ausserhalb der Fenster stale oder evicted, der Snapshot ist nach jedem Neustart binnen 60 s wieder vollstaendig und die alte broker_epoch kommt nie wieder, Working Set beider Prozesse waechst je Generation um hoechstens max(10 %, 16 MiB), und der Sondenpfad verliert keinen Ganzblock. Beide Programme verweigern Produktions- und Golden-Pipename mit Exit 3, gefahren vor dem Lauf. Seit SONDE-013 laeuft dabei der Evidenzpfad mit: jede Sonde baut oberhalb einer kleinen P1-Fuellstandsschwelle GAR KEINEN evidence_snapshot mehr und zaehlt den verworfenen Analyseframe, statt die in EINTRAEGEN gedeckelte P1-Queue mit 10-KiB-Nachrichten zu fuellen. Eine fehlende Messung ist kein PASS (NAK-283 F13): jeder Speicherpunkt traegt das Gueltigkeitsmerkmal seiner Windows-Abfrage, und fehlt ausserhalb der Neustartfenster eine gueltige Messung, endet S07 mit dem eigenen Status MESSUNG FEHLT (Exit 3) statt im Budget. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1` | [OK] Exit 0 | 148,66 s | [A24](roh/NAK-309-ec419a7-dirty.md#a24) |
+| A34 | Der Selbsttest des Soak-Orakels (NAK-283 F13, Muster A27). Er laeuft OHNE Repo-Fixture und ohne Lauf: vier Faelle bauen ihre Berichte im Speicher und laufen durch dieselben Funktionen wie A24 - Messstelle, Speicherpunkt, Urteil. Eine fehlende RSS-Messung endet mit MESSUNG FEHLT und Exit 3, nie im Budget; ein nicht abfragbarer Prozess und ein Prozess mit 0 Bytes Working Set sind im Bericht verschieden; ein Fehlerpunkt direkt vor oder nach dem Neustartfenster faellt, obwohl das Fenster die Kurve filtert; ein Altbericht ohne Gueltigkeitsmerkmal bleibt ueber --bericht auswertbar, derselbe Bericht als Livelauf ist rot. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest` | [OK] Exit 0 | 0,17 s | [A34](roh/NAK-309-ec419a7-dirty.md#a34) |
+| A35 | Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286, NAK-309) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL (eigen ist nur ein selbst gestarteter Prozess, dessen PID, Startzeit und Befehlszeile in der Besitzliste stehen, auch bei gleichem Fenstertitel), faehrt nur den gepinnten MCP-Stand, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Eine MCP-Antwort misst nur mit der Anforderungskennung ihres Versuchs, jede andere heisst UNGEMESSEN; dass der Importweg fl_trigger nie laedt, ist ueber ein Attrappenpaket gemessen. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor und Abweichung; Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\fl\selbsttest.py` | [OK] Exit 0 | 26,94 s | [A35](roh/NAK-309-ec419a7-dirty.md#a35) |
+| A36 | Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebundene Kernziel ist gedeckt. Verglichen werden Zeitstempel, keine Inhalte. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_beweisrunner.py --selbsttest` | [OK] Exit 0 | 4,78 s | [A36](roh/NAK-309-ec419a7-dirty.md#a36) |
+| A28 | Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett. | `py -3.13 tools\eq-copilot\erzeuge_p5_korpus.py --pruefen` | [OK] Exit 0 | 0,14 s | [A28](roh/NAK-309-ec419a7-dirty.md#a28) |
+| A29 | Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1). | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py` | [OK] Exit 0 | 0,13 s | [A29](roh/NAK-309-ec419a7-dirty.md#a29) |
+| A30 | Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen. | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py --selbsttest` | [OK] Exit 0 | 0,20 s | [A30](roh/NAK-309-ec419a7-dirty.md#a30) |
+| A31 | Die adversarialen Gegenbeispiele des Phasengates G5 am PRODUKTPFAD - genau die Faelle, die das Korpusformat nicht ausdruecken kann. Eine Intent-Rolle trennt zwei messtechnisch identische Kandidaten NICHT, auch nicht bei rolle=fuehrt, und bei drei sichtbaren Kandidaten wird der Fuehrende gegen JEDEN geprueft, nicht nur gegen den Zweitplatzierten. Eine Quelle, die ihre Energie in einem ganz anderen Band traegt als der Masterbefund, erreicht keine starke Aussage. Zwei Kandidaten, deren Raenge sich nur durch ein Band WEIT ausserhalb des Befundintervalls unterscheiden, sind ungetrennt. Umklammernde und disjunkte Fensterspannen fallen am Alignment mit Grund, obwohl die Ueberdeckung ihrer SPANNEN 1,0 meldet. Und die Passage laeuft ueber den echten Produktpfad samt Store: zwoelf und acht Fensterlaengen tragen die Aussage, sieben nicht, und eine Passage ohne ein einziges Masterfenster ergibt eine ENTHALTUNG mit ungueltiger Beobachtung statt Schweigen (M-27). Seit der Nacharbeit 1 (07.09.2026) faehrt das Bein ALLE 15 vereinbarten Ketteneingaben durch denselben Produktpfad und DRUCKT je Eingabe ihr Ergebnis: vier Passagenrandwerte (12, 11, 8 und 7 Fensterlaengen), den zweiten experiment_begin mit gleicher passage_id, zwei Master, den Master ohne Fenster, den Kanalwechsel vor und nach dem Deskriptorwechsel, drei Sonden auf einem Kanal, die antikorrelierte Quelle allein und neben der korrelierten, dazu die Masteranomalie in einem Fenster HINTER der Passage. Seit NAK-213 (08.09.2026) traegt KEINE der sieben frueher gedruckten NAK-213-Luecken mehr eine Luecke: zwei Master ergeben eine Enthaltung OHNE ORT statt eines stillen Gewinners, ein Master ohne Fenster ebenfalls statt Schweigen, der Kanalwechsel nimmt die Belege GENAU DER wechselnden Quelle zurueck und entfernt ihren Befund, drei Sonden auf einem Kanal werden ueber ALLE Quellen der Sitzung erkannt - eine vierte, stumme Sonde desselben Kanals setzt die Duplikatmarke mit. Seit NAK-214 (08.09.2026) fahren drei Faelle dieses Tickets mit: zwei bestaetigte Mains erzeugen KEINEN Vorschlag (Vorschlaege 0, keine proposal-Zeile im Store), ein PRE/POST-Paar unterhalb der Alignmentschwelle bleibt Aussageklasse 1 mit next_test prepost_paar_messen, und eine zurueckgenommene juengste Passage laesst die AELTERE rechnen - jeder druckt sein Ergebnis. Keine Luecke bleibt gedruckt, und der aufruferlose Helfer `luecke()` ist mit seinem letzten Aufrufer gegangen. | `cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1` | [OK] Exit 0 | 105,09 s | [A31](roh/NAK-309-ec419a7-dirty.md#a31) |
+| A25 | Der P4-Referenzkorpus ist reproduzierbar (M-80): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt MANIFEST und meldet jede verwaiste Datei. Dasselbe Muster wie A6, A7, A8, A10, A12 und A20; die gitattributes-Regel haelt die Zeilenenden. Seit NAK-182 weist der Erzeuger ausserdem ab, was der Korpus nicht tragen darf: eine Wahrheit ausserhalb der geschlossenen Menge, eine fehlende `quelle` und einen Bezeichner, der in der genannten Datei nicht woertlich steht. Die zwei Mengen KEINE_BEHAUPTUNG und KEINE_STARKE sowie die Zeile `nicht_gemessen` reisen im MANIFEST mit, damit der Pruefer sie von dort liest statt aus einer zweiten Kopie. | `py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen` | [OK] Exit 0 | 0,14 s | [A25](roh/NAK-309-ec419a7-dirty.md#a25) |
+| A26 | Das Sammelbein des P4-Exit-Gates (§58, §49.4, M-79/M-81 bis M-85): vier Klassen - Referenzkorpus, Loop-/Seek-/PDC-Goldens, adversariale Vergleichsfixtures und Stereo-Goldens -, alle muessen bestehen, und jedes genannte Bein steht wirklich im Kanon-Runner. Neben Precision und Recall zaehlen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl FALSCHER Behauptungen; die muss null sein. Eine Enthaltung ist dabei kein Fehler - §49.4 woertlich: ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache. Seit NAK-182 liest das Bein zwei geschlossene Wahrheitsmengen AUS DEM MANIFEST: auf KEINE_BEHAUPTUNG (unbekannt, unvergleichbar, zeitvariabel) ist jede Aussage falsch, auch die schwache; auf den zwei Werten, die nur in KEINE_STARKE stehen (nicht_kausal, nicht_exakt), ist es die starke. Zaehler und Nenner von Recall lesen dieselbe Menge, Precision und Recall sind als Quoten geriegelt, jeder Korpusfall nennt eine Quelldatei samt woertlichem Bezeichner und wird dort gesucht, die fuenf geschlossenen Mengen des v3-Vertrags werden auf kausale Bezeichner geprueft (Entscheid G4 §8), und die in P4 NICHT gemessene Zusage M-85 Ziel 1 wird im Kopf gedruckt statt still zu fehlen. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py` | [OK] Exit 0 | 0,14 s | [A26](roh/NAK-309-ec419a7-dirty.md#a26) |
+| A27 | Der Selbsttest des Exit-Gate-Beins (NAK-182 R1, MP1-6). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch dieselben Funktionen, die A26 fuehrt. Auf dem Korpusweg fallen eine STARKE Aussage auf jedem Wert aus KEINE_STARKE und eine SCHWACHE auf jedem Wert aus KEINE_BEHAUPTUNG; eine schwache Aussage auf nicht_kausal oder nicht_exakt bleibt gruen - genau das trennt die zwei Mengen. Auf dem Kennzahlweg bekommt die Riegelfunktion synthetische Kennzahlen direkt eingespeist, weil Recall und Precision ueber 1 nach der Zweimengenlogik strukturell unerreichbar sind und die Wachen trotzdem einen Weg zu fallen brauchen. Dazu ein erfundener Bezeichner, ein Pfad ins Leere, eine fehlende Vertragsmenge und ein kausaler Enumwert. Seit Nacharbeit 1 laeuft auch S-07 durch die echte Validierung: ein synthetischer Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN geht durch dieselbe Funktion _pruefe_wahrheiten, die A26 auf den geladenen Korpus anwendet, und muss genau eine rote Zeile mit dem Fallnamen ergeben; sein Gegenteil keine. Jede Erwartung laeuft MIT ihrem Gegenteil - sonst waere der Selbsttest auch dann gruen, wenn ein Riegel immer rot meldete. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest` | [OK] Exit 0 | 0,13 s | [A27](roh/NAK-309-ec419a7-dirty.md#a27) |
+| A23 | SONDE-012 E-L06 integriert ueber eine ausschliessliche Probe-Pipe: synthetische C++-Quellen senden vollstaendige Messfenster durch den echten Rust-Coordinator an das echte Main-SourcesModel. Der Endpunkt ist dessen Revision samt Anzeige-Invalidierung. Bei 16 und 32 Quellen liegt p95 fuer 2048/4096 Samples unter 300 ms und fuer 16384 Samples unter 750 ms, jeweils ab dem ersten Sample des Fensters. | `py -3.13 tools\eq-copilot\pruefe_sonde012_sources_latency.py` | [OK] Exit 0 | 4,63 s | [A23](roh/NAK-309-ec419a7-dirty.md#a23) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Seit NAK-283 (F04, F05) bleibt der Nulltest bitgleich, wenn reset() vor jedem dritten Block laeuft - ausgeschaltet bei 44,1 / 48 / 96 / 192 kHz, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen, und im Hard-Bypass auch mit NaN, +Inf und -Inf zwischen zwei reset(); Mono und Stereo mit gleichem Ein- und Ausgang werden angenommen (im Monobus bleibt der Passthrough bitgleich, und das Band rechnet endlich), Quadrophonie, 5.1, vier diskrete Kanaele, Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus bekommen ein Nein, setBusesLayout auf Quadrophonie scheitert, und der Prozessor bleibt bei zwei Kanaelen. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,27 s | [A16](roh/NAK-309-ec419a7-dirty.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,13 s | [B1](roh/NAK-309-ec419a7-dirty.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend. Seit SONDE-015 zusaetzlich das Kind Dsp: 120 Werte bit-exakt durch den Roundtrip, flache Arrays statt Kindknoten, voller Undo-Ring aus 32 Schnappschuessen bytegleich und unter 16 MiB, der 33. Eintrag read-only; die Layoutmigration v1 nach v2 setzt occupied bitgenau aus enabled und den Werten; das Preset traegt zwei getrennte Versionen, weist jedes der sechs verbotenen Identitaetsfelder ab, ignoriert unbekannte Top-Level-Felder und laesst eq_enabled beim Laden unberuehrt. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 1,30 s | [B2](roh/NAK-309-ec419a7-dirty.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [B3](roh/NAK-309-ec419a7-dirty.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,11 s | [B3b](roh/NAK-309-ec419a7-dirty.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler. Seit SONDE-015 zusaetzlich der Fassungsschritt P1 5: der aus der committeten Fassung zurueckgebaute Leser der Fassung 4 lehnt state_report.dsp ab, ein Bericht ohne dsp bleibt in beiden Fassungen gueltig, und der Empfaenger rechnet SHA-256(dsp.jcs) gegen state_hash nach - ein schemagueltiger Bericht mit abweichendem Hash wird GANZ abgewiesen. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,39 s | [B3c](roh/NAK-309-ec419a7-dirty.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten UND ueber 2000 weitere mit wechselnder Hoer-Markierung, Ein- und Ausfade und Interventionsring (SONDE-013 M-74), und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,42 s | [B4](roh/NAK-309-ec419a7-dirty.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,14 s | [B9](roh/NAK-309-ec419a7-dirty.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen -, waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, und ein Drop zaehlt als Segment, nicht als Epoche. Seit NAK-182 misst ein Sweep zusaetzlich die ZEITLAGE: ein bekannter Impuls bei Stromsample 206336 laeuft ueber die fuenf Blockgroessen 1, 333, 512, 2048 und 16384 mal die fuenf Sampleraten 44,1 / 48 / 88,2 / 96 und 192 kHz, und der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH und liegt innerhalb einer Fensterlaenge (4096 Samples) vor dem Impuls. Die Auswahl des Ereignisses kennt die Sollzeit NICHT - gemessen wird das staerkste Flussereignis des Laufs, und dass es unzweifelhaft das staerkste ist, ist eine eigene Zusage. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 5,40 s | [B5](roh/NAK-309-ec419a7-dirty.md#b5) |
+| B6 | Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht. Ein Block ueber maxBlock (1024 Samples bei 256) verwirft den Analyse-Tap und gleicht auf beiden Kanaelen sample-exakt dem Lauf ohne Ueberlast in 4 x 256. Seit NAK-283 (F12) die float-Kante des Ausgangs: ein endlicher double ueber FLT_MAX (Output-Trim +6 dB auf 0,75 und 0,25 x FLT_MAX) kommt auf 0 verriegelt und im Eingangszaehler gezaehlt heraus, und kein Ausgangswert ist nicht endlich; auf endlichem Material in +/-1,0 (Bell +9 dB und Output-Trim +6 dB, 204 800 Werte, auch mit Betrag >= 1) ist jeder float bitgleich die Verengung des double-Taps, und der Zaehler bleibt stehen. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [OK] Exit 0 | 5,03 s | [B6](roh/NAK-309-ec419a7-dirty.md#b6) |
+| B7 | Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang. Seit NAK-283 (F05, F09, F12) am echten SondeProcessor: reset() beendet die Audiohistorie - nach einem Impuls in den Resonator (1 kHz, +12 dB, Q 10) ist der erste Block Stille auf beiden Kanaelen exakt 0, ohne reset() klingt er nach - und laesst getStateInformation bytegleich, die Revision, das bestaetigte eq_enabled und die engagierte Bank im Kern stehen (1 kHz danach mehr als 6 dB lauter); releaseResources->prepareToPlay, reset() und prepareToPlay allein enden in derselben Audiohistorie (Stille exakt 0, untereinander bitgleich). Ein Block ueber maxBlock bei rechnendem Kern hinterlaesst in der Analysequeue eine Luecke (der naechste Block beginnt bei 192 mit kFlagLueckeDavor, Segment +1), und Kern und Queue beschreiben dieselbe verworfene Zeitspanne (ein verworfener Tap, ein Block ohne Audio mit 128 Frames, oversize und Ueberlauf +0); ruht der Committed-Pfad im Hard-Bypass, wird derselbe Block ohne Luecke angenommen. Endliche double ueber FLT_MAX am Tap kommen in der Analysekopie als endliche floats an, und der Kernzaehler steigt um genau diese 1024 Werte. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [OK] Exit 0 | 0,41 s | [B7](roh/NAK-309-ec419a7-dirty.md#b7) |
+| B10 | C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. Seit SONDE-013 nimmt die C++-Vertragsengine die drei Experimentfamilien aus den committeten Fixtures an, lehnt einen fremden execution_mode an derselben Engine ab, und ein experiment_manual_result laeuft als persistenzpflichtiger P0-Befehl durch das In-Flight-Register wie jede andere steuernde Nachricht. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 221,37 s | [B10](roh/NAK-309-ec419a7-dirty.md#b10) |
+| B11 | Probeeq uebernimmt JUCE updateTrackProperties ausschliesslich auf dem Message-Thread; gueltige Hostnamen reisen codepointgetreu in heartbeat.runtime, leer/Whitespace/121 Codepoints/C0/C1 gelten als Fehlen; Hostvorrang veraendert das gespeicherte User-Label nicht, Clear stellt dessen Rueckfall her. Persistierte Messpunkte insert/pre/post und Betrieb active/suspended/offline reisen ohne Synthese; der lokale C++-Pfad behauptet nicht, dass FL den Callback liefert. | `eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest_artefacts\Release\EqCopSonde012HostChannelContextTest.exe` | [OK] Exit 0 | 1,05 s | [B11](roh/NAK-309-ec419a7-dirty.md#b11) |
+| B12 | Probeeq fuehrt Audio ueber die vorallokierte Ganzblockqueue zum Analyseworker und P2: LUFS-I reist nur atomar mit endlicher unsicherheitLu und ohne Status; collecting/gated reisen ohne Zahlenpaar; halbe, nichtendliche oder statusbehaftete Paare werden nicht serialisiert. Seek, Loop, Oversize-Drop und Kontinuitaetsbruch starten eine leere Reihe; der gemessene Audiopfad alloziert dabei 0-mal und verwirft bei Ueberlast nur Analyse. | `eq-copilot\build\plugin\EqCopSonde012LoudnessSourceTest_artefacts\Release\EqCopSonde012LoudnessSourceTest.exe` | [OK] Exit 0 | 1,60 s | [B12](roh/NAK-309-ec419a7-dirty.md#b12) |
+| B13 | Gen/Main ersetzt sein Quellenmodell durch absolute session_snapshot-Sichten und haelt Mitgliedschaft, Control, Messung, Namensherkunft und Capability-Evidenz getrennt; Frischegrenzen, Messpunkte, Betrieb, Fehlerkanal, Lautheitspaar, Hostvorrang, Sortierung und Hauptziel werden einzeln gemessen. Die integrierte 16-/32-Quellen-Zeitmessung gehoert A23. | `eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe` | [OK] Exit 0 | 0,11 s | [B13](roh/NAK-309-ec419a7-dirty.md#b13) |
+| B14 | MainProject Save/Load erhaelt bestaetigte Quellidentitaet und User-Label, aber weder Control-Liveness noch Runtime-Nonce oder Messframe; Join, Benennen und Unbind melden je echte persistente Aenderung Host-Dirty, No-op, Save und Load nicht; Reload baut einen frischen subscribe_session-Auftrag. | `eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe` | [OK] Exit 0 | 8,34 s | [B14](roh/NAK-309-ec419a7-dirty.md#b14) |
+| B15 | EqCopShot rendert den deklarierten SONDE-012-Sichtsatz bei exakt 760x430: 0/1/16 Quellen, fresh/partial/stale/disconnected/invalid, Namens- und Lautheitsgegenpfade, alle Diagnosezustaende, Label-/Unnamed-Rueckfall, Findings, genau ein Hauptziel mit Referenzen sowie das deaktivierte Label-Feld eines nicht fuehrenden Main. | `eq-copilot\build\plugin\EqCopShot_artefacts\Release\EqCopShot.exe --sonde012-suite eq-copilot/build/sonde012-shots` | [OK] Exit 0 | 2,22 s | [B15](roh/NAK-309-ec419a7-dirty.md#b15) |
+| B20 | Gesamtklasse nach §34.3 (M-06): die vier Klassen sind geordnet, und `deckeln` ist ein Minimum, kein Mittelwert. Jeder der vier harten Maengel deckelt EINZELN auf schwach, ohne gegen die drei guten Nachbarquellen verrechnet zu werden; zwei Maengel ergeben in allen zwoelf Paarungen unbrauchbar. Was ein Erzeuger nicht beurteilen kann, deckelt ebenso auf mittel - eine Sonde mit PERFEKTER Abdeckung kommt deshalb nur auf mittel, weil sie Session, Passage und Alignment nicht sieht; das ist die Regel hinter dem Literal, das Etappe B an einer Stelle gesetzt hatte. Die zwei Abdeckungsschwellen und die Fensterschwelle fallen je an ihrer Kante und knapp darunter (Muster C-09). Die tragende Zusage ist eine INVARIANTE ueber den ganzen Raum: in 1536 Uebergaengen ueber alle 256 Bitkombinationen in drei Basislagen hebt ein zusaetzlicher harter Mangel die Klasse NIE - und alle vier Klassen kommen darin wirklich vor, die Invariante ist also nicht trivial erfuellt. Ein Mittelwert koennte diese Zusage nicht halten. | `eq-copilot\build\plugin\EqCopSonde013QualityClassTest_artefacts\Release\EqCopSonde013QualityClassTest.exe` | [OK] Exit 0 | 0,06 s | [B20](roh/NAK-309-ec419a7-dirty.md#b20) |
+| B22 | Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und alle drei Verlaeufe sind Energien ohne Phase. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts. | `eq-copilot\build\plugin\EqCopSonde013FingerprintGoldenTest_artefacts\Release\EqCopSonde013FingerprintGoldenTest.exe` | [OK] Exit 0 | 0,94 s | [B22](roh/NAK-309-ec419a7-dirty.md#b22) |
+| B23 | Die manuelle Passage als Projektintent im MainProjectState (§33.5, M-25/M-69). Das neue persistente Feld `manual_passages_v1` traegt seine Fassung im Namen; ein Altstand ohne das Feld laedt normal, ein unbekanntes Zusatzfeld aus einer spaeteren Fassung zerstoert den Leser nicht und steht unveraendert im naechsten Save, und Save/Load ist ueber zwei Runden bytegleich - auch am oberen int64-Rand und mit leerer Liste (die Eigenschaft entfaellt dann, statt als leeres Array zu reisen). Jede persistente Aenderung meldet GENAU einmal Host-Dirty, das Vergessen wie das Merken; ein read-only-Stand verweigert beides und gibt seine Originalbytes zurueck. Was hier NICHT reist, ist Absicht: Fingerprint, Quellenset, Abdeckung und Epoche sind Messergebnisse und bleiben im Store, sonst behauptete ein Projekt nach dem Loeschen der Datenbank weiter, es gebe Evidenz. Jede Grenze wird von beiden Seiten gefahren - was die Produkt-API ablehnt, lehnt auch der Leser ab, und zwar fail-closed als read-only statt still korrigiert. | `eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe` | [OK] Exit 0 | 11,70 s | [B23](roh/NAK-309-ec419a7-dirty.md#b23) |
+| B24 | PRE/POST auf der Audioseite (§38.3/§38.4, M-18/M-20/M-24). Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist: identische Kette, reiner Gain von +15 dB und ein linearer Tiefpass bleiben fast ueberall ueber der 0,8-Schwelle aus §38.3 - Kompression, Modulation, Saturation und wechselnde Latenz fallen darunter, und die beiden Gruppen ueberlappen nicht. Deshalb traegt keine der vier adversarialen Ketten eine statische EQ-Behauptung. Der Vergleichspegel wird vorab gemessen und eingefroren: sechs Sekunden mit +18 dB und zwei Sekunden Stille aendern ihn um kein Tausendstel, denn eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor; ohne genug Material friert er gar nicht erst ein, und NaN/Inf verriegeln statt ihn zu vergiften. Hoerbares Delta ist ohne nachgewiesenes Compare-Routing gesperrt - der Raum aus drei binaeren Nachweisen wird VOLLSTAENDIG abgefahren, genau eine der acht Kombinationen ist frei, und in P4 gibt es kein Compare-Routing. | `eq-copilot\build\plugin\EqCopSonde013PrePostGoldenTest_artefacts\Release\EqCopSonde013PrePostGoldenTest.exe` | [OK] Exit 0 | 1,04 s | [B24](roh/NAK-309-ec419a7-dirty.md#b24) |
+| B25 | Unsicherheit und Mehrfachtestung (§43.2, M-45). Der Block-Bootstrap ist deterministisch, enthaelt den Mittelwert und liefert bei bloeckigem Material ein BREITERES Intervall als ein Bootstrap ueber Einzelwerte - benachbarte Deltas sind korreliert, und wer Unabhaengigkeit annimmt, macht aus Rauschen eine belastbare Aenderung. Leere oder unmoegliche Eingaben ergeben KEIN Intervall statt eines um null. Bei 221 gleichverteilten p-Werten meldet der naive Scan zweistellig viele Baender und die FDR-Korrektur kein einziges, waehrend 20 klare Treffer durchkommen; die Grenze p_(k) = k/m*q faellt inklusiv an ihrem Wert. Cluster verlangen zusammenhaengende Baender - drei verstreute ergeben keinen, vier benachbarte schon, und auch am linken und rechten Rand. | `eq-copilot\build\plugin\EqCopSonde013ExperimentGoldenTest_artefacts\Release\EqCopSonde013ExperimentGoldenTest.exe` | [OK] Exit 0 | 0,10 s | [B25](roh/NAK-309-ec419a7-dirty.md#b25) |
+| B26 | Die zwei Kanten des Blindvergleichs (§43.1, §15, M-43/M-44). Ohne eingefrorenen Vergleichspegel wird KEIN Klangurteil angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das; ein noch laufender Pegel zaehlt nicht als Abgleich. Die Blindreihenfolge wird vor dem Urteil gebunden und laesst sich nicht drehen; vor dem Urteil gibt der Typ sie GAR NICHT heraus, und der Ausgabeparameter bleibt unberuehrt statt still einen lesbaren Wert zu tragen. Erst das Urteil deckt genau die gebundene Reihenfolge auf, in beide Richtungen geprueft. Ein zweites Urteil und ein spaeterer Pegel aendern nichts mehr; jede Sperre traegt ein Wort, und der Passagenwechsel raeumt Urteil, Abgleich und Bindung gemeinsam ab. | `eq-copilot\build\plugin\EqCopSonde013ExperimentUiTest_artefacts\Release\EqCopSonde013ExperimentUiTest.exe` | [OK] Exit 0 | 0,55 s | [B26](roh/NAK-309-ec419a7-dirty.md#b26) |
+| B21 | RT→Control-Ring fuer hoerbare Eingriffe (M-37 bis M-39, §34.2): ein Begin steht SOFORT zur Abholung bereit, ohne Kadenzfenster - der Unterschied zum 1-Hz-Heartbeat-Bit, das ein 380-Sample-Ereignispaar nie gesehen haette. Ein Ende traegt einen Nachlauf, der mindestens so lang ist wie der Eingriff selbst, UND dessen Dauer, damit ein Empfaenger die Konservativitaet pruefen statt sie glauben kann. Der Ueberlauf ist die schaerfste Zusage: dieser Ring verwendet KEIN drop-oldest, das aelteste Ereignis steht unveraendert an erster Stelle, der Ueberlauf ist sticky gemeldet und gezaehlt, der Rest kommt lueckenlos aufsteigend heraus, und das Sticky-Bit heilt nicht von selbst - nur resync() loescht es. 200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen, mit Zaehler gemessen statt behauptet (M-74). Sequenzen am u64-Rand kommen unveraendert zurueck, und zuruecksetzen() leert Ring, Sticky-Bit und Zaehler gemeinsam. | `eq-copilot\build\plugin\EqCopSonde013InterventionRingTest_artefacts\Release\EqCopSonde013InterventionRingTest.exe` | [OK] Exit 0 | 0,10 s | [B21](roh/NAK-309-ec419a7-dirty.md#b21) |
+| B19 | Bandweise Stereoevidenz (§40.1, §40.3, M-08/M-10/M-11/M-12): die fuenf Klassen aus §40.3 treffen ihre ANALYTISCH bekannte Antwort - Mono ergibt Korrelation 1, Kohaerenz 1, Phase 0 und Folddown 0 dB innerhalb der 0,25 dB aus §40.3; Polaritaetsinvertierung ergibt Korrelation -1 bei Kohaerenz 1 (die Kohaerenz misst den Zusammenhang, nicht das Vorzeichen) und eine Monosumme, die an die Vertragsgrenze laeuft statt zu schweigen; eine bekannte Laufzeit ergibt eine Phase, die der Formel +2*pi*f*tau folgt, an drei Traegerfrequenzen gemessen; unkorrelierte Kanaele fallen in Korrelation und Kohaerenz, und bei niedriger Kohaerenz entsteht keine Lag- oder Polaritaetsempfehlung. Seit NAK-182 faehrt ein Sweep dieselben fuenf Klassen und den Folddown ueber die 18 Blockgroessen 1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345 und 16384 - je Blockgroesse dieselbe Antwort, je Blockgroesse ein wirklich entstandenes Evidenzfenster und vergleichbar viele gemittelte Fenster (Freiheitsgrade innerhalb 20 Prozent des Medians). Das ist eine AUSWAHL aus 1 bis 16384 und keine Erschoepfung: die Obergrenze ist die Slotkapazitaet des Layouts, 256 zum Beispiel bleibt ungemessen. Seit Nacharbeit 1 wertet der Sweep bei bekannter Laufzeit ALLE DREI Traeger aus - 300, 900 und 2000 Hz, je Blockgroesse mit Praesenzbit und Phasenfehler gegen +2*pi*f*tau innerhalb 0,25 rad -, und der Unkorreliert-Fall misst je Blockgroesse zusaetzlich, dass KEIN Band mit Basis eine Phase traegt; das sind dieselben Felder, die der 512er-Abschnitt fuer M-12 nutzt. | `eq-copilot\build\plugin\EqCopSonde013StereoGoldenTest_artefacts\Release\EqCopSonde013StereoGoldenTest.exe` | [OK] Exit 0 | 1,87 s | [B19](roh/NAK-309-ec419a7-dirty.md#b19) |
+| B17 | True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht fuer 15 bis 19 keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt auf 1e-9 genau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten. Seit NAK-283 (N01) zusaetzlich die vier transienten Faelle 20 bis 23 aus EBU Tech 3341 (Versatz 0 bis 3): jeder trifft eine im Test gerechnete, vorher an 15 bis 19 auf +/-0,01 dB validierte 64-fach-Referenz innerhalb +/-0,1 dB und liegt zusaetzlich in der Normtoleranz 0,0 +0,2/-0,4 dBTP. Insgesamt 43 Pruefungen. | `eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe` | [OK] Exit 0 | 0,34 s | [B17](roh/NAK-309-ec419a7-dirty.md#b17) |
+| B18 | Loudnessfenster, Headroom und Dynamik (M-01, M-03, M-04, M-07, M-09): Momentary (400 ms) und Short-term (3 s) sind wirklich zwei Fenster - bei stehendem Pegel gleich, 0,8 s nach einem Pegelsprung mehr als 5 LU auseinander, danach wieder beieinander; nach 0,6 s traegt der Frame Momentary und KEIN Short-term. integration_samples passt im Dauerbetrieb zur 10-Hz-Kadenz und faellt beim ersten Rahmen nach einer Grenze messbar kleiner aus. PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, nicht gegen den Sample-Peak des 100-ms-Rahmens; die Engine setzt selbst kein PLR, weil LUFS-I erst im Sondenprozessor zugemischt wird. Headroom ist eine Verteilung: zwei Signale mit gleichem Maximum trennen sich um mehr als 10 dB im P50. Crest steht in zwei Fenstern und trennt dichte kleine Spitzen von einer einzelnen grossen. LRA gibt es nach 30 s NICHT, nach 75 s mit passender Spanne, bei Material ohne Dynamik nahe null und nach 90 s Stille gar nicht - die 60-s-Schwelle zaehlt gegatetes Material, keine Wanduhr. NaN und Inf im Eingang erzeugen in keiner der neun neuen Metrikstellen einen nichtendlichen Wert. Ein verworfener Analyseblock schliesst auch die neuen Fenster, und keines von ihnen ueberbrueckt eine Transportgrenze. | `eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe` | [OK] Exit 0 | 5,69 s | [B18](roh/NAK-309-ec419a7-dirty.md#b18) |
+| B16 | Evidenzpfad (§33.2): der aus einem echten FeatureFrame erzeugte evidence_snapshot passiert Textriegel und dieselbe Vertragsengine wie B3c; P10/P50/P95 trennen ein springendes von einem ruhigen Signal gleicher mittlerer Lautheit (Spanne P95-P10 um mehr als 6 dB verschieden) und halten in JEDEM Band mit Bit die Ordnung P10<=P50<=P95; die Abdeckung faellt messbar, sobald ganze Analysefenster in Stille liegen, und die Konvergenz faellt bei wanderndem Pegel; der Ereignisstrom traegt Fluss- und Peakbit getrennt samt Verlustzaehler, ein Ereignis fremder Epoche oder ohne Anker entsteht gar nicht. Seit NAK-182 misst dasselbe Bein die C++-Haelfte der fokussierten 0,01-dB-Evidenz (M-83 Satz 2), seit Nacharbeit 1 vollstaendig am SERIALISIERTEN Snapshot: PRE und POST laufen durch den echten Serialisierer, und jede Zahl kommt aus verteilung.p50 des eigenen Wire-Textes - Encoding-Wort, Ganzzahlen und Praesenzbits. Daraus kommt ein bekannter Gain von 3,00 dB je Band mit Bit innerhalb 0,1 dB zurueck, und eine Leiter aus 20 Pegeln im Abstand 0,01 dB - je ein eigener Enginelauf samt Serialisierung - ergibt 20 streng monotone Ganzzahlen, deren Nachbarn sich um genau 1 unterscheiden. Material (Frequenz, Samplerate, Amplitude, Blockgroesse, Laufbegrenzung), Pegel, Gain und Aufloesung kommen aus den ZAHLEN der Fixture evidenz-0p01-paar-wire-v1.json, nicht aus ihren Bytes und nicht aus lokalen Konstanten. | `eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe` | [OK] Exit 0 | 1,76 s | [B16](roh/NAK-309-ec419a7-dirty.md#b16) |
+| B27 | Der musikalische Intent als Projektintent im MainProjectState (§37.1, U22, M-01 bis M-09/M-11). Die Rollenmenge ist GESCHLOSSEN und hat genau fuenf Werte; ein sechster faellt in der Produkt-API UND im Leser, statt still auf einen bekannten Zweig abgebildet zu werden. Die §37.1-Belegung ist ABGELEITET und damit total und injektiv: alle fuenf Rollen kommen ueber den Roundtrip zurueck, keine zwei teilen sich eine Belegung (alle zwanzig geordneten Paare), und eine fremde Belegung gehoert zu keiner Rolle. Schutzangaben sind ORTHOGONAL zur Rolle - eine Quelle ohne Rolle kann Attack geschuetzt haben, und keiner der fuenf Rollenwechsel loescht einen Schutzbereich. Die Rolle bewusst-verschmolzen ist ein globales Veto gegen Entmaskierung; eine ausdrueckliche gerichtete Beziehung hebt es NUR fuer dieses Paar auf, nicht fuer ein drittes. Die Konfliktregeln sind eine geordnete Liste, kein Score: alle zehn Paarungen der fuenf Stufen fallen in beiden Leserichtungen, hundert Vermutungen schlagen die Schutzgrenze nie, und innerhalb Stufe 2 gewinnt das Spezifischere. Ein Zyklus im fuehrt_vor-Graphen erreicht die Persistenz NIE unmarkiert - die Pruefung laeuft beim Speichern, der Leser weist einen von Hand gebauten Zyklus als read-only ab, und derselbe Schluss als gleichrangig gespeichert laedt und kommt als gleichrangig zurueck. Eine abgeleitete Vermutung ueberschreibt einen Userwert nie, der umgekehrte Weg gilt. Derselbe Bus traegt verschiedene Rollen in zwei Passagen ohne Datenverlust, passagespezifisch vor global. Dazu die fuenf Teile der State-Invariante: Fassung im Namen, Altstand ohne die Felder laedt bytegleich, eine unbekannte Eigenschaft ueberlebt, Save/Load ueber zwei Runden bytegleich, und jede echte Aenderung meldet GENAU einmal Host-Dirty, waehrend No-op, abgewiesener Wert, Laden und read-only schweigen. Jede Grenze faellt von BEIDEN Seiten (17 Leserfaelle samt NaN/Inf-Konfidenz, Revision 0, Bandrand 0/221 und Selbstbeziehung), und die volle 256er-Liste, die die API erzeugt, laedt der eigene Leser. Zuletzt M-11 am Produktpfad: zwei echte Prozessoren mit demselben Strom, einer mit vollem Intent, liefern bitgleiche Evidenzbaender, Perzentile, Livebaender, metrics_version und NaN-Zaehler - mit Gegenprobe, dass die Baender wirklich Werte tragen. | `eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe` | [OK] Exit 0 | 0,50 s | [B27](roh/NAK-309-ec419a7-dirty.md#b27) |
+| B29 | Die Zustandsmaschine des AssistantStep im Main (46.1, E-07/E-08, M-55 bis M-62). Die Zustandsmenge hat ACHT Werte, jeder kommt ueber seinen eigenen Rueckweg zurueck, ein neunter faellt. Nach preview fuehrt KEINE Kante - weder hin noch zurueck -, ein gespeicherter preview-Schritt ist ein Lesefehler statt eines stillen Sprungs, und die Produkt-API setzt ihn nicht; die Gegenprobe mit proposal laedt normal. Jeder der acht Zustaende traegt fuenf Angaben (Eintritt, Evidenz, Useraktion, Timeout ueber 0, sichere Rueckkante), auch preview - der erste Zustand ist seine eigene Rueckkante. Der Deckel ist STRUKTURELL: ein zweiter Startversuch bei offenem Schritt wird abgewiesen, nicht eingereiht, und erst nach dem terminalen Abbruch beginnt ein neuer. Die vier Gegenpfade laufen einzeln: Zurueck geht auf die Rueckkante, Ueberspringen auf den naechsten Zustand, Resume ist eine FRAGE ohne Revisionssprung, und Verwerfen ist terminal statt geloescht - danach gibt es kein Resume mehr. Die drei benannten Ergebnisse aus 46.2 sind eigene Ergebnisse mit Objekt; dasselbe zweimal hebt keine Revision. Die harten Gates greifen VOR der Gewichtung: drei Kandidaten mit perfektem Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt. Verdrahtet am echten Prozessor mit Host-Dirty genau einmal je echter Aenderung, Rekonstruktion aus dem gespeicherten MainProject und bytegleichem Save/Load; jede Grenze faellt von beiden Seiten, und ein Altstand ohne die Eigenschaft laedt normal und schreibt sie nicht. | `eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe` | [OK] Exit 0 | 1,01 s | [B29](roh/NAK-309-ec419a7-dirty.md#b29) |
+| B30 | Diagnose-Briefkasten im Plugin (Plan S25e (3), R-286-1 und R-286-2): ohne anfrage.json nur eine Existenzpruefung je Takt (hoechstens 1 Hz, Message-Thread) und nichts Messbares - Audio, State, Parameter und der Snapshot des Knopfwegs bleiben bytegleich. Eine gueltige Anfrage beantworten Gen und Probeeq je Kennung genau einmal, solange sie im Ring der letzten 256 steht, ueber den eigenen Schreibweg (exklusive Temp-Datei, Groessenpruefung, Umbenennen ohne Ersetzen, nie Ordneranlage oder Loeschung) mit einem Umschlag nach nakama.diagnose.antwort.v1; fremde oder zu grosse Anfragen und solche hinter einer Junction bleiben ohne Antwort, eine beim Lesen gesperrte wird im naechsten Takt beantwortet. | `eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe` | [OK] Exit 0 | 74,63 s | [B30](roh/NAK-309-ec419a7-dirty.md#b30) |
+| B28 | Die Befundzustaende auf der Gen-Seite (Abnahme U21, M-29 bis M-35). Die drei Sicherheitsstufen sind auf GENAU DREI Zustaende abgebildet, und die Abbildung ist ein FELD: ein vierter Wert macht den ganzen Snapshot ungueltig, statt still auf einen bekannten zu fallen. Nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT - die Sperre liegt am Befund im Modell, nicht an einer ausgegrauten Schaltflaeche. Messqualitaet der Passage und Sicherheit des Befunds bleiben zwei Felder aus zwei Quellen: ein Befund mit confidence.class hoch, dessen Zustand more_data sagt, bleibt nicht handelbar. Alternativen sind EIGENE Befunde mit eigenem Zustand und reisen als IDs; ein Freitext faellt. Der Beleg ist die markierte Zone - Bandrand 0 und 221 gueltig, leeres Intervall und 222 nicht -, und ein Belegtextfeld gibt es nicht. Die drei Anzeigezeilen sind drei eigene Felder; eine vierte oder eine leere faellt. Die acht Ausschlussgruende kommen mit ihrem Grund an, ein neunter faellt. Jede Zahl faellt an ihrer Grenze und nicht erst danach. Zuletzt die Fassungsleiter: ein Leser der Fassung 2 lehnt findings ab, Abwesenheit heisst keine Befunde, und ein Sitzungswechsel raeumt sie ab. Seit Etappe E dazu der Maskierungswert AM Befund: er benennt Frequenzbereich und beide Quellen, gueltig und herabgesetzt sind zwei eigene Bits, Abwesenheit ist etwas anderes als ein ungueltiger Wert, und ein Objekt beliebiger Form faellt - sechs Formen einzeln geprueft. Eine Zeichenanweisung (Achse, Zoom, Farbe) faellt am Vertrag, auch im Maskierungswert. | `eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe` | [OK] Exit 0 | 0,51 s | [B28](roh/NAK-309-ec419a7-dirty.md#b28) |
+| B8 | Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread. Seit NAK-309 (M-74) zuerst, vor dem ersten Prozessor: im Testbau nennt der Prozessor seinem v2-Client einen Probe-Namen, nie die Produktions-Pipe, nach Produkt- und Testkonstruktor denselben, und jedes Ziel mit den Prozessorquellen ausser dem Produkt traegt den Testschalter. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,26 s | [B8](roh/NAK-309-ec419a7-dirty.md#b8) |
+| A32 | Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook. Der Quellumfang kommt seit NAK-283 (M-69) aus einem pruefbaren Inventar: jede Datei mit Endung .rs, .cpp, .h oder .hpp unter broker/src und eq-copilot/plugin samt allen Unterbaeumen, mit Grund ausgenommen nur der flatc-Codegen (broker/src/generiert, eq-copilot/plugin/vertrag/generiert) und der Testbaum eq-copilot/plugin/tests; der Bericht druckt das Inventar, und eine Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als WERKZEUGFEHLER (Inventarriegel, Exit 2). Gemessen werden Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Grenzen - Zeilen je Datei, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner - werden ehrlich gemeldet, auch wenn sie reissen (Pflegeticket NAK-292). Jeder neue Treffer ueber der Zeilengrenze meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 129 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung; das Inventar mit neuem Unterbaum, Codegen, Tests und einer Ableitung, die still einen Unterbaum verliert). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 heisst gerissen und ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest, eine fehlende Inventarwurzel oder der Inventarriegel, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen, und ein ungemessener Unterbaum machte jedes andere Mass falsch. | `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | [HINWEIS] Exit 4 - Befund, nicht blockierend (siehe Rohausgabe) | 12,97 s | [A32](roh/NAK-309-ec419a7-dirty.md#a32) |
+| A33 | clang-tidy ueber alle Uebersetzungseinheiten von eq-copilot/plugin ohne tests/ und ohne den flatc-Codegen vertrag/generiert/ (Bein A9 haelt ihn bytegleich; Regelsatz eq-copilot/plugin/.clang-tidy: bugprone, clang-analyzer, concurrency, performance sowie eine cert-, cppcoreguidelines- und misc-Auswahl; keine Stilregeln, Ausnahmen dort mit Grund) in einem eigenen Ninja-Baum eq-copilot/build-tidy mit denselben cl.exe-Schaltern wie der Produktbau. Gezaehlt werden eindeutige Fundstellen (Datei, Zeile, Spalte, Check) gegen die Ratsche in tools/plan/tidy.py: Grenze = Iststand der Erstmessung NAK-288, Ziel 0, nur gesenkt, nie erhoeht; eine Aenderung des Regelsatzes zieht die Ratsche im selben Commit nach. Vorangestellt der Selbsttest (Einordnung in den Quellort, Datenbankfilter, Diagnoseparser, Deduplizierung, Ratschenrand, Umgebungsleser). Nicht blockierend: Exit 4 ist ein Hinweis. ROT ist Exit 2: eine Uebersetzungseinheit mit error-Diagnose oder ein abgestuerzter clang-tidy heisst NICHT gemessen, denn eine halb geparste Einheit meldet weniger Funde und saehe wie Fortschritt aus. FEHLT (Exit 3) ohne Visual Studio 2022 mit C++-Werkzeugen und Clang-Komponente, cmake oder ninja. | `py -3.13 tools\plan\tidy.py --mit-selbsttest` | [OK] Exit 0 | 103,65 s | [A33](roh/NAK-309-ec419a7-dirty.md#a33) |
+
+### 14.14 Kanon nachher, A32 und A33 (Fortsetzung von §14 unter dem Runnerabschnitt)
+
+**GRUEN - 69/69 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe
+Uebersicht | Exitcode 0** auf `ec419a71` (Code gleich `48fc736a`, dazwischen
+nur Belege und Manifest), mit `-Bauen`, abgekoppelt mit dem Befehl aus dem
+Auftrag, 19.09.2026, 03:05 bis 03:47 Uhr; Abschnitt „Kanon-Lauf - NAK-309
+Etappe 3 Kanon nachher" direkt über diesem, Rohausgabe
+`docs/beweise/roh/NAK-309-ec419a7-dirty.md` („dirty" nur wegen der zwei fremden
+untracked Ordner), Commit `cd21b301`. A4b, A35, A1, B8 und B14 je `[OK]` Exit
+0; A15 stillgelegt wie bisher. `--broker-pin` schrieb nicht, das
+Installer-Manifest ist unverändert. Einen verwaisten `vctip.exe` aus dem
+Einzelbau des Handlaufs (Start 02:57 Uhr, Elternprozess beendet) habe ich vor
+dem Start beendet (NAK-300); der Runner lief ohne Hänger durch.
+
+**A32 und A33 vorher und nachher.** Vorher (Kanon nachher der Etappe 2, §14.1):
+A32 `[HINWEIS]` Exit 4 — Quelldateien über 2 000 Zeilen 1 (Grenze 0),
+Funktionen über 200 Zeilen 34 (Grenze 28), Kommentar-Bezeichner ohne Code 36
+(Grenze 30); Dateien über 1 500 Zeilen 10; 201 Dateien gemessen; MEMORY.md
+5 395 B, CLAUDE.md 19 677 B, Skill 24 537 B. A33 `[OK]` Exit 0 mit 58
+Fundstellen bei Grenze 58. Nachher: A32 `[HINWEIS]` Exit 4 mit denselben
+Zahlen (1/0, 34/28, 36/30; 10 Dateien über 1 500 Zeilen; MEMORY.md 5 395 B,
+CLAUDE.md 19 677 B, Skill 24 537 B), gemessen jetzt 202 Dateien — neu ist
+`eq-copilot/plugin/src/ProbePipeRegel.h` (101 Zeilen, keine Funktion über 200
+Zeilen). A33 `[OK]` Exit 0 mit 58 Fundstellen bei Grenze 58: die C++-Änderungen
+dieser Etappe erhöhen die Ratsche nicht.
+
+## 15. Messung der Etappe 3, Entscheide zu E3-1 bis E3-13 und Eingriff des Dirigenten in den Kanonlauf (Dirigent, 19.09.2026, 04:1x Uhr)
+
+**Ablauf, gemessen.** Worker `24f1e8a6` (`nakama-nak309-7a51070-bau`, Opus max,
+`dontAsk`, zusätzlich `--add-dir` auf das Nachbarrepo), gestartet vom Dirigenten
+am 18.09.2026 gegen 23:01 Uhr mit dem Auftrag
+`docs/beweise/roh/NAK-309-etappe-3-auftrag.txt` (Commit `58f7a5f2`), Basis
+`7a510701b75016a5f64dc4759d6f4fe032f85508`. Letzter Commit `252f8c73` um
+03:51:22 Uhr; `claude agents --json` zeigte um 03:52:20 Uhr `done`. Laufzeit rund
+4 h 50 min, also über der Marke von rund drei Stunden aus dem Skill §3.3; wie oft
+der Worker kompaktiert hat, ist nicht gemessen. Aufsicht ENG: Beobachter
+`cockpit.ps1 -WatchWorker` zehnmal gesetzt (das Monitor-Werkzeug läuft nach 30
+Minuten ab, NAK-319 c), Kontrollloop im 15-Minuten-Takt; nach dem Workerende
+`CronDelete`, `CronList` leer, der Beobachter endete von selbst.
+
+**Kein Kanon vorher (Entscheid des Dirigenten im Auftrag).** Der „Kanon nachher"
+der Etappe 2 (GRUEN 69/69 auf `67e60dd3`) galt als Ausgangswert, weil `git diff
+--stat 67e60dd3..HEAD -- eq-copilot broker tools` vor dem Workerstart leer war
+(vom Dirigenten gemessen, 18.09.2026 23:0x Uhr). Ob der Worker dieselbe Messung
+bei seinem Start wiederholt hat, steht in §14.1; der Dirigent hat §14.1 bis §14.9
+nicht gelesen.
+
+**Endzustand, gemessen (03:52 bis 04:0x Uhr).** Basis `7a510701` ist Vorfahr von
+HEAD (`git merge-base --is-ancestor`, Exit 0); HEAD `252f8c73` = `origin/master`
+nach `git fetch`; `git status --short` nur `briefing-hub/` und
+`nimbalyst-local/`. Elf Commits, alle vom Worker, alle „NAK-309 Etappe 3". `git
+diff --stat 7a510701..HEAD` ohne `docs/beweise/roh`: 22 Dateien, +2529/-127 —
+`docs/beweise/NAK-286.md`, `docs/beweise/NAK-309.md`, vier Szenarien unter
+`docs/gesundheit/szenarien/`, `docs/plugin-wissen.md`, `eq-copilot/README.md`,
+`eq-copilot/plugin/probe/PipeProbeMain.cpp`, `eq-copilot/plugin/src/PipeClient.cpp`
+und `.h`, `eq-copilot/plugin/src/PluginProcessor.cpp` und `.h`,
+`eq-copilot/plugin/src/ProbePipeRegel.h` (neu), drei Testquellen unter
+`eq-copilot/plugin/tests/`, `tools/beweise.ps1`, `tools/fl/LIES-MICH.md`,
+`tools/fl/laufzeit.ps1`, `tools/fl/mcp-stand.json` (neu), `tools/fl/szenario.py`;
+dazu 44 Rohdateien. `tools/fl/selbsttest.py` ist unberührt. Drei Dateien liegen
+außerhalb der Liste des Auftrags (`PluginProcessor.h`, `LebenslaufTestMain.cpp`,
+`ShotTestMain.cpp`); der Auftrag verlangte dafür die Nennung mit Begründung vor
+der Änderung: sie stehen im Commit `7385e06a` (23:26:54 Uhr), der Codecommit
+`e7ce4199` folgt um 23:40:06 Uhr (Commitzeiten gemessen, §14.3). Sechs Commits
+tragen Code oder Werkzeug (`e7ce4199`, `e203490b`, `e131796c`, `afc6fe60`,
+`0882980f`, `48fc736a`), jeder entspricht einem Bauschritt; ein eigener
+Mutationscommit ist nicht darunter (A-10, am Betreff und an der Dateiliste
+gelesen, nicht Hunk für Hunk).
+
+**Rundenbilanz** (`py -3.13 tools/dirigent/rundenbilanz.py 7a510701..HEAD`):
+Produkt 6 Datei(en) +197/-10, Tests 3 Datei(en) +442/-3, Pruefwerkzeug 5 Datei(en)
++1290/-99, Doku 51 Datei(en) +18838/-13, Sonstiges 1 Datei(en) +8/-2. Bauetappe
+mit Produkt-, Test- und Werkzeugzeilen. Kumuliert über das Ticket: zwei
+Bauetappen (2 und 3), keine Nacharbeitsrunde.
+
+**Kanon.** „Kanon nachher" der Etappe 3: GRUEN 69/69, ein stillgelegtes Bein,
+`EXIT=0`, gelaufen auf `ec419a71`, Ende 03:47:27 Uhr (Logzeile gelesen); der
+Workercommit mit Runnerabschnitt und Rohausgabe folgt um 03:49:18 Uhr, während
+des Laufs kam nichts in den Worktree. `git diff --stat ec419a71..HEAD --
+eq-copilot broker tools` ist leer: der Kanon deckt den End-Codestand. Die
+Einzelbeine aus §14.8 hat der Dirigent nicht erneut gefahren.
+
+**Eingriff des Dirigenten in den Kanonlauf (03:12 Uhr).** Der Lauf startete um
+03:05:06 Uhr; um 03:11 Uhr stand das Log seit 03:05:08 Uhr bei „Baue:". Gemessen:
+beide Runnerprozesse ohne CPU-Zuwachs über 15 Sekunden, kein Bauprozess (`cmake`,
+`MSBuild`, `cl`, `link`), einziger Nachkomme ein `vctip.exe` (PID 20484, Start
+03:05:13 Uhr, Elternprozess beendet). Das ist das in `CLAUDE.md` beschriebene
+Bild von NAK-300. Der Dirigent hat nach Prüfung von Name und Startzeit genau
+diese PID beendet (`Stop-Process -Id 20484`); 25 Sekunden später schrieb der
+Runner die ersten Beine. Der Prozess ist der MSVC-Telemetriehelfer und kein Teil
+des Baus; ins Repo wurde nichts geschrieben. Grenze der Zuordnung: die
+Elternkette ließ sich nicht bis zum Runner zurückverfolgen, die Zuordnung stützt
+sich auf die Startzeit im Bauschritt und darauf, dass kein zweiter Bau lief. Der
+Worker wartete laut Auftrag mit einer Schleife auf die `EXIT=`-Zeile; diese
+Schleife erkennt den Hänger nicht, der Hinweis im Auftrag allein reicht also
+nicht. Ein zweiter `vctip.exe` (Start 03:33:54 Uhr) hielt den Lauf nicht auf: der
+Runner schrieb danach weitere Beine und die `EXIT=`-Zeile; kein Eingriff.
+
+**Messabdeckung, geprüft auf Vorhandensein und Form.** Für M-18 bis M-28, M-30
+bis M-56 und M-74 liegt je eine Rohdatei `docs/beweise/roh/NAK-309-rot-M-NN.txt`
+(39 Dateien), jede mit der Zeile „Die Zusage faellt an der erwarteten Pruefung:
+JA" und mindestens zwei SHA-256-Werten. M-29 ist nach R-309-8 der Handlauf in
+`docs/beweise/roh/NAK-309-etappe3-pipeprobe.txt` (§14.6: Lauf 1 Exit 0, Lauf 2
+ohne drittes Argument Exit 1 mit `dateiidentitaetFalsch`). Das Werkzeug der
+Rotbeweise liegt committet unter `docs/beweise/roh/NAK-309-etappe3-rot.ps1`
+(Lehre aus §12). Ob eine Mutation je an der Zeile sitzt, die die Zusage trägt,
+beurteilt die Erstprüfung 3 am Code; der Dirigent hat keine Rohdatei inhaltlich
+geprüft.
+
+**Stichproben an der Quelle (Dirigent, 03:5x Uhr).**
+
+- `git diff 7a510701..HEAD` über `PluginProcessor.cpp`, `PluginProcessor.h` und
+  `PipeClient.cpp` vollständig gelesen: `v2PipeNameDesBaus()` wählt zur
+  Übersetzungszeit am Schalter `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3`, im Produktbau
+  `kPipeName`; der Rückfall in `PipeClient` entfällt, ein leerer Name startet
+  keinen Thread (`letzterFehler` „kein Pipename").
+- `V3Verdrahtung` wird an genau zwei Stellen erzeugt (`PluginProcessor.cpp`,
+  `produktVerdrahtung()` und der Testkonstruktor); beide setzen `v2PipeName`, die
+  Struktur ist privat. Kein Weg lässt das Feld leer.
+- `eq-copilot/plugin/CMakeLists.txt` (in dieser Etappe unverändert): der Schalter
+  hängt nur an Konsolentestzielen (zwei Funktionen, Einzelziele, die Schleife der
+  Main-Ziele); `EqCopilot` und `NakamaProbeeq` stehen in keiner der gelesenen
+  Stellen. Grenze: gesucht wurde nach dem Symbolnamen; ein Setzen über eine
+  Variable oder ein Interface-Ziel fände diese Suche nicht.
+- Nicht gelesen: `ProbePipeRegel.h`, `PipeProbeMain.cpp`, `tools/fl/laufzeit.ps1`,
+  `tools/fl/szenario.py`, die Testquellen, der Code des Nachbarrepos. Ob
+  `SondeProcessor` (Probeeq) einen eigenen v2-Client trägt, den M-74 nicht
+  erfasst, ist nicht gelesen und steht als Prüffrage im Auftrag der Erstprüfung 3.
+- `docs/beweise/NAK-286.md`: 15 Zeilen eingefügt, keine gelöscht, ein Hunk am
+  Dateiende (append-only, A-8). `docs/beweise/NAK-309.md`: vier geänderte Zeilen,
+  davon drei Kopfzeilen (Etappe, Basis-SHA, Ticketpfade, vom Auftrag geöffnet);
+  die vierte ist die letzte Zeile von §13, die nur den fehlenden Zeilenumbruch am
+  Dateiende bekommen hat (Text gleich).
+- Nachbarrepo: `0e6912d` (vier Pfade aus §6.4) und `15b3b1a` (nur
+  `tests/test_request_id.py`); `src/fl_studio_mcp/utils/__init__.py` unberührt;
+  HEAD = `origin/evenacadia-local` = `revision` in `tools/fl/mcp-stand.json`
+  (`15b3b1a133ad37aa75e63e2d98a7aac0b74a62ae`), Arbeitskopie sauber.
+
+**Entscheide zu §14.10 (Technik, innerhalb Ticket, Invarianten und Regeln).**
+Wo nicht anders vermerkt, stützt sich der Entscheid auf die Beschreibung des
+Bauers; die Quelle dazu hat der Dirigent nicht gelesen, das Urteil am Code liegt
+bei der Erstprüfung 3.
+
+| Abweichung | Entscheid | Grenze |
+|---|---|---|
+| E3-1 Trennerregel in `probePipeUrteil` | genehmigt | strenger als §6.4 und im Sinn von R-309-5; `istProbePipename` bleibt unverändert. Die Aussage, Win32 löse `..` in `\\.\`-Pfaden auf, ist nicht nachgemessen; die Regel gilt unabhängig davon. Die Schwäche von `istProbePipename` selbst liegt außerhalb dieses Tickets und ist sicherheitsnah: Registerhinweis mit Zuordnung zu S25i (NAK-310), vom Dirigenten nicht bewertet. |
+| E3-2 M-74 in B8 mit drei Teilen, Quelltextwache über `CMakeLists.txt` | genehmigt | die Wache deckt ein künftiges Testziel ohne Schalter |
+| E3-3 Ping ohne passende Kennung ist Exit 3 | genehmigt | entspricht A-7 (§9): nie stille Fehlzuordnung |
+| E3-4 `Umgebung.verbindung` verlangt `send_command` mit `request_id` | genehmigt | Exit 3 nennt Ursache und Pin |
+| E3-5 eigene Fehler des MCP-Clients tragen die Kennung | genehmigt | Antworten des Controllers ohne Kennung bleiben unverändert; ohne eigene Kennung verhält sich der Client wie bisher |
+| E3-6 lokale Aktionen mit verworfener Antwort messen nichts | genehmigt | Verschärfung von M-42 |
+| E3-7 Zusatzfall `309/M-50 ping_zeile_nennt_module` | genehmigt | zusätzliche Messung |
+| E3-8 `Warte-Ping` verlangt zusätzlich den Titel der Projektdatei | genehmigt | zweites Merkmal neben dem Besitz, ersetzt ihn nie |
+| E3-9 NAK-286 §48 ergänzt M-78 | genehmigt | append-only (gemessen), als Ergänzung markiert |
+| E3-10 Rotbeweise an mehr als einer Stelle | genehmigt | zu M-19 (1) („fällt als `fremd` statt als `zugelassen`") steht eine Prüffrage im Auftrag der Erstprüfung 3: bricht die Mutation die Zusage der Zeile oder nur das Etikett |
+| E3-11 Behauptung A4b unverändert | zur Kenntnis | Behauptung ≤ Messung bleibt gewahrt; der Nachzug läuft in Etappe 4 mit, die Behauptungszeilen des Runners ändert |
+| E3-12 zweiter Nachbarcommit `15b3b1a1` | genehmigt | gemessen: nur `tests/test_request_id.py`; der Auftrag nannte einen Commit, A-7 bleibt gewahrt (Pin im selben Änderungssatz, auf origin) |
+| E3-13 erster Lauf des Rotbeweis-Werkzeugs verworfen | zur Kenntnis | alle Rohdateien stammen aus dem zweiten Lauf; der Dirigent hat um 02:56 Uhr das Überschreiben vorhandener Rohdateien beobachtet, das passt dazu |
+
+**Hinweise aus §14.12 und §14.13.** Vor dem ersten Laufzeit-Arm-Lauf: ein FL, das
+ein früherer Runner ohne Besitzliste gestartet hat, gilt als fremd; der erste
+Lauf installiert den Controller neu; der Pin verlangt das Nachbarrepo auf
+`15b3b1a1` (auf dem Laptop vorher `git pull` dort). Die Kopfzeile „Grenze" nannte
+das Nachbarrepo noch „nur gelesen"; der Dirigent hat sie mit diesem Abschnitt
+nachgezogen. `tools/fl/laufzeit.ps1` (2 276 Zeilen) und `tools/fl/szenario.py`
+(3 935 Zeilen) misst A32 nicht; das beantwortet die in §13 offene Frage zum
+Gesundheitsmaß von der Seite der Dateitypen (A32 zählt laut §14.12 nur `.rs`,
+`.cpp`, `.h`, `.hpp`; vom Dirigenten nicht am Werkzeug nachgelesen).
+
+**Werkzeugbeobachtungen dieser Etappe (Registernachträge stehen aus).**
+„TELEMETRIE · Statusquelle unbekannt" dreimal: 18.09. 23:3x Uhr (Cache 81 s alt,
+Meldung im Cache nicht mehr geführt), 19.09. 01:20 Uhr (Cache 2 s alt, die Quelle
+der Claude-Kontingente fehlte kurz, zeitgleich mit dem Reset des
+Fünf-Stunden-Fensters) und 03:47 Uhr (Cache 80 s alt, voller Kanon lief): das
+Cache-Alter unterscheidet die zwei Bilder (NAK-320). Das Cockpit bestätigt den
+Kontrollloop über den Text „Every 15 minutes" im Ergebnis von `CronList`; das
+Werkzeug gibt den rohen Ausdruck aus, der Loop gilt deshalb nie als bestätigt
+(NAK-319 b). Die Warteschleife auf `EXIT=` erkennt den `vctip.exe`-Hänger nicht
+(NAK-300). Die Registerzeilen dazu, zu NAK-307, NAK-317 und der Hinweis zu E3-1
+folgen nach dem Urteil der Erstprüfung 3 in einem Zug, damit das Register nur
+einmal geschrieben wird.
+
+**Nächster Schritt.** Erstprüfung 3 durch einen frischen, lesenden Prüfer (nie
+der Bauer; Codex-Woche 94 %, gemessen 03:47 Uhr, deshalb Opus-Thread, Skill
+§3.6), Vorlage A aus `tools/dirigent/pruefauftrag-vorlage.md`, Auftrag
+`docs/beweise/roh/NAK-309-erstpruefung-3-auftrag.txt`, Prüfbereich `git diff
+7a510701...252f8c73` über die Code-, Test- und Werkzeugpfade der Etappe. Der
+Laufzeit-Arm läuft nach einem PASS.
+
+## 16. Erstprüfung 3: Urteil, Einordnung und Regel R-309-10 (Dirigent, 19.09.2026, 04:3x Uhr)
+
+**Berichtigung zu §15.** Die Überschrift von §15 nennt „04:1x Uhr". Geschrieben
+wurde der Abschnitt gegen 04:00 Uhr (Commit `8f3abe25`, danach um 04:01 Uhr die
+Telemetriemessung); die Uhrzeit war geschätzt, nicht gemessen.
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Frischer, lesender Opus-Thread (Agent der Dirigentensession, Modell Opus; Codex-Woche 94 %, gemessen 04:01 Uhr, Skill §3.6); nie der Bauer. 75 Werkzeugaufrufe, 1 006 Sekunden. |
+| Auftrag | `docs/beweise/roh/NAK-309-erstpruefung-3-auftrag.txt` (Vorlage A; Gate-Text per Skript aus `docs/plan/plan.json` eingesetzt, 1 409 Zeichen, wörtlich enthalten gemessen), Prüfbereich `git diff 7a510701...252f8c73` über 18 Pfade im Nakama-Repo und `git diff 01f72386...15b3b1a1` über vier Pfade im Nachbarrepo. |
+| HEAD | `7d3794aac773147c1d5a2ffd18c4e74b37d82d6d` vor und nach dem Lauf (vom Prüfer gemeldet; nach dem Lauf vom Dirigenten nachgemessen: HEAD = `origin/master`, `git status --short` nur die zwei fremden Ordner; Nachbarrepo `15b3b1a1`, sauber). Über dem Prüfziel `252f8c73` liegen nur Dokumente, der Code-Diff ist leer (vor dem Start gemessen). Der Lauf ist gültig. |
+| Urteil | **PASS** — kein DEFEKT; fünf LÜCKEN (L-1 bis L-5), fünf HÄRTUNGEN (H-1 bis H-5). Rohbericht wörtlich: `docs/beweise/roh/NAK-309-erstpruefung-3-urteil.md` (per Skript aus dem Transkript des Prüfers gezogen, 29 066 Zeichen, nicht abgetippt). |
+| Abweichung des Prüfers | Er hat nach eigener Angabe zwei `git diff`-Ausgaben zum Lesen nach `%TEMP%` geschrieben (`nak309-laufzeit.diff`, `nak309-szenario.diff`; vom Dirigenten dort gefunden, 04:07 und 04:08 Uhr), entgegen „du schreibst nichts". Beide liegen außerhalb beider Repos; HEAD und Arbeitsbäume sind unverändert (gemessen). Der Lauf bleibt gültig. |
+| Rundenbilanz | unverändert §15 (Bauetappe 3: Produkt 6 Dateien +197/-10, Tests 3 Dateien +442/-3, Prüfwerkzeug 5 Dateien +1290/-99); keine Nacharbeitsrunde. |
+
+**Offene Prüffrage des Dirigenten beantwortet.** `SondeProcessor` (Probeeq) trägt
+keinen v2-Client (vom Prüfer gelesen: nur die zwei v3-Clients, kein `PipeClient`
+unter `eq-copilot/plugin/sonde/`); genau ein Prozessor im Baum trägt einen
+v2-Client, M-74 deckt ihn. Der Testschalter steht an genau den 14 Testzielen,
+die `NAKAMA_PROZESSOR_QUELLEN` übersetzen, am Produkt `EqCopilot` nicht (vom
+Prüfer gezählt). Der Dirigent hat diese zwei Aussagen nicht nachgelesen.
+
+**Einordnung (Dirigent; L-1 an der Matrixzeile nachgelesen, die übrigen nach dem
+Bericht des Prüfers).**
+
+| Befund | Klasse | Entscheid |
+|---|---|---|
+| L-1 Rotbeweisspalte von M-19 sagt „Großschreibung zugelassen", unter der Mutation fällt der Name aber auf `fremd` und bleibt abgelehnt | Textpräzisierung | bestätigt an der Zeile M-19 (§5.3): die fett gesetzte Zusage nennt die Meldung `PROBE ABGELEHNT (Pipename produktion)` wörtlich, die Mutation bricht also einen Teil der Zusagezeile; Ablehnung, Exit 64 und „kein Client" tragen zwei Schichten, keine Einzelmutation fällt sie. §5 bleibt stehen (append-only), der Code ist strenger als die Vorhersage. Eine Doppelmutation für den Kern ist Härtung, Register NAK-323 (f). |
+| L-2 M-24 misst die Namensgleichheit nur als Quelltextaussage | bekannt | deckt sich mit NAK-318; Nachtrag dort, keine neue Regel |
+| L-3 der Besitz hängt am echten Format von `Win32_Process.CommandLine`, gemessen nur gegen die Attrappe | LÜCKE | Regel **R-309-10** unten |
+| L-4 die Fremdprüfung ist ein Tor an benannten Stellen, kein Dauerwächter; der Satz in M-34 liest sich weiter | Textpräzisierung | es gilt M-31 (a): nach dem Ping misst der Lauf weiter; M-34 heißt „an den benannten Toren". Das Beenden bleibt immer geschützt (ein einziger Ausgang, laut Prüfer). Ein Dauerwächter ist Härtung, Register NAK-323 (g). |
+| L-5 die Wache M-74 (c) erfasst Ziele nur über `NAKAMA_PROZESSOR_QUELLEN` | HÄRTUNG (vom Dirigenten herabgestuft) | am Zielstand leer (ein Prozessor mit v2-Client); Register NAK-323 (h) |
+| H-1 bis H-5 | HÄRTUNG | Register NAK-323 (a) bis (e) |
+
+**R-309-10 (neu, Technik, schließt L-3).** Der erste echte Laufzeit-Arm-Lauf nach
+Etappe 3 ist die Messung des Besitzurteils am Host. Er gilt für dieses Ticket
+nur dann als gemessen, wenn der Runner das von ihm gestartete FL als eigen
+erkennt und am Ende selbst beendet. Endet der Lauf `UEBERSPRUNGEN`, weil das
+selbst gestartete FL nicht als eigen gilt, ist das ein Defekt der Etappe 3
+(Nacharbeit an `Projekt-Der-Befehlszeile`), auch bei Exit 0; der Dirigent liest
+dazu die Besitz- und Übersprungzeilen des Rohprotokolls und prüft nach dem Lauf,
+ob ein FL-Prozess übrig ist. Ein übrig gebliebenes, vom Runner gestartetes FL
+beendet der Dirigent nicht nach dem Titel, sondern nur nach PID und Startzeit
+aus dem Rohprotokoll dieses Laufs.
+
+**Etappe 3 ist mit PASS erstgeprüft.** NAK-317 (Tests starten den v2-Client auf
+dem Produktionsnamen) ist geschlossen: M-74 gebaut in `e7ce4199`, rotbewiesen,
+vom Prüfer am Code gelesen, Kanon GRUEN 69/69.
+
+**Nächster Schritt.** Laufzeit-Arm auf dem End-Stand (`tools/fl/laufzeit.ps1
+-Ticket NAK-309 -Basis 4c1c7f3c`, Gate: „Laufzeit-Arm erst nach V1") unter
+R-309-10; danach Etappe 4 (Beweislücken, M-57 bis M-73, dazu R-309-9 mit M-75,
+der Wortlaut der A36-Behauptung, der Nachzug der A4b-Behauptung aus E3-11, H-5
+aus §10 und der Entscheid zu NAK-321).
+
+## 17. Reihenfolge geändert, Übergabe und Hygiene im Abschlussfenster (Dirigent, 19.09.2026, 04:27 Uhr gemessen)
+
+**Berichtigung zu §16.** Die Überschrift von §16 nennt „04:3x Uhr". Der Commit
+mit §16 (`0635d1de`) trägt 04:24:07 Uhr; richtig ist 04:2x Uhr. Zum zweiten Mal
+in Folge war eine Uhrzeit geschätzt statt gemessen; ab hier stehen in den
+Überschriften des Dirigenten nur gemessene Zeiten (`Get-Date` oder Commitzeit).
+
+**Entscheid: Etappe 4 vor dem Laufzeit-Arm (ändert den „Nächsten Schritt" aus
+§16).** Der Laufzeit-Arm läuft nicht in dieser Session, sondern am End-Stand
+nach Etappe 4, weiter unter R-309-10. Gründe: (1) Der Skill §3.3 verlangt ihn
+nach grünem Kanon auf dem End-Stand; ein Lauf jetzt mäße den Stand vor Etappe 4
+und müsste danach wiederholt werden. (2) Etappe 4 berührt weder
+`tools/fl/laufzeit.ps1` noch `tools/fl/szenario.py` (Pfade in §6.5) und hängt
+nicht am Ergebnis des Laufs; eine Nacharbeit nach R-309-10 wäre ohnehin ein
+eigener Worker nach Etappe 4. (3) Um 04:25 Uhr lief kein FL; der Lauf startet FL
+mit Fenster, und die Szenarien rufen `transport.start` am Diagnoseprojekt mit
+dem Testtrack auf. Ob dabei Ton über das Audiogerät des Rechners ausgegeben
+wird, steht in `tools/fl/LIES-MICH.md` nicht und ist nicht gemessen; der Dirigent
+vermutet es und stellt am Audiogerät des Users nichts um. Preis des Entscheids:
+L-3 (echtes Format der Befehlszeile), die Boot-Marke der Controller-Version
+2026-09-18 und der erste Pinlauf bleiben bis dahin ungemessen. Der Aufruf für
+den Lauf: `pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket NAK-309 -Basis
+4c1c7f3c8cb5145de0e545aebe6305e450f00f7c -Beenden` — mit `-Beenden`, weil
+R-309-10 verlangt, dass der Runner sein FL am Ende selbst beendet (ohne den
+Schalter bleibt es laut `tools/fl/LIES-MICH.md` offen).
+
+**Offene Frage an den User (Register NAK-325, noch keine Karte in
+`docs/plan/fragen.json`).** Darf der Laufzeit-Arm auch nachts laufen? Er öffnet
+FL Studio sichtbar und spielt dabei vermutlich den Testtrack hörbar ab. Bis zur
+Antwort fährt der Dirigent ihn nur zwischen 9:00 und 23:00 Uhr. Die Frage
+blockiert nichts; die nächste Session legt die Karte an und stellt sie im
+Zeitfenster.
+
+**Warum diese Session Etappe 4 nicht beginnt.** Kontext gemessen 04:25 Uhr: 42 %
+(Sessionbeginn 11 %); Etappe 3 hat mit Auftrag, Aufsicht, Messung, Erstprüfung
+und Register 31 Punkte gekostet. Etappe 4 in dieser Session läge in der Messung
+und in der Erstprüfung 4 über der Schwelle von 500k, ab der der Skill §5 keine
+neue Prüfrunde erlaubt. Kontingente 04:25 Uhr: Claude 10 % im
+Fünf-Stunden-Fenster, 14 % in der Woche, Codex-Woche 94 %.
+
+**Übergabe für Etappe 4 (nächste Dirigentensession).** Auftrag aus §6.5 (M-57
+bis M-73), dazu: R-309-9 mit der neuen Matrixzeile M-75 (§13), das Wort in der
+A36-Behauptung („jedes gebaute gebundene Kernziel", §12), der Nachzug der
+A4b-Behauptung um M-18 bis M-28 (E3-11, §14.10), H-5 aus §10 (M-62 gehört zu
+G10, nicht G7) und der Entscheid zu NAK-321. Muster: der Auftrag der Etappe 3
+(`docs/beweise/roh/NAK-309-etappe-3-auftrag.txt`). Lehren dieser Etappe für den
+Auftrag: (a) der Worker wartet auf die `EXIT=`-Zeile des Kanons und erkennt den
+`vctip.exe`-Hänger nicht; der Auftrag verlangt deshalb, dass die Warteschleife
+zusätzlich meldet, wenn das Log länger als fünf Minuten bei „Baue:" steht, und
+dass der Worker dann nach NAK-300 handelt; (b) der Workername endet auf `-bau`,
+der Worker braucht für Etappe 4 kein `--add-dir`; (c) Prüfer weiter ein frischer
+Opus-Thread, solange die Codex-Woche über 90 % steht; der Prüfauftrag nennt nur
+Testfälle, die am Zielstand gezählt sind (§15: der Dirigent hatte drei Fallnamen
+aus dem Bauplan übernommen, die es so nicht gibt, und vor dem Commit
+berichtigt).
+
+**Hygiene im Abschlussfenster (04:2x Uhr, per Kommando).** Kontextfläche unter
+den Grenzen: `MEMORY.md` 5 395 B, `CLAUDE.md` 19 677 von 20 480 B, Skill 24 537
+von 24 576 B; keine Indexzeile über 250 Zeichen, keine Memory-Datei ohne
+Indexlink. `py -3.13 tools/plan/dokuriegel.py` über `CLAUDE.md` und den Skill: 0
+Befunde; über Register und Manifest: 0 Befunde. `py -3.13
+tools/plan/gesundheit.py`: Exit 4 mit den drei bekannten gerissenen Grenzen aus
+NAK-292 und denselben Zahlen wie in §13 (Quelldateien über 2 000 Zeilen 1 von 0,
+Funktionen über 200 Zeilen 34 von 28, Kommentar-Bezeichner ohne Code 36 von 30),
+gemessen 202 Dateien; Etappe 3 hat kein Maß bewegt. `tools/plan/tidy.py` nicht
+erneut gefahren; A33 lief im Kanon nachher auf demselben Codestand mit 58
+Fundstellen bei Grenze 58. Abgeräumt: Worker `24f1e8a6`, die zwei Temp-Dateien
+des Prüfers, Kontrollloop und Beobachter (§15).
+
+## 18. Etappe 4 — Beweislücken (Bauer, 19.09.2026)
+
+Auftrag `docs/beweise/roh/NAK-309-etappe-4-auftrag.txt` (Commit `8d573e9f`);
+Grundlage §4.9 bis §4.13, §5.7 (M-57 bis M-72), §6.5, §8.1 F-19 bis F-22, §9
+(A-5, A-6, A-10), §10 (H-5), §12, §13 (R-309-9), §14.10 E3-11, §15 und §17.
+Zeilennummern in diesem Abschnitt gelten zum Stand des Commits, den die Zeile
+nennt; ohne Nennung zum Basis-SHA `8d573e9f`.
+
+### 18.1 Start und Ausgangswert des Kanons
+
+- **Basis-SHA** `8d573e9fc3ca9b4e2bc52fe20a56afc89a9dbb0e` (Kopfzeile
+  Basis-SHA). `git pull --ff-only`: „Already up to date"; `git status
+  --short`: nur `briefing-hub/` und `nimbalyst-local/`. Prozesse um 04:36 Uhr
+  (`Get-Date` 04:36:13): kein `cmake`, `MSBuild`, `cl`, `cargo`, `link`,
+  `vctip`, `FL64`, `FL`, `rustc` oder `EqCop*`.
+- **Kanon vorher entfällt** (Auftrag Schritt 2): `git diff --stat
+  ec419a71..HEAD -- eq-copilot broker tools` ist beim Start leer (Exit 0;
+  dazwischen neun Commits, nur Dokumente). Ausgangswert ist der Kanon nachher
+  der Etappe 3: **GRUEN - 69/69 Kanon-Laeufe bestanden, 1 stillgelegtes Bein,
+  Exit 0** auf `ec419a71` (19.09.2026, 03:05 bis 03:47 Uhr; Abschnitt
+  „Kanon-Lauf - NAK-309 Etappe 3 Kanon nachher", Rohausgabe
+  `docs/beweise/roh/NAK-309-ec419a7-dirty.md`), darin A4 `[OK]` 1 179,71 s,
+  A4-SI `[OK]` 12,92 s, B2, A12, B10, B22 und A36 je `[OK]` Exit 0. A32
+  `[HINWEIS]` Exit 4 (Quelldateien über 2 000 Zeilen 1 bei Grenze 0,
+  Funktionen über 200 Zeilen 34 bei Grenze 28, Kommentar-Bezeichner ohne Code
+  36 bei Grenze 30; Dateien über 1 500 Zeilen 10; 202 Dateien gemessen), A33
+  `[OK]` Exit 0 mit 58 Fundstellen bei Grenze 58 (§14.14).
+
+### 18.2 Matrixzeile M-75 (R-309-9, L-1 der Erstprüfung 2)
+
+§5 bleibt unverändert (append-only); M-75 ist eine Zeile dieses Manifests wie
+M-01 bis M-74.
+
+**Vor dem Bau gemessen** (19.09.2026, nach 04:53 Uhr, `Get-Date` 04:53:46
+unmittelbar davor; Werkzeug
+`tools/eq-copilot/pruefe_beweisrunner.py` am echten Baubaum, Klasse
+`Ableitung` und CMake-Export `nakama-frischebaum-Release.json`):
+`$gemesseneZiele` (`tools/beweise.ps1:782-827`) nennt sechs Ziele, alle
+stehen im CMake-Export, alle sind aus den Tracking-Logs ableitbar, alle sind
+heute frisch; kein Ziel ist nicht ableitbar.
+
+| Ziel | Bein | Typ laut Export | Frischebaum (Werkzeuge der Leselogs) | Eingaben der Arbeitskopie | Stand |
+|---|---|---|---|---|---|
+| `EqCopilot_VST3` | B1, A14 | MODULE_LIBRARY | `cl`, `link` | 1 987 | frisch |
+| `NakamaKern` | A14 | STATIC_LIBRARY | `cl`, `lib-link` | 263 | frisch |
+| `EqCopIpcLast` | A22 | EXECUTABLE | `cl`, `link` | 429 | frisch |
+| `EqCopSonde012SourcesLatencyTest` | A23 | EXECUTABLE | `cl`, `link` | 432 | frisch |
+| `EqCopSessionSoak` | A24 | EXECUTABLE | `cl`, `link` | 1 841 | frisch |
+| `NakamaProbeeq_VST3` | B1 | MODULE_LIBRARY | `cl`, `link` | 1 966 | frisch |
+
+| ID | Befund | Zustand und Vorbedingung | Ereignis | Zusage | Reihenfolge und Frist | Test | Rotbeweis | Quelle | Etappe |
+|---|---|---|---|---|---|---|---|---|---|
+| M-75 | R-309-9 · L-1 der Erstprüfung 2 · gemessene Ziele | Die sechs Ziele aus `$gemesseneZiele`, die `-Bauen` baut und die ein Bein ausführt oder misst (Tabelle oben), stehen in `bau_ziele` der Frischeprüfung, aber in keinem Zeitvergleich: die Population trägt nur Beine der Art `plugin` (`tools/beweise.ps1:1025`), die Vergleichsschleife läuft nur über sie (`tools/eq-copilot/pruefe_beweisrunner.py:565-609`) | Runnerlauf; eine Eingabe eines gemessenen Ziels ist jünger als dessen Zieldatei, oder sein Frischebaum ist nicht ableitbar | **Jedes Ziel, das der Runner baut und ein Bein ausführt oder misst, bekommt dasselbe Frischeurteil wie ein Prüfbinary: `frisch`, `VERALTET` (verweigert die Beglaubigung, Werkzeug-Exit 4 → `NICHT BEGLAUBIGT`) oder `NICHT ABLEITBAR` (nie grün, Exit 3 → `UNVOLLSTAENDIG`); ein Ziel ohne Zieldatei wird genannt, nicht beurteilt; ein Ziel, das im CMake-Export fehlt, ist nicht ableitbar** | Baustand vor dem ersten Bein (`--baustand`); die Zieldatei kommt aus dem CMake-Export, nie aus einer Namensregel des Runners | A36 **NEU** `gemessene_ziele_im_zeitvergleich` (Attrappe: ein Ziel in `bau_ziele` ohne Bein; (a) Eingabe jünger → `VERALTET`, Exit 4, mit Gegenfall `frisch`, Exit 0; (b) CL-Leselog fehlt → `NICHT ABLEITBAR`, Exit 3; (c) Ziel fehlt im CMake-Export → `NICHT ABLEITBAR`; (d) Zieldatei fehlt → „nicht gebaut, nicht beurteilt"; (e) Quelltextwache über `tools/beweise.ps1`: `$gemesseneZiele` ist nicht leer und geht über `$zuBauen` in `bau_ziele`) | **heute rot** — Gegenprobe L-1 (`docs/beweise/roh/NAK-309-erstpruefung-2-urteil.md`; `tools/beweise.ps1:1025`, `pruefe_beweisrunner.py:565-609`): ein veraltetes `EqCopIpcLast.exe` bleibt ohne `VERALTET`. Rotbeweis nach dem Bau an der Zeile, die die Population der gemessenen Ziele bildet (`pruefe_beweisrunner.py`, `baustand()`): die gemessenen Ziele entfallen → (a) rot; dazu an der Runnerzeile, die sie in `bau_ziele` trägt (`$zuBauen += @($gemesseneZiele …)`) → (e) rot | R-309-9 (§13); L-1 der Erstprüfung 2 | 4 |
+
+Etikett: heute rot (Zählung §5.9 damit 75 Zeilen, heute rot 33).
+
+**Befund außerhalb von `$gemesseneZiele` (gemessen, nicht gebaut).** R-309-9
+beginnt mit „Jede Binärdatei, die ein Kanon-Bein ausführt oder misst"; der
+Auftrag fasst die Population als „die Ziele aus `$gemesseneZiele`". Drei
+Rust-Binaries liegen außerhalb: A22 führt
+`broker/target/release/eqcop-broker-v3probe.exe` aus
+(`tools/eq-copilot/pruefe_ipc_last.py:45`), A23 und A24 führen
+`broker/target/release/eqcop-broker-sonde012-probe.exe` aus
+(`pruefe_sonde012_sources_latency.py:14`, `pruefe_session_soak.py:119`), und
+A17 misst den Hash von `broker/target/release/eqcop-broker.exe`
+(`pruefe_installer_manifest.py:720`). Sie entstehen nur mit `-Bauen`
+(`cargo build --release`, `tools/beweise.ps1:908-914`) und haben keine
+MSBuild-Tracking-Logs; ein Frischebaum wäre aus der cargo-Abhängigkeitsdatei
+`broker/target/release/<bin>.d` ableitbar (gemessen: vorhanden, sie nennt die
+Quellen unter `broker/src/` und die eingebundenen Schemadateien). Diese Etappe
+baut das nicht; M-75 und die Behauptung von A36 nennen nur die Ziele aus
+`$gemesseneZiele`. Hinweis an den Dirigenten in §18.13.
+
+### 18.3 Dateien außerhalb der Liste des Auftrags (vor der Änderung genannt)
+
+- `eq-copilot/plugin/tests/V3TestServer.h` (LF): der geteilte v3-Testserver,
+  den `IpcTestMain.cpp` einbindet; die Schalter aus G7 und G10, neben die §6.5
+  den neuen Schalter legt (`welcomeAlsP2`, `welcomeTypfalsch`, …), sind dort
+  definiert, nicht in `IpcTestMain.cpp`, und das welcome schreibt der Server
+  mit festem Envelope-Minor 0. Zwei Schalter kommen dazu, beide mit dem
+  heutigen Verhalten als Vorgabe: `welcomeMinor` (Envelope-Minor des welcome,
+  Vorgabe 0; M-62 bis M-65) und `p2NachWelcomeMinor` (genau ein P2-Frame mit
+  diesem Minor auf der Telemetrieverbindung direkt nach dem welcome, Vorgabe
+  −1 = keiner; M-65). Kein anderes Bein setzt sie; die übrigen Nutzer des
+  Headers bleiben bytegleich im Verhalten.
+
+### 18.4 Änderungen je Datei
+
+Commits auf `master`, je mit Pathspec: `7519c387` (Start, §18.1 bis §18.3),
+`e1fb5289` (Golden, Erzeuger, Feldzählung, Karte, KONZEPT), `3fe8f6d6`
+(Welcome-Minorgrenze), `3b2d182c` (Briefkasten), `685158e9` (NOT RUN),
+`4b65c147` (M-75, Wortlaut A36), `4161b04c` (Fingerprint, Wortlaut B22),
+`d19d4d67` (Wortlaut A4b), `cb7c0d0e` (Wache `urteilsvorrang` nach dem
+Probelauf des Rotbeweises, §18.10 E4-11), `8480ecb9` (Rotbeweise im Volllauf,
+Werkzeug Fassung 1), `b1ddc24c` (Kopf von `pruefe_beweisrunner.py`),
+`b8549bca` (Ränder der Vorzeichenumkehr in B22), `2ffa644d` (Nachlauf M-67,
+M-71, M-72, M-75, Werkzeug Fassung 2), `0333855d` (`plugin-wissen.md`),
+`4d6b8dbf` (Urteilskombinationen), `958dc81d` (Rohzeilen mit `--nocapture`),
+`eee10788` (Einzelbeine), `8d5e5bb8` (Beleglauf 1 samt Broker-Pin), `789f305a` (Konsolenzeile des Runners), `2dd3bde6` (Nachlauf M-67, M-70, M-75 und Urteilskombinationen), dazu die Commits des Beleglaufs 2, dieses Abschnitts und des Kanons nachher (§18.14). Die Zeilenenden sind je Datei vor
+dem Schreiben gemessen und erhalten: LF bei `StateMigrationTestMain.cpp`,
+`erzeuge_state_fixtures.py`, `IpcTestMain.cpp`, `briefkasten.rs`,
+`store_crash_matrix.rs`, `pruefe_beweisrunner.py` und den neuen Dateien;
+CRLF bei `abdeckungskarte.md`, `KONZEPT.md`, `V3TestServer.h`, `beweise.ps1`,
+`Sonde013FingerprintGoldenTest.cpp` und `plugin-wissen.md`;
+`eq-copilot/fixtures/state/**` ist `-text`. **Berichtigung zu §18.3:** dort
+steht `V3TestServer.h` als LF; gemessen ist die Arbeitskopie CRLF
+(`i/lf w/crlf`), und so ist sie geschrieben.
+
+- **`eq-copilot/plugin/tests/StateMigrationTestMain.cpp`** (B2): in G7 nach dem
+  Block `main-intent-v1` der Block `main-binding-v1` — `state::frisch`, Klasse
+  `main`, Bindung `0123456789abcdef0123456789abcdef`, Bytes aus
+  `state::speichere`. Mit `--schreibe-goldens` schreibt er die Datei; ohne liest
+  er sie von der Platte und prüft getrennt den Leser (M-57) und den Schreiber
+  samt Rückweg (M-58).
+- **`eq-copilot/fixtures/state/schema2/main-binding-v1.bin`** (neu, 256 Byte,
+  SHA-256 `c77ecec2…`) über `EqCopStateMigrationTest --schreibe-goldens`, die
+  übrigen acht Goldens dabei bytegleich neu geschrieben (`git status` ohne
+  Änderung); **`eq-copilot/fixtures/state/MANIFEST.json`** über den
+  Schreibmodus des Erzeugers (nur der neue Eintrag, 5 Zeilen).
+- **`tools/eq-copilot/erzeuge_state_fixtures.py`** (A12): `main-binding-v1` in
+  der Goldenliste samt Kommentar (M-59); dazu die Waisenprüfung auch über
+  `schema2/`, mit den registrierten Goldens als verwalteter Menge (§18.10 E4-1).
+- **`docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py`** (neu): das
+  Zählwerkzeug (§18.5); **`…-feldzaehlung.txt`** (neu): die zwei Läufe.
+- **`docs/gesundheit/abdeckungskarte.md`**, **`docs/gesundheit/KONZEPT.md`**:
+  die gemessene Zahl 133 mit Datum, Ticket und Zählweg; der frühere Wert und die
+  132 vor dem Golden stehen als Verlauf dabei; in der Karte dazu die Dateizahl
+  80 statt 79 (§18.10 E4-12).
+- **`eq-copilot/plugin/tests/V3TestServer.h`**: die Schalter `welcomeMinor` und
+  `p2NachWelcomeMinor` (§18.3).
+- **`eq-copilot/plugin/tests/IpcTestMain.cpp`** (B10): im Abschnitt G7
+  (TelemetryClient) `welcome_minor_grenze_telemetrie` (M-64, M-65), im
+  Abschnitt G10 (Control-Handschlag, H-5) `welcome_minor_grenze_control`
+  (M-62, M-63). `Verbindung.cpp` und `TelemetryClient.cpp` sind unverändert
+  (A-5).
+- **`broker/src/briefkasten.rs`** (nur Testmodul, A4):
+  `nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal` (M-66).
+- **`broker/tests/store_crash_matrix.rs`** (A4, A4-SI): `junction_legen` liefert
+  den Grund (`Result<(), String>`) und verweigert unter
+  `NAKAMA_TEST_JUNCTION_VERWEIGERN=1`; `melde_nicht_gelaufen` (rein, liest keine
+  Umgebung) und `nicht_gelaufen` (nimmt `NAKAMA_NICHT_GELAUFEN`, leer gilt als
+  fehlend, ohne Meldeweg `panic!`); beide Junction-Tests melden NOT RUN statt
+  `eprintln!` und `return`; `store_weist_reparse_punkt_im_pfad_ab` nutzt
+  `junction_legen`; neuer Test `nicht_gelaufen_ohne_meldeweg_scheitert`
+  (M-67, M-68).
+- **`tools/eq-copilot/pruefe_beweisrunner.py`** (A36): Modus `--nicht-gelaufen`
+  (0 leer, 3 NOT RUN, 2 unlesbar, Zeile `NICHT-GELAUFEN-JSON` für den Runner);
+  in `baustand()` die Population der gemessenen Ziele aus `bau_ziele` ohne Bein,
+  Datei aus dem CMake-Export (M-75); die JSON-Zeile trägt je Eintrag `binary`
+  und `gemessen`; die Selbsttestfälle `nicht_gelaufen_macht_unvollstaendig`
+  (M-67), `urteilsvorrang_rot_vor_nicht_gelaufen` (M-70) und
+  `gemessene_ziele_im_zeitvergleich` (M-75); der bestehende Fall
+  `gleichstand_und_ein_tick` nimmt die eigene Quelle von B6 (§18.10 E4-8); der
+  Skriptkopf nennt die gemessenen Ziele und die Fälle bis M-75 (`b1ddc24c`).
+- **`tools/beweise.ps1`**: NOT RUN für A4 und A4-SI (Feld `Meldeweg`, frischer
+  Meldeordner je Bein nur für den Kindprozess über `Fuehre-Aus -Umgebung` und
+  `Start-Process -Environment`, danach `--nicht-gelaufen`, Symbol `[NOT RUN]`,
+  `$fehlendeVoraussetzung`, Nachsatz „k Bein(e) NOT RUN, siehe Uebersicht",
+  Grünzählung am Symbol, Ordner im `finally` entfernt); M-75: die
+  Baustandtabelle nimmt die Datei aus dem Werkzeug, Verweigerungs- und Rohtext
+  nennen die gemessenen Ziele; Runnerkopf (Beschreibung, Exitcode 3); die
+  Behauptungszeilen A4, A4-SI, A4b, A36 und B22 (§18.8); aus dem Selbstaudit die
+  Konsolenzeile eines Beins mit Meldeweg erst nach der Klassifikation
+  (`789f305a`, §18.10 E4-16).
+- **`eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp`** (B22): statt
+  `pruefe (true, …)` der Bytevergleich unter Vorzeichenumkehr (M-71) und der
+  Trennschärfefall gegen den Sinus (M-72); aus dem Selbstaudit zwei
+  Randprüfungen, Stille und Vollaussteuerung (`b8549bca`, §18.11). `Fingerprint.h`
+  und die Engine sind unverändert.
+- **`docs/plugin-wissen.md`**: ein datierter Absatz zu NOT RUN und zu den
+  gemessenen Zielen neben der Exitcode-Zeile des Runners.
+- **`docs/beweise/roh/NAK-309-etappe4-rot.ps1`** (neu): das Werkzeug der
+  Rotbeweise, Gegenproben und Einzelbeine in zwei Fassungen (§18.6); jede
+  Rohdatei nennt den SHA-256 ihrer Fassung.
+- **`docs/beweise/roh/NAK-309-etappe4-urteilskombi.ps1`** und **`.txt`** (neu):
+  Urteilskombinationen des Runners (§18.11);
+  **`docs/beweise/roh/NAK-309-etappe4-nocapture.txt`** (neu): zwei Tests des
+  Briefkastens mit `--nocapture`; `docs/beweise/roh/NAK-309-etappe4-einzelbeine.txt` (neu, §18.7); Manifeste und Rohausgaben der zwei Belegläufe (neu, §18.9).
+- **`eq-copilot/install/nakama-installer-v1.json`**: `--broker-pin` des
+  Beleglaufs 1 schrieb die sha256 des neu gebauten Release-Brokers
+  (`8d5e5bb8`, Auftrag Schritt 7).
+
+### 18.5 Feldzählung (M-61)
+
+Zählweg (`docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py`): Population nach
+der Zählregel der Karte, 136 Felder — Wurzel `schema`; Common 7 und
+MainProject 8 und Dsp 6 aus den `juce::Identifier`-Konstanten in
+`eq-copilot/plugin/state/NakamaState.cpp` (beim Lauf gegen die Quelle geprüft);
+Parameters `schema`, `dsp_schema_version` und die ersten 112 Kennungen aus
+`eq-copilot/schemas/state/nakama-parameter-v2.json`. Jedes Byte-Bild
+`eq-copilot/fixtures/state/schema2/*.bin` wird als JUCE-ValueTree geladen (Format
+an der JUCE-Quelle 8.0.9 gelesen: `SharedObject::writeToStream`,
+`writeString`, `writeCompressedInt`, jedes `var` mit Längenpräfix), die Datei
+muss bis zum letzten Byte aufgehen; gezählt wird je Feld, ob es an seinem Ort
+in mindestens einem Byte-Bild steht. Die JSON-Dateien unter `jcs/` (14),
+`dto/` (36) und `preset/` (20) sind eigene Verträge und zählen nicht.
+
+| Lauf | Byte-Bilder | Wurzel | Common | MainProject | Parameters | Dsp | Summe | ohne Fixture |
+|---|---|---|---|---|---|---|---|---|
+| vorher (04:56:53, HEAD `7519c387`) | 8 | 1/1 | 6/7 | 5/8 | 114/114 | 6/6 | **132 von 136** | `Common.project_binding_id`, `MainProject.confirmed_members_v1`, `manual_passages_v1`, `assistant_step_v1` |
+| nachher (04:58:27, HEAD `7519c387`, das neue Golden in der Arbeitskopie) | 9 | 1/1 | 7/7 | 5/8 | 114/114 | 6/6 | **133 von 136** | die drei MainProject-Felder aus NAK-267 A-3 |
+
+Die Zählung stimmt mit Teil A §2 überein (132 vorher); keine Abweichung.
+Karte und KONZEPT nennen seit `e1fb5289` die gemessene 133 mit Datum, Ticket
+und Zählweg. Rotbeweis: dieselbe Zählung ohne das Golden (`--ohne`) ergibt 132
+gegen die 133 der Karte (`NAK-309-rot-M-61.txt`).
+
+### 18.6 Rotbeweise je Matrixzeile
+
+Ablauf nach §6.1, Werkzeug `docs/beweise/roh/NAK-309-etappe4-rot.ps1`. Jede
+Rohdatei trägt Kopf, Zusage, Bein, Datei und Zeile der Mutation, SHA-256 vor
+der Mutation (Datei gleich HEAD), Mutation vorher und nachher wörtlich, Bau
+unter Mutation mit Zeitstempelprüfung (C++, NAK-230), den Lauf nur des
+betroffenen Beins, die gefallenen Prüfungen, den Satz „Die Zusage fällt an
+der erwarteten Prüfung", die Mitgefallenen mit Grund, die unter derselben
+Mutation grün gebliebenen Prüfungen, die bytegleiche Rücknahme (SHA-256, `git
+diff` leer, LastWriteTime auf jetzt) und den Lauf danach. Wo ein Lauf gegen
+den Basisstand ohne Umbau nicht möglich ist, steht der Grund in der
+Rohdatei. **Volllauf** mit Fassung 1 des Werkzeugs (SHA-256 `063356A9…`,
+Commit `8480ecb9`) auf HEAD `cb7c0d0e`, 19.09.2026, 05:36 bis 06:27
+Uhr, Exit 0; **Nachlauf** der Zeilen M-67, M-71, M-72 und M-75 mit Fassung 2
+(SHA-256 `C978A877…`, Commit `2ffa644d`) auf HEAD `b8549bca`, nachdem
+der Kopf von `pruefe_beweisrunner.py` (`b1ddc24c`) und B22 (`b8549bca`, zwei
+Randprüfungen) sich geändert hatten (06:33 bis 06:35 Uhr, Exit 0; ein erster Nachlauf um 06:30 Uhr mit einer Zwischenfassung, SHA-256 `D28C3FF5…`, ergab dieselben Urteile, seine Rohdateien sind überschrieben, weil die Zwischenfassung eine überflüssige Konsolenzeile mit falscher Begründung trug, §18.11 Nr. 6). Der SHA-256 gilt für die
+Bytes, die git speichert (LF); eine Arbeitskopie mit `core.autocrlf=true` kann
+das Werkzeug mit CRLF tragen.
+
+| Zeile | Test (Datei, Name wörtlich, Bein) | Ergebnis | Rohdatei | fällt an der Zusagezeile |
+|---|---|---|---|---|
+| M-57 | B2, `eq-copilot/plugin/tests/StateMigrationTestMain.cpp`, G7, Block `main-binding-v1`: „M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert" | grün: `geladen, Bindung '0123456789abcdef0123456789abcdef'` | `docs/beweise/roh/NAK-309-rot-M-57.txt` | **JA** — Leser weist einen leeren Wert zu (`NakamaState.cpp`, `c.projectBindingId = binding.toString();`); mit fällt die Rückwegprüfung von M-58 und die Kennzeile von G7 (Gründe in der Rohdatei) |
+| M-58 | B2, derselbe Block: „M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes" und „M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich" | grün: `256 Bytes vom Writer, 256 auf der Platte` | `docs/beweise/roh/NAK-309-rot-M-58.txt` | **JA** (beide) — Writer entfernt die Bindung bedingungslos; M-57 bleibt dabei grün (Leser und Schreiber stehen nicht auf demselben Writer) |
+| M-59 | A12, `tools/eq-copilot/erzeuge_state_fixtures.py --pruefen` (Goldenliste, MANIFEST, Waisenprüfung) | grün | `docs/beweise/roh/NAK-309-rot-M-59.txt` | **JA** — ohne Listeneintrag `VERWAIST: schema2/main-binding-v1.bin`, dazu `ABWEICHUNG: MANIFEST.json`; Gegenprobe (2) mit dem Waisenumfang vor der Etappe: grün wie erwartet (E4-1) |
+| M-60 | B2 bestehend, `StateMigrationTestMain.cpp` G7: „'sensor': project_binding_id NICHT erfunden" (je Rolle) | grün | `docs/beweise/roh/NAK-309-rot-M-60.txt` | **JA** — Migration setzt eine Bindung; mit fallen dieselbe Prüfung der übrigen Rollen und die Migrationsgoldens |
+| M-61 | Zählwerkzeug `docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py`, Rohdatei `docs/beweise/roh/NAK-309-etappe4-feldzaehlung.txt` | 133 von 136; Karte und KONZEPT nennen 133 | `docs/beweise/roh/NAK-309-rot-M-61.txt` | **JA** — ohne das Golden 132 gegen 133 der Karte, Exit 4 |
+| M-62 | B10, `eq-copilot/plugin/tests/IpcTestMain.cpp`, G10, `welcome_minor_grenze_control`: „welcome_minor_grenze_control (M-62): ein welcome mit Envelope-schema_minor 5 (= kJsonSchemaMinor) verbindet" | grün | `docs/beweise/roh/NAK-309-rot-M-62.txt` | **JA** — Welcome verlangt Minor < 5; mit fallen M-63 a/b (vorhergesagt) und `plugin_stoppt_keinen_fremden_brokerprozess` (nicht vorhergesagt, Ursache §18.11 Nr. 5) |
+| M-63 | B10, derselbe Block: „welcome_minor_grenze_control (M-63 a): ein welcome mit schema_minor 6 verbindet heute - der Handschlag prueft Familie und Inhalt, nicht den Minor"; „welcome_minor_grenze_control (M-63 b): der erste Frame mit schema_minor 6 schliesst - letzterFehler nennt den Minor, envelopeAbweisungen +1" | grün: `Envelope schema_minor ist neuer als der JSON-Leser — wird geschlossen · Abweisungen 1` | `docs/beweise/roh/NAK-309-rot-M-63.txt` | **JA** (a): Minorprüfung `> 5` im Welcome, M-62 bleibt grün; **JA** (b): Eingangsprüfung entfernt, mit fällt G1a an derselben Zeile |
+| M-64 | B10, G7, `welcome_minor_grenze_telemetrie`: „welcome_minor_grenze_telemetrie (M-64): ein welcome mit Envelope-schema_minor 5 (= kJsonSchemaMinor) koppelt" | grün | `docs/beweise/roh/NAK-309-rot-M-64.txt` | **JA** — Telemetrie-Welcome verlangt Minor < 5; mit fallen die zwei M-65-Prüfungen |
+| M-65 | B10, derselbe Block: „welcome_minor_grenze_telemetrie (M-65): ein welcome mit schema_minor 6 koppelt heute ebenfalls - der Handschlag prueft den Minor nicht"; „welcome_minor_grenze_telemetrie (M-65): der P2-Frame danach erreicht beiFrame mit schema_minor 3 unveraendert (kFeatureBatchSchemaMinor 2) - die Grenze zieht der Verbraucher" | grün: `Rueckrufe 1, Minor 3` | `docs/beweise/roh/NAK-309-rot-M-65.txt` | **JA** (1): `beiFrame` bekommt den gedeckelten Minor, kein Mitfallen; **JA** (2): Minorprüfung `> 5` im Telemetrie-Welcome, M-64 bleibt grün |
+| M-66 | A4, `broker/src/briefkasten.rs` (Testmodul): `nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal` | grün (mit `--nocapture`: `join_frist_verfehlt=1 stopp_ms=2015 antworten_vor_freigabe=0 takte_fertig_seit_stopp=1 antworten=1 existenzpruefungen_seit_stopp=0 beendet=true`, `docs/beweise/roh/NAK-309-etappe4-nocapture.txt`) | `docs/beweise/roh/NAK-309-rot-M-66.txt` | **JA** (1): Stoppflag vor dem Takt entfernt → „<n> Takte fertig nach dem Stopp statt genau des begonnenen", mit fallen M-45 (1) bis (3) aus NAK-286; **JA** (2): begonnener Abschluss nach dem Stopp abgewürgt → „0 Antwortdatei(en) statt genau einer"; beide Male rot nach 2,03 s beziehungsweise 2,04 s Testzeit, kein Hänger |
+| M-67 | A36, `tools/eq-copilot/pruefe_beweisrunner.py`: `nicht_gelaufen_macht_unvollstaendig`; A4 `store_weist_reparse_punkt_im_pfad_ab` und A4-SI `volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen` (`broker/tests/store_crash_matrix.rs`) im Beleglauf | Beleglauf `UNVOLLSTAENDIG`, Exit 3 (§18.9) | `docs/beweise/roh/NAK-309-rot-M-67.txt` | **JA** (1a): alter Skip ohne Marke im A4-Test → Beinbilanz `[OK]` statt `[NOT RUN]`; **JA** (1b): derselbe Skip im A4-SI-Test; **JA** (2): die Klassifikation zählt keine Marke → Exit 0 statt 3, mit fallen die Fälle „zwei Marken desselben Tests" und „Marke eines anderen Tests" |
+| M-68 | A4, `broker/tests/store_crash_matrix.rs`: `nicht_gelaufen_ohne_meldeweg_scheitert` | grün | `docs/beweise/roh/NAK-309-rot-M-68.txt` | **JA** — ohne Meldeweg stilles `Ok`: der Test fällt, und `store_weist_reparse_punkt_im_pfad_ab` mit Schalter ohne Meldeweg besteht still (Exit 0) statt zu scheitern |
+| M-69 | A4 und A4-SI im Verfahren des Runners (Meldeordner leer, `[OK]`); Wiederholung NAK-121 G2-TOCTOU-002 und R2-3 | grün, Meldeordner leer | `docs/beweise/roh/NAK-309-rot-M-69.txt` | **JA** (1): Marke trotz vorhandener Junction → `[NOT RUN]` statt `[OK]`; **JA** (2): Reparse-Riegel in `broker/src/store/pfad.rs` entfernt → `store_weist_reparse_punkt_im_pfad_ab` rot (Exit 101); **JA** (3): zweites `CreateFileW` über den Namen (`pfad.rs:295`) → `volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen` rot (Exit 101); je nach Rücknahme grün |
+| M-70 | A36: `urteilsvorrang_rot_vor_nicht_gelaufen` (Quelltextwache über `tools/beweise.ps1`) | grün | `docs/beweise/roh/NAK-309-rot-M-70.txt` | **JA** (1): Zweige ROT und fehlende Voraussetzung vertauscht; **JA** (2): `[NOT RUN]` in der Grünzählung |
+| M-71 | B22, `eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp`: „M-71: dasselbe Material mit umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben Fingerprint - alle 76 Byte und der Fensterzaehler", dazu „M-71 Rand Stille: …" und „M-71 Rand Vollaussteuerung: …" | grün: `0 von 76 Byte verschieden, Fenster 98 und 98`; Stille: kein Fingerprint, bytegleich; Vollaussteuerung: 0 von 76, Fenster 98 und 98 | `docs/beweise/roh/NAK-309-rot-M-71.txt` | **JA** (1): vorzeichenabhängiger Faktor aus dem Mittenring im ersten Fenster (`Fingerprint.h:66`, E4-9) → „M-71: …" rot mit 5 von 76 Byte verschieden; mit fällt der Rand Vollaussteuerung (11 von 76 Byte, vorhergesagt), der Rand Stille bleibt grün; Gegenprobe (2): dieselbe Mutation lässt den Test am Basis-SHA grün (JA) — `pruefe (true, …)` maß nichts |
+| M-72 | B22: „M-72: ein Sinus derselben Grundfrequenz statt des Akkords unterscheidet sich in mindestens einem Byte - der Vergleich aus M-71 misst etwas" | grün: `38 von 76 Byte verschieden` | `docs/beweise/roh/NAK-309-rot-M-72.txt` | **JA** — `fingerprintJetzt` liefert konstante Bytes → „M-72: …" rot mit 0 von 76 Byte verschieden; mit fallen drei Trennfälle desselben Beins (Gründe in der Rohdatei); M-71 und beide Ränder bleiben grün |
+| M-75 | A36: `gemessene_ziele_im_zeitvergleich` (Fälle (a) bis (e)) | grün | `docs/beweise/roh/NAK-309-rot-M-75.txt` | **JA** (1): die Population der gemessenen Ziele leer (`pruefe_beweisrunner.py`, `baustand()`) → (a) rot, mit fallen das Gegenteil und (b) bis (d); **JA** (2): die Runnerzeile `$zuBauen += @($gemesseneZiele …)` entfernt → (e) rot („die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau") |
+
+Ergebnis je Zeile: alle 17 Zeilen rotbewiesen, jede Mutation fällt an der
+Zusagezeile, jedes Bein ist nach der Rücknahme grün. Das Ergebnis der Beine
+im Ganzen steht in §18.7.
+
+### 18.7 Einzeln gefahrene Beine
+
+Werkzeug `docs/beweise/roh/NAK-309-etappe4-rot.ps1 -Einzelbeine` (Fassung 2,
+SHA-256 `C978A877…`), Rohdatei
+`docs/beweise/roh/NAK-309-etappe4-einzelbeine.txt`, HEAD `958dc81d`,
+19.09.2026, 06:37 bis 07:03 Uhr. Vorher gebaut: `EqCopStateMigrationTest`,
+`EqCopIpcTest`, `EqCopSonde013FingerprintGoldenTest`, je Binary jünger als
+jede Quelle der Etappe (NAK-230). A4 und A4-SI im Verfahren des Runners:
+frischer Meldeordner nur in der Umgebung des Kindprozesses, danach
+`--nicht-gelaufen`. Die Kopfzeile der Rohdatei „git status der Beinquellen:
+NICHT sauber" meint das offene Manifest dieser Etappe; `git status
+--porcelain --untracked-files=no -- eq-copilot broker tools` war unmittelbar
+vor dem Start leer (06:37:56).
+
+| Bein | Aufruf | Exit | Dauer | Ergebnis |
+|---|---|---|---|---|
+| B2 | `EqCopStateMigrationTest.exe` | 0 | 1,4 s | 291 Prüfungen ok, 0 Fehler; M-57 und M-58 grün |
+| A12 | `py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen` | 0 | 0,3 s | „STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)" |
+| B10 | `EqCopIpcTest.exe` | 0 | 221,9 s | 441 Prüfungen, 0 Fehler; M-62 bis M-65 grün |
+| A4 | `cargo test --manifest-path broker/Cargo.toml --color never`, mit Meldeweg | 0 | 1 192,7 s | jedes Testbinary ok (Bibliothek 284 bestanden), Meldeordner leer, Beinbilanz `[OK]`; M-66 und M-68 grün |
+| A4-SI | dasselbe mit `--test store_crash_matrix -- --ignored --test-threads=1`, mit Meldeweg | 0 | 13,4 s | 23 bestanden, Meldeordner leer, `[OK]` |
+| B22 | `EqCopSonde013FingerprintGoldenTest.exe` | 0 | 1,3 s | 27 bestanden, 0 gescheitert; M-71 mit beiden Rändern und M-72 grün |
+| A36 | `py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest` | 0 | 5,9 s | 14 von 14 Fällen |
+
+### 18.8 Geänderte Behauptungszeilen (alt und neu wörtlich)
+
+Fünf Behauptungen in `tools/beweise.ps1` ändern sich, sonst keine: A36, A4b
+und B22 nach dem Auftrag, A4 und A4-SI nach §6.5 („die Behauptungen von A4 und
+A4-SI nennen NOT RUN"). Der Unterschied je Zeile, gemessen als Mitte zwischen
+gemeinsamem Anfang und gemeinsamem Ende von alt und neu:
+
+- **A4, A4-SI:** je ein Satz angehängt (NOT RUN mit Grund, `[NOT RUN]` in der
+  Übersicht, der Lauf ist `UNVOLLSTAENDIG`, nie grün); der alte Text bleibt
+  unverändert davor.
+- **A4b:** angehängt die gemessenen Regeln des Probewerkzeugs (M-18 bis M-28)
+  und die zwei Quelltextwachen (Auftrag, E3-11).
+- **A36:** „jedes gebundene Kernziel ist gedeckt" wird „jedes gebaute gebundene
+  Kernziel ist gedeckt"; dahinter ein Satz zu den gemessenen Zielen mit genau
+  dem, was M-75 misst (eine jüngere Eingabe nur des gemessenen Ziels verweigert
+  die Beglaubigung, nicht ableitbar oder im Export fehlend ist nie grün, die
+  Übergabe misst eine Quelltextwache); nach „Verglichen werden Zeitstempel,
+  keine Inhalte." ein Satz zur NOT-RUN-Meldung (M-67, M-70).
+- **B22:** einziger Unterschied „alle drei Verlaeufe sind Energien ohne Phase"
+  → „der Fingerprint ist unter Vorzeichenumkehr des Signals bytegleich".
+
+Die Zeilen, aus der Datei gelesen (`git show 8d573e9f:tools/beweise.ps1` und
+Arbeitskopie):
+
+**A4** — alt `tools/beweise.ps1:503` am Basis-SHA, neu `:518` zum Stand `cb7c0d0e`.
+
+```text
+alt: Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen.
+```
+
+```text
+neu: Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. Fehlt einem Test eine Voraussetzung (das Junction-Recht fuer store_weist_reparse_punkt_im_pfad_ab), meldet er NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4).
+```
+
+**A4-SI** — alt `tools/beweise.ps1:511` am Basis-SHA, neu `:527` zum Stand `cb7c0d0e`.
+
+```text
+alt: SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push.
+```
+
+```text
+neu: SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. Fehlt das Junction-Recht fuer volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen, meldet der Test NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4).
+```
+
+**A4b** — alt `tools/beweise.ps1:519` am Basis-SHA, neu `:535` zum Stand `cb7c0d0e`.
+
+```text
+alt: C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher.
+```
+
+```text
+neu: C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. Seit NAK-309 (M-18 bis M-28) die Regeln des Probewerkzeugs: ohne Argument waehlt es den v2-Probenamen, ein leeres Argument bleibt leer; der Produktionsname (auch gross oder gemischt geschrieben), Namen mit \ oder / hinter \\.\pipe\, fremde Namen und ungueltige v2-Suffixe werden abgelehnt, v2- und v3-Probenamen zugelassen; ein PipeClient ohne Namen startet keinen Verbindungsversuch; ein Konfliktende gilt nur mit einem neuen Broker-ACK ohne Konflikt auf derselben stehenden Verbindung, nicht nach Abbau oder Neuaufbau. Quelltextwachen: PipeProbeMain entscheidet den Namen vor Servererwartung und erstem Client (abgelehnt Exit 64) und wartet auf dieses Konfliktende-Praedikat; das Produkt nennt seine v2-Pipe ausdruecklich.
+```
+
+**A36** — alt `tools/beweise.ps1:629` am Basis-SHA, neu `:645` zum Stand `cb7c0d0e`.
+
+```text
+alt: Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebundene Kernziel ist gedeckt. Verglichen werden Zeitstempel, keine Inhalte. Jede Erwartung laeuft mit ihrem Gegenteil.
+```
+
+```text
+neu: Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebaute gebundene Kernziel ist gedeckt. Dasselbe Urteil trifft jedes Ziel aus $gemesseneZiele, das der Runner baut (NAK-309 R-309-9; die Uebergabe misst eine Quelltextwache): eine juengere Eingabe nur des gemessenen Ziels verweigert die Beglaubigung, auch wenn jedes Pruefbinary frisch ist, und ein nicht ableitbares oder im CMake-Export fehlendes Ziel ist nie gruen. Verglichen werden Zeitstempel, keine Inhalte. Die NOT-RUN-Meldung der cargo-Beine (R-309-4): ein leerer Meldeordner heisst gelaufen, eine Marke NOT RUN mit Test und Grund, ein unlesbarer Ordner nie leer; im Urteilsblock des Runners geht ROT der fehlenden Voraussetzung vor, und NOT RUN zaehlt nie als gruen (Quelltextwache). Jede Erwartung laeuft mit ihrem Gegenteil.
+```
+
+**B22** — alt `tools/beweise.ps1:736` am Basis-SHA, neu `:752` zum Stand `cb7c0d0e`.
+
+```text
+alt: Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und alle drei Verlaeufe sind Energien ohne Phase. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts.
+```
+
+```text
+neu: Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und der Fingerprint ist unter Vorzeichenumkehr des Signals bytegleich. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts.
+```
+
+### 18.9 Beleglauf mit gesetztem Schalter (M-67)
+
+Voller Kanon mit `-Bauen` und `NAKAMA_TEST_JUNCTION_VERWEIGERN=1`, nur in der
+Umgebung des abgekoppelten Runnerprozesses (`Start-Process -Environment`),
+mit eigenem Ziel unter `docs/beweise/roh/`; er hängt nichts an dieses
+Manifest an und ist nicht der Abschlusskanon. Aufruf (Lauf 2; Lauf 1 ebenso
+mit dem Ziel ohne `-endstand` und ohne das Wort „Endstand" im Titel):
+
+```powershell
+$log = Join-Path $env:TEMP 'nakama-nak309-e4-beleglauf2.log'
+$befehl = "pwsh -NoProfile -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/roh/NAK-309-etappe4-beleglauf-m67-endstand.md -Titel 'NAK-309 Etappe 4 Beleglauf M-67 Endstand (NAKAMA_TEST_JUNCTION_VERWEIGERN=1)' *> $log; Add-Content $log ('EXIT=' + `$LASTEXITCODE)"
+Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -ArgumentList '-NoProfile', '-Command', $befehl -Environment @{ NAKAMA_TEST_JUNCTION_VERWEIGERN = '1' }
+```
+
+| Lauf | Stand | Zeit (gemessen) | Urteilszeile | Exit | A4 | A4-SI | Rohausgabe |
+|---|---|---|---|---|---|---|---|
+| 1 | `eee10788` | 07:03:53 bis 07:45:06 | `UNVOLLSTAENDIG - 67 gruen, 2 Voraussetzung(en) fehlen \| 1 stillgelegte(s) Bein(e), siehe Uebersicht \| 2 Bein(e) NOT RUN, siehe Uebersicht` | 3 | `[NOT RUN]` store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (1 188,73 s) | `[NOT RUN]` volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: TOCTOU-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (19,74 s) | `docs/beweise/roh/NAK-309-etappe4-beleglauf-m67.md`, `docs/beweise/roh/NAK-309-etappe4-beleglauf-m67-eee1078-dirty.md` |
+| 2 | `2dd3bde6` | 07:50:49 bis 08:27:39 | `UNVOLLSTAENDIG - 67 gruen, 2 Voraussetzung(en) fehlen \| 1 stillgelegte(s) Bein(e), siehe Uebersicht \| 2 Bein(e) NOT RUN, siehe Uebersicht` | 3 | `[NOT RUN]` store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (1 184,27 s) | `[NOT RUN]` volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: TOCTOU-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (12,80 s) | `docs/beweise/roh/NAK-309-etappe4-beleglauf-m67-endstand.md`, `docs/beweise/roh/NAK-309-etappe4-beleglauf-m67-endstand-2dd3bde-dirty.md` |
+
+Nach jedem Lauf gemessen: der Schalter steht weder in der Umgebung der
+Session-Shell noch in der Benutzer- oder Maschinenumgebung, im Temp-Ordner
+liegt kein Ordner `nakama-nicht-gelaufen-*`, der Runnerprozess ist beendet.
+`kanon_lesen()` aus `tools/plan/planstand.py` liest das Manifest des Laufs 1
+als „Kanon zuletzt unvollständig", das des Laufs 2 ebenso. `--broker-pin` schrieb
+in Lauf 1 die sha256 des neu gebauten Release-Brokers in
+`eq-copilot/install/nakama-installer-v1.json` (`CA857330…` → `B81B040C…`);
+die Zeile ist mit dem Lauf committet (`8d5e5bb8`, Auftrag Schritt 7).
+
+**Warum zwei Läufe.** Lauf 1 zeigte in der Konsole beide Beine zuerst als
+`[OK] … Exit 0` und erst nach der Klassifikation als `[NOT RUN]` — Urteil,
+Übersicht und Exitcode waren richtig, die Protokollzeile nicht (§18.11
+Nr. 7). Nach der Korrektur (`789f305a`) lief der Beleg auf dem Endstand
+des Runners noch einmal (Lauf 2); die Konsole zeigt dort nur die endgültige
+Zeile je Bein (`[NOT RUN] broker - store_weist_reparse_punkt_im_pfad_ab: … (1.184,27 s)` und `[NOT RUN] subscription_server_integration - … (12,80 s)`), und `--broker-pin` schrieb dieselbe sha256 wie in Lauf 1.
+
+### 18.10 Abweichungen vom Bauplan §6.5
+
+- **E4-1 · A12-Waisenprüfung auch über `schema2/`**
+  (`tools/eq-copilot/erzeuge_state_fixtures.py`). §6.5 nennt nur den Eintrag in
+  der Goldenliste und den Kommentar. Grund: die Zusage von M-59 („ohne
+  verwaiste Datei") galt für `schema2/` nicht, die Waisenprüfung lief nur über
+  `jcs/`, `dto/` und `preset/`. Gegenprobe M-59 (2): mit dem alten Umfang und
+  einem MANIFEST, das der Erzeuger ohne Listeneintrag neu geschrieben hat,
+  bleibt `schema2/main-binding-v1.bin` unbemerkt, A12 grün. Verwaltet sind in
+  `schema2/` genau die Goldens, die der Erzeuger im MANIFEST registriert.
+- **E4-2 · Schalter des Testservers in `V3TestServer.h`, zwei statt einem**
+  (§18.3, vor der Änderung genannt): die Schalter aus G7 und G10 stehen dort,
+  und M-65 braucht nach dem welcome einen P2-Frame mit wählbarem Minor.
+- **E4-3 · `junction_legen` liefert den Grund** (`Result<(), String>` statt
+  „meldet `false`"). Die Marke trägt `<Test>: <Grund>` (R-309-4); mit `false`
+  bliebe offen, ob der Schalter, `cmd`, `mklink /J` oder die fehlende Junction
+  die Ursache ist. Die zweite Junction im A4-SI-Test scheitert wie am
+  Basis-SHA mit Panik (dort `assert!`), jetzt mit Grund.
+- **E4-4 · `melde_nicht_gelaufen` weist zusätzlich ab:** relativer Meldeweg,
+  Testname außerhalb von `[A-Za-z0-9_]`, leerer oder mehrzeiliger Grund. Nur so
+  hat jede Marke die Zeilenform, die `--nicht-gelaufen` liest; ein Verstoß
+  endet über `nicht_gelaufen` mit Panik (Test rot), nie als stille Rückkehr.
+- **E4-5 · Abbildung des Meldewegs im Runner.** §6.5 nennt die Exitcodes des
+  Werkzeugs; der Runner bildet sie so ab: Exit 3 mit lesbaren Marken →
+  `[NOT RUN]` (fehlende Voraussetzung); jeder andere Exit ungleich 0, auch
+  Exit 3 ohne lesbare Marken → `[ROT]` „NOT-RUN-Meldeweg unlesbar"; ein rotes
+  Bein mit Marken bleibt `[ROT]` und nennt sie im Status (ROT gewinnt, M-70).
+- **E4-6 · Grünzählung am Symbol** (`[OK]`, `[HINWEIS]`) statt am Exitcode
+  (Basis-SHA `tools/beweise.ps1:1234`: `ExitCode -eq 0 -or Symbol -eq
+  '[HINWEIS]'`). Ein Bein mit NOT RUN endet mit cargo-Exit 0. Für jedes andere
+  Bein zählt es gleich: der Runner setzt `[OK]` genau bei Exit 0 und
+  `[HINWEIS]` genau beim Hinweisexit (`tools/beweise.ps1:1239-1254`, Stand
+  `cb7c0d0e`).
+- **E4-7 · Runnerkopf.** Beschreibung (`tools/beweise.ps1:42-52`, Stand `cb7c0d0e`) und
+  Exitcodezeile (`:100`) nennen NOT RUN und die gemessenen Ziele; beides gehört
+  zu den zwei erlaubten Änderungen des Runners (NOT RUN bis in die Beinbilanz,
+  R-309-9). Keine weitere Zeile außer den fünf Behauptungen (§18.8).
+- **E4-8 · Selbsttestfall `gleichstand_und_ein_tick` (M-03)** nimmt die eigene
+  Quelle von B6 (`tests/DspGoldenTestMain.cpp`) statt einer Kernquelle. Seit
+  M-75 steht `NakamaKern` als gemessenes Ziel im Zeitvergleich der Attrappe;
+  eine Kernquelle auf der Zeit des Binaries machte die Bibliothek zu Recht
+  veraltet, und der Fall hätte Exit 4 statt des Zahlenrands von B6 gemessen.
+- **E4-9 · Mutation M-71** am Mittenring statt an `s.arbeit[0]`. `s.arbeit`
+  hält an der Stelle die FFT des Seitenkanals, die im Testsignal (L = R) null
+  ist; ein Faktor, der jedes Fenster und jedes Band gleich trifft, verschwindet
+  in der Normierung je Verlauf. Die Mutation verstärkt deshalb die geraden
+  Bandgruppen des ersten Fensters, wenn Probe 2048 des Mittenrings negativ ist
+  (Wortlaut in `NAK-309-rot-M-71.txt`).
+- **E4-10 · Zusätzliche Rotbeweise und Gegenproben** über §6.5 hinaus: M-59 (2)
+  alter Waisenumfang; M-66 (2) begonnener Abschluss nach dem Stopp abgewürgt
+  (zweite Richtung aus Teil A, T3-04-04); M-67 (1b) für A4-SI und (2) an der
+  Klassifikation; M-68 zweiter Lauf (Schalter ohne Meldeweg muss scheitern);
+  M-70 (2) `[NOT RUN]` in der Grünzählung; M-71 (2) dieselbe Mutation gegen den
+  Test am Basis-SHA; M-75 (2) an der Runnerzeile.
+- **E4-11 · Wache `urteilsvorrang` nach dem Probelauf nachgeschärft**
+  (`cb7c0d0e`). Im Probelauf des Rotbeweises M-70 (1) fiel die erste Fassung
+  der Wache nur, weil die Zeile `if ($rot -gt 0) {` fehlte, nicht an der
+  Reihenfolge: sie verlangte den ROT-Zweig als `if` und den Zweig der
+  fehlenden Voraussetzung als `elseif`. Jetzt dürfen beide Zweige `if` oder
+  `elseif` heißen, der ROT-Zweig muss der erste (`if`) sein und vor dem Zweig
+  der fehlenden Voraussetzung stehen; die Meldung nennt den
+  Reihenfolgeverstoß.
+- **E4-12 · Karte: Dateizahl 80 statt 79.** Der Auftrag erlaubt in Karte und
+  KONZEPT nur die gemessene Zahl; die Dateizahl derselben Zeile wurde durch
+  das neue Golden falsch und ist nachgezogen (gemessen: `git ls-files
+  eq-copilot/fixtures/state/` 80 Dateien, am Basis-SHA 79), der alte Wert steht
+  im Verlauf.
+- **E4-13 · Werkzeuge unter `docs/beweise/roh/`**: das Zählwerkzeug
+  (`NAK-309-etappe4-feldzaehlung.py`), das Rotbeweiswerkzeug
+  (`NAK-309-etappe4-rot.ps1`) und das Skript der Urteilskombinationen
+  (`NAK-309-etappe4-urteilskombi.ps1`); alle fallen unter die Rohdateien des
+  Auftrags (`docs/beweise/roh/NAK-309-*`), keine Datei außerhalb.
+- **E4-14 · Zwei Randprüfungen in B22** über §6.5 hinaus (Stille,
+  Vollaussteuerung; `b8549bca`). Auftrag Schritt 6 verlangt, dass die
+  Vorzeichenumkehr bei Stille und Vollaussteuerung die Aussage nicht ändert;
+  gemessen war sie nur am Akkord 0,4. Die Rotbeweise M-71 und M-72 liefen
+  danach neu.
+- **E4-15 · Rotbeweiswerkzeug in zwei Fassungen:** Volllauf mit Fassung 1,
+  Nachlauf der Zeilen M-67, M-71, M-72 und M-75 mit Fassung 2 (§18.6); beide
+  Fassungen sind committet (`8480ecb9`, `2ffa644d`), jede Rohdatei nennt ihren
+  SHA-256.
+- **E4-16 · Konsolenzeile eines Beins mit Meldeweg** (`789f305a`, Selbstaudit
+  am Beleglauf 1): das Bein schreibt seine Zeile erst nach der Klassifikation
+  (`[OK] … Meldeordner leer`, `[NOT RUN] …` mit Dauer oder `[ROT]`). Nur
+  `Write-Host`; Urteil, Übersicht und Exitcode sind unverändert. Danach liefen
+  die Rotbeweise M-67, M-70 und M-75, die Urteilskombinationen und der
+  Beleglauf auf dem Endstand noch einmal (§18.6, §18.9, §18.11).
+
+### 18.11 Selbstaudit und Prüfliste
+
+**Diff `8d573e9f..HEAD` adversarial gelesen** (Auftrag Schritt 6). Befunde am
+eigenen Stand und was daraus wurde:
+
+1. Die Wache `urteilsvorrang` fiel im Probelauf des Rotbeweises M-70 am
+   falschen Grund → nachgeschärft (`cb7c0d0e`, §18.10 E4-11).
+2. §18.3 nannte `V3TestServer.h` LF, gemessen ist CRLF → berichtigt in §18.4.
+3. Der Kopf von `tools/eq-copilot/pruefe_beweisrunner.py` nannte die
+   Selbsttestfälle „M-01 bis M-08, M-10, M-67 und M-70" und kannte die
+   gemessenen Ziele nicht → nachgezogen (`b1ddc24c`); die Rotbeweise M-67
+   und M-75, die diese Datei mutieren, liefen danach neu.
+4. Die Vorzeichenumkehr war nur am Akkord 0,4 gemessen → B22 misst sie jetzt
+   auch bei Stille und bei Vollaussteuerung (`b8549bca`, unten); die
+   Rotbeweise M-71 und M-72 liefen danach neu.
+5. Der Rotbeweis M-62 fiel zusätzlich an `plugin_stoppt_keinen_fremden_brokerprozess`,
+   im Werkzeug nicht vorhergesagt. Ursache an der Quelle: der Test verbindet
+   einen echten `ControlClient` mit `broker/target/debug/eqcop-broker-v3probe.exe`
+   (`eq-copilot/plugin/tests/IpcTestMain.cpp:6568-6611`, Stand `cb7c0d0e`), und der Broker schreibt sein welcome mit
+   Envelope-Minor 5 (`broker/src/transport/server_v3/verbindung.rs:381`,
+   `P0_SCHEMA_MINOR = 5` in `mod.rs:204`). Die Mutation „welcome verlangt
+   Minor < 5" trennt also auch den echten Broker — die Grenze 5 ist der
+   Produktionsfall. Die Rohdatei bleibt, wie das Werkzeug sie schrieb.
+6. Eine Zwischenfassung des Rotbeweiswerkzeugs (SHA-256 `D28C3FF5…`, nicht
+   committet) setzte die Konsole auf UTF-8, begründet damit, die Umleitung
+   von `Start-Process` mache aus „§" ein „Â§". Gemessen stimmt das nicht: in
+   einer abgekoppelten Probe kamen die Bytes vor „32.4" bei Codepage 850 wie
+   bei 65001 als `C2 A7` an. B22 selbst gibt „§" in zwei vorbestehenden
+   Prüftexten als „Â§" aus, weil `juce::String` ein `char`-Literal mit
+   Nicht-ASCII-Bytes Byte für Byte als Zeichen nimmt; die Kopfzeile, die
+   direkt über `std::cout` geht, kommt richtig an. Die Zeile ist wieder
+   heraus (Fassung 2, `C978A877…`), und der Nachlauf lief damit neu (§18.6).
+7. Im Beleglauf 1 schrieb die Konsole A4 und A4-SI zuerst als `[OK] …
+   Exit 0` und erst nach der Klassifikation als `[NOT RUN]`: der Runner gab
+   die Zeile nach dem Exitcode aus, bevor er den Meldeordner las. Behoben in
+   `789f305a` (§18.10 E4-16); gemessen in den Urteilskombinationen (Zeilen
+   „Konsole:") und im Beleglauf 2 (§18.9).
+
+**Ränder, gemessen:**
+
+- **Meldeordner** fehlt, leer, mit unlesbarer Marke, mit Marke eines fremden
+  Tests, mit zwei Marken desselben Tests: Selbsttestfall
+  `nicht_gelaufen_macht_unvollstaendig` (A36) — leer Exit 0; eine Marke Exit 3
+  mit Test und Grund; zwei Marken desselben Tests beide Gründe, Exit 3; Marke
+  eines anderen Tests Exit 3; unlesbar Exit 2 bei fehlendem Ordner, fremder
+  Datei, Zeile mit anderem Testnamen, Marke ohne Grund, leerer Marke, kein
+  UTF-8, CRLF.
+- **NOT RUN zusammen mit ROT, fehlender Voraussetzung und VERALTET:**
+  `docs/beweise/roh/NAK-309-etappe4-urteilskombi.txt` (Werkzeug daneben;
+  Runnerkopien im Temp-Ordner mit eigener Beinliste, Urteilsblock
+  unverändert). K1 NOT RUN mit ROT: `ROT - 1 von 3 Kanon-Laeufen fehlgeschlagen | 1 Bein(e) NOT RUN, siehe Uebersicht`, Exit 2. K2 mit einem Python-Bein, das Exit 3 meldet (derselbe Zweig wie A9 ohne `flatc`, `tools/beweise.ps1:1184-1197`, Stand `789f305a`): `UNVOLLSTAENDIG - 1 gruen, 2 Voraussetzung(en) fehlen | 1 Bein(e) NOT RUN, siehe Uebersicht`, Exit 3. K3 bei veraltetem Baustand (38 Zeilen VERALTET: die Rotbeweise legten Quellen mit neuer LastWriteTime zurück und bauten nur ihr eigenes Ziel): Exit 3 vor 4. K4 derselbe Baustand ohne NOT RUN: `NICHT BEGLAUBIGT - 1/1 gruen, aber Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen`, Exit 4. Kein Meldeordner blieb zurück, der Schalter stand weder im Prozess des Skripts noch in der Benutzer- oder Maschinenumgebung.
+  Die Summe stimmt: `n gruen` zählt nur `[OK]` und `[HINWEIS]`, `m
+  Voraussetzung(en)` zählt `[FEHLT]` und `[NOT RUN]`; jedes gelaufene Bein
+  steht in genau einer der drei Mengen grün, rot, Voraussetzung
+  (`tools/beweise.ps1:1239-1296`, Stand `cb7c0d0e`).
+- **Leser des Planstands:** `tools/plan/planstand.py:102-111`, Muster
+  `(?P<unvollstaendig>UNVOLLSTAENDIG)\s*[-—]+\s*\d+\s+gruen` und
+  `NICHT\s+BEGLAUBIGT\s*[-—]+\s*\d+/\d+\s+gruen`. `kanon_lesen()` aus
+  `planstand.py` (importiert, nicht ausgeführt; der Planstand wird nicht
+  geschrieben) liest die neuen Zeilen so: die Urteilszeilen in der Form des Runners mit Nachsatz → `UNVOLLSTAENDIG - 67 gruen, 2 Voraussetzung(en) fehlen | … | 2 Bein(e) NOT RUN, siehe Uebersicht` „Kanon zuletzt unvollständig", `NICHT BEGLAUBIGT - 69/69 gruen, aber Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen | …` „Kanon zuletzt nicht beglaubigt", `ROT - 1 von 70 Kanon-Laeufen fehlgeschlagen | … | 1 Bein(e) NOT RUN, siehe Uebersicht` „Kanon 69/70 ROT"; die echten Manifeste der zwei Belegläufe (§18.9) → „Kanon zuletzt unvollständig". Das Präfix, das der Leser braucht, ist unverändert.
+- **Minor 5, 6 und der Frame danach:** M-62 bis M-65 (§18.6).
+- **Schranke des Briefkastentests:** sie öffnet über einen `Drop`-Öffner auch
+  bei einer Panik im Test, und jedes Warten trägt die Frist
+  `SCHRANKE_FRIST` 30 s; unter beiden Mutationen von M-66 endete der Test rot
+  statt zu hängen (Testzeit 2,03 s und 2,04 s, `docs/beweise/roh/NAK-309-rot-M-66.txt`).
+- **Vorzeichenumkehr bei Stille und Vollaussteuerung:** zwei neue Prüfungen in B22 (`b8549bca`). Stille mit 0,0 gegen −0,0 ergibt bytegleich dasselbe, nämlich keinen Fingerprint (nichts Messbares); ein auf ±1,0 begrenzter Sinus (jede Spitze genau +1,0 oder −1,0) und sein Vorzeichenbild ergeben bytegleich denselben Fingerprint (0 von 76 Byte verschieden, Fenster 98 und 98). Unter der Mutation M-71 fällt der Rand Vollaussteuerung mit (11 von 76 Byte), der Rand Stille nicht.
+- **Behauptung ≤ Messung:** die fünf Behauptungen (§18.8) sagen je nur, was
+  ein Test oder eine Quelltextwache misst; A36 nennt „jedes gebaute gebundene
+  Kernziel" (M-06 nennt nicht gebaute nur) und für die gemessenen Ziele genau
+  die Fälle (a) bis (c) und die Wache (e) von M-75; B22 nennt die
+  Vorzeichenumkehr statt einer Phasenfreiheit. Protokollzeilen des Runners:
+  die Urteilszeile nennt NOT RUN selbst (Nachsatz), die Übersicht Test und
+  Grund je Marke.
+- **Umgebung:** `NAKAMA_NICHT_GELAUFEN` und `NAKAMA_TEST_JUNCTION_VERWEIGERN`
+  standen nur in Kindprozessen (`Start-Process -Environment`); gemessen nach
+  jedem Lauf dieser Etappe (§18.9, §18.14).
+
+**Prüfliste `tools/dirigent/pruefliste.md`, abgehakt:**
+
+| Abschnitt | Punkt | Etappe 4 |
+|---|---|---|
+| A Rückstau | Politik bei voll, Abfluss, Schlüssel, Lesepfad, Zähler, beide Sprachen | nicht zutreffend; keine Queue geändert |
+| B Lebenszyklus | Join mit Frist; Stopp-Fenster als Test | angewandt: M-66 misst den Nachlauf nach der echten Join-Frist an Zählern (`join_frist_verfehlt`, `takte_fertig`, Antwortdateien, Existenzprüfungen nach dem Stopp), rotbewiesen in zwei Richtungen |
+| C Verträge und Längen | Grenzwerte an jeder Zahl über den Draht | angewandt: Envelope-Minor 5 und 6 in beiden Handschlägen, dazu der Frame danach (M-62 bis M-65) |
+| D Bau- und Prüfriegel | fail-closed, Unbekanntes ist ROT | angewandt: unlesbarer Meldeweg ist ROT (E4-5), ein gemessenes Ziel ohne Export ist nicht ableitbar (M-75 (c)) |
+| D Bau- und Prüfriegel | Frische der Eingaben, sonst Voraussetzung fehlt | angewandt: M-75, die gemessenen Ziele stehen im Zeitvergleich |
+| D Bau- und Prüfriegel | was der Kanon nicht baut, bezeugt er nicht als frisch | angewandt: ein gemessenes Ziel ohne Zieldatei wird genannt, nicht beurteilt (M-75 (d)); die Rust-Binaries außerhalb stehen als offener Punkt in §18.12 |
+| E Behauptung ≤ Messung | Behauptung nicht weiter als der Test | angewandt: §18.8, B22 ohne „Energien ohne Phase" |
+| E Behauptung ≤ Messung | Zahlen gemessen | angewandt: Feldzahl 133 gezählt (§18.5), Dateizahl 80 gezählt (E4-12) |
+| E Behauptung ≤ Messung | lebender Kopf beim Abschluss, Verlauf append-only | angewandt: §18 angehängt, im Kopf nur Etappe, Basis-SHA und Ticketpfade |
+| E Behauptung ≤ Messung | jede neue Prüfung einmal gebrochen | angewandt: §18.6, je Zeile eine Rohdatei |
+| E Behauptung ≤ Messung | geänderte Zusage an drei Stellen | angewandt: Runnerkopf (`tools/beweise.ps1:42-52` und `:100`, Stand `cb7c0d0e`), Skriptkopf (`pruefe_beweisrunner.py`, Kopf von `store_crash_matrix.rs` an `junction_legen` und `melde_nicht_gelaufen`, Kommentar in B22), Manifestkopf; `git grep "Energien ohne Phase"` außerhalb `docs/` trifft nur noch `broker/tests/sonde013_experiment.rs:840` (§18.12) |
+| E Behauptung ≤ Messung | Writer-Fixtures statt Handschrift | angewandt: `main-binding-v1.bin` aus `EqCopStateMigrationTest --schreibe-goldens`, MANIFEST über den Erzeuger |
+| F Änderungssatz | speichern↔laden, starten↔stoppen, melden↔lesen | angewandt: Leser und Schreiber gegen dasselbe Golden (M-57, M-58); Marke im Test, Klassifikation, Urteilszeile und Exitcode in einem Satz (`685158e9`); Meldeordner angelegt und im `finally` entfernt |
+| F Änderungssatz | Writer, Reader, Fixtures eines Vertrags gemeinsam | angewandt: Golden, Goldenliste und MANIFEST in `e1fb5289` |
+
+### 18.12 Offene Punkte
+
+Nicht erledigt ist keine Aufgabe des Auftrags. Offen und außerhalb der
+Ticketgrenze, deshalb nur benannt:
+
+1. **Rust-Binaries außerhalb der Frischeprüfung** (§18.2):
+   `eqcop-broker-v3probe.exe` (A22), `eqcop-broker-sonde012-probe.exe` (A23,
+   A24) und `eqcop-broker.exe` (Hash in A17) entstehen mit `-Bauen`, stehen
+   aber in keinem Zeitvergleich. R-309-9 beginnt mit „Jede Binärdatei, die ein
+   Kanon-Bein ausführt oder misst"; der Auftrag fasst die Population als
+   `$gemesseneZiele`. Ein Frischebaum wäre aus `broker/target/release/<bin>.d`
+   ableitbar.
+2. **Stiller Skip derselben Klasse wie T3-09-04 im Briefkasten:**
+   `broker/src/briefkasten.rs:1989-1996` (Stand `cb7c0d0e`), NAK-286 M-49 (c):
+   ohne Symlink-Recht schreibt der Test „[--] … Lage (c) ungemessen" und
+   besteht. Auf diesem Rechner fehlt das Recht (gemessen: „Dem Client fehlt
+   ein erforderliches Recht. (os error 1314)",
+   `docs/beweise/roh/NAK-309-etappe4-nocapture.txt`). Als NOT RUN gemeldet,
+   wäre jeder Kanon auf diesem Rechner `UNVOLLSTAENDIG`; ob das so sein soll,
+   entscheidet die Kanonbilanz, nicht diese Etappe.
+3. **A32 verschiebt sich** (§18.14): `broker/src/briefkasten.rs` wächst durch
+   den Test M-66 im Testmodul über 2 000 Zeilen. Der Haken `beim_schreiben` ist
+   ein Feld des Testdateisystems im Testmodul (`:1025`, `:1055`), ein
+   Integrationstest unter `broker/tests/` erreicht ihn nicht; die Aufteilung der
+   Datei ist Codebase-Pflege (eigenes verhaltensneutrales Ticket, CLAUDE.md).
+4. **Kommentar mit der alten Behauptung:**
+   `broker/tests/sonde013_experiment.rs:838-840` sagt „alle drei Verlaeufe
+   sind Energien ohne Phase" — derselbe Satz, den B22 in dieser Etappe
+   verliert, weil ihn kein Test misst.
+5. **Kommentar in `tools/plan/planstand.py:78`** zitiert die alte
+   NICHT-BEGLAUBIGT-Zeile („aber Pruefbinaries sind aelter als die Quellen");
+   der Leser liest nur bis „gruen" (§18.11), das Urteil bleibt lesbar.
+6. **PowerShell 7.4:** der Meldeweg des Runners setzt die Umgebung über
+   `Start-Process -Environment` (erst ab PowerShell 7.4). Hier gemessen:
+   7.6.6 (`C:\Program Files\PowerShell\7\pwsh.exe`). Auf dem Laptop vor dem
+   ersten Kanon `$PSVersionTable.PSVersion` prüfen.
+7. **„Â§" in B22:** zwei vorbestehende Prüftexte in
+   `eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp` geben „§" als
+   „Â§" aus (`juce::String` aus einem `char`-Literal mit Nicht-ASCII-Bytes);
+   kosmetisch, sichtbar in den Rohdateien von M-71 und M-72 (§18.11 Nr. 6).
+
+Offene Produktfragen: keine.
+
+### 18.13 Hinweise an den Dirigenten
+
+- **NAK-267 A-3:** `Common.project_binding_id` hat jetzt ein eingefrorenes
+  Writer-Golden (M-57 bis M-59), die Zählung steht bei 133 von 136 (§18.5).
+  Ohne Fixture bleiben die drei MainProject-Felder `confirmed_members_v1`,
+  `manual_passages_v1` und `assistant_step_v1`. Vorschlag für den
+  Registernachtrag (§6.6): vierter Eintrag erledigt, drei offen.
+- **NAK-154:** M-62 bis M-65 messen das heutige erlaubte Verhalten an der
+  Grenze 5 und eins darüber in beiden Handschlägen, rotbewiesen; keine
+  Produktquelle hat sich geändert. Nebenbefund des Rotbeweises M-62: der
+  echte v3-Broker schreibt beide welcome mit Envelope-Minor 5
+  (`broker/src/transport/server_v3/verbindung.rs:381`, `:432`;
+  `P0_SCHEMA_MINOR` in `broker/src/transport/server_v3/mod.rs:204`) — die
+  Grenze 5 ist der Produktionsfall. Punkt 2 (der Deckel liegt beim Verbraucher,
+  `SourcesModel.cpp`) bleibt Registerpunkt.
+- **NAK-121:** M-69 (2) und (3) wiederholen G2-TOCTOU-002 (Reparse-Riegel in
+  `broker/src/store/pfad.rs` entfernt) und R2-3 (zweites `CreateFileW` über
+  den Namen, `broker/src/store/pfad.rs:295`) auf dem Etappenstand `cb7c0d0e`:
+  je genau der Zieltest rot (Exit 101, Bein `[ROT]`), nach der Rücknahme grün
+  (`docs/beweise/roh/NAK-309-rot-M-69.txt`). Die zwei NAK-121-Zeilen sind damit
+  auf dem heutigen Stand gemessen (R-309-4).
+- **NAK-286 M-45:** „Die Join-Frist 2 s bleibt Zusage ohne Zeit-Rotbeweis"
+  (`docs/beweise/NAK-286.md:575`) ist eingelöst: M-66 misst den Nachlauf nach
+  der echten Frist (`stopp_ms=2015`, `join_frist_verfehlt=1`, genau ein Takt
+  und eine Antwort nach dem Stopp, keine Existenzprüfung), rotbewiesen in zwei
+  Richtungen; unter der ersten Mutation fallen M-45 (1) bis (3) mit. Zu NAK-286
+  gehört auch der Skip in §18.12 Nr. 2 (M-49 (c)).
+- **Befunde aus §18.12:** 1, 2 und 4 sind Registerkandidaten, 3 gehört in den
+  nächsten Pflegeschritt, 5 und 7 sind kosmetisch, 6 betrifft den Laptop.
+
+
+### 18.14 Kanon nachher, A32 und A33 (Bauer, 19.09.2026)
+
+Aufruf wörtlich nach Auftrag Schritt 7 (abgekoppelt, `-Bauen -Ziel
+docs/beweise/NAK-309.md -Anhaengen -Titel 'NAK-309 Etappe 4 Kanon nachher'`),
+gestartet 08:29:19 auf HEAD `dca46403` (Arbeitsbaum: nur die zwei fremden
+Ordner), Ende 09:09:57 (letzte Schreibzeit des Logs), Exit 0; Abschnitt
+„Kanon-Lauf - NAK-309 Etappe 4 Kanon nachher" oben, Rohausgabe
+`docs/beweise/roh/NAK-309-dca4640-dirty.md`, committet in `17dc1e82`.
+
+- **Urteil:** `GRUEN - 69/69 Kanon-Laeufe bestanden | 1 stillgelegte(s)
+  Bein(e), siehe Uebersicht`. Gleich viele Beine wie vorher (69 gelaufen, 1
+  stillgelegt): M-75 braucht kein eigenes Bein, es misst im Selbsttest von A36
+  und im Baustand vor dem ersten Bein — dort stehen die sechs gemessenen Ziele
+  als `gem.` mit „frisch (Bau bestaetigt)"; NOT RUN ist ein Ergebnis der
+  bestehenden Beine A4 und A4-SI.
+- **Beine der Etappe:** A4 `[OK]` 1 178,80 s (Konsole „Exit 0, Meldeordner
+  leer"), A4-SI `[OK]` 12,86 s, B2 1,32 s, A12 0,28 s, B10 221,55 s, B22
+  1,23 s, A36 5,89 s, je `[OK]` Exit 0; die Beine der gemessenen Ziele B1,
+  A14, A22, A23 und A24 ebenso.
+- **Eingriff (NAK-300):** um 08:34 stand die letzte Logzeile seit über fünf
+  Minuten auf „Baue:"; kein MSBuild, `cl`, `link` oder `cmake` lief, der
+  Runner blieb in fünf Sekunden bei 1,73 s CPU, und `vctip.exe` (PID 350580,
+  gestartet 08:29:22) hing als Rest des Bauschritts. Um 08:34:51 nur
+  `vctip.exe` beendet; der Lauf ging sofort weiter.
+- **Nach dem Lauf gemessen:** `NAKAMA_TEST_JUNCTION_VERWEIGERN` und
+  `NAKAMA_NICHT_GELAUFEN` stehen weder in der Session-Shell noch in der
+  Benutzer- oder Maschinenumgebung, im Temp-Ordner liegt kein Ordner
+  `nakama-nicht-gelaufen-*`; `--broker-pin` schrieb dieselbe sha256 wie die
+  Belegläufe, `eq-copilot/install/nakama-installer-v1.json` blieb gleich.
+- **Nahtstelle:** vor dem Lauf endete das Manifest mit einer Leerzeile
+  (NAK-321); der angehängte Abschnitt beginnt nach `---` mit seiner
+  Überschrift.
+
+| Maß | vorher (Etappe 3, `ec419a71`, §18.1) | nachher (`dca46403`) | Ursache |
+|---|---|---|---|
+| A32 Exit | 4 `[HINWEIS]` | 4 `[HINWEIS]` | nicht blockierend |
+| A32 Quelldateien über 2 000 Zeilen (Grenze 0) | 1 | 2 | `broker/src/briefkasten.rs` hat 2085 Zeilen durch den Test M-66 im Testmodul, gemeldet „OHNE PFLEGETICKET" (§18.12 Nr. 3); `eq-copilot/plugin/state/NakamaState.cpp` 2911 wie vorher (NAK-292) |
+| A32 Quelldateien über 1 500 Zeilen (Ziel) | 10 | 9 | dieselbe Datei wechselt in die Klasse über 2 000 |
+| A32 Funktionen über 200 Zeilen (Grenze 28) | 34 | 34 | — |
+| A32 Kommentar-Bezeichner ohne Code (Grenze 30) | 36 | 36 | — |
+| A32 gemessene Dateien | 202 | 202 | — |
+| A33 clang-tidy-Fundstellen (Grenze 58) | 58, Exit 0 | 58, Exit 0 | die Etappe ändert keine Plugin-Quelle außerhalb von `tests/`, und A33 misst ohne `tests/` |
+
+Commits nach §18.4: `2f600b27` (Beleglauf 2), `dca46403` (§18.4 bis
+§18.13), `17dc1e82` (Kanon nachher) und der Commit dieses Abschnitts samt
+Kopfzeilen Etappe und Ticketpfade.
+
+## 19. Messung der Etappe 4, Entscheide zu E4-1 bis E4-16 und Auftrag der Erstprüfung 4 (Dirigent, 19.09.2026, 09:1x Uhr gemessen)
+
+| Merkmal | Wert |
+|---|---|
+| Auftrag | `docs/beweise/roh/NAK-309-etappe-4-auftrag.txt` (Commit `8d573e9f`, zugleich Basis-SHA der Etappe 4). Entscheid darin: NAK-321 wird in Etappe 4 nicht gebaut (kein Befund des Gates, kosmetisch; der Bauer stellt die Leerzeile vor dem Anhängen von Hand sicher). |
+| Worker | `7af00950` (`nakama-nak309-8d573e9-bau`), Opus max, gestartet 04:34:27 Uhr (`startedAt` aus `claude agents --json`), letzter Commit 09:12:04 Uhr, Zustand `done`. Aufsicht ENG: Beobachter `cockpit.ps1 -WatchWorker` neunmal neu gesetzt (das Monitor-Werkzeug der Session läuft höchstens 30 Minuten), Stundenloop `c7070a81`, nach dem Ende gelöscht. Kein Eingriff des Dirigenten; den `vctip.exe`-Hänger des Kanons nachher hat der Worker nach dem Auftrag selbst gelöst (§18.14). |
+| Endzustand (09:13 Uhr gemessen) | `git status --short` nur `briefing-hub/` und `nimbalyst-local/`; HEAD `49dab04d458a3387df624a544ff36c6497afef27` = `origin/master`; Basis `8d573e9f` ist Vorfahr; 24 Commits, ein Autor; kein Prozess `cmake`, `MSBuild`, `cl`, `cargo`, `link`, `vctip`, `FL64`, `EqCop*`; `NAKAMA_NICHT_GELAUFEN` und `NAKAMA_TEST_JUNCTION_VERWEIGERN` in der Benutzerumgebung nicht gesetzt. |
+| Diff `8d573e9f..49dab04d` ohne `docs/beweise/roh/` | 16 Dateien, +1702 −79: `broker/src/briefkasten.rs` (+90, ein Hunk ab Zeile 1808 innerhalb von `mod tests`, vom Dirigenten am Hunk-Kopf gemessen), `broker/tests/store_crash_matrix.rs`, `eq-copilot/plugin/tests/IpcTestMain.cpp`, `eq-copilot/plugin/tests/V3TestServer.h` (vor der Änderung genannt, §18.3), `eq-copilot/plugin/tests/StateMigrationTestMain.cpp`, `eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp`, `eq-copilot/fixtures/state/schema2/main-binding-v1.bin` (neu, 256 Byte) und `MANIFEST.json`, `tools/beweise.ps1` (+110), `tools/eq-copilot/pruefe_beweisrunner.py` (+331), `tools/eq-copilot/erzeuge_state_fixtures.py`, `eq-copilot/install/nakama-installer-v1.json` (eine Zeile, Brokerhash), `docs/gesundheit/abdeckungskarte.md`, `docs/gesundheit/KONZEPT.md`, `docs/plugin-wissen.md`, dieses Manifest; dazu 29 Rohdateien. Keine Produktquelle außerhalb von Testmodulen. |
+| Rundenbilanz | `py -3.13 tools/dirigent/rundenbilanz.py 8d573e9f..HEAD`: Produkt 4 Datei(en) +96/-1 \| Tests 5 Datei(en) +368/-33 \| Pruefwerkzeug 3 Datei(en) +419/-37 \| Doku 33 Datei(en) +38219/-8. Die vier „Produkt"-Dateien der Bilanz sind das Testmodul in `briefkasten.rs`, das Golden, `MANIFEST.json` und die Brokerhash-Zeile; keine Nacharbeitsrunde. |
+| Messabdeckung | §18.6: 17 von 17 Matrixzeilen (M-57 bis M-72, M-75) mit Test und Rotbeweis „fällt an der Zusagezeile: JA"; 17 Rohdateien `NAK-309-rot-M-NN.txt` im Index gezählt. Die sieben neuen Fallnamen und der Block `main-binding-v1` sind am Zielstand mit `git grep -c -F` gezählt (alle vorhanden). Das Urteil je Zeile liegt bei der Erstprüfung 4; der Dirigent hat Vorhandensein und Form gemessen, keinen Rotbeweis nachgefahren. |
+| Kanon | Ausgangswert `ec419a71` GRUEN 69/69 (§18.1); Beleglauf mit gesetztem Schalter zweimal `UNVOLLSTAENDIG`, Exit 3 (§18.9; der zweite auf dem Endstand des Runners nach E4-16); Kanon nachher **GRUEN 69/69**, Exit 0, auf `dca46403` (§18.14, Log vom Dirigenten gelesen: letzte Zeile `EXIT=0`). Nach `dca46403` liegen nur Manifestcommits. A33 58 bei Grenze 58. A32: „Quelldateien über 2 000 Zeilen" 1 → 2 (`broker/src/briefkasten.rs` 2085 Zeilen durch den Test M-66). |
+
+**Entscheide zu den Abweichungen §18.10.** E4-1 (Waisenprüfung auch über
+`schema2/`) genehmigt: ohne sie war die Zusage von M-59 für den neuen Ordner
+nicht gemessen; die Ursache ist die Änderung, nicht der Listeneintrag. E4-3,
+E4-4 (Grund in der Marke, strenge Markenform) genehmigt: R-309-4 verlangt den
+Grund. E4-5 und E4-6 (Abbildung des Meldewegs, Grünzählung am Symbol statt am
+Exitcode) genehmigt unter Vorbehalt der Erstprüfung 4: sie berühren das Urteil
+des Runners und sind deshalb eigene Prüffrage. E4-2, E4-7 bis E4-16 zur
+Kenntnis; E4-16 (eigener Fehler des Bauers im Selbstaudit gefunden, Beleglauf
+und drei Rotbeweise auf dem korrigierten Runner wiederholt) ist das verlangte
+Vorgehen.
+
+**Brokerhash.** `--broker-pin` schrieb im ersten Beleglauf einen neuen
+Release-Brokerhash (`CA857330…` → `B81B040C…`), obwohl in `broker/src` nur das
+Testmodul von `briefkasten.rs` wuchs. Die Bauordnung der Etappe 2 trägt das
+(der Pin folgt dem gebauten Binary, A17 misst ihn); warum ein `cfg(test)`-Zusatz
+das Release-Binary ändert, hat der Dirigent nicht nachgemessen. Prüffrage der
+Erstprüfung 4.
+
+**Einordnung der offenen Punkte §18.12 (Registernachtrag im Abschlussfenster).**
+Nr. 1 (Rust-Binaries `eqcop-broker-v3probe.exe`, `eqcop-broker-sonde012-probe.exe`,
+`eqcop-broker.exe` stehen in keinem Zeitvergleich): vorläufig LÜCKE außerhalb
+der 13 Befunde; die Erstprüfung 4 ordnet sie gegen R-309-9 ein, danach
+entscheidet der Dirigent die Regel. Nr. 2 (stiller Skip NAK-286 M-49 (c),
+Symlink-Recht fehlt auf diesem Rechner): Registerpunkt derselben Klasse wie
+T3-09-04, nicht Teil dieser Etappe. Nr. 3 (A32, `briefkasten.rs` über 2 000
+Zeilen): Registerpunkt [Planarbeit · Pflegeschritt], Nachtrag zu NAK-292.
+Nr. 4 und 5 (zwei Kommentare mit altem Wortlaut), Nr. 7 („Â§" in zwei
+Prüftexten): kosmetisch, Register. Nr. 6 (`Start-Process -Environment` braucht
+PowerShell 7.4): Zeile für den Rechnerwechsel in `tools/fl/LIES-MICH.md` oder
+`docs/plugin-wissen.md`, Register.
+
+**Prüfer.** Codex-Woche 94 % (Telemetrie 09:14 Uhr), deshalb ein frischer,
+lesender Opus-Thread (Skill §3.6), nie der Bauer. Auftrag:
+`docs/beweise/roh/NAK-309-erstpruefung-4-auftrag.txt` (Vorlage A, Gate-Text
+programmatisch aus `docs/plan/plan.json`), Prüfbereich `git diff
+8d573e9f...49dab04d` über die zwölf Code-, Test-, Fixture- und Werkzeugpfade
+der Etappe; `docs/**` ausgeschlossen.
+
+## 20. Erstprüfung 4: Urteil, Einordnung und Regel R-309-11 (Dirigent, 19.09.2026, 09:35 Uhr gemessen)
+
+| Merkmal | Wert |
+|---|---|
+| Prüfer | Frischer, lesender Opus-Thread (Agent der Dirigentensession, Modell Opus; Codex-Woche 94 %, Telemetrie 09:14 Uhr, Skill §3.6); nie der Bauer. 84 Werkzeugaufrufe, 958 Sekunden, nichts geschrieben, kein Werkzeug des Prüfbereichs gefahren. |
+| Auftrag | `docs/beweise/roh/NAK-309-erstpruefung-4-auftrag.txt` (Vorlage A; Gate-Text programmatisch aus `docs/plan/plan.json`), Prüfbereich `git diff 8d573e9f...49dab04d` über zwölf Pfade, `docs/**` ausgeschlossen. |
+| HEAD | `4e53b1137c9c131b710fe3794f4f46a5cf1f8edf` vor und nach dem Lauf (vom Prüfer gemeldet; nach dem Lauf vom Dirigenten nachgemessen, `git status --short` nur die zwei fremden Ordner). Über dem Prüfziel `49dab04d` liegen nur §19 und der Prüfauftrag. |
+| Urteil | **PASS** — kein DEFEKT; zwei LÜCKEN (L-1, L-2), drei HÄRTUNGEN (H-1 bis H-3). Rohbericht wörtlich: `docs/beweise/roh/NAK-309-erstpruefung-4-urteil.md` (per Skript aus dem Transkript des Prüfers gezogen, 19 677 Zeichen, nicht abgetippt). |
+| Rundenbilanz | unverändert §19 (eine Baurunde: Produkt 4 Datei(en) +96/-1, Tests 5 Datei(en) +368/-33, Pruefwerkzeug 3 Datei(en) +419/-37); keine Nacharbeitsrunde. |
+
+**Prüffragen des Dirigenten beantwortet (§19).** E4-5 und E4-6 halten: die
+Grünzählung am Symbol ist für jedes Bein ohne Meldeordner deckungsgleich mit der
+früheren Zählung am Exitcode, der Meldeweg wird fail-closed abgebildet, das
+Präfix der Urteilszeile bleibt für `tools/plan/planstand.py` lesbar, und die
+zwei Umgebungsvariablen bleiben auf den Kindprozess begrenzt (vom Prüfer am Code
+gelesen). Der Vorbehalt aus §19 entfällt. Brokerhash: im ganzen Änderungssatz
+ist unter `broker/src` nur das Testmodul von `briefkasten.rs` berührt (vom
+Prüfer mit `git diff --stat` gemessen); die geänderte Quelldatei erzwingt den
+Neubau des Crates, `--broker-pin` schreibt den Hash des neu gelinkten Binaries.
+Dass der Link ohne Produktänderung andere Bytes liefert, erklärt der Prüfer mit
+der Nicht-Reproduzierbarkeit des MSVC-Links; gemessen hat das niemand, die
+Bauordnung der Etappe 2 trägt es in beiden Fällen (A17 hält Pin und Datei
+gegeneinander).
+
+**Einordnung (Dirigent; L-1 und L-2 an der Quelle nachgelesen, H-1 bis H-3 nach
+dem Bericht des Prüfers).**
+
+| Befund | Klasse | Entscheid |
+|---|---|---|
+| L-1 Die drei Release-Rust-Binaries (`eqcop-broker-v3probe.exe` A22, `eqcop-broker-sonde012-probe.exe` A23 und A24, `eqcop-broker.exe` A17) stehen in keinem Zeitvergleich | LÜCKE | bestätigt: `git grep -i -E 'mtime\|st_mtime\|frisch\|aelter'` über die drei Prüfskripte der Beine ergibt 0 Treffer; der Frischeweg des Werkzeugs läuft über den CMake-Export, den ein cargo-Artefakt nicht erreicht. Deckt sich mit §18.12 Nr. 1 des Bauers. Kein Satz von Gate, M-75 oder A36 bricht (alle drei nennen die Ziele aus `$gemesseneZiele`). Regel **R-309-11** unten, gebaut außerhalb dieses Tickets, Register NAK-326. |
+| L-2 Der NOT-RUN-Meldeweg existiert nur für cargo-Beine mit `Meldeweg = $true` | LÜCKE | bestätigt: `tools/beweise.ps1` setzt das Feld an genau zwei Einträgen (A4, A4-SI) und liest es nur im cargo-Zweig. Die Etappe hält ihre Zusage (M-67 bis M-70 nennen A4 und A4-SI). Zusammen mit dem stillen Skip NAK-286 M-49 (c) aus §18.12 Nr. 2 Register NAK-327; keine neue Regel in diesem Ticket, R-309-4 gilt dort fort. |
+| H-1 Wache `urteilsvorrang` lässt für den Zweig der fehlenden Voraussetzung `if` wie `elseif` zu | HÄRTUNG | Register NAK-328 (a) |
+| H-2 Klassifikationsaufruf ohne Vorprüfung auf `py` und PowerShell 7.4; endet fail-closed als ROT statt als fehlende Voraussetzung | HÄRTUNG | Register NAK-328 (b) |
+| H-3 Anzeigetabelle fällt für ein gemessenes Ziel ohne Exporteintrag auf die Namensregel zurück; folgenlos für das Urteil | HÄRTUNG | Register NAK-328 (c) |
+| §18.12 Nr. 3 (A32: `broker/src/briefkasten.rs` 2085 Zeilen) | Codebase-Riss | Nachtrag zu NAK-292 [Planarbeit · Pflegeschritt] |
+| §18.12 Nr. 4, 5, 7 (zwei Kommentare mit altem Wortlaut, „Â§" in zwei Prüftexten), Nr. 6 (PowerShell 7.4 auf dem Laptop prüfen) | Kosmetik und Rechnerwechsel | Register NAK-328 (d) bis (f) |
+
+**R-309-11 (neu, Technik, schließt L-1; nicht Teil von NAK-309).** Ein mit cargo
+gebautes Binary, das ein Kanon-Bein ausführt oder dessen Hash ein Bein misst,
+bekommt ein Frischeurteil aus seiner Abhängigkeitsdatei
+`broker/target/release/<bin>.d`: ist eine dort genannte Quelle jünger als das
+Binary, verweigert der Runner die Beglaubigung (VERALTET); fehlt die Datei oder
+ist sie nicht lesbar, ist das Ziel nicht ableitbar und nie grün. Grund für die
+Ticketgrenze: das Gate von S25h nennt mit T3-09-01 die DSP-Quellabhängigkeiten,
+jeder Abschlusskanon läuft mit `-Bauen` (cargo baut dann selbst frisch), das
+Restrisiko liegt bei Läufen ohne `-Bauen`. Gebaut in einem Werkzeugticket
+(NAK-326), mit Matrixzeile und Rotbeweis wie M-75.
+
+**Etappe 4 ist mit PASS erstgeprüft.** Damit sind alle 13 Befunde des Gates
+gebaut und je Etappe erstgeprüft. Offen für den Ticketabschluss (§6.6): der
+Laufzeit-Arm am End-Stand unter R-309-10, die Abschlussprüfung T2 über
+`4c1c7f3c...HEAD`, M-73 als Diffprüfung, die Registernachträge aus §18.13
+(NAK-267 A-3, NAK-154, NAK-121, NAK-286 M-45) und NAK-307, der lebende Kopf. Der
+Kanon nachher der Etappe 4 (GRUEN 69/69 auf `dca46403`) deckt den End-Codestand,
+solange danach kein Code mehr entsteht (gemessen: `git diff --stat
+789f305a..HEAD -- broker eq-copilot tools` leer).
+
+## 21. Laufzeit-Arm am End-Stand unter R-309-10 und M-73 (Dirigent, 19.09.2026, 09:45 Uhr gemessen)
+
+| Merkmal | Wert |
+|---|---|
+| Aufruf | `pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket NAK-309 -Basis 4c1c7f3c8cb5145de0e545aebe6305e450f00f7c -Beenden`, abgekoppelt mit Log, 09:36:32 bis 09:43:29 Uhr, auf HEAD `1d41b460` (Code gleich `789f305a`). Vor dem Start lief kein `FL64.exe` (gemessen). |
+| Kopfzeile | `LAUFZEIT NAK-309 1d41b460 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=5 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=5,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Producer Edition v26.1.4 [build 5589]`, Runner-Exit 3. Rohdatei `docs/beweise/roh/NAK-309-laufzeit-1d41b460.md`. |
+| Einordnung Exit 3 | Bekannter Stand, kein Befund: `nulltest-host` besteht 8 von 9 Schritten; Schritt 8 (`verarbeitung_ein`) endet `VORAUSSETZUNG`, weil das Referenzprojekt `Nakama-Diagnose-Verarbeitung.flp` fehlt (Karte U43, K-286-1). Dieselbe Kopfzeile tragen NAK-286 (`e35e3de5`) und NAK-289 (`c8286582`). Schritt 7 (Auslieferungszustand) `BITIDENTISCH`, 0 Abweichungen über 2 015 193 Frames; Schritt 9 (ohne Slots) `GLEICH`. `snapshot-runde01` 13 von 13, `u40-aktivitaetsgate`, `bereitschaft` und `fenster` Exit 0. |
+| R-309-10 (Besitz am Host) | **erfüllt.** Der Runner trug vier selbst gestartete Prozesse ein und nach bestätigtem Ende wieder aus: Render PID 253968 und 199112 („Render beendet"), FL PID 181404 und 130312 („Diagnose-FL beenden … (eigen, Projekt wird nie gespeichert)", „ausgetragen (Ende bestaetigt)"). Keine Zeile `UEBERSPRUNGEN`, keine Zeile „fremd"; nach dem Lauf läuft kein `FL64.exe` (`Get-Process FL64` leer, 09:43:47 Uhr). Damit ist L-3 der Erstprüfung 3 gemessen: das echte Format von `Win32_Process.CommandLine` trägt das Besitzurteil. |
+| Erster Pinlauf und Kennung | MCP-Stand `15b3b1a1` auf `evenacadia-local`, sauber, 10 gepinnte Dateien gleich; Controller-Skript neu installiert, Boot-Marke `script_version 2026-09-18`; 35 MCP-Schrittzeilen des Rohprotokolls tragen `request_id=…`, 0 Zeilen `UNGEMESSEN` (mit `grep -c` gezählt). Diagnose- und Referenzprojekt am Ende bytegleich (SHA-256 Repo = Arbeitskopie). |
+| Installation | `--hashen` zog die zwei VST3-Hashes und `hashes_erzeugt_am` nach (Brokerhash unverändert `B81B040C…`), [4c] und [4c+] grün; `\Nakama\installieren` Exit 0, `\Nakama\pruefen` Exit 0 mit drei Artefakten „aktuell". `eq-copilot/install/nakama-installer-v1.json` gehört zu den Abschlussdateien. |
+| M-73 | `git diff --stat 4c1c7f3c..HEAD -- eq-copilot/identity eq-copilot/schemas eq-copilot/plugin/dsp eq-copilot/plugin/core/ipc/PipeToken.h eq-copilot/plugin/core/ipc/PipeToken.cpp` leer (vom Dirigenten während des Laufs gemessen); A1, A14, A16 und B1 stehen im jüngsten Kanonabschnitt (`dca46403`) mit `[OK] Exit 0`. |
+
+**Nächster Schritt.** Abschlussprüfung T2 über `4c1c7f3c...HEAD` durch einen
+frischen, lesenden Opus-Thread (Codex-Woche 94 %), Auftrag
+`docs/beweise/roh/NAK-309-abschlusspruefung-auftrag.txt`.

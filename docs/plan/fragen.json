@@ -147,6 +147,17 @@
    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-03, PF11-16, Arbeitsübersicht W27; docs/offene-punkte.md NAK-316",
    "seit": "18.09.",
    "status": "offen"
+  },
+  {
+   "id": "U53",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Betrieb des Laufzeit-Arms)",
+   "titel": "Darf der Laufzeit-Arm auch nachts laufen?",
+   "was": "Nach jedem lohnenden Ticket startet der Laufzeit-Arm FL Studio sichtbar mit dem Diagnoseprojekt, spielt den Testtrack ab und beendet FL wieder (am 19.09. rund sieben Minuten). Dabei kommt vermutlich Ton über dein Audiogerät; gemessen ist das nicht, und am Audiogerät stellt der Dirigent nichts um. (1) Empfohlen: nur zwischen 9 und 23 Uhr; nachts fertige Tickets warten mit der FL-Messung bis zum Morgen. (2) Auch nachts: FL läuft dann unbeaufsichtigt und ist möglicherweise zu hören.",
+   "warum": "Seit 12.09.2026 laufen FL-Start, Installation und Messung ohne Handgriff (NAK-285, NAK-286); die Regel vom 11.09.2026 (Fragen und Handgriffe nur 9 bis 23 Uhr) nennt automatische Läufe nicht. Ohne Antwort bleibt es bei Weg 1.",
+   "wo": "docs/offene-punkte.md NAK-325; docs/beweise/NAK-309-verlauf.md §17 und §21; tools/fl/LIES-MICH.md",
+   "seit": "19.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

@@ -27,6 +27,7 @@
 
 #include "../core/analysis/FeatureEngine.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -293,6 +294,29 @@ int main()
                 "M-72: ein Sinus derselben Grundfrequenz statt des Akkords unterscheidet sich in "
                 "mindestens einem Byte - der Vergleich aus M-71 misst etwas",
                 juce::String (verschiedeneBytes (f, sinus)) + " von 76 Byte verschieden");
+
+        // Raender der Vorzeichenumkehr (Selbstaudit NAK-309 Etappe 4): bei
+        // Stille traegt das Signal kein Vorzeichen, -0,0 statt 0,0 aendert
+        // nichts; bei Vollaussteuerung (ein auf +-1,0 begrenzter Sinus, jede
+        // Spitze genau +1,0 oder -1,0) koennte eine unsymmetrische Begrenzung
+        // das Vorzeichen tragen.
+        const auto stille = fingerprintVon ([] (std::uint64_t) { return 0.0f; }, 400);
+        const auto stilleUmgekehrt = fingerprintVon ([] (std::uint64_t) { return -0.0f; }, 400);
+        pruefe (stilleUmgekehrt == stille,
+                "M-71 Rand Stille: 0,0 und -0,0 ergeben BYTEGLEICH dasselbe",
+                juce::String (stille.gesetzt ? "Fingerprint gesetzt, " : "kein Fingerprint (nichts Messbares), ")
+                + juce::String (verschiedeneBytes (stille, stilleUmgekehrt)) + " von 76 Byte verschieden");
+        const auto voll = [] (std::uint64_t n)
+        {
+            return (float) std::clamp (1.5 * std::sin (kZweiPi * 220.0 * (double) n / 48000.0), -1.0, 1.0);
+        };
+        const auto vollFp = fingerprintVon (voll, 400);
+        const auto vollUmgekehrt = fingerprintVon ([voll] (std::uint64_t n) { return -voll (n); }, 400);
+        pruefe (vollFp.gesetzt && vollUmgekehrt == vollFp,
+                "M-71 Rand Vollaussteuerung: ein auf +-1,0 begrenzter Sinus und sein Vorzeichenbild ergeben "
+                "BYTEGLEICH denselben Fingerprint",
+                juce::String (verschiedeneBytes (vollFp, vollUmgekehrt)) + " von 76 Byte verschieden, Fenster "
+                + juce::String ((int) vollFp.fenster) + " und " + juce::String ((int) vollUmgekehrt.fenster));
     }
 
     // ── M-27: fingerprint_window_never_crosses_epoch_boundary ────────────

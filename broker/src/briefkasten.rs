@@ -1805,6 +1805,96 @@ mod tests {
         assert_eq!(kanarienwert.load(Ordering::SeqCst), 0xC0FFEE, "M-45 (2) nach_stopp_keine_lieferung: Kanarienwert beruehrt");
     }
 
+    /// NAK-309 Etappe 4 (T3-04-04, M-66): der erlaubte Nachlauf nach der Join-Frist, gemessen.
+    /// Ein Takt steht mitten im Schreibschritt (Haken `beim_schreiben` mit Schranke); der
+    /// Stoppweg wartet die ECHTE Join-Frist von 2 s ab (`JOIN_FRIST` bleibt Produktkonstante,
+    /// F-20) und zaehlt `join_frist_verfehlt`. Nach der Freigabe beendet der Thread den
+    /// begonnenen Schreibschritt genau einmal und beginnt keinen neuen Takt, auch nicht fuer
+    /// zehn Ausloesungen nach dem Stopp. Gemessen wird an Zaehlern, nicht an der Uhr. Die
+    /// Schranke oeffnet spaetestens nach 30 s von selbst und beim Verlassen des Tests, damit
+    /// ein roter Verlauf nie haengt.
+    #[test]
+    fn nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal() {
+        struct Schranke {
+            /// (erreicht, offen)
+            zustand: Mutex<(bool, bool)>,
+            meldung: Condvar,
+        }
+        impl Schranke {
+            fn oeffne(&self) {
+                sperre(&self.zustand).1 = true;
+                self.meldung.notify_all();
+            }
+        }
+        struct Oeffner(Arc<Schranke>);
+        impl Drop for Oeffner {
+            fn drop(&mut self) {
+                self.0.oeffne();
+            }
+        }
+        const SCHRANKE_FRIST: Duration = Duration::from_secs(30);
+        const NAME: &str = "NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal";
+
+        let mut b = buehne(true, LANG);
+        let kern = b.griff.kern.clone().expect("gestartet");
+        let schranke = Arc::new(Schranke { zustand: Mutex::new((false, false)), meldung: Condvar::new() });
+        let oeffner = Oeffner(Arc::clone(&schranke));
+        let im_haken = Arc::clone(&schranke);
+        *sperre(&b.fs.beim_schreiben) = Some(Box::new(move || {
+            let beginn = Instant::now();
+            let mut z = sperre(&im_haken.zustand);
+            z.0 = true;
+            im_haken.meldung.notify_all();
+            while !z.1 && beginn.elapsed() < SCHRANKE_FRIST {
+                let rest = SCHRANKE_FRIST.saturating_sub(beginn.elapsed());
+                z = im_haken.meldung.wait_timeout(z, rest).unwrap_or_else(PoisonError::into_inner).0;
+            }
+        }));
+        let k = neue_kennung();
+        b.anfrage(&k);
+        b.ausloesen();
+        let erreicht = {
+            let beginn = Instant::now();
+            let frist = Duration::from_secs(10);
+            let mut z = sperre(&schranke.zustand);
+            while !z.0 && beginn.elapsed() < frist {
+                let rest = frist.saturating_sub(beginn.elapsed());
+                z = schranke.meldung.wait_timeout(z, rest).unwrap_or_else(PoisonError::into_inner).0;
+            }
+            z.0
+        };
+        assert!(erreicht, "{NAME} vorbedingung: der Takt erreicht den Schreibschritt nicht");
+
+        let (s0, fertig0) = (b.stand(), sperre(&kern.weck).takte_fertig);
+        let beginn = Instant::now();
+        b.griff.stoppen();
+        let stopp_ms = beginn.elapsed().as_millis();
+        let verfehlt = wert(&b.z().join_frist_verfehlt);
+        let vor_freigabe = b.antworten(&k).len();
+        (0..10).for_each(|_| b.ausloesen());
+        schranke.oeffne();
+        let _ = b.warte(Duration::from_secs(10), |weck| weck.beendet || weck.takte_fertig > fertig0 + 1);
+        let (beendet, fertig) = {
+            let weck = sperre(&kern.weck);
+            (weck.beendet, weck.takte_fertig.wrapping_sub(fertig0))
+        };
+        let d = b.stand().seit(s0);
+        let antworten = b.antworten(&k).len();
+        println!(
+            "[roh] {NAME} join_frist_verfehlt={verfehlt} stopp_ms={stopp_ms} antworten_vor_freigabe={vor_freigabe} \
+             takte_fertig_seit_stopp={fertig} antworten={antworten} existenzpruefungen_seit_stopp={} beendet={beendet}",
+            d.existenz
+        );
+        assert_eq!(verfehlt, 1, "{NAME}: join_frist_verfehlt {verfehlt} statt 1");
+        assert_eq!(vor_freigabe, 0, "{NAME}: Antwort schon vor der Freigabe - der Schreibschritt stand nicht");
+        assert_eq!(fertig, 1, "{NAME}: {fertig} Takte fertig nach dem Stopp statt genau des begonnenen");
+        assert_eq!(d.existenz, 0, "{NAME}: {} Existenzpruefungen nach dem Stopp - ein neuer Takt hat begonnen", d.existenz);
+        let genau_eine = antworten == 1 && wert(&b.z().antworten) == 1 && wert(&b.z().schreibversuche) == 1;
+        assert!(genau_eine, "{NAME}: {antworten} Antwortdatei(en) statt genau einer");
+        assert!(beendet, "{NAME}: der Thread endet nach dem begonnenen Takt nicht");
+        drop(oeffner);
+    }
+
     struct Teil(&'static str, Arc<Mutex<Vec<&'static str>>>);
 
     impl Drop for Teil {

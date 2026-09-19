@@ -17,7 +17,9 @@ Beine der Faelle:
   ROT   py pruefe_beweisrunner.py --nicht-gelaufen <fehlender Ordner>   -> Exit 2, [ROT]
   FEHLT py pruefe_beweisrunner.py --nicht-gelaufen <Ordner mit Marke>   -> Exit 3: ein Python-Bein mit Exit 3
         nimmt im Runner denselben Zweig wie A9 ohne flatc ([FEHLT] "Voraussetzung fehlt (Exit 3)").
-Kein -Bauen: VERALTET ist der Baustand, den der Lauf vorfindet (er steht je Fall in der Rohdatei).
+Kein -Bauen. Vor K3 wird VERALTET hergestellt, statt es vom Zufall des Baustands abhaengen zu lassen: die
+LastWriteTime von eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp (Quelle von B22) geht auf jetzt, der
+Inhalt bleibt; der naechste Lauf mit -Bauen baut B22 neu. Der Baustand steht je Fall in der Rohdatei.
 Der Schalter steht nur in der Umgebung des Runnerprozesses des Falls (Start-Process -Environment).
 #>
 $ErrorActionPreference = 'Stop'
@@ -80,7 +82,14 @@ $faelle = @(
     @{ Fall = 'K4'; Beine = @('OK'); Schalter = $false; Exit = 4; Muster = '^NICHT BEGLAUBIGT - 1/1 gruen, aber Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen'; Satz = 'Gegenprobe zu K3: derselbe Baustand ohne NOT RUN ist NICHT BEGLAUBIGT (Exit 4) - VERALTET liegt wirklich vor' }
 )
 $fehler = 0
+$quelleB22 = Join-Path $Repo 'eq-copilot\plugin\tests\Sonde013FingerprintGoldenTest.cpp'
 foreach ($f in $faelle) {
+    if ($f.Fall -eq 'K3') {
+        $shaVor = (Get-FileHash -Algorithm SHA256 -LiteralPath $quelleB22).Hash
+        (Get-Item -LiteralPath $quelleB22).LastWriteTime = Get-Date
+        $z.Add(("Vor K3: LastWriteTime von eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp auf {0:yyyy-MM-dd HH:mm:ss} gesetzt, Inhalt gleich (SHA-256 {1} vorher, {2} nachher) - B22 ist damit VERALTET" -f (Get-Item -LiteralPath $quelleB22).LastWriteTime, $shaVor.Substring(0, 16), (Get-FileHash -Algorithm SHA256 -LiteralPath $quelleB22).Hash.Substring(0, 16)))
+        $z.Add('')
+    }
     $kopie = Kopie $f.Fall $f.Beine
     $ziel = Join-Path $Temp "kombi-$($f.Fall).md"
     if (Test-Path -LiteralPath $ziel) { [IO.File]::Delete($ziel) }
@@ -106,6 +115,8 @@ foreach ($f in $faelle) {
         $zellen = $zeile -split '\s\|\s'
         $z.Add(("  Bein {0}: {1}" -f $zellen[0].Trim('| '), $zellen[3]))
     }
+    $konsole = if (Test-Path -LiteralPath $aus) { [IO.File]::ReadAllText($aus, $Utf8) } else { '' }
+    foreach ($zeile in @($konsole -split "`r?`n" | Where-Object { $_ -match '^\[(OK|NOT RUN|ROT|FEHLT|HINWEIS)\] ' })) { $z.Add("  Konsole: $zeile") }
     $rohText = (@(Get-ChildItem -LiteralPath $Temp -File -Filter "kombi-$($f.Fall)-*.md" | Sort-Object LastWriteTime | Select-Object -Last 1) | ForEach-Object { [IO.File]::ReadAllText($_.FullName, $Utf8) }) -join ''
     $veraltet = @($rohText -split "`r?`n" | Where-Object { $_ -match '^\|[^|]+\|[^|]+\|[^|]+\|\s*VERALTET\b' })
     $hinweis = @($manifest -split "`r?`n" | Where-Object { $_ -match '^> Baustand:' }) | Select-Object -First 1

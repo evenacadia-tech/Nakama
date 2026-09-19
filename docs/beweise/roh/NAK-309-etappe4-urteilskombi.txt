@@ -1,6 +1,6 @@
 NAK-309 Etappe 4 - Urteilskombinationen des Runners (Selbstaudit, Auftrag Schritt 6)
-Stand:  2026-09-19 06:36, HEAD 0333855d; tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-urteilskombi.ps1 (SHA-256 FC1B611B084D90533BAE205B8183EBB493590B15D6745D035C3C648316B2ECEB)
+Stand:  2026-09-19 07:48, HEAD 789f305a; tools/beweise.ps1 SHA-256 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-urteilskombi.ps1 (SHA-256 F5C243C1AD642D8794E25AA15F53D49E4DF2377379F66F89BC8014364B933939)
 Meldeordner im Temp-Ordner vor dem ersten Fall: 0
 
 --- K1: NOT RUN mit ROT: ROT gewinnt (Exit 2), der Nachsatz nennt NOT RUN ---
@@ -11,44 +11,55 @@ Urteil:   ROT - 1 von 3 Kanon-Laeufen fehlgeschlagen | 1 Bein(e) NOT RUN, siehe 
   Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
   Bein ROT: [ROT] Exit 2
   Bein OK: [OK] Exit 0
-Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
-Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+  Konsole: [NOT RUN] broker - store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (0,16 s)
+  Konsole: [ROT] pruefe_beweisrunner.py - Exit 2 (0,17 s)
+  Konsole: [OK] pruefe_beweisrunner.py - Exit 0 (0,17 s)
+Manifestzeile: (kein Baustandhinweis)
+Baustandtabelle der Rohausgabe: 0 Zeile(n) VERALTET
 Erwartung erfuellt: JA
 Meldeordner im Temp-Ordner nach dem Fall: 0
 
 --- K2: NOT RUN mit einer fehlenden Voraussetzung (Exit 3 eines Python-Beins): Exit 3, beide zaehlen als Voraussetzung, NOT RUN nie gruen ---
 Beine: NR, FEHLT, OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: ja
 Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K2.ps1 -Ziel <Temp>\kombi-K2.md
-Exitcode: 3 (erwartet 3), 3.9 s
+Exitcode: 3 (erwartet 3), 3.2 s
 Urteil:   UNVOLLSTAENDIG - 1 gruen, 2 Voraussetzung(en) fehlen | 1 Bein(e) NOT RUN, siehe Uebersicht
   Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
   Bein FEHLT: [FEHLT] Voraussetzung fehlt (Exit 3)
   Bein OK: [OK] Exit 0
-Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
-Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+  Konsole: [NOT RUN] broker - store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (0,14 s)
+  Konsole: [FEHLT] pruefe_beweisrunner.py - Voraussetzung fehlt (Exit 3)
+  Konsole: [OK] pruefe_beweisrunner.py - Exit 0 (0,18 s)
+Manifestzeile: (kein Baustandhinweis)
+Baustandtabelle der Rohausgabe: 0 Zeile(n) VERALTET
 Erwartung erfuellt: JA
 Meldeordner im Temp-Ordner nach dem Fall: 0
+
+Vor K3: LastWriteTime von eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp auf 2026-09-19 07:48:45 gesetzt, Inhalt gleich (SHA-256 8A262104520B49FD vorher, 8A262104520B49FD nachher) - B22 ist damit VERALTET
 
 --- K3: NOT RUN bei veraltetem Baustand: Exit 3 vor 4 ---
 Beine: NR, OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: ja
 Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K3.ps1 -Ziel <Temp>\kombi-K3.md
-Exitcode: 3 (erwartet 3), 3.5 s
+Exitcode: 3 (erwartet 3), 3.4 s
 Urteil:   UNVOLLSTAENDIG - 1 gruen, 1 Voraussetzung(en) fehlen | 1 Bein(e) NOT RUN, siehe Uebersicht
   Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
   Bein OK: [OK] Exit 0
+  Konsole: [NOT RUN] broker - store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 (0,15 s)
+  Konsole: [OK] pruefe_beweisrunner.py - Exit 0 (0,16 s)
 Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
-Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Baustandtabelle der Rohausgabe: 1 Zeile(n) VERALTET, erste: | `EqCopSonde013FingerprintGoldenTest` | 2026-09-19 06:34:58 | `21C2B49C503A0EFE` | VERALTET | eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp (2026-09-19 07:48:45) |
 Erwartung erfuellt: JA
 Meldeordner im Temp-Ordner nach dem Fall: 0
 
 --- K4: Gegenprobe zu K3: derselbe Baustand ohne NOT RUN ist NICHT BEGLAUBIGT (Exit 4) - VERALTET liegt wirklich vor ---
 Beine: OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: nein
 Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K4.ps1 -Ziel <Temp>\kombi-K4.md
-Exitcode: 4 (erwartet 4), 2.8 s
+Exitcode: 4 (erwartet 4), 2.7 s
 Urteil:   NICHT BEGLAUBIGT - 1/1 gruen, aber Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen
   Bein OK: [OK] Exit 0
+  Konsole: [OK] pruefe_beweisrunner.py - Exit 0 (0,16 s)
 Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
-Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Baustandtabelle der Rohausgabe: 1 Zeile(n) VERALTET, erste: | `EqCopSonde013FingerprintGoldenTest` | 2026-09-19 06:34:58 | `21C2B49C503A0EFE` | VERALTET | eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp (2026-09-19 07:48:45) |
 Erwartung erfuellt: JA
 Meldeordner im Temp-Ordner nach dem Fall: 0
 

@@ -1,5 +1,5 @@
 NAK-309 Etappe 4 - Rotbeweis M-75 (1) Population der gemessenen Ziele leer
-Stand:  2026-09-19 06:35, HEAD b8549bca
+Stand:  2026-09-19 07:49, HEAD 789f305a
 Zusage: Jedes Ziel, das der Runner baut und ein Bein ausfuehrt oder misst, bekommt dasselbe Frischeurteil wie ein Pruefbinary.
 Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
 Datei:  tools/eq-copilot/pruefe_beweisrunner.py:572
@@ -111,21 +111,21 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 50
 --- LAUF NACH RUECKNAHME ---
 Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/pruefe_beweisrunner.py SHA-256 AD21C39F351C4A87CAC7D26AF5976005ABE53BDE0FD109EEA92ED0924AE826CB); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
-Exitcode: 0 (1.3 s)
+Exitcode: 0 (1.2 s)
   Selbsttest: 1 von 1 Faellen bestanden
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 0 (6.1 s)
+Exitcode: 0 (6 s)
   Selbsttest: 14 von 14 Faellen bestanden
 
 Bein nach Ruecknahme gruen (die Zusage haelt): ja
 
 ==============================================================================
 NAK-309 Etappe 4 - Rotbeweis M-75 (2) Runner fuehrt die gemessenen Ziele nicht in bau_ziele
-Stand:  2026-09-19 06:35, HEAD b8549bca
+Stand:  2026-09-19 07:50, HEAD 789f305a
 Zusage: Die Ziele aus $gemesseneZiele gehen ueber $zuBauen in bau_ziele der Frischepruefung.
 Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
 Datei:  tools/beweise.ps1:899
-SHA-256 vorher: 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD (Datei gleich HEAD: ja)
+SHA-256 vorher: 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84 (Datei gleich HEAD: ja)
 Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Selbsttest und Code stehen in derselben Datei.
@@ -146,7 +146,7 @@ Exitcode: 4 (1.2 s)
   Selbsttest: 0 von 1 Faellen bestanden
 
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 4 (5.9 s)
+Exitcode: 4 (6 s)
   (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
   Selbsttest: 13 von 14 Faellen bestanden
 
@@ -215,12 +215,12 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 54
   Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
 
 --- LAUF NACH RUECKNAHME ---
-Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
-Exitcode: 0 (1.4 s)
+Exitcode: 0 (1.3 s)
   Selbsttest: 1 von 1 Faellen bestanden
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 0 (6 s)
+Exitcode: 0 (5.9 s)
   Selbsttest: 14 von 14 Faellen bestanden
 
 Bein nach Ruecknahme gruen (die Zusage haelt): ja

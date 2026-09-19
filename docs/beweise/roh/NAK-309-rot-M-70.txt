@@ -1,15 +1,15 @@
 NAK-309 Etappe 4 - Rotbeweis M-70 (1) Zweige ROT und fehlende Voraussetzung vertauscht
-Stand:  2026-09-19 06:26, HEAD cb7c0d0e
+Stand:  2026-09-19 07:49, HEAD 789f305a
 Zusage: ROT gewinnt: Exit 2 vor 3 vor 4; NOT RUN zaehlt nie als gruen.
 Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
-Datei:  tools/beweise.ps1:1324-1331
-SHA-256 vorher: 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Datei:  tools/beweise.ps1:1332-1339
+SHA-256 vorher: 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: entfaellt - Regressionswache der bestehenden Reihenfolge.
 
 --- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
-tools/beweise.ps1, vorher (Zeile 1324):
+tools/beweise.ps1, vorher (Zeile 1332):
 if ($rot -gt 0) {
     $exitcode = 2
     $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
@@ -38,7 +38,7 @@ Exitcode: 4 (0.2 s)
   Selbsttest: 0 von 1 Faellen bestanden
 
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 4 (6.2 s)
+Exitcode: 4 (5.9 s)
   tools/beweise.ps1: ROT vor fehlender Voraussetzung vor NICHT BEGLAUBIGT, [NOT RUN] fehlt in der Gruenzaehlung und ist eine fehlende Voraussetzung  [Reihenfolge des Urteilsblocks verletzt (ROT vor Voraussetzung vor NICHT BEGLAUBIGT)]
   Selbsttest: 13 von 14 Faellen bestanden
 
@@ -107,9 +107,9 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 54
   Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
 
 --- LAUF NACH RUECKNAHME ---
-Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-70
-Exitcode: 0 (0.3 s)
+Exitcode: 0 (0.2 s)
   Selbsttest: 1 von 1 Faellen bestanden
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
 Exitcode: 0 (6.1 s)
@@ -119,17 +119,17 @@ Bein nach Ruecknahme gruen (die Zusage haelt): ja
 
 ==============================================================================
 NAK-309 Etappe 4 - Rotbeweis M-70 (2) [NOT RUN] in der Gruenzaehlung
-Stand:  2026-09-19 06:26, HEAD cb7c0d0e
+Stand:  2026-09-19 07:49, HEAD 789f305a
 Zusage: NOT RUN zaehlt nie als gruen.
 Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
-Datei:  tools/beweise.ps1:1306
-SHA-256 vorher: 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Datei:  tools/beweise.ps1:1314
+SHA-256 vorher: 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: entfaellt - Regressionswache.
 
 --- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
-tools/beweise.ps1, vorher (Zeile 1306):
+tools/beweise.ps1, vorher (Zeile 1314):
 $gruen = @($gelaufen | Where-Object { $_.Symbol -in @('[OK]', '[HINWEIS]') })
 nachher:
 $gruen = @($gelaufen | Where-Object { $_.Symbol -in @('[OK]', '[HINWEIS]', '[NOT RUN]') })
@@ -144,7 +144,7 @@ Exitcode: 4 (0.2 s)
   Selbsttest: 0 von 1 Faellen bestanden
 
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 4 (5.9 s)
+Exitcode: 4 (6 s)
   tools/beweise.ps1: ROT vor fehlender Voraussetzung vor NICHT BEGLAUBIGT, [NOT RUN] fehlt in der Gruenzaehlung und ist eine fehlende Voraussetzung  [0 statt genau einer Zeile: \$gruen = @\(\$gelaufen \| Where-Object \{ \$_\.Symbol -in @\('\[OK\]', '\[HINWEIS\]'\) \}\)]
   Selbsttest: 13 von 14 Faellen bestanden
 
@@ -213,12 +213,12 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 54
   Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
 
 --- LAUF NACH RUECKNAHME ---
-Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7576A10B8746F3A044197AEC5CE0407ADCF025A10A11AB7261D6565A62C43A84); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-70
 Exitcode: 0 (0.2 s)
   Selbsttest: 1 von 1 Faellen bestanden
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 0 (6.2 s)
+Exitcode: 0 (6 s)
   Selbsttest: 14 von 14 Faellen bestanden
 
 Bein nach Ruecknahme gruen (die Zusage haelt): ja

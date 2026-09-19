@@ -418,6 +418,7 @@ hatten. Sie sind jetzt zugeordnet — Wortlaut und Belege stehen in
 |---|---|---|
 | Band-Belegung, atomare Slotfreigabe und wiederherstellbares Remove (`enabled = false` ≠ „Slot frei") | **S26–28**, gespiegelt in **S28b**, Bedienung **S31b** | `design/abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-02.md` (01.09.2026), Entscheidungen 4/5 und 5/5 |
 | `Frame.band_dynamic_gain_db` — Nutzlast zum reservierten Namen | **S26–28** (IPC), **S28b** (lokal), Anzeige **S31b** | `design/abnahmen/2026-09-01-technische-ui-architektur-fuenferblock-01.md` (01.09.2026), Entscheidung 5/5; Reservierung in `eq-copilot/schemas/v3/reservierte-nachrichten-v1.json` |
+| Messart der Schwelle je dynamischem Band (Spitze oder Durchschnitt, Ausgangszustand Durchschnitt): neuer gespeicherter Wert je Band, versioniert | **S26–28**, gespiegelt in **S28b**, Bedienung **S31b**; beide Messarten im Kern vorher in **S25j** | `design/abnahmen/2026-09-19-dynamik-schwelle-je-band-umschaltbar-u45.md` (19.09.2026, Karte U45), Register NAK-331 |
 | 10-Sekunden-Kandidat: ID, Timer, Nachricht, ACK, Reconnect, Kill, Ablauf | **S29–31** | `design/abnahmen/2026-08-23-interview-struktur.md` (23.08.2026, Drei-Stufen-Geste), Blueprint §15 Punkt 12 |
 | Direkte Edit-Transaktion: Band-Drag, Textwert, Preset-Load, Curve-Copy auf Preview/Kandidat/Confirmed/Cancel/Revert | **S29–31** | Blueprint §15 Punkt 14 |
 | Zweistufiger Mix — Zustands- und Umschaltsemantik | **S29–31** | `design/abnahmen/2026-08-23-gen-eq-zentrale.md` (23.08.2026), Blueprint §15 Punkt 7 |

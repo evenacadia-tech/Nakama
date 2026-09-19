@@ -50,17 +50,6 @@
    "status": "offen"
   },
   {
-   "id": "U45",
-   "dringlichkeit": "jetzt",
-   "art": "Produktentscheid (Klangverhalten)",
-   "titel": "Dynamischer EQ: soll die Schwelle auf Spitzen oder auf die Durchschnittslautstärke reagieren?",
-   "was": "Ein dynamisches Band greift, sobald der Pegel in seinem Frequenzbereich eine Schwelle (Threshold) überschreitet. Offen ist, was „Pegel“ dabei heißt: (1) Empfohlen: der Durchschnittspegel über einen kurzen Zeitraum (RMS) — greift gleichmäßig und reagiert weniger nervös auf einzelne Schläge. (2) Der Spitzenpegel (Peak) — greift sofort auf Transienten wie Snare-Schläge, kann bei perkussivem Material flattern. Attack, Hold und Release bleiben in beiden Fällen so einstellbar wie heute.",
-   "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. An der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 4). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Länge des Messfensters ist Technik.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-06 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U46",
    "dringlichkeit": "jetzt",
    "art": "Produktentscheid (Klangverhalten)",
@@ -836,6 +825,29 @@
     "warum": "Audit-Befund T3-15-09, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 2). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Höhe der Obergrenze ist Technik und bleibt beim Dirigenten; wie die Meldung aussieht, gehört zum geparkten Designteil.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-09 und Arbeitsübersicht W08; docs/offene-punkte.md NAK-311",
     "seit": "19.09.",
+    "status": "offen"
+   }
+  },
+  "U45": {
+   "wahl": "Eigene Antwort: beide Messarten, je Band umschaltbar; neues Band startet auf Durchschnitt.",
+   "text": "beides einzeln auswählbar",
+   "nachfrage": {
+    "frage": "„einzeln“ kann zwei Dinge heißen. Teil 1, wo der Umschalter sitzt: „1. Je Band“ oder „2. Einmal für den ganzen EQ“. Teil 2, was für ein neues Band gilt, bevor umgeschaltet wird: „1. Durchschnitt (empfohlen)“ oder „2. Spitze“.",
+    "text": "1 und 1",
+    "datum": "2026-09-19 11:21"
+   },
+   "datum": "2026-09-19 11:21",
+   "status": "eingearbeitet",
+   "ergebnis": "Beide Messarten gibt es, je dynamischem Band umschaltbar zwischen Spitze und Durchschnitt; ein neues Band startet auf Durchschnitt. NAK-311 Etappe 5 (Audit-Befund T3-15-06) baut beide Messarten mit festgelegtem Pegelbegriff in den Kern, aktiv ist Durchschnitt, ohne neues gespeichertes Feld. Der Umschalter je Band ist ein neuer gespeicherter Wert und wird zuerst versioniert: Register NAK-331, zugeordnet den Planschritten S26–28, S28b und S31b; Altstände ohne den Wert laden mit Durchschnitt. Messfenster und Bauart der Spitzenmessung entscheidet der Dirigent. Festgehalten in design/abnahmen/2026-09-19-dynamik-schwelle-je-band-umschaltbar-u45.md. Gestellt als Text in der Dirigentensitzung 0cb3cdf4 (AskUserQuestion im dontAsk-Modus gesperrt) mit zwei Wegen: „1. Durchschnittspegel, RMS (empfohlen)“, „2. Spitzenpegel, Peak“.",
+   "karte": {
+    "id": "U45",
+    "dringlichkeit": "jetzt",
+    "art": "Produktentscheid (Klangverhalten)",
+    "titel": "Dynamischer EQ: soll die Schwelle auf Spitzen oder auf die Durchschnittslautstärke reagieren?",
+    "was": "Ein dynamisches Band greift, sobald der Pegel in seinem Frequenzbereich eine Schwelle (Threshold) überschreitet. Offen ist, was „Pegel“ dabei heißt: (1) Empfohlen: der Durchschnittspegel über einen kurzen Zeitraum (RMS) — greift gleichmäßig und reagiert weniger nervös auf einzelne Schläge. (2) Der Spitzenpegel (Peak) — greift sofort auf Transienten wie Snare-Schläge, kann bei perkussivem Material flattern. Attack, Hold und Release bleiben in beiden Fällen so einstellbar wie heute.",
+    "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. An der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 4). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Länge des Messfensters ist Technik.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-06 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
+    "seit": "18.09.",
     "status": "offen"
    }
   }

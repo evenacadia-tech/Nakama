@@ -11,8 +11,8 @@ pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, zeigt
 `tools/dirigent/logo.ps1` und ruft Claude mit `claude-fable-5-1[1m]`, `xhigh`,
 `--permission-mode dontAsk`, `--remote-control nakama-dirigent` (User 30.08.2026)
-und `/dirigent` auf (Fable 5.1 voll benannt, User 01.09.2026; `[1m]` trägt
-das 1M-Fenster für §5). Endet Claude, bleibt das Fenster: liegt
+und `/dirigent` auf (User 01.09.2026; `[1m]` trägt das 1M-Fenster für
+§5). Endet Claude, bleibt das Fenster: liegt
 `nakama-dirigent-neustart.marker` im Temp-Ordner (`[IO.Path]::GetTempPath()`),
 startet der Starter sofort eine frische Session im selben Fenster; sonst
 wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne Starter:
@@ -41,11 +41,11 @@ mit ungeprüfter nativer Fähigkeit (Ersatzwege: §4).
 
 ## 1. Rolle
 
-- Keine Berechtigungsfragen (User 11.09.2026): Dirigent und Worker laufen mit
-  `--permission-mode dontAsk`; `.claude/settings.json` erlaubt alles Nötige
-  und lehnt Destruktives per `deny` ab (Vorlage
-  `tools/dirigent/settings.dontask.json`); nie `ask`, nie
-  `bypassPermissions`. Eine `ask`-Regel oder ein Prompt ist ein Befund.
+- Keine Berechtigungsfragen (User 11.09., 19.09.2026): Dirigent `auto`, wenn
+  der Hook `tools/hooks/keine-rueckfrage.sh` verdrahtet ist (lehnt Rückfragen
+  ab; der Starter prüft es), sonst wie jeder Worker `dontAsk`. Klassifikator
+  blockt → Worker fährt es; `dontAsk` blockt (`.claude/`) → Dirigent; gehäufte
+  Ablehnungen → Neustart (§5). Nie `ask`, nie `bypassPermissions`.
 - Der Dirigent entscheidet und misst, baut nie; bei laufendem Worker bleibt
   er an Repo-Dateien lesend.
 - Technik innerhalb von Ticket, Invarianten und Designrichtung entscheidet

@@ -49,11 +49,24 @@ if (-not (Test-Path -LiteralPath $logoPath -PathType Leaf)) {
     throw "Dirigentenlogo wurde nicht gefunden: $logoPath"
 }
 
+# Berechtigungsmodus des Dirigenten (User 19.09.2026): `dontAsk` lehnt Schreiben
+# unter .claude/ immer ab (Skillpflege unmoeglich), `auto` laesst den
+# Klassifikator entscheiden, faellt aber nach 3 Blocks in Folge oder 20 je
+# Session auf einen Dialog zurueck - nachts steht dann alles (User 11.09.2026).
+# `auto` gilt deshalb nur, wenn der PermissionRequest-Hook
+# tools/hooks/keine-rueckfrage.sh in .claude/settings.json verdrahtet ist (er
+# lehnt jede Rueckfrage ohne Dialog ab); sonst bleibt es bei `dontAsk`. Worker
+# laufen immer mit `dontAsk` (Skill §3.2).
+$projektSettingsPath = Join-Path $repoRoot '.claude\settings.json'
+$rueckfrageHookVerdrahtet = (Test-Path -LiteralPath $projektSettingsPath -PathType Leaf) -and
+    ([IO.File]::ReadAllText($projektSettingsPath, [Text.Encoding]::UTF8) -match '"PermissionRequest"[\s\S]*keine-rueckfrage\.sh')
+$permissionMode = if ($rueckfrageHookVerdrahtet) { 'auto' } else { 'dontAsk' }
+
 $claudeArguments = @(
     '--remote-control', 'nakama-dirigent',
     '--model', 'claude-fable-5-1[1m]',
     '--effort', 'xhigh',
-    '--permission-mode', 'dontAsk',   # keine Berechtigungsfragen (User-Wort 11.09.2026); allow/deny in .claude/settings.json (Vorlage tools/dirigent/settings.dontask.json)
+    '--permission-mode', $permissionMode,
     '--name', 'nakama-dirigent',
     '/dirigent'
 )

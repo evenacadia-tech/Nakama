@@ -9,7 +9,11 @@
     §6.1: 311/M-12, M-13 mit M-14, M-18, der neutrale Schritt in M-22 und die
     Tapvergleiche M-90, M-91). Seit NAK-311 Etappe 3 (W01) Abschnitt P: die
     Pfadrampen in der Ruhe gegen einen frischen Kern als Orakel (§6.2:
-    311/M-23 bis M-38; M-34 misst B7 am Prozessor).
+    311/M-23 bis M-38; M-34 misst B7 am Prozessor). Seit W03 der
+    Slot-Lebenszyklus gegen einen Referenzkern ohne Wechsel (§6.3): 311/M-43
+    bis M-45, M-54, M-55 in Abschnitt E, 311/M-41 im M-121-Block von L, der
+    Fremdslotwechsel im Allokationslauf von J (M-56) und Abschnitt Q
+    (311/M-46 bis M-51, M-53, M-94, M-95); M-40 misst B7.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -46,6 +50,7 @@
 #include "NakamaParameter.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -58,6 +63,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -561,6 +567,153 @@ const char* typName (Filtertyp t)
         case Filtertyp::highCut:   return "high_cut";
     }
     return "?";
+}
+
+//==============================================================================
+// NAK-311 W03 (Manifest NAK-311 §6.3, R-311-1): die Messwege des
+// Slot-Lebenszyklus. Das MASS (F-9) ist der groesste Betrag von
+// 20*log10 (Perioden-RMS mit Wechsel / Perioden-RMS des Referenzkerns) ueber
+// volle Perioden des Prueftons auf beiden Kanaelen, ab dem ersten Sample des
+// Umschaltblocks, der auf einer Periodengrenze beginnt. Der Referenzkern hat
+// dieselbe Vorgeschichte und bekommt denselben Eingang in derselben
+// Blockteilung, nur ohne den Wechsel. Alles hier ist eigenstaendig
+// ausgeschrieben; der Kern liefert nur Ausgang, Taps und Auslenkungen.
+
+/** Was ein Lauf ab dem Umschaltblock aufzeichnet: den float-Ausgang und den
+    Tap post_candidate (beide L und R verschraenkt, ein fehlender Tap als
+    NaN), je Block die acht Committed-Auslenkungen und die rechnende
+    Crossfade-Quelle des Committed-Pfades (-1 = keine, also Rampe oder kein
+    Uebergang). */
+struct W03Lauf
+{
+    std::vector<double> aus, kandidat;
+    std::vector<std::array<double, (size_t) param::kSlots>> auslenkungen;
+    std::vector<int> kreuzQuelle;
+};
+
+/** Faehrt `samples` Samples aus `quelle (n, l, r)` ab dem Stromindex `n0` in
+    Bloecken zu `blockGroesse` (der letzte kuerzer); zeichnet in `lauf` auf,
+    wenn gesetzt. */
+template <typename Quelle>
+void fahreW03 (DspKern& k, const Quelle& quelle, long long& n0, int samples, int blockGroesse, W03Lauf* lauf)
+{
+    std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
+    float* kan[2] = { a.data(), b.data() };
+    for (int rest = samples; rest > 0;)
+    {
+        const int m = std::min (rest, blockGroesse);
+        for (int i = 0; i < m; ++i) quelle (n0 + i, a[(size_t) i], b[(size_t) i]);
+        k.verarbeite (kan, 2, m);
+        if (lauf != nullptr)
+        {
+            const double* cl = k.tap (Tap::postCandidate, 0);
+            const double* cr = k.tap (Tap::postCandidate, 1);
+            for (int i = 0; i < m; ++i)
+            {
+                lauf->aus.push_back ((double) a[(size_t) i]);
+                lauf->aus.push_back ((double) b[(size_t) i]);
+                lauf->kandidat.push_back (cl != nullptr ? cl[i] : std::nan (""));
+                lauf->kandidat.push_back (cr != nullptr ? cr[i] : std::nan (""));
+            }
+            std::array<double, (size_t) param::kSlots> w {};
+            k.auslenkungenDb (w.data());
+            lauf->auslenkungen.push_back (w);
+            int klingend = -1, q = -1;
+            k.rechnendeSlots (Pfad::committed, klingend, q);
+            lauf->kreuzQuelle.push_back (q);
+        }
+        n0 += m;
+        rest -= m;
+    }
+}
+
+/** Zwei Kerne mit identischer Vorgeschichte: `vorher` im Pfad `pfad` (dazu
+    `committedDazu` im Committed-Pfad, wenn gesetzt), `vorgeschichte` Samples
+    aus `vor` in Bloecken zu `vorBlock`. Dann uebernimmt NUR der Pruefkern
+    `nachher`, und beide fahren `fenster` Samples aus `nach` in Bloecken zu
+    `blockGroesse`. `uebernahmen` zaehlt die Blockrand-Uebernahmen des
+    Fensters (B-11). */
+struct W03Paar
+{
+    W03Lauf test, ref;
+    std::uint64_t uebernahmenTest = 0, uebernahmenRef = 0;
+    std::array<double, (size_t) param::kSlots> auslenkungVorher {};
+};
+
+template <typename QuelleVor, typename QuelleNach>
+W03Paar fahrePaar (double fs, int maxBlock, const param::DspSatz& vorher, const param::DspSatz& nachher, Pfad pfad,
+                   const QuelleVor& vor, int vorgeschichte, int vorBlock,
+                   const QuelleNach& nach, int fenster, int blockGroesse,
+                   const param::DspSatz* committedDazu = nullptr)
+{
+    W03Paar e;
+    auto test = neuerKern (fs, maxBlock);
+    auto ref  = neuerKern (fs, maxBlock);
+    for (auto* k : { test.get(), ref.get() })
+    {
+        if (committedDazu != nullptr) k->uebernehmeZustand (*committedDazu);
+        k->uebernehmeZustand (vorher, pfad);
+        long long n = 0;
+        fahreW03 (*k, vor, n, vorgeschichte, vorBlock, nullptr);
+        k->pflege();
+    }
+    test->auslenkungenDb (e.auslenkungVorher.data());
+    const std::uint64_t uT = test->uebernahmen(), uR = ref->uebernahmen();
+    test->uebernehmeZustand (nachher, pfad);
+    long long nT = vorgeschichte, nR = vorgeschichte;
+    fahreW03 (*test, nach, nT, fenster, blockGroesse, &e.test);
+    fahreW03 (*ref,  nach, nR, fenster, blockGroesse, &e.ref);
+    e.uebernahmenTest = test->uebernahmen() - uT;
+    e.uebernahmenRef  = ref->uebernahmen() - uR;
+    return e;
+}
+
+/** Das Mass (F-9) ueber `perioden` Perioden zu je `jePeriode` Werten ab Index
+    0. Ein Referenz-RMS 0 oder ein nicht endlicher Wert ergibt +inf: das Mass
+    faellt dann, statt still zu bestehen. `erste` erhaelt den Wert der ersten
+    Periode mit Vorzeichen, `schlimmste` die Periode des Maximums. */
+double periodenMass (const std::vector<double>& test, const std::vector<double>& ref, size_t jePeriode,
+                     int perioden, double* erste = nullptr, int* schlimmste = nullptr)
+{
+    const double unendlich = std::numeric_limits<double>::infinity();
+    double mass = 0.0;
+    for (int p = 0; p < perioden; ++p)
+    {
+        const size_t von = (size_t) p * jePeriode, bis = von + jePeriode;
+        if (bis > test.size() || bis > ref.size()) return unendlich;
+        double st = 0.0, sr = 0.0;
+        for (size_t i = von; i < bis; ++i) { st += test[i] * test[i]; sr += ref[i] * ref[i]; }
+        double db = 10.0 * std::log10 (st / sr);   // 20*log10 des RMS-Verhaeltnisses
+        if (! std::isfinite (db)) db = unendlich;
+        if (p == 0 && erste != nullptr) *erste = db;
+        if (p == 0 || std::abs (db) > mass)
+        {
+            mass = std::max (mass, std::abs (db));
+            if (schlimmste != nullptr) *schlimmste = p;
+        }
+    }
+    return mass;
+}
+
+/** Erster Index ab `von`, an dem zwei Aufzeichnungen im Bitmuster
+    abweichen; -1 heisst bytegleich. */
+long long ersteBitAbweichung (const std::vector<double>& a, const std::vector<double>& b, size_t von)
+{
+    if (a.size() != b.size()) return (long long) std::min (a.size(), b.size());
+    for (size_t i = von; i < a.size(); ++i)
+        if (std::memcmp (&a[i], &b[i], sizeof (double)) != 0) return (long long) i;
+    return -1;
+}
+
+/** R-311-10 (Manifest NAK-311 §27): die Rundungstoleranz von E-31. Unter 1,0
+    zwei Schritte des float-Rasters 2^-24, also 2^-23; darueber zwei Schritte
+    des float-Rasters am groessten Betrag des Laufs - dieselbe Herleitung. */
+double rundungR31110 (double groessterBetrag)
+{
+    if (! (groessterBetrag >= 1.0)) return kRundungFloat;
+    int e = 0;
+    (void) std::frexp (groessterBetrag, &e);            // Betrag in [2^(e-1), 2^e)
+    return 2.0 * std::ldexp (1.0, e - 1 - 23);           // float: 23 Mantissenbits
 }
 
 } // namespace
@@ -1767,6 +1920,89 @@ int main()
                 pruefe (maxRes < 1e-5,
                         std::string ("bandwert_") + sp.name + "_rampt_ohne_zustandsreset (M-17, R8, B-4)",
                         "groesstes Residuum gegen die stetige Rampe " + zahl (maxRes, 12) + " (-100 dBFS = 1e-5)");
+            }
+        }
+
+        // NAK-311 W03 (Manifest NAK-311 §6.3 M-43 bis M-45, M-54, M-55; R-311-1,
+        // T3-15-08): ein Wechsel an einem ANDEREN Slot laesst die Historie eines
+        // unveraenderten Slots stehen. Slot 0 traegt ein Band, Slot 5 ist belegt,
+        // `gain_db` 0 und aus. Nur `v1.band.5.enabled` wird wahr (M-43), oder
+        // Slot 5 wechselt eingeschaltet den Typ Bell -> Low-Shelf mit 0 dB (M-44).
+        // Beide Slot-5-Entwuerfe sind mit Zustand 0 bitgenau die Einheit
+        // (b0 = 1, b1 = a1, b2 = a2): wird Slot 0 uebertragen, ist der Ausgang ab
+        // Fade-Ende bytegleich zum Referenzkern. Vorgeschichte mindestens 2 s bis
+        // zu einer Periodengrenze, Mass nach F-9 ueber 100 Perioden.
+        {
+            enum class Wechsel { einschalten, typwechsel };
+            struct Ergebnis
+            {
+                double mass = 0.0, erste = 0.0;
+                int schlimmste = -1, periode = 0;
+                long long abw = -2;
+                std::uint64_t uT = 0, uR = 0;
+            };
+            const auto fall = [] (double rate, double f0, double q, double gainDb, double tonHz, double amplitude,
+                                  Wechsel wechsel, int blockGroesse, int maxBlock)
+            {
+                Ergebnis erg;
+                erg.periode = (int) std::llround (rate / tonHz);
+                const int perioden = (int) std::ceil (2.0 * rate / (double) erg.periode);
+                int vorBlock = erg.periode;
+                for (int t = 1; t <= erg.periode; ++t)
+                    if (erg.periode % t == 0 && erg.periode / t <= std::min (maxBlock, 512)) { vorBlock = erg.periode / t; break; }
+
+                auto vorher = machSatz (true);
+                belege (vorher, 0, Filtertyp::bell, f0, q, gainDb);
+                belege (vorher, 5, Filtertyp::bell, 1000.0, 1.0, 0.0);
+                vorher.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = (wechsel == Wechsel::typwechsel);
+                auto nachher = vorher;
+                if (wechsel == Wechsel::einschalten)
+                    nachher.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = true;
+                else
+                    nachher.werte[(size_t) param::indexBandV1 (5, param::kType)].enumIndex = (int) Filtertyp::lowShelf;
+
+                const double w = 2.0 * kPiRef * tonHz / rate;
+                const auto ton = [w, amplitude] (long long n, float& l, float& r)
+                { l = r = (float) (amplitude * std::sin (w * (double) n)); };
+                const auto e = fahrePaar (rate, maxBlock, vorher, nachher, Pfad::committed, ton, perioden * erg.periode,
+                                          vorBlock, ton, 100 * erg.periode, blockGroesse);
+                erg.mass = periodenMass (e.test.aus, e.ref.aus, 2u * (size_t) erg.periode, 100, &erg.erste, &erg.schlimmste);
+                erg.abw  = ersteBitAbweichung (e.test.aus, e.ref.aus, 2u * (size_t) kFadeSamples);
+                erg.uT   = e.uebernahmenTest;
+                erg.uR   = e.uebernahmenRef;
+                return erg;
+            };
+            const auto text = [] (const Ergebnis& e)
+            {
+                return "Mass " + zahl (e.mass, 6) + " dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode "
+                     + std::to_string (e.periode) + " Samples, 100 Perioden ab dem Umschaltblock; erste Periode "
+                     + zahl (e.erste, 6) + " dB, groesste Abweichung in Periode " + std::to_string (e.schlimmste)
+                     + "); ab Fade-Ende bytegleich zum Referenzkern: "
+                     + (e.abw == -1 ? std::string ("ja") : "nein, erste Abweichung an Sample " + std::to_string (e.abw / 2))
+                     + "; Blockrand-Uebernahmen Pruefkern " + std::to_string (e.uT) + ", Referenzkern " + std::to_string (e.uR);
+            };
+            const auto haelt = [] (const Ergebnis& e) { return e.mass <= 0.5 && e.abw == -1 && e.uT == 1 && e.uR == 0; };
+            const std::string name = "unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel";
+
+            const auto m43 = fall (48000.0, 50.0, 8.0, 12.0, 50.0, 0.25, Wechsel::einschalten, 64, 512);
+            pruefe (haelt (m43), "311/M-43 " + name + " (NAK-311 R-311-1, T3-15-08): Slot 0 Bell 50 Hz Q 8 +12 dB, "
+                    "nur v1.band.5.enabled wird wahr, Slot 0 wird uebertragen", text (m43));
+            const auto m44 = fall (48000.0, 50.0, 8.0, 12.0, 50.0, 0.25, Wechsel::typwechsel, 64, 512);
+            pruefe (haelt (m44), "311/M-44 " + name + " (Teilfall von 311/M-43): Typwechsel an Slot 5 Bell -> Low-Shelf mit 0 dB",
+                    text (m44));
+            const auto m45 = fall (48000.0, 1000.0, 2.0, 12.0, 1000.0, 0.25, Wechsel::einschalten, 64, 512);
+            pruefe (m45.mass <= 0.5, "311/M-45 " + name + " (Teilfall von 311/M-43, Gegenfall): Slot 0 Bell 1 kHz Q 2 +12 dB "
+                    "mit 1-kHz-Sinus, Mass hoechstens 0,5 dB", text (m45));
+            for (const double rate : { 44100.0, 48000.0, 96000.0 })
+            {
+                const auto e = fall (rate, 50.0, 8.0, 12.0, 50.0, 0.25, Wechsel::einschalten, 64, 2048);
+                pruefe (haelt (e), "311/M-54 " + name + " (Teilfall von 311/M-43): " + zahl (rate / 1000.0, 1) + " kHz", text (e));
+            }
+            for (const int bg : { 1, 255, 256, 257, 180, 4096 })
+            {
+                const auto e = fall (48000.0, 50.0, 8.0, 12.0, 50.0, 0.25, Wechsel::einschalten, bg, 512);
+                pruefe (haelt (e), "311/M-55 " + name + " (Teilfall von 311/M-43, B-11): Blockgroesse " + std::to_string (bg)
+                        + " (maxBlock 512), genau eine Uebernahme", text (e));
             }
         }
     }
@@ -3193,6 +3429,12 @@ int main()
         // Bloecke bis zum naechsten Wechsel durch die Neutralpruefung, auch
         // die uebergrossen, stueckelnden.
         const auto neutral = machSatz (true);
+        // NAK-311 M-56 (W03): ein Committed-Fremdslotwechsel im Zyklus - Slot 6
+        // kommt zur Rampenbelegung hinzu; die Slots 0 und 3 bleiben
+        // topologisch gleich und wandern im Crossfade in die neue Bank. Bei 140
+        // geht Slot 6 wieder, zugleich mit einem Wertewechsel an Slot 0.
+        auto fremd = rampe;
+        belege (fremd, 6, Filtertyp::notch, 2500.0, 3.0, 0.0);
 
         const std::uint64_t uebernahmenVorher = kern->uebernahmen();
         std::uint64_t gesamt = 0, testAllokationen = 0;
@@ -3204,6 +3446,7 @@ int main()
             switch (blk % 400)
             {
                 case  40: ok = kern->uebernehmeZustand (rampe); break;
+                case  65: ok = kern->uebernehmeZustand (fremd); break;
                 case  90: ok = kern->uebernehmeZustand (kand1, Pfad::candidate); break;
                 case 140: ok = kern->uebernehmeZustand (s); break;
                 case 190: ok = kern->uebernehmeZustand (kand2, Pfad::candidate); break;
@@ -4420,6 +4663,50 @@ int main()
                     "remove_mit_neubelegung_verwirft_die_alte_auslenkung (M-121)",
                     "nachher " + zahl (nachher[2], 15));
         }
+
+        // (c) NAK-311 W03 (Manifest NAK-311 §6.3 M-41, T3-14-02): eine
+        //     VERDRAENGTE Zwischenpublikation bricht den Lebenszyklus. Belegung A
+        //     (dynamisches Bell 1 kHz Q 2, Range -12 dB, Threshold -40 dB, Attack
+        //     0,1 ms, Hold 500 ms, Release 5000 ms) mit einem Quadraturton 0,5
+        //     eingeschwungen (Detektor -9 dB, 31 dB ueber Threshold: Plateau
+        //     -12 dB). Dann "leer" (Slot 0 frei) und B (gleich A) vor DEMSELBEN
+        //     Blockrand, ohne Audio dazwischen: der Audiothread nimmt nur A und B,
+        //     und B muss trotzdem kalt beginnen - der Remove lag in der
+        //     verdraengten Zwischenpublikation (R-311-1).
+        {
+            auto k = neuerKern (fs, 512);
+            auto belegungA = machSatz (true);
+            belege (belegungA, 0, Filtertyp::bell, 1000.0, 2.0, 0.0);
+            machDynamisch (belegungA, 0, -12.0, -40.0, 0.1, 500.0, 5000.0);
+            k->uebernehmeZustand (belegungA);
+            const double w = 2.0 * kPiRef * 1000.0 / fs;
+            long long n = 0;
+            fahreW03 (*k, [w] (long long i, float& l, float& r)
+                      { l = (float) (0.5 * std::sin (w * (double) i)); r = (float) (0.5 * std::cos (w * (double) i)); },
+                      n, 48000, 512, nullptr);
+            double vorherA[param::kSlots];
+            k->auslenkungenDb (vorherA);
+            k->pflege();
+
+            const std::uint64_t uebernahmenVor = k->uebernahmen();
+            k->uebernehmeZustand (machSatz (true));   // "leer": Slot 0 frei - wird verdraengt
+            k->uebernehmeZustand (belegungA);         // B = A, vor demselben Blockrand
+            W03Lauf stille;
+            fahreW03 (*k, [] (long long, float& l, float& r) { l = 0.0f; r = 0.0f; }, n, 2048, 64, &stille);
+            const std::uint64_t uebernahmen = k->uebernahmen() - uebernahmenVor;
+
+            double slot0Max = 0.0;   // betragsgroesster gemeldeter Wert, mit Vorzeichen
+            for (const auto& a : stille.auslenkungen) if (std::abs (a[0]) > std::abs (slot0Max)) slot0Max = a[0];
+            double spitzeNachFade = 0.0;
+            for (size_t i = 2u * (size_t) kFadeSamples; i < stille.aus.size(); ++i)
+                spitzeNachFade = std::max (spitzeNachFade, std::abs (stille.aus[i]));
+            pruefe (vorherA[0] == -12.0 && uebernahmen == 1 && slot0Max == 0.0 && spitzeNachFade == 0.0,
+                    "311/M-41 verdraengte_zwischenpublikation_bricht_den_lebenszyklus (NAK-311 T3-14-02, M-121, R-311-1)",
+                    "A eingeschwungen " + zahl (vorherA[0], 4) + " dB; leer und B vor demselben Blockrand, Uebernahmen +"
+                    + std::to_string (uebernahmen) + "; betragsgroesste Meldung von Slot 0 ab dem ersten Block "
+                    + zahl (slot0Max, 6) + " dB (ueber 32 Bloecke Stille); Spitze bei Stille ab Sample "
+                    + std::to_string (kFadeSamples) + ": " + zahl (spitzeNachFade, 9));
+        }
     }
 
     //==========================================================================
@@ -5572,6 +5859,485 @@ int main()
                     + (tap.size() > 2 ? " (Sample 1: " + zahl (tap[2] / x, 7) + " x Eingang)" : std::string())
                     + "; Committed-Tap ueber " + std::to_string (comLauf.size() / 2) + " Samples bytegleich auf "
                     + zahl (comVorher, 9) + ": " + (comUnberuehrt ? "ja" : "nein"));
+        }
+    }
+
+    //==========================================================================
+    std::cout << std::endl << "== Q - Slot-Lebenszyklus (NAK-311 W03) ==" << std::endl;
+    {
+        // NAK-311 T3-14-02 und T3-15-08 (Manifest NAK-311 §6.3, R-311-1, R-311-8,
+        // R-311-9): ein Slot, dessen Belegung und Topologie ueber jede Publikation
+        // seit dem gefahrenen Programm gleich blieben, behaelt im Crossfade seinen
+        // Filter-, Detektor- und Huellkurvenzustand; ein geaenderter Slot und jeder
+        // Slot nach einem globalen Wechsel startet kalt und meldet 0,0 (SONDE-015
+        // M-121, E-8). Verglichen wird gegen einen Referenzkern mit identischer
+        // Vorgeschichte ohne Wechsel; Mass und Fenster wie M-43 (F-9). Die Faelle
+        // M-43 bis M-45, M-54 und M-55 stehen in Abschnitt E, M-41 im M-121-Block
+        // von Abschnitt L, M-56 im Allokationslauf von Abschnitt J.
+        const double fs = 48000.0;
+        const int    bs = 64;
+        const int    mb = 512;
+        const int    periode50 = 960;
+        const double w1k = 2.0 * kPiRef * 1000.0 / fs;
+        const double w50 = 2.0 * kPiRef * 50.0 / fs;
+
+        // Der Aufbau aus M-46: Slot 0 dynamisches Bell wie M-40 (1 kHz Q 2,
+        // Range -12 dB, Threshold -40 dB, Attack 0,1 ms, Hold 500 ms, Release
+        // 5000 ms), Slot 1 statisches Bell 50 Hz Q 8 +12 dB. Vorgeschichte: der
+        // 1-kHz-Quadraturton 0,5 (Detektor -9 dB, Plateau -12 dB) und der
+        // 50-Hz-Sinus 0,25 auf beiden Kanaelen, 2 s bis zu einer Periodengrenze.
+        auto basis = machSatz (true);
+        belege (basis, 0, Filtertyp::bell, 1000.0, 2.0, 0.0);
+        machDynamisch (basis, 0, -12.0, -40.0, 0.1, 500.0, 5000.0);
+        belege (basis, 1, Filtertyp::bell, 50.0, 8.0, 12.0);
+
+        const auto beideToene = [w1k, w50] (long long n, float& l, float& r)
+        {
+            const double t50 = 0.25 * std::sin (w50 * (double) n);
+            l = (float) (0.5 * std::sin (w1k * (double) n) + t50);
+            r = (float) (0.5 * std::cos (w1k * (double) n) + t50);
+        };
+        const auto nur50  = [w50] (long long n, float& l, float& r) { l = r = (float) (0.25 * std::sin (w50 * (double) n)); };
+        const auto stille = [] (long long, float& l, float& r) { l = 0.0f; r = 0.0f; };
+        const int vorgeschichte = 100 * periode50;   // 2 s, endet auf einer Periodengrenze
+
+        // Die betragsgroesste gemeldete Auslenkung eines Slots ueber alle Bloecke
+        // des Laufs, mit Vorzeichen; 0,0 heisst: jeder Block meldete 0,0.
+        const auto slotMax = [] (const W03Lauf& l, int slot)
+        {
+            double m = 0.0;
+            for (const auto& a : l.auslenkungen)
+                if (std::abs (a[(size_t) slot]) > std::abs (m)) m = a[(size_t) slot];
+            return m;
+        };
+        const auto spitzeAb = [] (const std::vector<double>& x, size_t von)
+        {
+            double m = 0.0;
+            for (size_t i = von; i < x.size(); ++i) m = std::max (m, std::abs (x[i]));
+            return m;
+        };
+        const auto mitTyp = [] (param::DspSatz s, int slot, Filtertyp t)
+        {
+            s.werte[(size_t) param::indexBandV1 (slot, param::kType)].enumIndex = (int) t;
+            return s;
+        };
+
+        // M-46: Typwechsel an Slot 0 (Bell -> Low-Shelf, dynamisch bleibt); ab dem
+        // Umschaltblock nur noch der 50-Hz-Sinus - der Detektor von Slot 0 hoert
+        // ihn rund 32 dB gedaempft (-47 dB Leistung, unter Threshold -40 dB).
+        {
+            const auto e = fahrePaar (fs, mb, basis, mitTyp (basis, 0, Filtertyp::lowShelf), Pfad::committed,
+                                      beideToene, vorgeschichte, bs, nur50, 100 * periode50, bs);
+            const double slot0 = slotMax (e.test, 0);
+            double erste = 0.0;
+            int schlimmste = -1;
+            const double mass = periodenMass (e.test.aus, e.ref.aus, 2u * (size_t) periode50, 100, &erste, &schlimmste);
+            pruefe (e.auslenkungVorher[0] == -12.0 && slot0 == 0.0 && e.uebernahmenTest == 1,
+                    "311/M-46 geaenderter_slot_kalt_unveraenderter_warm: Slot 0 kalt (SONDE-015 M-121, E-8)",
+                    "Slot 0 vorher " + zahl (e.auslenkungVorher[0], 4) + " dB, nach dem Typwechsel betragsgroesste Meldung ab dem ersten Block "
+                    + zahl (slot0, 6) + " dB ueber " + std::to_string (e.test.auslenkungen.size()) + " Bloecke");
+            pruefe (mass <= 0.5,
+                    "311/M-46 geaenderter_slot_kalt_unveraenderter_warm: Slot 1 warm (R-311-1)",
+                    "Mass " + zahl (mass, 6) + " dB gegen 0,5 dB (erste Periode " + zahl (erste, 6)
+                    + " dB, groesste Abweichung in Periode " + std::to_string (schlimmste) + ")");
+        }
+
+        // M-47: (a) Remove an Slot 0, (b) dynamic_enabled aus an Slot 0; Slot 1
+        // wie M-46, derselbe Eingang.
+        {
+            auto entfernt = basis;
+            entfernt.werte[(size_t) param::indexOccupied (0)].b = false;
+            entfernt.werte[(size_t) param::indexBandV1 (0, param::kEnabled)].b = false;
+            auto ohneDynamik = basis;
+            ohneDynamik.werte[(size_t) param::indexBandV1 (0, param::kDynamicEnabled)].b = false;
+            struct Unterfall { const char* name; const param::DspSatz* satz; };
+            const Unterfall faelle[] = { { "(a) Remove", &entfernt }, { "(b) dynamic_enabled aus", &ohneDynamik } };
+            for (const auto& u : faelle)
+            {
+                const auto e = fahrePaar (fs, mb, basis, *u.satz, Pfad::committed, beideToene, vorgeschichte, bs,
+                                          nur50, 100 * periode50, bs);
+                const double slot0 = slotMax (e.test, 0);
+                double erste = 0.0;
+                int schlimmste = -1;
+                const double mass = periodenMass (e.test.aus, e.ref.aus, 2u * (size_t) periode50, 100, &erste, &schlimmste);
+                pruefe (e.auslenkungVorher[0] == -12.0 && slot0 == 0.0 && e.uebernahmenTest == 1,
+                        std::string ("311/M-47 remove_und_dynamik_aus_melden_null: ") + u.name + ", Meldung 0 (SONDE-015 M-121)",
+                        "Slot 0 vorher " + zahl (e.auslenkungVorher[0], 4) + " dB, danach betragsgroesste Meldung ab dem ersten Block "
+                        + zahl (slot0, 6) + " dB");
+                pruefe (mass <= 0.5,
+                        std::string ("311/M-47 remove_und_dynamik_aus_melden_null: ") + u.name + ", Slot 1 warm (R-311-1)",
+                        "Mass " + zahl (mass, 6) + " dB gegen 0,5 dB (erste Periode " + zahl (erste, 6)
+                        + " dB, groesste Abweichung in Periode " + std::to_string (schlimmste) + ")");
+            }
+        }
+
+        // M-48: globale Wechsel machen jeden Slot kalt - (a) Mono-Bass 0 -> 120 Hz
+        // (Crossfade, E-20), (b) `bereiteVor` mit neuer Samplerate 44,1 -> 48 kHz
+        // und demselben Programm. Ab dem Umschaltblock Stille.
+        {
+            auto monoBass = basis;
+            setzeGlobal (monoBass, "v1.global.mono_bass_hz", 120.0);
+            const auto e = fahrePaar (fs, mb, basis, monoBass, Pfad::committed, beideToene, vorgeschichte, bs,
+                                      stille, 4096, bs);
+            double alle = 0.0;
+            for (int slot = 0; slot < param::kSlots; ++slot) if (std::abs (slotMax (e.test, slot)) > std::abs (alle)) alle = slotMax (e.test, slot);
+            const double spitze = spitzeAb (e.test.aus, 2u * (size_t) kFadeSamples);
+            pruefe (e.auslenkungVorher[0] == -12.0 && alle == 0.0 && spitze == 0.0 && e.uebernahmenTest == 1,
+                    "311/M-48 globaler_wechsel_macht_alle_slots_kalt: (a) Mono-Bass 0 -> 120 Hz (R-311-1, E-20)",
+                    "Slot 0 vorher " + zahl (e.auslenkungVorher[0], 4) + " dB; danach betragsgroesste Auslenkung aller Slots ab dem ersten Block "
+                    + zahl (alle, 6) + " dB, Spitze bei Stille ab Sample " + std::to_string (kFadeSamples) + ": " + zahl (spitze, 9));
+
+            auto k = neuerKern (44100.0, mb);
+            k->uebernehmeZustand (basis);
+            const double w1k441 = 2.0 * kPiRef * 1000.0 / 44100.0;
+            const double w50441 = 2.0 * kPiRef * 50.0 / 44100.0;
+            long long n = 0;
+            fahreW03 (*k, [w1k441, w50441] (long long i, float& l, float& r)
+                      {
+                          const double t50 = 0.25 * std::sin (w50441 * (double) i);
+                          l = (float) (0.5 * std::sin (w1k441 * (double) i) + t50);
+                          r = (float) (0.5 * std::cos (w1k441 * (double) i) + t50);
+                      }, n, 88200, bs, nullptr);
+            double vorher[param::kSlots];
+            k->auslenkungenDb (vorher);
+            k->bereiteVor (48000.0, mb);
+            k->uebernehmeZustand (basis);
+            W03Lauf lauf;
+            fahreW03 (*k, stille, n, 4096, bs, &lauf);
+            double alleB = 0.0;
+            for (int slot = 0; slot < param::kSlots; ++slot) if (std::abs (slotMax (lauf, slot)) > std::abs (alleB)) alleB = slotMax (lauf, slot);
+            const double spitzeB = spitzeAb (lauf.aus, 0);
+            pruefe (vorher[0] == -12.0 && alleB == 0.0 && spitzeB == 0.0,
+                    "311/M-48 globaler_wechsel_macht_alle_slots_kalt: (b) bereiteVor 44,1 -> 48 kHz, dasselbe Programm (R-311-1)",
+                    "Slot 0 vorher " + zahl (vorher[0], 4) + " dB; danach betragsgroesste Auslenkung aller Slots " + zahl (alleB, 6)
+                    + " dB, Spitze bei Stille " + zahl (spitzeB, 9));
+        }
+
+        // M-49: Zahlenrand Slotzahl 0 und 8. Acht dynamische Bells (Range -12 dB,
+        // Threshold -40 dB, Attack 500 ms, Hold 500 ms, Release 5000 ms, Q 2,
+        // Mitten eine Oktave auseinander), je mit eigenem Quadraturton 0,15 auf
+        // der Bandmitte eingeschwungen (Plateau -12 dB); ab dem Umschaltblock
+        // Stille. Die Range steht ausdruecklich: mit der Vorgabe 0 dB liefe kein
+        // Detektor, und (b) und (c) verglichen nur Nullen. Die ATTACK nennt die
+        // Matrixzeile nicht; sie steht hier auf 500 ms, weil der kalt startende
+        // Slot 7 in (b) HINTER sieben uebertragenen Baendern liegt: deren
+        // Ausklingen traegt bei Stille noch Energie auf seiner Bandmitte
+        // (gemessen: Detektorleistung 0,0056, rund -22 dB), und eine 0,1-ms-
+        // Huellkurve stuende damit binnen weniger Samples wieder auf dem
+        // Plateau - "Slot 7 meldet 0,0" waere nicht messbar. Mit 500 ms bleibt
+        // seine Huellkurve im Fenster unter dem Threshold.
+        {
+            const double mitten[param::kSlots] = { 62.5, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0 };
+            auto acht = machSatz (true);
+            for (int slot = 0; slot < param::kSlots; ++slot)
+            {
+                belege (acht, slot, Filtertyp::bell, mitten[slot], 2.0, 0.0);
+                machDynamisch (acht, slot, -12.0, -40.0, 500.0, 500.0, 5000.0);
+            }
+            const auto achtToene = [&mitten, fs] (long long n, float& l, float& r)
+            {
+                double a = 0.0, b = 0.0;
+                for (double f : mitten)
+                {
+                    const double w = 2.0 * kPiRef * f / fs;
+                    a += 0.15 * std::sin (w * (double) n);
+                    b += 0.15 * std::cos (w * (double) n);
+                }
+                l = (float) a;
+                r = (float) b;
+            };
+
+            // (a) Programm ohne aktives Band; ein Band kommt hinzu.
+            {
+                auto eines = machSatz (true);
+                belege (eines, 4, Filtertyp::bell, 1000.0, 2.0, 0.0);
+                machDynamisch (eines, 4, -12.0, -40.0, 0.1, 500.0, 5000.0);
+                const auto e = fahrePaar (fs, mb, machSatz (true), eines, Pfad::committed, achtToene, vorgeschichte, bs,
+                                          stille, 4096, bs);
+                double alle = 0.0;
+                for (int slot = 0; slot < param::kSlots; ++slot) if (std::abs (slotMax (e.test, slot)) > std::abs (alle)) alle = slotMax (e.test, slot);
+                const double spitze = spitzeAb (e.test.aus, 2u * (size_t) kFadeSamples);
+                pruefe (alle == 0.0 && spitze == 0.0 && e.uebernahmenTest == 1,
+                        "311/M-49 slotzahl_null_und_acht: (a) null Baender, eines kommt hinzu und startet kalt",
+                        "betragsgroesste Auslenkung aller Slots ab dem ersten Block " + zahl (alle, 6) + " dB, Spitze bei Stille ab Sample "
+                        + std::to_string (kFadeSamples) + ": " + zahl (spitze, 9));
+            }
+
+            // (b) Typwechsel nur an Slot 7 (Bell -> High-Shelf, dynamisch bleibt).
+            {
+                const auto e = fahrePaar (fs, mb, acht, mitTyp (acht, 7, Filtertyp::highShelf), Pfad::committed, achtToene,
+                                          vorgeschichte, bs, stille, 4096, bs);
+                bool vorbedingung = true;
+                for (double a : e.auslenkungVorher) if (a != -12.0) vorbedingung = false;
+                bool bitgleich = e.test.auslenkungen.size() == e.ref.auslenkungen.size();
+                long long ersterBlock = -1;
+                for (size_t blk = 0; bitgleich && blk < e.test.auslenkungen.size(); ++blk)
+                    if (std::memcmp (e.test.auslenkungen[blk].data(), e.ref.auslenkungen[blk].data(), 7 * sizeof (double)) != 0)
+                    { bitgleich = false; ersterBlock = (long long) blk; }
+                const double slot7 = slotMax (e.test, 7);
+                pruefe (vorbedingung && bitgleich && slot7 == 0.0 && e.uebernahmenTest == 1,
+                        "311/M-49 slotzahl_null_und_acht: (b) Typwechsel nur an Slot 7 - Slots 0 bis 6 uebertragen, Slot 7 kalt",
+                        std::string ("vorher alle acht bei -12 dB: ") + (vorbedingung ? "ja" : "nein")
+                        + "; Auslenkungen der Slots 0 bis 6 je Block bitgleich zum Referenzkern ueber "
+                        + std::to_string (e.test.auslenkungen.size()) + " Bloecke: "
+                        + (bitgleich ? std::string ("ja") : "nein, erster Block " + std::to_string (ersterBlock))
+                        + " (Slot 0 danach " + zahl (e.test.auslenkungen.empty() ? 0.0 : e.test.auslenkungen[0][0], 4)
+                        + " dB, Referenz " + zahl (e.ref.auslenkungen.empty() ? 0.0 : e.ref.auslenkungen[0][0], 4)
+                        + " dB); betragsgroesste Meldung von Slot 7 " + zahl (slot7, 6) + " dB");
+            }
+
+            // (c) alle acht Slots zugleich topologisch geaendert (Bell -> High-Shelf).
+            {
+                auto alleNeu = acht;
+                for (int slot = 0; slot < param::kSlots; ++slot) alleNeu = mitTyp (alleNeu, slot, Filtertyp::highShelf);
+                const auto e = fahrePaar (fs, mb, acht, alleNeu, Pfad::committed, achtToene, vorgeschichte, bs,
+                                          stille, 4096, bs);
+                double alle = 0.0;
+                for (int slot = 0; slot < param::kSlots; ++slot) if (std::abs (slotMax (e.test, slot)) > std::abs (alle)) alle = slotMax (e.test, slot);
+                const double spitze = spitzeAb (e.test.aus, 2u * (size_t) kFadeSamples);
+                pruefe (e.auslenkungVorher[7] == -12.0 && alle == 0.0 && spitze == 0.0 && e.uebernahmenTest == 1,
+                        "311/M-49 slotzahl_null_und_acht: (c) alle acht Slots zugleich geaendert - keiner uebertragen",
+                        "betragsgroesste Auslenkung aller Slots ab dem ersten Block " + zahl (alle, 6) + " dB, Spitze bei Stille ab Sample "
+                        + std::to_string (kFadeSamples) + ": " + zahl (spitze, 9));
+            }
+        }
+
+        // M-50 (a), Matrixpruefung 1 H-8: nur Output-Trim -3 dB an einem
+        // eingeschwungenen dynamischen Slot - Rampenuebergang mit
+        // Zustandsuebernahme wie heute (E-19); ab dem Umschaltblock Stille, die
+        // Auslenkung bleibt im Hold bei -12 dB.
+        {
+            auto dyn = machSatz (true);
+            belege (dyn, 0, Filtertyp::bell, 1000.0, 2.0, 0.0);
+            machDynamisch (dyn, 0, -12.0, -40.0, 0.1, 500.0, 5000.0);
+            auto leiser = dyn;
+            setzeGlobal (leiser, "v1.global.output_trim_db", -3.0);
+            const auto quad = [w1k] (long long n, float& l, float& r)
+            { l = (float) (0.5 * std::sin (w1k * (double) n)); r = (float) (0.5 * std::cos (w1k * (double) n)); };
+            const auto e = fahrePaar (fs, mb, dyn, leiser, Pfad::committed, quad, 96000, bs, stille, 4096, bs);
+            bool bleibt = ! e.test.auslenkungen.empty();
+            for (const auto& a : e.test.auslenkungen) if (a[0] != -12.0) bleibt = false;
+            const bool rampe = ! e.test.kreuzQuelle.empty() && e.test.kreuzQuelle[0] == -1;
+            pruefe (e.auslenkungVorher[0] == -12.0 && bleibt && rampe && e.uebernahmenTest == 1,
+                    "311/M-50 output_trim_haelt_die_historie (Teilfall (a), E-19, REGEL B-4)",
+                    "vorher " + zahl (e.auslenkungVorher[0], 4) + " dB; nach Output-Trim -3 dB in jedem von "
+                    + std::to_string (e.test.auslenkungen.size()) + " Bloecken Stille -12 dB: " + (bleibt ? "ja" : "nein")
+                    + "; Rampe ohne Crossfade-Quelle: " + (rampe ? "ja" : "nein"));
+        }
+
+        // M-51, neuer Fall: Crossfade MIT Uebertragung haelt E-31. DC
+        // x = (double) 0,3f, Blockgroesse 64; Slot 0 Low-Shelf 8 kHz Q 0,707
+        // +9 dB eingeschwungen (Ausgang x0 = x * 10^(9/20), konstant), Slot 1
+        // High-Shelf 8 kHz Q 0,707 +3 dB (bei DC die Einheit); Slot 1 wechselt
+        // auf Low-Shelf +3 dB, Slot 0 bleibt. Der uebertragene Slot 0 liefert
+        // konstant x0: genau ein Band laeuft kalt auf konstantem Eingang x0
+        // gegen die konstante Quelle x0 - der Fall, fuer den `kaltSchranke`
+        // hergeleitet ist. Toleranz nach R-311-10.
+        {
+            auto k = neuerKern (fs, bs);
+            auto sa = machSatz (true);
+            belege (sa, 0, Filtertyp::lowShelf,  8000.0, 0.707, 9.0);
+            belege (sa, 1, Filtertyp::highShelf, 8000.0, 0.707, 3.0);
+            k->uebernehmeZustand (sa);
+            const auto vor = fahreDc (*k, 0.3, 2048, bs);
+            k->pflege();
+            k->uebernehmeZustand (mitTyp (sa, 1, Filtertyp::lowShelf));
+            const auto lauf = fahreDc (*k, 0.3, 1024, bs);
+
+            const double x0      = vor.back();
+            const double schritt = x0 * (std::pow (10.0, 3.0 / 20.0) - 1.0) / (double) kFadeSamples;
+            double betrag = 0.0;
+            for (double v : vor)  betrag = std::max (betrag, std::abs (v));
+            for (double v : lauf) betrag = std::max (betrag, std::abs (v));
+            const double toleranz   = rundungR31110 (betrag);
+            const double amUmschalt = std::abs (lauf[0] - x0);
+            const double wache      = kaltSchranke (Filtertyp::lowShelf, fs, 8000.0, 0.707, 3.0, x0, x0);
+            const double sprung     = groessterSprung (x0, lauf);
+            const std::string rundung = "Toleranz R-311-10 " + zahl (toleranz, 9) + " (groesster Betrag des Laufs "
+                                      + zahl (betrag, 7) + ")";
+            pruefe (amUmschalt <= schritt + toleranz,
+                    "311/M-51 crossfade_mit_uebertragung_haelt_e31: Umschaltsample (E-31, R-311-10)",
+                    "Sprung am Umschaltsample " + zahl (amUmschalt, 9) + " gegen Fadeschritt x0(10^(3/20) - 1)/256 = "
+                    + zahl (schritt, 9) + " + " + rundung + "; x0 = " + zahl (x0, 7));
+            pruefe (sprung <= wache + toleranz,
+                    "311/M-51 crossfade_mit_uebertragung_haelt_e31: Wache ueber den Lauf (E-31, kaltSchranke)",
+                    "groesster Sprung " + zahl (sprung, 9) + " gegen kaltSchranke (Low-Shelf 8 kHz Q 0,707 +3 dB, x0, x0) = "
+                    + zahl (wache, 9) + " + " + rundung + "; Ende " + zahl (lauf.back(), 6) + " gegen "
+                    + zahl (x0 * std::pow (10.0, 3.0 / 20.0), 6));
+        }
+
+        // M-53: der Candidate-Pfad (E-16) - Kennungen je Pfad getrennt. Candidate
+        // mit Slot 0 Bell 50 Hz Q 8 +12 dB am 50-Hz-Sinus eingeschwungen, Slot 5
+        // belegt und aus; die Candidate-Publikation schaltet Slot 5 (0 dB) ein.
+        // Gemessen am Tap post_candidate.
+        {
+            auto kandVor = machSatz (true);
+            belege (kandVor, 0, Filtertyp::bell, 50.0, 8.0, 12.0);
+            belege (kandVor, 5, Filtertyp::bell, 1000.0, 1.0, 0.0);
+            kandVor.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = false;
+            auto kandNach = kandVor;
+            kandNach.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = true;
+            auto committed = machSatz (true);
+            setzeGlobal (committed, "v1.global.output_trim_db", -2.0);
+            const auto e = fahrePaar (fs, mb, kandVor, kandNach, Pfad::candidate, nur50, vorgeschichte, bs,
+                                      nur50, 100 * periode50, bs, &committed);
+            double erste = 0.0;
+            int schlimmste = -1;
+            const double mass = periodenMass (e.test.kandidat, e.ref.kandidat, 2u * (size_t) periode50, 100, &erste, &schlimmste);
+            const long long abw = ersteBitAbweichung (e.test.kandidat, e.ref.kandidat, 2u * (size_t) kFadeSamples);
+            pruefe (mass <= 0.5 && abw == -1 && e.uebernahmenTest == 1,
+                    "311/M-53 candidate_slot_behaelt_historie (E-16, R-311-1)",
+                    "Mass am Tap post_candidate " + zahl (mass, 6) + " dB gegen 0,5 dB (erste Periode " + zahl (erste, 6)
+                    + " dB, groesste Abweichung in Periode " + std::to_string (schlimmste)
+                    + "); Tap ab Fade-Ende bytegleich zum Referenzkern: "
+                    + (abw == -1 ? std::string ("ja") : "nein, erste Abweichung an Sample " + std::to_string (abw / 2)));
+        }
+
+        // M-94 (R-311-8): Uebertragung bei gleichzeitiger Wertaenderung. 48 kHz,
+        // Blockgroesse 64, Quadraturton auf der Bandmitte (L sin, R cos, E-25);
+        // gemessen am Quadraturbetrag m(n) = sqrt (L^2 + R^2) des Ausgangs, der
+        // beim eingeschwungenen Ton konstant ist. Slot 5 belegt, 0 dB, aus. Eine
+        // Publikation: Slot 5 schaltet ein und zugleich (a) statisch gain_db
+        // +12 -> +6 dB, (b) dynamisch Range -12 -> -6 dB. Referenzkern: dieselbe
+        // Wertaenderung ohne Fremdslotwechsel als Rampe (E-19). Die Zahlen sind
+        // Schranken (R-311-8): (1) Sprung am Umschaltsample hoechstens
+        // Fadeschritt + Toleranz R-311-10, (2) Spitze ueber 4800 Samples
+        // hoechstens 0,5 dB ueber der groesseren eingeschwungenen Spitze, (3) ab
+        // Fade-Ende plus T_E hoechstens 0,5 dB neben dem Referenzkern.
+        {
+            struct Unterfall
+            {
+                const char* name;
+                double amplitude, mVor, mNach;
+                int abSample;   ///< kFadeSamples + T_E
+                bool dynamisch;
+            };
+            const Unterfall faelle[] = {
+                { "(a) statisch, gain_db +12 -> +6 dB", 0.25, 0.25 * std::pow (10.0, 12.0 / 20.0), 0.25 * std::pow (10.0, 6.0 / 20.0),
+                  kFadeSamples + 626, false },
+                { "(b) dynamisch, Range -12 -> -6 dB", 0.5, 0.5 * std::pow (10.0, -12.0 / 20.0), 0.5 * std::pow (10.0, -6.0 / 20.0),
+                  kFadeSamples + 322, true },
+            };
+            for (const auto& u : faelle)
+            {
+                auto vorher = machSatz (true);
+                if (u.dynamisch)
+                {
+                    belege (vorher, 0, Filtertyp::bell, 1000.0, 2.0, 0.0);
+                    machDynamisch (vorher, 0, -12.0, -40.0, 0.1, 0.0, 100.0);
+                }
+                else
+                {
+                    belege (vorher, 0, Filtertyp::bell, 1000.0, 2.0, 12.0);
+                }
+                belege (vorher, 5, Filtertyp::bell, 1000.0, 1.0, 0.0);
+                vorher.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = false;
+                auto nurWert = vorher;
+                if (u.dynamisch) nurWert.werte[(size_t) param::indexBandV1 (0, param::kDynamicRangeDb)].zahl = -6.0;
+                else             nurWert.werte[(size_t) param::indexBandV1 (0, param::kGainDb)].zahl = 6.0;
+                auto mitFremd = nurWert;
+                mitFremd.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = true;
+
+                const double a = u.amplitude;
+                const auto quad = [w1k, a] (long long n, float& l, float& r)
+                { l = (float) (a * std::sin (w1k * (double) n)); r = (float) (a * std::cos (w1k * (double) n)); };
+
+                // Pruefkern und Referenzkern: dieselbe Vorgeschichte, je ihre Publikation.
+                auto test = neuerKern (fs, mb);
+                auto ref  = neuerKern (fs, mb);
+                W03Lauf vorT, lT, lR;
+                long long nT = 0, nR = 0;
+                test->uebernehmeZustand (vorher);
+                ref->uebernehmeZustand (vorher);
+                fahreW03 (*test, quad, nT, 96000, bs, &vorT);
+                fahreW03 (*ref,  quad, nR, 96000, bs, nullptr);
+                test->pflege();
+                ref->pflege();
+                test->uebernehmeZustand (mitFremd);
+                ref->uebernehmeZustand (nurWert);
+                fahreW03 (*test, quad, nT, 4800, bs, &lT);
+                fahreW03 (*ref,  quad, nR, 4800, bs, &lR);
+
+                const auto betragM = [] (const std::vector<double>& x, size_t i) { return std::sqrt (x[2 * i] * x[2 * i] + x[2 * i + 1] * x[2 * i + 1]); };
+                const size_t nVor = vorT.aus.size() / 2;
+                const double mVorher = betragM (vorT.aus, nVor - 1);
+                double groessterBetrag = 0.0;
+                for (double v : lT.aus) groessterBetrag = std::max (groessterBetrag, std::abs (v));
+                const double toleranz = rundungR31110 (groessterBetrag);
+                const double fadeschritt = std::abs (u.mNach - u.mVor) / (double) kFadeSamples;
+                const double amUmschalt  = std::abs (betragM (lT.aus, 0) - mVorher);
+                double spitze = 0.0;
+                for (size_t i = 0; i < 4800; ++i) spitze = std::max (spitze, betragM (lT.aus, i));
+                const double spitzenSchranke = std::max (u.mVor, u.mNach) * std::pow (10.0, 0.5 / 20.0);
+                double referenzMass = 0.0;
+                size_t referenzAn = 0;
+                for (size_t i = (size_t) u.abSample; i < 4800; ++i)
+                {
+                    double db = std::abs (20.0 * std::log10 (betragM (lT.aus, i) / betragM (lR.aus, i)));
+                    if (! std::isfinite (db)) db = std::numeric_limits<double>::infinity();
+                    if (db > referenzMass) { referenzMass = db; referenzAn = i; }
+                }
+                const double mEnde = betragM (lT.aus, 4799);
+                pruefe (amUmschalt <= fadeschritt + toleranz,
+                        std::string ("311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: ") + u.name
+                        + " - (1) Umschaltsample (E-31, R-311-10)",
+                        "Sprung von m am Umschaltsample " + zahl (amUmschalt, 9) + " gegen Fadeschritt " + zahl (fadeschritt, 9)
+                        + " + Toleranz " + zahl (toleranz, 9) + " (groesster Betrag " + zahl (groessterBetrag, 7) + "); m vorher "
+                        + zahl (mVorher, 6) + " (Soll " + zahl (u.mVor, 4) + ")");
+                pruefe (spitze <= spitzenSchranke,
+                        std::string ("311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: ") + u.name
+                        + " - (2) Spitze ueber 100 Perioden (R-311-8)",
+                        "Spitze von m " + zahl (spitze, 6) + " gegen " + zahl (spitzenSchranke, 6) + " (0,5 dB ueber "
+                        + zahl (std::max (u.mVor, u.mNach), 4) + ")");
+                pruefe (referenzMass <= 0.5,
+                        std::string ("311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: ") + u.name
+                        + " - (3) ab Fade-Ende plus T_E neben dem Referenzkern (R-311-8)",
+                        "ab Sample " + std::to_string (u.abSample) + " bis 4799 hoechstens " + zahl (referenzMass, 6)
+                        + " dB neben der Rampe (an Sample " + std::to_string (referenzAn) + "); m am Fensterende "
+                        + zahl (mEnde, 6) + " (Soll " + zahl (u.mNach, 4) + ")");
+            }
+        }
+
+        // M-95 (R-311-9): der Mono-Bass-Zustand wandert mit. Mono-Bass 500 Hz in
+        // beiden Programmen, kein aktives Band, Slot 5 belegt, 0 dB, aus; reines
+        // Seitensignal L = 0,5 cos (2 pi 15 n / fs), R = -L, 2 s eingeschwungen;
+        // der Umschaltblock beginnt auf einer Periodengrenze (3200 Samples =
+        // 50 Bloecke). Nur v1.band.5.enabled wird wahr. Mass wie M-43 an der
+        // Seitenkomponente (L - R)/2 ueber 100 Perioden.
+        {
+            const int periode15 = 3200;
+            const double w15 = 2.0 * kPiRef * 15.0 / fs;
+            auto vorher = machSatz (true);
+            setzeGlobal (vorher, "v1.global.mono_bass_hz", 500.0);
+            belege (vorher, 5, Filtertyp::bell, 1000.0, 1.0, 0.0);
+            vorher.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = false;
+            auto nachher = vorher;
+            nachher.werte[(size_t) param::indexBandV1 (5, param::kEnabled)].b = true;
+            const auto seite = [w15] (long long n, float& l, float& r)
+            {
+                const float x = (float) (0.5 * std::cos (w15 * (double) n));
+                l = x;
+                r = -x;
+            };
+            const auto e = fahrePaar (fs, mb, vorher, nachher, Pfad::committed, seite, 30 * periode15, bs,
+                                      seite, 100 * periode15, bs);
+            const auto seiteVon = [] (const std::vector<double>& x)
+            {
+                std::vector<double> s (x.size() / 2);
+                for (size_t i = 0; i < s.size(); ++i) s[i] = (x[2 * i] - x[2 * i + 1]) * 0.5;
+                return s;
+            };
+            double erste = 0.0;
+            int schlimmste = -1;
+            const double mass = periodenMass (seiteVon (e.test.aus), seiteVon (e.ref.aus), (size_t) periode15, 100,
+                                              &erste, &schlimmste);
+            const long long abw = ersteBitAbweichung (e.test.aus, e.ref.aus, 2u * (size_t) kFadeSamples);
+            pruefe (mass <= 0.5 && abw == -1 && e.uebernahmenTest == 1,
+                    "311/M-95 mono_bass_zustand_wird_uebertragen (R-311-9, F-8)",
+                    "Mass an der Seitenkomponente " + zahl (mass, 6) + " dB gegen 0,5 dB (Periode 3200 Samples, 100 Perioden; "
+                    "erste Periode " + zahl (erste, 6) + " dB, groesste Abweichung in Periode " + std::to_string (schlimmste)
+                    + "); ab Fade-Ende bytegleich zum Referenzkern: "
+                    + (abw == -1 ? std::string ("ja") : "nein, erste Abweichung an Sample " + std::to_string (abw / 2)));
         }
     }
 

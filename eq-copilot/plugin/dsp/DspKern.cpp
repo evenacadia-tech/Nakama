@@ -219,6 +219,72 @@ void DspKern::meldeProgramm (Pfad p, const DspProgramm& prog) noexcept
                             std::memory_order_release);
 }
 
+std::uint64_t DspKern::naechsteKennung() noexcept
+{
+    // 64 Bit, monoton, nie zurueckgesetzt - wie die Generation des Pools
+    // (B-12). Selbst eine Publikation je Sample bei 192 kHz braeuchte drei
+    // Millionen Jahre bis zum Ueberlauf; liefe er doch um, ueberspringt er die
+    // 0, damit ein aktiver Slot nie die Kennung "nicht aktiv" traegt.
+    if (++kennungsZaehler == 0) ++kennungsZaehler;
+    return kennungsZaehler;
+}
+
+void DspKern::merke (Pfad p, const DspProgramm& prog) noexcept
+{
+    auto& m = merkzettel[(size_t) p];
+    m.gueltig     = true;
+    m.pfadKennung = prog.pfadKennung;
+    m.samplerate  = prog.samplerate;
+    m.eqEngagiert = prog.eqEngagiert;
+    m.hardBypass  = prog.hardBypass;
+    m.monoBassAn  = prog.monoBassHz > 0.0;
+    for (int i = 0; i < kSlots; ++i)
+    {
+        const auto& b = prog.baender[(size_t) i];
+        auto& s = m.slots[(size_t) i];
+        s.kennung   = b.lebenszyklus;
+        s.typ       = b.typ;
+        s.modus     = b.modus;
+        s.quelle    = b.quelle;
+        s.aktiv     = b.aktiv;
+        s.dynamisch = b.dynamisch;
+        s.nutztSvf  = b.nutztSvf;
+    }
+}
+
+void DspKern::vergebeKennungen (Pfad p, DspProgramm& prog) noexcept
+{
+    // §9 F-6: verglichen wird gegen die zuletzt PUBLIZIERTE Belegung dieses
+    // Pfades, nicht gegen die vom Audiothread genommene - welche Bank er
+    // faehrt, weiss der Worker nicht. Nur so traegt die Kennung auch den
+    // Wechsel einer verdraengten Zwischenpublikation (M-41): A, leer, B ergibt
+    // fuer Slot 0 drei Staende, und der Audiothread sieht A und B mit
+    // verschiedenen Kennungen.
+    const auto& m = merkzettel[(size_t) p];
+
+    // §9 F-8: die Pfadkennung haelt, solange die globalen Felder von
+    // `rampenKompatibel` gleich bleiben; sonst startet jeder Slot kalt.
+    const bool pfadGleich = m.gueltig && m.eqEngagiert == prog.eqEngagiert && m.hardBypass == prog.hardBypass
+                         && m.samplerate == prog.samplerate && m.monoBassAn == (prog.monoBassHz > 0.0);
+    prog.pfadKennung = pfadGleich ? m.pfadKennung : naechsteKennung();
+
+    for (int i = 0; i < kSlots; ++i)
+    {
+        auto& b = prog.baender[(size_t) i];
+        const auto& s = m.slots[(size_t) i];
+        // Dieselben Felder, die `rampenKompatibel` je Slot topologisch nennt
+        // (DspProgramm.cpp): ein Slot, der belegt bleibt und sie alle haelt,
+        // behaelt seine Kennung; jeder andere aktive Slot bekommt eine neue
+        // (F-7: gleiche Topologie nach Remove und Neubelegung ist NICHT
+        // derselbe Slot), ein inaktiver traegt 0.
+        const bool bleibt = m.gueltig && b.aktiv && s.aktiv && s.typ == b.typ && s.modus == b.modus
+                         && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle;
+        b.lebenszyklus = ! b.aktiv ? 0 : (bleibt ? s.kennung : naechsteKennung());
+    }
+
+    merke (p, prog);
+}
+
 bool DspKern::uebernehmeZustand (const param::DspSatz& satz, Pfad p)
 {
     // Etappe 4a: EIN Publikationsweg. Die Transaktion ruft beide Haelften
@@ -248,6 +314,10 @@ void DspKern::publiziereVorbau (Pfad p) noexcept
     {
         // Bankfrei (E-18): die ENDE-Marke. Der Pfad blendet am Blockrand in
         // die Ruhe und dient seine Bank ueber den ACK aus.
+        // NAK-311 W03: die ENDE-Marke LEERT den Merkzettel - was danach kommt,
+        // schaltet aus der Ruhe ein und beginnt kalt (M-07), auch wenn die
+        // Marke verdraengt wird und der Audiothread sie nie sieht.
+        merkzettel[(size_t) p].gueltig = false;
         meldeProgramm (p, prog);
         baenke.publiziereEnde (p);
         if (p == Pfad::candidate) candidateAktiv.store (false, std::memory_order_release);
@@ -264,6 +334,11 @@ void DspKern::publiziereVorbau (Pfad p) noexcept
     auto& bank = baenke.bank (slot);
     bank.programm = prog;
     bank.programm.generation = baenke.naechsteGeneration();
+
+    // NAK-311 W03 (R-311-1): die Kennungen stehen in der Bank, BEVOR sie
+    // uebergeben wird - Zuordnung und Operation auf derselben Seite der
+    // Release-/Acquire-Uebergabe (M-52).
+    vergebeKennungen (p, bank.programm);
 
     // M-07/E-8: die neue Bank startet KALT. Ist der Wechsel am Blockrand ein
     // reiner Rampenwechsel, uebernimmt der Audiothread dort den Zustand der
@@ -287,6 +362,8 @@ void DspKern::beendeCandidate()
     // sofort auf Processed zurueckfallen; die ENDE-Marke fuehrt die Baenke
     // ueber Fade und ACK zurueck in den Pool.
     candidateAktiv.store (false, std::memory_order_release);
+    // NAK-311 W03: wie die ENDE-Marke - der naechste Candidate beginnt kalt.
+    merkzettel[(size_t) Pfad::candidate].gueltig = false;
     baenke.publiziereEnde (Pfad::candidate);
 }
 
@@ -406,7 +483,22 @@ void DspKern::blockrand (Pfad p) noexcept
     }
 
     auto& bankNeu = baenke.bank (neu);
-    const bool nurRampen = alt >= 0 && rampenKompatibel (baenke.bank (alt).programm, bankNeu.programm);
+    const DspProgramm* pAlt = alt >= 0 ? &baenke.bank (alt).programm : nullptr;
+    const DspProgramm& pNeu = bankNeu.programm;
+
+    // NAK-311 W03 (R-311-1): die ERSTE Lesestelle der Kennungen. Beide
+    // Programme gehoeren dem Audiothread in diesem Moment (die alte Bank ist
+    // aktiv, die neue gerade genommen). Ein Rampenuebergang verlangt
+    // zusaetzlich zu `rampenKompatibel` gleiche Pfadkennung und gleiche
+    // Kennung jedes aktiven Slots - sonst laeuft ein Crossfade.
+    const bool pfadGleich = pAlt != nullptr && pAlt->pfadKennung == pNeu.pfadKennung;
+    bool kennungenGleich = pfadGleich;
+    for (int i = 0; i < kSlots && kennungenGleich; ++i)
+        if (pNeu.baender[(size_t) i].aktiv
+            && pAlt->baender[(size_t) i].lebenszyklus != pNeu.baender[(size_t) i].lebenszyklus)
+            kennungenGleich = false;
+
+    const bool nurRampen = kennungenGleich && rampenKompatibel (*pAlt, pNeu);
 
     if (nurRampen)
     {
@@ -416,6 +508,30 @@ void DspKern::blockrand (Pfad p) noexcept
         // Allokation.
         bankNeu.baender         = baenke.bank (alt).baender;
         bankNeu.monoBassZustand = baenke.bank (alt).monoBassZustand;
+    }
+    else if (pfadGleich)
+    {
+        // NAK-311 W03 (R-311-1, R-311-8, R-311-9): die ZWEITE Lesestelle - der
+        // Crossfade uebernimmt VOR dem ersten Sample den `BandZustand` genau
+        // der Slots, die in beiden Programmen aktiv sind und dieselbe Kennung
+        // tragen; bei beiderseits aktiver Mono-Bass-Stufe auch
+        // `monoBassZustand`. Alles andere bleibt kalt, wie `publiziereVorbau`
+        // die Bank vorbereitet hat (E-8 fuer geaenderte Slots). Aus der Ruhe
+        // (alt < 0) wird nichts uebernommen (M-07), und ein laufender Uebergang
+        // nimmt keine neue Publikation (E-17): uebertragen wird immer aus einer
+        // eingeschwungenen Bank. Geteilt wird nichts - nach der Uebernahme
+        // fuehrt jede Bank ihre eigene Kopie (§44.2). Hoechstens acht Kopien
+        // fester Groesse, keine Allokation, keine Sperre.
+        const auto& bankAlt = baenke.bank (alt);
+        for (int i = 0; i < kSlots; ++i)
+        {
+            const auto& a = pAlt->baender[(size_t) i];
+            const auto& n = pNeu.baender[(size_t) i];
+            if (a.aktiv && n.aktiv && a.lebenszyklus == n.lebenszyklus)
+                bankNeu.baender[(size_t) i] = bankAlt.baender[(size_t) i];
+        }
+        if (pAlt->monoBassHz > 0.0 && pNeu.monoBassHz > 0.0)
+            bankNeu.monoBassZustand = bankAlt.monoBassZustand;
     }
 
     if (alt >= 0) baenke.beginneVerblassen (alt);

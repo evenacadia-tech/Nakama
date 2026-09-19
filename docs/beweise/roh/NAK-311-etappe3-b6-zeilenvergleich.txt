@@ -242,3 +242,25 @@ URTEIL M-83 (Abschnitte G und H): bytegleich - G 0, H 0 Basiszeilen ohne Entspre
   ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
   ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
   ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+=================================================================================
+NAK-311 Etappe 3 Teil b (W03) - B6-Zeilenvergleich gegen DIESELBE Basis (M-82, M-83)
+Stand:  2026-09-20 (Bauer Teil b)
+Endlauf: B6 am End-Codestand von Teil b (W03: Kennungen, Uebernahme im Crossfade, Tests, Doku),
+         gemeinsamer Gruenlauf nach der bytegleichen Ruecknahme aller vierzehn Mutationen;
+         Exit 0, "339 geprueft, 0 Fehler". Verglichen wird zeilenweise in Reihenfolge
+         (difflib.SequenceMatcher ohne Autojunk) gegen die oben wortgleich abgelegten Basiszeilen.
+
+== Abschnitt C: Basis 78 Zeilen, Endlauf 78 Zeilen, in Reihenfolge bytegleich 78 von 78 Basiszeilen
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+   -> Zeilen des Endlaufs ohne Entsprechung in der Basis: 0
+== Abschnitt G: Basis 13 Zeilen, Endlauf 13 Zeilen, in Reihenfolge bytegleich 13 von 13 Basiszeilen
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+   -> Zeilen des Endlaufs ohne Entsprechung in der Basis: 0
+== Abschnitt H: Basis 12 Zeilen, Endlauf 12 Zeilen, in Reihenfolge bytegleich 12 von 12 Basiszeilen
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+   -> Zeilen des Endlaufs ohne Entsprechung in der Basis: 0
+
+URTEIL M-82 (Abschnitt C): bytegleich
+URTEIL M-83 (Abschnitte G und H): bytegleich
+

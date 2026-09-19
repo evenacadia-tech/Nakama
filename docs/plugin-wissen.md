@@ -573,6 +573,39 @@ neutralen Programms stehen die fünf Rampen damit sofort in Ruhe auf 1,0, und
 die Neutralprüfung oben greift ab dem Ende des Crossfades (aus der Quelle,
 nicht eigens gemessen).
 
+**Slot-Lebenszyklus (20.09.2026, NAK-311 Etappe 3, W03).** Jeder aktive Slot
+trägt seit W03 eine 64-Bit-**Lebenszykluskennung** im `BandProgramm`, jeder
+Pfad eine **Pfadkennung** im `DspProgramm`; beide vergibt der Worker in
+`publiziereVorbau`, bevor er die Bank übergibt, gegen einen Merkzettel der
+**zuletzt publizierten** Belegung dieses Pfades (nicht der vom Audiothread
+genommenen — welche Bank er fährt, weiß der Worker nicht). Ein Slot behält
+seine Kennung, solange er belegt bleibt und `typ`, `modus`, `dynamisch`,
+`nutztSvf` und `quelle` gleich bleiben; die Pfadkennung hält, solange
+`eq_enabled`, Hard-Bypass, Samplerate und die Mono-Bass-Stufe an oder aus
+gleich bleiben. Die ENDE-Marke und `beendeCandidate` leeren den Merkzettel:
+was danach kommt, schaltet aus der Ruhe ein und beginnt kalt (M-07). Am
+Blockrand liest der Audiothread beide Kennungen an zwei Stellen: ein
+**Rampenübergang** verlangt zusätzlich zu `rampenKompatibel` gleiche
+Pfadkennung und gleiche Slotkennung jedes aktiven Slots; im **Crossfade** mit
+alter Bank übernimmt die neue Bank vor dem ersten Sample den `BandZustand`
+genau der Slots, die in beiden Programmen aktiv sind und dieselbe Kennung
+tragen, bei gleicher Pfadkennung und beiderseits aktiver Mono-Bass-Stufe auch
+`monoBassZustand`. Alles andere bleibt kalt.
+
+Warum: vorher entschied allein die Topologie. Ein Slot, der zwischen zwei
+Blockrändern entfernt und neu belegt wurde, sah topologisch gleich aus und erbte
+die Dynamik seines Vorgängers (T3-14-02: gemeldet −12 dB, Stillespitze 0,1025);
+umgekehrt startete bei einem Wechsel an **irgendeinem** Slot die ganze Bank kalt,
+und ein unverändertes Bell 50 Hz Q 8 +12 dB brach um 8,0 dB ein und brauchte
+200 ms zurück (T3-15-08). Beides ist dieselbe fehlende Identität in zwei
+Richtungen. Kosten (gemessen, `docs/beweise/roh/NAK-311-etappe3-kosten.txt`):
+72 Bytes je Programm, 216 Bytes Merkzettel je Pfad, am Blockrand höchstens neun
+64-Bit-Vergleiche und je übertragenem Slot eine Kopie von 256 Bytes — dieselbe,
+die der Rampenweg schon macht; keine Allokation, keine Sperre, keine Arbeit je
+Sample. Gemessen in B6 (311/M-41, M-43 bis M-51, M-53 bis M-56, M-94, M-95) und
+B7 (311/M-40); Manifest `docs/beweise/NAK-311.md` §6.3 und §28, Nachtrag zu E-8
+und M-121 in `docs/beweise/SONDE-015.md` §13.1.
+
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 
 ### 2.1 Hostbrücke (SONDE-003)

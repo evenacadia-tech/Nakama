@@ -1,0 +1,228 @@
+NAK-311 Etappe 3 Teil b (W03) - Rotbeweis M-45
+Stand:  2026-09-20 (Bauer Teil b), Basis 04c7d9a8 (Etappe 3: 024d686f)
+Zeile:  M-45 (Manifest docs/beweise/NAK-311.md §6.3)
+Etikett: Regressionswache laut Matrix - am Basisstand GEMESSEN rot (Befund, siehe unten)
+Zusage: Mass hoechstens 0,5 dB (Matrix: heute -0,21 dB, Altbasis BEFUNDE.md:634)
+Bein:   B6 EqCopDspGoldenTest
+
+HINWEIS: BEFUND an den Dirigenten: die Matrix fuehrt M-45 als Regressionswache mit "heute -0,21 dB". Unter dem Mass, das F-9 und §6.3 fuer diese Zeile festlegen (Perioden-RMS beider Kanaele je voller Periode), misst der Basisstand 0,578087 dB in Periode 1 - die Zusage 0,5 dB haelt am Basisstand NICHT. Die alte Zahl -0,21 dB stammt aus Periodenspitzen (BEFUNDE.md:737 nennt die beiden Groessen ausdruecklich als verschiedene Messungen desselben Vorgangs). Damit ist M-45 in Wahrheit "heute rot" und wird nach dem Bau gruen (Mass 0,000000 dB). Die in D-1c behauptete doppelte Sicherung traegt unter diesem Mass nur zur Haelfte: die Uebertragung allein haelt das Mass, der Crossfade allein nicht (Mutation A macht M-45 rot).
+
+HINWEIS: Die von der Matrix genannte Brechung (Crossfadezweig durch einen Sofortwechsel ersetzt) ist unten als Mutation E gefahren.
+
+Testquellen aller Laeufe dieser Datei:
+  eq-copilot/plugin/tests/DspGoldenTestMain.cpp D27E0A5FD03F6474FF9363D65BCA09B55B88764A2FEEDB92DE6A9981BCF86FD4
+  eq-copilot/plugin/tests/TransactionTestMain.cpp 0B6CE22B27E45F70A14B2ED2C6B5EE1156B689B548DD018B53930C0FAF89BF6B
+
+Abschnitt 1 - MUTATION NACH DEM BAU
+
+--- MUTATION E: Crossfadezweig durch einen Sofortwechsel auf die kalte Bank ersetzt ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp
+SHA-256 vorher (Endstand der Reparatur): A5FA160E3AD55F44CAABEF67D42ED86908FDE9A07438B092E656B2B346191E0C
+Sicherungskopie: C:\Users\phili\.claude\jobs\8169f34a\tmp\sicherung\DspKern.cpp.vor-E (ausserhalb des Repos)
+vorher:
+      else if (pfadGleich)
+nachher:
+      else if (false)   // ROTBEWEIS Mutation E: keine Uebernahme
+vorher:
+      z.uebergang = nurRampen ? Uebergang::rampe : Uebergang::crossfade;
+nachher:
+      z.uebergang = nurRampen ? Uebergang::rampe : Uebergang::keiner;   // ROTBEWEIS Mutation E
+vorher:
+      z.rest      = nurRampen ? kRampeSamples : kFadeSamples;
+nachher:
+      z.rest      = nurRampen ? kRampeSamples : 0;
+      if (! nurRampen && alt >= 0) { baenke.meldeAusgedient (alt); z.quelle = -1; }   // ROTBEWEIS Mutation E: Sofortwechsel
+SHA-256 mutiert: 64A89F38B1995C5080BBB3259D7FA509395F2ED87C10B90D45E505E14743A1C3
+
+--- LAUF UNTER MUTATION (B6): ROT ---
+Bau Exit 0; Binary 00:08:20, mutierte Quelle 00:08:17, Binary juenger: ja; Exitcode 1; 339 geprueft, 49 Fehler
+
+Gefallene Pruefungen (49):
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.72735319 gegen Fadeschritt 0.00284122]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.8886632 gegen Fadeschritt 0.0034713, Fadeende 0.300000]
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.5455149 gegen Fadeschritt 0.0021309, Fadeende 0.300000]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  FEHLER  zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.254805982 und 0.000000000 gegen Fadeschritt 0.002130918]
+  FEHLER  wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.318974286 gegen hergeleitete Schranke 0.002956120]
+  FEHLER  311/M-43 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (NAK-311 R-311-1, T3-15-08): Slot 0 Bell 50 Hz Q 8 +12 dB, nur v1.band.5.enabled wird wahr, Slot 0 wird uebertragen  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-44 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): Typwechsel an Slot 5 Bell -> Low-Shelf mit 0 dB  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-45 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, Gegenfall): Slot 0 Bell 1 kHz Q 2 +12 dB mit 1-kHz-Sinus, Mass hoechstens 0,5 dB  [Mass 6.203221 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 48 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -6.203221 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 44.1 kHz  [Mass 9.845717 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 882 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845717 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 48.0 kHz  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 96.0 kHz  [Mass 9.845705 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 1920 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845705 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 1 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 255 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 256 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 257 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 180 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 4096 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.744343221 gegen 0.023443103 im ruhigen Lauf]
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.787360311 gegen 0.024111748 im ruhigen Lauf]
+  FEHLER  vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle -1, Candidate 3 mit Quelle -1, freie Slots 0]
+  FEHLER  candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.416108012 (aus Dry waeren es 0.5455), andere Kurve 0.254805982 gegen Fadeschritt 0.002130918]
+  FEHLER  wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.416108012 gegen 0.002531178, andere Kurve max 0.318974286 gegen 0.002956120]
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.4842649 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+  FEHLER  candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.074061513 an Sample 383 von 2304, Auswahl am Ende wirksam: ja]
+  FEHLER  worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [0/4000 Stichproben; erster Bruch: Uebergang 0: Committed rechnet 2 mit Quelle -1, Candidate 3 mit Quelle -1]
+  FEHLER  jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [0/8000; erster Bruch: Uebergang 0, Callback 0: 2 Bankdurchlaeufe]
+  FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: ja, Zusatzsprung am Umschaltsample 0.020442441 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+  FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: E-31-Mass (Teilfall von 311/M-23)  [Sprung am Umschaltsample 0.029001832 gegen 2^-23, groesster Sprung ueber den Lauf 0.029002190 gegen 2(K-1)(g-1)x/K^2 = 0.057777064 + Rundung 0.000000954]
+  FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: ja, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.870617486 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.1160073 (Kurve 1,000453)]
+  FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.029001832, Ende Einblenden = Beginn Ausblenden 0.029001713, Ruhebeginn 0.000000000 gegen Fadeschritt 0.029001820 + 0.000000477; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 0.029001951 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 5.568349584)]
+  FEHLER  311/M-46 geaenderter_slot_kalt_unveraenderter_warm: Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+  FEHLER  311/M-47 remove_und_dynamik_aus_melden_null: (a) Remove, Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+  FEHLER  311/M-47 remove_und_dynamik_aus_melden_null: (b) dynamic_enabled aus, Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+  FEHLER  311/M-49 slotzahl_null_und_acht: (b) Typwechsel nur an Slot 7 - Slots 0 bis 6 uebertragen, Slot 7 kalt  [vorher alle acht bei -12 dB: ja; Auslenkungen der Slots 0 bis 6 je Block bitgleich zum Referenzkern ueber 64 Bloecke: nein, erster Block 0 (Slot 0 danach 0.0000 dB, Referenz -12.0000 dB); betragsgroesste Meldung von Slot 7 0.000000 dB]
+  FEHLER  311/M-51 crossfade_mit_uebertragung_haelt_e31: Umschaltsample (E-31, R-311-10)  [Sprung am Umschaltsample 0.361752629 gegen Fadeschritt x0(10^(3/20) - 1)/256 = 0.001362526 + Toleranz R-311-10 0.000000238 (groesster Betrag des Laufs 1.2560594); x0 = 0.8455149]
+  FEHLER  311/M-51 crossfade_mit_uebertragung_haelt_e31: Wache ueber den Lauf (E-31, kaltSchranke)  [groesster Sprung 0.361752629 gegen kaltSchranke (Low-Shelf 8 kHz Q 0,707 +3 dB, x0, x0) = 0.001743612 + Toleranz R-311-10 0.000000238 (groesster Betrag des Laufs 1.2560594); Ende 1.194322 gegen 1.194322]
+  FEHLER  311/M-53 candidate_slot_behaelt_historie (E-16, R-311-1)  [Mass am Tap post_candidate 9.845715 dB gegen 0,5 dB (erste Periode -9.845715 dB, groesste Abweichung in Periode 0); Tap ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256]
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (a) statisch, gain_db +12 -> +6 dB - (1) Umschaltsample (E-31, R-311-10)  [Sprung von m am Umschaltsample 0.739649755 gegen Fadeschritt 0.001939267 + Toleranz 0.000000119 (groesster Betrag 0.4988156); m vorher 0.995268 (Soll 0.9953)]
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (1) Umschaltsample (E-31, R-311-10)  [Sprung von m am Umschaltsample 0.374405662 gegen Fadeschritt 0.000488278 + Toleranz 0.000000119 (groesster Betrag 0.5000000); m vorher 0.125594 (Soll 0.1256)]
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (2) Spitze ueber 100 Perioden (R-311-8)  [Spitze von m 0.500000 gegen 0.265442 (0,5 dB ueber 0.2506)]
+  FEHLER  311/M-95 mono_bass_zustand_wird_uebertragen (R-311-9, F-8)  [Mass an der Seitenkomponente 36.212883 dB gegen 0,5 dB (Periode 3200 Samples, 100 Perioden; erste Periode 36.212883 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-45 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, Gegenfall): Slot 0 Bell 1 kHz Q 2 +12 dB mit 1-kHz-Sinus, Mass hoechstens 0,5 dB  [Mass 6.203221 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 48 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -6.203221 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.72735319 gegen Fadeschritt 0.00284122]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 1.18866, max Sprung 0.8886632 gegen Fadeschritt 0.0034713, Fadeende 0.300000]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.84551, max Sprung 0.5455149 gegen Fadeschritt 0.0021309, Fadeende 0.300000]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: nein, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 0 von 256, Wachmarken an 256, 300 und 511]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: nein, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+      Grund: die Neutralpruefung beginnt am Uebergangsende; ohne Crossfade gibt es kein Uebergangsende zu messen
+  FEHLER  zweiter_wechsel_im_laufenden_fade_springt_nicht (M-03, M-06, B-5, W-4)  [am Umschaltsample 0.254805982 und 0.000000000 gegen Fadeschritt 0.002130918]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.318974286 gegen hergeleitete Schranke 0.002956120]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-43 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (NAK-311 R-311-1, T3-15-08): Slot 0 Bell 50 Hz Q 8 +12 dB, nur v1.band.5.enabled wird wahr, Slot 0 wird uebertragen  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-44 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): Typwechsel an Slot 5 Bell -> Low-Shelf mit 0 dB  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 44.1 kHz  [Mass 9.845717 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 882 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845717 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 48.0 kHz  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-54 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43): 96.0 kHz  [Mass 9.845705 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 1920 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845705 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 1 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 255 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 256 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 257 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 180 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-55 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, B-11): Blockgroesse 4096 (maxBlock 512), genau eine Uebernahme  [Mass 9.845715 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 960 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -9.845715 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  dynamic_enabled_wechselt_nur_am_blockrand (M-25)  [zweite Differenz am Wechsel 0.744343221 gegen 0.023443103 im ruhigen Lauf]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.787360311 gegen 0.024111748 im ruhigen Lauf]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 2 mit Quelle -1, Candidate 3 mit Quelle -1, freie Slots 0]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  candidate_wechsel_blendet_aus_der_bisherigen_candidate_bank (§44.2, B-7, W-4)  [am Umschaltsample: dieselbe Kurve 0.416108012 (aus Dry waeren es 0.5455), andere Kurve 0.254805982 gegen Fadeschritt 0.002130918]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  wache_der_kalt_startenden_candidate_bank_ueber_den_ganzen_lauf (B-7, W-4)  [dieselbe Kurve max 0.416108012 gegen 0.002531178, andere Kurve max 0.318974286 gegen 0.002956120]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 2, belegt 1, Candidate-Slots -1/-1, max Sprung 0.4842649 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.074061513 an Sample 383 von 2304, Auswahl am Ende wirksam: ja]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [0/4000 Stichproben; erster Bruch: Uebergang 0: Committed rechnet 2 mit Quelle -1, Candidate 3 mit Quelle -1]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [0/8000; erster Bruch: Uebergang 0, Callback 0: 2 Bankdurchlaeufe]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: ja, Zusatzsprung am Umschaltsample 0.020442441 gegen Fadeschritt 0.002911203 (Abstand Programm zu Eingang 0.74527)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: E-31-Mass (Teilfall von 311/M-23)  [Sprung am Umschaltsample 0.029001832 gegen 2^-23, groesster Sprung ueber den Lauf 0.029002190 gegen 2(K-1)(g-1)x/K^2 = 0.057777064 + Rundung 0.000000954]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: ja, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 1.870617486 gegen 0.000000954; Ausgang/Eingang bei n = 1: 1.1160073 (Kurve 1,000453)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.029001832, Ende Einblenden = Beginn Ausblenden 0.029001713, Ruhebeginn 0.000000000 gegen Fadeschritt 0.029001820 + 0.000000477; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 0.029001951 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 5.568349584)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-46 geaenderter_slot_kalt_unveraenderter_warm: Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-47 remove_und_dynamik_aus_melden_null: (a) Remove, Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-47 remove_und_dynamik_aus_melden_null: (b) dynamic_enabled aus, Slot 1 warm (R-311-1)  [Mass 9.842775 dB gegen 0,5 dB (erste Periode -9.842775 dB, groesste Abweichung in Periode 0)]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-49 slotzahl_null_und_acht: (b) Typwechsel nur an Slot 7 - Slots 0 bis 6 uebertragen, Slot 7 kalt  [vorher alle acht bei -12 dB: ja; Auslenkungen der Slots 0 bis 6 je Block bitgleich zum Referenzkern ueber 64 Bloecke: nein, erster Block 0 (Slot 0 danach 0.0000 dB, Referenz -12.0000 dB); betragsgroesste Meldung von Slot 7 0.000000 dB]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-51 crossfade_mit_uebertragung_haelt_e31: Umschaltsample (E-31, R-311-10)  [Sprung am Umschaltsample 0.361752629 gegen Fadeschritt x0(10^(3/20) - 1)/256 = 0.001362526 + Toleranz R-311-10 0.000000238 (groesster Betrag des Laufs 1.2560594); x0 = 0.8455149]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-51 crossfade_mit_uebertragung_haelt_e31: Wache ueber den Lauf (E-31, kaltSchranke)  [groesster Sprung 0.361752629 gegen kaltSchranke (Low-Shelf 8 kHz Q 0,707 +3 dB, x0, x0) = 0.001743612 + Toleranz R-311-10 0.000000238 (groesster Betrag des Laufs 1.2560594); Ende 1.194322 gegen 1.194322]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-53 candidate_slot_behaelt_historie (E-16, R-311-1)  [Mass am Tap post_candidate 9.845715 dB gegen 0,5 dB (erste Periode -9.845715 dB, groesste Abweichung in Periode 0); Tap ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256]
+      Grund: die Uebernahme ist in dieser Mutation mit ausgeschaltet (zweite Ersetzung), der Fall faellt wie unter Mutation A
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (a) statisch, gain_db +12 -> +6 dB - (1) Umschaltsample (E-31, R-311-10)  [Sprung von m am Umschaltsample 0.739649755 gegen Fadeschritt 0.001939267 + Toleranz 0.000000119 (groesster Betrag 0.4988156); m vorher 0.995268 (Soll 0.9953)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (1) Umschaltsample (E-31, R-311-10)  [Sprung von m am Umschaltsample 0.374405662 gegen Fadeschritt 0.000488278 + Toleranz 0.000000119 (groesster Betrag 0.5000000); m vorher 0.125594 (Soll 0.1256)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (2) Spitze ueber 100 Perioden (R-311-8)  [Spitze von m 0.500000 gegen 0.265442 (0,5 dB ueber 0.2506)]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+  FEHLER  311/M-95 mono_bass_zustand_wird_uebertragen (R-311-9, F-8)  [Mass an der Seitenkomponente 36.212883 dB gegen 0,5 dB (Periode 3200 Samples, 100 Perioden; erste Periode 36.212883 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256]
+      Grund: der Crossfade ist der Weg JEDES topologischen Wechsels und des Ausschaltens; ohne ihn fehlt diesen Faellen die Blende, und die neue Bank setzt hart ein
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+  ok      remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove 0.000000000000000]
+  ok      remove_mit_neubelegung_verwirft_die_alte_auslenkung (M-121)  [nachher 0.000000000000000]
+  ok      311/M-41 verdraengte_zwischenpublikation_bricht_den_lebenszyklus (NAK-311 T3-14-02, M-121, R-311-1)  [A eingeschwungen -12.0000 dB; leer und B vor demselben Blockrand, Uebernahmen +1; betragsgroesste Meldung von Slot 0 ab dem ersten Block 0.000000 dB (ueber 32 Bloecke Stille); Spitze bei Stille ab Sample 256: 0.000000000]
+  ok      bankpool_parallel_ohne_rennen (M-122)  [7286 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+  ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2999]
+  ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+  ok      311/M-46 geaenderter_slot_kalt_unveraenderter_warm: Slot 0 kalt (SONDE-015 M-121, E-8)  [Slot 0 vorher -12.0000 dB, nach dem Typwechsel betragsgroesste Meldung ab dem ersten Block 0.000000 dB ueber 1500 Bloecke]
+  ok      311/M-47 remove_und_dynamik_aus_melden_null: (a) Remove, Meldung 0 (SONDE-015 M-121)  [Slot 0 vorher -12.0000 dB, danach betragsgroesste Meldung ab dem ersten Block 0.000000 dB]
+  ok      311/M-47 remove_und_dynamik_aus_melden_null: (b) dynamic_enabled aus, Meldung 0 (SONDE-015 M-121)  [Slot 0 vorher -12.0000 dB, danach betragsgroesste Meldung ab dem ersten Block 0.000000 dB]
+  ok      311/M-48 globaler_wechsel_macht_alle_slots_kalt: (a) Mono-Bass 0 -> 120 Hz (R-311-1, E-20)  [Slot 0 vorher -12.0000 dB; danach betragsgroesste Auslenkung aller Slots ab dem ersten Block 0.000000 dB, Spitze bei Stille ab Sample 256: 0.000000000]
+  ok      311/M-48 globaler_wechsel_macht_alle_slots_kalt: (b) bereiteVor 44,1 -> 48 kHz, dasselbe Programm (R-311-1)  [Slot 0 vorher -12.0000 dB; danach betragsgroesste Auslenkung aller Slots 0.000000 dB, Spitze bei Stille 0.000000000]
+  ok      311/M-49 slotzahl_null_und_acht: (a) null Baender, eines kommt hinzu und startet kalt  [betragsgroesste Auslenkung aller Slots ab dem ersten Block 0.000000 dB, Spitze bei Stille ab Sample 256: 0.000000000]
+  ok      311/M-49 slotzahl_null_und_acht: (c) alle acht Slots zugleich geaendert - keiner uebertragen  [betragsgroesste Auslenkung aller Slots ab dem ersten Block 0.000000 dB, Spitze bei Stille ab Sample 256: 0.000000000]
+  ok      311/M-50 output_trim_haelt_die_historie (Teilfall (a), E-19, REGEL B-4)  [vorher -12.0000 dB; nach Output-Trim -3 dB in jedem von 64 Bloecken Stille -12 dB: ja; Rampe ohne Crossfade-Quelle: ja]
+  ok      311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (a) statisch, gain_db +12 -> +6 dB - (2) Spitze ueber 100 Perioden (R-311-8)  [Spitze von m 0.498816 gegen 1.054241 (0,5 dB ueber 0.9953)]
+  ok      311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (a) statisch, gain_db +12 -> +6 dB - (3) ab Fade-Ende plus T_E neben dem Referenzkern (R-311-8)  [ab Sample 882 bis 4799 hoechstens 0.000001 dB neben der Rampe (an Sample 888); m am Fensterende 0.498816 (Soll 0.4988)]
+  ok      311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (3) ab Fade-Ende plus T_E neben dem Referenzkern (R-311-8)  [ab Sample 578 bis 4799 hoechstens 0.000001 dB neben der Rampe (an Sample 588); m am Fensterende 0.250594 (Soll 0.2506)]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 A5FA160E3AD55F44CAABEF67D42ED86908FDE9A07438B092E656B2B346191E0C, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- GEMEINSAMER GRUENLAUF NACH DER BYTEGLEICHEN RUECKNAHME ALLER VIERZEHN MUTATIONEN ---
+Endstand: DspKern.cpp A5FA160E3AD55F44CAABEF67D42ED86908FDE9A07438B092E656B2B346191E0C, DspKern.h 244BBB8FBA2C026E16D5B03C5630AA42319CB62C2D822990B4A7E6C010846086, DspProgramm.h 6953E8128317506E295D0E6761C14061527841FBFF08F097136389F6E81FAA9D, DspBankPool.cpp 8B0EA20534DCD10BBFC44C2E5FFC191E4EEA661169E6FCF66C8F666272B6515F
+Ein Bauaufruf B6 und B7, Exit 0; B6 Exit 0 "339 geprueft, 0 Fehler", B7 Exit 0 "179 geprueft, 0 Fehler".
+Diese Zeile am Endstand:
+  [B6] ok      311/M-45 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, Gegenfall): Slot 0 Bell 1 kHz Q 2 +12 dB mit 1-kHz-Sinus, Mass hoechstens 0,5 dB  [Mass 0.000000 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 48 Samples, 100 Perioden ab dem Umschaltblock; erste Periode 0.000000 dB, groesste Abweichung in Periode 0); ab Fade-Ende bytegleich zum Referenzkern: ja; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+
+Abschnitt 2 - HEUTE ROT: der neue Test gegen den UNVERAENDERTEN Kern
+Kernquellen bytegleich zur Basis: DspKern.cpp 1CA0F7C85793B67A4B09D1468E9388D0A53B0F68608C53975F15C6D46A31768C, DspKern.h 72395FE46BC3D3B888839D92DC404B80E02A4B935139486FD877D659F190D3A5, DspProgramm.h 43EE973DA008A0D9A1401495CB63506E1DC4766C0462EBD23131A7A49073AEF7
+Bau Exit 0, Binary 00:04:20, juengste Quelle 00:03:27, Binary juenger: ja.
+B6 Exitcode 1 ("339 geprueft, 20 Fehler"), B7 Exitcode 1 ("179 geprueft, 1 Fehler").
+--- LAUF GEGEN DEN UNVERAENDERTEN KERN: ROT ---
+  [B6] FEHLER  311/M-45 unveraenderter_slot_behaelt_historie_bei_fremdslotwechsel (Teilfall von 311/M-43, Gegenfall): Slot 0 Bell 1 kHz Q 2 +12 dB mit 1-kHz-Sinus, Mass hoechstens 0,5 dB  [Mass 0.578087 dB gegen 0,5 dB (Perioden-RMS beider Kanaele, Periode 48 Samples, 100 Perioden ab dem Umschaltblock; erste Periode -0.386881 dB, groesste Abweichung in Periode 1); ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256; Blockrand-Uebernahmen Pruefkern 1, Referenzkern 0]
+

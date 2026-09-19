@@ -1,0 +1,33 @@
+NAK-311 Etappe 3 Teil b (W03) - gebaute Groessen des Slot-Lebenszyklus
+Stand:  2026-09-20 (Bauer Teil b), Basis 04c7d9a8, Endstand der Reparatur
+Quelle: gemessen im gebauten B6 (MSVC Release, x64) mit einer voruebergehenden
+        Messzeile in eq-copilot/plugin/tests/DspGoldenTestMain.cpp und einer
+        oeffentlichen Konstanten `kMerkzettelBytes` in eq-copilot/plugin/dsp/DspKern.h;
+        beide Dateien danach bytegleich zurueckgespielt
+        (DspGoldenTestMain.cpp SHA-256 D27E0A5FD03F6474FF9363D65BCA09B55B88764A2FEEDB92DE6A9981BCF86FD4,
+         DspKern.h SHA-256 244BBB8FBA2C026E16D5B03C5630AA42319CB62C2D822990B4A7E6C010846086).
+
+Messzeile Endstand:  [KOSTEN] BandProgramm 264 DspProgramm 2280 BandZustand 256 DspBank 4344 DspKern 23624 Merkzettel 216
+Messzeile Basisstand: [KOSTEN] BandProgramm 256 DspProgramm 2208 BandZustand 256 DspBank 4272 DspKern 22752 Merkzettel 0
+
+| Groesse | Basis 04c7d9a8 | Endstand W03 | Zuwachs |
+|---|---|---|---|
+| sizeof (BandProgramm) | 256 B | 264 B | 8 B (die 64-Bit-Kennung) |
+| sizeof (DspProgramm) | 2208 B | 2280 B | 72 B (8 Slotkennungen + Pfadkennung) |
+| sizeof (BandZustand) | 256 B | 256 B | 0 B - die Kopie je uebertragenem Slot |
+| sizeof (DspBank) | 4272 B | 4344 B | 72 B |
+| sizeof (DspKern) | 22752 B | 23624 B | 872 B |
+| Merkzettel je Pfad (privat) | 0 B | 216 B | 216 B, zwei Pfade = 432 B |
+
+Rechnung des Bauplans (§7.3) gegen die Messung: "8 x 8 + 8 = 72 Bytes je Programm,
+bei vier Baenken und zwei Vorbauten 432 Bytes" - gemessen sind es
+72 B je Programm und damit
+432 B in vier Baenken und zwei Vorbauten.
+"Der Merkzettel rund 0,2 KB je Pfad" - gemessen 216 B je Pfad.
+
+Am Blockrand kommen hoechstens neun 64-Bit-Vergleiche hinzu (Pfadkennung und acht
+Slotkennungen) und je uebertragenem Slot eine Kopie fester Groesse
+sizeof (BandZustand) = 256 B - dieselbe Kopie, die der Rampenweg heute fuer
+alle acht Slots macht. Keine Allokation, keine Sperre, keine Arbeit je Sample;
+gemessen im Allokationslauf (311/M-56, B6 Abschnitt J: 4000 Bloecke, 0 Allokationen,
+0 Sperren, mit einem Committed-Fremdslotwechsel im Zyklus).

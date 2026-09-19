@@ -71,6 +71,15 @@
       weil keine Auswahl sie dann noch hoert (X-1, E-33); und auf
       einen Candidate, der gerade aus der Ruhe einblendet, blendet die
       Hoermatrix erst nach diesem Einblenden (E-34).
+    - Jeder aktive Slot traegt eine LEBENSZYKLUSKENNUNG, jeder Pfad eine
+      Pfadkennung (NAK-311, T3-14-02 und T3-15-08): der Worker vergibt sie bei
+      der Publikation gegen die zuletzt publizierte Belegung, der Audiothread
+      liest sie am Blockrand. Ein Slot, dessen Belegung und Topologie ueber
+      jede Publikation dazwischen gleich blieben, behaelt im Crossfade seinen
+      Filter-, Detektor- und Huellkurvenzustand; ein geaenderter Slot, ein
+      zwischendurch entfernter und neu belegter und nach einem globalen
+      Wechsel (eq_enabled, Bypass, Samplerate, Mono-Bass-Stufe) jeder Slot
+      startet kalt und meldet 0 (M-121, E-8).
     - Uebernommen wird genau einmal je aeusserem `verarbeite`-Aufruf (B-11).
 
     WAS HIER NICHT LIEGT: Transaktionen, Revisionen, `state_hash`, Undo,
@@ -156,6 +165,9 @@ public:
 
     /** S8: legt das Programm aus `baueVor` in eine freie Bank und publiziert
         es (bankpflichtig) oder publiziert die ENDE-Marke (bankfrei, E-18).
+        Vergibt dabei die Lebenszyklus- und die Pfadkennung des Programms
+        (NAK-311 W03) - vor der Uebergabe der Bank; die ENDE-Marke leert den
+        Merkzettel des Pfades.
         Kann nicht scheitern und alloziert nicht - vorausgesetzt, zwischen
         `baueVor` und diesem Aufruf belegt niemand eine Bank. Baenke belegt
         nur der Control-Worker (§44.2); der Aufrufer haelt deshalb genau EINEN
@@ -390,6 +402,44 @@ private:
         void ruhe() noexcept;
     };
 
+    /*  NAK-311 W03 (R-311-1, §9 F-6): der MERKZETTEL der zuletzt
+        PUBLIZIERTEN Belegung eines Pfades - nicht der vom Audiothread
+        genommenen, die der Worker nicht kennt. Genau die Felder, die
+        `rampenKompatibel` topologisch nennt, dazu die vergebene Kennung. */
+    struct SlotMerkmal
+    {
+        std::uint64_t kennung   { 0 };
+        Filtertyp     typ       { Filtertyp::bell };
+        Kanalmodus    modus     { Kanalmodus::stereo };
+        Sidechain     quelle    { Sidechain::none };
+        bool          aktiv     { false };
+        bool          dynamisch { false };
+        bool          nutztSvf  { false };
+    };
+
+    struct Merkzettel
+    {
+        std::uint64_t pfadKennung { 0 };
+        double        samplerate  { 0.0 };
+        bool          gueltig     { false };   ///< false vor der ersten Publikation, nach ENDE-Marke und Candidate-Ende
+        bool          eqEngagiert { false };
+        bool          hardBypass  { false };
+        bool          monoBassAn  { false };
+        std::array<SlotMerkmal, (size_t) kSlots> slots {};
+    };
+
+    /** Vergibt die Kennungen des Programms einer noch nicht publizierten Bank
+        und schreibt den Merkzettel fort. NUR der Worker, in
+        `publiziereVorbau` nach `bank.programm = prog` und VOR der Uebergabe
+        der Bank (M-52). */
+    void vergebeKennungen (Pfad p, DspProgramm& prog) noexcept;
+    void merke (Pfad p, const DspProgramm& prog) noexcept;
+
+    /** Der naechste Wert des Lebenszyklus-Zaehlers; nie 0 (0 heisst "Slot
+        nicht aktiv"). 64 Bit: der Zaehler laeuft in der Lebensdauer einer
+        Instanz nicht ueber; liefe er, ueberspringt er die 0. */
+    std::uint64_t naechsteKennung() noexcept;
+
     void blockrand (Pfad p) noexcept;
     void heileZustaende (int slot) noexcept;
 
@@ -446,6 +496,13 @@ private:
         lesbar, ohne eine Bank zu belegen (M-35, B-10). */
     std::array<DspProgramm, (size_t) kPfade> vorbau {};
     std::array<bool, (size_t) kPfade>        vorbauBankpflichtig {};
+
+    /*  NAK-311 W03: Merkzettel und Zaehler gehoeren ALLEIN dem Worker - kein
+        Atomic, keine Sperre, nichts davon liest der Audiothread. Er sieht die
+        Kennungen nur im Programm einer Bank, die ihm gehoert, ueber dieselbe
+        Release-/Acquire-Uebergabe wie das uebrige Programm (M-52). */
+    std::array<Merkzettel, (size_t) kPfade> merkzettel {};
+    std::uint64_t kennungsZaehler { 0 };
 
     std::atomic<Hoermatrix> hoerwunsch  { Hoermatrix::processed };
     std::atomic<Hoermatrix> hoerwirksam { Hoermatrix::processed };

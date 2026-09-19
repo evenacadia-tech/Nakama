@@ -118,6 +118,16 @@ struct BandProgramm
     bool        geklemmtSidechain { false };   ///< priority_sidechain -> internal
     bool        gekapptFreq       { false };   ///< freq_hz > 0,45*fs
     double      freqHzWirksam     { 0.0 };     ///< nach der Kappung
+
+    /*  NAK-311 W03 (R-311-1): die LEBENSZYKLUSKENNUNG dieses Slots. 0 heisst
+        "nicht aktiv"; ein aktiver Slot traegt nie 0. Wie `generation` vergibt
+        sie erst die Publikation (`DspKern::publiziereVorbau`), `baueProgramm`
+        laesst sie auf 0. Gleiche Kennung in zwei Programmen desselben Pfades
+        heisst: der Slot blieb ueber JEDE Publikation dazwischen belegt und
+        topologisch gleich - auch ueber eine verdraengte, die der Audiothread
+        nie gesehen hat. Nur Laufzeit: sie wird nie gespeichert und geht ueber
+        keinen Draht. */
+    std::uint64_t lebenszyklus { 0 };
 };
 
 //==============================================================================
@@ -126,6 +136,13 @@ struct DspProgramm
 {
     double        samplerate  { 0.0 };
     std::uint64_t generation  { 0 };
+
+    /*  NAK-311 W03 (R-311-1, §9 F-8): die PFADKENNUNG. Sie wechselt, sobald
+        ein globales Feld von `rampenKompatibel` (eq_enabled, bypass,
+        Samplerate, Mono-Bass-Stufe an oder aus) seit dem zuletzt publizierten
+        Programm dieses Pfades gewechselt hat; dann startet jeder Slot kalt.
+        Vergeben wie `lebenszyklus` erst bei der Publikation. */
+    std::uint64_t pfadKennung { 0 };
 
     /*  Die beiden Schalter, die den Pfad ueberhaupt oeffnen. Beide sind im
         Vertrag `blockrand`, gehoeren also ins Programm und nicht in eine
@@ -231,7 +248,15 @@ double autoGainGitterHz (int stelle) noexcept;
     `enabled` (blockrand), `type`, `channel_mode`, `dynamic_enabled` und
     `sidechain_source`, dazu das Ein- und Ausschalten der Mono-Bass-Stufe
     (Entscheid E-20). Laeuft im Audiothread: keine Allokation, keine
-    Ausnahme. */
+    Ausnahme.
+
+    ZWEITE BEDINGUNG seit NAK-311 W03 (R-311-1): der Audiothread verlangt fuer
+    den Rampenweg zusaetzlich gleiche `pfadKennung` und gleiche
+    `lebenszyklus`-Kennung jedes aktiven Slots. Diese Funktion vergleicht nur
+    die beiden Programme; die Kennungen tragen auch den Wechsel einer
+    VERDRAENGTEN Zwischenpublikation, die der Audiothread nie gesehen hat.
+    Sonst laeuft ein Crossfade, in dem die neue Bank den Zustand genau der
+    Slots mit gleicher Kennung uebernimmt (`DspKern::blockrand`). */
 bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept;
 
 } // namespace nakama::dsp

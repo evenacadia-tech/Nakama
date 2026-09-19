@@ -19,7 +19,9 @@
          Analysekopie (M-35 bis M-37, M-41). Die Analysefaelle halten den
          Worker ueber `mitAngehaltenerAnalyseFuerTest` an und lesen die Queue
          selbst - deterministisch, ohne auf Zeit zu warten. Seit NAK-311
-         Etappe 3 (W01) der Host-Reset im Ausblenden (311/M-34, Abschnitt R).
+         Etappe 3 (W01) der Host-Reset im Ausblenden (311/M-34, Abschnitt R),
+         seit W03 Remove und Neubelegung ohne Audio dazwischen (311/M-40,
+         Abschnitt S).
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -2660,6 +2662,101 @@ void nak311Pfadrampen()
             d.str());
 }
 
+void nak311SlotLebenszyklus()
+{
+    abschnitt ("S - NAK-311 W03: Remove und Neubelegung ohne Audio dazwischen starten kalt (311/M-40)");
+    // Manifest NAK-311 §6.3 M-40 (T3-14-02, SONDE-015 M-121): auf dem
+    // Pruefstand ein dynamisches Bell 1 kHz Q 2, Range -12 dB, Threshold
+    // -40 dB, Attack 0,1 ms, Hold 500 ms, Release 5000 ms in Slot 0, mit einem
+    // Quadraturton 0,5 eingeschwungen (Detektor -9 dB: Plateau -12 dB). Dann
+    // `remove` fuer Slot 0 und `bandBelegen` mit derselben Konfiguration, beide
+    // committet, kein Audioblock dazwischen - die zweite Publikation verdraengt
+    // die erste, der Audiothread sieht das Remove nie. Danach nur Stille in
+    // Bloecken zu 64. Die neue Belegung beginnt trotzdem kalt: Auslenkung ab dem
+    // ersten Block exakt 0,0, der Uebergang ist ein Crossfade, ab Sample
+    // kFadeSamples ist der Ausgang exakt 0,0.
+    Stand st; Sitzung s;
+    const double fs = 48000.0;
+    auto z = mitEq (true);
+    const auto zelle = [&z] (int feld) -> param::Zelle& { return z.werte[(size_t) iBand (0, feld)]; };
+    z.werte[(size_t) param::indexOccupied (0)].b = true;
+    zelle (param::kEnabled).b                = true;
+    zelle (param::kType).enumIndex           = (int) dsp::Filtertyp::bell;
+    zelle (param::kFreqHz).zahl              = 1000.0;
+    zelle (param::kQ).zahl                   = 2.0;
+    zelle (param::kGainDb).zahl              = 0.0;
+    zelle (param::kDynamicEnabled).b         = true;
+    zelle (param::kDynamicRangeDb).zahl      = -12.0;
+    zelle (param::kThresholdDb).zahl         = -40.0;
+    zelle (param::kAttackMs).zahl            = 0.1;
+    zelle (param::kHoldMs).zahl              = 500.0;
+    zelle (param::kReleaseMs).zahl           = 5000.0;
+    zelle (param::kSidechainSource).enumIndex = (int) dsp::Sidechain::internal;
+    const auto e1 = fahre (st, s, apply (*st.tk, z, 1));
+    wachen (*st.tk, s, "311/M-40 Apply");
+
+    std::vector<float> l (512), r (512);
+    float* kan[2] = { l.data(), r.data() };
+    const double w = 2.0 * 3.14159265358979323846 * 1000.0 / fs;
+    long long n = 0;
+    for (int blk = 0; blk < 94; ++blk)
+    {
+        for (int i = 0; i < 512; ++i)
+        {
+            l[(size_t) i] = (float) (0.5 * std::sin (w * (double) (n + i)));
+            r[(size_t) i] = (float) (0.5 * std::cos (w * (double) (n + i)));
+        }
+        st.kern->verarbeite (kan, 2, 512);
+        n += 512;
+    }
+    double vorher[param::kSlots];
+    st.kern->auslenkungenDb (vorher);
+    st.kern->pflege();
+
+    const std::uint64_t uebernahmenVor = st.kern->uebernahmen();
+    const auto e2 = fahre (st, s, remove (*st.tk, 0, 2));
+    wachen (*st.tk, s, "311/M-40 Remove");
+    auto belegen = auftrag (*st.tk, tx::Art::bandBelegen, 3);
+    for (int f = 0; f < param::kJeSlot; ++f) belegen.band[(size_t) f] = z.werte[(size_t) iBand (0, f)];
+    const auto e3 = fahre (st, s, belegen);
+    wachen (*st.tk, s, "311/M-40 Belegen");
+
+    bool kreuzblende = false;
+    double slot0Max = 0.0, spitzeNachFade = 0.0;
+    for (int blk = 0; blk < 32; ++blk)
+    {
+        std::fill (l.begin(), l.end(), 0.0f);
+        std::fill (r.begin(), r.end(), 0.0f);
+        st.kern->verarbeite (kan, 2, 64);
+        if (blk == 0)
+        {
+            int klingend = -1, quelle = -1;
+            st.kern->rechnendeSlots (dsp::Pfad::committed, klingend, quelle);
+            kreuzblende = quelle >= 0;
+        }
+        double werte[param::kSlots];
+        st.kern->auslenkungenDb (werte);
+        if (std::abs (werte[0]) > std::abs (slot0Max)) slot0Max = werte[0];   // betragsgroesster Wert, mit Vorzeichen
+        for (int i = 0; i < 64; ++i)
+            if (blk * 64 + i >= dsp::kFadeSamples)
+                spitzeNachFade = std::max (spitzeNachFade, (double) std::max (std::abs (l[(size_t) i]), std::abs (r[(size_t) i])));
+    }
+    const std::uint64_t uebernahmen = st.kern->uebernahmen() - uebernahmenVor;
+
+    const bool commits = e1.ausgang == tx::Ausgang::commit && e2.ausgang == tx::Ausgang::commit
+                      && e3.ausgang == tx::Ausgang::commit && e3.slot == 0;
+    std::ostringstream d;
+    d << std::setprecision (9) << "drei Commits (Belegen auf Slot 0) " << (commits ? "ja" : "nein")
+      << ", eingeschwungen " << vorher[0] << " dB, Uebernahmen danach +" << uebernahmen
+      << ", Uebergang ist ein Crossfade " << (kreuzblende ? "ja" : "nein")
+      << ", betragsgroesste Meldung von Slot 0 ab dem ersten Block " << slot0Max << " dB, Spitze bei Stille ab Sample "
+      << dsp::kFadeSamples << ": " << spitzeNachFade;
+    pruefe (commits && vorher[0] == -12.0 && uebernahmen == 1 && kreuzblende && slot0Max == 0.0 && spitzeNachFade == 0.0,
+            "311/M-40 remove_und_belegen_ohne_audio_startet_kalt (NAK-311 T3-14-02, SONDE-015 M-121): Remove und "
+            "Neubelegung ohne Audioblock dazwischen, danach Stille - Auslenkung 0,0, Crossfade, ab kFadeSamples exakt 0,0",
+            d.str());
+}
+
 } // namespace
 
 int main()
@@ -2692,6 +2789,9 @@ int main()
 
     // NAK-311 Etappe 3 (W01): Host-Reset im Ausblenden
     nak311Pfadrampen();
+
+    // NAK-311 Etappe 3 (W03): Remove und Neubelegung ohne Audio
+    nak311SlotLebenszyklus();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

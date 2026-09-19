@@ -4351,3 +4351,59 @@ Haben Befunde eine gemeinsame Ursache, ist die Ursache der Auftrag, nicht die Pu
 
 **Reihenfolge.** NAK-283 (zweiter Codeaudit, Vorrang nach User-Wort 10.09. und 12.09.2026) → Nacharbeit 1 der Etappe 4a mit R-4a-A bis R-4a-C als Auftrag (Runde 1 von 3, Wiederprüfung durch Codex Astra max) → Etappe 4b. Kein Worker im Checkout, bevor NAK-283 seine Einordnung hat.
 
+
+## 13. Nachträge aus NAK-311
+
+Append-only. Jeder Nachtrag nennt Datum, Ticketetappe und die Zeile, die er
+berichtigt; der Text darüber bleibt unverändert.
+
+### 13.1 E-8 und M-121 — der Slot-Lebenszyklus (NAK-311 Etappe 3, W03, 20.09.2026)
+
+**Betroffen:** Entscheid E-8 (`:3400`) und Matrixzeile M-121 (`:1213`).
+
+**E-8 lautet** „Ob eine neue Bank den Filterzustand der alten erbt · **Nein** —
+sie startet kalt, alle Zustände auf 0" mit zwei Begründungen: der Crossfade
+über 256 Samples decke die Transiente ab, und ein übertragener Zustand wäre ein
+geteilter Zustand zwischen zwei Bänken, was §44.2 verbiete. Beide tragen den
+Fall eines **unveränderten** Slots nicht (NAK-311 T3-15-08, Quellvalidierung
+Teil A §3.2):
+
+- 256 Samples sind 5,33 ms bei 48 kHz. Ein unverändertes Bell 50 Hz Q 8 +12 dB
+  bricht beim Kaltstart im ersten Perioden-RMS um **8,002865 dB** ein und liegt
+  erst nach rund 200 ms wieder innerhalb 1 dB (Phase 16 des Tiefenaudits; in
+  NAK-311 als `311/M-43` am Basisstand nachgemessen: 8,002865 dB bei 48 kHz,
+  7,689075 dB bei 44,1 kHz, 9,495848 dB bei 96 kHz).
+- §44.2 trennt die **Pfade**, nicht zwei Bänke desselben Pfades: „nie eine Bank
+  oder ein Filterzustand zwischen beiden **Pfaden** geteilt". E-19 überträgt im
+  Rampenfall längst denselben Zustand innerhalb eines Pfades, und übertragen
+  wird eine **Kopie** — nach der Übernahme führt jede Bank ihre eigene.
+
+**Nachtrag zu E-8.** Für einen Slot, dessen Belegung und Topologie (`typ`,
+`modus`, `dynamisch`, `nutztSvf`, `quelle`) über **jede** Publikation seit dem
+gefahrenen Programm gleich geblieben sind, gilt seit NAK-311 Etappe 3 die Regel
+R-311-1 (`docs/beweise/NAK-311.md` §2): der Audiothread übernimmt seinen
+Filter-, Detektor- und Hüllkurvenzustand auch im Crossfade, und ein Wechsel an
+einem anderen Slot ändert seinen Ausgang um höchstens **0,5 dB** (Perioden-RMS
+über 100 Perioden gegen einen Referenzkern ohne Wechsel). Bei gleicher
+Pfadkennung und beiderseits aktiver Mono-Bass-Stufe wandert auch
+`monoBassZustand` mit (R-311-9). E-8 bleibt unverändert für **geänderte** Slots
+— Remove, Neubelegung, Typwechsel, `dynamic_enabled` aus — und für globale
+Wechsel (eq_enabled, Hard-Bypass, Samplerate, Mono-Bass-Stufe an oder aus):
+dort startet die neue Bank kalt, wie M-07 es für das Einschalten aus der Ruhe
+verlangt. Gemessen in B6 (`311/M-43` bis `311/M-49`, `311/M-51`, `311/M-53` bis
+`311/M-55`, `311/M-94`, `311/M-95`) und B7 (`311/M-40`).
+
+**Nachtrag zu M-121.** Die Zeile sagt: „Wechselt Programm, Belegung oder
+Slotinhalt — Remove, Neubelegung, Typwechsel, `dynamic_enabled` aus —, wird der
+gehaltene Wert dieses Slots **verworfen** (0) statt weitergemeldet." Das gilt
+unverändert für den Slot, der wechselt. Ein **unveränderter** Slot meldet über
+einen Fremdslotwechsel hinweg weiter — wie heute schon im Rampenfall (E-19):
+sein Zustand wandert mit, und der gemeldete Wert gehört weiter zu genau diesem
+Zustand. Neu ist gegenüber dem Basisstand zweierlei: die **Identität** eines
+Slots zählt, nicht nur seine Topologie — ein Slot, der zwischen zwei
+Blockrändern entfernt und neu belegt wurde, erbt nichts, auch wenn seine
+Topologie gleich aussieht (`311/M-40`, `311/M-41`) —, und ein Wechsel in einer
+**verdrängten** Zwischenpublikation, die der Audiothread nie gesehen hat, bricht
+die Übertragung ebenso.
+
+**Nicht berührt:** E2-7, E-6 und die Zahl zu M-84 (NAK-311 Etappe 4).

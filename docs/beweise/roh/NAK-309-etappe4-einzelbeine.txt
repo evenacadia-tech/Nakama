@@ -1,0 +1,119 @@
+NAK-309 Etappe 4 - einzeln gefahrene Beine (Auftrag Schritt 4: B2, A12, B10, A4, A4-SI, B22, A36)
+Stand:  2026-09-19 06:37, HEAD 958dc81d; git status der Beinquellen: NICHT sauber
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 -Einzelbeine (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
+A4 und A4-SI im Verfahren des Runners: frischer Meldeordner nur in der Umgebung des Kindprozesses, danach --nicht-gelaufen.
+
+--- BAU ---
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopStateMigrationTest
+Exitcode: 0 (16.9 s)
+Binary eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe: 2026-09-19 06:38:14.477, Quelle eq-copilot/plugin/tests/StateMigrationTestMain.cpp: 2026-09-19 04:57:10.196 - Binary juenger: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopIpcTest
+Exitcode: 0 (66.4 s)
+Binary eq-copilot/build/plugin/EqCopIpcTest_artefacts/Release/EqCopIpcTest.exe: 2026-09-19 06:39:20.982, Quelle eq-copilot/plugin/tests/IpcTestMain.cpp: 2026-09-19 05:00:27.885 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopIpcTest_artefacts/Release/EqCopIpcTest.exe: 2026-09-19 06:39:20.982, Quelle eq-copilot/plugin/tests/V3TestServer.h: 2026-09-19 05:00:02.843 - Binary juenger: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopSonde013FingerprintGoldenTest
+Exitcode: 0 (0.9 s)
+Binary eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe: 2026-09-19 06:34:58.934, Quelle eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp: 2026-09-19 06:34:40.984 - Binary juenger: ja
+
+--- B2 EqCopStateMigrationTest ---
+Aufruf: eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe
+Exitcode: 0 (1.4 s)
+Pruefungen ok: 291, rot: 0
+  STATE-MIGRATION-TEST OK - 291 Pruefungen ok, 0 Fehler
+    ok      M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [geladen, Bindung '0123456789abcdef0123456789abcdef']
+    ok      M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes  [256 Bytes vom Writer, 256 auf der Platte]
+    ok      M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+
+--- A12 erzeuge_state_fixtures.py --pruefen ---
+Aufruf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Exitcode: 0 (0.3 s)
+Pruefungen ok: 0, rot: 0
+  STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+--- B10 EqCopIpcTest ---
+Aufruf: eq-copilot/build/plugin/EqCopIpcTest_artefacts/Release/EqCopIpcTest.exe
+Exitcode: 0 (221.9 s)
+Pruefungen ok: 441, rot: 0
+  ALLE PRUEFUNGEN GRUEN — 441 Pruefungen, 0 Fehler
+    ok      welcome_minor_grenze_telemetrie (M-64): ein welcome mit Envelope-schema_minor 5 (= kJsonSchemaMinor) koppelt
+    ok      welcome_minor_grenze_telemetrie (M-65): ein welcome mit schema_minor 6 koppelt heute ebenfalls - der Handschlag prueft den Minor nicht
+    ok      welcome_minor_grenze_telemetrie (M-65): der P2-Frame danach erreicht beiFrame mit schema_minor 3 unveraendert (kFeatureBatchSchemaMinor 2) - die Grenze zieht der Verbraucher  [Rueckrufe 1, Minor 3]
+    ok      welcome_minor_grenze_control (M-62): ein welcome mit Envelope-schema_minor 5 (= kJsonSchemaMinor) verbindet
+    ok      welcome_minor_grenze_control (M-63 a): ein welcome mit schema_minor 6 verbindet heute - der Handschlag prueft Familie und Inhalt, nicht den Minor
+    ok      welcome_minor_grenze_control (M-63 b): der erste Frame mit schema_minor 6 schliesst - letzterFehler nennt den Minor, envelopeAbweisungen +1  [Envelope schema_minor ist neuer als der JSON-Leser — wird geschlossen · Abweisungen 1]
+
+--- A4 cargo test (Meldeweg) ---
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (1192.7 s)
+Pruefungen ok: 804, rot: 0
+  test result: ok. 284 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.85s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.04s
+  test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.40s
+  test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+  test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+  test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.52s
+  test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+  test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+  test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+  test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  test result: ok. 82 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.46s
+  test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.58s
+  test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.63s
+  test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 141.10s
+  test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.70s
+  test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.47s
+  test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.48s
+  test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.00s
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.60s
+  test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 807.77s
+  test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 27.75s
+  test result: ok. 68 passed; 0 failed; 23 ignored; 0 measured; 0 filtered out; finished in 1.70s
+  test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+  test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... ok
+  test nicht_gelaufen_ohne_meldeweg_scheitert ... ok
+  Beinbilanz A4: [OK] (erwartet [OK])
+
+--- A4-SI cargo test --test store_crash_matrix -- --ignored --test-threads=1 (Meldeweg) ---
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (13.4 s)
+Pruefungen ok: 19, rot: 0
+  test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 68 filtered out; finished in 13.25s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+  Beinbilanz A4-SI: [OK] (erwartet [OK])
+
+--- B22 EqCopSonde013FingerprintGoldenTest ---
+Aufruf: eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe
+Exitcode: 0 (1.3 s)
+Pruefungen ok: 27, rot: 0
+  27 bestanden, 0 gescheitert
+  [ok]   M-71: dasselbe Material mit umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben Fingerprint - alle 76 Byte und der Fensterzaehler  [0 von 76 Byte verschieden, Fenster 98 und 98]
+  [ok]   M-72: ein Sinus derselben Grundfrequenz statt des Akkords unterscheidet sich in mindestens einem Byte - der Vergleich aus M-71 misst etwas  [38 von 76 Byte verschieden]
+  [ok]   M-71 Rand Stille: 0,0 und -0,0 ergeben BYTEGLEICH dasselbe  [kein Fingerprint (nichts Messbares), 0 von 76 Byte verschieden]
+  [ok]   M-71 Rand Vollaussteuerung: ein auf +-1,0 begrenzter Sinus und sein Vorzeichenbild ergeben BYTEGLEICH denselben Fingerprint  [0 von 76 Byte verschieden, Fenster 98 und 98]
+
+--- A36 pruefe_beweisrunner.py --selbsttest ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0 (5.9 s)
+Pruefungen ok: 55, rot: 0
+  Selbsttest: 14 von 14 Faellen bestanden
+  (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 0]
+  (b) ein Tick (100 ns) juenger: VERALTET  [VERALTET, Exit 4]
+  (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert (Exit 4), obwohl jedes Pruefbinary frisch ist  [VST3 VERALTET eq-copilot/plugin/src/Vst3Huelle.cpp, Beine frisch True, Exit 4]
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [NICHT ABLEITBAR, Exit 3]
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [NICHT ABLEITBAR [Ziel EqCopilot_VST3 fehlt im CMake-Export], Exit 3]
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [gehalten]

@@ -50,17 +50,6 @@
    "status": "offen"
   },
   {
-   "id": "U47",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (ja/nein)",
-   "titel": "Projekte mit weniger als 44,1 kHz: unterstützen oder ausschließen?",
-   "was": "FL-Projekte laufen fast immer mit 44,1 oder 48 kHz oder mehr. Nakamas Regeln nennen 44,1 kHz als kleinste unterstützte Abtastrate; trotzdem nimmt der EQ heute auch 22,05 oder 32 kHz an, und dann liegen einige Stützpunkte der automatischen Lautstärke-Angleichung (Auto-Gain) oberhalb des Bereichs, den es bei dieser Rate überhaupt gibt. (1) Empfohlen: unter 44,1 kHz nicht unterstützen — der EQ bleibt neutral (das Signal läuft unverändert durch) und meldet den Grund als ehrlichen Zustand; wie die Anzeige das zeigt, gehört zum geparkten Designteil. (2) Unterstützen, mit einem an die Rate angepassten Gitter.",
-   "warum": "Audit-Feld F08 (Phase 16, tatsächlich mit 32 und 22,05 kHz gemessen: 4 von 11 Stützpunkten oberhalb der Grenze); an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 7). Ob FL Studio solche Raten überhaupt anbietet, ist nicht belegt; die Frage eilt deshalb nicht. Gebaut wird dieser Teil erst nach deiner Antwort.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/roh/phase-16-abdeckung.md F08; docs/offene-punkte.md NAK-311",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U48",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (Klangverhalten)",
@@ -854,6 +843,24 @@
     "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket; dann muss die gemessene Filter-Referenz, gegen die heute jeder Filtertest läuft, neu festgelegt und neu abgenommen werden — ein eigener, größerer Schritt. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
     "warum": "Audit-Befund T3-15-10: ein alter Prüfauftrag nennt die Korrektur als zu prüfen, aber es gibt keinen Entscheid und keine Matrixzeile dazu. Ohne Antwort bleibt es beim Vertagen; nichts am Kern ändert sich dadurch.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-10 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
+    "seit": "18.09.",
+    "status": "offen"
+   }
+  },
+  "U47": {
+   "wahl": "1. Nicht unterstützen (Empfohlen).",
+   "text": "1",
+   "datum": "2026-09-19 11:26",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: unter 44,1 kHz ist der EQ nicht unterstützt; er bleibt neutral, das Signal läuft unverändert durch, und Nakama meldet den Grund als ehrlichen Zustand (Anzeige: geparkter Designteil; bis dahin im Bericht des Kerns). Genau 44,1 kHz bleibt unterstützt; die Messung ist nicht berührt. Gebaut in NAK-311 Etappe 5 (Audit-Feld F08) mit eigenem Matrixnachtrag und Rotbeweis im Bein A16. Festgehalten in design/abnahmen/2026-09-19-unter-44-1-khz-nicht-unterstuetzt-u47.md und im Register NAK-311. Gestellt als Text in der Dirigentensitzung 0cb3cdf4 (AskUserQuestion im dontAsk-Modus gesperrt) mit zwei Wegen: „1. Nicht unterstützen (empfohlen)“, „2. Unterstützen“.",
+   "karte": {
+    "id": "U47",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Produktentscheid (ja/nein)",
+    "titel": "Projekte mit weniger als 44,1 kHz: unterstützen oder ausschließen?",
+    "was": "FL-Projekte laufen fast immer mit 44,1 oder 48 kHz oder mehr. Nakamas Regeln nennen 44,1 kHz als kleinste unterstützte Abtastrate; trotzdem nimmt der EQ heute auch 22,05 oder 32 kHz an, und dann liegen einige Stützpunkte der automatischen Lautstärke-Angleichung (Auto-Gain) oberhalb des Bereichs, den es bei dieser Rate überhaupt gibt. (1) Empfohlen: unter 44,1 kHz nicht unterstützen — der EQ bleibt neutral (das Signal läuft unverändert durch) und meldet den Grund als ehrlichen Zustand; wie die Anzeige das zeigt, gehört zum geparkten Designteil. (2) Unterstützen, mit einem an die Rate angepassten Gitter.",
+    "warum": "Audit-Feld F08 (Phase 16, tatsächlich mit 32 und 22,05 kHz gemessen: 4 von 11 Stützpunkten oberhalb der Grenze); an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 7). Ob FL Studio solche Raten überhaupt anbietet, ist nicht belegt; die Frage eilt deshalb nicht. Gebaut wird dieser Teil erst nach deiner Antwort.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/roh/phase-16-abdeckung.md F08; docs/offene-punkte.md NAK-311",
     "seit": "18.09.",
     "status": "offen"
    }

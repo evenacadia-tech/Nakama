@@ -4729,6 +4729,67 @@ int main (int argc, char** argv)
                 telemetrie.snapshot().letzterFehler);
         telemetrie.stop();
         gut.stoppen();
+
+        // NAK-309 Etappe 4 (T3-03-11, M-64, M-65): welcome_minor_grenze_telemetrie.
+        // Gemessen wird das heutige, erlaubte Verhalten an der Minorgrenze - keine
+        // neue Regel (F-19): der Handschlag prueft Familie, Vertrag und Kopplung,
+        // nicht den Envelope-Minor; die Grenze fuer P2 zieht der Verbraucher
+        // (`SourcesModel.cpp`), NAK-154 Punkt 2 bleibt Registerpunkt.
+        {
+            TestServer grenze (testPipeName ("wm-tel-5"));
+            grenze.welcomeMinor.store (nakama::ipc::kJsonSchemaMinor);
+            grenze.starten();
+            TelemetryClient t5 ([&] {
+                TelemetryHello t;
+                t.adresse = testAdresse (hex32 ('7'));
+                t.linkId = hex32 ('a');
+                t.challenge = hex32 ('b');
+                return t;
+            }, grenze.pipeName());
+            t5.start();
+            pruefe (warteAuf (4000, [&] {
+                        return t5.snapshot().status == TelemetryClient::Status::verbunden;
+                    }),
+                    "welcome_minor_grenze_telemetrie (M-64): ein welcome mit Envelope-schema_minor 5 "
+                    "(= kJsonSchemaMinor) koppelt",
+                    t5.snapshot().letzterFehler);
+            t5.stop();
+            grenze.stoppen();
+        }
+        {
+            TestServer darueber (testPipeName ("wm-tel-6"));
+            darueber.welcomeMinor.store (nakama::ipc::kJsonSchemaMinor + 1);
+            darueber.p2NachWelcomeMinor.store (kFeatureBatchSchemaMinor + 1);
+            darueber.starten();
+            std::atomic<int> gesehenerMinor { -1 };
+            std::atomic<int> rueckrufe { 0 };
+            TelemetryClient t6 ([&] {
+                TelemetryHello t;
+                t.adresse = testAdresse (hex32 ('7'));
+                t.linkId = hex32 ('a');
+                t.challenge = hex32 ('b');
+                return t;
+            }, darueber.pipeName(), [&] (const std::uint8_t*, std::size_t, std::uint8_t minor) {
+                gesehenerMinor.store (minor);
+                rueckrufe.fetch_add (1);
+            });
+            t6.start();
+            pruefe (warteAuf (4000, [&] {
+                        return t6.snapshot().status == TelemetryClient::Status::verbunden;
+                    }),
+                    "welcome_minor_grenze_telemetrie (M-65): ein welcome mit schema_minor 6 koppelt heute "
+                    "ebenfalls - der Handschlag prueft den Minor nicht",
+                    t6.snapshot().letzterFehler);
+            const bool frameKam = warteAuf (4000, [&] { return rueckrufe.load() >= 1; });
+            pruefe (frameKam && gesehenerMinor.load() == kFeatureBatchSchemaMinor + 1,
+                    "welcome_minor_grenze_telemetrie (M-65): der P2-Frame danach erreicht beiFrame mit "
+                    "schema_minor 3 unveraendert (kFeatureBatchSchemaMinor 2) - die Grenze zieht der "
+                    "Verbraucher",
+                    "Rueckrufe " + std::to_string (rueckrufe.load()) + ", Minor "
+                        + std::to_string (gesehenerMinor.load()));
+            t6.stop();
+            darueber.stoppen();
+        }
     }
 
     abschnitt ("G8 · nicht endliche Audiofelder werden VOR der Wandlung verriegelt");
@@ -4927,6 +4988,73 @@ int main (int argc, char** argv)
                       "Control: ein Zusatzfeld verbindet nicht");
         controlProbe ("wcc-lang", false, false, true,
                       "Control: eine zu lange `broker_version` verbindet nicht");
+
+        // NAK-309 Etappe 4 (T3-03-11, M-62, M-63): welcome_minor_grenze_control.
+        // Gemessen wird das heutige, erlaubte Verhalten an der Minorgrenze (F-19):
+        // der Handschlag (`Verbindung.cpp`, Welcome-Schleife) prueft Familie und
+        // Inhalt, nicht den Minor; die Strenge liegt im Eingang danach.
+        {
+            TestServer grenze (testPipeName ("wm-ctl-5"));
+            grenze.welcomeMinor.store (nakama::ipc::kJsonSchemaMinor);
+            grenze.starten();
+            ControlClient c5 ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('c'));
+                return h;
+            }, grenze.pipeName());
+            c5.start();
+            pruefe (warteAuf (4000, [&] {
+                        return c5.snapshot().status == ControlClient::Status::verbunden;
+                    }),
+                    "welcome_minor_grenze_control (M-62): ein welcome mit Envelope-schema_minor 5 "
+                    "(= kJsonSchemaMinor) verbindet",
+                    c5.snapshot().letzterFehler);
+            c5.stop();
+            grenze.stoppen();
+        }
+        {
+            TestServer darueber (testPipeName ("wm-ctl-6"));
+            darueber.welcomeMinor.store (nakama::ipc::kJsonSchemaMinor + 1);
+            darueber.controlAntwortMinor.store (nakama::ipc::kJsonSchemaMinor + 1);
+            darueber.starten();
+            ControlClient c6 ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('c'));
+                return h;
+            }, darueber.pipeName());
+            c6.start();
+            // (a) Ohne Statusprovider sendet der Client nichts von selbst: bis
+            //     zum Heartbeat unten ist das welcome der einzige Frame.
+            const bool verbunden = warteAuf (4000, [&] {
+                return c6.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const auto vorher = c6.snapshot().envelopeAbweisungen;
+            pruefe (verbunden && vorher == 0,
+                    "welcome_minor_grenze_control (M-63 a): ein welcome mit schema_minor 6 verbindet "
+                    "heute - der Handschlag prueft Familie und Inhalt, nicht den Minor",
+                    c6.snapshot().letzterFehler);
+            // (b) Der erste Frame danach traegt Minor 6: der Eingang schliesst.
+            //     Den Fehlertext liest derselbe Schnappschuss, der die Abweisung
+            //     zaehlt - ein Neuaufbau leert ihn erst nach dem Backoff.
+            c6.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+            std::string text;
+            std::uint64_t abweisungen = 0;
+            const bool geschlossen = warteAuf (4000, [&] {
+                const auto s = c6.snapshot();
+                if (s.envelopeAbweisungen < vorher + 1)
+                    return false;
+                text = s.letzterFehler;
+                abweisungen = s.envelopeAbweisungen;
+                return true;
+            });
+            pruefe (geschlossen && abweisungen == vorher + 1
+                        && text.rfind ("Envelope schema_minor ist neuer als der JSON-Leser", 0) == 0,
+                    "welcome_minor_grenze_control (M-63 b): der erste Frame mit schema_minor 6 schliesst - "
+                    "letzterFehler nennt den Minor, envelopeAbweisungen +1",
+                    text + " · Abweisungen " + std::to_string (abweisungen));
+            c6.stop();
+            darueber.stoppen();
+        }
     }
 
     abschnitt ("G11 · ein P2-Frame auf der Control-Verbindung wird abgewiesen");

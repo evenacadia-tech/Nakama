@@ -69,6 +69,13 @@ public:
     std::atomic<bool> welcomeTypfalsch { false };
     std::atomic<bool> welcomeZusatzfeld { false };
     std::atomic<bool> welcomeLangeVersion { false };
+    /// NAK-309 Etappe 4 (T3-03-11, M-62 bis M-65): der Envelope-Minor des
+    /// welcome. Vorgabe 0 wie bisher; die Grenzfaelle setzen
+    /// `kJsonSchemaMinor` und eins darueber.
+    std::atomic<int> welcomeMinor { 0 };
+    /// Direkt nach dem welcome genau einen P2-Frame mit diesem Minor auf der
+    /// TELEMETRIE-Verbindung schicken (M-65); -1 = keinen.
+    std::atomic<int> p2NachWelcomeMinor { -1 };
     /// Nach dem welcome einen korrekt gerahmten P2-Frame ueber die CONTROL-
     /// Verbindung schicken (T2-Befund 4).
     std::atomic<bool> sendeP2AufControl { false };
@@ -417,7 +424,8 @@ private:
             welcome += ",\"extra\":1";                          // additionalProperties:false
         welcome += "}";
         std::vector<std::uint8_t> aus;
-        envelopeSchreiben (welcomeAlsP2.load() ? Familie::p2 : Familie::p0, 0,
+        envelopeSchreiben (welcomeAlsP2.load() ? Familie::p2 : Familie::p0,
+                           static_cast<std::uint8_t> (welcomeMinor.load()),
                            reinterpret_cast<const std::uint8_t*> (welcome.data()),
                            welcome.size(), aus);
         if (sendeKaputtenFrame.load())
@@ -453,6 +461,22 @@ private:
                                reinterpret_cast<const std::uint8_t*> (beliebig.data()),
                                beliebig.size(), p0rahmen);
             if (! schreiben (h, p0rahmen.data(), p0rahmen.size()))
+            {
+                schliessen (h);
+                return;
+            }
+        }
+
+        // NAK-309 M-65: ein einzelner P2-Frame mit gewaehltem Minor direkt
+        // nach dem welcome; der Client reicht ihn an `beiFrame` weiter.
+        if (const int minor = p2NachWelcomeMinor.load(); minor >= 0 && istTelemetry)
+        {
+            std::uint8_t nutz[16];
+            std::memset (nutz, 0x44, sizeof (nutz));
+            std::vector<std::uint8_t> p2rahmen;
+            envelopeSchreiben (Familie::p2, static_cast<std::uint8_t> (minor), nutz,
+                               sizeof (nutz), p2rahmen);
+            if (! schreiben (h, p2rahmen.data(), p2rahmen.size()))
             {
                 schliessen (h);
                 return;

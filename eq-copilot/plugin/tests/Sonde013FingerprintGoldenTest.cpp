@@ -260,16 +260,39 @@ int main()
                 "Fingerprint ist bewusst NICHT injektiv",
                 juce::String (aehnlich, 4));
 
-        // (3) Kein Byte traegt eine Phase oder ein Vorzeichen: alle drei
-        //     Verlaeufe sind Energien beziehungsweise Betraege. Ein Signal
-        //     ohne Phase ist auch bei perfekter Amplitudenkenntnis nicht
-        //     rekonstruierbar.
+        // (3) NAK-309 Etappe 4 (T3-09-05, M-71, M-72): gemessen wird, was
+        //     messbar ist - die Vorzeichenumkehr. Dasselbe Material mit
+        //     umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben Fingerprint
+        //     (alle 76 Byte und der Fensterzaehler): kein Byte traegt das
+        //     Vorzeichen des Signals. Eine allgemeine Phasenfreiheit ist an
+        //     einem gefensterten Spektrum nicht bytegleich messbar und wird
+        //     hier nicht behauptet (F-22).
         pruefe (byteSumme (f.bandEnergie, Fingerprint::kBaender) > 0
                   && byteSumme (f.chroma, Fingerprint::kChroma) > 0,
                 "die Verlaeufe tragen Werte - der Test misst keine leeren Felder");
-        pruefe (true,
-                "und alle drei sind ENERGIEN ohne Vorzeichen und ohne Phase: selbst "
-                "bei perfekter Amplitudenkenntnis fehlt die halbe Information");
+        const auto verschiedeneBytes = [] (const Fingerprint& a, const Fingerprint& b)
+        {
+            int n = 0;
+            for (int i = 0; i < Fingerprint::kBaender; ++i) n += a.bandEnergie[i] != b.bandEnergie[i] ? 1 : 0;
+            for (int i = 0; i < Fingerprint::kChroma; ++i)  n += a.chroma[i] != b.chroma[i] ? 1 : 0;
+            for (int i = 0; i < Fingerprint::kOnsets; ++i)  n += a.onset[i] != b.onset[i] ? 1 : 0;
+            return n;
+        };
+        const auto material = akkord (0.4, 220.0);
+        const auto umgekehrt = fingerprintVon ([material] (std::uint64_t n) { return -material (n); }, 400);
+        pruefe (umgekehrt.gesetzt && umgekehrt == f,
+                "M-71: dasselbe Material mit umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben "
+                "Fingerprint - alle 76 Byte und der Fensterzaehler",
+                juce::String (verschiedeneBytes (f, umgekehrt)) + " von 76 Byte verschieden, Fenster "
+                + juce::String ((int) f.fenster) + " und " + juce::String ((int) umgekehrt.fenster));
+
+        // M-72, der Gegenfall: ein anderes Spektrum derselben Grundfrequenz
+        // (Sinus statt Akkord) unterscheidet sich - der Bytevergleich aus
+        // M-71 ist nicht leer.
+        pruefe (sinus.gesetzt && verschiedeneBytes (f, sinus) >= 1,
+                "M-72: ein Sinus derselben Grundfrequenz statt des Akkords unterscheidet sich in "
+                "mindestens einem Byte - der Vergleich aus M-71 misst etwas",
+                juce::String (verschiedeneBytes (f, sinus)) + " von 76 Byte verschieden");
     }
 
     // ── M-27: fingerprint_window_never_crosses_epoch_boundary ────────────

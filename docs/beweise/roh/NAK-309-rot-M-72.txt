@@ -1,10 +1,10 @@
 NAK-309 Etappe 4 - Rotbeweis M-72 fingerprintJetzt liefert konstante Bytes
-Stand:  2026-09-19 06:27, HEAD cb7c0d0e
+Stand:  2026-09-19 06:34, HEAD b8549bca
 Zusage: Material A gegen einen Sinus derselben Grundfrequenz: die Fingerprints unterscheiden sich in mindestens einem Byte.
 Bein:   B22 EqCopSonde013FingerprintGoldenTest (eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp)
 Datei:  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:179
 SHA-256 vorher: 4A4E17135A68BDAF69E5E82FAFDDF5364B615D9C2D006F05D37D3E73553C774E (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: entfaellt - Regressionswache.
 
@@ -17,17 +17,17 @@ nachher:
 
 --- BAU UNTER MUTATION ---
 Aufruf: cmake --build eq-copilot/build --config Release --target EqCopSonde013FingerprintGoldenTest
-Exitcode: 0 (5.1 s)
-Binary eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe: 2026-09-19 06:27:07.388, Quelle eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h: 2026-09-19 06:27:02.387 - Binary juenger: ja
+Exitcode: 0 (5 s)
+Binary eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe: 2026-09-19 06:34:52.502, Quelle eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h: 2026-09-19 06:34:47.575 - Binary juenger: ja
 
 --- LAUF UNTER MUTATION ---
 Aufruf: eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe
-Exitcode: 1 (1 s)
+Exitcode: 1 (1.2 s)
   [ROT]  ein anderer Akkord ist messbar unaehnlicher als derselbe in anderer Lautstaerke - GENAU das ist die Aufgabe aus Â§32.4  [gleich 1.0000, gewechselt 1.0000]
   [ROT]  und breitbandiges Rauschen ist einem Akkord deutlich unaehnlich  [1.0000]
   [ROT]  M-72: ein Sinus derselben Grundfrequenz statt des Akkords unterscheidet sich in mindestens einem Byte - der Vergleich aus M-71 misst etwas  [0 von 76 Byte verschieden]
   [ROT]  und er gehoert zu Material B, nicht zu einer Mischung aus beiden - das Fingerprintfenster hat die Grenze NICHT ueberbrueckt (Â§32.3)  [zu A 1.0000, zu B 1.0000]
-  21 bestanden, 4 gescheitert
+  23 bestanden, 4 gescheitert
 
 Gefallene Pruefungen:
   [ROT]  ein anderer Akkord ist messbar unaehnlicher als derselbe in anderer Lautstaerke - GENAU das ist die Aufgabe aus Â§32.4  [gleich 1.0000, gewechselt 1.0000]
@@ -46,7 +46,7 @@ Mitgefallen:
   [ROT]  und er gehoert zu Material B, nicht zu einer Mischung aus beiden - das Fingerprintfenster hat die Grenze NICHT ueberbrueckt (Â§32.3)  [zu A 1.0000, zu B 1.0000]
       Grund: konstante Bytes machen jeden Vergleich gleich - dieselbe Ursache, andere Faelle desselben Beins
 
-Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 21
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 23
   [ok]   nach acht Bloecken traegt er KEIN Bit - ein Onsetverlauf aus vier Fenstern ist keine Rhythmusaussage und eine Bandenergie aus vier Fenstern kein Klangbild
   [ok]   nach 400 Bloecken steht er
   [ok]   und sagt, ueber wie viele Analysefenster er geht  [98 Fenster]
@@ -59,6 +59,8 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 21
   [ok]   ein Sinus und ein Dreieck derselben Grundfrequenz sind sich im Fingerprint AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst NICHT injektiv  [1.0000]
   [ok]   die Verlaeufe tragen Werte - der Test misst keine leeren Felder
   [ok]   M-71: dasselbe Material mit umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben Fingerprint - alle 76 Byte und der Fensterzaehler  [0 von 76 Byte verschieden, Fenster 98 und 98]
+  [ok]   M-71 Rand Stille: 0,0 und -0,0 ergeben BYTEGLEICH dasselbe  [kein Fingerprint (nichts Messbares), 0 von 76 Byte verschieden]
+  [ok]   M-71 Rand Vollaussteuerung: ein auf +-1,0 begrenzter Sinus und sein Vorzeichenbild ergeben BYTEGLEICH denselben Fingerprint  [0 von 76 Byte verschieden, Fenster 98 und 98]
   [ok]   beide Referenzen stehen
   [ok]   vor der Grenze traegt die Engine den Fingerprint von Material A  [1.0000]
   [ok]   nach der Grenze steht wieder einer
@@ -74,10 +76,10 @@ Hinweis: M-71 bleibt unter dieser Mutation gruen (beide Fingerprints sind konsta
 --- LAUF NACH RUECKNAHME ---
 Quellen bytegleich zurueckgespielt: ja (eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h SHA-256 4A4E17135A68BDAF69E5E82FAFDDF5364B615D9C2D006F05D37D3E73553C774E); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: cmake --build eq-copilot/build --config Release --target EqCopSonde013FingerprintGoldenTest
-Exitcode: 0 (5.1 s)
-Binary eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe: 2026-09-19 06:27:13.656, Quelle eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h: 2026-09-19 06:27:08.454 - Binary juenger: ja
+Exitcode: 0 (5.2 s)
+Binary eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe: 2026-09-19 06:34:58.934, Quelle eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h: 2026-09-19 06:34:53.789 - Binary juenger: ja
 Aufruf: eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe
-Exitcode: 0 (1 s)
-  25 bestanden, 0 gescheitert
+Exitcode: 0 (1.4 s)
+  27 bestanden, 0 gescheitert
 
 Bein nach Ruecknahme gruen (die Zusage haelt): ja

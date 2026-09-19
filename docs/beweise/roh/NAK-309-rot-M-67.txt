@@ -1,10 +1,10 @@
 NAK-309 Etappe 4 - Rotbeweis M-67 (1a) alter Skip ohne Marke (A4-Test)
-Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Stand:  2026-09-19 06:34, HEAD b8549bca
 Zusage: Die fehlende Voraussetzung endet als NOT RUN mit Grund: Marke im Meldeordner, Beinbilanz [NOT RUN], nie gruen.
 Bein:   A4 im Verfahren des Runners (Meldeordner, --nicht-gelaufen) mit NAKAMA_TEST_JUNCTION_VERWEIGERN=1
 Datei:  broker/tests/store_crash_matrix.rs:3232-3235
 SHA-256 vorher: 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729 (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: heute rot laut Gegenprobe der Matrixzeile (store_crash_matrix.rs:3239-3244 am Basis-SHA: eprintln! und return, A4 ohne --nocapture); ohne Umbau nicht messbar, weil der Basisstand weder den Schalter noch den Meldeweg kennt.
 
@@ -22,7 +22,7 @@ kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle be
 
 --- LAUF UNTER MUTATION ---
 Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>, NAKAMA_TEST_JUNCTION_VERWEIGERN=1] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
-Exitcode: 0 (3.7 s)
+Exitcode: 0 (1.7 s)
   Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [OK] (erwartet [NOT RUN])
   test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
   Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
@@ -41,7 +41,7 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 1
 --- LAUF NACH RUECKNAHME ---
 Quellen bytegleich zurueckgespielt: ja (broker/tests/store_crash_matrix.rs SHA-256 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>, NAKAMA_TEST_JUNCTION_VERWEIGERN=1] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
-Exitcode: 0 (2.1 s)
+Exitcode: 0 (2 s)
   test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
   Klassifikation: Meldeweg: NOT RUN - 1 Test(s) nicht gelaufen (Exit 3) (Werkzeug-Exit 3)
 
@@ -49,12 +49,12 @@ Bein nach Ruecknahme gruen (die Zusage haelt): ja
 
 ==============================================================================
 NAK-309 Etappe 4 - Rotbeweis M-67 (1b) alter Skip ohne Marke (A4-SI-Test)
-Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Stand:  2026-09-19 06:34, HEAD b8549bca
 Zusage: Die fehlende Voraussetzung endet als NOT RUN mit Grund: Marke im Meldeordner, Beinbilanz [NOT RUN], nie gruen.
 Bein:   A4-SI im Verfahren des Runners (Meldeordner, --nicht-gelaufen) mit NAKAMA_TEST_JUNCTION_VERWEIGERN=1
 Datei:  broker/tests/store_crash_matrix.rs:3359-3362
 SHA-256 vorher: 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729 (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: heute rot laut Gegenprobe der Matrixzeile (store_crash_matrix.rs:3364-3367 am Basis-SHA); ohne Umbau nicht messbar.
 
@@ -72,7 +72,7 @@ kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle be
 
 --- LAUF UNTER MUTATION ---
 Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>, NAKAMA_TEST_JUNCTION_VERWEIGERN=1] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen -- --ignored; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
-Exitcode: 0 (1.7 s)
+Exitcode: 0 (1.8 s)
   Beinbilanz A4-SI (volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen): [OK] (erwartet [NOT RUN])
   test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.04s
   Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
@@ -92,24 +92,24 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 1
 Quellen bytegleich zurueckgespielt: ja (broker/tests/store_crash_matrix.rs SHA-256 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>, NAKAMA_TEST_JUNCTION_VERWEIGERN=1] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen -- --ignored; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
 Exitcode: 0 (1.8 s)
-  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.04s
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.03s
   Klassifikation: Meldeweg: NOT RUN - 1 Test(s) nicht gelaufen (Exit 3) (Werkzeug-Exit 3)
 
 Bein nach Ruecknahme gruen (die Zusage haelt): ja
 
 ==============================================================================
 NAK-309 Etappe 4 - Rotbeweis M-67 (2) Klassifikation zaehlt keine Marke
-Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Stand:  2026-09-19 06:34, HEAD b8549bca
 Zusage: Eine Marke <Test>: <Grund> im Meldeordner ist NOT RUN (Werkzeug-Exit 3), nie leer.
 Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
-Datei:  tools/eq-copilot/pruefe_beweisrunner.py:844
-SHA-256 vorher: 4B589A4EC1EDE3A888DE1B14FD7F6AD93EDB3B55579AADC53811EE169041A634 (Datei gleich HEAD: ja)
-Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+Datei:  tools/eq-copilot/pruefe_beweisrunner.py:853
+SHA-256 vorher: AD21C39F351C4A87CAC7D26AF5976005ABE53BDE0FD109EEA92ED0924AE826CB (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 C978A877290882001F8729B0C3452ED18F633B1411AB193DCF6EBFA1CB20755F)
 
 Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Selbsttest und Code stehen in derselben Datei.
 
 --- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
-tools/eq-copilot/pruefe_beweisrunner.py, vorher (Zeile 844):
+tools/eq-copilot/pruefe_beweisrunner.py, vorher (Zeile 853):
     if not marken:
 nachher:
     if True:  # MUTATION: Marken zaehlen nicht, der Meldeordner gilt als leer
@@ -126,7 +126,7 @@ Exitcode: 4 (0.2 s)
   Selbsttest: 0 von 1 Faellen bestanden
 
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
-Exitcode: 4 (6.1 s)
+Exitcode: 4 (6 s)
   eine Marke <Test>: <Grund> ist NOT RUN mit Test und Grund (Exit 3: fehlende Voraussetzung, der Runner macht daraus UNVOLLSTAENDIG, nie gruen)  [Exit 0, []]
   zwei Marken desselben Tests: beide Gruende, weiter NOT RUN  [Exit 0, 0 Marken]
   eine Marke eines anderen Tests zaehlt ebenso als NOT RUN - nie gruen  [Exit 0]
@@ -201,7 +201,7 @@ Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 52
   Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
 
 --- LAUF NACH RUECKNAHME ---
-Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/pruefe_beweisrunner.py SHA-256 4B589A4EC1EDE3A888DE1B14FD7F6AD93EDB3B55579AADC53811EE169041A634); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/pruefe_beweisrunner.py SHA-256 AD21C39F351C4A87CAC7D26AF5976005ABE53BDE0FD109EEA92ED0924AE826CB); LastWriteTime auf jetzt gesetzt; git diff leer: ja
 Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-67
 Exitcode: 0 (0.2 s)
   Selbsttest: 1 von 1 Faellen bestanden

@@ -18,6 +18,10 @@ Grenzen (Auftrag Etappe 4): kein FL, keine Installation, keine Aufgabe \Nakama\*
 nur seinen eigenen Testserver auf Probe-Namen). Die Umgebungsvariablen NAKAMA_NICHT_GELAUFEN und
 NAKAMA_TEST_JUNCTION_VERWEIGERN stehen nur in der Umgebung des Kindprozesses (Start-Process -Environment). Vor jeder
 Mutation muss die Datei gleich HEAD sein.
+
+Fassung 2 (nach dem Volllauf in Fassung 1, SHA-256 063356A9..., Commit 8480ecb9): M-71 (1) sagt das Mitfallen des
+neuen Rands Vollaussteuerung von B22 vorher, und die Einzelbeine zeigen die Randpruefungen von B22. Mutationen und
+Erwartungen sind sonst dieselben.
 #>
 param(
     [string[]]$Nur = @(),
@@ -838,6 +842,7 @@ Spec @{ Zeile = 'M-71'; Teil = '(1) vorzeichenabhaengiger Faktor im Fingerprint'
     Bau = @('EqCopSonde013FingerprintGoldenTest'); Laeufe = @((Lauf-Cpp 'B22'))
     OhneBasislauf = 'Teil (2) dieser Datei: dieselbe Mutation gegen den Test am Basis-SHA.'
     Erwartet = @((E '^\[ROT\]\s+M-71: dasselbe Material mit umgekehrtem Vorzeichen' 'M-71: dasselbe Material mit umgekehrtem Vorzeichen ergibt BYTEGLEICH denselben Fingerprint'))
+    Mit = @{ 'M-71 Rand Vollaussteuerung' = 'dieselbe Mutation am Rand: sie greift auch am Vorzeichenbild des begrenzten Sinus, sobald dessen Mittenring an der Probe des ersten Fensters negativ ist - erwartet' }
     Hinweis = 'Die Matrixzeile nennt s.arbeit[0] als Quelle des Vorzeichens; s.arbeit haelt an dieser Stelle die FFT des Seitenkanals, der im Testsignal (L = R) null ist. Das Vorzeichen traegt der Mittenring s.ringM (Zeitbereich, Probe 2048 des ersten Fensters). Ein Faktor, der jedes Fenster und jedes Band gleich traefe, verschwaende in der Normierung je Verlauf; die Mutation wirkt deshalb auf die geraden Bandgruppen des ersten Fensters. Am Material A (Probe 2048 positiv) aendert sie nichts, am vorzeichengekehrten Material verstaerkt sie diese Gruppen.' }
 
 Spec @{ Zeile = 'M-71'; Teil = '(2) Gegenprobe: dieselbe Mutation gegen den Test am Basis-SHA'; Bein = $B22Bein; Gegenprobe = $true
@@ -916,7 +921,7 @@ function Fahre-Einzelbeine {
         $z.Add("Pruefungen ok: $($n.Ok.Count), rot: $($n.Rot.Count)")
         foreach ($r in $n.Rot) { $z.Add("  $r") }
         foreach ($r in $n.Summe) { $z.Add("  $r") }
-        foreach ($l in @($n.Ok | Where-Object { $_ -match 'M-5[78] main-binding|welcome_minor_grenze|M-7[12]:|nicht_gelaufen_ohne_meldeweg_scheitert|nach_join_frist_endet|Beinbilanz|^\((a|b|c|d|e)\) ' })) { $z.Add("  $l") }
+        foreach ($l in @($n.Ok | Where-Object { $_ -match 'M-5[78] main-binding|welcome_minor_grenze|M-7[12][: ]|nicht_gelaufen_ohne_meldeweg_scheitert|nach_join_frist_endet|Beinbilanz|^\((a|b|c|d|e)\) ' })) { $z.Add("  $l") }
     }
     $roh = Join-Path $RohOrdner 'NAK-309-etappe4-einzelbeine.txt'
     [IO.File]::WriteAllText($roh, [string]::Join("`n", $z) + "`n", $Utf8)

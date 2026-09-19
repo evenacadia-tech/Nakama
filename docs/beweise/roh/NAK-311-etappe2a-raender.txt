@@ -1,0 +1,18 @@
+# NAK-311 Etappe 2 Teil a - Zahlenraender von vergleiche, ad hoc gemessen (Selbstaudit §20.7)
+
+Stand: Commit 285af4f4 (tools/fl/nulltest.py wie in 5f45b15b). Lauf 19.09.2026 im Ordner tools/fl mit
+`py -3.13 -` und einem Einmalskript, das nulltest.vergleiche direkt mit Float-32-Attrappen (20 000 Frames, Stereo,
+Werte k/2^23 wie der Selbsttest) aufruft; kein Selbsttestfall, keine Datei geschrieben.
+Faelle: (1) Nullvorzeichen an Frame 0 Kanal 0 und am letzten Frame Kanal 1, Render -0 gegen Quelle +0; (2) dieselben
+Stellen umgekehrt, Render +0 gegen Quelle -0 (bei einer PCM-Quelle nicht erreichbar, hier direkt am Vergleich);
+(3) v = +1 mit Nullvorzeichen am ersten Ueberlappframe (Renderframe 1) und am letzten Renderframe; (4) identisch;
+(5) NaN an derselben Stelle in Render und Quelle (die PCM-Quelle traegt nie NaN; der Zahlenweg ist unveraendert).
+
+Ausgabe (unveraendert; die RuntimeWarning stammt aus der unveraenderten Kettenrechnung im Fall 5):
+C:\Users\phili\Projekte\Nakama\tools\fl\nulltest.py:269: RuntimeWarning: invalid value encountered in spacing
+  toleranz = 2.0 * np.spacing(np.abs(produkt)).astype(np.float64) + (2.0 ** -24 if render_pcm24 else 0.0)
+Rand Frame 0 und n-1, Render -0 gegen Quelle +0: Urteil NULLVORZEICHEN Exit 5 v 0 abw 0 nv 2 erste {'frame': 0, 'kanal': 0} letzte {'frame': 19999, 'kanal': 1}
+Rand umgekehrt, Render +0 gegen Quelle -0: Urteil NULLVORZEICHEN Exit 5 v 0 abw 0 nv 2 erste {'frame': 0, 'kanal': 0} letzte {'frame': 19999, 'kanal': 1}
+v = +1, Nullvorzeichen am ersten und letzten Ueberlappframe: Urteil VERSATZ Exit 5 v 1 abw 0 nv 2 erste {'frame': 1, 'kanal': 0} letzte {'frame': 19999, 'kanal': 0}
+identisch: Urteil BITIDENTISCH Exit 0 v 0 abw 0 nv 0 erste None letzte None
+NaN in beiden an derselben Stelle (Quelle PCM nie NaN): Urteil ABWEICHUNG Exit 4 v 0 abw 1 nv 0 erste None letzte None

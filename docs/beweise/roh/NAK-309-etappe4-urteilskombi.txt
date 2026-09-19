@@ -1,0 +1,56 @@
+NAK-309 Etappe 4 - Urteilskombinationen des Runners (Selbstaudit, Auftrag Schritt 6)
+Stand:  2026-09-19 06:36, HEAD 0333855d; tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-urteilskombi.ps1 (SHA-256 FC1B611B084D90533BAE205B8183EBB493590B15D6745D035C3C648316B2ECEB)
+Meldeordner im Temp-Ordner vor dem ersten Fall: 0
+
+--- K1: NOT RUN mit ROT: ROT gewinnt (Exit 2), der Nachsatz nennt NOT RUN ---
+Beine: NR, ROT, OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: ja
+Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K1.ps1 -Ziel <Temp>\kombi-K1.md
+Exitcode: 2 (erwartet 2), 3.7 s
+Urteil:   ROT - 1 von 3 Kanon-Laeufen fehlgeschlagen | 1 Bein(e) NOT RUN, siehe Uebersicht
+  Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
+  Bein ROT: [ROT] Exit 2
+  Bein OK: [OK] Exit 0
+Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
+Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Erwartung erfuellt: JA
+Meldeordner im Temp-Ordner nach dem Fall: 0
+
+--- K2: NOT RUN mit einer fehlenden Voraussetzung (Exit 3 eines Python-Beins): Exit 3, beide zaehlen als Voraussetzung, NOT RUN nie gruen ---
+Beine: NR, FEHLT, OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: ja
+Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K2.ps1 -Ziel <Temp>\kombi-K2.md
+Exitcode: 3 (erwartet 3), 3.9 s
+Urteil:   UNVOLLSTAENDIG - 1 gruen, 2 Voraussetzung(en) fehlen | 1 Bein(e) NOT RUN, siehe Uebersicht
+  Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
+  Bein FEHLT: [FEHLT] Voraussetzung fehlt (Exit 3)
+  Bein OK: [OK] Exit 0
+Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
+Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Erwartung erfuellt: JA
+Meldeordner im Temp-Ordner nach dem Fall: 0
+
+--- K3: NOT RUN bei veraltetem Baustand: Exit 3 vor 4 ---
+Beine: NR, OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: ja
+Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K3.ps1 -Ziel <Temp>\kombi-K3.md
+Exitcode: 3 (erwartet 3), 3.5 s
+Urteil:   UNVOLLSTAENDIG - 1 gruen, 1 Voraussetzung(en) fehlen | 1 Bein(e) NOT RUN, siehe Uebersicht
+  Bein NR: [NOT RUN] store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1
+  Bein OK: [OK] Exit 0
+Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
+Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Erwartung erfuellt: JA
+Meldeordner im Temp-Ordner nach dem Fall: 0
+
+--- K4: Gegenprobe zu K3: derselbe Baustand ohne NOT RUN ist NICHT BEGLAUBIGT (Exit 4) - VERALTET liegt wirklich vor ---
+Beine: OK; Schalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1 nur fuer den Runnerprozess: nein
+Aufruf: pwsh -NoProfile -File <Temp>\beweise-kombi-K4.ps1 -Ziel <Temp>\kombi-K4.md
+Exitcode: 4 (erwartet 4), 2.8 s
+Urteil:   NICHT BEGLAUBIGT - 1/1 gruen, aber Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen
+  Bein OK: [OK] Exit 0
+Manifestzeile: > Baustand: Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen (Tabelle in der Rohausgabe). Neu fahren mit `-Bauen`.
+Baustandtabelle der Rohausgabe: 38 Zeile(n) VERALTET, erste: | `EqCopNullTest` | 2026-09-19 02:58:22 | `1D5E793933677D79` | VERALTET | eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h (2026-09-19 06:34:53) |
+Erwartung erfuellt: JA
+Meldeordner im Temp-Ordner nach dem Fall: 0
+
+Umgebung dieses Prozesses: NAKAMA_TEST_JUNCTION_VERWEIGERN=(nicht gesetzt), NAKAMA_NICHT_GELAUFEN=(nicht gesetzt); Benutzer: (nicht gesetzt); Maschine: (nicht gesetzt)
+Faelle mit erfuellter Erwartung: 4 von 4

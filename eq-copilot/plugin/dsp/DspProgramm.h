@@ -155,6 +155,21 @@ struct DspProgramm
     bool   msStufeAktiv { false };
     Biquad monoBassHochpass {};
 
+    /*  NAK-311 (T3-01-01, Manifest §7.2 Punkt 3): der engagierte Pfad
+        rechnet mit diesem Programm bauartbedingt die Identitaet - engagiert
+        und nicht im Hard-Bypass, jedes aktive Band ein statischer
+        Einheitsbiquad ohne SVF, M/S-Stufe aus, Input- und Output-Trim im
+        Kurzschluss bei 0 dB. Der Kern liest es am Stueckbeginn fuer die
+        Neutralpruefung (`DspKern::verarbeiteStueck`); ob er schreibt,
+        entscheiden dort zusaetzlich der Ruhezustand der fuenf Rampen, der
+        Uebergang und die Hoermatrix. Der abgeleitete Auto-Gain gehoert NICHT
+        dazu: unter der Bandbedingung ist `autoGainDb` exakt 0,0, und
+        angewandt wird er nur ueber seine Rampe, die die Pruefung ohnehin auf
+        1,0 verlangt. Nach der RBJ-Formel ist schon ein 0-dB-Bell KEIN
+        Einheitsbiquad (b1 = a1 != 0, B6 311/F-4): ein aktives Band mit 0 dB
+        haelt den Kern schreibend. */
+    bool   neutral { false };
+
     std::array<BandProgramm, (size_t) kSlots> baender {};
 
     /** Traegt ueberhaupt ein Band Arbeit? Wird fuer die Feldanwesenheit von

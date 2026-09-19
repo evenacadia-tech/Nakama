@@ -1,0 +1,63 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-18
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-18 (T3-01-01, Gegenfall Hoermatrix) - heute nicht messbar
+Zusage: Delta schreibt (Processed - Dry) * Makeup (bei endlichem Eingang +0,0, an der Wachmarke der ungezaehmte Dry-Anteil), Candidate schreibt den Candidate-Ausgang; nur Processed und Dry ohne laufenden Hoermatrix-Fade lassen den Puffer unberuehrt.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt L, 311/M-18 neutral_mit_delta_und_candidate_schreibt (processed, dry, delta, candidate, Hoermatrix-Fade)
+
+--- MUTATION: Hoermatrixbedingung aus der Neutralpruefung genommen: auch Delta und Candidate gelten als "hoert den Pfad" ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:1097
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    const bool hoertPfad  = hoerLaufend == Hoermatrix::processed || hoerLaufend == Hoermatrix::dry;
+nachher:
+    const bool hoertPfad  = true;   // ROTBEWEIS NAK-311 M-18: Hoermatrixbedingung entfernt
+SHA-256 mutiert: ED2E8A46A7D1DFD994223848EBDEBD80D9E94A2986FB02445E25C5FA05C84D8B
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-18-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:04:35, mutierte Quelle 21:04:32, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (3):
+  FEHLER  delta_bei_gleichheit_ist_exakt_null (M-54)
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: delta schreibt_plus_null_und_den_ungezaehmten_dry_anteil  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja, Delta ungleich +0,0 an 1021 endlichen Stellen]
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: candidate schreibt_den_candidate_ausgang  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: delta schreibt_plus_null_und_den_ungezaehmten_dry_anteil  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja, Delta ungleich +0,0 an 1021 endlichen Stellen]
+  erwartet: FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: candidate schreibt_den_candidate_ausgang  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  delta_bei_gleichheit_ist_exakt_null (M-54)
+      Grund: SONDE-015 M-54 im selben Zustand (neutral, Delta): ohne Hoermatrixbedingung schreibt Delta nicht und laesst den Eingang stehen statt +0,0
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 0 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 6 von 6 Stellen, Riegel +6]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  ok      311/M-18 neutral_mit_delta_und_candidate_schreibt: processed laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja]
+  ok      311/M-18 neutral_mit_delta_und_candidate_schreibt: dry laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 0 von 512, Wachmarken bytegleich ja]
+  ok      311/M-18 neutral_mit_delta_und_candidate_schreibt: der hoermatrix_fade_schreibt_bis_zu_seinem_ende  [Wachmarke an 100 im Fade geschrieben: ja, geaenderte Samples ab 256: 0 von 256]
+
+Hinweis: Delta laeuft unter der Mutation als Eingang durch statt als Stille (0 von 512 Samples geaendert), Candidate ebenso. Den Hoermatrix-Fade traegt ein eigener Term des Schreibendes (hoerFadeRest); er bleibt gruen.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

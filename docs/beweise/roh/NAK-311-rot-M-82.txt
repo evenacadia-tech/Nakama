@@ -1,0 +1,82 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-82
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-82 (Gate, RBJ-Goldens) - Regressionswache
+Zusage: Die Ausgabezeilen des Abschnitts C von B6 sind bytegleich zum Lauf am Basis-SHA der Etappe.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt C (Zeilenvergleich in der Rohdatei)
+
+--- MUTATION: entwurfBell mit alpha aus 2,01 * q (DspFilter.h liegt ausserhalb der Ticketpfade: nur voruebergehend, nach §7.1) ---
+Datei: eq-copilot/plugin/dsp/DspFilter.h:120
+SHA-256 vorher (Endstand der Reparatur): C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    const double alpha = std::sin (w0) / (2.0 * q);
+nachher:
+    const double alpha = std::sin (w0) / (2.01 * q);   // ROTBEWEIS NAK-311 M-82
+SHA-256 mutiert: B5507E63AC7BBA0B19726BF0A2EC7ECC5693F3C4345A1E19F59BE98960E50C88
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-82-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:07:01, mutierte Quelle 21:06:23, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Zeilenvergleich gegen den Basislauf (NAK-311-etappe2-b6-zeilenvergleich.txt, Basis bb061d73):
+== Abschnitt C: Basis 78 Zeilen, Vergleichslauf 78 Zeilen, in Reihenfolge bytegleich 69 von 78 Basiszeilen
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0144 dB bei 1612.7 Hz, Rand 0.0000 dB, 241 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0215 dB bei 931.6 Hz, Rand 0.0259 dB, 241 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0144 dB bei 1612.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0215 dB bei 931.6 Hz, Rand 0.0259 dB, 242 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0144 dB bei 1612.7 Hz, Rand 0.0001 dB, 242 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0216 dB bei 931.6 Hz, Rand 0.0259 dB, 242 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0144 dB bei 1612.7 Hz, Rand 0.0001 dB, 242 Stellen]
+  nur Basis (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  nur Vergleichslauf (replace):   ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0216 dB bei 931.6 Hz, Rand 0.0259 dB, 242 Stellen]
+  nur Basis (replace):   ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  nur Vergleichslauf (replace):   ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0053 dB ueber drei Stellen]
+   -> Basiszeilen ohne bytegleiche Entsprechung: 9
+
+== Abschnitt G: Basis 11 Zeilen, Vergleichslauf 13 Zeilen, in Reihenfolge bytegleich 10 von 11 Basiszeilen
+  nur Vergleichslauf (insert):   ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  nur Vergleichslauf (insert):   ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+  nur Basis (replace):   ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+  nur Vergleichslauf (replace):   ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023940921 gegen 0.024111748 im ruhigen Lauf]
+   -> Basiszeilen ohne bytegleiche Entsprechung: 1
+
+== Abschnitt H: Basis 12 Zeilen, Vergleichslauf 12 Zeilen, in Reihenfolge bytegleich 12 von 12 Basiszeilen
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+
+Die Zusage faellt an der erwarteten Pruefung (Zeilenvergleich Abschnitt C): JA
+
+Gefallene Pruefungen im Bein (4):
+  FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.000096675568]
+      Grund: misst die Kaskade gegen ein im Test eigenstaendig gerechnetes Golden mit Bell-Baendern; der veraenderte Entwurf weicht davon ab
+  FEHLER  bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.001324195438 (-100 dBFS = 1e-5)]
+      Grund: vergleicht eine Bell-Rampe mit der stetigen Referenz aus der eigenstaendigen Formel des Tests
+  FEHLER  bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000447994535 (-100 dBFS = 1e-5)]
+      Grund: wie gain_db: Bell-Rampe gegen die eigenstaendige Formel
+  FEHLER  bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.000501084957 (-100 dBFS = 1e-5)]
+      Grund: wie gain_db: Bell-Rampe gegen die eigenstaendige Formel
+
+Hinweis: ABWEICHUNG von der Rotbeweisspalte: sie erwartet "Zeilen weichen ab, 0,05 dB gerissen". Die Zeilen weichen ab (Abschnitt C: 8 bell_gegen_analytische_antwort-Zeilen und impulsantwort_misst_wie_ein_eingeschwungener_sinus; dazu in G channel_mode_wechselt_am_blockrand_klickfrei, das einen Bell faehrt) - daran faellt die Zusage von M-82. Die 0,05-dB-Schranke der Goldens reisst unter 2,01 * q nicht: gemessen typisch bis 0,0216 dB, Rand bis 0,0259 dB (Schranke Rand 0,1 dB); bell_gegen_analytische_antwort bleibt ok. Rot wird das Bein ueber die vier Pruefungen oben. DspFilter.h liegt ausserhalb der Ticketpfade: nur voruebergehend mutiert, bytegleich zurueckgespielt, in keinem Commit.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspFilter.h bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis: Mutation: JA

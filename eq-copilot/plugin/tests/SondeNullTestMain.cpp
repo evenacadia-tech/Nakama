@@ -34,6 +34,12 @@
     DAZ/FTZ-Messung 311/M-01: sie gibt fuer das Bitmuster aus Subnormals, +-0
     und kleinsten Normalen die Ein- und Ausgangsbits aus und prueft nur, dass
     alle Zustaende, Layouts und Raten liefen - keine Bitgleichheit.
+    Seit NAK-311 Etappe 2 Teil b (Manifest NAK-311 §6.1, §22) zusaetzlich:
+    engagiert-neutral (SONDE-015 M-02) und bei Mix 0 mit Output-Trim 0 dB
+    (M-33) kommen das Bitmuster ab Sample 512, die Wachmarke 0x7F800001, NaN
+    und +-Inf bytegleich heraus, auch im Monobus, bei 44,1, 48 und 96 kHz
+    (311/M-10, M-11, M-19, M-20, M-21); der Tap post_committed traegt dort den
+    Eingang als double (M-92, M-93, R-311-6).
     Ein eingeschalteter resonanter Filter klingt naturgemaess aus; das ist
     kein Tail im Sinne des Hostvertrags, und dieses Bein behauptet dazu
     nichts.
@@ -59,6 +65,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #if defined (_M_X64) || defined (__x86_64__)
  #include <xmmintrin.h>
@@ -109,6 +116,32 @@ std::string hex32 (std::uint32_t bits)
     std::snprintf (text, sizeof (text), "0x%08X", (unsigned) bits);
     return text;
 }
+
+/** NAK-311 §6.1: die Wachmarke - ein signalisierender NaN mit Nutzlast. Eine
+    Rueckwandlung float -> double -> float macht ihn ruhig; bytegleich bleibt
+    er nur, wenn niemand schreibt (Muster B6, W-1). */
+constexpr std::uint32_t kWachmarke = 0x7F800001u;
+
+/** NAK-311 §6.1, R-311-7: Bitmuster und nicht endliche Werte liegen erst ab
+    diesem Sample - Engagier-Fade und Rampen sind dann vorbei (wie 311/M-01). */
+constexpr std::int64_t kMaterialAb = nakama::dsp::kFadeSamples + nakama::dsp::kRampeSamples;
+
+/** Die sechs nicht endlichen Werte aus 311/M-11: dreimal die Wachmarke, ein
+    ruhiger NaN, +Inf und -Inf, jeder auf genau einem Kanal (im Monobus auf
+    Kanal 0); der andere Kanal traegt an derselben Stelle Rauschen. */
+struct NichtEndlich { int versatz; int kanal; std::uint32_t bits; };
+const NichtEndlich kNichtEndlich[] = { { 16, 0, kWachmarke }, { 32, 1, kWachmarke }, { 48, 0, kWachmarke },
+                                       { 64, 1, 0x7FC00000u }, { 80, 0, 0x7F800000u }, { 96, 1, 0xFF800000u } };
+
+/** Das Material der NAK-311-Zeilen M-10, M-11, M-17, M-19 und M-20 (§6.1)
+    ueber dem Rauschen von `fuelle`. */
+struct Material
+{
+    int  kanaele         = 2;
+    bool bitmuster       = false;   ///< M-10: in jedem Block ab kMaterialAb die acht Muster, je Kanal derselbe Block
+    bool nurGanzeBloecke = false;   ///< M-20: nur in Bloecken, deren erstes Sample auf oder hinter kMaterialAb liegt
+    bool nichtEndlich    = false;   ///< M-11: die sechs Werte im ersten Block, der auf oder hinter kMaterialAb beginnt
+};
 
 bool istHex (const std::string& text, std::size_t laenge)
 {
@@ -169,35 +202,110 @@ const int kBlockgroessen[] = { 1, 7, 64, 128, 333, 512, 1024, 2048, 3, 480 };
 struct Nulllauf
 {
     std::int64_t samples    = 0;
-    std::int64_t abweichend = 0;   ///< Samples, die nicht bitgleich zur Eingangskopie sind
+    std::int64_t abweichend = 0;   ///< Samples, deren Rauschen nicht bitgleich zur Eingangskopie ist
     bool         latenzNull = true;
+
+    // NAK-311 §6.1: das Material getrennt vom Rauschen, je Stelle (Kanal, Sample).
+    int bitmusterGesetzt = 0, bitmusterAbweichend = 0;
+    int nichtEndlichGesetzt = 0, nichtEndlichAbweichend = 0;
+    int nichtEndlichEndlichHeraus = 0;   ///< M-17: an der Stelle kam ein endlicher Wert heraus
+    int wachmarkenBytegleich = 0;        ///< Wachmarken, die mit 0x7F800001 herauskamen
+    int nichtEndlichTapNull = 0;         ///< der Tap post_committed traegt dort +0,0 (M-11)
+    std::int64_t rauschenAbweichendAbMaterial = 0;   ///< M-17: Rauschsamples ab kMaterialAb, die veraendert herauskommen
+    std::int64_t tapGeprueft = 0, tapAbweichend = 0; ///< R-311-6: Rauschstellen am Tap post_committed
 };
 
 /** Faehrt `bloecke` Bloecke Rauschen durch. Abweichungen zaehlen erst ab dem
     globalen Sample `zaehlenAb` - davor liegt ein Fade, der hier nicht
     gemessen wird. `resetAlle > 0` ruft vor jedem `resetAlle`-ten Block den
     Host-Reset (NAK-283 M-34), wie ihn der VST3-Wrapper bei
-    `setProcessing (false)` ausloest. */
+    `setProcessing (false)` ausloest.
+
+    NAK-311: `material` legt Bitmuster und nicht endliche Werte ueber das
+    Rauschen; sie zaehlen getrennt, nie in `abweichend`. `tapAb >= 0`
+    vergleicht nach jedem Block den Tap post_committed ab diesem globalen
+    Sample an jeder Rauschstelle mit dem Eingang als double (R-311-6) - die
+    Stellen des Bitmusters misst 311/M-01. */
 Nulllauf fahreNull (Prozessor& p, int bloecke, juce::Random& wuerfel, std::int64_t zaehlenAb = 0,
-                    int resetAlle = 0)
+                    int resetAlle = 0, const Material& material = {}, std::int64_t tapAb = -1)
 {
     Nulllauf l;
     juce::MidiBuffer midi;
+    const int kanaele = material.kanaele;
+    bool nichtEndlichGelegt = false;
     for (int b = 0; b < bloecke; ++b)
     {
         if (resetAlle > 0 && b % resetAlle == resetAlle - 1)
             p.reset();
         const int groesse = kBlockgroessen[(size_t) b % std::size (kBlockgroessen)];
-        juce::AudioBuffer<float> puffer (2, groesse), kopie (2, groesse);
+        const std::int64_t start = l.samples;
+        juce::AudioBuffer<float> puffer (kanaele, groesse), kopie (kanaele, groesse);
         fuelle (puffer, wuerfel);
+
+        // Je Stelle: 0 Rauschen, 1 Bitmuster, 2 nicht endlich.
+        std::vector<std::uint8_t> art ((size_t) (kanaele * groesse), 0);
+        const auto lege = [&] (int k, int n, std::uint32_t bits, std::uint8_t a)
+        {
+            puffer.setSample (k, n, std::bit_cast<float> (bits));
+            art[(size_t) (k * groesse + n)] = a;
+        };
+        if (material.bitmuster && start + groesse > kMaterialAb
+            && (! material.nurGanzeBloecke || start >= kMaterialAb))
+        {
+            const int ab = (int) std::max<std::int64_t> (0, kMaterialAb - start);
+            for (int j = 0; j < (int) std::size (kBitmuster) && ab + j < groesse; ++j)
+                for (int k = 0; k < kanaele; ++k)
+                    lege (k, ab + j, kBitmuster[j], 1);
+        }
+        if (material.nichtEndlich && ! nichtEndlichGelegt && start >= kMaterialAb
+            && groesse > kNichtEndlich[std::size (kNichtEndlich) - 1].versatz)
+        {
+            for (const auto& w : kNichtEndlich)
+                lege (w.kanal % kanaele, w.versatz, w.bits, 2);
+            l.nichtEndlichGesetzt += (int) std::size (kNichtEndlich);
+            nichtEndlichGelegt = true;
+        }
+
         kopie.makeCopyOf (puffer);
         p.processBlock (puffer, midi);
+
+        auto& kern = p.dspKernFuerTest();
+        const bool tapDa = tapAb >= 0 && kern.tapLaenge() == groesse;
         for (int n = 0; n < groesse; ++n, ++l.samples)
         {
-            if (l.samples < zaehlenAb) continue;
-            for (int k = 0; k < 2; ++k)
-                if (std::memcmp (puffer.getReadPointer (k) + n, kopie.getReadPointer (k) + n, sizeof (float)) != 0)
-                    { ++l.abweichend; break; }
+            bool rauschenAnders = false;
+            for (int k = 0; k < kanaele; ++k)
+            {
+                const float* aus = puffer.getReadPointer (k) + n;
+                const float* ein = kopie.getReadPointer (k) + n;
+                const bool anders = std::memcmp (aus, ein, sizeof (float)) != 0;
+                const double* tap = tapDa ? kern.tap (nakama::dsp::Tap::postCommitted, k) : nullptr;
+                const auto a = art[(size_t) (k * groesse + n)];
+                if (a == 1)
+                {
+                    ++l.bitmusterGesetzt;
+                    if (anders) ++l.bitmusterAbweichend;
+                }
+                else if (a == 2)
+                {
+                    if (anders) ++l.nichtEndlichAbweichend;
+                    if (std::isfinite (*aus)) ++l.nichtEndlichEndlichHeraus;
+                    if (std::bit_cast<std::uint32_t> (*ein) == kWachmarke && ! anders) ++l.wachmarkenBytegleich;
+                    if (tap != nullptr && tap[n] == 0.0 && ! std::signbit (tap[n])) ++l.nichtEndlichTapNull;
+                }
+                else
+                {
+                    if (anders && l.samples >= zaehlenAb) rauschenAnders = true;
+                    if (tapAb >= 0 && l.samples >= tapAb)
+                    {
+                        ++l.tapGeprueft;
+                        const double soll = (double) *ein;
+                        if (tap == nullptr || std::memcmp (tap + n, &soll, sizeof (double)) != 0) ++l.tapAbweichend;
+                    }
+                }
+            }
+            if (rauschenAnders) ++l.abweichend;
+            if (rauschenAnders && l.samples >= kMaterialAb) ++l.rauschenAbweichendAbMaterial;
         }
         if (p.getLatencySamples() != 0) l.latenzNull = false;
     }
@@ -382,15 +490,24 @@ int main()
     }
 
     // -- 6. M-02: engagiert, aber neutral ----------------------------------
+    // NAK-311 (M-10, M-21, M-93): dazu das Bitmuster ab Sample kMaterialAb in
+    // jedem Block, 48 kHz als dritte Rate und der Tap post_committed ueber
+    // dasselbe Fenster (R-311-6) - er misst die Rechnung der neutralen Kette,
+    // die der Ausgangsvergleich nicht mehr sieht, seit der Kern in diesem
+    // Zustand nicht schreibt. Das Rauschen zaehlt ab Sample 0, samt
+    // Engagier-Fade; fuer das Bitmuster gilt die Zusage ab dem Schreibende
+    // (R-311-7), deshalb liegt es erst ab Sample 512.
     abschnitt ("6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch");
-    for (const double rate : { 44100.0, 96000.0 })
+    for (const double rate : { 44100.0, 48000.0, 96000.0 })
     {
         auto p = vorbereitet (rate, 2048);
         auto z = p->bestaetigterZustand();
         z.werte[(size_t) param::kIndexEqEnabled].b = true;
         const auto e = setze (*p, z);
         juce::Random wuerfel ((juce::int64) rate + 2);
-        const auto lauf = fahreNull (*p, 1000, wuerfel);
+        Material material;
+        material.bitmuster = true;
+        const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material, 0);
         int aktiv = -1, quelle = -1, kandidat = -1, kandidatQuelle = -1;
         p->dspKernFuerTest().gefahreneSlots (aktiv, quelle, kandidat, kandidatQuelle);
         const bool rechnet = aktiv >= 0 && p->dspKernFuerTest().pool().bank (aktiv).programm.eqEngagiert
@@ -398,6 +515,15 @@ int main()
         pruefe (e.ausgang == tx::Ausgang::commit && lauf.abweichend == 0 && rechnet,
                 "eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei " + juce::String (rate, 0) + " Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank",
                 juce::String (lauf.samples) + " Samples, " + juce::String (lauf.abweichend) + " abweichend, aktive Bank " + juce::String (aktiv));
+        pruefe (rechnet && lauf.bitmusterGesetzt > 0 && lauf.bitmusterAbweichend == 0,
+                "311/M-10 bitmuster_ab_sample_512_bytegleich bei " + juce::String (rate, 0)
+                    + " Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus",
+                juce::String (lauf.bitmusterAbweichend) + " von " + juce::String (lauf.bitmusterGesetzt)
+                    + " Musterstellen veraendert");
+        pruefe (rechnet && lauf.tapGeprueft > 0 && lauf.tapAbweichend == 0,
+                "311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei " + juce::String (rate, 0)
+                    + " Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double",
+                juce::String (lauf.tapAbweichend) + " von " + juce::String (lauf.tapGeprueft) + " Tapstellen abweichend");
     }
 
     // -- 7. M-05: der Hard-Bypass ------------------------------------------
@@ -458,18 +584,47 @@ int main()
             return z;
         };
         const std::int64_t einschwingen = nakama::dsp::kFadeSamples + nakama::dsp::kRampeSamples;
-        auto p = vorbereitet (48000.0, 2048);
-        const auto e = setze (*p, zustandMitMix (0.0));
-        juce::Random wuerfel (33);
-        const auto lauf = fahreNull (*p, 1000, wuerfel, einschwingen);
-        auto gegen = vorbereitet (48000.0, 2048);
-        setze (*gegen, zustandMitMix (1.0));
-        juce::Random wuerfelGegen (33);
-        const auto gegenLauf = fahreNull (*gegen, 1000, wuerfelGegen, einschwingen);
-        pruefe (e.ausgang == tx::Ausgang::commit && lauf.abweichend == 0 && gegenLauf.abweichend > 0,
-                "mix_null_ist_bitidentisch: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB",
-                "Mix 0: " + juce::String (lauf.abweichend) + " abweichend; Gegenprobe Mix 1: "
-                    + juce::String (gegenLauf.abweichend) + " abweichend (das Band ist hoerbar)");
+        // NAK-311 (M-20, M-21, M-92): Bitmuster und die sechs nicht endlichen
+        // Werte aus 311/M-11 erst in Bloecken, deren erstes Sample auf oder
+        // hinter Sample 512 liegt (das Stueck mit dem Fade-Ende darf der Kern
+        // nach §9 F-4 bis zu seinem Ende schreiben), bei 44,1, 48 und 96 kHz;
+        // dazu der Tap post_committed ab Sample 512 (R-311-6): der Dry-Zweig
+        // ist pre_nakama, vor Input-Trim und Filterbank.
+        Material material;
+        material.bitmuster = true;
+        material.nurGanzeBloecke = true;
+        material.nichtEndlich = true;
+        for (const double rate : { 44100.0, 48000.0, 96000.0 })
+        {
+            auto p = vorbereitet (rate, 2048);
+            const auto e = setze (*p, zustandMitMix (0.0));
+            juce::Random wuerfel ((juce::int64) rate + 33);
+            const auto lauf = fahreNull (*p, 1000, wuerfel, einschwingen, 0, material, einschwingen);
+            auto gegen = vorbereitet (rate, 2048);
+            setze (*gegen, zustandMitMix (1.0));
+            juce::Random wuerfelGegen ((juce::int64) rate + 33);
+            const auto gegenLauf = fahreNull (*gegen, 1000, wuerfelGegen, einschwingen, 0, material);
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.abweichend == 0 && gegenLauf.abweichend > 0,
+                    "mix_null_ist_bitidentisch bei " + juce::String (rate, 0)
+                        + " Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB",
+                    "Mix 0: " + juce::String (lauf.abweichend) + " abweichend; Gegenprobe Mix 1: "
+                        + juce::String (gegenLauf.abweichend) + " abweichend (das Band ist hoerbar)");
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0,
+                    "311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei " + juce::String (rate, 0)
+                        + " Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus",
+                    juce::String (lauf.nichtEndlichAbweichend) + " von " + juce::String (lauf.nichtEndlichGesetzt)
+                        + " nicht endlichen Werten veraendert, " + juce::String (lauf.wachmarkenBytegleich)
+                        + " Wachmarken bytegleich");
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.bitmusterGesetzt > 0 && lauf.bitmusterAbweichend == 0,
+                    "311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei " + juce::String (rate, 0)
+                        + " Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus",
+                    juce::String (lauf.bitmusterAbweichend) + " von " + juce::String (lauf.bitmusterGesetzt)
+                        + " Musterstellen veraendert");
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.tapGeprueft > 0 && lauf.tapAbweichend == 0,
+                    "311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei " + juce::String (rate, 0)
+                        + " Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double",
+                    juce::String (lauf.tapAbweichend) + " von " + juce::String (lauf.tapGeprueft) + " Tapstellen abweichend");
+        }
     }
 
     // -- 10. M-93: Speichern, Laden, Speichern im Layout v2 ----------------
@@ -892,6 +1047,39 @@ int main()
                         + ", Passthrough bitgleich " + jaNein (passthrough) + ", Band rechnet " + jaNein (gerechnet));
         }
         {
+            // NAK-311 311/M-11, Teilfall M-19 (Mono): der engagiert-neutrale
+            // Kern schreibt auch im Monobus keinen Sample. Material wie
+            // 311/M-11 auf Kanal 0. Der Riegel zaehlt jeden Wert zweimal, weil
+            // `dryR` im Monobus den linken Kanal traegt und der Riegel beide
+            // Komponenten getrennt zaehlt (DspKern::verarbeiteStueck).
+            auto p = std::make_unique<Prozessor>();
+            const bool monoGesetzt = p->setBusesLayout (layout (mono, mono));
+            p->setRateAndBufferSizeDetails (48000.0, 2048);
+            p->prepareToPlay (48000.0, 2048);
+            auto z = p->bestaetigterZustand();
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            const auto e = setze (*p, z);
+            Material material;
+            material.kanaele = 1;
+            material.bitmuster = true;
+            material.nichtEndlich = true;
+            juce::Random w (19);
+            const auto lauf = fahreNull (*p, 1000, w, 0, 0, material, 0);
+            const auto zaehler = p->dspKernFuerTest().nichtEndlicheEingaenge();
+            const bool imMono = monoGesetzt && p->getTotalNumInputChannels() == 1 && e.ausgang == tx::Ausgang::commit;
+            pruefe (imMono && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0 && zaehler == 12,
+                    "311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Wachmarke: "
+                    "Wachmarke, NaN und +-Inf kommen auf Kanal 0 bytegleich heraus; der Riegel zaehlt 12, zwei je Wert",
+                    juce::String (lauf.nichtEndlichAbweichend) + " von " + juce::String (lauf.nichtEndlichGesetzt)
+                        + " veraendert, Zaehler " + juce::String ((juce::int64) zaehler));
+            pruefe (imMono && lauf.abweichend == 0 && lauf.bitmusterGesetzt > 0 && lauf.bitmusterAbweichend == 0,
+                    "311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: "
+                    "Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus",
+                    juce::String (lauf.samples) + " Samples, Rauschen " + juce::String (lauf.abweichend)
+                        + " abweichend, Muster " + juce::String (lauf.bitmusterAbweichend) + " von "
+                        + juce::String (lauf.bitmusterGesetzt) + " veraendert");
+        }
+        {
             auto p = std::make_unique<Prozessor>();
             const bool monoStereo = p->checkBusesLayoutSupported (layout (mono, stereo));
             const bool stereoMono = p->checkBusesLayoutSupported (layout (stereo, mono));
@@ -1022,6 +1210,95 @@ int main()
                 "daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo "
                 "und Mono; 44,1, 48 und 96 kHz; je " + juce::String (musterZahl) + " Muster ausgegeben",
                 juce::String (kombinationen) + " von 18");
+    }
+
+    // -- 14. NAK-311 M-11: der engagiert-neutrale Kern schreibt keinen Sample --
+    // Manifest NAK-311 §6.1 (M-11, M-15 bis M-17, M-21), §9 F-3: nicht endliche
+    // Eingaenge schreibt der neutrale Kern nicht, sie kommen bytegleich heraus
+    // wie im Passthrough (SONDE-015 M-50); der Riegel laeuft fuer den inneren
+    // Weg weiter und zaehlt sie (M-49), der Tap post_committed traegt 0,0. Die
+    // Wachmarke haelt das unabhaengig von DAZ: eine Rueckwandlung machte sie
+    // ruhig. Gegenfaelle: ausgeschaltet (M-15), Hard-Bypass (M-16) und ein
+    // wirksames Band (M-17), bei dem die Neutralpruefung nicht greift.
+    abschnitt ("14. NAK-311 311/M-11 neutral_engagiert_schreibt_keinen_sample (M-11, M-15 bis M-17, M-21)");
+    {
+        Material material;
+        material.bitmuster = true;
+        material.nichtEndlich = true;
+        const auto detail = [] (const Nulllauf& l, std::uint64_t zaehler)
+        {
+            return "nicht endlich " + juce::String (l.nichtEndlichAbweichend) + " von " + juce::String (l.nichtEndlichGesetzt)
+                 + " veraendert, " + juce::String (l.wachmarkenBytegleich) + " Wachmarken bytegleich, "
+                 + juce::String (l.nichtEndlichEndlichHeraus) + " endlich heraus, Tap 0,0 an "
+                 + juce::String (l.nichtEndlichTapNull) + ", Zaehler " + juce::String ((juce::int64) zaehler)
+                 + "; Rauschen " + juce::String (l.abweichend) + " abweichend (ab Sample 512: "
+                 + juce::String (l.rauschenAbweichendAbMaterial) + "), Muster " + juce::String (l.bitmusterAbweichend)
+                 + " von " + juce::String (l.bitmusterGesetzt) + " veraendert";
+        };
+
+        for (const double rate : { 44100.0, 48000.0, 96000.0 })
+        {
+            auto p = vorbereitet (rate, 2048);
+            auto z = p->bestaetigterZustand();
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            const auto e = setze (*p, z);
+            juce::Random wuerfel ((juce::int64) rate + 11);
+            const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material, 0);
+            const auto zaehler = p->dspKernFuerTest().nichtEndlicheEingaenge();
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0
+                        && zaehler == 6 && lauf.nichtEndlichTapNull == 6,
+                    "311/M-11 neutral_engagiert_schreibt_keinen_sample bei " + juce::String (rate, 0)
+                        + " Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0",
+                    detail (lauf, zaehler));
+        }
+
+        {
+            // M-15: ausgeschaltet - der fruehe Rueckweg, kein Zaehler.
+            auto p = vorbereitet (48000.0, 2048);
+            juce::Random wuerfel (15);
+            const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material);
+            const auto zaehler = p->dspKernFuerTest().nichtEndlicheEingaenge();
+            pruefe (lauf.abweichend == 0 && lauf.bitmusterGesetzt > 0 && lauf.bitmusterAbweichend == 0
+                        && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0 && zaehler == 0,
+                    "311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt",
+                    detail (lauf, zaehler));
+        }
+        {
+            // M-16: Hard-Bypass mit +12-dB-Bell und Width 1,7 dahinter.
+            auto p = vorbereitet (48000.0, 2048);
+            auto z = p->bestaetigterZustand();
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            z.werte[(size_t) iGlobal ("v1.global.bypass")].b = true;
+            z.werte[(size_t) iGlobal ("v1.global.width")].zahl = 1.7;
+            setzeHoerbaresBand (z);
+            const auto e = setze (*p, z);
+            juce::Random wuerfel (16);
+            const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material);
+            const auto zaehler = p->dspKernFuerTest().nichtEndlicheEingaenge();
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.abweichend == 0 && lauf.bitmusterGesetzt > 0
+                        && lauf.bitmusterAbweichend == 0 && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0
+                        && zaehler == 0,
+                    "311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt",
+                    detail (lauf, zaehler));
+        }
+        {
+            // M-17: ein wirksames Band - die Neutralpruefung greift nicht. Der
+            // Riegel setzt die nicht endlichen Werte auf 0,0, das Band liefert
+            // daraus seinen Zustandsrest, und geschrieben wird ein endlicher Wert.
+            auto p = vorbereitet (48000.0, 2048);
+            auto z = p->bestaetigterZustand();
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            setzeHoerbaresBand (z);
+            const auto e = setze (*p, z);
+            juce::Random wuerfel (17);
+            const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material);
+            const auto zaehler = p->dspKernFuerTest().nichtEndlicheEingaenge();
+            pruefe (e.ausgang == tx::Ausgang::commit && lauf.rauschenAbweichendAbMaterial > 0 && lauf.nichtEndlichGesetzt == 6
+                        && lauf.nichtEndlichEndlichHeraus == 6 && lauf.wachmarkenBytegleich == 0 && zaehler == 6,
+                    "311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs "
+                    "nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6",
+                    detail (lauf, zaehler));
+        }
     }
 
     std::cout << std::endl

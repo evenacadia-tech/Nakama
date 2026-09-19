@@ -1,0 +1,49 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-91
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-91 (T3-01-01, R-311-6, Messkraft) - Regressionswache
+Zusage: Zusaetzlich zum Ausgangsvergleich, der bleibt: der Tap post_committed traegt ueber dieselben acht Bloecke auf beiden Kanaelen exakt den Eingang als double.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt G, 311/M-91 mix_null_traegt_am_tap_den_eingang (neben mix_null_ist_bitidentisch (M-33))
+
+--- MUTATION: SONDE-015-Rotbeweis M-33 (docs/beweise/roh/SONDE-015-rot-M-33.txt, -M-33-e4.txt): Dry hinter dem Input-Trim abgegriffen ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:726
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+            if (mix == 0.0)      { l = dL[i]; rr = dR[i]; }
+nachher:
+            if (mix == 0.0)      { l = dL[i] * r.input.aktuell; rr = dR[i] * r.input.aktuell; }   // ROTBEWEIS NAK-311 M-91/M-92 (SONDE-015 M-33): Dry hinter dem Input-Trim
+SHA-256 mutiert: 898DC7B9941610DC8FFC077CA769C9CA397BB4E43BF3808CD142542CF7B635E0
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-91-92-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:05:47, mutierte Quelle 21:05:45, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 8191 von 8192 Stellen ungleich dem Eingang als double]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 8191 von 8192 Stellen ungleich dem Eingang als double]
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+
+Hinweis: Der Ausgangsvergleich mix_null_ist_bitidentisch (M-33) bleibt unter der Mutation gruen: im M-33-Zustand schreibt der Kern nicht - genau die Messkraft, die der Tap zurueckholt (8191 von 8192 Tapstellen tragen das 10^(9/20)-fache; die eine gleiche Stelle ist der Nullwert sin(0)).
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

@@ -907,6 +907,34 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     const bool committedRuht = nachPass && (zc.uebergang == Uebergang::keiner || vonPass);
     const bool candRechnet   = pfadRechnet (Pfad::candidate);
 
+    // --- NAK-311 Neutralpruefung: was am Stueckbeginn feststeht ------------
+    // Das Uebergangsende des Committed-Pfades in Samples ab Stueckbeginn,
+    // Crossfade wie Rampe, gezaehlt wie `z.rest` (M-13, M-14).
+    const bool cRampe = zc.uebergang == Uebergang::rampe && zc.rest > 0;
+    const size_t cUebergangsEnde = (cCrossfade || cRampe) ? (size_t) zc.rest : 0;
+
+    // §9 F-4: ein Einheitsband, das in diesem Stueck noch rechnet - Rest einer
+    // Bandrampe im Zustand oder eine Rampe von einem wirksamen Entwurf her,
+    // also genau dann, wenn `verarbeiteBand` es nicht ueberspringt -, laesst
+    // den Kern bis zum Stueckende schreiben; die Ruhe beginnt im naechsten
+    // Stueck mit leerem Zustand. Gefragt wird nur im neutralen Programm.
+    bool einheitsbandRechnet = false;
+    if (zc.aktiv >= 0 && programmVon (zc.aktiv).neutral)
+    {
+        const auto& bank = baenke.bank (zc.aktiv);
+        const DspBank* rampenQuelle = (cRampe && zc.quelle >= 0) ? &baenke.bank (zc.quelle) : nullptr;
+        for (int slot = 0; slot < kSlots && ! einheitsbandRechnet; ++slot)
+        {
+            const auto& b = bank.programm.baender[(size_t) slot];
+            if (! b.aktiv || b.nutztSvf || ! b.statischIstEinheit) continue;
+            const auto& zb = bank.baender[(size_t) slot];
+            const bool leer = zb.statisch[0].z1 == 0.0 && zb.statisch[0].z2 == 0.0
+                           && zb.statisch[1].z1 == 0.0 && zb.statisch[1].z2 == 0.0;
+            const BandProgramm* qb = rampenQuelle != nullptr ? &rampenQuelle->programm.baender[(size_t) slot] : nullptr;
+            einheitsbandRechnet = ! leer || (qb != nullptr && qb->aktiv && ! qb->statischIstEinheit);
+        }
+    }
+
     // --- der Nicht-Endlich-Riegel, EINMAL je Stueck ----------------------
     // R9: verriegelt und gezaehlt, VOR jedem Filterzustand - und nur, wenn
     // ueberhaupt eine engagierte Bank rechnet. Der Dry-Zweig bleibt roh.
@@ -1048,6 +1076,36 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     size_t schreibBis = n;
     if (passthroughUebergang && nachPass)
         while (schreibBis > 0 && cGewicht[schreibBis - 1] >= 1.0) --schreibBis;
+    const bool passthroughErreicht = schreibBis < n;
+
+    // NAK-311 (T3-01-01, §7.2 Punkt 3): die NEUTRALPRUEFUNG, der dritte Fall
+    // des Schreibendes neben `committedRuht` und W-1. Ab dem ersten Sample, ab
+    // dem der Ausgang bauartbedingt der Eingang ist, bleibt der Puffer
+    // unberuehrt; gerechnet ist trotzdem alles (Riegel, beide Pfade, Taps,
+    // Zaehler). So ist es, wenn der Committed-Pfad nach diesem Stueck
+    // engagiert und ohne Uebergang steht, die Hoermatrix Processed oder Dry
+    // hoert und der Pfad entweder das neutrale Programm mit allen fuenf Rampen
+    // in Ruhe auf 1,0 faehrt (SONDE-015 M-02) oder Mix in Ruhe auf 0,0 und
+    // Output-Trim in Ruhe auf 1,0 steht, die uebrigen Rampen in Ruhe (M-33:
+    // der Wet-Zweig geht nicht ein, Dry ist pre_nakama). "In Ruhe" fragt den
+    // Rampenzustand, nie nur das Ziel - eine Rampe, die durch 0,99999994
+    // laeuft, ruht nicht. Die Grenze liegt wie bei W-1 auf dem Sample, auch
+    // mitten im Stueck: am Ende von Crossfade, Rampe und Hoermatrix-Fade. Eine
+    // Handvoll Vergleiche je Stueck, keine Arbeit je Sample.
+    const auto& rc = zc.rampen;
+    const bool pfadSteht  = zc.uebergang == Uebergang::keiner && zc.aktiv >= 0 && ! istPassthrough (zc.aktiv);
+    const bool hoertPfad  = hoerLaufend == Hoermatrix::processed || hoerLaufend == Hoermatrix::dry;
+    if (pfadSteht && hoertPfad)
+    {
+        const bool neutralRuht = programmVon (zc.aktiv).neutral && ! einheitsbandRechnet
+                              && rc.input.ruhtBei (1.0) && rc.width.ruhtBei (1.0) && rc.autoGain.ruhtBei (1.0)
+                              && rc.mix.ruhtBei (1.0) && rc.output.ruhtBei (1.0);
+        const bool mixNullRuht = rc.mix.ruhtBei (0.0) && rc.output.ruhtBei (1.0)
+                              && rc.input.ruhtBei (rc.input.ziel) && rc.width.ruhtBei (rc.width.ziel)
+                              && rc.autoGain.ruhtBei (rc.autoGain.ziel);
+        if (neutralRuht || mixNullRuht)
+            schreibBis = std::min (schreibBis, std::max (cUebergangsEnde, (size_t) std::max (0, hoerFadeRest)));
+    }
 
     for (size_t i = 0; i < schreibBis; ++i)
     {
@@ -1085,10 +1143,13 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
         }
     }
 
-    if (schreibBis < n)
+    if (passthroughErreicht)
     {
         // Ab hier ruht der Pfad (W-1): die Hoermatrix hat nichts mehr zu
         // blenden - dieselbe Ruhe wie im naechsten Stueck mit `committedRuht`.
+        // Nach der Neutralpruefung dagegen hoert die Hoermatrix den Pfad weiter;
+        // ihr Fade ist dort schon geschrieben, und ein wartender Wechsel beginnt
+        // im naechsten Stueck.
         hoerLaufend  = wirksam;
         hoerVorher   = wirksam;
         hoerFadeRest = 0;

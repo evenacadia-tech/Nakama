@@ -1,0 +1,121 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-93
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-93 (T3-01-01, R-311-6, Messkraft) - Regressionswache
+Zusage: Zusaetzlich zum Ausgangsvergleich, der bleibt (M-10): der Tap post_committed traegt ab Sample 0 an allen Rauschsamples auf beiden Kanaelen exakt den Eingang als double.
+Bein:   A16 EqCopProbeeqNullTest, Abschnitt 6, 311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 44,1, 48 und 96 kHz
+
+--- MUTATION: SONDE-015-Rotbeweis M-02 (docs/beweise/roh/SONDE-015-rot-M-02-e4.txt): 0 dB Input-Trim liefert 1,000001 statt 1,0 ---
+Datei: eq-copilot/plugin/dsp/DspProgramm.cpp:184
+SHA-256 vorher (Endstand der Reparatur): F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    aus.inputTrimLin  = aus.inputTrimDb  == 0.0 ? 1.0 : dbInLinear (aus.inputTrimDb);
+nachher:
+    aus.inputTrimLin  = aus.inputTrimDb  == 0.0 ? 1.000001 : dbInLinear (aus.inputTrimDb);   // ROTBEWEIS NAK-311 M-10/M-93 (SONDE-015 M-02-e4)
+SHA-256 mutiert: 991E3AEA45966E348E98CEF280B518E3AA02AA96C2234E8014442E96B6769CEA
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-10-93-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:06:08, mutierte Quelle 21:06:05, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 89 Pruefungen ok, 21 Fehler
+
+Gefallene Pruefungen (21):
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453273 abweichend, aktive Bank 0]
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+  FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 44100 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453275 abweichend, aktive Bank 0]
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+  FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 48000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453274 abweichend, aktive Bank 0]
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+  FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 96000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+  FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Wachmarke: Wachmarke, NaN und +-Inf kommen auf Kanal 0 bytegleich heraus; der Riegel zaehlt 12, zwei je Wert  [6 von 6 veraendert, Zaehler 12]
+  FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus  [460000 Samples, Rauschen 453267 abweichend, Muster 5181 von 6676 veraendert]
+  FEHLER  311/M-01 lief: Zustand a stereo 44100 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  311/M-01 lief: Zustand a stereo 48000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  311/M-01 lief: Zustand a stereo 96000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  311/M-01 lief: Zustand a mono 44100 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  311/M-01 lief: Zustand a mono 48000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  311/M-01 lief: Zustand a mono 96000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+  FEHLER  daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo und Mono; 44,1, 48 und 96 kHz; je 8 Muster ausgegeben  [12 von 18]
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453274 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 48000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453277 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 96000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453275 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 44100 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+  erwartet: FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 48000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+  erwartet: FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 96000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [906646 von 906648 Tapstellen abweichend]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453273 abweichend, aktive Bank 0]
+      Grund: M-10 Haelfte Rauschen: die Input-Rampe laeuft auf 1,000001 zu und ruht dort, Rampe::ruhtBei (1.0) verneint die Neutralpruefung, :660 multipliziert jeden Sample mit 1,000001 (Rohdatei M-10)
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt, und unter DAZ kommen die Subnormals als Null heraus
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453275 abweichend, aktive Bank 0]
+      Grund: M-10 Haelfte Rauschen: die Input-Rampe laeuft auf 1,000001 zu und ruht dort, Rampe::ruhtBei (1.0) verneint die Neutralpruefung, :660 multipliziert jeden Sample mit 1,000001 (Rohdatei M-10)
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt, und unter DAZ kommen die Subnormals als Null heraus
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 453274 abweichend, aktive Bank 0]
+      Grund: M-10 Haelfte Rauschen: die Input-Rampe laeuft auf 1,000001 zu und ruht dort, Rampe::ruhtBei (1.0) verneint die Neutralpruefung, :660 multipliziert jeden Sample mit 1,000001 (Rohdatei M-10)
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [10362 von 13352 Musterstellen veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt, und unter DAZ kommen die Subnormals als Null heraus
+  FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Wachmarke: Wachmarke, NaN und +-Inf kommen auf Kanal 0 bytegleich heraus; der Riegel zaehlt 12, zwei je Wert  [6 von 6 veraendert, Zaehler 12]
+      Grund: derselbe Zustand im Monobus ist nicht mehr neutral: der Kern schreibt
+  FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus  [460000 Samples, Rauschen 453267 abweichend, Muster 5181 von 6676 veraendert]
+      Grund: derselbe Zustand im Monobus ist nicht mehr neutral: der Kern schreibt
+  FEHLER  311/M-01 lief: Zustand a stereo 44100 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  311/M-01 lief: Zustand a stereo 48000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  311/M-01 lief: Zustand a stereo 96000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  311/M-01 lief: Zustand a mono 44100 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  311/M-01 lief: Zustand a mono 48000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  311/M-01 lief: Zustand a mono 96000 Hz, Bitmuster ab Sample 512  [6 von 8 Mustern veraendert]
+      Grund: die Wache der Messung M-01 prueft fuer Zustand (a) inputTrimLin == 1,0; unter der Mutation ist das 1,000001, der Zustand gilt als nicht eingestellt
+  FEHLER  daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo und Mono; 44,1, 48 und 96 kHz; je 8 Muster ausgegeben  [12 von 18]
+      Grund: Summe der Wache: 12 von 18 Kombinationen, die sechs Kombinationen des Zustands (a) fallen wie oben
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453274 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt die Wachmarke als 0,0
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 48000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453277 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt die Wachmarke als 0,0
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 96000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 453275 abweichend (ab Sample 512: 452812), Muster 10362 von 13352 veraendert]
+      Grund: derselbe Zustand ist nicht mehr neutral: der Kern schreibt die Wachmarke als 0,0
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      mix_null_ist_bitidentisch bei 44100 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 44100 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+  ok      mix_null_ist_bitidentisch bei 48000 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 48000 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+  ok      mix_null_ist_bitidentisch bei 96000 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 96000 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+  ok      311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 0, Zaehler 6; Rauschen 453323 abweichend (ab Sample 512: 452812), Muster 13352 von 13352 veraendert]
+
+Hinweis: 906646 von 906648 Tapstellen weichen ab: :660 multipliziert mit der Input-Rampe auf dem Weg zu 1,000001; gleich bleibt nur Sample 0 beider Kanaele, dort gibt der Engagier-Crossfade der Bank das Gewicht 0.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspProgramm.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (A16; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0 (derselbe Bauaufruf); Binary 21:08:36, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 110 Pruefungen ok, 0 Fehler
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

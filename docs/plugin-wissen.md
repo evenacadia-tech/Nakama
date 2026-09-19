@@ -29,10 +29,11 @@
 > Bundlename) bleibt in `identity/plugin-identities-v1.json` eingefroren und
 > gesperrt — stillgelegt heißt „nicht mehr ausgeliefert", nicht „wieder frei".
 > Entscheid: `../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`.
-> Probeeq trägt aktive Produktklasse und Parameter-State, seine DSP ist laut
-> `plugin/sonde/SondeProcessor.h` und `plugin/CMakeLists.txt` erst für P6
-> vorgesehen — es ist heute eine audio-neutrale Hülle. Produktziel und
-> aktueller Implementierungsstand nicht vermischen. `EqCop*` / „EQ-Copilot" /
+> Probeeq trägt aktive Produktklasse und Parameter-State und seit SONDE-015
+> Etappe 4a den aktiven DSP-Kern (`plugin/dsp/`, §1.7); im Default
+> (`eq_enabled` aus) ist er ein bitgleicher Passthrough, der keinen Sample
+> schreibt (berichtigt 19.09.2026, NAK-311). Produktziel und aktueller
+> Implementierungsstand nicht vermischen. `EqCop*` / „EQ-Copilot" /
 > `Eqcp` bleiben bis NAK-30 Legacy.
 
 Die relevanten Plugin-Threads: **Audiothread** (`processBlock`) ·
@@ -509,6 +510,44 @@ Geometrie größer. Die ältere 750:520-Materialfront beweist diese Umsetzung
 nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
+
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 19.09.2026, NAK-311 Etappe 2)
+
+`DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
+Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
+mit den Taps `pre_nakama`, `post_committed`, `post_candidate` und der
+Hörmatrix dahinter; `SondeProcessor::processBlock` ruft ihn unter
+`juce::ScopedNoDenormals` (FTZ und DAZ). In drei Fällen schreibt er den Puffer
+nicht: ausgeschaltet oder im Hard-Bypass kein Sample (`committedRuht`); beim
+Crossfade in den Passthrough endet es exakt am Fade-Ende (E-32); und seit
+NAK-311 die **Neutralprüfung** in `verarbeiteStueck`: steht der
+Committed-Pfad engagiert und ohne Übergang, hört die Hörmatrix Processed oder
+Dry, und fährt der Pfad das Programm mit dem Merkmal `DspProgramm::neutral`
+(aus `baueProgramm`: engagiert, kein Hard-Bypass, jedes aktive Band ein
+statischer Einheitsbiquad ohne SVF, M/S-Stufe aus, beide Trims 0 dB) mit allen
+fünf Rampen in Ruhe auf 1,0 — oder ruht Mix auf 0,0 und Output-Trim auf 1,0 —,
+bleibt der Puffer ab dem ersten Sample nach Crossfade-, Rampen- und
+Hörmatrix-Fade-Ende unberührt, auch mitten im Teilstück. Gerechnet wird
+weiter: der Riegel zählt nicht endliche Eingänge, die Taps tragen die Rechnung.
+
+Warum: vorher schrieb der Kern im engagiert-neutralen Zustand jeden Sample
+über float → double → float zurück; unter DAZ kamen die vier Subnormals des
+Bitmusters als Null mit Vorzeichen heraus (Messung 311/M-01, Rohdatei
+`docs/beweise/roh/NAK-311-etappe2-daz-messung.txt`), und ein signalisierender
+NaN wurde ruhig. Nach der Reparatur meldet dieselbe Messung 0 veränderte
+Muster (`docs/beweise/roh/NAK-311-etappe2-daz-messung-nachher.txt`).
+Gemessen in A16 (311/M-10, M-11, M-19, M-20, M-21, dazu die Tapvergleiche
+M-92, M-93) und B6 (311/M-12, M-13 mit M-14, M-18, M-90, M-91);
+Manifest `docs/beweise/NAK-311.md` §6.1 und §22.
+
+Grenzen: in den Übergangsfenstern (Engagier-Fade, Rampe, Hörmatrix-Fade, je
+256 Samples) schreibt der Kern weiter (gemessen: M-13, M-14, M-18) —
+bitgleich sind dort normale Werte, für Subnormals und −0 gilt keine Zusage
+(R-311-7). Bei Delta und Candidate greift die Neutralprüfung nicht (M-18). Ein aktives Band hält
+den Kern schreibend, auch ein 0-dB-Bell: nach der RBJ-Formel ist er kein
+Einheitsbiquad (b1 = a1 ≠ 0, B6 311/F-4). Dry mit einem wirksamen Programm
+schreibt weiter (aus der Quelle, nicht eigens gemessen; Registerpunkt zu
+SONDE-015 M-53). Die Etappen 3 und 4 von NAK-311 ergänzen diesen Abschnitt.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

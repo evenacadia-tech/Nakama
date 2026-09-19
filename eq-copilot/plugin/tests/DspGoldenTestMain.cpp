@@ -4,7 +4,10 @@
     der Verhaltensmatrix §3.1 bis §3.6 und §3.13 von
     `docs/beweise/SONDE-015.md`, dazu aus §3.14 den Messwert des
     Vier-Bank-Falls (M-118, Abschnitt N) und die Haelfte des Kerns von M-120
-    (Abschnitt O) - beides seit der Audit-Nacharbeit vom 10.09.2026.
+    (Abschnitt O) - beides seit der Audit-Nacharbeit vom 10.09.2026. Seit
+    NAK-311 Etappe 2 dazu die Neutralpruefung des Kerns (Manifest NAK-311
+    §6.1: 311/M-12, M-13 mit M-14, M-18, der neutrale Schritt in M-22 und die
+    Tapvergleiche M-90, M-91).
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -676,6 +679,90 @@ int main()
                     "eq an, bypass aus, 120 Werte auf Default");
         }
 
+        // NAK-311 311/M-12 (T3-01-01): der engagiert-neutrale Kern SCHREIBT
+        // NICHT. Hier ohne DAZ, am Kern allein: die Wachmarke (sNaN mit
+        // Nutzlast) haelt das unabhaengig von der Rueckwandlung - jeder
+        // Schreibzugriff machte sie ruhig oder, ueber den Riegel, zu 0,0. Der
+        // Riegel laeuft fuer den inneren Weg weiter (SONDE-015 M-49): er zaehlt
+        // jeden der sechs Werte einmal, und der Tap post_committed traegt dort
+        // 0,0 (Manifest NAK-311 §9 F-3).
+        {
+            auto kern = neuerKern (48000.0);
+            kern->uebernehmeZustand (machSatz (true));
+            fahreStille (*kern, kFadeSamples + kRampeSamples + 2048);
+            kern->pflege();
+
+            const auto bits = [] (std::uint32_t b) { float f; std::memcpy (&f, &b, 4); return f; };
+            struct Stelle { int n; int kanal; std::uint32_t b; };
+            const Stelle stellen[] = { { 16, 0, 0x7F800001u }, { 32, 1, 0x7F800001u }, { 48, 0, 0x7F800001u },
+                                       { 64, 1, 0x7FC00000u }, { 80, 0, 0x7F800000u }, { 96, 1, 0xFF800000u } };
+            const std::uint32_t muster[] = { 0x00000001u, 0x80000001u, 0x007FFFFFu, 0x807FFFFFu,
+                                             0x00800000u, 0x80800000u, 0x00000000u, 0x80000000u };
+            std::vector<float> l (512), r (512);
+            for (int i = 0; i < 512; ++i)
+            {
+                l[(size_t) i] = (float) (0.4 * std::sin (0.021 * (double) i));
+                r[(size_t) i] = (float) (0.3 * std::cos (0.017 * (double) i));
+            }
+            for (int j = 0; j < 8; ++j) { l[(size_t) (200 + j)] = bits (muster[j]); r[(size_t) (200 + j)] = bits (muster[j]); }
+            for (const auto& s : stellen) (s.kanal == 0 ? l : r)[(size_t) s.n] = bits (s.b);
+            const auto lK = l, rK = r;
+            const std::uint64_t zaehlerVorher = kern->nichtEndlicheEingaenge();
+            float* kanaele[2] = { l.data(), r.data() };
+            kern->verarbeite (kanaele, 2, 512);
+
+            int geschrieben = 0, tapNull = 0;
+            for (int i = 0; i < 512; ++i)
+                if (std::memcmp (&l[(size_t) i], &lK[(size_t) i], sizeof (float)) != 0
+                 || std::memcmp (&r[(size_t) i], &rK[(size_t) i], sizeof (float)) != 0)
+                    ++geschrieben;
+            for (const auto& s : stellen)
+            {
+                const double* t = kern->tap (Tap::postCommitted, s.kanal);
+                if (t != nullptr && t[s.n] == 0.0 && ! std::signbit (t[s.n])) ++tapNull;
+            }
+            const std::uint64_t gezaehlt = kern->nichtEndlicheEingaenge() - zaehlerVorher;
+            pruefe (geschrieben == 0 && tapNull == 6 && gezaehlt == 6,
+                    "311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)",
+                    "eq an, sonst Default, nach Fade und Rampen: geaenderte Samples " + std::to_string (geschrieben)
+                    + " von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an " + std::to_string (tapNull)
+                    + " von 6 Stellen, Riegel +" + std::to_string (gezaehlt));
+        }
+
+        // NAK-311 §9 F-4 (Selbstaudit der Etappe 2): ein 0-dB-Bell ist nach der
+        // RBJ-Formel KEIN Einheitsbiquad - b0 = 1, aber b1 = a1 = -2 cos(w0)/a0.
+        // Ein Programm mit einem aktiven Band ist damit nie "neutral", und der
+        // Kern schreibt weiter; den Wert selbst aendert das Band bei Zustand 0
+        // nicht (b == a), die Wachmarke wird ueber den Riegel zu 0,0.
+        {
+            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            auto kern = neuerKern (48000.0);
+            auto s = machSatz (true);
+            belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 0.0);
+            kern->uebernehmeZustand (s);
+            fahreStille (*kern, kFadeSamples + kRampeSamples + 2048);
+            int ck = -1, cq = -1, kk = -1, kq = -1;
+            kern->gefahreneSlots (ck, cq, kk, kq);
+            const bool einheit = ck >= 0 && kern->pool().bank (ck).programm.baender[0].statischIstEinheit;
+
+            std::vector<float> l (64, 0.25f), r (64, 0.25f);
+            l[10] = wachmarke; r[20] = wachmarke;
+            float* kanaele[2] = { l.data(), r.data() };
+            kern->verarbeite (kanaele, 2, 64);
+            const bool wachmarkeGeschrieben = std::memcmp (&l[10], &wachmarke, sizeof (float)) != 0
+                                           && std::memcmp (&r[20], &wachmarke, sizeof (float)) != 0;
+            int wertAnders = 0;
+            for (int i = 0; i < 64; ++i)
+            {
+                if (i != 10 && l[(size_t) i] != 0.25f) ++wertAnders;
+                if (i != 20 && r[(size_t) i] != 0.25f) ++wertAnders;
+            }
+            pruefe (ck >= 0 && ! einheit && wachmarkeGeschrieben && wertAnders == 0,
+                    "311/F-4 null_db_bell_ist_kein_einheitsband_und_haelt_den_kern_schreibend (NAK-311 §9 F-4, Selbstaudit)",
+                    std::string ("statischIstEinheit ") + (einheit ? "ja" : "nein") + ", Wachmarken ueberschrieben: "
+                    + (wachmarkeGeschrieben ? "ja" : "nein") + ", uebrige Werte veraendert: " + std::to_string (wertAnders));
+        }
+
         // M-05: Hard-Bypass VOR M/S und Filterbank - auch mit Baendern und
         // width != 1 bleibt der Ausgang bitgenau der Eingang.
         {
@@ -1032,6 +1119,136 @@ int main()
                         std::string ("der Fade schreibt Sample 0: ") + (fadeGeschrieben ? "ja" : "nein")
                         + ", geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: "
                         + std::to_string (hintenGeschrieben) + " von 256, Wachmarken an 256, 300 und 511");
+            }
+        }
+
+        // NAK-311 311/M-13 (T3-01-01, Muster E-32): engagiert der Kern aus der
+        // Ruhe ein NEUTRALES Programm, endet der Schreibzugriff EXAKT am ersten
+        // Sample nach dem Crossfade - auch mitten im Teilstueck, bei jeder
+        // Blockgroesse und bei einem Block ueber maxBlock (M-48). Die Samples 0
+        // bis 255 tragen den Fade (dort wird die Wachmarke ruhig), ab 256
+        // schreibt der Kern keinen Sample mehr (Wachmarken an 256, 257, 511 und
+        // am letzten Sample bytegleich).
+        {
+            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            for (const int bg : { 1, 255, 256, 257, 180, 4096 })
+            {
+                auto k = neuerKern (48000.0, 512);
+                k->uebernehmeZustand (machSatz (false));
+                fahreStille (*k, 1024, 512);
+                k->pflege();
+                k->uebernehmeZustand (machSatz (true));
+
+                const int gesamt = ((512 + bg - 1) / bg) * bg;
+                std::vector<float> wl ((size_t) gesamt, 0.3f), wr ((size_t) gesamt, 0.3f);
+                for (const int i : { 0, 255, 256, 257, 511, gesamt - 1 }) { wl[(size_t) i] = wachmarke; wr[(size_t) i] = wachmarke; }
+                const auto wlK = wl, wrK = wr;
+                for (int ab = 0; ab < gesamt; ab += bg)
+                {
+                    float* wkan[2] = { wl.data() + ab, wr.data() + ab };
+                    k->verarbeite (wkan, 2, std::min (bg, gesamt - ab));
+                }
+                const auto anders = [&] (int i)
+                {
+                    return std::memcmp (&wl[(size_t) i], &wlK[(size_t) i], sizeof (float)) != 0
+                        || std::memcmp (&wr[(size_t) i], &wrK[(size_t) i], sizeof (float)) != 0;
+                };
+                int hinten = 0;
+                for (int i = kFadeSamples; i < gesamt; ++i) if (anders (i)) ++hinten;
+                const bool fadeSchreibt = anders (0) && anders (kFadeSamples - 1);
+                pruefe (fadeSchreibt && hinten == 0,
+                        "311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse "
+                        + std::to_string (bg),
+                        std::string ("der Fade schreibt Sample 0 und 255: ") + (fadeSchreibt ? "ja" : "nein")
+                        + ", geaenderte Samples ab 256: " + std::to_string (hinten) + " von "
+                        + std::to_string (gesamt - kFadeSamples) + ", Wachmarken an 256, 257 und 511"
+                        + (gesamt > 512 ? " und am letzten Sample " + std::to_string (gesamt - 1) : std::string()));
+            }
+
+            // M-14 (Teilfall): eine Rampe auf das neutrale Programm ist
+            // Verarbeitung. Output-Trim +6 dB -> 0 dB: die 256 Rampensamples
+            // schreibt der Kern entlang der hier ausgeschriebenen Ideallinie,
+            // ab dem ersten Sample nach dem Rampenende keinen mehr.
+            {
+                auto k = neuerKern (48000.0, 512);
+                auto laut = machSatz (true);
+                setzeGlobal (laut, "v1.global.output_trim_db", 6.0);
+                k->uebernehmeZustand (laut);
+                fahreStille (*k, kRampeSamples + 2048, 512);
+                k->pflege();
+                k->uebernehmeZustand (machSatz (true));
+
+                std::vector<float> wl (512, 0.25f), wr (512, 0.25f);
+                for (const int i : { 256, 257, 511 }) { wl[(size_t) i] = wachmarke; wr[(size_t) i] = wachmarke; }
+                const auto wlK = wl, wrK = wr;
+                float* wkan[2] = { wl.data(), wr.data() };
+                k->verarbeite (wkan, 2, 512);
+
+                const double von = std::pow (10.0, 6.0 / 20.0);
+                double maxAbw = 0.0;
+                for (int i = 0; i < kRampeSamples; ++i)
+                {
+                    // Tick 1 ist das erste Sample der Rampe, Tick 256 steht auf 1,0.
+                    const double soll = 0.25 * (von + (1.0 - von) * (double) (i + 1) / (double) kRampeSamples);
+                    maxAbw = std::max ({ maxAbw, std::abs ((double) wl[(size_t) i] - soll), std::abs ((double) wr[(size_t) i] - soll) });
+                }
+                int hinten = 0;
+                for (int i = kRampeSamples; i < 512; ++i)
+                    if (std::memcmp (&wl[(size_t) i], &wlK[(size_t) i], sizeof (float)) != 0
+                     || std::memcmp (&wr[(size_t) i], &wrK[(size_t) i], sizeof (float)) != 0)
+                        ++hinten;
+                pruefe (maxAbw < 1e-6 && hinten == 0,
+                        "311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)",
+                        "Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie "
+                        + zahl (maxAbw, 9) + ", geaenderte Samples ab 256: " + std::to_string (hinten)
+                        + " von 256, Wachmarken an 256, 257 und 511");
+            }
+
+            // Selbstaudit NAK-311 Etappe 2 (aktivieren <-> abklingen, Zahlenrand
+            // Mix): (a) aus der schreibfreien Ruhe heraus setzt das Schreiben am
+            // ERSTEN Sample des Uebergangs wieder ein, neutral -> wirksam per
+            // Crossfade wie per Rampe; (b) Mix 1e-9 ist nicht Mix 0 - der Kern
+            // schreibt.
+            {
+                const auto erstesSampleGeschrieben = [&] (const param::DspSatz& danach)
+                {
+                    auto k = neuerKern (48000.0, 512);
+                    k->uebernehmeZustand (machSatz (true));
+                    fahreStille (*k, kFadeSamples + kRampeSamples + 2048, 512);
+                    k->pflege();
+                    k->uebernehmeZustand (danach);
+                    std::vector<float> wl (512, 0.25f), wr (512, 0.25f);
+                    wl[0] = wachmarke; wr[0] = wachmarke;
+                    float* wkan[2] = { wl.data(), wr.data() };
+                    k->verarbeite (wkan, 2, 512);
+                    return std::memcmp (&wl[0], &wachmarke, sizeof (float)) != 0
+                        && std::memcmp (&wr[0], &wachmarke, sizeof (float)) != 0;
+                };
+                auto mitBand = machSatz (true);
+                belege (mitBand, 0, Filtertyp::bell, 1000.0, 1.0, 12.0);   // Topologie: Crossfade
+                auto mitTrim = machSatz (true);
+                setzeGlobal (mitTrim, "v1.global.output_trim_db", 6.0);     // Wert: Rampe
+                const bool perCrossfade = erstesSampleGeschrieben (mitBand);
+                const bool perRampe     = erstesSampleGeschrieben (mitTrim);
+                pruefe (perCrossfade && perRampe,
+                        "311/M-13 Selbstaudit schreiben_setzt_am_ersten_uebergangssample_wieder_ein",
+                        std::string ("neutral -> +12-dB-Bell (Crossfade): ") + (perCrossfade ? "ja" : "nein")
+                        + ", neutral -> Output-Trim +6 dB (Rampe): " + (perRampe ? "ja" : "nein")
+                        + " - Wachmarke an Sample 0 des Uebergangs geschrieben");
+
+                auto k = neuerKern (48000.0, 512);
+                auto fastNull = machSatz (true);
+                setzeGlobal (fastNull, "v2.global.mix", 1e-9);
+                k->uebernehmeZustand (fastNull);
+                fahreStille (*k, kFadeSamples + kRampeSamples + 2048, 512);
+                std::vector<float> wl (512, 0.25f), wr (512, 0.25f);
+                wl[300] = wachmarke; wr[300] = wachmarke;
+                float* wkan[2] = { wl.data(), wr.data() };
+                k->verarbeite (wkan, 2, 512);
+                const bool geschrieben = std::memcmp (&wl[300], &wachmarke, sizeof (float)) != 0
+                                      && std::memcmp (&wr[300], &wachmarke, sizeof (float)) != 0;
+                pruefe (geschrieben, "311/M-13 Selbstaudit mix_ein_milliardstel_ist_nicht_mix_null",
+                        std::string ("Mix 1e-9 eingeschwungen, Wachmarke an 300 geschrieben: ") + (geschrieben ? "ja" : "nein"));
             }
         }
 
@@ -2212,6 +2429,26 @@ int main()
                     "ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)",
                     "Stufe lief, " + std::to_string (floatWaereAnders)
                     + " Samples waeren in float anders, Samples ab Rampenende bitgleich");
+
+            // NAK-311 M-90 (R-311-6): seit der Neutralpruefung schreibt der Kern
+            // ab Sample 256 nicht mehr - der Ausgangsvergleich sieht dort nur
+            // "unberuehrt". Die Rechnung selbst misst der Tap post_committed
+            // ueber dasselbe Fenster: exakt der Eingang als double.
+            int tapAnders = 0;
+            for (int kanal = 0; kanal < 2; ++kanal)
+            {
+                const double* t = kern->tap (Tap::postCommitted, kanal);
+                const auto& ein = kanal == 0 ? aK : bK;
+                for (int i = kRampeSamples - 1; i < 512; ++i)
+                {
+                    const double soll = (double) ein[(size_t) i];
+                    if (t == nullptr || std::memcmp (t + i, &soll, sizeof (double)) != 0) ++tapAnders;
+                }
+            }
+            pruefe (tapAnders == 0,
+                    "311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)",
+                    "Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: " + std::to_string (tapAnders)
+                    + " von 514 Stellen ungleich dem Eingang als double");
         }
 
         // M-30: width 0 ist mono.
@@ -2309,6 +2546,7 @@ int main()
 
             std::vector<float> a (512), b (512), aK, bK;
             bool bitgleich = true;
+            int tapAnders = 0;   // NAK-311 M-91 (R-311-6)
             for (int blk = 0; blk < 8; ++blk)
             {
                 for (int i = 0; i < 512; ++i)
@@ -2321,9 +2559,26 @@ int main()
                     if (std::memcmp (&a[(size_t) i], &aK[(size_t) i], sizeof (float)) != 0
                      || std::memcmp (&b[(size_t) i], &bK[(size_t) i], sizeof (float)) != 0)
                         bitgleich = false;
+                for (int kanal = 0; kanal < 2; ++kanal)
+                {
+                    const double* t = kern->tap (Tap::postCommitted, kanal);
+                    const auto& ein = kanal == 0 ? aK : bK;
+                    for (int i = 0; i < 512; ++i)
+                    {
+                        const double soll = (double) ein[(size_t) i];
+                        if (t == nullptr || std::memcmp (t + i, &soll, sizeof (double)) != 0) ++tapAnders;
+                    }
+                }
             }
             pruefe (bitgleich, "mix_null_ist_bitidentisch (M-33)",
                     "trotz +9 dB Input-Trim und +12-dB-Bell");
+            // NAK-311 M-91 (R-311-6): im M-33-Zustand schreibt der Kern nicht
+            // mehr; die Rechnung - Dry ist pre_nakama, vor Input-Trim und
+            // Filterbank - misst der Tap post_committed ueber dieselben Bloecke.
+            pruefe (tapAnders == 0,
+                    "311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)",
+                    "Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: " + std::to_string (tapAnders)
+                    + " von 8192 Stellen ungleich dem Eingang als double");
         }
 
         {
@@ -2932,6 +3187,10 @@ int main()
         belege (kand2, 6, Filtertyp::highShelf, 6000.0, 0.707, -4.0, Kanalmodus::side);
         auto aus = s;
         aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+        // NAK-311 M-22: ein neutraler Schritt im Zyklus - danach laufen die
+        // Bloecke bis zum naechsten Wechsel durch die Neutralpruefung, auch
+        // die uebergrossen, stueckelnden.
+        const auto neutral = machSatz (true);
 
         const std::uint64_t uebernahmenVorher = kern->uebernahmen();
         std::uint64_t gesamt = 0, testAllokationen = 0;
@@ -2949,6 +3208,7 @@ int main()
                 case 240: kern->beendeCandidate(); break;
                 case 290: ok = kern->uebernehmeZustand (aus); break;
                 case 340: ok = kern->uebernehmeZustand (s); break;
+                case 370: ok = kern->uebernehmeZustand (neutral); break;
                 default: break;
             }
             if (! ok) ++busy;
@@ -3458,6 +3718,107 @@ int main()
             bool exaktNull = true;
             for (int i = 0; i < 512; ++i) if (a[(size_t) i] != 0.0f || b[(size_t) i] != 0.0f) exaktNull = false;
             pruefe (exaktNull, "delta_bei_gleichheit_ist_exakt_null (M-54)");
+        }
+
+        // NAK-311 311/M-18 (T3-01-01, §9 F-4): im engagiert-neutralen Kern
+        // lassen nur Processed und Dry ohne laufenden Hoermatrix-Fade den Puffer
+        // unberuehrt. Delta schreibt (Processed - Dry) * Makeup - bei endlichem
+        // Eingang +0,0, an der Wachmarke den ungezaehmten Dry-Anteil -,
+        // Candidate schreibt den Candidate-Ausgang, und der Fade der Hoermatrix
+        // schreibt bis zu seinem Ende, auch mitten im Teilstueck.
+        {
+            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const auto material = [&] (std::vector<float>& l, std::vector<float>& r)
+            {
+                for (int i = 0; i < 512; ++i)
+                {
+                    l[(size_t) i] = (float) (0.4 * std::sin (0.021 * (double) i));
+                    r[(size_t) i] = (float) (0.3 * std::cos (0.017 * (double) i));
+                }
+                l[100] = wachmarke; r[300] = wachmarke;
+            };
+            const auto istWachmarke = [&] (float f) { return std::memcmp (&f, &wachmarke, sizeof (float)) == 0; };
+            const Hoermatrix wahl[] = { Hoermatrix::processed, Hoermatrix::dry, Hoermatrix::delta, Hoermatrix::candidate };
+            const char* namen[] = { "processed", "dry", "delta", "candidate" };
+            for (int f = 0; f < 4; ++f)
+            {
+                auto k = neuerKern (fs, 512);
+                k->uebernehmeZustand (machSatz (true));
+                if (wahl[f] == Hoermatrix::candidate)
+                {
+                    auto kand = machSatz (true);
+                    belege (kand, 0, Filtertyp::bell, 1000.0, 1.0, 12.0);   // ein hoerbares Candidate-Programm
+                    k->uebernehmeZustand (kand, Pfad::candidate);
+                }
+                fahreStille (*k, kFadeSamples + kRampeSamples + 2048, 512);
+                k->setzeHoermatrix (wahl[f]);
+                fahreStille (*k, kFadeSamples + 512, 512);   // den Fade der Hoermatrix abwarten (M-55)
+
+                std::vector<float> l (512), r (512);
+                material (l, r);
+                const auto lK = l, rK = r;
+                float* kan[2] = { l.data(), r.data() };
+                k->verarbeite (kan, 2, 512);
+
+                int geaendert = 0, deltaNichtNull = 0;
+                for (int i = 0; i < 512; ++i)
+                {
+                    const bool anders = std::memcmp (&l[(size_t) i], &lK[(size_t) i], sizeof (float)) != 0
+                                     || std::memcmp (&r[(size_t) i], &rK[(size_t) i], sizeof (float)) != 0;
+                    if (anders) ++geaendert;
+                    const std::uint32_t nullBits = 0;
+                    if (i != 100 && std::memcmp (&l[(size_t) i], &nullBits, sizeof (float)) != 0) ++deltaNichtNull;
+                    if (i != 300 && std::memcmp (&r[(size_t) i], &nullBits, sizeof (float)) != 0) ++deltaNichtNull;
+                }
+                const bool wachmarkenBleiben = istWachmarke (l[100]) && istWachmarke (r[300]);
+                const bool wirksam = k->wirksameHoermatrix() == wahl[f];
+                bool ok = wirksam;
+                std::string was;
+                if (wahl[f] == Hoermatrix::processed || wahl[f] == Hoermatrix::dry)
+                {
+                    ok = ok && geaendert == 0;
+                    was = "laesst_den_puffer_unberuehrt";
+                }
+                else if (wahl[f] == Hoermatrix::delta)
+                {
+                    ok = ok && geaendert > 0 && deltaNichtNull == 0 && std::isnan (l[100]) && std::isnan (r[300])
+                            && ! istWachmarke (l[100]) && ! istWachmarke (r[300]);
+                    was = "schreibt_plus_null_und_den_ungezaehmten_dry_anteil";
+                }
+                else
+                {
+                    ok = ok && geaendert > 0 && std::isfinite (l[100]) && std::isfinite (r[300]);
+                    was = "schreibt_den_candidate_ausgang";
+                }
+                pruefe (ok, std::string ("311/M-18 neutral_mit_delta_und_candidate_schreibt: ") + namen[f] + " " + was,
+                        std::string ("wirksam ") + (wirksam ? "ja" : "nein") + ", geaenderte Samples "
+                        + std::to_string (geaendert) + " von 512, Wachmarken bytegleich " + (wachmarkenBleiben ? "ja" : "nein")
+                        + (wahl[f] == Hoermatrix::delta ? ", Delta ungleich +0,0 an " + std::to_string (deltaNichtNull) + " endlichen Stellen" : ""));
+            }
+
+            // Der Fade der Hoermatrix (Processed -> Dry) schreibt bis zu seinem
+            // Ende, ab dem ersten Sample danach nicht mehr - im selben Stueck.
+            {
+                auto k = neuerKern (fs, 512);
+                k->uebernehmeZustand (machSatz (true));
+                fahreStille (*k, kFadeSamples + kRampeSamples + 2048, 512);
+                k->setzeHoermatrix (Hoermatrix::dry);
+                std::vector<float> l (512), r (512);
+                material (l, r);
+                const auto lK = l, rK = r;
+                float* kan[2] = { l.data(), r.data() };
+                k->verarbeite (kan, 2, 512);
+                int hinten = 0;
+                for (int i = kFadeSamples; i < 512; ++i)
+                    if (std::memcmp (&l[(size_t) i], &lK[(size_t) i], sizeof (float)) != 0
+                     || std::memcmp (&r[(size_t) i], &rK[(size_t) i], sizeof (float)) != 0)
+                        ++hinten;
+                const bool fadeSchreibt = ! istWachmarke (l[100]);
+                pruefe (fadeSchreibt && hinten == 0 && istWachmarke (r[300]),
+                        "311/M-18 neutral_mit_delta_und_candidate_schreibt: der hoermatrix_fade_schreibt_bis_zu_seinem_ende",
+                        std::string ("Wachmarke an 100 im Fade geschrieben: ") + (fadeSchreibt ? "ja" : "nein")
+                        + ", geaenderte Samples ab 256: " + std::to_string (hinten) + " von 256");
+            }
         }
 
         // M-54: der Abgleich ist FEST, nicht materialabhaengig.

@@ -1,0 +1,52 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-90
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-90 (T3-01-01, R-311-6, Messkraft) - Regressionswache
+Zusage: Zusaetzlich zum Ausgangsvergleich, der bleibt: der Tap post_committed traegt ueber die Samples 255 bis 511 auf beiden Kanaelen exakt den Eingang als double.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt G, 311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (neben ms_stufe_ist_bei_width_eins_bitgenau_reversibel)
+
+--- MUTATION: SONDE-015-Rotbeweis M-30 (B-19b, docs/beweise/roh/SONDE-015-rot-B-19b-e3-n1.txt): m aus der float-Summe ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:678
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+            const double m = (L[i] + R[i]) * 0.5;
+nachher:
+            const double m = (double) ((float) L[i] + (float) R[i]) * 0.5;   // ROTBEWEIS NAK-311 M-90 (SONDE-015 B-19b)
+SHA-256 mutiert: 14338BA6CE5E9C8BCC3687828BB259082FAB6438E84767F9262EADB8AC3607C2
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-90-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:05:24, mutierte Quelle 21:05:21, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (2):
+  FEHLER  ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  FEHLER  311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 250 von 514 Stellen ungleich dem Eingang als double]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 250 von 514 Stellen ungleich dem Eingang als double]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+      Grund: der Ausgangsvergleich ueber 255..511 enthaelt Sample 255, das letzte Rampensample, das der Kern nach der Reparatur noch schreibt; es liegt unter den betroffenen Samples. Die Zeile sagt genau das voraus ("faellt nur noch, wenn Sample 255 eines dieser Samples ist"); die Samples 256 bis 511 schreibt der Kern nicht mehr, der Ausgang allein saehe dort nichts
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

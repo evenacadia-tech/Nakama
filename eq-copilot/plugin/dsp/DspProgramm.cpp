@@ -265,6 +265,17 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
     // ueber denselben Rampenweg wie der Output-Trim angewandt (M-39).
     aus.autoGainDb  = leiteAutoGainAb (aus);
     aus.autoGainLin = aus.autoGainDb == 0.0 ? 1.0 : dbInLinear (aus.autoGainDb);
+
+    // NAK-311 (T3-01-01, §7.2 Punkt 3): das Merkmal "neutral" - der engagierte
+    // Pfad rechnet bauartbedingt die Identitaet, und der Kern darf das
+    // Schreiben lassen (`DspKern::verarbeiteStueck`). Die Bandbedingung
+    // verlangt je aktivem Band den Weg, den `verarbeiteBand` ueberspringt;
+    // der abgeleitete Auto-Gain gehoert nicht dazu (DspProgramm.h).
+    bool baenderNeutral = true;
+    for (const auto& b : aus.baender)
+        if (b.aktiv && (b.nutztSvf || ! b.statischIstEinheit)) baenderNeutral = false;
+    aus.neutral = aus.eqEngagiert && ! aus.hardBypass && baenderNeutral && ! aus.msStufeAktiv
+               && aus.inputTrimDb == 0.0 && aus.outputTrimDb == 0.0;
 }
 
 } // namespace nakama::dsp

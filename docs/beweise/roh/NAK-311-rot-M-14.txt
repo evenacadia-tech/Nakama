@@ -1,0 +1,99 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-14
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-14 (T3-01-01, Gegenfall Rampe)
+Zusage: Waehrend der 256 Rampensamples schreibt der Kern (die Rampe ist Verarbeitung, M-17); ab dem ersten Sample nach dem Rampenende nicht mehr - Wachmarke dort bytegleich.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt B, 311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)
+
+Abschnitt 1 - HEUTE ROT: der neue oder ergaenzte Test gegen den unveraenderten Kern (Basis bb061d73, Produktquellen bytegleich zu HEAD: DspKern.cpp A12B25FA9A866A65F390FCFB4702C5DD927BEA10815CFBE46ED41054866066F5, DspKern.h 98FF88117BA52154D23EC24A47951788150DCEA152CF62DF31AC9A1F073C1461, DspProgramm.cpp 692F92C869051BC3392B621668FAF44821D2DC7F04FD5B4C3509FB883880B989, DspProgramm.h E6DF85A5566A4E7E6D4179390207947B6FE0025951C2D319EF48EEBC8A056593). Heute rot ist die zweite Haelfte der Zusage: der Kern schreibt auch nach dem Rampenende (3 Wachmarken ueberschrieben).
+--- LAUF GEGEN DEN UNVERAENDERTEN KERN: ROT ---
+Bein-Ausgabe: b6-heute-rot.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary EqCopDspGoldenTest 20:58:16, juengste Quelle DspGoldenTestMain.cpp 20:57:30, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (11):
+  FEHLER  311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 6 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 6 von 6 Stellen, Riegel +6]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  FEHLER  311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.000000015, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: processed laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: dry laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: der hoermatrix_fade_schreibt_bis_zu_seinem_ende  [Wachmarke an 100 im Fade geschrieben: ja, geaenderte Samples ab 256: 1 von 256]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.000000015, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 6 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 6 von 6 Stellen, Riegel +6]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+      Grund: heute rot, eigene Zeile
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: processed laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+      Grund: heute nicht messbar (M-18)
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: dry laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+      Grund: heute nicht messbar (M-18)
+  FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: der hoermatrix_fade_schreibt_bis_zu_seinem_ende  [Wachmarke an 100 im Fade geschrieben: ja, geaenderte Samples ab 256: 1 von 256]
+      Grund: heute nicht messbar (M-18)
+
+--- MUTATION: Rampenruhe aus der Neutralpruefung genommen: das Schreibende wartet nicht mehr auf das Ende eines Rampenuebergangs ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:914
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    const size_t cUebergangsEnde = (cCrossfade || cRampe) ? (size_t) zc.rest : 0;
+nachher:
+    const size_t cUebergangsEnde = (cCrossfade) ? (size_t) zc.rest : 0;   // ROTBEWEIS NAK-311 M-14: Rampenruhe entfernt
+SHA-256 mutiert: 6884DA00837F5ACD91A6A44F9FD0105AAD25F0D00CF3FAE57C45EF69F3B12A7D
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-14-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:03:44, mutierte Quelle 21:03:42, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.247843643, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.247843643, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 1  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 256, Wachmarken an 256, 257 und 511]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+  ok      311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 0 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+  ok      zipperresiduen_unter_minus_100_dbfs (M-17)  [groesste Stufe 0.00388777 gegen Rampenschritt 0.00388774]
+  ok      die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.000000059]
+  ok      rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.995262265 gegen Ziel 1.995262315]
+
+Hinweis: Die Rampe fehlt im Ausgang: die 256 Rampensamples weichen um bis zu 0,2478 von der Ideallinie ab (der Kern schreibt sie nicht). ABWEICHUNG von der Rotbeweisspalte: sie nennt als fallende Pruefung die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17) aus Abschnitt E. Die bleibt gruen, weil ihre Rampe von neutral WEG in ein Programm mit Output-Trim +6 dB laeuft - dessen Merkmal ist falsch, die Neutralpruefung greift dort nie. Die Ideallinie der Rampe AUF das neutrale Programm misst deshalb der Teilfall 311/M-14 selbst; an ihr faellt die Zusage.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: heute rot: JA / Mutation: JA

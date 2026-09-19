@@ -21,7 +21,7 @@
     Der Candidate-Pfad ist derselbe Aufbau auf eigenen Baenken; sein Tap
     heisst post_candidate.
 
-    ZWEI ZUSAGEN, DIE DIE FORM BESTIMMEN:
+    DREI ZUSAGEN, DIE DIE FORM BESTIMMEN:
 
     1. Ausgeschaltet wird NICHTS geschrieben. Nicht "mit 1,0 multipliziert",
        nicht "durch neutrale Biquads gerechnet" - der Puffer wird nicht
@@ -31,6 +31,19 @@
 
     2. Der Passthrough SANITISIERT NICHTS (M-50). Ein NaN im ausgeschalteten
        Zustand kommt unveraendert heraus.
+
+    3. Engagiert, aber bauartbedingt ohne Wirkung, wird ebenfalls nichts
+       geschrieben (NAK-311, die Neutralpruefung in `verarbeiteStueck`). Das
+       gilt ab dem ersten Sample nach Crossfade, Rampe und Hoermatrix-Fade,
+       wenn der Committed-Pfad entweder das Programm mit dem Merkmal
+       `DspProgramm::neutral` faehrt und alle fuenf Rampen in Ruhe auf 1,0
+       stehen (SONDE-015 M-02), oder Mix in Ruhe auf 0,0 und Output-Trim in
+       Ruhe auf 1,0 steht (M-33), und die Hoermatrix Processed oder Dry hoert.
+       Zurueckgeschrieben wird dort nichts, also wandelt auch nichts ein
+       double zurueck in den Puffer: Subnormals, -0 und nicht endliche Werte
+       kommen bytegleich heraus, auch unter DAZ und FTZ. Gerechnet wird weiter - der Riegel zaehlt, und die
+       Taps tragen die Rechnung. "In Ruhe" heisst `Rampe::ruhtBei`, nie ein
+       Zielvergleich.
 
     DER LEBENSZYKLUS IST EIN GESCHLOSSENER AUTOMAT (Nacharbeit 1, Ursache
     der Befunde B-1 und B-5 bis B-12):
@@ -162,7 +175,9 @@ public:
     //== Audiothread-Seite ==================================================
 
     /** Verarbeitet einen Block in-place. `kanaele` zeigt auf 1 oder 2
-        Kanaele. Schreibt bei ausgeschaltetem Kern KEINEN Sample.
+        Kanaele. Schreibt bei ausgeschaltetem Kern KEINEN Sample, und ebenso
+        keinen, sobald der engagierte Pfad bauartbedingt den Eingang ausgibt
+        (Zusage 3 oben, NAK-311).
 
         Die Programmuebernahme beider Pfade laeuft genau EINMAL je Aufruf,
         vor dem ersten Sample (B-11). Ein Block groesser als `maxBlock` laeuft
@@ -333,6 +348,9 @@ private:
             return aktuell;
         }
 
+        /** Steht die Rampe still auf `wert`? Fragt den Zustand, nicht nur
+            das Ziel (M-02). Die Neutralpruefung (NAK-311) fragt so jede der
+            fuenf Rampen; `ruhtBei (ziel)` heisst "ruht, gleich worauf". */
         bool ruhtBei (double wert) const noexcept { return rest == 0 && aktuell == wert && ziel == wert; }
     };
 

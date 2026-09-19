@@ -1,0 +1,62 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-83
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-83 (Gate, Stereo-Goldens) - Regressionswache
+Zusage: gruen; Ausgabezeilen der Abschnitte G und H gleich dem Basislauf der Etappe.
+Bein:   B6 EqCopDspGoldenTest, Abschnitte G und H
+
+--- MUTATION: Diagonalterm der M/S-Faltung durch das Produkt hMid * hSide ersetzt ---
+Datei: eq-copilot/plugin/dsp/DspProgramm.cpp:125
+SHA-256 vorher (Endstand der Reparatur): F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+        const auto diagonal = (hMid + hSide) * 0.5;
+nachher:
+        const auto diagonal = hMid * hSide;   // ROTBEWEIS NAK-311 M-83
+SHA-256 mutiert: 6C0F6CBD3C8BD56CF9FE7D36447350F1E4B63A06BA59CF6B3640E6B22D87FC08
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-83-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:10, mutierte Quelle 21:07:34, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Zeilenvergleich gegen den Basislauf (NAK-311-etappe2-b6-zeilenvergleich.txt, Basis bb061d73):
+== Abschnitt C: Basis 78 Zeilen, Vergleichslauf 78 Zeilen, in Reihenfolge bytegleich 78 von 78 Basiszeilen
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+
+== Abschnitt G: Basis 11 Zeilen, Vergleichslauf 13 Zeilen, in Reihenfolge bytegleich 11 von 11 Basiszeilen
+  nur Vergleichslauf (insert):   ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  nur Vergleichslauf (insert):   ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+   -> Basiszeilen ohne bytegleiche Entsprechung: 0
+
+== Abschnitt H: Basis 12 Zeilen, Vergleichslauf 12 Zeilen, in Reihenfolge bytegleich 10 von 12 Basiszeilen
+  nur Basis (replace):   ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  nur Basis (replace):   ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  nur Vergleichslauf (replace):   FEHLER  identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -11.761481 dB]
+  nur Vergleichslauf (replace):   FEHLER  und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+   -> Basiszeilen ohne bytegleiche Entsprechung: 2
+
+Die Zusage faellt an der erwarteten Pruefung (Zeilenvergleich Abschnitt H): JA
+
+Gefallene Pruefungen im Bein (2):
+  FEHLER  identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -11.761481 dB]
+      Grund: die erwartete Pruefung (M-37): ein identisches Paar ergibt H^2 statt H, -11,76 statt -5,86 dB
+  FEHLER  und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+      Grund: Teil derselben Pruefung M-37: das Paar liegt jetzt beim doppelten Gain
+
+Hinweis: Die Rotbeweisspalte nennt identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37); sie faellt, und der Zeilenvergleich von Abschnitt H zeigt genau diese zwei Zeilen.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspProgramm.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis: Mutation: JA

@@ -1,0 +1,61 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-17
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-17 (T3-01-01, Gegenfall wirksames Band) - Regressionswache
+Zusage: Die Neutralpruefung greift nicht: der Kern schreibt auch ab Sample 512 (mindestens ein Rauschsample veraendert), an den sechs nicht endlichen Stellen kommt ein endlicher Wert heraus, nie 0x7F800001; nichtEndlicheEingaenge steigt um 6.
+Bein:   A16 EqCopProbeeqNullTest, Abschnitt 14, 311/M-11 Teilfall M-17 wirksames_band_schreibt
+
+--- MUTATION: die Bandbedingung des Merkmals "neutral" (jedes aktive Band ein statischer Einheitsbiquad ohne SVF) aus dem Merkmal genommen ---
+Datei: eq-copilot/plugin/dsp/DspProgramm.cpp:277
+SHA-256 vorher (Endstand der Reparatur): F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    aus.neutral = aus.eqEngagiert && ! aus.hardBypass && baenderNeutral && ! aus.msStufeAktiv
+nachher:
+    (void) baenderNeutral;   // ROTBEWEIS NAK-311 M-17: Bandbedingung aus dem Merkmal genommen
+    aus.neutral = aus.eqEngagiert && ! aus.hardBypass && ! aus.msStufeAktiv
+SHA-256 mutiert: 42B72C819C331935F452B83B24111F945A5B55BEAD18D0AA3384A0DE1C93FA79
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-17-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:04:19, mutierte Quelle 21:04:17, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 109 Pruefungen ok, 1 Fehler
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 6; Rauschen 255 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 6; Rauschen 255 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 48000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 96000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+
+Hinweis: Unter der Mutation ist das Merkmal fuer den +12-dB-Bell wahr, alle Rampen ruhen auf 1,0: ab Sample 256 schreibt der Kern nicht mehr (die Bell ist kein Einheitsband, §9 F-4 haelt das Stueck nicht fest - "hoechstens bis zum Stueckende" ist damit erfuellt). Die drei Wachmarken kommen bytegleich heraus, NaN und +-Inf unveraendert; auch der Rauschteil ab Sample 512 bleibt unveraendert. Die Zusage faellt an den nicht endlichen Stellen.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspProgramm.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 F4F1CDBB562ECA50C97A25551D37B9570FA59A453F56627F1A2D839BD8948480, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (A16; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0 (derselbe Bauaufruf); Binary 21:08:36, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 110 Pruefungen ok, 0 Fehler
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

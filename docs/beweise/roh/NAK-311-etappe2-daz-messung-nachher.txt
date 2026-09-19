@@ -1,0 +1,184 @@
+NAK-311 Etappe 2 Teil b - Messung M-01 nach der Reparatur (Wache 311/M-01 daz_ftz_messung_bitmuster, A16)
+Stand:  2026-09-19 (Bauer Teil b)
+Stand des Codes: End-Codestand des Teils b (Neutralpruefung in DspKern::verarbeiteStueck, Merkmal neutral in
+baueProgramm); A16 EqCopProbeeqNullTest gebaut im gemeinsamen Bauaufruf der Einzelbeine, Binary 2026-09-19
+21:08:36, juengste Quelle DspProgramm.cpp 21:08:26 (bytegleich zurueckgespielt) - Binary juenger. Exit 0,
+"SONDE-NULLTEST OK - 110 Pruefungen ok, 0 Fehler".
+Vorher-Messung: docs/beweise/roh/NAK-311-etappe2-daz-messung.txt (Ausgang (a): a 24, b 24, c 0).
+
+AUSWERTUNG
+- 311/M-01 Summe veraenderter Muster je Zustand (je 6 Kombinationen zu 8 Mustern): a 0, b 0, c 0
+- Musterzeilen "bytegleich": 144 von 144; "VERAENDERT": 0.
+- Zustand (a) eq an, sonst Default (M-02) und Zustand (b) Mix 0, Output-Trim 0 dB, Input-Trim +9 dB, +12-dB-Bell
+  (M-33): 0 veraenderte Muster in Stereo und Mono bei 44,1, 48 und 96 kHz - die Neutralpruefung schreibt dort
+  keinen Sample. Zustand (c) eq aus: 0 wie vorher.
+- Die Wache bleibt stehen und gruen (18 von 18 Kombinationen liefen); sie prueft keine Bitgleichheit - die
+  Bitgleichheit tragen 311/M-10, 311/M-19, 311/M-20 und 311/M-21.
+
+AUSGABE DES BINARIES (Zeilen der Messung, unveraendert bis auf CRLF zu LF)
+-- 13. NAK-311 311/M-01 daz_ftz_messung_bitmuster
+  311/M-01 MXCSR unter juce::ScopedNoDenormals 0x00009FE0 (FTZ 1, DAZ 1)
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 Summe veraenderter Muster je Zustand (je 6 Kombinationen zu 8 Mustern): a 0, b 0, c 0
+  ok      daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo und Mono; 44,1, 48 und 96 kHz; je 8 Muster ausgegeben  [18 von 18]

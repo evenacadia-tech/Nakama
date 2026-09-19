@@ -1,0 +1,52 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-22
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-22 (T3-01-01, Echtzeit) - Regressionswache
+Zusage: 0 Allokationen und 0 Sperren im Callback, auch in Bloecken mit Neutralpruefung.
+Bein:   B6 EqCopDspGoldenTest, Abschnitt J, null_allokationen_im_callback_samt_programmwechseln (Zyklus um den neutralen Schritt bei Block 370 ergaenzt)
+
+--- MUTATION: in der Neutralpruefung ein std::vector angelegt ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:1106
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+        if (neutralRuht || mixNullRuht)
+            schreibBis = std::min (schreibBis, std::max (cUebergangsEnde, (size_t) std::max (0, hoerFadeRest)));
+nachher:
+        if (neutralRuht || mixNullRuht)
+        { std::vector<int> rotbeweis (1); (void) rotbeweis;   // ROTBEWEIS NAK-311 M-22: Allokation in der Neutralpruefung
+            schreibBis = std::min (schreibBis, std::max (cUebergangsEnde, (size_t) std::max (0, hoerFadeRest))); }
+SHA-256 mutiert: 2260AFF19CDC0042210CBB9635E0173D75337B29EAF9A1532F17053E7140F330
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-22-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:05:06, mutierte Quelle 21:05:04, Binary juenger: ja
+Exitcode: 1
+DSP-GOLDEN FEHLGESCHLAGEN
+
+Gefallene Pruefungen (1):
+  FEHLER  null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 81 Blockrand-Uebernahmen, 60 Baenke geerntet, busy_retry 0, Testzaehler 666, Kernzaehler 666]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)  [4000 Bloecke, 4179358 Samples, 81 Blockrand-Uebernahmen, 60 Baenke geerntet, busy_retry 0, Testzaehler 666, Kernzaehler 666]
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      null_sperren_im_callback (M-47)  [Sperrenzaehler=0]
+  ok      sperrzaehler_sieht_eine_sperre_im_audiopfad (M-47, B-13)  [ausserhalb 0, im Audiopfad 1]
+  ok      der_zaehler_trennt_worker_und_audiothread (M-47)  [Testzaehler 1, Kernzaehler 0]
+
+Hinweis: 666 Allokationen im Callback: so oft lief die Neutralpruefung im Zyklus positiv. Ohne den neutralen Schritt erreichte der Zyklus sie nicht (hergeleitet, nicht gemessen: die uebrigen Programme tragen Baender und Mix 0,7, das Ausschalten kehrt ueber committedRuht vor der Pruefung zurueck).
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (B6; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-B6.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:08:29, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+DSP-GOLDEN OK
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

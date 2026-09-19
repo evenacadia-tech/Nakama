@@ -1,0 +1,65 @@
+NAK-311 Etappe 2 Teil b - Rotbeweis M-15
+Stand:  2026-09-19 (Bauer Teil b)
+Zeile:  M-15 (T3-01-01, Gegenfall ausgeschaltet) - Regressionswache
+Zusage: eq aus, Bitmuster und Wachmarke: bytegleich, kein Zaehler steigt (M-01, M-50).
+Bein:   A16 EqCopProbeeqNullTest, Abschnitt 14, 311/M-11 Teilfall M-15
+
+--- MUTATION: frueher Rueckweg bei committedRuht entfernt: auch der ausgeschaltete und der hard-bypasste Kern laufen durch den Ruecklauf ---
+Datei: eq-copilot/plugin/dsp/DspKern.cpp:991
+SHA-256 vorher (Endstand der Reparatur): C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D
+Sicherungskopie: C:\Users\phili\.claude\jobs\fae250ca\tmp\sicherung\ (ausserhalb des Repos)
+vorher:
+    if (committedRuht)
+nachher:
+    if (false && committedRuht)   // ROTBEWEIS NAK-311 M-15/M-16: Rueckweg bei committedRuht entfernt
+SHA-256 mutiert: 3C6EBBA23134901D17F715C681CAB3D41AC3424D7117B5E23080E1980C67656B
+Testquellen waehrend aller Mutationslaeufe: eq-copilot/plugin/tests/DspGoldenTestMain.cpp 89EE241116AA706CB8383F3B925F49D42216DC450B93F0B4059A2FB60EC7B172, eq-copilot/plugin/tests/SondeNullTestMain.cpp C51A47859C939BA11F1D95110D5EF06A0EA2189C4FD1F76A13EDE48A10BA5E42 (dieselben Bytes wie im Rotlauf gegen den unveraenderten Kern; danach kamen nur die zwei B6-Selbstauditpruefungen 311/M-13 Selbstaudit dazu, Manifest §22)
+
+--- LAUF UNTER MUTATION: ROT ---
+Bein-Ausgabe: rot-M-15-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0; Binary 21:04:04, mutierte Quelle 21:04:01, Binary juenger: ja
+Exitcode: 1
+SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 2 Fehler
+
+Gefallene Pruefungen (2):
+  FEHLER  311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 3 von 6 veraendert, 0 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 7174 von 13352 veraendert]
+  FEHLER  311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 3 von 6 veraendert, 0 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 7166 von 13352 veraendert]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: FEHLER  311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 3 von 6 veraendert, 0 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 7174 von 13352 veraendert]
+
+Mitgefallen (deklariert, mit Grund):
+  FEHLER  311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 3 von 6 veraendert, 0 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 7166 von 13352 veraendert]
+      Grund: derselbe Rueckweg traegt auch diesen Gegenfall (eigene Rohdatei)
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt):
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 48000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 96000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 0, Zaehler 6; Rauschen 453323 abweichend (ab Sample 512: 452812), Muster 13352 von 13352 veraendert]
+
+Hinweis: Die bestehenden Passthrough-Faelle (Rauschen, qNaN, +-Inf) bleiben unter der Mutation gruen: fuer normale Werte, den ruhigen NaN und +-Inf ist die Rueckwandlung bytegleich. Erst Wachmarke und Subnormals zeigen den Schreibzugriff.
+
+--- RUECKNAHME ---
+Quelle eq-copilot/plugin/dsp/DspKern.cpp bytegleich aus der Sicherung zurueckgespielt: ja (SHA-256 C909BCC38159B72B1D438640791330686D323010A676C5F04D2F3EF7533B6D9D, gleich dem Wert vor der Mutation); LastWriteTime auf jetzt.
+
+--- LAUF NACH RUECKNAHME: GRUEN (A16; gemeinsamer Gruenlauf 21:08 nach der bytegleichen Ruecknahme aller Mutationen dieses Teils, alle drei Dateien mit SHA-256 gleich dem Endstand) ---
+Bein-Ausgabe: gruen-nach-ruecknahme-A16.txt (Scratchpad des Bauers, nicht im Repo); Bau Exit 0 (derselbe Bauaufruf); Binary 21:08:36, juengste zurueckgespielte Quelle 21:08:26, Binary juenger: ja
+Exitcode: 0
+SONDE-NULLTEST OK - 110 Pruefungen ok, 0 Fehler
+
+Gefallene Pruefungen (0):
+  (keine)
+
+Gruen nach Ruecknahme: JA
+
+Ergebnis je Abschnitt: Mutation: JA

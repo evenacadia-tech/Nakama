@@ -50,17 +50,6 @@
    "status": "offen"
   },
   {
-   "id": "U44",
-   "dringlichkeit": "jetzt",
-   "art": "Produktentscheid (Klangverhalten)",
-   "titel": "Großer EQ-Sprung: überblenden, lassen wie heute oder hart umschalten?",
-   "was": "Wenn ein Band in einem Schritt weit springt — etwa ein Höhenregler (Shelf) von 5 kHz auf 50 Hz, beim Laden einer Voreinstellung, beim Tippen eines Werts oder bei einer Automationsstufe — kann für den Bruchteil einer Sekunde ein deutlich lauteres Wummern oder Zischen durchkommen, das weder vorher noch nachher im Klang steckt (eine Übergangsspitze; im Audit etwa 17 bis 22 dB über dem Klang gemessen). Heute gleitet Nakama bei jeder Änderung in rund 5 Millisekunden vom alten zum neuen Wert; bei kleinen Änderungen ist das sauber, bei großen Sprüngen entsteht genau dabei die Spitze. Drei Wege: (1) Empfohlen: große Sprünge kurz überblenden — der alte Klang blendet in wenigen Millisekunden in den neuen, im Audit praktisch ohne Spitze; das kostet einen zweiten Filterlauf nur für diesen Moment, langsame Reglerfahrten klingen exakt wie heute. (2) Alles lassen wie heute; die Spitze bleibt. (3) Hart umschalten ohne Gleiten: kleinere Spitze als heute (im Audit etwa 7 dB), dafür ein hörbarer Klick.",
-   "warum": "Audit-Befund T3-15-07, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 1). Gebaut wird dieser Teil erst nach deiner Antwort; die übrigen Teile des Audio-Kerns (Planschritt S25j, Ticket NAK-311) laufen vorher. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten. Kartentext berichtigt am 19.09.2026: das heutige Verhalten ist kein Sofortumschalten.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-07 und Arbeitsübersicht W07; docs/offene-punkte.md NAK-311",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U45",
    "dringlichkeit": "jetzt",
    "art": "Produktentscheid (Klangverhalten)",
@@ -823,6 +812,24 @@
     "nachtrag": "2026-09-15 05:2x — nach der Messung der Etappe 4 (docs/beweise/NAK-286.md §38.2): (1) Die Dateinamen bleiben die hier genannten — Nakama-Diagnose-Referenz.flp (ohne die beiden Nakama-Slots) und Nakama-Diagnose-Verarbeitung.flp (Verarbeitung in Probeeq ein, hörbarer Bandeingriff), beide im Ordner von eq-copilot/fixtures/fl/Nakama-Diagnose.flp; der Runner wird auf diese Namen gebracht (Regel P-18), der User ändert nichts an ihnen. (2) Beim selben Handgriff (K-286-2, Regel P-17): im Diagnoseprojekt selbst das Fenster von Nakama Probeeq auf Insert 1 aufklappen (der FL-Wrapper ist eingeklappt gespeichert; die Automatik erfasste nur die 67 × 31 Pixel große Kopfleiste) und das Diagnoseprojekt speichern. Ohne (2) endet der Fensterschritt künftig mit „Voraussetzung: eingeklappt“, nichts anderes hängt daran.",
     "stellen_ab": "2026-09-14, 12:00 Uhr — nicht 9:00 Uhr. User-Wort 13.09.2026, 23:2x Uhr, wörtlich: „STELL Die frage um 12 uhr nicht um 9 dieses mal“",
     "gestellt": "2026-09-14, 12:04 Uhr in der Dirigentensitzung 3fc9471e (Text mit drei Wegen: erledigt / bleibt liegen / jetzt mit Anleitung; Dateinamen Nakama-Diagnose-Referenz.flp und Nakama-Diagnose-Verarbeitung.flp neben dem Diagnoseprojekt in eq-copilot/fixtures/fl/) und per Push angekündigt; AskUserQuestion ist im dontAsk-Modus gesperrt. Antwort ausstehend beim Session-Neustart am 14.09.2026 nachmittags: die nächste Session stellt die Frage nicht erneut, sondern zeigt sie beim nächsten Kontakt des Users einmal kurz und wartet auf den Wortlaut."
+   }
+  },
+  "U44": {
+   "wahl": "1. Überblenden (Empfohlen).",
+   "text": "1",
+   "datum": "2026-09-19 11:10",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: große Sprünge eines EQ-Bands werden kurz überblendet; langsame Reglerfahrten klingen wie heute. Gebaut wird das in NAK-311 Etappe 5 (Audit-Befund T3-15-07, Arbeitspaket W07), nach dem Slot-Lebenszyklus der Etappe 3 (W03), mit eigenem Matrixnachtrag; ab wann ein Sprung als groß gilt und wie lang die Überblendung ist, entscheidet der Dirigent. Festgehalten in design/abnahmen/2026-09-19-grosser-eq-sprung-ueberblenden-u44.md und im Register NAK-311. Gestellt als Text in der Dirigentensitzung 0cb3cdf4 (AskUserQuestion im dontAsk-Modus gesperrt) mit drei Wegen: „1. Überblenden (empfohlen)“, „2. Lassen wie heute“, „3. Hart umschalten“.",
+   "karte": {
+    "id": "U44",
+    "dringlichkeit": "jetzt",
+    "art": "Produktentscheid (Klangverhalten)",
+    "titel": "Großer EQ-Sprung: überblenden, lassen wie heute oder hart umschalten?",
+    "was": "Wenn ein Band in einem Schritt weit springt — etwa ein Höhenregler (Shelf) von 5 kHz auf 50 Hz, beim Laden einer Voreinstellung, beim Tippen eines Werts oder bei einer Automationsstufe — kann für den Bruchteil einer Sekunde ein deutlich lauteres Wummern oder Zischen durchkommen, das weder vorher noch nachher im Klang steckt (eine Übergangsspitze; im Audit etwa 17 bis 22 dB über dem Klang gemessen). Heute gleitet Nakama bei jeder Änderung in rund 5 Millisekunden vom alten zum neuen Wert; bei kleinen Änderungen ist das sauber, bei großen Sprüngen entsteht genau dabei die Spitze. Drei Wege: (1) Empfohlen: große Sprünge kurz überblenden — der alte Klang blendet in wenigen Millisekunden in den neuen, im Audit praktisch ohne Spitze; das kostet einen zweiten Filterlauf nur für diesen Moment, langsame Reglerfahrten klingen exakt wie heute. (2) Alles lassen wie heute; die Spitze bleibt. (3) Hart umschalten ohne Gleiten: kleinere Spitze als heute (im Audit etwa 7 dB), dafür ein hörbarer Klick.",
+    "warum": "Audit-Befund T3-15-07, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 1). Gebaut wird dieser Teil erst nach deiner Antwort; die übrigen Teile des Audio-Kerns (Planschritt S25j, Ticket NAK-311) laufen vorher. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten. Kartentext berichtigt am 19.09.2026: das heutige Verhalten ist kein Sofortumschalten.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-07 und Arbeitsübersicht W07; docs/offene-punkte.md NAK-311",
+    "seit": "18.09.",
+    "status": "offen"
    }
   }
  }

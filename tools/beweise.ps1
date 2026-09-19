@@ -532,7 +532,7 @@ $kanon = @(
         Art        = 'plugin'
         Argumente  = @()
         AbPhase    = 'jetzt'
-        Behauptung = 'C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher.'
+        Behauptung = 'C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. Seit NAK-309 (M-18 bis M-28) die Regeln des Probewerkzeugs: ohne Argument waehlt es den v2-Probenamen, ein leeres Argument bleibt leer; der Produktionsname (auch gross oder gemischt geschrieben), Namen mit \ oder / hinter \\.\pipe\, fremde Namen und ungueltige v2-Suffixe werden abgelehnt, v2- und v3-Probenamen zugelassen; ein PipeClient ohne Namen startet keinen Verbindungsversuch; ein Konfliktende gilt nur mit einem neuen Broker-ACK ohne Konflikt auf derselben stehenden Verbindung, nicht nach Abbau oder Neuaufbau. Quelltextwachen: PipeProbeMain entscheidet den Namen vor Servererwartung und erstem Client (abgelehnt Exit 64) und wartet auf dieses Konfliktende-Praedikat; das Produkt nennt seine v2-Pipe ausdruecklich.'
     }
     # --- Python-Beine des v3-Vertrags ---------------------------------------
     #

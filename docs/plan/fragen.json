@@ -50,17 +50,6 @@
    "status": "offen"
   },
   {
-   "id": "U46",
-   "dringlichkeit": "jetzt",
-   "art": "Produktentscheid (Klangverhalten)",
-   "titel": "Höhen-Korrektur des digitalen EQ (Decramping): einbauen, verwerfen oder vertagen?",
-   "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket; dann muss die gemessene Filter-Referenz, gegen die heute jeder Filtertest läuft, neu festgelegt und neu abgenommen werden — ein eigener, größerer Schritt. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
-   "warum": "Audit-Befund T3-15-10: ein alter Prüfauftrag nennt die Korrektur als zu prüfen, aber es gibt keinen Entscheid und keine Matrixzeile dazu. Ohne Antwort bleibt es beim Vertagen; nichts am Kern ändert sich dadurch.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-10 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U47",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (ja/nein)",
@@ -847,6 +836,24 @@
     "was": "Ein dynamisches Band greift, sobald der Pegel in seinem Frequenzbereich eine Schwelle (Threshold) überschreitet. Offen ist, was „Pegel“ dabei heißt: (1) Empfohlen: der Durchschnittspegel über einen kurzen Zeitraum (RMS) — greift gleichmäßig und reagiert weniger nervös auf einzelne Schläge. (2) Der Spitzenpegel (Peak) — greift sofort auf Transienten wie Snare-Schläge, kann bei perkussivem Material flattern. Attack, Hold und Release bleiben in beiden Fällen so einstellbar wie heute.",
     "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. An der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 4). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Länge des Messfensters ist Technik.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-06 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
+    "seit": "18.09.",
+    "status": "offen"
+   }
+  },
+  "U46": {
+   "wahl": "1. Vertagen (Empfohlen).",
+   "text": "1.",
+   "datum": "2026-09-19 11:24",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: die Höhen-Korrektur (Decramping) ist vertagt, nicht verworfen; am Klang und an der gemessenen Filter-Referenz ändert sich jetzt nichts. Sie kommt später als eigener Schritt mit Hörprobe, ausgelöst durch eine neue Karte nach dem fertigen Kern; Register NAK-332 hält den Punkt. In NAK-311 ist der Audit-Befund T3-15-10 damit entschieden, kein Bau. Festgehalten in design/abnahmen/2026-09-19-decramping-vertagt-u46.md. Gestellt als Text in der Dirigentensitzung 0cb3cdf4 (AskUserQuestion im dontAsk-Modus gesperrt) mit drei Wegen: „1. Vertagen (empfohlen)“, „2. Jetzt einbauen, im Audio-Kern-Ticket“, „3. Verwerfen“.",
+   "karte": {
+    "id": "U46",
+    "dringlichkeit": "jetzt",
+    "art": "Produktentscheid (Klangverhalten)",
+    "titel": "Höhen-Korrektur des digitalen EQ (Decramping): einbauen, verwerfen oder vertagen?",
+    "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket; dann muss die gemessene Filter-Referenz, gegen die heute jeder Filtertest läuft, neu festgelegt und neu abgenommen werden — ein eigener, größerer Schritt. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
+    "warum": "Audit-Befund T3-15-10: ein alter Prüfauftrag nennt die Korrektur als zu prüfen, aber es gibt keinen Entscheid und keine Matrixzeile dazu. Ohne Antwort bleibt es beim Vertagen; nichts am Kern ändert sich dadurch.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-10 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
     "seit": "18.09.",
     "status": "offen"
    }

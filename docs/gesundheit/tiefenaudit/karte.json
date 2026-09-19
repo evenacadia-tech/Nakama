@@ -1,0 +1,1204 @@
+{
+ "_lies_mich": "Bereichskarte des Agenten-Tiefenaudits (Skill /tiefenaudit). Diese Datei ist die einzige handgepflegte Quelle der Agentenaufträge: Bereiche, Nähte, Kopplungen. Aufträge werden daraus gerechnet (tools/pruefung/tiefenaudit_karte.py --auftraege), nie von Hand geschrieben. Bekannte Problemstellen stehen NICHT hier, sie werden aus den Befundquellen gerechnet (--befunde). Spielregeln: docs/gesundheit/tiefenaudit/LIES-MICH.md.",
+ "stand": "Entwurf 19.09.2026 (User-Auftrag 19.09.2026). Noch kein Lauf. Zuordnung Test zu Bereich nach Dateinamen und Tiefenaudit 3; der erste Lauf prüft sie (Kartennachtrag).",
+ "befundquellen": [
+  "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md"
+ ],
+ "pflichtabdeckung": {
+  "wurzeln": [
+   "eq-copilot/plugin/**",
+   "eq-copilot/schemas/**",
+   "eq-copilot/install/**",
+   "eq-copilot/identity/**",
+   "eq-copilot/cmake/**",
+   "eq-copilot/CMakeLists.txt",
+   "broker/src/**",
+   "broker/tests/**",
+   "broker/Cargo.toml",
+   "broker/Cargo.lock",
+   "tools/**"
+  ],
+  "endungen": [
+   ".cpp",
+   ".h",
+   ".in",
+   ".rs",
+   ".py",
+   ".ps1",
+   ".cmake",
+   ".txt",
+   ".json",
+   ".fbs",
+   ".toml",
+   ".lock",
+   ".md",
+   ".sh"
+  ],
+  "ausgenommen": [
+   {
+    "pfad": "tools/codex-plugins/**",
+    "grund": "Codex-Werkzeugquelle, kein Produkt und kein Beweisweg"
+   },
+   {
+    "pfad": "tools/dirigent/logo.ps1",
+    "grund": "Anzeige ohne Logik"
+   }
+  ]
+ },
+ "zeilenbudget_je_bereich": 16000,
+ "invarianten": {
+  "GRUNDGESETZ": "Nichts Ungefragtes: Verarbeitung nur, wenn der User sie einschaltet. Ausgeschaltet ist der Pfad im Nulltest bitidentisch; sonst Passthrough sampleidentisch, ohne Latenz oder Tail. Der Advisor schlägt nur vor.",
+  "ECHTZEIT": "Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder Netzzugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio. Steuerung über Pipe oder UI wird außerhalb des Audio-Threads übernommen.",
+  "SCHEMA": "Schemas sind Verträge: neue persistente Felder zuerst versionieren; Altstände laden; unbekannte Felder zerstören alte Consumer nicht; Save und Load gemeinsam testen. v3: Discriminator, Zieladresse, Revision und Capability sind nicht additiv erweiterbar.",
+  "STATE": "State bleibt verlustfrei: unbekannte Major-Versionen oder unzulässige Matrizen read-only mit Originalbytes; jede persistente Änderung meldet dem Host Dirty-State.",
+  "OPTIK": "Engine kennt keine Optik: sie liefert kohärente Mess-Snapshots; der Editor hält Anzeigezustand und rendert nur neue Snapshot-Revisionen.",
+  "ZEIT": "Zeit ist aktive Musikzeit: Zonen-Ticks sind deterministisch und durch Goldens beweisbar.",
+  "NAN": "NaN-Ehrlichkeit: nicht-endliche Werte werden verriegelt und gezählt; Nyquist gekappt; ohne genügend endliche Nachbarn keine Basislinie.",
+  "IDENTITAET": "Identität bleibt eingefroren bis NAK-30: Class-IDs, Hersteller-/Plugin-Codes und Replace-V2-Verhalten nie beiläufig ändern.",
+  "PROBE": "Probe-Pipe ist nie Produktions-Pipe; nie ein Testbroker auf der Produktions-Pipe.",
+  "BEDIENUNG": "Keine toten UI-Elemente; Tasten sind Material (Zustände wechseln nie die Maße); Zustand ehrlich gemeldet.",
+  "BEWEIS": "Behauptung ≤ Messung: ein Bein bezeugt nur, was es baut und misst; Frische der Eingaben; jede Prüfung einmal gebrochen."
+ },
+ "nicht_melden": [
+  "Legacy-Bezeichner EQ-Copilot, EqCop*, Eqcp (bleiben bis NAK-30)",
+  "Geparkter Designteil (User 12.09.2026): Aussehen, Figma, Skizze, Blueprint-Fortschreibung; Prisma, Hörkompass, Glas/Licht, Tiefenfeld, Bauplan 2.0, Kunstwerk, Feld-Alphabet",
+  "Noch nicht angeschlossener Produktumfang (S28b, S29–31, Sidechain, Release): nur gegen Verträge prüfen, nie als fehlende Bedienung melden",
+  "Punkte, die docs/offene-punkte.md schon führt: als „bekannt NAK-nnn“ kennzeichnen, nur melden, wenn der Befund über die Registerzeile hinausgeht",
+  "Stil, Kosmetik, Benennung, theoretische Randfälle ohne Zusage, Sabotage in repo-eigenen Quellen (Bedrohungsmodell ist die versehentliche Regression)"
+ ],
+ "bereiche": [
+  {
+   "id": "P01",
+   "name": "Audio-Eintritt und Prozessor (Gen)",
+   "spur": "sammler",
+   "klassen": [
+    "K6",
+    "K2",
+    "Naht"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "ECHTZEIT",
+    "STATE"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/src/PluginProcessor.cpp",
+    "eq-copilot/plugin/src/PluginProcessor.h",
+    "eq-copilot/plugin/src/PluginFactory.cpp",
+    "eq-copilot/plugin/src/WorkerCadence.h",
+    "eq-copilot/plugin/src/prozessor/**",
+    "eq-copilot/plugin/tests/NullTestMain.cpp",
+    "eq-copilot/plugin/tests/QueueStressTestMain.cpp",
+    "eq-copilot/plugin/tests/SessionSoakMain.cpp"
+   ],
+   "fragen": [
+    "Jeder Weg von processBlock und processParameterChanges: Sperre, Allokation, Datei, Pipe, Logging?",
+    "Was geschieht im ersten Block nach prepareToPlay, im Offline-Render, bei Blockgröße 1 und bei wechselnder Blockgröße?",
+    "Welche Hostaufrufe können sich überlappen (setStateInformation während processBlock, Editor auf/zu, Reload derselben Instanz)?"
+   ]
+  },
+  {
+   "id": "P02",
+   "name": "DSP-Kern (EQ, Dynamik, Rampen, Bänke)",
+   "spur": "sammler",
+   "klassen": [
+    "K6",
+    "Numerik"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "ECHTZEIT",
+    "NAN"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/dsp/**",
+    "eq-copilot/plugin/tests/DspGoldenTestMain.cpp"
+   ],
+   "fragen": [
+    "Jeder Übergang (ein/aus, Bankwechsel, Rampe, Crossfade, Hörmatrix): klickfrei nach dem Maß E-31, und bleibt kein Zustand aus der Ruhe stehen?",
+    "Jeder Slot-Lebenszyklus (belegen, entfernen, neu belegen, Typwechsel, Fremdslotwechsel): erbt oder verliert ein Slot Historie?",
+    "Jede Zahl: NaN, ±Inf, Subnormals, ±0, Nyquist, Extremkurven, Mono, Samplerate an den Rändern?"
+   ]
+  },
+  {
+   "id": "P03",
+   "name": "Sonde / Probeeq-Prozessor",
+   "spur": "sammler",
+   "klassen": [
+    "K6",
+    "K2",
+    "K4"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "ECHTZEIT",
+    "STATE",
+    "PROBE"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/sonde/**",
+    "eq-copilot/plugin/tests/SondeNullTestMain.cpp",
+    "eq-copilot/plugin/tests/Sonde012HostChannelContextTest.cpp",
+    "eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp"
+   ],
+   "fragen": [
+    "Misst Probeeq wirklich passiv: schreibt irgendein Weg ein Sample, solange der EQ aus ist?",
+    "Parameterweg Host → Prozessor → Worker → Kern: wo kann ein Wert verloren gehen, doppelt gelten oder nach dem Ausschalten wirken?",
+    "Messsonde und EQ-Ausführer in derselben Instanz: teilen sie Zustand, den nur einer besitzen darf?"
+   ]
+  },
+  {
+   "id": "P04",
+   "name": "Messkern: Analyse-Engine, Spektrum, Zeit, Bandgitter",
+   "spur": "sammler",
+   "klassen": [
+    "Numerik",
+    "K3"
+   ],
+   "invarianten": [
+    "NAN",
+    "ZEIT",
+    "OPTIK",
+    "ECHTZEIT"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+    "eq-copilot/plugin/core/analysis/Fft.h",
+    "eq-copilot/plugin/core/analysis/BandGrid.h",
+    "eq-copilot/plugin/core/analysis/BandGridZahlen.h",
+    "eq-copilot/plugin/core/analysis/Statistik.h",
+    "eq-copilot/plugin/core/analysis/Konfidenz.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Frame.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Spektrum.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Vertrag.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Zeit.h",
+    "eq-copilot/plugin/core/StampedAudioQueue.h",
+    "eq-copilot/plugin/src/AnalyseEngine.cpp",
+    "eq-copilot/plugin/src/AnalyseEngine.h",
+    "eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp",
+    "eq-copilot/plugin/tests/GoldenTestMain.cpp",
+    "eq-copilot/plugin/tests/Sonde013QualityClassTest.cpp"
+   ],
+   "fragen": [
+    "Jede Messgröße: Einheit, Fenster, Referenz und Gültigkeit bei Stille, Vollaussteuerung, Sprüngen und Lücken?",
+    "Wo wird eine Zahl konvertiert, bevor ihr Bereich geprüft ist?",
+    "Welche Golden-Datei würde einen falschen Rechenweg mit richtigem Format nicht bemerken?"
+   ]
+  },
+  {
+   "id": "P13",
+   "name": "Messgrößen: Lautheit, True Peak, Stereo, Fingerprint, Vergleichspegel",
+   "spur": "sammler",
+   "klassen": [
+    "Numerik"
+   ],
+   "invarianten": [
+    "NAN",
+    "ZEIT"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/core/analysis/KGewichtung.h",
+    "eq-copilot/plugin/core/analysis/LoudnessAccumulator.h",
+    "eq-copilot/plugin/core/analysis/TruePeak.h",
+    "eq-copilot/plugin/core/analysis/Vergleichspegel.h",
+    "eq-copilot/plugin/core/analysis/Blindvergleich.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Lautheit.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Stereo.h",
+    "eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h",
+    "eq-copilot/plugin/tests/LoudnessGoldenTestMain.cpp",
+    "eq-copilot/plugin/tests/Sonde013TruePeakGoldenTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp",
+    "eq-copilot/plugin/tests/Sonde012LoudnessSourceTest.cpp"
+   ],
+   "fragen": [
+    "Je Messgröße: Norm oder Referenz, Fenster, Gating, Verhalten bei Stille, Mono, Vollaussteuerung?",
+    "Was geschieht mit einem Wert, dessen Messung nachträglich ungültig wird: Alter ehrlich oder still weiter gezeigt?",
+    "Welches Golden prüft Phase, Vorzeichen oder Kanalvertauschung nicht?"
+   ]
+  },
+  {
+   "id": "P05",
+   "name": "IPC-Client: Verbindung, Lebenslauf, Broker-Start",
+   "spur": "sammler",
+   "klassen": [
+    "K2",
+    "K1"
+   ],
+   "invarianten": [
+    "ECHTZEIT",
+    "PROBE"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/core/ipc/controlclient/**",
+    "eq-copilot/plugin/core/ipc/ControlClient.cpp",
+    "eq-copilot/plugin/core/ipc/ControlClient.h",
+    "eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp",
+    "eq-copilot/plugin/core/ipc/BrokerLifecycle.h",
+    "eq-copilot/plugin/core/ipc/BrokerInstallBinding.h.in",
+    "eq-copilot/plugin/core/ipc/IpcVerbindung.cpp",
+    "eq-copilot/plugin/core/ipc/IpcVerbindung.h",
+    "eq-copilot/plugin/src/PipeClient.cpp",
+    "eq-copilot/plugin/src/PipeClient.h",
+    "eq-copilot/plugin/src/ProbePipeRegel.h",
+    "eq-copilot/plugin/probe/**",
+    "eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp",
+    "eq-copilot/plugin/tests/LebenslaufTestMain.cpp"
+   ],
+   "fragen": [
+    "Je Thread, Callback und Handle: wer besitzt ihn, wer beendet ihn, mit welcher Join-Frist, und was geschieht im Stopp-Fenster?",
+    "Verbinden↔trennen, starten↔stoppen: gibt es einen Weg, der nur eine Hälfte kennt?",
+    "Kann irgendein Weg auf die Produktions-Pipe zurückfallen, wenn ein Probe-Name erwartet wird?"
+   ]
+  },
+  {
+   "id": "P06",
+   "name": "IPC-Draht: Umschlag, Queues, Telemetrie, Zahlen über den Draht",
+   "spur": "sammler",
+   "klassen": [
+    "K1",
+    "K3"
+   ],
+   "invarianten": [
+    "ECHTZEIT",
+    "NAN",
+    "SCHEMA"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/core/ipc/IpcQueues.h",
+    "eq-copilot/plugin/core/ipc/InterventionsRing.h",
+    "eq-copilot/plugin/core/ipc/TelemetryClient.cpp",
+    "eq-copilot/plugin/core/ipc/TelemetryClient.h",
+    "eq-copilot/plugin/core/ipc/WireEnvelope.cpp",
+    "eq-copilot/plugin/core/ipc/WireEnvelope.h",
+    "eq-copilot/plugin/core/ipc/WireZahl.h",
+    "eq-copilot/plugin/core/ipc/PipeToken.cpp",
+    "eq-copilot/plugin/core/ipc/PipeToken.h",
+    "eq-copilot/plugin/tests/IpcTestMain.cpp",
+    "eq-copilot/plugin/tests/IpcLastMain.cpp",
+    "eq-copilot/plugin/tests/V3TestServer.h",
+    "eq-copilot/plugin/tests/Sonde013EventWireTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013InterventionRingTest.cpp"
+   ],
+   "fragen": [
+    "Je Queue: Politik bei voll je Priorität, Abfluss ohne Reconnect, Ordnung nach Commit, Schlüssel überleben den Puffer?",
+    "Je Feld über den Draht: Länge im Leser, Discriminator vor Inhalt, NaN/Inf, Bereich vor Konvertierung?",
+    "Pipe-Token: nur Form und Lebensdauer lesen; Sicherheitsurteile gehören der Sicherheitsspur."
+   ]
+  },
+  {
+   "id": "P07",
+   "name": "State und Migration",
+   "spur": "sammler",
+   "klassen": [
+    "K4"
+   ],
+   "invarianten": [
+    "STATE",
+    "SCHEMA",
+    "IDENTITAET"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/state/NakamaState.cpp",
+    "eq-copilot/plugin/state/NakamaState.h",
+    "eq-copilot/plugin/state/NakamaKanon.cpp",
+    "eq-copilot/plugin/state/NakamaKanon.h",
+    "eq-copilot/plugin/state/NakamaKernRiegel.h",
+    "eq-copilot/plugin/state/NakamaLebenslauf.cpp",
+    "eq-copilot/plugin/state/NakamaLebenslauf.h",
+    "eq-copilot/plugin/state/NakamaParameter.cpp",
+    "eq-copilot/plugin/state/NakamaParameter.h",
+    "eq-copilot/plugin/state/NakamaPreset.cpp",
+    "eq-copilot/plugin/state/NakamaPreset.h",
+    "eq-copilot/schemas/state/**",
+    "tools/eq-copilot/erzeuge_state_fixtures.py",
+    "eq-copilot/plugin/tests/StateMigrationTestMain.cpp"
+   ],
+   "fragen": [
+    "Je persistentes Feld: Schreiber ↔ Leser ↔ Migration ↔ eingefrorenes Fixture ↔ Dirty-State an den Host?",
+    "Was geschieht mit unbekannter Major-Version, unzulässiger Matrix, abgeschnittenen Bytes, Laden während Automation?",
+    "Welcher Zustand lebt nur in der Sitzung und müsste nach Reload derselben Instanz geleert oder erhalten sein?"
+   ]
+  },
+  {
+   "id": "P14",
+   "name": "Transaktion, DSP-Bericht und Passage-Zustand",
+   "spur": "sammler",
+   "klassen": [
+    "K4",
+    "K3"
+   ],
+   "invarianten": [
+    "STATE",
+    "SCHEMA",
+    "NAN"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/state/NakamaTransaktion.cpp",
+    "eq-copilot/plugin/state/NakamaTransaktion.h",
+    "eq-copilot/plugin/tests/TransactionTestMain.cpp",
+    "eq-copilot/plugin/tests/Sonde013PassageStateTest.cpp"
+   ],
+   "fragen": [
+    "Je Transaktion: Vorschau, Kandidat, Bestätigung, Abbruch, Rücknahme; welcher Zwischenstand kann hängen bleiben?",
+    "Trägt der Bericht nur endliche Werte innerhalb der Vertragsgrenzen, und meldet er jede Klemmung?",
+    "Passage-Zustand über Speichern und Laden: was ist Sitzung, was ist Projekt?"
+   ]
+  },
+  {
+   "id": "P08",
+   "name": "Vertrag v2/v3: Schemas und C++-Leser",
+   "spur": "sammler",
+   "klassen": [
+    "K3"
+   ],
+   "invarianten": [
+    "SCHEMA",
+    "NAN"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/vertrag/**",
+    "eq-copilot/schemas/*.json",
+    "eq-copilot/schemas/v3/*.json",
+    "eq-copilot/schemas/v3/README.md",
+    "eq-copilot/schemas/v3/bandgitter/**",
+    "eq-copilot/plugin/tests/SchemaTestMain.cpp",
+    "tools/eq-copilot/pruefe_v3_vertrag.py",
+    "tools/eq-copilot/pruefe_v2_schemas.py"
+   ],
+   "fragen": [
+    "Je Feld der v3-Schemas: hat der C++-Leser dieselbe Grenze wie das Schema, und gibt es ein Negativfixture?",
+    "Wo prüft nur der SchemaTest, während der Produktparser daneben läuft?",
+    "Welche Grenze im Schema ist falsch hergeleitet oder vom Code reißbar?"
+   ]
+  },
+  {
+   "id": "P15",
+   "name": "Vertragswerkzeuge: v3-Fixtures und FlatBuffers",
+   "spur": "sammler",
+   "klassen": [
+    "K3",
+    "K5"
+   ],
+   "invarianten": [
+    "SCHEMA",
+    "BEWEIS"
+   ],
+   "pfade": [
+    "eq-copilot/schemas/v3/flatbuffers/**",
+    "tools/eq-copilot/erzeuge_v3_fixtures.py",
+    "tools/eq-copilot/erzeuge_fb_fixtures.py",
+    "tools/eq-copilot/erzeuge_envelope_fixtures.py",
+    "tools/eq-copilot/erzeuge_fixtures.py",
+    "tools/eq-copilot/pruefe_fbs_feldids.py",
+    "tools/eq-copilot/pruefe_flatc_drift.py"
+   ],
+   "fragen": [
+    "Je Negativfixture: bricht es genau die eine Regel, die sein Name nennt, und stimmt sein warum-Text?",
+    "Feld-IDs und flatc-Stand: wer merkt Drift, und ist der Zeiger auf flatc ein Bauartefakt ohne Rückfall?",
+    "Erzeuger und Prüfer: teilen sie Code, sodass ein Fehler beide grün lässt?"
+   ]
+  },
+  {
+   "id": "P09",
+   "name": "Modell und Fläche: SourcesModel, Editor, Markierung",
+   "spur": "sammler",
+   "klassen": [
+    "K8",
+    "Modell",
+    "K2"
+   ],
+   "invarianten": [
+    "OPTIK",
+    "BEDIENUNG"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/src/SourcesModel.cpp",
+    "eq-copilot/plugin/src/SourcesModel.h",
+    "eq-copilot/plugin/src/PluginEditor.cpp",
+    "eq-copilot/plugin/src/PluginEditor.h",
+    "eq-copilot/plugin/src/HoerMarkierung.h",
+    "eq-copilot/plugin/src/ZonenRegeln.h",
+    "eq-copilot/plugin/src/LeitstandTokens.h",
+    "eq-copilot/plugin/src/EqCopilotAssetKit.h",
+    "eq-copilot/plugin/src/EqCopilotIds.h",
+    "eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp",
+    "eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp",
+    "eq-copilot/plugin/tests/MarkierungTestMain.cpp",
+    "eq-copilot/plugin/tests/ShotTestMain.cpp",
+    "eq-copilot/plugin/tests/PaintBenchMain.cpp",
+    "tools/eq-copilot/pruefe_sonde012_sources_latency.py"
+   ],
+   "fragen": [
+    "Je sichtbarem Zustand: meldet er ehrlich Alter, Gültigkeit und Fehler, oder zeigt er einen veralteten Wert als frisch?",
+    "Je Snapshot-Übernahme: Sitzung, Bindung, Ordnung (N+1 vor N)?",
+    "Nur Funktion und Ehrlichkeit prüfen, kein Aussehen (Designteil geparkt)."
+   ]
+  },
+  {
+   "id": "P10",
+   "name": "Vergleich, Befund und Advisor auf der Plugin-Seite; Diagnose-Briefkasten",
+   "spur": "sammler",
+   "klassen": [
+    "Modell",
+    "K3",
+    "K5"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "NAN",
+    "OPTIK"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/src/Diagnose.cpp",
+    "eq-copilot/plugin/src/Diagnose.h",
+    "eq-copilot/plugin/src/DiagnoseAntwort.cpp",
+    "eq-copilot/plugin/src/DiagnoseAntwort.h",
+    "eq-copilot/plugin/core/diagnose/**",
+    "eq-copilot/plugin/tests/BriefkastenTestMain.cpp",
+    "eq-copilot/plugin/tests/Sonde013ExperimentGoldenTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013ExperimentUiTest.cpp",
+    "eq-copilot/plugin/tests/Sonde013PrePostGoldenTest.cpp",
+    "eq-copilot/plugin/tests/Sonde014AssistentTest.cpp",
+    "eq-copilot/plugin/tests/Sonde014BefundTest.cpp",
+    "eq-copilot/plugin/tests/Sonde014IntentTest.cpp",
+    "eq-copilot/schemas/diagnose/**"
+   ],
+   "fragen": [
+    "Der Advisor schlägt nur vor: gibt es einen Weg, auf dem ein Vorschlag ohne Handgriff wirkt?",
+    "Diagnose: was wird geschrieben, wann, mit welcher Frist nach Stop; Berechtigungsfragen gehören der Sicherheitsspur.",
+    "Welcher Test prüft nur das Format eines Befunds, nicht seine Herleitung?"
+   ]
+  },
+  {
+   "id": "P11",
+   "name": "Plugin-Bau und Testverdrahtung",
+   "spur": "sammler",
+   "klassen": [
+    "K5"
+   ],
+   "invarianten": [
+    "BEWEIS",
+    "IDENTITAET"
+   ],
+   "pfade": [
+    "eq-copilot/CMakeLists.txt",
+    "eq-copilot/plugin/CMakeLists.txt",
+    "eq-copilot/cmake/**",
+    "eq-copilot/plugin/tests/IdentityTestMain.cpp"
+   ],
+   "fragen": [
+    "Je Prüfbinary: aus welchen Quellen entsteht es, und kennt die Frischeprüfung alle?",
+    "Welche Codegen- oder Pin-Schritte laufen in fester Ordnung (Broker → Manifest → Plugin), und was geschieht bei vertauschter Ordnung?",
+    "Wo ändert eine CMake-Option still die Identität oder den Pipe-Namen?"
+   ]
+  },
+  {
+   "id": "P12",
+   "name": "Hostgrenzen: Hostbrücke, Hostprobe, Aux-Spike (Messgeräte der Hostfähigkeiten)",
+   "spur": "sammler",
+   "klassen": [
+    "Naht",
+    "K5"
+   ],
+   "invarianten": [
+    "BEWEIS",
+    "IDENTITAET",
+    "ECHTZEIT"
+   ],
+   "pfade": [
+    "eq-copilot/plugin/hostbridge/**",
+    "eq-copilot/plugin/hostprobe/**",
+    "eq-copilot/plugin/spike/**",
+    "eq-copilot/plugin/tests/HostContextTestMain.cpp",
+    "eq-copilot/plugin/tests/HostProbeTestMain.cpp",
+    "eq-copilot/plugin/tests/AuxSpikeTestMain.cpp",
+    "tools/eq-copilot/erzeuge_aux_spike_fixtures.py",
+    "tools/eq-copilot/pruefe_host_capabilities.py"
+   ],
+   "fragen": [
+    "Welche Hostfähigkeit gilt als bestätigt, und ist sie im echten FL gemessen oder nur angenommen?",
+    "Was liefert die Hostbrücke, wenn FL einen Wert nicht herausgibt: ehrlicher Fehlwert oder stiller Ersatz?",
+    "Tragen die Messgeräte eigene Identitäten, die nie mit den Produkt-Plugins kollidieren?"
+   ]
+  },
+  {
+   "id": "B01",
+   "name": "Broker: Transport, Server, Framing, Protokoll",
+   "spur": "sammler",
+   "klassen": [
+    "K1",
+    "K2",
+    "Rust"
+   ],
+   "invarianten": [
+    "PROBE",
+    "SCHEMA"
+   ],
+   "pfade": [
+    "broker/src/transport/**",
+    "broker/src/server.rs",
+    "broker/src/framing.rs",
+    "broker/src/protokoll.rs",
+    "broker/src/sitzung.rs",
+    "broker/tests/transport_fuzz.rs",
+    "broker/tests/broker_idle.rs"
+   ],
+   "fragen": [
+    "Je Verbindung und Queue: Rückstau, Fristen (Handshake, Leerlauf, Rate), Ordnung nach Commit?",
+    "Je unsafe-Block und je Windows-Handle: Besitz, Schließen, Fehlerweg?",
+    "ACLs, Impersonation und Token nur inventarisieren; das Urteil gehört der Sicherheitsspur."
+   ]
+  },
+  {
+   "id": "B02",
+   "name": "Broker: Coordinator-Kern (Zustand, Befehl, Sicht, Abo, Mitgliedschaft)",
+   "spur": "sammler",
+   "klassen": [
+    "K1",
+    "K4",
+    "Rust"
+   ],
+   "invarianten": [
+    "SCHEMA",
+    "ZEIT"
+   ],
+   "pfade": [
+    "broker/src/coordinator/mod.rs",
+    "broker/src/coordinator/zustand.rs",
+    "broker/src/coordinator/befehl.rs",
+    "broker/src/coordinator/flush.rs",
+    "broker/src/coordinator/senke.rs",
+    "broker/src/coordinator/sicht.rs",
+    "broker/src/coordinator/subscription.rs",
+    "broker/src/coordinator/mitgliedschaft.rs",
+    "broker/src/coordinator/liveness.rs",
+    "broker/src/coordinator/link.rs",
+    "broker/src/coordinator/uhr.rs",
+    "broker/src/coordinator/schema.rs",
+    "broker/tests/coordinator_model.rs",
+    "broker/tests/sonde012_sources_slice.rs"
+   ],
+   "fragen": [
+    "Monotone Eviction, Ordnung der Zustellung nach Commit, Rücknahme gegen Vollsnapshot: wo teilen zwei Dinge einen Schlüssel?",
+    "Was geschieht bei Brokerneustart, Disconnect mitten im Commit, veralteter Sitzung?",
+    "Welche Annahme über Uhr und Lebendigkeit ist nicht gemessen?"
+   ]
+  },
+  {
+   "id": "B03",
+   "name": "Broker: Vergleichsevidenz I (Experiment, Pre/Post, Paarung)",
+   "spur": "sammler",
+   "klassen": [
+    "K4",
+    "Modell",
+    "Rust"
+   ],
+   "invarianten": [
+    "NAN",
+    "ZEIT"
+   ],
+   "pfade": [
+    "broker/src/coordinator/experiment.rs",
+    "broker/src/coordinator/experiment_verdrahtung.rs",
+    "broker/src/coordinator/prepost.rs",
+    "broker/src/coordinator/prepost_verdrahtung.rs",
+    "broker/src/paar.rs",
+    "broker/tests/sonde013_experiment.rs",
+    "broker/tests/sonde013_prepost.rs",
+    "broker/tests/sonde013_passage.rs"
+   ],
+   "fragen": [
+    "Paarung PRE/POST: was geschieht bei Disconnect, veralteter oder verspäteter Aufnahme, fehlender Pair-ID?",
+    "Invalidierung: wird jeder abhängige Wert wirklich ungültig, und kommt er nach Restore ehrlich zurück?",
+    "Welcher Test setzt die im Produkt fehlende Kennung selbst und misst deshalb nicht den Produktweg?"
+   ]
+  },
+  {
+   "id": "B08",
+   "name": "Broker: Vergleichsevidenz II (Invalidierung, Intervention, Vergleichbarkeit, Evidenz)",
+   "spur": "sammler",
+   "klassen": [
+    "K4",
+    "Modell",
+    "Rust"
+   ],
+   "invarianten": [
+    "NAN",
+    "ZEIT"
+   ],
+   "pfade": [
+    "broker/src/coordinator/invalidierung.rs",
+    "broker/src/coordinator/invalidierung_verdrahtung.rs",
+    "broker/src/coordinator/intervention.rs",
+    "broker/src/coordinator/vergleichbarkeit.rs",
+    "broker/src/coordinator/evidenz.rs",
+    "broker/tests/sonde013_taint.rs",
+    "broker/tests/sonde013_verdrahtung.rs"
+   ],
+   "fragen": [
+    "Invalidierung: wird jeder abhängige Wert wirklich ungültig, und kommt er nach Restore ehrlich zurück?",
+    "Vergleichbarkeit: welche zwei Passagen gelten als vergleichbar, obwohl Pegel, Länge oder Material es nicht sind?",
+    "Verdrahtung: wo misst ein Test den Helfer statt des Produktwegs?"
+   ]
+  },
+  {
+   "id": "B04",
+   "name": "Broker: Ursachen (Hypothese, Maskierung, Befund)",
+   "spur": "sammler",
+   "klassen": [
+    "Modell",
+    "K3",
+    "Rust"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "NAN"
+   ],
+   "pfade": [
+    "broker/src/coordinator/hypothese/**",
+    "broker/src/coordinator/hypothese_verdrahtung.rs",
+    "broker/src/coordinator/maskierung.rs",
+    "broker/tests/sonde014_hypothese.rs",
+    "broker/tests/sonde014_gegenbeispiele.rs",
+    "broker/tests/sonde014_befund.rs",
+    "broker/tests/sonde014_maskierung.rs",
+    "broker/tests/sonde014_p5_korpus.rs"
+   ],
+   "fragen": [
+    "Regelbasiert, keine KI-Erklärschicht: behauptet eine Hypothese mehr, als ihre Evidenz trägt?",
+    "Statistik: mathematisch unmögliche Testwerte, p-Werte am Rand, Division durch kleine Zahlen, Enthaltung ehrlich?",
+    "Determinismus: gleiche Eingabe, gleiche Ausgabe, unabhängig von Reihenfolge und Uhr?"
+   ]
+  },
+  {
+   "id": "B09",
+   "name": "Broker: Vorschläge (Proposal, Assistent, Intent)",
+   "spur": "sammler",
+   "klassen": [
+    "Modell",
+    "K3",
+    "Rust"
+   ],
+   "invarianten": [
+    "GRUNDGESETZ",
+    "NAN"
+   ],
+   "pfade": [
+    "broker/src/coordinator/proposal.rs",
+    "broker/src/coordinator/proposal_verdrahtung.rs",
+    "broker/src/coordinator/assistent.rs",
+    "broker/src/coordinator/intent.rs",
+    "broker/tests/sonde014_proposal.rs",
+    "broker/tests/sonde014_verdrahtung.rs",
+    "broker/tests/sonde014_nacharbeit1.rs",
+    "broker/tests/sonde014_nacharbeit2.rs",
+    "broker/tests/sonde014_nacharbeit3.rs"
+   ],
+   "fragen": [
+    "Bleibt jeder Vorschlag ein Vorschlag, bis ein Handgriff ihn übernimmt?",
+    "Kleinster Test: ist der vorgeschlagene Eingriff wirklich der kleinste, der die Hypothese prüft?",
+    "Was geschieht mit einem Vorschlag, dessen Grundlage inzwischen ungültig ist?"
+   ]
+  },
+  {
+   "id": "B05",
+   "name": "Broker: Store, Persistenz, Briefkasten",
+   "spur": "sammler",
+   "klassen": [
+    "K4",
+    "K2",
+    "Rust"
+   ],
+   "invarianten": [
+    "STATE",
+    "SCHEMA"
+   ],
+   "pfade": [
+    "broker/src/store/**",
+    "broker/src/persistenz.rs",
+    "broker/src/briefkasten.rs",
+    "broker/tests/store_crash_matrix.rs",
+    "broker/tests/briefkasten.rs"
+   ],
+   "fragen": [
+    "Schreiben unter Abbruch: welcher Zwischenstand ist auf der Platte sichtbar, und liest der Neustart ihn ehrlich?",
+    "SQLite-Migration und Outbox: Ordnung, Wiederholung, Doppelzustellung?",
+    "Endet eine fehlende Testvoraussetzung als NOT RUN oder als grün?"
+   ]
+  },
+  {
+   "id": "B06",
+   "name": "Broker: Vertrag Rust, DTO, generierter Code",
+   "spur": "sammler",
+   "klassen": [
+    "K3",
+    "Rust"
+   ],
+   "invarianten": [
+    "SCHEMA",
+    "NAN"
+   ],
+   "pfade": [
+    "broker/src/vertrag.rs",
+    "broker/src/dto.rs",
+    "broker/src/generiert/**",
+    "broker/tests/contract_cross_language.rs"
+   ],
+   "fragen": [
+    "Je Feld: dieselbe Grenze wie der C++-Leser und das Schema?",
+    "Generierter Code: stimmt der flatc-Stand, und wer merkt Drift?",
+    "Wo konvertiert der Leser vor der Bereichsprüfung?"
+   ]
+  },
+  {
+   "id": "B07",
+   "name": "Broker: Register, Bindung, Alias, Lebenslauf, Aggregat, Telemetrie, Start",
+   "spur": "sammler",
+   "klassen": [
+    "K2",
+    "K4",
+    "Rust"
+   ],
+   "invarianten": [
+    "IDENTITAET",
+    "PROBE"
+   ],
+   "pfade": [
+    "broker/src/register.rs",
+    "broker/src/bindung.rs",
+    "broker/src/instance_alias.rs",
+    "broker/src/lebenslauf.rs",
+    "broker/src/aggregat.rs",
+    "broker/src/telemetrie.rs",
+    "broker/src/zeit.rs",
+    "broker/src/probe.rs",
+    "broker/src/lib.rs",
+    "broker/src/main.rs",
+    "broker/src/testhilfe.rs",
+    "broker/src/bin/**",
+    "broker/Cargo.toml",
+    "broker/Cargo.lock"
+   ],
+   "fragen": [
+    "Klonen einer Spur, Rollenwechsel, mehr Quellen als die Liste trägt: wer bleibt die bekannte Quelle?",
+    "Je Prozessstart und -ende: Reihenfolge, Frist, Rest auf der Platte?",
+    "Abhängigkeiten: gepinnt, und welche trägt unsafe oder Netz?"
+   ]
+  },
+  {
+   "id": "S01",
+   "name": "Sicherheitsspur: Pipe-ACL, Impersonation, Token, Spawn, erhöhte Installationsaufgaben",
+   "spur": "sicherheit",
+   "klassen": [
+    "Sicherheit"
+   ],
+   "invarianten": [
+    "PROBE",
+    "IDENTITAET"
+   ],
+   "pfade": [
+    "broker/tests/security_vectors.rs",
+    "tools/dirigent/install-aufgaben-registrieren.ps1"
+   ],
+   "fragen": [
+    "Diese Spur läuft nie als Claude-Sammler: Codex gpt-5.6-sol max über tools/pruefung/codex-audit-lauf.ps1 (User 15.09.2026), Auftrag nach dem Muster der Phase 12."
+   ]
+  },
+  {
+   "id": "W01",
+   "name": "Beweisrunner und seine Selbstprüfung",
+   "spur": "sammler",
+   "klassen": [
+    "K5"
+   ],
+   "invarianten": [
+    "BEWEIS",
+    "PROBE"
+   ],
+   "pfade": [
+    "tools/beweise.ps1",
+    "tools/beweise-roh.ps1",
+    "tools/eq-copilot/pruefe_beweisrunner.py"
+   ],
+   "fragen": [
+    "Je Bein: was baut es, was misst es, was behauptet seine Zeile, und ist die Behauptung kleiner oder gleich der Messung?",
+    "Wie endet ein Bein bei fehlender Voraussetzung, bei Timeout, bei altem Binary?",
+    "Welches Bein war nie rot?"
+   ]
+  },
+  {
+   "id": "W02",
+   "name": "Korpus-, Fixture- und Prüfskripte",
+   "spur": "sammler",
+   "klassen": [
+    "K5",
+    "K3"
+   ],
+   "invarianten": [
+    "BEWEIS"
+   ],
+   "pfade": [
+    "tools/eq-copilot/erzeuge_bandgitter.py",
+    "tools/eq-copilot/erzeuge_bandgitter_header.py",
+    "tools/eq-copilot/erzeuge_p4_korpus.py",
+    "tools/eq-copilot/erzeuge_p5_korpus.py",
+    "tools/eq-copilot/erzeuge_quantisierung.py",
+    "tools/eq-copilot/erzeuge_testsong.py",
+    "tools/eq-copilot/pruefe_ipc_last.py",
+    "tools/eq-copilot/pruefe_kern_identitaetsfrei.py",
+    "tools/eq-copilot/pruefe_p4_korpus.py",
+    "tools/eq-copilot/pruefe_p5_korpus.py",
+    "tools/eq-copilot/pruefe_session_soak.py",
+    "tools/eq-copilot/smf.py",
+    "tools/eq-copilot/verify_testsong.py"
+   ],
+   "fragen": [
+    "Erzeuger und Prüfer desselben Korpus: teilen sie Code, sodass ein Fehler beide grün lässt?",
+    "Bytegleichheit: passende .gitattributes-Regel, deterministische Ausgabe?",
+    "Welche Prüfung vergleicht identische Generatorbytes mit sich selbst?"
+   ]
+  },
+  {
+   "id": "W03",
+   "name": "Laufzeit-Arm, Szenarien und FL-MCP-Naht",
+   "spur": "sammler",
+   "klassen": [
+    "K5",
+    "Naht"
+   ],
+   "invarianten": [
+    "BEWEIS",
+    "GRUNDGESETZ"
+   ],
+   "pfade": [
+    "tools/fl/**",
+    "docs/gesundheit/szenarien/**"
+   ],
+   "fragen": [
+    "Beendet der Runner nur Eigenes, und ordnet er jede MCP-Antwort dem richtigen Versuch zu?",
+    "Nulltest im Host: urteilt er über Bytes oder über Zahlen?",
+    "Der gepinnte Stand des Nachbarrepos fl-studio-mcp (tools/fl/mcp-stand.json) wird nur gelesen: stimmen Aufrufpaare beidseitig?"
+   ]
+  },
+  {
+   "id": "W04",
+   "name": "Installer, Rückweg, Identität, Host-Capabilities",
+   "spur": "sammler",
+   "klassen": [
+    "K4",
+    "K5"
+   ],
+   "invarianten": [
+    "IDENTITAET",
+    "BEWEIS"
+   ],
+   "pfade": [
+    "eq-copilot/install/**",
+    "eq-copilot/identity/**",
+    "tools/eq-copilot/pruefe_installer_manifest.py",
+    "tools/eq-copilot/pruefe_installer_gegenpfad.py",
+    "eq-copilot/schemas/installer/**"
+   ],
+   "fragen": [
+    "installieren↔Rückweg: ist der Rückweg bytegleich, und was geschieht bei laufendem FL oder Hash-Abweichung?",
+    "Manifest, Broker-Pin und Plugin-Header: aus derselben Baugeneration?",
+    "Rechte und erhöhte Ausführung nur inventarisieren; das Urteil gehört der Sicherheitsspur."
+   ]
+  },
+  {
+   "id": "W05",
+   "name": "Plan-, Dirigenten-, Prüf- und Hook-Werkzeuge",
+   "spur": "sammler",
+   "klassen": [
+    "K5",
+    "K7"
+   ],
+   "invarianten": [
+    "BEWEIS"
+   ],
+   "pfade": [
+    "tools/plan/**",
+    "tools/dirigent/**",
+    "tools/hooks/**",
+    "tools/pruefung/**"
+   ],
+   "fragen": [
+    "Rechnet jedes Werkzeug aus committeten Quellen, und wie endet es bei fehlender Eingabe (Exit 2 gegen Exit 4)?",
+    "Welche Zahl wird abgeschrieben statt gemessen?",
+    "Welches Werkzeug hat keinen Selbsttest und war nie rot?"
+   ]
+  }
+ ],
+ "naehte": [
+  {
+   "id": "N01",
+   "name": "Host → Wrapper → Parameter → Worker → DSP-Kern (Automation, erster Block, Offline-Render)",
+   "bereiche": [
+    "P12",
+    "P01",
+    "P03",
+    "P02"
+   ],
+   "kette": "Hostparameter und Automation bis zum wirksamen Programm im Audiothread",
+   "frage": "Wo kann ein Wert verloren gehen, doppelt gelten, verspätet wirken oder nach dem Ausschalten noch wirken?"
+  },
+  {
+   "id": "N02",
+   "name": "Speichern ↔ Laden ↔ Migration ↔ Fixture ↔ Dirty-State",
+   "bereiche": [
+    "P07",
+    "P14",
+    "P03",
+    "P01",
+    "W04"
+   ],
+   "kette": "jedes persistente Feld vom Schreiber über das Projekt bis zum Leser der nächsten Version",
+   "frage": "Welches Feld hat nur eine Hälfte: geschrieben, aber nie gelesen; gelesen, aber ohne Fixture; geändert, aber ohne Dirty-State?"
+  },
+  {
+   "id": "N03",
+   "name": "v3-Vertrag: Schema ↔ C++-Leser ↔ Rust-Leser ↔ Fixtures ↔ FlatBuffers",
+   "bereiche": [
+    "P08",
+    "P15",
+    "B06",
+    "P06"
+   ],
+   "kette": "jedes Vertragsfeld auf beiden Seiten des Drahts",
+   "frage": "Wo tragen die zwei Sprachen verschiedene Grenzen, und welches Negativfixture fehlt auf einer Seite?"
+  },
+  {
+   "id": "N04",
+   "name": "Sonde → Pipe → Broker → Gen: Zustellung, Ordnung, Rückstau, Frische",
+   "bereiche": [
+    "P03",
+    "P06",
+    "B01",
+    "B02",
+    "P09"
+   ],
+   "kette": "eine Messung vom Audiothread der Sonde bis zur Anzeige in Gen",
+   "frage": "Wo kann N+1 vor N ankommen, ein veralteter Wert als frisch erscheinen oder Rückstau Audio berühren?"
+  },
+  {
+   "id": "N05",
+   "name": "Lebenslauf über Prozessgrenzen: Verbinden, Trennen, Reload derselben Instanz, Brokerneustart",
+   "bereiche": [
+    "P05",
+    "B01",
+    "B07",
+    "P01"
+   ],
+   "kette": "Start und Ende jeder Verbindung und jedes Prozesses",
+   "frage": "Welches Paar (verbinden↔trennen, starten↔stoppen, öffnen↔schließen) ist nur auf einer Seite gebaut oder getestet?"
+  },
+  {
+   "id": "N06",
+   "name": "Vergleich und Ursache über beide Seiten: Plugin-Aufnahme ↔ Broker-Auswertung ↔ Anzeige",
+   "bereiche": [
+    "P10",
+    "B03",
+    "B08",
+    "B04",
+    "B09",
+    "P09"
+   ],
+   "kette": "eine Passage von der Aufnahme bis zum angezeigten Befund",
+   "frage": "Wo setzt ein Test die Kennung selbst, die im Produkt fehlt, und wo behauptet die Anzeige mehr als die Evidenz?"
+  },
+  {
+   "id": "N07",
+   "name": "Bau → Pin → Manifest → Installer → Laufzeit-Arm → Beweis",
+   "bereiche": [
+    "P11",
+    "W04",
+    "W01",
+    "W03"
+   ],
+   "kette": "vom Quelltext bis zum gemessenen installierten Stand",
+   "frage": "Wo kann ein grüner Lauf einen alten, falsch gepinnten oder nicht installierten Stand bezeugen?"
+  },
+  {
+   "id": "N08",
+   "name": "Beweis ↔ Zusage: welcher Fehler käme an allen Beinen vorbei?",
+   "bereiche": [
+    "W01",
+    "W02",
+    "P02",
+    "P07",
+    "P13",
+    "B05"
+   ],
+   "kette": "jede tragende Invariante gegen das Bein, das sie messen soll",
+   "frage": "Welche Invariante aus CLAUDE.md hat kein Bein, das bei ihrem Bruch rot würde, und welches Bein misst einen Nebeneffekt?"
+  },
+  {
+   "id": "N09",
+   "name": "Prozessor ↔ Modell und Editor: Übergabe von Audio-, Worker- und Sitzungszustand an die Fläche",
+   "bereiche": [
+    "P01",
+    "P03",
+    "P09"
+   ],
+   "kette": "jeder Wert, den der Prozessor oder sein Worker dem SourcesModel und dem Editor übergibt, und jeder Handgriff zurück",
+   "frage": "Wo liest die Fläche einen Zustand, den ein anderer Thread gerade ändert, wo überlebt ein Sitzungswert den Reload, und wo endet ein Handgriff ohne ACK, Reject oder ehrliche Anzeige? (Gerechnet aus Tiefenaudit 3: acht Befunde nennen Orte in P01 und P09.)"
+  }
+ ],
+ "kopplungen": [
+  {
+   "id": "KOP-01",
+   "wenn": [
+    "eq-copilot/schemas/v3/**"
+   ],
+   "dann_auch": [
+    "eq-copilot/plugin/vertrag/**",
+    "broker/src/vertrag.rs",
+    "broker/src/dto.rs",
+    "eq-copilot/plugin/tests/SchemaTestMain.cpp",
+    "broker/tests/contract_cross_language.rs",
+    "tools/eq-copilot/pruefe_v3_vertrag.py",
+    "tools/eq-copilot/erzeuge_v3_fixtures.py"
+   ],
+   "warum": "Ein Vertragsfeld hat zwei Leser, einen Erzeuger der Fixtures und zwei Testseiten; wer nur eine Seite ändert, lässt die andere still abweichen.",
+   "beleg": "CLAUDE.md „Schemas sind Verträge“; docs/gesundheit/KONZEPT.md §3 Klasse K3",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-02",
+   "wenn": [
+    "eq-copilot/plugin/state/**",
+    "eq-copilot/schemas/state/**"
+   ],
+   "dann_auch": [
+    "tools/eq-copilot/erzeuge_state_fixtures.py",
+    "eq-copilot/plugin/tests/StateMigrationTestMain.cpp",
+    "eq-copilot/plugin/tests/TransactionTestMain.cpp",
+    "eq-copilot/plugin/sonde/**",
+    "eq-copilot/plugin/src/PluginProcessor.cpp"
+   ],
+   "warum": "Ein neues persistentes Feld braucht Version, Migration, eingefrorenes Fixture, Schreiber und Leser und die Dirty-State-Meldung an den Host.",
+   "beleg": "CLAUDE.md „State bleibt verlustfrei“; docs/gesundheit/KONZEPT.md §3 Klasse K4",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-03",
+   "wenn": [
+    "eq-copilot/plugin/dsp/DspKern.cpp"
+   ],
+   "dann_auch": [
+    "eq-copilot/plugin/dsp/DspProgramm.cpp",
+    "eq-copilot/plugin/sonde/SondeProcessor.cpp",
+    "eq-copilot/plugin/tests/DspGoldenTestMain.cpp",
+    "eq-copilot/plugin/tests/SondeNullTestMain.cpp"
+   ],
+   "warum": "DspKern::blockrand trägt drei Dinge zugleich: die fünf Pfadrampen, den Slot-Lebenszyklus und den Übergang großer Sprünge; eine Reparatur der einen Sache verschiebt die anderen.",
+   "beleg": "docs/beweise/NAK-311.md §1 (gemeinsame Ursachen), §9.1 F-5 bis F-8",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-04",
+   "wenn": [
+    "tools/fl/nulltest.py"
+   ],
+   "dann_auch": [
+    "tools/fl/laufzeit.ps1",
+    "docs/gesundheit/szenarien/**",
+    "tools/beweise.ps1"
+   ],
+   "warum": "Das Urteil des Host-Nulltests bestimmt den Szenario-Exit und damit, ob der Laufzeit-Arm den Rückweg fährt; ein neues Urteilswort ändert drei Stellen.",
+   "beleg": "docs/beweise/NAK-311.md §2 R-311-2, §9.1 F-1 und F-2",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-05",
+   "wenn": [
+    "broker/src/**"
+   ],
+   "dann_auch": [
+    "eq-copilot/install/nakama-installer-v1.json",
+    "eq-copilot/plugin/core/ipc/BrokerInstallBinding.h.in",
+    "tools/eq-copilot/pruefe_installer_manifest.py"
+   ],
+   "warum": "Der Broker wird gepinnt: Broker-Bau, Manifest und Plugin-Header müssen aus derselben Baugeneration stammen, sonst lehnt das Plugin den installierten Broker ab oder nimmt einen falschen an.",
+   "beleg": "docs/beweise/NAK-309.md Etappe 2 (T3-05-03)",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-06",
+   "wenn": [
+    "eq-copilot/plugin/CMakeLists.txt",
+    "eq-copilot/cmake/**"
+   ],
+   "dann_auch": [
+    "tools/beweise.ps1",
+    "tools/eq-copilot/pruefe_beweisrunner.py"
+   ],
+   "warum": "Die Frischeprüfung des Runners leitet die Quellen je Prüfbinary aus dem Bau ab; ein neues Ziel oder eine neue Quellabhängigkeit ohne Nachzug lässt eine alte Messung als frisch gelten.",
+   "beleg": "docs/beweise/NAK-309.md Etappe 2 (T3-09-01)",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-07",
+   "wenn": [
+    "eq-copilot/plugin/dsp/DspProgramm.cpp"
+   ],
+   "dann_auch": [
+    "eq-copilot/plugin/state/NakamaTransaktion.cpp",
+    "eq-copilot/schemas/v3/eq-ipc-v3.schema.json",
+    "tools/eq-copilot/erzeuge_v3_fixtures.py",
+    "eq-copilot/plugin/tests/SchemaTestMain.cpp"
+   ],
+   "warum": "Abgeleitete DSP-Werte (Auto-Gain) wandern über baueBericht in den v3-Bericht; die Schemagrenze, ihr Kommentar und ein Fixture tragen dieselbe Herleitung.",
+   "beleg": "docs/beweise/NAK-311.md §9.1 F-13 und F-14, §9.2",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-08",
+   "wenn": [
+    "eq-copilot/plugin/src/PipeClient.cpp",
+    "eq-copilot/plugin/src/ProbePipeRegel.h",
+    "eq-copilot/plugin/probe/**"
+   ],
+   "dann_auch": [
+    "eq-copilot/plugin/core/ipc/PipeToken.h",
+    "eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp",
+    "tools/beweise.ps1"
+   ],
+   "warum": "Probe-Pipe ist nie Produktions-Pipe: jeder Weg, der einen Pipenamen wählt, muss dieselbe Regel tragen, sonst landet ein Test auf der Produktions-Pipe.",
+   "beleg": "CLAUDE.md „Begriffe nicht vermischen“; docs/beweise/NAK-309.md Etappe 3 (T3-13-01, M-74)",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-09",
+   "wenn": [
+    "tools/fl/szenario.py"
+   ],
+   "dann_auch": [
+    "tools/fl/mcp-stand.json",
+    "tools/fl/selbsttest.py",
+    "tools/fl/LIES-MICH.md"
+   ],
+   "warum": "Die Szenarien sprechen mit dem Nachbarrepo fl-studio-mcp am gepinnten Stand; eine neue Antwortform braucht beide Seiten und einen neuen Pin.",
+   "beleg": "docs/beweise/NAK-309.md Etappe 3 (T3-13-03, T3-13-06)",
+   "stand": "belegt"
+  },
+  {
+   "id": "KOP-10",
+   "wenn": [
+    "eq-copilot/identity/**",
+    "eq-copilot/plugin/src/EqCopilotIds.h"
+   ],
+   "dann_auch": [
+    "eq-copilot/plugin/CMakeLists.txt",
+    "eq-copilot/plugin/tests/IdentityTestMain.cpp",
+    "eq-copilot/install/**",
+    "tools/eq-copilot/pruefe_kern_identitaetsfrei.py"
+   ],
+   "warum": "Die Identität ist bis NAK-30 eingefroren; Class-IDs, Codes und Installationsziele hängen an denselben Werten, alte Projekte laden nur mit ihnen.",
+   "beleg": "CLAUDE.md „Identität bleibt eingefroren“",
+   "stand": "belegt"
+  }
+ ]
+}

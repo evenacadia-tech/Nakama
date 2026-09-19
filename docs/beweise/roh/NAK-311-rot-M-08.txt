@@ -1,0 +1,62 @@
+# NAK-311 Rotbeweis M-08 - 311/M-08 weg_r2_urteilt_nullvorzeichen_wie_heute und M-64 verarbeitung_ein_umgekehrt, Bein A35
+
+Bauer: Etappe 2 Teil a, 19.09.2026. Stand: HEAD 2f8dd720, im Arbeitsbaum das Messgeraet in der Fassung des Commits 1 (tools/fl/nulltest.py SHA-256 der Arbeitskopie, CRLF: 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE). Ablauf nach Manifest §7.1: Sicherung, Mutation genau eines Textblocks, nur der betroffene Fall mit --nur, Ruecknahme aus der Sicherung.
+
+## Rotbeweis M-08 (Regressionswache): bewerte_verarbeitung zaehlt Nullvorzeichen als Abweichung
+
+Zeitpunkt: 2026-09-19T20:19:46+02:00
+Matrixzeile: M-08 (T3-09-02, Weg R2 unveraendert), Etikett Regressionswache der Urteile von Weg R2.
+Zusage: (a) verarbeitung_ein nur Nullvorzeichen -> VERFEHLT, Exit 4, Grund '... der Vergleich waere blind' (Befund NULLVORZEICHEN); (b) ohne_slots nur Nullvorzeichen -> VERFEHLT, Exit 4, SHA ungleich; (c) ohne_slots gegen einen Auslieferungsschritt NULLVORZEICHEN -> VORAUSSETZUNG, Exit 5, Grund '... nicht BITIDENTISCH'.
+Bein: A35, Faelle 311/M-08 weg_r2_urteilt_nullvorzeichen_wie_heute und M-64 verarbeitung_ein_umgekehrt.
+Datei der Mutation: tools/fl/nulltest.py, Zeile 400 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\nulltest.py.61DC53AB37C3
+
+Vorher, woertlich:
+```
+    elif abweichungen > 0:
+        e["urteil"] = "GEMESSEN"
+```
+Nachher (Mutation), woertlich:
+```
+    elif abweichungen + (e.get("nullvorzeichen") or 0) > 0:
+        e["urteil"] = "GEMESSEN"
+```
+SHA-256 mutiert: 1D8672AA63268858DA8B598E34061E82FD792B8B506DC90D9524D0B729545BD6
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur weg_r2_urteilt_nullvorzeichen_wie_heute --nur verarbeitung_ein_umgekehrt
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['verarbeitung_ein_umgekehrt', 'weg_r2_urteilt_nullvorzeichen_wie_heute']
+=== nulltest.py: Exit 4 (1.3 s) ===
+[ok] M-64 verarbeitung_ein_umgekehrt
+[ROT] 311/M-08 weg_r2_urteilt_nullvorzeichen_wie_heute: (a) verarbeitung_ein nur Nullvorzeichen: Urteil GEMESSEN Befund NULLVORZEICHEN Exit 0 Grund 'Voraussetzung Weg R1 fehlt: die Kette aendert das Nullvorzeichen' statt VERFEHLT 4, der Vergleich waere blind
+SELBSTTEST nulltest.py: 1 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'weg_r2_urteilt_nullvorzeichen_wie_heute,verarbeitung_ein_umgekehrt'
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] 311/M-08 weg_r2_urteilt_nullvorzeichen_wie_heute :: (a) verarbeitung_ein nur Nullvorzeichen: Urteil GEMESSEN Befund NULLVORZEICHEN Exit 0 Grund 'Voraussetzung Weg R1 fehlt: die Kette aendert das Nullvorzeichen' statt VERFEHLT 4, der Vergleich waere blind
+Erwartet fallend: ['(a) verarbeitung_ein nur Nullvorzeichen']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- keine
+Gruen geblieben: 311/M-08 (b) und (c) - ohne_slots liest bewerte_verarbeitung nicht - und der ganze Fall M-64 verarbeitung_ein_umgekehrt (dort ist nullvorzeichen 0).
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['verarbeitung_ein_umgekehrt', 'weg_r2_urteilt_nullvorzeichen_wie_heute']
+=== nulltest.py: Exit 0 (1.4 s) ===
+[ok] M-64 verarbeitung_ein_umgekehrt
+[ok] 311/M-08 weg_r2_urteilt_nullvorzeichen_wie_heute
+SELBSTTEST nulltest.py: 2 ok, 0 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'weg_r2_urteilt_nullvorzeichen_wie_heute,verarbeitung_ein_umgekehrt'
+SELBSTTEST A35: GRUEN
+```
+

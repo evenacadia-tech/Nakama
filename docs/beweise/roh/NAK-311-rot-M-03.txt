@@ -1,0 +1,231 @@
+# NAK-311 Rotbeweis M-03 - nullvorzeichen_ist_nie_bitidentisch
+
+Matrixzeile: M-03 (T3-09-02, R-311-2), Etikett "heute rot" (Manifest NAK-311 §6.1).
+Zusage: Unterschied nur im Nullvorzeichen -> eigenes Urteil NULLVORZEICHEN, Szenario-Exit 5, nie BITIDENTISCH;
+nullvorzeichen = 1 mit erster und letzter Stelle (Frame k, Kanal 0); die zwei SHA-256 des Bereichs verschieden;
+Grund "Voraussetzung Weg R1 fehlt: die Kette aendert das Nullvorzeichen".
+Bein: A35 (py -3.13 tools/fl/selbsttest.py), Fall 311/M-03 nullvorzeichen_ist_nie_bitidentisch in tools/fl/nulltest.py.
+Bauer: Etappe 2 Teil a, 19.09.2026.
+
+## 1. Heute rot: der neue Fall gegen das unveraenderte vergleiche
+
+Zeitpunkt: 2026-09-19T20:13:59+02:00
+HEAD: 2f8dd7200a4d28bd86a0204f331171d2fd318238 (Kanon-vorher-Commit; vergleiche, rohzeile, EXIT_JE_URTEIL wie am Basis-SHA 99307112)
+tools/fl/nulltest.py an HEAD, SHA-256 (LF, git show): 73D3AA4A8FA6238162D313F987ADB7AAE427014FC77C3AA8E037B18B246F72F4
+tools/fl/nulltest.py im Arbeitsbaum mit dem neuen Fall, SHA-256 (CRLF): 88B57B70EA413B1661FAFEEFA73983A1431F9AC1D6054C318FB8E387C847C633
+Diff gegen HEAD, nur Zusaetze hinter vergleiche (git diff -U0, Hunk-Koepfe):
+@@ -824,0 +825,53 @@ def fall_ohne_slots_render_gegen_render(t: Selbsttest) -> None:
+@@ -832,0 +886 @@ FAELLE = [
+  (Zeilen 825-877: Hilfen und Fall; Zeile 886: Eintrag in FAELLE; vergleiche liegt bei :194-249 unveraendert)
+
+Gegenprobe an der Quelle (Stand 99307112): tools/fl/nulltest.py:206 `ungleich = r != q` (Zahlengleichheit, +0 == -0) und
+:225-229 (BITIDENTISCH ohne Blick auf die in :212-213 gerechneten SHA-256).
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur nullvorzeichen_ist_nie_bitidentisch
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_ist_nie_bitidentisch']
+=== nulltest.py: Exit 4 (0.6 s) ===
+[ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch: Nullvorzeichen an Frame 123457: Urteil BITIDENTISCH Exit 0 v 0 Abweichungen 0 statt NULLVORZEICHEN 5 (nie BITIDENTISCH) | Nullvorzeichen an Frame 123457: nullvorzeichen None, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0} | Nullvorzeichen an Frame 123457: Grund None | ergebnis.json: Urteil BITIDENTISCH Exit 0 nullvorzeichen None | Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284], 'quelle': [0.499999 | Rohzeile ohne 'Exit 5': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284], 'quelle': [0.499999 | Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284], 'quelle': [0.499999 | Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284], 'quelle': [0.499999
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_ist_nie_bitidentisch'
+SELBSTTEST A35: ROT
+EXIT=4
+
+Ergebnis: ROT, wie erwartet. Das unveraenderte vergleiche urteilt BITIDENTISCH mit Exit 0, obwohl die zwei SHA-256 des
+Bereichs verschieden sind (63716F76... gegen 760CF407...): die Information lag vor und wurde nicht genutzt.
+Die Zusage faellt an der erwarteten Pruefung: JA (Urteil NULLVORZEICHEN / Exit 5 / nie BITIDENTISCH).
+Mitgefallen, mit Grund: nullvorzeichen und Stellen (Feld existiert am Basisstand nicht), Grund (fehlt), ergebnis.json
+und Rohzeile (tragen BITIDENTISCH). Gruen geblieben: die SHA-256-Pruefung (die Bytes gehen auch heute auseinander).
+Bauer: Etappe 2 Teil a, 19.09.2026. Stand: HEAD 2f8dd720, im Arbeitsbaum das Messgeraet in der Fassung des Commits 1 (tools/fl/nulltest.py SHA-256 der Arbeitskopie, CRLF: 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE). Ablauf nach Manifest §7.1: Sicherung, Mutation genau eines Textblocks, nur der betroffene Fall mit --nur, Ruecknahme aus der Sicherung.
+
+## 2. Nach dem Bau, Mutation A (Matrix): der Bytevergleich an der Urteilszeile durch den Zahlenvergleich ersetzt
+
+Zeitpunkt: 2026-09-19T20:19:27+02:00
+Datei der Mutation: tools/fl/nulltest.py, Zeile 224 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\nulltest.py.61DC53AB37C3
+
+Vorher, woertlich:
+```
+    bitverschieden = r.astype("<f4", copy=False).view("<u4") != q.astype("<f4", copy=False).view("<u4")
+```
+Nachher (Mutation), woertlich:
+```
+    bitverschieden = r != q
+```
+SHA-256 mutiert: 4C5AB28693B4949F7165DC23BBA2430C2BB7A8B4BBC47140622FAB5CAEDD6C21
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur nullvorzeichen_ist_nie_bitidentisch
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_ist_nie_bitidentisch']
+=== nulltest.py: Exit 4 (0.6 s) ===
+[ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch: Nullvorzeichen an Frame 123457: Urteil ABWEICHUNG Exit 4 v 0 Abweichungen 0 statt NULLVORZEICHEN 5 (nie BITIDENTISCH) | Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0} | Nullvorzeichen an Frame 123457: Grund 'Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed)' | ergebnis.json: Urteil ABWEICHUNG Exit 4 nullvorzeichen 0 | Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich | Rohzeile ohne 'Exit 5': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich | Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich | Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_ist_nie_bitidentisch'
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Urteil ABWEICHUNG Exit 4 v 0 Abweichungen 0 statt NULLVORZEICHEN 5 (nie BITIDENTISCH)
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0}
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Grund 'Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed)'
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: ergebnis.json: Urteil ABWEICHUNG Exit 4 nullvorzeichen 0
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Exit 5': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+Erwartet fallend: ['Nullvorzeichen an Frame 123457: Urteil']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0}
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Grund 'Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed)'
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: ergebnis.json: Urteil ABWEICHUNG Exit 4 nullvorzeichen 0
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Exit 5': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil ABWEICHUNG · Exit 4 · grund Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed) · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stich
+Gemessenes Urteil unter Mutation A: ABWEICHUNG mit Exit 4 (fail-closed), nicht BITIDENTISCH wie die Rotbeweisspalte vorhersagt. Grund: BITIDENTISCH verlangt seit dem Bau zusaetzlich gleiche SHA-256 des Bereichs (R-311-2, M-02); die SHA-256 sehen das Nullvorzeichen weiter, keine Regel greift, und der Vergleich endet fail-closed. Die Zusage (NULLVORZEICHEN, Exit 5, nullvorzeichen 1 mit Stellen) faellt an ihren Pruefungen. Mutation B unten nimmt die SHA-Bedingung dazu und zeigt das vorhergesagte BITIDENTISCH.
+Mitgefallen mit Grund: Stellen und Zahl (nullvorzeichen 0), Grund, ergebnis.json und Rohzeile (tragen ABWEICHUNG). Gruen geblieben: die SHA-256-Pruefung (die Bytes gehen auseinander).
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_ist_nie_bitidentisch']
+=== nulltest.py: Exit 0 (0.6 s) ===
+[ok] 311/M-03 nullvorzeichen_ist_nie_bitidentisch
+SELBSTTEST nulltest.py: 1 ok, 0 rot
+=== laufzeit.ps1: Exit 2 (0.4 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_ist_nie_bitidentisch'
+SELBSTTEST A35: GRUEN
+```
+
+## 3. Nach dem Bau, Mutation B: wie A, dazu die SHA-Bedingung aus der Regel BITIDENTISCH genommen
+
+Zeitpunkt: 2026-09-19T20:19:29+02:00
+Datei der Mutation: tools/fl/nulltest.py, Zeile 224 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\nulltest.py.61DC53AB37C3
+
+Vorher, woertlich:
+```
+    bitverschieden = r.astype("<f4", copy=False).view("<u4") != q.astype("<f4", copy=False).view("<u4")
+    nullvorzeichen_stellen = bitverschieden & ~ungleich
+    nullvorzeichen = int(np.count_nonzero(nullvorzeichen_stellen))
+    ergebnis = {
+        "v": v,
+        "ueberlappend": {"von": i0, "bis": i1, "frames": i1 - i0},
+        "abweichungen": abweichungen,
+        "nullvorzeichen": nullvorzeichen,
+        "sha256_render_bereich": hashlib.sha256(r.astype("<f4").tobytes()).hexdigest().upper(),
+        "sha256_quelle_bereich": hashlib.sha256(q.astype("<f4").tobytes()).hexdigest().upper(),
+        "spitzen_bereich": {"render": [float(np.max(np.abs(r[:, c]))) for c in range(2)],
+                            "quelle": [float(np.max(np.abs(q[:, c]))) for c in range(2)]},
+        "erste": None,
+        "letzte": None,
+        "nullvorzeichen_erste": None,
+        "nullvorzeichen_letzte": None,
+        "g": None,
+        "g_db": None,
+    }
+    for vorsilbe, stellen, anzahl in (("", ungleich, abweichungen), ("nullvorzeichen_", nullvorzeichen_stellen, nullvorzeichen)):
+        if anzahl:
+            idx = np.argwhere(stellen)
+            ergebnis[vorsilbe + "erste"] = {"frame": int(idx[0][0]) + i0, "kanal": int(idx[0][1])}
+            ergebnis[vorsilbe + "letzte"] = {"frame": int(idx[-1][0]) + i0, "kanal": int(idx[-1][1])}
+    if abweichungen == 0:
+        # Jede Regel nennt ihre ganze Bedingung; die erste, die gilt, urteilt. Was keine trifft - ein Bytunterschied ohne
+        # Wert- und Nullvorzeichenunterschied, bei Float 32 nicht erreichbar -, endet ABWEICHUNG (fail-closed).
+        sha_gleich = ergebnis["sha256_render_bereich"] == ergebnis["sha256_quelle_bereich"]
+        bytes_erklaert = sha_gleich or nullvorzeichen > 0
+        regeln = (("VERSATZ", v != 0 and bytes_erklaert),
+                  ("NULLVORZEICHEN", v == 0 and nullvorzeichen > 0),
+                  ("BITIDENTISCH", v == 0 and nullvorzeichen == 0 and sha_gleich))
+```
+Nachher (Mutation), woertlich:
+```
+    bitverschieden = r != q
+    nullvorzeichen_stellen = bitverschieden & ~ungleich
+    nullvorzeichen = int(np.count_nonzero(nullvorzeichen_stellen))
+    ergebnis = {
+        "v": v,
+        "ueberlappend": {"von": i0, "bis": i1, "frames": i1 - i0},
+        "abweichungen": abweichungen,
+        "nullvorzeichen": nullvorzeichen,
+        "sha256_render_bereich": hashlib.sha256(r.astype("<f4").tobytes()).hexdigest().upper(),
+        "sha256_quelle_bereich": hashlib.sha256(q.astype("<f4").tobytes()).hexdigest().upper(),
+        "spitzen_bereich": {"render": [float(np.max(np.abs(r[:, c]))) for c in range(2)],
+                            "quelle": [float(np.max(np.abs(q[:, c]))) for c in range(2)]},
+        "erste": None,
+        "letzte": None,
+        "nullvorzeichen_erste": None,
+        "nullvorzeichen_letzte": None,
+        "g": None,
+        "g_db": None,
+    }
+    for vorsilbe, stellen, anzahl in (("", ungleich, abweichungen), ("nullvorzeichen_", nullvorzeichen_stellen, nullvorzeichen)):
+        if anzahl:
+            idx = np.argwhere(stellen)
+            ergebnis[vorsilbe + "erste"] = {"frame": int(idx[0][0]) + i0, "kanal": int(idx[0][1])}
+            ergebnis[vorsilbe + "letzte"] = {"frame": int(idx[-1][0]) + i0, "kanal": int(idx[-1][1])}
+    if abweichungen == 0:
+        # Jede Regel nennt ihre ganze Bedingung; die erste, die gilt, urteilt. Was keine trifft - ein Bytunterschied ohne
+        # Wert- und Nullvorzeichenunterschied, bei Float 32 nicht erreichbar -, endet ABWEICHUNG (fail-closed).
+        sha_gleich = ergebnis["sha256_render_bereich"] == ergebnis["sha256_quelle_bereich"]
+        bytes_erklaert = sha_gleich or nullvorzeichen > 0
+        regeln = (("VERSATZ", v != 0 and bytes_erklaert),
+                  ("NULLVORZEICHEN", v == 0 and nullvorzeichen > 0),
+                  ("BITIDENTISCH", v == 0 and nullvorzeichen == 0))
+```
+SHA-256 mutiert: 74D0C1C387F425DE867CA2639E9589F41749DDC5DA1F6CF50FC1F94EA88466EB
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur nullvorzeichen_ist_nie_bitidentisch
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_ist_nie_bitidentisch']
+=== nulltest.py: Exit 4 (0.6 s) ===
+[ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch: Nullvorzeichen an Frame 123457: Urteil BITIDENTISCH Exit 0 v 0 Abweichungen 0 statt NULLVORZEICHEN 5 (nie BITIDENTISCH) | Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0} | Nullvorzeichen an Frame 123457: Grund None | ergebnis.json: Urteil BITIDENTISCH Exit 0 nullvorzeichen 0 | Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],  | Rohzeile ohne 'Exit 5': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],  | Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],  | Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284], 
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_ist_nie_bitidentisch'
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Urteil BITIDENTISCH Exit 0 v 0 Abweichungen 0 statt NULLVORZEICHEN 5 (nie BITIDENTISCH)
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0}
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Grund None
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: ergebnis.json: Urteil BITIDENTISCH Exit 0 nullvorzeichen 0
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Exit 5': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+Erwartet fallend: ['Urteil BITIDENTISCH Exit 0']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: nullvorzeichen 0, erste None, letzte None statt 1 an {'frame': 123457, 'kanal': 0}
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Nullvorzeichen an Frame 123457: Grund None
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Urteil NULLVORZEICHEN': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'Exit 5': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'erstes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+- [ROT] 311/M-03 nullvorzeichen_ist_nie_bitidentisch :: Rohzeile ohne 'letztes Nullvorzeichen Frame 123457 Kanal 0': Urteil BITIDENTISCH · Exit 0 · N 199993 · v 0 · abweichungen 0 · nullvorzeichen 0 · g 1.0 · g_db 0.0 · ueberlappend 199993 Frames [0, 199993) · sha256_render_bereich 63716F76C471CFB18ED49D7FD2466C75A5CE86494BA8338379B2766EED8AA853 · sha256_quelle_bereich 760CF4077D5DC4CC8ACCE589805D08AB692ED04E0DAA81D0A4865F3A54B44642 · Stichprobenspitzen Datei {'render': [0.4999997615814209, 0.4999951124191284],
+Unter Mutation B urteilt das Messgeraet wie am Basisstand BITIDENTISCH mit Exit 0 - genau die Blindheit aus Abschnitt 1. Beleg, dass Bytevergleich und SHA-Bedingung je fuer sich die Zusage 'nie BITIDENTISCH' tragen.
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_ist_nie_bitidentisch']
+=== nulltest.py: Exit 0 (0.5 s) ===
+[ok] 311/M-03 nullvorzeichen_ist_nie_bitidentisch
+SELBSTTEST nulltest.py: 1 ok, 0 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_ist_nie_bitidentisch'
+SELBSTTEST A35: GRUEN
+```
+

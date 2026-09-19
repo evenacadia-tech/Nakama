@@ -1,0 +1,60 @@
+# NAK-311 Rotbeweis M-04 - 311/M-04 nullvorzeichen_zaehlt_und_weicht_dem_wert, Bein A35
+
+Bauer: Etappe 2 Teil a, 19.09.2026. Stand: HEAD 2f8dd720, im Arbeitsbaum das Messgeraet in der Fassung des Commits 1 (tools/fl/nulltest.py SHA-256 der Arbeitskopie, CRLF: 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE). Ablauf nach Manifest §7.1: Sicherung, Mutation genau eines Textblocks, nur der betroffene Fall mit --nur, Ruecknahme aus der Sicherung.
+
+## Rotbeweis M-04 (heute nicht messbar): Rangfolge vertauscht, NULLVORZEICHEN vor dem Wertunterschied
+
+Zeitpunkt: 2026-09-19T20:19:31+02:00
+Matrixzeile: M-04 (T3-09-02, Gegenfall), Etikett 'heute nicht messbar' (das Urteil entsteht im Bau).
+Zusage: (a) NULLVORZEICHEN, nullvorzeichen = 2, erste Stelle k1, letzte k2; (b) ABWEICHUNG, Szenario-Exit 4 - ein Wertunterschied geht vor, abweichungen = 1 an k2, nullvorzeichen = 1 steht als Zahl daneben.
+Bein: A35, Fall 311/M-04 nullvorzeichen_zaehlt_und_weicht_dem_wert.
+Datei der Mutation: tools/fl/nulltest.py, Zeile 248 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\nulltest.py.61DC53AB37C3
+
+Vorher, woertlich:
+```
+    if abweichungen == 0:
+        # Jede Regel nennt ihre ganze Bedingung
+```
+Nachher (Mutation), woertlich:
+```
+    if abweichungen == 0 or nullvorzeichen > 0:
+        # Jede Regel nennt ihre ganze Bedingung
+```
+SHA-256 mutiert: ED902D7598F56346C4143259D7286B086AEA16C0FD449D31E04BE60BC78D3BB6
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur nullvorzeichen_zaehlt_und_weicht_dem_wert
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_zaehlt_und_weicht_dem_wert']
+=== nulltest.py: Exit 4 (0.7 s) ===
+[ROT] 311/M-04 nullvorzeichen_zaehlt_und_weicht_dem_wert: (b) Nullvorzeichen und LSB: Urteil NULLVORZEICHEN Exit 5 statt ABWEICHUNG 4 (der Wertunterschied geht vor)
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_zaehlt_und_weicht_dem_wert'
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] 311/M-04 nullvorzeichen_zaehlt_und_weicht_dem_wert :: (b) Nullvorzeichen und LSB: Urteil NULLVORZEICHEN Exit 5 statt ABWEICHUNG 4 (der Wertunterschied geht vor)
+Erwartet fallend: ['(b) Nullvorzeichen und LSB: Urteil']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- keine
+Gruen geblieben: (a) (kein Wertunterschied, dieselbe Regel wie vorher), (b) Zahl und Stelle der Abweichung und (b) nullvorzeichen 1 als Zahl - gezaehlt wird vor der Rangfolge.
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['nullvorzeichen_zaehlt_und_weicht_dem_wert']
+=== nulltest.py: Exit 0 (0.7 s) ===
+[ok] 311/M-04 nullvorzeichen_zaehlt_und_weicht_dem_wert
+SELBSTTEST nulltest.py: 1 ok, 0 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'nullvorzeichen_zaehlt_und_weicht_dem_wert'
+SELBSTTEST A35: GRUEN
+```
+

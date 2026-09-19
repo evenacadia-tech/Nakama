@@ -19,17 +19,27 @@ Ablauf: Renderstatus lesen (kein Render -> KEIN_RENDER), `fmt `-Chunks pruefen
 FORMATFEHLER), N = floor(Songlaenge_ms * 44,1) Frames, Versatzsuche ueber die
 volle Songlaenge (Kreuzkorrelation beider Kanaele, |v| < N), Vergleich nach
 Ausrichtung ueber die ueberlappenden Renderframes max(0, v) bis
-min(N, Quellframes + v) - 1 auf der exakten Float-32-Darstellung beider Dateien.
+min(N, Quellframes + v) - 1 auf der exakten Float-32-Darstellung beider Dateien:
+Werte (`abweichungen`, r != q) und Bytes (`nullvorzeichen`: wertgleich, aber
+bitverschieden - bei Float 32 genau +0 gegen -0; NAK-311 R-311-2), dazu die
+SHA-256 beider Bereiche.
 
 v ist der Frameindex im Render, an dem Quellframe 0 liegt (Manifest §13.2 P-7):
 v > 0 heisst, die Quelle beginnt im Render spaeter; v < 0 heisst, Renderframe 0
 entspricht Quellframe -v.
 
-Urteil und Szenario-Exit (F-19, F-24): BITIDENTISCH 0 (v = 0, 0 Abweichungen) ·
-VERSATZ 5 (v != 0, 0 Abweichungen) · KETTE 5 (alle Abweichungen erklaert ein
-einziger Faktor g bis auf Float-32-Rundung, v roh) · ABWEICHUNG 4 (sonst) ·
-KEIN_RENDER 5 · FORMATFEHLER 5. Exit 2 = Werkzeugfehler. Das Ergebnis steht
-in `ergebnis.json` (Render-Ordner) fuer die Folgeszenarien (F-26).
+Urteil und Szenario-Exit (F-19, F-24; Rangfolge NAK-311 F-2: Wertunterschied vor
+VERSATZ vor NULLVORZEICHEN vor BITIDENTISCH): BITIDENTISCH 0 (v = 0,
+0 Abweichungen, 0 Nullvorzeichen und gleiche SHA-256 beider Bereiche, also
+gleiche Bytes) · VERSATZ 5 (v != 0, 0 Abweichungen) · NULLVORZEICHEN 5 (v = 0,
+0 Abweichungen, aber Nullvorzeichen: die Kette aendert das Vorzeichen einer
+Null, kein Rueckweg) · KETTE 5 (alle Abweichungen erklaert ein einziger Faktor g
+bis auf Float-32-Rundung, v roh) · ABWEICHUNG 4 (sonst; auch ein
+Bytunterschied ohne Wert- und Nullvorzeichenunterschied, fail-closed) ·
+KEIN_RENDER 5 · FORMATFEHLER 5. Exit 2 = Werkzeugfehler. Die Zahl der
+Nullvorzeichen steht nach jedem Vergleich in Ergebnis und Rohzeile, ab 1 mit
+erster und letzter Stelle. Das Ergebnis steht in `ergebnis.json` (Render-Ordner)
+fuer die Folgeszenarien (F-26).
 
 Float-32-Rundung fuer KETTE: |r_i - g*q_i| <= 2 * ulp32(g*q_i) + h, h = 2^-24 bei
 einem PCM-24-Render (halbe Quantisierungsstufe), sonst 0 - zwei Rundungsstufen
@@ -42,7 +52,8 @@ VORAUSSETZUNG 5 (auch KEIN_RENDER und FORMATFEHLER). Das Ergebnis steht in der
 Auslieferungsrenders - ein Referenzschritt loest keinen Rueckweg aus (M-65).
 `verarbeitung_ein`: derselbe Vergleich gegen die Quelle wie R1, umgekehrt
 bewertet - Abweichungen nach Ausrichtung GEMESSEN (auch mit v != 0 oder Faktor
-g), 0 Abweichungen (BITIDENTISCH, VERSATZ) VERFEHLT, der Vergleich waere blind.
+g), 0 Abweichungen (BITIDENTISCH, VERSATZ, NULLVORZEICHEN) VERFEHLT, der
+Vergleich waere blind.
 `ohne_slots`: SHA-256 des Datenbereichs des Referenzrenders ueber denselben
 Framebereich und in derselben Float-32-Darstellung wie `sha256_render_bereich`
 der ergebnis.json des Auslieferungsrenders - gleich GEMESSEN, ungleich
@@ -192,7 +203,11 @@ def versatz_kandidat(render, quelle, n: int, suche: int | None = None) -> int:
 
 
 def vergleiche(render, quelle, n: int, render_pcm24: bool, suche: int | None = None) -> dict:
-    """Urteil nach Ausrichtung um den gefundenen Versatz v (F-19)."""
+    """Urteil nach Ausrichtung um den gefundenen Versatz v (F-19; NAK-311 R-311-2, F-2).
+
+    `abweichungen` zaehlt die Wertunterschiede (r != q), `nullvorzeichen` die Stellen, die wertgleich, aber in der
+    Float-32-Darstellung bitverschieden sind - bei Float 32 genau die Paare +0/-0, weil NaN nie wertgleich ist.
+    Rangfolge: Wertunterschied (KETTE oder ABWEICHUNG) vor VERSATZ vor NULLVORZEICHEN vor BITIDENTISCH."""
     import numpy as np
 
     m = quelle.shape[0]
@@ -205,26 +220,45 @@ def vergleiche(render, quelle, n: int, render_pcm24: bool, suche: int | None = N
     q = np.ascontiguousarray(quelle[i0 - v:i1 - v])
     ungleich = r != q
     abweichungen = int(np.count_nonzero(ungleich))
+    # Bytevergleich auf derselben Float-32-Darstellung wie die SHA-256 unten und wie Weg R2 (abweichungen_gegen_auslieferung).
+    bitverschieden = r.astype("<f4", copy=False).view("<u4") != q.astype("<f4", copy=False).view("<u4")
+    nullvorzeichen_stellen = bitverschieden & ~ungleich
+    nullvorzeichen = int(np.count_nonzero(nullvorzeichen_stellen))
     ergebnis = {
         "v": v,
         "ueberlappend": {"von": i0, "bis": i1, "frames": i1 - i0},
         "abweichungen": abweichungen,
+        "nullvorzeichen": nullvorzeichen,
         "sha256_render_bereich": hashlib.sha256(r.astype("<f4").tobytes()).hexdigest().upper(),
         "sha256_quelle_bereich": hashlib.sha256(q.astype("<f4").tobytes()).hexdigest().upper(),
         "spitzen_bereich": {"render": [float(np.max(np.abs(r[:, c]))) for c in range(2)],
                             "quelle": [float(np.max(np.abs(q[:, c]))) for c in range(2)]},
         "erste": None,
         "letzte": None,
+        "nullvorzeichen_erste": None,
+        "nullvorzeichen_letzte": None,
         "g": None,
         "g_db": None,
     }
-    if abweichungen:
-        idx = np.argwhere(ungleich)
-        ergebnis["erste"] = {"frame": int(idx[0][0]) + i0, "kanal": int(idx[0][1])}
-        ergebnis["letzte"] = {"frame": int(idx[-1][0]) + i0, "kanal": int(idx[-1][1])}
+    for vorsilbe, stellen, anzahl in (("", ungleich, abweichungen), ("nullvorzeichen_", nullvorzeichen_stellen, nullvorzeichen)):
+        if anzahl:
+            idx = np.argwhere(stellen)
+            ergebnis[vorsilbe + "erste"] = {"frame": int(idx[0][0]) + i0, "kanal": int(idx[0][1])}
+            ergebnis[vorsilbe + "letzte"] = {"frame": int(idx[-1][0]) + i0, "kanal": int(idx[-1][1])}
     if abweichungen == 0:
-        ergebnis["urteil"] = "BITIDENTISCH" if v == 0 else "VERSATZ"
-        if v == 0:
+        # Jede Regel nennt ihre ganze Bedingung; die erste, die gilt, urteilt. Was keine trifft - ein Bytunterschied ohne
+        # Wert- und Nullvorzeichenunterschied, bei Float 32 nicht erreichbar -, endet ABWEICHUNG (fail-closed).
+        sha_gleich = ergebnis["sha256_render_bereich"] == ergebnis["sha256_quelle_bereich"]
+        bytes_erklaert = sha_gleich or nullvorzeichen > 0
+        regeln = (("VERSATZ", v != 0 and bytes_erklaert),
+                  ("NULLVORZEICHEN", v == 0 and nullvorzeichen > 0),
+                  ("BITIDENTISCH", v == 0 and nullvorzeichen == 0 and sha_gleich))
+        ergebnis["urteil"] = next((urteil for urteil, gilt in regeln if gilt), "ABWEICHUNG")
+        if ergebnis["urteil"] == "NULLVORZEICHEN":
+            ergebnis["grund"] = "Voraussetzung Weg R1 fehlt: die Kette aendert das Nullvorzeichen"
+        elif ergebnis["urteil"] == "ABWEICHUNG":
+            ergebnis["grund"] = "Bytes des Bereichs verschieden ohne Wert- und Nullvorzeichenunterschied (fail-closed)"
+        if ergebnis["urteil"] in ("BITIDENTISCH", "NULLVORZEICHEN"):
             ergebnis["g"], ergebnis["g_db"] = 1.0, 0.0
         return ergebnis
 
@@ -250,6 +284,7 @@ def vergleiche(render, quelle, n: int, render_pcm24: bool, suche: int | None = N
 
 
 EXIT_JE_URTEIL = {"BITIDENTISCH": EXIT_OK, "VERSATZ": EXIT_SZENARIO_VORAUSSETZUNG,
+                  "NULLVORZEICHEN": EXIT_SZENARIO_VORAUSSETZUNG,
                   "KETTE": EXIT_SZENARIO_VORAUSSETZUNG, "ABWEICHUNG": EXIT_VERFEHLT,
                   "KEIN_RENDER": EXIT_SZENARIO_VORAUSSETZUNG, "FORMATFEHLER": EXIT_SZENARIO_VORAUSSETZUNG}
 
@@ -499,7 +534,7 @@ def rohzeile(e: dict) -> str:
     teile = [f"Urteil {e['urteil']}", f"Exit {e.get('exit')}"]
     if e.get("vergleich"):
         teile = [f"Vergleich {e['vergleich']}", *teile, f"Befund {e.get('befund')}"]
-    for schluessel in ("grund", "N", "v", "abweichungen", "g", "g_db"):
+    for schluessel in ("grund", "N", "v", "abweichungen", "nullvorzeichen", "g", "g_db"):
         if e.get(schluessel) is not None:
             teile.append(f"{schluessel} {e[schluessel]}")
     if e.get("abweichungen_grund"):
@@ -510,6 +545,9 @@ def rohzeile(e: dict) -> str:
     for schluessel in ("erste", "letzte"):
         if e.get(schluessel):
             teile.append(f"{schluessel} Abweichung Frame {e[schluessel]['frame']} Kanal {e[schluessel]['kanal']}")
+    for schluessel, wort in (("nullvorzeichen_erste", "erstes"), ("nullvorzeichen_letzte", "letztes")):
+        if e.get(schluessel):
+            teile.append(f"{wort} Nullvorzeichen Frame {e[schluessel]['frame']} Kanal {e[schluessel]['kanal']}")
     for schluessel in ("sha256_render_bereich", "sha256_quelle_bereich", "sha256_auslieferung_bereich"):
         if e.get(schluessel):
             teile.append(f"{schluessel} {e[schluessel]}")
@@ -621,6 +659,11 @@ def fall_identisch_null_abweichungen(t: Selbsttest) -> None:
     t.pruefe(e.get("N") == N_TEST, f"N {e.get('N')} statt {N_TEST}")
     t.pruefe(code == 0 and e["urteil"] == "BITIDENTISCH" and e["v"] == 0 and e["abweichungen"] == 0,
              f"identischer Render: Urteil {e['urteil']}, v {e.get('v')}, Abweichungen {e.get('abweichungen')}, Exit {code}")
+    # NAK-311 M-02: BITIDENTISCH heisst gleiche Bytes - gleiche SHA-256 des Bereichs, 0 Nullvorzeichen.
+    t.pruefe(e.get("nullvorzeichen") == 0 and e.get("sha256_render_bereich") is not None
+             and e.get("sha256_render_bereich") == e.get("sha256_quelle_bereich"),
+             f"identischer Render: nullvorzeichen {e.get('nullvorzeichen')}, SHA-256 Render {e.get('sha256_render_bereich')} "
+             f"gegen Quelle {e.get('sha256_quelle_bereich')}")
     k = 123_457
     r = q[:N_TEST].copy()
     r[k, 0] = q[k, 0] + np.float32(2.0 ** -23)
@@ -822,6 +865,178 @@ def fall_ohne_slots_render_gegen_render(t: Selbsttest) -> None:
              f"ohne Render: Befund {e.get('befund')} Grund {e.get('grund')!r} Exit {code} statt KEIN_RENDER 5")
 
 
+# ---------------------------------------------------------------- NAK-311 Etappe 2: Nullvorzeichen (R-311-2, F-2)
+
+K_NULL = 123_457  # Frame, an dem die Quelle eine 0 traegt (PCM 24, gelesen als +0,0)
+
+
+def _quelle_mit_nullen(*stellen: tuple[int, int]):
+    """Quelle wie _quelle, an den Stellen (Frame, Kanal) eine 0; der Selbsttest schreibt sie selbst als PCM 24."""
+    q = _quelle(400_000)
+    for frame, kanal in stellen:
+        q[frame, kanal] = 0.0
+    return q
+
+
+def _rohteile(e: dict) -> list[str]:
+    return rohzeile(e).split(" · ")
+
+
+def fall_nullvorzeichen_ist_nie_bitidentisch(t: Selbsttest) -> None:
+    """NAK-311 M-03: an Frame k traegt die Quelle 0 (+0,0) und der Render -0,0, sonst bytegleich, v = 0 -> eigenes Urteil
+    NULLVORZEICHEN mit Szenario-Exit 5, nie BITIDENTISCH; nullvorzeichen 1 mit erster und letzter Stelle (k, Kanal 0), die
+    zwei SHA-256 des Bereichs verschieden, Grund "Voraussetzung Weg R1 fehlt"; ergebnis.json und Rohzeile tragen es."""
+    import numpy as np
+
+    k = K_NULL
+    q = _quelle_mit_nullen((k, 0))
+    r = q[:N_TEST].copy()
+    r[k, 0] = np.float32(-0.0)
+    code, e = t.fall("m311-nullvorzeichen", r, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 5 and e["urteil"] == "NULLVORZEICHEN" and e.get("v") == 0 and e.get("abweichungen") == 0,
+             f"Nullvorzeichen an Frame {k}: Urteil {e['urteil']} Exit {code} v {e.get('v')} Abweichungen "
+             f"{e.get('abweichungen')} statt NULLVORZEICHEN 5 (nie BITIDENTISCH)")
+    stelle = {"frame": k, "kanal": 0}
+    t.pruefe(e.get("nullvorzeichen") == 1 and e.get("nullvorzeichen_erste") == stelle
+             and e.get("nullvorzeichen_letzte") == stelle,
+             f"Nullvorzeichen an Frame {k}: nullvorzeichen {e.get('nullvorzeichen')}, erste {e.get('nullvorzeichen_erste')}, "
+             f"letzte {e.get('nullvorzeichen_letzte')} statt 1 an {stelle}")
+    t.pruefe(e.get("sha256_render_bereich") is not None
+             and e.get("sha256_render_bereich") != e.get("sha256_quelle_bereich"),
+             f"Nullvorzeichen an Frame {k}: SHA-256 Render {e.get('sha256_render_bereich')} gegen Quelle "
+             f"{e.get('sha256_quelle_bereich')} - die Bytes gehen auseinander")
+    t.pruefe("Voraussetzung Weg R1 fehlt: die Kette aendert das Nullvorzeichen" in (e.get("grund") or ""),
+             f"Nullvorzeichen an Frame {k}: Grund {e.get('grund')!r}")
+    gespeichert = json.loads((t.ordner / "m311-nullvorzeichen-ergebnis.json").read_text(encoding="utf-8"))
+    t.pruefe(gespeichert.get("urteil") == "NULLVORZEICHEN" and gespeichert.get("exit") == 5
+             and gespeichert.get("nullvorzeichen") == 1,
+             f"ergebnis.json: Urteil {gespeichert.get('urteil')} Exit {gespeichert.get('exit')} nullvorzeichen "
+             f"{gespeichert.get('nullvorzeichen')}")
+    teile = _rohteile(e)
+    for teil in ("Urteil NULLVORZEICHEN", "Exit 5", f"erstes Nullvorzeichen Frame {k} Kanal 0",
+                 f"letztes Nullvorzeichen Frame {k} Kanal 0"):
+        t.pruefe(teil in teile, f"Rohzeile ohne '{teil}': {' · '.join(teile)[:400]}")
+
+
+def fall_nullvorzeichen_zaehlt_und_weicht_dem_wert(t: Selbsttest) -> None:
+    """NAK-311 M-04: (a) Nullvorzeichen an (k1, Kanal 0) und (k2, Kanal 1) -> NULLVORZEICHEN, nullvorzeichen 2, erste
+    Stelle k1, letzte k2; (b) Nullvorzeichen an k1 und ein gekipptes LSB an k2 -> ABWEICHUNG mit Exit 4: der
+    Wertunterschied geht vor, abweichungen 1 an k2, nullvorzeichen 1 steht als Zahl daneben."""
+    import numpy as np
+
+    k1, k2 = 23_456, K_NULL
+    q = _quelle_mit_nullen((k1, 0), (k2, 1))
+    zwei = q[:N_TEST].copy()
+    zwei[k1, 0] = np.float32(-0.0)
+    zwei[k2, 1] = np.float32(-0.0)
+    code, e = t.fall("m311-zwei-nullvorzeichen", zwei, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 5 and e["urteil"] == "NULLVORZEICHEN" and e.get("abweichungen") == 0,
+             f"(a) zwei Nullvorzeichen: Urteil {e['urteil']} Exit {code} Abweichungen {e.get('abweichungen')} statt NULLVORZEICHEN 5")
+    t.pruefe(e.get("nullvorzeichen") == 2 and e.get("nullvorzeichen_erste") == {"frame": k1, "kanal": 0}
+             and e.get("nullvorzeichen_letzte") == {"frame": k2, "kanal": 1},
+             f"(a) zwei Nullvorzeichen: nullvorzeichen {e.get('nullvorzeichen')}, erste {e.get('nullvorzeichen_erste')}, "
+             f"letzte {e.get('nullvorzeichen_letzte')} statt 2 von ({k1}, 0) bis ({k2}, 1)")
+    gemischt = q[:N_TEST].copy()
+    gemischt[k1, 0] = np.float32(-0.0)
+    gemischt[k2, 1] = np.float32(2.0 ** -23)  # die Quelle traegt dort 0: ein gekipptes LSB
+    code, e = t.fall("m311-nullvorzeichen-und-lsb", gemischt, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 4 and e["urteil"] == "ABWEICHUNG",
+             f"(b) Nullvorzeichen und LSB: Urteil {e['urteil']} Exit {code} statt ABWEICHUNG 4 (der Wertunterschied geht vor)")
+    t.pruefe(e.get("abweichungen") == 1 and e.get("erste") == {"frame": k2, "kanal": 1}
+             and e.get("letzte") == {"frame": k2, "kanal": 1},
+             f"(b) Nullvorzeichen und LSB: Abweichungen {e.get('abweichungen')}, erste {e.get('erste')}, letzte {e.get('letzte')} "
+             f"statt 1 an ({k2}, 1)")
+    t.pruefe(e.get("nullvorzeichen") == 1 and e.get("nullvorzeichen_erste") == {"frame": k1, "kanal": 0}
+             and "nullvorzeichen 1" in _rohteile(e),
+             f"(b) Nullvorzeichen und LSB: nullvorzeichen {e.get('nullvorzeichen')} an {e.get('nullvorzeichen_erste')} "
+             "steht nicht als Zahl daneben")
+
+
+def fall_versatz_geht_dem_nullvorzeichen_vor(t: Selbsttest) -> None:
+    """NAK-311 M-05: Render um v = +1 und v = -1 verschoben (Konstruktion wie M-75), dazu ein Nullvorzeichen im
+    Ueberlapp -> VERSATZ mit Szenario-Exit 5 und v mit Vorzeichen nach P-7, nie BITIDENTISCH und nie NULLVORZEICHEN; die
+    Zahl der Nullvorzeichen steht in ergebnis.json und Rohzeile."""
+    import numpy as np
+
+    k = K_NULL
+    q = _quelle_mit_nullen((k, 0))
+    for v in (1, -1):
+        r = (np.concatenate([np.zeros((v, 2), np.float32), q[:N_TEST - v]]) if v > 0
+             else q[-v:-v + N_TEST].copy())
+        r[k + v, 0] = np.float32(-0.0)  # Renderframe k + v traegt Quellframe k (P-7)
+        code, e = t.fall(f"m311-versatz{v}-nullvorzeichen", r, "float32", MS_TEST, quelle=q)
+        t.pruefe(code == 5 and e["urteil"] == "VERSATZ" and e.get("v") == v and e.get("abweichungen") == 0,
+                 f"v = {v} mit Nullvorzeichen: Urteil {e['urteil']} Exit {code} v {e.get('v')} Abweichungen "
+                 f"{e.get('abweichungen')} statt VERSATZ 5 mit v {v}")
+        t.pruefe(e.get("nullvorzeichen") == 1 and e.get("nullvorzeichen_erste") == {"frame": k + v, "kanal": 0}
+                 and "nullvorzeichen 1" in _rohteile(e),
+                 f"v = {v} mit Nullvorzeichen: nullvorzeichen {e.get('nullvorzeichen')} an {e.get('nullvorzeichen_erste')}, "
+                 f"Rohzeile {rohzeile(e)[:300]}")
+
+
+def fall_nichtendlicher_render_ist_abweichung(t: Selbsttest) -> None:
+    """NAK-311 M-07: der Render traegt an einer Stelle, an der die Quelle 0 hat, einen ruhigen NaN, +Inf beziehungsweise
+    -Inf, sonst bytegleich -> ABWEICHUNG mit Szenario-Exit 4, 1 Abweichung an der Stelle, 0 Nullvorzeichen; nie
+    BITIDENTISCH, nie NULLVORZEICHEN, nie KETTE; ergebnis.json und Rohzeile werden geschrieben (kein Werkzeugfehler)."""
+    import numpy as np
+
+    k = K_NULL
+    q = _quelle_mit_nullen((k, 0))
+    for name, wert in (("nan", np.float32(np.nan)), ("plusinf", np.float32(np.inf)), ("minusinf", np.float32(-np.inf))):
+        r = q[:N_TEST].copy()
+        r[k, 0] = wert
+        with np.errstate(invalid="ignore"):  # inf * 0 in der Kettenrechnung ist hier gewollt
+            code, e = t.fall(f"m311-{name}", r, "float32", MS_TEST, quelle=q)
+        t.pruefe(code == 4 and e["urteil"] == "ABWEICHUNG",
+                 f"{name} im Render: Urteil {e['urteil']} Exit {code} statt ABWEICHUNG 4")
+        t.pruefe(e.get("abweichungen") == 1 and e.get("erste") == {"frame": k, "kanal": 0} and e.get("nullvorzeichen") == 0,
+                 f"{name} im Render: Abweichungen {e.get('abweichungen')} an {e.get('erste')}, nullvorzeichen "
+                 f"{e.get('nullvorzeichen')} statt 1 an ({k}, 0) und 0")
+        pfad = t.ordner / f"m311-{name}-ergebnis.json"
+        gespeichert = json.loads(pfad.read_text(encoding="utf-8")) if pfad.exists() else {}
+        teile = _rohteile(e)
+        t.pruefe(gespeichert.get("urteil") == "ABWEICHUNG" and gespeichert.get("exit") == 4
+                 and "Urteil ABWEICHUNG" in teile and "Exit 4" in teile,
+                 f"{name} im Render: ergebnis.json {gespeichert.get('urteil')}/{gespeichert.get('exit')}, Rohzeile {' · '.join(teile)[:200]}")
+
+
+def fall_weg_r2_urteilt_nullvorzeichen_wie_heute(t: Selbsttest) -> None:
+    """NAK-311 M-08: Weg R2 bleibt in Urteilswoertern und Exits, wie er ist. (a) verarbeitung_ein, der Render
+    unterscheidet sich von der Quelle nur im Nullvorzeichen -> VERFEHLT, Exit 4, Befund NULLVORZEICHEN, der Vergleich
+    waere blind; (b) ohne_slots, der Referenzrender unterscheidet sich vom Auslieferungsrender nur im Nullvorzeichen ->
+    VERFEHLT, Exit 4, SHA-256 ungleich, 1 Abweichung an der Stelle; (c) ohne_slots gegen einen Auslieferungsschritt mit
+    Urteil NULLVORZEICHEN -> VORAUSSETZUNG, Exit 5, Grund "nicht BITIDENTISCH"."""
+    import numpy as np
+
+    k = K_NULL
+    q = _quelle_mit_nullen((k, 0))
+    nv = q[:N_TEST].copy()
+    nv[k, 0] = np.float32(-0.0)
+    code, e = t.referenz("m311-ein-nullvorzeichen", "verarbeitung_ein", nv, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 4 and e.get("urteil") == "VERFEHLT" and e.get("befund") == "NULLVORZEICHEN"
+             and e.get("abweichungen") == 0 and e.get("nullvorzeichen") == 1 and "blind" in (e.get("grund") or ""),
+             f"(a) verarbeitung_ein nur Nullvorzeichen: Urteil {e.get('urteil')} Befund {e.get('befund')} Exit {code} Grund "
+             f"{e.get('grund')!r} statt VERFEHLT 4, der Vergleich waere blind")
+    code, a = t.fall("m311-auslieferung", q[:N_TEST + 400], "pcm24", MS_TEST, quelle=q)
+    t.pruefe(code == 0 and a["urteil"] == "BITIDENTISCH", f"(b) Attrappe des Auslieferungsrenders: Urteil {a['urteil']} Exit {code}")
+    code, e = t.referenz("m311-ohne-slots-nullvorzeichen", "ohne_slots", nv, "float32", MS_TEST,
+                         auslieferung=t.ordner / "m311-auslieferung-ergebnis.json")
+    t.pruefe(code == 4 and e.get("urteil") == "VERFEHLT" and e.get("befund") == "UNGLEICH"
+             and e.get("sha256_render_bereich") not in (None, a.get("sha256_render_bereich"))
+             and e.get("abweichungen") == 1 and e.get("erste") == {"frame": k, "kanal": 0},
+             f"(b) ohne_slots nur Nullvorzeichen: Urteil {e.get('urteil')} Befund {e.get('befund')} Exit {code} Abweichungen "
+             f"{e.get('abweichungen')} an {e.get('erste')} statt VERFEHLT 4 mit 1 Abweichung an ({k}, 0)")
+    code, b = t.fall("m311-auslieferung-nullvorzeichen", nv, "float32", MS_TEST, quelle=q)
+    t.pruefe(code == 5 and b["urteil"] == "NULLVORZEICHEN",
+             f"(c) Attrappe des Auslieferungsschritts: Urteil {b['urteil']} Exit {code} statt NULLVORZEICHEN 5")
+    code, e = t.referenz("m311-ohne-slots-gegen-nullvorzeichen", "ohne_slots", q[:N_TEST], "pcm24", MS_TEST,
+                         auslieferung=t.ordner / "m311-auslieferung-nullvorzeichen-ergebnis.json")
+    t.pruefe(code == 5 and e.get("urteil") == "VORAUSSETZUNG" and e.get("befund") == "OHNE_AUSLIEFERUNG"
+             and "nicht BITIDENTISCH" in (e.get("grund") or "") and "NULLVORZEICHEN" in (e.get("grund") or ""),
+             f"(c) ohne_slots gegen NULLVORZEICHEN: Urteil {e.get('urteil')} Befund {e.get('befund')} Grund {e.get('grund')!r} "
+             f"Exit {code} statt VORAUSSETZUNG 5")
+
+
 FAELLE = [
     ("M-62", "identisch_null_abweichungen", fall_identisch_null_abweichungen),
     ("M-75", "versatz_ist_voraussetzung", fall_versatz_ist_voraussetzung),
@@ -830,6 +1045,11 @@ FAELLE = [
     ("M-60", "render_status", fall_render_status),
     ("M-64", "verarbeitung_ein_umgekehrt", fall_verarbeitung_ein_umgekehrt),
     ("M-64", "ohne_slots_render_gegen_render", fall_ohne_slots_render_gegen_render),
+    ("311/M-03", "nullvorzeichen_ist_nie_bitidentisch", fall_nullvorzeichen_ist_nie_bitidentisch),
+    ("311/M-04", "nullvorzeichen_zaehlt_und_weicht_dem_wert", fall_nullvorzeichen_zaehlt_und_weicht_dem_wert),
+    ("311/M-05", "versatz_geht_dem_nullvorzeichen_vor", fall_versatz_geht_dem_nullvorzeichen_vor),
+    ("311/M-07", "nichtendlicher_render_ist_abweichung", fall_nichtendlicher_render_ist_abweichung),
+    ("311/M-08", "weg_r2_urteilt_nullvorzeichen_wie_heute", fall_weg_r2_urteilt_nullvorzeichen_wie_heute),
 ]
 
 

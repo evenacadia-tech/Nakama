@@ -1,0 +1,60 @@
+# NAK-311 Rotbeweis M-02 - M-62 identisch_null_abweichungen (erste Haelfte), Bein A35
+
+Bauer: Etappe 2 Teil a, 19.09.2026. Stand: HEAD 2f8dd720, im Arbeitsbaum das Messgeraet in der Fassung des Commits 1 (tools/fl/nulltest.py SHA-256 der Arbeitskopie, CRLF: 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE). Ablauf nach Manifest §7.1: Sicherung, Mutation genau eines Textblocks, nur der betroffene Fall mit --nur, Ruecknahme aus der Sicherung.
+
+## Rotbeweis M-02 (Regressionswache): der Bytevergleich liest den Renderbereich um einen Frame versetzt
+
+Zeitpunkt: 2026-09-19T20:19:24+02:00
+Matrixzeile: M-02 (T3-09-02, R-311-2), Etikett Regressionswache.
+Zusage: bytegleicher Bereich -> Urteil BITIDENTISCH, Szenario-Exit 0; sha256_render_bereich gleich sha256_quelle_bereich; Feld nullvorzeichen = 0.
+Bein: A35, Fall M-62 identisch_null_abweichungen (erste Haelfte, ergaenzt um SHA-Gleichheit und Feld).
+Datei der Mutation: tools/fl/nulltest.py, Zeile 224 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\nulltest.py.61DC53AB37C3
+
+Vorher, woertlich:
+```
+    bitverschieden = r.astype("<f4", copy=False).view("<u4") != q.astype("<f4", copy=False).view("<u4")
+```
+Nachher (Mutation), woertlich:
+```
+    bitverschieden = np.roll(r, 1, axis=0).astype("<f4", copy=False).view("<u4") != q.astype("<f4", copy=False).view("<u4")
+```
+SHA-256 mutiert: 72BB167F7B20756F58B80B142F998B7846A93394F7359B758B7CC59D66288C61
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur identisch_null_abweichungen
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['identisch_null_abweichungen']
+=== nulltest.py: Exit 4 (0.7 s) ===
+[ROT] M-62 identisch_null_abweichungen: identischer Render: Urteil NULLVORZEICHEN, v 0, Abweichungen 0, Exit 5 | identischer Render: nullvorzeichen 399986, SHA-256 Render E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E gegen Quelle E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E
+SELBSTTEST nulltest.py: 0 ok, 1 rot
+=== laufzeit.ps1: Exit 2 (0.3 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'identisch_null_abweichungen'
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] M-62 identisch_null_abweichungen :: identischer Render: Urteil NULLVORZEICHEN, v 0, Abweichungen 0, Exit 5
+- [ROT] M-62 identisch_null_abweichungen :: identischer Render: nullvorzeichen 399986, SHA-256 Render E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E gegen Quelle E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E
+Erwartet fallend: ['identischer Render: Urteil']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- [ROT] M-62 identisch_null_abweichungen :: identischer Render: nullvorzeichen 399986, SHA-256 Render E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E gegen Quelle E9F11C1070685ABFF5C1696BDFAF8BE5DA4395D179B92033D4E83610F420104E
+Mitgefallen mit Grund: 'identischer Render: nullvorzeichen ...' - dieselbe versetzte Bytezeile speist das Feld nullvorzeichen (fast jede Stelle wertgleich und bitverschieden); die SHA-256 selbst bleiben gleich.
+Gruen geblieben (keine Fehlermeldung): N, gekipptes LSB (ABWEICHUNG 4, 1 Abweichung an k) und der Nullframe vor der Quelle (VERSATZ 5) - der Wertweg und die Versatzregel lesen die versetzte Bytezeile nicht als Wertunterschied.
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['identisch_null_abweichungen']
+=== nulltest.py: Exit 0 (0.7 s) ===
+[ok] M-62 identisch_null_abweichungen
+SELBSTTEST nulltest.py: 1 ok, 0 rot
+=== laufzeit.ps1: Exit 2 (0.4 s) ===
+SELBSTTEST laufzeit.ps1: kein Fall passt zu 'identisch_null_abweichungen'
+SELBSTTEST A35: GRUEN
+```
+

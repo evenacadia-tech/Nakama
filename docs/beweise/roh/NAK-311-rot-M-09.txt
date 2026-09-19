@@ -1,0 +1,68 @@
+# NAK-311 Rotbeweis M-09 - M-65 rueckweg_nur_bei_abweichung (Selbsttest tools/fl/laufzeit.ps1), Bein A35
+
+Bauer: Etappe 2 Teil a, 19.09.2026. Stand: HEAD 2f8dd720, im Arbeitsbaum das Messgeraet in der Fassung des Commits 1 (tools/fl/nulltest.py SHA-256 der Arbeitskopie, CRLF: 61DC53AB37C3505B96042FB2081502274296921BD82FCC6EA7CDBAD4002CD9EE). Ablauf nach Manifest §7.1: Sicherung, Mutation genau eines Textblocks, nur der betroffene Fall mit --nur, Ruecknahme aus der Sicherung.
+
+## Rotbeweis M-09 (Regressionswache): Rueckweg bei jedem Urteil ungleich BITIDENTISCH
+
+Zeitpunkt: 2026-09-19T20:19:51+02:00
+Matrixzeile: M-09 (T3-09-02, Laufzeit-Arm, R-311-2 letzter Satz), Etikett Regressionswache.
+Zusage: nulltest-host endet mit Szenario-Exit 5 und einem Urteil ungleich ABWEICHUNG -> kein Rueckweg, die Folgeszenarien laufen, Gesamturteil VORAUSSETZUNG, Exit 3 (derselbe Weg fuer KETTE, VERSATZ und NULLVORZEICHEN).
+Bein: A35, Fall M-65 rueckweg_nur_bei_abweichung (tools/fl/laufzeit.ps1, Selbsttest). tools/fl/laufzeit.ps1 wird nur voruebergehend mutiert und steht in keinem Commit (Manifest §9 F-1).
+Datei der Mutation: tools/fl/laufzeit.ps1, Zeile 976 (Stand der Mutation)
+SHA-256 vorher (unveraendert): 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\a4b1478d\tmp\sicherung\laufzeit.ps1.0A16F76CD914
+
+Vorher, woertlich:
+```
+        if ($name -eq 'nulltest-host.json' -and (Nulltest-Urteil) -eq 'ABWEICHUNG') { $rueckweg = Fahre-Rueckweg }
+```
+Nachher (Mutation), woertlich:
+```
+        if ($name -eq 'nulltest-host.json' -and (Nulltest-Urteil) -ne 'BITIDENTISCH') { $rueckweg = Fahre-Rueckweg }
+```
+SHA-256 mutiert: AB163BEA3B5ACF108315F72E800F61526461C06FECF9ED70FD6C51596BD89885
+
+Befehl: py -3.13 tools/fl/selbsttest.py --nur rueckweg_nur_bei_abweichung
+Exit unter Mutation: 4
+Ausgabe unter Mutation:
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['rueckweg_nur_bei_abweichung']
+=== nulltest.py: Exit 2 (0.1 s) ===
+SELBSTTEST nulltest.py: kein Fall passt zu ['rueckweg_nur_bei_abweichung']
+=== laufzeit.ps1: Exit 4 (2.1 s) ===
+[ROT] M-65 rueckweg_nur_bei_abweichung: [KETTE] KETTE: Rueckweg gefahren | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 4 | [VERSATZ] VERSATZ: Rueckweg gefahren | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 4
+SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+SELBSTTEST A35: ROT
+```
+Gefallene Pruefungen:
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [KETTE] KETTE: Rueckweg gefahren
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [KETTE] KETTE: Folgeszenarien liefen nicht
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [KETTE] KETTE: Exit 4
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [VERSATZ] VERSATZ: Rueckweg gefahren
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [VERSATZ] VERSATZ: Folgeszenarien liefen nicht
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [VERSATZ] VERSATZ: Exit 4
+Erwartet fallend: ['KETTE: Rueckweg gefahren', 'VERSATZ: Rueckweg gefahren']
+Die Zusage faellt an der erwarteten Pruefung: JA
+Mitgefallene Pruefungen (nicht erwartet):
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [KETTE] KETTE: Folgeszenarien liefen nicht
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [KETTE] KETTE: Exit 4
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [VERSATZ] VERSATZ: Folgeszenarien liefen nicht
+- [ROT] M-65 rueckweg_nur_bei_abweichung :: [VERSATZ] VERSATZ: Exit 4
+Gruen geblieben: der Teil ABWEICHUNG (Rueckweg, pruefen danach, Folgeszenarien entfallen) und 'FL laeuft beim Rueckweg' - fuer ABWEICHUNG ist die mutierte Bedingung gleich.
+
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 nachher 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405 (gleich dem Wert vorher)
+Lauf nach Ruecknahme: Exit 0
+```
+=== szenario.py: Exit 2 (0.1 s) ===
+SELBSTTEST szenario.py: kein Fall passt zu ['rueckweg_nur_bei_abweichung']
+=== nulltest.py: Exit 2 (0.1 s) ===
+SELBSTTEST nulltest.py: kein Fall passt zu ['rueckweg_nur_bei_abweichung']
+=== laufzeit.ps1: Exit 0 (2.0 s) ===
+[ok] M-65 rueckweg_nur_bei_abweichung
+SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+SELBSTTEST A35: GRUEN
+```
+
+Einordnung der Mitgefallenen: 'Folgeszenarien liefen nicht' und 'Exit 4' je fuer KETTE und VERSATZ gehoeren zur selben Zusage (die Folgeszenarien laufen, Gesamturteil VORAUSSETZUNG, Exit 3): der gefahrene Rueckweg laesst die Folgeszenarien entfallen und setzt VERFEHLT mit Exit 4. Kein Nebeneffekt.
+tools/fl/laufzeit.ps1 nach der Ruecknahme bytegleich zum Basisstand: SHA-256 der Arbeitskopie vorher und nachher 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405; git diff 99307112 -- tools/fl/laufzeit.ps1 ist leer.

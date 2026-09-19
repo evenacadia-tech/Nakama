@@ -1,0 +1,15 @@
+NAK-309 Etappe 4 - zwei Tests des Briefkastens mit --nocapture (Rohzeilen, die A4 ohne --nocapture verschluckt)
+Stand:  2026-09-19 06:37, HEAD 4d6b8dbf
+
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal -- --nocapture
+Exitcode: 0
+  [roh] NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal join_frist_verfehlt=1 stopp_ms=2015 antworten_vor_freigabe=0 takte_fertig_seit_stopp=1 antworten=1 existenzpruefungen_seit_stopp=0 beendet=true
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 283 filtered out; finished in 2.04s
+
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::reparse_punkte_werden_ignoriert -- --nocapture
+Exitcode: 0
+  [--] M-49 reparse_punkte_werden_ignoriert (c) symlink nicht erzeugbar [Dem Client fehlt ein erforderliches Recht. (os error 1314)] - Lage (c) ungemessen
+  test briefkasten::tests::reparse_punkte_werden_ignoriert ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 283 filtered out; finished in 0.06s
+

@@ -48,6 +48,13 @@ WAS DIE FRISCHEPRUEFUNG BEHAUPTET
       Grund; nie gruen), "stillgelegt, nicht beurteilt" und
       "nicht gebaut, nicht beurteilt".
 
+    Gemessene Ziele (NAK-309 Etappe 4, R-309-9, M-75)
+      Jedes Ziel aus bau_ziele, das kein Bein der Population ist (im Runner
+      $gemesseneZiele: Ziele, die ein Bein ausfuehrt oder misst), bekommt
+      dasselbe Urteil wie ein Pruefbinary. Seine Zieldatei nennt der
+      CMake-Export, nie eine Namensregel; fehlt das Ziel im Export, ist es
+      NICHT ABLEITBAR.
+
     Kreuzprobe (M-06)
       Gegen den CMake-Export nakama-frischebaum-<Konfiguration>.json
       (eq-copilot/plugin/CMakeLists.txt, file(GENERATE)): jeder
@@ -80,7 +87,9 @@ MODI
       "bau_ziele": [...]}. Mit --bau-bestaetigt hat -Bauen unmittelbar vorher
       erfolgreich gebaut: der Zeitvergleich folgt dem Urteil des
       Buildsystems, Ableitung, Kreuzprobe und Inventar laufen trotzdem.
-      Ausgabe: Tabelle und eine Zeile "BAUSTAND-JSON {...}" fuer den Runner.
+      Ausgabe: Tabelle und eine Zeile "BAUSTAND-JSON {...}" fuer den Runner;
+      je Eintrag nennt sie die beurteilte Datei ("binary") und ob es ein
+      gemessenes Ziel ist ("gemessen").
   --nicht-gelaufen <meldeordner>
       NAK-309 Etappe 4 (T3-09-04, R-309-4): der Meldeordner eines cargo-Beins
       nach dem Lauf. Jede Marke heisst <Test>.nicht-gelaufen und traegt je
@@ -94,8 +103,8 @@ MODI
       Kanon-Bein A36: ein Attrappen-Baubaum im Temp-Ordner (Tracking-Logs in
       UTF-16 mit BOM wie MSBuild, CustomBuild in UTF-8), jede Erwartung mit
       ihrem Gegenteil; Faelle nach den Matrixzeilen M-01 bis M-08, M-10,
-      M-67 und M-70 aus docs/beweise/NAK-309.md. --nur nimmt einen Fallnamen
-      oder eine Matrixzeile.
+      M-67, M-70 und M-75 aus docs/beweise/NAK-309.md. --nur nimmt einen
+      Fallnamen oder eine Matrixzeile.
 
 EXITCODES
 

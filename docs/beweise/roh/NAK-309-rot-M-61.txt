@@ -1,0 +1,41 @@
+NAK-309 Etappe 4 - Rotbeweis M-61 Zaehlung ohne das Golden
+Stand:  2026-09-19 05:37, HEAD cb7c0d0e
+Zusage: Die Zahl ist gemessen: Karte und KONZEPT nennen genau den Wert der Zaehlung ueber alle eingefrorenen Byte-Bilder.
+Bein:   Zaehlwerkzeug docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py (Rohdatei NAK-309-etappe4-feldzaehlung.txt)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: der Basisstand ist der Lauf "vorher" in NAK-309-etappe4-feldzaehlung.txt (132, Karte 133).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+keine Quellmutation: das Golden main-binding-v1.bin wird in der Zaehlung weggelassen (--ohne) - der Stand vor dem neuen Golden
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py --ohne schema2/main-binding-v1.bin
+Exitcode: 4 (0.2 s)
+  Karte oder KONZEPT widerspricht der Zaehlung: JA
+  Summe        132 von 136
+  Ohne eingefrorenes Fixture: Common.project_binding_id, MainProject.confirmed_members_v1, MainProject.manual_passages_v1, MainProject.assistant_step_v1
+  Karte (docs/gesundheit/abdeckungskarte.md, K4 Population) nennt: 133; KONZEPT (docs/gesundheit/KONZEPT.md, StateMigrationTest) nennt: 133; gezaehlt: 132
+
+Gefallene Pruefungen:
+  Karte oder KONZEPT widerspricht der Zaehlung: JA
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: Karte oder KONZEPT widerspricht der Zaehlung: JA (132 gegen 133)  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: py -3.13 docs/beweise/roh/NAK-309-etappe4-feldzaehlung.py
+Exitcode: 0 (0.2 s)
+  Summe        133 von 136
+  Ohne eingefrorenes Fixture: MainProject.confirmed_members_v1, MainProject.manual_passages_v1, MainProject.assistant_step_v1
+  Karte (docs/gesundheit/abdeckungskarte.md, K4 Population) nennt: 133; KONZEPT (docs/gesundheit/KONZEPT.md, StateMigrationTest) nennt: 133; gezaehlt: 133
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja

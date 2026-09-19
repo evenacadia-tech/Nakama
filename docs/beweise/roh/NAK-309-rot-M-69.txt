@@ -1,0 +1,163 @@
+NAK-309 Etappe 4 - Rotbeweis M-69 (1) Marke trotz vorhandener Junction
+Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Zusage: Die zwei Tests laufen wirklich: der Meldeordner bleibt leer, das Bein steht als [OK].
+Bein:   A4 im Verfahren des Runners (Meldeordner, --nicht-gelaufen), Schalter nicht gesetzt
+Datei:  broker/tests/store_crash_matrix.rs:3229
+SHA-256 vorher: 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: entfaellt - heute nicht messbar (der Meldeordner entsteht in dieser Etappe).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+broker/tests/store_crash_matrix.rs, vorher (Zeile 3229):
+    if let Err(grund) = junction_legen(&verweis, &echt) {
+nachher:
+    if let Err(grund) = junction_legen(&verweis, &echt).and_then(|()| Err::<(), String>("Marke trotz vorhandener Junction".into())) { // MUTATION
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (1.7 s)
+  Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [NOT RUN] (erwartet [OK]) - NOT RUN store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Marke trotz vorhandener Junction
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.03s
+  Klassifikation: Meldeweg: NOT RUN - 1 Test(s) nicht gelaufen (Exit 3) (Werkzeug-Exit 3)
+
+Gefallene Pruefungen:
+  Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [NOT RUN] (erwartet [OK]) - NOT RUN store_weist_reparse_punkt_im_pfad_ab: Reparse-Fall nicht gemessen: Marke trotz vorhandener Junction
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: Beinbilanz [NOT RUN] statt [OK]  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 1
+  test store_weist_reparse_punkt_im_pfad_ab ... ok
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (broker/tests/store_crash_matrix.rs SHA-256 9B70AF8F49842B16EB8C821753202538184F9CC8954B8B9A1537564055FA0729); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (2.2 s)
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.03s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja
+
+==============================================================================
+NAK-309 Etappe 4 - Rotbeweis M-69 (2) NAK-121 G2-TOCTOU-002 wiederholt: Reparse-Riegel entfernt
+Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Zusage: Die Rotbeweise der NAK-121-Zeilen laufen auf dem Stand der Etappe noch einmal und machen genau diese Tests rot (docs/beweise/roh/NAK-121-rot-G2-TOCTOU-002.txt).
+Bein:   A4 im Verfahren des Runners, Schalter nicht gesetzt
+Datei:  broker/src/store/pfad.rs:139-148
+SHA-256 vorher: 26EDFC40439F21ECDCDF2E57318DAC58228A52E157B3E8B92551FC6F56914FE8 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: entfaellt - Regressionswache (Wiederholung der NAK-121-Mutation).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+broker/src/store/pfad.rs, vorher (Zeile 139):
+    let mut pruefling = Some(kandidat);
+    while let Some(teil) = pruefling {
+        if traegt_reparse_punkt(teil)? {
+            return Err(StoreFehler::Pfad(format!(
+                "Reparse-Punkt im Storepfad: {}",
+                teil.display()
+            )));
+        }
+        pruefling = teil.parent().filter(|eltern| !eltern.as_os_str().is_empty());
+    }
+nachher:
+    // MUTANTE: kein Reparse-Riegel - eine untergeschobene Junction
+    // klassifiziert wieder den Vorfahren statt das geoeffnete Objekt.
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 101 (4.3 s)
+  test store_weist_reparse_punkt_im_pfad_ab ... FAILED
+    Panik in store_weist_reparse_punkt_im_pfad_ab: ein Reparse-Punkt im Pfad muss abgewiesen werden: false
+  Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [ROT] (erwartet [OK])
+  test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.04s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+
+Gefallene Pruefungen:
+  test store_weist_reparse_punkt_im_pfad_ab ... FAILED
+    Panik in store_weist_reparse_punkt_im_pfad_ab: ein Reparse-Punkt im Pfad muss abgewiesen werden: false
+  Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [ROT] (erwartet [OK])
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: store_weist_reparse_punkt_im_pfad_ab (Exit 101)  -> gefallen
+
+Mitgefallen:
+    Panik in store_weist_reparse_punkt_im_pfad_ab: ein Reparse-Punkt im Pfad muss abgewiesen werden: false
+      Grund: Meldung desselben Tests
+  Beinbilanz A4 (store_weist_reparse_punkt_im_pfad_ab): [ROT] (erwartet [OK])
+      Grund: der rote Test macht das Bein rot - ROT geht vor
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (broker/src/store/pfad.rs SHA-256 26EDFC40439F21ECDCDF2E57318DAC58228A52E157B3E8B92551FC6F56914FE8); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix store_weist_reparse_punkt_im_pfad_ab; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (4 s)
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.03s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja
+
+==============================================================================
+NAK-309 Etappe 4 - Rotbeweis M-69 (3) NAK-121 R2-3 wiederholt: zweites CreateFileW ueber den Namen
+Stand:  2026-09-19 06:26, HEAD cb7c0d0e
+Zusage: Die Rotbeweise der NAK-121-Zeilen laufen auf dem Stand der Etappe noch einmal und machen genau diese Tests rot (docs/beweise/roh/NAK-121-rot-R2-3-r2.txt).
+Bein:   A4-SI im Verfahren des Runners, Schalter nicht gesetzt
+Datei:  broker/src/store/pfad.rs:295
+SHA-256 vorher: 26EDFC40439F21ECDCDF2E57318DAC58228A52E157B3E8B92551FC6F56914FE8 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: entfaellt - Regressionswache (Wiederholung der NAK-121-Mutation).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+broker/src/store/pfad.rs, vorher (Zeile 295):
+    volume_am_handle(griff, "der geoeffneten SQLite-Hauptdatenbank")
+nachher:
+    geoeffnete_db_volume(Path::new(conn.path().unwrap_or_default())) // MUTANTE: zweites CreateFileW ueber den Namen
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen -- --ignored; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 101 (3.6 s)
+  test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... FAILED
+    Panik in volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: die Entscheidung folgte dem Namen statt dem Objekt: \\?\C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-361916-6cfacad42c8c4c43b982a914fc8e8527\ziel-b\nakama-broker.sqlite3
+  Beinbilanz A4-SI (volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen): [ROT] (erwartet [OK])
+  test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.08s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+
+Gefallene Pruefungen:
+  test volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen ... FAILED
+    Panik in volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: die Entscheidung folgte dem Namen statt dem Objekt: \\?\C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-361916-6cfacad42c8c4c43b982a914fc8e8527\ziel-b\nakama-broker.sqlite3
+  Beinbilanz A4-SI (volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen): [ROT] (erwartet [OK])
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen (Exit 101)  -> gefallen
+
+Mitgefallen:
+    Panik in volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen: die Entscheidung folgte dem Namen statt dem Objekt: \\?\C:\Users\phili\AppData\Local\Temp\nakama-sonde011-toctou002-sqlite-handle-361916-6cfacad42c8c4c43b982a914fc8e8527\ziel-b\nakama-broker.sqlite3
+      Grund: Meldung desselben Tests
+  Beinbilanz A4-SI (volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen): [ROT] (erwartet [OK])
+      Grund: der rote Test macht das Bein rot - ROT geht vor
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (broker/src/store/pfad.rs SHA-256 26EDFC40439F21ECDCDF2E57318DAC58228A52E157B3E8B92551FC6F56914FE8); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: [NAKAMA_NICHT_GELAUFEN=<frischer Meldeordner>] cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen -- --ignored; danach py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --nicht-gelaufen <Meldeordner>
+Exitcode: 0 (3.9 s)
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.09s
+  Klassifikation: Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0) (Werkzeug-Exit 0)
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja

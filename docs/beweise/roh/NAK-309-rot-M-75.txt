@@ -1,0 +1,226 @@
+NAK-309 Etappe 4 - Rotbeweis M-75 (1) Population der gemessenen Ziele leer
+Stand:  2026-09-19 06:27, HEAD cb7c0d0e
+Zusage: Jedes Ziel, das der Runner baut und ein Bein ausfuehrt oder misst, bekommt dasselbe Frischeurteil wie ein Pruefbinary.
+Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
+Datei:  tools/eq-copilot/pruefe_beweisrunner.py:563
+SHA-256 vorher: 4B589A4EC1EDE3A888DE1B14FD7F6AD93EDB3B55579AADC53811EE169041A634 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Selbsttest und Code stehen in derselben Datei.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+tools/eq-copilot/pruefe_beweisrunner.py, vorher (Zeile 563):
+        if ziel in beine:
+nachher:
+        if True:  # MUTATION: die gemessenen Ziele entfallen aus der Population
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
+Exitcode: 4 (1.4 s)
+  Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im Zeitvergleich und sind frisch, Exit 0  [VST3 (fehlt), Kern (fehlt), Exit 0]
+  (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert (Exit 4), obwohl jedes Pruefbinary frisch ist  [VST3 (fehlt) , Beine frisch True, Exit 0]
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [(fehlt), Exit 3]
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [(fehlt) [], Exit 3]
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [(fehlt), Exit 3]
+  Selbsttest: 0 von 1 Faellen bestanden
+
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 4 (5.8 s)
+  Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im Zeitvergleich und sind frisch, Exit 0  [VST3 (fehlt), Kern (fehlt), Exit 0]
+  (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert (Exit 4), obwohl jedes Pruefbinary frisch ist  [VST3 (fehlt) , Beine frisch True, Exit 0]
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [(fehlt), Exit 3]
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [(fehlt) [], Exit 3]
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [(fehlt), Exit 3]
+  Selbsttest: 13 von 14 Faellen bestanden
+
+Gefallene Pruefungen:
+  Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im Zeitvergleich und sind frisch, Exit 0  [VST3 (fehlt), Kern (fehlt), Exit 0]
+  (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert (Exit 4), obwohl jedes Pruefbinary frisch ist  [VST3 (fehlt) , Beine frisch True, Exit 0]
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [(fehlt), Exit 3]
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [(fehlt) [], Exit 3]
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [(fehlt), Exit 3]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, Exit 4  -> gefallen
+
+Mitgefallen:
+  Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im Zeitvergleich und sind frisch, Exit 0  [VST3 (fehlt), Kern (fehlt), Exit 0]
+      Grund: ohne Population steht kein gemessenes Ziel in der Tabelle
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [(fehlt), Exit 3]
+      Grund: dieselbe Population traegt auch die Faelle nicht ableitbar, fehlt im Export und nicht gebaut
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [(fehlt) [], Exit 3]
+      Grund: dieselbe Population traegt auch die Faelle nicht ableitbar, fehlt im Export und nicht gebaut
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [(fehlt), Exit 3]
+      Grund: dieselbe Population traegt auch die Faelle nicht ableitbar, fehlt im Export und nicht gebaut
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 50
+  Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 0, B6 frisch]
+  nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  die Beglaubigung wird verweigert (Exit 4)  [Exit 4]
+  frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 0]
+  eine juengere Quelle ausserhalb ihres Frischebaums laesst B6 und B7 frisch  [B6 frisch, B7 frisch]
+  Gegenteil: B15, dessen Frischebaum sie enthaelt, ist VERALTET  [B15 VERALTET, eq-copilot/plugin/tests/ShotTestMain.cpp]
+  (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 0]
+  (b) ein Tick (100 ns) juenger: VERALTET  [VERALTET, Exit 4]
+  Ruecknahme mit altem Zeitstempel gilt als frisch (Grenze, keine Zusage)  [frisch]
+  die Ausgabe nennt die Grenze  [Grenze: Zeitstempel, kein Inhalt]
+  stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 0]
+  Gegenteil: dasselbe Binary ohne Marke ist VERALTET (Exit 4)  [VERALTET, Exit 4]
+  Gegenteil: Verbraucher mit Kern und statischer Verbraucher ueber sein Endziel sind gedeckt, Exit 0  [B6 gedeckt, EqCopilot gedeckt, Exit 0]
+  ein Verbraucher, den der Kanon nicht baut, wird genannt, nicht beurteilt  [nicht im Kanon, nicht beurteilt]
+  Kernverbraucher, dessen Link-Leselog den Kern nicht nennt: 'Frischebaum deckt ... nicht', Exit 4  [NICHT GEDECKT, Exit 4]
+  ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 0]
+  (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 0]
+  eine getrackte Datei ohne Frischebaum und ohne Ausnahme verweigert die Beglaubigung (Exit 4)  [Exit 4, Luecken ['Frischebaum unvollstaendig: eq-copilot/plugin/tests/VergessenTest.cpp']]
+  Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  Manifest juenger als generate.stamp: jedes Binary VERALTET 'Konfiguration ausstehend', Exit 4  [Exit 4, VERALTET Konfiguration ausstehend: eq-copilot/install/nakama-installer-v1.json]
+  Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 0]
+  nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 0, frisch]
+  Gegenteil: geaenderte Projektdatei (Uebersetzeroptionen) macht nur ihr Binary VERALTET  [B6 VERALTET eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 VERALTET eq-copilot/build/plugin/generated/nakama/BrokerInstallBinding.h]
+  nach bestaetigtem Bau folgt der Zeitvergleich dem Buildsystem  [frisch (Bau bestaetigt)]
+  Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Gegenteil: leerer Meldeordner - jeder Test lief, Exit 0  [Exit 0]
+  eine Marke <Test>: <Grund> ist NOT RUN mit Test und Grund (Exit 3: fehlende Voraussetzung, der Runner macht daraus UNVOLLSTAENDIG, nie gruen)  [Exit 3, [('store_weist_reparse_punkt_im_pfad_ab', 'Reparse-Fall nicht gemessen: Testschalter')]]
+  zwei Marken desselben Tests: beide Gruende, weiter NOT RUN  [Exit 3, 2 Marken]
+  eine Marke eines anderen Tests zaehlt ebenso als NOT RUN - nie gruen  [Exit 3]
+  unlesbar (Meldeordner fehlt): Exit 2, nie leer  [Exit 2, Meldeordner fehlt]
+  unlesbar (fremde Datei): Exit 2, nie leer  [Exit 2, keine Marke: notiz.txt]
+  unlesbar (Zeile nennt einen anderen Test): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: Zeile ist nicht '<Test>: <Grund>']
+  unlesbar (Marke ohne Grund): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: Zeile ist nicht '<Test>: <Grund>']
+  unlesbar (leere Marke): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: keine Folge von Zeilen mit LF-Ende]
+  unlesbar (kein UTF-8): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen nicht lesbar (UnicodeDecodeError)]
+  unlesbar (CRLF statt LF): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: keine Folge von Zeilen mit LF-Ende]
+  tools/beweise.ps1: ROT vor fehlender Voraussetzung vor NICHT BEGLAUBIGT, [NOT RUN] fehlt in der Gruenzaehlung und ist eine fehlende Voraussetzung  [gehalten]
+  Gegenteil: dieselbe Quelle mit vertauschten Zweigen faellt  [Reihenfolge des Urteilsblocks verletzt (ROT vor Voraussetzung vor NICHT BEGLAUBIGT)]
+  Gegenteil: [NOT RUN] in der Gruenzaehlung faellt  [0 statt genau einer Zeile: \$gruen = @\(\$gelaufen \| Where-Object \{ \$_\.Symbol -in @\('\[OK\]', '\[HINWEIS\]'\) \}\)]
+  (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [gehalten]
+  Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/pruefe_beweisrunner.py SHA-256 4B589A4EC1EDE3A888DE1B14FD7F6AD93EDB3B55579AADC53811EE169041A634); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
+Exitcode: 0 (1.4 s)
+  Selbsttest: 1 von 1 Faellen bestanden
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0 (6.1 s)
+  Selbsttest: 14 von 14 Faellen bestanden
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja
+
+==============================================================================
+NAK-309 Etappe 4 - Rotbeweis M-75 (2) Runner fuehrt die gemessenen Ziele nicht in bau_ziele
+Stand:  2026-09-19 06:27, HEAD cb7c0d0e
+Zusage: Die Ziele aus $gemesseneZiele gehen ueber $zuBauen in bau_ziele der Frischepruefung.
+Bein:   A36 (tools/eq-copilot/pruefe_beweisrunner.py --selbsttest); gezielt der Fall ueber --nur, dazu das ganze Bein
+Datei:  tools/beweise.ps1:899
+SHA-256 vorher: 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Selbsttest und Code stehen in derselben Datei.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+tools/beweise.ps1, vorher (Zeile 899):
+$zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
+nachher:
+# MUTATION: gemessene Ziele nicht zugefuehrt
+
+--- BAU UNTER MUTATION ---
+kein Bau: die Quelltextwache liest tools/beweise.ps1 beim Lauf; der Runner selbst laeuft unter dieser Mutation nicht.
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
+Exitcode: 4 (1.3 s)
+  (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
+  Selbsttest: 0 von 1 Faellen bestanden
+
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 4 (6 s)
+  (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
+  Selbsttest: 13 von 14 Faellen bestanden
+
+Gefallene Pruefungen:
+  (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: (e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 54
+  Gegenteil: ohne Aenderung ist B6 frisch und der Baustand Exit 0  [Exit 0, B6 frisch]
+  nur dsp/DspKern.cpp geaendert: EqCopDspGoldenTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  nur dsp/DspKern.cpp geaendert: EqCopTransactionTest VERALTET, juengste Eingabe dsp/DspKern.cpp  [VERALTET, eq-copilot/plugin/dsp/DspKern.cpp]
+  die Beglaubigung wird verweigert (Exit 4)  [Exit 4]
+  frischer Bau nach der DSP-Aenderung: B6, B7, B15 frisch, Exit 0  [Exit 0]
+  eine juengere Quelle ausserhalb ihres Frischebaums laesst B6 und B7 frisch  [B6 frisch, B7 frisch]
+  Gegenteil: B15, dessen Frischebaum sie enthaelt, ist VERALTET  [B15 VERALTET, eq-copilot/plugin/tests/ShotTestMain.cpp]
+  (a) Eingabe mit exakt der LastWriteTime des Binaries: frisch  [frisch, Exit 0]
+  (b) ein Tick (100 ns) juenger: VERALTET  [VERALTET, Exit 4]
+  Ruecknahme mit altem Zeitstempel gilt als frisch (Grenze, keine Zusage)  [frisch]
+  die Ausgabe nennt die Grenze  [Grenze: Zeitstempel, kein Inhalt]
+  stillgelegtes Bein mit altem Binary: 'stillgelegt, nicht beurteilt', Exit 0  [stillgelegt, nicht beurteilt, Exit 0]
+  Gegenteil: dasselbe Binary ohne Marke ist VERALTET (Exit 4)  [VERALTET, Exit 4]
+  Gegenteil: Verbraucher mit Kern und statischer Verbraucher ueber sein Endziel sind gedeckt, Exit 0  [B6 gedeckt, EqCopilot gedeckt, Exit 0]
+  ein Verbraucher, den der Kanon nicht baut, wird genannt, nicht beurteilt  [nicht im Kanon, nicht beurteilt]
+  Kernverbraucher, dessen Link-Leselog den Kern nicht nennt: 'Frischebaum deckt ... nicht', Exit 4  [NICHT GEDECKT, Exit 4]
+  ein Kanon-Verbraucher ohne Binary wird genannt, nicht beurteilt - und nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Gegenteil: intakter Baum ist ableitbar (Exit 0)  [Exit 0]
+  (a) CL-Leselog von B6 fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release/EqCopDsp.4CC300A8.tlog: CL-Leselog ]
+  (a) kein Link-Schreiblog nennt B6: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, kein Link-Tracking-Log des Baubaums nennt eq-copilot/build/plugin/EqCopDspGoldenTest_artef]
+  (b) Bibliothek unter dem Baubaum ohne Erzeuger: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/Release/FREMD.LIB ist keinem Zwischenordner zuzuordnen (kein *.wri]
+  (c) CMake-Export fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, CMake-Export eq-copilot/build/plugin/nakama-frischebaum-Release.json fehlt]
+  (c) generate.stamp.depend fehlt: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend fehlt]
+  (d) zwei Tracking-Ordner im Zwischenordner: NICHT ABLEITBAR, Exit 3, nie 0  [NICHT ABLEITBAR, Exit 3, eq-copilot/build/plugin/EqCopDspGoldenTest.dir/Release: 2 Tracking-Ordner statt genau eine]
+  Gegenteil: jede getrackte Datei im Frischebaum oder mit Grund ausgenommen, Exit 0  [Exit 0]
+  eine getrackte Datei ohne Frischebaum und ohne Ausnahme verweigert die Beglaubigung (Exit 4)  [Exit 4, Luecken ['Frischebaum unvollstaendig: eq-copilot/plugin/tests/VergessenTest.cpp']]
+  Gegenteil: dieselbe Datei mit Grund in der Ausnahmeliste, Exit 0  [Exit 0]
+  Manifest juenger als generate.stamp: jedes Binary VERALTET 'Konfiguration ausstehend', Exit 4  [Exit 4, VERALTET Konfiguration ausstehend: eq-copilot/install/nakama-installer-v1.json]
+  Gegenteil: Manifest nicht juenger als der Stempel, frisch  [Exit 0]
+  nach dem Konfigurieren ohne Inhaltsaenderung: frisch, obwohl das Manifest juenger als das Binary ist  [Exit 0, frisch]
+  Gegenteil: geaenderte Projektdatei (Uebersetzeroptionen) macht nur ihr Binary VERALTET  [B6 VERALTET eq-copilot/build/plugin/EqCopDspGoldenTest.vcxproj]
+  Gegenteil: ein inhaltlich geaenderter erzeugter Header macht jeden Kernverbraucher VERALTET  [B7 VERALTET eq-copilot/build/plugin/generated/nakama/BrokerInstallBinding.h]
+  nach bestaetigtem Bau folgt der Zeitvergleich dem Buildsystem  [frisch (Bau bestaetigt)]
+  Gegenteil: die Kreuzprobe laeuft trotzdem und verweigert (Exit 4)  [Exit 4]
+  Gegenteil: leerer Meldeordner - jeder Test lief, Exit 0  [Exit 0]
+  eine Marke <Test>: <Grund> ist NOT RUN mit Test und Grund (Exit 3: fehlende Voraussetzung, der Runner macht daraus UNVOLLSTAENDIG, nie gruen)  [Exit 3, [('store_weist_reparse_punkt_im_pfad_ab', 'Reparse-Fall nicht gemessen: Testschalter')]]
+  zwei Marken desselben Tests: beide Gruende, weiter NOT RUN  [Exit 3, 2 Marken]
+  eine Marke eines anderen Tests zaehlt ebenso als NOT RUN - nie gruen  [Exit 3]
+  unlesbar (Meldeordner fehlt): Exit 2, nie leer  [Exit 2, Meldeordner fehlt]
+  unlesbar (fremde Datei): Exit 2, nie leer  [Exit 2, keine Marke: notiz.txt]
+  unlesbar (Zeile nennt einen anderen Test): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: Zeile ist nicht '<Test>: <Grund>']
+  unlesbar (Marke ohne Grund): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: Zeile ist nicht '<Test>: <Grund>']
+  unlesbar (leere Marke): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: keine Folge von Zeilen mit LF-Ende]
+  unlesbar (kein UTF-8): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen nicht lesbar (UnicodeDecodeError)]
+  unlesbar (CRLF statt LF): Exit 2, nie leer  [Exit 2, store_weist_reparse_punkt_im_pfad_ab.nicht-gelaufen: keine Folge von Zeilen mit LF-Ende]
+  tools/beweise.ps1: ROT vor fehlender Voraussetzung vor NICHT BEGLAUBIGT, [NOT RUN] fehlt in der Gruenzaehlung und ist eine fehlende Voraussetzung  [gehalten]
+  Gegenteil: dieselbe Quelle mit vertauschten Zweigen faellt  [Reihenfolge des Urteilsblocks verletzt (ROT vor Voraussetzung vor NICHT BEGLAUBIGT)]
+  Gegenteil: [NOT RUN] in der Gruenzaehlung faellt  [0 statt genau einer Zeile: \$gruen = @\(\$gelaufen \| Where-Object \{ \$_\.Symbol -in @\('\[OK\]', '\[HINWEIS\]'\) \}\)]
+  Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im Zeitvergleich und sind frisch, Exit 0  [VST3 frisch, Kern frisch, Exit 0]
+  (a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert (Exit 4), obwohl jedes Pruefbinary frisch ist  [VST3 VERALTET eq-copilot/plugin/src/Vst3Huelle.cpp, Beine frisch True, Exit 4]
+  (b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen  [NICHT ABLEITBAR, Exit 3]
+  (c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel  [NICHT ABLEITBAR [Ziel EqCopilot_VST3 fehlt im CMake-Export], Exit 3]
+  (d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen  [nicht gebaut, nicht beurteilt, Exit 3]
+  Gegenteil: ohne die Zufuehrung faellt die Wache  [die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau]
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (tools/beweise.ps1 SHA-256 7DE32B029C3AB42AB6E41BD09874D414170B1563472CDD4AC9C6152DCC7F67FD); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest --nur M-75
+Exitcode: 0 (1.3 s)
+  Selbsttest: 1 von 1 Faellen bestanden
+Aufruf: py -3.13 tools/eq-copilot/pruefe_beweisrunner.py --selbsttest
+Exitcode: 0 (5.9 s)
+  Selbsttest: 14 von 14 Faellen bestanden
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja

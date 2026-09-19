@@ -1,0 +1,173 @@
+NAK-309 Etappe 4 - Rotbeweis M-66 (1) Stoppflag vor jedem Takt entfernt
+Stand:  2026-09-19 06:24, HEAD cb7c0d0e
+Zusage: Nach der Join-Frist beendet der Thread den begonnenen Schreibschritt genau einmal (eine Antwortdatei, takte_fertig +1) und beginnt keinen neuen Takt.
+Bein:   A4 (cargo test, Testmodul broker/src/briefkasten.rs); gezielt der Test, dazu das ganze Testmodul
+Datei:  broker/src/briefkasten.rs:559-562
+SHA-256 vorher: E4691A529F2FA6000A5F387D0175DC6ECFB80AA93199C902096E7CD1BF95BA7D (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Test und Hilfe stehen im Testcrate des Etappenstands.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+broker/src/briefkasten.rs, vorher (Zeile 559):
+            // Das Stoppflag vor jedem Takt und nach jedem Wecken (M-45).
+            if weck.stopp {
+                break;
+            }
+nachher:
+            // MUTATION: Stoppflag vor dem Takt entfernt
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal -- --nocapture
+Exitcode: 101 (5.9 s)
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: assertion `left == right` failed: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 2 Takte fertig nach dem Stopp statt genau des begonnenen
+  test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 283 filtered out; finished in 2.03s
+
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::
+Exitcode: 101 (12.3 s)
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+  test briefkasten::tests::nach_stopp_keine_lieferung ... FAILED
+  test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... FAILED
+  test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: assertion `left == right` failed: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 2 Takte fertig nach dem Stopp statt genau des begonnenen
+    Panik in briefkasten::tests::nach_stopp_keine_lieferung: assertion `left == right` failed: M-45 (2) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp 17 statt 0
+    Panik in briefkasten::tests::stoppreihenfolge_briefkasten_zuerst: M-45 (3) stoppreihenfolge_briefkasten_zuerst: Thread endet im geordneten Stopp
+    Panik in briefkasten::tests::stopp_weckt_ohne_wartedurchlauf: M-45 (1) stopp_weckt_ohne_wartedurchlauf: Thread nicht beendet
+  test result: FAILED. 14 passed; 4 failed; 0 ignored; 0 measured; 266 filtered out; finished in 12.07s
+
+Gefallene Pruefungen:
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: assertion `left == right` failed: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 2 Takte fertig nach dem Stopp statt genau des begonnenen
+  test briefkasten::tests::nach_stopp_keine_lieferung ... FAILED
+  test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... FAILED
+  test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... FAILED
+    Panik in briefkasten::tests::nach_stopp_keine_lieferung: assertion `left == right` failed: M-45 (2) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp 17 statt 0
+    Panik in briefkasten::tests::stoppreihenfolge_briefkasten_zuerst: M-45 (3) stoppreihenfolge_briefkasten_zuerst: Thread endet im geordneten Stopp
+    Panik in briefkasten::tests::stopp_weckt_ohne_wartedurchlauf: M-45 (1) stopp_weckt_ohne_wartedurchlauf: Thread nicht beendet
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal  -> gefallen
+  erwartet: Meldung: <n> Takte fertig nach dem Stopp statt genau des begonnenen  -> gefallen
+
+Mitgefallen:
+  test briefkasten::tests::nach_stopp_keine_lieferung ... FAILED
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+  test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... FAILED
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+  test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... FAILED
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+    Panik in briefkasten::tests::nach_stopp_keine_lieferung: assertion `left == right` failed: M-45 (2) nach_stopp_keine_lieferung: Existenzpruefungen nach dem Stopp 17 statt 0
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+    Panik in briefkasten::tests::stoppreihenfolge_briefkasten_zuerst: M-45 (3) stoppreihenfolge_briefkasten_zuerst: Thread endet im geordneten Stopp
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+    Panik in briefkasten::tests::stopp_weckt_ohne_wartedurchlauf: M-45 (1) stopp_weckt_ohne_wartedurchlauf: Thread nicht beendet
+      Grund: M-45 (1) bis (3) aus NAK-286 messen dieselbe Stoppruefung: ohne sie endet der Thread im Stopp nie und beginnt nach dem Stopp weitere Takte
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 14
+  test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+  test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+  test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+  test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+  test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+  test briefkasten::tests::keine_leere_antwort ... ok
+  test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+  test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+  test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+  test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+  test briefkasten::tests::reparse_punkte_werden_ignoriert ... ok
+  test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+  test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+  test briefkasten::tests::kennungsring_fifo_256 ... ok
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (broker/src/briefkasten.rs SHA-256 E4691A529F2FA6000A5F387D0175DC6ECFB80AA93199C902096E7CD1BF95BA7D); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal -- --nocapture
+Exitcode: 0 (6 s)
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 283 filtered out; finished in 2.03s
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::
+Exitcode: 0 (3.1 s)
+  test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 266 filtered out; finished in 3.02s
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja
+
+==============================================================================
+NAK-309 Etappe 4 - Rotbeweis M-66 (2) begonnener Abschluss nach dem Stopp abgewuergt
+Stand:  2026-09-19 06:25, HEAD cb7c0d0e
+Zusage: Der begonnene Schreibschritt endet nach der Freigabe genau einmal - mit genau einer Antwortdatei.
+Bein:   A4 (cargo test, Testmodul broker/src/briefkasten.rs); gezielt der Test, dazu das ganze Testmodul
+Datei:  broker/src/briefkasten.rs:749-750
+SHA-256 vorher: E4691A529F2FA6000A5F387D0175DC6ECFB80AA93199C902096E7CD1BF95BA7D (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Test und Hilfe stehen im Testcrate des Etappenstands.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+broker/src/briefkasten.rs, vorher (Zeile 749):
+        // (5) ohne Ersetzen in den Antwortnamen. (6) kein Aufraeumer.
+        dateisystem.benenne_um_ohne_ersetzen(&temp, &ziel)
+nachher:
+        // (5) ohne Ersetzen in den Antwortnamen. (6) kein Aufraeumer.
+        if sperre(&self.weck).stopp { return false; } // MUTATION: Abschluss nach dem Stopp abgewuergt
+        dateisystem.benenne_um_ohne_ersetzen(&temp, &ziel)
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal -- --nocapture
+Exitcode: 101 (5.8 s)
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 0 Antwortdatei(en) statt genau einer
+  test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 283 filtered out; finished in 2.04s
+
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::
+Exitcode: 101 (3.2 s)
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 0 Antwortdatei(en) statt genau einer
+  test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 266 filtered out; finished in 3.02s
+
+Gefallene Pruefungen:
+  test briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal ... FAILED
+    Panik in briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: NAK-309 M-66 nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal: 0 Antwortdatei(en) statt genau einer
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal  -> gefallen
+  erwartet: Meldung: 0 Antwortdatei(en) statt genau einer  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 17
+  test briefkasten::tests::anfrage_und_zeitstempel_wie_plugin ... ok
+  test briefkasten::tests::fassade_zaehlt_jeden_schritt ... ok
+  test briefkasten::tests::ohne_anfrage_nur_existenzpruefung ... ok
+  test briefkasten::tests::register_sperre_nie_ueber_dateischreiben ... ok
+  test briefkasten::tests::gesperrtes_aggregat_antwort_mit_grund ... ok
+  test briefkasten::tests::anfrage_broker_genau_eine_antwort ... ok
+  test briefkasten::tests::keine_leere_antwort ... ok
+  test briefkasten::tests::pfadtraversal_unmoeglich ... ok
+  test briefkasten::tests::antwort_feldmenge_wie_schema ... ok
+  test briefkasten::tests::stopp_weckt_ohne_wartedurchlauf ... ok
+  test briefkasten::tests::stoppreihenfolge_briefkasten_zuerst ... ok
+  test briefkasten::tests::startfehler_ohne_registerzeile ... ok
+  test briefkasten::tests::uhrsprung_aendert_zuordnung_nicht ... ok
+  test briefkasten::tests::reparse_punkte_werden_ignoriert ... ok
+  test briefkasten::tests::kennungsregeln_wie_plugin ... ok
+  test briefkasten::tests::kennungsring_fifo_256 ... ok
+  test briefkasten::tests::nach_stopp_keine_lieferung ... ok
+
+Hinweis: Zweite Richtung aus der Quellvalidierung (Teil A, T3-04-04, Abschnitt 5): der erlaubte Abschluss darf nicht abgewuergt werden.
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (broker/src/briefkasten.rs SHA-256 E4691A529F2FA6000A5F387D0175DC6ECFB80AA93199C902096E7CD1BF95BA7D); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::nach_join_frist_endet_der_begonnene_schreibschritt_genau_einmal -- --nocapture
+Exitcode: 0 (6.1 s)
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 283 filtered out; finished in 2.03s
+Aufruf: cargo test --manifest-path broker/Cargo.toml --color never --lib briefkasten::tests::
+Exitcode: 0 (3.1 s)
+  test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 266 filtered out; finished in 3.02s
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja

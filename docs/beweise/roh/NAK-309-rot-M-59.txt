@@ -1,0 +1,96 @@
+NAK-309 Etappe 4 - Rotbeweis M-59 (1) Golden nicht in der Goldenliste
+Stand:  2026-09-19 05:37, HEAD cb7c0d0e
+Zusage: Das neue Golden steht in der Goldenliste und im MANIFEST, bytegleich zur Neuerzeugung, ohne verwaiste Datei.
+Bein:   A12 (py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen)
+Datei:  tools/eq-copilot/erzeuge_state_fixtures.py:1088
+SHA-256 vorher: 679D50E2B8D0CF1010FA90E797B1D095D9C89D023ABEE02F2D168962497A8486 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: entfaellt - Regressionswache der Registrierung; die Waisenpruefung ueber schema2/ kommt aus dieser Etappe (Teil 2 zeigt den alten Umfang).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+tools/eq-copilot/erzeuge_state_fixtures.py, vorher (Zeile 1088):
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1"):
+nachher:
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1"):  # MUTATION: main-binding-v1 nicht eingetragen
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Exitcode: 2 (0.3 s)
+  ABWEICHUNG: MANIFEST.json
+  VERWAIST: schema2/main-binding-v1.bin
+  STATE-FIXTURES ABWEICHEND (2)
+
+Gefallene Pruefungen:
+  ABWEICHUNG: MANIFEST.json
+  VERWAIST: schema2/main-binding-v1.bin
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: VERWAIST: schema2/main-binding-v1.bin  -> gefallen
+
+Mitgefallen:
+  ABWEICHUNG: MANIFEST.json
+      Grund: das committete MANIFEST fuehrt das Golden, die Neuerzeugung ohne Listeneintrag nicht - zweite Schicht derselben Zusage (bytegleich zur Neuerzeugung)
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/erzeuge_state_fixtures.py SHA-256 679D50E2B8D0CF1010FA90E797B1D095D9C89D023ABEE02F2D168962497A8486); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Exitcode: 0 (0.4 s)
+  STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja
+
+==============================================================================
+NAK-309 Etappe 4 - Gegenprobe M-59 (2) Gegenprobe: alter Waisenumfang ohne schema2/
+Stand:  2026-09-19 05:37, HEAD cb7c0d0e
+Zusage: Gegenprobe zur Etappenaenderung: mit dem Waisenumfang vor Etappe 4 (jcs, dto, preset) und einem MANIFEST, das der Erzeuger ohne Listeneintrag neu geschrieben hat, bleibt eine verwaiste Datei unter schema2/ unbemerkt - deshalb gehoert schema2/ in die Waisenpruefung.
+Bein:   A12 (py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen)
+Datei:  tools/eq-copilot/erzeuge_state_fixtures.py:1088, :1153
+SHA-256 vorher: 679D50E2B8D0CF1010FA90E797B1D095D9C89D023ABEE02F2D168962497A8486 (Datei gleich HEAD: ja)
+Datei:  eq-copilot/fixtures/state/MANIFEST.json(nur gesichert, der Vorlauf schreibt sie)
+SHA-256 vorher: C25427260E59D39ECA251639F6BB7BF9306C59347FECA33325F1329C1BB5BBD8 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe4-rot.ps1 (SHA-256 063356A98409C4D2D7BAD5FFD936FEC5811BBB2505C1903F51BE2CC977AD837B)
+
+Lauf gegen den Basisstand: entfaellt - Gegenprobe des alten Waisenumfangs.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+tools/eq-copilot/erzeuge_state_fixtures.py, vorher (Zeile 1088):
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1"):
+nachher:
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1"):  # GEGENPROBE: main-binding-v1 nicht eingetragen
+tools/eq-copilot/erzeuge_state_fixtures.py, vorher (Zeile 1153):
+        for ordner in ("jcs", "dto", "preset", "schema2"):
+nachher:
+        for ordner in ("jcs", "dto", "preset"):  # GEGENPROBE: Waisenumfang vor Etappe 4
+
+--- BAU UNTER MUTATION ---
+kein Bau: Rust baut cargo test selbst; Python und PowerShell lesen die Quelle beim Lauf
+Vorlauf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py - Exit 0
+  DTO: 7 gueltige gehasht, 29 ungueltige mit Grund
+  Preset: 3 gueltige, 17 ungueltige mit Grund
+  geschrieben: 71 Dateien nach C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+--- LAUF UNTER MUTATION ---
+Aufruf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Exitcode: 0 (0.5 s)
+  STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+Gefallene Pruefungen:
+  keine
+
+Gegenprobe wie erwartet (der Lauf bleibt gruen): JA
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+--- LAUF NACH RUECKNAHME ---
+Quellen bytegleich zurueckgespielt: ja (tools/eq-copilot/erzeuge_state_fixtures.py SHA-256 679D50E2B8D0CF1010FA90E797B1D095D9C89D023ABEE02F2D168962497A8486; eq-copilot/fixtures/state/MANIFEST.json SHA-256 C25427260E59D39ECA251639F6BB7BF9306C59347FECA33325F1329C1BB5BBD8); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: py -3.13 tools/eq-copilot/erzeuge_state_fixtures.py --pruefen
+Exitcode: 0 (0.3 s)
+  STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+
+Bein nach Ruecknahme gruen (die Zusage haelt): ja

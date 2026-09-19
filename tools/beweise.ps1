@@ -1239,7 +1239,12 @@ foreach ($eintrag in $kanon) {
     if ($lauf.ExitCode -eq 0) {
         $zeile.Symbol = '[OK]'
         $zeile.Status = 'Exit 0'
-        Write-Host ('[OK] {0} - Exit 0 ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
+        # Ein Bein mit Meldeweg meldet sich erst nach der Klassifikation seines
+        # Meldeordners; sonst stuende ein Bein, das NOT RUN wird, zuerst als
+        # [OK] im Protokoll (NAK-309 Etappe 4).
+        if (-not $meldeordner) {
+            Write-Host ('[OK] {0} - Exit 0 ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
+        }
     }
     elseif (Ist-Hinweisexit $eintrag $lauf.ExitCode) {
         $zeile.Symbol = '[HINWEIS]'
@@ -1277,7 +1282,7 @@ foreach ($eintrag in $kanon) {
                     $zeile.Symbol = '[NOT RUN]'
                     $zeile.Status = $text
                     $fehlendeVoraussetzung++
-                    Write-Host ('[NOT RUN] {0} - {1}' -f $zeile.Name, $text) -ForegroundColor Yellow
+                    Write-Host ('[NOT RUN] {0} - {1} ({2})' -f $zeile.Name, $text, (Dauertext $zeile.Sekunden)) -ForegroundColor Yellow
                 }
             }
             elseif ($meldung.ExitCode -ne 0) {
@@ -1285,6 +1290,9 @@ foreach ($eintrag in $kanon) {
                 $zeile.Symbol = '[ROT]'
                 $zeile.Status = ('{0} | NOT-RUN-Meldeweg unlesbar (Werkzeug-Exit {1})' -f $zeile.Status, $meldung.ExitCode)
                 Write-Host ('[ROT] {0} - NOT-RUN-Meldeweg unlesbar (Werkzeug-Exit {1})' -f $zeile.Name, $meldung.ExitCode) -ForegroundColor Red
+            }
+            elseif ($zeile.Symbol -eq '[OK]') {
+                Write-Host ('[OK] {0} - Exit 0, Meldeordner leer ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
             }
         }
         finally {

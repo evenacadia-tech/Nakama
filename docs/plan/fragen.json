@@ -53,9 +53,9 @@
    "id": "U44",
    "dringlichkeit": "jetzt",
    "art": "Produktentscheid (Klangverhalten)",
-   "titel": "Großer EQ-Sprung: weich überblenden oder sofort umschalten?",
-   "was": "Wenn ein Band in einem Schritt weit springt — etwa ein Höhenregler (Shelf) von 5 kHz auf 50 Hz, oder beim Laden einer Voreinstellung — kann der Klang für einen kurzen Moment lauter oder anders sein als vorher und nachher (eine Übergangsspitze). Heute glättet Nakama kleine Änderungen sanft über eine kurze Rampe; große Sprünge sind nicht geregelt. Zwei Wege: (1) Empfohlen: große Sprünge kurz überblenden — der alte Klang blendet in wenigen Millisekunden in den neuen, ohne Spitze; das kostet einen zweiten Filterlauf nur für diesen Moment. (2) Sofort umschalten und die kurze Spitze in Kauf nehmen.",
-   "warum": "Audit-Befund T3-15-07 (Nachrechnung: die Übergangsenergie liegt deutlich über beiden Endzuständen). Ohne Entscheid bleibt es beim heutigen Verhalten; der Dirigent nimmt für den Bau des Audio-Kerns (Planschritt S25j, Ticket NAK-311) Weg 1 als Vorschlag. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten.",
+   "titel": "Großer EQ-Sprung: überblenden, lassen wie heute oder hart umschalten?",
+   "was": "Wenn ein Band in einem Schritt weit springt — etwa ein Höhenregler (Shelf) von 5 kHz auf 50 Hz, beim Laden einer Voreinstellung, beim Tippen eines Werts oder bei einer Automationsstufe — kann für den Bruchteil einer Sekunde ein deutlich lauteres Wummern oder Zischen durchkommen, das weder vorher noch nachher im Klang steckt (eine Übergangsspitze; im Audit etwa 17 bis 22 dB über dem Klang gemessen). Heute gleitet Nakama bei jeder Änderung in rund 5 Millisekunden vom alten zum neuen Wert; bei kleinen Änderungen ist das sauber, bei großen Sprüngen entsteht genau dabei die Spitze. Drei Wege: (1) Empfohlen: große Sprünge kurz überblenden — der alte Klang blendet in wenigen Millisekunden in den neuen, im Audit praktisch ohne Spitze; das kostet einen zweiten Filterlauf nur für diesen Moment, langsame Reglerfahrten klingen exakt wie heute. (2) Alles lassen wie heute; die Spitze bleibt. (3) Hart umschalten ohne Gleiten: kleinere Spitze als heute (im Audit etwa 7 dB), dafür ein hörbarer Klick.",
+   "warum": "Audit-Befund T3-15-07, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 1). Gebaut wird dieser Teil erst nach deiner Antwort; die übrigen Teile des Audio-Kerns (Planschritt S25j, Ticket NAK-311) laufen vorher. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten. Kartentext berichtigt am 19.09.2026: das heutige Verhalten ist kein Sofortumschalten.",
    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-07 und Arbeitsübersicht W07; docs/offene-punkte.md NAK-311",
    "seit": "18.09.",
    "status": "offen"
@@ -66,7 +66,7 @@
    "art": "Produktentscheid (Klangverhalten)",
    "titel": "Dynamischer EQ: soll die Schwelle auf Spitzen oder auf die Durchschnittslautstärke reagieren?",
    "was": "Ein dynamisches Band greift, sobald der Pegel in seinem Frequenzbereich eine Schwelle (Threshold) überschreitet. Offen ist, was „Pegel“ dabei heißt: (1) Empfohlen: der Durchschnittspegel über einen kurzen Zeitraum (RMS) — greift gleichmäßig und reagiert weniger nervös auf einzelne Schläge. (2) Der Spitzenpegel (Peak) — greift sofort auf Transienten wie Snare-Schläge, kann bei perkussivem Material flattern. Attack, Hold und Release bleiben in beiden Fällen so einstellbar wie heute.",
-   "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. Ohne Entscheid baut der Dirigent Weg 1 mit einem kurzen Messfenster; die Fensterlänge ist Technik.",
+   "warum": "Audit-Befund T3-15-06: der Schwellwert ist heute keinem Pegelbegriff zugeordnet; je nach Hold- und Attack-Einstellung folgt die Hüllkurve mal der Momentanleistung, mal einem Mittel — derselbe Threshold wirkt dann unterschiedlich. An der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 4). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Länge des Messfensters ist Technik.",
    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-06 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
    "seit": "18.09.",
    "status": "offen"
@@ -76,7 +76,7 @@
    "dringlichkeit": "jetzt",
    "art": "Produktentscheid (Klangverhalten)",
    "titel": "Höhen-Korrektur des digitalen EQ (Decramping): einbauen, verwerfen oder vertagen?",
-   "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
+   "was": "Digitale EQ-Filter drücken Glocken und Höhenregler nahe der halben Abtastrate zusammen: bei 44,1 kHz wird eine Glocke bei 16 kHz zur oberen Grenze hin schmaler und schief, anders als bei einem analogen EQ. Eine Korrektur (Decramping, „matched analog“) gleicht das an und kostet etwas Rechenzeit je Band. (1) Empfohlen: vertagen — erst den Kern fertigstellen, später ein eigener Schritt mit Hörprobe. (2) Jetzt einbauen, im Audio-Kern-Ticket; dann muss die gemessene Filter-Referenz, gegen die heute jeder Filtertest läuft, neu festgelegt und neu abgenommen werden — ein eigener, größerer Schritt. (3) Verwerfen — es bleibt dauerhaft beim heutigen Verhalten.",
    "warum": "Audit-Befund T3-15-10: ein alter Prüfauftrag nennt die Korrektur als zu prüfen, aber es gibt keinen Entscheid und keine Matrixzeile dazu. Ohne Antwort bleibt es beim Vertagen; nichts am Kern ändert sich dadurch.",
    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-10 und Arbeitsübersicht W35; docs/offene-punkte.md NAK-311",
    "seit": "18.09.",
@@ -84,11 +84,11 @@
   },
   {
    "id": "U47",
-   "dringlichkeit": "jetzt",
+   "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (ja/nein)",
    "titel": "Projekte mit weniger als 44,1 kHz: unterstützen oder ausschließen?",
-   "was": "FL-Projekte laufen fast immer mit 44,1 oder 48 kHz oder mehr. Nakamas Regeln nennen 44,1 kHz als kleinste unterstützte Abtastrate; trotzdem nimmt der EQ heute auch 22,05 oder 32 kHz an, und dann liegen einige Stützpunkte der automatischen Lautstärke-Angleichung (Auto-Gain) oberhalb des Bereichs, den es bei dieser Rate überhaupt gibt. (1) Empfohlen: unter 44,1 kHz nicht unterstützen — der EQ bleibt neutral und meldet den Grund ehrlich in der Anzeige. (2) Unterstützen, mit einem an die Rate angepassten Gitter.",
-   "warum": "Audit-Feld F08 (Phase 16, tatsächlich mit 32 und 22,05 kHz gemessen: 4 von 11 Stützpunkten oberhalb der Grenze). Ohne Antwort bleibt Weg 1 der Vorschlag für den Audio-Kern (Planschritt S25j, NAK-311).",
+   "was": "FL-Projekte laufen fast immer mit 44,1 oder 48 kHz oder mehr. Nakamas Regeln nennen 44,1 kHz als kleinste unterstützte Abtastrate; trotzdem nimmt der EQ heute auch 22,05 oder 32 kHz an, und dann liegen einige Stützpunkte der automatischen Lautstärke-Angleichung (Auto-Gain) oberhalb des Bereichs, den es bei dieser Rate überhaupt gibt. (1) Empfohlen: unter 44,1 kHz nicht unterstützen — der EQ bleibt neutral (das Signal läuft unverändert durch) und meldet den Grund als ehrlichen Zustand; wie die Anzeige das zeigt, gehört zum geparkten Designteil. (2) Unterstützen, mit einem an die Rate angepassten Gitter.",
+   "warum": "Audit-Feld F08 (Phase 16, tatsächlich mit 32 und 22,05 kHz gemessen: 4 von 11 Stützpunkten oberhalb der Grenze); an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 7). Ob FL Studio solche Raten überhaupt anbietet, ist nicht belegt; die Frage eilt deshalb nicht. Gebaut wird dieser Teil erst nach deiner Antwort.",
    "wo": "docs/audits/2026-09-15-tiefenaudit/roh/phase-16-abdeckung.md F08; docs/offene-punkte.md NAK-311",
    "seit": "18.09.",
    "status": "offen"
@@ -156,6 +156,17 @@
    "was": "Nach jedem lohnenden Ticket startet der Laufzeit-Arm FL Studio sichtbar mit dem Diagnoseprojekt, spielt den Testtrack ab und beendet FL wieder (am 19.09. rund sieben Minuten). Dabei kommt vermutlich Ton über dein Audiogerät; gemessen ist das nicht, und am Audiogerät stellt der Dirigent nichts um. (1) Empfohlen: nur zwischen 9 und 23 Uhr; nachts fertige Tickets warten mit der FL-Messung bis zum Morgen. (2) Auch nachts: FL läuft dann unbeaufsichtigt und ist möglicherweise zu hören.",
    "warum": "Seit 12.09.2026 laufen FL-Start, Installation und Messung ohne Handgriff (NAK-285, NAK-286); die Regel vom 11.09.2026 (Fragen und Handgriffe nur 9 bis 23 Uhr) nennt automatische Läufe nicht. Ohne Antwort bleibt es bei Weg 1.",
    "wo": "docs/offene-punkte.md NAK-325; docs/beweise/NAK-309-verlauf.md §17 und §21; tools/fl/LIES-MICH.md",
+   "seit": "19.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U54",
+   "dringlichkeit": "jetzt",
+   "art": "Produktentscheid (Klangverhalten, Schutz)",
+   "titel": "AUTO-Lautstärkeausgleich: Obergrenze einbauen?",
+   "was": "Der AUTO-Ausgleich rechnet aus, wie viel lauter oder leiser deine EQ-Kurve das Signal macht, und zieht das am Ausgang wieder ab. Schneidet eine Einstellung sehr viel weg — mehrere steile Tiefpässe übereinander, wie beim Suchen oder in einer geladenen Voreinstellung —, kommt die Rechnung auf „hier fehlt fast alles“ und dreht entsprechend weit auf, heute ohne Obergrenze (im Audit über +40 dB). Zu hören ist dann nicht die Musik, sondern tiefes Rumpeln unter 20 Hz und Gleichanteil, die die Rechnung nicht erfasst; das kann Boxen und Kopfhörer gefährden. (1) Empfohlen: Obergrenze — der Ausgleich geht höchstens bis zu einem festen Betrag, und Nakama meldet ehrlich, dass gedeckelt wurde; bei allen normalen Einstellungen ändert sich nichts. (2) Keine Obergrenze wie heute: volle Kompensation auch in extremen Fällen.",
+   "warum": "Audit-Befund T3-15-09, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 2). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Höhe der Obergrenze ist Technik und bleibt beim Dirigenten; wie die Meldung aussieht, gehört zum geparkten Designteil.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-09 und Arbeitsübersicht W08; docs/offene-punkte.md NAK-311",
    "seit": "19.09.",
    "status": "offen"
   }

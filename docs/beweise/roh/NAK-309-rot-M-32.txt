@@ -1,0 +1,207 @@
+NAK-309 Etappe 3 - Rotbeweis M-32 Besitzpruefung liefert immer fremd
+Stand:  2026-09-19 02:32, HEAD 48fc736a
+Zusage: Das eigene Diagnose-FL wird beendet (nie gespeichert), danach wird sein Eintrag entfernt (Regressionswache).
+Bein:   A35 (tools/fl/selbsttest.py); gezielt der Fall ueber -Nur beziehungsweise --nur
+Datei:  tools/fl/laufzeit.ps1:511
+SHA-256 vorher: 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+Lauf gegen den Basisstand: entfaellt - Regressionswache (am Basis-SHA ueber den Titel beendet).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 511):
+    return @{ Eigen = $true; Grund = 'eigen'; Zweck = [string]$eintrag.Zweck }
+nachher:
+    return @{ Eigen = $false; Grund = 'MUTATION: immer fremd' }  # MUTATION: Besitzpruefung liefert immer fremd
+
+--- BAU UNTER MUTATION ---
+kein Bau (Python, PowerShell oder Szenariodatei: das Bein liest die Quelle beim Lauf)
+
+--- LAUF UNTER MUTATION ---
+Aufruf: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur frischer_start_schluessel
+Exitcode: 4
+  [ROT] M-59 frischer_start_schluessel: [mit frischer_start] frischer_start: kein Beenden und Neustart zwischen a und b () | [Neustart scheitert] gescheiterter Neustart: Exit 0 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+
+Aufruf: py -3.13 tools/fl/selbsttest.py
+Exitcode: 4
+  [ROT] M-02 lohnt_vier_faelle: [Diff scheitert] (b) der Lauf endet UEBERSPRUNGEN statt weiterzulaufen
+  [ROT] NAK-297 titel_ohne_haupttitel: [eigenes Diagnose-FL mit leerem MainWindowTitle] leerer MainWindowTitle als fremd gewertet: UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' | [eigenes Diagnose-FL mit leerem MainWindowTitle] das eigene Diagnose-FL (Titel im Hauptfenster) nicht beendet | [eigenes FL-Fenster ohne lesbaren Titel] leerer Titel eines eigenen FL als fremd gewertet: 'fremdes FL-Projekt offen: '' (PID 5000, MUTATION: immer fremd)'
+  [ROT] M-07 loopmidi_und_restprozesse: [Restprozesse] beendbarer Restprozess nicht beendet | [Restprozesse] nicht beendbarer Restprozess nicht geloggt
+  [ROT] M-09 controller_veraltet_neu_installieren: [Diagnose-FL laeuft, Controller veraltet] Neustart nach setup-local.ps1 fehlt (beende -1, setup -1, start -1)
+  [ROT] M-10 szenario_exitcodes: [Szenario-Exit 0] Szenario-Exit 0: Runner-Exit 0 UEBERSPRUNGEN statt 0 GEMESSEN | [Szenario-Exit 0] Szenario-Exit 0: die Folge brach ab | [Szenario-Exit 2] Szenario-Exit 2: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 2] Szenario-Exit 2: die Folge brach ab | [Szenario-Exit 4] Szenario-Exit 4: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 4] Szenario-Exit 4: die Folge brach ab | [Szenario-Exit 5] Szenario-Exit 5: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG | [Szenario-Exit 5] Szenario-Exit 5: die Folge brach ab | [Szenario-Exit 3] Szenario-Exit 3: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+  [ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] bereitschaft.json lief nicht | [KETTE an Position 3] fenster.json lief nicht | [KETTE an Position 3] nulltest-host.json lief nicht | [KETTE an Position 3] snapshot-runde01.json lief nicht | [KETTE an Position 3] u40-aktivitaetsgate.json lief nicht | [KETTE an Position 3] Gesamturteil 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+  [ROT] M-11 kopfzeile_erste_fassung: [Kopfzeile gemessen] gemessen: Urteilswort 'UEBERSPRUNGEN' statt GEMESSEN | [Kopfzeile gemessen] gemessen: Rohdatei ohne Kopf, Kopfzeile oder Protokoll | [Kopfzeile gemessen] gemessen: Rohdatei ohne ## Szenarien
+  [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 0 'LAUFZEIT SELBSTTEST abcdef12 UEBERSPRUNGEN fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd) roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-2f288cdde5e6\roh.md'
+  [ROT] M-12 projekt_unveraendert: [Arbeitskopie veraendert] veraenderte Arbeitskopie: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' statt 4 VERFEHLT 'Diagnoseprojekt veraendert'
+  [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] unveraenderte Referenzprojekte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+  [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] drei Renders: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet () | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+  [ROT] M-13 volllauf_erzwingen_beenden: [Volllauf] Szenario lief trotz -Erzwingen nicht | [Volllauf] -Beenden hat das Diagnose-FL nicht beendet
+  [ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] simulierter Exit 3: Runner-Exit 0
+  [ROT] M-59 frischer_start_schluessel: [mit frischer_start] frischer_start: kein Beenden und Neustart zwischen a und b () | [Neustart scheitert] gescheiterter Neustart: Exit 0 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  [ROT] M-60 render_ablauf: [Render haengt] haengt: nicht genau die Render-PID beendet
+  [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: kein Rueckweg | [ABWEICHUNG] ABWEICHUNG:  FL-Prozess(e) leben waehrend des Rueckwegs | [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 0 | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 0 | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [NAK-41] NAK-41: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(e) vor einem frischer_start] (e) Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das eigene Diagnose-FL nicht beendet | [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) Exit 0 UEBERSPRUNGEN statt des Szenarienurteils 0 GEMESSEN
+  [ROT] 309/M-34 fremder_restprozess_bleibt: [Beende-Restprozesse beendet nur Eigenes] Beende-Restprozesse hat den eigenen Prozess nicht beendet | [Beende-Restprozesse beendet nur Eigenes] eigener Restprozess nach bestaetigtem Ende nicht ausgetragen
+  [ROT] 309/M-37 ping_nur_eigene_pid: [ohne Doppel: Diagnose-PID ist die selbst gestartete] Diagnose-PID nicht die selbst gestartete ()
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(b) -Beenden traegt nach bestaetigtem Ende aus] (b) beendetes FL nicht ausgetragen | [(c) ein FL bleibt nach dem Lauf offen und ist im naechsten Lauf eigen] (c) im zweiten Lauf nicht als eigenes FL erkannt
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) das eigene Diagnose-FL wurde vor dem Rueckweg nicht beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Exit 0 UEBERSPRUNGEN
+  [ROT] 309/M-50 ping_zeile_nennt_module: [Ping mit Importgraph] Ping-Zeile ohne die geladenen fl_studio_mcp-Module
+  [ROT] 309/M-52 mcp_stand_gepinnt: [gepinnter Stand] MCP-Stand nicht vor Installation und erstem uv run (Stand 2, hashen 3, Ping -1) | [gepinnter Stand] Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  SELBSTTEST szenario.py: 39 ok, 0 rot
+  SELBSTTEST nulltest.py: 7 ok, 0 rot
+  SELBSTTEST laufzeit.ps1: 13 ok, 24 rot
+  SELBSTTEST A35: ROT
+
+Gefallene Pruefungen:
+  [ROT] M-59 frischer_start_schluessel: [mit frischer_start] frischer_start: kein Beenden und Neustart zwischen a und b () | [Neustart scheitert] gescheiterter Neustart: Exit 0 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  [ROT] M-02 lohnt_vier_faelle: [Diff scheitert] (b) der Lauf endet UEBERSPRUNGEN statt weiterzulaufen
+  [ROT] NAK-297 titel_ohne_haupttitel: [eigenes Diagnose-FL mit leerem MainWindowTitle] leerer MainWindowTitle als fremd gewertet: UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' | [eigenes Diagnose-FL mit leerem MainWindowTitle] das eigene Diagnose-FL (Titel im Hauptfenster) nicht beendet | [eigenes FL-Fenster ohne lesbaren Titel] leerer Titel eines eigenen FL als fremd gewertet: 'fremdes FL-Projekt offen: '' (PID 5000, MUTATION: immer fremd)'
+  [ROT] M-07 loopmidi_und_restprozesse: [Restprozesse] beendbarer Restprozess nicht beendet | [Restprozesse] nicht beendbarer Restprozess nicht geloggt
+  [ROT] M-09 controller_veraltet_neu_installieren: [Diagnose-FL laeuft, Controller veraltet] Neustart nach setup-local.ps1 fehlt (beende -1, setup -1, start -1)
+  [ROT] M-10 szenario_exitcodes: [Szenario-Exit 0] Szenario-Exit 0: Runner-Exit 0 UEBERSPRUNGEN statt 0 GEMESSEN | [Szenario-Exit 0] Szenario-Exit 0: die Folge brach ab | [Szenario-Exit 2] Szenario-Exit 2: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 2] Szenario-Exit 2: die Folge brach ab | [Szenario-Exit 4] Szenario-Exit 4: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 4] Szenario-Exit 4: die Folge brach ab | [Szenario-Exit 5] Szenario-Exit 5: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG | [Szenario-Exit 5] Szenario-Exit 5: die Folge brach ab | [Szenario-Exit 3] Szenario-Exit 3: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+  [ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] bereitschaft.json lief nicht | [KETTE an Position 3] fenster.json lief nicht | [KETTE an Position 3] nulltest-host.json lief nicht | [KETTE an Position 3] snapshot-runde01.json lief nicht | [KETTE an Position 3] u40-aktivitaetsgate.json lief nicht | [KETTE an Position 3] Gesamturteil 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+  [ROT] M-11 kopfzeile_erste_fassung: [Kopfzeile gemessen] gemessen: Urteilswort 'UEBERSPRUNGEN' statt GEMESSEN | [Kopfzeile gemessen] gemessen: Rohdatei ohne Kopf, Kopfzeile oder Protokoll | [Kopfzeile gemessen] gemessen: Rohdatei ohne ## Szenarien
+  [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 0 'LAUFZEIT SELBSTTEST abcdef12 UEBERSPRUNGEN fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd) roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-2f288cdde5e6\roh.md'
+  [ROT] M-12 projekt_unveraendert: [Arbeitskopie veraendert] veraenderte Arbeitskopie: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' statt 4 VERFEHLT 'Diagnoseprojekt veraendert'
+  [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] unveraenderte Referenzprojekte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+  [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] drei Renders: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet () | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+  [ROT] M-13 volllauf_erzwingen_beenden: [Volllauf] Szenario lief trotz -Erzwingen nicht | [Volllauf] -Beenden hat das Diagnose-FL nicht beendet
+  [ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] simulierter Exit 3: Runner-Exit 0
+  [ROT] M-60 render_ablauf: [Render haengt] haengt: nicht genau die Render-PID beendet
+  [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: kein Rueckweg | [ABWEICHUNG] ABWEICHUNG:  FL-Prozess(e) leben waehrend des Rueckwegs | [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 0 | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 0 | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [NAK-41] NAK-41: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(e) vor einem frischer_start] (e) Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das eigene Diagnose-FL nicht beendet | [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) Exit 0 UEBERSPRUNGEN statt des Szenarienurteils 0 GEMESSEN
+  [ROT] 309/M-34 fremder_restprozess_bleibt: [Beende-Restprozesse beendet nur Eigenes] Beende-Restprozesse hat den eigenen Prozess nicht beendet | [Beende-Restprozesse beendet nur Eigenes] eigener Restprozess nach bestaetigtem Ende nicht ausgetragen
+  [ROT] 309/M-37 ping_nur_eigene_pid: [ohne Doppel: Diagnose-PID ist die selbst gestartete] Diagnose-PID nicht die selbst gestartete ()
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(b) -Beenden traegt nach bestaetigtem Ende aus] (b) beendetes FL nicht ausgetragen | [(c) ein FL bleibt nach dem Lauf offen und ist im naechsten Lauf eigen] (c) im zweiten Lauf nicht als eigenes FL erkannt
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) das eigene Diagnose-FL wurde vor dem Rueckweg nicht beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Exit 0 UEBERSPRUNGEN
+  [ROT] 309/M-50 ping_zeile_nennt_module: [Ping mit Importgraph] Ping-Zeile ohne die geladenen fl_studio_mcp-Module
+  [ROT] 309/M-52 mcp_stand_gepinnt: [gepinnter Stand] MCP-Stand nicht vor Installation und erstem uv run (Stand 2, hashen 3, Ping -1) | [gepinnter Stand] Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: M-59 frischer_start_schluessel (kein Beenden vor dem Neustart)  -> gefallen
+
+Mitgefallen:
+  [ROT] M-02 lohnt_vier_faelle: [Diff scheitert] (b) der Lauf endet UEBERSPRUNGEN statt weiterzulaufen
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] NAK-297 titel_ohne_haupttitel: [eigenes Diagnose-FL mit leerem MainWindowTitle] leerer MainWindowTitle als fremd gewertet: UEBERSPRUNGEN 'fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' | [eigenes Diagnose-FL mit leerem MainWindowTitle] das eigene Diagnose-FL (Titel im Hauptfenster) nicht beendet | [eigenes FL-Fenster ohne lesbaren Titel] leerer Titel eines eigenen FL als fremd gewertet: 'fremdes FL-Projekt offen: '' (PID 5000, MUTATION: immer fremd)'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-07 loopmidi_und_restprozesse: [Restprozesse] beendbarer Restprozess nicht beendet | [Restprozesse] nicht beendbarer Restprozess nicht geloggt
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-09 controller_veraltet_neu_installieren: [Diagnose-FL laeuft, Controller veraltet] Neustart nach setup-local.ps1 fehlt (beende -1, setup -1, start -1)
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-10 szenario_exitcodes: [Szenario-Exit 0] Szenario-Exit 0: Runner-Exit 0 UEBERSPRUNGEN statt 0 GEMESSEN | [Szenario-Exit 0] Szenario-Exit 0: die Folge brach ab | [Szenario-Exit 2] Szenario-Exit 2: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 2] Szenario-Exit 2: die Folge brach ab | [Szenario-Exit 4] Szenario-Exit 4: Runner-Exit 0 UEBERSPRUNGEN statt 4 VERFEHLT | [Szenario-Exit 4] Szenario-Exit 4: die Folge brach ab | [Szenario-Exit 5] Szenario-Exit 5: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG | [Szenario-Exit 5] Szenario-Exit 5: die Folge brach ab | [Szenario-Exit 3] Szenario-Exit 3: Runner-Exit 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-10 kette_erreicht_folgeszenarien: [KETTE an Position 3] bereitschaft.json lief nicht | [KETTE an Position 3] fenster.json lief nicht | [KETTE an Position 3] nulltest-host.json lief nicht | [KETTE an Position 3] snapshot-runde01.json lief nicht | [KETTE an Position 3] u40-aktivitaetsgate.json lief nicht | [KETTE an Position 3] Gesamturteil 0 UEBERSPRUNGEN statt 3 VORAUSSETZUNG
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-11 kopfzeile_erste_fassung: [Kopfzeile gemessen] gemessen: Urteilswort 'UEBERSPRUNGEN' statt GEMESSEN | [Kopfzeile gemessen] gemessen: Rohdatei ohne Kopf, Kopfzeile oder Protokoll | [Kopfzeile gemessen] gemessen: Rohdatei ohne ## Szenarien
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-11 kopfzeile_und_protokoll: [KETTE mit Render] Kopfzeile ohne Szenario-Exit 5 in der Liste der Szenarioexits: Exit 0 'LAUFZEIT SELBSTTEST abcdef12 UEBERSPRUNGEN fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd) roh=C:\Users\phili\AppData\Local\Temp\nak286-laufzeit-2f288cdde5e6\roh.md'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-12 projekt_unveraendert: [Arbeitskopie veraendert] veraenderte Arbeitskopie: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)' statt 4 VERFEHLT 'Diagnoseprojekt veraendert'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-64 referenzprojekte_aus_szenariodatei: [Projekte der Karte neben Koedern] unveraenderte Referenzprojekte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzprojekte waehrend des Laufs veraendert] veraenderte Referenzprojekte (Arbeitskopie, Repo): Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' statt 4 VERFEHLT mit beiden Namen | [ohne die Projekte der Karte] ohne die Projekte der Karte: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-64 referenzrender_vor_fl_start: [drei Renders vor dem FL-Start] drei Renders: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5003, MUTATION: immer fremd)' | [Referenzrender haengt] haengender Referenzrender: nicht genau seine PID beendet () | [Referenzrender haengt] nach dem haengenden Referenzrender lief der naechste Render nicht vor dem FL-Start
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-13 volllauf_erzwingen_beenden: [Volllauf] Szenario lief trotz -Erzwingen nicht | [Volllauf] -Beenden hat das Diagnose-FL nicht beendet
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-55 anfrage_lebenszyklus: [Anfrage und simulierter Exit 3] simulierter Exit 3: Runner-Exit 0
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-60 render_ablauf: [Render haengt] haengt: nicht genau die Render-PID beendet
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] M-65 rueckweg_nur_bei_abweichung: [ABWEICHUNG] ABWEICHUNG: kein Rueckweg | [ABWEICHUNG] ABWEICHUNG:  FL-Prozess(e) leben waehrend des Rueckwegs | [ABWEICHUNG] ABWEICHUNG: Rohdatei ohne Zeilen "entfallen" | [ABWEICHUNG] ABWEICHUNG: Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [KETTE] KETTE: Folgeszenarien liefen nicht | [KETTE] KETTE: Exit 0 | [VERSATZ] VERSATZ: Folgeszenarien liefen nicht | [VERSATZ] VERSATZ: Exit 0 | [FL laeuft beim Rueckweg] FL laeuft: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [NAK-41] NAK-41: Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(e) vor einem frischer_start] (e) Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das eigene Diagnose-FL nicht beendet | [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) Exit 0 UEBERSPRUNGEN statt des Szenarienurteils 0 GEMESSEN
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-34 fremder_restprozess_bleibt: [Beende-Restprozesse beendet nur Eigenes] Beende-Restprozesse hat den eigenen Prozess nicht beendet | [Beende-Restprozesse beendet nur Eigenes] eigener Restprozess nach bestaetigtem Ende nicht ausgetragen
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-37 ping_nur_eigene_pid: [ohne Doppel: Diagnose-PID ist die selbst gestartete] Diagnose-PID nicht die selbst gestartete ()
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(b) -Beenden traegt nach bestaetigtem Ende aus] (b) beendetes FL nicht ausgetragen | [(c) ein FL bleibt nach dem Lauf offen und ist im naechsten Lauf eigen] (c) im zweiten Lauf nicht als eigenes FL erkannt
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5001, MUTATION: immer fremd)' | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) das eigene Diagnose-FL wurde vor dem Rueckweg nicht beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Exit 0 UEBERSPRUNGEN
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-50 ping_zeile_nennt_module: [Ping mit Importgraph] Ping-Zeile ohne die geladenen fl_studio_mcp-Module
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+  [ROT] 309/M-52 mcp_stand_gepinnt: [gepinnter Stand] MCP-Stand nicht vor Installation und erstem uv run (Stand 2, hashen 3, Ping -1) | [gepinnter Stand] Exit 0 UEBERSPRUNGEN 'fremdes FL beim Ping: fremdes FL-Projekt offen: 'Nakama-Diagnose.flp - FL Studio 2026' (PID 5000, MUTATION: immer fremd)'
+      Grund: ohne Besitz ist kein FL eigen: jeder Fall, der ein eigenes FL beendet, neu startet oder als laufend erkennt, faellt mit derselben Regel
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 59
+  [ok] M-20 frist_ohne_schrittwert
+  [ok] M-78 timeout_genau_einmal
+  [ok] M-22 kein_piano_roll_weg
+  [ok] M-21 fenster_frist_erzwungen
+  [ok] M-21 fenster_eingeklappt
+  [ok] M-55 anfrage_schreiben_und_abraeumen
+  [ok] M-53 antwortgroessen
+  [ok] M-56 antworten_auswahl
+  [ok] M-57 ohne_brokerprozess_keine_erwartung
+  [ok] M-58 erste_fassung_unveraendert
+  [ok] M-58 erwartungsarten_und_punktpfade
+  [ok] M-11 szenario_abschnitte
+  [ok] M-67 snapshot_messpunkt_und_baender
+  [ok] M-67 referenzausschnitt_rohzeile
+  [ok] M-67 umlauf_rohzeilen
+  [ok] M-68 f28_nur_hergeleitete_baender
+  [ok] M-66 kettenverschiebung_aus_nulltest
+  [ok] M-64 referenzschritte_aus_renderstatus
+  [ok] M-81 fortlaufbedingung_teilbloecke
+  [ok] M-69 stellen_aus_energieprofil
+  [ok] M-70 stelle_materialausschnitt
+  [ok] M-70 stelle_zeitplan
+  [ok] M-70 stelle_zwei_durchlaeufe
+  [ok] M-71 roh_schreibt_null_als_null
+  [ok] M-71 deltas_ueber_evidenzabschluesse
+  [ok] M-71 rohzeile_lage_im_host
+  [ok] M-71 stelle_klammer_und_differenzen
+  [ok] M-72 u40_ohne_sollwert
+  [ok] M-57 tasklist_oem_ohne_treffer
+  [ok] M-68 low_frac_in_snapshotdefinition
+  [ok] M-68 rechnung_rohwerte
+  [ok] 309/M-41 antwort_mit_kennung_gemessen
+  [ok] 309/M-42 fremde_oder_fehlende_kennung_ungemessen
+  [ok] 309/M-43 echo_abweichung_verfehlt
+  [ok] 309/M-44 spaete_antwort_ohne_kette
+  [ok] 309/M-46 wiederholung_mit_neuer_kennung
+  [ok] 309/M-48 echo_in_jeder_szenariodatei
+  [ok] 309/M-50 importgraph_ohne_fl_trigger
+  [ok] 309/M-51 fensterskript_ohne_fl_trigger
+  [ok] M-62 identisch_null_abweichungen
+  [ok] M-75 versatz_ist_voraussetzung
+  [ok] M-63 konstanter_faktor_ist_voraussetzung
+  [ok] M-61 format_ist_voraussetzung
+  [ok] M-60 render_status
+  [ok] M-64 verarbeitung_ein_umgekehrt
+  [ok] M-64 ohne_slots_render_gegen_render
+  [ok] M-01 lohnt_nicht_ohne_produktpfad
+  [ok] M-03 fremdes_projekt_nie_beenden
+  [ok] M-04 hashen_scheitert_exit3
+  [ok] M-05 installation_verweigert_exit3
+  [ok] M-06 pruefen_nicht_aktuell_exit3
+  [ok] M-08 ping_frist_exit3
+  [ok] M-08 schonfrist_vor_trigger
+  [ok] 309/M-35 pid_wiederverwendung_ist_fremd
+  [ok] 309/M-36 eigenes_fl_mit_fremdem_projekt
+  [ok] 309/M-53 mcp_revision_weicht_ab
+  [ok] 309/M-54 mcp_datei_weicht_ab
+  [ok] 309/M-55 mcp_stand_unlesbar
+  [ok] 309/M-56 pin_nur_per_commit
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur frischer_start_schluessel
+Exitcode: 0
+  SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Aufruf: py -3.13 tools/fl/selbsttest.py
+Exitcode: 0
+  SELBSTTEST szenario.py: 39 ok, 0 rot
+  SELBSTTEST nulltest.py: 7 ok, 0 rot
+  SELBSTTEST laufzeit.ps1: 37 ok, 0 rot
+  SELBSTTEST A35: GRUEN
+
+Bein nach Ruecknahme gruen: ja

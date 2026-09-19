@@ -1,0 +1,181 @@
+NAK-309 Etappe 3 - Rotbeweis M-74 (a) Testzweig von v2PipeNameDesBaus nennt kPipeName
+Stand:  2026-09-19 02:30, HEAD 48fc736a
+Zusage: Ein Test, der den Prozessor baut, oeffnet die Produktions-Pipe nie: im Testbau traegt der v2-Client einen Probe-Namen; das Bein misst die Namenswahl vor dem ersten Prozessor und endet bei einem Verstoss vor jeder Konstruktion.
+Bein:   B8 EqCopLebenslaufTest (eq-copilot/plugin/tests/LebenslaufTestMain.cpp, Teil 0)
+Datei:  eq-copilot/plugin/src/PluginProcessor.cpp:96
+SHA-256 vorher: 1FC3A5B8A82D0835D70A19702F3BCF00CD54492E0FD7BC5ACE693DEB4C19CCAE (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Teil 0 steht im Testbinary des Etappenstands (Gegenprobe PluginProcessor.cpp:151 und PipeClient.cpp:221 am Basis-SHA in der Matrixzeile).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 96):
+    return juce::String ("\\\\.\\pipe\\evenacadia.eq-copilot.m2probe.testbau");
+nachher:
+    return juce::String (juce::CharPointer_UTF16 (kPipeName)); // MUTATION: der Testbau nennt die Produktions-Pipe
+
+--- BAU UNTER MUTATION ---
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopLebenslaufTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:43.248, Quelle eq-copilot/plugin/src/PluginProcessor.cpp: 2026-09-19 02:30:36.577 - Binary juenger: ja
+
+--- LAUF UNTER MUTATION ---
+Aufruf: eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe
+Exitcode: 1
+    FEHLER  M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/namenswahl: der Testbau nennt dem v2-Client einen Probe-Namen, nie die Produktions-Pipe  [\\.\pipe\evenacadia.eq-copilot.v1 (Urteil produktion)]
+  LEBENSLAUF-TEST FEHLGESCHLAGEN - Abbruch vor dem ersten Prozessor (M-74): der Testbau naennte dem v2-Client '\\.\pipe\evenacadia.eq-copilot.v1'
+
+Gefallene Pruefungen:
+    FEHLER  M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/namenswahl: der Testbau nennt dem v2-Client einen Probe-Namen, nie die Produktions-Pipe  [\\.\pipe\evenacadia.eq-copilot.v1 (Urteil produktion)]
+  LEBENSLAUF-TEST FEHLGESCHLAGEN - Abbruch vor dem ersten Prozessor (M-74): der Testbau naennte dem v2-Client '\\.\pipe\evenacadia.eq-copilot.v1'
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: m74 .../namenswahl  -> gefallen
+  erwartet: Abbruch vor dem ersten Prozessor  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 0
+
+Hinweis: Unter der Mutation endet B8 nach Teil 0 (a) mit Exit 1, bevor ein Prozessor entsteht - kein Pipezugriff. Deshalb laufen die uebrigen Pruefungen des Beins unter dieser Mutation nicht (0 weiter gruen ist hier gewollt). Gebaut wird nur EqCopLebenslaufTest.
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 1FC3A5B8A82D0835D70A19702F3BCF00CD54492E0FD7BC5ACE693DEB4C19CCAE); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopLebenslaufTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/PluginProcessor.cpp: 2026-09-19 02:30:43.419 - Binary juenger: ja
+Aufruf: eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe
+Exitcode: 0
+  LEBENSLAUF-TEST OK - 82 Pruefungen ok, 0 Fehler
+
+Bein nach Ruecknahme gruen: ja
+
+==============================================================================
+NAK-309 Etappe 3 - Rotbeweis M-74 (c) ein Ziel aus der Testschalter-Schleife genommen
+Stand:  2026-09-19 02:30, HEAD 48fc736a
+Zusage: Jedes Ziel mit den Prozessorquellen ausser EqCopilot traegt den Testschalter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 (Quelltextwache ueber CMakeLists.txt).
+Bein:   B8 EqCopLebenslaufTest (eq-copilot/plugin/tests/LebenslaufTestMain.cpp, Teil 0)
+Datei:  eq-copilot/plugin/CMakeLists.txt:1327-1329
+SHA-256 vorher: 24747C0BA779ACF84CEC9A532CFE3D5B71C75AF4716C1A92F475B863691FD4CA (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Teil 0 steht im Testbinary des Etappenstands.
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 1327):
+             EqCopSonde014AssistentTest EqCopBriefkastenTest)
+    target_compile_definitions(${ziel} PRIVATE
+        NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+nachher:
+             EqCopBriefkastenTest) # MUTATION: EqCopSonde014AssistentTest aus der Testschalter-Schleife genommen
+    target_compile_definitions(${ziel} PRIVATE
+        NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+
+--- BAU UNTER MUTATION ---
+kein Bau: B8 liest CMakeLists.txt zur Laufzeit (__FILE__). Ein Bau unter dieser Mutation konfigurierte den Baum neu und naehme EqCopSonde014AssistentTest den Testschalter - genau die Gefahr, die M-74 misst. B8 laeuft auf dem unveraenderten Binary.
+
+--- LAUF UNTER MUTATION ---
+Aufruf: eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe
+Exitcode: 1
+    FEHLER  M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/cmake: jedes Ziel mit den Prozessorquellen ausser EqCopilot traegt den Testschalter  [15 Ziele mit Prozessorquellen, davon 14 Testziele; ohne Schalter: [EqCopSonde014AssistentTest]; Schleife setzt den Schalter ja, EqCopilot in der Schleife nein]
+  LEBENSLAUF-TEST FEHLGESCHLAGEN - 81 ok, 1 Fehler
+
+Gefallene Pruefungen:
+    FEHLER  M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/cmake: jedes Ziel mit den Prozessorquellen ausser EqCopilot traegt den Testschalter  [15 Ziele mit Prozessorquellen, davon 14 Testziele; ohne Schalter: [EqCopSonde014AssistentTest]; Schleife setzt den Schalter ja, EqCopilot in der Schleife nein]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: m74 .../cmake  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 81
+    ok      M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/namenswahl: der Testbau nennt dem v2-Client einen Probe-Namen, nie die Produktions-Pipe  [\\.\pipe\evenacadia.eq-copilot.m2probe.testbau (Urteil zugelassen)]
+    ok      M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/client: derselbe Probe-Name am v2-Client nach Produkt- und Testkonstruktor  [Produktkonstruktor '\\.\pipe\evenacadia.eq-copilot.m2probe.testbau', Testkonstruktor '\\.\pipe\evenacadia.eq-copilot.m2probe.testbau']
+    ok      frisch: unclassified  [unclassified]
+    ok      frisch: neutral
+    ok      frisch: keine Audio-Ausnahme (audio-neutral)
+    ok      frisch: kein Brokerstart
+    ok      Schema-1 'sensor' -> legacy  [legacy]
+    ok      Schema-1 'sensor': bleibt passiv (keine Audio-Ausnahme)
+    ok      Schema-1 'pre' -> legacy  [legacy]
+    ok      Schema-1 'pre': bleibt passiv (keine Audio-Ausnahme)
+    ok      Schema-1 'post' -> legacy  [legacy]
+    ok      Schema-1 'post': bleibt passiv (keine Audio-Ausnahme)
+    ok      Schema-1 'hub' -> main  [main]
+    ok      Schema-1 'hub': Audio-Ausnahme moeglich
+    ok      Schema-2 main (Kind-Matrix bestaetigt) -> main
+    ok      Schema-2 legacy -> legacy
+    ok      Vorbereitung: erst main
+    ok      unbekanntes Major danach -> zurueck auf unclassified
+    ok      Muell (ignoriert) aendert nichts - main bleibt main
+    ok      Muell auf einen frischen Automaten klassifiziert nicht
+    ok      explizite Initialisierung OHNE Editor: abgelehnt
+    ok      ... und der Automat bleibt neutral
+    ok      der geoeffnete Editor allein klassifiziert NICHT
+    ok      Editor offen + explizite Initialisierung: angenommen
+    ok      ... -> main
+    ok      main + offener Editor darf den Broker starten
+    ok      Editor zu: die Klassifikation bleibt (der Stand hat sich nicht geaendert)
+    ok      main OHNE offenen Editor darf NICHT starten
+    ok      Rueckweg: derselbe Akt fuehrt von main zurueck
+    ok      ... -> legacy
+    ok      legacy darf nie starten - auch mit Editor nicht
+    ok      legacy ist wieder audio-neutral
+    ok      Sonde (NkPr) frisch: neutral trotz fester Produktklasse
+    ok      Sonde (NkPr): gueltiger eigener Stand -> passive_probe
+    ok      Sonde (NkPr): kein Brokerstart
+    ok      Sonde (NkPr): auch mit offenem Editor kein Brokerstart
+    ok      Sonde (NkPr): kein Akt macht sie zum Main
+    ok      Sonde (NkAc): gueltiger eigener Stand -> active_probe
+    ok      Sonde (NkAc): ein fremder Main-Stand faellt auf neutral, nie auf main
+    ok      produkt_v3_hello_bindet_originalidentitaet_rolle_und_host
+    ok      Gen-ControlClient traegt den produktiven Heartbeat-/State-Report-Provider
+    ok      Scannerlauf: klassifiziert NICHT (53.5)  [unclassified]
+    ok      Scannerlauf: kein Brokerstart
+    ok      Scannerlauf: unclassified bleibt audio-neutral (kein Sample gefaerbt)
+    ok      Scannerlauf: Markierung meldet sich nicht hoerbar
+    ok      Altprojekt 'sensor' -> legacy  [legacy]
+    ok      legacy mit offenem Editor: kein Brokerstart
+    ok      legacy ist 'immer passiv' - kein Sample gefaerbt
+    ok      Altprojekt 'hub' -> main  [main]
+    ok      Schema-1-Migration erfindet keine Projektbindung
+    ok      main, aber Editor zu: noch kein Brokerstart
+    ok      main + offener Editor: Brokerstart erlaubt
+    ok      expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung
+    ok      Projektbindung reist im bestehenden Host-State verlustfrei
+    ok      main: DIESELBE Markierung faerbt jetzt (der Riegel kann fallen)
+    ok      Vorbereitung: Rollenwahl aendert den Stand
+    ok      frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit
+    ok      Rollenwahl OHNE offenen Editor klassifiziert nicht (53.5)  [unclassified]
+    ok      der geoeffnete Editor allein holt es auch nicht nach
+    ok      Vorbereitung: der User waehlt die Rolle im offenen Editor
+    ok      frische Instanz: Editor offen + Rollenwahl 'hub' -> main
+    ok      frische Instanz als main: faerbt
+    ok      Rueckweg: 'sensor' klassifiziert zurueck auf legacy
+    ok      Rueckweg/M-34: nach dem Ausfade greift neutral - und bleibt es ueber 80 Bloecke
+    ok      Vorbereitung: main
+    ok      der fremde Stand kommt read-only zurueck
+    ok      read-only -> zurueck auf unclassified
+    ok      read-only: kein Brokerstart
+    ok      read-only: wieder audio-neutral
+    ok      brokerstart_gate_alle_negativzustaende
+    ok      launcher_bleibt_vor_gate_unberuehrt
+    ok      broker_lifecycle_aufrufe_im_audiothread_null
+    ok      brokerstop_nie_im_processblock
+    ok      broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre
+    ok      processblock_quellschnitt_dateioperationen_null
+    ok      processblock_quellschnitt_pipeoperationen_null
+    ok      processblock_quellschnitt_prozessoperationen_null
+    ok      processblock_quellschnitt_logoperationen_null
+    ok      processblock_quellschnitt_store_wait_null
+    ok      NAK-180 N-20: die feindliche Pipe steht
+    ok      NAK-180 N-20: stop_kehrt_in_gemessener_frist_zurueck - auch wenn ein Tick gerade in `namedPipeErreichbar` steht, kehrt `stop()` unter 1 s zurueck; mit der Serverfrist stuende er bis zu 49,7 Tage  [0 ms]
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 24747C0BA779ACF84CEC9A532CFE3D5B71C75AF4716C1A92F475B863691FD4CA); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+kein Bau: wie unter Mutation; der naechste Bau konfiguriert wegen des neuen Zeitstempels einmal neu (gleicher Inhalt).
+Aufruf: eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe
+Exitcode: 0
+  LEBENSLAUF-TEST OK - 82 Pruefungen ok, 0 Fehler
+
+Bein nach Ruecknahme gruen: ja

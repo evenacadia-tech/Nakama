@@ -1,0 +1,153 @@
+NAK-309 Etappe 3 - Rotbeweis M-30 Besitzpruefung durch den Titeltest ersetzt
+Stand:  2026-09-19 02:30, HEAD 48fc736a
+Zusage: Das Titel-Doppel bleibt unberuehrt: Exit 0 UEBERSPRUNGEN, der Grund nennt PID, Titel und "nicht von diesem Runner gestartet"; kein beende <pid>.
+Bein:   A35 (tools/fl/selbsttest.py); gezielt der Fall ueber -Nur beziehungsweise --nur
+Datei:  tools/fl/laufzeit.ps1:504
+SHA-256 vorher: 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+Lauf gegen den Basisstand: ohne Umbau nicht moeglich - Selbsttest und Code stehen in derselben Datei (Gegenprobe steht in der Matrixzeile).
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 504):
+    if (-not $eintrag) { return @{ Eigen = $false; Grund = 'nicht von diesem Runner gestartet' } }
+nachher:
+    if (-not $eintrag) { if ($inst.Fenster -and ([string]$inst.Titel) -like "*$($K.ProjektName)*") { return @{ Eigen = $true; Grund = 'eigen'; Zweck = 'fl' } }; return @{ Eigen = $false; Grund = 'nicht von diesem Runner gestartet' } }  # MUTATION: Titeltest statt Besitz (Ist-Diagnose am Basis-SHA)
+
+--- BAU UNTER MUTATION ---
+kein Bau (Python, PowerShell oder Szenariodatei: das Bein liest die Quelle beim Lauf)
+
+--- LAUF UNTER MUTATION ---
+Aufruf: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur 309/M-30
+Exitcode: 4
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Titel-Doppel beendet | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Installation neben dem Titel-Doppel | [(a) vor der Installation, Kopie] (a) Kopie: Titel-Doppel beendet | [(a) vor der Installation, Kopie] (a) Kopie: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Kopie] (a) Kopie: Installation neben dem Titel-Doppel | [(a) vor der Installation, Repo] (a) Repo: Titel-Doppel beendet | [(a) vor der Installation, Repo] (a) Repo: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Repo] (a) Repo: Installation neben dem Titel-Doppel | [(b) vor der Neuinstallation des Controllers] (b) Titel-Doppel beendet oder Controller daneben neu installiert | [(b) vor der Neuinstallation des Controllers] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(c) vor dem Render] (c) Render neben dem Titel-Doppel oder Doppel beendet | [(c) vor dem Render] (c) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' | [(d) vor dem FL-Start] (d) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(e) vor einem frischer_start] (e) Titel-Doppel beim frischen Start beendet | [(e) vor einem frischer_start] (e) Szenario neben dem Titel-Doppel gefahren | [(e) vor einem frischer_start] (e) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=2 verfehlt=0 [a.json=0,b.json=0] fl=Attrappe'
+  SELBSTTEST laufzeit.ps1: 0 ok, 1 rot
+
+Aufruf: py -3.13 tools/fl/selbsttest.py
+Exitcode: 4
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Titel-Doppel beendet | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Installation neben dem Titel-Doppel | [(a) vor der Installation, Kopie] (a) Kopie: Titel-Doppel beendet | [(a) vor der Installation, Kopie] (a) Kopie: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Kopie] (a) Kopie: Installation neben dem Titel-Doppel | [(a) vor der Installation, Repo] (a) Repo: Titel-Doppel beendet | [(a) vor der Installation, Repo] (a) Repo: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Repo] (a) Repo: Installation neben dem Titel-Doppel | [(b) vor der Neuinstallation des Controllers] (b) Titel-Doppel beendet oder Controller daneben neu installiert | [(b) vor der Neuinstallation des Controllers] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(c) vor dem Render] (c) Render neben dem Titel-Doppel oder Doppel beendet | [(c) vor dem Render] (c) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' | [(d) vor dem FL-Start] (d) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(e) vor einem frischer_start] (e) Titel-Doppel beim frischen Start beendet | [(e) vor einem frischer_start] (e) Szenario neben dem Titel-Doppel gefahren | [(e) vor einem frischer_start] (e) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=2 verfehlt=0 [a.json=0,b.json=0] fl=Attrappe'
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das Titel-Doppel beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) der Neustart hat etwas beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) ein zweites FL gestartet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-35 pid_wiederverwendung_ist_fremd: [(a) gleiche PID, andere Startzeit] (a) die PID allein als Besitz gewertet: beendet | [(a) gleiche PID, andere Startzeit] (a) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) beendet trotz anderer Befehlszeile | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-37 ping_nur_eigene_pid: [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Szenario neben dem fremden FL gefahren
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) unlesbare Liste als alles eigen gewertet: Titel-Doppel beendet | [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) der Rueckweg hat das Titel-Doppel beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Rueckweg neben einem fremden FL gestartet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+  SELBSTTEST szenario.py: 39 ok, 0 rot
+  SELBSTTEST nulltest.py: 7 ok, 0 rot
+  SELBSTTEST laufzeit.ps1: 31 ok, 6 rot
+  SELBSTTEST A35: ROT
+
+Gefallene Pruefungen:
+  [ROT] 309/M-30 namensgleiches_fremdes_projekt_nie_beenden: [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Titel-Doppel beendet | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, anderer Ordner] (a) anderer Ordner: Installation neben dem Titel-Doppel | [(a) vor der Installation, Kopie] (a) Kopie: Titel-Doppel beendet | [(a) vor der Installation, Kopie] (a) Kopie: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Kopie] (a) Kopie: Installation neben dem Titel-Doppel | [(a) vor der Installation, Repo] (a) Repo: Titel-Doppel beendet | [(a) vor der Installation, Repo] (a) Repo: Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(a) vor der Installation, Repo] (a) Repo: Installation neben dem Titel-Doppel | [(b) vor der Neuinstallation des Controllers] (b) Titel-Doppel beendet oder Controller daneben neu installiert | [(b) vor der Neuinstallation des Controllers] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(c) vor dem Render] (c) Render neben dem Titel-Doppel oder Doppel beendet | [(c) vor dem Render] (c) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [nulltest-host.json=0] fl=Attrappe' | [(d) vor dem FL-Start] (d) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(e) vor einem frischer_start] (e) Titel-Doppel beim frischen Start beendet | [(e) vor einem frischer_start] (e) Szenario neben dem Titel-Doppel gefahren | [(e) vor einem frischer_start] (e) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=2 verfehlt=0 [a.json=0,b.json=0] fl=Attrappe'
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das Titel-Doppel beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) der Neustart hat etwas beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) ein zweites FL gestartet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-35 pid_wiederverwendung_ist_fremd: [(a) gleiche PID, andere Startzeit] (a) die PID allein als Besitz gewertet: beendet | [(a) gleiche PID, andere Startzeit] (a) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) beendet trotz anderer Befehlszeile | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-37 ping_nur_eigene_pid: [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Szenario neben dem fremden FL gefahren
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) unlesbare Liste als alles eigen gewertet: Titel-Doppel beendet | [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) der Rueckweg hat das Titel-Doppel beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Rueckweg neben einem fremden FL gestartet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 309/M-30 (a) anderer Ordner: Titel-Doppel beendet  -> gefallen
+
+Mitgefallen:
+  [ROT] 309/M-31 beenden_und_neustart_nur_eigene: [(a) Volllauf -Erzwingen -Beenden, Titel-Doppel waehrend eines Szenarios] (a) -Beenden hat das Titel-Doppel beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) der Neustart hat etwas beendet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) ein zweites FL gestartet | [(b) -Neustart mit einem Titel-Doppel vor dem FL-Start] (b) Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+      Grund: dieselbe Regel R-309-1': ein FL mit Nakama-Diagnose.flp im Titel ohne gueltigen Besitzeintrag ist fremd - jeder Fall mit einem solchen Prozess faellt mit (Titel-Doppel, PID-Wiederverwendung, unlesbare Liste, Rueckweg)
+  [ROT] 309/M-35 pid_wiederverwendung_ist_fremd: [(a) gleiche PID, andere Startzeit] (a) die PID allein als Besitz gewertet: beendet | [(a) gleiche PID, andere Startzeit] (a) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) beendet trotz anderer Befehlszeile | [(b) gleiche PID und Startzeit, andere Befehlszeile] (b) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+      Grund: dieselbe Regel R-309-1': ein FL mit Nakama-Diagnose.flp im Titel ohne gueltigen Besitzeintrag ist fremd - jeder Fall mit einem solchen Prozess faellt mit (Titel-Doppel, PID-Wiederverwendung, unlesbare Liste, Rueckweg)
+  [ROT] 309/M-37 ping_nur_eigene_pid: [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Exit 0 GEMESSEN 'installation=keine (-OhneInstallation) szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe' | [Titel-Doppel erscheint vor dem ersten Ping und steht vorn in der Prozessliste] Szenario neben dem fremden FL gefahren
+      Grund: dieselbe Regel R-309-1': ein FL mit Nakama-Diagnose.flp im Titel ohne gueltigen Besitzeintrag ist fremd - jeder Fall mit einem solchen Prozess faellt mit (Titel-Doppel, PID-Wiederverwendung, unlesbare Liste, Rueckweg)
+  [ROT] 309/M-38 besitzliste_lebenslauf: [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) unlesbare Liste als alles eigen gewertet: Titel-Doppel beendet | [(e) unlesbare Liste gilt als leer, nie als alles eigen] (e) Exit 0 GEMESSEN 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=1 verfehlt=0 [bereitschaft.json=0] fl=Attrappe'
+      Grund: dieselbe Regel R-309-1': ein FL mit Nakama-Diagnose.flp im Titel ohne gueltigen Besitzeintrag ist fremd - jeder Fall mit einem solchen Prozess faellt mit (Titel-Doppel, PID-Wiederverwendung, unlesbare Liste, Rueckweg)
+  [ROT] 309/M-39 rueckweg_nur_eigene: [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) der Rueckweg hat das Titel-Doppel beendet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Rueckweg neben einem fremden FL gestartet | [(b) Titel-Doppel waehrend des Nulltests, ABWEICHUNG] (b) Kopfzeile 'installation=installiert; pruefen Exit 0, 2 Artefakt(e) aktuell szenarien=3 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=4] fl=Attrappe entfallen: snapshot-runde01.json, u40-aktivitaetsgate.json (Rueckweg nach ABWEICHUNG) rueckweg: Rueckweg Exit 0; pruefen Exit 0'
+      Grund: dieselbe Regel R-309-1': ein FL mit Nakama-Diagnose.flp im Titel ohne gueltigen Besitzeintrag ist fremd - jeder Fall mit einem solchen Prozess faellt mit (Titel-Doppel, PID-Wiederverwendung, unlesbare Liste, Rueckweg)
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 77
+  [ok] M-20 frist_ohne_schrittwert
+  [ok] M-78 timeout_genau_einmal
+  [ok] M-22 kein_piano_roll_weg
+  [ok] M-21 fenster_frist_erzwungen
+  [ok] M-21 fenster_eingeklappt
+  [ok] M-55 anfrage_schreiben_und_abraeumen
+  [ok] M-53 antwortgroessen
+  [ok] M-56 antworten_auswahl
+  [ok] M-57 ohne_brokerprozess_keine_erwartung
+  [ok] M-58 erste_fassung_unveraendert
+  [ok] M-58 erwartungsarten_und_punktpfade
+  [ok] M-11 szenario_abschnitte
+  [ok] M-67 snapshot_messpunkt_und_baender
+  [ok] M-67 referenzausschnitt_rohzeile
+  [ok] M-67 umlauf_rohzeilen
+  [ok] M-68 f28_nur_hergeleitete_baender
+  [ok] M-66 kettenverschiebung_aus_nulltest
+  [ok] M-64 referenzschritte_aus_renderstatus
+  [ok] M-81 fortlaufbedingung_teilbloecke
+  [ok] M-69 stellen_aus_energieprofil
+  [ok] M-70 stelle_materialausschnitt
+  [ok] M-70 stelle_zeitplan
+  [ok] M-70 stelle_zwei_durchlaeufe
+  [ok] M-71 roh_schreibt_null_als_null
+  [ok] M-71 deltas_ueber_evidenzabschluesse
+  [ok] M-71 rohzeile_lage_im_host
+  [ok] M-71 stelle_klammer_und_differenzen
+  [ok] M-72 u40_ohne_sollwert
+  [ok] M-57 tasklist_oem_ohne_treffer
+  [ok] M-68 low_frac_in_snapshotdefinition
+  [ok] M-68 rechnung_rohwerte
+  [ok] 309/M-41 antwort_mit_kennung_gemessen
+  [ok] 309/M-42 fremde_oder_fehlende_kennung_ungemessen
+  [ok] 309/M-43 echo_abweichung_verfehlt
+  [ok] 309/M-44 spaete_antwort_ohne_kette
+  [ok] 309/M-46 wiederholung_mit_neuer_kennung
+  [ok] 309/M-48 echo_in_jeder_szenariodatei
+  [ok] 309/M-50 importgraph_ohne_fl_trigger
+  [ok] 309/M-51 fensterskript_ohne_fl_trigger
+  [ok] M-62 identisch_null_abweichungen
+  [ok] M-75 versatz_ist_voraussetzung
+  [ok] M-63 konstanter_faktor_ist_voraussetzung
+  [ok] M-61 format_ist_voraussetzung
+  [ok] M-60 render_status
+  [ok] M-64 verarbeitung_ein_umgekehrt
+  [ok] M-64 ohne_slots_render_gegen_render
+  [ok] M-01 lohnt_nicht_ohne_produktpfad
+  [ok] M-02 lohnt_vier_faelle
+  [ok] M-03 fremdes_projekt_nie_beenden
+  [ok] M-04 hashen_scheitert_exit3
+  [ok] M-05 installation_verweigert_exit3
+  [ok] M-06 pruefen_nicht_aktuell_exit3
+  [ok] NAK-297 titel_ohne_haupttitel
+  [ok] M-07 loopmidi_und_restprozesse
+  [ok] M-08 ping_frist_exit3
+  [ok] M-08 schonfrist_vor_trigger
+  [ok] M-09 controller_veraltet_neu_installieren
+  [ok] M-10 szenario_exitcodes
+  [ok] M-10 kette_erreicht_folgeszenarien
+  [ok] M-11 kopfzeile_erste_fassung
+  [ok] M-11 kopfzeile_und_protokoll
+  [ok] M-12 projekt_unveraendert
+  [ok] M-64 referenzprojekte_aus_szenariodatei
+  [ok] M-64 referenzrender_vor_fl_start
+  [ok] M-13 volllauf_erzwingen_beenden
+  [ok] M-55 anfrage_lebenszyklus
+  [ok] M-59 frischer_start_schluessel
+  [ok] M-60 render_ablauf
+  [ok] M-65 rueckweg_nur_bei_abweichung
+  [ok] 309/M-34 fremder_restprozess_bleibt
+  [ok] 309/M-36 eigenes_fl_mit_fremdem_projekt
+  [ok] 309/M-50 ping_zeile_nennt_module
+  [ok] 309/M-52 mcp_stand_gepinnt
+  [ok] 309/M-53 mcp_revision_weicht_ab
+  [ok] 309/M-54 mcp_datei_weicht_ab
+  [ok] 309/M-55 mcp_stand_unlesbar
+  [ok] 309/M-56 pin_nur_per_commit
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 0A16F76CD914FC0D71258010EC20F5C2E69AEAB62ECCEE0BD8A81F8201D87405); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Selbsttest -Nur 309/M-30
+Exitcode: 0
+  SELBSTTEST laufzeit.ps1: 1 ok, 0 rot
+Aufruf: py -3.13 tools/fl/selbsttest.py
+Exitcode: 0
+  SELBSTTEST szenario.py: 39 ok, 0 rot
+  SELBSTTEST nulltest.py: 7 ok, 0 rot
+  SELBSTTEST laufzeit.ps1: 37 ok, 0 rot
+  SELBSTTEST A35: GRUEN
+
+Bein nach Ruecknahme gruen: ja

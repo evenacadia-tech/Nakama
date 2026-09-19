@@ -1,0 +1,116 @@
+NAK-309 Etappe 3 - Rotbeweis M-49 Kopierzeile im Controller entfernt
+Stand:  2026-09-19 02:56, HEAD 15b3b1a1 (fl-studio-mcp, evenacadia-local)
+Zusage: Ein Commit im Nachbarrepo fuehrt die Kennung durch: der Controller kopiert request_id in jede Antwort, Erfolg und Fehler.
+Bein:   pytest im Nachbarrepo fl-studio-mcp (tests/test_request_id.py; dazu die ganze Suite)
+Datei:  fl_controller/device_FLStudioMCP.py:168
+SHA-256 vorher: 6640525B954B373E01C7D9C5C587D8C2AA4FA090E3CB0E176D5BD7B44F8802CB (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+--- LAUF DES NEUEN TESTS GEGEN DEN BASISSTAND (fl-studio-mcp 01f72386, git archive, PYTHONPATH=<Basis>\src) ---
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+Exitcode: 1
+  tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler FAILED
+  FAILED tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+  ============================== 1 failed in 0.12s ==============================
+  E       AssertionError: assert {'success': True, 'track': 0} == {'success': T...cccccccccccc'}
+  E
+  E         Omitting 2 identical items, use -vv to show
+  E         Right contains 1 more item:
+  E         {'request_id': 'cccccccccccccccccccccccccccccccc'}
+  E
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 168):
+        response["request_id"] = request_id
+nachher:
+        pass  # MUTATION: Kopierzeile entfernt
+
+--- BAU UNTER MUTATION ---
+kein Bau (Python, PowerShell oder Szenariodatei: das Bein liest die Quelle beim Lauf)
+
+--- LAUF UNTER MUTATION ---
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+Exitcode: 1
+  tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler FAILED
+  FAILED tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+  ============================== 1 failed in 0.10s ==============================
+
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider
+Exitcode: 1
+  tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler FAILED
+  FAILED tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+  ======================== 1 failed, 53 passed in 0.46s =========================
+
+Gefallene Pruefungen:
+  tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler FAILED
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler  -> gefallen
+
+Mitgefallen: keine
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 53
+  tests/test_controller_probe_handlers.py::test_song_length_units_are_the_measured_ones PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_defaults_to_seconds PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_passes_explicit_mode PASSED
+  tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim PASSED
+  tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db PASSED
+  tests/test_controller_probe_handlers.py::test_ping_reports_title_and_versions PASSED
+  tests/test_controller_probe_handlers.py::test_peaks_use_left_right_max_modes PASSED
+  tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track PASSED
+  tests/test_controller_probe_handlers.py::test_focus_editor_requires_a_plugin PASSED
+  tests/test_controller_probe_handlers.py::test_focus_editor_focuses_and_names_the_plugin PASSED
+  tests/test_fenster.py::test_capture_never_touches_foreground PASSED
+  tests/test_fenster.py::test_capture_rejects_uniform_image PASSED
+  tests/test_fenster.py::test_minimized_window_is_a_failure PASSED
+  tests/test_fenster.py::test_capture_needs_exactly_one_window PASSED
+  tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers PASSED
+  tests/test_mixer_routing.py::test_rejects_out_of_range_track PASSED
+  tests/test_mixer_routing.py::test_rejects_self_route PASSED
+  tests/test_mixer_routing.py::test_rejects_bool_as_track_index PASSED
+  tests/test_mixer_routing.py::test_rejects_nan_level PASSED
+  tests/test_mixer_routing.py::test_batch_is_all_or_nothing PASSED
+  tests/test_mixer_routing.py::test_level_is_clamped_not_rejected PASSED
+  tests/test_mixer_routing.py::test_set_level_needs_an_existing_route PASSED
+  tests/test_mixer_routing.py::test_set_level_on_existing_route PASSED
+  tests/test_mixer_routing.py::test_exclusive_clears_the_direct_master_path PASSED
+  tests/test_mixer_routing.py::test_non_exclusive_keeps_existing_routes PASSED
+  tests/test_mixer_routing.py::test_ui_is_notified_once_per_batch PASSED
+  tests/test_mixer_routing.py::test_apply_reports_levels_and_names PASSED
+  tests/test_mixer_routing.py::test_route_without_level_keeps_fl_default PASSED
+  tests/test_mixer_routing.py::test_get_routing_single_track PASSED
+  tests/test_mixer_routing.py::test_get_routing_scans_everything_when_asked PASSED
+  tests/test_port_selection.py::test_prefers_loopmidi_over_gs_synth PASSED
+  tests/test_port_selection.py::test_prefers_iac_on_mac PASSED
+  tests/test_port_selection.py::test_no_fallback_to_first_port PASSED
+  tests/test_port_selection.py::test_env_override_matches_substring_case_insensitively PASSED
+  tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none PASSED
+  tests/test_port_selection.py::test_connect_reports_missing_port_honestly PASSED
+  tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected PASSED
+  tests/test_port_selection.py::test_send_command_resolves_none_from_env PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[None-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[4.5-4.5] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[abc-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[0-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[-1-2.0] PASSED
+  tests/test_request_id.py::test_send_command_schreibt_kennung PASSED
+  tests/test_request_id.py::test_zwei_spaete_antworten PASSED
+  tests/test_request_id.py::test_frist_absolut PASSED
+  tests/test_request_id.py::test_antwort_ohne_kennung_unveraendert PASSED
+  tests/test_request_id.py::test_ohne_kennung_wie_bisher PASSED
+  tests/test_request_id.py::test_eigene_fehler_tragen_die_kennung PASSED
+  tests/test_request_id.py::test_flconnection_reicht_kennung_durch PASSED
+  tests/test_request_id.py::test_controller_ohne_kennung_wie_bisher PASSED
+  tests/test_request_id.py::test_controller_version_steigt PASSED
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 6640525B954B373E01C7D9C5C587D8C2AA4FA090E3CB0E176D5BD7B44F8802CB); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler
+Exitcode: 0
+  ============================== 1 passed in 0.08s ==============================
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider
+Exitcode: 0
+  ============================= 54 passed in 0.44s ==============================
+
+Bein nach Ruecknahme gruen: ja

@@ -1,0 +1,52 @@
+NAK-309 Etappe 3 - Handlauf M-29 (T3-13-01, NB-1): der dokumentierte Ablauf eq-copilot/README.md
+Stand:  2026-09-19 02:56, HEAD 48fc736a
+Zusage: Der dokumentierte Ablauf endet mit PROBE OK v2 - KONFLIKT OK - KONFLIKT-ENDE OK (Exit 0): das Beispiel nennt das Server-Binary der Probe als drittes Argument.
+Rotbeweis (R-309-8): derselbe Aufruf ohne drittes Argument nach dem Bau, erwartet Exit 1 (Servererwartung = installierter Broker, Stufe 1 scheitert an der Dateiidentitaet).
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 -Handlauf (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+Nur Probe-Namen: \\.\pipe\evenacadia.eq-copilot.m2probe (eqcop-broker-probe.exe ohne Pipeargument); keine Produktions-Pipe, kein FL.
+
+--- BAU ---
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopPipeProbe
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopPipeProbe_artefacts/Release/EqCopPipeProbe.exe: 2026-09-19 02:57:11.049, Quelle eq-copilot/plugin/probe/PipeProbeMain.cpp: 2026-09-19 02:22:34.353 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeProbe_artefacts/Release/EqCopPipeProbe.exe: 2026-09-19 02:57:11.049, Quelle eq-copilot/plugin/src/ProbePipeRegel.h: 2026-09-19 02:29:27.166 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeProbe_artefacts/Release/EqCopPipeProbe.exe: 2026-09-19 02:57:11.049, Quelle eq-copilot/plugin/src/PipeClient.cpp: 2026-09-19 02:15:48.518 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeProbe_artefacts/Release/EqCopPipeProbe.exe: 2026-09-19 02:57:11.049, Quelle eq-copilot/plugin/src/PipeClient.h: 2026-09-18 23:28:31.043 - Binary juenger: ja
+Aufruf: cargo build --release --bin eqcop-broker-probe --manifest-path broker/Cargo.toml --color never
+Exitcode: 0
+  Finished `release` profile [optimized] target(s) in 2.86s
+eqcop-broker-probe.exe 2026-09-19 01:49:57.897, SHA-256 7935F9688B5EFE24EFC8F129F517E5C2057267C111D53B16011EEAAC1DEB95F7
+
+--- Lauf 1 (README, mit drittem Argument) ---
+Terminal 1: ..\broker\target\release\eqcop-broker-probe.exe 30   (Arbeitsordner eq-copilot, PID 284032)
+Terminal 2: build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe" 5 ..\broker\target\release\eqcop-broker-probe.exe
+Exitcode: 0 (erwartet 0) -> wie erwartet
+  SERVERERWARTUNG · C:\Users\phili\Projekte\Nakama\broker\target\release\eqcop-broker-probe.exe · sha256 7935F9688B5EFE24...
+  PROBE OK v2 · broker 0.1.0 · token 314c0c31... · heartbeats 2/2 bestaetigt · konflikt nein
+  KONFLIKT OK · beide Instanzen sehen das Flag
+  KONFLIKT-ENDE OK · neues ACK ohne Konflikt nach Trennung des Duplikats
+Broker-Probe: Exit 0
+  Broker läuft auf \\.\pipe\evenacadia.eq-copilot.m2probe — warte 30 s auf Sensoren …
+  {
+    "laeuft": true,
+    "broker_version": "0.1.0",
+    "protokoll_version": 2,
+    "pipe_name": "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe",
+    "session_token_kurz": "314c0c31",
+    "gestartet_ms": 0,
+
+--- Lauf 2 (Rotbeweis R-309-8, ohne drittes Argument) ---
+Terminal 1: ..\broker\target\release\eqcop-broker-probe.exe 30   (Arbeitsordner eq-copilot, PID 270968)
+Terminal 2: build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe" 5
+Exitcode: 1 (erwartet 1) -> wie erwartet
+  SERVERERWARTUNG · C:/Program Files/evenacadia/Nakama/eqcop-broker.exe · sha256 CA85733027ACCEF5...
+  PROBE FEHLGESCHLAGEN (Stufe 1) · Status getrennt · Protokoll 0 · Versuche 1 · Fehler: Server nicht verifiziert: dateiidentitaetFalsch
+Broker-Probe: Exit 0
+  Broker läuft auf \\.\pipe\evenacadia.eq-copilot.m2probe — warte 30 s auf Sensoren …
+  {
+    "laeuft": true,
+    "broker_version": "0.1.0",
+    "protokoll_version": 2,
+    "pipe_name": "\\\\.\\pipe\\evenacadia.eq-copilot.m2probe",
+    "session_token_kurz": "00eb32a6",
+    "gestartet_ms": 0,

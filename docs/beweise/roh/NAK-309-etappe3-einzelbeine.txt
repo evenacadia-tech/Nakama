@@ -1,0 +1,67 @@
+NAK-309 Etappe 3 - einzeln gefahrene Beine (Auftrag Schritt 4: A4b, A35, A1, B14, B8 mit M-74)
+Stand:  2026-09-19 02:58, HEAD 48fc736a; Arbeitsbaum der Beinquellen gleich HEAD
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 -Einzelbeine (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+--- BAU ---
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopPipeClientTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopPipeClientTest_artefacts/Release/EqCopPipeClientTest.exe: 2026-09-19 02:29:30.723, Quelle eq-copilot/plugin/src/ProbePipeRegel.h: 2026-09-19 02:29:27.166 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeClientTest_artefacts/Release/EqCopPipeClientTest.exe: 2026-09-19 02:29:30.723, Quelle eq-copilot/plugin/src/PipeClient.cpp: 2026-09-19 02:15:48.518 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeClientTest_artefacts/Release/EqCopPipeClientTest.exe: 2026-09-19 02:29:30.723, Quelle eq-copilot/plugin/src/PipeClient.h: 2026-09-18 23:28:31.043 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopPipeClientTest_artefacts/Release/EqCopPipeClientTest.exe: 2026-09-19 02:29:30.723, Quelle eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp: 2026-09-18 23:31:29.911 - Binary juenger: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopLebenslaufTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/ProbePipeRegel.h: 2026-09-19 02:29:27.166 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/PipeClient.cpp: 2026-09-19 02:15:48.518 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/PipeClient.h: 2026-09-18 23:28:31.043 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/PluginProcessor.cpp: 2026-09-19 02:30:43.419 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/src/PluginProcessor.h: 2026-09-18 23:29:06.785 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe: 2026-09-19 02:30:49.301, Quelle eq-copilot/plugin/tests/LebenslaufTestMain.cpp: 2026-09-18 23:32:39.507 - Binary juenger: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopNullTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe: 2026-09-19 02:58:22.516, Quelle eq-copilot/plugin/src/PipeClient.cpp: 2026-09-19 02:15:48.518 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe: 2026-09-19 02:58:22.516, Quelle eq-copilot/plugin/src/PipeClient.h: 2026-09-18 23:28:31.043 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe: 2026-09-19 02:58:22.516, Quelle eq-copilot/plugin/src/PluginProcessor.cpp: 2026-09-19 02:30:43.419 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe: 2026-09-19 02:58:22.516, Quelle eq-copilot/plugin/src/PluginProcessor.h: 2026-09-18 23:29:06.785 - Binary juenger: ja
+Aufruf: cmake --build eq-copilot/build --config Release --target EqCopSonde012ProjectReloadTest
+Exitcode: 0
+Binary eq-copilot/build/plugin/EqCopSonde012ProjectReloadTest_artefacts/Release/EqCopSonde012ProjectReloadTest.exe: 2026-09-19 02:58:28.410, Quelle eq-copilot/plugin/src/PipeClient.cpp: 2026-09-19 02:15:48.518 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopSonde012ProjectReloadTest_artefacts/Release/EqCopSonde012ProjectReloadTest.exe: 2026-09-19 02:58:28.410, Quelle eq-copilot/plugin/src/PipeClient.h: 2026-09-18 23:28:31.043 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopSonde012ProjectReloadTest_artefacts/Release/EqCopSonde012ProjectReloadTest.exe: 2026-09-19 02:58:28.410, Quelle eq-copilot/plugin/src/PluginProcessor.cpp: 2026-09-19 02:30:43.419 - Binary juenger: ja
+Binary eq-copilot/build/plugin/EqCopSonde012ProjectReloadTest_artefacts/Release/EqCopSonde012ProjectReloadTest.exe: 2026-09-19 02:58:28.410, Quelle eq-copilot/plugin/src/PluginProcessor.h: 2026-09-18 23:29:06.785 - Binary juenger: ja
+
+--- A4b EqCopPipeClientTest ---
+Aufruf: eq-copilot/build/plugin/EqCopPipeClientTest_artefacts/Release/EqCopPipeClientTest.exe
+Exitcode: 0
+Pruefungen ok: 82, rot: 0
+  PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+
+--- A35 selbsttest.py ---
+Aufruf: py -3.13 tools/fl/selbsttest.py
+Exitcode: 0
+Pruefungen ok: 83, rot: 0
+  SELBSTTEST szenario.py: 39 ok, 0 rot
+  SELBSTTEST nulltest.py: 7 ok, 0 rot
+  SELBSTTEST laufzeit.ps1: 37 ok, 0 rot
+  SELBSTTEST A35: GRUEN
+
+--- A1 EqCopNullTest ---
+Aufruf: eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe
+Exitcode: 0
+Pruefungen ok: 10, rot: 0
+  NULLTEST OK
+
+--- B14 EqCopSonde012ProjectReloadTest ---
+Aufruf: eq-copilot/build/plugin/EqCopSonde012ProjectReloadTest_artefacts/Release/EqCopSonde012ProjectReloadTest.exe
+Exitcode: 0
+Pruefungen ok: 231, rot: 0
+  SONDE-012 ProjectReload: 231/231 gruen
+
+--- B8 EqCopLebenslaufTest (darin M-74) ---
+Aufruf: eq-copilot/build/plugin/EqCopLebenslaufTest_artefacts/Release/EqCopLebenslaufTest.exe
+Exitcode: 0
+Pruefungen ok: 82, rot: 0
+  LEBENSLAUF-TEST OK - 82 Pruefungen ok, 0 Fehler
+    ok      M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/namenswahl: der Testbau nennt dem v2-Client einen Probe-Namen, nie die Produktions-Pipe  [\\.\pipe\evenacadia.eq-copilot.m2probe.testbau (Urteil zugelassen)]
+    ok      M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/client: derselbe Probe-Name am v2-Client nach Produkt- und Testkonstruktor  [Produktkonstruktor '\\.\pipe\evenacadia.eq-copilot.m2probe.testbau', Testkonstruktor '\\.\pipe\evenacadia.eq-copilot.m2probe.testbau']
+    ok      M-74 m74_testbau_oeffnet_die_produktions_pipe_nie/cmake: jedes Ziel mit den Prozessorquellen ausser EqCopilot traegt den Testschalter  [15 Ziele mit Prozessorquellen, davon 14 Testziele; ohne Schalter: []; Schleife setzt den Schalter ja, EqCopilot in der Schleife nein]

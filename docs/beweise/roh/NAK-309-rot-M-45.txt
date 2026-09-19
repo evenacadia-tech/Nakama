@@ -1,0 +1,115 @@
+NAK-309 Etappe 3 - Rotbeweis M-45 Uebergehen fremder Kennungen entfernt
+Stand:  2026-09-19 02:55, HEAD 15b3b1a1 (fl-studio-mcp, evenacadia-local)
+Zusage: Zwei verspaetete Antworten fremder Kennung werden uebergangen, ohne die Datei zu loeschen, und je Kennung einmal gezaehlt; zurueck kommt die eigene Antwort.
+Bein:   pytest im Nachbarrepo fl-studio-mcp (tests/test_request_id.py; dazu die ganze Suite)
+Datei:  src/fl_studio_mcp/utils/midi_connection.py:301
+SHA-256 vorher: 7580981C75D1342F8917320E82819F8BF39250F466E051621537A65407DC5FF3 (Datei gleich HEAD: ja)
+Werkzeug: docs/beweise/roh/NAK-309-etappe3-rot.ps1 (SHA-256 6A8D2B48F1A34C769E58C9585C81449E4815CB58363BA18900EA476C0FC70020)
+
+--- LAUF DES NEUEN TESTS GEGEN DEN BASISSTAND (fl-studio-mcp 01f72386, git archive, PYTHONPATH=<Basis>\src) ---
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_zwei_spaete_antworten
+Exitcode: 1
+  tests/test_request_id.py::test_zwei_spaete_antworten FAILED
+  FAILED tests/test_request_id.py::test_zwei_spaete_antworten - TypeError: MIDI...
+  ============================== 1 failed in 0.12s ==============================
+  E       TypeError: MIDIConnection._wait_for_response() takes 2 positional arguments but 3 were given
+
+--- MUTIERTE STELLE (die Zeile, die die Zusage traegt) ---
+vorher (Zeile 301):
+                if request_id is not None and answer_id is not None and answer_id != request_id:
+nachher:
+                if False:  # MUTATION: Uebergehen fremder Kennungen entfernt
+
+--- BAU UNTER MUTATION ---
+kein Bau (Python, PowerShell oder Szenariodatei: das Bein liest die Quelle beim Lauf)
+
+--- LAUF UNTER MUTATION ---
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_zwei_spaete_antworten
+Exitcode: 1
+  tests/test_request_id.py::test_zwei_spaete_antworten FAILED
+  FAILED tests/test_request_id.py::test_zwei_spaete_antworten - AssertionError:...
+  ============================== 1 failed in 0.11s ==============================
+
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider
+Exitcode: 1
+  tests/test_request_id.py::test_zwei_spaete_antworten FAILED
+  tests/test_request_id.py::test_frist_absolut FAILED
+  FAILED tests/test_request_id.py::test_zwei_spaete_antworten - AssertionError:...
+  FAILED tests/test_request_id.py::test_frist_absolut - assert (True is False)
+  ======================== 2 failed, 52 passed in 0.52s =========================
+
+Gefallene Pruefungen:
+  tests/test_request_id.py::test_zwei_spaete_antworten FAILED
+  tests/test_request_id.py::test_frist_absolut FAILED
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: tests/test_request_id.py::test_zwei_spaete_antworten  -> gefallen
+
+Mitgefallen:
+  tests/test_request_id.py::test_frist_absolut FAILED
+      Grund: dieselbe Uebergehen-Regel: ohne sie endet die Wartezeit an der ersten fremden Antwort
+
+Unter derselben Mutation weiter gruen (Beleg gegen den Nebeneffekt): 52
+  tests/test_controller_probe_handlers.py::test_song_length_units_are_the_measured_ones PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_defaults_to_seconds PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_passes_explicit_mode PASSED
+  tests/test_controller_probe_handlers.py::test_get_position_reports_ms_and_seconds PASSED
+  tests/test_controller_probe_handlers.py::test_set_position_makes_no_position_claim PASSED
+  tests/test_controller_probe_handlers.py::test_channel_info_reports_volume_db PASSED
+  tests/test_controller_probe_handlers.py::test_ping_reports_title_and_versions PASSED
+  tests/test_controller_probe_handlers.py::test_peaks_use_left_right_max_modes PASSED
+  tests/test_controller_probe_handlers.py::test_peaks_reject_out_of_range_track PASSED
+  tests/test_controller_probe_handlers.py::test_focus_editor_requires_a_plugin PASSED
+  tests/test_controller_probe_handlers.py::test_focus_editor_focuses_and_names_the_plugin PASSED
+  tests/test_fenster.py::test_capture_never_touches_foreground PASSED
+  tests/test_fenster.py::test_capture_rejects_uniform_image PASSED
+  tests/test_fenster.py::test_minimized_window_is_a_failure PASSED
+  tests/test_fenster.py::test_capture_needs_exactly_one_window PASSED
+  tests/test_fenster.py::test_declare_accepts_real_win32_function_pointers PASSED
+  tests/test_mixer_routing.py::test_rejects_out_of_range_track PASSED
+  tests/test_mixer_routing.py::test_rejects_self_route PASSED
+  tests/test_mixer_routing.py::test_rejects_bool_as_track_index PASSED
+  tests/test_mixer_routing.py::test_rejects_nan_level PASSED
+  tests/test_mixer_routing.py::test_batch_is_all_or_nothing PASSED
+  tests/test_mixer_routing.py::test_level_is_clamped_not_rejected PASSED
+  tests/test_mixer_routing.py::test_set_level_needs_an_existing_route PASSED
+  tests/test_mixer_routing.py::test_set_level_on_existing_route PASSED
+  tests/test_mixer_routing.py::test_exclusive_clears_the_direct_master_path PASSED
+  tests/test_mixer_routing.py::test_non_exclusive_keeps_existing_routes PASSED
+  tests/test_mixer_routing.py::test_ui_is_notified_once_per_batch PASSED
+  tests/test_mixer_routing.py::test_apply_reports_levels_and_names PASSED
+  tests/test_mixer_routing.py::test_route_without_level_keeps_fl_default PASSED
+  tests/test_mixer_routing.py::test_get_routing_single_track PASSED
+  tests/test_mixer_routing.py::test_get_routing_scans_everything_when_asked PASSED
+  tests/test_port_selection.py::test_prefers_loopmidi_over_gs_synth PASSED
+  tests/test_port_selection.py::test_prefers_iac_on_mac PASSED
+  tests/test_port_selection.py::test_no_fallback_to_first_port PASSED
+  tests/test_port_selection.py::test_env_override_matches_substring_case_insensitively PASSED
+  tests/test_port_selection.py::test_env_override_that_matches_nothing_yields_none PASSED
+  tests/test_port_selection.py::test_connect_reports_missing_port_honestly PASSED
+  tests/test_port_selection.py::test_ambiguous_virtual_ports_are_not_connected PASSED
+  tests/test_port_selection.py::test_send_command_resolves_none_from_env PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[None-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[4.5-4.5] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[abc-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[0-2.0] PASSED
+  tests/test_port_selection.py::test_default_timeout_from_env[-1-2.0] PASSED
+  tests/test_request_id.py::test_send_command_schreibt_kennung PASSED
+  tests/test_request_id.py::test_antwort_ohne_kennung_unveraendert PASSED
+  tests/test_request_id.py::test_ohne_kennung_wie_bisher PASSED
+  tests/test_request_id.py::test_eigene_fehler_tragen_die_kennung PASSED
+  tests/test_request_id.py::test_flconnection_reicht_kennung_durch PASSED
+  tests/test_request_id.py::test_controller_kopiert_kennung_in_erfolg_und_fehler PASSED
+  tests/test_request_id.py::test_controller_ohne_kennung_wie_bisher PASSED
+  tests/test_request_id.py::test_controller_version_steigt PASSED
+
+--- LAUF NACH RUECKNAHME ---
+Quelle bytegleich zurueckgespielt: ja (SHA-256 7580981C75D1342F8917320E82819F8BF39250F466E051621537A65407DC5FF3); LastWriteTime auf jetzt gesetzt; git diff leer: ja
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider tests/test_request_id.py::test_zwei_spaete_antworten
+Exitcode: 0
+  ============================== 1 passed in 0.07s ==============================
+Aufruf: <MCP-Repo>\.venv\Scripts\python.exe -m pytest -v --color=no -p no:cacheprovider
+Exitcode: 0
+  ============================= 54 passed in 0.53s ==============================
+
+Bein nach Ruecknahme gruen: ja

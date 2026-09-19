@@ -3226,20 +3226,13 @@ fn store_weist_reparse_punkt_im_pfad_ab() {
 
     // Eine Junction ist der praxisnahe Fall: sie braucht keine Adminrechte.
     let verweis = ordner.0.join("verweis");
-    let status = Command::new("cmd")
-        .args([
-            "/c",
-            "mklink",
-            "/J",
-            verweis.to_str().unwrap(),
-            echt.to_str().unwrap(),
-        ])
-        .status();
-    let junction_da = status.map(|s| s.success()).unwrap_or(false) && verweis.exists();
-    if !junction_da {
+    if let Err(grund) = junction_legen(&verweis, &echt) {
         // Ohne Junction misst der Test nichts - dann sagt er das, statt gruen
-        // zu schweigen.
-        eprintln!("mklink /J nicht verfuegbar; Reparse-Fall uebersprungen");
+        // zu schweigen: NOT RUN mit Grund (NAK-309 R-309-4, M-67).
+        nicht_gelaufen(
+            "store_weist_reparse_punkt_im_pfad_ab",
+            &format!("Reparse-Fall nicht gemessen: {grund}"),
+        );
         return;
     }
 
@@ -3361,8 +3354,12 @@ fn volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen() {
     }
 
     let verweis = ordner.0.join("verweis");
-    if !junction_legen(&verweis, &ziel_a) {
-        eprintln!("mklink /J nicht verfuegbar; TOCTOU-Fall uebersprungen");
+    if let Err(grund) = junction_legen(&verweis, &ziel_a) {
+        // NOT RUN mit Grund, nie ein stilles Gruen (NAK-309 R-309-4, M-67).
+        nicht_gelaufen(
+            "volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen",
+            &format!("TOCTOU-Fall nicht gemessen: {grund}"),
+        );
         return;
     }
 
@@ -3376,10 +3373,9 @@ fn volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen() {
 
     // Jetzt zeigt derselbe NAME auf ein anderes Objekt. SQLite haelt weiter A.
     std::fs::remove_dir(&verweis).expect("die Junction laesst sich abhaengen");
-    assert!(
-        junction_legen(&verweis, &ziel_b),
-        "die Junction liess sich nicht auf das zweite Ziel legen"
-    );
+    if let Err(grund) = junction_legen(&verweis, &ziel_b) {
+        panic!("die Junction liess sich nicht auf das zweite Ziel legen: {grund}");
+    }
 
     // DIE Entscheidung: das Handle, das SQLite haelt.
     let (am_handle, remote) =
@@ -3432,10 +3428,15 @@ fn volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen() {
 }
 
 /// Eine Verzeichnis-Junction legen. Sie braucht keine Adminrechte; fehlt
-/// `mklink`, meldet der Aufrufer das, statt gruen zu schweigen.
+/// `mklink`, meldet der Aufrufer das mit dem Grund, statt gruen zu schweigen.
+/// Der Testschalter `NAKAMA_TEST_JUNCTION_VERWEIGERN=1` macht die fehlende
+/// Voraussetzung deterministisch (NAK-309 M-67, F-21).
 #[cfg(windows)]
-fn junction_legen(verweis: &Path, ziel: &Path) -> bool {
-    Command::new("cmd")
+fn junction_legen(verweis: &Path, ziel: &Path) -> Result<(), String> {
+    if std::env::var_os("NAKAMA_TEST_JUNCTION_VERWEIGERN").is_some_and(|wert| wert == "1") {
+        return Err("Testschalter NAKAMA_TEST_JUNCTION_VERWEIGERN=1".into());
+    }
+    let status = Command::new("cmd")
         .args([
             "/c",
             "mklink",
@@ -3444,9 +3445,89 @@ fn junction_legen(verweis: &Path, ziel: &Path) -> bool {
             ziel.to_str().unwrap(),
         ])
         .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
-        && verweis.exists()
+        .map_err(|fehler| format!("cmd nicht ausfuehrbar ({fehler})"))?;
+    if !status.success() {
+        return Err(format!("mklink /J scheitert ({status})"));
+    }
+    if !verweis.exists() {
+        return Err("mklink /J meldet Erfolg, die Junction fehlt".into());
+    }
+    Ok(())
+}
+
+/// NAK-309 Etappe 4 (T3-09-04, R-309-4, M-67, M-68): eine fehlende
+/// Testvoraussetzung ist kein Gruen. `cargo test` kennt je Test nur bestanden
+/// oder gescheitert (F-21); der Test legt deshalb eine Marke `<Test>: <Grund>`
+/// in den Meldeordner seines Beins, den der Runner in `NAKAMA_NICHT_GELAUFEN`
+/// nennt und nach dem Bein liest (`tools/eq-copilot/pruefe_beweisrunner.py
+/// --nicht-gelaufen`): das Bein steht dann als `[NOT RUN]` in der Bilanz, und
+/// der Kanon ist `UNVOLLSTAENDIG`. Ohne Meldeweg ist das Melden ein Fehler -
+/// nie Exit 0 ohne Marke. Die Funktion liest keine Umgebung.
+fn melde_nicht_gelaufen(meldeweg: Option<&Path>, test: &str, grund: &str) -> Result<PathBuf, String> {
+    let Some(ordner) = meldeweg else {
+        return Err(format!("NOT RUN ohne Meldeweg: {grund}"));
+    };
+    if !ordner.is_absolute() {
+        return Err(format!("NOT RUN mit relativem Meldeweg {}: {grund}", ordner.display()));
+    }
+    if test.is_empty() || !test.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_') {
+        return Err(format!("NOT RUN mit ungueltigem Testnamen {test:?}: {grund}"));
+    }
+    if grund.trim().is_empty() || grund.contains(|zeichen| zeichen == '\r' || zeichen == '\n') {
+        return Err(format!("NOT RUN von {test} ohne einzeiligen Grund"));
+    }
+    let marke = ordner.join(format!("{test}.nicht-gelaufen"));
+    let mut datei = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&marke)
+        .map_err(|fehler| format!("NOT RUN nicht meldbar ({}: {fehler}): {grund}", marke.display()))?;
+    use std::io::Write as _;
+    datei
+        .write_all(format!("{test}: {grund}\n").as_bytes())
+        .map_err(|fehler| format!("NOT RUN nicht meldbar ({}: {fehler}): {grund}", marke.display()))?;
+    Ok(marke)
+}
+
+/// Der Aufrufer im Test: nimmt den Meldeordner aus `NAKAMA_NICHT_GELAUFEN`
+/// (leer gilt als fehlend) und endet ohne Meldeweg mit `panic!` (M-68).
+#[cfg(windows)]
+fn nicht_gelaufen(test: &str, grund: &str) {
+    let meldeweg = std::env::var_os("NAKAMA_NICHT_GELAUFEN")
+        .filter(|wert| !wert.is_empty())
+        .map(PathBuf::from);
+    match melde_nicht_gelaufen(meldeweg.as_deref(), test, grund) {
+        Ok(marke) => eprintln!("NOT RUN {test}: {grund} (Marke {})", marke.display()),
+        Err(fehler) => panic!("{fehler}"),
+    }
+}
+
+/// NAK-309 M-68: ohne Meldeweg scheitert das Melden mit Grund, nie eine stille
+/// Rueckkehr; mit Meldeweg steht genau eine Marke `<Test>: <Grund>`; ein
+/// Meldeordner, den es nicht gibt, ist kein Meldeweg.
+#[test]
+fn nicht_gelaufen_ohne_meldeweg_scheitert() {
+    assert_eq!(
+        melde_nicht_gelaufen(None, "irgendein_test", "Voraussetzung fehlt"),
+        Err("NOT RUN ohne Meldeweg: Voraussetzung fehlt".to_string()),
+        "M-68 nicht_gelaufen_ohne_meldeweg_scheitert: ohne Meldeweg kein Fehler"
+    );
+    let ordner = TestOrdner::neu("nicht-gelaufen");
+    let marke = melde_nicht_gelaufen(Some(&ordner.0), "irgendein_test", "Voraussetzung fehlt")
+        .expect("M-68 nicht_gelaufen_ohne_meldeweg_scheitert: mit Meldeweg meldbar");
+    assert_eq!(
+        std::fs::read_to_string(&marke).unwrap(),
+        "irgendein_test: Voraussetzung fehlt\n",
+        "M-68 nicht_gelaufen_ohne_meldeweg_scheitert: Marke <Test>: <Grund>"
+    );
+    assert!(
+        melde_nicht_gelaufen(Some(&ordner.0.join("gibt-es-nicht")), "irgendein_test", "x").is_err(),
+        "M-68 nicht_gelaufen_ohne_meldeweg_scheitert: ein fehlender Meldeordner ist kein Meldeweg"
+    );
+    assert!(
+        melde_nicht_gelaufen(Some(Path::new("relativ")), "irgendein_test", "x").is_err(),
+        "M-68 nicht_gelaufen_ohne_meldeweg_scheitert: ein relativer Meldeweg zaehlt nicht"
+    );
 }
 
 /// D16 der Nacharbeit Runde 1 (Abschlusspruefung 1, 03.09.2026): die

@@ -41,6 +41,14 @@
     MSBuild-Tracking-Logs ab (NAK-309); ist das nicht ableitbar, fehlt eine
     Voraussetzung (Exitcode 3). Bein A36 misst diese Ableitung selbst.
 
+    NOT RUN (NAK-309 Etappe 4, R-309-4): ein cargo-Bein mit Meldeweg bekommt
+    einen frischen Meldeordner in NAKAMA_NICHT_GELAUFEN - nur in der Umgebung
+    seines Kindprozesses (Start-Process -Environment, PowerShell 7.4). Meldet
+    ein Test dort eine fehlende Voraussetzung, steht das Bein als [NOT RUN]
+    mit Test und Grund in der Uebersicht, zaehlt nie als gruen und macht den
+    Lauf UNVOLLSTAENDIG (Exitcode 3); ROT geht vor. Die Klassifikation des
+    Ordners misst Bein A36.
+
     Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
     git den Index auf, legt .git/index.lock an, und ein unter Last
     abgeschossener Aufruf laesst die Sperre liegen.
@@ -87,7 +95,7 @@
       0  alles gruen
       2  mindestens ein Kanon-Lauf rot
       3  Voraussetzung fehlt (nicht gebaut, keine Fixtures, kein cargo,
-         Frischebaum nicht ableitbar)
+         Frischebaum nicht ableitbar, ein Test meldet NOT RUN)
       4  Laeufe gruen, aber ein Binary ist aelter als eine seiner Quellen
          oder der Frischebaum deckt nicht jede Quelle (nicht beglaubigt)
       5  Rohausgabe nicht reservierbar (Namen belegt) - nichts geschrieben
@@ -302,7 +310,10 @@ function Fuehre-Aus {
         [Parameter(Mandatory)][string] $Datei,
         [string[]] $Argumente = @(),
         [string] $Arbeitsverzeichnis = $Wurzel,
-        [double] $ZeitlimitMinuten = $BeinZeitlimitMinuten
+        [double] $ZeitlimitMinuten = $BeinZeitlimitMinuten,
+        # Nur fuer den Kindprozess (NAK-309 R-309-4); die Umgebung des Runners
+        # bleibt unberuehrt.
+        [hashtable] $Umgebung = @{}
     )
 
     $ausDatei = [IO.Path]::GetTempFileName()
@@ -324,6 +335,7 @@ function Fuehre-Aus {
             WorkingDirectory       = $Arbeitsverzeichnis
         }
         if ($Argumente.Count -gt 0) { $start.ArgumentList = @($Argumente | ForEach-Object { Argument-Quoten $_ }) }
+        if ($Umgebung.Count -gt 0) { $start.Environment = $Umgebung }
 
         $prozess = Start-Process @start
         if ($null -ne $prozess) {
@@ -500,7 +512,8 @@ $kanon = @(
         Art        = 'cargo'
         Argumente  = @('test', '--manifest-path', 'broker/Cargo.toml', '--color', 'never')
         AbPhase    = 'jetzt'
-        Behauptung = 'Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen.'
+        Meldeweg   = $true
+        Behauptung = 'Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. Fehlt einem Test eine Voraussetzung (das Junction-Recht fuer store_weist_reparse_punkt_im_pfad_ab), meldet er NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4).'
     }
     [pscustomobject]@{
         Kuerzel    = 'A4-SI'
@@ -508,7 +521,8 @@ $kanon = @(
         Art        = 'cargo'
         Argumente  = @('test', '--manifest-path', 'broker/Cargo.toml', '--color', 'never', '--test', 'store_crash_matrix', '--', '--ignored', '--test-threads=1')
         AbPhase    = 'jetzt'
-        Behauptung = 'SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push.'
+        Meldeweg   = $true
+        Behauptung = 'SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. Fehlt das Junction-Recht fuer volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen, meldet der Test NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4).'
     }
     [pscustomobject]@{
         Kuerzel    = 'A4b'
@@ -1073,9 +1087,12 @@ else {
 $ergebnisse = @()
 $rot = 0
 $fehlendeVoraussetzung = 0
+# NAK-309 R-309-4: Beine, in denen ein Test NOT RUN gemeldet hat.
+$nichtGelaufen = 0
 
 foreach ($eintrag in $kanon) {
 
+    $meldeordner = $null
     $zeile = [pscustomobject]@{
         Kuerzel    = $eintrag.Kuerzel
         Name       = $eintrag.Name
@@ -1113,7 +1130,17 @@ foreach ($eintrag in $kanon) {
             Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
             continue
         }
-        $lauf = Fuehre-Aus -Datei 'cargo' -Argumente $eintrag.Argumente
+        # NAK-309 Etappe 4 (T3-09-04, R-309-4, F-21): ein frischer Meldeordner je
+        # Bein, genannt nur in der Umgebung des Kindprozesses. Ein Test legt dort
+        # `<Test>: <Grund>` ab, wenn ihm eine Voraussetzung fehlt; ohne diesen
+        # Weg scheitert er, statt still gruen zu enden.
+        $umgebung = @{}
+        if (Feldwert $eintrag 'Meldeweg' $false) {
+            $meldeordner = Join-Path ([IO.Path]::GetTempPath()) ('nakama-nicht-gelaufen-{0}-{1}' -f $eintrag.Kuerzel, [guid]::NewGuid().ToString('N'))
+            [void](New-Item -ItemType Directory -Path $meldeordner)
+            $umgebung['NAKAMA_NICHT_GELAUFEN'] = $meldeordner
+        }
+        $lauf = Fuehre-Aus -Datei 'cargo' -Argumente $eintrag.Argumente -Umgebung $umgebung
     }
     elseif ($eintrag.Art -eq 'python') {
         # Standardort ist tools\eq-copilot; ein Eintrag darf mit `Ordner` einen
@@ -1222,6 +1249,45 @@ foreach ($eintrag in $kanon) {
         Write-Host ('[ROT] {0} - Exit {1} ({2})' -f $zeile.Name, $lauf.ExitCode, (Dauertext $zeile.Sekunden)) -ForegroundColor Red
     }
 
+    # NAK-309 R-309-4: der Meldeordner nach dem Bein. Werkzeug-Exit 0 leer,
+    # 3 NOT RUN, jeder andere unlesbar. NOT RUN zaehlt nie als gruen und ist
+    # eine fehlende Voraussetzung; ein rotes Bein bleibt rot und nennt die
+    # Marken; ein unlesbarer Meldeweg ist rot - wer ihn nicht lesen kann, weiss
+    # nicht, ob jeder Test lief.
+    if ($meldeordner) {
+        try {
+            $meldung = Fuehre-Aus -Datei 'py' -Argumente @('-3.13', (Join-Path $Wurzel 'tools\eq-copilot\pruefe_beweisrunner.py'), '--nicht-gelaufen', $meldeordner)
+            $zeile.StdErr = ($zeile.StdErr + "`n" + (@(($meldung.StdOut + "`n" + $meldung.StdErr) -split "`r?`n" | Where-Object { $_.Trim() } | ForEach-Object { '[Meldeweg] ' + $_ }) -join "`n")).Trim()
+            $marken = @()
+            $jsonMeldung = @($meldung.StdOut -split "`r?`n" | Where-Object { $_.StartsWith('NICHT-GELAUFEN-JSON ') }) | Select-Object -Last 1
+            if ($jsonMeldung) {
+                try { $marken = @(($jsonMeldung.Substring('NICHT-GELAUFEN-JSON '.Length) | ConvertFrom-Json).marken) } catch { $marken = @() }
+            }
+            if ($meldung.ExitCode -eq 3 -and $marken.Count -gt 0) {
+                $nichtGelaufen++
+                $text = (@($marken | ForEach-Object { '{0}: {1}' -f $_.test, $_.grund }) -join '; ')
+                if ($zeile.Symbol -eq '[ROT]') {
+                    $zeile.Status = ('{0} | NOT RUN {1}' -f $zeile.Status, $text)
+                }
+                else {
+                    $zeile.Symbol = '[NOT RUN]'
+                    $zeile.Status = $text
+                    $fehlendeVoraussetzung++
+                    Write-Host ('[NOT RUN] {0} - {1}' -f $zeile.Name, $text) -ForegroundColor Yellow
+                }
+            }
+            elseif ($meldung.ExitCode -ne 0) {
+                if ($zeile.Symbol -ne '[ROT]') { $rot++ }
+                $zeile.Symbol = '[ROT]'
+                $zeile.Status = ('{0} | NOT-RUN-Meldeweg unlesbar (Werkzeug-Exit {1})' -f $zeile.Status, $meldung.ExitCode)
+                Write-Host ('[ROT] {0} - NOT-RUN-Meldeweg unlesbar (Werkzeug-Exit {1})' -f $zeile.Name, $meldung.ExitCode) -ForegroundColor Red
+            }
+        }
+        finally {
+            Remove-Item -LiteralPath $meldeordner -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     $ergebnisse += $zeile
 }
 
@@ -1231,7 +1297,9 @@ $gelaufen = @($ergebnisse | Where-Object { $_.Gelaufen })
 # [HINWEIS] zaehlt als bestanden - siehe Begruendung an `Ist-Hinweisexit`:
 # nur so ist die Urteilszeile mit und ohne Befund eines nicht blockierenden
 # Beins wortgleich. Der Befund selbst steht in Uebersicht und Rohausgabe.
-$gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 -or $_.Symbol -eq '[HINWEIS]' })
+# Gezaehlt wird am Symbol, nicht am Exitcode: ein Bein mit NOT RUN endet mit
+# Exit 0 und ist trotzdem nicht gruen (NAK-309 R-309-4, M-70).
+$gruen = @($gelaufen | Where-Object { $_.Symbol -in @('[OK]', '[HINWEIS]') })
 $geplant = @($ergebnisse | Where-Object { $_.Symbol -eq '[GEPLANT]' })
 $stillgelegt = @($ergebnisse | Where-Object { $_.Symbol -eq '[STILLGELEGT]' })
 # Ein "4/4 gruen" waere geschoenigt, solange sieben Kanon-Eintraege nur geplant sind.
@@ -1239,6 +1307,8 @@ $nachsatz = if ($geplant.Count -gt 0) { " | $($geplant.Count) geplante Pruefung(
 # Und eine gesunkene Zahl ohne Erklaerung waere die andere Schoenung: das
 # Urteil sagt selbst, wie viele Beine stillgelegt sind (S9b/SONDE-007c).
 if ($stillgelegt.Count -gt 0) { $nachsatz += " | $($stillgelegt.Count) stillgelegte(s) Bein(e), siehe Uebersicht" }
+# NAK-309 R-309-4: NOT RUN steht im Urteil selbst, nicht nur in der Uebersicht.
+if ($nichtGelaufen -gt 0) { $nachsatz += " | $nichtGelaufen Bein(e) NOT RUN, siehe Uebersicht" }
 # NAK-309 M-07: ein nicht ableitbarer Baustand ist eine fehlende
 # Voraussetzung - nie GRUEN; ROT geht weiter vor, NICHT BEGLAUBIGT danach.
 if ($baustandFehlt) {

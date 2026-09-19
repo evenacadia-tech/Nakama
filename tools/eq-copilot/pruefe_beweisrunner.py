@@ -81,17 +81,27 @@ MODI
       erfolgreich gebaut: der Zeitvergleich folgt dem Urteil des
       Buildsystems, Ableitung, Kreuzprobe und Inventar laufen trotzdem.
       Ausgabe: Tabelle und eine Zeile "BAUSTAND-JSON {...}" fuer den Runner.
+  --nicht-gelaufen <meldeordner>
+      NAK-309 Etappe 4 (T3-09-04, R-309-4): der Meldeordner eines cargo-Beins
+      nach dem Lauf. Jede Marke heisst <Test>.nicht-gelaufen und traegt je
+      Zeile "<Test>: <Grund>". Exit 0 leer (jeder Test mit Meldeweg lief),
+      3 NOT RUN (Test und Grund je Marke; eine Marke eines anderen Tests und
+      zwei Marken desselben Tests zaehlen ebenso, nie gruen), 2 unlesbar
+      (Ordner fehlt, ein Eintrag ist keine Marke, eine Zeile hat nicht die
+      Form, kein UTF-8). Ausgabe: je Marke eine Zeile und eine Zeile
+      "NICHT-GELAUFEN-JSON {...}" fuer den Runner.
   --selbsttest [--nur <fall>]
       Kanon-Bein A36: ein Attrappen-Baubaum im Temp-Ordner (Tracking-Logs in
       UTF-16 mit BOM wie MSBuild, CustomBuild in UTF-8), jede Erwartung mit
-      ihrem Gegenteil; Faelle nach den Matrixzeilen M-01 bis M-08 und M-10
-      aus docs/beweise/NAK-309.md. --nur nimmt einen Fallnamen oder eine
-      Matrixzeile.
+      ihrem Gegenteil; Faelle nach den Matrixzeilen M-01 bis M-08, M-10,
+      M-67 und M-70 aus docs/beweise/NAK-309.md. --nur nimmt einen Fallnamen
+      oder eine Matrixzeile.
 
 EXITCODES
 
-  0 frisch bzw. Selbsttest gruen; 4 veraltet, Deckungs- oder Inventarluecke
-  bzw. Selbsttest rot; 3 nicht ableitbar; 2 Werkzeugfehler.
+  0 frisch bzw. Selbsttest gruen bzw. Meldeordner leer; 4 veraltet, Deckungs-
+  oder Inventarluecke bzw. Selbsttest rot; 3 nicht ableitbar bzw. NOT RUN;
+  2 Werkzeugfehler bzw. Meldeordner unlesbar.
 """
 
 from __future__ import annotations
@@ -765,6 +775,76 @@ def baustand_cli(pfad: pathlib.Path, bau_bestaetigt: bool, wurzel: pathlib.Path)
     return ergebnis.exit
 
 
+# == NOT RUN (NAK-309 Etappe 4, T3-09-04, R-309-4, F-21) ==========================
+
+MARKE = re.compile(r"^(?P<test>[A-Za-z0-9_]+)\.nicht-gelaufen$")
+NICHT_GELAUFEN_JSON = "NICHT-GELAUFEN-JSON "
+
+
+@dataclass
+class Meldung:
+    exit: int
+    zeilen: list[str]
+    marken: list[tuple[str, str]]
+    grund: str = ""
+
+
+def nicht_gelaufen(ordner: pathlib.Path) -> Meldung:
+    """Der Meldeordner eines cargo-Beins: 0 leer, 3 NOT RUN, 2 unlesbar.
+
+    Der Runner legt den Ordner je Bein frisch an; eine Marke eines anderen
+    Tests kann nur ein fremder Schreiber hineinlegen und zaehlt deshalb wie
+    jede Marke als NOT RUN - nie gruen. Unlesbar ist nie leer: wer den
+    Meldeweg nicht lesen kann, weiss nicht, ob jeder Test lief."""
+    z = [f"Meldeordner {ordner}"]
+
+    def unlesbar(grund: str) -> Meldung:
+        z.append(f"  UNLESBAR: {grund}")
+        z.append("Meldeweg: UNLESBAR (Exit 2)")
+        return Meldung(2, z, [], grund)
+
+    if not ordner.is_dir():
+        return unlesbar("Meldeordner fehlt")
+    try:
+        eintraege = sorted(ordner.iterdir(), key=lambda p: p.name)
+    except OSError as f:
+        return unlesbar(f"Meldeordner nicht lesbar ({type(f).__name__})")
+    marken: list[tuple[str, str]] = []
+    for eintrag in eintraege:
+        treffer = MARKE.match(eintrag.name)
+        if treffer is None or not eintrag.is_file():
+            return unlesbar(f"keine Marke: {eintrag.name}")
+        try:
+            text = eintrag.read_bytes().decode("utf-8")
+        except (OSError, UnicodeDecodeError) as f:
+            return unlesbar(f"{eintrag.name} nicht lesbar ({type(f).__name__})")
+        if not text.endswith("\n") or "\r" in text:
+            return unlesbar(f"{eintrag.name}: keine Folge von Zeilen mit LF-Ende")
+        praefix = treffer.group("test") + ": "
+        for zeile in text[:-1].split("\n"):
+            if not zeile.startswith(praefix) or not zeile[len(praefix):].strip():
+                return unlesbar(f"{eintrag.name}: Zeile ist nicht '<Test>: <Grund>'")
+            marken.append((treffer.group("test"), zeile[len(praefix):]))
+    if not marken:
+        z.append("Meldeweg: leer - jeder Test mit Meldeweg ist gelaufen (Exit 0)")
+        return Meldung(0, z, [])
+    for test, grund in marken:
+        z.append(f"  NOT RUN {test}: {grund}")
+    tests = len({test for test, _ in marken})
+    z.append(f"Meldeweg: NOT RUN - {tests} Test(s) nicht gelaufen (Exit 3)")
+    return Meldung(3, z, marken)
+
+
+def nicht_gelaufen_cli(ordner: pathlib.Path) -> int:
+    meldung = nicht_gelaufen(ordner)
+    for zeile in meldung.zeilen:
+        print(zeile)
+    daten = {"exit": meldung.exit, "grund": meldung.grund,
+             "marken": [{"test": t, "grund": g} for t, g in meldung.marken]}
+    print(NICHT_GELAUFEN_JSON + json.dumps(daten, ensure_ascii=True))
+    return meldung.exit
+
+
 # == Selbsttest (Bein A36) =====================================================
 
 T_QUELLE = 1_789_000_000_500_000_000     # Quellen, Kopfdateien, Projektdateien (halbe Sekunde)
@@ -1228,6 +1308,114 @@ def _fall_bau(ordner):
     return "Bau bestaetigt: Kreuzprobe und Inventar laufen weiter", p
 
 
+def _fall_m67(ordner):
+    p = []
+    m = pathlib.Path(tempfile.mkdtemp(prefix="nakama a36 meldeweg ", dir=ordner))
+    test = "store_weist_reparse_punkt_im_pfad_ab"
+    e = nicht_gelaufen(m)
+    p.append((e.exit == 0 and not e.marken, "Gegenteil: leerer Meldeordner - jeder Test lief, Exit 0",
+              f"Exit {e.exit}"))
+    marke = m / f"{test}.nicht-gelaufen"
+    marke.write_bytes(f"{test}: Reparse-Fall nicht gemessen: Testschalter\n".encode())
+    e = nicht_gelaufen(m)
+    p.append((e.exit == 3 and e.marken == [(test, "Reparse-Fall nicht gemessen: Testschalter")],
+              "eine Marke <Test>: <Grund> ist NOT RUN mit Test und Grund (Exit 3: fehlende Voraussetzung, "
+              "der Runner macht daraus UNVOLLSTAENDIG, nie gruen)", f"Exit {e.exit}, {e.marken}"))
+    with open(marke, "ab") as f:
+        f.write(f"{test}: zweiter Grund\n".encode())
+    e = nicht_gelaufen(m)
+    p.append((e.exit == 3 and len(e.marken) == 2 and {t for t, _ in e.marken} == {test},
+              "zwei Marken desselben Tests: beide Gruende, weiter NOT RUN", f"Exit {e.exit}, {len(e.marken)} Marken"))
+    (m / "anderer_test.nicht-gelaufen").write_bytes(b"anderer_test: Marke eines fremden Beins\n")
+    e = nicht_gelaufen(m)
+    p.append((e.exit == 3 and ("anderer_test", "Marke eines fremden Beins") in e.marken,
+              "eine Marke eines anderen Tests zaehlt ebenso als NOT RUN - nie gruen", f"Exit {e.exit}"))
+
+    def unlesbar(titel: str, name: str, inhalt: bytes | None) -> None:
+        u = pathlib.Path(tempfile.mkdtemp(prefix="nakama a36 unlesbar ", dir=ordner))
+        if inhalt is None:
+            os.rmdir(u)
+        else:
+            (u / name).write_bytes(inhalt)
+        e = nicht_gelaufen(u)
+        p.append((e.exit == 2 and not e.marken, f"unlesbar ({titel}): Exit 2, nie leer", f"Exit {e.exit}, {e.grund}"))
+
+    unlesbar("Meldeordner fehlt", "", None)
+    unlesbar("fremde Datei", "notiz.txt", b"irgendwas\n")
+    unlesbar("Zeile nennt einen anderen Test", f"{test}.nicht-gelaufen", b"anderer_test: Grund\n")
+    unlesbar("Marke ohne Grund", f"{test}.nicht-gelaufen", f"{test}: \n".encode())
+    unlesbar("leere Marke", f"{test}.nicht-gelaufen", b"")
+    unlesbar("kein UTF-8", f"{test}.nicht-gelaufen", test.encode() + b": \xff\xfe\n")
+    unlesbar("CRLF statt LF", f"{test}.nicht-gelaufen", f"{test}: Grund\r\n".encode())
+    return "NOT RUN aus dem Meldeordner: leer 0, Marke 3, unlesbar 2", p
+
+
+RUNNER = WURZEL / "tools" / "beweise.ps1"
+
+# Die Zeilen des Urteilsblocks von tools/beweise.ps1 in ihrer Reihenfolge (M-70):
+# ROT vor der fehlenden Voraussetzung vor NICHT BEGLAUBIGT, jede mit ihrem Exitcode.
+URTEILSFOLGE = (
+    r"\$gruen = @\(\$gelaufen \| Where-Object \{ \$_\.Symbol -in @\('\[OK\]', '\[HINWEIS\]'\) \}\)",
+    r"\$exitcode = 0",
+    r"if \(\$rot -gt 0\) \{",
+    r"\$exitcode = 2",
+    r'\$urteil = "ROT - .*"',
+    r"elseif \(\$fehlendeVoraussetzung -gt 0\) \{",
+    r"\$exitcode = 3",
+    r'\$urteil = "UNVOLLSTAENDIG - \$\(\$gruen\.Count\) gruen, .*"',
+    r"elseif \(\$veraltet\) \{",
+    r"\$exitcode = 4",
+    r'\$urteil = "NICHT BEGLAUBIGT - .*"',
+    r'\$urteil = "GRUEN - .*"',
+)
+
+
+def urteilsvorrang(text: str) -> list[str]:
+    """Quelltextwache ueber den Urteilsblock des Runners (M-70); leer = gehalten.
+    NOT RUN zaehlt nie als gruen (die Gruenzaehlung nimmt nur [OK] und [HINWEIS]),
+    ist eine fehlende Voraussetzung (Exit 3), und ROT geht vor."""
+    zeilen = [z.strip() for z in text.splitlines()]
+    befunde: list[str] = []
+
+    def einmal(muster: str) -> int:
+        treffer = [i for i, z in enumerate(zeilen) if re.fullmatch(muster, z)]
+        if len(treffer) != 1:
+            befunde.append(f"{len(treffer)} statt genau einer Zeile: {muster}")
+            return -1
+        return treffer[0]
+
+    folge = [einmal(m) for m in URTEILSFOLGE]
+    if all(i >= 0 for i in folge) and folge != sorted(folge):
+        befunde.append("Reihenfolge des Urteilsblocks verletzt (ROT vor Voraussetzung vor NICHT BEGLAUBIGT)")
+    if sum(1 for z in zeilen if z.startswith("$gruen =")) != 1:
+        befunde.append("die Gruenzaehlung ist nicht genau eine Zuweisung")
+    symbol = einmal(r"\$zeile\.Symbol = '\[NOT RUN\]'")
+    if symbol >= 0 and not any(re.fullmatch(r"\$fehlendeVoraussetzung\+\+", z) for z in zeilen[symbol + 1:symbol + 4]):
+        befunde.append("NOT RUN zaehlt nicht als fehlende Voraussetzung")
+    if not any("$nichtGelaufen Bein(e) NOT RUN, siehe Uebersicht" in z and z.startswith("if ($nichtGelaufen -gt 0)")
+               for z in zeilen):
+        befunde.append("der Nachsatz 'k Bein(e) NOT RUN' fehlt im Urteil")
+    return befunde
+
+
+def _fall_m70(ordner):
+    p = []
+    text = RUNNER.read_text(encoding="utf-8")
+    b = urteilsvorrang(text)
+    p.append((not b, "tools/beweise.ps1: ROT vor fehlender Voraussetzung vor NICHT BEGLAUBIGT, [NOT RUN] "
+                     "fehlt in der Gruenzaehlung und ist eine fehlende Voraussetzung",
+              "; ".join(b) if b else "gehalten"))
+    vertauscht = text.replace("if ($rot -gt 0) {", "if ($__rot -gt 0) {", 1) \
+                     .replace("elseif ($fehlendeVoraussetzung -gt 0) {", "if ($rot -gt 0) {", 1) \
+                     .replace("if ($__rot -gt 0) {", "elseif ($fehlendeVoraussetzung -gt 0) {", 1)
+    p.append((bool(urteilsvorrang(vertauscht)), "Gegenteil: dieselbe Quelle mit vertauschten Zweigen faellt",
+              "; ".join(urteilsvorrang(vertauscht))[:120]))
+    mitgezaehlt = text.replace("@('[OK]', '[HINWEIS]')", "@('[OK]', '[HINWEIS]', '[NOT RUN]')", 1)
+    p.append((bool(urteilsvorrang(mitgezaehlt)), "Gegenteil: [NOT RUN] in der Gruenzaehlung faellt",
+              "; ".join(urteilsvorrang(mitgezaehlt))[:120]))
+    return "Urteilsvorrang: ROT vor NOT RUN, NOT RUN nie gruen (Quelltextwache)", p
+
+
 SELBSTTEST_FAELLE = (
     ("M-01", "dsp_aenderung_ohne_bau_verweigert", _fall_m01),
     ("M-02", "frischer_bau_akzeptiert", _fall_m02),
@@ -1240,6 +1428,8 @@ SELBSTTEST_FAELLE = (
     ("M-10", "configure_ausstehend_ist_veraltet", _fall_m10a),
     ("M-10", "configure_ohne_inhaltsaenderung_bleibt_frisch", _fall_m10b),
     ("--bau-bestaetigt", "bau_bestaetigt_prueft_deckung", _fall_bau),
+    ("M-67", "nicht_gelaufen_macht_unvollstaendig", _fall_m67),
+    ("M-70", "urteilsvorrang_rot_vor_nicht_gelaufen", _fall_m70),
 )
 
 
@@ -1273,6 +1463,8 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--baustand", type=pathlib.Path, metavar="POPULATION_JSON",
                    help="Baustand der Population gegen den echten Baubaum (Aufruf des Runners)")
     g.add_argument("--selbsttest", action="store_true", help="Kanon-Bein A36: Attrappen-Baubaum")
+    g.add_argument("--nicht-gelaufen", type=pathlib.Path, metavar="MELDEORDNER",
+                   help="NOT-RUN-Marken eines cargo-Beins lesen (Aufruf des Runners)")
     p.add_argument("--bau-bestaetigt", action="store_true",
                    help="-Bauen hat unmittelbar vorher erfolgreich gebaut")
     p.add_argument("--nur", metavar="FALL", help="nur diesen Selbsttestfall (Name oder Matrixzeile)")
@@ -1282,6 +1474,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.selbsttest:
             return selbsttest(args.nur)
+        if args.nicht_gelaufen is not None:
+            return nicht_gelaufen_cli(args.nicht_gelaufen)
         return baustand_cli(args.baustand, args.bau_bestaetigt, args.wurzel.resolve())
     except Exception as f:  # noqa: BLE001 - Werkzeugfehler, nie ein Traceback als Urteil
         print(f"WERKZEUGFEHLER - {type(f).__name__}: {f}")

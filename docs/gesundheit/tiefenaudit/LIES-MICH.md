@@ -49,7 +49,7 @@ Hauptlauf, das Audit ändert keinen Code, der Dirigent auditiert nie selbst
 | `docs/gesundheit/tiefenaudit/auftrag-bereich.md`, `auftrag-naht.md` | Vorlagen mit Platzhaltern; das Werkzeug füllt sie |
 | `docs/gesundheit/tiefenaudit/auftrag-skeptiker.md` | Vorlage; der Hauptlauf füllt sie je Befundpaket |
 | `tools/pruefung/tiefenaudit_karte.py` | Vorprüfung, Befundzuordnung, Auftragsrechnung, Berichtsprüfung, Betroffenheit; Standardbibliothek, mit Selbsttest |
-| `docs/gesundheit/tiefenaudit/SKILL-vorlage.md` | dünner Starter als Vorlage; nennt keine Agentenzahl und keinen Auftragstext. Der Skill-Ordner unter `.claude/` ist für Claude gesperrt (gemessen 19.09.2026, in der Arbeitskopie und im Hauptcheckout); der User übernimmt die Vorlage einmal nach `.claude/skills/tiefenaudit/SKILL.md` (noch nicht angelegt), wie bei `tools/dirigent/settings.dontask.json`. Ändert sich die Vorlage, ist die Kopie nachzuziehen |
+| `docs/gesundheit/tiefenaudit/SKILL-vorlage.md` | dünner Starter als Vorlage; nennt keine Agentenzahl und keinen Auftragstext. Der Skill-Ordner unter `.claude/` ist im Modus `dontAsk` für Claude gesperrt (gemessen 19.09.2026, in der Arbeitskopie und im Hauptcheckout); die Kopie `.claude/skills/tiefenaudit/SKILL.md` ist am 19.09.2026 im Auto-Modus angelegt (inhaltsgleich, LF). Ändert sich die Vorlage, zieht eine Session im Auto-Modus die Kopie nach |
 | `docs/audits/<JJJJ-MM-TT>-tiefenaudit-agenten/` | je Lauf: `BEFUNDE.md`, `auftraege/` (gerechnete Aufträge als Beleg), `roh/` (Berichte der Agenten) |
 
 ## 3. Drei Agentenarten

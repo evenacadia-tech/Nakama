@@ -96,6 +96,17 @@
           }
         ]
       }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "^(?!(AskUserQuestion|ExitPlanMode)$).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/keine-rueckfrage.sh\""
+          }
+        ]
+      }
     ]
   }
 }

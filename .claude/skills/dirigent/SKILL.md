@@ -10,7 +10,7 @@ pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 
 Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, zeigt
 `tools/dirigent/logo.ps1` und ruft Claude mit `claude-fable-5-1[1m]`, `xhigh`,
-`--permission-mode dontAsk`, `--remote-control nakama-dirigent` (User 30.08.2026)
+Modus nach §1, `--remote-control nakama-dirigent` (User 30.08.2026)
 und `/dirigent` auf (User 01.09.2026; `[1m]` trägt das 1M-Fenster für
 §5). Endet Claude, bleibt das Fenster: liegt
 `nakama-dirigent-neustart.marker` im Temp-Ordner (`[IO.Path]::GetTempPath()`),
@@ -18,7 +18,7 @@ startet der Starter sofort eine frische Session im selben Fenster; sonst
 wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne Starter:
 
 ```powershell
-claude --remote-control nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk --name nakama-dirigent /dirigent
+claude --remote-control nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
 ```
 
 Die native `statusLine` startet `tools/dirigent/cockpit.ps1 -StatusLine`. Vor
@@ -420,8 +420,8 @@ Produktfragen und Handgriffe nur 9:00–23:00 PC-Lokalzeit (`Get-Date`; User
 Nach Absturz oder Neustart:
 
 ```powershell
-claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
-claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode dontAsk
+claude --resume nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
+claude --resume <session-id> --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto
 ```
 
 Die Sitzung beginnt mit `claude agents --json`, `CronList`, `git status` und

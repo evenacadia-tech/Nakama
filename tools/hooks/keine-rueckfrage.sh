@@ -12,14 +12,16 @@
 #
 # Der Hook lockert nichts: er kennt nur "deny". Welche Werkzeuge er NICHT
 # sieht, bestimmt allein der matcher in `.claude/settings.json` (die Datei
-# aendert nur der User). Der matcher MUSS AskUserQuestion und ExitPlanMode
+# aendert nur der User oder Claude auf sein Wort; eingetragen 19.09.2026).
+# Der matcher `^(?!(AskUserQuestion|ExitPlanMode)$).*` MUSS beide
 # ausnehmen: die Userfrage laeuft durch denselben Berechtigungsweg und wird
 # sonst mit abgelehnt - auch mit allow-Regel und im Auto-Modus (gemessen
 # 19.09.2026); `/fragen` und jede Produktfrage des Dirigenten waeren tot.
 #
-# Gegenprobe: eine Session im Manual-Modus mit diesem Hook meldet bei einem
-# Write "Denied by PermissionRequest hook" und endet, statt zu warten
-# (gemessen 19.09.2026, CLI 2.1.278, -p und --bg).
+# Gegenprobe, beide Richtungen (gemessen 19.09.2026, CLI 2.1.278, -p und --bg):
+# eine Session im Manual-Modus mit diesem Hook meldet bei einem Write "Denied
+# by PermissionRequest hook" und endet, statt zu warten; mit dem matcher oben
+# zeigt AskUserQuestion im Auto-Modus seinen Auswahldialog.
 
 cat >/dev/null
 printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny","message":"NAKAMA-RIEGEL: keine Rueckfragen in diesem Projekt. Aktion abgelehnt; einen anderen zulaessigen Weg waehlen oder den Schritt einem Worker geben."}}}'

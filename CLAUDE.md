@@ -116,12 +116,15 @@ logische Commits gehen ohne Rückfrage raus.
   (`git clone --local -c core.longpaths=true` an einen kurzen Pfad, kein
   `git worktree`), committet mit Pathspec und pusht. Screenshots und
   Temporäres nie in den Repo-Root.
-- **Keine Berechtigungsfragen** (User 11.09.2026): `.claude/settings.json`
-  hält `defaultMode: dontAsk`, `allow` für alles Nötige und `deny` statt
-  `ask` für Destruktives (Vorlage `tools/dirigent/settings.dontask.json`; die
-  Datei ändert nur der User). Dirigent und Worker starten mit
-  `--permission-mode dontAsk`; eine `ask`-Regel oder ein Prompt ist ein
-  Befund.
+- **Keine Berechtigungsfragen** (User 11.09. und 19.09.2026):
+  `.claude/settings.json` hält `defaultMode: dontAsk`, `allow` für alles
+  Nötige, `deny` statt `ask` für Destruktives und den PermissionRequest-Hook
+  `tools/hooks/keine-rueckfrage.sh`, der jede Rückfrage ohne Dialog ablehnt
+  (sein matcher nimmt `AskUserQuestion` und `ExitPlanMode` aus, sonst sind
+  Userfragen tot; Vorlage `tools/dirigent/settings.dontask.json`; die Datei
+  ändert nur der User oder Claude auf sein Wort). Der Dirigent startet mit
+  `--permission-mode auto` (`dontAsk` lehnt Schreiben unter `.claude/` immer
+  ab), Worker mit `dontAsk`; eine `ask`-Regel oder ein Prompt ist ein Befund.
 - Sicherheitsarbeit (Reviews, Audits, Härtung an Pipes, Impersonation,
   Signaturen) wird an Worker, Codex oder Review-Skills delegiert, nie im
   Gesprächs- oder Dirigentenkontext ausgeführt (User 01.09.2026).

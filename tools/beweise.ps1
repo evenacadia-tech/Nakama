@@ -39,7 +39,9 @@
     statt eine veraltete Messung als Basislinie auszugeben. Welche Dateien das
     sind, leitet tools/eq-copilot/pruefe_beweisrunner.py je Binary aus den
     MSBuild-Tracking-Logs ab (NAK-309); ist das nicht ableitbar, fehlt eine
-    Voraussetzung (Exitcode 3). Bein A36 misst diese Ableitung selbst.
+    Voraussetzung (Exitcode 3). Bein A36 misst diese Ableitung selbst. Seit
+    NAK-309 Etappe 4 (R-309-9) gilt dasselbe Urteil fuer jedes Ziel, das der
+    Runner baut und ein Bein ausfuehrt oder misst ($gemesseneZiele).
 
     NOT RUN (NAK-309 Etappe 4, R-309-4): ein cargo-Bein mit Meldeweg bekommt
     einen frischen Meldeordner in NAKAMA_NICHT_GELAUFEN - nur in der Umgebung
@@ -640,7 +642,7 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='A35'; Name='selbsttest.py'; Art='python'; Ordner='tools\fl'; Argumente=@(); AbPhase='P3'; Behauptung='Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286, NAK-309) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL (eigen ist nur ein selbst gestarteter Prozess, dessen PID, Startzeit und Befehlszeile in der Besitzliste stehen, auch bei gleichem Fenstertitel), faehrt nur den gepinnten MCP-Stand, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Eine MCP-Antwort misst nur mit der Anforderungskennung ihres Versuchs, jede andere heisst UNGEMESSEN; dass der Importweg fl_trigger nie laedt, ist ueber ein Attrappenpaket gemessen. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor und Abweichung; Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil.' }
     # NAK-309 Etappe 2 (18.09.2026, T3-09-01, R-309-6): der Selbsttest der
     # Frischepruefung, Muster A34. Bis dahin mass kein Bein den Runner selbst.
-    [pscustomobject]@{ Kuerzel='A36'; Name='pruefe_beweisrunner.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='jetzt'; Behauptung='Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebundene Kernziel ist gedeckt. Verglichen werden Zeitstempel, keine Inhalte. Jede Erwartung laeuft mit ihrem Gegenteil.' }
+    [pscustomobject]@{ Kuerzel='A36'; Name='pruefe_beweisrunner.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='jetzt'; Behauptung='Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebaute gebundene Kernziel ist gedeckt. Dasselbe Urteil trifft jedes Ziel aus $gemesseneZiele, das der Runner baut (NAK-309 R-309-9; die Uebergabe misst eine Quelltextwache): eine juengere Eingabe nur des gemessenen Ziels verweigert die Beglaubigung, auch wenn jedes Pruefbinary frisch ist, und ein nicht ableitbares oder im CMake-Export fehlendes Ziel ist nie gruen. Verglichen werden Zeitstempel, keine Inhalte. Die NOT-RUN-Meldung der cargo-Beine (R-309-4): ein leerer Meldeordner heisst gelaufen, eine Marke NOT RUN mit Test und Grund, ein unlesbarer Ordner nie leer; im Urteilsblock des Runners geht ROT der fehlenden Voraussetzung vor, und NOT RUN zaehlt nie als gruen (Quelltextwache). Jede Erwartung laeuft mit ihrem Gegenteil.' }
     [pscustomobject]@{ Kuerzel='A28'; Name='erzeuge_p5_korpus.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='P5'; Behauptung='Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett.' }
     [pscustomobject]@{ Kuerzel='A29'; Name='pruefe_p5_korpus.py'; Art='python'; Argumente=@(); AbPhase='P5'; Behauptung='Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1).' }
     [pscustomobject]@{ Kuerzel='A30'; Name='pruefe_p5_korpus.py'; Art='python'; Argumente=@('--selbsttest'); AbPhase='P5'; Behauptung='Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen.' }
@@ -1031,7 +1033,7 @@ $bauBestaetigt = $Bauen -and (@($bauProtokoll | Where-Object { $_.Schritt -eq 'b
 
 $baustand = @()
 $veraltet = $false
-$veraltetText = 'Pruefbinaries sind aelter als die Quellen'
+$veraltetText = 'Pruefbinaries oder gemessene Ziele sind aelter als ihre Quellen'
 $baustandFehlt = $false
 $baustandGrund = ''
 $baustandDaten = $null
@@ -1069,7 +1071,9 @@ else {
         $baustandGrund = 'Frischebaum nicht ableitbar'
     }
     foreach ($b in @($baustandDaten.binaries)) {
-        $exe = Pruefbinaer $b.name
+        # Die Datei nennt das Werkzeug (fuer gemessene Ziele aus dem CMake-Export,
+        # NAK-309 R-309-9); ohne Datei ist das Ziel nicht gebaut.
+        $exe = if ($b.binary) { $b.binary } else { Pruefbinaer $b.name }
         if (-not (Test-Path -LiteralPath $exe)) { continue }
         $datei = Get-Item -LiteralPath $exe
         $baustand += [pscustomobject]@{
@@ -1481,7 +1485,7 @@ else {
 $roh.Add('')
 # Die Ableitung steht nicht hier, sondern im Werkzeug, das sie misst (A36);
 # hier steht, was es an diesem Baum gesehen hat.
-$roh.Add("Frischebaum je Binary aus den MSBuild-Tracking-Logs (``tools/eq-copilot/pruefe_beweisrunner.py --baustand``, Exit $($baustandLauf.ExitCode)): Leselogs des Zwischenordners, jede Bibliothek ueber die Logs ihres Erzeugers, Projektdatei und Konfigurationsstand; Kreuzprobe gegen den CMake-Export, Inventar ueber ``git ls-files eq-copilot/plugin``. Verglichen werden Zeitstempel, keine Inhalte. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+$roh.Add("Frischebaum je Pruefbinary und je gemessenem Ziel aus ``" + '$gemesseneZiele' + "`` (NAK-309 R-309-9) aus den MSBuild-Tracking-Logs (``tools/eq-copilot/pruefe_beweisrunner.py --baustand``, Exit $($baustandLauf.ExitCode)): Leselogs des Zwischenordners, jede Bibliothek ueber die Logs ihres Erzeugers, Projektdatei und Konfigurationsstand; Kreuzprobe gegen den CMake-Export, Inventar ueber ``git ls-files eq-copilot/plugin``. Verglichen werden Zeitstempel, keine Inhalte. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
 if ($bauBestaetigt) {
     $roh.Add('')
     $roh.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft. Kreuzprobe und Inventar sind trotzdem gelaufen.')

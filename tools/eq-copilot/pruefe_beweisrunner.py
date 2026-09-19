@@ -531,9 +531,9 @@ def baustand(wurzel: pathlib.Path, eingabe: dict, bau_bestaetigt: bool,
     population = eingabe.get("population") or []
     bau_ziele = list(eingabe.get("bau_ziele") or [])
     z: list[str] = []
-    z.append(f"[Baustand] Frischebaum je Pruefbinary aus den MSBuild-Tracking-Logs "
-             f"({BAUBAUM}, {konfig})" + ("  - Bau bestaetigt: der Zeitvergleich folgt dem Buildsystem"
-                                         if bau_bestaetigt else ""))
+    z.append(f"[Baustand] Frischebaum je Pruefbinary und je gemessenem Ziel (Bein gem.) aus den "
+             f"MSBuild-Tracking-Logs ({BAUBAUM}, {konfig})"
+             + ("  - Bau bestaetigt: der Zeitvergleich folgt dem Buildsystem" if bau_bestaetigt else ""))
     z.append("  " + GRENZZEILE)  # M-04: die Grenze steht in jeder Ausgabe
     zeilen_binaries: list[dict] = []
     luecken: list[str] = []
@@ -551,12 +551,28 @@ def baustand(wurzel: pathlib.Path, eingabe: dict, bau_bestaetigt: bool,
     # -- Population: Frischebaum und Urteil je Binary ------------------------
     # M-05: der Runner uebergibt jedes Plugin-Bein samt Marke; stillgelegte
     # bleiben draussen - kein Frischeurteil, kein Einfluss auf den Exit.
-    draussen = {p.get("name", "") for p in population if p.get("stillgelegt")}
+    #
+    # R-309-9 (M-75): jedes Ziel, das der Runner baut und ein Bein ausfuehrt
+    # oder misst ($gemesseneZiele), bekommt dasselbe Urteil. Es steht in
+    # bau_ziele, aber nicht unter den Beinen; seine Zieldatei nennt der
+    # CMake-Export, nie eine Namensregel des Runners. Fehlt es dort, ist es
+    # nicht ableitbar.
+    beine = {p.get("name", "") for p in population}
+    alle = [dict(p, gemessen=False) for p in population]
+    for ziel in bau_ziele:
+        if ziel in beine:
+            continue
+        datei = (export.get("ziele", {}).get(ziel) or {}).get("datei") or ""
+        alle.append({"kuerzel": "gem.", "name": ziel, "binary": datei, "stillgelegt": None, "gemessen": True})
+    draussen = {p.get("name", "") for p in alle if p.get("stillgelegt")}
     baeume: dict[str, Baum] = {}
     gruende: dict[str, str] = {}
-    for p in population:
+    for p in alle:
         name = p.get("name", "")
-        binary = pathlib.Path(p.get("binary", ""))
+        if p["gemessen"] and not p.get("binary") and grund_global is None:
+            gruende[name] = f"Ziel {name} fehlt im CMake-Export"
+            continue
+        binary = pathlib.Path(p.get("binary") or "")
         if name in draussen or grund_global is not None or abl is None or not binary.is_file():
             continue
         try:
@@ -572,22 +588,22 @@ def baustand(wurzel: pathlib.Path, eingabe: dict, bau_bestaetigt: bool,
 
     veraltet = False
     nicht_ableitbar = grund_global is not None
-    for p in population:
+    for p in alle:
         name = p.get("name", "")
         eintrag = {"kuerzel": p.get("kuerzel", ""), "name": name, "stand": "", "juengste_eingabe": "",
-                   "juengste_zeit": "", "grund": ""}
-        binary = pathlib.Path(p.get("binary", ""))
+                   "juengste_zeit": "", "grund": "", "binary": p.get("binary") or "", "gemessen": p["gemessen"]}
+        binary = pathlib.Path(p.get("binary") or "")
         if name in draussen:
             eintrag["stand"] = STAND_STILLGELEGT
         elif grund_global is not None:
             eintrag["stand"] = STAND_NICHT_ABLEITBAR
             eintrag["grund"] = grund_global
-        elif not binary.is_file():
-            eintrag["stand"] = STAND_NICHT_GEBAUT
         elif name in gruende:
             eintrag["stand"] = STAND_NICHT_ABLEITBAR
             eintrag["grund"] = gruende[name]
             nicht_ableitbar = True
+        elif not binary.is_file():
+            eintrag["stand"] = STAND_NICHT_GEBAUT
         else:
             baum = baeume[name]
             binary_ns = _mtime_ns(str(binary))
@@ -619,7 +635,7 @@ def baustand(wurzel: pathlib.Path, eingabe: dict, bau_bestaetigt: bool,
         zeilen_binaries.append(eintrag)
 
     z.append("")
-    z.append(f"  {'Bein':<6} {'Pruefbinary':<38} {'Stand':<30} juengste Eingabe")
+    z.append(f"  {'Bein':<6} {'Pruefbinary oder gemessenes Ziel':<38} {'Stand':<30} juengste Eingabe")
     for e in zeilen_binaries:
         rechts = e["juengste_eingabe"] + (f" ({e['juengste_zeit']})" if e["juengste_zeit"] else "")
         if e["grund"]:
@@ -1117,7 +1133,10 @@ def _fall_m02(ordner):
 def _fall_m03(ordner):
     a = _neue_attrappe(ordner)
     p = []
-    dsp = a.abs("eq-copilot/plugin/dsp/DspKern.cpp")
+    # Die eigene Quelle von B6, nicht eine Kernquelle: seit M-75 steht auch
+    # NakamaKern.lib (T_BAU) im Zeitvergleich, und eine Kernquelle auf T_BINARY
+    # machte sie zu Recht veraltet - der Zahlenrand gilt dem Binary von B6.
+    dsp = a.abs("eq-copilot/plugin/tests/DspGoldenTestMain.cpp")
     a.zeit(dsp, T_BINARY)
     e = a.lauf()
     s = _stand(e, "EqCopDspGoldenTest")
@@ -1308,6 +1327,76 @@ def _fall_bau(ordner):
     return "Bau bestaetigt: Kreuzprobe und Inventar laufen weiter", p
 
 
+def gemessene_im_runner(text: str) -> list[str]:
+    """Quelltextwache ueber tools/beweise.ps1 (M-75 (e)): die Ziele aus
+    $gemesseneZiele gehen ueber $zuBauen in bau_ziele der Frischepruefung;
+    leer = gehalten."""
+    befunde: list[str] = []
+    block = re.search(r"^\$gemesseneZiele = @\((?P<rumpf>.*?)^\)", text, re.S | re.M)
+    ziele = re.findall(r"^\s*Ziel\s*=\s*'([^']+)'", block.group("rumpf"), re.M) if block else []
+    if not ziele:
+        befunde.append("$gemesseneZiele nennt kein Ziel")
+    zeilen = [z.strip() for z in text.splitlines()]
+    zufuehrung = (r"\$zuBauen \+= @\(\$gemesseneZiele \| Where-Object \{ \$cmakeText -match "
+                  r"\[regex\]::Escape\(\$_\.Marker\) \} \| ForEach-Object \{ \$_\.Ziel \}\)")
+    if sum(1 for z in zeilen if re.fullmatch(zufuehrung, z)) != 1:
+        befunde.append("die gemessenen Ziele gehen nicht ueber $zuBauen in den Bau")
+    if not any("bau_ziele = @($zuBauen)" in z and z.startswith("[ordered]@{") for z in zeilen):
+        befunde.append("bau_ziele der Frischepruefung ist nicht $zuBauen")
+    return befunde
+
+
+def _fall_m75(ordner):
+    p = []
+    a = _neue_attrappe(ordner)
+    e = a.lauf()
+    vst3, kern = _stand(e, "EqCopilot_VST3"), _stand(e, "NakamaKern")
+    p.append((vst3["stand"] == STAND_FRISCH and kern["stand"] == STAND_FRISCH and e.exit == 0
+              and all(b["gemessen"] for b in e.json["binaries"] if b["name"] in ("EqCopilot_VST3", "NakamaKern")),
+              "Gegenteil: die gemessenen Ziele (EqCopilot_VST3, NakamaKern: in bau_ziele, ohne Bein) stehen im "
+              "Zeitvergleich und sind frisch, Exit 0", f"VST3 {vst3['stand']}, Kern {kern['stand']}, Exit {e.exit}"))
+    a.zeit(a.abs("eq-copilot/plugin/src/Vst3Huelle.cpp"), T_BINARY + 10 * SEKUNDE)
+    e = a.lauf()
+    vst3 = _stand(e, "EqCopilot_VST3")
+    beine_frisch = all(_stand(e, n)["stand"] == STAND_FRISCH
+                       for n in ("EqCopDspGoldenTest", "EqCopTransactionTest", "EqCopShot"))
+    p.append((vst3["stand"] == STAND_VERALTET and vst3["juengste_eingabe"].endswith("src/Vst3Huelle.cpp")
+              and beine_frisch and e.exit == 4,
+              "(a) eine Eingabe nur des gemessenen Ziels juenger: VERALTET, die Beglaubigung wird verweigert "
+              "(Exit 4), obwohl jedes Pruefbinary frisch ist",
+              f"VST3 {vst3['stand']} {vst3['juengste_eingabe']}, Beine frisch {beine_frisch}, Exit {e.exit}"))
+    a = _neue_attrappe(ordner)
+    os.remove(a.pb / "EqCopilot_VST3.dir" / "Release" / "EqCopilot_VST3.tlog" / "CL.read.1.tlog")
+    e = a.lauf()
+    vst3 = _stand(e, "EqCopilot_VST3")
+    p.append((vst3["stand"] == STAND_NICHT_ABLEITBAR and e.exit == 3,
+              "(b) CL-Leselog des gemessenen Ziels fehlt: NICHT ABLEITBAR, Exit 3, nie gruen",
+              f"{vst3['stand']}, Exit {e.exit}"))
+    a = _neue_attrappe(ordner)
+    del a.ziele["EqCopilot_VST3"]
+    a.export()
+    e = a.lauf()
+    vst3 = _stand(e, "EqCopilot_VST3")
+    p.append((vst3["stand"] == STAND_NICHT_ABLEITBAR and "fehlt im CMake-Export" in vst3["grund"] and e.exit == 3,
+              "(c) ein gemessenes Ziel, das im CMake-Export fehlt: NICHT ABLEITBAR, nie eine Namensregel",
+              f"{vst3['stand']} [{vst3['grund']}], Exit {e.exit}"))
+    a = _neue_attrappe(ordner)
+    os.remove(a.ziele["EqCopilot_VST3"]["datei"])
+    e = a.lauf()
+    vst3 = _stand(e, "EqCopilot_VST3")
+    p.append((vst3["stand"] == STAND_NICHT_GEBAUT and e.exit != 0,
+              "(d) Zieldatei fehlt: genannt, nicht beurteilt - und der Lauf ist nie gruen",
+              f"{vst3['stand']}, Exit {e.exit}"))
+    text = RUNNER.read_text(encoding="utf-8")
+    b = gemessene_im_runner(text)
+    p.append((not b, "(e) tools/beweise.ps1: $gemesseneZiele geht ueber $zuBauen in bau_ziele der Frischepruefung",
+              "; ".join(b) if b else "gehalten"))
+    ohne = "\n".join(z for z in text.splitlines() if not z.strip().startswith("$zuBauen += @($gemesseneZiele"))
+    p.append((bool(gemessene_im_runner(ohne)), "Gegenteil: ohne die Zufuehrung faellt die Wache",
+              "; ".join(gemessene_im_runner(ohne))))
+    return "Gemessene Ziele stehen im Zeitvergleich wie jedes Pruefbinary (R-309-9)", p
+
+
 def _fall_m67(ordner):
     p = []
     m = pathlib.Path(tempfile.mkdtemp(prefix="nakama a36 meldeweg ", dir=ordner))
@@ -1430,6 +1519,7 @@ SELBSTTEST_FAELLE = (
     ("--bau-bestaetigt", "bau_bestaetigt_prueft_deckung", _fall_bau),
     ("M-67", "nicht_gelaufen_macht_unvollstaendig", _fall_m67),
     ("M-70", "urteilsvorrang_rot_vor_nicht_gelaufen", _fall_m70),
+    ("M-75", "gemessene_ziele_im_zeitvergleich", _fall_m75),
 )
 
 

@@ -147,17 +147,6 @@
    "wo": "docs/offene-punkte.md NAK-325; docs/beweise/NAK-309-verlauf.md §17 und §21; tools/fl/LIES-MICH.md",
    "seit": "19.09.",
    "status": "offen"
-  },
-  {
-   "id": "U54",
-   "dringlichkeit": "jetzt",
-   "art": "Produktentscheid (Klangverhalten, Schutz)",
-   "titel": "AUTO-Lautstärkeausgleich: Obergrenze einbauen?",
-   "was": "Der AUTO-Ausgleich rechnet aus, wie viel lauter oder leiser deine EQ-Kurve das Signal macht, und zieht das am Ausgang wieder ab. Schneidet eine Einstellung sehr viel weg — mehrere steile Tiefpässe übereinander, wie beim Suchen oder in einer geladenen Voreinstellung —, kommt die Rechnung auf „hier fehlt fast alles“ und dreht entsprechend weit auf, heute ohne Obergrenze (im Audit über +40 dB). Zu hören ist dann nicht die Musik, sondern tiefes Rumpeln unter 20 Hz und Gleichanteil, die die Rechnung nicht erfasst; das kann Boxen und Kopfhörer gefährden. (1) Empfohlen: Obergrenze — der Ausgleich geht höchstens bis zu einem festen Betrag, und Nakama meldet ehrlich, dass gedeckelt wurde; bei allen normalen Einstellungen ändert sich nichts. (2) Keine Obergrenze wie heute: volle Kompensation auch in extremen Fällen.",
-   "warum": "Audit-Befund T3-15-09, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 2). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Höhe der Obergrenze ist Technik und bleibt beim Dirigenten; wie die Meldung aussieht, gehört zum geparkten Designteil.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-09 und Arbeitsübersicht W08; docs/offene-punkte.md NAK-311",
-   "seit": "19.09.",
-   "status": "offen"
   }
  ],
  "geparkt": [
@@ -829,6 +818,24 @@
     "warum": "Audit-Befund T3-15-07, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 1). Gebaut wird dieser Teil erst nach deiner Antwort; die übrigen Teile des Audio-Kerns (Planschritt S25j, Ticket NAK-311) laufen vorher. Ab wann ein Sprung als groß gilt, ist Technik und bleibt beim Dirigenten. Kartentext berichtigt am 19.09.2026: das heutige Verhalten ist kein Sofortumschalten.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-07 und Arbeitsübersicht W07; docs/offene-punkte.md NAK-311",
     "seit": "18.09.",
+    "status": "offen"
+   }
+  },
+  "U54": {
+   "wahl": "1. Obergrenze (Empfohlen).",
+   "text": "1",
+   "datum": "2026-09-19 11:17",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: der AUTO-Ausgleich bekommt eine Obergrenze und meldet ehrlich, wenn gedeckelt wurde; bei normalen Einstellungen ändert sich nichts. Gebaut wird das in NAK-311 Etappe 5 (Audit-Befund T3-15-09 Teil b, Arbeitspaket W08) mit eigenem Matrixnachtrag; die Höhe der Obergrenze entscheidet der Dirigent nach Messung, die Form der Meldung im Bericht ebenfalls (eine Vertragsänderung nur versioniert); wie die Meldung aussieht, gehört zum geparkten Designteil. Festgehalten in design/abnahmen/2026-09-19-auto-ausgleich-obergrenze-u54.md und im Register NAK-311. Gestellt als Text in der Dirigentensitzung 0cb3cdf4 (AskUserQuestion im dontAsk-Modus gesperrt) mit zwei Wegen: „1. Obergrenze (empfohlen)“, „2. Keine Obergrenze wie heute“.",
+   "karte": {
+    "id": "U54",
+    "dringlichkeit": "jetzt",
+    "art": "Produktentscheid (Klangverhalten, Schutz)",
+    "titel": "AUTO-Lautstärkeausgleich: Obergrenze einbauen?",
+    "was": "Der AUTO-Ausgleich rechnet aus, wie viel lauter oder leiser deine EQ-Kurve das Signal macht, und zieht das am Ausgang wieder ab. Schneidet eine Einstellung sehr viel weg — mehrere steile Tiefpässe übereinander, wie beim Suchen oder in einer geladenen Voreinstellung —, kommt die Rechnung auf „hier fehlt fast alles“ und dreht entsprechend weit auf, heute ohne Obergrenze (im Audit über +40 dB). Zu hören ist dann nicht die Musik, sondern tiefes Rumpeln unter 20 Hz und Gleichanteil, die die Rechnung nicht erfasst; das kann Boxen und Kopfhörer gefährden. (1) Empfohlen: Obergrenze — der Ausgleich geht höchstens bis zu einem festen Betrag, und Nakama meldet ehrlich, dass gedeckelt wurde; bei allen normalen Einstellungen ändert sich nichts. (2) Keine Obergrenze wie heute: volle Kompensation auch in extremen Fällen.",
+    "warum": "Audit-Befund T3-15-09, an der Quelle bestätigt (docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md, Abschnitt 2). Gebaut wird dieser Teil erst nach deiner Antwort; bis dahin bleibt es beim heutigen Verhalten. Die Höhe der Obergrenze ist Technik und bleibt beim Dirigenten; wie die Meldung aussieht, gehört zum geparkten Designteil.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-15-09 und Arbeitsübersicht W08; docs/offene-punkte.md NAK-311",
+    "seit": "19.09.",
     "status": "offen"
    }
   }

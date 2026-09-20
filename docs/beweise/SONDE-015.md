@@ -4623,3 +4623,39 @@ gemessenen Zeiten verschieben sich, die Zusage nicht. Gemessen in B6
 (`attack_hold_release_als_sprungantwort_bei_vier_raten`,
 `dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit`) und B7 (`311/M-77`,
 `311/M-78`).
+
+### 13.8 E-6 — der Bezugspunkt der Steuerrate seit dem festgelegten Pegelbegriff (NAK-311 Etappe 5, Nacharbeit 1, T3-15-11, R-311-15, 20.09.2026)
+
+**Betroffen:** der Nachtrag §13.3 (`:4445`), Absatz „Berichtigt, gemessen in
+NAK-311 `311/M-73` bis `311/M-75`".
+
+§13.3 hält den Messstand der **Etappe 4** fest: „bis einschließlich Sample
+d = (8 − p) mod 8 bitgleich … und weicht ab d + 1 ab". Das war dort richtig
+(nachgemessen am Basisstand `5ee8318c`) und bleibt als Verlauf stehen. Durch
+den Änderungssatz D ist der Satz am heutigen Stand falsch geworden.
+
+**Seit dem festgelegten Pegelbegriff (Etappe 5, Änderungssatz D, R-311-15)
+zählt die Messung ab dem Bezugspunkt:** dem ersten Steuerschritt mit einer
+Auslenkung ungleich 0, im Test aus `schrittRest` und der Auslenkung gelesen
+statt aus dem Toneinsatz (`docs/beweise/NAK-311.md` §40.4 Risiko 3). Der
+Pegelbegriff ist eine dritte kalt startende Stufe; bei manchen Steuerphasen
+liegt der erste wirksame Entwurf dadurch **einen Rasterschritt nach dem
+Toneinsatz**. Gemessen am Endstand der Etappe 5 (Bein B6, 20.09.2026):
+
+- 48 kHz und 44,1 kHz: p = 0 → Bezugspunkt 8, erste Abweichung 9, volle
+  Wirkung 16 (am Basisstand 0, 1 und 8); p = 1, 3 und 7 unverändert
+- 96 kHz: p = 7 → Bezugspunkt 9, erste Abweichung 10, volle Wirkung 17 (am
+  Basisstand 1, 2 und 9); p = 0, 1 und 3 unverändert
+
+**Die Zusage und ihre Zahlen bleiben:** die erste Wirkung liegt je nach
+Steuerphase **1 bis 8**, die volle Wirkung des ersten Entwurfs **8 bis 15
+Samples** nach dem Bezugspunkt — 0,167 bis 0,3125 ms bei 48 kHz, 0,181 bis
+0,340 ms bei 44,1 kHz und 0,083 bis 0,156 ms bei 96 kHz, bei 48 und 44,1 kHz
+also weiter gröber als die kürzeste Attack von 0,1 ms. `kDynamikSchritt` bleibt
+8, und das Verhalten ändert sich durch diesen Nachtrag nicht: geändert hat sich
+allein der Punkt, von dem aus gezählt wird.
+
+Nachgezogen sind damit das Prüfetikett von `311/M-73` bis `311/M-75`
+(`eq-copilot/plugin/tests/DspGoldenTestMain.cpp`) und die Behauptung des Beins
+B6 (`tools/beweise.ps1`); die Bedingungen und Schranken des Tests messen den
+Bezugspunkt seit dem Änderungssatz D bereits richtig.

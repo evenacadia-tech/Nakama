@@ -1,0 +1,190 @@
+NAK-311 Etappe 5, Nacharbeit 1 - Herkunft der vier Goldens von 311/M-133
+========================================================================
+
+Defekt:      D-1 der Erstpruefung 5 - 311/M-133 hat fuer seine zweite Haelfte
+             keinen Riegel, waehrend Matrix, Runner und Pruefetikett einen
+             behaupten.
+Entscheid:   Fall A (Manifest Paragraph 62 Nr. 1) - die Zusage der Matrixzeile
+             bleibt woertlich. Die vier Fingerabdruecke werden am
+             UNVERAENDERTEN Kern des Basisstands erzeugt und als Konstanten in
+             die `pruefe`-Bedingung gelegt (Muster 311/M-100, kM123Golden).
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab (Basisstand des
+             Aenderungssatzes A = Basisstand der Etappe 5)
+HEAD:        1fff97a5bd5230d80d54cd8fffd93d74aaa65503
+Weg:         W1 - temporaere Mutation im sichtbaren Checkout nach Paragraph
+             7.1. Die elf Dateien, die in EqCopProbeeqNullTest eingehen, wurden
+             auf den Basisstand gesetzt (`git show 5ee8318c:<datei>`), die zwei
+             Helfer und eine Ausgabeschleife eingefuegt, nur
+             EqCopProbeeqNullTest gebaut und gefahren, danach jede Datei
+             bytegleich aus der Sicherung zurueckgespielt.
+Messung:     dieselbe wie 311/M-133 im Endstand - vorbereitet (rate, 2048),
+             mitBell14k (Bell 14 kHz +12 dB Q 4, Auto-Gain an, eq_enabled an),
+             fnvAusgang (..., 40, 512, (int) rate + 133).
+
+Kein fremder Bau- oder Testprozess lief (Get-Process cmake, MSBuild, cl, link,
+cargo, EqCop*, FL64, vctip leer; NAK-290). Nichts davon ist committet.
+
+
+--- 1. SHA-256 der elf Dateien VOR der temporaeren Mutation ---------------
+
+8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4  eq-copilot/plugin/dsp/DspBankPool.cpp
+ABB3A7C91AB90CC6A09495CA2AFCFBB9EEC8142029BBA27EE9162980E5484548  eq-copilot/plugin/dsp/DspBankPool.h
+E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D  eq-copilot/plugin/dsp/DspFilter.h
+CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8  eq-copilot/plugin/dsp/DspKern.cpp
+D66CA755FAACD831FF0E6681E4A819C330654E383E6BD7CCE549858F9C8DB8E5  eq-copilot/plugin/dsp/DspKern.h
+3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E  eq-copilot/plugin/dsp/DspProgramm.cpp
+CB559C76CB167E82E5469CEE765D408CB9BE04B6DA1C644527A3D24D35AF3FBD  eq-copilot/plugin/dsp/DspProgramm.h
+24A3A37D4BDF59255A1624F3EACAB87EC7E7E3C03D245D8E091050889D98F767  eq-copilot/plugin/sonde/SondeProcessor.cpp
+80037FB3185320529C0AE84398CAD9AE9CD810E20706C0E9D32516ABD58270DE  eq-copilot/plugin/state/NakamaTransaktion.cpp
+4857666F5F9EBCE1F60E60826EB4A68B27A967E6D02F639DA3591E6E7488A800  eq-copilot/plugin/state/NakamaTransaktion.h
+D32AD03EFFD0C1386C437ACE5117A340422361BEFC15B3028A1C9F942578F464  eq-copilot/plugin/tests/SondeNullTestMain.cpp
+
+Sicherungskopien ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\4ba2e768\tmp\sicherung-head\
+
+`git diff --stat 5ee8318c -- eq-copilot/plugin/dsp eq-copilot/plugin/sonde
+eq-copilot/plugin/state eq-copilot/plugin/tests/SondeNullTestMain.cpp` war nach
+dem Einspielen leer: der Stand war der Basisstand.
+
+
+--- 2. Die temporaere Ergaenzung woertlich (Diff gegen 5ee8318c) ----------
+
+diff --git a/eq-copilot/plugin/tests/SondeNullTestMain.cpp b/eq-copilot/plugin/tests/SondeNullTestMain.cpp
+index d9bc8183..1221b227 100644
+--- a/eq-copilot/plugin/tests/SondeNullTestMain.cpp
++++ b/eq-copilot/plugin/tests/SondeNullTestMain.cpp
+@@ -191,6 +191,36 @@ tx::Ergebnis setze (Prozessor& p, const param::DspSatz& z)
+     return p.fuehreTransaktionAus (a);
+ }
+ 
++// --- TEMPORAER (NAK-311 Nacharbeit 1, D-1): wortgleich aus dem Endstand ---
++/** NAK-311 311/M-133: ein Fingerabdruck des Ausgangs (FNV-1a ueber die
++    Bytes jedes ausgegebenen float, in Blockreihenfolge). */
++std::uint64_t fnvAusgang (Prozessor& p, int bloecke, int groesse, int saat, int kanaele = 2)
++{
++    std::uint64_t h = 1469598103934665603ull;
++    juce::Random w (saat);
++    juce::MidiBuffer midi;
++    juce::AudioBuffer<float> b (kanaele, groesse);
++    for (int i = 0; i < bloecke; ++i)
++    {
++        for (int k = 0; k < kanaele; ++k)
++            for (int n = 0; n < groesse; ++n)
++                b.setSample (k, n, w.nextFloat() * 1.8f - 0.9f);
++        p.processBlock (b, midi);
++        for (int k = 0; k < kanaele; ++k)
++            for (int n = 0; n < groesse; ++n)
++            {
++                const auto bits = std::bit_cast<std::uint32_t> (b.getSample (k, n));
++                for (int byte = 0; byte < 4; ++byte)
++                {
++                    h ^= (std::uint64_t) ((bits >> (byte * 8)) & 0xFFu);
++                    h *= 1099511628211ull;
++                }
++            }
++    }
++    return h;
++}
++// --- ENDE TEMPORAER -------------------------------------------------------
++
+ int iBand (int slot, int feld) { return param::indexBandV1 (slot, feld); }
+ int iGlobal (const char* id)   { return param::indexVonId (id); }
+ 
+@@ -1485,6 +1515,41 @@ int main()
+         }
+     }
+ 
++    // --- TEMPORAER (NAK-311 Nacharbeit 1, D-1): die vier Fingerabdruecke am
++    //     UNVERAENDERTEN Kern des Basisstands 5ee8318c. Dieselbe Messung wie
++    //     311/M-133 im Endstand: vorbereitet (rate, 2048), mitBell14k,
++    //     fnvAusgang (..., 40, 512, (int) rate + 133).
++    {
++        namespace dspn = nakama::dsp;
++        const auto mitBell14k = [] (param::DspSatz z)
++        {
++            z.werte[(size_t) param::kIndexEqEnabled].b = true;
++            z.werte[(size_t) iGlobal ("v2.global.auto_gain")].b = true;
++            z.werte[(size_t) param::indexOccupied (0)].b = true;
++            z.werte[(size_t) iBand (0, param::kEnabled)].b = true;
++            z.werte[(size_t) iBand (0, param::kType)].enumIndex = (int) dspn::Filtertyp::bell;
++            z.werte[(size_t) iBand (0, param::kFreqHz)].zahl = 14000.0;
++            z.werte[(size_t) iBand (0, param::kQ)].zahl      = 4.0;
++            z.werte[(size_t) iBand (0, param::kGainDb)].zahl = 12.0;
++            return z;
++        };
++        std::cout << std::endl << "== BASISGOLDEN 311/M-133 am Basisstand 5ee8318c ==" << std::endl;
++        for (const double rate : { 44100.0, 48000.0, 96000.0, 192000.0 })
++        {
++            auto p = vorbereitet (rate, 2048);
++            const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
++            const auto abdruck = fnvAusgang (*p, 40, 512, (int) rate + 133);
++            auto& kern = p->dspKernFuerTest();
++            std::cout << "  " << juce::String (rate, 0).toStdString() << " Hz: 0x"
++                      << juce::String::toHexString ((juce::int64) abdruck).toStdString()
++                      << "  (commit " << (e.ausgang == tx::Ausgang::commit ? 1 : 0)
++                      << ", Kern-Samplerate " << juce::String (kern.samplerate(), 1).toStdString()
++                      << ", autoGainDb " << juce::String (kern.autoGainDb(), 12).toStdString()
++                      << ")" << std::endl;
++        }
++    }
++    // --- ENDE TEMPORAER ---------------------------------------------------
++
+     std::cout << std::endl
+               << (fehlerZahl == 0 ? "SONDE-NULLTEST OK - " : "SONDE-NULLTEST FEHLGESCHLAGEN - ")
+               << okZahl << " Pruefungen ok, " << fehlerZahl << " Fehler" << std::endl;
+
+--- 3. Bau und Lauf am Basisstand ----------------------------------------
+
+Bau: cmake --build eq-copilot/build --config Release --target
+     EqCopProbeeqNullTest, Exit 0.
+     Quellstempel SondeNullTestMain.cpp 2026-09-20T19:28:54,
+     Binary 2026-09-20T19:29:04 (Binary neuer als die Quelle: True).
+Lauf: eq-copilot/build/plugin/EqCopProbeeqNullTest_artefacts/Release/EqCopProbeeqNullTest.exe
+     Exit 0.
+
+== BASISGOLDEN 311/M-133 am Basisstand 5ee8318c ==
+  44100 Hz: 0xcb14d6eee50e7d7c  (commit 1, Kern-Samplerate 44100.0, autoGainDb -0.759373668958)
+  48000 Hz: 0xbd787728731ba929  (commit 1, Kern-Samplerate 48000.0, autoGainDb -0.853206521983)
+  96000 Hz: 0x5ece3bcf185baff5  (commit 1, Kern-Samplerate 96000.0, autoGainDb -1.275649859551)
+  192000 Hz: 0x33f35b42b6693e06  (commit 1, Kern-Samplerate 192000.0, autoGainDb -1.390377442677)
+SONDE-NULLTEST OK - 114 Pruefungen ok, 0 Fehler
+
+--- 4. Basiswerte gegen die heutigen Werte --------------------------------
+
+Der heutige Lauf am HEAD 1fff97a5 (Endstand der Etappe, vor dieser Nacharbeit)
+gab dieselben vier Werte aus:
+
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck des Basisstands  [Ausgang FNV-1a 0xcb14d6eee50e7d7c, Kern-Samplerate 44100.0, autoGainDb -0.759373668958, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck des Basisstands  [Ausgang FNV-1a 0xbd787728731ba929, Kern-Samplerate 48000.0, autoGainDb -0.853206521983, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck des Basisstands  [Ausgang FNV-1a 0x5ece3bcf185baff5, Kern-Samplerate 96000.0, autoGainDb -1.275649859551, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck des Basisstands  [Ausgang FNV-1a 0x33f35b42b6693e06, Kern-Samplerate 192000.0, autoGainDb -1.390377442677, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  Rate         Basisstand 5ee8318c    HEAD 1fff97a5          gleich
+  44 100 Hz    0xcb14d6eee50e7d7c     0xcb14d6eee50e7d7c     ja
+  48 000 Hz    0xbd787728731ba929     0xbd787728731ba929     ja
+  96 000 Hz    0x5ece3bcf185baff5     0x5ece3bcf185baff5     ja
+  192 000 Hz   0x33f35b42b6693e06     0x33f35b42b6693e06     ja
+
+Kein Wert weicht ab: der Haltfall des Auftrags tritt nicht ein. Die vier
+Goldens sind damit zugleich der Beleg, dass die Aenderungssaetze A bis D den
+hoerbaren Pfad bei unterstuetzter Rate nicht angefasst haben.
+
+
+--- 5. Ruecknahme, bytegleich --------------------------------------------
+
+Jede der elf Dateien wurde aus der Sicherung zurueckgespielt, LastWriteTime auf
+jetzt gesetzt (NAK-230) und ihr SHA-256 gegen Abschnitt 1 geprueft:
+
+gleich=True  8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4  eq-copilot/plugin/dsp/DspBankPool.cpp
+gleich=True  ABB3A7C91AB90CC6A09495CA2AFCFBB9EEC8142029BBA27EE9162980E5484548  eq-copilot/plugin/dsp/DspBankPool.h
+gleich=True  E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D  eq-copilot/plugin/dsp/DspFilter.h
+gleich=True  CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8  eq-copilot/plugin/dsp/DspKern.cpp
+gleich=True  D66CA755FAACD831FF0E6681E4A819C330654E383E6BD7CCE549858F9C8DB8E5  eq-copilot/plugin/dsp/DspKern.h
+gleich=True  3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E  eq-copilot/plugin/dsp/DspProgramm.cpp
+gleich=True  CB559C76CB167E82E5469CEE765D408CB9BE04B6DA1C644527A3D24D35AF3FBD  eq-copilot/plugin/dsp/DspProgramm.h
+gleich=True  24A3A37D4BDF59255A1624F3EACAB87EC7E7E3C03D245D8E091050889D98F767  eq-copilot/plugin/sonde/SondeProcessor.cpp
+gleich=True  80037FB3185320529C0AE84398CAD9AE9CD810E20706C0E9D32516ABD58270DE  eq-copilot/plugin/state/NakamaTransaktion.cpp
+gleich=True  4857666F5F9EBCE1F60E60826EB4A68B27A967E6D02F639DA3591E6E7488A800  eq-copilot/plugin/state/NakamaTransaktion.h
+gleich=True  D32AD03EFFD0C1386C437ACE5117A340422361BEFC15B3028A1C9F942578F464  eq-copilot/plugin/tests/SondeNullTestMain.cpp
+
+`git status --short` zeigte danach nur die zwei fremden untracked Ordner
+briefing-hub/ und nimbalyst-local/; `git diff` war leer.

@@ -4688,9 +4688,9 @@ int main()
                 pruefe (allesTraegt && minErste == 1 && maxErste == kDynamikSchritt
                             && minVoll == kDynamikSchritt && maxVoll == 2 * kDynamikSchritt - 1,
                         std::string (f.zeile) + " " + f.was
-                            + " (NAK-311 T3-15-11): der Tap bleibt bis einschliesslich Sample "
-                              "d = (8 - p) mod 8 bitgleich zum Referenzkern, der Entwurf faellt auf d "
-                              "und wirkt ab d + 8 mit Gewicht 1 - erste Wirkung 1 bis 8, volle 8 bis 15 Samples",
+                            + " (NAK-311 T3-15-11): der Tap bleibt bis einschliesslich des Bezugspunkts "
+                              "bitgleich zum Referenzkern (erster Steuerschritt mit Auslenkung ungleich 0), und "
+                              "der dort entworfene Satz wirkt acht Samples spaeter mit Gewicht 1 - erste Wirkung 1 bis 8, volle 8 bis 15 Samples danach",
                         d.str());
             }
         }

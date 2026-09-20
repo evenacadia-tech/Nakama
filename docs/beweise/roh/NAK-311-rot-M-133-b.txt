@@ -1,0 +1,68 @@
+NAK-311 Etappe 5, Nacharbeit 1 - Rotbeweis 311/M-133 (zweite Haelfte)
+=====================================================================
+
+Matrixzeile: M-133 (Manifest Paragraph 39.4). Die bestehende Rotbeweisdatei
+             docs/beweise/roh/NAK-311-rot-M-133.txt bleibt unangetastet: sie
+             belegt die ERSTE Haelfte der Zeile (Unterstuetzung der Rate). Hier
+             faellt die ZWEITE Haelfte - der Bitvergleich gegen den Basisstand -,
+             die bis zur Nacharbeit 1 keinen Riegel hatte (D-1).
+Zusage:      44 100 Hz bleibt unterstuetzt: der Kern bereitet sich vor, das
+             Band ist hoerbar, der Ausgang ist bitgleich zum Lauf am Basis-SHA
+             der Etappe, und abgelehnteSamplerateHz() ist exakt +0,0. Dasselbe
+             gilt fuer 48, 96 und 192 kHz.
+Bein:        A16 (EqCopProbeeqNullTest), Fall 311/M-133 bei vier Raten.
+Mutation:    eq-copilot/plugin/dsp/DspFilter.h, Zeile 120 in `entwurfBell` -
+             der Nenner des Koeffizienten `alpha` im statischen Bandpfad.
+             Die Mutation aendert den hoerbaren Ausgang jeder unterstuetzten
+             Rate und laesst die vier uebrigen Teilbedingungen von 311/M-133
+             (commit, hoerbares Band, Kern-Samplerate, abgelehnte Rate +0,0)
+             wahr - der Fall darf also NUR am Fingerabdruckvergleich fallen.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+
+--- Die Mutation nach dem Bau ---------------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspFilter.h
+  vorher :     const double alpha = std::sin (w0) / (2.0 * q);
+  nachher:     const double alpha = std::sin (w0) / (2.000001 * q);   // MUTATION M-133 b
+SHA-256 vorher : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\4ba2e768\tmp\sicherung\M-133b-DspFilter.h
+Bau (Exit 0), Quellstempel 2026-09-20T19:34:58, Binary 2026-09-20T19:35:08
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (4):
+
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x3d0618d126eaffd4 gegen Basisstand 0xcb14d6eee50e7d7c (gleich nein), Kern-Samplerate 44100.0, autoGainDb -0.759373356172, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x3cf367b40d543933 gegen Basisstand 0xbd787728731ba929 (gleich nein), Kern-Samplerate 48000.0, autoGainDb -0.853206171657, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x4106e0131c17d0cd gegen Basisstand 0x5ece3bcf185baff5 (gleich nein), Kern-Samplerate 96000.0, autoGainDb -1.275649348308, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xcaeddf3b0c8923cb gegen Basisstand 0x33f35b42b6693e06 (gleich nein), Kern-Samplerate 192000.0, autoGainDb -1.390376894314, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+
+Zaehlzeile: SONDE-NULLTEST FEHLGESCHLAGEN - 127 Pruefungen ok, 4 Fehler
+
+Die Zusage faellt an der erwarteten Pruefung: JA - an allen vier Raten, und in
+jeder gefallenen Zeile ist der Fingerabdruckvergleich die EINZIGE gefallene
+Teilbedingung. Die Detailausgabe zeigt es je Zeile:
+
+  - "gleich nein" (Ist gegen Soll),
+  - Kern-Samplerate gleich der gefahrenen Rate,
+  - autoGainDb ungleich 0 (das Band ist hoerbar),
+  - abgelehnteSamplerateHz 0.000000, Vorzeichenbit 0.
+
+Mitgefallen mit Grund: KEINE. Kein Bestandsfall des Beins faellt unter dieser
+Mutation, weil die uebrigen A16-Faelle Bitgleichheit zwischen Ein- und Ausgang,
+Zaehler oder Zustandswerte pruefen - nie einen absoluten Ausgangswert.
+
+Unter derselben Mutation GRUEN geblieben (127): alle uebrigen Pruefungen des
+Beins, darunter 311/M-132 (vier Faelle), 311/M-134, 311/M-136, 311/M-137 (vier
+Faelle), 311/M-139, die Nulltests bei 44,1 / 48 / 96 / 192 kHz und die
+Neutralpruefung 311/M-11. Das ist der Beleg gegen den Nebeneffekt: die Mutation
+trifft ausschliesslich den gerechneten Ausgang.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0, Zaehlzeile:
+  SONDE-NULLTEST OK - 131 Pruefungen ok, 0 Fehler
+Die Ausgabe des Laufs nach der Ruecknahme ist datei-identisch zum Lauf vor dem
+Rotbeweis (SHA-256 der beiden Ausgabedateien gleich).

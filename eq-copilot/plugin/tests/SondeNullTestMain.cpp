@@ -174,8 +174,10 @@ juce::File wurzel()
 
 /** NAK-311 311/M-133: ein Fingerabdruck des Ausgangs (FNV-1a ueber die
     Bytes jedes ausgegebenen float, in Blockreihenfolge). Er traegt den
-    Bitvergleich gegen den Basisstand des Aenderungssatzes: derselbe Lauf
-    gibt dort dieselbe Zahl aus (§7.1, Zeilenvergleich der Beinausgabe).
+    Bitvergleich gegen die am Basisstand der Etappe erzeugten Goldens: die
+    vier Werte von 311/M-133 sind mit genau dieser Messung am unveraenderten
+    Kern des Basisstands 5ee8318c erzeugt (Herkunft
+    docs/beweise/roh/NAK-311-etappe5-m133-basisgolden.txt).
     Deterministisch, weil Saat, Blockzahl und Blockgroesse fest sind. */
 std::uint64_t fnvAusgang (Prozessor& p, int bloecke, int groesse, int saat, int kanaele = 2)
 {
@@ -1659,11 +1661,23 @@ int main()
         }
 
         // ── 311/M-133 (Regressionswache): genau 44 100 Hz bleibt unterstuetzt
-        // Der Fingerabdruck ist der Bitvergleich gegen den Basisstand des
-        // Satzes: derselbe Lauf gibt dort dieselbe Zahl aus (§7.1,
-        // Zeilenvergleich in `docs/beweise/roh/NAK-311-etappe5-a16-*`).
-        for (const double rate : { 44100.0, 48000.0, 96000.0, 192000.0 })
+        // Die vier Fingerabdruecke sind GOLDENS im Sinne der Golden-Regel
+        // (§7.1): sie stammen aus dem UNVERAENDERTEN Kern am Basisstand der
+        // Etappe (5ee8318c), erzeugt mit genau dieser Messung - vorbereitet
+        // (rate, 2048), mitBell14k, fnvAusgang (..., 40, 512, (int) rate + 133)
+        // -, aufgeschrieben in
+        // docs/beweise/roh/NAK-311-etappe5-m133-basisgolden.txt und hier nie
+        // nachgezogen: sie SIND der gemessene Bitvergleich zum Basisstand.
+        struct M133Golden { double rate; std::uint64_t abdruck; };
+        constexpr M133Golden kM133Goldens[] = {
+            {  44100.0, 0xcb14d6eee50e7d7cull },
+            {  48000.0, 0xbd787728731ba929ull },
+            {  96000.0, 0x5ece3bcf185baff5ull },
+            { 192000.0, 0x33f35b42b6693e06ull },
+        };
+        for (const auto& golden : kM133Goldens)
         {
+            const double rate = golden.rate;
             auto p = vorbereitet (rate, 2048);
             const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
             const auto abdruck = fnvAusgang (*p, 40, 512, (int) rate + 133);
@@ -1675,12 +1689,15 @@ int main()
                               && kern.autoGainDb() != 0.0;
             pruefe (e.ausgang == tx::Ausgang::commit && hoerbar
                         && kern.samplerate() == rate
-                        && abgelehnt == 0.0 && ! std::signbit (abgelehnt),
+                        && abgelehnt == 0.0 && ! std::signbit (abgelehnt)
+                        && abdruck == golden.abdruck,
                     "311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei " + juce::String (rate, 0)
                         + " Hz: der Kern bereitet sich vor, das Band ist hoerbar, "
-                          "abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck "
-                          "des Basisstands",
+                          "abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs "
+                          "ist gleich dem am Basisstand 5ee8318c erzeugten Golden",
                     "Ausgang FNV-1a 0x" + juce::String::toHexString ((juce::int64) abdruck)
+                        + " gegen Basisstand 0x" + juce::String::toHexString ((juce::int64) golden.abdruck)
+                        + " (gleich " + jaNein (abdruck == golden.abdruck) + ")"
                         + ", Kern-Samplerate " + juce::String (kern.samplerate(), 1)
                         + ", autoGainDb " + juce::String (kern.autoGainDb(), 12)
                         + ", abgelehnteSamplerateHz " + juce::String (abgelehnt, 6) + " (Vorzeichenbit "

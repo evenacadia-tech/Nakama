@@ -1,0 +1,46 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-113
+====================================================
+
+Matrixzeile : M-113 - T3-15-09 Teil b - Grenze und je ein Schritt daneben; strikt groesser entscheidet
+Zusage      : kAutoGainDeckelDb - 1 ULP und die Grenze selbst kommen BITGLEICH zurueck, erst + 1 ULP wird bitgenau die Grenze; der Zustand ist genau dann gesetzt, wenn der Deckel greift.
+Beine       : EqCopDspGoldenTest
+Erwartet    : die Zusage faellt an 311/M-113
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.h
+  SHA-256 vorher : 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-113-0-DspProgramm.h
+  vorher woertlich:
+    |     return roh > kAutoGainDeckelDb ? kAutoGainDeckelDb : roh;
+  nachher woertlich:
+    |     return roh >= kAutoGainDeckelDb ? kAutoGainDeckelDb : roh;   // MUTATION M-113: >= statt >
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.h
+  SHA-256 vorher : 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-113-1-DspProgramm.h
+  vorher woertlich:
+    |         return autoGainAn && autoGainRohDb > kAutoGainDeckelDb;
+  nachher woertlich:
+    |         return autoGainAn && autoGainRohDb >= kAutoGainDeckelDb;   // MUTATION M-113: >= statt >
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:12:26, juengste mutierte Quelle: 12:12:20 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 1 Fehler
+    FEHLER  311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)  [abgeleitet knapp darueber 24.00000000000000355 -> angewandt 24.00000000000000000 (Zustand gesetzt), knapp darunter 23.99999999999999289 -> 23.99999999999999289 (Zustand falsch); die Ableitung UEBERSPRINGT die Grenze - exakte Treffer in 800 benachbarten doubles: 0; Praedikat an -1 ULP / genau / +1 ULP mit Auto-Gai
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-113
+  gefallen: 311/M-113
+  mitgefallene Pruefungen: 0
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.h: SHA-256 nachher 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342 -> BYTEGLEICH
+  eq-copilot/plugin/dsp/DspProgramm.h: SHA-256 nachher 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

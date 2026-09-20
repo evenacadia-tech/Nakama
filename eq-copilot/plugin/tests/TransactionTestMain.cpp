@@ -3118,10 +3118,12 @@ void nak311Recall()
 // 48 -> 32 -> 48 kHz (311/M-135), Kern UND Bericht im dritten Fenster
 // (311/M-143, R-311-20) und Latenz, Tail und Callback (311/M-139).
 
-/** Der Pruefling von 311/M-143: ein High-Cut 20 Hz Q 0,707 mit Auto-Gain an -
-    ein Programm, dessen abgeleiteter Ausgleich WEIT von 0 liegt (Phase 15,
-    Quellvalidierung Teil B §2.1: +42,99 dB). Satz B (Deckel) ist noch nicht
-    gebaut; hier gilt der ungedeckelte Wert des Basisstands. */
+/** Der Pruefling von 311/M-143: EIN High-Cut 20 Hz Q 0,707 mit Auto-Gain an -
+    ein Programm, dessen abgeleiteter Ausgleich WEIT von 0 liegt. Gemessen im
+    Satz A: +15,688900344 dB (die +42,99 dB der Quellvalidierung Teil B §2.1
+    gelten fuer ACHT solcher High-Cuts; berichtigt vom Dirigenten, §52). Der
+    Wert liegt UNTER `kAutoGainDeckelDb` = 24,0: der Deckel des Satzes B
+    beruehrt diese Zeile nicht, ihre Zahlen bleiben bitgleich. */
 param::DspSatz nak311HighCutMitAutoGain()
 {
     auto z = mitEq (true);
@@ -3267,7 +3269,8 @@ void nak311Ratenschranke()
 
         std::ostringstream d;
         d << std::setprecision (12) << "vor dem Wechsel Kern " << kernVor << " dB, Bericht " << vor.autoGainDb
-          << " dB (ungedeckelt, Satz B noch nicht gebaut); im Fenster Kern " << kernImFenster
+          << " dB (unter dem Deckel 24,0, also ungedeckelt), Deckelzustand "
+          << (vor.autoGainGedeckelt ? "GESETZT" : "falsch") << "; im Fenster Kern " << kernImFenster
           << " dB (Vorzeichenbit " << (std::signbit (kernImFenster) ? 1 : 0) << "), Bericht "
           << imFenster.autoGainDb << " dB, klemmungen " << imFenster.klemmungen.size()
           << ", abgelehnt Kern " << kernAbgelehnt << " / Bericht " << imFenster.abgelehnteSamplerateHz
@@ -3287,7 +3290,13 @@ void nak311Ratenschranke()
                     && imFenster.undoTiefe == vor.undoTiefe
                     && bitGleich (kernNach, kernVor) && bitGleich (nach.autoGainDb, vor.autoGainDb)
                     && p->dspKernFuerTest().abgelehnteSamplerateHz() == 0.0
-                    && nach.abgelehnteSamplerateHz == 0.0,
+                    && nach.abgelehnteSamplerateHz == 0.0
+                    // NAK-311 Satz B: der Pruefling liegt unter dem Deckel -
+                    // diese Zeile bleibt von R-311-14 unberuehrt.
+                    && kernVor < dsp::kAutoGainDeckelDb
+                    && bitGleich (kernVor, p->dspKernFuerTest().autoGainRohDb())
+                    && ! vor.autoGainGedeckelt && ! nach.autoGainGedeckelt
+                    && ! imFenster.autoGainGedeckelt,
                 "311/M-143 ratenwechsel_nullt_den_ausgleich_und_meldet_beides (NAK-311 R-311-20): High-Cut 20 Hz "
                 "Q 0,707 mit Auto-Gain an, 48 -> 32 -> 48 kHz - im 32-kHz-Fenster sind Kern und Bericht exakt "
                 "+0,0, klemmungen leer, die Zaehler des alten Fensters genullt, die Kanalzahl auf 2, und BEIDE "
@@ -3335,6 +3344,78 @@ void nak311Ratenschranke()
     }
 }
 
+//==============================================================================
+// NAK-311 Etappe 5, Aenderungssatz B - R-311-14 (T3-15-09 Teil b, Karte U54)
+//
+// Der Teilfall von 311/M-117 am ECHTEN Prozessor: `SondeProcessor::dspBericht`
+// ist der einzige Produktaufrufer von `baueBericht`. Was er meldet, ist die
+// Zahl, die auch der Kern faehrt - der Deckel sitzt vor beiden, in
+// `leiteAutoGainAb`. Dazu der Gegenfall 311/M-118 (Auto-Gain aus).
+
+/** Acht High-Cuts 20 Hz Q 0,15 - der Pruefling der Abnahme U54, abgeleitet
+    +150,46 dB und damit weit ueber `kAutoGainDeckelDb`. */
+param::DspSatz nak311AchtHighCutsQ015 (bool autoGainAn)
+{
+    auto z = mitEq (true);
+    for (int slot = 0; slot < param::kSlots; ++slot)
+    {
+        setzeBand (z, slot, 20.0, 0.0);
+        z.werte[(size_t) iBand (slot, param::kType)].enumIndex = (int) dsp::Filtertyp::highCut;
+        z.werte[(size_t) iBand (slot, param::kQ)].zahl = 0.15;
+    }
+    z.werte[(size_t) param::kIndexAutoGain].b = autoGainAn;
+    return z;
+}
+
+void nak311AutoGainDeckel()
+{
+    abschnitt ("V - NAK-311 U54/R-311-14: die Obergrenze des angewandten AUTO-Ausgleichs (311/M-117, 311/M-118)");
+
+    const double fs = 48000.0;
+    const int    blk = 512;
+
+    for (const bool autoGainAn : { true, false })
+    {
+        auto p = prozessor (fs, blk);
+        const auto e = setze (*p, nak311AchtHighCutsQ015 (autoGainAn));
+        fahreAudio (*p, 20, blk, 117);
+
+        tx::DspBericht b; juce::String g;
+        const bool gebaut = p->dspBericht (b, g);
+        auto& kern = p->dspKernFuerTest();
+        const double kernDb  = kern.autoGainDb();
+        const double kernRoh = kern.autoGainRohDb();
+
+        const auto bitGleich = [] (double x, double y)
+        { return std::memcmp (&x, &y, sizeof (double)) == 0; };
+
+        std::ostringstream d;
+        d << std::setprecision (15) << "Auto-Gain " << (autoGainAn ? "an" : "aus") << ": abgeleitet "
+          << kernRoh << " dB, Kern angewandt " << kernDb << " dB, Bericht " << b.autoGainDb
+          << " dB, Deckel " << dsp::kAutoGainDeckelDb << " dB; Zustand Kern "
+          << (kern.autoGainGedeckelt() ? "gesetzt" : "falsch") << " / Bericht "
+          << (b.autoGainGedeckelt ? "gesetzt" : "falsch") << ", klemmungen " << b.klemmungen.size();
+
+        pruefe (e.ausgang == tx::Ausgang::commit && gebaut
+                    && kernRoh > 150.0 && kernRoh < 151.0
+                    && bitGleich (kernDb, dsp::kAutoGainDeckelDb)
+                    && bitGleich (b.autoGainDb, dsp::kAutoGainDeckelDb)
+                    && kern.autoGainGedeckelt() == autoGainAn
+                    && b.autoGainGedeckelt == autoGainAn
+                    && b.klemmungen.empty(),
+                std::string (autoGainAn
+                    ? "311/M-117 bericht_und_kern_melden_denselben_gedeckelten_wert (Teilfall ueber "
+                      "SondeProcessor::dspBericht, NAK-311 R-311-14, U54): acht High-Cuts 20 Hz Q 0,15 - der "
+                      "abgeleitete Ausgleich +150,46 dB bleibt lesbar, angewandt und gemeldet wird bitgleich "
+                      "kAutoGainDeckelDb, und beide tragen den Zustand"
+                    : "311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall ueber "
+                      "SondeProcessor::dspBericht, NAK-311 F-24, M-35): derselbe Pruefling mit "
+                      "v2.global.auto_gain AUS - der Wert bleibt gerechnet und lesbar, angewandt wird nichts, "
+                      "und der Zustand ist in Kern und Bericht falsch"),
+                d.str());
+    }
+}
+
 } // namespace
 
 int main()
@@ -3376,6 +3457,9 @@ int main()
 
     // NAK-311 Etappe 5, Satz A (F08, R-311-16, R-311-20): die Ratenschranke
     nak311Ratenschranke();
+
+    // NAK-311 Etappe 5, Satz B (U54, R-311-14): die Obergrenze des Ausgleichs
+    nak311AutoGainDeckel();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

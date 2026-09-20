@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssatz A)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A und B)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -735,6 +735,48 @@ M-136, M-137, M-139), B7 Abschnitt U (311/M-135, M-139, M-143) und B3c
 C++-lokal — `$defs/dsp_bericht` ist mit `additionalProperties: false`
 geschlossen, ein Drahtfeld wäre eine Vertragsänderung (§41.2 F-27,
 Registerpunkt zu S26–28).
+
+**Obergrenze des angewandten AUTO-Ausgleichs (20.09.2026, NAK-311 Etappe 5,
+Änderungssatz B, R-311-14, Karte U54).** Der abgeleitete Auto-Gain war nach
+oben ungeklemmt: acht High-Cuts 20 Hz Q 0,15 bei 48 kHz — jeder Wert
+vertragsgültig — ergeben **+150,46 dB**, dieselben mit Q 0,707 +42,99 dB. Das
+Gitter beginnt erst bei 20 Hz, also traf diese Anhebung Gleichanteil und
+Infraschall voll. Seit dieser Etappe deckelt `gedeckelterAutoGainDb`
+(`eq-copilot/plugin/dsp/DspProgramm.h`) den **angewandten** Ausgleich
+**einseitig** auf `kAutoGainDeckelDb` = 24,0 dB — dieselbe Zahl, bis zu der
+`v1.global.output_trim_db` reicht: Nakama hebt automatisch nie weiter an, als
+der User selbst aufdrehen kann. Strikt größer entscheidet; die Grenze selbst
+und der nächste `double` darunter kommen bitgleich durch.
+
+Der Deckel sitzt an den **zwei Rückgabezeilen** von `leiteAutoGainAb`, nicht am
+Rampenziel: dort lesen Programm, Kern und Bericht dieselbe Zahl
+(`DspProgramm::autoGainDb` → `autoGainLin` → Rampenziel; `baueBericht` baut sein
+eigenes Programm mit derselben Funktion). Am Rampenziel gedeckelt liefen drei
+Zahlen nebeneinander — Kern +150,46 dB, Bericht +120 dB, gefahren 24 dB. Der
+**ungedeckelte** Wert bleibt daneben lesbar (`DspProgramm::autoGainRohDb`,
+`DspKern::autoGainRohDb()`), weil R4 „der abgeleitete Wert in dB ist lesbar"
+zusagt; greift der Deckel nicht, sind beide bitgleich.
+
+Die **Absenkungsseite bleibt unberührt**: −199,77 dB kommen bitgleich durch den
+Deckel, und erst die Berichtsklemmung `berichtsAutoGainDb` macht daraus die
+gemeldeten −120 (R-311-5, unverändert). Zwei getrennte Stufen in dieser
+Reihenfolge. Der **Zustand** „Deckel greift" steht in
+`DspProgramm::autoGainGedeckelt()` — genau dann wahr, wenn der Deckel greift
+**und** `v2.global.auto_gain` an ist; ein gemeldeter Deckel ohne wirkenden
+Ausgleich wäre keine ehrliche Meldung. Er hängt am gefahrenen Programm und
+fällt mit dem nächsten zurück. Lesbar über `DspKern::autoGainGedeckelt()` und
+`DspBericht::autoGainGedeckelt`; auf den Draht geht er nicht —
+`$defs/dsp_bericht` ist mit `additionalProperties: false` geschlossen
+(Registerpunkt zu S26–28). Genau eine Schemazeile hat sich geändert: der
+`$comment` von `auto_gain_db` nennt den einseitigen Deckel (R-311-19).
+
+Gemessen in B6 Abschnitt H2 (311/M-112 bis M-116, M-118, M-119), B3c
+(311/M-114, M-117, M-118) und B7 Abschnitt V (311/M-117, M-118); Manifest
+`docs/beweise/NAK-311.md` §39.2, §40.2 und §53. Nebenbefund derselben Etappe:
+die Wachmarke von B6 — ein signalisierender NaN — wurde von MSVC
+konstantgefaltet und dabei ruhig (`0x7F800001` → `0x7FC00001`), weil der
+Compiler Gleitkommakonstanten intern als `double` hält; seither läuft sie über
+`ausBitmuster` mit einem `volatile` Zwischenschritt, der die Faltung verbietet.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

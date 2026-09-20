@@ -143,6 +143,31 @@ std::string zahl (double d, int stellen = 6)
     return o.str();
 }
 
+/** Ein `float` aus seinem Bitmuster - ohne Konstantfaltung, und genau darauf
+    kommt es an.
+
+    MSVC haelt Gleitkommakonstanten intern als `double`. Ein KONSTANTGEFALTETES
+    float-sNaN laeuft dabei durch float -> double -> float und wird dabei
+    RUHIG: aus 0x7F800001 wird 0x7FC00001. Die Wachmarke waere dann schon
+    ruhig, bevor der Kern sie sieht - und jede Probe "hat der Kern
+    geschrieben?" saehe faelschlich "nein", weil ein ruhiger NaN durch den
+    Rueckweg float -> double -> float bytegleich zurueckkommt. Ob der Compiler
+    faltet, haengt vom Inline-Pfad der umgebenden Funktion ab; eine Aenderung
+    an ganz anderer Stelle desselben `main` kippt es (gemessen NAK-311 Etappe 5
+    Satz B, 20.09.2026: 311/M-13 und 311/M-18 fielen mit `marke=7fc00001`).
+
+    Der `volatile` Zwischenschritt verbietet die Faltung: das Bitmuster wird
+    zur Laufzeit gelesen und mit `memcpy` uebernommen, danach traegt jede
+    float-Kopie (`movss`) es unveraendert weiter. */
+float ausBitmuster (std::uint32_t bits) noexcept
+{
+    volatile std::uint32_t fluechtig = bits;
+    const std::uint32_t    gelesen   = fluechtig;
+    float f = 0.0f;
+    std::memcpy (&f, &gelesen, sizeof (f));
+    return f;
+}
+
 //==============================================================================
 // Der DTO-Bau: alles laeuft ueber `nakama::parameter`, es gibt keine zweite
 // Wahrheit fuer Grenzen, Defaults oder Reihenfolge.
@@ -858,7 +883,7 @@ int main()
             fahreStille (*kern, kFadeSamples + kRampeSamples + 2048);
             kern->pflege();
 
-            const auto bits = [] (std::uint32_t b) { float f; std::memcpy (&f, &b, 4); return f; };
+            const auto bits = [] (std::uint32_t b) { return ausBitmuster (b); };
             struct Stelle { int n; int kanal; std::uint32_t b; };
             const Stelle stellen[] = { { 16, 0, 0x7F800001u }, { 32, 1, 0x7F800001u }, { 48, 0, 0x7F800001u },
                                        { 64, 1, 0x7FC00000u }, { 80, 0, 0x7F800000u }, { 96, 1, 0xFF800000u } };
@@ -901,7 +926,7 @@ int main()
         // Kern schreibt weiter; den Wert selbst aendert das Band bei Zustand 0
         // nicht (b == a), die Wachmarke wird ueber den Riegel zu 0,0.
         {
-            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const float wachmarke = ausBitmuster (0x7F800001u);   // NAK-311: nie konstantgefaltet
             auto kern = neuerKern (48000.0);
             auto s = machSatz (true);
             belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 0.0);
@@ -1182,7 +1207,7 @@ int main()
         // Nutzlast ueberlebt jede float->double->float-Wandlung nicht (sie
         // macht ihn ruhig) - bitgleich bleibt er nur, wenn niemand schreibt.
         {
-            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const float wachmarke = ausBitmuster (0x7F800001u);   // NAK-311: nie konstantgefaltet
             const char* namen[] = { "delta + eq_enabled aus", "delta + hard-bypass",
                                     "candidate + eq_enabled aus", "candidate + hard-bypass" };
             for (int fall = 0; fall < 4; ++fall)
@@ -1249,7 +1274,7 @@ int main()
         // Nutzlast) liegen HINTER dem Fade-Ende im SELBEN Teilstueck; ein
         // float->double->float-Ruecklauf machte sie ruhig.
         {
-            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const float wachmarke = ausBitmuster (0x7F800001u);   // NAK-311: nie konstantgefaltet
             const char* namen[] = { "processed + eq_enabled aus", "processed + hard-bypass",
                                     "delta + eq_enabled aus", "delta + hard-bypass" };
             for (int fall = 0; fall < 4; ++fall)
@@ -1296,7 +1321,7 @@ int main()
         // schreibt der Kern keinen Sample mehr (Wachmarken an 256, 257, 511 und
         // am letzten Sample bytegleich).
         {
-            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const float wachmarke = ausBitmuster (0x7F800001u);   // NAK-311: nie konstantgefaltet
             for (const int bg : { 1, 255, 256, 257, 180, 4096 })
             {
                 auto k = neuerKern (48000.0, 512);
@@ -3362,7 +3387,8 @@ int main()
             0xC0113FE32BC1B7DAull, 0xC0055DD001A5F001ull, 0xC0055DD001A5F001ull, 0xC0022A8D8F930CABull,
             0xC0022A8D8F930CABull, 0x3FCD799DE6A48DB0ull };
 
-        int m61Gleich = 0;
+        int m61Gleich = 0, m61Gedeckelt = 0, m61UeberDemDeckel = 0, m61NichtBitgleich = 0;
+        double m61Kleinster = 0.0, m61Groesster = 0.0;
         std::string m61Erste;
         for (int i = 0; i < kM61Zahl; ++i)
         {
@@ -3375,11 +3401,30 @@ int main()
             if (std::memcmp (&bits, &kM61Bits[i], sizeof (std::uint64_t)) == 0) ++m61Gleich;
             else if (m61Erste.empty())
                 m61Erste = std::string (m61Namen[i]) + ": " + hex64 (bits) + " statt " + hex64 (kM61Bits[i]);
+
+            // NAK-311 Etappe 5, Aenderungssatz B - 311/M-119 (Regressionswache):
+            // der einseitige Deckel beruehrt KEINEN dieser vierzehn Prueflinge.
+            // Je Pruefling gemessen, nicht nur behauptet: sein ABGELEITETER Wert
+            // liegt unter `kAutoGainDeckelDb`, der Deckel laesst ihn bitgleich
+            // durch, und der Zustand bleibt falsch.
+            const double roh = k->autoGainRohDb();
+            if (i == 0 || roh < m61Kleinster) m61Kleinster = roh;
+            if (i == 0 || roh > m61Groesster) m61Groesster = roh;
+            if (roh > kAutoGainDeckelDb) ++m61UeberDemDeckel;
+            if (bitsVon (gedeckelterAutoGainDb (roh)) != bitsVon (roh)) ++m61NichtBitgleich;
+            if (k->autoGainGedeckelt()) ++m61Gedeckelt;
         }
         pruefe (m61Gleich == kM61Zahl, "311/M-61 zweikanalformel_bitgleich_zum_basisstand (R-311-3)",
                 m61Erste.empty() ? (std::to_string (m61Gleich) + " von " + std::to_string (kM61Zahl)
                                     + " Prueflingen bitgleich (memcmp)")
                                  : ("erste Abweichung " + m61Erste));
+        pruefe (m61UeberDemDeckel == 0 && m61NichtBitgleich == 0 && m61Gedeckelt == 0
+                    && m61Gleich == kM61Zahl,
+                "311/M-119 alle_vierzehn_goldens_liegen_auf_der_ungedeckelten_seite (NAK-311 R-311-14, Gate GRENZE)",
+                std::to_string (kM61Zahl) + " Prueflinge von " + zahl (m61Kleinster, 12) + " bis "
+                    + zahl (m61Groesster, 12) + " dB, Deckel " + zahl (kAutoGainDeckelDb, 1)
+                    + " dB; darueber " + std::to_string (m61UeberDemDeckel) + ", nicht bitgleich durch den Deckel "
+                    + std::to_string (m61NichtBitgleich) + ", Zustand gesetzt " + std::to_string (m61Gedeckelt));
 
         // ---- Die Monoformel, hier EIGENSTAENDIG ausgeschrieben ---------------
         // Muster M-13 von SONDE-015: kein Aufruf von `leiteAutoGainAb` als
@@ -3708,6 +3753,488 @@ int main()
                     "311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig",
                     "nicht endliches Mittel -> " + zahl (unendlich, 15)
                         + ", nicht positives Mittel -> " + zahl (nullwert, 15));
+        }
+
+        //======================================================================
+        // NAK-311 Etappe 5, Aenderungssatz B (T3-15-09 Teil b, R-311-14, Karte
+        // U54): die Obergrenze des ANGEWANDTEN Auto-Gain-Ausgleichs.
+        //
+        // Am Basisstand ist der abgeleitete Auto-Gain nach oben ungeklemmt:
+        // acht High-Cuts 20 Hz Q 0,15 ergeben +150,46 dB, dieselben mit Q 0,707
+        // +42,99 dB - beides vertragsgueltig, und beides trifft Gleichanteil
+        // und Infraschall, die das Gitter ab 20 Hz gar nicht erfasst. Seit
+        // R-311-14 deckelt `gedeckelterAutoGainDb` den ANGEWANDTEN Ausgleich
+        // EINSEITIG auf `kAutoGainDeckelDb`, und zwar an den zwei
+        // Rueckgabezeilen von `leiteAutoGainAb` - der einen Stelle, an der
+        // Programm, Kern und Bericht dieselbe Zahl lesen (M-117). Die
+        // Absenkungsseite bleibt unberuehrt (M-114).
+        //
+        // Das MASS der Audiofolge ist ein Verhaeltnis zweier Laeufe, die sich
+        // NUR in `v2.global.auto_gain` unterscheiden: die Baender bekommen
+        // beidemal denselben Eingang und tragen denselben Zustand, der
+        // Auto-Gain wirkt danach als Faktor. Das Verhaeltnis ihrer Taps IST
+        // deshalb der angewandte Faktor - unabhaengig davon, wie weit die
+        // 20-Hz-Kaskade schon eingeschwungen ist.
+        //
+        // Matrixzeilen 311/M-112, M-113, M-115, M-116 und die Teilfaelle zu
+        // 311/M-114 und 311/M-118 (Manifest NAK-311 §39.2). 311/M-119 steht
+        // oben im M-61-Lauf, 311/M-117 in B3c und B7.
+        {
+            const double deckelLin = dbInLinear (kAutoGainDeckelDb);
+
+            /** Acht gleiche High-Cuts 20 Hz im Modus `stereo`, Auto-Gain nach
+                Wunsch - der Pruefling der Abnahme U54. Ueber `q` faehrt der
+                abgeleitete Ausgleich von +150 dB (Q 0,15) ueber +43 dB
+                (Q 0,707) bis unter den Deckel (Q 1,0); Typ, Kanalmodus und
+                Belegung bleiben dabei gleich, ein Wechsel der Guete allein ist
+                also ein reiner Rampenwechsel. */
+            auto achtHighCuts = [] (double q, bool autoGainAn)
+            {
+                auto s = machSatz (true);
+                setzeGlobalBool (s, "v2.global.auto_gain", autoGainAn);
+                for (int slot = 0; slot < param::kSlots; ++slot)
+                    belege (s, slot, Filtertyp::highCut, 20.0, q, 0.0, Kanalmodus::stereo);
+                return s;
+            };
+
+            /** Acht gleiche Low-Shelves 1 kHz +12 dB - der Gegenfall auf der
+                ABSENKUNGSseite (M-114, derselbe Pruefling wie 311/M-67). */
+            auto achtLowShelves = [] (double q)
+            {
+                auto s = machSatz (true);
+                setzeGlobalBool (s, "v2.global.auto_gain", true);
+                for (int slot = 0; slot < param::kSlots; ++slot)
+                    belege (s, slot, Filtertyp::lowShelf, 1000.0, q, 12.0, Kanalmodus::stereo);
+                return s;
+            };
+
+            /** Faehrt Gleichanteil 0,25 plus 10-Hz-Ton 0,25 auf beiden Kanaelen
+                - genau das Material, das die acht High-Cuts stehen lassen und
+                das der Auto-Gain deshalb voll aufdreht. `tapAus` nimmt, wenn
+                gesetzt, den Tap `post_committed` (Kanal 0) Sample fuer Sample
+                auf; `spitze` meldet den groessten Betrag des LETZTEN Blocks. */
+            auto fahreGleichanteil = [&fs] (DspKern& k, long long& n0, int bloecke, int blockGroesse,
+                                            std::vector<double>* tapAus)
+            {
+                std::vector<float> a ((size_t) blockGroesse), b ((size_t) blockGroesse);
+                float* kan[2] = { a.data(), b.data() };
+                const double w = 2.0 * kPiRef * 10.0 / fs;
+                double spitze = 0.0;
+                for (int block = 0; block < bloecke; ++block)
+                {
+                    for (int i = 0; i < blockGroesse; ++i)
+                    {
+                        const auto v = (float) (0.25 + 0.25 * std::sin (w * (double) (n0 + i)));
+                        a[(size_t) i] = v;
+                        b[(size_t) i] = v;
+                    }
+                    k.verarbeite (kan, 2, blockGroesse);
+                    if (const double* t = k.tap (Tap::postCommitted, 0))
+                    {
+                        if (tapAus != nullptr)
+                            for (int i = 0; i < blockGroesse; ++i) tapAus->push_back (t[i]);
+                        if (block + 1 == bloecke)
+                        {
+                            spitze = 0.0;
+                            for (int i = 0; i < blockGroesse; ++i) spitze = std::max (spitze, std::abs (t[i]));
+                        }
+                    }
+                    n0 += blockGroesse;
+                }
+                return spitze;
+            };
+
+            /** Das Programm der GEFAHRENEN Committed-Bank - die Zahlen, die der
+                Audiothread wirklich sieht, nicht die eines Vorbaus. */
+            auto gefahrenesProgramm = [] (DspKern& k) -> const DspProgramm*
+            {
+                int cA = -1, cQ = -1, kA = -1, kQ = -1;
+                k.gefahreneSlots (cA, cQ, kA, kQ);
+                return cA >= 0 ? &k.pool().bank (cA).programm : nullptr;
+            };
+
+            // ---- 311/M-112 mit dem Teilfall 311/M-118 ----------------------
+            // Heute rot: ohne Deckel faehrt der Kern +150,46 dB, also Faktor
+            // 3,3e7 auf Gleichanteil und Infraschall.
+            {
+                auto mit = neuerKern (fs, 512);
+                mit->uebernehmeZustand (achtHighCuts (0.15, true));
+                long long nMit = 0;
+                const double spitzeMit = fahreGleichanteil (*mit, nMit, 48, 512, nullptr);
+
+                auto ohne = neuerKern (fs, 512);
+                ohne->uebernehmeZustand (achtHighCuts (0.15, false));
+                long long nOhne = 0;
+                const double spitzeOhne = fahreGleichanteil (*ohne, nOhne, 48, 512, nullptr);
+
+                const auto* prog = gefahrenesProgramm (*mit);
+                const double roh       = mit->autoGainRohDb();
+                const double angewandt = mit->autoGainDb();
+                const double faktor = spitzeOhne > 0.0 ? spitzeMit / spitzeOhne
+                                                       : std::numeric_limits<double>::infinity();
+
+                const bool zahlen = prog != nullptr
+                                 && bitsVon (prog->autoGainDb)    == bitsVon (kAutoGainDeckelDb)
+                                 && bitsVon (prog->autoGainLin)   == bitsVon (deckelLin)
+                                 && bitsVon (prog->autoGainRohDb) == bitsVon (roh)
+                                 && bitsVon (angewandt) == bitsVon (kAutoGainDeckelDb)
+                                 && roh > 150.0 && roh < 151.0
+                                 && mit->autoGainGedeckelt();
+
+                pruefe (zahlen && std::abs (faktor - deckelLin) <= 1e-9 * deckelLin,
+                        "311/M-112 auto_gain_deckel_greift_und_meldet (NAK-311 R-311-14, T3-15-09 Teil b, U54)",
+                        "acht High-Cuts 20 Hz Q 0,15 bei 48 kHz: abgeleitet " + zahl (roh, 9)
+                            + " dB (lesbar ueber autoGainRohDb), ANGEWANDT " + zahl (angewandt, 15)
+                            + " dB = kAutoGainDeckelDb bitgenau " + std::string (zahlen ? "ja" : "NEIN")
+                            + ", autoGainLin " + zahl (prog != nullptr ? prog->autoGainLin : 0.0, 12)
+                            + " gegen dbInLinear(24) " + zahl (deckelLin, 12)
+                            + "; Spitze am Tap post_committed mit Auto-Gain " + zahl (spitzeMit, 9)
+                            + " gegen denselben Lauf ohne " + zahl (spitzeOhne, 9) + " = Faktor "
+                            + zahl (faktor, 9) + " (Deckel laesst hoechstens " + zahl (deckelLin, 9)
+                            + " zu; ungedeckelt waere der Faktor " + zahl (dbInLinear (roh), 1)
+                            + "); Zustand " + (mit->autoGainGedeckelt() ? "gesetzt" : "NICHT gesetzt"));
+
+                // 311/M-118 (Teilfall): derselbe Pruefling mit AUSGESCHALTETEM
+                // Auto-Gain. Gerechnet und lesbar ist der Wert wie seit R4 -
+                // ANGEWANDT wird nichts (die Spitze bleibt unter dem Eingang
+                // 0,5; mit dem Deckel waeren es 7,9), und genau deshalb ist der
+                // Zustand FALSCH: gemeldet wird ein gedeckelter Ausgleich nur,
+                // wenn einer wirkt (F-24).
+                const auto* progOhne = gefahrenesProgramm (*ohne);
+                const double rohOhne = ohne->autoGainRohDb();
+                pruefe (progOhne != nullptr
+                            && bitsVon (progOhne->autoGainDb)    == bitsVon (kAutoGainDeckelDb)
+                            && bitsVon (progOhne->autoGainRohDb) == bitsVon (rohOhne)
+                            && rohOhne > 150.0 && rohOhne < 151.0
+                            && ! ohne->autoGainGedeckelt()
+                            && spitzeOhne < 0.5001 && spitzeOhne > 0.0,
+                        "311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall von 311/M-112, F-24, M-35)",
+                        "autoGainDb " + zahl (ohne->autoGainDb(), 15) + " dB (gedeckelt), autoGainRohDb "
+                            + zahl (rohOhne, 9) + " dB (abgeleitet), Zustand "
+                            + (ohne->autoGainGedeckelt() ? "GESETZT" : "falsch")
+                            + "; Spitze am Tap post_committed " + zahl (spitzeOhne, 9)
+                            + " unter dem Eingangsgleichanteil - angewandt wird nichts");
+            }
+
+            // ---- 311/M-114 (Teilfall): die Absenkungsseite bleibt, wie sie ist
+            // Regressionswache. Der Deckel ist EINSEITIG: -199,77 dB und
+            // -92,29 dB kommen BITGLEICH durch ihn, und der Zustand ist falsch.
+            // Die Berichtsklemmung auf -120 ist eine zweite, getrennte Stufe
+            // und wird in B3c gemessen (311/M-67, 311/M-68).
+            {
+                auto tief = neuerKern (fs, 512);
+                tief->uebernehmeZustand (achtLowShelves (8.0));
+                auto flach = neuerKern (fs, 512);
+                flach->uebernehmeZustand (achtLowShelves (0.70710678118654752));
+
+                const double tiefDb  = tief->autoGainDb(),  tiefRoh  = tief->autoGainRohDb();
+                const double flachDb = flach->autoGainDb(), flachRoh = flach->autoGainRohDb();
+
+                pruefe (bitsVon (tiefDb) == bitsVon (tiefRoh) && bitsVon (flachDb) == bitsVon (flachRoh)
+                            && tiefDb < -190.0 && tiefDb > -210.0
+                            && flachDb < -90.0 && flachDb > -95.0
+                            && ! tief->autoGainGedeckelt() && ! flach->autoGainGedeckelt(),
+                        "311/M-114 absenkungsseite_bleibt_ungedeckelt (Regressionswache, NAK-311 R-311-14, M-71)",
+                        "acht Low-Shelves 1 kHz +12 dB Q 8: angewandt " + zahl (tiefDb, 9)
+                            + " dB, abgeleitet " + zahl (tiefRoh, 9) + " dB, bitgleich "
+                            + (bitsVon (tiefDb) == bitsVon (tiefRoh) ? "ja" : "NEIN") + "; Q 0,707: "
+                            + zahl (flachDb, 9) + " dB gegen " + zahl (flachRoh, 9) + " dB, bitgleich "
+                            + (bitsVon (flachDb) == bitsVon (flachRoh) ? "ja" : "NEIN") + "; Zustand "
+                            + (tief->autoGainGedeckelt() || flach->autoGainGedeckelt() ? "GESETZT" : "falsch"));
+            }
+
+            // ---- 311/M-113 (a): die Deckelfunktion allein an drei Kanten ----
+            // STRIKT groesser entscheidet; kein std::clamp, keine
+            // Multiplikation, kein Runden (Muster `berichtsAutoGainDb`).
+            {
+                const double ueber = std::nextafter (kAutoGainDeckelDb, std::numeric_limits<double>::infinity());
+                const double unter = std::nextafter (kAutoGainDeckelDb, -std::numeric_limits<double>::infinity());
+                const double minusNull = -0.0, subnormal = std::numeric_limits<double>::denorm_min();
+
+                const bool kanten = bitsVon (gedeckelterAutoGainDb (unter)) == bitsVon (unter)
+                                 && bitsVon (gedeckelterAutoGainDb (kAutoGainDeckelDb)) == bitsVon (kAutoGainDeckelDb)
+                                 && bitsVon (gedeckelterAutoGainDb (ueber)) == bitsVon (kAutoGainDeckelDb)
+                                 && bitsVon (gedeckelterAutoGainDb (24.5)) == bitsVon (kAutoGainDeckelDb);
+                const bool durchlass = bitsVon (gedeckelterAutoGainDb (-199.767783)) == bitsVon (-199.767783)
+                                    && bitsVon (gedeckelterAutoGainDb (0.0)) == bitsVon (0.0)
+                                    && bitsVon (gedeckelterAutoGainDb (minusNull)) == bitsVon (minusNull)
+                                    && bitsVon (gedeckelterAutoGainDb (subnormal)) == bitsVon (subnormal)
+                                    && bitsVon (gedeckelterAutoGainDb (-subnormal)) == bitsVon (-subnormal);
+                pruefe (kanten && durchlass,
+                        "311/M-113 (a) deckel_an_seinen_drei_kanten (NAK-311 R-311-14, Muster berichtsAutoGainDb)",
+                        "Deckel " + zahl (kAutoGainDeckelDb, 1) + " dB; -1 ULP " + zahl (unter, 17) + " -> "
+                            + zahl (gedeckelterAutoGainDb (unter), 17) + " (bitgleich), genau -> "
+                            + zahl (gedeckelterAutoGainDb (kAutoGainDeckelDb), 17) + " (bitgleich), +1 ULP "
+                            + zahl (ueber, 17) + " -> " + zahl (gedeckelterAutoGainDb (ueber), 17)
+                            + " (auf den Deckel); Absenkungsseite, +0,0, -0,0 und das kleinste Subnormal "
+                            "kommen bitgleich zurueck " + (durchlass ? "ja" : "NEIN"));
+            }
+
+            // ---- 311/M-113 (b): Zahlenrand Slotzahl 0 ----------------------
+            // Ohne aktives Band traegt der Kurzschluss die Zusage - exakt +0,0
+            // (kein -0,0) in BEIDEN Werten, und der Zustand ist falsch (M-36).
+            {
+                auto leer = neuerKern (fs, 512);
+                auto s0 = machSatz (true);
+                setzeGlobalBool (s0, "v2.global.auto_gain", true);
+                leer->uebernehmeZustand (s0);
+                const double db = leer->autoGainDb(), roh = leer->autoGainRohDb();
+                pruefe (db == 0.0 && ! std::signbit (db) && roh == 0.0 && ! std::signbit (roh)
+                            && ! leer->autoGainGedeckelt(),
+                        "311/M-113 (b) ohne_aktives_band_bleibt_der_kurzschluss (Teilfall, M-36)",
+                        "autoGainDb " + zahl (db, 15) + ", autoGainRohDb " + zahl (roh, 15)
+                            + " (Vorzeichenbits " + std::to_string (std::signbit (db) ? 1 : 0)
+                            + std::to_string (std::signbit (roh) ? 1 : 0) + "), Zustand "
+                            + (leer->autoGainGedeckelt() ? "GESETZT" : "falsch"));
+            }
+
+            // ---- 311/M-113 (c): das PROGRAMM an der Grenze -----------------
+            // Ein von Hand gebautes Programm mit konstanter Betragsantwort b0
+            // traegt an jeder Gitterstelle |H|^2 = b0^2; der abgeleitete Wert
+            // ist damit -20*log10(b0) und ueber `b0` bis auf das letzte Bit
+            // feiner einstellbar als ueber jeden Filterentwurf (Muster des
+            // M-65-Selbstaudits oben). Auch damit ist die Grenze nicht
+            // BITGENAU abzuleiten - der Lauf unten misst genau das -, deshalb
+            // traegt die Kante "genau auf der Grenze" die Funktion (a) und das
+            // Praedikat `DspProgramm::autoGainGedeckelt()`.
+            {
+                auto programmMit = [&fs] (double b0)
+                {
+                    DspProgramm p;
+                    p.kanaele    = 2;
+                    p.samplerate = fs;
+                    p.autoGainAn = true;
+                    auto& b = p.baender[0];
+                    b.aktiv              = true;
+                    b.modus              = Kanalmodus::stereo;
+                    b.nutztSvf           = false;
+                    b.statischIstEinheit = false;
+                    b.statisch           = Biquad { b0, 0.0, 0.0, 0.0, 0.0 };
+                    double roh = 0.0;
+                    p.autoGainDb    = leiteAutoGainAb (p, &roh);
+                    p.autoGainRohDb = roh;
+                    return p;
+                };
+
+                // 800 aufeinanderfolgende doubles um den analytischen Wert:
+                // waechst b0, faellt der abgeleitete Wert monoton. GEMESSEN
+                // wird dabei auch, dass die Ableitung die Grenze ueberspringt:
+                // benachbarte `mittel`-Werte liegen im log10 rund 4,44e-16
+                // auseinander, mal zehn also 4,44e-15 - mehr als ein ULP von
+                // 24,0 (3,55e-15). Kein Programm dieser Familie leitet die
+                // Grenze bitgenau ab; die Kante "genau auf der Grenze" traegt
+                // deshalb die Funktion (a) und das Praedikat unten.
+                double b0Genau = 0.0, b0Ueber = 0.0, b0Unter = 0.0;
+                {
+                    double b = std::pow (10.0, -kAutoGainDeckelDb / 20.0);
+                    for (int i = 0; i < 400; ++i) b = std::nextafter (b, 0.0);
+                    for (int i = 0; i < 800; ++i)
+                    {
+                        const double roh = programmMit (b).autoGainRohDb;
+                        if (roh >  kAutoGainDeckelDb) b0Ueber = b;
+                        if (roh == kAutoGainDeckelDb && b0Genau == 0.0) b0Genau = b;
+                        if (roh <  kAutoGainDeckelDb && b0Unter == 0.0) b0Unter = b;
+                        b = std::nextafter (b, 1.0);
+                    }
+                }
+
+                const bool klammer = b0Ueber != 0.0 && b0Unter != 0.0;
+                const auto pUeber = programmMit (klammer ? b0Ueber : 1.0);
+                const auto pUnter = programmMit (klammer ? b0Unter : 1.0);
+
+                // Das Praedikat selbst an seinen drei Kanten, mit dem
+                // abgeleiteten Wert direkt gesetzt - hier ist "genau auf der
+                // Grenze" erreichbar. Strikt groesser entscheidet, und ohne
+                // eingeschalteten Auto-Gain ist keine Kante gesetzt (F-24).
+                const double kanteUnter = std::nextafter (kAutoGainDeckelDb,
+                                                          -std::numeric_limits<double>::infinity());
+                const double kanteUeber = std::nextafter (kAutoGainDeckelDb,
+                                                          std::numeric_limits<double>::infinity());
+                auto praedikat = [] (double rohDb, bool an)
+                {
+                    DspProgramm p;
+                    p.autoGainAn    = an;
+                    p.autoGainRohDb = rohDb;
+                    p.autoGainDb    = gedeckelterAutoGainDb (rohDb);
+                    return p.autoGainGedeckelt();
+                };
+                const bool kanten = ! praedikat (kanteUnter, true)
+                                 && ! praedikat (kAutoGainDeckelDb, true)
+                                 &&   praedikat (kanteUeber, true)
+                                 && ! praedikat (kanteUnter, false)
+                                 && ! praedikat (kAutoGainDeckelDb, false)
+                                 && ! praedikat (kanteUeber, false);
+
+                const bool richtig = klammer && kanten && b0Genau == 0.0
+                    // knapp DARUEBER: bitgenau auf den Deckel gesetzt, Zustand gesetzt
+                    && bitsVon (pUeber.autoGainDb) == bitsVon (kAutoGainDeckelDb)
+                    && pUeber.autoGainRohDb > kAutoGainDeckelDb && pUeber.autoGainGedeckelt()
+                    // knapp DARUNTER: bitgleich durch, Zustand falsch
+                    && bitsVon (pUnter.autoGainDb) == bitsVon (pUnter.autoGainRohDb)
+                    && pUnter.autoGainRohDb < kAutoGainDeckelDb && ! pUnter.autoGainGedeckelt();
+                pruefe (richtig,
+                        "311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)",
+                        "abgeleitet knapp darueber " + zahl (pUeber.autoGainRohDb, 17) + " -> angewandt "
+                            + zahl (pUeber.autoGainDb, 17) + " (Zustand "
+                            + (pUeber.autoGainGedeckelt() ? "gesetzt" : "FALSCH") + "), knapp darunter "
+                            + zahl (pUnter.autoGainRohDb, 17) + " -> " + zahl (pUnter.autoGainDb, 17)
+                            + " (Zustand " + (pUnter.autoGainGedeckelt() ? "GESETZT" : "falsch")
+                            + "); die Ableitung UEBERSPRINGT die Grenze - exakte Treffer in 800 "
+                            "benachbarten doubles: " + std::to_string (b0Genau == 0.0 ? 0 : 1)
+                            + "; Praedikat an -1 ULP / genau / +1 ULP mit Auto-Gain an: "
+                            + (praedikat (kanteUnter, true) ? "1" : "0")
+                            + (praedikat (kAutoGainDeckelDb, true) ? "1" : "0")
+                            + (praedikat (kanteUeber, true) ? "1" : "0") + ", mit Auto-Gain aus: "
+                            + (praedikat (kanteUnter, false) ? "1" : "0")
+                            + (praedikat (kAutoGainDeckelDb, false) ? "1" : "0")
+                            + (praedikat (kanteUeber, false) ? "1" : "0") + " (erwartet 001 und 000)");
+            }
+
+            // ---- 311/M-113 (d): Zahlenrand Slotzahl 8 am echten Bauweg -----
+            // Zwei benachbarte Guetewerte der acht High-Cuts, deren abgeleitete
+            // Werte den Deckel einschliessen: der Zustand wird genau dann
+            // gesetzt, wenn der Deckel greift.
+            {
+                auto rohVonQ = [&] (double q)
+                {
+                    DspProgramm p;
+                    baueProgramm (achtHighCuts (q, true), fs, 0, p, 2);
+                    return p.autoGainRohDb;
+                };
+
+                double qUeber = 0.9, qUnter = 1.0;   // ueber bzw. unter dem Deckel
+                const bool klammerStimmt = rohVonQ (qUeber) > kAutoGainDeckelDb
+                                        && rohVonQ (qUnter) < kAutoGainDeckelDb;
+                for (int i = 0; i < 80 && klammerStimmt; ++i)
+                {
+                    const double mitteQ = 0.5 * (qUeber + qUnter);
+                    if (mitteQ == qUeber || mitteQ == qUnter) break;
+                    if (rohVonQ (mitteQ) > kAutoGainDeckelDb) qUeber = mitteQ; else qUnter = mitteQ;
+                }
+
+                auto kUeber = neuerKern (fs, 512);
+                kUeber->uebernehmeZustand (achtHighCuts (qUeber, true));
+                auto kUnter = neuerKern (fs, 512);
+                kUnter->uebernehmeZustand (achtHighCuts (qUnter, true));
+
+                pruefe (klammerStimmt
+                            && bitsVon (kUeber->autoGainDb()) == bitsVon (kAutoGainDeckelDb)
+                            && kUeber->autoGainRohDb() > kAutoGainDeckelDb && kUeber->autoGainGedeckelt()
+                            && bitsVon (kUnter->autoGainDb()) == bitsVon (kUnter->autoGainRohDb())
+                            && kUnter->autoGainRohDb() < kAutoGainDeckelDb && ! kUnter->autoGainGedeckelt(),
+                        "311/M-113 (d) acht_high_cuts_beidseits_der_grenze (Teilfall, NAK-311 R-311-14)",
+                        "Q " + zahl (qUeber, 15) + " -> abgeleitet " + zahl (kUeber->autoGainRohDb(), 12)
+                            + " dB, angewandt " + zahl (kUeber->autoGainDb(), 12) + " dB, Zustand "
+                            + (kUeber->autoGainGedeckelt() ? "gesetzt" : "FALSCH") + "; Q "
+                            + zahl (qUnter, 15) + " -> abgeleitet " + zahl (kUnter->autoGainRohDb(), 12)
+                            + " dB, angewandt " + zahl (kUnter->autoGainDb(), 12) + " dB, Zustand "
+                            + (kUnter->autoGainGedeckelt() ? "GESETZT" : "falsch"));
+            }
+
+            // ---- 311/M-115: der Deckel steht in BEIDEN Rueckgabezeilen ------
+            // Acht `stereo`-Baender rechnen im Monozweig dieselbe Kaskade und
+            // denselben Wert wie im Zweikanalzweig - der Unterschied liegt
+            // allein in der Rueckgabezeile. Stuende der Deckel nur in einer,
+            // fuehre der andere Bus +150,46 dB.
+            {
+                auto mono = std::make_unique<DspKern>();   // NAK-175: auf den HEAP
+                mono->bereiteVor (fs, 512, 1);
+                mono->uebernehmeZustand (achtHighCuts (0.15, true));
+                {
+                    std::vector<float> a (512, 0.25f);
+                    float* kan[1] = { a.data() };
+                    for (int block = 0; block < 4; ++block)
+                    {
+                        std::fill (a.begin(), a.end(), 0.25f);
+                        mono->verarbeite (kan, 1, 512);
+                    }
+                }
+
+                auto stereo = neuerKern (fs, 512);         // Kanalzahl 2
+                stereo->uebernehmeZustand (achtHighCuts (0.15, true));
+                long long nStereo = 0;
+                fahreGleichanteil (*stereo, nStereo, 4, 512, nullptr);
+
+                const auto* progMono   = gefahrenesProgramm (*mono);
+                const auto* progStereo = gefahrenesProgramm (*stereo);
+                pruefe (progMono != nullptr && progStereo != nullptr
+                            && progMono->kanaele == 1 && progStereo->kanaele == 2
+                            && bitsVon (mono->autoGainDb()) == bitsVon (kAutoGainDeckelDb)
+                            && bitsVon (stereo->autoGainDb()) == bitsVon (kAutoGainDeckelDb)
+                            && bitsVon (mono->autoGainRohDb()) == bitsVon (stereo->autoGainRohDb())
+                            && mono->autoGainGedeckelt() && stereo->autoGainGedeckelt(),
+                        "311/M-115 deckel_in_beiden_zweigen (NAK-311 R-311-14, R-311-3, §32.2)",
+                        "Monozweig (Programm-Kanalzahl "
+                            + std::to_string (progMono != nullptr ? progMono->kanaele : -1)
+                            + ") abgeleitet " + zahl (mono->autoGainRohDb(), 12) + " dB -> angewandt "
+                            + zahl (mono->autoGainDb(), 15) + " dB; Zweikanalzweig (Kanalzahl "
+                            + std::to_string (progStereo != nullptr ? progStereo->kanaele : -1)
+                            + ") abgeleitet " + zahl (stereo->autoGainRohDb(), 12) + " dB -> angewandt "
+                            + zahl (stereo->autoGainDb(), 15) + " dB; beide Zustaende "
+                            + (mono->autoGainGedeckelt() && stereo->autoGainGedeckelt() ? "gesetzt" : "NICHT gesetzt"));
+            }
+
+            // ---- 311/M-116: der Zustand faellt zurueck ----------------------
+            // setzen <-> zuruecknehmen am selben Kern: Q 0,15 (+150 dB, ueber
+            // dem Deckel) -> Q 0,707 (+43 dB, immer noch darueber) -> Q 1,0
+            // (unter dem Deckel). Typ, Kanalmodus und Belegung bleiben gleich,
+            // der Wechsel ist also ein Rampenwechsel: die Auto-Gain-Rampe laeuft
+            // ueber `kRampeSamples` auf das neue Ziel, sie springt nicht (M-02).
+            // Gemessen am Verhaeltnis zweier Laeufe, die sich NUR in
+            // `v2.global.auto_gain` unterscheiden - es ist der angewandte
+            // Faktor selbst.
+            {
+                auto mit  = neuerKern (fs, 512);
+                auto ohne = neuerKern (fs, 512);
+                long long nMit = 0, nOhne = 0;
+
+                mit ->uebernehmeZustand (achtHighCuts (0.15, true));
+                ohne->uebernehmeZustand (achtHighCuts (0.15, false));
+                fahreGleichanteil (*mit,  nMit,  48, 512, nullptr);
+                fahreGleichanteil (*ohne, nOhne, 48, 512, nullptr);
+                const bool   zustand1 = mit->autoGainGedeckelt();
+                const double db1      = mit->autoGainDb();
+
+                mit ->uebernehmeZustand (achtHighCuts (0.70710678118654752, true));
+                ohne->uebernehmeZustand (achtHighCuts (0.70710678118654752, false));
+                fahreGleichanteil (*mit,  nMit,  48, 512, nullptr);
+                fahreGleichanteil (*ohne, nOhne, 48, 512, nullptr);
+                const bool   zustand2 = mit->autoGainGedeckelt();
+                const double db2 = mit->autoGainDb(), roh2 = mit->autoGainRohDb();
+
+                mit ->uebernehmeZustand (achtHighCuts (1.0, true));
+                ohne->uebernehmeZustand (achtHighCuts (1.0, false));
+                std::vector<double> tapMit, tapOhne;
+                fahreGleichanteil (*mit,  nMit,  2, 512, &tapMit);
+                fahreGleichanteil (*ohne, nOhne, 2, 512, &tapOhne);
+                const bool   zustand3 = mit->autoGainGedeckelt();
+                const double db3 = mit->autoGainDb(), roh3 = mit->autoGainRohDb();
+
+                const double neuLin = dbInLinear (roh3);
+                const double faktorErst = tapOhne[0]   != 0.0 ? tapMit[0]   / tapOhne[0]   : 0.0;
+                const double faktorSpaet = tapOhne[300] != 0.0 ? tapMit[300] / tapOhne[300] : 0.0;
+                const bool keinSprung = std::abs (faktorErst - deckelLin) < 0.01 * deckelLin
+                                     && std::abs (faktorSpaet - neuLin)   < 1e-6 * neuLin
+                                     && faktorErst > neuLin * 1.05;
+
+                pruefe (zustand1 && zustand2 && ! zustand3
+                            && bitsVon (db1) == bitsVon (kAutoGainDeckelDb)
+                            && bitsVon (db2) == bitsVon (kAutoGainDeckelDb) && roh2 > kAutoGainDeckelDb
+                            && bitsVon (db3) == bitsVon (roh3) && roh3 < kAutoGainDeckelDb
+                            && keinSprung,
+                        "311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)",
+                        "Q 0,15: angewandt " + zahl (db1, 12) + " dB, Zustand "
+                            + (zustand1 ? "gesetzt" : "FALSCH") + "; Q 0,707: abgeleitet " + zahl (roh2, 9)
+                            + " dB, angewandt " + zahl (db2, 12) + " dB, Zustand "
+                            + (zustand2 ? "gesetzt" : "FALSCH") + "; Q 1,0: abgeleitet " + zahl (roh3, 9)
+                            + " dB, angewandt " + zahl (db3, 9) + " dB (bitgleich "
+                            + (bitsVon (db3) == bitsVon (roh3) ? "ja" : "NEIN") + "), Zustand "
+                            + (zustand3 ? "GESETZT" : "falsch")
+                            + "; angewandter Faktor am ersten Sample nach dem Wechsel " + zahl (faktorErst, 9)
+                            + " (altes Ziel " + zahl (deckelLin, 9) + "), nach " + std::to_string (300)
+                            + " Samples " + zahl (faktorSpaet, 9) + " (neues Ziel " + zahl (neuLin, 9)
+                            + ", Rampe " + std::to_string (kRampeSamples) + " Samples)");
+            }
         }
     }
 
@@ -4566,7 +5093,7 @@ int main()
         // Candidate schreibt den Candidate-Ausgang, und der Fade der Hoermatrix
         // schreibt bis zu seinem Ende, auch mitten im Teilstueck.
         {
-            const float wachmarke = [] { std::uint32_t bits = 0x7F800001u; float f; std::memcpy (&f, &bits, 4); return f; }();
+            const float wachmarke = ausBitmuster (0x7F800001u);   // NAK-311: nie konstantgefaltet
             const auto material = [&] (std::vector<float>& l, std::vector<float>& r)
             {
                 for (int i = 0; i < 512; ++i)

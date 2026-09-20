@@ -1420,12 +1420,15 @@ struct Nak311Stand
 };
 
 /** Acht gleiche Low-Shelves in den acht Slots - `occupied` UND `enabled`, ein
-    freier Slot verarbeitet nichts. */
-nakama::parameter::DspSatz nak311AchtShelves (double q)
+    freier Slot verarbeitet nichts. `autoGainAn` schaltet `v2.global.auto_gain`
+    (NAK-311 Satz B: der Deckelzustand haengt daran, der abgeleitete Wert
+    nicht). */
+nakama::parameter::DspSatz nak311AchtShelves (double q, bool autoGainAn = false)
 {
     namespace param = nakama::parameter;
     param::DspSatz s;
     s.werte[(size_t) param::kIndexEqEnabled].b = true;
+    s.werte[(size_t) param::kIndexAutoGain].b  = autoGainAn;
     for (int slot = 0; slot < param::kSlots; ++slot)
     {
         s.werte[(size_t) param::indexOccupied (slot)].b = true;
@@ -1551,7 +1554,8 @@ void fahreNak311Berichtsgrenze (const juce::var& schemaVar, bool schemaGelesen)
         const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
         const double linSoll  = std::pow (10.0, kernWert / 20.0);
         pruefe (kernWert < -190.0 && kernWert > -210.0 && std::isfinite (kernWert)
-                    && std::abs (lin / linSoll - 1.0) < 1e-12 && bericht.klemmungen.empty(),
+                    && std::abs (lin / linSoll - 1.0) < 1e-12 && bericht.klemmungen.empty()
+                    && ! bericht.autoGainGedeckelt,
                 "311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der "
                 "lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer",
                 "Kern " + juce::String (kernWert, 6) + " dB, autoGainLin " + juce::String (lin, 18)
@@ -1575,11 +1579,48 @@ void fahreNak311Berichtsgrenze (const juce::var& schemaVar, bool schemaGelesen)
         const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
         const bool gueltig = fassung5.gueltig (doc);
 
-        pruefe (gebaut && nak311BitGleich (bericht.autoGainDb, kernWert) && gueltig,
+        pruefe (gebaut && nak311BitGleich (bericht.autoGainDb, kernWert) && gueltig
+                    && ! bericht.autoGainGedeckelt,
                 "311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich (NAK-311 R-311-5): acht Low-Shelves "
                 "1 kHz +12 dB Q 0,707 - der gemeldete Wert ist BITGLEICH dem abgeleiteten und gueltig",
                 "Bericht " + juce::String (bericht.autoGainDb, 9) + " dB, Kern "
                     + juce::String (kernWert, 9) + " dB, gueltig " + (gueltig ? "ja" : "nein"));
+    }
+
+    // ── 311/M-114 (Teilfall, Satz B): die Absenkungsseite bleibt ungedeckelt
+    //
+    // Regressionswache zu R-311-14. Der Deckel des Satzes B ist EINSEITIG und
+    // sitzt VOR der Berichtsklemmung; auf der Absenkungsseite darf er nichts
+    // tun. Derselbe Pruefling wie 311/M-67, nur mit eingeschaltetem
+    // `v2.global.auto_gain` - erst dann ist "Zustand falsch" eine Aussage
+    // ueber den Deckel und nicht ueber den Schalter.
+    {
+        Nak311Stand st (48000.0);
+        const auto satz = nak311AchtShelves (8.0, true);
+        juce::String grund;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        tx::DspBericht bericht;
+        const bool gebaut = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        double lin = 0.0;
+        const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
+        const double kernRoh  = st.kern->autoGainRohDb();
+
+        pruefe (gebaut && bericht.autoGainDb == -120.0 && ! bericht.autoGainGedeckelt
+                    && nak311BitGleich (kernWert, kernRoh)
+                    && kernWert < -190.0 && kernWert > -210.0
+                    && ! st.kern->autoGainGedeckelt() && bericht.klemmungen.empty(),
+                "311/M-114 absenkungsseite_bleibt_ungedeckelt (Regressionswache, NAK-311 R-311-14, M-67, M-71): "
+                "acht Low-Shelves 1 kHz +12 dB Q 8 mit Auto-Gain AN - der einseitige Deckel laesst den "
+                "abgeleiteten Wert bitgleich durch, der Kern faehrt ihn ungeklemmt, der Bericht klemmt wie "
+                "seit R-311-5 auf exakt -120, und der Deckelzustand ist in beiden falsch",
+                "Kern angewandt " + juce::String (kernWert, 9) + " dB, Kern abgeleitet "
+                    + juce::String (kernRoh, 9) + " dB, bitgleich "
+                    + (nak311BitGleich (kernWert, kernRoh) ? "ja" : "NEIN") + ", Bericht "
+                    + juce::String (bericht.autoGainDb, 6) + " dB, Zustand Kern "
+                    + (st.kern->autoGainGedeckelt() ? "GESETZT" : "falsch") + " / Bericht "
+                    + (bericht.autoGainGedeckelt ? "GESETZT" : "falsch") + ", klemmungen "
+                    + juce::String ((int) bericht.klemmungen.size()));
     }
 
     // ── 311/M-69 mit dem Teilfall 311/M-70: die Klemmfunktion selbst ──────
@@ -1650,6 +1691,152 @@ void fahreNak311Berichtsgrenze (const juce::var& schemaVar, bool schemaGelesen)
                     + juce::String (std::signbit (ausNan) ? 1 : 0) + "), +Inf -> "
                     + juce::String (tx::berichtsAutoGainDb (inf), 6) + ", -Inf -> "
                     + juce::String (tx::berichtsAutoGainDb (-inf), 6));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-311 Etappe 5, Aenderungssatz B · Bericht und Kern melden DENSELBEN
+// gedeckelten Wert (T3-15-09 Teil b, Karte U54; R-311-14)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Manifest NAK-311 §39.2, Zeile 311/M-117 mit dem Teilfall 311/M-118.
+//
+// Der Deckel sitzt in `leiteAutoGainAb`, also VOR `baueBericht`: das Programm
+// des Kerns und das Programm, das `baueBericht` selbst baut, tragen dieselbe
+// Zahl. Waere er statt dessen am Rampenziel gesetzt, liefen drei Zahlen
+// nebeneinander - Kern +150,46 dB, Bericht +120 dB (Berichtsklemmung),
+// gefahren 24 dB. Die Berichtsklemmung ist die ZWEITE Stufe und laesst den
+// gedeckelten Wert unveraendert durch, weil er innerhalb +/-120 liegt (M-69).
+// Der ZUSTAND bleibt C++-lokal: `$defs/dsp_bericht` ist mit
+// `additionalProperties: false` geschlossen (M-140, F-27).
+
+/** Acht gleiche High-Cuts 20 Hz in den acht Slots - der Pruefling der Abnahme
+    U54. Mit Q 0,15 ist der abgeleitete Ausgleich +150,46 dB und damit weit
+    ueber `kAutoGainDeckelDb`. */
+nakama::parameter::DspSatz nak311AchtHighCuts (double q, bool autoGainAn)
+{
+    namespace param = nakama::parameter;
+    param::DspSatz s;
+    s.werte[(size_t) param::kIndexEqEnabled].b = true;
+    s.werte[(size_t) param::kIndexAutoGain].b  = autoGainAn;
+    for (int slot = 0; slot < param::kSlots; ++slot)
+    {
+        s.werte[(size_t) param::indexOccupied (slot)].b = true;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kEnabled)].b = true;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kType)].enumIndex
+            = (int) nakama::dsp::Filtertyp::highCut;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kFreqHz)].zahl = 20.0;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kQ)].zahl      = q;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kGainDb)].zahl = 0.0;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kChannelMode)].enumIndex
+            = (int) nakama::dsp::Kanalmodus::stereo;
+    }
+    return s;
+}
+
+void fahreNak311Deckel (const juce::var& schemaVar, bool schemaGelesen)
+{
+    namespace tx  = nakama::transaktion;
+    namespace dsp = nakama::dsp;
+
+    if (! schemaGelesen)
+        return;
+
+    bool okVorlage = false;
+    const auto vorlage = lies ("eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json", okVorlage);
+    if (! okVorlage)
+        return;
+
+    nakama::vertrag::Schema fassung5;
+    juce::String ladefehler;
+    if (! nakama::vertrag::Schema::laden (schemaVar, fassung5, ladefehler))
+    {
+        pruefe (false, "311/M-117: die Fassung 5 laedt", ladefehler);
+        return;
+    }
+
+    // ── 311/M-117: Bericht und Kern melden bitgleich den gedeckelten Wert ─
+    {
+        Nak311Stand st (48000.0);
+        const auto satz = nak311AchtHighCuts (0.15, true);
+        juce::String grund;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        tx::DspBericht bericht;
+        const bool gebaut = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        double lin = 0.0;
+        const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
+        const double kernRoh  = st.kern->autoGainRohDb();
+
+        const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
+        const auto verletzungen = fassung5.pruefe (doc);
+
+        // Der Zustand geht NICHT auf den Draht: derselbe Bericht MIT dem Feld
+        // im dsp-Dokument wird von `additionalProperties: false` abgewiesen.
+        auto mitFeld = doc.clone();
+        if (auto* wurzel = mitFeld.getDynamicObject())
+            if (auto* dspObj = wurzel->getProperty ("dsp").getDynamicObject())
+                dspObj->setProperty ("auto_gain_gedeckelt", bericht.autoGainGedeckelt);
+        const auto verletzungenMitFeld = fassung5.pruefe (mitFeld);
+
+        juce::String detail = "abgeleitet " + juce::String (kernRoh, 9) + " dB, Kern angewandt "
+                            + juce::String (kernWert, 15) + " dB, Bericht "
+                            + juce::String (bericht.autoGainDb, 15) + " dB, Deckel "
+                            + juce::String (dsp::kAutoGainDeckelDb, 15) + " dB; Zustand Kern "
+                            + (st.kern->autoGainGedeckelt() ? "gesetzt" : "NICHT gesetzt") + " / Bericht "
+                            + (bericht.autoGainGedeckelt ? "gesetzt" : "NICHT gesetzt")
+                            + ", autoGainLin " + juce::String (lin, 12) + ", Verletzungen ohne Feld "
+                            + juce::String (verletzungen.size()) + ", mit Feld "
+                            + juce::String (verletzungenMitFeld.size());
+        if (! verletzungenMitFeld.isEmpty())
+            detail += " (" + verletzungenMitFeld[0].instanz + " gegen "
+                    + verletzungenMitFeld[0].schluessel + ")";
+
+        pruefe (gebaut
+                    && nak311BitGleich (kernWert, dsp::kAutoGainDeckelDb)
+                    && nak311BitGleich (bericht.autoGainDb, dsp::kAutoGainDeckelDb)
+                    && kernRoh > 150.0 && kernRoh < 151.0
+                    && st.kern->autoGainGedeckelt() && bericht.autoGainGedeckelt
+                    && bericht.klemmungen.empty()
+                    && verletzungen.isEmpty() && ! verletzungenMitFeld.isEmpty(),
+                "311/M-117 bericht_und_kern_melden_denselben_gedeckelten_wert (NAK-311 R-311-14, U54): acht "
+                "High-Cuts 20 Hz Q 0,15 bei 48 kHz - der abgeleitete Ausgleich +150,46 dB bleibt ueber "
+                "DspKern::autoGainRohDb() lesbar, angewandt und GEMELDET wird bitgleich kAutoGainDeckelDb; die "
+                "Berichtsklemmung laesst ihn unveraendert durch (innerhalb +/-120, M-69), der Zustand ist in "
+                "Kern und Bericht gesetzt, und der gebaute state_report bleibt gueltig - mit dem Zustand im "
+                "dsp-Dokument wuerde er abgewiesen, er geht also nicht auf den Draht",
+                detail);
+    }
+
+    // ── 311/M-118 (Teilfall): Auto-Gain aus - gedeckelt, aber nicht gemeldet
+    {
+        Nak311Stand st (48000.0);
+        const auto satz = nak311AchtHighCuts (0.15, false);
+        juce::String grund;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        tx::DspBericht bericht;
+        const bool gebaut = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        double lin = 0.0;
+        const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
+        const double kernRoh  = st.kern->autoGainRohDb();
+        const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
+
+        pruefe (gebaut
+                    && nak311BitGleich (kernWert, dsp::kAutoGainDeckelDb)
+                    && nak311BitGleich (bericht.autoGainDb, dsp::kAutoGainDeckelDb)
+                    && kernRoh > 150.0 && kernRoh < 151.0
+                    && ! st.kern->autoGainGedeckelt() && ! bericht.autoGainGedeckelt
+                    && fassung5.gueltig (doc),
+                "311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall von 311/M-117, NAK-311 F-24, M-35): "
+                "derselbe Pruefling mit v2.global.auto_gain AUS - gerechnet und lesbar bleibt alles, ANGEWANDT "
+                "wird nichts, und genau deshalb ist der Zustand in Kern und Bericht falsch: gemeldet wird ein "
+                "gedeckelter Ausgleich nur, wenn einer wirkt",
+                "abgeleitet " + juce::String (kernRoh, 9) + " dB, gedeckelt "
+                    + juce::String (kernWert, 15) + " dB, Bericht "
+                    + juce::String (bericht.autoGainDb, 15) + " dB, Zustand Kern "
+                    + (st.kern->autoGainGedeckelt() ? "GESETZT" : "falsch") + " / Bericht "
+                    + (bericht.autoGainGedeckelt ? "GESETZT" : "falsch"));
     }
 }
 
@@ -1799,6 +1986,7 @@ int main (int, char*[])
 
     fahreFassung5UndDspBericht (schemaVar, ok);
     fahreNak311Berichtsgrenze (schemaVar, ok);
+    fahreNak311Deckel (schemaVar, ok);
     fahreNak311Ratenschranke (schemaVar, ok);
 
     fahreBandgitter();

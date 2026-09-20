@@ -1,0 +1,38 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-116
+====================================================
+
+Matrixzeile : M-116 - T3-15-09 Teil b - setzen<->zuruecknehmen
+Zusage      : Der Zustand faellt zurueck, sobald das Programm die Grenze nicht mehr reisst; er haengt am gefahrenen Programm, nie an einer Historie.
+Beine       : EqCopDspGoldenTest
+Erwartet    : die Zusage faellt an 311/M-116
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspKern.cpp
+  SHA-256 vorher : 5D02A08FBECF93CDAFC82EA64FCDF86D1E28C38748AC507FD9F1F04A6ED99554
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-116-0-DspKern.cpp
+  vorher woertlich:
+    |     autoGainGedeckeltBericht[(size_t) p].store (prog.autoGainGedeckelt(), std::memory_order_relaxed);
+  nachher woertlich:
+    |     if (prog.autoGainGedeckelt()) autoGainGedeckeltBericht[(size_t) p].store (true, std::memory_order_relaxed);   // MUTATION M-116: Sticky-Flag
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:14:38, juengste mutierte Quelle: 12:14:35 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 1 Fehler
+    FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt; Q 0,707: abgeleitet 42.978122765 dB, angewandt 24.000000000000 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand GESETZT; angewandter Faktor am ersten Sample nach dem Wechsel 15.822167895 (altes Zi
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-116
+  gefallen: 311/M-116
+  mitgefallene Pruefungen: 0
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspKern.cpp: SHA-256 nachher 5D02A08FBECF93CDAFC82EA64FCDF86D1E28C38748AC507FD9F1F04A6ED99554 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

@@ -1,0 +1,71 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-140
+====================================================
+
+Matrixzeile : M-140 - Gate S25j GRENZE - die Etappe aendert weder Vertrag noch State noch Identitaet
+Zusage      : git diff ueber eq-copilot/schemas/v3 zeigt GENAU EINE Zeile, den $comment von auto_gain_db; jede weitere Zeile ist ein Bruch. Die zwei Zustaende stehen ausschliesslich im C++-Bericht und in Gettern des Kerns, nie auf dem Draht.
+Beine       : EqCopSchemaTest
+Erwartet    : die Zusage faellt an 311/M-117
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+  SHA-256 vorher : 804B92054952295866E271D11C600622FA3C93924395C8FC2D20D25882B45B2F
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-140-0-eq-ipc-v3.schema.json
+  vorher woertlich:
+    |         "klemmungen": {
+  nachher woertlich:
+    |         "auto_gain_gedeckelt": { "type": "boolean" },
+    |         "klemmungen": {
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopSchemaTest: EXIT=0
+  Binary EqCopSchemaTest: 12:16:40, juengste mutierte Quelle: 12:16:57 -> ZU ALT
+  Lauf EqCopSchemaTest: EXIT=1, 161 bestanden, 1 gescheitert
+    [ROT]  311/M-117 bericht_und_kern_melden_denselben_gedeckelten_wert (NAK-311 R-311-14, U54): acht High-Cuts 20 Hz Q 0,15 bei 48 kHz - der abgeleitete Ausgleich +150,46 dB bleibt ueber DspKern::autoGainRohDb() lesbar, angewandt und GEMELDET wird bitgleich kAutoGainDeckelDb; die Berichtsklemmung laesst ihn unveraendert durch (innerhalb +/-120, M-69), der Zustand ist in Kern und Bericht gesetzt, und 
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-117
+  gefallen: 311/M-117
+  mitgefallene Pruefungen: 0
+
+Ruecknahme
+----------
+  eq-copilot/schemas/v3/eq-ipc-v3.schema.json: SHA-256 nachher 804B92054952295866E271D11C600622FA3C93924395C8FC2D20D25882B45B2F -> BYTEGLEICH
+  Bau EqCopSchemaTest: EXIT=0
+  Lauf EqCopSchemaTest nach der Ruecknahme: EXIT=0, 162 bestanden, 0 gescheitert
+
+Bein nach der Ruecknahme gruen: JA
+
+
+Anhang - der Diff und das Referenzbein A5 unter derselben Mutation
+------------------------------------------------------------------
+
+Gemessen am selben mutierten Schema (Rueckgabe des Treibers oben), zusaetzlich
+zu B3c:
+
+  git diff --stat -- eq-copilot/schemas
+    eq-copilot/schemas/v3/eq-ipc-v3.schema.json | 3 ++-
+    1 file changed, 2 insertions(+), 1 deletion(-)
+  git diff --numstat -- eq-copilot/schemas
+    2       1       eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+
+Damit traegt der Diff ueber `eq-copilot/schemas/v3` eine ZWEITE Zeile neben dem
+ausgenommenen `$comment` - genau der Bruch, den M-140 nennt (im Endstand steht
+dort 1 insertion, 1 deletion, also genau die eine ausgenommene Zeile).
+
+  A5 py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+    MIT Mutation           : EXIT=2
+      ROT: jede der 274 deklarierten Eigenschaften steht in mindestens einem
+           Fixture - auto_gain_gedeckelt
+    nach der Ruecknahme    : EXIT=0
+
+  Ruecknahme bytegleich: SHA-256
+  804B92054952295866E271D11C600622FA3C93924395C8FC2D20D25882B45B2F vorher und
+  nachher.
+
+Die Zusage faellt damit an zwei Stellen: am Vertragsbein A5 (eine deklarierte
+Eigenschaft ohne Fixture) und an 311/M-117 in B3c (das Schema weist das
+zusaetzliche Feld nicht mehr ab). 311/M-138 (b) bleibt gruen und muss es: es
+misst ein ANDERES Feldnamen-Beispiel (`abgelehnte_samplerate_hz`), das die
+Mutation nicht erlaubt hat.

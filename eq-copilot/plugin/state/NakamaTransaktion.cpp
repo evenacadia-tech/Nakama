@@ -811,6 +811,9 @@ bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& gru
     aus.jcs      = juce::String::fromUTF8 ((const char*) text.getData(), (int) text.getSize());
 
     aus.autoGainDb = 0.0;
+    // NAK-311 R-311-14: der Zustand faellt mit dem Wert zurueck. Ohne
+    // Programmzweig gibt es keinen Ausgleich, also auch keinen gedeckelten.
+    aus.autoGainGedeckelt = false;
     aus.klemmungen.clear();
     // NAK-311 R-311-16 (F08, U47): der GRUND steht im Bericht, auch wenn es
     // sonst nichts zu melden gibt - gerade dann. Er haengt an der zuletzt
@@ -832,9 +835,19 @@ bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& gru
         dsp::baueProgramm (sicht, fs, 0, *prog, tk.kanaele());
         // NAK-311 R-311-5: der BERICHT klemmt auf die Vertragsgrenze, statt
         // sie zu reissen. Das Programm selbst bleibt unberuehrt - `prog`
-        // behaelt seinen abgeleiteten Wert, und genau ihn faehrt der Kern
-        // (M-71). Geklemmt wird hier und nur hier.
+        // behaelt den Wert, den auch der Kern faehrt (M-71). Seit R-311-14 ist
+        // das auf der ANHEBUNGSSEITE der gedeckelte, auf der Absenkungsseite
+        // weiter der abgeleitete. Geklemmt wird hier und nur hier.
         aus.autoGainDb = berichtsAutoGainDb (prog->autoGainDb);
+        // NAK-311 R-311-14 (Karte U54): zwei getrennte Stufen in dieser
+        // Reihenfolge. Der DECKEL sitzt schon in `leiteAutoGainAb`, also in
+        // `prog->autoGainDb` - deshalb meldet der Bericht auf der
+        // Anhebungsseite denselben Wert, den der Kern faehrt (M-117). Die
+        // Berichtsklemmung darueber ist die zweite Stufe und bleibt Wort fuer
+        // Wort, wie sie war (M-114): -199,77 dB werden weiter -120, und der
+        // Zustand hier ist dabei falsch. Er kommt aus DIESEM Programm und aus
+        // derselben einen Bedingung, die der Kern liest.
+        aus.autoGainGedeckelt = prog->autoGainGedeckelt();
         for (int slot = 0; slot < param::kSlots; ++slot)
         {
             const auto& b = prog->baender[(size_t) slot];

@@ -1,0 +1,51 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-114
+====================================================
+
+Matrixzeile : M-114 - T3-15-09 Teil b - Gegenfall Absenkungsseite (Regressionswache)
+Zusage      : -199,77 dB und -92,29 dB kommen BITGLEICH durch den Deckel, der Zustand ist falsch, und der Bericht klemmt -199,77 wie seit R-311-5 auf exakt -120.
+Beine       : EqCopDspGoldenTest, EqCopSchemaTest
+Erwartet    : die Zusage faellt an 311/M-114, 311/M-67
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.h
+  SHA-256 vorher : 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-114-0-DspProgramm.h
+  vorher woertlich:
+    |     return roh > kAutoGainDeckelDb ? kAutoGainDeckelDb : roh;
+  nachher woertlich:
+    |     return roh > kAutoGainDeckelDb ? kAutoGainDeckelDb : (roh < -kAutoGainDeckelDb ? -kAutoGainDeckelDb : roh);   // MUTATION M-114: zweiseitiger Deckel
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Bau EqCopSchemaTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:13:44, juengste mutierte Quelle: 12:13:39 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 3 Fehler
+    FEHLER  311/M-65 (b) mono_acht_baender_folgt_der_kaskade (R-311-3)  [-24.000000000000 dB gegen die Testreferenz -144.890032333108 dB; die Zweikanalformel gaebe -24.000000000000 dB (Abstand 0.000000 dB)]
+    FEHLER  311/M-114 absenkungsseite_bleibt_ungedeckelt (Regressionswache, NAK-311 R-311-14, M-71)  [acht Low-Shelves 1 kHz +12 dB Q 8: angewandt -24.000000000 dB, abgeleitet -199.767783231 dB, bitgleich NEIN; Q 0,707: -24.000000000 dB gegen -92.293932124 dB, bitgleich NEIN; Zustand falsch]
+    FEHLER  311/M-113 (a) deckel_an_seinen_drei_kanten (NAK-311 R-311-14, Muster berichtsAutoGainDb)  [Deckel 24.0 dB; -1 ULP 23.99999999999999645 -> 23.99999999999999645 (bitgleich), genau -> 24.00000000000000000 (bitgleich), +1 ULP 24.00000000000000355 -> 24.00000000000000000 (auf den Deckel); Absenkungsseite, +0,0, -0,0 und das kleinste Subnormal kommen bitgleich zurueck NEIN]
+  Binary EqCopSchemaTest: 12:13:48, juengste mutierte Quelle: 12:13:39 -> Binary juenger
+  Lauf EqCopSchemaTest: EXIT=1, 159 bestanden, 3 gescheitert
+    [ROT]  311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze (NAK-311 R-311-5, T3-15-09 Teil a): acht Low-Shelves 1 kHz +12 dB Q 8 bei 48 kHz - `auto_gain_db` ist exakt -120, der Bericht ist gueltig gegen $defs/dsp_bericht  [auto_gain_db -24.000000, Verletzungen 0]
+    [ROT]  311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer  [Kern -24.000000 dB, autoGainLin 0.063095734448019331 gegen 10^(dB/20) = 0.063095734448019331 (Verhaeltnis 1 + 0.000000000000000000), Bericht -24.000000 dB, klemmungen 0]
+    [ROT]  311/M-114 absenkungsseite_bleibt_ungedeckelt (Regressionswache, NAK-311 R-311-14, M-67, M-71): acht Low-Shelves 1 kHz +12 dB Q 8 mit Auto-Gain AN - der einseitige Deckel laesst den abgeleiteten Wert bitgleich durch, der Kern faehrt ihn ungeklemmt, der Bericht klemmt wie seit R-311-5 auf exakt -120, und der Deckelzustand ist in beiden falsch  [Kern angewandt -24.000000000 dB, Kern abgeleitet
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-114, 311/M-67
+  gefallen: 311/M-114, 311/M-67
+  mitgefallene Pruefungen: 3
+    FEHLER  311/M-65 (b) mono_acht_baender_folgt_der_kaskade (R-311-3)  [-24.000000000000 dB gegen die Testreferenz -144.890032333108 dB; die Zweikanalformel gaebe -24.000000000000 dB (Abstand 0.000000 dB)]
+    FEHLER  311/M-113 (a) deckel_an_seinen_drei_kanten (NAK-311 R-311-14, Muster berichtsAutoGainDb)  [Deckel 24.0 dB; -1 ULP 23.99999999999999645 -> 23.99999999999999645 (bitgleich), genau -> 24.00000000000000000 (bitgleich), +1 ULP 24.00000000000000355 -> 24.00000000000000000 (auf den Deckel); Absenku
+    [ROT]  311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer  [Kern -24.000000 dB, autoGainLin 0.063095734448019331 gegen 10^(dB/20) = 0.063095734448019331 (Verha
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.h: SHA-256 nachher 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Bau EqCopSchemaTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+  Lauf EqCopSchemaTest nach der Ruecknahme: EXIT=0, 162 bestanden, 0 gescheitert
+
+Bein nach der Ruecknahme gruen: JA
+

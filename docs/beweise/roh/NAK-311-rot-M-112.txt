@@ -1,0 +1,139 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis 311/M-112 ("heute rot")
+=====================================================================
+
+Matrixzeile : 311/M-112 (Manifest NAK-311 §39.2) - T3-15-09 Teil b, R-311-14,
+              Karte U54. Etikett "heute rot".
+Zusage      : Der abgeleitete Ausgleich ist der heutige (+150,46 dB) und bleibt
+              ueber DspKern::autoGainRohDb() lesbar; der ANGEWANDTE ist exakt
+              kAutoGainDeckelDb - DspProgramm::autoGainDb bitgenau 24,0 und
+              autoGainLin bitgenau dbInLinear(24,0). Am Tap post_committed
+              liegt der Ausgang hoechstens 10^(24/20) = 15,849-mal ueber dem
+              Lauf mit Auto-Gain aus statt 10^(150,46/20). Der Zustand ist
+              gesetzt.
+Bein        : B6 EqCopDspGoldenTest, Abschnitt H2
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master, Basis 5ee8318c
+              (Stand c4832c93 = origin/master beim Start)
+
+Nach §7.1 steht fuer "heute rot" zusaetzlich der Lauf des NEUEN Tests gegen den
+unveraenderten Kern in dieser Rohdatei: der Test wird VOR der Reparatur
+geschrieben und einmal rot gefahren.
+
+
+Abschnitt 1 - der neue Test einmal rot, VOR der Reparatur
+---------------------------------------------------------
+
+Am Basis-SHA gibt es weder `kAutoGainDeckelDb` noch `gedeckelterAutoGainDb`,
+weder `DspProgramm::autoGainRohDb` noch `DspKern::autoGainRohDb()` und
+`autoGainGedeckelt()`; der Test uebersetzt dort nicht. Der Rotlauf faehrt
+deshalb nach §7.1 gegen einen ZWISCHENSTAND, der nur Signaturen, Feld und
+Getter traegt und NICHT deckelt.
+
+Der Zwischenstand Z1, woertlich (gegen den Basisstand):
+
+  * DspProgramm.h: die Konstante `kAutoGainDeckelDb` = 24,0, die Funktion
+    `gedeckelterAutoGainDb`, das Feld `DspProgramm::autoGainRohDb`, das
+    Praedikat `DspProgramm::autoGainGedeckelt()` und der zweite Parameter
+    `double* ungedeckeltAus` von `leiteAutoGainAb` - alle vorhanden.
+  * DspProgramm.cpp: `leiteAutoGainAb` legt den ungedeckelten Wert ab, gibt ihn
+    aber UNGEDECKELT zurueck. Die zwei Rueckgabezeilen lauten in Z1:
+
+        |         return monoRoh;
+        |     return roh;
+
+    statt
+
+        |         return gedeckelterAutoGainDb (monoRoh);   // NAK-311 R-311-14
+        |     return gedeckelterAutoGainDb (roh);   // NAK-311 R-311-14
+
+    `baueProgramm` uebernimmt beide Werte wie im Endstand.
+  * DspKern.h/.cpp: die zwei Getter, die zwei Atomic-Reihen und die zwei
+    weiteren Veroeffentlichungen in `meldeProgramm` - alle vorhanden.
+  * NakamaTransaktion.h/.cpp: das Zustandsfeld und seine Belegung - vorhanden.
+
+Bau        : cmake --build eq-copilot/build --config Release
+             --target EqCopDspGoldenTest, EXIT=0
+Lauf       : eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/
+             EqCopDspGoldenTest.exe, EXIT=1, "365 geprueft, 15 Fehler"
+
+Gefallen ist die Zusage an ihrer Pruefung:
+
+  FEHLER  311/M-112 auto_gain_deckel_greift_und_meldet (NAK-311 R-311-14,
+          T3-15-09 Teil b, U54)  [acht High-Cuts 20 Hz Q 0,15 bei 48 kHz:
+          abgeleitet 150.464333526 dB (lesbar ueber autoGainRohDb), ANGEWANDT
+          150.464333526439503 dB = kAutoGainDeckelDb bitgenau NEIN, autoGainLin
+          33359280.592964325100 gegen dbInLinear(24) 15.848931924611; Spitze am
+          Tap post_committed mit Auto-Gain 6511149.878322810 gegen denselben
+          Lauf ohne 0.195182563 = Faktor 33359280.592964329 (Deckel laesst
+          hoechstens 15.848931925 zu; ungedeckelt waere der Faktor 33359280.6);
+          Zustand gesetzt]
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen sind im selben Lauf 311/M-113 (c), 311/M-113 (d), 311/M-115,
+311/M-116 und 311/M-118 - sie messen dieselbe Ursache (die Ableitung kennt
+keine Obergrenze) an anderen Stellen und haben weiter unten ihre eigenen
+Rotbeweise.
+
+GRUEN geblieben sind unter demselben Zwischenstand 311/M-113 (a) und (b),
+311/M-114 (Absenkungsseite) und 311/M-119 (die vierzehn Hexgolden) - der Beleg
+gegen den Nebeneffekt: der fehlende Deckel beruehrt weder die Deckelfunktion
+selbst noch die Absenkungsseite noch einen Golden.
+
+Ebenfalls in diesem Lauf rot: 311/M-13 (sieben Faelle) und 311/M-18 (zwei
+Faelle). Sie gehoeren NICHT zu dieser Zusage. Gemessene Ursache (Abschnitt 3
+des Manifests §53): die Wachmarke von B6 ist ein signalisierender NaN, den MSVC
+beim Konstantfalten ueber float -> double -> float ruhig stellte (0x7F800001 ->
+0x7FC00001); mit ruhiger Marke sieht der Test "nicht geschrieben". Behoben im
+selben Aenderungssatz durch `ausBitmuster` mit volatile-Zwischenschritt. Am
+Endstand sind alle 365 Pruefungen gruen.
+
+
+Abschnitt 2 - die Mutation nach dem Bau
+---------------------------------------
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.cpp
+  SHA-256 vorher : DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-112-0-DspProgramm.cpp
+  vorher woertlich:
+    |         return gedeckelterAutoGainDb (monoRoh);   // NAK-311 R-311-14
+  nachher woertlich:
+    |         return monoRoh;   // MUTATION M-112: Deckel entfernt
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.cpp
+  SHA-256 vorher : DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-112-1-DspProgramm.cpp
+  vorher woertlich:
+    |     return gedeckelterAutoGainDb (roh);   // NAK-311 R-311-14
+  nachher woertlich:
+    |     return roh;   // MUTATION M-112: Deckel entfernt
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:11:25, juengste mutierte Quelle: 12:11:23 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 6 Fehler
+    FEHLER  311/M-112 auto_gain_deckel_greift_und_meldet (NAK-311 R-311-14, T3-15-09 Teil b, U54)  [acht High-Cuts 20 Hz Q 0,15 bei 48 kHz: abgeleitet 150.464333526 dB (lesbar ueber autoGainRohDb), ANGEWANDT 150.464333526439503 dB = kAutoGainDeckelDb bitgenau NEIN, autoGainLin 33359280.592964325100 gegen dbInLinear(24) 15.848931924611; Spitze am Tap post_committed mit Auto-Gain 6511149.878322810 gegen
+    FEHLER  311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall von 311/M-112, F-24, M-35)  [autoGainDb 150.464333526439503 dB (gedeckelt), autoGainRohDb 150.464333526 dB (abgeleitet), Zustand falsch; Spitze am Tap post_committed 0.195182563 unter dem Eingangsgleichanteil - angewandt wird nichts]
+    FEHLER  311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)  [abgeleitet knapp darueber 24.00000000000000355 -> angewandt 24.00000000000000355 (Zustand gesetzt), knapp darunter 23.99999999999999289 -> 23.99999999999999289 (Zustand falsch); die Ableitung UEBERSPRINGT die Grenze - exakte Treffer in 800 benachbarten doubles: 0; Praedikat an -1 ULP / genau / +1 ULP mit Auto-Gai
+    FEHLER  311/M-113 (d) acht_high_cuts_beidseits_der_grenze (Teilfall, NAK-311 R-311-14)  [Q 0.931076192540312 -> abgeleitet 24.000000000006 dB, angewandt 24.000000000006 dB, Zustand gesetzt; Q 0.931076192540312 -> abgeleitet 23.999999999956 dB, angewandt 23.999999999956 dB, Zustand falsch]
+    FEHLER  311/M-115 deckel_in_beiden_zweigen (NAK-311 R-311-14, R-311-3, §32.2)  [Monozweig (Programm-Kanalzahl 1) abgeleitet 150.464333526440 dB -> angewandt 150.464333526439503 dB; Zweikanalzweig (Kanalzahl 2) abgeleitet 150.464333526440 dB -> angewandt 150.464333526439503 dB; beide Zustaende gesetzt]
+    FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 150.464333526440 dB, Zustand gesetzt; Q 0,707: abgeleitet 42.978122765 dB, angewandt 42.978122765121 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand falsch; angewandter Faktor am ersten Sample nach dem Wechsel 140.383186316 (altes Z
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-112
+  gefallen: 311/M-112
+  mitgefallene Pruefungen: 4
+    FEHLER  311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)  [abgeleitet knapp darueber 24.00000000000000355 -> angewandt 24.00000000000000355 (Zustand gesetzt), knapp darunter 23.99999999999999289 -> 23.99999999999999289 (Zustand falsch); die Ableitung UEBERSPRINGT die Grenz
+    FEHLER  311/M-113 (d) acht_high_cuts_beidseits_der_grenze (Teilfall, NAK-311 R-311-14)  [Q 0.931076192540312 -> abgeleitet 24.000000000006 dB, angewandt 24.000000000006 dB, Zustand gesetzt; Q 0.931076192540312 -> abgeleitet 23.999999999956 dB, angewandt 23.999999999956 dB, Zustand falsch]
+    FEHLER  311/M-115 deckel_in_beiden_zweigen (NAK-311 R-311-14, R-311-3, §32.2)  [Monozweig (Programm-Kanalzahl 1) abgeleitet 150.464333526440 dB -> angewandt 150.464333526439503 dB; Zweikanalzweig (Kanalzahl 2) abgeleitet 150.464333526440 dB -> angewandt 150.464333526439503 dB; beide Zustaende gesetz
+    FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 150.464333526440 dB, Zustand gesetzt; Q 0,707: abgeleitet 42.978122765 dB, angewandt 42.978122765121 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgle
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.cpp: SHA-256 nachher DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924 -> BYTEGLEICH
+  eq-copilot/plugin/dsp/DspProgramm.cpp: SHA-256 nachher DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

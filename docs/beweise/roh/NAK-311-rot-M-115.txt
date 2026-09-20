@@ -1,0 +1,38 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-115
+====================================================
+
+Matrixzeile : M-115 - T3-15-09 Teil b - Mono- und Zweikanalzweig
+Zusage      : Beide Zweige liefern denselben gedeckelten Wert, bitgleich, und setzen denselben Zustand; der Deckel steht in BEIDEN Rueckgabezeilen.
+Beine       : EqCopDspGoldenTest
+Erwartet    : die Zusage faellt an 311/M-115
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.cpp
+  SHA-256 vorher : DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-115-0-DspProgramm.cpp
+  vorher woertlich:
+    |         return gedeckelterAutoGainDb (monoRoh);   // NAK-311 R-311-14
+  nachher woertlich:
+    |         return monoRoh;   // MUTATION M-115: Deckel nur in der Zweikanalzeile
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:14:16, juengste mutierte Quelle: 12:14:14 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 1 Fehler
+    FEHLER  311/M-115 deckel_in_beiden_zweigen (NAK-311 R-311-14, R-311-3, §32.2)  [Monozweig (Programm-Kanalzahl 1) abgeleitet 150.464333526440 dB -> angewandt 150.464333526439503 dB; Zweikanalzweig (Kanalzahl 2) abgeleitet 150.464333526440 dB -> angewandt 24.000000000000000 dB; beide Zustaende gesetzt]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-115
+  gefallen: 311/M-115
+  mitgefallene Pruefungen: 0
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.cpp: SHA-256 nachher DD841820114817DB76F221834BBA80E3123F170B612580B422D70DB1B6FAF924 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

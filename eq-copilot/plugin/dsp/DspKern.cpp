@@ -112,8 +112,13 @@ void DspKern::bereiteVor (double samplerate, int maxBlock, int kanaele)
         // Was `freigeben` NICHT tut und der Weg hier tun muss (R-311-20): der
         // gemeldete Auto-Gain und die Zaehler gehoeren zum alten Fenster. Ohne
         // das truege `autoGainDb()` den Wert der letzten unterstuetzten Rate,
-        // waehrend kein Block klingt (M-143).
-        for (auto& a : autoGainBericht) a.store (0.0, std::memory_order_relaxed);
+        // waehrend kein Block klingt (M-143). NAK-311 R-311-14: der
+        // ungedeckelte Wert und der Deckelzustand gehoeren zum selben alten
+        // Fenster und fallen mit ihm - sonst meldete der Kern einen
+        // gedeckelten Ausgleich, waehrend kein Block klingt.
+        for (auto& a : autoGainBericht)          a.store (0.0,   std::memory_order_relaxed);
+        for (auto& a : autoGainRohBericht)       a.store (0.0,   std::memory_order_relaxed);
+        for (auto& a : autoGainGedeckeltBericht) a.store (false, std::memory_order_relaxed);
         zaehlerZuruecksetzen();
 
         // Der GRUND, lesbar ueber `abgelehnteSamplerateHz()`. Nur eine
@@ -145,7 +150,11 @@ void DspKern::bereiteVor (double samplerate, int maxBlock, int kanaele)
     hoerFadeRest = 0;
     candidateAktiv.store (false, std::memory_order_relaxed);
     dynamikAktiv  .store (false, std::memory_order_relaxed);
-    for (auto& a : autoGainBericht) a.store (0.0, std::memory_order_relaxed);
+    // NAK-311 R-311-14: die drei Auto-Gain-Melder gehoeren zusammen und fallen
+    // zusammen; die naechste Publikation belegt sie wieder gemeinsam.
+    for (auto& a : autoGainBericht)          a.store (0.0,   std::memory_order_relaxed);
+    for (auto& a : autoGainRohBericht)       a.store (0.0,   std::memory_order_relaxed);
+    for (auto& a : autoGainGedeckeltBericht) a.store (false, std::memory_order_relaxed);
 
     tapGueltig    = 0;
     letzteKanaele = 0;
@@ -252,6 +261,13 @@ void DspKern::zaehlerZuruecksetzen() noexcept
 void DspKern::meldeProgramm (Pfad p, const DspProgramm& prog) noexcept
 {
     autoGainBericht[(size_t) p].store (prog.autoGainDb, std::memory_order_relaxed);
+    // NAK-311 R-311-14 (Karte U54): derselbe Ort, derselbe Schreiber, dieselbe
+    // Speicherordnung - und dasselbe Programm. Der gemeldete, der ungedeckelte
+    // Wert und der Zustand stammen aus EINER Quelle und koennen deshalb nie
+    // auseinanderlaufen (M-117). Die Bedingung des Zustands steht einmal in
+    // `DspProgramm::autoGainGedeckelt()`, nicht hier.
+    autoGainRohBericht[(size_t) p].store (prog.autoGainRohDb, std::memory_order_relaxed);
+    autoGainGedeckeltBericht[(size_t) p].store (prog.autoGainGedeckelt(), std::memory_order_relaxed);
     if (p == Pfad::committed)
         dynamikAktiv.store (prog.eqEngagiert && ! prog.hardBypass && prog.irgendeinBandDynamisch(),
                             std::memory_order_release);

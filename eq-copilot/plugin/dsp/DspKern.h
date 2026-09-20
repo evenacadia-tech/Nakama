@@ -318,12 +318,33 @@ public:
     std::uint64_t verworfeneAnalyseframes() const noexcept
     { return zaehlerVerworfen.load (std::memory_order_relaxed); }
 
-    /** Der abgeleitete Auto-Gain-Betrag des Committed-Programms in dB. IMMER
-        lesbar, auch wenn der Schalter aus ist (M-35). */
+    /** Der Auto-Gain-Betrag des Committed-Programms in dB, so wie er
+        ANGEWANDT wird. IMMER lesbar, auch wenn der Schalter aus ist (M-35).
+        Seit NAK-311 R-311-14 ist das auf der Anhebungsseite der gedeckelte
+        Wert; der ungedeckelte steht daneben in `autoGainRohDb()`. */
     double autoGainDb() const noexcept { return autoGainBericht[0].load (std::memory_order_relaxed); }
 
     /** Derselbe Wert des Candidate-Programms, aus SEINER Kurve (B-6). */
     double autoGainCandidateDb() const noexcept { return autoGainBericht[1].load (std::memory_order_relaxed); }
+
+    /** NAK-311 R-311-14 (T3-15-09 Teil b, Karte U54, §41.2 F-23): derselbe
+        Auto-Gain des Committed-Programms OHNE den Deckel. Greift der Deckel
+        nicht, ist er BITGLEICH zu `autoGainDb()`; greift er, steht hier der
+        abgeleitete Wert, damit nichts still verschwindet (R4: "der abgeleitete
+        Wert in dB ist lesbar"). Wie `autoGainDb()` immer lesbar, auch wenn der
+        Schalter aus ist (M-35, M-118). */
+    double autoGainRohDb() const noexcept { return autoGainRohBericht[0].load (std::memory_order_relaxed); }
+
+    /** NAK-311 R-311-14 (§41.2 F-24): greift der Deckel im Committed-Programm,
+        UND ist `v2.global.auto_gain` an? Nur dann meldet der Kern einen
+        gedeckelten Ausgleich - ein Deckel ohne wirkenden Ausgleich waere eine
+        Meldung ueber etwas, das niemand hoert (M-118). Der Zustand haengt am
+        gefahrenen Programm und wird nie gehalten: er faellt zurueck, sobald ein
+        Programm die Grenze nicht mehr reisst oder der Schalter ausgeht (M-116).
+        Die Bedingung steht nicht hier, sondern einmal in
+        `DspProgramm::autoGainGedeckelt()`. */
+    bool autoGainGedeckelt() const noexcept
+    { return autoGainGedeckeltBericht[0].load (std::memory_order_relaxed); }
 
     /** NAK-311 R-311-16 (F08, Karte U47): die zuletzt ABGELEHNTE Abtastrate
         in Hz - der Grund, aus dem der EQ neutral bleibt -, oder exakt +0,0,
@@ -574,6 +595,14 @@ private:
     std::atomic<std::uint64_t> zaehlerMsStufe     { 0 };
     std::atomic<std::uint64_t> zaehlerUebernahmen { 0 };
     std::array<std::atomic<double>, (size_t) kPfade> autoGainBericht {};
+    /*  NAK-311 R-311-14: der ungedeckelte Wert und der Deckelzustand je Pfad.
+        Sie stehen neben `autoGainBericht`, werden am selben Ort, vom selben
+        Schreiber (`meldeProgramm`, Worker) und mit derselben Speicherordnung
+        belegt und aus demselben Programm genommen - deshalb koennen die drei
+        Melder nicht auseinanderlaufen. Der Audiothread liest keinen von
+        ihnen. */
+    std::array<std::atomic<double>, (size_t) kPfade> autoGainRohBericht {};
+    std::array<std::atomic<bool>,   (size_t) kPfade> autoGainGedeckeltBericht {};
 
     void (*teilstueckHaken) (void*) { nullptr };
     void* teilstueckKontext { nullptr };

@@ -126,6 +126,38 @@ inline constexpr int    kAutoGainStellen = 121;
 inline constexpr double kAutoGainVonHz   = 20.0;
 inline constexpr double kAutoGainBisHz   = 20000.0;
 
+/** NAK-311 R-311-14 (T3-15-09 Teil b, Karte U54): die Obergrenze des
+    ANGEWANDTEN Auto-Gain-Ausgleichs in dB. EINSEITIG - gedeckelt wird nur die
+    ANHEBUNG. Die Absenkungsseite bleibt, wie sie ist (dort wirkt weiter allein
+    die BERICHTSgrenze `kBerichtAutoGainGrenzeDb`, M-114, M-67): die Gefahr, ueber
+    die der User am 19.09.2026 entschieden hat, ist das Aufdrehen.
+
+    Die Zahl ist nicht gewaehlt, sondern uebernommen: `v1.global.output_trim_db`
+    reicht bis +24 dB (`eq-copilot/schemas/state/nakama-parameter-v2.json`).
+    Nakama hebt automatisch nie weiter an, als der User selbst aufdrehen kann.
+    Sie liegt 17,0 dB ueber der groessten Anhebung gewoehnlicher Arbeit
+    (Low-Cut 500 Hz und High-Cut 2 kHz zusammen: +7,0 dB) und 18,99 dB unter der
+    kleinsten gemessenen Gefahr (acht High-Cuts 20 Hz Q 0,707: +42,99 dB;
+    dieselben mit Q 0,15: +150,46 dB) - linear Faktor 8,9. */
+inline constexpr double kAutoGainDeckelDb = 24.0;
+
+/** Der Deckel selbst, einzeln aufrufbar (311/M-113). STRIKT groesser
+    entscheidet: `kAutoGainDeckelDb` und der naechste `double` darunter kommen
+    BITGLEICH zurueck, erst der naechste darueber wird bitgenau auf die Grenze
+    gesetzt. Kein `std::clamp`, keine Multiplikation, kein Runden (Muster
+    `berichtsAutoGainDb`).
+
+    Jeder Wert auf der Absenkungsseite kommt unveraendert zurueck, auch -0,0;
+    +0,0 bleibt +0,0. NaN und +/-Inf erreichen diese Funktion nie - der
+    Kurzschluss und die zwei Wachen von `leiteAutoGainAb` stehen davor. Kaeme
+    doch ein NaN, faellt der Vergleich wie jeder Vergleich mit NaN, und der Wert
+    kaeme unveraendert zurueck: gedeckelt wird nur, was nachweislich zu gross
+    ist. */
+constexpr double gedeckelterAutoGainDb (double roh) noexcept
+{
+    return roh > kAutoGainDeckelDb ? kAutoGainDeckelDb : roh;
+}
+
 //==============================================================================
 /** Ein Band-Slot im gebauten Programm. */
 struct BandProgramm
@@ -223,10 +255,22 @@ struct DspProgramm
     double monoBassHz   { 0.0 };
 
     /*  Auto-Gain. `autoGainDb` wird IMMER gerechnet und ist immer lesbar
-        (M-35); angewandt wird es nur bei `autoGainAn`. */
-    bool   autoGainAn   { false };
-    double autoGainDb   { 0.0 };
-    double autoGainLin  { 1.0 };
+        (M-35); angewandt wird es nur bei `autoGainAn`.
+
+        NAK-311 R-311-14 (T3-15-09 Teil b, Karte U54): `autoGainDb` traegt seit
+        dem Aenderungssatz B den ANGEWANDTEN Wert, auf der Anhebungsseite also
+        den gedeckelten. `autoGainLin` folgt ihm, der Kern faehrt ihn ueber
+        seine Rampe, und `baueBericht` meldet ihn - drei Leser, EINE Zahl
+        (M-117). Daneben haelt `autoGainRohDb` den UNGEDECKELTEN Wert lesbar,
+        weil R4 "der abgeleitete Wert in dB ist lesbar" zusagt und ein Deckel,
+        der ihn ueberschreibt, dem spaeteren Bedienpunkt die Moeglichkeit
+        naehme, ehrlich zu zeigen, wie weit gedeckelt wurde (F-23). Greift der
+        Deckel nicht, sind beide BITGLEICH. Beide sind Laufzeit: nie
+        gespeichert, nie im `state_hash`, ueber keinen Draht. */
+    bool   autoGainAn    { false };
+    double autoGainDb    { 0.0 };
+    double autoGainRohDb { 0.0 };
+    double autoGainLin   { 1.0 };
 
     /*  Die M/S-Stufe (Width und Mono-Bass). `msStufeAktiv` ist false, wenn
         width == 1,0 UND monoBassHz == 0 - dann wird die Matrix gar nicht
@@ -264,6 +308,23 @@ struct DspProgramm
     {
         for (const auto& b : baender) if (b.aktiv && b.dynamisch) return true;
         return false;
+    }
+
+    /** NAK-311 R-311-14 (§41.2 F-24): greift der Deckel in DIESEM Programm -
+        und wirkt der Ausgleich ueberhaupt? Die Bedingung steht hier EINMAL;
+        `DspKern::meldeProgramm` und `baueBericht` lesen beide sie, damit die
+        zwei Melder nicht auseinanderlaufen koennen (M-117).
+
+        Zwei Bedingungen, beide noetig (F-24): der Deckel greift (strikt
+        groesser, dieselbe Richtung wie `gedeckelterAutoGainDb`) UND
+        `v2.global.auto_gain` ist an. Ein gemeldeter Deckel ohne wirkenden
+        Ausgleich waere eine Meldung ueber etwas, das niemand hoert
+        (`CLAUDE.md`, "keine toten UI-Elemente"). Der Zustand haengt allein am
+        Programm - er wird nie gehalten und faellt mit dem naechsten Programm
+        zurueck (M-116). */
+    bool autoGainGedeckelt() const noexcept
+    {
+        return autoGainAn && autoGainRohDb > kAutoGainDeckelDb;
     }
 };
 
@@ -314,8 +375,20 @@ void baueProgramm (const nakama::parameter::DspSatz& satz, double samplerate,
     Kaskade zaehlt die Reihenfolge. Die Faltung waere hier falsch, nicht nur
     ungenau - der Kern KENNT das Material im Monobus (beide Komponenten sind
     gleich), und nur die Kaskade traegt den Weg, auf dem ein spaeteres
-    `mid`-Band den gedachten rechten Kanal wieder nach links mischt. */
-double leiteAutoGainAb (const DspProgramm& p);
+    `mid`-Band den gedachten rechten Kanal wieder nach links mischt.
+
+    NAK-311 R-311-14 (Karte U54): der Rueckgabewert ist der ANGEWANDTE Wert -
+    auf der Anhebungsseite durch `gedeckelterAutoGainDb` einseitig gedeckelt.
+    Hier und nur hier: an dieser Stelle lesen Programm, Kern und Bericht
+    dieselbe Zahl (M-117); ein Deckel erst am Rampenziel liesse drei Zahlen
+    nebeneinander laufen. Beide Zweige decken an ihrer eigenen Rueckgabezeile,
+    weil der Monozweig mit `return` endet.
+
+    `ungedeckeltAus` nimmt, wenn gesetzt, den UNGEDECKELTEN Wert auf. JEDER
+    Rueckweg belegt ihn: die fuenf Kurzschluss- und Wachwege mit 0,0, die zwei
+    rechnenden mit dem abgeleiteten Wert. Er ist nie NaN und nie unendlich -
+    die Wachen davor bleiben unveraendert. */
+double leiteAutoGainAb (const DspProgramm& p, double* ungedeckeltAus = nullptr);
 
 /** Die Gitterfrequenz einer Stelle 0..120. Oeffentlich, damit der Golden
     dieselben Stellen prueft, ohne sie abzuschreiben. */

@@ -82,11 +82,18 @@ double autoGainGitterHz (int stelle) noexcept
     return kAutoGainVonHz * std::pow (kAutoGainBisHz / kAutoGainVonHz, anteil);
 }
 
-double leiteAutoGainAb (const DspProgramm& p)
+double leiteAutoGainAb (const DspProgramm& p, double* ungedeckeltAus)
 {
     // M-39, B-18: der Rechenort wird GEZAEHLT, nicht behauptet. Laeuft diese
     // Ableitung je im Audiopfad, steigt dort ein eigener Zaehler.
     RtWache::meldeAbleitung();
+
+    // NAK-311 R-311-14: JEDER Rueckweg legt den ungedeckelten Wert ab. Die
+    // fuenf Kurzschluss- und Wachwege unten geben 0,0 zurueck - dort sind
+    // ungedeckelt und gedeckelt dasselbe, und diese Vorbelegung traegt sie
+    // alle auf einmal; die zwei RECHNENDEN Rueckwege ueberschreiben sie mit
+    // dem abgeleiteten Wert. +0,0 bleibt dabei +0,0.
+    if (ungedeckeltAus != nullptr) *ungedeckeltAus = 0.0;
 
     // M-36: flache Kurve ergibt EXAKT 0,0 dB. Traegt das Programm kein
     // aktives Band, ist der Gitterlauf ueberfluessig - und ein Lauf ueber
@@ -160,7 +167,9 @@ double leiteAutoGainAb (const DspProgramm& p)
         const double monoMittel = monoSumme / (double) kAutoGainStellen;
         if (! (monoMittel > 0.0) || ! std::isfinite (monoMittel)) return 0.0;
         if (monoMittel == 1.0) return 0.0;
-        return -10.0 * std::log10 (monoMittel);
+        const double monoRoh = -10.0 * std::log10 (monoMittel);
+        if (ungedeckeltAus != nullptr) *ungedeckeltAus = monoRoh;
+        return gedeckelterAutoGainDb (monoRoh);   // NAK-311 R-311-14
     }
 
     double summe = 0.0;
@@ -200,7 +209,9 @@ double leiteAutoGainAb (const DspProgramm& p)
     const double mittel = summe / (double) kAutoGainStellen;
     if (! (mittel > 0.0) || ! std::isfinite (mittel)) return 0.0;
     if (mittel == 1.0) return 0.0;   // bitgenau flach: log10(1,0) ist 0, aber -0,0 ist es nicht
-    return -10.0 * std::log10 (mittel);
+    const double roh = -10.0 * std::log10 (mittel);
+    if (ungedeckeltAus != nullptr) *ungedeckeltAus = roh;
+    return gedeckelterAutoGainDb (roh);   // NAK-311 R-311-14
 }
 
 //==============================================================================
@@ -336,8 +347,15 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
     // R4: immer gerechnet, angewandt nur bei eingeschaltetem Schalter
     // (M-35). Der Wert steht ausserhalb des Audiothreads fest und wird dort
     // ueber denselben Rampenweg wie der Output-Trim angewandt (M-39).
-    aus.autoGainDb  = leiteAutoGainAb (aus);
-    aus.autoGainLin = aus.autoGainDb == 0.0 ? 1.0 : dbInLinear (aus.autoGainDb);
+    //
+    // NAK-311 R-311-14 (Karte U54): `leiteAutoGainAb` gibt den ANGEWANDTEN
+    // Wert zurueck - auf der Anhebungsseite gedeckelt -, und legt den
+    // ungedeckelten daneben ab. `autoGainLin` folgt dem angewandten Wert:
+    // gefahren wird genau das, was Kern und Bericht melden (M-117).
+    double autoGainRoh = 0.0;
+    aus.autoGainDb    = leiteAutoGainAb (aus, &autoGainRoh);
+    aus.autoGainRohDb = autoGainRoh;
+    aus.autoGainLin   = aus.autoGainDb == 0.0 ? 1.0 : dbInLinear (aus.autoGainDb);
 
     // NAK-311 (T3-01-01, §7.2 Punkt 3): das Merkmal "neutral" - der engagierte
     // Pfad rechnet bauartbedingt die Identitaet, und der Kern darf das

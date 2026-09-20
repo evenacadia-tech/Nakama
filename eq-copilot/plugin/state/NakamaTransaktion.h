@@ -407,7 +407,7 @@ struct DspBericht
     std::uint64_t         revision = 0;
     HashText              hash {};
     juce::String          jcs;               ///< GENAU der kanonische Text, ueber den `hash` gebildet wurde (M-103)
-    double                autoGainDb = 0.0;  ///< abgeleitet aus dem Programm des BESTAETIGTEN Zustands (R4)
+    double                autoGainDb = 0.0;  ///< aus dem Programm des BESTAETIGTEN Zustands (R4); auf der Anhebungsseite der gedeckelte Wert (R-311-14)
     std::vector<Klemmung> klemmungen;        ///< aus demselben Programm, in Slotreihenfolge
     std::vector<int>      verletzteBaender;  ///< aus dem WIRKSAMEN Zustand - Automation meldet dieselbe Verletzung (M-70)
     int                   undoTiefe = 0;     ///< jetzt moegliche Undo-Schritte: Ringlaenge minus Cursor
@@ -420,6 +420,20 @@ struct DspBericht
         und dieses Ticket den v3-Vertrag nicht aendert (§41.2 F-27, M-138 b,
         M-140). Das versionierte Drahtfeld ist Registerpunkt zu S26-28. */
     double                abgelehnteSamplerateHz = 0.0;
+
+    /** NAK-311 R-311-14 (T3-15-09 Teil b, Karte U54): greift die Obergrenze
+        des ANGEWANDTEN Ausgleichs, UND ist `v2.global.auto_gain` an? Dann
+        traegt `autoGainDb` oben den gedeckelten statt des abgeleiteten Werts,
+        und der Zustand sagt es ehrlich. Er kommt aus demselben Programm, aus
+        dem `autoGainDb` kommt, und aus derselben einen Bedingung, die der Kern
+        liest (`dsp::DspProgramm::autoGainGedeckelt()`, M-117).
+
+        Wie `abgelehnteSamplerateHz` C++-lokal: es geht NICHT in das
+        `state_report.dsp`-Dokument, weil `$defs/dsp_bericht`
+        `additionalProperties: false` und ein geschlossenes `required` hat und
+        dieses Ticket den v3-Vertrag nicht aendert (§41.2 F-27, M-140). Der
+        ungedeckelte Wert steht am Kern (`dsp::DspKern::autoGainRohDb()`). */
+    bool                  autoGainGedeckelt = false;
 };
 
 /** NAK-311 R-311-5 (T3-15-09 Teil a): die BERICHTSgrenze von `auto_gain_db`
@@ -428,10 +442,13 @@ struct DspBericht
     C++ genau einmal; Bein B3c liest sie im Test aus dem GELADENEN Schema und
     haelt beide gegeneinander, damit Vertrag und Code nicht auseinanderlaufen.
 
-    Sie ist KEINE Obergrenze des angewandten Ausgleichs: die Ableitung selbst
-    darf darueber liegen (acht Low-Shelves 1 kHz +12 dB Q 8 ergeben
-    -199,77 dB), und der Kern faehrt sie ungeklemmt weiter. Ob der ANGEWANDTE
-    Ausgleich einen Deckel bekommt, entscheidet Karte U54. */
+    Sie ist KEINE Obergrenze des angewandten Ausgleichs: auf der
+    ABSENKUNGSSEITE darf die Ableitung darueber liegen (acht Low-Shelves 1 kHz
+    +12 dB Q 8 ergeben -199,77 dB), und der Kern faehrt sie dort ungeklemmt
+    weiter. Die Obergrenze des ANGEWANDTEN Ausgleichs ist seit NAK-311
+    R-311-14 (Karte U54) `dsp::kAutoGainDeckelDb` - einseitig, nur nach oben
+    und eine STUFE FRUEHER, in `leiteAutoGainAb`. Beide Stufen sind getrennt
+    und werden getrennt gemessen (311/M-114, 311/M-117). */
 inline constexpr double kBerichtAutoGainGrenzeDb = 120.0;
 
 /** NAK-311 R-311-5: der gemeldete Auto-Gain. Klemmt auf

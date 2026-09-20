@@ -1,0 +1,52 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-118
+====================================================
+
+Matrixzeile : M-118 - T3-15-09 Teil b - Gegenfall Auto-Gain aus
+Zusage      : Der Zustand ist FALSCH, wenn v2.global.auto_gain aus ist: gemeldet wird ein gedeckelter Ausgleich nur, wenn einer wirkt.
+Beine       : EqCopDspGoldenTest, EqCopSchemaTest, EqCopTransactionTest
+Erwartet    : die Zusage faellt an 311/M-118
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.h
+  SHA-256 vorher : 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-118-0-DspProgramm.h
+  vorher woertlich:
+    |         return autoGainAn && autoGainRohDb > kAutoGainDeckelDb;
+  nachher woertlich:
+    |         return autoGainRohDb > kAutoGainDeckelDb;   // MUTATION M-118: ohne autoGainAn
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Bau EqCopSchemaTest: EXIT=0
+  Bau EqCopTransactionTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:15:24, juengste mutierte Quelle: 12:15:18 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 2 Fehler
+    FEHLER  311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall von 311/M-112, F-24, M-35)  [autoGainDb 24.000000000000000 dB (gedeckelt), autoGainRohDb 150.464333526 dB (abgeleitet), Zustand GESETZT; Spitze am Tap post_committed 0.195182563 unter dem Eingangsgleichanteil - angewandt wird nichts]
+    FEHLER  311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)  [abgeleitet knapp darueber 24.00000000000000355 -> angewandt 24.00000000000000000 (Zustand gesetzt), knapp darunter 23.99999999999999289 -> 23.99999999999999289 (Zustand falsch); die Ableitung UEBERSPRINGT die Grenze - exakte Treffer in 800 benachbarten doubles: 0; Praedikat an -1 ULP / genau / +1 ULP mit Auto-Gai
+  Binary EqCopSchemaTest: 12:15:27, juengste mutierte Quelle: 12:15:18 -> Binary juenger
+  Lauf EqCopSchemaTest: EXIT=1, 161 bestanden, 1 gescheitert
+    [ROT]  311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall von 311/M-117, NAK-311 F-24, M-35): derselbe Pruefling mit v2.global.auto_gain AUS - gerechnet und lesbar bleibt alles, ANGEWANDT wird nichts, und genau deshalb ist der Zustand in Kern und Bericht falsch: gemeldet wird ein gedeckelter Ausgleich nur, wenn einer wirkt  [abgeleitet 150.464333526 dB, gedeckelt 24.000000000000000 dB, Beric
+  Binary EqCopTransactionTest: 12:15:33, juengste mutierte Quelle: 12:15:18 -> Binary juenger
+  Lauf EqCopTransactionTest: EXIT=1, 192 geprueft, 1 Fehler
+    FEHLER  311/M-118 auto_gain_aus_deckelt_ohne_zu_melden (Teilfall ueber SondeProcessor::dspBericht, NAK-311 F-24, M-35): derselbe Pruefling mit v2.global.auto_gain AUS - der Wert bleibt gerechnet und lesbar, angewandt wird nichts, und der Zustand ist in Kern und Bericht falsch  [Auto-Gain aus: abgeleitet 150.46433352644 dB, Kern angewandt 24 dB, Bericht 24 dB, Deckel 24 dB; Zustand Kern gesetzt / B
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-118
+  gefallen: 311/M-118
+  mitgefallene Pruefungen: 1
+    FEHLER  311/M-113 (c) programm_und_praedikat_an_der_grenze (NAK-311 R-311-14, F-24)  [abgeleitet knapp darueber 24.00000000000000355 -> angewandt 24.00000000000000000 (Zustand gesetzt), knapp darunter 23.99999999999999289 -> 23.99999999999999289 (Zustand falsch); die Ableitung UEBERSPRINGT die Grenz
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.h: SHA-256 nachher 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Bau EqCopSchemaTest: EXIT=0
+  Bau EqCopTransactionTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+  Lauf EqCopSchemaTest nach der Ruecknahme: EXIT=0, 162 bestanden, 0 gescheitert
+  Lauf EqCopTransactionTest nach der Ruecknahme: EXIT=0, 192 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

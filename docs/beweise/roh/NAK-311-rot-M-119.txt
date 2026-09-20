@@ -1,0 +1,45 @@
+NAK-311 Etappe 5, Aenderungssatz B - Rotbeweis M-119
+====================================================
+
+Matrixzeile : M-119 - T3-15-09 Teil b - Grenze und Goldens (Regressionswache)
+Zusage      : Alle vierzehn Bitmuster von 311/M-61 bleiben bitgleich: ihre Werte liegen zwischen -5,997027825804 und +0,230273950213 dB, also saemtlich unter kAutoGainDeckelDb.
+Beine       : EqCopDspGoldenTest
+Erwartet    : die Zusage faellt an 311/M-61, 311/M-119
+Datum       : 20.09.2026
+Repo        : C:\Users\phili\Projekte\Nakama, Branch master
+
+Mutationsort: eq-copilot/plugin/dsp/DspProgramm.h
+  SHA-256 vorher : 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342
+  Sicherungskopie: C:\Users\phili\.claude\jobs\dd6f4e0c\tmp\rot-sicherung\M-119-0-DspProgramm.h
+  vorher woertlich:
+    | inline constexpr double kAutoGainDeckelDb = 24.0;
+  nachher woertlich:
+    | inline constexpr double kAutoGainDeckelDb = 0.1;   // MUTATION M-119: Deckel 0,1
+
+Lauf MIT Mutation
+-----------------
+  Bau EqCopDspGoldenTest: EXIT=0
+  Binary EqCopDspGoldenTest: 12:16:13, juengste mutierte Quelle: 12:16:07 -> Binary juenger
+  Lauf EqCopDspGoldenTest: EXIT=1, 365 geprueft, 5 Fehler
+    FEHLER  311/M-61 zweikanalformel_bitgleich_zum_basisstand (R-311-3)  [erste Abweichung M47_gemischtes_programm: 0x3FB999999999999A statt 0x3FCD799DE6A48DB0]
+    FEHLER  311/M-119 alle_vierzehn_goldens_liegen_auf_der_ungedeckelten_seite (NAK-311 R-311-14, Gate GRENZE)  [14 Prueflinge von -5.997027825804 bis 0.230273950213 dB, Deckel 0.1 dB; darueber 1, nicht bitgleich durch den Deckel 1, Zustand gesetzt 1]
+    FEHLER  311/M-113 (d) acht_high_cuts_beidseits_der_grenze (Teilfall, NAK-311 R-311-14)  [Q 0.900000000000000 -> abgeleitet 26.338779299292 dB, angewandt 0.100000000000 dB, Zustand gesetzt; Q 1.000000000000000 -> abgeleitet 19.082282923505 dB, angewandt 0.100000000000 dB, Zustand GESETZT]
+    FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 0.100000000000 dB, Zustand gesetzt; Q 0,707: abgeleitet 42.978122765 dB, angewandt 0.100000000000 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 0.100000000 dB (bitgleich NEIN), Zustand GESETZT; angewandter Faktor am ersten Sample nach dem Wechsel 1.011579454 (altes Ziel
+    FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 0.1000 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: ja, Spitze Ausgang/Eingang 1.0000000, groesste Abweichung von 1,0 0.000000000]
+
+Die Zusage faellt an der erwarteten Pruefung: JA
+  erwartet: 311/M-119, 311/M-61
+  gefallen: 311/M-119, 311/M-61
+  mitgefallene Pruefungen: 3
+    FEHLER  311/M-113 (d) acht_high_cuts_beidseits_der_grenze (Teilfall, NAK-311 R-311-14)  [Q 0.900000000000000 -> abgeleitet 26.338779299292 dB, angewandt 0.100000000000 dB, Zustand gesetzt; Q 1.000000000000000 -> abgeleitet 19.082282923505 dB, angewandt 0.100000000000 dB, Zustand GESETZT]
+    FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 0.100000000000 dB, Zustand gesetzt; Q 0,707: abgeleitet 42.978122765 dB, angewandt 0.100000000000 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 0.100000000 dB (bitgleich 
+    FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 0.1000 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: ja, Spitze Ausgang/Eingang 1.0000000, groesste Abweichung von 1,0 0.000000000]
+
+Ruecknahme
+----------
+  eq-copilot/plugin/dsp/DspProgramm.h: SHA-256 nachher 613AE90EC3CEC4370BC4C4E330934F32FA374FEFF611E96F77F0F12CC1A74342 -> BYTEGLEICH
+  Bau EqCopDspGoldenTest: EXIT=0
+  Lauf EqCopDspGoldenTest nach der Ruecknahme: EXIT=0, 365 geprueft, 0 Fehler
+
+Bein nach der Ruecknahme gruen: JA
+

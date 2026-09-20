@@ -3114,10 +3114,11 @@ void nak311Recall()
         a->dspKernFuerTest().auslenkungenDb (werte);
 
         // NAK-311 W35 (R-311-15, 311/M-126): der PEGELBEGRIFF und sein
-        // Zustand sind abgeleitet wie `kanaele` - Laufzeit, kein Statefeld,
-        // kein Drahtfeld, keine Revision. Der Pegelzustand hat sich in den
-        // zwei Sekunden nachweislich bewegt (er traegt die Leistung des
-        // Quadraturtons), und die Statebytes sind trotzdem bytegleich.
+        // Zustand sind abgeleitet wie `kanaele` - Laufzeit, kein Statefeld.
+        // Drahtfeld und Revision misst diese Zeile nicht; den Vertrag prueft
+        // B3c. Der Pegelzustand hat sich in den zwei Sekunden nachweislich
+        // bewegt - endlich und ueber 0 -, und die Statebytes sind trotzdem
+        // bytegleich.
         int cA = -1, cQ = -1, kA = -1, kQ = -1;
         a->dspKernFuerTest().gefahreneSlots (cA, cQ, kA, kQ);
         const double pegel = cA >= 0

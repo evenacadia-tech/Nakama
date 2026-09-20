@@ -2223,9 +2223,13 @@ void f129()
     // Die Allokations- und Sperrenzaehler misst der bestehende Lauf
     // `null_allokationen_im_callback_samt_programmwechseln`, der seit diesem
     // Satz acht dynamische Baender im Zyklus fuehrt. Den RECHENORT misst
-    // diese Zeile am Quelltext, fail-closed nach dem Muster B-13: kein
-    // Entwurf und keine transzendente Funktion im Rumpf von
-    // `verarbeiteBand`, und genau EIN Aufruf der Pegelstufe.
+    // diese Zeile am Quelltext, fail-closed nach dem Muster B-13: im Text
+    // von `verarbeiteBand` steht keine der sieben verbotenen Zeichenketten,
+    // und der Aufruf der Pegelstufe steht dort genau EINMAL. Die Wortsuche
+    // liest nur den Text dieser einen Funktion und folgt keinem Aufruf:
+    // ueber den Steuerratenschritt, der alle `kDynamikSchritt` Samples
+    // Kennlinie und SVF-Satz neu rechnet (`leistungInDb` mit `std::log10`,
+    // `svfEntwurf` mit `std::pow`), sagt sie nichts.
     //
     // Der Rechenortzaehler der `RtWache` traegt es nicht: er zaehlt, wo
     // `leiteAutoGainAb` laeuft, und ein `std::exp` im Callback meldet sich
@@ -2257,9 +2261,10 @@ void f129()
             "311/M-129 pegelstufe_rechnet_im_callback_nur_mult_und_add (NAK-311 T3-15-06, R-311-15)",
             "Rumpf von verarbeiteBand " + std::to_string (rumpf.size()) + " Zeichen, Aufrufe der "
             "Pegelstufe " + std::to_string (stufen)
-            + (treffer.empty() ? std::string (", kein Entwurf und keine transzendente Funktion")
+            + (treffer.empty() ? std::string (", keine der sieben verbotenen Zeichenketten im Text "
+                                              "dieser Funktion")
                                : ", Treffer: " + treffer)
-            + "; der Pol entsteht in baueProgramm (Worker)");
+            + "; der Pol entsteht in baueProgramm (Worker), die Wortsuche folgt keinem Aufruf");
 }
 
 void f130()
@@ -6532,8 +6537,9 @@ int main()
         // NAK-311 M-111 (W07, R-311-13): eine Publikation UEBER dem
         // Frequenzkriterium im selben Zyklus - topologisch gleich zu `rampe`,
         // aber Slot 0 springt um den Faktor 100. Sie nimmt den Crossfade-Weg;
-        // der Zaehler muss trotzdem bei 0 bleiben, denn die drei Vergleiche
-        // laufen im Worker und `blockrand` bleibt unveraendert.
+        // der Zaehler muss trotzdem bei 0 bleiben. Die drei Vergleiche liegen
+        // im Worker - diese Zeile misst das nicht, sie zaehlt Allokationen
+        // und Sperren -, und `blockrand` bleibt unveraendert.
         auto grosserSprung = rampe;
         grosserSprung.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl
             = rampe.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl * 100.0;

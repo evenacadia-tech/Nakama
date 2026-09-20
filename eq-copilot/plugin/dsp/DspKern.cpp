@@ -94,9 +94,10 @@ void DspKern::PfadZustand::ruhe() noexcept
 
 DspKern::DspKern() = default;
 
-void DspKern::bereiteVor (double samplerate, int maxBlock)
+void DspKern::bereiteVor (double samplerate, int maxBlock, int kanaele)
 {
     abtastrate      = samplerate;
+    kanalzahl       = kanaele;   // NAK-311 R-311-3
     maxBlockGroesse = maxBlock > 0 ? maxBlock : 0;
 
     const size_t n = (size_t) maxBlockGroesse;
@@ -132,6 +133,11 @@ void DspKern::freigeben()
     tapPuffer.clear();
     maxBlockGroesse = 0;
     abtastrate      = 0.0;
+    // NAK-311 R-311-3: die Kanalzahl ist Hostumgebung wie die Abtastrate und
+    // faellt mit ihr auf die Vorgabe zurueck. Ohne ein neues `bereiteVor`
+    // gibt es keinen Bus, dessen Zahl noch gaelte; ein Programmbau danach
+    // haette ohnehin `samplerate == 0` und damit Auto-Gain 0,0.
+    kanalzahl       = 2;
     // B-12: der Pool setzt seine Ressourcen zurueck, nicht seinen
     // Generationszaehler.
     baenke.zuruecksetzen();
@@ -300,7 +306,7 @@ bool DspKern::baueVor (const param::DspSatz& satz, Pfad p)
     // bankfrei und scheitert hier nie. Gerechnet wird trotzdem, damit der
     // abgeleitete Wert lesbar bleibt (M-35).
     auto& prog = vorbau[(size_t) p];
-    baueProgramm (satz, abtastrate, 0, prog);
+    baueProgramm (satz, abtastrate, 0, prog, kanalzahl);
     const bool pflicht = satz.werte[(size_t) param::kIndexEqEnabled].b;
     vorbauBankpflichtig[(size_t) p] = pflicht;
     return ! pflicht || baenke.freieSlots() > 0;

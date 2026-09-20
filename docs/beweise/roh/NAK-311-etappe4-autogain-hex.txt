@@ -1,0 +1,76 @@
+NAK-311 Etappe 4, Teil a - Hexgolden fuer die Matrixzeile 311/M-61
+==================================================================
+
+Zweck (Manifest NAK-311 §6.4 M-61, §7.1 Golden-Regel, §7.4 "Hexgolden fuer
+M-61"): die Zweikanalformel der Auto-Gain-Ableitung muss nach dem Bau des
+Monozweigs BITGLEICH bleiben. Die Erwartungswerte des Falls
+`311/M-61 zweikanalformel_bitgleich_zum_basisstand` duerfen deshalb nur vom
+UNVERAENDERTEN Kern stammen, nie vom geaenderten.
+
+Erzeugerstand
+-------------
+Repo        C:\Users\phili\Projekte\Nakama, Branch master
+Basis-SHA   df14a648e4414fea3faa0f1c90f7c669e9716292 (Basis der Etappe 4)
+Produktcode UNVERAENDERT. `git diff` beruehrte zu diesem Zeitpunkt genau eine
+            Datei: eq-copilot/plugin/tests/DspGoldenTestMain.cpp (+79/-0, nur
+            der neue Abschnitt H2 mit der Hexausgabe). Kein Byte in
+            eq-copilot/plugin/dsp/**, /state/**, /sonde/**.
+            Insbesondere traegt `leiteAutoGainAb` hier noch KEINEN Monozweig
+            und `DspProgramm` KEIN Feld `kanaele`; alle Pruefkerne laufen mit
+            der Vorgabe-Kanalzahl 2 von `bereiteVor`.
+Bau         cmake --build eq-copilot/build --config Release --target EqCopDspGoldenTest
+            EXIT=0; Binary 20.09.2026 01:42:09, Quelle 20.09.2026 01:41:14
+            (Binary juenger als Quelle, NAK-230)
+Lauf        eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/EqCopDspGoldenTest.exe
+            EXIT=0, "339 geprueft, 0 Fehler", "DSP-GOLDEN OK"
+Datum       20.09.2026
+
+Prueflinge (alle 48 kHz, Kanalzahl 2)
+-------------------------------------
+ 0 H_flache_kurve            eq an, auto_gain an, kein Band belegt (M-36)
+ 1 H_neutraler_bell          + Bell 1 kHz Q 1,0 gain 0 dB auf Slot 2 (M-36)
+ 2 H_shelf_plus_sechs        High-Shelf 20 Hz Q 1,0 +6 dB, stereo (M-37)
+ 3 H_stereo_q0707            High-Shelf 20 Hz Q 0,707 +6 dB, stereo (M-37)
+ 4 H_mid_side_paar           dasselbe Shelf auf mid (Slot 0) UND side (Slot 1) (M-37)
+ 5 H_dynamisches_bell        Bell 1 kHz Q 1,0 0 dB, dynamisch Range -12 dB (M-38)
+ 6 H_auto_gain_aus           High-Shelf 20 Hz Q 1,0 +6 dB, auto_gain AUS (M-35)
+ 7 H_mit_output_trim         High-Shelf 20 Hz Q 1,0 +6 dB, Output-Trim +6 dB (M-40)
+ 8 modus_stereo              Low-Shelf 1 kHz Q 1,0 +6 dB, channel_mode stereo
+ 9 modus_left                dasselbe Band, channel_mode left
+10 modus_right               dasselbe Band, channel_mode right
+11 modus_mid                 dasselbe Band, channel_mode mid
+12 modus_side                dasselbe Band, channel_mode side
+13 M47_gemischtes_programm   der Zustand des M-47-Laufs (Abschnitt J): Bell
+                             1 kHz Q 1,0 +6 dB mid auf Slot 0, Low-Shelf 200 Hz
+                             Q 0,707 -4 dB dynamisch (Range -6 dB, Threshold
+                             -30 dB) auf Slot 3, Width 1,4, Mono-Bass 120 Hz,
+                             Mix 0,7, auto_gain an
+
+Ausgabe des Laufs, woertlich
+----------------------------
+  hexgolden  311/M-61 H_flache_kurve  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_neutraler_bell  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_shelf_plus_sechs  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 H_stereo_q0707  0xC017714584703D0E  (-5.860616750098 dB)
+  hexgolden  311/M-61 H_mid_side_paar  0xC017714584703D0E  (-5.860616750098 dB)
+  hexgolden  311/M-61 H_dynamisches_bell  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_auto_gain_aus  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 H_mit_output_trim  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 modus_stereo  0xC0113FE32BC1B7DA  (-4.312390025805 dB)
+  hexgolden  311/M-61 modus_left  0xC0055DD001A5F001  (-2.670806897046 dB)
+  hexgolden  311/M-61 modus_right  0xC0055DD001A5F001  (-2.670806897046 dB)
+  hexgolden  311/M-61 modus_mid  0xC0022A8D8F930CAB  (-2.270777818370 dB)
+  hexgolden  311/M-61 modus_side  0xC0022A8D8F930CAB  (-2.270777818370 dB)
+  hexgolden  311/M-61 M47_gemischtes_programm  0x3FCD799DE6A48DB0  (0.230273950213 dB)
+
+Zwei Beobachtungen, die den Erzeugerstand belegen
+-------------------------------------------------
+- `modus_left` und `modus_right` liefern denselben Wert, ebenso `modus_mid`
+  und `modus_side`: die Zweikanalformel ist in L/R und in M/S symmetrisch
+  (E(f) = 0,5*(|H_L|^2 + |H_R|^2), Diagonalterm (H_M + H_S)/2). Genau diese
+  Symmetrie bricht der Monozweig auf - im Monobus wird nur a_L ausgewertet.
+- `H_mid_side_paar` ist bitgleich zu `H_stereo_q0707` (M-37, B-04-Regel).
+
+Diese vierzehn Bitmuster sind ab hier die Erwartung von 311/M-61 (Vergleich
+mit `memcmp`, nicht "nahe"). Aendert der Monozweig irgendeine dieser Zahlen,
+faellt die Zeile.

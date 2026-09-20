@@ -19,6 +19,15 @@
     Gebaut wird AUSSERHALB des Audiothreads (R9). Der Bau rechnet `sin`,
     `cos`, `pow`, `tan` und die 121 Gitterstellen des Auto-Gains; nichts
     davon laeuft je im Callback.
+
+    NAK-311 R-311-3 (T3-16-04): seit Etappe 4 traegt das Programm die
+    KANALZAHL des Busses (`kanaele`, Vorgabe 2). Sie kommt aus
+    `SondeProcessor::prepareToPlay` ueber `DspKern::bereiteVor`
+    beziehungsweise `Transaktionskern::setzeSamplerate` in `baueProgramm`
+    und wird ausschliesslich von `leiteAutoGainAb` gelesen: auf einem
+    Monobus rechnet die Ableitung die geordnete Kaskade und wertet nur den
+    ausgegebenen Kanal aus. Sie ist Laufzeit des Hosts - kein Statefeld,
+    keine Revision, kein Host-Dirty.
 */
 
 #include "DspFilter.h"
@@ -137,6 +146,18 @@ struct DspProgramm
     double        samplerate  { 0.0 };
     std::uint64_t generation  { 0 };
 
+    /*  NAK-311 (T3-16-04, R-311-3): die KANALZAHL des Busses, auf dem dieses
+        Programm laeuft - 1 im Monobus, 2 im Stereobus (das Layout laesst nur
+        diese beiden zu, `SondeProcessor::isBusesLayoutSupported`). Sie kommt
+        aus `prepareToPlay` ueber `DspKern::bereiteVor` beziehungsweise
+        `Transaktionskern::setzeSamplerate` in `baueProgramm`; die Vorgabe 2
+        haelt jeden Aufrufer bitgleich, der sie nicht nennt. Nur
+        `leiteAutoGainAb` liest sie: bei 1 rechnet die Ableitung die geordnete
+        Monokaskade und wertet nur den ausgegebenen Kanal aus. LAUFZEIT des
+        Hosts, kein Statefeld - sie wird nie gespeichert, geht ueber keinen
+        Draht und erzeugt weder Revision noch Host-Dirty. */
+    int           kanaele     { 2 };
+
     /*  NAK-311 W03 (R-311-1, §9 F-8): die PFADKENNUNG. Sie wechselt, sobald
         ein globales Feld von `rampenKompatibel` (eq_enabled, bypass,
         Samplerate, Mono-Bass-Stufe an oder aus) seit dem zuletzt publizierten
@@ -211,9 +232,14 @@ struct DspProgramm
     `samplerate` muss > 0 sein. Der `DspSatz` gilt als bereits validiert
     (`nakama::parameter::validiere`); dieser Bau prueft ihn nicht erneut,
     sondern KAPPT nur, was samplerateabhaengig ist (Nyquist), und KLEMMT,
-    was der Vertrag heute nicht liefern kann (priority_sidechain). */
+    was der Vertrag heute nicht liefern kann (priority_sidechain).
+
+    `kanalzahl` ist die Kanalzahl des Busses (NAK-311 R-311-3). Sie landet
+    unveraendert in `DspProgramm::kanaele` und wirkt ausschliesslich auf
+    `leiteAutoGainAb`: 1 waehlt die Monoformel, jede andere Zahl die
+    Zweikanalformel. Die Vorgabe 2 haelt jeden heutigen Aufrufer bitgleich. */
 void baueProgramm (const nakama::parameter::DspSatz& satz, double samplerate,
-                   std::uint64_t generation, DspProgramm& aus);
+                   std::uint64_t generation, DspProgramm& aus, int kanalzahl = 2);
 
 /** Die Auto-Gain-Ableitung, einzeln aufrufbar (§5.4).
 
@@ -231,7 +257,23 @@ void baueProgramm (const nakama::parameter::DspSatz& satz, double samplerate,
 
     Traegt das Programm KEIN aktives Band, ist das Ergebnis exakt 0,0
     (Kurzschluss statt Gitterlauf, M-36). Dynamische Anteile, Trims, Width,
-    Mono-Bass und Mix gehen nicht ein (§5.4 Feinheit 5). */
+    Mono-Bass und Mix gehen nicht ein (§5.4 Feinheit 5).
+
+    NAK-311 R-311-3: die Formel oben ist die Stereo-/M-S-Naeherung - sie
+    mittelt ZWEI Ausgangsseiten. Auf einem MONOBUS (`kanaele == 1`) gibt es
+    keine zweite Seite. Dort rechnet die Ableitung stattdessen die geordnete
+    Kaskade: je Gitterstelle startet das Paar `(a_L, a_R) = (1, 1)` - der
+    Monoeingang, den der Kern in beide Komponenten legt -, die aktiven
+    Baender wirken in SLOTREIHENFOLGE mit derselben Ruheantwort `H`
+    (`stereo` auf beide, `left` auf `a_L`, `right` auf `a_R`, `mid` und
+    `side` ueber dieselbe M/S-Rueckfuehrung wie `DspKern::verarbeiteBand`),
+    und ausgewertet wird nur `a_L` - der Kanal, den der Kern im Monobus
+    schreibt: `E(f) = |a_L(f)|^2`. Folgen: `right` und `side` ergeben exakt
+    +0,0, `left`, `mid` und `stereo` die volle Kompensation, und in einer
+    Kaskade zaehlt die Reihenfolge. Die Faltung waere hier falsch, nicht nur
+    ungenau - der Kern KENNT das Material im Monobus (beide Komponenten sind
+    gleich), und nur die Kaskade traegt den Weg, auf dem ein spaeteres
+    `mid`-Band den gedachten rechten Kanal wieder nach links mischt. */
 double leiteAutoGainAb (const DspProgramm& p);
 
 /** Die Gitterfrequenz einer Stelle 0..120. Oeffentlich, damit der Golden

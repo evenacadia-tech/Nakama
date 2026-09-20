@@ -95,6 +95,74 @@ double leiteAutoGainAb (const DspProgramm& p)
     // Optimierung, sondern die Zusage selbst.
     if (! p.irgendeinBandAktiv() || p.samplerate <= 0.0) return 0.0;
 
+    // NAK-311 R-311-3 (T3-16-04): der MONOBUS. Der Zweikanalzweig unten ist
+    // die Stereo-/M-S-Naeherung aus R4 - er mittelt zwei Ausgangsseiten. Im
+    // Monobus gibt es keine zweite Seite: der Kern legt den einen Eingang in
+    // beide Komponenten (`DspKern::verarbeiteStueck`) und schreibt am Ende
+    // nur Kanal 0. Ein Band im Modus `right` aendert dort nichts, ein
+    // `side`-Band hoert bei L = R die Null - die Abnahme vom 24.08.2026
+    // ("den Pegelgewinn der aktuellen Kurve ... am Ausgang ab") verlangt
+    // deshalb, dass beide auch nichts ausgleichen.
+    //
+    // Gerechnet wird die geordnete KASKADE, nicht die Faltung (§9 F-11): weil
+    // der Kern das Material hier kennt (beide Komponenten sind gleich), ist
+    // sie exakt, und nur mit ihr wirkt ein spaeteres `mid`-Band auf den Weg,
+    // den ein frueheres `right`-Band genommen hat. Je Gitterstelle startet
+    // das Paar (a_L, a_R) = (1, 1); die Baender wirken in Slotreihenfolge mit
+    // derselben Ruheantwort wie im Zweikanalzweig, `mid` und `side` ueber
+    // dieselbe Rueckfuehrung in L und R wie `DspKern::verarbeiteBand`.
+    // Ausgewertet wird nur a_L.
+    if (p.kanaele == 1)
+    {
+        double monoSumme = 0.0;
+        for (int i = 0; i < kAutoGainStellen; ++i)
+        {
+            const double f = autoGainGitterHz (i);
+            const double w = 2.0 * kPi * f / p.samplerate;
+
+            std::complex<double> aLinks { 1.0, 0.0 }, aRechts { 1.0, 0.0 };
+
+            for (const auto& b : p.baender)
+            {
+                if (! b.aktiv) continue;
+                const auto h = bandRuheAntwort (b, w);
+                switch (b.modus)
+                {
+                    case Kanalmodus::stereo: aLinks *= h; aRechts *= h; break;
+                    case Kanalmodus::left:   aLinks  *= h;              break;
+                    case Kanalmodus::right:  aRechts *= h;              break;
+                    case Kanalmodus::mid:
+                    {
+                        const auto mitte = (aLinks + aRechts) * 0.5;
+                        const auto seite = (aLinks - aRechts) * 0.5;
+                        aLinks  = mitte * h + seite;
+                        aRechts = mitte * h - seite;
+                        break;
+                    }
+                    case Kanalmodus::side:
+                    {
+                        const auto mitte = (aLinks + aRechts) * 0.5;
+                        const auto seite = (aLinks - aRechts) * 0.5;
+                        aLinks  = mitte + seite * h;
+                        aRechts = mitte - seite * h;
+                        break;
+                    }
+                }
+            }
+
+            monoSumme += std::norm (aLinks);
+        }
+
+        // Dieselben zwei Wachen wie unten: ein nicht endliches oder nicht
+        // positives Mittel endet bei 0,0, und bitgenau flach ergibt +0,0 -
+        // `-10*log10(1,0)` waere -0,0, und M-57, M-58 und M-65 (a) verlangen
+        // ausdruecklich das positive Null.
+        const double monoMittel = monoSumme / (double) kAutoGainStellen;
+        if (! (monoMittel > 0.0) || ! std::isfinite (monoMittel)) return 0.0;
+        if (monoMittel == 1.0) return 0.0;
+        return -10.0 * std::log10 (monoMittel);
+    }
+
     double summe = 0.0;
     for (int i = 0; i < kAutoGainStellen; ++i)
     {
@@ -160,11 +228,16 @@ bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept
 
 //==============================================================================
 void baueProgramm (const param::DspSatz& satz, double samplerate,
-                   std::uint64_t generation, DspProgramm& aus)
+                   std::uint64_t generation, DspProgramm& aus, int kanalzahl)
 {
     aus = DspProgramm {};
     aus.samplerate = samplerate;
     aus.generation = generation;
+
+    // NAK-311 R-311-3: die Kanalzahl des Busses, unveraendert uebernommen.
+    // Sie steht VOR `leiteAutoGainAb` fest - die Ableitung am Ende dieser
+    // Funktion liest sie aus `aus`.
+    aus.kanaele    = kanalzahl;
 
     const auto& w = satz.werte;
 

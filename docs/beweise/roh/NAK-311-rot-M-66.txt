@@ -1,0 +1,82 @@
+NAK-311 Etappe 4, Teil a - Rotbeweis 311/M-66
+=============================================
+
+Ticket      NAK-311 (Planschritt S25j), Etappe 4 Teil a, R-311-3 / T3-16-04
+Basis-SHA   df14a648e4414fea3faa0f1c90f7c669e9716292
+Datum       20.09.2026
+Etikett     Regressionswache - einmal absichtlich gebrochen, kein Beleg fuer
+            den Bau.
+Bein        B6 (EqCopDspGoldenTest)
+Zusage      Die Ableitung laeuft nie im Audiopfad:
+            `RtWache::ableitungenImAudiopfad()` bleibt 0 - auch fuer den
+            Monokern.
+Test        eq-copilot/plugin/tests/DspGoldenTestMain.cpp, Abschnitt H,
+            bestehender Fall `auto_gain_wird_nicht_im_audiothread_gerechnet
+            (M-39, B-18; NAK-311 311/M-66 Monokern)`, um einen Monokern
+            ergaenzt (`bereiteVor` mit Kanalzahl 1, zwei Programmwechsel,
+            Bloecke ueber den einen Kanal, Pflege); die Schranke steht
+            jetzt bei `ableitungenAusserhalb() >= 4`.
+
+1. Mutation nach dem Bau
+--------------------------
+
+Datei              eq-copilot/plugin/dsp/DspKern.cpp, Zeile 464 (Endstand)
+SHA-256 vorher     29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Sicherungskopie    C:\Users\phili\.claude\jobs\36fec424\tmp\sicherung\F-ableitung-im-blockrand-DspKern.cpp
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+    zaehlerUebernahmen.fetch_add (1, std::memory_order_relaxed);
+
+nachher (woertlich):
+    zaehlerUebernahmen.fetch_add (1, std::memory_order_relaxed);
+    if (neu >= 0) (void) leiteAutoGainAb (baenke.bank (neu).programm);   // Rotbeweis 311/M-66
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte: "die Ableitung in
+                   `blockrand` verlegt". `blockrand` laeuft im Audiopfad unter
+                   `RtWache::Bereich` (DspKern.cpp:970); dort steigt der Zaehler
+                   `ableitungenImAudiopfad`.
+
+Bau                cmake --build eq-copilot/build --config Release --target EqCopDspGoldenTest
+                   EXIT=0
+Binary             20.09.2026 01:56:34 (Quelle 01:56:31)
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18; NAK-311
+  311/M-66 Monokern)
+    [Ableitungen ausserhalb 4, im Audiopfad 4 (Stereo- und Monokern zusammen)]
+  B6 insgesamt: 350 geprueft, 1 Fehler, EXIT=1
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  keine.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  349 von 350, darunter 311/M-57 bis M-61, M-64 und M-65. Die Mutation
+  verschiebt nur den Rechenort, nicht das Ergebnis.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+                   (gleich dem Wert oben - die Ruecknahme ist bytegleich)
+Gruenlauf          gemeinsam nach der Ruecknahme ALLER Mutationen dieses
+                   Teils (Muster SONDE-015 Etappe 4a, NAK-311 §22.5 Punkt 8);
+                   vor jeder Mutation war die Datei per SHA-256 auf den
+                   Endstand geprueft. Einzelbeine auf dem Endstand:
+                   B6 EXIT=0 "352 geprueft, 0 Fehler", A16 EXIT=0
+                   "114 Pruefungen ok, 0 Fehler", B7, B3c, A1, B1, A14 je
+                   EXIT=0.
+                   Die Mutationslaeufe oben zaehlen 350 Pruefungen: die zwei
+                   SELBSTAUDIT-Pruefungen des Abschnitts H2
+                   (`311/M-59 Selbstaudit side_hinter_left_wirkt`,
+                   `311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig`)
+                   kamen erst NACH den Rotbeweisen dazu; sie sind keine
+                   Matrixzeilen und haben keinen eigenen Rotbeweis (Muster
+                   NAK-311 §22.5 Punkt 7).
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`git diff --stat` der Etappe nennt keine mutierte Datei ausserhalb der
+Ticketpfade dieses Teils; jede mutierte Datei ist bytegleich zum Endstand
+zurueckgenommen (SHA-256 oben).

@@ -40,6 +40,15 @@
     und +-Inf bytegleich heraus, auch im Monobus, bei 44,1, 48 und 96 kHz
     (311/M-10, M-11, M-19, M-20, M-21); der Tap post_committed traegt dort den
     Eingang als double (M-92, M-93, R-311-6).
+    Seit NAK-311 Etappe 4 Teil a (Manifest §6.4, R-311-3) im Layoutabschnitt:
+    der Ausgleich rechnet nur mit dem ausgegebenen Kanal. Ueber den Weg
+    Mono -> Stereo -> Mono mit je einem prepareToPlay melden Kern UND
+    dspBericht fuer ein Band im Modus `right` im Monobus exakt +0,0 dB, und
+    der Ausgang mit Auto-Gain ist bytegleich zum Lauf ohne; im Stereobus
+    tragen beide den Zweikanalwert, bitgleich zu einem Stereokern mit
+    demselben Zustand (311/M-62). Der Kanalwunsch `channel_mode` bleibt dabei
+    im bestaetigten Zustand und in den Statebytes, ohne Revision und ohne
+    Host-Dirty (311/M-63).
     Ein eingeschalteter resonanter Filter klingt naturgemaess aus; das ist
     kein Tail im Sinne des Hostvertrags, und dieses Bein behauptet dazu
     nichts.
@@ -193,6 +202,19 @@ void setzeHoerbaresBand (param::DspSatz& z)
     z.werte[(size_t) iBand (0, param::kFreqHz)].zahl    = 1000.0;
     z.werte[(size_t) iBand (0, param::kGainDb)].zahl    = 12.0;
 }
+
+/** NAK-311 311/M-63: zaehlt Host-Dirty ueber den echten JUCE-Weg -
+    `updateHostDisplay` ruft `audioProcessorChanged` jedes Listeners synchron
+    (Muster B7 `TransactionTestMain.cpp`). */
+struct DirtyZaehler final : juce::AudioProcessorListener
+{
+    int nichtParameter = 0;
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
+    {
+        if (d.nonParameterStateChanged) ++nichtParameter;
+    }
+};
 
 /** Die wechselnden Blockgroessen der Nulllaeufe - von 1 Sample bis zum
     vorbereiteten Maximum. FL zerteilt Puffer an Automationspunkten bis auf
@@ -1092,6 +1114,168 @@ int main()
                     "angenommen: Mono->Stereo " + jaNein (monoStereo) + ", Stereo->Mono " + jaNein (stereoMono)
                         + ", aus->Stereo " + jaNein (ausStereo) + ", Stereo->aus " + jaNein (stereoAus)
                         + ", aus->aus " + jaNein (beideAus));
+        }
+        {
+            // NAK-311 311/M-62 (R-311-3, T3-16-04): Layout setzen <-> Programm
+            // erneuern. Der Zustand traegt Auto-Gain an und das Band der
+            // Phase 16 - ein Low-Shelf 20 kHz / +12 dB / Q 0,707 im Modus
+            // `right`. Im Monobus schreibt der Kern nur Kanal 0; dort aendert
+            // dieses Band nichts, also gleicht Auto-Gain auch nichts aus.
+            // HEUTE ROT: die Phase 16 mass im Monobus -9,177564 dB.
+            // Gefahren wird Mono -> Stereo -> Mono; nach JEDEM prepareToPlay
+            // muessen Kern UND Bericht den Wert der neuen Kanalzahl tragen -
+            // die zwei Lesestellen duerfen nie auseinanderlaufen.
+            // Teilfall 311/M-63 (Regressionswache): der Kanalwunsch bleibt.
+            const auto mitBand = [] (param::DspSatz z)
+            {
+                z.werte[(size_t) param::kIndexEqEnabled].b = true;
+                z.werte[(size_t) iGlobal ("v2.global.auto_gain")].b = true;
+                z.werte[(size_t) param::indexOccupied (0)].b = true;
+                z.werte[(size_t) iBand (0, param::kEnabled)].b = true;
+                z.werte[(size_t) iBand (0, param::kType)].enumIndex = (int) nakama::dsp::Filtertyp::lowShelf;
+                z.werte[(size_t) iBand (0, param::kFreqHz)].zahl = 20000.0;
+                z.werte[(size_t) iBand (0, param::kQ)].zahl = 0.707;
+                z.werte[(size_t) iBand (0, param::kGainDb)].zahl = 12.0;
+                z.werte[(size_t) iBand (0, param::kChannelMode)].enumIndex = (int) nakama::dsp::Kanalmodus::right;
+                return z;
+            };
+
+            /** Faehrt einen 250-Hz-Sinus ueber den EINEN Kanal des Monobusses
+                und gibt den float-Ausgang zurueck. */
+            const auto fahreMono = [] (Prozessor& p, int bloecke)
+            {
+                juce::MidiBuffer midi;
+                juce::AudioBuffer<float> b (1, 512);
+                std::vector<float> aus;
+                long long n0 = 0;
+                for (int blk = 0; blk < bloecke; ++blk)
+                {
+                    for (int i = 0; i < 512; ++i)
+                        b.setSample (0, i, (float) (0.25 * std::sin (2.0 * 3.14159265358979323846
+                                                                    * 250.0 * (double) (n0 + i) / 48000.0)));
+                    p.processBlock (b, midi);
+                    for (int i = 0; i < 512; ++i) aus.push_back (b.getSample (0, i));
+                    n0 += 512;
+                }
+                return aus;
+            };
+
+            const auto fahreStereo = [] (Prozessor& p, int bloecke)
+            {
+                juce::MidiBuffer midi;
+                juce::AudioBuffer<float> b (2, 512);
+                b.clear();
+                for (int blk = 0; blk < bloecke; ++blk) p.processBlock (b, midi);
+            };
+
+            const auto bericht = [] (Prozessor& p)
+            {
+                tx::DspBericht r;
+                juce::String grund;
+                const bool ok = p.dspBericht (r, grund);
+                return std::pair<bool, double> { ok, r.autoGainDb };
+            };
+
+            // --- Mono ---------------------------------------------------------
+            auto p = std::make_unique<Prozessor>();
+            const bool monoGesetzt = p->setBusesLayout (layout (mono, mono));
+            p->setRateAndBufferSizeDetails (48000.0, 512);
+            p->prepareToPlay (48000.0, 512);
+            setze (*p, mitBand (p->bestaetigterZustand()));
+
+            DirtyZaehler dirty;
+            p->addListener (&dirty);
+            const auto monoMit = fahreMono (*p, 94);          // 48 128 Samples
+            const int dirtyNachCommit = dirty.nichtParameter;
+
+            juce::MemoryBlock bytesVorher;
+            p->getStateInformation (bytesVorher);
+            const auto revisionVorher = p->stateRevision();
+
+            auto ohne = std::make_unique<Prozessor>();
+            ohne->setBusesLayout (layout (mono, mono));
+            ohne->setRateAndBufferSizeDetails (48000.0, 512);
+            ohne->prepareToPlay (48000.0, 512);
+            auto zOhne = mitBand (ohne->bestaetigterZustand());
+            zOhne.werte[(size_t) iGlobal ("v2.global.auto_gain")].b = false;
+            setze (*ohne, zOhne);
+            const auto monoOhne = fahreMono (*ohne, 94);
+
+            const double monoKern    = p->dspKernFuerTest().autoGainDb();
+            const auto   monoBericht = bericht (*p);
+            const bool   monoBitgleich = monoMit.size() == monoOhne.size()
+                                      && std::memcmp (monoMit.data(), monoOhne.data(),
+                                                      monoMit.size() * sizeof (float)) == 0;
+
+            pruefe (monoGesetzt && p->getTotalNumInputChannels() == 1
+                        && monoKern == 0.0 && ! std::signbit (monoKern)
+                        && monoBericht.first && monoBericht.second == 0.0 && ! std::signbit (monoBericht.second)
+                        && monoBitgleich,
+                    "311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), Mono: der Kern und "
+                    "dspBericht melden exakt +0,0, und der Ausgang mit Auto-Gain ist bytegleich zum Lauf ohne",
+                    "Kern " + juce::String (monoKern, 12) + " dB, Bericht "
+                        + juce::String (monoBericht.second, 12) + " dB, Ausgang bytegleich "
+                        + jaNein (monoBitgleich) + " (Phase 16 mass -9,177564 dB)");
+
+            // --- Stereo -------------------------------------------------------
+            const bool stereoGesetzt = p->setBusesLayout (layout (stereo, stereo));
+            p->setRateAndBufferSizeDetails (48000.0, 512);
+            p->prepareToPlay (48000.0, 512);
+            fahreStereo (*p, 4);
+            const double stereoKern    = p->dspKernFuerTest().autoGainDb();
+            const auto   stereoBericht = bericht (*p);
+
+            auto ref = std::make_unique<Prozessor>();   // ein Stereokern mit demselben Zustand
+            ref->setRateAndBufferSizeDetails (48000.0, 512);
+            ref->prepareToPlay (48000.0, 512);
+            setze (*ref, mitBand (ref->bestaetigterZustand()));
+            const double refKern = ref->dspKernFuerTest().autoGainDb();
+
+            pruefe (stereoGesetzt && p->getTotalNumInputChannels() == 2
+                        && std::memcmp (&stereoKern, &refKern, sizeof (double)) == 0
+                        && stereoBericht.first
+                        && std::memcmp (&stereoBericht.second, &refKern, sizeof (double)) == 0
+                        && stereoKern != 0.0,
+                    "311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), Stereo: Kern und "
+                    "Bericht tragen den Zweikanalwert, bitgleich zu einem Stereokern mit demselben Zustand",
+                    "Kern " + juce::String (stereoKern, 12) + " dB, Bericht "
+                        + juce::String (stereoBericht.second, 12) + " dB, Referenz "
+                        + juce::String (refKern, 12) + " dB");
+
+            // --- und zurueck in den Monobus ------------------------------------
+            const bool zurueck = p->setBusesLayout (layout (mono, mono));
+            p->setRateAndBufferSizeDetails (48000.0, 512);
+            p->prepareToPlay (48000.0, 512);
+            fahreMono (*p, 4);
+            const double zurueckKern    = p->dspKernFuerTest().autoGainDb();
+            const auto   zurueckBericht = bericht (*p);
+            pruefe (zurueck && p->getTotalNumInputChannels() == 1
+                        && zurueckKern == 0.0 && ! std::signbit (zurueckKern)
+                        && zurueckBericht.first && zurueckBericht.second == 0.0
+                        && ! std::signbit (zurueckBericht.second),
+                    "311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), zurueck in Mono: "
+                    "Kern und Bericht stehen wieder auf exakt +0,0",
+                    "Kern " + juce::String (zurueckKern, 12) + " dB, Bericht "
+                        + juce::String (zurueckBericht.second, 12) + " dB");
+
+            // --- 311/M-63: der Kanalwunsch ist State, die Kanalzahl nicht -----
+            juce::MemoryBlock bytesNachher;
+            p->getStateInformation (bytesNachher);
+            p->removeListener (&dirty);
+            const auto& z = p->bestaetigterZustand();
+            const bool modusBleibt = z.werte[(size_t) iBand (0, param::kChannelMode)].enumIndex
+                                     == (int) nakama::dsp::Kanalmodus::right;
+            pruefe (modusBleibt && bytesVorher == bytesNachher
+                        && p->stateRevision() == revisionVorher
+                        && dirty.nichtParameter == dirtyNachCommit,
+                    "311/M-63 kanalwunsch_ueberlebt_den_layoutwechsel (Teilfall von 311/M-62, "
+                    "Regressionswache): channel_mode bleibt `right`, die Statebytes sind gleich, keine "
+                    "Revision, kein Host-Dirty",
+                    "channel_mode right " + jaNein (modusBleibt) + ", Bytes gleich "
+                        + jaNein (bytesVorher == bytesNachher) + " (" + juce::String ((int) bytesVorher.getSize())
+                        + " Bytes), Revision " + juce::String ((juce::int64) p->stateRevision())
+                        + ", Dirty-Meldungen ueber die drei Wechsel "
+                        + juce::String (dirty.nichtParameter - dirtyNachCommit));
         }
     }
 

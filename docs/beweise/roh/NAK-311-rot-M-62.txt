@@ -1,0 +1,112 @@
+NAK-311 Etappe 4, Teil a - Rotbeweis 311/M-62
+=============================================
+
+Ticket      NAK-311 (Planschritt S25j), Etappe 4 Teil a, R-311-3 / T3-16-04
+Basis-SHA   df14a648e4414fea3faa0f1c90f7c669e9716292
+Datum       20.09.2026
+Etikett     heute rot
+Bein        A16 (EqCopProbeeqNullTest)
+Zusage      Mono: Ausgang mit Auto-Gain bitgleich zum Ausgang ohne, `dspBericht`
+            meldet `auto_gain_db` +0,0; Stereo: Kern und Bericht tragen den
+            Zweikanalwert (bitgleich zu einem Stereokern mit demselben
+            Zustand); zurueck in Mono wieder +0,0.
+Test        eq-copilot/plugin/tests/SondeNullTestMain.cpp, Abschnitt 12
+            (Buslayout), `311/M-62 kanalzahlwechsel_erneuert_ableitung_und_
+            bericht` in drei Pruefungen (Mono, Stereo, zurueck in Mono).
+            Echter SondeProcessor, Layout Mono -> Stereo -> Mono, je mit
+            `prepareToPlay`; Zustand: Auto-Gain an, Low-Shelf 20 kHz /
+            +12 dB / Q 0,707 im Modus `right` (das Band aus M-57).
+
+1. Der Test VOR der Reparatur, rot gegen den Zwischenstand
+----------------------------------------------------------
+Am Basis-SHA fehlen die neuen Parameter, der Fall liesse sich dort nicht
+uebersetzen. Der Rotlauf fuhr deshalb gegen einen ZWISCHENSTAND, woertlich:
+
+  - `DspProgramm` traegt das neue Feld `kanaele` (Vorgabe 2); `baueProgramm`
+    nimmt den Parameter `kanalzahl` (Vorgabe 2) und legt ihn dort ab.
+  - `DspKern::bereiteVor` und `Transaktionskern::setzeSamplerate` tragen je
+    einen Parameter `kanaele` (Vorgabe 2); der Kern reicht ihn in `baueVor`,
+    der Transaktionskern in `baueBericht` an `baueProgramm`.
+  - `SondeProcessor::prepareToPlay` misst die Kanalzahl einmal und gibt sie
+    an beide, vor `publiziereWirksam`.
+  - `leiteAutoGainAb` ist UNVERAENDERT: kein Monozweig; jedes Programm
+    rechnet die Zweikanalformel wie am Basisstand.
+
+Bau     cmake --build eq-copilot/build --config Release --target
+        EqCopDspGoldenTest EqCopProbeeqNullTest, EXIT=0
+Lauf    EqCopProbeeqNullTest.exe, EXIT=1
+  FEHLER  311/M-62 ..., Mono
+          [Kern -9.177520647929 dB, Bericht -9.177520647929 dB,
+           Ausgang bytegleich nein]
+  FEHLER  311/M-62 ..., zurueck in Mono
+          [Kern -9.177520647929 dB, Bericht -9.177520647929 dB]
+A16 insgesamt: 112 Pruefungen ok, 2 Fehler.
+
+Die Stereo-Haelfte blieb gruen: dort war der Wert schon am
+Zwischenstand richtig.
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+2. Mutation nach dem Bau
+--------------------------
+
+Datei              eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 270 (Endstand)
+SHA-256 vorher     F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+Sicherungskopie    C:\Users\phili\.claude\jobs\36fec424\tmp\sicherung\G-kanalzahl-nicht-im-transaktionskern-SondeProcessor.cpp
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+        transaktion->setzeSamplerate (sichereRate, busKanaele);
+
+nachher (woertlich):
+        transaktion->setzeSamplerate (sichereRate);   // Rotbeweis 311/M-62
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte: "die Kanalzahl erreicht
+                   den Transaktionskern nicht - der Bericht bleibt beim
+                   Stereowert". Ohne das zweite Argument greift die Vorgabe 2.
+
+Bau                cmake --build eq-copilot/build --config Release --target EqCopProbeeqNullTest
+                   EXIT=0
+Binary             20.09.2026 01:57:00 (Quelle 01:56:53)
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  311/M-62 ..., Mono
+    [Kern 0.000000000000 dB, Bericht -9.177520647929 dB, Ausgang bytegleich ja]
+  311/M-62 ..., zurueck in Mono
+    [Kern 0.000000000000 dB, Bericht -9.177520647929 dB]
+  A16 insgesamt: 112 Pruefungen ok, 2 Fehler, EXIT=1
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  keine - beide gefallenen Pruefungen gehoeren zu dieser Zeile.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  112 von 114, darunter 311/M-62 Haelfte "Stereo" (dort trifft die
+  Vorgabe 2 zufaellig zu) und 311/M-63. Der Befund ist woertlich der aus
+  der Rotbeweisspalte: der KERN meldet +0,0, der BERICHT -9,18 - die zwei
+  Lesestellen laufen auseinander.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+                   (gleich dem Wert oben - die Ruecknahme ist bytegleich)
+Gruenlauf          gemeinsam nach der Ruecknahme ALLER Mutationen dieses
+                   Teils (Muster SONDE-015 Etappe 4a, NAK-311 §22.5 Punkt 8);
+                   vor jeder Mutation war die Datei per SHA-256 auf den
+                   Endstand geprueft. Einzelbeine auf dem Endstand:
+                   B6 EXIT=0 "352 geprueft, 0 Fehler", A16 EXIT=0
+                   "114 Pruefungen ok, 0 Fehler", B7, B3c, A1, B1, A14 je
+                   EXIT=0.
+                   Die Mutationslaeufe oben zaehlen 350 Pruefungen: die zwei
+                   SELBSTAUDIT-Pruefungen des Abschnitts H2
+                   (`311/M-59 Selbstaudit side_hinter_left_wirkt`,
+                   `311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig`)
+                   kamen erst NACH den Rotbeweisen dazu; sie sind keine
+                   Matrixzeilen und haben keinen eigenen Rotbeweis (Muster
+                   NAK-311 §22.5 Punkt 7).
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`git diff --stat` der Etappe nennt keine mutierte Datei ausserhalb der
+Ticketpfade dieses Teils; jede mutierte Datei ist bytegleich zum Endstand
+zurueckgenommen (SHA-256 oben).

@@ -13,7 +13,14 @@
     Slot-Lebenszyklus gegen einen Referenzkern ohne Wechsel (§6.3): 311/M-43
     bis M-45, M-54, M-55 in Abschnitt E, 311/M-41 im M-121-Block von L, der
     Fremdslotwechsel im Allokationslauf von J (M-56) und Abschnitt Q
-    (311/M-46 bis M-51, M-53, M-94, M-95); M-40 misst B7.
+    (311/M-46 bis M-51, M-53, M-94, M-95); M-40 misst B7. Seit NAK-311
+    Etappe 4 Teil a (R-311-3, T3-16-04) der neue Abschnitt H2: im Monobus
+    (`bereiteVor` mit Kanalzahl 1) rechnet die Auto-Gain-Ableitung die
+    geordnete Kaskade und wertet nur den ausgegebenen Kanal aus - 311/M-57
+    bis M-61, M-64 und M-65 gegen eine HIER eigenstaendig ausgeschriebene
+    Monoformel und gegen Hexwerte, die der unveraenderte Kern am Basisstand
+    der Etappe ausgegeben hat; 311/M-66 (Rechenort auch im Monokern) steht
+    im M-39-Fall des Abschnitts H.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -3082,10 +3089,38 @@ int main()
             kern->uebernehmeZustand (s2);
             fahreStille (*kern, 4096, 512);
             kern->pflege();
-            pruefe (RtWache::ableitungenAusserhalb() >= 2 && RtWache::ableitungenImAudiopfad() == 0,
-                    "auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)",
+
+            // NAK-311 311/M-66 (R-311-3): derselbe Zaehler am MONOKERN. Der
+            // Monozweig rechnet dieselben 121 Gitterstellen, nur eine andere
+            // Formel - er darf den Rechenort nicht verschieben. Gefahren wird
+            // wieder ein Programmwechsel samt Blockrandubernahme und Pflege,
+            // diesmal ueber den einen Kanal des Monobusses.
+            auto mono = std::make_unique<DspKern>();
+            mono->bereiteVor (fs, 512, 1);
+            auto monoStille = [] (DspKern& k, int samples, int blockGroesse)
+            {
+                std::vector<float> a ((size_t) blockGroesse, 0.0f);
+                float* kan[1] = { a.data() };
+                for (int rest = samples; rest > 0;)
+                {
+                    const int m = rest < blockGroesse ? rest : blockGroesse;
+                    std::fill (a.begin(), a.begin() + m, 0.0f);
+                    k.verarbeite (kan, 1, m);
+                    rest -= m;
+                }
+            };
+            mono->uebernehmeZustand (s);
+            monoStille (*mono, 4096, 512);
+            mono->pflege();
+            mono->uebernehmeZustand (s2);
+            monoStille (*mono, 4096, 512);
+            mono->pflege();
+
+            pruefe (RtWache::ableitungenAusserhalb() >= 4 && RtWache::ableitungenImAudiopfad() == 0,
+                    "auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18; NAK-311 311/M-66 Monokern)",
                     "Ableitungen ausserhalb " + std::to_string (RtWache::ableitungenAusserhalb())
-                    + ", im Audiopfad " + std::to_string (RtWache::ableitungenImAudiopfad()));
+                    + ", im Audiopfad " + std::to_string (RtWache::ableitungenImAudiopfad())
+                    + " (Stereo- und Monokern zusammen)");
         }
 
         // M-40: Auto-Gain ersetzt den Output-Trim nicht - beide wirken.
@@ -3114,6 +3149,432 @@ int main()
             pruefe (std::abs (verhaeltnis - std::pow (10.0, 6.0 / 20.0)) < 0.01,
                     "auto_gain_und_output_trim_addieren_sich (M-40)",
                     "Verhaeltnis " + zahl (verhaeltnis, 5) + " gegen 1,99526");
+        }
+    }
+
+    //==========================================================================
+    // NAK-311 Etappe 4 Teil a (T3-16-04, R-311-3): Auto-Gain im Monobus.
+    // Matrixzeilen 311/M-57 bis M-61, M-64 und M-65 (Manifest NAK-311 §6.4).
+    std::cout << std::endl << "== H2 - Auto-Gain im Monobus (NAK-311 R-311-3) ==" << std::endl;
+    {
+        const double fs = 48000.0;
+
+        // ---- 311/M-61: die Zweikanalformel bleibt bitgleich zum Basisstand --
+        // Regressionswache. Die Hexwerte hat der UNVERAENDERTE Kern am
+        // Basis-SHA der Etappe 4 ausgegeben (Golden-Regel §7.1: Goldens
+        // entstehen nur ueber ihren Erzeuger, nie ueber den geaenderten Kern);
+        // Rohbeleg `docs/beweise/roh/NAK-311-etappe4-autogain-hex.txt`.
+        // Geprueft wird mit `memcmp` - bitgleich, nicht "nahe".
+        const char* const m61Namen[] = {
+            "H_flache_kurve", "H_neutraler_bell", "H_shelf_plus_sechs", "H_stereo_q0707",
+            "H_mid_side_paar", "H_dynamisches_bell", "H_auto_gain_aus", "H_mit_output_trim",
+            "modus_stereo", "modus_left", "modus_right", "modus_mid", "modus_side",
+            "M47_gemischtes_programm" };
+        constexpr int kM61Zahl = 14;
+
+        auto m61Pruefling = [] (int i)
+        {
+            auto s = machSatz (true);
+            setzeGlobalBool (s, "v2.global.auto_gain", true);
+            switch (i)
+            {
+                case 0: break;                                                      // flache Kurve (M-36)
+                case 1: belege (s, 2, Filtertyp::bell, 1000.0, 1.0, 0.0); break;    // neutraler Bell (M-36)
+                case 2: belege (s, 0, Filtertyp::highShelf, 20.0, 1.0, 6.0); break; // M-37
+                case 3: belege (s, 0, Filtertyp::highShelf, 20.0, 0.707, 6.0, Kanalmodus::stereo); break;
+                case 4: belege (s, 0, Filtertyp::highShelf, 20.0, 0.707, 6.0, Kanalmodus::mid);
+                        belege (s, 1, Filtertyp::highShelf, 20.0, 0.707, 6.0, Kanalmodus::side); break;
+                case 5: belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 0.0);
+                        machDynamisch (s, 0, -12.0, -60.0, 1.0, 0.0, 5.0); break;   // M-38
+                case 6: belege (s, 0, Filtertyp::highShelf, 20.0, 1.0, 6.0);
+                        setzeGlobalBool (s, "v2.global.auto_gain", false); break;   // M-35
+                case 7: belege (s, 0, Filtertyp::highShelf, 20.0, 1.0, 6.0);
+                        setzeGlobal (s, "v1.global.output_trim_db", 6.0); break;    // M-40
+                case 8:  belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::stereo); break;
+                case 9:  belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::left);   break;
+                case 10: belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::right);  break;
+                case 11: belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::mid);    break;
+                case 12: belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::side);   break;
+                default:                                                            // der M-47-Lauf
+                    belege (s, 0, Filtertyp::bell, 1000.0, 1.0, 6.0, Kanalmodus::mid);
+                    belege (s, 3, Filtertyp::lowShelf, 200.0, 0.707, -4.0);
+                    machDynamisch (s, 3, -6.0, -30.0);
+                    setzeGlobal (s, "v1.global.width", 1.4);
+                    setzeGlobal (s, "v1.global.mono_bass_hz", 120.0);
+                    setzeGlobal (s, "v2.global.mix", 0.7);
+                    break;
+            }
+            return s;
+        };
+
+        auto bitsVon = [] (double d)
+        {
+            std::uint64_t b = 0;
+            std::memcpy (&b, &d, sizeof (b));
+            return b;
+        };
+
+        auto hex64 = [] (std::uint64_t b)
+        {
+            std::ostringstream o;
+            o << "0x" << std::hex << std::uppercase << std::setw (16) << std::setfill ('0') << b;
+            return o.str();
+        };
+
+        // Die vierzehn Bitmuster des Basisstands `df14a648`, Lauf vom
+        // 20.09.2026 (Rohdatei oben).
+        const std::uint64_t kM61Bits[kM61Zahl] = {
+            0x0000000000000000ull, 0x0000000000000000ull, 0xC017FCF4DCC41CCBull, 0xC017714584703D0Eull,
+            0xC017714584703D0Eull, 0x0000000000000000ull, 0xC017FCF4DCC41CCBull, 0xC017FCF4DCC41CCBull,
+            0xC0113FE32BC1B7DAull, 0xC0055DD001A5F001ull, 0xC0055DD001A5F001ull, 0xC0022A8D8F930CABull,
+            0xC0022A8D8F930CABull, 0x3FCD799DE6A48DB0ull };
+
+        int m61Gleich = 0;
+        std::string m61Erste;
+        for (int i = 0; i < kM61Zahl; ++i)
+        {
+            auto k = neuerKern (fs, 512);            // Kanalzahl 2 (Vorgabe von bereiteVor)
+            k->uebernehmeZustand (m61Pruefling (i));
+            const double wert = k->autoGainDb();
+            const std::uint64_t bits = bitsVon (wert);
+            std::cout << "  hexgolden  311/M-61 " << m61Namen[i] << "  " << hex64 (bits)
+                      << "  (" << zahl (wert, 12) << " dB)" << std::endl;
+            if (std::memcmp (&bits, &kM61Bits[i], sizeof (std::uint64_t)) == 0) ++m61Gleich;
+            else if (m61Erste.empty())
+                m61Erste = std::string (m61Namen[i]) + ": " + hex64 (bits) + " statt " + hex64 (kM61Bits[i]);
+        }
+        pruefe (m61Gleich == kM61Zahl, "311/M-61 zweikanalformel_bitgleich_zum_basisstand (R-311-3)",
+                m61Erste.empty() ? (std::to_string (m61Gleich) + " von " + std::to_string (kM61Zahl)
+                                    + " Prueflingen bitgleich (memcmp)")
+                                 : ("erste Abweichung " + m61Erste));
+
+        // ---- Die Monoformel, hier EIGENSTAENDIG ausgeschrieben ---------------
+        // Muster M-13 von SONDE-015: kein Aufruf von `leiteAutoGainAb` als
+        // Orakel. Je Gitterstelle startet das Paar (a_L, a_R) = (1, 1) - der
+        // Monoeingang, den der Kern in beide Komponenten legt
+        // (`DspKern::verarbeiteStueck`). Die aktiven Baender wirken in
+        // SLOTREIHENFOLGE mit ihrer statischen Ruheantwort aus `refEntwurf`
+        // (der unabhaengig ausgeschriebenen RBJ-Formel dieses Tests); `mid`
+        // und `side` gehen ueber dieselbe Rueckfuehrung in L und R wie
+        // `DspKern::verarbeiteBand`. Ausgewertet wird nur a_L - der Kanal,
+        // den der Kern im Monobus schreibt. Dann pink-gewichtetes Mittel
+        // ueber die 121 Gitterstellen und -10*log10.
+        struct MonoBand { Filtertyp typ; double f, q, gain; Kanalmodus modus; };
+
+        auto monoReferenzDb = [] (const std::vector<MonoBand>& baender, double rate)
+        {
+            if (baender.empty()) return 0.0;
+            double summe = 0.0;
+            for (int i = 0; i < kAutoGainStellen; ++i)
+            {
+                const double w = 2.0 * kPiRef * autoGainGitterHz (i) / rate;
+                const std::complex<double> z (std::cos (-w), std::sin (-w));
+                const std::complex<double> z2 = z * z;
+                std::complex<double> aL { 1.0, 0.0 }, aR { 1.0, 0.0 };
+                for (const auto& b : baender)
+                {
+                    const auto r = refEntwurf (b.typ, rate, b.f, b.q, b.gain);
+                    const auto h = (r.b0 + r.b1 * z + r.b2 * z2) / (1.0 + r.a1 * z + r.a2 * z2);
+                    switch (b.modus)
+                    {
+                        case Kanalmodus::stereo: aL *= h; aR *= h; break;
+                        case Kanalmodus::left:   aL *= h; break;
+                        case Kanalmodus::right:  aR *= h; break;
+                        case Kanalmodus::mid:
+                        {
+                            const auto m = (aL + aR) * 0.5, s = (aL - aR) * 0.5;
+                            aL = m * h + s; aR = m * h - s; break;
+                        }
+                        case Kanalmodus::side:
+                        {
+                            const auto m = (aL + aR) * 0.5, s = (aL - aR) * 0.5;
+                            aL = m + s * h; aR = m - s * h; break;
+                        }
+                    }
+                }
+                summe += std::norm (aL);
+            }
+            const double mittel = summe / (double) kAutoGainStellen;
+            if (! (mittel > 0.0) || ! std::isfinite (mittel)) return 0.0;
+            return -10.0 * std::log10 (mittel);
+        };
+
+        /** Ein Kern auf einem MONObus: `bereiteVor` mit Kanalzahl 1.
+            NAK-175: auf den Heap. */
+        auto neuerMonoKern = [] (double rate, int maxBlock, int kanaele = 1)
+        {
+            auto k = std::make_unique<DspKern>();
+            k->bereiteVor (rate, maxBlock, kanaele);
+            return k;
+        };
+
+        /** Faehrt einen Sinus ueber den EINEN Kanal des Monobusses und gibt
+            den float-Ausgang zurueck - derselbe Aufruf, den der Prozessor im
+            Monobus macht (`verarbeite (kanaele, 1, n)`). */
+        auto fahreMonoTon = [] (DspKern& k, double rate, double f, double amplitude,
+                                int samples, int blockGroesse)
+        {
+            std::vector<float> a ((size_t) blockGroesse, 0.0f);
+            float* kan[1] = { a.data() };
+            std::vector<float> aus;
+            aus.reserve ((size_t) samples);
+            const double w = 2.0 * kPiRef * f / rate;
+            long long n0 = 0;
+            for (int rest = samples; rest > 0;)
+            {
+                const int m = rest < blockGroesse ? rest : blockGroesse;
+                for (int i = 0; i < m; ++i)
+                    a[(size_t) i] = (float) (amplitude * std::sin (w * (double) (n0 + i)));
+                k.verarbeite (kan, 1, m);
+                for (int i = 0; i < m; ++i) aus.push_back (a[(size_t) i]);
+                n0 += m;
+                rest -= m;
+            }
+            return aus;
+        };
+
+        /** Der Monopruefling der Phase 16: ein Low-Shelf 20 kHz / +12 dB /
+            Q 0,707 im gegebenen Kanalmodus, Auto-Gain nach Wunsch. */
+        auto monoSatz = [] (Kanalmodus modus, bool autoGainAn)
+        {
+            auto s = machSatz (true);
+            setzeGlobalBool (s, "v2.global.auto_gain", autoGainAn);
+            belege (s, 0, Filtertyp::lowShelf, 20000.0, 0.707, 12.0, modus);
+            return s;
+        };
+
+        // ---- 311/M-57 und M-58: `right` und `side` gleichen NICHTS aus ------
+        // Heute rot: Phase 16 mass am echten Kern -9,177564 dB (`right`) und
+        // -7,839905 dB (`side`) - eine hoerbare Absenkung eines Weges, an dem
+        // das Band gar nicht wirkt. Die Abnahme vom 24.08.2026 sagt "den
+        // Pegelgewinn der aktuellen Kurve ... am Ausgang ab": im Monobus
+        // schreibt der Kern nur Kanal 0, und dort aendert weder ein
+        // `right`- noch ein `side`-Band etwas.
+        for (const auto modus : { Kanalmodus::right, Kanalmodus::side })
+        {
+            const bool istRight = (modus == Kanalmodus::right);
+            const std::string name = istRight ? "311/M-57 mono_right_band_ergibt_null_db"
+                                              : "311/M-58 mono_side_band_ergibt_null_db (Teilfall von 311/M-57)";
+
+            auto mit  = neuerMonoKern (fs, 512);
+            mit->uebernehmeZustand (monoSatz (modus, true));
+            const double wert = mit->autoGainDb();
+            pruefe (wert == 0.0 && ! std::signbit (wert), name + ", Wert",
+                    "exakt +0,0 (kein -0,0): " + zahl (wert, 15)
+                        + "; Phase 16 mass " + (istRight ? "-9,177564" : "-7,839905") + " dB");
+
+            auto ohne = neuerMonoKern (fs, 512);
+            ohne->uebernehmeZustand (monoSatz (modus, false));
+            const auto aMit  = fahreMonoTon (*mit,  fs, 250.0, 0.25, 48000, 512);
+            const auto aOhne = fahreMonoTon (*ohne, fs, 250.0, 0.25, 48000, 512);
+            const bool bitgleich = aMit.size() == aOhne.size()
+                                && std::memcmp (aMit.data(), aOhne.data(), aMit.size() * sizeof (float)) == 0;
+            pruefe (bitgleich, name + ", Ausgang",
+                    "48 000 Samples 250-Hz-Sinus 0,25 im Monobus: mit Auto-Gain bytegleich zum Lauf ohne");
+        }
+
+        // ---- 311/M-60: `left` und `mid` kompensieren VOLL -------------------
+        // Heute rot: die Zweikanalformel rechnet fuer `left` das Mittel
+        // 0,5*(|H|^2 + 1) und fuer `mid` den Diagonalterm. Im Monobus wirken
+        // beide auf den ausgegebenen Kanal wie ein `stereo`-Band - die Zeile
+        // nennt den Kern im Modus `stereo` ausdruecklich als Orakel.
+        {
+            auto stereoModus = neuerMonoKern (fs, 512);
+            auto s = machSatz (true);
+            setzeGlobalBool (s, "v2.global.auto_gain", true);
+            belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::stereo);
+            stereoModus->uebernehmeZustand (s);
+            const double soll = stereoModus->autoGainDb();
+
+            for (const auto modus : { Kanalmodus::left, Kanalmodus::mid })
+            {
+                auto k = neuerMonoKern (fs, 512);
+                auto sm = machSatz (true);
+                setzeGlobalBool (sm, "v2.global.auto_gain", true);
+                belege (sm, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, modus);
+                k->uebernehmeZustand (sm);
+                const double ist = k->autoGainDb();
+                const double ref = monoReferenzDb ({ { Filtertyp::lowShelf, 1000.0, 1.0, 6.0, modus } }, fs);
+                pruefe (std::abs (ist - soll) <= 1e-9 && std::abs (ist - ref) <= 1e-9,
+                        std::string ("311/M-60 mono_") + (modus == Kanalmodus::left ? "left" : "mid")
+                            + "_kompensiert_voll (Teilfall von 311/M-57)",
+                        zahl (ist, 12) + " dB gegen Modus stereo " + zahl (soll, 12)
+                            + " dB und gegen die Testreferenz " + zahl (ref, 12) + " dB");
+            }
+        }
+
+        // ---- 311/M-59: die Kaskade laeuft in SLOTREIHENFOLGE ----------------
+        // Heute rot (heute Zweikanalformel). Der Kreuzweg ist der Punkt: ein
+        // `right`-Band wirkt im Monobus nicht fuer sich, aber eine spaetere
+        // `mid`-Stufe mischt den gedachten rechten Kanal wieder nach links -
+        // deshalb zaehlt die Reihenfolge, und deshalb faltet die Monoformel
+        // nicht, sondern rechnet die Kaskade (§9 F-11).
+        {
+            const MonoBand shelfRechts { Filtertyp::highShelf, 5000.0, 0.707, 6.0, Kanalmodus::right };
+            const MonoBand bellMid     { Filtertyp::bell,      1000.0, 1.0,   6.0, Kanalmodus::mid   };
+
+            auto baue = [&] (const MonoBand& erst, const MonoBand& zweit)
+            {
+                auto s = machSatz (true);
+                setzeGlobalBool (s, "v2.global.auto_gain", true);
+                belege (s, 0, erst.typ,  erst.f,  erst.q,  erst.gain,  erst.modus);
+                belege (s, 1, zweit.typ, zweit.f, zweit.q, zweit.gain, zweit.modus);
+                return s;
+            };
+
+            auto vorwaerts = neuerMonoKern (fs, 512);
+            vorwaerts->uebernehmeZustand (baue (shelfRechts, bellMid));
+            auto rueckwaerts = neuerMonoKern (fs, 512);
+            rueckwaerts->uebernehmeZustand (baue (bellMid, shelfRechts));
+
+            const double istV = vorwaerts->autoGainDb(), istR = rueckwaerts->autoGainDb();
+            const double refV = monoReferenzDb ({ shelfRechts, bellMid }, fs);
+            const double refR = monoReferenzDb ({ bellMid, shelfRechts }, fs);
+            pruefe (std::abs (istV - refV) <= 1e-9 && std::abs (istR - refR) <= 1e-9
+                        && std::abs (istV - istR) > 1e-9,
+                    "311/M-59 mono_kaskade_in_slotreihenfolge (R-311-3, §9 F-11)",
+                    "Slot 0 right, Slot 1 mid: " + zahl (istV, 12) + " dB gegen Referenz "
+                        + zahl (refV, 12) + "; vertauscht: " + zahl (istR, 12) + " dB gegen Referenz "
+                        + zahl (refR, 12) + "; Abstand der beiden Reihenfolgen "
+                        + zahl (std::abs (istV - istR), 9) + " dB");
+        }
+
+        // ---- 311/M-64: nur die 1 waehlt die Monoformel ----------------------
+        // Das Layout laesst nur Mono und Stereo zu
+        // (`SondeProcessor::isBusesLayoutSupported`), 0 und 3 erreicht der
+        // Prozessor nie; sie fallen auf die Zweikanalformel, weil die der
+        // bisherige Stand ist (§9 F-10).
+        {
+            auto satz = [] ()
+            {
+                auto s = machSatz (true);
+                setzeGlobalBool (s, "v2.global.auto_gain", true);
+                belege (s, 0, Filtertyp::lowShelf, 1000.0, 1.0, 6.0, Kanalmodus::right);
+                return s;
+            };
+            // Derselbe Pruefling wie `modus_right` im Hexgolden: sein
+            // Zweikanalwert steht dort bitgenau.
+            const std::uint64_t kZweikanal = 0xC0055DD001A5F001ull;
+
+            std::string bericht;
+            bool alleRichtig = true;
+            for (const int n : { 0, 1, 2, 3 })
+            {
+                auto k = neuerMonoKern (fs, 512, n);
+                k->uebernehmeZustand (satz());
+                const double wert = k->autoGainDb();
+                const std::uint64_t bits = bitsVon (wert);
+                const bool ok = (n == 1)
+                                  ? (wert == 0.0 && ! std::signbit (wert))
+                                  : (std::memcmp (&bits, &kZweikanal, sizeof (std::uint64_t)) == 0);
+                if (! ok) alleRichtig = false;
+                bericht += (bericht.empty() ? "" : ", ") + std::to_string (n) + " -> " + hex64 (bits);
+            }
+            pruefe (alleRichtig, "311/M-64 kanalzahl_ausser_eins_ist_zweikanal (R-311-3)",
+                    "Kanalzahl " + bericht + "; erwartet 1 -> 0x0000000000000000, sonst "
+                        + hex64 (kZweikanal));
+        }
+
+        // ---- 311/M-65: Slotzahl 0 und 8 im Monobus --------------------------
+        // (a) Regressionswache: OHNE aktives Band traegt der Kurzschluss die
+        //     Zusage. Liefe der Gitterlauf, kaeme an jeder der 121 Stellen
+        //     |a_L|^2 = 1,0 heraus, die Summe waere exakt 121,0, das Mittel
+        //     exakt 1,0 - und -10*log10(1,0) ist -0,0, nicht +0,0.
+        // (b) Heute rot: acht Low-Shelves +12 dB tragen unter 1 kHz praktisch
+        //     die reelle Verstaerkung G = 3,981; die geordnete Monokaskade
+        //     ergibt dort |a_L|^2 = G^12, die Zweikanalformel G^8*((G^2+1)/2)^2
+        //     - 5,49 dB je Gitterstelle weniger.
+        {
+            auto ohneBand = neuerMonoKern (fs, 512);
+            auto s0 = machSatz (true);
+            setzeGlobalBool (s0, "v2.global.auto_gain", true);
+            ohneBand->uebernehmeZustand (s0);
+            const double leer = ohneBand->autoGainDb();
+            pruefe (leer == 0.0 && ! std::signbit (leer),
+                    "311/M-65 (a) mono_ohne_band_ist_exakt_null (Regressionswache, M-36)",
+                    "exakt +0,0 (kein -0,0): " + zahl (leer, 15));
+
+            const Kanalmodus acht[] = { Kanalmodus::stereo, Kanalmodus::left, Kanalmodus::right,
+                                        Kanalmodus::mid,    Kanalmodus::stereo, Kanalmodus::left,
+                                        Kanalmodus::right,  Kanalmodus::mid };
+            auto s8 = machSatz (true);
+            setzeGlobalBool (s8, "v2.global.auto_gain", true);
+            std::vector<MonoBand> refBaender;
+            for (int i = 0; i < 8; ++i)
+            {
+                belege (s8, i, Filtertyp::lowShelf, 1000.0, 8.0, 12.0, acht[(size_t) i]);
+                refBaender.push_back ({ Filtertyp::lowShelf, 1000.0, 8.0, 12.0, acht[(size_t) i] });
+            }
+            auto achtKern = neuerMonoKern (fs, 512);
+            achtKern->uebernehmeZustand (s8);
+            const double ist = achtKern->autoGainDb();
+            const double ref = monoReferenzDb (refBaender, fs);
+
+            auto stereoKern = neuerKern (fs, 512);   // Kanalzahl 2: die alte Rechnung
+            stereoKern->uebernehmeZustand (s8);
+            const double zweikanal = stereoKern->autoGainDb();
+
+            pruefe (std::isfinite (ist) && std::abs (ist - ref) <= 1e-9,
+                    "311/M-65 (b) mono_acht_baender_folgt_der_kaskade (R-311-3)",
+                    zahl (ist, 12) + " dB gegen die Testreferenz " + zahl (ref, 12)
+                        + " dB; die Zweikanalformel gaebe " + zahl (zweikanal, 12) + " dB (Abstand "
+                        + zahl (std::abs (ist - zweikanal), 6) + " dB)");
+        }
+
+        // ---- Selbstaudit: zwei Raender, die keine Matrixzeile allein trifft --
+        // Keine Matrixzeilen und ohne eigenen Rotbeweis (Muster NAK-311 §22.5
+        // Punkt 7); sie kamen aus dem Selbstaudit des Aenderungssatzes.
+
+        // (1) Ein `side`-Band HINTER einem `left`-Band. M-58 misst den
+        //     side-Zweig nur am symmetrischen Paar, wo die Seitenkomponente
+        //     exakt 0 ist und er gar nichts tut. Erst hinter einem
+        //     einseitigen Band ist sie ungleich 0 - dort muss die
+        //     Rueckfuehrung stimmen.
+        {
+            const MonoBand links { Filtertyp::lowShelf,  1000.0, 1.0, 6.0, Kanalmodus::left };
+            const MonoBand seite { Filtertyp::highShelf, 5000.0, 1.0, 6.0, Kanalmodus::side };
+            auto s = machSatz (true);
+            setzeGlobalBool (s, "v2.global.auto_gain", true);
+            belege (s, 0, links.typ, links.f, links.q, links.gain, links.modus);
+            belege (s, 1, seite.typ, seite.f, seite.q, seite.gain, seite.modus);
+            auto k = neuerMonoKern (fs, 512);
+            k->uebernehmeZustand (s);
+            const double ist       = k->autoGainDb();
+            const double ref       = monoReferenzDb ({ links, seite }, fs);
+            const double ohneSeite = monoReferenzDb ({ links }, fs);
+            pruefe (std::abs (ist - ref) <= 1e-9 && std::abs (ref - ohneSeite) > 1e-6,
+                    "311/M-59 Selbstaudit side_hinter_left_wirkt",
+                    zahl (ist, 12) + " dB gegen die Testreferenz " + zahl (ref, 12)
+                        + " dB; ohne das side-Band waeren es " + zahl (ohneSeite, 12) + " dB");
+        }
+
+        // (2) Die beiden Wachen des Monozweigs, direkt gemessen (Zusage von
+        //     M-65 (b): "ein nicht endliches oder nicht positives Mittel endet
+        //     im Monozweig wie im Zweikanalzweig bei 0,0"). Im
+        //     vertragsgueltigen Parameterraum ist beides unerreichbar - acht
+        //     Shelves zu +12 dB ergeben 1,6e7 -, deshalb wird das Programm hier
+        //     von Hand gebaut und `leiteAutoGainAb` einzeln gerufen.
+        {
+            auto mitAntwort = [] (double b0)
+            {
+                DspProgramm p;
+                p.kanaele    = 1;
+                p.samplerate = 48000.0;
+                auto& b = p.baender[0];
+                b.aktiv              = true;
+                b.modus              = Kanalmodus::stereo;
+                b.nutztSvf           = false;
+                b.statischIstEinheit = false;
+                b.statisch           = Biquad { b0, 0.0, 0.0, 0.0, 0.0 };
+                return leiteAutoGainAb (p);
+            };
+            const double unendlich = mitAntwort (std::numeric_limits<double>::infinity());
+            const double nullwert  = mitAntwort (0.0);
+            pruefe (unendlich == 0.0 && ! std::signbit (unendlich)
+                        && nullwert == 0.0 && ! std::signbit (nullwert),
+                    "311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig",
+                    "nicht endliches Mittel -> " + zahl (unendlich, 15)
+                        + ", nicht positives Mittel -> " + zahl (nullwert, 15));
         }
     }
 

@@ -1,0 +1,127 @@
+NAK-311 Etappe 4, Teil a - Rotbeweis 311/M-59
+=============================================
+
+Ticket      NAK-311 (Planschritt S25j), Etappe 4 Teil a, R-311-3 / T3-16-04
+Basis-SHA   df14a648e4414fea3faa0f1c90f7c669e9716292
+Datum       20.09.2026
+Etikett     heute rot
+Bein        B6 (EqCopDspGoldenTest)
+Zusage      `autoGainDb()` gleich -10*log10 des Mittels ueber die 121
+            Gitterstellen von |a_L|^2, a_L aus der im Test ausgeschriebenen
+            GEORDNETEN Kaskade (Eingangspaar 1 und 1, Baender in
+            Slotreihenfolge, nur L ausgewertet), auf 1e-9 dB; die
+            vertauschte Reihenfolge ergibt einen ANDEREN Wert.
+Test        eq-copilot/plugin/tests/DspGoldenTestMain.cpp, Abschnitt H2,
+            `311/M-59 mono_kaskade_in_slotreihenfolge`. Pruefling: Monobus,
+            48 kHz, Slot 0 High-Shelf 5 kHz / +6 dB / Q 0,707 `right`,
+            Slot 1 Bell 1 kHz / +6 dB / Q 1,0 `mid`; dazu dieselben zwei
+            Baender in vertauschter Slotreihenfolge.
+
+1. Der Test VOR der Reparatur, rot gegen den Zwischenstand
+----------------------------------------------------------
+Am Basis-SHA fehlen die neuen Parameter, der Fall liesse sich dort nicht
+uebersetzen. Der Rotlauf fuhr deshalb gegen einen ZWISCHENSTAND, woertlich:
+
+  - `DspProgramm` traegt das neue Feld `kanaele` (Vorgabe 2); `baueProgramm`
+    nimmt den Parameter `kanalzahl` (Vorgabe 2) und legt ihn dort ab.
+  - `DspKern::bereiteVor` und `Transaktionskern::setzeSamplerate` tragen je
+    einen Parameter `kanaele` (Vorgabe 2); der Kern reicht ihn in `baueVor`,
+    der Transaktionskern in `baueBericht` an `baueProgramm`.
+  - `SondeProcessor::prepareToPlay` misst die Kanalzahl einmal und gibt sie
+    an beide, vor `publiziereWirksam`.
+  - `leiteAutoGainAb` ist UNVERAENDERT: kein Monozweig; jedes Programm
+    rechnet die Zweikanalformel wie am Basisstand.
+
+Bau     cmake --build eq-copilot/build --config Release --target
+        EqCopDspGoldenTest EqCopProbeeqNullTest, EXIT=0
+Lauf    EqCopDspGoldenTest.exe, EXIT=1
+  FEHLER  311/M-59 mono_kaskade_in_slotreihenfolge
+          [Slot 0 right, Slot 1 mid: -1.576442892688 dB gegen Referenz
+           -1.498117403905; vertauscht: -1.576442892688 dB gegen Referenz
+           -1.427212327720; Abstand der beiden Reihenfolgen 0.000000000 dB]
+B6 insgesamt: 350 geprueft, 9 Fehler.
+
+Die Zweikanalformel ist reihenfolgeblind: beide Anordnungen liefern
+denselben Wert, und keiner der beiden trifft die geordnete Kaskade.
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+2. Mutation nach dem Bau
+--------------------------
+
+Datei              eq-copilot/plugin/dsp/DspProgramm.cpp, Zeile 123 bis 153 (Endstand)
+SHA-256 vorher     9C0AEDA7E37F802250BE724F57EEA36007F6A562D051CD3FD7CEDCF025F173D1
+Sicherungskopie    C:\Users\phili\.claude\jobs\36fec424\tmp\sicherung\B-mono-ohne-reihenfolge-DspProgramm.cpp
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+    das Paar (a_L, a_R) wandert in SLOTREIHENFOLGE durch die Baender:
+        std::complex<double> aLinks { 1.0, 0.0 }, aRechts { 1.0, 0.0 };
+        je Band:  stereo -> beide *= h | left -> aLinks *= h | right -> aRechts *= h
+                  mid/side -> mitte und seite bilden, EINE Komponente mit h,
+                              zurueck nach L und R
+        monoSumme += std::norm (aLinks);
+
+nachher (woertlich):
+    je Kanalmodus EIN Produkt wie im Zweikanalzweig - die Reihenfolge
+    faellt heraus:
+        std::complex<double> hSt, hLi, hRe, hMi, hSi   (alle 1,0)
+        je Band:  hSt / hLi / hRe / hMi / hSi *= h
+        const auto aLinks = hSt * hLi * ((hMi + hSi) * 0.5);
+        monoSumme += std::norm (aLinks);
+
+Grund der Stelle   die Zeilen, die die SLOTREIHENFOLGE tragen (R-311-3: "Kaskade in
+                   Slotreihenfolge"; §9 F-11). Genau diese Mutation nennt die
+                   Rotbeweisspalte: "Monozweig ohne Reihenfolge (Produkt je
+                   Kanalmodus wie im Zweikanalzweig)".
+
+Bau                cmake --build eq-copilot/build --config Release --target EqCopDspGoldenTest
+                   EXIT=0
+Binary             20.09.2026 01:55:15 (Quelle 01:55:12)
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  311/M-59 mono_kaskade_in_slotreihenfolge
+    [beide Reihenfolgen -0.652850567082 dB, Abstand 0.000000000 dB]
+  311/M-58 mono_side_band_ergibt_null_db (Wert und Ausgang) [-7.839868068442453 dB]
+  311/M-60 mono_mid_kompensiert_voll                        [-2.270777818370 dB]
+  311/M-65 (b) mono_acht_baender_folgt_der_kaskade          [-138.855681104606 dB]
+  B6 insgesamt: 350 geprueft, 5 Fehler, EXIT=1
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  311/M-58, 311/M-60 (Haelfte `mid`) und 311/M-65 (b). Grund: der
+  Diagonalterm (H_M + H_S)/2 der reihenfolgeblinden Fassung wirkt auf a_L
+  auch dort, wo die geordnete Kaskade die Seitenkomponente gar nicht
+  anfasst - bei gleichem L und R ist sie exakt 0. Dieselbe Ursache wie in
+  M-59, kein zweiter Defekt.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  345 von 350, darunter 311/M-57 (Wert UND Ausgang), 311/M-60 Haelfte
+  `left`, 311/M-61, 311/M-64, 311/M-65 (a) und 311/M-66. Dass M-57 gruen
+  bleibt, ist der Beleg: die Mutation trifft ausschliesslich die
+  Reihenfolge, nicht die Auswertung des ausgegebenen Kanals.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    9C0AEDA7E37F802250BE724F57EEA36007F6A562D051CD3FD7CEDCF025F173D1
+                   (gleich dem Wert oben - die Ruecknahme ist bytegleich)
+Gruenlauf          gemeinsam nach der Ruecknahme ALLER Mutationen dieses
+                   Teils (Muster SONDE-015 Etappe 4a, NAK-311 §22.5 Punkt 8);
+                   vor jeder Mutation war die Datei per SHA-256 auf den
+                   Endstand geprueft. Einzelbeine auf dem Endstand:
+                   B6 EXIT=0 "352 geprueft, 0 Fehler", A16 EXIT=0
+                   "114 Pruefungen ok, 0 Fehler", B7, B3c, A1, B1, A14 je
+                   EXIT=0.
+                   Die Mutationslaeufe oben zaehlen 350 Pruefungen: die zwei
+                   SELBSTAUDIT-Pruefungen des Abschnitts H2
+                   (`311/M-59 Selbstaudit side_hinter_left_wirkt`,
+                   `311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig`)
+                   kamen erst NACH den Rotbeweisen dazu; sie sind keine
+                   Matrixzeilen und haben keinen eigenen Rotbeweis (Muster
+                   NAK-311 §22.5 Punkt 7).
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`git diff --stat` der Etappe nennt keine mutierte Datei ausserhalb der
+Ticketpfade dieses Teils; jede mutierte Datei ist bytegleich zum Endstand
+zurueckgenommen (SHA-256 oben).

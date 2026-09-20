@@ -262,8 +262,17 @@ public:
     parameter::DspSatz wirksam() const;
 
     //== Umgebung =============================================================
-    void   setzeSamplerate (double samplerate) noexcept;
+    /** Abtastrate und Kanalzahl des Busses - beides Hostumgebung, beides aus
+        `SondeProcessor::prepareToPlay`, beides ohne Revision und ohne
+        Host-Dirty. `kanaele` (NAK-311 R-311-3) geht unveraendert an
+        `baueProgramm` in `baueBericht`, damit der gemeldete Auto-Gain
+        derselbe ist wie der des Kerns; die Vorgabe 2 haelt jeden Aufrufer
+        bitgleich, der sie nicht nennt. Die Kanalzahl ist KEIN Statefeld: der
+        Kanalwunsch je Band (`channel_mode`) bleibt davon unberuehrt im
+        bestaetigten Zustand und in den Statebytes. */
+    void   setzeSamplerate (double samplerate, int kanaele = 2) noexcept;
     double samplerate() const noexcept { return fs; }
+    int    kanaele() const noexcept { return kanalzahl; }
     void   setzeSamplegenaueAutomation (bool ja) noexcept { samplegenau = ja; }
     bool   samplegenaueAutomation() const noexcept { return samplegenau; }
 
@@ -304,6 +313,7 @@ private:
     PreviewOverlay    vorschau;
     AutomationOverlay automationOverlay;
     double            fs = 0.0;
+    int               kanalzahl = 2;   ///< NAK-311 R-311-3, Hostumgebung neben `fs`
     bool              samplegenau = false;
 
     // Arbeitsplatz der Stufen S2 bis S7 - vor dem Commit-Punkt beschrieben,

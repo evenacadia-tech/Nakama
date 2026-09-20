@@ -1,0 +1,98 @@
+NAK-311 Etappe 4, Teil a - Rotbeweis 311/M-63 (Teilfall von M-62)
+=================================================================
+
+Ticket      NAK-311 (Planschritt S25j), Etappe 4 Teil a, R-311-3 / T3-16-04
+Basis-SHA   df14a648e4414fea3faa0f1c90f7c669e9716292
+Datum       20.09.2026
+Etikett     Regressionswache - einmal absichtlich gebrochen, kein Beleg fuer
+            den Bau.
+Bein        A16 (EqCopProbeeqNullTest)
+Zusage      `channel_mode` bleibt `right` im bestaetigten Zustand und in den
+            Statebytes; die Bytes vor und nach den Wechseln sind gleich;
+            keine Revision, kein Host-Dirty.
+Test        eq-copilot/plugin/tests/SondeNullTestMain.cpp, Abschnitt 12,
+            `311/M-63 kanalwunsch_ueberlebt_den_layoutwechsel`. Gemessen
+            werden `getStateInformation` vor und nach Mono -> Stereo ->
+            Mono (4708 Bytes, Vergleich als juce::MemoryBlock), der
+            Enumindex von `channel_mode` im bestaetigten Zustand,
+            `stateRevision()` und ein `juce::AudioProcessorListener`, der
+            `nonParameterStateChanged` zaehlt.
+
+1. Mutation nach dem Bau
+--------------------------
+
+Datei              eq-copilot/plugin/state/NakamaTransaktion.cpp, Zeile 356 (Endstand)
+SHA-256 vorher     1FB741EB59BF2615BBD41C656C9876A0D46F370F645A3CA6DB158C70249F8085
+Sicherungskopie    C:\Users\phili\.claude\jobs\36fec424\tmp\sicherung\H-channel-mode-zurueckgeschrieben-NakamaTransaktion.cpp
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+    kanalzahl = kanaele;
+}
+
+nachher (woertlich):
+    kanalzahl = kanaele;
+
+    // Rotbeweis 311/M-63: der Programmbau schreibt `channel_mode` im DTO auf
+    // `stereo` zurueck, sobald der Bus mono ist.
+    if (kanalzahl == 1)
+        for (int slot = 0; slot < param::kSlots; ++slot)
+            committed.werte[(size_t) param::indexBandV1 (slot, param::kChannelMode)].enumIndex = 0;
+}
+
+Grund der Stelle   die Rotbeweisspalte nennt "der Programmbau schreibt `channel_mode`
+                   im DTO auf `stereo` zurueck". Die Zusage von M-63 ist das
+                   FEHLEN eines solchen Schreibzugriffs; die einzige Stelle, an
+                   der die Kanalzahl den Zustandskern erreicht, ist
+                   `Transaktionskern::setzeSamplerate` - dort steht die Mutation.
+
+Bau                cmake --build eq-copilot/build --config Release --target EqCopProbeeqNullTest
+                   EXIT=0
+Binary             20.09.2026 01:57:24 (Quelle 01:57:17)
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  311/M-63 kanalwunsch_ueberlebt_den_layoutwechsel
+    [channel_mode right nein, Bytes gleich nein (4708 Bytes), Revision 1,
+     Dirty-Meldungen ueber die drei Wechsel 0]
+  311/M-62 ..., zurueck in Mono  [Kern -11.917134307584 dB, Bericht gleich]
+  A16 insgesamt: 112 Pruefungen ok, 2 Fehler, EXIT=1
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  311/M-62 Haelfte "zurueck in Mono". Grund: mit dem auf `stereo`
+  zurueckgeschriebenen Kanalwunsch wirkt das Band im Monobus wieder, und
+  die Monoformel gleicht es korrekt aus - eben nicht mehr mit +0,0.
+  Dieselbe Ursache, kein zweiter Defekt.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  112 von 114, darunter 311/M-62 Haelfte "Mono" (die Mutation greift erst
+  ab dem ZWEITEN `prepareToPlay`: beim ersten trug der bestaetigte Zustand
+  das Band noch nicht) und Haelfte "Stereo", dazu
+  `speichern_laden_speichern_bytegleich_in_v2 (M-93)` - der Statepfad
+  selbst bleibt heil, verloren geht nur der Kanalwunsch.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    1FB741EB59BF2615BBD41C656C9876A0D46F370F645A3CA6DB158C70249F8085
+                   (gleich dem Wert oben - die Ruecknahme ist bytegleich)
+Gruenlauf          gemeinsam nach der Ruecknahme ALLER Mutationen dieses
+                   Teils (Muster SONDE-015 Etappe 4a, NAK-311 §22.5 Punkt 8);
+                   vor jeder Mutation war die Datei per SHA-256 auf den
+                   Endstand geprueft. Einzelbeine auf dem Endstand:
+                   B6 EXIT=0 "352 geprueft, 0 Fehler", A16 EXIT=0
+                   "114 Pruefungen ok, 0 Fehler", B7, B3c, A1, B1, A14 je
+                   EXIT=0.
+                   Die Mutationslaeufe oben zaehlen 350 Pruefungen: die zwei
+                   SELBSTAUDIT-Pruefungen des Abschnitts H2
+                   (`311/M-59 Selbstaudit side_hinter_left_wirkt`,
+                   `311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig`)
+                   kamen erst NACH den Rotbeweisen dazu; sie sind keine
+                   Matrixzeilen und haben keinen eigenen Rotbeweis (Muster
+                   NAK-311 §22.5 Punkt 7).
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`git diff --stat` der Etappe nennt keine mutierte Datei ausserhalb der
+Ticketpfade dieses Teils; jede mutierte Datei ist bytegleich zum Endstand
+zurueckgenommen (SHA-256 oben).

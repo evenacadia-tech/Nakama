@@ -236,13 +236,19 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
     jassert (getLatencySamples() == 0);
     const double sichereRate = std::isfinite (samplerate) && samplerate > 0.0
                             && samplerate <= 768000.0 ? samplerate : 0.0;
+    // NAK-311 R-311-3 (T3-16-04): EINE Messung der Kanalzahl fuer alle drei
+    // Abnehmer - Analyse, DSP-Kern und Transaktionskern. Zwei getrennte
+    // Aufrufe von `getTotalNumInputChannels()` koennten auseinanderlaufen,
+    // und ein Kern, der den Monobus anders sieht als der Bericht, meldet
+    // einen anderen Ausgleich, als er faehrt (M-62).
+    const int busKanaele = getTotalNumInputChannels();
     {
         std::lock_guard<std::mutex> l (analyseSchloss);
         v3Samplerate.store (sichereRate);
         analyseQueue.neustartAnfordern();
     }
     v3BlockSize.store (maxBlock >= 0 ? maxBlock : 0);
-    v3Channels.store (getTotalNumInputChannels());
+    v3Channels.store (busKanaele);
 
     // SONDE-015 4a: der DSP-Kern wird hier vorallokiert (M-41) - unter dem
     // Callback-Schloss, damit kein Block in die neuen Puffer faellt, und unter
@@ -253,10 +259,15 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
     {
         const juce::ScopedLock callback (getCallbackLock());
         const juce::ScopedLock l (zustandSchloss);
-        dspKern->bereiteVor (sichereRate, maxBlock);
+        // NAK-311 R-311-3: Kern UND Transaktionskern bekommen dieselbe
+        // gemessene Kanalzahl, beide VOR `publiziereWirksam` - der neu
+        // publizierte Zustand traegt damit den Ausgleich des neuen Busses,
+        // und die zwei Lesestellen laufen nie auseinander (Layout
+        // setzen <-> Programm erneuern, M-62).
+        dspKern->bereiteVor (sichereRate, maxBlock, busKanaele);
         analyseL.assign ((size_t) maxBlock, 0.0f);
         analyseR.assign ((size_t) maxBlock, 0.0f);
-        transaktion->setzeSamplerate (sichereRate);
+        transaktion->setzeSamplerate (sichereRate, busKanaele);
         dspAusfuehrung->vergissLetztePublikation();
         publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
         if (transaktion->preview().aktiv && ! dspAusfuehrung->publizierePreview (transaktion->preview().satz))

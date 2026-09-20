@@ -1,0 +1,301 @@
+NAK-311 Etappe 4, Teil a - B6-Zeilenvergleich (Matrixzeilen M-82 und M-83)
+==========================================================================
+
+Zusage M-82: die Ausgabezeilen des Abschnitts C von B6 sind bytegleich zum
+             Lauf am Basis-SHA der Etappe.
+Zusage M-83: die bestehenden Faelle der Abschnitte G und H bleiben gruen und
+             ihre Ausgabezeilen gleich dem Basislauf; in Etappe 4 dazu M-61.
+
+Basislauf   Basis-SHA df14a648e4414fea3faa0f1c90f7c669e9716292, Produktcode
+            UNVERAENDERT (kein Byte in eq-copilot/plugin/**), 20.09.2026.
+            Bau EXIT=0, Lauf EXIT=0, "339 geprueft, 0 Fehler".
+Endlauf     Endstand dieses Teils a, 20.09.2026, Bau EXIT=0, Lauf EXIT=0,
+            "352 geprueft, 0 Fehler"; Binary 02:10:06, juengste Quelle
+            02:09:02 (NAK-230 geprueft).
+
+ERGEBNIS
+--------
+Abschnitt C (RBJ-Goldens, M-10 bis M-13)     Basis 80 Zeilen, Ende 80 Zeilen, bytegleich: JA
+Abschnitt G (Kanalmodus, M/S, Trims, Mix)    Basis 15 Zeilen, Ende 15 Zeilen, bytegleich: JA
+Abschnitt H (Auto-Gain, M-35 bis M-40)       Basis 14 Zeilen, Ende 14 Zeilen, bytegleich: NEIN
+Abschnitt H2 (Auto-Gain im Monobus)       NEU, 29 Zeilen
+
+Die EINE Abweichung im Abschnitt H, mit Grund:
+
+  -  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  +  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18; NAK-311 311/M-66 Monokern)  [Ableitungen ausserhalb 4, im Audiopfad 0 (Stereo- und Monokern zusammen)]
+
+Grund: Matrixzeile 311/M-66. Der bestehende Fall
+`auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)` ist um einen
+MONOKERN ergaenzt (`bereiteVor` mit Kanalzahl 1, zwei Programmwechsel,
+Bloecke ueber den einen Kanal, Pflege). Dadurch steigt der Zaehler
+`ableitungenAusserhalb` von 2 auf 4 und der Prueftext traegt den Zusatz;
+der gemessene Wert, auf den es ankommt - `ableitungenImAudiopfad` -, bleibt
+0. Die Ticketgrenze nennt diese Ergaenzung ausdruecklich.
+
+Jede andere Zeile der Abschnitte C, G und H ist bytegleich. Abschnitt H2
+ist neu hinzugekommen (311/M-57 bis M-61, M-64, M-65 und die vierzehn
+Hexzeilen des Goldens); er steht HINTER H und verschiebt keine Zeile darin.
+
+
+BASISZEILEN, WOERTLICH (bleiben stehen, damit der zweite Worker der
+Etappe 4 gegen dieselbe Basis vergleicht)
+----------------------------------------------------------------------
+
+== C - Filtergoldens gegen die analytische RBJ-Antwort (M-10 bis M-13) ==
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 207.5 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 61.7 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 21.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 18245.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 23.1 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 806.3 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 1015.9 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 226.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 53.4 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 30.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 241 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.259 gegen -0.259 dB; 1000 Hz: -12.000 gegen -12.000 dB; 4000 Hz: -23.761 gegen -23.761 dB; ]
+  ok      nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+  ok      kappung_aendert_den_persistenten_wert_nicht (M-12)  [DTO traegt weiter 20000 Hz]
+  ok      bei_96_khz_greift_der_deckel_nicht (M-12)  [0,45 * 96000 = 43200 Hz liegt ueber 20000]
+  ok      koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+
+
+== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  ok      width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.000000000]
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+  ok      input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -3.0000 dB (soll -3)]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+  ok      mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  ok      mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.50000000]
+  ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+
+
+== H - Auto-Gain (M-35 bis M-40) ==
+  ok      flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: 0.000000000000000]
+  ok      neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: 0.000000000000000]
+  ok      shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-5.9970 dB]
+  ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  ok      auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -5.9970 dB]
+  ok      der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.99435]
+  ok      dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 0.000000000]
+  ok      und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung -12.0000 dB]
+  ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
+  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+
+
+ENDZEILEN DES TEILS a, WOERTLICH
+--------------------------------
+
+== C - Filtergoldens gegen die analytische RBJ-Antwort (M-10 bis M-13) ==
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 51.9 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @44100  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 207.5 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @44100  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 241 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 56.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 1076.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 61.7 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @48000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 19330.5 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 21.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @48000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 0.0000 dB bei 18245.6 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 30.8 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 879.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 23.1 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @96000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 806.3 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 1015.9 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @96000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 0.0000 dB bei 226.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 369.7 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) bell 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 854.3 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_shelf 200 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 27.5 Hz, Rand 0.0000 dB, 244 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_shelf 5000 Hz @192000  [Eck-/Mittenfrequenz und f/4, 4f]
+  ok      high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 53.4 Hz, Rand 0.0000 dB, 243 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) notch 1000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 987.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) low_cut 100 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 21.2 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      gitter_traegt_die_prueflingspunkte (R15 Feinheit 3, B-24) high_cut 8000 Hz @192000  [Eck-/Mittenfrequenz]
+  ok      high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 0.0000 dB bei 30.0 Hz, Rand 0.0000 dB, 242 Stellen]
+  ok      impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 0.0030 dB ueber drei Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 243 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 0.0000 dB, Rand 0.0000 dB, 241 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 244 Stellen]
+  ok      dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 0.0000 dB, Rand 0.0000 dB, 242 Stellen]
+  ok      dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.259 gegen -0.259 dB; 1000 Hz: -12.000 gegen -12.000 dB; 4000 Hz: -23.761 gegen -23.761 dB; ]
+  ok      nyquist_kappung_bei_045_fs (M-12)  [wirksam 19845.000 Hz statt 20000]
+  ok      kappung_aendert_den_persistenten_wert_nicht (M-12)  [DTO traegt weiter 20000 Hz]
+  ok      bei_96_khz_greift_der_deckel_nicht (M-12)  [0,45 * 96000 = 43200 Hz liegt ueber 20000]
+  ok      koeffizienten_und_zustaende_sind_double (M-16)  [je 8 Byte]
+
+
+== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==
+  ok      width_eins_ist_bitidentisch (M-30)  [Ein- und Ausgang bitgleich ueber 10 Bloecke]
+  ok      width_eins_rechnet_die_ms_stufe_nicht (M-30, B-19)  [M/S-Laeufe=0]
+  ok      ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+  ok      311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 0 von 514 Stellen ungleich dem Eingang als double]
+  ok      width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.000000000]
+  ok      input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.498816 gegen 0.498816]
+  ok      input_trim_liegt_vor_der_bank_der_detektor_hoert_ihn (M-31, B-16)  [Eingang -33 dBFS, Trim +6 dB, Threshold -30: Auslenkung -3.0000 dB (soll -3)]
+  ok      output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.498816 gegen 0.498816]
+  ok      mix_null_ist_bitidentisch (M-33)  [trotz +9 dB Input-Trim und +12-dB-Bell]
+  ok      311/M-91 mix_null_traegt_am_tap_den_eingang (NAK-311 R-311-6, M-33)  [Tap post_committed ueber 8 Bloecke zu 512 beider Kanaele: 0 von 8192 Stellen ungleich dem Eingang als double]
+  ok      mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+  ok      mix_ist_linear_nicht_equal_power (M-34)  [0,5*wet + 0,5*dry bei gleichem Signal = 0.50000000]
+  ok      channel_mode_wechselt_am_blockrand_klickfrei (M-29)  [zweite Differenz am Wechsel 0.023939967 gegen 0.024111748 im ruhigen Lauf]
+
+
+== H - Auto-Gain (M-35 bis M-40) ==
+  ok      flache_kurve_ergibt_exakt_null_db (M-36)  [bitgenau +0,0, nicht -0,0 aus einem Gitterlauf: 0.000000000000000]
+  ok      neutraler_bell_ergibt_exakt_null_db (M-36)  [bitgenau +0,0: 0.000000000000000]
+  ok      shelf_plus_sechs_ergibt_minus_sechs (M-37)  [-5.9970 dB]
+  ok      identisches_mid_side_paar_faellt_auf_stereo_zusammen (M-37)  [stereo -5.860617 dB, mid+side -5.860617 dB]
+  ok      und es wird NICHT wie der doppelte Gain kompensiert (M-37)  [das Doppelte waere -11.7212 dB]
+  ok      auto_gain_aus_wirkt_nicht_und_ist_trotzdem_lesbar (M-35)  [abgeleitet -5.9970 dB]
+  ok      der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.99435]
+  ok      dynamik_bewegt_den_auto_gain_nicht (M-38)  [vorher 0.000000000, nachher 0.000000000]
+  ok      und die Dynamik hat sich wirklich bewegt (M-38)  [Auslenkung -12.0000 dB]
+  ok      auto_gain_steht_vor_dem_ersten_block_fest (M-39)  [vor dem ersten Block bereits -5.9970 dB]
+  ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18; NAK-311 311/M-66 Monokern)  [Ableitungen ausserhalb 4, im Audiopfad 0 (Stereo- und Monokern zusammen)]
+  ok      auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.99526 gegen 1,99526]
+
+
+== H2 - Auto-Gain im Monobus (NAK-311 R-311-3) ==
+  hexgolden  311/M-61 H_flache_kurve  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_neutraler_bell  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_shelf_plus_sechs  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 H_stereo_q0707  0xC017714584703D0E  (-5.860616750098 dB)
+  hexgolden  311/M-61 H_mid_side_paar  0xC017714584703D0E  (-5.860616750098 dB)
+  hexgolden  311/M-61 H_dynamisches_bell  0x0000000000000000  (0.000000000000 dB)
+  hexgolden  311/M-61 H_auto_gain_aus  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 H_mit_output_trim  0xC017FCF4DCC41CCB  (-5.997027825804 dB)
+  hexgolden  311/M-61 modus_stereo  0xC0113FE32BC1B7DA  (-4.312390025805 dB)
+  hexgolden  311/M-61 modus_left  0xC0055DD001A5F001  (-2.670806897046 dB)
+  hexgolden  311/M-61 modus_right  0xC0055DD001A5F001  (-2.670806897046 dB)
+  hexgolden  311/M-61 modus_mid  0xC0022A8D8F930CAB  (-2.270777818370 dB)
+  hexgolden  311/M-61 modus_side  0xC0022A8D8F930CAB  (-2.270777818370 dB)
+  hexgolden  311/M-61 M47_gemischtes_programm  0x3FCD799DE6A48DB0  (0.230273950213 dB)
+  ok      311/M-61 zweikanalformel_bitgleich_zum_basisstand (R-311-3)  [14 von 14 Prueflingen bitgleich (memcmp)]
+  ok      311/M-57 mono_right_band_ergibt_null_db, Wert  [exakt +0,0 (kein -0,0): 0.000000000000000; Phase 16 mass -9,177564 dB]
+  ok      311/M-57 mono_right_band_ergibt_null_db, Ausgang  [48 000 Samples 250-Hz-Sinus 0,25 im Monobus: mit Auto-Gain bytegleich zum Lauf ohne]
+  ok      311/M-58 mono_side_band_ergibt_null_db (Teilfall von 311/M-57), Wert  [exakt +0,0 (kein -0,0): 0.000000000000000; Phase 16 mass -7,839905 dB]
+  ok      311/M-58 mono_side_band_ergibt_null_db (Teilfall von 311/M-57), Ausgang  [48 000 Samples 250-Hz-Sinus 0,25 im Monobus: mit Auto-Gain bytegleich zum Lauf ohne]
+  ok      311/M-60 mono_left_kompensiert_voll (Teilfall von 311/M-57)  [-4.312390025805 dB gegen Modus stereo -4.312390025805 dB und gegen die Testreferenz -4.312390025805 dB]
+  ok      311/M-60 mono_mid_kompensiert_voll (Teilfall von 311/M-57)  [-4.312390025805 dB gegen Modus stereo -4.312390025805 dB und gegen die Testreferenz -4.312390025805 dB]
+  ok      311/M-59 mono_kaskade_in_slotreihenfolge (R-311-3, §9 F-11)  [Slot 0 right, Slot 1 mid: -1.498117403905 dB gegen Referenz -1.498117403905; vertauscht: -1.427212327720 dB gegen Referenz -1.427212327720; Abstand der beiden Reihenfolgen 0.070905076 dB]
+  ok      311/M-64 kanalzahl_ausser_eins_ist_zweikanal (R-311-3)  [Kanalzahl 0 -> 0xC0055DD001A5F001, 1 -> 0x0000000000000000, 2 -> 0xC0055DD001A5F001, 3 -> 0xC0055DD001A5F001; erwartet 1 -> 0x0000000000000000, sonst 0xC0055DD001A5F001]
+  ok      311/M-65 (a) mono_ohne_band_ist_exakt_null (Regressionswache, M-36)  [exakt +0,0 (kein -0,0): 0.000000000000000]
+  ok      311/M-65 (b) mono_acht_baender_folgt_der_kaskade (R-311-3)  [-144.890032333108 dB gegen die Testreferenz -144.890032333108 dB; die Zweikanalformel gaebe -138.855681104606 dB (Abstand 6.034351 dB)]
+  ok      311/M-59 Selbstaudit side_hinter_left_wirkt  [-4.343340893422 dB gegen die Testreferenz -4.343340893422 dB; ohne das side-Band waeren es -4.312390025805 dB]
+  ok      311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig  [nicht endliches Mittel -> 0.000000000000000, nicht positives Mittel -> 0.000000000000000]
+

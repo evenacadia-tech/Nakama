@@ -110,8 +110,17 @@ public:
         auch nicht beim ersten Programmwechsel (M-41). `maxBlock` ist die
         groesste Blockgroesse, fuer die die Taps Platz haben; ein groesserer
         Block laeuft trotzdem durch (Audio faellt nie aus), nur der Tap
-        dieses Blocks gilt als verworfen und wird gezaehlt (M-48). */
-    void bereiteVor (double samplerate, int maxBlock);
+        dieses Blocks gilt als verworfen und wird gezaehlt (M-48).
+
+        `kanaele` ist die Kanalzahl des Busses (NAK-311 R-311-3, T3-16-04).
+        Der Kern haelt sie neben der Abtastrate und reicht sie in `baueVor`
+        an `baueProgramm`; nur die Auto-Gain-Ableitung liest sie. Wie die
+        Abtastrate ist sie HOSTUMGEBUNG: der Prozessor gibt in
+        `prepareToPlay` die gemessene Zahl, und `freigeben` setzt beide
+        zurueck, damit keine veraltete Kanalzahl einen Programmbau ohne neue
+        Vorbereitung erreicht. Die Vorgabe 2 haelt jeden Aufrufer bitgleich,
+        der sie nicht nennt. */
+    void bereiteVor (double samplerate, int maxBlock, int kanaele = 2);
 
     /** Gibt die Puffer frei und setzt alle Zustaende zurueck. Der
         Generationszaehler des Pools bleibt stehen (B-12). */
@@ -481,6 +490,13 @@ private:
     DspBankPool baenke;
 
     double abtastrate  { 0.0 };
+    /** NAK-311 R-311-3: die Kanalzahl des Busses aus `bereiteVor`. Steht
+        neben der Abtastrate, weil sie dieselbe Herkunft und dieselbe
+        Lebensdauer hat (Hostumgebung, gesetzt in `prepareToPlay`,
+        zurueckgesetzt in `freigeben`). Gelesen wird sie nur im Worker
+        (`baueVor` -> `baueProgramm`), nie im Audiothread: dort steht die
+        Zahl im Programm der gefahrenen Bank. */
+    int    kanalzahl   { 2 };
     int    maxBlockGroesse { 0 };
 
     // Arbeitspuffer, vorallokiert.

@@ -347,9 +347,13 @@ param::DspSatz Transaktionskern::wirksam() const
     return s;
 }
 
-void Transaktionskern::setzeSamplerate (double samplerate) noexcept
+void Transaktionskern::setzeSamplerate (double samplerate, int kanaele) noexcept
 {
     fs = (std::isfinite (samplerate) && samplerate > 0.0) ? samplerate : 0.0;
+    // NAK-311 R-311-3: unveraendert uebernommen und in `baueBericht` an
+    // `baueProgramm` gereicht. Kein Statefeld, keine Revision, kein
+    // Host-Dirty - `channel_mode` im bestaetigten Zustand bleibt unberuehrt.
+    kanalzahl = kanaele;
 }
 
 Ergebnis Transaktionskern::ohneCommit (Ausgang a, Stufe s) const noexcept
@@ -792,7 +796,10 @@ bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& gru
         auto sicht = c;
         setzeFreieSlotsNeutral (sicht.werte);
         auto prog = std::make_unique<dsp::DspProgramm>();
-        dsp::baueProgramm (sicht, fs, 0, *prog);
+        // NAK-311 R-311-3: dieselbe Kanalzahl wie der Kern. Liefe sie hier
+        // nicht mit, meldete der Bericht im Monobus den Zweikanalwert,
+        // waehrend der Kern den Monowert faehrt (M-62).
+        dsp::baueProgramm (sicht, fs, 0, *prog, tk.kanaele());
         aus.autoGainDb = prog->autoGainDb;
         for (int slot = 0; slot < param::kSlots; ++slot)
         {

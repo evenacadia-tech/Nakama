@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 19.09.2026, NAK-311 Etappe 2)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 4a)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -605,6 +605,46 @@ die der Rampenweg schon macht; keine Allokation, keine Sperre, keine Arbeit je
 Sample. Gemessen in B6 (311/M-41, M-43 bis M-51, M-53 bis M-56, M-94, M-95) und
 B7 (311/M-40); Manifest `docs/beweise/NAK-311.md` §6.3 und §28, Nachtrag zu E-8
 und M-121 in `docs/beweise/SONDE-015.md` §13.1.
+
+**Auto-Gain im Monobus (20.09.2026, NAK-311 Etappe 4 Teil a, R-311-3).** Das
+Buslayout lässt Mono und Stereo mit gleichem Ein- und Ausgang zu (NAK-283
+F04). `SondeProcessor::prepareToPlay` misst die Kanalzahl **einmal** und gibt
+sie an `DspKern::bereiteVor` **und** `Transaktionskern::setzeSamplerate`,
+beide vor `publiziereWirksam`; der Kern hält sie neben der Abtastrate und
+reicht sie in `baueVor`, der Transaktionskern in `baueBericht` an
+`baueProgramm`, das sie als `DspProgramm::kanaele` ablegt (Vorgabe 2, damit
+jeder andere Aufrufer unverändert und bitgleich bleibt). Gelesen wird sie nur
+von `leiteAutoGainAb`. Bei Kanalzahl 1 rechnet die Ableitung statt der
+Zweikanalformel die **geordnete Monokaskade**: je Gitterstelle startet das
+Paar (a_L, a_R) = (1, 1) — der Monoeingang, den der Kern in beide Komponenten
+legt —, die aktiven Bänder wirken in Slotreihenfolge mit derselben
+Ruheantwort (`stereo` auf beide, `left` auf a_L, `right` auf a_R, `mid` und
+`side` über dieselbe M/S-Rückführung wie `verarbeiteBand`), und ausgewertet
+wird nur a_L, der Kanal, den der Kern im Monobus schreibt. Dieselben
+Kurzschlüsse und Wachen wie im Zweikanalzweig; der Zweikanalzweig selbst ist
+textgleich geblieben. Die Kanalzahl ist Laufzeit des Hosts: kein Statefeld,
+keine Revision, kein Host-Dirty — der Kanalwunsch `channel_mode` bleibt
+unberührt im bestätigten Zustand und in den Statebytes.
+
+Warum: die Formel aus R4 mittelt zwei Ausgangsseiten und ist ausdrücklich als
+Stereo- und M/S-Näherung entschieden. Im Monobus gibt es keine zweite Seite;
+ein Band im Modus `right` oder `side` ändert dort nichts am ausgegebenen
+Kanal, senkte den Ausgang aber trotzdem ab — in Phase 16 am echten Kern
+gemessen −9,177564 dB (`right`) und −7,839905 dB (`side`), eine hörbare
+Absenkung eines sonst neutralen Wegs (T3-16-04). Die Abnahme vom 24.08.2026
+verlangt den Pegelgewinn der Kurve, die am Ausgang wirkt. Gerechnet wird die
+Kaskade und nicht die Faltung, weil der Kern das Material im Monobus kennt
+(beide Komponenten sind gleich) und nur so ein späteres `mid`-Band den Weg
+eines früheren `right`-Bandes wieder nach links mischt. Folgen: `right` und
+`side` ergeben exakt +0,0 dB, und der Ausgang bleibt bytegleich zum Lauf ohne
+Auto-Gain; `left`, `mid` und `stereo` kompensieren voll; in einer Kaskade
+zählt die Slotreihenfolge (gemessen 0,070905 dB Abstand zwischen zwei
+Reihenfolgen); acht Low-Shelves 1 kHz +12 dB Q 8 ergeben −144,890032 dB statt
+−138,855681 dB. Die vierzehn Zweikanalwerte des Basisstands bleiben bitgleich
+(memcmp). Gemessen in B6 Abschnitt H2 (311/M-57 bis M-61, M-64, M-65), im
+M-39-Fall des Abschnitts H (311/M-66, Monokern) und in A16 Abschnitt 12
+(311/M-62, M-63); Manifest `docs/beweise/NAK-311.md` §6.4 und §32, Hexgolden
+`docs/beweise/roh/NAK-311-etappe4-autogain-hex.txt`.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

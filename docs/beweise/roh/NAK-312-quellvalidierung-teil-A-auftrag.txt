@@ -1,0 +1,35 @@
+NAK-312 — Etappe 0: Quellvalidierung Teil A. Auftrag des Dirigenten, 20.09.2026.
+
+ROLLE. Du bist ein lesender Validierer im Ticket NAK-312 (Planschritt S25k, Tiefenaudit 3 abarbeiten, Teil 4: Hostkante und Plugin-Lebenslauf) im Repo C:\Users\phili\Projekte\Nakama (Branch master, sichtbarer Checkout). Du prüfst Auditbefunde an der Quelle und schreibst genau einen Bericht. Du baust nichts und reparierst nichts.
+
+GRENZE. Deine einzige Schreibaktion ist die neue Datei docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md (LF-Zeilenenden). Kein Bau, kein Testlauf, kein Kanon, kein Skript, kein FL Studio, kein Codex, keine Fehlerinjektion. Git nur lesend (status, rev-parse, log, show, diff, blame, grep); kein add, kein commit, kein push. Fremde Dateien fasst du nie an (die Ordner briefing-hub/ und nimbalyst-local/ sind fremd). Parallel läuft ein zweiter Validierer (Teil B), der nur docs/beweise/roh/NAK-312-quellvalidierung-teil-B.md schreibt; diese Datei gehört nicht dir. Sicherheitsbefunde (T3-12-*) sind nicht Gegenstand; Legacy-Bezeichner (EQ-Copilot, EqCop*, Eqcp) sind kein Befund; Design ist geparkt, schlage keine Oberfläche vor.
+
+START. Miss git rev-parse HEAD und git status --short und halte beides im Berichtskopf fest; miss beides noch einmal unmittelbar vor dem Schreiben. Wandert HEAD, nenne es und gleiche die betroffenen Zeilennummern neu ab.
+
+GEGENSTAND (8 IDs).
+- W02: T3-05-01 (alte Hostmailbox überschreibt geladenen Klang), T3-05-02 (read-only State verarbeitet Hostparameter).
+- W05: T3-01-02 (JUCE/APVTS-Locks vor der RT-Wache), T3-01-03 (State-Lock beim wiederholten Offlineflag), T3-01-05 (Automation am 5-ms-Wandzeittakt).
+- W06: T3-01-04 (erstes Offline-Audio), T3-01-09 (geerbter Hostbypass umgeht DSP-Historie), T3-01-10 (Gen-Reset bei aktiver Hörmarkierung).
+Dazu die Produktkarte U48 in docs/plan/fragen.json (Bypass- und Reset-Historie): trifft ihr Text das, was die Quelle heute tut, und die Wege, die es wirklich gibt?
+
+LESEN, in dieser Reihenfolge.
+1. Muster des Berichts: docs/beweise/roh/NAK-311-quellvalidierung-teil-A.md (Form, Tiefe, Kopf) und docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md (Trennung Technik und Produkt, Kartenprüfung).
+2. Gate: Schritt S25k in docs/plan/plan.json (Feld text, wörtlich zitieren); Registerzeile NAK-312 in docs/offene-punkte.md.
+3. Befunde: in docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md die Phasenzeilen der acht IDs, die Skeptikerzeilen der Phase 10 dazu, den Phase-16-Abschnitt und in der „Aktuellen Arbeitsübersicht für Fable“ die Zeilen W02, W05, W06; dazu die Rohberichte unter docs/audits/2026-09-15-tiefenaudit/roh/: phase-01-echtzeit.md, phase-05-hostkante.md, phase-10-skeptiker.md, phase-11-synthese.md (Kartenentwurf PF11-01), phase-16-c-persistenz.md, phase-16-e-last-lebenslauf.md, phase-16-f-gegenpruefung-c.md, phase-16-f-gegenpruefung.md, phase-16-abdeckung.md.
+4. Zusagen an ihrer Stelle: CLAUDE.md (Wahrheitskern mit Grundgesetz, Tragende technische Invarianten), docs/FL-Nakama-Sonden-Design-Entwurf.md (Fassung 0.5; die Abschnitte zu Hostparametern, Overlay, Automation, Offline-Rendern, Bypass, Reset, read-only State), docs/beweise/SONDE-015.md und die weiteren Manifeste, auf die die Befunde verweisen (Matrixzeilen und Entscheide wörtlich), docs/plugin-wissen.md, eq-copilot/identity/host-capabilities-fl-v1.json, docs/beweise/termin-a/ und termin-b/ nur, soweit ein Befund eine Hostreihenfolge behauptet.
+5. Code am HEAD: eq-copilot/plugin/sonde/ (SondeProcessor und seine Parameter-, Mailbox-, Recall-, Offline-, Bypass- und Resetwege), die Gen-Seite des Prozessors (Hörmarkierung, reset), eq-copilot/plugin/state/ (Recall, read-only-Haltung, Transaktion), eq-copilot/plugin/dsp/DspKern.* nur an den Übergängen Bypass, Reset und Offline, die RT-Wache und ihre Aufrufstellen, eq-copilot/plugin/tests/ (welcher Test deckt heute was; welches Bein aus tools/beweise.ps1 fährt ihn, insbesondere B2, B6, B7, B14, B15, A16).
+
+LIEFERUNG. Berichtskopf wie im Muster (Ticket, HEAD, Datum, Modell, IDs, Quellen, Prüfform, Arbeitsbaum). Dann je ID ein Abschnitt mit genau diesen Teilen:
+a) Behauptung des Audits in einem Satz, mit Fundstelle im Audit.
+b) Quellkette am HEAD: die Zeilen, die das Verhalten tragen, wörtlich zitiert mit Datei:Zeile; jede Zeilennummer selbst nachgelesen, keine aus dem Audit übernommen. Der Weg vom Eingang (Hostcallback, Parameter, State) bis zur Wirkung (Audio, State, Dirty, Anzeige).
+c) Zusage wörtlich: gegen welchen Satz steht das Verhalten (CLAUDE.md-Invariante, Gate, Entwurf, Matrixzeile, Entscheid), mit Quelle und Zeile; schweigen die Quellen, steht das ausdrücklich da.
+d) Heutige Abdeckung: welcher Test und welches Bein berührt den Weg, was misst er wirklich, was nicht.
+e) Urteil: BESTÄTIGT, PRÄZISIERT (was genau anders ist) oder WIDERLEGT, mit Begründung aus b) bis d). Ein Befund, der heute nicht mehr zutrifft, weil NAK-309 oder NAK-311 den Code geändert haben, ist mit dem ändernden Commit zu benennen.
+f) Kategorievorschlag: DEFEKT (verletzt eine zitierte Zusage), LÜCKE (Quellen schweigen; dazu: Technikregel oder Produktentscheid, mit Begründung, warum der User hier eine echte Wahl hat oder nicht), HÄRTUNG (von keiner Zusage verlangt). Schwere critical, high, medium oder low mit einem Satz.
+g) Kleinster Fix in Sätzen (kein Code), mit den betroffenen Dateien und Funktionen, und welche Beziehung mitzuprüfen ist (speichern↔laden, aktivieren↔abklingen, öffnen↔schließen, verbinden↔trennen).
+h) Ort des Rotbeweises: Testdatei, Stelle oder Nachbartest, Bein; welche Mutation an welcher Zeile die Zusage bricht. Der Rotbeweis fällt an der Zeile, die die Zusage trägt, nicht an einem Nebeneffekt.
+Danach: Abschnitt „Gemeinsame Ursachen“ (welche IDs teilen eine Wurzel, welche nur die Datei; was in einen Änderungssatz gehört und was getrennt bleiben muss; Berührung mit den IDs aus Teil B: W09, W22, W23, W24), Abschnitt „Karte U48“ (trifft, berichtigen mit Wortlautvorschlag in Alltagssprache für einen Musiker, oder entfällt, weil die Quellen schon entschieden haben), Abschnitt „Reihenfolge“ (welche Reparatur vor welcher, welche Etappen du vorschlägst, was erst nach der Antwort auf U48 baubar ist) und Abschnitt „Nicht geprüft“ (ehrlich, mit Grund).
+
+MASSSTAB. Ein Urteil ohne zitierte Zeile gilt nicht. Schreibe „nicht gefunden“, statt zu raten. Schwere und Kategorie des Audits sind Hinweis, nicht Maß. Zahlenränder nennen, wo ein Befund sie berührt (NaN, ±Inf, Blockgröße 1, erste Samples, Überlauf). Nenne irreführende Kommentare im Code, die ein Befund berührt, mit Datei:Zeile.
+
+ENDE. Schreibe den Bericht, prüfe mit git status --short, dass nur deine Datei neu ist, und beende dich mit einer Zeile: FERTIG Teil A, <Zahl> bestätigt, <Zahl> präzisiert, <Zahl> widerlegt.

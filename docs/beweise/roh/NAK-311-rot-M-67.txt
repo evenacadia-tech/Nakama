@@ -1,0 +1,97 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-67
+=============================================
+
+Ticket      NAK-311 (Planschritt S25j), Etappe 4 Teil b, R-311-5 / T3-15-09 Teil a
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     heute rot
+Bein        B3c (EqCopSchemaTest)
+Zusage      Transaktionskern mit DSP-Kern, 48 kHz, acht Low-Shelves 1 kHz
+            +12 dB Q 8 (vertragsgueltig): `auto_gain_db` im Bericht ist exakt
+            -120, und der Bericht ist als `state_report` mit `dsp` gueltig
+            gegen die Fassung 5 ($defs/dsp_bericht).
+Test        eq-copilot/plugin/tests/SchemaTestMain.cpp:1531,
+            `311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze`
+            in `fahreNak311Berichtsgrenze` (:1493, Aufruf :1676), neben
+            `fahreFassung5UndDspBericht`. Der Fall baut den Bericht mit dem
+            ECHTEN Transaktionskern und dem ECHTEN DSP-Kern und setzt ihn in
+            die Vorlage `eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json`
+            (dsp ganz, dazu state_hash, state_revision, undo_tiefe).
+
+1. Der Test VOR der Reparatur, rot gegen den UNVERAENDERTEN Basisstand
+-----------------------------------------------------------------------
+Codestand: Basis-SHA 805f6078, kein Byte Produktcode geaendert; einzige
+Aenderung war der neue Testfall selbst (nur `311/M-67`, ohne M-68 bis M-71,
+weil `berichtsAutoGainDb` am Basisstand nicht existiert).
+
+Bau     cmake --build eq-copilot/build --config Release --target EqCopSchemaTest
+        EXIT=0, Binary 20.09.2026 02:31:11 (Quelle 02:31:08)
+Lauf    EqCopSchemaTest.exe, EXIT=1
+
+  [ROT]  311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze (NAK-311
+         R-311-5, T3-15-09 Teil a)
+         [auto_gain_db -199.767783, Verletzungen 1
+          (/dsp/auto_gain_db gegen minimum)]
+
+  B3c insgesamt: 152 bestanden, 1 gescheitert.
+
+Der gemessene Wert -199,767783 dB bestaetigt die Zahl der Quellvalidierung
+(`docs/beweise/roh/NAK-311-quellvalidierung-teil-B.md` §2.1: -199,77 dB,
+Altbasis nachgerechnet). Die EINE Verletzung ist genau `minimum` von
+`auto_gain_db` - der Bericht reisst die Vertragsgrenze.
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+2. Mutation nach dem Bau
+------------------------
+
+Datei              eq-copilot/plugin/state/NakamaTransaktion.cpp, Zeile 822 (Endstand)
+SHA-256 vorher     11F8D3B03FEB1E2B74E570736145D0B28C44FCD3128384C76699C7A7CA7C8681
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\NakamaTransaktion.cpp
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+        aus.autoGainDb = berichtsAutoGainDb (prog->autoGainDb);
+
+nachher (woertlich):
+        aus.autoGainDb = prog->autoGainDb;
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Klemmung
+                   entfernt -> ungueltig -> rot"). Es ist die Zeile, die die
+                   Zusage traegt: der Bericht uebernimmt den abgeleiteten
+                   Wert wieder ungeklemmt.
+
+SHA-256 mutiert    54018ACF27D959D6EC04BD53EFF39FD25F0562AA25E66C9256C2E1D0C915D870
+Bau                cmake --build eq-copilot/build --config Release --target EqCopSchemaTest
+                   EXIT=0
+Binary             20.09.2026 02:44:48 (LastWriteTime der Quelle vor dem Bau auf jetzt gesetzt)
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  [ROT] 311/M-67 [auto_gain_db -199.767783, Verletzungen 1
+        (/dsp/auto_gain_db gegen minimum)]
+  B3c insgesamt: 156 bestanden, 1 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  keine.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  156 von 157, darunter 311/M-68 (der Wert innerhalb der Grenze bleibt
+  bitgleich - ohne Klemmung ist er es erst recht), 311/M-69, 311/M-70 und
+  311/M-71 (die Klemmfunktion selbst und der ungeklemmte Kernwert sind von
+  dieser Zeile unberuehrt). Genau das ist der Beleg, dass die Zeile nur den
+  BERICHT traegt.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    11F8D3B03FEB1E2B74E570736145D0B28C44FCD3128384C76699C7A7CA7C8681
+                   (gleich dem Wert oben - die Ruecknahme ist bytegleich)
+Gruenlauf          nach der Ruecknahme Bau EXIT=0, Binary 20.09.2026 02:44:51,
+                   Lauf EXIT=0, "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`git diff --stat` der Etappe nennt keine mutierte Datei ausserhalb der
+Ticketpfade dieses Teils; jede mutierte Datei ist bytegleich zum Endstand
+zurueckgenommen (SHA-256 oben).

@@ -1,0 +1,82 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-76
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, F12 / R-311-4, SONDE-015 M-84
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regressionswache (einmal gebrochen)
+Bein        B7 (EqCopTransactionTest)
+Zusage      Echter `SondeProcessor`, der Pruefling der Phase 16: dynamisches
+            Bell 1 kHz Q 2, Grundgain 0 dB, `stereo`, Range -12 dB,
+            Threshold -15 dB, Attack 500 ms, Hold 0, Release 100 ms, mit
+            einem Quadraturton 0,5 auf 1 kHz eingeschwungen (5 s Vorlauf).
+            `setStateInformation` mit den EIGENEN Bytes (gleiche Topologie,
+            `ladestart` mit erzwungener Publikation): Ausgang UND Tap
+            `post_committed` bleiben bitgleich zum ununterbrochenen
+            Vergleichskern C mit identischer Vorgeschichte.
+Test        eq-copilot/plugin/tests/TransactionTestMain.cpp:3002,
+            `311/M-76 gleicher_ladestart_bleibt_warm`, Abschnitt T
+            (`nak311Recall`, :2963, Aufruf :3141).
+
+Gemessen am Endstand (gruen):
+  Commits ja, 48128 Samples nach dem Ladestart,
+  Ausgang bitgleich ja, Tap bitgleich ja.
+
+Das bestaetigt die Messung der Phase 16 am echten Kern
+(`docs/audits/2026-09-15-tiefenaudit/roh/phase-16-d-dsp.md:28`, `:96`) und
+haelt die Widerlegung der Ausgangsvermutung ("nach dem Laden ist alles
+kalt") fest. Sie traegt, weil Pfad- und Lebenszykluskennungen aus W03
+(§28.2) unveraendert bleiben.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/dsp/DspKern.cpp, Zeile 275 (Endstand)
+SHA-256 vorher     29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspKern.cpp
+
+vorher (woertlich):
+    prog.pfadKennung = pfadGleich ? m.pfadKennung : naechsteKennung();
+
+nachher (woertlich):
+    prog.pfadKennung = naechsteKennung();
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("der
+                   Ladestart setzt die Pfadkennung neu -> kalt -> rot").
+                   Es ist die Vergabestelle, an der die Gleichheit der
+                   Pfadkennung entsteht; ohne sie ist jede Publikation ein
+                   neuer Pfad, auch die des Ladestarts.
+
+SHA-256 mutiert    406AB8A7859489D01D462CC55DD4A59323048BCEB9A04FD99D98B0FAD661A062
+Bau                cmake --build ... --target EqCopTransactionTest, EXIT=0
+Binary             20.09.2026 02:48:04
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  FEHLER 311/M-76 gleicher_ladestart_bleibt_warm
+    [Commits ja, 48128 Samples nach dem Ladestart, Ausgang bitgleich nein,
+     Tap bitgleich nein]
+  B7 insgesamt: 187 geprueft, 1 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  keine in B7.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  186 von 187, darunter 311/M-77 und 311/M-78 (dort startet die neue
+  Instanz ohnehin kalt - die Kennung aendert daran nichts), 311/M-79,
+  `reload_rekonstruiert_denselben_audioausgang (M-84)` und der
+  W03-Abschnitt S `311/M-40`. Die W03-Faelle des Beins B6 sind von dieser
+  Mutation ebenfalls betroffen; B6 gehoert nicht zu dieser Zeile und wurde
+  nach §7.1 ("nur die betroffenen Ziele bauen und fahren") nicht gefahren.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:48:08, Lauf EXIT=0,
+                   "187 geprueft, 0 Fehler".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`eq-copilot/plugin/dsp/DspKern.cpp` wurde voruebergehend mutiert und ist
+bytegleich zurueckgenommen; `git diff --stat` der Etappe nennt sie nicht.

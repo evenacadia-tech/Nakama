@@ -72,10 +72,21 @@ inline constexpr double kDeltaMakeupDb = 12.0;
 
 /** Steuerrate des dynamischen Bandes in Samples: alle so viele Samples
     werden Detektorpegel, Kennlinie und SVF-Koeffizienten neu gerechnet,
-    dazwischen laeuft der Mischfaktor linear weiter. Bei 48 kHz sind das
-    0,167 ms - feiner als die kuerzeste Attack (0,1 ms). Der DETEKTOR
-    selbst laeuft mit voller Audiorate; nur `log10` und `pow` haengen an
-    diesem Schritt. */
+    dazwischen laeuft der Mischfaktor linear weiter. Der DETEKTOR selbst
+    laeuft mit voller Audiorate; nur `log10` und `pow` haengen an diesem
+    Schritt, und genau ihre Kosten sind der Grund: je Sample und Band
+    kosten sie ein Vielfaches der Filterarbeit.
+
+    Was der Schritt fuer die REAKTION heisst (NAK-311 T3-15-11, gemessen in
+    311/M-73 bis 311/M-75): der frisch entworfene Koeffizientensatz wirkt am
+    Entwurfssample mit Gewicht NULL - `schrittRest` steht dort auf
+    `kDynamikSchritt`, `tSchritt` also auf 0 - und erst acht Samples spaeter
+    mit Gewicht eins. Ein einsetzender Pegel wirkt damit anteilig nach 1 bis
+    8 und voll nach 8 bis 15 Samples: 0,167 bis 0,3125 ms bei 48 kHz und
+    0,181 bis 0,340 ms bei 44,1 kHz. Das ist GROEBER als die kuerzeste
+    einstellbare Attack von 0,1 ms; erst ab 96 kHz ist der Schritt selbst
+    (0,083 ms) feiner als sie. Eine Zusage zur Reaktionszeit gibt es nicht -
+    E-25 rechnet die Steuerrate ausdruecklich in die Prueftoleranz ein. */
 inline constexpr int kDynamikSchritt = 8;
 
 /** Das Auto-Gain-Gitter: 20 Hz bis 20 kHz in 1/12-Oktav-Schritten (§5.4

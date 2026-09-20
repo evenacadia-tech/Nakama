@@ -1,0 +1,100 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-72
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, Gate GRENZE / CLAUDE.md "Schemas sind Vertraege"
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regressionswache (einmal gebrochen)
+Beine       A5 (pruefe_v3_vertrag.py --abdeckung), A8 (erzeuge_v3_fixtures.py
+            --pruefen), A9 (pruefe_flatc_drift.py), B3c (EqCopSchemaTest)
+Zusage      Am v3-Vertrag aendert sich NUR der `$comment` von `auto_gain_db`:
+            `git diff` zeigt genau EINE geaenderte Zeile, mit CRLF wie im
+            Index (`-text`); A5, A8, A9 und B3c bleiben gruen; `dsp_klemmung`
+            unveraendert.
+
+Byte-Belege am Endstand (gruen)
+-------------------------------
+git ls-files --eol eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+  i/crlf  w/crlf  attr/-text
+git ls-files --eol eq-copilot/fixtures/v3/MANIFEST.json
+  i/lf    w/lf    attr/-text
+
+git diff --numstat eq-copilot/schemas/v3/eq-ipc-v3.schema.json   ->  1  1
+git diff --numstat eq-copilot/fixtures/v3/MANIFEST.json          ->  1  1
+
+Bytezaehlung der Schemadatei am Endstand: 2395 Zeilenenden, alle CRLF,
+kein einzelnes LF; Nicht-ASCII-Bytes 530 - gleich dem Stand an HEAD
+(805f6078). Die geaenderte Zeile 2325 selbst enthaelt 0 Nicht-ASCII-Bytes,
+ist also reines ASCII wie der uebrige Schematext.
+
+Das MANIFEST.json entstand ueber den SCHREIBLAUF des Erzeugers
+(`py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py`, "geschrieben: 406
+Dateien"), nie von Hand; danach A8 `--pruefen` EXIT=0, "bytegleich: 406
+Dateien, MANIFEST sha256=a0cc0cd052112a361a749c90a6ec6759a5cb064f55185c1b4b3386afa9b52b04".
+
+git diff --numstat ueber eq-copilot/fixtures/v3 nennt AUSSER dem Manifest
+keine Datei: der Korpus selbst ist bytegleich.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/schemas/v3/eq-ipc-v3.schema.json, Zeile 2328 (Endstand)
+SHA-256 vorher     30B68F206BA28EB77CC5771F1B809BA614985AF49168C93A660CD3B98688AA79
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\eq-ipc-v3.schema.json
+
+vorher (woertlich):
+          "maximum": 120
+
+nachher (woertlich):
+          "maximum": 200
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("`maximum`
+                   auf 200 -> `git diff` zeigt zwei Zeilen, und das Fixture
+                   `dsp-auto-gain-ausserhalb` wird gueltig gegen sein
+                   Manifesturteil; die Korpusbeine melden es").
+
+SHA-256 mutiert    16EDC3DA962DB1C24AB91F7029DC11894A73593846582E001C34A50A08559CAC
+git diff --numstat unter der Mutation:  2  2   (statt 1 1) - genau die
+                   vorhergesagten ZWEI Zeilen.
+
+Laeufe unter der Mutation:
+  A5  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung, EXIT=2
+      ROT: ungueltig/dsp-auto-gain-ausserhalb.json: jsonschema sagt gueltig,
+           Manifest erwartet ungueltig
+  A8  py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen, EXIT=0
+      (bleibt gruen: A8 vergleicht den erzeugten Korpus BYTEWEISE mit dem
+      committeten; das Schema geht in diesen Vergleich nicht ein. Gemessen,
+      nicht erwartet - die Matrixzeile nennt A8 mit; sie faellt dort nicht.)
+  B3c EqCopSchemaTest.exe, EXIT=1
+      [ROT] ungueltig/dsp-auto-gain-ausserhalb.json: Urteil ungueltig
+            erwartet, Engine sagt gueltig
+      [ROT] Korpus klassifiziert wie das Manifest (402 Fixtures) [1 Abweichungen]
+      [ROT] 311/M-69 klemmgrenze_gleich_schemagrenze
+            [Konstante 120.000000, Schema [-120.000000, 200.000000], ...,
+             Schema nimmt +/-120 an und weist 120.5 ab nein]
+      B3c insgesamt: 155 bestanden, 2 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (A5 und B3c melden beide
+genau das Fixture `dsp-auto-gain-ausserhalb`).
+
+Mitgefallen, mit Grund:
+  311/M-69 - die Zeile haelt Konstante und Schemagrenze ausdruecklich
+  gegeneinander; ein geaendertes `maximum` ist genau der Fall, den sie
+  bewachen soll.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  A8 (siehe oben), und in B3c 155 von 157, darunter 311/M-67, 311/M-68,
+  311/M-70 und 311/M-71 - der Bericht selbst bleibt unveraendert, nur das
+  Urteil ueber das Grenzfixture kippt.
+
+Ruecknahme         bytegleich aus der Sicherungskopie, VOR jedem weiteren
+                   Bein (Auftrag: "wird bytegleich zurueckgenommen, bevor
+                   irgendetwas anderes laeuft")
+SHA-256 nachher    30B68F206BA28EB77CC5771F1B809BA614985AF49168C93A660CD3B98688AA79
+git diff --numstat nach der Ruecknahme:  1  1
+Gruenlauf          A5 EXIT=0, A8 EXIT=0, A9 EXIT=0,
+                   B3c EXIT=0 "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+keine mutierte Datei ausserhalb der Ticketpfade; bytegleich zurueckgenommen.

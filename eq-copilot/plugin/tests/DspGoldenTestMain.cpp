@@ -20,7 +20,11 @@
     bis M-61, M-64 und M-65 gegen eine HIER eigenstaendig ausgeschriebene
     Monoformel und gegen Hexwerte, die der unveraenderte Kern am Basisstand
     der Etappe ausgegeben hat; 311/M-66 (Rechenort auch im Monokern) steht
-    im M-39-Fall des Abschnitts H.
+    im M-39-Fall des Abschnitts H. Seit Etappe 4 Teil b (T3-15-11) misst
+    Abschnitt F die STEUERRATE gegen einen Referenzkern mit Range 0
+    (311/M-73 bis M-75, §6.4): der erste Entwurf wirkt 1 bis 8 Samples
+    anteilig und 8 bis 15 Samples voll - erlaubtes Verhalten, gemessen, kein
+    geaendertes Verhalten.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -2593,6 +2597,135 @@ int main()
             }
             pruefe (gleich, "ausschalten_aendert_nur_dynamic_enabled (M-24 im Kern)",
                     "die fuenf Werte bleiben bitgleich");
+        }
+
+        // ── NAK-311 T3-15-11: die Steuerrate, gemessen ────────────────────
+        // Manifest NAK-311 §6.4, Zeilen 311/M-73 bis 311/M-75, §9 F-15.
+        // ERLAUBTES VERHALTEN, gemessen - kein Verhalten aendert sich,
+        // `kDynamikSchritt` bleibt 8. Berichtigt wird nur die BEGRUENDUNG
+        // (DspProgramm.h und Entscheid E-6 sagten, 8 Samples seien "feiner
+        // als die kuerzeste Attack"; sie sind groeber).
+        //
+        // Pruefling und Referenzkern unterscheiden sich in EINEM Wert: der
+        // Referenzkern traegt Range 0. Derselbe SVF-Weg laeuft in beiden
+        // (`nutztSvf` haengt nicht an der Range, DspProgramm.cpp), nur der
+        // Detektor bleibt dort stehen. Beide fahren dasselbe Signal: erst
+        // 8*m + p Samples Stille - das Steuerraster zaehlt ab dem ersten
+        // Sample des Kerns, m = 32 haelt den Einblend-Crossfade aus der Ruhe
+        // (kFadeSamples) vor dem Einsatz fertig -, dann den Quadraturton 0,5
+        // auf der Bandmitte. Threshold -60 dB (Vertragsminimum) legt den
+        // Pegel ins Plateau, die Auslenkung ist dort die volle Range.
+        //
+        // Gemessen wird der Tap `post_committed` Sample fuer Sample, dazu am
+        // Bandzustand `schrittRest` (wo faellt der Entwurf?) und `svfVon`
+        // (welcher Satz wirkt mit Gewicht 1?).
+        {
+            const int  phasen[] = { 0, 1, 3, 7 };
+            const int  vorlaufBloecke = 32;        // 8 * 32 = 256 >= kFadeSamples
+            const int  messen = 40;                // deckt d + 8 <= 15 mit Rand
+            const double f0 = 1000.0, amp = 0.5;
+
+            struct Fall { double rate; const char* zeile; const char* was; };
+            const Fall faelle[] = {
+                { 48000.0, "311/M-73", "erster_entwurf_wirkt_voll_nach_8_bis_15_samples" },
+                { 44100.0, "311/M-74", "dieselben_samplezahlen_bei_44_1_khz" },
+                { 96000.0, "311/M-75", "dieselben_samplezahlen_bei_96_khz" },
+            };
+
+            for (const auto& f : faelle)
+            {
+                int minErste = 1000, maxErste = -1, minVoll = 1000, maxVoll = -1;
+                bool allesTraegt = true;
+                std::ostringstream d;
+                d << std::setprecision (9);
+
+                for (int pi = 0; pi < 4; ++pi)
+                {
+                    const int p = phasen[pi];
+                    const int dSoll = (kDynamikSchritt - p) % kDynamikSchritt;
+
+                    const auto machKern = [&] (double range)
+                    {
+                        auto k = neuerKern (f.rate, 64);
+                        auto s = machSatz (true);
+                        belege (s, 0, Filtertyp::bell, f0, 0.707, 0.0);
+                        machDynamisch (s, 0, range, -60.0, 0.1, 0.0, 100.0);
+                        k->uebernehmeZustand (s);
+                        return k;
+                    };
+                    auto kDyn = machKern (-12.0);
+                    auto kRef = machKern (0.0);
+
+                    long long nD = 0, nR = 0;
+                    const int vorlauf = kDynamikSchritt * vorlaufBloecke + p;
+                    fahreStereoTon (*kDyn, f.rate, f0, 0.0, nD, vorlauf, 1);
+                    fahreStereoTon (*kRef, f.rate, f0, 0.0, nR, vorlauf, 1);
+
+                    std::vector<double> tapD, tapR;
+                    std::vector<int> rest ((size_t) messen, -1);
+                    std::vector<SvfKoeffizienten> svfVon ((size_t) messen), svfNach ((size_t) messen);
+                    for (int i = 0; i < messen; ++i)
+                    {
+                        fahreStereoTon (*kDyn, f.rate, f0, amp, nD, 1, 1, &tapD);
+                        fahreStereoTon (*kRef, f.rate, f0, amp, nR, 1, 1, &tapR);
+                        int cA = -1, cQ = -1, kA = -1, kQ = -1;
+                        kDyn->gefahreneSlots (cA, cQ, kA, kQ);
+                        const auto& z = kDyn->pool().bank (cA).baender[0];
+                        rest[(size_t) i]    = z.schrittRest;
+                        svfVon[(size_t) i]  = z.svfVon;
+                        svfNach[(size_t) i] = z.svfNach;
+                    }
+
+                    int erste = -1;
+                    for (int i = 0; i < messen && erste < 0; ++i)
+                        if (std::memcmp (&tapD[(size_t) i], &tapR[(size_t) i], sizeof (double)) != 0)
+                            erste = i;
+
+                    // Der Entwurf faellt genau auf den Samples i == d (mod 8):
+                    // danach steht `schrittRest` auf kDynamikSchritt - 1.
+                    bool rasterStimmt = true;
+                    for (int i = 0; i < messen; ++i)
+                        if ((rest[(size_t) i] == kDynamikSchritt - 1)
+                            != (i % kDynamikSchritt == dSoll % kDynamikSchritt))
+                            rasterStimmt = false;
+
+                    // Volle Wirkung: bei d + 8 ist `tSchritt` wieder 0, und
+                    // `svfVon` traegt dort GENAU den Satz, der bei d entworfen
+                    // wurde - der erste Entwurf wirkt mit Gewicht 1.
+                    const int voll = dSoll + kDynamikSchritt;
+                    const bool volleWirkung =
+                           voll < messen
+                        && rest[(size_t) voll] == kDynamikSchritt - 1
+                        && std::memcmp (&svfVon[(size_t) voll], &svfNach[(size_t) dSoll],
+                                        sizeof (SvfKoeffizienten)) == 0;
+
+                    const bool traegt = erste == dSoll + 1 && rasterStimmt && volleWirkung;
+                    allesTraegt = allesTraegt && traegt;
+                    minErste = std::min (minErste, erste);
+                    maxErste = std::max (maxErste, erste);
+                    minVoll  = std::min (minVoll, voll);
+                    maxVoll  = std::max (maxVoll, voll);
+
+                    d << (pi > 0 ? "; " : "") << "p=" << p << " d=" << dSoll
+                      << " erste Abweichung " << erste << " (soll " << (dSoll + 1) << ")"
+                      << " volle Wirkung " << voll << (traegt ? "" : " TRAEGT NICHT");
+                }
+
+                d << "; erste Wirkung " << minErste << " bis " << maxErste << " Samples = "
+                  << (1000.0 * (double) minErste / f.rate) << " bis "
+                  << (1000.0 * (double) maxErste / f.rate) << " ms, volle Wirkung "
+                  << minVoll << " bis " << maxVoll << " Samples = "
+                  << (1000.0 * (double) minVoll / f.rate) << " bis "
+                  << (1000.0 * (double) maxVoll / f.rate) << " ms";
+
+                pruefe (allesTraegt && minErste == 1 && maxErste == kDynamikSchritt
+                            && minVoll == kDynamikSchritt && maxVoll == 2 * kDynamikSchritt - 1,
+                        std::string (f.zeile) + " " + f.was
+                            + " (NAK-311 T3-15-11): der Tap bleibt bis einschliesslich Sample "
+                              "d = (8 - p) mod 8 bitgleich zum Referenzkern, der Entwurf faellt auf d "
+                              "und wirkt ab d + 8 mit Gewicht 1 - erste Wirkung 1 bis 8, volle 8 bis 15 Samples",
+                        d.str());
+            }
         }
     }
 

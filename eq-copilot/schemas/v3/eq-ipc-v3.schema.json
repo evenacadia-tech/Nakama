@@ -2322,7 +2322,7 @@
           "maxLength": 8192
         },
         "auto_gain_db": {
-          "$comment": "ABGELEITET, nie persistent und nie im state_hash (R4). Er wird immer gerechnet, angewandt aber nur bei v2.global.auto_gain = true. Die Grenze folgt aus dem Erreichbaren: acht Baender zu je 12 dB im selben Kanalmodus ergeben hoechstens 96 dB Plateau; 120 ist die Reserve darueber.",
+          "$comment": "ABGELEITET, nie persistent und nie im state_hash (R4). Er wird immer gerechnet, angewandt aber nur bei v2.global.auto_gain = true. Die Grenze ist eine Berichtsgrenze: der Bericht klemmt auf +/-120 (NAK-311 R-311-5); die Ableitung selbst kann darueber liegen (acht Low-Shelves 1 kHz +12 dB Q 8: -199.77 dB).",
           "type": "number",
           "minimum": -120,
           "maximum": 120

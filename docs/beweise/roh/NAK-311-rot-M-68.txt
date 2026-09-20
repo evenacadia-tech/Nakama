@@ -1,0 +1,72 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-68
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-5 / T3-15-09 Teil a
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regressionswache (einmal gebrochen)
+Bein        B3c (EqCopSchemaTest)
+Zusage      Acht Low-Shelves 1 kHz +12 dB Q 0,707 (-92,29 dB, innerhalb der
+            Grenze): `auto_gain_db` im Bericht ist BITGLEICH dem abgeleiteten
+            Wert des Berichtsprogramms, und der Bericht ist gueltig.
+Test        eq-copilot/plugin/tests/SchemaTestMain.cpp:1570,
+            `311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich`.
+            Der abgeleitete Wert wird UNABHAENGIG gelesen: `DspKern::autoGainDb()`
+            nach `uebernehmeZustand` und einem Block (derselbe Weg, den der
+            Audiothread geht), verglichen mit `std::memcmp`.
+
+Gemessen am Endstand (gruen):
+  Bericht -92.293932124 dB, Kern -92.293932124 dB, bitgleich, gueltig ja.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/state/NakamaTransaktion.h, Zeile 408 (Endstand)
+SHA-256 vorher     E2C0C868542A0BF6309EC679A3BFC3C85BB1D233361A431D14BADCDBB644B79E
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\NakamaTransaktion.h
+                   (ausserhalb des Repos)
+
+vorher (woertlich):
+inline constexpr double kBerichtAutoGainGrenzeDb = 120.0;
+
+nachher (woertlich):
+inline constexpr double kBerichtAutoGainGrenzeDb = 90.0;
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Grenze auf
+                   90 dB -> -90 statt -92,29 -> rot"). Die Grenzkonstante ist
+                   die Zeile, an der die Zusage "innerhalb der Grenze
+                   bitgleich" haengt.
+
+SHA-256 mutiert    0380D912BD130DA8BC6C4776CCEF3FF3C9A1FDAFA0111522E0C35BDE0E9CDB9E
+Bau                cmake --build ... --target EqCopSchemaTest, EXIT=0
+Binary             20.09.2026 02:45:07
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  [ROT] 311/M-68 [Bericht -90.000000000 dB, Kern -92.293932124 dB, gueltig ja]
+  [ROT] 311/M-67 [auto_gain_db -90.000000, Verletzungen 0]
+  [ROT] 311/M-69 [Konstante 90.000000, Schema [-120.000000, 120.000000], ...]
+  B3c insgesamt: 154 bestanden, 3 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (311/M-68 meldet -90 statt
+-92,293932124 - genau der vorhergesagte Wert).
+
+Mitgefallen, mit Grund:
+  311/M-67 - die Zusage nennt exakt -120; mit der Grenze 90 meldet der
+    Bericht -90. Derselbe Konstantenwert traegt beide Zeilen.
+  311/M-69 - die Zeile prueft ausdruecklich, dass die Konstante gleich
+    `minimum`/`maximum` des geladenen Schemas ist; 90 gegen 120 faellt dort.
+    Das ist ihr Zweck (Vertrag und Code duerfen nicht auseinanderlaufen).
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  154 von 157, darunter 311/M-70 (NaN/Inf-Verhalten haengt nicht am
+  Zahlenwert der Grenze) und 311/M-71 (der Kernwert bleibt -199,77 dB).
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    E2C0C868542A0BF6309EC679A3BFC3C85BB1D233361A431D14BADCDBB644B79E
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:45:13, Lauf EXIT=0,
+                   "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+keine mutierte Datei ausserhalb der Ticketpfade; bytegleich zurueckgenommen.

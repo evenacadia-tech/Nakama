@@ -1,0 +1,79 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-71
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-5 (letzter Satz), Karte U54
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     erlaubtes Verhalten gemessen (einmal gebrochen)
+Bein        B3c (EqCopSchemaTest)
+Zusage      Geklemmt wird NUR der Bericht. `DspKern::autoGainDb()` und der
+            lineare Faktor des gefahrenen Programms (`autoGainLin`, aus dem
+            die Auto-Gain-Rampe ihr Ziel nimmt, DspKern.cpp) bleiben beim
+            ungeklemmten Wert -199,77 dB; `klemmungen` traegt fuer Auto-Gain
+            keinen Eintrag (das waere eine Vertragsaenderung und gehoert zu
+            Karte U54).
+Test        eq-copilot/plugin/tests/SchemaTestMain.cpp:1546,
+            `311/M-71 klemmung_nur_im_bericht` als Teilfall von 311/M-67.
+            Der Kernwert wird ueber den ECHTEN Audioweg gelesen
+            (`uebernehmeZustand` -> ein Block -> `gefahreneSlots` ->
+            `pool().bank(cA).programm.autoGainLin`).
+
+Gemessen am Endstand (gruen):
+  Kern -199.767783 dB,
+  autoGainLin 0.000000000102709553 gegen 10^(dB/20) = 0.000000000102709553
+  (Verhaeltnis 1 + 0.000000000000000000), Bericht -120.000000 dB,
+  klemmungen 0.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/dsp/DspProgramm.cpp, Zeile 203 (Endstand)
+                   - AUSSERHALB der Ticketpfade dieses Teils, nur
+                   voruebergehend nach §7.1, nie in einem Commit.
+SHA-256 vorher     9C0AEDA7E37F802250BE724F57EEA36007F6A562D051CD3FD7CEDCF025F173D1
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspProgramm.cpp
+
+vorher (woertlich):
+    return -10.0 * std::log10 (mittel);
+
+nachher (woertlich):
+    { const double roh = -10.0 * std::log10 (mittel); return roh < -120.0 ? -120.0 : (roh > 120.0 ? 120.0 : roh); }
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Klemmung in
+                   `baueProgramm` statt in `baueBericht` -> Getter -120 ->
+                   rot"). `leiteAutoGainAb` ist die Ableitung, die
+                   `baueProgramm` ablegt und die der Kern faehrt; dort zu
+                   klemmen ist genau der verbotene Ort.
+
+SHA-256 mutiert    0B7529E36B8414C692E8639B61D2B44D26AC5FCB6D6DD0DA8A874D015B1373EF
+Bau                cmake --build ... --target EqCopSchemaTest, EXIT=0
+Binary             20.09.2026 02:46:11
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  [ROT] 311/M-71 [Kern -120.000000 dB, autoGainLin 0.000001000000000000
+        gegen 10^(dB/20) = 0.000001000000000000, Bericht -120.000000 dB,
+        klemmungen 0]
+  B3c insgesamt: 156 bestanden, 1 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - der Getter meldet -120
+statt -199,77, und der lineare Faktor steigt von 1,03e-10 auf 1,0e-6.
+
+Mitgefallen:
+  keine.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  156 von 157, darunter 311/M-67 (der BERICHT meldet unter dieser Mutation
+  weiter -120 - genau deshalb traegt M-67 die Zeile nicht und M-71 schon),
+  311/M-68 (-92,29 dB liegt innerhalb und bleibt), 311/M-69 und 311/M-70.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    9C0AEDA7E37F802250BE724F57EEA36007F6A562D051CD3FD7CEDCF025F173D1
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:46:13, Lauf EXIT=0,
+                   "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`eq-copilot/plugin/dsp/DspProgramm.cpp` wurde voruebergehend mutiert und ist
+bytegleich zurueckgenommen (SHA-256 oben, vorher = nachher);
+`git diff --stat` der Etappe nennt sie nicht.

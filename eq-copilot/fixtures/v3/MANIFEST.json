@@ -1432,7 +1432,7 @@
     {
       "datei": "ungueltig/dsp-auto-gain-ausserhalb.json",
       "urteil": "ungueltig",
-      "warum": "acht Baender zu je 12 dB erreichen hoechstens 96 dB; 120 ist die Reserve, 120.5 ist ein Fehler",
+      "warum": "120 ist die Berichtsgrenze, die Ableitung kann darueber liegen; 120.5 im Bericht ist ein Fehler",
       "verletzungen": [
         {
           "instanz": "/dsp/auto_gain_db",

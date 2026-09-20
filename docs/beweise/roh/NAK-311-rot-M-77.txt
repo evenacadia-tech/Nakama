@@ -1,0 +1,209 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-77 (drei Teile)
+==========================================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-4 / F12, SONDE-015 M-84, §9 F-12
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regel gemessen, in drei Teilen mit je einer Mutation
+Bein        B7 (EqCopTransactionTest)
+Zusage      Referenzbeginn t = 0 ist das erste Sample des ersten Blocks der
+            geladenen Instanz B (`setStateInformation` mit den Bytes von A,
+            dann `setRateAndBufferSizeDetails` und `prepareToPlay`); A laeuft
+            ununterbrochen weiter und bekommt ab t = 0 denselben Eingang.
+            Die Abweichung des Quadraturbetrags je Sample,
+            20*log10(B/A), ist ab
+              t_E = max(kFadeSamples, 5*tau_a*fs + 10*Q*A_max*fs/(pi*f0) + 16)
+            hoechstens 0,1 dB; davor liegt sie im Betrag hoechstens bei
+            |g0| + |Range| + 0,1 dB. A_max = 10^(max(0, g0, g0+Range)/40).
+            Geltungsbereich: dynamisches Bell, Kanalmodus `stereo`, Sidechain
+            `internal`, Quadraturton auf der Bandmitte, Q >= 1,
+            Q*A_min >= 0,5, f0 bis min(20 kHz, fs/4).
+Test        eq-copilot/plugin/tests/TransactionTestMain.cpp, Abschnitt T
+            (`nak311Recall`, :2963), drei Pruefungen
+            `311/M-77 recall_in_neue_instanz_innerhalb_der_toleranz_pruefling_1..3`
+            ueber `fahreRecall` (:2887); t_E schreibt der Test EIGENSTAENDIG
+            aus (`nak311TeE`, :2854), er ruft keine Produktfunktion als
+            Orakel.
+
+Prueflinge (48 kHz, Quadraturton 0,5, Grundgain 0 dB, Range -12 dB,
+Hold 0, Release 100 ms; je im Knie (Threshold -15 dB) und im Plateau
+(Threshold -40 dB)):
+  1  Bell 1 kHz Q 2  (Q*A_min = 1,00), Attack 0,1 / 10 / 500 ms
+     -> Huellkurventerm
+  2  Bell 1 kHz Q 1,0 (Q*A_min = 0,501), Attack 0,1 ms
+     -> Crossfadeterm (t_E = max(256; 24 + 152,8 + 16) = 256)
+  3  Bell 12 kHz = fs/4, Q 24 (Q*A_min = 12,0), Attack 0,1 ms
+     -> Frequenzterm
+
+GEMESSEN AM ENDSTAND (gruen), je "ab t_E hoechstens" / "davor hoechstens"
+-------------------------------------------------------------------------
+Pruefling 1  Attack 0,1 ms  Knie    t_E 345.577491  0.000045 dB (Sample 347)  /  5.969100 dB
+             Attack 0,1 ms  Plateau t_E 345.577491  0.000000 dB               / 12.000000 dB
+             Attack 10 ms   Knie    t_E 2721.577491 0.016390 dB (Sample 2722) /  5.969100 dB
+             Attack 10 ms   Plateau t_E 2721.577491 0.000000 dB               / 12.000000 dB
+             Attack 500 ms  Knie    t_E 120321.577491 0.029019 dB (Sample 120322) / 5.969001 dB
+             Attack 500 ms  Plateau t_E 120321.577491 0.000000 dB             / 12.000001 dB
+Pruefling 2  Attack 0,1 ms  Knie    t_E 256.000000  0.001050 dB (Sample 256)  /  5.969316 dB
+             Attack 0,1 ms  Plateau t_E 256.000000  0.000000 dB               / 12.000000 dB
+Pruefling 3  Attack 0,1 ms  Knie    t_E 345.577491  0.000750 dB (Sample 346)  /  5.969100 dB
+             Attack 0,1 ms  Plateau t_E 345.577491  0.000013 dB (Sample 347)  / 12.000000 dB
+
+Schranken: 0,1 dB ab t_E, 12,1 dB davor. Groesster gemessener Wert ab t_E
+ueber alle zehn Faelle: 0,029019 dB (Pruefling 1, Attack 500 ms, Knie) -
+das Dreifache unter der Schranke. Groesster Wert davor: 12,000001 dB, je
+bei n = 0 (dort ist B = x exakt); Abstand zur Schranke 0,1 dB. Beide
+Schranken aus §9 F-12 halten am ECHTEN Produkt; der Nachbau der
+Coderekursionen (§16.1) gab ab t_E hoechstens 0,0115 dB - der Unterschied
+ist die float-Wandlung am Hostpuffer und die Blockstruktur, die der Nachbau
+ausdruecklich nicht fuehrt. KEIN Befund an den Dirigenten: keine Schranke
+gerissen.
+
+TEIL 1 - Huellkurventerm (Pruefling 1)
+---------------------------------------
+Datei              eq-copilot/plugin/dsp/DspFilter.h, Zeile 284 (Endstand)
+                   - ausserhalb der Ticketpfade, nur voruebergehend (§7.1)
+SHA-256 vorher     C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspFilter.h
+
+vorher (woertlich):
+    k.attackPol   = huellkurvePol (attackMs,  samplerate);
+
+nachher (woertlich):
+    k.attackPol   = huellkurvePol (5.0 * attackMs,  samplerate);
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Attackpol in
+                   `huellkurveEntwurf` mit fuenffachem tau"). Der Attackpol
+                   traegt den Term 5*tau_a*fs der Formel.
+
+SHA-256 mutiert    F53C12DFCDE6D9F535F81DD8DA3EEF0B5EB422F708206767734374292882D79A
+Bau                EXIT=0, Binary 20.09.2026 02:48:48
+Lauf               EXIT=1
+
+Gefallen:
+  FEHLER 311/M-77 ..._pruefling_1
+    Attack 10 ms, Knie:  ab t_E 1.721296 dB (Sample 2722)   TRAEGT NICHT
+    Attack 500 ms, Knie: ab t_E 1.781905 dB (Sample 120322) TRAEGT NICHT
+    (Attack 0,1 ms und alle Plateaufaelle bleiben unter 0,1 dB)
+  FEHLER 311/M-78 ..._pruefling_1  (derselbe Weg, dieselben Zahlen)
+  B7 insgesamt: 187 geprueft, 2 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - im KNIE bei Attack 10 und
+500 ms, wo 5*tau_a die Zeit t_E bestimmt; im Plateau haelt der Deckel u = 1
+die Auslenkung auf der Range, genau wie die Matrix es vorhersagt.
+
+Mitgefallen, mit Grund:
+  311/M-78 Pruefling 1 - derselbe Weg `bereiteVor` -> Ruhe -> Einblenden.
+
+Gruen geblieben: 185 von 187, darunter 311/M-77/M-78 Pruefling 2 und 3
+(dort ist 5*tau_a bei Attack 0,1 ms selbst verfuenffacht nur 120 Samples und
+liegt unter t_E), 311/M-76 und 311/M-79.
+
+Ruecknahme         bytegleich, SHA-256 nachher
+                   C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+Gruenlauf          EXIT=0, Binary 02:48:58, "187 geprueft, 0 Fehler".
+
+TEIL 2 - Crossfadeterm (Pruefling 2)
+-------------------------------------
+Datei              eq-copilot/plugin/dsp/DspKern.cpp, Zeile 547 (Endstand)
+                   - ausserhalb der Ticketpfade, nur voruebergehend (§7.1)
+SHA-256 vorher     29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspKern.cpp
+
+vorher (woertlich):
+    z.rest      = nurRampen ? kRampeSamples : kFadeSamples;
+
+nachher (woertlich):
+    z.rest      = nurRampen ? kRampeSamples : (alt < 0 ? 2 * kFadeSamples : kFadeSamples);
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("das
+                   Einblenden aus der Ruhe doppelt so lang, Rest
+                   2*kFadeSamples bei `alt < 0`"). Diese Zeile setzt die
+                   Laenge des Einblend-Crossfades, der den Term
+                   `kFadeSamples` in t_E traegt.
+
+SHA-256 mutiert    D4EF09CB5710351E76B85A0E565BF52EEA5DD87AAD894B726B5F475CC7BE1490
+Bau                EXIT=0, Binary 20.09.2026 02:49:23
+Lauf               EXIT=1
+
+Gefallen:
+  FEHLER 311/M-77 ..._pruefling_2
+    Knie:    ab t_E 5.969305 dB (Sample 256)  TRAEGT NICHT
+    Plateau: ab t_E 12.000000 dB (Sample 256) TRAEGT NICHT
+  FEHLER 311/M-77 ..._pruefling_1 und ..._pruefling_3
+  FEHLER 311/M-78 ..._pruefling_1, _2 und _3
+  B7 insgesamt: 187 geprueft, 6 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - Pruefling 2 bei t_E = 256
+mit exakt +12,000000 dB im Plateau und +5,969305 dB im Knie, also genau den
+Werten, die die Matrix vorhersagt (B ist dort Dry allein, weil das Gewicht
+bei n = 256 erst t = 0 erreicht).
+
+Mitgefallen, mit Grund:
+  Pruefling 1 und 3 (in M-77 wie in M-78) - der Einblend-Crossfade aus der
+  Ruhe laeuft fuer JEDE neue Instanz; die Mutation ist nicht
+  prueflingsspezifisch. Die Matrix waehlt Pruefling 2, weil dort der
+  Crossfade den Wert von t_E BESTIMMT (t_E = kFadeSamples = 256 gegen
+  192,8 aus den uebrigen Termen); bei Pruefling 1 und 3 liegt t_E hoeher
+  und die Abweichung ist entsprechend kleiner (4,30 / 9,35 dB).
+
+Gruen geblieben: 181 von 187, darunter 311/M-76 (dort laeuft kein
+Einblenden aus der Ruhe, sondern der warme Ladestart) und 311/M-79, dazu
+der W01-Abschnitt R und der W03-Abschnitt S.
+
+Ruecknahme         bytegleich, SHA-256 nachher
+                   29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Gruenlauf          EXIT=0, Binary 02:49:27, "187 geprueft, 0 Fehler".
+
+TEIL 3 - Frequenzterm (Pruefling 3)
+------------------------------------
+Datei              eq-copilot/plugin/dsp/DspFilter.h, Zeile 227 (Endstand,
+                   in `entwurfBandpass`, :224) - ausserhalb der Ticketpfade,
+                   nur voruebergehend (§7.1)
+SHA-256 vorher     C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspFilter.h
+
+vorher (woertlich):
+    const double alpha = std::sin (w0) / (2.0 * q);
+
+nachher (woertlich):
+    const double alpha = std::sin (w0) / (4.0 * q);
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("die
+                   Detektorbandbreite halbiert"). Sie trifft nur den
+                   Detektor (`entwurfBandpass` hat genau einen Aufrufer);
+                   die Spitzenverstaerkung an f0 bleibt 1, A eingeschwungen
+                   unveraendert - nur die Zeitkonstante steigt von
+                   1/artanh(1/48) = 48,0 auf 1/artanh(1/96) = 96,0 Samples.
+
+SHA-256 mutiert    7CE7DC2B6B12C68A936C32A07DDE5D140E6CAB0829B0AD59C5587F36510C6538
+Bau                EXIT=0, Binary 20.09.2026 02:49:53
+Lauf               EXIT=1
+
+Gefallen:
+  FEHLER 311/M-77 ..._pruefling_3
+    Knie:    ab t_E 0.195004 dB (Sample 346) TRAEGT NICHT
+    Plateau: ab t_E 0.000011 dB              (haelt)
+  FEHLER 311/M-78 ..._pruefling_3 (dieselben Zahlen)
+  B7 insgesamt: 187 geprueft, 2 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - und der gemessene Wert
++0,195004 dB bei Sample 346 ist auf drei Nachkommastellen der Wert, den der
+Nachbau der Coderekursionen vorhergesagt hat (§16.1: "+0,1950 dB bei
+n = 346"; Plateau 0,000 dB). Die Zeile faellt im Knie, wie die Matrix sagt.
+
+Mitgefallen, mit Grund:
+  311/M-78 Pruefling 3 - derselbe Weg.
+
+Gruen geblieben: 185 von 187, darunter Pruefling 1 und 2 (bei f0 = 1 kHz
+ist die Detektorzeitkonstante klein gegen t_E) und 311/M-76.
+
+Ruecknahme         bytegleich, SHA-256 nachher
+                   C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+Gruenlauf          EXIT=0, Binary 02:50:04, "187 geprueft, 0 Fehler".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`DspFilter.h` (zweimal) und `DspKern.cpp` (einmal) wurden voruebergehend
+mutiert; jede Mutation wurde einzeln und bytegleich zurueckgenommen (SHA-256
+vorher = nachher je Teil), zwei Mutationen derselben Datei rueckwaerts.
+`git diff --stat` der Etappe nennt keine der beiden.

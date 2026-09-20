@@ -299,3 +299,45 @@ ENDZEILEN DES TEILS a, WOERTLICH
   ok      311/M-59 Selbstaudit side_hinter_left_wirkt  [-4.343340893422 dB gegen die Testreferenz -4.343340893422 dB; ohne das side-Band waeren es -4.312390025805 dB]
   ok      311/M-65 Selbstaudit monozweig_wacht_wie_der_zweikanalzweig  [nicht endliches Mittel -> 0.000000000000000, nicht positives Mittel -> 0.000000000000000]
 
+
+
+==========================================================================
+NAK-311 Etappe 4, Teil b - B6-Zeilenvergleich gegen DIESELBE Basis
+==========================================================================
+
+Basislauf   unveraendert der oben woertlich stehende Lauf am Basis-SHA der
+            Etappe, df14a648e4414fea3faa0f1c90f7c669e9716292 (Abschnitte C,
+            G und H, "BASISZEILEN, WOERTLICH").
+Endlauf     Endstand des Teils b, 20.09.2026, Bau EXIT=0, Lauf EXIT=0,
+            "355 geprueft, 0 Fehler"; Binary 02:53:21, juengste Quelle
+            eq-copilot/plugin/sonde/SondeProcessor.cpp 02:51:27
+            (NAK-230 geprueft).
+
+ERGEBNIS
+--------
+Abschnitt C (RBJ-Goldens, M-10 bis M-13)     Basis 78 Ergebniszeilen, Ende 78, bytegleich: JA
+Abschnitt G (Kanalmodus, M/S, Trims, Mix)    Basis 13 Ergebniszeilen, Ende 13, bytegleich: JA
+Abschnitt H (Auto-Gain, M-35 bis M-40)       Basis 12 Ergebniszeilen, Ende 12, bytegleich: NEIN
+Abschnitt H2 (Auto-Gain im Monobus)          27 gespeicherte Zeilen des Teils a, alle unveraendert
+Abschnitt F (Dynamische Baender)             Ende 28 Ergebniszeilen (Teil a: 25)
+
+Die EINE Abweichung im Abschnitt H ist DIESELBE wie im Teil a - sie stammt
+aus 311/M-66 und nicht aus diesem Teil b:
+
+  -   ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18)  [Ableitungen ausserhalb 2, im Audiopfad 0]
+  +   ok      auto_gain_wird_nicht_im_audiothread_gerechnet (M-39, B-18; NAK-311 311/M-66 Monokern)  [Ableitungen ausserhalb 4, im Audiopfad 0 (Stereo- und Monokern zusammen)]
+
+Neu hinzugekommen, mit Grund
+----------------------------
+Abschnitt F: +3 Ergebniszeilen (25 -> 28), die drei Matrixzeilen dieses
+Teils zur Steuerrate - `311/M-73 erster_entwurf_wirkt_voll_nach_8_bis_15_samples`,
+`311/M-74 dieselben_samplezahlen_bei_44_1_khz` und
+`311/M-75 dieselben_samplezahlen_bei_96_khz`. Sie stehen am ENDE des
+Abschnitts F und verschieben keine bestehende Zeile darin; die Zaehlung des
+Beins steigt entsprechend von 352 auf 355 Pruefungen.
+
+Abschnitt H2: unveraendert. Alle 27 im Teil a gespeicherten Zeilen kommen im
+Endlauf woertlich vor; der Teil b fasst den Monozweig nicht an.
+
+Jede andere Zeile der Abschnitte C, G und H ist bytegleich zur Basis.
+M-82 und M-83 halten.

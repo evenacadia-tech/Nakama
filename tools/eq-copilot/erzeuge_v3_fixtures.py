@@ -1954,7 +1954,7 @@ UNGUELTIG: list[tuple] = [
      [setze("dsp", {"jcs": "{}", "auto_gain_db": 120.5, "klemmungen": [],
                     "verletzte_baender": []})],
      [v("/dsp/auto_gain_db", f"{S}/dsp_bericht/properties/auto_gain_db/maximum", "maximum")],
-     "acht Baender zu je 12 dB erreichen hoechstens 96 dB; 120 ist die Reserve, 120.5 ist ein Fehler"),
+     "120 ist die Berichtsgrenze, die Ableitung kann darueber liegen; 120.5 im Bericht ist ein Fehler"),
 
     ("dsp-verletztes-band-8", "state_report",
      [setze("dsp", {"jcs": "{}", "auto_gain_db": 0.0, "klemmungen": [],

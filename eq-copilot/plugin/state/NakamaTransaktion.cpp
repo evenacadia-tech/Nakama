@@ -774,6 +774,21 @@ bool DspKernAusfuehrung::zuletztPubliziert (param::Satz& aus) const noexcept
 }
 
 //==============================================================================
+double berichtsAutoGainDb (double roh) noexcept
+{
+    // NAK-311 R-311-5 (§9 F-13). Die Reihenfolge traegt die Zusage: NaN
+    // ueberlebt keinen Vergleich (jeder ist falsch), deshalb steht es zuerst
+    // und wird +0,0 - nicht -0,0, denn das ist ein anderes Bitmuster. Danach
+    // entscheiden zwei Vergleiche; +/-Inf fallen ohne eigenen Zweig darunter.
+    // Jeder Wert innerhalb der Grenze kommt BITGLEICH zurueck: kein
+    // std::clamp, keine Multiplikation, kein Runden.
+    if (std::isnan (roh)) return 0.0;
+    if (roh >  kBerichtAutoGainGrenzeDb) return  kBerichtAutoGainGrenzeDb;
+    if (roh < -kBerichtAutoGainGrenzeDb) return -kBerichtAutoGainGrenzeDb;
+    return roh;
+}
+
+//==============================================================================
 bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& grund)
 {
     const auto& c = tk.bestaetigt();
@@ -800,7 +815,11 @@ bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& gru
         // nicht mit, meldete der Bericht im Monobus den Zweikanalwert,
         // waehrend der Kern den Monowert faehrt (M-62).
         dsp::baueProgramm (sicht, fs, 0, *prog, tk.kanaele());
-        aus.autoGainDb = prog->autoGainDb;
+        // NAK-311 R-311-5: der BERICHT klemmt auf die Vertragsgrenze, statt
+        // sie zu reissen. Das Programm selbst bleibt unberuehrt - `prog`
+        // behaelt seinen abgeleiteten Wert, und genau ihn faehrt der Kern
+        // (M-71). Geklemmt wird hier und nur hier.
+        aus.autoGainDb = berichtsAutoGainDb (prog->autoGainDb);
         for (int slot = 0; slot < param::kSlots; ++slot)
         {
             const auto& b = prog->baender[(size_t) slot];

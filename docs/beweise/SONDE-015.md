@@ -4407,3 +4407,123 @@ Topologie gleich aussieht (`311/M-40`, `311/M-41`) —, und ein Wechsel in einer
 die Übertragung ebenso.
 
 **Nicht berührt:** E2-7, E-6 und die Zahl zu M-84 (NAK-311 Etappe 4).
+
+### 13.2 E2-7 — die Grenze von `auto_gain_db` ist eine Berichtsgrenze (NAK-311 Etappe 4, T3-15-09 Teil a, R-311-5, 20.09.2026)
+
+**Betroffen:** Entscheid E2-7 (`:2951`), Spalte „Gemessen".
+
+**E2-7 begründet** die Grenze so: „Acht Bänder zu je 12 dB im selben
+Kanalmodus ergeben höchstens 96 dB Plateau; 120 ist die Reserve." Dieser Satz
+ist **falsch**. RBJ-Shelves überschwingen bei Q über 0,707, und Cuts dämpfen
+unbegrenzt; das Erreichbare liegt weit über 96 dB. Gemessen an acht
+Low-Shelves 1 kHz +12 dB Q 8 bei 48 kHz — jeder Wert im Vertragsbereich —
+liefert die Ableitung **−199,767783 dB** (NAK-311 `311/M-67`, Bein B3c); acht
+High-Cuts 20 Hz Q 0,15 ergeben +150,46 dB (Tiefenaudit 3, Phase 15).
+
+**Berichtigt:** ±120 dB ist keine physikalische Grenze, sondern die
+**Berichtsgrenze** des Drahtvertrags. Seit NAK-311 klemmt `baueBericht` den
+gemeldeten Wert auf sie, statt sie zu reißen: NaN wird +0,0, +∞ und Werte
+darüber werden +120, −∞ und Werte darunter −120, alles dazwischen bleibt
+bitgleich (`berichtsAutoGainDb` in `eq-copilot/plugin/state/NakamaTransaktion.h`).
+Die **Ableitung selbst** bleibt ungeklemmt: `DspKern::autoGainDb()` und der
+lineare Faktor, aus dem die Auto-Gain-Rampe ihr Ziel nimmt, tragen weiter den
+vollen Wert (`311/M-71`). Die Obergrenze des **angewandten** Ausgleichs ist ein
+Produktentscheid und steht in Karte U54.
+
+Die übrigen Zahlen von E2-7 bleiben unverändert: `jcs` höchstens 8192 Zeichen,
+`klemmungen` und `verletzte_baender` je höchstens 8, höchstens eine Klemmung je
+Slot. `dsp_klemmung` bekommt für Auto-Gain **keinen** Eintrag — das wäre eine
+Vertragsänderung.
+
+Derselbe falsche Satz stand an drei weiteren Stellen und ist dort mit
+berichtigt: im `$comment` von `auto_gain_db`
+(`eq-copilot/schemas/v3/eq-ipc-v3.schema.json`), im `warum` des Fixtures
+`dsp-auto-gain-ausserhalb` im Erzeuger
+(`tools/eq-copilot/erzeuge_v3_fixtures.py`) und im daraus geschriebenen
+`eq-copilot/fixtures/v3/MANIFEST.json`.
+
+### 13.3 E-6 — die Steuerrate ist gröber als die kürzeste Attack (NAK-311 Etappe 4, T3-15-11, 20.09.2026)
+
+**Betroffen:** Entscheid E-6 (`:3397`), Spalte „Gemessen".
+
+**E-6 begründet** `kDynamikSchritt` = 8 Samples so: „8 Samples sind 0,167 ms
+bei 48 kHz und damit **feiner** als die kürzeste Attack (0,1 ms)." Die
+Ungleichung steht verkehrt herum: 0,167 ms ist **gröber** als 0,1 ms.
+
+**Berichtigt, gemessen in NAK-311 `311/M-73` bis `311/M-75` (Bein B6):** der
+frisch entworfene Koeffizientensatz wirkt am Entwurfssample mit Gewicht
+**null** — `schrittRest` steht dort auf `kDynamikSchritt`, das Mischgewicht
+also auf 0 — und erst acht Samples später mit Gewicht eins. Gegen einen
+Referenzkern mit Range 0 bleibt der Tap `post_committed` nach dem Einsatz
+eines Quadraturtons bis einschließlich Sample d = (8 − p) mod 8 bitgleich und
+weicht ab d + 1 ab, wobei p die Steuerphase des Einsatzes ist. Die erste
+Wirkung liegt damit **1 bis 8**, die volle Wirkung des ersten Entwurfs **8 bis
+15 Samples** nach dem Einsatz:
+
+- 48 kHz: 0,167 bis 0,3125 ms
+- 44,1 kHz: 0,181 bis 0,340 ms
+- 96 kHz: 0,083 bis 0,156 ms
+
+Bei 48 und 44,1 kHz ist das gröber als die kürzeste einstellbare Attack von
+0,1 ms; erst ab 96 kHz ist der Schritt selbst (0,083 ms) feiner als sie.
+
+**Der Grund für 8 Samples bleibt und bleibt gut:** `log10` und `pow` je Sample
+und Band kosten ein Vielfaches der Filterarbeit. Der **Detektor** läuft
+weiterhin mit voller Audiorate, und die lineare Überblendung dazwischen hält
+den Gain sample-genau stetig. `kDynamikSchritt` bleibt 8; das Verhalten ändert
+sich durch diesen Nachtrag nicht. E-25 rechnet die Steuerrate ausdrücklich in
+die Prüftoleranz ein („höchstens 0,18 ms"); eine Zusage zur Reaktionszeit gibt
+es nicht.
+
+### 13.4 M-84 — die numerische Toleranz bekommt ihre Zahl (NAK-311 Etappe 4, F12, R-311-4, 20.09.2026)
+
+**Betroffen:** Matrixzeile M-84 (`:1162`), Zusage „innerhalb numerischer
+Toleranz denselben Audioausgang".
+
+M-84 nannte weder einen **Referenzbeginn** noch eine **Zahl**. Beides steht
+jetzt fest; die Reihenfolge der Zeile (State lesen, validieren, Committed
+setzen, Hostparameter synchronisieren, erster Block) bleibt unverändert.
+
+**Referenzbeginn.** t = 0 ist das erste Sample des ersten Blocks der geladenen
+oder neu vorbereiteten Instanz B. Die ununterbrochen laufende Instanz A
+bekommt ab dort denselben Eingang.
+
+**Geltungsbereich.** Ein **dynamisches Bell** (Typ `bell`, Kanalmodus
+`stereo`, Sidechain `internal`) mit **Quadraturton auf der Bandmitte** f0
+(L sin, R cos, E-25) im Teilraum **Q ≥ 1** und **Q·A_min ≥ 0,5** mit
+A_min = 10^(min(0, g0, g0 + Range)/40), **f0 von 20 Hz bis min(20 kHz,
+fs/4)**, sonst im vertragsgültigen Raum (Attack 0,1 bis 500 ms, Grundgain g0
+und Range je −12 bis +12 dB, Threshold −60 bis 0 dBFS, Hold 0 bis 500 ms,
+Release 5 bis 5000 ms, fs 44,1 bis 96 kHz).
+
+**Toleranz.** Mit t_E = max(`kFadeSamples`, 5·τ_a·fs + 10·Q·A_max·fs/(π·f0)
++ 16) Samples und A_max = 10^(max(0, g0, g0 + Range)/40) weicht der
+Quadraturbetrag je Sample ab t_E höchstens **0,1 dB** ab; davor liegt
+20·log10(B/A) im Betrag höchstens bei **Betrag(g0) + Betrag(Range) + 0,1 dB**.
+Die drei Summanden von t_E sind der Hüllkurventerm (fünf Zeitkonstanten der
+Attack), der Bandterm (zehn genäherte Zeitkonstanten von Detektor und Band)
+und die Steuerrate (bis zu 8 Samples bis zum nächsten Entwurf, 8 Überblendung;
+§13.3).
+
+**Außerhalb dieses Teilraums** — für Shelves, breitbandiges Material, f0 über
+fs/4, Q unter 1 und Q·A_min unter 0,5 — nennt NAK-311 keine Zahl; dort bleibt
+M-84 bei „innerhalb numerischer Toleranz".
+
+**Gemessen** in NAK-311 `311/M-77` (neue Instanz aus den Bytes von A) und
+`311/M-78` (`prepareToPlay` auf der laufenden Instanz), Bein B7, mit drei
+Prüflingen je im Knie und im Plateau: Bell 1 kHz Q 2 bei Attack 0,1 / 10 /
+500 ms, Bell 1 kHz Q 1,0 und Bell 12 kHz = fs/4 mit Q 24. Größte Abweichung ab
+t_E über alle Fälle: **0,029 dB**, also das Dreifache unter der Schranke.
+Herleitung und Randfälle in NAK-311 §9.1 F-12.
+
+**Unberührt bleibt die strengere Hälfte:** bei gleichem kaltem Beginn beider
+Instanzen ist der Ausgang **bitgleich**, nicht nur innerhalb der Toleranz
+(`reload_rekonstruiert_denselben_audioausgang`, `311/M-80`). Und ein
+**Same-Instance-Ladestart** bei unveränderter Topologie bleibt warm: Ausgang
+und Tap sind bitgleich zum ununterbrochenen Kern (`311/M-76`) — dort wandern
+Filter-, Detektor- und Hüllkurvenzustand über die Kennungen aus W03 (§13.1)
+mit.
+
+**Kein persistenter Wert.** Die Hüllkurvenleistung bleibt Audiohistorie: zwei
+Sekunden eingeschwungenes Audio lassen die Statebytes unverändert
+(`311/M-79`). Es gibt keine neue Stateversion und kein neues Feld.

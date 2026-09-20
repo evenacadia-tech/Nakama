@@ -395,6 +395,32 @@ struct DspBericht
     int                   undoTiefe = 0;     ///< jetzt moegliche Undo-Schritte: Ringlaenge minus Cursor
 };
 
+/** NAK-311 R-311-5 (T3-15-09 Teil a): die BERICHTSgrenze von `auto_gain_db`
+    in dB - dieselbe Zahl wie `minimum`/`maximum` in `$defs/dsp_bericht` des
+    v3-Vertrags (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json`). Sie steht im
+    C++ genau einmal; Bein B3c liest sie im Test aus dem GELADENEN Schema und
+    haelt beide gegeneinander, damit Vertrag und Code nicht auseinanderlaufen.
+
+    Sie ist KEINE Obergrenze des angewandten Ausgleichs: die Ableitung selbst
+    darf darueber liegen (acht Low-Shelves 1 kHz +12 dB Q 8 ergeben
+    -199,77 dB), und der Kern faehrt sie ungeklemmt weiter. Ob der ANGEWANDTE
+    Ausgleich einen Deckel bekommt, entscheidet Karte U54. */
+inline constexpr double kBerichtAutoGainGrenzeDb = 120.0;
+
+/** NAK-311 R-311-5: der gemeldete Auto-Gain. Klemmt auf
+    +/-`kBerichtAutoGainGrenzeDb`, statt die Vertragsgrenze zu reissen:
+
+      * NaN wird +0,0 - dieselbe Antwort, die die Ableitung bei nicht
+        endlichem Mittel selbst gibt (`DspProgramm.cpp`), und ein Bericht
+        traegt nie einen nicht endlichen Wert;
+      * +Inf und jeder Wert ueber der Grenze werden +120, -Inf und jeder Wert
+        darunter -120;
+      * alles dazwischen kommt BITGLEICH zurueck, auch -0,0.
+
+    Nur der Bericht klemmt. `DspKern::autoGainDb()`, die angewandte
+    Auto-Gain-Rampe und die Liste `klemmungen` bleiben unberuehrt (M-71). */
+double berichtsAutoGainDb (double roh) noexcept;
+
 /** Baut den Bericht. false mit `grund`, wenn der bestaetigte Zustand sich
     nicht kanonisieren laesst (kann nach einem gueltigen Ladestart nicht
     geschehen). Ohne Samplerate bleiben Programmangaben leer bzw. 0. */

@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 4a)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 4b)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -645,6 +645,55 @@ Reihenfolgen); acht Low-Shelves 1 kHz +12 dB Q 8 ergeben −144,890032 dB statt
 M-39-Fall des Abschnitts H (311/M-66, Monokern) und in A16 Abschnitt 12
 (311/M-62, M-63); Manifest `docs/beweise/NAK-311.md` §6.4 und §32, Hexgolden
 `docs/beweise/roh/NAK-311-etappe4-autogain-hex.txt`.
+
+**Berichtsgrenze des Auto-Gain (20.09.2026, NAK-311 Etappe 4 Teil b,
+R-311-5).** `±120 dB` in `$defs/dsp_bericht` ist eine **Berichts**grenze, keine
+physikalische. Die Ableitung kann weit darüber liegen: acht Low-Shelves 1 kHz
++12 dB Q 8 bei 48 kHz — jeder Wert vertragsgültig — ergeben −199,767783 dB.
+`baueBericht` klemmt seit dieser Etappe auf die Vertragsgrenze, statt sie zu
+reißen; die Funktion heißt `berichtsAutoGainDb`
+(`eq-copilot/plugin/state/NakamaTransaktion.h`) und ist die einzige Stelle im
+C++, die die Zahl trägt: NaN wird +0,0 (nicht −0,0), ±∞ werden ±120, alles
+dazwischen kommt bitgleich zurück. Geklemmt wird **nur der Bericht**:
+`DspKern::autoGainDb()` und der lineare Faktor, aus dem die Auto-Gain-Rampe ihr
+Ziel nimmt, bleiben ungeklemmt, und `klemmungen` bekommt keinen Eintrag — die
+Obergrenze des angewandten Ausgleichs ist Karte U54. Bein B3c liest `minimum`
+und `maximum` aus dem geladenen Schema und hält sie gegen die Konstante, damit
+Vertrag und Code nicht auseinanderlaufen (311/M-67 bis M-71); die frühere
+Begründung „acht Bänder zu je 12 dB ergeben höchstens 96 dB" ist an allen vier
+Stellen berichtigt (Entscheid E2-7, `$comment` im Schema, Erzeuger und
+Fixture-Manifest).
+
+**Steuerrate des dynamischen Bandes (20.09.2026, NAK-311 Etappe 4 Teil b,
+T3-15-11).** `kDynamikSchritt` bleibt 8 Samples; berichtigt ist nur die
+Begründung. Der frisch entworfene Koeffizientensatz wirkt am Entwurfssample mit
+Gewicht **null** und erst acht Samples später mit Gewicht eins: die erste
+Wirkung liegt 1 bis 8, die volle Wirkung des ersten Entwurfs 8 bis 15 Samples
+nach dem Einsatz — 0,167 bis 0,3125 ms bei 48 kHz, 0,181 bis 0,340 ms bei
+44,1 kHz, 0,083 bis 0,156 ms bei 96 kHz. Bei 48 und 44,1 kHz ist das **gröber**
+als die kürzeste einstellbare Attack von 0,1 ms; erst ab 96 kHz ist der Schritt
+feiner als sie. Der Grund für 8 Samples bleibt derselbe: `log10` und `pow` je
+Sample und Band kosten ein Vielfaches der Filterarbeit; der Detektor läuft mit
+voller Audiorate. Gemessen in B6 Abschnitt F gegen einen Referenzkern mit
+Range 0 (311/M-73 bis M-75).
+
+**Recall eingeschwungener dynamischer Bänder (20.09.2026, NAK-311 Etappe 4
+Teil b, R-311-4).** Kein Produktcode: die Hüllkurvenleistung bleibt
+Audiohistorie, kein persistenter Wert (311/M-79 misst, dass zwei Sekunden
+Audio die Statebytes nicht bewegen). Die Toleranz von SONDE-015 M-84 hat jetzt
+ihre Zahl: Referenzbeginn t = 0 ist das erste Sample des ersten Blocks der
+geladenen oder neu vorbereiteten Instanz, und für ein dynamisches Bell
+(`stereo`, Sidechain `internal`) mit Quadraturton auf der Bandmitte im
+Teilraum Q ≥ 1, Q·A_min ≥ 0,5 und f0 bis min(20 kHz, fs/4) weicht der
+Quadraturbetrag je Sample ab
+t_E = max(`kFadeSamples`, 5·τ_a·fs + 10·Q·A_max·fs/(π·f0) + 16) höchstens
+0,1 dB ab, davor im Betrag höchstens |g0| + |Range| + 0,1 dB. Gemessen über
+drei Prüflinge je in Knie und Plateau: größte Abweichung ab t_E 0,029 dB
+(311/M-77 für eine neue Instanz, 311/M-78 für `prepareToPlay` auf der
+laufenden). Ein **Same-Instance-Ladestart** bei unveränderter Topologie bleibt
+dagegen warm — Ausgang und Tap bitgleich (311/M-76), weil die Kennungen aus W03
+gleich bleiben. Manifest `docs/beweise/NAK-311.md` §6.4, §9.1 F-12 und §34;
+Nachtrag zu E2-7, E-6 und M-84 in `docs/beweise/SONDE-015.md` §13.2 bis §13.4.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

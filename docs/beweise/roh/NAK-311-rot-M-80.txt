@@ -1,0 +1,92 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-80
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, F12, SONDE-015 M-84
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regressionswache (einmal gebrochen)
+Bein        B7 (EqCopTransactionTest)
+Zusage      Gleicher kalter Beginn beider Instanzen, statische Baender
+            (bestehender Fall: zwei Baender, Width 1,3, Auto-Gain an, eine
+            Zone): nach dem Reload ist der Hash gleich und der Ausgang
+            BITGLEICH - strenger als M-84, das nur "innerhalb numerischer
+            Toleranz" verlangt.
+Test        eq-copilot/plugin/tests/TransactionTestMain.cpp:2192,
+            BESTEHENDER Fall `reload_rekonstruiert_denselben_audioausgang
+            (M-84)`; dieser Teil b aendert ihn nicht.
+
+Gemessen am Endstand (gruen):
+  ok  reload_rekonstruiert_denselben_audioausgang (M-84)  [153600 Samples]
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 1064
+                   (Endstand) - ausserhalb der Ticketpfade dieses Teils, nur
+                   voruebergehend (§7.1)
+SHA-256 vorher     F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\SondeProcessor.cpp
+
+vorher (woertlich):
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+            && transaktion->ladestart (zustand.dspDto(), (std::uint64_t) zustand.stateRevision,
+                                       zustand.undoRing, zustand.undoCursor, grund);
+
+nachher (woertlich):
+        const bool eigenerStand = false && ! zustand.nurLesen && zustand.hatParameters
+            && transaktion->ladestart (zustand.dspDto(), (std::uint64_t) zustand.stateRevision,
+                                       zustand.undoRing, zustand.undoCursor, grund);
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("am Ladeweg,
+                   der die Zusage traegt: `eigenerStand` stets falsch, also
+                   immer der neutrale Ladestart"). Durch die
+                   Kurzschlussauswertung laeuft der eigene `ladestart` nie;
+                   der neutrale Zweig uebernimmt.
+
+SHA-256 mutiert    5CFABBDF801196956D9F3A019A77C1EC7DEC041113200A6DA73A7048CDC0B2F1
+Bau                cmake --build ... --target EqCopTransactionTest, EXIT=0
+Binary             20.09.2026 02:51:26
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  FEHLER reload_rekonstruiert_denselben_audioausgang (M-84) [153600 Samples]
+         - beide Teilpruefungen der Zeile (Hash UND Ausgang) fallen: B traegt
+           den Hash des neutralen Zustands und gibt als Passthrough den
+           Eingang aus, A den bearbeiteten Ausgang.
+  FEHLER prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte)
+  FEHLER eq_enabled_ueberlebt_speichern_laden (M-08)
+  FEHLER bank_wird_erst_beim_ersten_block_aktiv (M-08)
+  FEHLER altstand_v1_laedt_im_prozessor_verlustfrei (M-90, R5)
+  FEHLER 311/M-76 gleicher_ladestart_bleibt_warm
+  FEHLER 311/M-77 ..._pruefling_1, _2 und _3
+  B7 insgesamt: 187 geprueft, 9 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen, mit Grund:
+  Acht weitere Zeilen, alle am SELBEN Ladeweg: M-89, M-08 (zweimal) und
+  M-90 pruefen, dass der geladene Stand der bestaetigte wird; 311/M-76 und
+  311/M-77 laden ihren Zustand ueber genau diesen Zweig. Die Mutation nimmt
+  den eigenen Ladestart aus dem Weg - jede Zeile, die ihn braucht, faellt.
+  Das ist kein Nebeneffekt, sondern die Reichweite der Zeile.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  178 von 187, darunter 311/M-78 (dort laedt nichts - `prepareToPlay` auf
+  der laufenden Instanz), 311/M-79 (schreibt nur), der ganze
+  Transaktionskern der Ebene 1 (Abschnitte A bis L), der W01-Abschnitt R
+  und der W03-Abschnitt S.
+  Die frueher erwogene Mutation "Hoermatrix-Auswahl im Hash" waere
+  unwirksam gewesen (beide Instanzen stehen beim Vergleich auf Processed);
+  diese hier trifft.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:51:32, Lauf EXIT=0,
+                   "187 geprueft, 0 Fehler".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`eq-copilot/plugin/sonde/SondeProcessor.cpp` wurde voruebergehend mutiert
+(zweimal insgesamt in diesem Teil, je einzeln und rueckwaerts
+zurueckgenommen) und ist bytegleich zum Basisstand; `git diff --stat` der
+Etappe nennt sie nicht.

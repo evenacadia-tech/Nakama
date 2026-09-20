@@ -1,0 +1,72 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-70
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-5 / T3-15-09 Teil a, §9 F-13
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     heute nicht messbar (Mutation NACH dem Bau ist der Beleg)
+Bein        B3c (EqCopSchemaTest)
+Zusage      Klemmfunktion aus M-69, gerufen mit NaN, +Inf und -Inf:
+            NaN wird +0,0 (NICHT -0,0 - anderes Bitmuster), +Inf wird +120,
+            -Inf wird -120; nie ein nicht endlicher Wert im Bericht.
+            Zusaetzlich gemessen: -0,0 kommt bitgleich zurueck (ein Wert
+            innerhalb der Grenze bleibt unveraendert).
+Test        eq-copilot/plugin/tests/SchemaTestMain.cpp:1632,
+            `311/M-70 nan_wird_plus_null_und_inf_wird_die_grenze`.
+            Der Nullvergleich laeuft ueber `std::memcmp` gegen +0,0 UND
+            gegen -0,0, dazu `std::signbit`.
+
+Warum am Basisstand nicht messbar: die Klemmfunktion existiert dort nicht.
+
+Gemessen am Endstand (gruen):
+  NaN -> 0.000000 (Vorzeichenbit 0), +Inf -> 120.000000, -Inf -> -120.000000.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/state/NakamaTransaktion.cpp, Zeile 785 (Endstand)
+SHA-256 vorher     11F8D3B03FEB1E2B74E570736145D0B28C44FCD3128384C76699C7A7CA7C8681
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\NakamaTransaktion.cpp
+
+vorher (woertlich, die drei Zeilen des Funktionsrumpfs):
+    if (std::isnan (roh)) return 0.0;
+    if (roh >  kBerichtAutoGainGrenzeDb) return  kBerichtAutoGainGrenzeDb;
+    if (roh < -kBerichtAutoGainGrenzeDb) return -kBerichtAutoGainGrenzeDb;
+
+nachher (woertlich, der NaN-Zweig entfernt):
+    if (roh >  kBerichtAutoGainGrenzeDb) return  kBerichtAutoGainGrenzeDb;
+    if (roh < -kBerichtAutoGainGrenzeDb) return -kBerichtAutoGainGrenzeDb;
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Klemmung
+                   ohne NaN-Zweig -> NaN bleibt NaN -> rot"). Ohne ihn ist
+                   jeder Vergleich mit NaN falsch, und der Wert faellt
+                   unveraendert durch.
+
+SHA-256 mutiert    97AB41E41EA49FA156ADEE6A4C57B1568950C3AE25C7BB6CF5CA77024D3BD918
+Bau                cmake --build ... --target EqCopSchemaTest, EXIT=0
+Binary             20.09.2026 02:45:47
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  [ROT] 311/M-70 [NaN -> nan (Vorzeichenbit 0), +Inf -> 120.000000,
+        -Inf -> -120.000000]
+  B3c insgesamt: 156 bestanden, 1 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen:
+  keine.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  156 von 157, darunter 311/M-67, 311/M-68, 311/M-69 und 311/M-71: die
+  +/-Inf-Haelfte und alle endlichen Werte haengen an den zwei uebrigen
+  Zweigen und bleiben richtig. Der NaN-Zweig traegt allein seine Haelfte.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    11F8D3B03FEB1E2B74E570736145D0B28C44FCD3128384C76699C7A7CA7C8681
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:45:50, Lauf EXIT=0,
+                   "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+keine mutierte Datei ausserhalb der Ticketpfade; bytegleich zurueckgenommen.

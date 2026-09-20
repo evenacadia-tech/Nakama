@@ -21,7 +21,13 @@
          selbst - deterministisch, ohne auf Zeit zu warten. Seit NAK-311
          Etappe 3 (W01) der Host-Reset im Ausblenden (311/M-34, Abschnitt R),
          seit W03 Remove und Neubelegung ohne Audio dazwischen (311/M-40,
-         Abschnitt S).
+         Abschnitt S), seit Etappe 4 Teil b (F12, R-311-4) der RECALL
+         eingeschwungener dynamischer Baender (Abschnitt T, 311/M-76 bis
+         M-79): der Same-Instance-Ladestart bleibt bitgleich warm, eine neu
+         geladene oder neu vorbereitete Instanz haelt ab t_E die bezifferte
+         Toleranz von M-84 (Manifest NAK-311 §9.1 F-12), und zwei Sekunden
+         Audio lassen die Statebytes unveraendert. Kein Produktcode - die
+         Huellkurvenleistung bleibt Audiohistorie.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -2757,6 +2763,350 @@ void nak311SlotLebenszyklus()
             d.str());
 }
 
+//==============================================================================
+// NAK-311 Etappe 4 Teil b (F12, R-311-4): der Recall eingeschwungener
+// dynamischer Baender. KEIN Produktcode - die Huellkurvenleistung bleibt
+// Audiohistorie. Gemessen werden die Zahl der Toleranz von M-84 und ihr
+// Geltungsbereich (Manifest NAK-311 §9.1 F-12, §6.4 M-76 bis M-80).
+
+constexpr double kPiRecall = 3.14159265358979323846;
+
+/** Ein Lauf des Quadraturtons durch den ECHTEN Prozessor: L = sin, R = cos
+    auf der Bandmitte (E-25). Bei einem eingeschwungenen Quadraturton ist der
+    Betrag sqrt(L^2 + R^2) je Sample konstant gleich Amplitude mal
+    angewandter Verstaerkung - er misst die Verstaerkung ohne Schwebung ueber
+    eine Periode und damit sample-genau. */
+struct QuadraturLauf
+{
+    std::vector<float>  ausgang;   ///< L und R je Sample, verschraenkt
+    std::vector<double> tap;       ///< `post_committed`, Kanal 0
+    std::vector<double> betrag;    ///< sqrt(L^2 + R^2) des Ausgangs
+};
+
+QuadraturLauf fahreQuadratur (Prozessor& p, double fs, double f0, double amp,
+                              long long& n0, int samples, int groesse, bool aufzeichnen)
+{
+    QuadraturLauf lauf;
+    const int bloecke = (samples + groesse - 1) / groesse;
+    if (aufzeichnen)
+    {
+        lauf.ausgang.reserve ((size_t) bloecke * (size_t) groesse * 2);
+        lauf.tap.reserve ((size_t) bloecke * (size_t) groesse);
+        lauf.betrag.reserve ((size_t) bloecke * (size_t) groesse);
+    }
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> puffer (2, groesse);
+    const double w = 2.0 * kPiRecall * f0 / fs;
+    for (int b = 0; b < bloecke; ++b)
+    {
+        for (int i = 0; i < groesse; ++i)
+        {
+            puffer.setSample (0, i, (float) (amp * std::sin (w * (double) (n0 + i))));
+            puffer.setSample (1, i, (float) (amp * std::cos (w * (double) (n0 + i))));
+        }
+        p.processBlock (puffer, midi);
+        if (aufzeichnen)
+        {
+            const double* t = p.dspKernFuerTest().tap (dsp::Tap::postCommitted, 0);
+            for (int i = 0; i < groesse; ++i)
+            {
+                const double l = (double) puffer.getSample (0, i);
+                const double r = (double) puffer.getSample (1, i);
+                lauf.ausgang.push_back ((float) l);
+                lauf.ausgang.push_back ((float) r);
+                lauf.tap.push_back (t != nullptr ? t[i] : 0.0);
+                lauf.betrag.push_back (std::sqrt (l * l + r * r));
+            }
+        }
+        n0 += groesse;
+    }
+    return lauf;
+}
+
+/** Ein dynamisches Bell in Slot 0 - Typ `bell`, Kanalmodus `stereo`,
+    Sidechain `internal`, also genau der Teilraum aus §9 F-12. */
+param::DspSatz nak311DynBand (double f0, double q, double g0, double rangeDb,
+                              double thresholdDb, double attackMs,
+                              double holdMs = 0.0, double releaseMs = 100.0)
+{
+    auto z = mitEq (true);
+    const auto zelle = [&z] (int feld) -> param::Zelle& { return z.werte[(size_t) iBand (0, feld)]; };
+    z.werte[(size_t) param::indexOccupied (0)].b = true;
+    zelle (param::kEnabled).b                 = true;
+    zelle (param::kType).enumIndex            = (int) dsp::Filtertyp::bell;
+    zelle (param::kFreqHz).zahl               = f0;
+    zelle (param::kQ).zahl                    = q;
+    zelle (param::kGainDb).zahl               = g0;
+    zelle (param::kChannelMode).enumIndex     = (int) dsp::Kanalmodus::stereo;
+    zelle (param::kDynamicEnabled).b          = true;
+    zelle (param::kDynamicRangeDb).zahl       = rangeDb;
+    zelle (param::kThresholdDb).zahl          = thresholdDb;
+    zelle (param::kAttackMs).zahl             = attackMs;
+    zelle (param::kHoldMs).zahl               = holdMs;
+    zelle (param::kReleaseMs).zahl            = releaseMs;
+    zelle (param::kSidechainSource).enumIndex = (int) dsp::Sidechain::internal;
+    return z;
+}
+
+/** t_E aus §9 F-12, HIER eigenstaendig ausgeschrieben (Muster M-13: der Test
+    ruft keine Produktfunktion als Orakel):
+
+        t_E = max (kFadeSamples, 5*tau_a*fs + 10*Q*A_max*fs/(pi*f0) + 16)
+
+    mit A_max = 10^(max(0, g0, g0 + Range)/40). Die drei Summanden sind der
+    Huellkurventerm (5 Zeitkonstanten der Attack), der Bandterm (zehn
+    genaeherte Zeitkonstanten von Detektor und Band) und die Steuerrate
+    (bis zu 8 Samples bis zum naechsten Entwurf, 8 Ueberblendung; M-73). */
+double nak311TeE (double fs, double f0, double q, double g0, double rangeDb, double attackMs)
+{
+    const double aMax = std::pow (10.0, std::max (0.0, std::max (g0, g0 + rangeDb)) / 40.0);
+    return std::max ((double) dsp::kFadeSamples,
+                     5.0 * (attackMs * 0.001) * fs + 10.0 * q * aMax * fs / (kPiRecall * f0) + 16.0);
+}
+
+/** Der Vorlauf, der Instanz A EINGESCHWUNGEN macht: zehn Attack-Zeitkonstanten
+    (Rest e^-10 = 4,5e-5, also 0,0004 dB) plus das Vierfache des Bandterms
+    plus Reserve. */
+int nak311Vorlauf (double fs, double f0, double q, double attackMs)
+{
+    return (int) std::ceil (10.0 * (attackMs * 0.001) * fs)
+         + 4 * (int) std::ceil (10.0 * q * fs / (kPiRecall * f0)) + 8000;
+}
+
+/** Ein Pruefling aus M-77: Bandwerte, Attack und der Name seines Terms. */
+struct RecallFall
+{
+    const char* pruefling;
+    double f0, q, g0, range, attack;
+};
+
+/** Faehrt EINEN Vergleich und liefert die groesste Abweichung ab t_E und
+    davor. `neueInstanz` waehlt M-77 (Instanz B aus den Bytes von A) oder
+    M-78 (`prepareToPlay` auf A selbst, Vergleich gegen C). */
+struct RecallMass
+{
+    double tE = 0.0, maxNachTe = 0.0, maxVorTe = 0.0;
+    int    argNachTe = -1;
+    bool   aufgebaut = false;
+};
+
+RecallMass fahreRecall (const RecallFall& f, double thresholdDb, bool neueInstanz)
+{
+    const double fs = 48000.0, amp = 0.5;
+    const int    blk = 256;
+    RecallMass   m;
+    m.tE = nak311TeE (fs, f.f0, f.q, f.g0, f.range, f.attack);
+
+    const int tEn     = (int) std::ceil (m.tE);
+    const int vorlauf = nak311Vorlauf (fs, f.f0, f.q, f.attack);
+    const int mess    = tEn + 4800;
+
+    const auto z = nak311DynBand (f.f0, f.q, f.g0, f.range, thresholdDb, f.attack);
+
+    auto a = prozessor (fs, blk);
+    const auto ea = setze (*a, z);
+    std::unique_ptr<Prozessor> c;
+    tx::Ausgang ec = tx::Ausgang::commit;
+    if (! neueInstanz)
+    {
+        c = prozessor (fs, blk);
+        ec = setze (*c, z).ausgang;
+    }
+
+    long long nA = 0, nC = 0;
+    fahreQuadratur (*a, fs, f.f0, amp, nA, vorlauf, blk, false);
+    if (c != nullptr) fahreQuadratur (*c, fs, f.f0, amp, nC, vorlauf, blk, false);
+
+    // t = 0: das erste Sample des ersten Blocks der geladenen (M-77)
+    // beziehungsweise neu vorbereiteten (M-78) Instanz. Der Vergleichskern
+    // laeuft ununterbrochen weiter und bekommt ab hier denselben Eingang.
+    std::unique_ptr<Prozessor> b;
+    Prozessor* neu = nullptr;
+    Prozessor* ref = nullptr;
+    long long nNeu = nA, nRef = nA;
+    if (neueInstanz)
+    {
+        juce::MemoryBlock bytes;
+        a->getStateInformation (bytes);
+        b = std::make_unique<Prozessor>();
+        b->setStateInformation (bytes.getData(), (int) bytes.getSize());
+        b->setRateAndBufferSizeDetails (fs, blk);
+        b->prepareToPlay (fs, blk);
+        neu = b.get();
+        ref = a.get();
+    }
+    else
+    {
+        a->prepareToPlay (fs, blk);
+        neu = a.get();
+        ref = c.get();
+        nRef = nC;
+    }
+
+    const auto lNeu = fahreQuadratur (*neu, fs, f.f0, amp, nNeu, mess, blk, true);
+    const auto lRef = fahreQuadratur (*ref, fs, f.f0, amp, nRef, mess, blk, true);
+
+    m.aufgebaut = ea.ausgang == tx::Ausgang::commit && ec == tx::Ausgang::commit
+               && lNeu.betrag.size() == lRef.betrag.size() && ! lNeu.betrag.empty();
+    if (! m.aufgebaut) return m;
+
+    for (size_t i = 0; i < lNeu.betrag.size(); ++i)
+    {
+        if (! (lRef.betrag[i] > 0.0)) continue;
+        const double ab = std::abs (20.0 * std::log10 (lNeu.betrag[i] / lRef.betrag[i]));
+        if ((int) i >= tEn)
+        {
+            if (ab > m.maxNachTe) { m.maxNachTe = ab; m.argNachTe = (int) i; }
+        }
+        else if (ab > m.maxVorTe)
+        {
+            m.maxVorTe = ab;
+        }
+    }
+    return m;
+}
+
+void nak311Recall()
+{
+    abschnitt ("T - NAK-311 F12/R-311-4: Recall eingeschwungener dynamischer Baender (311/M-76 bis 311/M-79)");
+
+    const double fs = 48000.0, amp = 0.5;
+    const int    blk = 256;
+
+    // ── 311/M-76: der Same-Instance-Ladestart bleibt WARM ─────────────────
+    // Der Pruefling der Phase 16. `setStateInformation` mit den eigenen
+    // Bytes: gleiche Belegung, gleiche Topologie, also gleiche Pfad- und
+    // Lebenszykluskennungen (W03, §28.2) - der Zustand wandert, es gibt
+    // keinen Crossfade und keinen kalten Start.
+    {
+        const auto z = nak311DynBand (1000.0, 2.0, 0.0, -12.0, -15.0, 500.0);
+        auto a = prozessor (fs, blk);
+        auto c = prozessor (fs, blk);
+        const auto ea = setze (*a, z);
+        const auto ec = setze (*c, z);
+        long long nA = 0, nC = 0;
+        fahreQuadratur (*a, fs, 1000.0, amp, nA, 240000, blk, false);
+        fahreQuadratur (*c, fs, 1000.0, amp, nC, 240000, blk, false);
+
+        juce::MemoryBlock bytes;
+        a->getStateInformation (bytes);
+        a->setStateInformation (bytes.getData(), (int) bytes.getSize());
+
+        const auto la = fahreQuadratur (*a, fs, 1000.0, amp, nA, 48000, blk, true);
+        const auto lc = fahreQuadratur (*c, fs, 1000.0, amp, nC, 48000, blk, true);
+        const bool ausgangGleich = bitgleich (la.ausgang, lc.ausgang);
+        const bool tapGleich = la.tap.size() == lc.tap.size()
+            && std::memcmp (la.tap.data(), lc.tap.data(), la.tap.size() * sizeof (double)) == 0;
+
+        std::ostringstream d;
+        d << std::setprecision (9) << "Commits " << (ea.ausgang == tx::Ausgang::commit
+                                                     && ec.ausgang == tx::Ausgang::commit ? "ja" : "nein")
+          << ", " << la.ausgang.size() / 2 << " Samples nach dem Ladestart, Ausgang bitgleich "
+          << (ausgangGleich ? "ja" : "nein") << ", Tap bitgleich " << (tapGleich ? "ja" : "nein");
+        pruefe (ea.ausgang == tx::Ausgang::commit && ec.ausgang == tx::Ausgang::commit
+                    && ausgangGleich && tapGleich,
+                "311/M-76 gleicher_ladestart_bleibt_warm (NAK-311 F12, M-84): dynamisches Bell 1 kHz Q 2, "
+                "Range -12 dB, Threshold -15 dB, Attack 500 ms, eingeschwungen - `setStateInformation` mit "
+                "den EIGENEN Bytes laesst Ausgang und Tap bitgleich zum ununterbrochenen Vergleichskern",
+                d.str());
+    }
+
+    // ── 311/M-77 und 311/M-78: die Toleranz von M-84 mit ihrer Zahl ───────
+    //
+    // Geltungsbereich (§9 F-12): dynamisches Bell, Kanalmodus `stereo`,
+    // Sidechain `internal`, Quadraturton auf der Bandmitte, Q >= 1,
+    // Q*A_min >= 0,5 mit A_min = 10^(min(0, g0, g0 + Range)/40), f0 von
+    // 20 Hz bis min(20 kHz, fs/4). Zusage: ab t_E hoechstens 0,1 dB, davor
+    // im Betrag hoechstens |g0| + |Range| + 0,1 dB.
+    //
+    // Drei Prueflinge, je einer fuer einen Term der Formel: Pruefling 1 der
+    // Huellkurventerm (drei Attacks), Pruefling 2 der Crossfadeterm (Q 1,0,
+    // Q*A_min = 0,501 - dort ueberwiegt `kFadeSamples`), Pruefling 3 der
+    // Frequenzterm (f0 = fs/4, Q 24).
+    {
+        const RecallFall faelle[] = {
+            { "1 (Bell 1 kHz Q 2, Huellkurventerm)",        1000.0,  2.0, 0.0, -12.0,   0.1 },
+            { "1 (Bell 1 kHz Q 2, Huellkurventerm)",        1000.0,  2.0, 0.0, -12.0,  10.0 },
+            { "1 (Bell 1 kHz Q 2, Huellkurventerm)",        1000.0,  2.0, 0.0, -12.0, 500.0 },
+            { "2 (Bell 1 kHz Q 1, Crossfadeterm)",          1000.0,  1.0, 0.0, -12.0,   0.1 },
+            { "3 (Bell 12 kHz = fs/4 Q 24, Frequenzterm)", 12000.0, 24.0, 0.0, -12.0,   0.1 },
+        };
+        const double thresholds[] = { -15.0, -40.0 };   // Knie, Plateau
+        const char*  lage[]       = { "Knie", "Plateau" };
+
+        for (int teil = 0; teil < 2; ++teil)             // 0 = M-77, 1 = M-78
+        {
+            const bool neueInstanz = teil == 0;
+            for (int gruppe = 0; gruppe < 3; ++gruppe)   // die drei Prueflinge
+            {
+                bool ok = true;
+                std::ostringstream d;
+                d << std::setprecision (6) << std::fixed;
+                bool erstes = true;
+                for (const auto& f : faelle)
+                {
+                    const int nummer = f.pruefling[0] - '0';
+                    if (nummer != gruppe + 1) continue;
+                    for (int t = 0; t < 2; ++t)
+                    {
+                        const auto m = fahreRecall (f, thresholds[t], neueInstanz);
+                        const double schrankeVor = std::abs (f.g0) + std::abs (f.range) + 0.1;
+                        const bool traegt = m.aufgebaut && m.maxNachTe <= 0.1 && m.maxVorTe <= schrankeVor;
+                        ok = ok && traegt;
+                        d << (erstes ? "" : "; ") << "Attack " << f.attack << " ms, " << lage[t]
+                          << ": t_E " << m.tE << " Samples, ab t_E hoechstens " << m.maxNachTe
+                          << " dB (bei Sample " << m.argNachTe << "), davor hoechstens " << m.maxVorTe
+                          << " dB gegen " << schrankeVor << (traegt ? "" : " TRAEGT NICHT");
+                        erstes = false;
+                    }
+                }
+                const std::string zeile = neueInstanz ? "311/M-77" : "311/M-78";
+                const std::string name  = neueInstanz
+                    ? "recall_in_neue_instanz_innerhalb_der_toleranz_pruefling_"
+                    : "recall_nach_preparetoplay_innerhalb_der_toleranz_pruefling_";
+                pruefe (ok, zeile + " " + name + std::to_string (gruppe + 1)
+                            + " (NAK-311 R-311-4, M-84, F-12): "
+                            + (neueInstanz
+                               ? "eine NEUE Instanz aus den Bytes von A"
+                               : "`prepareToPlay` auf A selbst gegen die ununterbrochene Instanz C")
+                            + " - der Quadraturbetrag weicht ab t_E hoechstens 0,1 dB ab, davor im Betrag "
+                              "hoechstens |g0| + |Range| + 0,1 dB",
+                        d.str());
+            }
+        }
+    }
+
+    // ── 311/M-79: Audiohistorie ist kein State ────────────────────────────
+    // Zwei Sekunden eingeschwungenes Audio aendern kein Byte des States:
+    // weder Huellkurven- noch Filterhistorie reisen mit, und es entsteht
+    // keine neue Stateversion.
+    {
+        // Threshold -40 dB: der Ton liegt im PLATEAU, die Auslenkung ist dort
+        // die volle Range - die Huellkurve hat sich also nachweislich bewegt,
+        // bevor die Bytes zum zweiten Mal gelesen werden.
+        const auto z = nak311DynBand (1000.0, 2.0, 0.0, -12.0, -40.0, 500.0);
+        auto a = prozessor (fs, blk);
+        const auto ea = setze (*a, z);
+        juce::MemoryBlock vorher;
+        a->getStateInformation (vorher);
+        long long n = 0;
+        fahreQuadratur (*a, fs, 1000.0, amp, n, 96000, blk, false);
+        juce::MemoryBlock nachher;
+        a->getStateInformation (nachher);
+        double werte[param::kSlots];
+        a->dspKernFuerTest().auslenkungenDb (werte);
+        std::ostringstream d;
+        d << std::setprecision (9) << "Bytes vorher " << vorher.getSize() << ", nachher "
+          << nachher.getSize() << ", gleich " << (vorher == nachher ? "ja" : "nein")
+          << ", Auslenkung nach 2 s " << werte[0] << " dB, Revision " << a->stateRevision();
+        pruefe (ea.ausgang == tx::Ausgang::commit && vorher == nachher && werte[0] == -12.0,
+                "311/M-79 audiohistorie_ist_kein_state (NAK-311 F12, R-311-4): zwei Sekunden "
+                "eingeschwungenes Audio bewegen die Huellkurve auf die volle Range und lassen die "
+                "Statebytes UNVERAENDERT",
+                d.str());
+    }
+}
+
 } // namespace
 
 int main()
@@ -2792,6 +3142,9 @@ int main()
 
     // NAK-311 Etappe 3 (W03): Remove und Neubelegung ohne Audio
     nak311SlotLebenszyklus();
+
+    // NAK-311 Etappe 4 Teil b (F12, R-311-4): Recall und Audiohistorie
+    nak311Recall();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

@@ -1,0 +1,83 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-69
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-5 / T3-15-09 Teil a
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     heute nicht messbar (Mutation NACH dem Bau ist der Beleg)
+Bein        B3c (EqCopSchemaTest)
+Zusage      Die Klemmfunktion `berichtsAutoGainDb` (oeffentlich in
+            eq-copilot/plugin/state/NakamaTransaktion.h:422) mit der
+            Grenzkonstante 120 (:408): -120 und +120 kommen UNVERAENDERT
+            zurueck, der naechste double darueber und darunter sowie 120,5
+            werden auf +/-120 geklemmt; die Konstante ist gleich `minimum`
+            und `maximum` von `auto_gain_db`, AUS DEM GELADENEN SCHEMA
+            gelesen; das Schema nimmt +/-120 an und weist 120,5 ab
+            (bestehendes Fixture `ungueltig/dsp-auto-gain-ausserhalb.json`).
+Test        eq-copilot/plugin/tests/SchemaTestMain.cpp:1613,
+            `311/M-69 klemmgrenze_gleich_schemagrenze`. Die Vergleichszahlen
+            kommen aus `schemaVar["$defs"]["dsp_bericht"]["properties"]
+            ["auto_gain_db"]["minimum"|"maximum"]`, nicht aus einer zweiten
+            Zahl im Test (F-13).
+
+Warum am Basisstand nicht messbar: `berichtsAutoGainDb` und
+`kBerichtAutoGainGrenzeDb` existieren dort nicht; der Fall waere nicht
+uebersetzbar.
+
+Gemessen am Endstand (gruen):
+  Konstante 120.000000, Schema [-120.000000, 120.000000],
+  naechster double ueber der Grenze 120.00000000000001421
+    -> 120.00000000000000000, 120.5 -> 120.000000,
+  Schema nimmt +/-120 an und weist 120.5 ab: ja.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/state/NakamaTransaktion.h, Zeile 408 (Endstand)
+SHA-256 vorher     E2C0C868542A0BF6309EC679A3BFC3C85BB1D233361A431D14BADCDBB644B79E
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\NakamaTransaktion.h
+
+vorher (woertlich):
+inline constexpr double kBerichtAutoGainGrenzeDb = 120.0;
+
+nachher (woertlich):
+inline constexpr double kBerichtAutoGainGrenzeDb = 119.9;
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("Grenze 119,9
+                   -> +120 wird geklemmt und die Konstante weicht vom Schema
+                   ab -> rot"). Beide Haelften der Zusage haengen an dieser
+                   einen Zeile.
+
+SHA-256 mutiert    7FAD3B38F46D0746D614CEA44A92E71ED563B5FA34D5780744E96712B171AEDD
+Bau                cmake --build ... --target EqCopSchemaTest, EXIT=0
+Binary             20.09.2026 02:45:29
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  [ROT] 311/M-69 [Konstante 119.900000, Schema [-120.000000, 120.000000],
+        naechster double ueber der Grenze 119.90000000000001990
+        -> 119.90000000000000568, 120.5 -> 119.900000]
+  [ROT] 311/M-67 [auto_gain_db -119.900000, Verletzungen 0]
+  B3c insgesamt: 155 bestanden, 2 gescheitert.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - und zwar an BEIDEN
+Haelften: die Konstante weicht vom Schema ab, und +120 kaeme nicht mehr
+unveraendert zurueck.
+
+Mitgefallen, mit Grund:
+  311/M-67 - dieselbe Konstante bestimmt den gemeldeten Wert; er waere
+  -119,9 statt exakt -120.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  155 von 157, darunter 311/M-68 (-92,29 dB liegt auch innerhalb 119,9 und
+  bleibt bitgleich), 311/M-70 (NaN/Inf-Verhalten ist von der Zahl
+  unabhaengig) und 311/M-71 (der Kernwert bleibt ungeklemmt).
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    E2C0C868542A0BF6309EC679A3BFC3C85BB1D233361A431D14BADCDBB644B79E
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:45:34, Lauf EXIT=0,
+                   "157 bestanden, 0 gescheitert".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+keine mutierte Datei ausserhalb der Ticketpfade; bytegleich zurueckgenommen.

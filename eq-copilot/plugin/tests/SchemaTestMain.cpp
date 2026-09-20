@@ -12,10 +12,21 @@
     Zusaetzlich: das Bandgitter, der Quantisierungsvertrag und - weil ein
     gruener Test nichts wert ist, solange nicht gezeigt wurde, dass er
     ueberhaupt fallen KANN - eine Reihe Riegelproben.
+
+    Seit NAK-311 Etappe 4 Teil b (T3-15-09 Teil a, R-311-5) die
+    BERICHTSGRENZE von `auto_gain_db` (Manifest NAK-311 §6.4, 311/M-67 bis
+    M-71): `baueBericht` klemmt auf die Vertragsgrenze, statt sie zu
+    reissen. Der Fall baut den Bericht mit dem ECHTEN Transaktionskern und
+    dem ECHTEN DSP-Kern und validiert ihn als `state_report` - also eine
+    selbst gebaute Ausgabe, nicht nur ein Fixture. Die Klemmgrenze im C++
+    wird gegen `minimum` und `maximum` des GELADENEN Schemas gehalten, damit
+    Vertrag und Code nicht auseinanderlaufen koennen.
 */
 
 #include "../vertrag/NakamaVertrag.h"
 #include "../state/NakamaParameter.h"
+#include "../state/NakamaTransaktion.h"
+#include "../dsp/DspKern.h"
 #include "../vertrag/NakamaTelemetrie.h"
 #include "../core/analysis/FeatureEngine.h"
 #include "../core/ipc/TelemetryClient.h"
@@ -31,6 +42,8 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 namespace
 {
@@ -1369,6 +1382,277 @@ void fahreFassung5UndDspBericht (const juce::var& schemaVar, bool schemaGelesen)
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-311 Etappe 4 Teil b · die Berichtsgrenze (T3-15-09 Teil a, R-311-5)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Manifest NAK-311 §6.4, Zeilen 311/M-67 bis 311/M-71 und §9.1 F-13.
+//
+// `baueBericht` uebernahm den abgeleiteten Auto-Gain ungeklemmt. Mit acht
+// vertragsgueltigen Low-Shelves 1 kHz +12 dB Q 8 liegt er bei rund -199,77 dB
+// und reisst damit `minimum: -120` des v3-Vertrags: der Bericht waere
+// ungueltig. Seit R-311-5 klemmt der BERICHT auf die Vertragsgrenze; Kern,
+// angewandte Rampe und `klemmungen` bleiben unberuehrt (M-71, Karte U54).
+//
+// Der Pruefstand baut den Bericht mit dem ECHTEN Transaktionskern und dem
+// ECHTEN DSP-Kern und validiert ihn als `state_report` gegen die Fassung 5 -
+// nicht gegen ein Fixture, sondern gegen eine selbst gebaute Ausgabe. Die
+// Vorlage liefert nur die Huelle (Adresse, record_state); `dsp`, `state_hash`,
+// `state_revision` und `undo_tiefe` kommen aus dem Bericht.
+
+/** Der Pruefstand: DSP-Kern, seine Ausfuehrung und der Transaktionskern - alle
+    drei auf dem HEAP (NAK-175: ein `DspKern` gehoert nicht in einen
+    1-MiB-Rahmen). */
+struct Nak311Stand
+{
+    std::unique_ptr<nakama::dsp::DspKern>                    kern;
+    std::unique_ptr<nakama::transaktion::DspKernAusfuehrung> aus;
+    std::unique_ptr<nakama::transaktion::Transaktionskern>   tk;
+
+    explicit Nak311Stand (double fs)
+    {
+        kern = std::make_unique<nakama::dsp::DspKern>();
+        kern->bereiteVor (fs, 64);
+        aus = std::make_unique<nakama::transaktion::DspKernAusfuehrung> (*kern);
+        tk  = std::make_unique<nakama::transaktion::Transaktionskern> (*aus);
+        tk->setzeSamplerate (fs);
+    }
+};
+
+/** Acht gleiche Low-Shelves in den acht Slots - `occupied` UND `enabled`, ein
+    freier Slot verarbeitet nichts. */
+nakama::parameter::DspSatz nak311AchtShelves (double q)
+{
+    namespace param = nakama::parameter;
+    param::DspSatz s;
+    s.werte[(size_t) param::kIndexEqEnabled].b = true;
+    for (int slot = 0; slot < param::kSlots; ++slot)
+    {
+        s.werte[(size_t) param::indexOccupied (slot)].b = true;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kEnabled)].b = true;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kType)].enumIndex
+            = (int) nakama::dsp::Filtertyp::lowShelf;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kFreqHz)].zahl = 1000.0;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kQ)].zahl      = q;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kGainDb)].zahl = 12.0;
+        s.werte[(size_t) param::indexBandV1 (slot, param::kChannelMode)].enumIndex
+            = (int) nakama::dsp::Kanalmodus::stereo;
+    }
+    return s;
+}
+
+/** Setzt den Bericht in die Vorlage: `dsp` GANZ, dazu Hash, Revision und
+    Undo-Tiefe - der geprueft Text ist damit derselbe Bericht, nicht ein
+    Fixture mit einer getauschten Zahl. */
+juce::var nak311BerichtAlsDokument (const juce::var& vorlage,
+                                    const nakama::transaktion::DspBericht& b)
+{
+    auto doc = vorlage.clone();
+    auto* wurzel = doc.getDynamicObject();
+    if (wurzel == nullptr) return doc;
+    auto* dsp = wurzel->getProperty ("dsp").getDynamicObject();
+    if (dsp == nullptr) return doc;
+
+    dsp->setProperty ("jcs", b.jcs);
+    dsp->setProperty ("auto_gain_db", b.autoGainDb);
+    juce::Array<juce::var> klemmungen;
+    for (const auto& k : b.klemmungen)
+    {
+        auto* eintrag = new juce::DynamicObject();
+        eintrag->setProperty ("id", k.id);
+        eintrag->setProperty ("gemeldet", k.gemeldet);
+        eintrag->setProperty ("wirksam", k.wirksam);
+        klemmungen.add (juce::var (eintrag));
+    }
+    dsp->setProperty ("klemmungen", klemmungen);
+    juce::Array<juce::var> verletzt;
+    for (int slot : b.verletzteBaender) verletzt.add (slot);
+    dsp->setProperty ("verletzte_baender", verletzt);
+
+    wurzel->setProperty ("state_hash", nakama::transaktion::alsText (b.hash));
+    wurzel->setProperty ("state_revision", (juce::int64) b.revision);
+    wurzel->setProperty ("undo_tiefe", b.undoTiefe);
+    return doc;
+}
+
+/** Der abgeleitete Auto-Gain, wie ihn der KERN fuehrt - derselbe Weg, den der
+    Audiothread geht (`uebernehmeZustand` -> erster Block -> Bank uebernommen).
+    Er ist die Gegenprobe zum Bericht: er darf sich durch R-311-5 nicht
+    aendern (M-71). `lin` liefert dazu den linearen Faktor aus dem Programm der
+    gefahrenen Bank - genau der Wert, aus dem die Auto-Gain-Rampe ihr Ziel
+    nimmt. */
+double nak311KernAutoGain (nakama::dsp::DspKern& kern,
+                           const nakama::parameter::DspSatz& satz, double& lin)
+{
+    kern.uebernehmeZustand (satz);
+    std::vector<float> l ((size_t) 64, 0.0f), r ((size_t) 64, 0.0f);
+    float* kanaele[2] = { l.data(), r.data() };
+    kern.verarbeite (kanaele, 2, 64);
+    int cA = -1, cQ = -1, kA = -1, kQ = -1;
+    kern.gefahreneSlots (cA, cQ, kA, kQ);
+    lin = cA >= 0 ? kern.pool().bank (cA).programm.autoGainLin : 0.0;
+    return kern.autoGainDb();
+}
+
+bool nak311BitGleich (double a, double b) noexcept
+{
+    return std::memcmp (&a, &b, sizeof (double)) == 0;
+}
+
+void fahreNak311Berichtsgrenze (const juce::var& schemaVar, bool schemaGelesen)
+{
+    namespace tx = nakama::transaktion;
+
+    if (! schemaGelesen)
+        return;
+
+    bool okVorlage = false;
+    const auto vorlage = lies ("eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json", okVorlage);
+    if (! okVorlage)
+        return;
+
+    nakama::vertrag::Schema fassung5;
+    juce::String ladefehler;
+    if (! nakama::vertrag::Schema::laden (schemaVar, fassung5, ladefehler))
+    {
+        pruefe (false, "311/M-67: die Fassung 5 laedt", ladefehler);
+        return;
+    }
+
+    // ── 311/M-67, mit den Teilfaellen 311/M-70 und 311/M-71 ───────────────
+    {
+        Nak311Stand st (48000.0);
+        const auto satz = nak311AchtShelves (8.0);
+        juce::String grund;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        tx::DspBericht bericht;
+        const bool gebaut = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
+        const auto verletzungen = fassung5.pruefe (doc);
+
+        juce::String detail = "auto_gain_db " + juce::String (bericht.autoGainDb, 6)
+                            + ", Verletzungen " + juce::String (verletzungen.size());
+        if (! verletzungen.isEmpty())
+            detail += " (" + verletzungen[0].instanz + " gegen " + verletzungen[0].schluessel + ")";
+
+        pruefe (gebaut && bericht.autoGainDb == -120.0 && verletzungen.isEmpty(),
+                "311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze (NAK-311 R-311-5, T3-15-09 Teil a): "
+                "acht Low-Shelves 1 kHz +12 dB Q 8 bei 48 kHz - `auto_gain_db` ist exakt -120, "
+                "der Bericht ist gueltig gegen $defs/dsp_bericht",
+                detail);
+
+        // 311/M-71: geklemmt wird NUR der Bericht. Der Kern meldet weiter den
+        // abgeleiteten Wert, und das Programm der gefahrenen Bank traegt den
+        // linearen Faktor, aus dem die Rampe ihr Ziel nimmt. `klemmungen`
+        // bekommt fuer Auto-Gain keinen Eintrag - das waere eine
+        // Vertragsaenderung und gehoert zu Karte U54.
+        double lin = 0.0;
+        const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
+        const double linSoll  = std::pow (10.0, kernWert / 20.0);
+        pruefe (kernWert < -190.0 && kernWert > -210.0 && std::isfinite (kernWert)
+                    && std::abs (lin / linSoll - 1.0) < 1e-12 && bericht.klemmungen.empty(),
+                "311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der "
+                "lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer",
+                "Kern " + juce::String (kernWert, 6) + " dB, autoGainLin " + juce::String (lin, 18)
+                    + " gegen 10^(dB/20) = " + juce::String (linSoll, 18) + " (Verhaeltnis 1 + "
+                    + juce::String (lin / linSoll - 1.0, 18) + "), Bericht "
+                    + juce::String (bericht.autoGainDb, 6) + " dB, klemmungen "
+                    + juce::String ((int) bericht.klemmungen.size()));
+    }
+
+    // ── 311/M-68: der Gegenfall innerhalb der Grenze bleibt bitgleich ─────
+    {
+        Nak311Stand st (48000.0);
+        const auto satz = nak311AchtShelves (0.70710678118654752);
+        juce::String grund;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        tx::DspBericht bericht;
+        const bool gebaut = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        double lin = 0.0;
+        const double kernWert = nak311KernAutoGain (*st.kern, satz, lin);
+        const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
+        const bool gueltig = fassung5.gueltig (doc);
+
+        pruefe (gebaut && nak311BitGleich (bericht.autoGainDb, kernWert) && gueltig,
+                "311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich (NAK-311 R-311-5): acht Low-Shelves "
+                "1 kHz +12 dB Q 0,707 - der gemeldete Wert ist BITGLEICH dem abgeleiteten und gueltig",
+                "Bericht " + juce::String (bericht.autoGainDb, 9) + " dB, Kern "
+                    + juce::String (kernWert, 9) + " dB, gueltig " + (gueltig ? "ja" : "nein"));
+    }
+
+    // ── 311/M-69 mit dem Teilfall 311/M-70: die Klemmfunktion selbst ──────
+    //
+    // Die Grenze steht im C++ genau einmal. Hier wird sie gegen `minimum` und
+    // `maximum` des GELADENEN Schemas gehalten - nicht gegen eine zweite Zahl
+    // im Test, sonst liefen Vertrag und Code auseinander, ohne dass ein Bein
+    // faellt (§9 F-13).
+    {
+        const auto& feld = schemaVar["$defs"]["dsp_bericht"]["properties"]["auto_gain_db"];
+        const double minimum = (double) feld["minimum"];
+        const double maximum = (double) feld["maximum"];
+        const double grenze  = tx::kBerichtAutoGainGrenzeDb;
+
+        const double ueber = std::nextafter (grenze, std::numeric_limits<double>::infinity());
+        const double unter = std::nextafter (-grenze, -std::numeric_limits<double>::infinity());
+
+        const bool konstanteGleichVertrag = grenze == maximum && -grenze == minimum;
+        const bool raender =
+               nak311BitGleich (tx::berichtsAutoGainDb (-grenze), -grenze)
+            && nak311BitGleich (tx::berichtsAutoGainDb ( grenze),  grenze)
+            && nak311BitGleich (tx::berichtsAutoGainDb (ueber),    grenze)
+            && nak311BitGleich (tx::berichtsAutoGainDb (unter),   -grenze)
+            && nak311BitGleich (tx::berichtsAutoGainDb (120.5),    grenze);
+
+        // Dieselben zwei Werte am SCHEMA: +/-120 werden angenommen, 120,5
+        // abgewiesen - dieselbe Aussage, die das bestehende Fixture
+        // `ungueltig/dsp-auto-gain-ausserhalb.json` traegt.
+        const auto mitWert = [&] (double wert)
+        {
+            auto doc = vorlage.clone();
+            if (auto* wurzel = doc.getDynamicObject())
+                if (auto* dsp = wurzel->getProperty ("dsp").getDynamicObject())
+                    dsp->setProperty ("auto_gain_db", wert);
+            return fassung5.gueltig (doc);
+        };
+        const bool schemaRaender = mitWert (grenze) && mitWert (-grenze) && ! mitWert (120.5);
+
+        pruefe (konstanteGleichVertrag && raender && schemaRaender,
+                "311/M-69 klemmgrenze_gleich_schemagrenze (NAK-311 R-311-5): die Konstante im C++ ist "
+                "`minimum`/`maximum` aus dem geladenen Schema; +/-120 kommen unveraendert zurueck, "
+                "der naechste double darueber und darunter sowie 120,5 werden geklemmt",
+                "Konstante " + juce::String (grenze, 6) + ", Schema [" + juce::String (minimum, 6) + ", "
+                    + juce::String (maximum, 6) + "], naechster double ueber der Grenze "
+                    + juce::String (ueber, 17) + " -> " + juce::String (tx::berichtsAutoGainDb (ueber), 17)
+                    + ", 120.5 -> " + juce::String (tx::berichtsAutoGainDb (120.5), 6)
+                    + ", Schema nimmt +/-120 an und weist 120.5 ab " + (schemaRaender ? "ja" : "nein"));
+
+        const double nanWert = std::numeric_limits<double>::quiet_NaN();
+        const double inf     = std::numeric_limits<double>::infinity();
+        const double ausNan  = tx::berichtsAutoGainDb (nanWert);
+        const double minusNull = -0.0;
+        // Subnormal: ein Wert innerhalb der Grenze, und zwar der kleinste
+        // darstellbare - er darf weder genullt noch gerundet werden.
+        const double subnormal = std::numeric_limits<double>::denorm_min();
+        pruefe (nak311BitGleich (ausNan, 0.0) && ! nak311BitGleich (ausNan, minusNull)
+                    && tx::berichtsAutoGainDb ( inf) ==  grenze
+                    && tx::berichtsAutoGainDb (-inf) == -grenze
+                    && std::isfinite (ausNan) && std::isfinite (tx::berichtsAutoGainDb (inf))
+                    && std::isfinite (tx::berichtsAutoGainDb (-inf))
+                    && nak311BitGleich (tx::berichtsAutoGainDb (minusNull), minusNull)
+                    && nak311BitGleich (tx::berichtsAutoGainDb (subnormal), subnormal)
+                    && nak311BitGleich (tx::berichtsAutoGainDb (-subnormal), -subnormal),
+                "311/M-70 nan_wird_plus_null_und_inf_wird_die_grenze (NAK-311 R-311-5, F-13): NaN wird +0,0 "
+                "(nicht -0,0), +Inf wird +120, -Inf wird -120 - nie ein nicht endlicher Wert im Bericht; "
+                "-0,0 und das kleinste Subnormal kommen bitgleich zurueck",
+                "NaN -> " + juce::String (ausNan, 6) + " (Vorzeichenbit "
+                    + juce::String (std::signbit (ausNan) ? 1 : 0) + "), +Inf -> "
+                    + juce::String (tx::berichtsAutoGainDb (inf), 6) + ", -Inf -> "
+                    + juce::String (tx::berichtsAutoGainDb (-inf), 6));
+    }
+}
+
 } // namespace
 
 int main (int, char*[])
@@ -1403,6 +1687,7 @@ int main (int, char*[])
     }
 
     fahreFassung5UndDspBericht (schemaVar, ok);
+    fahreNak311Berichtsgrenze (schemaVar, ok);
 
     fahreBandgitter();
     fahreQuantisierung();

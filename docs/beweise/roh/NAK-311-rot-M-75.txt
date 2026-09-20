@@ -1,0 +1,59 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-75
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, T3-15-11
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     erlaubtes Verhalten gemessen (einmal gebrochen)
+Bein        B6 (EqCopDspGoldenTest)
+Zusage      wie 311/M-73, bei 96 kHz (Gegenfall): dieselben Samplezahlen;
+            die volle Wirkung liegt 8 bis 15 Samples nach dem Einsatz =
+            0,083 bis 0,156 ms - DORT ist der Schritt von 8 Samples
+            (0,083 ms) feiner als die kuerzeste Attack von 0,1 ms, wie E-6
+            es faelschlich fuer 48 kHz behauptet hat.
+Test        eq-copilot/plugin/tests/DspGoldenTestMain.cpp:2628,
+            `311/M-75 dieselben_samplezahlen_bei_96_khz` (Abschnitt F).
+
+Gemessen am Endstand (gruen):
+  p=0 d=0 erste Abweichung 1 (soll 1) volle Wirkung 8
+  p=1 d=7 erste Abweichung 8 (soll 8) volle Wirkung 15
+  p=3 d=5 erste Abweichung 6 (soll 6) volle Wirkung 13
+  p=7 d=1 erste Abweichung 2 (soll 2) volle Wirkung 9
+  erste Wirkung 1 bis 8 Samples = 0.0104166667 bis 0.0833333333 ms,
+  volle Wirkung 8 bis 15 Samples = 0.0833333333 bis 0.15625 ms.
+
+Die Matrix nennt fuer M-75 "dieselben Samplezahlen; 0,083 bis 0,156 ms" -
+gemessen bestaetigt, kein Befund.
+
+Mutation nach dem Bau
+---------------------
+Die Rotbeweisspalte sagt fuer M-75 "Rotbeweis wie M-73": DIESELBE Mutation,
+DERSELBE Lauf. Vollstaendig dokumentiert in
+`docs/beweise/roh/NAK-311-rot-M-73.txt`.
+
+Datei              eq-copilot/plugin/dsp/DspKern.cpp, Zeile 712 (Endstand)
+SHA-256 vorher     29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+SHA-256 mutiert    03E44C773DF52CB8ED1E2D026BA58F5A9A38A2CC1AE1931878814CA459475B4E
+vorher             const double tSchritt = 1.0 - (double) z.schrittRest / (double) kDynamikSchritt;
+nachher            const double tSchritt = 1.0;
+Bau                EXIT=0, Binary 20.09.2026 02:47:27
+Lauf               EXIT=1
+
+Gefallene Pruefung dieser Zeile:
+  FEHLER 311/M-75 dieselben_samplezahlen_bei_96_khz
+    [p=0 d=0 erste Abweichung 0 (soll 1) TRAEGT NICHT; p=1 d=7 erste
+     Abweichung 7 (soll 8) TRAEGT NICHT; p=3 d=5 erste Abweichung 5 (soll 6)
+     TRAEGT NICHT; p=7 d=1 erste Abweichung 1 (soll 2) TRAEGT NICHT;
+     erste Wirkung 0 bis 7 Samples = 0 bis 0.0729166667 ms]
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Mitgefallen, mit Grund:
+  311/M-73 und 311/M-74 - dieselbe Zeile traegt das Mischgewicht fuer jede
+  Samplerate.
+
+Gruen geblieben: 352 von 355 (siehe NAK-311-rot-M-73.txt).
+
+Ruecknahme         bytegleich, SHA-256 nachher
+                   29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Gruenlauf          EXIT=0, "355 geprueft, 0 Fehler".

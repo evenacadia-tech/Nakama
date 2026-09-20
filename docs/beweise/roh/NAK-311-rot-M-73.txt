@@ -1,0 +1,99 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-73 (mit M-74 und M-75)
+=================================================================
+
+Ticket      NAK-311, Etappe 4 Teil b, T3-15-11, §9 F-15
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     erlaubtes Verhalten gemessen (einmal gebrochen)
+Bein        B6 (EqCopDspGoldenTest)
+Zusage      48 kHz, Bell 1 kHz Q 0,707 `stereo`, dynamisch mit Range -12 dB,
+            Threshold -60 dB (Vertragsminimum), Attack 0,1 ms, Hold 0,
+            Release 100 ms; Referenzkern gleich, aber Range 0 (derselbe
+            SVF-Weg). Beide frisch, Vorlauf Stille von 8*m + p Samples
+            (m = 32). Ein Quadraturton 0,5 auf der Bandmitte setzt in
+            Steuerphase p = 0, 1, 3 und 7 ein.
+            Der Tap `post_committed` bleibt bis einschliesslich Sample
+            d = (8 - p) mod 8 nach dem Einsatz BITGLEICH zum Referenzkern
+            und weicht ab d + 1 ab; der Entwurf faellt auf Sample d
+            (`schrittRest` ist danach 7) und wirkt ab d + 8 mit Gewicht 1
+            (dort traegt `svfVon` genau den bei d entworfenen Satz).
+            Erste Wirkung 1 bis 8 Samples, volle Wirkung 8 bis 15 Samples.
+Test        eq-copilot/plugin/tests/DspGoldenTestMain.cpp:2626,
+            Abschnitt F (`== F - Dynamische Baender`, :2018), Block ab :2598:
+            `311/M-73 erster_entwurf_wirkt_voll_nach_8_bis_15_samples`,
+            `311/M-74 dieselben_samplezahlen_bei_44_1_khz`,
+            `311/M-75 dieselben_samplezahlen_bei_96_khz`.
+            `kDynamikSchritt` bleibt 8; kein Verhalten aendert sich.
+
+Gemessen am Endstand (gruen)
+----------------------------
+48 kHz (311/M-73):
+  p=0 d=0 erste Abweichung 1 (soll 1) volle Wirkung 8
+  p=1 d=7 erste Abweichung 8 (soll 8) volle Wirkung 15
+  p=3 d=5 erste Abweichung 6 (soll 6) volle Wirkung 13
+  p=7 d=1 erste Abweichung 2 (soll 2) volle Wirkung 9
+  erste Wirkung 1 bis 8 Samples, volle Wirkung 8 bis 15 Samples
+  = 0.166666667 bis 0.3125 ms
+44,1 kHz (311/M-74): dieselben Samplezahlen, 0.181405896 bis 0.340136054 ms
+96 kHz  (311/M-75): dieselben Samplezahlen, 0.0833333333 bis 0.15625 ms
+
+Die Zahlen stimmen mit der Matrix (§6.4) ueberein: 0,167 bis 0,3125 ms bei
+48 kHz, 0,181 bis 0,340 ms bei 44,1 kHz, 0,083 bis 0,156 ms bei 96 kHz.
+Kein Befund an den Dirigenten.
+
+Mutation nach dem Bau (EINE Mutation, alle drei Zeilen)
+-------------------------------------------------------
+
+Datei              eq-copilot/plugin/dsp/DspKern.cpp, Zeile 712 (Endstand)
+SHA-256 vorher     29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\DspKern.cpp
+
+vorher (woertlich):
+            const double tSchritt = 1.0 - (double) z.schrittRest / (double) kDynamikSchritt;
+
+nachher (woertlich):
+            const double tSchritt = 1.0;
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("das
+                   Mischgewicht an :579 fest 1,0 -> Abweichung schon bei d,
+                   Gewicht 1 bei d -> rot"). Zeile 579 des Basisstands
+                   7aa89ef2 ist am Endstand Zeile 712.
+
+SHA-256 mutiert    03E44C773DF52CB8ED1E2D026BA58F5A9A38A2CC1AE1931878814CA459475B4E
+Bau                cmake --build ... --target EqCopDspGoldenTest, EXIT=0
+Binary             20.09.2026 02:47:27
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  FEHLER 311/M-73  [p=0 d=0 erste Abweichung 0 (soll 1) TRAEGT NICHT;
+                    p=1 d=7 erste Abweichung 7 (soll 8) TRAEGT NICHT;
+                    p=3 d=5 erste Abweichung 5 (soll 6) TRAEGT NICHT;
+                    p=7 d=1 erste Abweichung 1 (soll 2) TRAEGT NICHT;
+                    erste Wirkung 0 bis 7 Samples]
+  FEHLER 311/M-74  dieselbe Verschiebung, 0 bis 7 Samples
+  FEHLER 311/M-75  dieselbe Verschiebung, 0 bis 7 Samples
+  B6 insgesamt: 355 geprueft, 3 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA, fuer 311/M-73, 311/M-74
+und 311/M-75 je an ihrer eigenen Pruefung (dieselbe Mutation, wie die
+Matrix es fuer M-74 und M-75 mit "Rotbeweis wie M-73" verlangt).
+
+Mitgefallen:
+  keine ausserhalb der drei Zeilen.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  352 von 355 - der ganze uebrige Abschnitt F (M-18 bis M-27), die
+  RBJ-Goldens des Abschnitts C, die Auto-Gain-Faelle der Abschnitte H und
+  H2 und die W01/W03-Abschnitte P und Q. Die bestehenden Dynamikfaelle
+  messen am Steuerschritt und sehen die Verschiebung um ein Sample nicht -
+  genau die Luecke, die diese drei Zeilen schliessen.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:47:35, Lauf EXIT=0,
+                   "355 geprueft, 0 Fehler".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`eq-copilot/plugin/dsp/DspKern.cpp` wurde voruebergehend mutiert und ist
+bytegleich zurueckgenommen; `git diff --stat` der Etappe nennt sie nicht.

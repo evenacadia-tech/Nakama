@@ -1,0 +1,84 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-79
+=============================================
+
+Ticket      NAK-311, Etappe 4 Teil b, F12 / R-311-4, CLAUDE.md
+            "State bleibt verlustfrei", SONDE-015 M-39
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regressionswache (einmal gebrochen)
+Bein        B7 (EqCopTransactionTest)
+Zusage      Instanz A frisch und nach zwei Sekunden eingeschwungenem Audio:
+            `getStateInformation` vor dem ersten Block und danach liefert
+            GLEICHE Bytes - keine Huellkurven- oder Filterhistorie im State,
+            keine neue Stateversion.
+Test        eq-copilot/plugin/tests/TransactionTestMain.cpp:3097,
+            `311/M-79 audiohistorie_ist_kein_state`. Der Pruefling steht im
+            PLATEAU (Threshold -40 dB), damit die Huellkurve sich
+            nachweislich bewegt hat, bevor die Bytes zum zweiten Mal
+            gelesen werden.
+
+Gemessen am Endstand (gruen):
+  Bytes vorher 4708, nachher 4708, gleich ja,
+  Auslenkung nach 2 s -12 dB (die volle Range), Revision 1.
+
+Mutation nach dem Bau
+---------------------
+
+Datei              eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 1007 ff.
+                   (`getStateInformation`, Endstand) - ausserhalb der
+                   Ticketpfade dieses Teils, nur voruebergehend (§7.1)
+SHA-256 vorher     F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+Sicherungskopie    C:\Users\phili\.claude\jobs\174305cc\tmp\sicherung\SondeProcessor.cpp
+
+vorher (woertlich):
+    const juce::ScopedLock l (zustandSchloss);
+    nakama::state::speichere (gehaltenerStand(), ziel);
+
+nachher (woertlich):
+    const juce::ScopedLock l (zustandSchloss);
+    auto stand = gehaltenerStand();
+    double auslenkung[nakama::parameter::kSlots];
+    dspKern->auslenkungenDb (auslenkung);
+    stand.baum.setProperty ("huellkurve_db", auslenkung[0], nullptr);
+    nakama::state::speichere (stand, ziel);
+
+Grund der Stelle   woertlich die Mutation der Rotbeweisspalte ("die
+                   Huellkurvenleistung als Feld in den State geschrieben ->
+                   Bytes weichen ab -> rot"). `getStateInformation` ist die
+                   Stelle, die die Zusage traegt: was hier hineingeht, ist
+                   persistent.
+
+SHA-256 mutiert    E67DF3924A847A3D0DAE3360F4E715DEE3B730162911F106BAB1B19FF1A789F5
+Bau                cmake --build ... --target EqCopTransactionTest, EXIT=0
+Binary             20.09.2026 02:50:53
+Lauf               EXIT=1
+
+Gefallene Pruefungen:
+  FEHLER 311/M-79 audiohistorie_ist_kein_state
+    [Bytes vorher 4733, nachher 4733, gleich nein, Auslenkung nach 2 s
+     -12 dB, Revision 1]
+  B7 insgesamt: 187 geprueft, 1 Fehler.
+
+Die Zusage faellt an der erwarteten Pruefung: JA. Die Bytezahl steigt um 25
+(das neue Feld), und die zwei Staende sind nicht mehr gleich: vor dem ersten
+Block traegt das Feld 0, danach -12.
+
+Mitgefallen:
+  keine.
+
+Gruen geblieben (Beleg gegen den Nebeneffekt):
+  186 von 187, darunter `preview_wird_nie_serialisiert (M-83)` und
+  `reset() laesst getStateInformation bytegleich` (NAK-283): sie vergleichen
+  zwei Staende ohne dazwischenliegendes Audio, die auch mit dem Feld gleich
+  bleiben. Genau deshalb braucht M-79 den Lauf MIT Audio.
+
+Ruecknahme         bytegleich aus der Sicherungskopie
+SHA-256 nachher    F81424034CBF43579C1802B71EDB83AA7EAD6BF4FA2EEEE6B634219F25DB6836
+Gruenlauf          Bau EXIT=0, Binary 20.09.2026 02:51:00, Lauf EXIT=0,
+                   "187 geprueft, 0 Fehler".
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`eq-copilot/plugin/sonde/SondeProcessor.cpp` wurde voruebergehend mutiert
+und ist bytegleich zurueckgenommen; `git diff --stat` der Etappe nennt sie
+nicht.

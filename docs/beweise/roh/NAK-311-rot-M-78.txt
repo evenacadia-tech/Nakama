@@ -1,0 +1,98 @@
+NAK-311 Etappe 4, Teil b - Rotbeweis 311/M-78 (drei Teile)
+==========================================================
+
+Ticket      NAK-311, Etappe 4 Teil b, R-311-4 / F12, SONDE-015 M-84, §9 F-12
+Basis-SHA   805f607818c0c7c49ed229a2b89fc5b4b147f481
+Datum       20.09.2026
+Etikett     Regel gemessen, in drei Teilen mit je einer Mutation
+Bein        B7 (EqCopTransactionTest)
+Zusage      wie 311/M-77, aber OHNE neue Instanz: `prepareToPlay` auf der
+            laufenden Instanz A selbst, verglichen gegen eine
+            ununterbrochene Instanz C mit identischer Vorgeschichte.
+            `prepareToPlay` ruft `bereiteVor` und publiziert neu; der erste
+            Block blendet aus der Ruhe ein - derselbe Weg wie bei M-77.
+Test        eq-copilot/plugin/tests/TransactionTestMain.cpp, Abschnitt T,
+            drei Pruefungen
+            `311/M-78 recall_nach_preparetoplay_innerhalb_der_toleranz_pruefling_1..3`
+            ueber denselben `fahreRecall` (:2887) mit `neueInstanz = false`.
+
+GEMESSEN AM ENDSTAND (gruen), "ab t_E hoechstens" / "davor hoechstens"
+----------------------------------------------------------------------
+Pruefling 1  Attack 0,1 ms  Knie    t_E 345.577491  0.000045 dB (Sample 347)  /  5.969100 dB
+             Attack 0,1 ms  Plateau t_E 345.577491  0.000000 dB               / 12.000000 dB
+             Attack 10 ms   Knie    t_E 2721.577491 0.016390 dB (Sample 2722) /  5.969100 dB
+             Attack 10 ms   Plateau t_E 2721.577491 0.000000 dB               / 12.000000 dB
+             Attack 500 ms  Knie    t_E 120321.577491 0.029019 dB (120322)    /  5.969001 dB
+             Attack 500 ms  Plateau t_E 120321.577491 0.000000 dB             / 12.000001 dB
+Pruefling 2  Attack 0,1 ms  Knie    t_E 256.000000  0.001050 dB (Sample 256)  /  5.969316 dB
+             Attack 0,1 ms  Plateau t_E 256.000000  0.000000 dB               / 12.000000 dB
+Pruefling 3  Attack 0,1 ms  Knie    t_E 345.577491  0.000750 dB (Sample 346)  /  5.969100 dB
+             Attack 0,1 ms  Plateau t_E 345.577491  0.000013 dB (Sample 347)  / 12.000000 dB
+
+Die Werte sind Zeile fuer Zeile dieselben wie in 311/M-77: `prepareToPlay`
+auf der laufenden Instanz und eine neu geladene Instanz nehmen denselben Weg
+`bereiteVor` -> Ruhe -> Einblenden. Schranken 0,1 dB ab t_E und 12,1 dB
+davor, beide gehalten. KEIN Befund an den Dirigenten.
+
+Mutationen nach dem Bau
+------------------------
+Die Rotbeweisspalte sagt: "je Teil dieselbe Mutation wie in M-77 -> rot aus
+demselben Grund, weil derselbe Weg `bereiteVor` -> Ruhe -> Einblenden
+laeuft." Dieselben drei Mutationen, DIESELBEN Laeufe; vollstaendig
+dokumentiert in `docs/beweise/roh/NAK-311-rot-M-77.txt`.
+
+TEIL 1 - Huellkurventerm
+  Datei     eq-copilot/plugin/dsp/DspFilter.h:284
+  vorher    k.attackPol   = huellkurvePol (attackMs,  samplerate);
+  nachher   k.attackPol   = huellkurvePol (5.0 * attackMs,  samplerate);
+  SHA-256   vorher C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+            mutiert F53C12DFCDE6D9F535F81DD8DA3EEF0B5EB422F708206767734374292882D79A
+            nachher C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+  Gefallen  FEHLER 311/M-78 ..._pruefling_1:
+            Attack 10 ms, Knie  ab t_E 1.721296 dB (Sample 2722)   TRAEGT NICHT
+            Attack 500 ms, Knie ab t_E 1.781905 dB (Sample 120322) TRAEGT NICHT
+  Mitgefallen: 311/M-77 ..._pruefling_1 (derselbe Weg).
+  Die Zusage faellt an der erwarteten Pruefung: JA.
+
+TEIL 2 - Crossfadeterm
+  Datei     eq-copilot/plugin/dsp/DspKern.cpp:547
+  vorher    z.rest      = nurRampen ? kRampeSamples : kFadeSamples;
+  nachher   z.rest      = nurRampen ? kRampeSamples : (alt < 0 ? 2 * kFadeSamples : kFadeSamples);
+  SHA-256   vorher 29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+            mutiert D4EF09CB5710351E76B85A0E565BF52EEA5DD87AAD894B726B5F475CC7BE1490
+            nachher 29DD414C310C7466A8257EDAE04489996C511C2BD4C5F0C4D6139A20C51B7113
+  Gefallen  FEHLER 311/M-78 ..._pruefling_2:
+            Knie    ab t_E 5.969305 dB (Sample 256)  TRAEGT NICHT
+            Plateau ab t_E 12.000000 dB (Sample 256) TRAEGT NICHT
+  Mitgefallen: 311/M-78 Pruefling 1 und 3 sowie alle drei von 311/M-77 -
+            der Einblend-Crossfade aus der Ruhe laeuft fuer jede neu
+            vorbereitete Instanz; die Mutation ist nicht
+            prueflingsspezifisch. Pruefling 2 ist der, bei dem der
+            Crossfade t_E BESTIMMT (256 gegen 192,8).
+  Die Zusage faellt an der erwarteten Pruefung: JA.
+
+TEIL 3 - Frequenzterm
+  Datei     eq-copilot/plugin/dsp/DspFilter.h:227 (in `entwurfBandpass`)
+  vorher    const double alpha = std::sin (w0) / (2.0 * q);
+  nachher   const double alpha = std::sin (w0) / (4.0 * q);
+  SHA-256   vorher C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+            mutiert 7CE7DC2B6B12C68A936C32A07DDE5D140E6CAB0829B0AD59C5587F36510C6538
+            nachher C3C76C1718C1B55B3F901E585278285B22EA52F9D200881B12EEFE106835318A
+  Gefallen  FEHLER 311/M-78 ..._pruefling_3:
+            Knie    ab t_E 0.195004 dB (Sample 346) TRAEGT NICHT
+            Plateau ab t_E 0.000011 dB (haelt)
+  Mitgefallen: 311/M-77 ..._pruefling_3.
+  Die Zusage faellt an der erwarteten Pruefung: JA; der Wert ist der des
+  Nachbaus (§16.1: +0,1950 dB bei n = 346).
+
+Gruen geblieben (Beleg gegen den Nebeneffekt)
+---------------------------------------------
+Teil 1: 185 von 187, Teil 2: 181 von 187, Teil 3: 185 von 187. In allen drei
+Laeufen gruen: 311/M-76 (der warme Ladestart geht nicht ueber `bereiteVor`),
+311/M-79, `reload_rekonstruiert_denselben_audioausgang (M-84)`, der
+W01-Abschnitt R und der W03-Abschnitt S.
+
+Diff ausserhalb der Ticketpfade
+-------------------------------
+`DspFilter.h` und `DspKern.cpp` wurden voruebergehend mutiert und sind
+bytegleich zurueckgenommen; `git diff --stat` der Etappe nennt sie nicht.

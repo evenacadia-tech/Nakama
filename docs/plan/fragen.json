@@ -50,17 +50,6 @@
    "status": "offen"
   },
   {
-   "id": "U48",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (Klangverhalten)",
-   "titel": "FLs eigener Bypass-Schalter: was soll er mit Klang und Messung machen?",
-   "was": "FL hat an jedem Mixer-Slot einen eigenen Bypass-Knopf, getrennt von Nakamas eigenem EQ-Schalter. Heute schaltet FLs Knopf hart um: der EQ verschwindet von einem Sample zum nächsten, und Probeeq hört auf zu messen — in Gen veraltet diese Quelle, solange der Knopf gedrückt ist. Nakamas eigener Schalter blendet dagegen weich über (etwa 5 ms). (1) Empfohlen: FLs Knopf blendet genauso weich über wie Nakamas eigener Schalter, und die Messung läuft währenddessen weiter. (2) FLs Knopf bleibt hart, aber die Messung läuft weiter. (3) Alles bleibt wie heute: hart, und die Messung pausiert.",
-   "warum": "Audit-Befund T3-01-09 (Kartenentwurf PF11-01), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md, Abschnitt 7 und „Karte U48“); Text am 21.09.2026 berichtigt: Nakamas eigener Schalter behält den inneren Filterzustand nicht, die Filter starten nach jedem der beiden Schalter neu — das ist schon entschieden und nicht Teil dieser Frage. Gebaut wird erst nach deiner Antwort (Planschritt S25k, Ticket NAK-312).",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-09, PF11-01, Arbeitsübersicht W06; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U49",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (Verhalten)",
@@ -891,6 +880,24 @@
     "warum": "Seit 12.09.2026 laufen FL-Start, Installation und Messung ohne Handgriff (NAK-285, NAK-286); die Regel vom 11.09.2026 (Fragen und Handgriffe nur 9 bis 23 Uhr) nennt automatische Läufe nicht. Ohne Antwort bleibt es bei Weg 1.",
     "wo": "docs/offene-punkte.md NAK-325; docs/beweise/NAK-309-verlauf.md §17 und §21; tools/fl/LIES-MICH.md",
     "seit": "19.09.",
+    "status": "offen"
+   }
+  },
+  "U48": {
+   "wahl": "1. Weich + Messung läuft (Empfohlen)",
+   "text": "Weich + Messung läuft (Empfohlen)",
+   "datum": "2026-09-21 01:01",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: FLs Slot-Bypass blendet weich über wie Nakamas eigener Schalter, und Probeeq misst im Hostbypass weiter; der Kaltstart der Filter (E-8) bleibt. Gebaut in NAK-312 (Planschritt S25k) als Etappe 7 mit eigenem Matrixnachtrag. Festgehalten in design/abnahmen/2026-09-21-fl-bypass-weich-messung-laeuft-u48.md und im Register NAK-312. Gestellt über AskUserQuestion in der Dirigentensitzung 90fe90ab mit drei Wegen: „Weich + Messung läuft (Empfohlen)“, „Hart, aber Messung läuft“, „Alles wie heute“; eingetragen nach dem Ende der laufenden Matrixprüfung.",
+   "karte": {
+    "id": "U48",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Produktentscheid (Klangverhalten)",
+    "titel": "FLs eigener Bypass-Schalter: was soll er mit Klang und Messung machen?",
+    "was": "FL hat an jedem Mixer-Slot einen eigenen Bypass-Knopf, getrennt von Nakamas eigenem EQ-Schalter. Heute schaltet FLs Knopf hart um: der EQ verschwindet von einem Sample zum nächsten, und Probeeq hört auf zu messen — in Gen veraltet diese Quelle, solange der Knopf gedrückt ist. Nakamas eigener Schalter blendet dagegen weich über (etwa 5 ms). (1) Empfohlen: FLs Knopf blendet genauso weich über wie Nakamas eigener Schalter, und die Messung läuft währenddessen weiter. (2) FLs Knopf bleibt hart, aber die Messung läuft weiter. (3) Alles bleibt wie heute: hart, und die Messung pausiert.",
+    "warum": "Audit-Befund T3-01-09 (Kartenentwurf PF11-01), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md, Abschnitt 7 und „Karte U48“); Text am 21.09.2026 berichtigt: Nakamas eigener Schalter behält den inneren Filterzustand nicht, die Filter starten nach jedem der beiden Schalter neu — das ist schon entschieden und nicht Teil dieser Frage. Gebaut wird erst nach deiner Antwort (Planschritt S25k, Ticket NAK-312).",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-09, PF11-01, Arbeitsübersicht W06; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
+    "seit": "18.09.",
     "status": "offen"
    }
   }

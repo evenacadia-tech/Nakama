@@ -1,0 +1,60 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-125
+=================================================================
+
+Matrixzeile : M-125 (§39.3) - T3-15-06, "aktiv ist Durchschnitt"
+Zusage      : `baueProgramm` setzt den Pegelbegriff jedes Slots auf
+              Durchschnitt, unbedingt und ohne Eingabe; ueber den Vertragsweg
+              ist Spitze nicht erreichbar, und im Produktcode steht genau eine
+              Setzstelle.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-125 vertragsweg_ergibt_immer_durchschnitt
+Etikett     : heute nicht messbar (der Begriff entsteht im Bau)
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspProgramm.cpp, `baueProgramm`, die EINE
+        Setzstelle des Pegelbegriffs
+SHA256 vorher  : 3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspProgramm.cpp.M-125.bak
+
+Vorher, woertlich:
+        b.pegelbegriff = Pegelbegriff::durchschnitt;
+
+Nachher, woertlich (die Setzstelle an einen Wert des `DspSatz` gebunden -
+`dynAn` ist `v2.band.<n>.dynamic_enabled`):
+        b.pegelbegriff = dynAn ? Pegelbegriff::spitze : Pegelbegriff::durchschnitt;
+
+Gebaut: EqCopDspGoldenTest, Binary 16:15:42 nach der Quelle 16:15:40.
+Exitcode: 1 - 389 geprueft, 13 Fehler.
+
+GEFALLEN ist die erwartete Pruefung:
+
+  FEHLER  311/M-125 vertragsweg_ergibt_immer_durchschnitt  [48 Slots ueber 6
+  Kombinationen aus dynamic_enabled und sidechain_source, alle Durchschnitt:
+  NEIN; Setzstellen im Produktcode 0 (), davon auf Spitze 0, Nennungen von
+  Pegelbegriff::spitze 2 (die Abbildung pegelFensterMs), in 113 Quelldateien]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - beide Haelften zugleich:
+der Vertragsweg erreicht Spitze (24 der 48 Slots), und die Quelltextwache
+findet keine unbedingte Setzstelle mehr, dafuer eine ZWEITE Nennung von
+`Pegelbegriff::spitze` ausserhalb der Abbildung.
+
+MITGEFALLEN (je mit Grund; mit Spitze faellt der ganze dynamische Weg auf den
+Basisstand zurueck): 311/M-120, 311/M-124 (alle vier Bandmitten, Spannen
+5.78 bis 5.79 dB), 311/M-130 (c), 311/M-131 (a) - `rampenKompatibel`
+vergleicht zwei Programme, die nun beide Spitze tragen, waehrend der Test
+eines davon auf Spitze setzt und damit Gleichheit misst -, 311/M-141 und die
+vier verschobenen Bestandspruefungen mit Pegelpol in ihrer Referenz.
+
+GRUEN GEBLIEBEN unter derselben Mutation: 311/M-123 (Spitze IST der
+Basisstand), 311/M-126, 311/M-129, 311/M-130 (a), (b), (d), 311/M-131 (b),
+(c), die RBJ-Goldens (M-82), die Stereo- und Hexgoldens (M-83) und der ganze
+Abschnitt Q (W03) - 376 der 389 Pruefungen.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : 3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

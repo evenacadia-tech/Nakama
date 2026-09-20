@@ -263,11 +263,44 @@ inline Biquad entwurf (Filtertyp typ, double samplerate, double freqHz, double q
     auf der MOMENTANLEISTUNG `x*x`; der dB-Wert entsteht erst am Ende als
     `10 * log10(leistung)`, nicht als `20 * log10(betrag)` einer gemittelten
     Amplitude - das waere kein RMS. */
+/** NAK-311 R-311-15 (T3-15-06, Karte U45): die FESTE Fensterlaenge des
+    Pegelbegriffs `durchschnitt`, in Millisekunden.
+
+    Technikkonstante mit Test (311/M-120, 311/M-124). Die Stufe, die sie
+    fuehrt, sitzt zwischen Detektor und Huellkurve: sie nimmt der Huellkurve
+    die Welligkeit, die deren asymmetrische Ballistik sonst gleichrichtet,
+    und erst damit wirkt derselbe Threshold bei jeder Hold- und
+    Attack-Einstellung nach demselben Begriff.
+
+    Die Zahl: die Momentanleistung eines Sinus schwingt mit 2*f0 zwischen 0
+    und dem Doppelten ihres Mittels; ein Pol mit der Zeitkonstante tau_m
+    daempft diesen Anteil auf r = 1/(4*pi*f0*tau_m), der Versatz des
+    eingeschwungenen Pegels ist hoechstens 10*log10(1 + r). Mit 10 ms sind
+    das 0,034 dB bei 1 kHz und 1,45 dB bei 20 Hz gegen heute +2,12 bis
+    +3,01 dB. 10 ms ist zugleich die klassische RMS-Integrationszeit und der
+    Vertragsdefault von `attack_ms`.
+
+    Was ein FESTES Fenster nicht kann: unter rund 340 Hz bleibt ein Rest, der
+    mit fallender Bandmitte waechst. Ein Fenster, das auch bei 20 Hz unter
+    0,1 dB bliebe, muesste 171 ms lang sein und machte ein dynamisches Band
+    bei jeder Frequenz traege. R-311-15 verlangt ausdruecklich ein festes
+    Fenster; die Frequenzabhaengigkeit steht deshalb als Zahl in 311/M-120
+    und 311/M-124 und ist kein Befund. */
+inline constexpr double kPegelFensterMs = 10.0;
+
 struct HuellkurveKoeffizienten
 {
     double attackPol  { 0.0 };   ///< exp(-1/(fs*tau_a))
     double releasePol { 0.0 };   ///< exp(-1/(fs*tau_r))
     std::int64_t holdSamples { 0 };
+
+    /*  NAK-311 R-311-15: der Pol des PEGELBEGRIFFS, der VOR dieser
+        Huellkurve steht. 0 heisst `spitze` - dann ist die Stufe
+        kurzgeschlossen und gibt die Momentanleistung unveraendert weiter.
+        Er wird nie interpoliert: der Pegelbegriff ist topologisch
+        (`rampenKompatibel`, `vergebeKennungen`), beide Seiten einer Rampe
+        tragen deshalb denselben Wert. */
+    double pegelPol { 0.0 };
 };
 
 inline double huellkurvePol (double ms, double samplerate) noexcept
@@ -277,15 +310,63 @@ inline double huellkurvePol (double ms, double samplerate) noexcept
     return std::exp (-1.0 / (samplerate * tau));
 }
 
+/** `pegelFensterMs` ist die Fensterlaenge des Pegelbegriffs: `kPegelFensterMs`
+    fuer `durchschnitt`, 0 fuer `spitze`. Sie kommt als ZAHL herein, weil die
+    Aufzaehlung der beiden Begriffe in `DspProgramm.h` steht - der Header
+    darueber. Der Pol wird HIER im Worker entworfen, nie im Callback (M-129). */
 inline HuellkurveKoeffizienten huellkurveEntwurf (double attackMs, double holdMs, double releaseMs,
-                                                 double samplerate) noexcept
+                                                 double samplerate, double pegelFensterMs) noexcept
 {
     HuellkurveKoeffizienten k;
     k.attackPol   = huellkurvePol (attackMs,  samplerate);
     k.releasePol  = huellkurvePol (releaseMs, samplerate);
     k.holdSamples = (std::int64_t) std::llround (holdMs * 0.001 * samplerate);
+    k.pegelPol    = huellkurvePol (pegelFensterMs, samplerate);
     return k;
 }
+
+/** NAK-311 R-311-15: der Zustand des PEGELBEGRIFFS - ein symmetrisches
+    Ein-Pol-Leistungsmittel zwischen Detektor und Huellkurve.
+
+    SYMMETRISCH heisst: derselbe Koeffizient in beide Richtungen, also keine
+    Gleichrichtung. Der Fixpunkt bei konstantem Eingang ist deshalb bitgenau
+    dieser Eingang (`leistung = pol*leistung + (1 - pol)*leistung`) - und
+    genau daran haengt die Zusage, dass der eingeschwungene Pegel nicht mehr
+    an Hold und Attack haengt. Gerechnet wird wie in der Huellkurve auf der
+    MOMENTANLEISTUNG. */
+struct PegelZustand
+{
+    double leistung { 0.0 };
+
+    void nullen() noexcept { leistung = 0.0; }
+
+    bool istEndlich() const noexcept { return std::isfinite (leistung); }
+
+    bool riegleDenormale() noexcept
+    {
+        if (istDenormalKlein (leistung)) { leistung = 0.0; return true; }
+        return false;
+    }
+
+    /** Ein Sample Detektorleistung hinein, der Pegel nach dem festgelegten
+        Begriff heraus.
+
+        Fenster 0 (`spitze`) schliesst die Stufe KURZ und gibt den Eingang
+        unveraendert weiter, statt mit 0 zu multiplizieren: `0,0 * leistung`
+        waere bei einem nicht endlichen Zustandswert NaN statt des Eingangs
+        (311/M-123). Derselbe sichere Ausgang faengt einen nicht endlichen
+        oder negativen Pol; ueber den Vertragsweg entsteht keiner, weil
+        `huellkurvePol` fuer jede gueltige Rate in [0, 1) liegt.
+
+        Eine Multiplikation, eine Addition, ein `double` Zustand - kein
+        `log10`, kein `pow`, keine Verzweigung auf Daten (M-129). */
+    double tick (double pol, double leistungEin) noexcept
+    {
+        if (! (pol > 0.0)) return leistungEin;
+        leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+    }
+};
 
 struct HuellkurveZustand
 {

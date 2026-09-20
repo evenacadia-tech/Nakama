@@ -10,6 +10,7 @@ void BandZustand::nullen() noexcept
     for (auto& z : statisch) z.nullen();
     for (auto& z : svf)      z.nullen();
     for (auto& z : detektor) z.nullen();
+    pegel.nullen();       // NAK-311 R-311-15
     huelle.nullen();
     schrittRest  = 0;
     svfVon       = {};
@@ -22,7 +23,9 @@ bool BandZustand::istEndlich() const noexcept
     for (const auto& z : statisch) if (! z.istEndlich()) return false;
     for (const auto& z : svf)      if (! z.istEndlich()) return false;
     for (const auto& z : detektor) if (! z.istEndlich()) return false;
-    return huelle.istEndlich() && std::isfinite (auslenkungDb);
+    // NAK-311 R-311-15: der Pegelzustand ist ein weiterer Zustand desselben
+    // Detektors und wird am Blockrand geheilt wie jeder andere (311/M-130 a).
+    return pegel.istEndlich() && huelle.istEndlich() && std::isfinite (auslenkungDb);
 }
 
 int BandZustand::riegleDenormale() noexcept
@@ -31,6 +34,7 @@ int BandZustand::riegleDenormale() noexcept
     for (auto& z : statisch) n += z.riegleDenormale() ? 1 : 0;
     for (auto& z : svf)      n += z.riegleDenormale() ? 1 : 0;
     for (auto& z : detektor) n += z.riegleDenormale() ? 1 : 0;
+    n += pegel.riegleDenormale() ? 1 : 0;       // NAK-311 R-311-15
     n += huelle.riegleDenormale() ? 1 : 0;
     return n;
 }

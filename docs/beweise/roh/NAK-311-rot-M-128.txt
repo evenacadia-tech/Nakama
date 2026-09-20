@@ -1,0 +1,86 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-128
+=================================================================
+
+Matrixzeile : M-128 (§39.3) - T3-15-06, "was sich NICHT verschiebt"
+Zusage      : Kein Zahlwert der Pruefungen aus der zweiten Liste von §40.4
+              verschiebt sich, und keine Schranke wird angepasst.
+Beine       : B6, B7, B3c, A16 - der Zeilenvergleich vorher/nachher
+              (R-311-22), Rohdateien
+              docs/beweise/roh/NAK-311-etappe5-{b6,b7,b3c,a16}-zeilenvergleich.txt,
+              Abschnitt 8
+Etikett     : Regressionswache
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand (die Zeilen mit Urteil oder Messwert, gegen den
+Endstand des Satzes C):
+
+  Bein   Basis   Endstand D   abweichende Zeilen
+  B6     401     413          58
+  B7     216     216          14
+  B3c    163     163           0
+  A16    131     131           0
+
+Die 58 Zeilen von B6 und die 14 von B7 sind im Manifest §60 einzeln
+eingeordnet. KEINE Zeile des Abschnitts C (RBJ-Goldens, M-82) und keine der
+Abschnitte G, H, H2 (Stereo- und Hexgoldens, M-83, 311/M-61) ist darunter -
+sie sind damit bitgleich.
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Dieselbe Mutation wie in `docs/beweise/roh/NAK-311-rot-M-124.txt`,
+Abschnitt 2a (§39.3 nennt sie fuer beide Zeilen): das Mittel asymmetrisch
+gemacht.
+
+Datei : eq-copilot/plugin/dsp/DspFilter.h, `PegelZustand::tick`
+SHA256 vorher  : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspFilter.h.M-124.bak
+
+Vorher, woertlich:
+        if (! (pol > 0.0)) return leistungEin;
+        leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Nachher, woertlich:
+        if (! (pol > 0.0)) return leistungEin;
+        if (leistungEin > leistung) leistung = leistungEin;
+        else leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Gebaut: EqCopDspGoldenTest, Binary 16:14:51 nach der Quelle 16:14:43.
+Exitcode: 1 - 389 geprueft, 7 Fehler.
+
+GEFALLEN ist eine Pruefung der ZWEITEN LISTE - genau das, was M-128
+ausschliesst:
+
+  FEHLER  311/M-49 slotzahl_null_und_acht: (b) Typwechsel nur an Slot 7 -
+  Slots 0 bis 6 uebertragen, Slot 7 kalt  [betragsgroesste Meldung von
+  Slot 7 -4.86871... statt 0]
+
+311/M-49 steht in der zweiten Liste (§40.4, Zeile "Abschnitt Q, alle
+W03-Zeilen 311/M-43 bis 311/M-56"). Die Zusage faellt an der erwarteten
+Pruefung: JA - eine Zeile der zweiten Liste verschiebt ihren Zahlwert und
+wird rot.
+
+ABWEICHUNG von der Rotbeweisspalte, benannt: §39.3 erwartet
+`kennlinie_im_knie_wirkt_im_audiopfad` mit seinen 0,02 dB. Diese Pruefung
+bleibt unter der Mutation GRUEN (gemessen: Auslenkung -4.5000 gegen soll
+-4.50, Wirkung -1.5000 gegen soll -1.50). Grund, gemessen: ihr Material ist
+ein Quadraturton auf der Bandmitte, dessen Detektorleistung KONSTANT ist -
+ein asymmetrisches Mittel hat dort nichts gleichzurichten, und der Fixpunkt
+bleibt bitgenau der Eingang. Genau dieser Grund steht in §40.4 fuer sie in
+der zweiten Liste; er traegt auch unter der Mutation. Die Zusage von M-128
+faellt deshalb an einer anderen Zeile derselben Liste.
+
+MITGEFALLEN: 311/M-120 (Versatz 2.99 dB), 311/M-124 bei 341 Hz, 311/M-130 (c),
+311/M-141 und zwei verschobene Bestandspruefungen mit Pegelpol in ihrer
+Referenz.
+
+GRUEN GEBLIEBEN: 382 Pruefungen, darunter `kennlinie_im_knie_wirkt_im_
+audiopfad`, die RBJ-Goldens (M-82) und die Stereo- und Hexgoldens (M-83).
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

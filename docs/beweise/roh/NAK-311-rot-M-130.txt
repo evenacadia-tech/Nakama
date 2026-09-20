@@ -1,0 +1,90 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-130
+=================================================================
+
+Matrixzeile : M-130 (§39.3) - T3-15-06, Zahlenraender
+Zusage      : (a) Ein nicht endlicher Pegelzustand wird am Blockrand geheilt
+              und gezaehlt, ein denormaler geriegelt und gezaehlt; der
+              Ausgang bleibt endlich. (b) Eingang exakt 0 ergibt Pegel exakt
+              +0,0, `leistungInDb` liefert `kStilleDb`, die Auslenkung ist
+              bitgenau 0,0. (c) `kPegelFensterMs` ergibt bei jeder Rate
+              dieselbe Zeit. (d) An beiden Thresholdraendern bleibt die
+              Auslenkung innerhalb +/-|Range|.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-130 pegelzustand_an_den_zahlenraendern
+Etikett     : heute nicht messbar (der Zustand entsteht im Bau)
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand:
+  (a) NaN: geheilt +1; denormal (1e-320): geriegelt +1; Ausgang endlich: ja.
+  (b) Pegel 0.000000000000000 (bitgenau +0,0), leistungInDb -240.0,
+      Auslenkung 0.000000000000000.
+  (c) 63-%-Punkt des Pegelzustands gegen kPegelFensterMs 10,0 ms +/- 1 ms:
+      44,1 kHz 10.363 ms; 48 kHz 10.354 ms; 96 kHz 10.344 ms;
+      192 kHz 10.344 ms.
+  (d) Threshold -60 dBFS: Auslenkung -12.000000 bis -12.000000;
+      Threshold 0 dBFS: 0.000000 bis 0.000000.
+
+Die Zeile hat ZWEI Haelften in ihrer Rotbeweisspalte ("den Pegelzustand aus
+`istEndlich` UND `riegleDenormale` des Bandzustands herausgelassen"); jede
+bekommt hier ihren eigenen Lauf.
+
+-----------------------------------------------------------------
+Haelfte a - aus `BandZustand::istEndlich` herausgelassen
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspBankPool.cpp, `BandZustand::istEndlich`
+SHA256 vorher  : 8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspBankPool.cpp.M-130a.bak
+
+Vorher, woertlich:
+    return pegel.istEndlich() && huelle.istEndlich() && std::isfinite (auslenkungDb);
+
+Nachher, woertlich:
+    return huelle.istEndlich() && std::isfinite (auslenkungDb);
+
+Gebaut: EqCopDspGoldenTest, Binary 16:18:01 nach der Quelle 16:17:59.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+  FEHLER  311/M-130 pegelzustand_an_den_zahlenraendern  [(a) NaN: geheilt +0;
+  denormal: geriegelt +1, ...]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - ein NaN im Pegelzustand
+ueberlebt den Blockrand, der Heilungszaehler bleibt stehen.
+
+SHA256 nachher : 8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4
+Bein danach Exit 0 - 389 geprueft, 0 Fehler.
+
+-----------------------------------------------------------------
+Haelfte b - aus `BandZustand::riegleDenormale` herausgelassen
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspBankPool.cpp, `BandZustand::riegleDenormale`
+SHA256 vorher  : 8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspBankPool.cpp.M-130b.bak
+
+Vorher, woertlich:
+    n += pegel.riegleDenormale() ? 1 : 0;       // NAK-311 R-311-15
+    n += huelle.riegleDenormale() ? 1 : 0;
+
+Nachher, woertlich:
+    n += huelle.riegleDenormale() ? 1 : 0;
+
+Gebaut: EqCopDspGoldenTest, Binary 16:18:24 nach der Quelle 16:18:21.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+  FEHLER  311/M-130 pegelzustand_an_den_zahlenraendern  [(a) NaN: geheilt +1;
+  denormal: geriegelt +0, ...]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - ein denormaler
+Pegelzustand ueberlebt den Blockrand ungeriegelt und ungezaehlt.
+
+SHA256 nachher : 8CEE8C01380F7F6EF4A2615E36805069A0FFE9245291A4F0945A964D991C47B4
+Bein danach Exit 0 - 389 geprueft, 0 Fehler.
+
+-----------------------------------------------------------------
+Nebeneffekte
+-----------------------------------------------------------------
+
+MITGEFALLEN in beiden Laeufen: keine. GRUEN GEBLIEBEN: je 388 Pruefungen -
+die uebrigen drei Haelften von M-130 und alle anderen Zeilen. Der Riegel
+wirkt nur auf den Pegelzustand; jeder andere Bandzustand bleibt unberuehrt.

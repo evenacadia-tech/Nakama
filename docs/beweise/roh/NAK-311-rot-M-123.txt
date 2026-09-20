@@ -1,0 +1,64 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-123
+=================================================================
+
+Matrixzeile : M-123 (§39.3) - T3-15-06, Gegenfall "Spitze"
+Zusage      : Mit Fenster 0 ist der dynamische Weg BITGLEICH zum Basisstand;
+              die Stufe wird dabei KURZGESCHLOSSEN, nicht gerechnet -
+              `0,0 * leistung` waere bei nicht endlicher Historie NaN.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-123 spitze_ist_bitgleich_zum_basisstand
+Etikett     : Regressionswache des Basisverhaltens
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Der Bitvergleich laeuft gegen die am Basisstand erzeugte Ausgabe
+(docs/beweise/roh/NAK-311-etappe5-m123-basis.txt, Fingerabdruck
+4420950042542505610 = 0x3D5A5EA3F77E7E8A ueber Tap, Ausgang und Auslenkung
+von 76 096 Samples), NIE gegen einen Lauf des geaenderten Kerns unter dem
+Begriff Durchschnitt.
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspFilter.h, `PegelZustand::tick` - die Zeile,
+        die den Kurzschluss traegt
+SHA256 vorher  : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspFilter.h.M-123.bak
+
+Vorher, woertlich:
+        if (! (pol > 0.0)) return leistungEin;
+        leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Nachher, woertlich (der Kurzschluss entfernt - gerechnet wird auch mit
+pol = 0):
+        leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Gebaut: EqCopDspGoldenTest, Binary 16:14:14 nach der Quelle 16:14:07.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+GEFALLEN ist genau die erwartete Pruefung:
+
+  FEHLER  311/M-123 spitze_ist_bitgleich_zum_basisstand  [Fingerabdruck
+  4420950042542505610 gegen Basisstand 4420950042542505610; Kurzschluss bei
+  Fenster 0 haelt den Eingang bitgleich, auch bei NaN, +/-Inf und denormalem
+  Zustand: NEIN]
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+Wie erwartet faellt die BITGLEICHHEIT nicht mit: mit einem sauberen Zustand
++0,0 ergibt `0,0 * 0,0 + 1,0 * x` genau x, der Fingerabdruck bleibt also
+gleich. Gerissen ist der zweite Teil der Zusage - der Kurzschluss selbst: mit
+NaN, +Inf, -Inf oder einem denormalen Zustandswert kommt NaN heraus statt des
+Eingangs, und der Zustand wird geschrieben, obwohl `spitze` ihn nie fuehren
+darf. Genau dafuer nennt §39.3 den nicht endlichen Zustandswert.
+
+MITGEFALLEN: keine. GRUEN GEBLIEBEN: die uebrigen 388 Pruefungen, darunter
+alle anderen Zeilen des Abschnitts F2 - die Mutation wirkt nur bei Fenster 0,
+und unter Durchschnitt ist `pol > 0`.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

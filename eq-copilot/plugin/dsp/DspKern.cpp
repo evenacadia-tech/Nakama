@@ -303,6 +303,8 @@ void DspKern::merke (Pfad p, const DspProgramm& prog) noexcept
         s.aktiv     = b.aktiv;
         s.dynamisch = b.dynamisch;
         s.nutztSvf  = b.nutztSvf;
+        // NAK-311 W35 (R-311-15): das siebte Topologiefeld.
+        s.pegelbegriff = b.pegelbegriff;
         // NAK-311 W07 (R-311-13): die drei Werte des Slots, wirksam - also
         // nach der Nyquistkappung (DspProgramm.cpp).
         s.freqHzWirksam = b.freqHzWirksam;
@@ -343,8 +345,12 @@ void DspKern::vergebeKennungen (Pfad p, DspProgramm& prog) noexcept
         // Crossfade, und NUR er startet kalt. Die Vergleiche stehen einmal in
         // `DspProgramm.h`; nicht endlich, 0 und negativ heissen dort
         // "gerissen" (F-21), damit ein NaN nie zur Uebertragung fuehrt.
+        // NAK-311 W35 (R-311-15, §41 F-19): dazu der PEGELBEGRIFF als
+        // siebtes Topologiefeld. Ein Wechsel ist ein Crossfade - zwischen
+        // zwei festgelegten Begriffen wird nie interpoliert.
         const bool bleibt = m.gueltig && b.aktiv && s.aktiv && s.typ == b.typ && s.modus == b.modus
                          && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle
+                         && s.pegelbegriff == b.pegelbegriff
                          && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
                          && ! sprungImVerhaeltnis (s.q, b.q, kSprungGueteVerhaeltnis)
                          && ! sprungInDb (s.gainDb, b.gainDb, kSprungGainDb);
@@ -746,7 +752,21 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
                 // Vertrag `wechsel = rampe` - ihre Koeffizienten laufen mit den
                 // uebrigen Rampenwerten, der Huellkurvenzustand wandert mit.
                 const HuellkurveKoeffizienten h = mitte ? mische (qb->huelle, b.huelle, t) : b.huelle;
-                z.huelle.tick (h, leistungEin);
+
+                // NAK-311 W35 (R-311-15, §41 F-17): der festgelegte
+                // PEGELBEGRIFF zwischen Detektor und Huellkurve. Er nimmt ihr
+                // die Welligkeit, die ihre asymmetrische Ballistik sonst
+                // gleichrichtet - erst damit haengt der eingeschwungene Pegel
+                // nicht mehr an Hold und Attack (311/M-120, 311/M-124).
+                //
+                // Der Pol kommt aus `b.huelle`, NICHT aus dem gemischten `h`:
+                // der Pegelbegriff ist topologisch, beide Seiten einer Rampe
+                // tragen deshalb denselben Begriff und - bei gleicher
+                // Samplerate, die `rampenKompatibel` ebenfalls verlangt -
+                // bitgleich denselben Pol. `mische` bleibt dadurch unberuehrt,
+                // und zwischen zwei Begriffen wird nie interpoliert (F-19).
+                const double pegel = z.pegel.tick (b.huelle.pegelPol, leistungEin);
+                z.huelle.tick (h, pegel);
             }
 
             // --- Steuerrate: Kennlinie und Neuentwurf ---------------------
@@ -801,8 +821,14 @@ void DspKern::verarbeiteBand (PfadZustand& pz, DspBank& bank, const DspBank* que
     // Nach einer Rampe der Range auf 0 ist er damit wirklich aus, und eine
     // spaetere Rampe von 0 weg beginnt wie ein frischer Detektor bei 0 statt
     // bei einem Pegel von damals.
+    // NAK-311 W35 (R-311-15, M-141): der Pegelzustand ist ein WEITERER
+    // Zustand desselben Detektors und wird mit ihm genullt. Bliebe er
+    // stehen, bekaeme die frisch genullte Huellkurve bei der naechsten Rampe
+    // von 0 weg als ersten Eingang den Pegel von damals und naehme darauf den
+    // Attack-Zweig - genau der eingefrorene Pegel, den E-29 ausschliesst.
     if (b.nutztSvf && ! detektorZuletzt)
     {
+        z.pegel.nullen();
         z.huelle.nullen();
         for (auto& d : z.detektor) d.nullen();
     }

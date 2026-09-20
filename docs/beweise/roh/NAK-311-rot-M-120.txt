@@ -1,0 +1,106 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-120
+=================================================================
+
+Matrixzeile : M-120 (§39.3) - T3-15-06 / R-311-15 / U45, "Durchschnitt"
+Zusage      : Aktiv ist Durchschnitt. Die eingeschwungene Auslenkung weicht
+              von der des Quadraturtons gleicher Leistung ab um hoechstens
+              (b) 0,1 dB bei f0 = 1 kHz, 1,5 dB bei f0 = 20 Hz und
+              (c) 1,6 dB bei f0 = 1 kHz (Rauschen).
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-120 durchschnitt_ist_materialunabhaengig
+Etikett     : heute rot
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+-----------------------------------------------------------------
+1. Der Lauf VOR der Reparatur, gegen den unveraenderten Kern
+-----------------------------------------------------------------
+
+Der Test ist vor jeder Aenderung am Produktcode geschrieben und einmal rot
+gefahren (§7.1, Absatz "Fuer 'heute rot'"). Geaendert war dabei ausschliesslich
+eq-copilot/plugin/tests/DspGoldenTestMain.cpp; kein Produktcode.
+
+Befehl:
+  eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/EqCopDspGoldenTest.exe
+Exitcode: 1
+
+  == F2 - Festgelegter Pegelbegriff der Dynamikschwelle (NAK-311 W35) ==
+  FEHLER  311/M-120 durchschnitt_ist_materialunabhaengig (NAK-311 T3-15-06, R-311-15, U45)  [(b) L = R-Sinus bei f0 = 1 kHz: Quadraturton -6.0000 dB, Pruefling -8.1184 dB (Spanne -8.1232 bis -8.1139), Versatz 2.1184 dB gegen 0.1000 TRAEGT NICHT; (b) L = R-Sinus bei f0 = 20 Hz: Quadraturton -6.0000 dB, Pruefling -8.1002 dB (Spanne -8.3259 bis -7.8620), Versatz 2.1002 dB gegen 1.5000 TRAEGT NICHT; (c) Rauschen bei f0 = 1 kHz: Quadraturton -1.5000 dB, Pruefling -5.5070 dB (Spanne -6.0806 bis -4.9390), Versatz 4.0070 dB gegen 1.6000 TRAEGT NICHT]
+
+Alle drei Teilfaelle fallen. Der Teilfall (b) bei den Vertragsdefaults trifft
+die Erwartung aus Phase 15 bitgenau: **+2,1184 dB** gegen die dort gemessenen
++2,12 dB (Quellvalidierung Teil B §4.1). Der Quadraturton liefert an beiden
+Bandmitten exakt -6,0000 dB, also genau den Abstand zum Threshold - seine
+Detektorleistung ist konstant, und die Huellkurve hat an ihr nichts
+gleichzurichten.
+
+Die Zahlen der Teilfaelle (b) bei 20 Hz (+2,1002 statt "bis 3,01") und (c)
+(+4,0070 statt +8,66) sind kleiner als die Hoechstwerte, die §39.3 aus Phase 15
+zitiert: jene gelten fuer die unguenstigste Einstellung (Hold ab einer halben
+Periode) beziehungsweise fuer den Pruefstand der Phase 15, dieser Pruefstand
+faehrt die VERTRAGSDEFAULTS Attack 10 ms / Hold 0 ms / Release 100 ms. Die
+Spanne ueber Hold und Attack misst 311/M-124; sie ist dort mit 5,79 dB groesser
+als die in §39.3 genannten 3,01 dB.
+
+-----------------------------------------------------------------
+2. Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspKern.cpp, `DspKern::verarbeiteBand`, die
+        Zeile der Pegelstufe zwischen Detektor und Huellkurve
+SHA256 vorher  : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspKern.cpp.M-120.bak
+                 (ausserhalb des Repos)
+
+Vorher, woertlich:
+                const double pegel = z.pegel.tick (b.huelle.pegelPol, leistungEin);
+                z.huelle.tick (h, pegel);
+
+Nachher, woertlich (die Pegelstufe uebersprungen - die Huellkurve bekommt
+wieder die MOMENTANLEISTUNG, wie am Basisstand):
+                z.huelle.tick (h, leistungEin);
+
+Gebaut: EqCopDspGoldenTest (LastWriteTime der Quelle vorher auf jetzt gesetzt);
+Binary 16:13:15 nach der Quelle 16:13:12.
+Gefahren: eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/EqCopDspGoldenTest.exe
+Exitcode: 1 - 389 geprueft, 13 Fehler.
+
+GEFALLEN ist die erwartete Pruefung:
+
+  FEHLER  311/M-120 durchschnitt_ist_materialunabhaengig  [(b) 1 kHz Versatz
+  2.1184 dB gegen 0.1000 TRAEGT NICHT; (b) 341 Hz 2.1142 gegen 0.1002 TRAEGT
+  NICHT; (b) 100 Hz 2.1137 gegen 0.3325 TRAEGT NICHT; (b) 20 Hz 2.1002 gegen
+  1.4547 TRAEGT NICHT; (c) Rauschen 4.0070 gegen 1.6000 TRAEGT NICHT]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - an allen fuenf Teilfaellen,
+und die Zahlen sind exakt die des Basisstands.
+
+MITGEFALLEN (je mit Grund; die Mutation entfernt die Pegelstufe GANZ, also
+faellt jede Zeile, die sie traegt):
+  - 311/M-124 (vier Bandmitten): Spanne wieder 5.78 bis 5.79 dB.
+  - 311/M-129: die Textwache zaehlt 0 Aufrufe der Pegelstufe im Rumpf.
+  - 311/M-130 (c): der Pegelzustand wird nie geschrieben, der 63-%-Punkt ist
+    nicht auffindbar (-1.000 ms).
+  - 311/M-131 (c): der Pegelzustand bleibt 0, es wandert nichts.
+  - 311/M-141: die zweite Rampe springt auf -0.046875 statt -0.002104 dB.
+  - Die verschobenen Bestandspruefungen `attack_hold_release_als_sprungantwort_
+    bei_vier_raten` (A 20.3 statt 32.1 ms), `huellkurvenwert_attack_ms_` und
+    `_hold_ms_rampt_ohne_zustandsreset` und
+    `range_0_nach_minus_12_rampt_ueber_die_volle_rampe`: ihre Referenzen
+    tragen den Pegelpol, der Kern nicht mehr.
+
+GRUEN GEBLIEBEN unter derselben Mutation (Beleg gegen den Nebeneffekt):
+  - 311/M-123 (Spitze bitgleich): Spitze IST der Basisstand, die Mutation
+    aendert dort nichts.
+  - 311/M-125 (eine Setzstelle), 311/M-126 (kein Statefeld), 311/M-127 zweite
+    Haelfte `dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit`
+    (die Spanne ueber vier Raten bleibt unter 1 ms),
+    311/M-130 (a), (b), (d), 311/M-131 (a) und (b).
+  - Abschnitt C (RBJ-Goldens, M-82), die Abschnitte G, H, H2 (Stereo- und
+    Hexgoldens, M-83) und der ganze Abschnitt Q (W03) - 376 der 389
+    Pruefungen.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+                 (gleich dem Wert aus Schritt 2 - bytegleich)
+LastWriteTime auf jetzt, neu gebaut, Binary juenger als die Quelle.
+Bein danach: EqCopDspGoldenTest Exit 0, 389 geprueft, 0 Fehler.

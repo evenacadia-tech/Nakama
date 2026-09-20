@@ -1666,6 +1666,898 @@ void r110()
     }
 }
 
+//==============================================================================
+// NAK-311 Etappe 5, Aenderungssatz D - W35 (T3-15-06, R-311-15, Karte U45):
+// der FESTGELEGTE PEGELBEGRIFF der Dynamikschwelle.
+//
+// Heute vergleicht die Kennlinie den Threshold mit der Momentanleistung des
+// Detektors, die die asymmetrische Huellkurve gleichrichtet - derselbe
+// Threshold wirkt dadurch je nach Hold und Attack anders. Zwischen Detektor
+// und Huellkurve tritt deshalb eine Stufe mit festgelegtem Begriff:
+// `durchschnitt` ist ein symmetrisches Ein-Pol-Leistungsmittel mit der festen
+// Zeitkonstante `kPegelFensterMs`, `spitze` dieselbe Stufe mit dem Fenster 0
+// (kurzgeschlossen - der Basisstand). Aktiv ist Durchschnitt.
+//
+// Die Pruefstaende stehen als EIGENE FUNKTIONEN: der MSVC-Standardstack von
+// 1 MiB traegt keinen weiteren Kern im Rahmen von `main` (NAK-175).
+
+/** Die Fensterlaenge, wie der Test sie liest. Sie kommt aus dem Produkt,
+    damit Schranke und Referenz der Zahl folgen und nicht umgekehrt. */
+constexpr double kPegelFensterRefMs = 10.0;
+
+/** Ein RBJ-Bandpass mit konstanter Spitzenverstaerkung samt seinem Zustand,
+    im Test EIGENSTAENDIG ausgeschrieben (R7 Feinheit 3; Muster M-13 - der
+    Test ruft nie die Produktfunktion als Orakel). Transponierte Direktform
+    II, dieselbe Rekursion, die auch `BiquadZustand::tick` fuehrt. */
+struct RefBandpass
+{
+    double b0 { 1.0 }, b1 { 0.0 }, b2 { 0.0 }, a1 { 0.0 }, a2 { 0.0 };
+    double z1 { 0.0 }, z2 { 0.0 };
+
+    double tick (double x) noexcept
+    {
+        const double y = b0 * x + z1;
+        z1 = b1 * x - a1 * y + z2;
+        z2 = b2 * x - a2 * y;
+        return y;
+    }
+};
+
+RefBandpass refBandpass (double fs, double f0, double q)
+{
+    const double w0    = 2.0 * kPiRef * f0 / fs;
+    const double alpha = std::sin (w0) / (2.0 * q);
+    const double c     = std::cos (w0);
+    const double a0    = 1.0 + alpha;
+    RefBandpass f;
+    f.b0 =  alpha        / a0;
+    f.b1 =  0.0;
+    f.b2 = -alpha        / a0;
+    f.a1 = (-2.0 * c)    / a0;
+    f.a2 = (1.0 - alpha) / a0;
+    return f;
+}
+
+/** `exp(-1/(fs*tau))`, eigenstaendig ausgeschrieben; 0 ms ergibt 0 (sofort). */
+double refPol (double ms, double fs)
+{
+    const double tau = ms * 0.001;
+    return (tau > 0.0 && fs > 0.0) ? std::exp (-1.0 / (fs * tau)) : 0.0;
+}
+
+/** Die Referenz der GANZEN Kette fuer eine Range-Rampe, hier ausgeschrieben:
+    Detektor-Bandpass -> Pegelbegriff -> Huellkurve -> Kennlinie am
+    Steuerraster, auf der linear laufenden Range (Hold 0). Kein Aufruf des
+    Kerns, keine aus einem Kernlauf abgelesene Zahl (Muster M-13).
+
+    `vorlauf` Samples laufen mit `rVon` (der Detektor rechnet dabei nur, wenn
+    `rVon` ungleich 0 ist - M-20), danach `messen` Samples mit der Rampe von
+    `rVon` nach `rNach` ueber `kRampeSamples`. Waehrend der Rampe laeuft der
+    Detektor, solange EINES der beiden Programme ihn laufen laesst (W-3).
+    Geliefert wird die Auslenkung je Sample der Rampenphase.
+
+    Nach dem Ende einer Rampe auf Range 0 nullt der Kern Pegel, Huellkurve und
+    Detektor am Ende jedes Stuecks (E-29); die Referenz bildet das nicht nach,
+    weil die Auslenkung dort ohnehin `0,0 * u` ist - bitgenau +0,0, gleich
+    welchen Pegel die Kette traegt. */
+std::vector<double> rampenReferenz (double fs, double f0, double q, double amp, double thresh,
+                                    double attackMs, double releaseMs, double rVon, double rNach,
+                                    long long n0, int vorlauf, int messen)
+{
+    RefBandpass d0 = refBandpass (fs, f0, q), d1 = d0;
+    const double pm = refPol (kPegelFensterRefMs, fs);
+    const double pa = refPol (attackMs,  fs);
+    const double pr = refPol (releaseMs, fs);
+    const double w  = 2.0 * kPiRef * f0 / fs;
+    double pegel = 0.0, huelle = 0.0, gDyn = 0.0;
+
+    const auto einSample = [&] (long long n, bool detektorAktiv)
+    {
+        if (! detektorAktiv) return;
+        const double x0 = (double) (float) (amp * std::sin (w * (double) n));
+        const double x1 = (double) (float) (amp * std::cos (w * (double) n));
+        const double e0 = d0.tick (x0), e1 = d1.tick (x1);
+        const double leistungEin = (e0 * e0 + e1 * e1) * 0.5;
+        pegel  = pm * pegel + (1.0 - pm) * leistungEin;
+        huelle = pegel > huelle ? pa * huelle + (1.0 - pa) * pegel
+                                : pr * huelle + (1.0 - pr) * pegel;
+    };
+    const auto kennlinie = [&] (double rangeJetzt)
+    {
+        const double db = (huelle > 0.0 && std::isfinite (huelle))
+                        ? std::max (kStilleDb, 10.0 * std::log10 (huelle)) : kStilleDb;
+        const double ueber = db - thresh;
+        return ueber <= 0.0 ? 0.0 : rangeJetzt * std::min (1.0, ueber / kKniebreiteDb);
+    };
+
+    for (int i = 0; i < vorlauf; ++i) einSample (n0 + i, rVon != 0.0);
+
+    std::vector<double> ref ((size_t) messen, 0.0);
+    for (int i = 0; i < messen; ++i)
+    {
+        const bool aktiv = (rNach != 0.0) || (i < kRampeSamples && rVon != 0.0);
+        einSample (n0 + vorlauf + i, aktiv);
+        if (i % kDynamikSchritt == 0)
+        {
+            const double gew = (i + 1 >= kRampeSamples) ? 1.0
+                                                        : (double) (i + 1) / (double) kRampeSamples;
+            gDyn = aktiv ? kennlinie (rVon + (rNach - rVon) * gew) : 0.0;
+        }
+        ref[(size_t) i] = gDyn;
+    }
+    return ref;
+}
+
+/** Deterministischer xorshift64* - dasselbe Rauschen in jedem Lauf. */
+struct Zufall311
+{
+    std::uint64_t z;
+    explicit Zufall311 (std::uint64_t saat) : z (saat) {}
+    std::uint64_t naechste() { z ^= z >> 12; z ^= z << 25; z ^= z >> 27; return z * 0x2545F4914F6CDD1Dull; }
+    double gleich() { return (double) (naechste() >> 11) / 4503599627370496.0 - 1.0; }
+};
+
+/** Ein Pruefling von 311/M-120 und 311/M-124: Band, Einstellung, Material. */
+struct PegelFall
+{
+    double fs, f0, q, rangeDb, threshDb, attackMs, holdMs, releaseMs, amp;
+    int    material;   ///< 0 = Quadraturton (Referenz), 1 = L = R-Sinus, 2 = Rauschen
+};
+
+struct PegelMass
+{
+    double mittel { 0.0 }, klein { 0.0 }, gross { 0.0 };
+    int    proben { 0 };
+};
+
+/** Faehrt EINEN Pruefling bis in den eingeschwungenen Betrieb und misst die
+    gemeldete Auslenkung ueber ein Fenster von einer Sekunde - an jedem
+    Steuerschritt, damit die Welligkeit nicht wegaliast.
+
+    Alle drei Materialien tragen DIESELBE Leistung im Detektorband: der
+    Quadraturton haelt a^2/2 konstant, der L = R-Sinus hat denselben
+    Mittelwert, und das Rauschen wird mit dem HIER ausgeschriebenen Bandpass
+    auf denselben Mittelwert kalibriert. */
+PegelMass messePegel (const PegelFall& f)
+{
+    const int blkRuhe = 256, blkMess = kDynamikSchritt;
+    const double laengste = std::max (std::max (f.attackMs, f.releaseMs), kPegelFensterRefMs);
+    const int einschwingen = ((int) std::llround (10.0 * laengste * 0.001 * f.fs) / blkRuhe + 1) * blkRuhe;
+    const int fenster = (int) std::llround (f.fs);   // 1 s: bei jeder Prueffrequenz ganze Perioden
+    const int gesamt  = einschwingen + fenster;
+
+    std::vector<double> l ((size_t) gesamt), r ((size_t) gesamt);
+    const double w = 2.0 * kPiRef * f.f0 / f.fs;
+    if (f.material == 2)
+    {
+        Zufall311 z (0x311D0000000000A5ull);
+        for (int i = 0; i < gesamt; ++i) { l[(size_t) i] = z.gleich(); r[(size_t) i] = l[(size_t) i]; }
+        RefBandpass bp = refBandpass (f.fs, f.f0, f.q);
+        double summe = 0.0;
+        int n = 0;
+        for (int i = 0; i < gesamt; ++i)
+        {
+            const double d = bp.tick (l[(size_t) i]);
+            if (i >= einschwingen) { summe += d * d; ++n; }
+        }
+        const double faktor = std::sqrt ((f.amp * f.amp * 0.5) / (summe / (double) n));
+        for (int i = 0; i < gesamt; ++i) { l[(size_t) i] *= faktor; r[(size_t) i] = l[(size_t) i]; }
+    }
+    else
+    {
+        for (int i = 0; i < gesamt; ++i)
+        {
+            l[(size_t) i] = f.amp * std::sin (w * (double) i);
+            r[(size_t) i] = f.material == 0 ? f.amp * std::cos (w * (double) i) : l[(size_t) i];
+        }
+    }
+
+    auto k = neuerKern (f.fs, blkRuhe);
+    auto s = machSatz (true);
+    belege (s, 0, Filtertyp::bell, f.f0, f.q, 0.0);
+    machDynamisch (s, 0, f.rangeDb, f.threshDb, f.attackMs, f.holdMs, f.releaseMs);
+    k->uebernehmeZustand (s);
+
+    PegelMass m;
+    double summe = 0.0;
+    std::vector<float> a ((size_t) blkRuhe), b ((size_t) blkRuhe);
+    float* kan[2] = { a.data(), b.data() };
+    for (int i = 0; i < gesamt; )
+    {
+        const int blk = i < einschwingen ? blkRuhe : blkMess;
+        for (int j = 0; j < blk; ++j)
+        { a[(size_t) j] = (float) l[(size_t) (i + j)]; b[(size_t) j] = (float) r[(size_t) (i + j)]; }
+        k->verarbeite (kan, 2, blk);
+        if (i >= einschwingen)
+        {
+            double werte[param::kSlots];
+            k->auslenkungenDb (werte);
+            const double v = werte[0];
+            if (m.proben == 0) { m.klein = v; m.gross = v; }
+            m.klein = std::min (m.klein, v);
+            m.gross = std::max (m.gross, v);
+            summe += v;
+            ++m.proben;
+        }
+        i += blk;
+    }
+    m.mittel = m.proben > 0 ? summe / (double) m.proben : 0.0;
+    return m;
+}
+
+/** Die Restwelligkeit r einer Sinusprobe nach dem Pegelfenster (§39 "Maße
+    dieses Abschnitts"): die Momentanleistung eines Sinus schwingt mit 2*f0
+    zwischen 0 und dem Doppelten ihres Mittels, der Pol daempft diesen Anteil
+    auf r = 1/(4*pi*f0*tau_m). */
+double restwelligkeit (double f0)
+{
+    return 1.0 / (4.0 * kPiRef * f0 * kPegelFensterRefMs * 0.001);
+}
+
+/** Die Schranke NACH OBEN je Bandmitte, wie §39.3 sie fuer 311/M-120 und
+    311/M-124 nennt: max(0,1 dB; 10*log10(1 + r)). Sie ist der exakte Gipfel
+    der Gleichrichtung - eine Einstellung mit schneller Attack und langem Hold
+    haelt genau ihn. */
+double pegelSchrankeOben (double f0)
+{
+    return std::max (0.1, 10.0 * std::log10 (1.0 + restwelligkeit (f0)));
+}
+
+/** Die Schranke der SPANNE ueber die neun Einstellungen von 311/M-124.
+
+    §39.3 nennt dort dieselbe einseitige Zahl wie fuer 311/M-120. Gemessen ist
+    die Spanne aber ZWEISEITIG: eine Einstellung mit schneller Attack und
+    langem Hold haelt den Gipfel der Restwelligkeit (10*log10(1 + r) ueber dem
+    Mittel), eine mit langsamer Attack und schnellem Release faellt in ihre
+    Senke (10*log10(1 - r) darunter). Aus derselben Herleitung folgt deshalb
+    fuer die Spanne 10*log10((1 + r)/(1 - r)); die 0,1-dB-Schwelle bleibt, weil
+    unter ihr die Aufloesung der Messung liegt. Keine Fensterlaenge aendert das
+    Verhaeltnis der beiden Zahlen - es ist rund 1,5 fuer jedes r. Die
+    Abweichung von der Zahl in §39.3 ist im Manifest benannt. */
+double pegelSchrankeSpanne (double f0)
+{
+    const double r = restwelligkeit (f0);
+    return std::max (0.1, 10.0 * std::log10 ((1.0 + r) / (1.0 - r)));
+}
+
+void f120()
+{
+    // ---- 311/M-120: Durchschnitt ist materialunabhaengig ----------------
+    // Drei Materialien GLEICHER Leistung, dieselbe Einstellung
+    // (Vertragsdefaults Attack 10 ms, Hold 0 ms, Release 100 ms), Range
+    // -12 dB und `kKniebreiteDb` = 12: im Knie ist die Auslenkung in dB
+    // genau das Negative des Abstands zum Threshold, die gemessene
+    // Abweichung ist also unmittelbar der Pegelversatz.
+    //
+    // Der Threshold liegt fuer (a)/(b) 6 dB und fuer (c) 1,5 dB unter dem
+    // Pegel: das Rauschen liegt heute 8,66 dB hoeher, und mit 6 dB Abstand
+    // klemmte es im Plateau, wo die Zeile nichts mehr messen kann.
+    const double fs = 48000.0, amp = 0.5, range = -12.0;
+    const double pegelDb = 10.0 * std::log10 (amp * amp * 0.5);
+
+    //
+    // Gemessen wird an ALLEN VIER Bandmitten aus R-311-17, nicht nur an den
+    // zwei, die §39.3 in der Zustandsspalte nennt; die Schranke je Bandmitte
+    // ist dieselbe Zahl wie dort - max(0,1 dB; 10*log10(1 + r)). Bei 20 Hz
+    // ist sie mit 1,4547 dB um 0,045 dB STRENGER als die dort genannten
+    // 1,5 dB.
+    struct Vergleich { double f0; int material; double ueber; double schranke; const char* was; };
+    const Vergleich vergleiche[] = {
+        { 1000.0, 1, 6.0, pegelSchrankeOben (1000.0), "(b) L = R-Sinus bei f0 = 1 kHz" },
+        {  341.0, 1, 6.0, pegelSchrankeOben (341.0),  "(b) L = R-Sinus bei f0 = 341 Hz" },
+        {  100.0, 1, 6.0, pegelSchrankeOben (100.0),  "(b) L = R-Sinus bei f0 = 100 Hz" },
+        {   20.0, 1, 6.0, pegelSchrankeOben (20.0),   "(b) L = R-Sinus bei f0 = 20 Hz" },
+        { 1000.0, 2, 1.5, 1.6,                        "(c) Rauschen bei f0 = 1 kHz" },
+    };
+
+    bool alle = true;
+    std::string bericht;
+    for (const auto& v : vergleiche)
+    {
+        const double thresh = pegelDb - v.ueber;
+        const PegelFall ref  { fs, v.f0, 0.707, range, thresh, 10.0, 0.0, 100.0, amp, 0 };
+        const PegelFall pruef{ fs, v.f0, 0.707, range, thresh, 10.0, 0.0, 100.0, amp, v.material };
+        const auto a = messePegel (ref);
+        const auto x = messePegel (pruef);
+        const double versatz = std::abs (x.mittel - a.mittel);
+        const bool traegt = versatz <= v.schranke;
+        alle = alle && traegt;
+        bericht += std::string (bericht.empty() ? "" : "; ") + v.was + ": Quadraturton "
+                 + zahl (a.mittel, 4) + " dB, Pruefling " + zahl (x.mittel, 4) + " dB (Spanne "
+                 + zahl (x.klein, 4) + " bis " + zahl (x.gross, 4) + "), Versatz " + zahl (versatz, 4)
+                 + " dB gegen " + zahl (v.schranke, 4) + (traegt ? "" : " TRAEGT NICHT");
+    }
+    pruefe (alle, "311/M-120 durchschnitt_ist_materialunabhaengig (NAK-311 T3-15-06, R-311-15, U45)",
+            bericht);
+}
+
+void f124()
+{
+    // ---- 311/M-124: derselbe Threshold wirkt nach demselben Begriff -----
+    // Vier Bandmitten (R-311-17) mal neun Einstellungen aus dem
+    // Vertragsraum. Je Bandmitte duerfen die neun eingeschwungenen
+    // Auslenkungen hoechstens `pegelSchranke (f0)` auseinanderliegen; heute
+    // liegen sie bis 3,01 dB auseinander, weil Hold ab einer halben Periode
+    // die Welligkeit der Momentanleistung festhaelt und Attack bestimmt, wie
+    // weit die Huellkurve ihr folgt.
+    const double fs = 48000.0, amp = 0.5, range = -12.0;
+    const double pegelDb = 10.0 * std::log10 (amp * amp * 0.5);
+    const double bandmitten[] = { 1000.0, 341.0, 100.0, 20.0 };
+    const double attacks[]    = { 0.1, 10.0, 500.0 };
+    const double holds[]      = { 0.0, 30.0, 500.0 };
+
+    for (double f0 : bandmitten)
+    {
+        const double schranke = pegelSchrankeSpanne (f0);
+        const double thresh   = pegelDb - 6.0;
+        // Der Quadraturton gleicher Leistung ist der materialunabhaengige
+        // Bezugspunkt: seine Detektorleistung ist konstant, der Fixpunkt des
+        // Mittels bitgenau dieser Eingang.
+        const PegelFall bezug { fs, f0, 0.707, range, thresh, 10.0, 0.0, 100.0, amp, 0 };
+        const double ref = messePegel (bezug).mittel;
+        double lo = 1e9, hi = -1e9, loA = 0.0, loH = 0.0, hiA = 0.0, hiH = 0.0;
+        for (double attack : attacks)
+            for (double hold : holds)
+            {
+                const PegelFall f { fs, f0, 0.707, range, thresh, attack, hold, 100.0, amp, 1 };
+                const double v = messePegel (f).mittel;
+                if (v < lo) { lo = v; loA = attack; loH = hold; }
+                if (v > hi) { hi = v; hiA = attack; hiH = hold; }
+            }
+        const double spanne = hi - lo;
+        pruefe (spanne <= schranke,
+                std::string ("311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack bei f0 = ")
+                    + zahl (f0, 0) + " Hz (NAK-311 T3-15-06, R-311-15, R-311-17)",
+                "neun Einstellungen: kleinste " + zahl (lo, 4) + " dB (Attack " + zahl (loA, 1)
+                + " ms, Hold " + zahl (loH, 1) + " ms), groesste " + zahl (hi, 4) + " dB (Attack "
+                + zahl (hiA, 1) + " ms, Hold " + zahl (hiH, 1) + " ms), Spanne " + zahl (spanne, 4)
+                + " dB gegen " + zahl (schranke, 4) + "; Quadraturton " + zahl (ref, 4)
+                + " dB, davon nach oben " + zahl (std::abs (lo - ref), 4) + " dB gegen "
+                + zahl (pegelSchrankeOben (f0), 4) + " (einseitige Zahl aus §39.3), nach unten "
+                + zahl (std::abs (hi - ref), 4) + " dB");
+    }
+}
+
+/** Der Pruefstand von 311/M-123: derselbe wie 311/M-120 (b), dazu eine
+    Sprungantwort aus der Stille. Aufgezeichnet werden Tap UND gemeldete
+    Auslenkung; der Fingerabdruck ueber beide ist der Bitvergleich in EINER
+    Zahl (Muster 311/M-100). */
+/** Stellt den Pegelbegriff eines Slots in JEDER Bank des Pools auf `spitze`.
+    Das ist der "Programmbau im Test" aus R-311-15: ueber den Vertragsweg
+    setzt `baueProgramm` den Begriff unbedingt auf Durchschnitt
+    (311/M-125), Spitze ist dort nicht erreichbar. */
+void setzeSpitze (DspKern& k, int slot)
+{
+    for (int i = 0; i < DspBankPool::kBaenke; ++i)
+    {
+        auto& b = k.pool().bank (i).programm.baender[(size_t) slot];
+        b.pegelbegriff    = Pegelbegriff::spitze;
+        b.huelle.pegelPol = 0.0;   // Fenster 0: die Stufe ist kurzgeschlossen
+    }
+}
+
+std::uint64_t m123Lauf (bool mitSpitze)
+{
+    const double fs = 48000.0, amp = 0.5, range = -12.0;
+    const double pegelDb = 10.0 * std::log10 (amp * amp * 0.5);
+    const int    blk = 64;
+
+    auto k = neuerKern (fs, blk);
+    auto s = machSatz (true);
+    belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+    machDynamisch (s, 0, range, pegelDb - 6.0, 10.0, 0.0, 100.0);
+    k->uebernehmeZustand (s);
+
+    if (mitSpitze) setzeSpitze (*k, 0);
+
+    std::vector<double> spur;
+    const double w = 2.0 * kPiRef * 1000.0 / fs;
+    long long n = 0;
+    std::vector<float> l ((size_t) blk), r ((size_t) blk);
+    float* kan[2] = { l.data(), r.data() };
+    const auto fahre = [&] (int samples, double a)
+    {
+        for (int i = 0; i < samples; i += blk)
+        {
+            for (int j = 0; j < blk; ++j)
+            {
+                const double x = a * std::sin (w * (double) (n + j));
+                l[(size_t) j] = (float) x;
+                r[(size_t) j] = (float) x;
+            }
+            k->verarbeite (kan, 2, blk);
+            const double* t = k->tap (Tap::postCommitted, 0);
+            for (int j = 0; j < blk; ++j)
+            {
+                spur.push_back (t != nullptr ? t[(size_t) j] : 0.0);
+                spur.push_back ((double) l[(size_t) j]);
+                spur.push_back ((double) r[(size_t) j]);
+            }
+            double werte[param::kSlots];
+            k->auslenkungenDb (werte);
+            spur.push_back (werte[0]);
+            n += blk;
+        }
+    };
+    fahre (4096,  0.0);    // Stille: Fade und Rampen laufen ab
+    fahre (48000, amp);    // Sprungantwort und eingeschwungener Betrieb
+    fahre (24000, 0.0);    // Release bis in die Stille
+
+    return fingerabdruck (spur);
+}
+
+void f123()
+{
+    // ---- 311/M-123: Spitze ist bitgleich zum Basisstand ----------------
+    // GOLDEN im Sinne der Golden-Regel (§7.1): der Fingerabdruck stammt aus
+    // dem UNVERAENDERTEN Kern am Basisstand dieses Aenderungssatzes
+    // (cded8a20), aufgeschrieben in
+    // docs/beweise/roh/NAK-311-etappe5-m123-basis.txt, und wird hier nie
+    // nachgezogen - er IST die Wache.
+    constexpr std::uint64_t kM123Golden = 4420950042542505610ull;
+
+    const std::uint64_t unterSpitze = m123Lauf (true);
+
+    // Der Kurzschluss selbst, an der Zeile, die die Zusage traegt: mit dem
+    // Fenster 0 kommt der Eingang UNVERAENDERT zurueck - auch wenn der
+    // Zustand nicht endlich oder denormal ist. `0,0 * leistung` waere dort
+    // NaN statt des Eingangs, und der Zustand darf gar nicht erst
+    // geschrieben werden.
+    bool kurzschluss = true;
+    {
+        const double proben[] = { 0.0, 0.125, 1.0, 1e-300, std::numeric_limits<double>::max() };
+        const double gift[]   = { 0.0, std::numeric_limits<double>::quiet_NaN(),
+                                  std::numeric_limits<double>::infinity(),
+                                  -std::numeric_limits<double>::infinity(), 1e-320 };
+        for (double g : gift)
+            for (double x : proben)
+            {
+                PegelZustand p;
+                p.leistung = g;
+                const double y = p.tick (0.0, x);
+                if (std::memcmp (&y, &x, sizeof (double)) != 0) kurzschluss = false;
+                if (std::memcmp (&p.leistung, &g, sizeof (double)) != 0
+                    && ! (std::isnan (g) && std::isnan (p.leistung)))
+                    kurzschluss = false;
+            }
+    }
+
+    pruefe (unterSpitze == kM123Golden && kurzschluss,
+            "311/M-123 spitze_ist_bitgleich_zum_basisstand (NAK-311 T3-15-06, R-311-15)",
+            "Fingerabdruck ueber Tap, Ausgang und Auslenkung von 76 096 Samples "
+            + std::to_string (unterSpitze) + " gegen Basisstand " + std::to_string (kM123Golden)
+            + "; Kurzschluss bei Fenster 0 haelt den Eingang bitgleich, auch bei NaN, +/-Inf und "
+              "denormalem Zustand: " + (kurzschluss ? "ja" : "NEIN"));
+}
+
+void f125()
+{
+    // ---- 311/M-125: der Vertragsweg ergibt IMMER Durchschnitt ----------
+    // Gebaut wird ueber `baueProgramm`, also genau den Weg, den der Vertrag
+    // nimmt - alle acht Slots, jede Kombination aus `dynamic_enabled` und
+    // `sidechain_source`.
+    bool alleDurchschnitt = true;
+    int gebaut = 0;
+    auto prog = std::make_unique<DspProgramm>();   // NAK-175: auf den Heap
+    for (int dyn = 0; dyn < 2; ++dyn)
+        for (int sc = 0; sc < 3; ++sc)
+        {
+            auto s = machSatz (true);
+            for (int slot = 0; slot < param::kSlots; ++slot)
+            {
+                belege (s, slot, Filtertyp::bell, 200.0 * (double) (slot + 1), 1.0, 3.0);
+                s.werte[(size_t) param::indexBandV1 (slot, param::kDynamicEnabled)].b = dyn != 0;
+                s.werte[(size_t) param::indexBandV1 (slot, param::kDynamicRangeDb)].zahl = -6.0;
+                s.werte[(size_t) param::indexBandV1 (slot, param::kThresholdDb)].zahl = -30.0;
+                s.werte[(size_t) param::indexBandV1 (slot, param::kSidechainSource)].enumIndex = sc;
+            }
+            baueProgramm (s, 48000.0, 1, *prog, 2);
+            for (int slot = 0; slot < param::kSlots; ++slot)
+            {
+                if (prog->baender[(size_t) slot].pegelbegriff != Pegelbegriff::durchschnitt)
+                    alleDurchschnitt = false;
+                ++gebaut;
+            }
+        }
+
+    // Und VOLLSTAENDIG: im PRODUKTCODE steht genau EINE Setzstelle. Gezaehlt
+    // werden Zuweisungen eines Begriffs an ein `pegelbegriff`-Feld unter
+    // eq-copilot/plugin ohne tests/ und ohne den erzeugten Vertragscode;
+    // dazu darf `Pegelbegriff::spitze` dort ueberhaupt nur EINMAL vorkommen -
+    // in der Abbildung `pegelFensterMs`, nie in einer Zuweisung. Fail-closed
+    // wie B-13: fehlt der Baum oder sind es zu wenige Dateien, ist es rot.
+    int setzstellen = 0, aufSpitze = 0, nennungenSpitze = 0, dateien = 0;
+    std::string fundstellen;
+    {
+        namespace dateisystem = std::filesystem;
+        const dateisystem::path wurzel = dateisystem::path (__FILE__).parent_path().parent_path();
+        const auto zaehle = [] (const std::string& text, const std::string& was)
+        {
+            int n = 0;
+            for (size_t p = text.find (was); p != std::string::npos; p = text.find (was, p + 1)) ++n;
+            return n;
+        };
+        std::error_code fehlerCode;
+        if (dateisystem::is_directory (wurzel, fehlerCode))
+            for (const auto& eintrag : dateisystem::recursive_directory_iterator (wurzel, fehlerCode))
+            {
+                if (! eintrag.is_regular_file()) continue;
+                const std::string pfad = eintrag.path().generic_string();
+                if (pfad.find ("/tests/") != std::string::npos
+                    || pfad.find ("/generiert/") != std::string::npos) continue;
+                const std::string endung = eintrag.path().extension().string();
+                if (endung != ".h" && endung != ".cpp") continue;
+                ++dateien;
+                std::ifstream ein (eintrag.path(), std::ios::binary);
+                const std::string text ((std::istreambuf_iterator<char> (ein)),
+                                        std::istreambuf_iterator<char>());
+                const int hier = zaehle (text, "pegelbegriff = Pegelbegriff::");
+                setzstellen     += hier;
+                aufSpitze       += zaehle (text, "pegelbegriff = Pegelbegriff::spitze");
+                nennungenSpitze += zaehle (text, "Pegelbegriff::spitze");
+                if (hier > 0) fundstellen += eintrag.path().filename().string() + " ";
+            }
+    }
+
+    pruefe (alleDurchschnitt && gebaut == 48 && dateien >= 20
+                && setzstellen == 1 && aufSpitze == 0 && nennungenSpitze == 1,
+            "311/M-125 vertragsweg_ergibt_immer_durchschnitt (NAK-311 T3-15-06, R-311-15)",
+            std::to_string (gebaut) + " Slots ueber 6 Kombinationen aus dynamic_enabled und "
+            "sidechain_source, alle Durchschnitt: " + (alleDurchschnitt ? "ja" : "NEIN")
+            + "; Setzstellen im Produktcode " + std::to_string (setzstellen) + " (" + fundstellen
+            + "), davon auf Spitze " + std::to_string (aufSpitze) + ", Nennungen von "
+            "Pegelbegriff::spitze " + std::to_string (nennungenSpitze) + " (die Abbildung "
+            "pegelFensterMs), in " + std::to_string (dateien) + " Quelldateien");
+}
+
+void f129()
+{
+    // ---- 311/M-129: Echtzeit und Kosten --------------------------------
+    // Die Stufe kostet je Sample und laufendem Detektor eine Multiplikation,
+    // eine Addition und einen `double` Zustand - kein log10, kein pow, keine
+    // Verzweigung auf Daten. Der Pol wird im WORKER entworfen
+    // (`huellkurveEntwurf` in `baueProgramm`), nie im Callback.
+    //
+    // Die Allokations- und Sperrenzaehler misst der bestehende Lauf
+    // `null_allokationen_im_callback_samt_programmwechseln`, der seit diesem
+    // Satz acht dynamische Baender im Zyklus fuehrt. Den RECHENORT misst
+    // diese Zeile am Quelltext, fail-closed nach dem Muster B-13: kein
+    // Entwurf und keine transzendente Funktion im Rumpf von
+    // `verarbeiteBand`, und genau EIN Aufruf der Pegelstufe.
+    //
+    // Der Rechenortzaehler der `RtWache` traegt es nicht: er zaehlt, wo
+    // `leiteAutoGainAb` laeuft, und ein `std::exp` im Callback meldet sich
+    // bei ihm nicht von selbst. Die Abweichung von der Rotbeweisspalte ist
+    // im Manifest benannt.
+    namespace dateisystem = std::filesystem;
+    const dateisystem::path dsp = dateisystem::path (__FILE__).parent_path().parent_path() / "dsp";
+    std::ifstream ein (dsp / "DspKern.cpp", std::ios::binary);
+    const std::string text ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+
+    const std::string anfang = "void DspKern::verarbeiteBand (";
+    const size_t von = text.find (anfang);
+    size_t bis = von == std::string::npos ? std::string::npos
+                                          : text.find ("\nvoid DspKern::verarbeiteBank", von);
+    const std::string rumpf = (von == std::string::npos || bis == std::string::npos)
+                            ? std::string() : text.substr (von, bis - von);
+
+    const char* verboten[] = { "std::exp", "std::pow", "std::log10", "huellkurvePol",
+                               "huellkurveEntwurf", "new ", "malloc" };
+    std::string treffer;
+    for (const char* v : verboten)
+        if (rumpf.find (v) != std::string::npos) treffer += std::string (v) + "; ";
+
+    int stufen = 0;
+    for (size_t p = rumpf.find ("z.pegel.tick"); p != std::string::npos;
+         p = rumpf.find ("z.pegel.tick", p + 1)) ++stufen;
+
+    pruefe (! rumpf.empty() && rumpf.size() > 2000 && treffer.empty() && stufen == 1,
+            "311/M-129 pegelstufe_rechnet_im_callback_nur_mult_und_add (NAK-311 T3-15-06, R-311-15)",
+            "Rumpf von verarbeiteBand " + std::to_string (rumpf.size()) + " Zeichen, Aufrufe der "
+            "Pegelstufe " + std::to_string (stufen)
+            + (treffer.empty() ? std::string (", kein Entwurf und keine transzendente Funktion")
+                               : ", Treffer: " + treffer)
+            + "; der Pol entsteht in baueProgramm (Worker)");
+}
+
+void f130()
+{
+    // ---- 311/M-130: die Zahlenraender des Pegelzustands ----------------
+    const double amp = 0.5, range = -12.0;
+    const double pegelDb = 10.0 * std::log10 (amp * amp * 0.5);
+
+    // (a) Ein nicht endlicher Pegelzustand wird am BLOCKRAND geheilt und
+    //     gezaehlt, ein denormaler geriegelt und gezaehlt - beides VOR dem
+    //     ersten Sample, der Ausgang bleibt endlich.
+    bool geheilt = false, geriegelt = false, ausgangEndlich = true;
+    std::string zaehlerText;
+    {
+        for (int fall = 0; fall < 2; ++fall)
+        {
+            auto k = neuerKern (48000.0, 256);
+            auto s = machSatz (true);
+            belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+            machDynamisch (s, 0, range, pegelDb - 6.0, 10.0, 0.0, 100.0);
+            k->uebernehmeZustand (s);
+            long long n0 = 0;
+            fahreStereoTon (*k, 48000.0, 1000.0, amp, n0, 4096, 256);
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            k->gefahreneSlots (cA, cQ, kA, kQ);
+            if (cA < 0) continue;
+            const auto geheiltVorher   = k->geheilteFilterzustaende();
+            const auto denormalVorher  = k->geriegelteDenormale();
+            k->pool().bank (cA).baender[0].pegel.leistung
+                = fall == 0 ? std::numeric_limits<double>::quiet_NaN() : 1e-320;
+            std::vector<double> aus;
+            fahreStereoTon (*k, 48000.0, 1000.0, amp, n0, 256, 256, &aus);
+            for (double v : aus) if (! std::isfinite (v)) ausgangEndlich = false;
+            const auto geheiltNachher  = k->geheilteFilterzustaende();
+            const auto denormalNachher = k->geriegelteDenormale();
+            const double nachher = k->pool().bank (cA).baender[0].pegel.leistung;
+            if (fall == 0) geheilt   = geheiltNachher == geheiltVorher + 1 && std::isfinite (nachher);
+            else           geriegelt = denormalNachher == denormalVorher + 1 && nachher != 1e-320;
+            zaehlerText += std::string (fall == 0 ? "NaN: geheilt +" : "; denormal: geriegelt +")
+                         + std::to_string (fall == 0 ? geheiltNachher - geheiltVorher
+                                                     : denormalNachher - denormalVorher);
+        }
+    }
+
+    // (b) Stille: der Pegel ist bitgenau +0,0, `leistungInDb` liefert
+    //     kStilleDb, und die Auslenkung ist bitgenau 0,0 (M-19).
+    bool stilleOk = false;
+    std::string stilleText;
+    {
+        auto k = neuerKern (48000.0, 512);
+        auto s = machSatz (true);
+        belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+        machDynamisch (s, 0, range, -60.0, 10.0, 0.0, 100.0);
+        k->uebernehmeZustand (s);
+        fahreStille (*k, 8192, 512);
+        int cA = -1, cQ = -1, kA = -1, kQ = -1;
+        k->gefahreneSlots (cA, cQ, kA, kQ);
+        double werte[param::kSlots];
+        k->auslenkungenDb (werte);
+        const double p = cA >= 0 ? k->pool().bank (cA).baender[0].pegel.leistung : -1.0;
+        const double nullPlus = 0.0;
+        stilleOk = cA >= 0 && std::memcmp (&p, &nullPlus, sizeof (double)) == 0
+                && leistungInDb (p) == kStilleDb && werte[0] == 0.0;
+        stilleText = "Pegel " + zahl (p, 15) + " (bitgenau +0,0: "
+                   + (std::memcmp (&p, &nullPlus, sizeof (double)) == 0 ? "ja" : "NEIN")
+                   + "), leistungInDb " + zahl (leistungInDb (p), 1) + ", Auslenkung "
+                   + zahl (werte[0], 15);
+    }
+
+    // (c) `kPegelFensterMs` ist in Millisekunden definiert und ergibt bei
+    //     jeder Rate dieselbe Zeit: gemessen am Pegelzustand selbst, vom
+    //     Tonbeginn bis 1 - 1/e der Zielleistung.
+    bool ratenOk = true;
+    std::string ratenText;
+    {
+        const double raten[] = { 44100.0, 48000.0, 96000.0, 192000.0 };
+        for (double rate : raten)
+        {
+            auto k = neuerKern (rate, 64);
+            auto s = machSatz (true);
+            belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+            machDynamisch (s, 0, range, -60.0, 0.1, 0.0, 100.0);
+            k->uebernehmeZustand (s);
+            long long n0 = 0;
+            fahreStille (*k, 4096, 64);
+            int cA = -1, cQ = -1, kA = -1, kQ = -1;
+            const double ziel = (1.0 - std::exp (-1.0)) * amp * amp * 0.5;
+            const int grenze = (int) std::llround (0.1 * rate);   // 100 ms Rand
+            int treffer = -1;
+            for (int i = 0; i < grenze && treffer < 0; ++i)
+            {
+                fahreStereoTon (*k, rate, 1000.0, amp, n0, 1, 1);
+                k->gefahreneSlots (cA, cQ, kA, kQ);
+                if (cA >= 0 && k->pool().bank (cA).baender[0].pegel.leistung >= ziel) treffer = i;
+            }
+            const double ms = treffer < 0 ? -1.0 : (double) (treffer + 1) * 1000.0 / rate;
+            if (treffer < 0 || std::abs (ms - kPegelFensterMs) > 1.0) ratenOk = false;
+            ratenText += zahl (rate / 1000.0, 1) + " kHz: " + zahl (ms, 3) + " ms; ";
+        }
+    }
+
+    // (d) An beiden Thresholdraendern des Vertrags bleibt die Auslenkung
+    //     innerhalb +/- |Range|.
+    bool raenderOk = true;
+    std::string raenderText;
+    {
+        for (double thresh : { -60.0, 0.0 })
+        {
+            const PegelFall f { 48000.0, 1000.0, 0.707, range, thresh, 10.0, 0.0, 100.0, amp, 1 };
+            const auto m = messePegel (f);
+            if (! (std::abs (m.klein) <= std::abs (range) + 1e-12
+                   && std::abs (m.gross) <= std::abs (range) + 1e-12)) raenderOk = false;
+            raenderText += "Threshold " + zahl (thresh, 1) + " dBFS: Auslenkung " + zahl (m.klein, 6)
+                         + " bis " + zahl (m.gross, 6) + "; ";
+        }
+    }
+
+    pruefe (geheilt && geriegelt && ausgangEndlich && stilleOk && ratenOk && raenderOk,
+            "311/M-130 pegelzustand_an_den_zahlenraendern (NAK-311 T3-15-06, R-311-15)",
+            "(a) " + zaehlerText + ", Ausgang endlich: " + (ausgangEndlich ? "ja" : "NEIN")
+            + "; (b) " + stilleText + "; (c) 63-%-Punkt gegen kPegelFensterMs "
+            + zahl (kPegelFensterMs, 1) + " ms +/- 1 ms: " + ratenText + "(d) " + raenderText);
+}
+
+void f131()
+{
+    // ---- 311/M-131: der Pegelbegriff ist topologisch -------------------
+    // (a) Zwei Programme desselben Pfades, die sich NUR im Pegelbegriff
+    //     eines aktiven Slots unterscheiden, sind nicht rampenkompatibel;
+    //     bei gleichem Begriff sind sie es.
+    bool rampeOk = false;
+    {
+        auto s = machSatz (true);
+        belege (s, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+        machDynamisch (s, 0, -12.0, -30.0);
+        auto alt = std::make_unique<DspProgramm>();
+        auto neu = std::make_unique<DspProgramm>();
+        baueProgramm (s, 48000.0, 1, *alt, 2);
+        baueProgramm (s, 48000.0, 2, *neu, 2);
+        const bool gleich = rampenKompatibel (*alt, *neu);
+        neu->baender[0].pegelbegriff    = Pegelbegriff::spitze;
+        neu->baender[0].huelle.pegelPol = 0.0;
+        const bool verschieden = rampenKompatibel (*alt, *neu);
+        rampeOk = gleich && ! verschieden;
+    }
+
+    // (b) Dasselbe Feld traegt die `bleibt`-Bedingung der Kennungsvergabe:
+    //     es steht im `SlotMerkmal`, `merke` schreibt es fort, und
+    //     `vergebeKennungen` vergleicht es. Ueber den Vertragsweg ist der
+    //     Fall nicht fahrbar - `baueProgramm` setzt immer Durchschnitt
+    //     (311/M-125) -, deshalb wird er wie die Sperrfreiheit in B-13 am
+    //     QUELLTEXT gemessen, fail-closed.
+    bool merkzettelOk = false;
+    std::string merkzettelText;
+    {
+        namespace dateisystem = std::filesystem;
+        const dateisystem::path dsp = dateisystem::path (__FILE__).parent_path().parent_path() / "dsp";
+        const auto lies = [&] (const char* name)
+        {
+            std::ifstream ein (dsp / name, std::ios::binary);
+            return std::string ((std::istreambuf_iterator<char> (ein)), std::istreambuf_iterator<char>());
+        };
+        const std::string kernH   = lies ("DspKern.h");
+        const std::string kernCpp = lies ("DspKern.cpp");
+        const bool imMerkmal = kernH.find ("Pegelbegriff  pegelbegriff") != std::string::npos;
+        const bool imMerke   = kernCpp.find ("s.pegelbegriff = b.pegelbegriff") != std::string::npos;
+        const bool imBleibt  = kernCpp.find ("&& s.pegelbegriff == b.pegelbegriff") != std::string::npos;
+        merkzettelOk = kernH.size() > 1000 && kernCpp.size() > 1000 && imMerkmal && imMerke && imBleibt;
+        merkzettelText = std::string ("SlotMerkmal ") + (imMerkmal ? "ja" : "NEIN") + ", merke "
+                       + (imMerke ? "ja" : "NEIN") + ", bleibt-Bedingung " + (imBleibt ? "ja" : "NEIN");
+    }
+
+    // (c) Bleibt der Begriff gleich - der Produktfall -, wandert der
+    //     Pegelzustand mit dem uebrigen Bandzustand ueber den Blockrand.
+    //     Pruefstand wie M-43: ein FREMDER Slot wechselt topologisch, Slot 0
+    //     behaelt seine Kennung.
+    bool wandertOk = false;
+    std::string wandertText;
+    {
+        const double fs = 48000.0, amp = 0.5;
+        auto k = neuerKern (fs, 64);
+        auto sa = machSatz (true);
+        belege (sa, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+        machDynamisch (sa, 0, -12.0, -30.0, 10.0, 0.0, 100.0);
+        belege (sa, 3, Filtertyp::bell, 4000.0, 1.0, 3.0);
+        auto sb = sa;
+        sb.werte[(size_t) param::indexBandV1 (3, param::kType)].enumIndex = (int) Filtertyp::notch;
+        k->uebernehmeZustand (sa);
+        long long n0 = 0;
+        fahreStereoTon (*k, fs, 1000.0, amp, n0, 48000, 64);
+        int cA = -1, cQ = -1, kA = -1, kQ = -1;
+        k->gefahreneSlots (cA, cQ, kA, kQ);
+        const double vorher = cA >= 0 ? k->pool().bank (cA).baender[0].pegel.leistung : -1.0;
+        const std::uint64_t idVorher = cA >= 0 ? k->pool().bank (cA).programm.baender[0].lebenszyklus : 0;
+        k->uebernehmeZustand (sb);
+        fahreStereoTon (*k, fs, 1000.0, amp, n0, 64, 64);
+        int nA = -1;
+        k->gefahreneSlots (nA, cQ, kA, kQ);
+        const double nachher = nA >= 0 ? k->pool().bank (nA).baender[0].pegel.leistung : -1.0;
+        const std::uint64_t idNachher = nA >= 0 ? k->pool().bank (nA).programm.baender[0].lebenszyklus : 0;
+        const double soll = amp * amp * 0.5;
+        wandertOk = nA >= 0 && nA != cA && idNachher == idVorher && idVorher != 0
+                 && vorher > 0.0 && std::abs (nachher / soll - 1.0) < 0.01
+                 && std::abs (nachher / vorher - 1.0) < 0.01;
+        wandertText = "Bank " + std::to_string (cA) + " -> " + std::to_string (nA)
+                    + ", Kennung Slot 0 unveraendert " + (idNachher == idVorher ? "ja" : "NEIN")
+                    + ", Pegel vorher " + zahl (vorher, 12) + ", nachher " + zahl (nachher, 12)
+                    + " (Sollpegel " + zahl (soll, 12) + ")";
+    }
+
+    pruefe (rampeOk && merkzettelOk && wandertOk,
+            "311/M-131 pegelbegriff_ist_topologisch (NAK-311 T3-15-06, R-311-15, R-311-1)",
+            "(a) rampenKompatibel bei gleichem Begriff wahr, bei verschiedenem falsch: "
+            + std::string (rampeOk ? "ja" : "NEIN") + "; (b) " + merkzettelText
+            + "; (c) der Pegelzustand wandert ueber den Fremdslotwechsel mit - " + wandertText);
+}
+
+void f141()
+{
+    // ---- 311/M-141: der Pegelzustand wird mit dem Detektor genullt -----
+    // E-29 / W-3: ein Detektor, der nicht mehr laeuft, haelt auch keinen
+    // PEGEL. Range -12 -> 0 rampen, danach Stille im Detektorfenster, dann
+    // Range 0 -> -12 rampen: der Pegelzustand ist dazwischen bitgenau +0,0,
+    // und die zweite Rampe beginnt wie ein FRISCHER Detektor.
+    const double fs = 48000.0, amp = 0.9, thresh = -60.0;
+    const double attackMs = 0.1, releaseMs = 100.0;
+    auto k = neuerKern (fs, 64);
+    auto sa = machSatz (true);
+    belege (sa, 0, Filtertyp::bell, 1000.0, 0.707, 0.0);
+    machDynamisch (sa, 0, -12.0, thresh, attackMs, 0.0, releaseMs);
+    auto sAus = sa;
+    sAus.werte[(size_t) param::indexBandV1 (0, param::kDynamicRangeDb)].zahl = 0.0;
+
+    k->uebernehmeZustand (sa);
+    long long n0 = 0;
+    fahreStereoTon (*k, fs, 1000.0, amp, n0, 4096, kDynamikSchritt);
+
+    // Erste Rampe: Range -12 -> 0. Danach laeuft der Detektor nicht mehr.
+    k->uebernehmeZustand (sAus);
+    fahreStereoTon (*k, fs, 1000.0, amp, n0, kRampeSamples, kDynamikSchritt);
+    // Stille im Detektorfenster - laenger als kPegelFensterMs und laenger
+    // als die Rampe.
+    fahreStereoTon (*k, fs, 1000.0, 0.0, n0, kRampeSamples + 4096, kDynamikSchritt);
+
+    int cA = -1, cQ = -1, kA = -1, kQ = -1;
+    k->gefahreneSlots (cA, cQ, kA, kQ);
+    const double pegelDazwischen = cA >= 0 ? k->pool().bank (cA).baender[0].pegel.leistung : -1.0;
+    const double huelleDazwischen = cA >= 0 ? k->pool().bank (cA).baender[0].huelle.leistung : -1.0;
+    const double nullPlus = 0.0;
+    const bool pegelGenullt = cA >= 0
+        && std::memcmp (&pegelDazwischen, &nullPlus, sizeof (double)) == 0;
+
+    // Zweite Rampe: Range 0 -> -12, der Ton setzt mit ihr wieder ein. Die
+    // Referenz ist HIER ausgeschrieben - die ganze Kette eines frischen
+    // Detektors (Bandpass, Pegelbegriff, Huellkurve, Kennlinie) auf der
+    // linear laufenden Range.
+    const int schritte = 64;
+    const int messen = schritte * kDynamikSchritt;
+    const std::vector<double> refAus = rampenReferenz (fs, 1000.0, 0.707, amp, thresh,
+                                                       attackMs, releaseMs, 0.0, -12.0,
+                                                       n0, 0, messen);
+
+    k->uebernehmeZustand (sa);
+    double maxRes = 0.0, amErsten = 0.0;
+    for (int j = 0; j < schritte; ++j)
+    {
+        std::vector<double> aus;
+        fahreStereoTon (*k, fs, 1000.0, amp, n0, kDynamikSchritt, kDynamikSchritt, nullptr, &aus);
+        const int m = j * kDynamikSchritt;
+        if (j == 0) amErsten = aus.back();
+        maxRes = std::max (maxRes, std::abs (aus.back() - refAus[(size_t) m]));
+    }
+
+    // Ein eingefrorener Pegel von damals stuende im ERSTEN Steuerschritt
+    // sofort im Plateau: die Auslenkung waere dort die volle anteilige
+    // Range statt eines Bruchteils davon.
+    const double ersteIdeal = refAus[0];
+    pruefe (pegelGenullt && maxRes < 1e-6 && std::abs (amErsten - ersteIdeal) < 1e-6,
+            "311/M-141 pegelzustand_wird_mit_dem_detektor_genullt (NAK-311 T3-15-06, E-29, W-3)",
+            "Pegel nach der ersten Rampe " + zahl (pegelDazwischen, 15) + " (bitgenau +0,0: "
+            + (pegelGenullt ? "ja" : "NEIN") + "), Huellkurvenleistung " + zahl (huelleDazwischen, 15)
+            + "; zweite Rampe gegen die ausgeschriebene Referenz des frischen Detektors: "
+            "erster Steuerschritt " + zahl (amErsten, 9) + " dB (soll " + zahl (ersteIdeal, 9)
+            + "), groesstes Residuum " + zahl (maxRes, 12) + " dB");
+}
+
+void abschnittF2()
+{
+    std::cout << std::endl
+              << "== F2 - Festgelegter Pegelbegriff der Dynamikschwelle (NAK-311 W35) ==" << std::endl;
+    f120();
+    f123();
+    f124();
+    f125();
+    f129();
+    f130();
+    f131();
+    f141();
+}
+
 void abschnittR()
 {
     std::cout << std::endl << "== R - Grosse Wertspruenge werden ueberblendet (NAK-311 W07) ==" << std::endl;
@@ -3327,6 +4219,17 @@ int main()
         // Samples (hoechstens 0,18 ms) und die Schwellenaufloesung liegen
         // darunter; eine auf 48 kHz festgeschriebene Umrechnung verfehlt jede
         // andere Rate um mindestens 1,77 ms (44,1 kHz) und 96 kHz um 20 ms.
+        //
+        // NAK-311 W35 (R-311-15, 311/M-127, §46.2 H-1): seit dem
+        // Aenderungssatz D liegt der Pegelbegriff VOR der Huellkurve, und die
+        // gemessene Attackzeit waechst um rund 12 ms. Der Sollwert kommt
+        // deshalb nicht mehr aus der Millisekundenangabe allein, sondern aus
+        // der GANZEN Kette, wie dieser Pruefstand sie faehrt: Detektor-
+        // Bandpass -> Pegelbegriff -> Huellkurve -> Kennlinie am Steuerraster,
+        // je Rate einmal HIER ausgeschrieben (eigene Rekursion, kein Aufruf
+        // des Kerns und keine aus einem Kernlauf abgelesene Zahl; Muster
+        // M-13). Die Toleranz von 1 ms je Stufe bleibt unveraendert - nur die
+        // Referenz aendert sich (E-25 bekommt einen datierten Nachtrag).
         {
             const double attackMs = 20.0, holdMs = 30.0, releaseMs = 50.0, toleranzMs = 1.0;
             const double thresh = -30.0;
@@ -3334,6 +4237,67 @@ int main()
             const double amp = std::sqrt (2.0 * pss);
             const double attackSchwelle  = -(12.0 + 10.0 * std::log10 (1.0 - std::exp (-1.0)));
             const double releaseSchwelle = -(12.0 - 10.0 / std::log (10.0));
+
+            // Die Referenz der ganzen Kette, Sample fuer Sample ausgeschrieben.
+            // Ausgewertet wird sie mit DERSELBEN Vorschrift wie der Kernlauf
+            // darunter; `sollAus` bekommt Attack, Hold und Release in ms.
+            const auto refZeiten = [&] (double rate, double* sollAus)
+            {
+                RefBandpass d0 = refBandpass (rate, 1000.0, 0.707), d1 = d0;
+                const double pm = refPol (kPegelFensterMs, rate);
+                const double pa = refPol (attackMs,  rate);
+                const double pr = refPol (releaseMs, rate);
+                const long long hs = std::llround (holdMs * 0.001 * rate);
+                const int stufe  = (int) std::llround (10.0 * attackMs * 0.001 * rate);
+                const int gesamt = stufe + (int) std::llround ((holdMs + 5.0 * releaseMs) * 0.001 * rate);
+                const double w = 2.0 * kPiRef * 1000.0 / rate;
+
+                std::vector<double> ref ((size_t) gesamt, 0.0);
+                double pegel = 0.0, huelle = 0.0, gDyn = 0.0;
+                long long holdRest = 0;
+                for (int i = 0; i < gesamt; ++i)
+                {
+                    const double a  = i < stufe ? amp : 0.0;
+                    const double x0 = (double) (float) (a * std::sin (w * (double) i));
+                    const double x1 = (double) (float) (a * std::cos (w * (double) i));
+                    const double e0 = d0.tick (x0), e1 = d1.tick (x1);
+                    const double leistungEin = (e0 * e0 + e1 * e1) * 0.5;
+                    pegel = pm > 0.0 ? pm * pegel + (1.0 - pm) * leistungEin : leistungEin;
+                    if (pegel > huelle) { huelle = pa * huelle + (1.0 - pa) * pegel; holdRest = hs; }
+                    else if (holdRest > 0) { --holdRest; }
+                    else { huelle = pr * huelle + (1.0 - pr) * pegel; }
+                    if (i % kDynamikSchritt == 0)
+                    {
+                        const double db = (huelle > 0.0 && std::isfinite (huelle))
+                                        ? std::max (kStilleDb, 10.0 * std::log10 (huelle)) : kStilleDb;
+                        const double ueber = db - thresh;
+                        gDyn = ueber <= 0.0 ? 0.0 : -12.0 * std::min (1.0, ueber / 12.0);
+                    }
+                    ref[(size_t) i] = gDyn;
+                }
+
+                size_t nA = ref.size(), nH = ref.size(), nR = ref.size();
+                for (size_t i = 0; i < (size_t) stufe; ++i)
+                    if (ref[i] <= attackSchwelle) { nA = i; break; }
+                const double plateau = ref[(size_t) stufe - 1];
+                for (size_t i = (size_t) stufe; i < ref.size(); ++i)
+                    if (ref[i] > plateau + 0.01) { nH = i; break; }
+                for (size_t i = nH; i < ref.size(); ++i)
+                    if (ref[i] >= releaseSchwelle) { nR = i; break; }
+                sollAus[0] = (double) nA * 1000.0 / rate;
+                sollAus[1] = (double) (nH - (size_t) stufe) * 1000.0 / rate;
+                sollAus[2] = (double) (nR - nH) * 1000.0 / rate;
+            };
+
+            double soll[4][3] = {};
+            std::string sollText;
+            for (int ri = 0; ri < 4; ++ri)
+            {
+                refZeiten (sampleraten[ri], soll[ri]);
+                sollText += zahl (sampleraten[ri] / 1000.0, 1) + " kHz: A " + zahl (soll[ri][0], 2)
+                          + " H " + zahl (soll[ri][1], 2) + " R " + zahl (soll[ri][2], 2) + " ms; ";
+            }
+
             double zeiten[4][3] = {};
             bool gefunden = true;
             std::string detail;
@@ -3371,21 +4335,21 @@ int main()
                 detail += zahl (rate / 1000.0, 1) + " kHz: A " + zahl (zeiten[ri][0], 2) + " H "
                           + zahl (zeiten[ri][1], 2) + " R " + zahl (zeiten[ri][2], 2) + " ms; ";
             }
-            const double soll[3] = { attackMs, holdMs, releaseMs };
             bool innerhalb = gefunden, gleich = gefunden;
             for (int st = 0; st < 3; ++st)
             {
                 double lo = 1e9, hi = -1e9;
                 for (int ri = 0; ri < 4; ++ri)
                 {
-                    if (std::abs (zeiten[ri][st] - soll[st]) > toleranzMs) innerhalb = false;
+                    if (std::abs (zeiten[ri][st] - soll[ri][st]) > toleranzMs) innerhalb = false;
                     lo = std::min (lo, zeiten[ri][st]);
                     hi = std::max (hi, zeiten[ri][st]);
                 }
                 if (hi - lo > toleranzMs) gleich = false;
             }
             pruefe (innerhalb, "attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)",
-                    "soll A 20 H 30 R 50 ms +/- 1 ms; " + detail);
+                    "soll aus der ausgeschriebenen Referenz der ganzen Kette (311/M-127) - "
+                    + sollText + "+/- 1 ms je Stufe; gemessen " + detail);
             pruefe (gleich, "dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)",
                     "Spanne je Stufe ueber vier Raten <= 1 ms");
         }
@@ -3434,6 +4398,14 @@ int main()
                 int cA = -1, cQ = -1, kA = -1, kQ = -1;
                 k->gefahreneSlots (cA, cQ, kA, kQ);
                 double lRef = k->pool().bank (cA).baender[0].huelle.leistung;
+                // NAK-311 W35 (R-311-15): die Idealrampe bekommt den
+                // PEGELPOL als vorgeschaltete Stufe. Sein Zustand beim
+                // Wechsel wird - wie der Huellkurvenzustand - am Kern
+                // ABGELESEN, die Rekursion darunter ist ausgeschrieben. Der
+                // Pol wird nie interpoliert (topologisch, F-19), also steht
+                // er auf beiden Seiten der Rampe gleich.
+                double pRef = k->pool().bank (cA).baender[0].pegel.leistung;
+                const double pm = pol (kPegelFensterMs);
                 const double l0 = lRef;
                 k->uebernehmeZustand (sb);
 
@@ -3452,7 +4424,8 @@ int main()
                     const double w  = (m + 1 >= kRampeSamples) ? 1.0 : (double) (m + 1) / (double) kRampeSamples;
                     const double pa = pol (wert (sa, param::kAttackMs))  + (pol (wert (sb, param::kAttackMs))  - pol (wert (sa, param::kAttackMs)))  * w;
                     const double pr = pol (wert (sa, param::kReleaseMs)) + (pol (wert (sb, param::kReleaseMs)) - pol (wert (sa, param::kReleaseMs))) * w;
-                    lRef = f.ton ? pa * lRef + (1.0 - pa) * pss : pr * lRef;
+                    pRef = pm * pRef + (1.0 - pm) * (f.ton ? pss : 0.0);
+                    lRef = f.ton ? pa * lRef + (1.0 - pa) * pRef : pr * lRef + (1.0 - pr) * pRef;
                     if (n % kDynamikSchritt == 0) gRef = kennlinieRef (lRef);
 
                     maxResL = std::max (maxResL, std::abs (h.leistung - lRef) / pss);
@@ -3480,12 +4453,26 @@ int main()
         }
 
         // W-3 / B-4 / R8 / M-17: dynamic_range_db -12 -> 0 und 0 -> -12 an
-        // einem Stereoton weit ueber Threshold plus Knie. Im Plateau IST die
-        // Auslenkung die Range; sie folgt deshalb an jedem Steuerschritt der
-        // HIER ausgeschriebenen Idealrampe der Range (E-29). Residuum unter
-        // 1e-6 dB: als Gain 1,2e-7 des Signals, bei Vollaussteuerung -138 dBFS
-        // und damit unter -100 dBFS. Danach ist der Detektor aus (-12 -> 0,
-        // Leistung exakt 0) beziehungsweise laeuft (0 -> -12).
+        // einem Stereoton weit ueber Threshold plus Knie. Die Auslenkung folgt
+        // an jedem Steuerschritt der HIER ausgeschriebenen Idealrampe (E-29).
+        // Residuum unter 1e-6 dB: als Gain 1,2e-7 des Signals, bei
+        // Vollaussteuerung -138 dBFS und damit unter -100 dBFS. Danach ist der
+        // Detektor aus (-12 -> 0, Leistung exakt 0) beziehungsweise laeuft
+        // (0 -> -12).
+        //
+        // NAK-311 W35 (R-311-15): die Referenz ist seit dem Aenderungssatz D
+        // die ganze Kette samt PEGELBEGRIFF (`rampenReferenz`), nicht mehr die
+        // Idealrampe der Range allein. Richtung -12 -> 0 aendert das nicht -
+        // dort ist der Pegel eingeschwungen, die Kennlinie klemmt im Plateau,
+        // und die Referenz liefert Sample fuer Sample dieselbe Rampe wie
+        // bisher. Richtung 0 -> -12 dagegen startet den Detektor KALT: der
+        // Pegel ist eine dritte Stufe mit `kPegelFensterMs`, und sein
+        // Einschwingen liegt in derselben Groessenordnung wie `kRampeSamples`.
+        // Diese Zeile misst damit sehr wohl eine Pegelgroesse; §40.4 fuehrt sie
+        // in der zweiten Liste ("Plateau"), was fuer diese Richtung nicht
+        // traegt - sie wird deshalb wie eine Zeile der ERSTEN Liste behandelt:
+        // Erwartung aus der ausgeschriebenen Referenz, Schranke 1e-6 dB
+        // unveraendert (Entscheidregel des Dirigenten, §59 Nr. 2).
         for (int richtung = 0; richtung < 2; ++richtung)
         {
             const double rVon = richtung == 0 ? -12.0 : 0.0, rNach = richtung == 0 ? 0.0 : -12.0;
@@ -3501,17 +4488,20 @@ int main()
             k->pflege();
             k->uebernehmeZustand (sb);
 
-            double maxRes = 0.0, amErsten = 0.0;
-            for (int j = 0; j < 48; ++j)
+            const int schritteR = 48;
+            const std::vector<double> refRampe =
+                rampenReferenz (fs, 1000.0, 0.707, 0.9, -60.0, 0.1, 100.0, rVon, rNach,
+                                0, 4096, schritteR * kDynamikSchritt);
+            double maxRes = 0.0, amErsten = 0.0, sollErster = 0.0;
+            for (int j = 0; j < schritteR; ++j)
             {
                 // Ein Block von kDynamikSchritt Samples: sein erstes Sample ist
                 // der Steuerschritt, der Bericht danach traegt dessen Wert.
                 std::vector<double> aus;
                 fahreStereoTon (*k, fs, 1000.0, 0.9, n0, kDynamikSchritt, kDynamikSchritt, nullptr, &aus);
                 const int m = j * kDynamikSchritt;
-                const double w = (m + 1 >= kRampeSamples) ? 1.0 : (double) (m + 1) / (double) kRampeSamples;
-                const double soll = w >= 1.0 ? rNach : rVon + (rNach - rVon) * w;
-                if (j == 0) amErsten = aus.back();
+                const double soll = refRampe[(size_t) m];
+                if (j == 0) { amErsten = aus.back(); sollErster = soll; }
                 maxRes = std::max (maxRes, std::abs (aus.back() - soll));
             }
             int cA = -1, cQ = -1, kA = -1, kQ = -1;
@@ -3527,8 +4517,8 @@ int main()
             pruefe (maxRes < 1e-6 && danach,
                     std::string ("range_") + (richtung == 0 ? "minus_12_nach_0" : "0_nach_minus_12")
                     + "_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)",
-                    "erster Steuerschritt " + zahl (amErsten, 6) + " dB (Idealrampe "
-                    + zahl (rVon + (rNach - rVon) / (double) kRampeSamples, 6) + "), groesstes Residuum "
+                    "erster Steuerschritt " + zahl (amErsten, 6) + " dB (Referenz "
+                    + zahl (sollErster, 6) + "), groesstes Residuum "
                     + zahl (maxRes, 12) + " dB; danach Detektor " + (laeuft ? "an" : "aus") + ", Leistung "
                     + zahl (leistungSpaeter, 9));
         }
@@ -3616,12 +4606,12 @@ int main()
                     fahreStereoTon (*kDyn, f.rate, f0, 0.0, nD, vorlauf, 1);
                     fahreStereoTon (*kRef, f.rate, f0, 0.0, nR, vorlauf, 1);
 
-                    std::vector<double> tapD, tapR;
+                    std::vector<double> tapD, tapR, auslD;
                     std::vector<int> rest ((size_t) messen, -1);
                     std::vector<SvfKoeffizienten> svfVon ((size_t) messen), svfNach ((size_t) messen);
                     for (int i = 0; i < messen; ++i)
                     {
-                        fahreStereoTon (*kDyn, f.rate, f0, amp, nD, 1, 1, &tapD);
+                        fahreStereoTon (*kDyn, f.rate, f0, amp, nD, 1, 1, &tapD, &auslD);
                         fahreStereoTon (*kRef, f.rate, f0, amp, nR, 1, 1, &tapR);
                         int cA = -1, cQ = -1, kA = -1, kQ = -1;
                         kDyn->gefahreneSlots (cA, cQ, kA, kQ);
@@ -3636,6 +4626,20 @@ int main()
                         if (std::memcmp (&tapD[(size_t) i], &tapR[(size_t) i], sizeof (double)) != 0)
                             erste = i;
 
+                    // NAK-311 W35 (R-311-15, §40.4 Risiko 3): der BEZUGSPUNKT
+                    // ist der erste Steuerschritt mit einer Auslenkung
+                    // ungleich 0 - gelesen aus `schrittRest` und der
+                    // Auslenkung, nicht aus dem Tonbeginn. Der Pegelbegriff
+                    // ist eine dritte kalt startende Stufe; bei manchen Phasen
+                    // liegt der erste wirksame Entwurf dadurch einen
+                    // Rasterschritt spaeter. Die Zusage selbst haengt an
+                    // `kDynamikSchritt`, nicht am Pegel, und bleibt: erste
+                    // Wirkung 1 bis 8, volle 8 bis 15 Samples NACH dem Entwurf.
+                    int basis = -1;
+                    for (int i = 0; i < messen && basis < 0; ++i)
+                        if (rest[(size_t) i] == kDynamikSchritt - 1 && auslD[(size_t) i] != 0.0)
+                            basis = i;
+
                     // Der Entwurf faellt genau auf den Samples i == d (mod 8):
                     // danach steht `schrittRest` auf kDynamikSchritt - 1.
                     bool rasterStimmt = true;
@@ -3644,25 +4648,33 @@ int main()
                             != (i % kDynamikSchritt == dSoll % kDynamikSchritt))
                             rasterStimmt = false;
 
-                    // Volle Wirkung: bei d + 8 ist `tSchritt` wieder 0, und
-                    // `svfVon` traegt dort GENAU den Satz, der bei d entworfen
-                    // wurde - der erste Entwurf wirkt mit Gewicht 1.
-                    const int voll = dSoll + kDynamikSchritt;
+                    // Volle Wirkung: acht Samples nach dem Bezugspunkt ist
+                    // `tSchritt` wieder 0, und `svfVon` traegt dort GENAU den
+                    // Satz, der am Bezugspunkt entworfen wurde - der erste
+                    // wirksame Entwurf wirkt mit Gewicht 1.
+                    const int voll = basis < 0 ? -1 : basis + kDynamikSchritt;
                     const bool volleWirkung =
-                           voll < messen
+                           basis >= 0 && voll < messen
                         && rest[(size_t) voll] == kDynamikSchritt - 1
-                        && std::memcmp (&svfVon[(size_t) voll], &svfNach[(size_t) dSoll],
+                        && std::memcmp (&svfVon[(size_t) voll], &svfNach[(size_t) basis],
                                         sizeof (SvfKoeffizienten)) == 0;
 
-                    const bool traegt = erste == dSoll + 1 && rasterStimmt && volleWirkung;
+                    const bool traegt = basis >= 0 && basis % kDynamikSchritt == dSoll
+                                     && erste == basis + 1 && rasterStimmt && volleWirkung;
                     allesTraegt = allesTraegt && traegt;
-                    minErste = std::min (minErste, erste);
-                    maxErste = std::max (maxErste, erste);
-                    minVoll  = std::min (minVoll, voll);
-                    maxVoll  = std::max (maxVoll, voll);
+                    // Im Raster gezaehlt, also unabhaengig davon, wie viele
+                    // Rasterschritte der kalt startende Pegel den Bezugspunkt
+                    // nach hinten schiebt.
+                    const int ersteRaster = basis < 0 ? -1 : erste - basis + dSoll;
+                    const int vollRaster  = basis < 0 ? -1 : voll  - basis + dSoll;
+                    minErste = std::min (minErste, ersteRaster);
+                    maxErste = std::max (maxErste, ersteRaster);
+                    minVoll  = std::min (minVoll, vollRaster);
+                    maxVoll  = std::max (maxVoll, vollRaster);
 
                     d << (pi > 0 ? "; " : "") << "p=" << p << " d=" << dSoll
-                      << " erste Abweichung " << erste << " (soll " << (dSoll + 1) << ")"
+                      << " Bezugspunkt " << basis << " erste Abweichung " << erste
+                      << " (soll " << (basis + 1) << ")"
                       << " volle Wirkung " << voll << (traegt ? "" : " TRAEGT NICHT");
                 }
 
@@ -3683,6 +4695,9 @@ int main()
             }
         }
     }
+
+    //==========================================================================
+    abschnittF2();
 
     //==========================================================================
     std::cout << std::endl << "== G - Kanalmodus, M/S, Trims, Mix (M-29 bis M-34) ==" << std::endl;
@@ -5510,6 +6525,19 @@ int main()
         auto grosserSprung = rampe;
         grosserSprung.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl
             = rampe.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl * 100.0;
+        // NAK-311 M-129 (W35, R-311-15): ACHT dynamische Baender mit laufendem
+        // Detektor im selben Zyklus. Die Pegelstufe kostet je Sample und
+        // laufendem Detektor eine Multiplikation, eine Addition und einen
+        // `double` Zustand - kein log10, kein pow, keine Verzweigung auf Daten.
+        // Ihr Pol wird im Worker entworfen (`huellkurveEntwurf`), nie hier;
+        // der Zaehler muss deshalb bei 0 Allokationen und 0 Sperren bleiben.
+        auto achtDynamisch = machSatz (true);
+        for (int slot = 0; slot < param::kSlots; ++slot)
+        {
+            belege (achtDynamisch, slot, Filtertyp::bell, 125.0 * (double) (slot + 1), 1.0, 3.0);
+            machDynamisch (achtDynamisch, slot, -6.0, -40.0, 10.0, 30.0, 100.0);
+        }
+        setzeGlobalBool (achtDynamisch, "v2.global.auto_gain", true);
 
         const std::uint64_t uebernahmenVorher = kern->uebernahmen();
         std::uint64_t gesamt = 0, testAllokationen = 0;
@@ -5527,6 +6555,7 @@ int main()
                 case 190: ok = kern->uebernehmeZustand (kand2, Pfad::candidate); break;
                 case 215: ok = kern->uebernehmeZustand (grosserSprung); break;   // M-111
                 case 265: ok = kern->uebernehmeZustand (rampe); break;           // zurueck unter das Kriterium
+                case 315: ok = kern->uebernehmeZustand (achtDynamisch); break;   // M-129
                 case 240: kern->beendeCandidate(); break;
                 case 290: ok = kern->uebernehmeZustand (aus); break;
                 case 340: ok = kern->uebernehmeZustand (s); break;
@@ -5556,7 +6585,7 @@ int main()
         const std::uint64_t uebernahmen = kern->uebernahmen() - uebernahmenVorher;
 
         pruefe (testAllokationen == 0 && RtWache::allokationen() == 0 && uebernahmen >= 60 && geerntet >= 30,
-                "null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111)",
+                "null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111, 311/M-129)",
                 "4000 Bloecke, " + std::to_string (gesamt) + " Samples, " + std::to_string (uebernahmen)
                 + " Blockrand-Uebernahmen, " + std::to_string (geerntet) + " Baenke geerntet, busy_retry "
                 + std::to_string (busy) + ", Testzaehler " + std::to_string (testAllokationen)

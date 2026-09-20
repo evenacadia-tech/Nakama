@@ -2849,27 +2849,44 @@ param::DspSatz nak311DynBand (double f0, double q, double g0, double rangeDb,
 }
 
 /** t_E aus §9 F-12, HIER eigenstaendig ausgeschrieben (Muster M-13: der Test
-    ruft keine Produktfunktion als Orakel):
+    ruft keine Produktfunktion als Orakel).
 
-        t_E = max (kFadeSamples, 5*tau_a*fs + 10*Q*A_max*fs/(pi*f0) + 16)
+    NAK-311 W35 (R-311-15, 311/M-127, §40.4), datierter Nachtrag zu §9.1 F-12
+    vom 20.09.2026: seit dem Aenderungssatz D liegt der PEGELBEGRIFF mit der
+    festen Zeitkonstante `kPegelFensterMs` vor der Huellkurve. Die
+    Zeitkonstanten zweier Pole in Reihe addieren sich als obere Schranke, der
+    Huellkurventerm wird deshalb
 
-    mit A_max = 10^(max(0, g0, g0 + Range)/40). Die drei Summanden sind der
-    Huellkurventerm (5 Zeitkonstanten der Attack), der Bandterm (zehn
-    genaeherte Zeitkonstanten von Detektor und Band) und die Steuerrate
-    (bis zu 8 Samples bis zum naechsten Entwurf, 8 Ueberblendung; M-73). */
+        5*(tau_a + tau_m)*fs   statt   5*tau_a*fs,
+
+    also
+
+        t_E = max (kFadeSamples,
+                   5*(tau_a + tau_m)*fs + 10*Q*A_max*fs/(pi*f0) + 16)
+
+    mit tau_m = `kPegelFensterMs`. Der Zuwachs ist hoechstens
+    5*`kPegelFensterMs`*fs Samples (bei 48 kHz 2400) und damit genau die
+    Schranke, die §40.4 nennt. A_max = 10^(max(0, g0, g0 + Range)/40); die
+    drei Summanden sind der Huellkurventerm (fuenf Zeitkonstanten der Reihe
+    aus Pegelfenster und Attack), der Bandterm (zehn genaeherte
+    Zeitkonstanten von Detektor und Band) und die Steuerrate (bis zu 8
+    Samples bis zum naechsten Entwurf, 8 Ueberblendung; M-73). Die TOLERANZ
+    von 0,1 dB ab t_E bleibt unveraendert - nur der Referenzbeginn wandert. */
 double nak311TeE (double fs, double f0, double q, double g0, double rangeDb, double attackMs)
 {
     const double aMax = std::pow (10.0, std::max (0.0, std::max (g0, g0 + rangeDb)) / 40.0);
+    const double tau  = (attackMs + dsp::kPegelFensterMs) * 0.001;
     return std::max ((double) dsp::kFadeSamples,
-                     5.0 * (attackMs * 0.001) * fs + 10.0 * q * aMax * fs / (kPiRecall * f0) + 16.0);
+                     5.0 * tau * fs + 10.0 * q * aMax * fs / (kPiRecall * f0) + 16.0);
 }
 
-/** Der Vorlauf, der Instanz A EINGESCHWUNGEN macht: zehn Attack-Zeitkonstanten
-    (Rest e^-10 = 4,5e-5, also 0,0004 dB) plus das Vierfache des Bandterms
-    plus Reserve. */
+/** Der Vorlauf, der Instanz A EINGESCHWUNGEN macht: zehn Zeitkonstanten der
+    Reihe aus Pegelfenster und Attack (Rest e^-10 = 4,5e-5, also 0,0004 dB)
+    plus das Vierfache des Bandterms plus Reserve. NAK-311 W35: der
+    Pegelbegriff ist die dritte Stufe und geht mit `kPegelFensterMs` ein. */
 int nak311Vorlauf (double fs, double f0, double q, double attackMs)
 {
-    return (int) std::ceil (10.0 * (attackMs * 0.001) * fs)
+    return (int) std::ceil (10.0 * ((attackMs + dsp::kPegelFensterMs) * 0.001) * fs)
          + 4 * (int) std::ceil (10.0 * q * fs / (kPiRecall * f0)) + 8000;
 }
 
@@ -3095,14 +3112,33 @@ void nak311Recall()
         a->getStateInformation (nachher);
         double werte[param::kSlots];
         a->dspKernFuerTest().auslenkungenDb (werte);
+
+        // NAK-311 W35 (R-311-15, 311/M-126): der PEGELBEGRIFF und sein
+        // Zustand sind abgeleitet wie `kanaele` - Laufzeit, kein Statefeld,
+        // kein Drahtfeld, keine Revision. Der Pegelzustand hat sich in den
+        // zwei Sekunden nachweislich bewegt (er traegt die Leistung des
+        // Quadraturtons), und die Statebytes sind trotzdem bytegleich.
+        int cA = -1, cQ = -1, kA = -1, kQ = -1;
+        a->dspKernFuerTest().gefahreneSlots (cA, cQ, kA, kQ);
+        const double pegel = cA >= 0
+            ? a->dspKernFuerTest().pool().bank (cA).baender[0].pegel.leistung : -1.0;
+        const auto begriff = cA >= 0
+            ? a->dspKernFuerTest().pool().bank (cA).programm.baender[0].pegelbegriff
+            : dsp::Pegelbegriff::spitze;
+        const bool pegelBewegt = pegel > 0.0 && std::isfinite (pegel)
+                              && begriff == dsp::Pegelbegriff::durchschnitt;
+
         std::ostringstream d;
         d << std::setprecision (9) << "Bytes vorher " << vorher.getSize() << ", nachher "
           << nachher.getSize() << ", gleich " << (vorher == nachher ? "ja" : "nein")
-          << ", Auslenkung nach 2 s " << werte[0] << " dB, Revision " << a->stateRevision();
-        pruefe (ea.ausgang == tx::Ausgang::commit && vorher == nachher && werte[0] == -12.0,
-                "311/M-79 audiohistorie_ist_kein_state (NAK-311 F12, R-311-4): zwei Sekunden "
-                "eingeschwungenes Audio bewegen die Huellkurve auf die volle Range und lassen die "
-                "Statebytes UNVERAENDERT",
+          << ", Auslenkung nach 2 s " << werte[0] << " dB, Revision " << a->stateRevision()
+          << ", Pegelbegriff " << (begriff == dsp::Pegelbegriff::durchschnitt ? "durchschnitt" : "spitze")
+          << ", Pegelzustand " << pegel << " (bewegt: " << (pegelBewegt ? "ja" : "nein") << ")";
+        pruefe (ea.ausgang == tx::Ausgang::commit && vorher == nachher && werte[0] == -12.0
+                    && pegelBewegt,
+                "311/M-79 audiohistorie_ist_kein_state (NAK-311 F12, R-311-4, 311/M-126): zwei "
+                "Sekunden eingeschwungenes Audio bewegen Pegelbegriff und Huellkurve auf die volle "
+                "Range und lassen die Statebytes UNVERAENDERT",
                 d.str());
     }
 }

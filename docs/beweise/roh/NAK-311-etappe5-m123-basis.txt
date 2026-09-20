@@ -1,0 +1,45 @@
+NAK-311 Etappe 5, Aenderungssatz D - Vergleichsausgabe am Basisstand fuer den
+Bitvergleich von 311/M-123 (Spitze ist der Basisstand)
+=============================================================================
+
+Basis-SHA des Aenderungssatzes D: cded8a20f6cb533d918862ece1625aba94f4d7af
+git diff --stat 7232a061 HEAD -- eq-copilot broker tools: leer (der Endstand
+des Satzes C ist unveraendert; der Dirigent hat seither nur Dokumente
+geschrieben).
+Erzeugt am 20.09.2026 vom Bauer des Aenderungssatzes D, VOR der ersten
+Aenderung am Produktcode.
+
+Zweck (Auftrag Satz D, "BASIS ZUERST" Nr. 2; §40.4 Golden- und Fixture-Regel):
+der Bitvergleich von 311/M-123 laeuft NIE gegen einen Lauf des geaenderten
+Kerns unter dem Begriff Durchschnitt, sondern gegen diese am unveraenderten
+Kern erzeugte Ausgabe.
+
+Pruefstand (`m123Lauf` in eq-copilot/plugin/tests/DspGoldenTestMain.cpp):
+  48 kHz, Blockgroesse 64, Slot 0 dynamisches Bell 1 kHz Q 0,707, Grundgain
+  0 dB, Kanalmodus stereo, Sidechain internal, Range -12 dB, Threshold
+  10*log10(0,5^2/2) - 6 = -15,0309 dB (der Pegel liegt im Knie),
+  Vertragsdefaults Attack 10 ms, Hold 0 ms, Release 100 ms.
+  Material L = R-Sinus 0,5 auf der Bandmitte.
+  Folge: 4096 Samples Stille (Fade und Rampen laufen ab), 48 000 Samples Ton
+  (Sprungantwort und eingeschwungener Betrieb), 24 000 Samples Stille
+  (Release bis in die Stille).
+  Aufgezeichnet je Sample: Tap post_committed, Ausgang L, Ausgang R; je Block
+  zusaetzlich die gemeldete Auslenkung. Der Fingerabdruck ist FNV-1a ueber die
+  Bitmuster dieser Spur (Muster 311/M-100, im Test eigenstaendig
+  ausgeschrieben) - der Bitvergleich in EINER Zahl.
+
+Befehl:
+  eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/EqCopDspGoldenTest.exe
+
+Ausgabe des Basislaufs (Abschnitt F2):
+
+  MESSWERT 311/M-123 Fingerabdruck des dynamischen Weges (Basisstand): 4420950042542505610
+
+GOLDEN fuer 311/M-123 nach dem Bau (Spitze, Fenster 0):
+
+  4420950042542505610  = 0x3D5A5EA3F77E7E8A
+
+Nach dem Bau vergleicht `311/M-123 spitze_ist_bitgleich_zum_basisstand` den
+Fingerabdruck des Laufes unter dem Begriff `spitze` gegen genau diese Zahl -
+einmal mit unberuehrtem und einmal mit nicht endlich vergiftetem Pegelzustand,
+weil ein `0,0 * leistung` dort NaN statt des Eingangs ergaebe (M-123).

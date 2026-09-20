@@ -1,0 +1,88 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-126
+=================================================================
+
+Matrixzeile : M-126 (§39.3) - T3-15-06, kein Statefeld, keine Revision, kein
+              Drahtfeld
+Zusage      : Die Statebytes sind vor und nach dem Bau dieselben wie am
+              Basis-SHA, die Revision steigt nicht, der Host bekommt kein
+              Dirty; der Pegelbegriff ist abgeleitet wie `kanaele` -
+              Laufzeit, kein Statefeld, kein Draht.
+Beine       : B7 (311/M-79, um den Pegelbegriff ergaenzt), B3c
+              (fahreFassung5UndDspBericht), B2 (Parametertabelle und
+              state_hash)
+Etikett     : Regressionswache
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand (ohne Mutation):
+  git diff --stat cded8a20 <Arbeitsstand> -- eq-copilot/schemas
+      eq-copilot/plugin/state eq-copilot/identity eq-copilot/fixtures
+    -> leer.
+  git grep -n "pegelbegriff\|Pegelbegriff" -- eq-copilot/schemas
+      eq-copilot/plugin/state eq-copilot/fixtures broker
+    -> kein Treffer.
+  B7 311/M-79: Statebytes vorher 4708, nachher 4708, gleich ja, Revision 1,
+    Pegelbegriff durchschnitt, Pegelzustand 0.124999998 (bewegt: ja).
+  B3c: 162 bestanden, 0 gescheitert. B2: 291 Pruefungen ok, 0 Fehler.
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/schemas/state/nakama-parameter-v2.json - der Vertrag, an
+        dem die Zusage haengt. NUR VORUEBERGEHEND (§7.1); der Aenderungssatz
+        fasst diese Datei nicht an.
+SHA256 vorher  : F564952B1778A6695E85958802327FF7E386030B1CBF1BCDD4A967CE40494E66
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\nakama-parameter-v2.json.M-126.bak
+
+Vorher, woertlich:
+  "anzahl_parameter": 120,
+  "anzahl_parameter_v1": 109,
+  "anzahl_host_parameter": 112,
+  "global": [
+    {
+      "id": "v1.global.bypass",
+
+Nachher, woertlich (der Pegelbegriff als GESPEICHERTER Wert aufgenommen):
+  "anzahl_parameter": 121,
+  "anzahl_parameter_v1": 109,
+  "anzahl_host_parameter": 113,
+  "global": [
+    {
+      "id": "v2.global.pegelbegriff",
+      "typ": "enum",
+      "werte": ["durchschnitt", "spitze"],
+      "default": "durchschnitt",
+      "wechsel": "blockrand",
+      "topologisch": true,
+      "bedeutung": "Rotbeweis 311/M-126: der Pegelbegriff als GESPEICHERTER Wert - genau das, was R-311-15 ausschliesst.",
+      "layout": "v2",
+      "host_parameter": true
+    },
+    {
+      "id": "v1.global.bypass",
+
+Gefahren: B2 (EqCopStateMigrationTest), B7, B3c.
+Exitcode B2: 1 - 288 Pruefungen ok, 4 Fehler.
+
+GEFALLEN sind die erwarteten Pruefungen:
+
+  FEHLER  anzahl_parameter == 120  [121]
+  FEHLER  anzahl_host_parameter == 112  [113]
+  FEHLER  Vertrags-ID ohne Tabelleneintrag  [v2.global.pegelbegriff]
+  FEHLER  == Parametertabelle deckungsgleich mit nakama-parameter-v2.json,
+          v1 unveraendert abgeleitet
+
+Die Zusage faellt an der erwarteten Pruefung: JA (B2).
+
+ABWEICHUNG von der Rotbeweisspalte, benannt: §39.3 erwartet "B2 UND B7
+fallen". B7 bleibt gruen (Exit 0, 192 geprueft, 0 Fehler), und B3c ebenso
+(162 bestanden). Grund, gemessen: B7 und B3c lesen die KOMPILIERTE
+Parametertabelle aus `NakamaParameter`, nicht die JSON-Datei; nur B2
+vergleicht beide Seiten gegeneinander (`StateMigrationTestMain.cpp:391`,
+`:588`). Die Zusage "kein neues Statefeld" faellt damit an genau einem Bein,
+nicht an zweien.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : F564952B1778A6695E85958802327FF7E386030B1CBF1BCDD4A967CE40494E66
+Beine danach: B2 Exit 0 (291 Pruefungen ok, 0 Fehler), B7 Exit 0
+(192 geprueft, 0 Fehler), B3c Exit 0 (162 bestanden, 0 gescheitert).

@@ -1,0 +1,303 @@
+NAK-311 Etappe 5, Aenderungssatz D - der festgelegte Pegelbegriff:
+verschobene Zahlen, Kosten und die Messung der zwei Listen
+=============================================================================
+
+Basis-SHA des Aenderungssatzes D: cded8a20f6cb533d918862ece1625aba94f4d7af
+Basis der Zeilenvergleiche: Endstand des Satzes C (7232a061); `git diff --stat
+7232a061 HEAD -- eq-copilot broker tools` ist leer.
+Erzeugt am 20.09.2026 vom Bauer des Aenderungssatzes D.
+
+-----------------------------------------------------------------
+1. Kosten der Pegelstufe (M-129)
+-----------------------------------------------------------------
+
+Je Sample und LAUFENDEM Detektor: eine Multiplikation, eine Addition, ein
+`double` Zustand. Kein `log10`, kein `pow`, keine Verzweigung auf Daten, kein
+Entwurf - der Pol steht im Programm und wird in `baueProgramm`
+(`huellkurveEntwurf`) im Worker gerechnet.
+
+  Rate      Baender   Multiplikations-Additionen je Sekunde
+   48 kHz   1           48 000
+   48 kHz   8          384 000
+  192 kHz   1          192 000
+  192 kHz   8        1 536 000
+
+Daneben stehen unveraendert die fuenf Koeffizienten des Detektor-Biquads je
+Komponente und der SVF. Zustand je Band: 8 Byte (ein `double`) zusaetzlich im
+`BandZustand`.
+
+Gemessen (B6, `null_allokationen_im_callback_samt_programmwechseln`, jetzt mit
+acht dynamischen Baendern im Zyklus): 4000 Bloecke wechselnder Groesse,
+4 179 358 Samples, 121 Blockrand-Uebernahmen, Testzaehler 0 Allokationen,
+Kernzaehler 0, Sperrenzaehler 0. Quelltextwache 311/M-129: Rumpf von
+`verarbeiteBand` 9742 Zeichen, genau EIN Aufruf der Pegelstufe, kein
+`std::exp`, `std::pow`, `std::log10`, `huellkurvePol`, `huellkurveEntwurf`,
+`new` oder `malloc`.
+
+Die Lastmessung von M-118 ist eine Wanduhrzahl und gehoert zu den
+ausgenommenen Zeilenklassen (§52 Nr. 5); zum Vergleich trotzdem: stationaere
+Last 1.034 % Echtzeit im Mittel am Basisstand, 1.046 % am Endstand;
+Uebergangslast 2.074 % gegen 2.066 % - beide innerhalb der Streuung zweier
+Laeufe desselben Binaries (Kontrollmessung in der B6-Vergleichsdatei,
+Abschnitt 4).
+
+-----------------------------------------------------------------
+2. Die Fensterzahl kPegelFensterMs = 10,0 - bestaetigt
+-----------------------------------------------------------------
+
+Die Zahl bleibt. Beide Masse der Regel halten (§59 Nr. 3):
+
+(a) 311/M-120 an allen VIER Bandmitten (R-311-17), Versatz gegen den
+    Quadraturton gleicher Leistung, Vertragsdefaults Attack 10 / Hold 0 /
+    Release 100 ms:
+
+      f0        gemessen    Schranke max(0,1; 10*log10(1 + r))
+      1000 Hz   0.0216 dB   0.1000 dB
+       341 Hz   0.0631 dB   0.1002 dB
+       100 Hz   0.2108 dB   0.3325 dB
+        20 Hz   0.8995 dB   1.4547 dB
+      Rauschen (1 kHz, 10*log10(1 + 3*sigma) mit sigma = 0,150):
+                0.3230 dB   1.6000 dB
+
+    Am Basisstand waren dieselben Zahlen 2.1184 / 2.1142 / 2.1137 / 2.1002
+    und 4.0070 dB.
+
+(b) Die Sprungantwort gegen die Reihenreferenz, Toleranz 1 ms je Stufe:
+    Abstand Messung zu Referenz 0.00 ms an allen vier Raten (siehe Nr. 3).
+    Das Fenster muss also weder verlaengert noch verkuerzt werden.
+
+-----------------------------------------------------------------
+3. Der Sollwert der Attackstufe je Rate (§46.2, Vormerkung H-1)
+-----------------------------------------------------------------
+
+Die Referenz kommt aus der GANZEN Kette, wie der Pruefstand sie faehrt
+(Detektor-Bandpass 1 kHz Q 0,707, Pegelbegriff, Huellkurve, Steuerraster
+`kDynamikSchritt` = 8), im Test eigenstaendig ausgeschrieben - kein Aufruf
+des Kerns, keine aus einem Kernlauf abgelesene Zahl.
+
+  Rate       Sollwert A   gemessen A   Abstand   zu 31,70 ms   im Band 32,04-32,17
+  44,1 kHz   32.11 ms     32.11 ms     0.00 ms   +0.41 ms      ja
+  48,0 kHz   32.17 ms     32.17 ms     0.00 ms   +0.47 ms      ja
+  96,0 kHz   32.08 ms     32.08 ms     0.00 ms   +0.38 ms      ja
+  192  kHz   32.04 ms     32.04 ms     0.00 ms   +0.34 ms      ja
+
+Hold: Soll 30.20 / 30.17 / 30.17 / 30.17 ms, gemessen dieselben Zahlen.
+Release: Soll 50.43 / 50.50 / 50.50 / 50.46 ms, gemessen dieselben Zahlen.
+Spanne der Attackzeit ueber die vier Raten: 0.13 ms (Schranke 1 ms).
+
+Die reine Polreihe ergaebe 31,70 ms (§44, D-3); die ganze Kette liegt
+0,34 bis 0,47 ms darueber - die Gruppenlaufzeit des Detektor-Bandpasses und
+das Steuerraster. Der Matrixpruefer hatte 32,04 bis 32,17 ms gerechnet; die
+Messung liegt genau in diesem Band.
+
+-----------------------------------------------------------------
+4. t_E der Prueflinge von 311/M-77 und 311/M-78 (§9.1 F-12, Nachtrag)
+-----------------------------------------------------------------
+
+Term (datierter Nachtrag vom 20.09.2026, im Testkommentar und im Manifest
+§60; §9.1 selbst bleibt unveraendert):
+
+  t_E = max (kFadeSamples, 5*(tau_a + tau_m)*fs + 10*Q*A_max*fs/(pi*f0) + 16)
+  mit tau_m = kPegelFensterMs.
+
+  Pruefling                                Attack    t_E vorher   t_E nachher   groesste Abweichung ab t_E
+  1 (Bell 1 kHz Q 2, Huellkurventerm)      0,1 ms      345.58       2745.58     0.015731 dB
+  1 (Bell 1 kHz Q 2, Huellkurventerm)     10   ms     2721.58       5121.58     0.001275 dB
+  1 (Bell 1 kHz Q 2, Huellkurventerm)    500   ms   120321.58     122721.58     0.026786 dB
+  2 (Bell 1 kHz Q 1, Crossfadeterm)        0,1 ms      256.00       2592.79     0.020848 dB
+  3 (Bell 12 kHz Q 24, Frequenzterm)       0,1 ms      345.58       2745.58     0.016433 dB
+
+Der Zuwachs betraegt 2336.79 bis 2400.00 Samples und bleibt damit unter der
+Schranke 5*kPegelFensterMs*fs = 2400 Samples aus §40.4. Die Toleranz 0,1 dB ab
+t_E bleibt unveraendert; gemessen werden hoechstens 0.027 dB.
+
+-----------------------------------------------------------------
+5. Verschobene Bestandspruefungen, je mit Zahl, Richtung und Referenz
+-----------------------------------------------------------------
+
+ERSTE LISTE von §40.4 (erwartete Verschiebungen):
+
+a) attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)
+   vorher  A 20.32 / 20.33 / 20.33 / 20.38 ms (44,1 / 48 / 96 / 192 kHz)
+   nachher A 32.11 / 32.17 / 32.08 / 32.04 ms
+   Richtung GROESSER, +11.71 bis +11.83 ms - zwei Pole in Reihe.
+   Referenz: die im Test ausgeschriebene Kette (Nr. 3), Toleranz 1 ms
+   unveraendert.
+
+b) dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)
+   Die Ausgabezeile ist unveraendert (sie traegt keine Zahl); die gemessenen
+   Absolutzahlen wachsen gleichmaessig mit, die gepruefte Spanne bleibt mit
+   0.13 ms unter 1 ms.
+
+c) huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)
+   vorher  Residuum Leistung 0.000000022502 Pss, Auslenkung 0.000000046 dB,
+           Leistung beim Wechsel 0.3292 Pss
+   nachher Residuum Leistung 0.000000012390 Pss, Auslenkung 0.000000027 dB,
+           Leistung beim Wechsel 0.3156 Pss
+   Richtung: der Startwert der Huellkurve ist kleiner, weil ihr Eingang jetzt
+   der noch einschwingende Pegel ist. Referenz: dieselbe ausgeschriebene
+   Idealrampe, um den Pegelpol als vorgeschaltete Stufe erweitert; Schranken
+   1e-6 von Pss und 1e-4 dB unveraendert.
+
+d) huellkurvenwert_hold_ms_rampt_ohne_zustandsreset
+   vorher  0.000000000401 Pss / 0.000000003 dB / 0.3292 Pss
+   nachher 0.000000000155 Pss / 0.000000001 dB / 0.3156 Pss   (wie c)
+
+e) huellkurvenwert_release_ms_rampt_ohne_zustandsreset
+   vorher  0.000000000000 Pss / 0.000000000 dB / 0.2697 Pss
+   nachher 0.000000000000 Pss / 0.000000000 dB / 0.2752 Pss
+   Richtung: die Leistung beim Wechsel ist GROESSER, weil der Pegel in der
+   Stille mit kPegelFensterMs abklingt und die Huellkurve ihm folgt statt
+   gegen 0 zu laufen. Referenz wie c.
+
+f) attack_hold_release_sind_drei_stufen (M-26)
+   vorher  ohne Hold 0.0000 dB, mit 400 ms Hold -6.8136 dB
+   nachher ohne Hold 0.0000 dB, mit 400 ms Hold -4.5816 dB
+   Richtung: NAEHER am wahren Leistungsmittel. Das gepruefte Kriterium ist die
+   Differenz ueber 0,5 dB und bleibt; nur die Detailzahlen wandern.
+
+g) dynamic_enabled_wechselt_nur_am_blockrand (M-25)
+   vorher  zweite Differenz am Wechsel 0.022388935 gegen 0.023443103
+   nachher 0.022553802 gegen 0.023443103
+   Das Kriterium ist relativ (hoechstens das Vierfache des ruhigen Schritts)
+   und bleibt.
+
+h) 311/M-73 / 311/M-74 / 311/M-75 (T3-15-11)
+   Der BEZUGSPUNKT wandert, die Samplezahlen bleiben. Gemessen wird jetzt ab
+   dem ersten Steuerschritt mit Auslenkung ungleich 0, gelesen aus
+   `schrittRest` und der Auslenkung:
+
+     Rate       p=0        p=1       p=3       p=7
+     48 kHz     0 -> 8     7 -> 7    5 -> 5    1 -> 1
+     44,1 kHz   0 -> 8     7 -> 7    5 -> 5    1 -> 1
+     96 kHz     0 -> 8     7 -> 7    5 -> 5    1 -> 9
+
+   Das ist genau die Vorhersage aus §40.4 ("bei Phase p = 0 wandert er von
+   Sample 0 auf Sample 8, bei 96 kHz und p = 7 von 1 auf 9; bei p = 1 und
+   p = 3 bleibt er, wo er ist"). Die Zusage "erste Wirkung 1 bis 8, volle 8
+   bis 15 Samples" und ihre ms-Werte bleiben unveraendert.
+
+i) 311/M-77 und 311/M-78 (B7): siehe Nr. 4.
+
+j) 311/M-79 (B7) ist um den Pegelbegriff ERGAENZT (311/M-126): die Zeile
+   nennt jetzt zusaetzlich den Pegelbegriff des Slots und den bewegten
+   Pegelzustand; die Zusage und die Statebytes sind unveraendert.
+
+ZWEITE LISTE von §40.4 - zwei Zeilen, deren Grund die Messung nicht traegt
+(Entscheidregel des Dirigenten §59 Nr. 2, Fall 3: falscher Listengrund ->
+wie die erste Liste, Erwartung aus der ausgeschriebenen Referenz, Schranke
+unveraendert, als Abweichung benannt):
+
+k) range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)
+   vorher  erster Steuerschritt -0.046875 dB (Idealrampe -0.046875),
+           groesstes Residuum 0.000000000000 dB, Leistung danach 0.406344790
+   nachher erster Steuerschritt -0.002104 dB (Referenz -0.002104),
+           groesstes Residuum 0.000000000000 dB, Leistung danach 0.382495720
+   Grund der zweiten Liste war "Plateau (Quadraturton 0,9 gegen Threshold
+   -60 dB): die Auslenkung IST die Range". Das traegt fuer die Richtung
+   -12 -> 0 (dort ist der Pegel eingeschwungen, die Zeile bleibt zahlgleich),
+   nicht aber fuer 0 -> -12: dort startet der Detektor KALT, und das
+   Einschwingen des Pegels (tau_m = 480 Samples bei 48 kHz) liegt in derselben
+   Groessenordnung wie `kRampeSamples` = 256. Die Referenz ist deshalb jetzt
+   die ganze Kette (`rampenReferenz`), die Schranke 1e-6 dB unveraendert;
+   gemessen wird 0.000000000000 dB.
+
+l) detektor_ist_bandbegrenzt (M-21)
+   vorher  1000 Hz -9.0000 dB, 60 Hz -1.3373 dB
+   nachher 1000 Hz -9.0000 dB, 60 Hz -0.0369 dB
+   Grund der zweiten Liste war "lose Verhaeltnisschranke ueber zwei Werte, die
+   BEIDE geklemmt sind ... 60 Hz liegt mit rund -77 dB weit unter Threshold
+   -40 (Auslenkung exakt 0,0)". Gemessen ist die 60-Hz-Auslenkung weder am
+   Basisstand noch danach exakt 0: am Basisstand richtete die asymmetrische
+   Huellkurve die Welligkeit der 60-Hz-Leistung so weit gleich, dass der
+   Pegel den Threshold streifte (-1.3373 dB); mit dem symmetrischen Mittel
+   faellt das auf -0.0369 dB. Die Zeile misst also sehr wohl eine
+   Pegelgroesse. Die gepruefte Ungleichung (|aussen| < 0,5*|innen|) ist
+   unveraendert und haelt mit grossem Rand (0.0369 gegen 4.5); der Test ist
+   nicht angefasst. Die Verschiebung geht in die RICHTIGE Richtung: der
+   Detektor ist jetzt schmaler, nicht breiter.
+
+AUSSERHALB BEIDER LISTEN (Entscheidregel Fall 2: gruenes Urteil, die
+Pegelstufe erklaert die Abweichung, Befund mit Beleg, Bau geht weiter):
+
+m) "die dynamische Auslenkung bewegte sich im Lauf - sonst verglich der
+   Parameterverlauf nur Nullen (M-120)" (B6, Block des Wanduhrlaufs)
+   vorher  Slot 5 zwischen -6.00 und 0.00 dB
+   nachher Slot 5 zwischen -5.46 und 0.00 dB
+   Die Zeile prueft nur, DASS sich die Auslenkung bewegt hat, und bleibt
+   gruen. Sie steht in keiner der zwei Listen - §40.4 fuehrt aus diesem Block
+   nur `realtime_und_offline_gleich (M-120)`, beide Pruefungen. Ihr Prueffall
+   ist ein dynamisches Band mit laufendem Detektor und nicht konstanter
+   Detektorleistung; der Betrag faellt, weil das symmetrische Mittel die
+   Gleichrichtung nimmt.
+
+-----------------------------------------------------------------
+6. Die Messung der zwei Listen (R-311-22)
+-----------------------------------------------------------------
+
+Verglichen wurden die Ausgaben von B6, B7, B3c und A16 vor und nach dem
+Aenderungssatz, Zeile fuer Zeile (Urteils- und Messwertzeilen); Rohdateien
+docs/beweise/roh/NAK-311-etappe5-{b6,b7,b3c,a16}-zeilenvergleich.txt,
+Abschnitt 8.
+
+  Bein   Basis (Satz C)   Endstand D   abweichende Zeilen
+  B6     401              413          58
+  B7     216              216          14
+  B3c    163              163           0
+  A16    131              131           0
+
+B6, 58 Zeilen (12 neu, 23 Paare):
+  - 12 NEUE Zeilen dieses Satzes: die Ueberschrift des Abschnitts F2 und
+    311/M-120, 311/M-123, 311/M-124 (vier Bandmitten), 311/M-125, 311/M-129,
+    311/M-130, 311/M-131, 311/M-141.
+  - 10 Paare der ERSTEN Liste: a, c, d, e, f, g, h (drei Zeilen) und die
+    Textkorrektur an `range_minus_12_nach_0_rampt_ueber_die_volle_rampe`
+    (Wort "Idealrampe" -> "Referenz", Zahlen bitgleich).
+  - 2 Paare der zweiten Liste mit berichtigtem Grund: k und l.
+  - 1 Paar ausserhalb beider Listen: m.
+  - 1 Paar `null_allokationen_im_callback_samt_programmwechseln`: der
+    Pruefname ist um 311/M-129 ergaenzt und der Zyklus um eine Publikation
+    mit acht dynamischen Baendern; 121 statt 111 Blockrand-Uebernahmen. Das
+    ist eine neue Messung dieses Satzes, keine verschobene Zahl.
+  - 8 Paare der AUSGENOMMENEN Zeilenklassen (§52 Nr. 5, Wanduhr- und
+    Threadwerte): `bankpool_parallel_ohne_rennen (M-122)`,
+    `generationen_bleiben_streng_monoton (M-122)`, die zwei MESSWERT-Zeilen
+    der Lastmessung und die zwei Urteilszeilen dazu (M-118), `der
+    Realtime-Lauf folgte der Wanduhr (M-120)` und `der Offline-Lauf lief ohne
+    Takt (M-120)`.
+  - 1 Paar Zaehlzeile: 378 -> 389 geprueft, je 0 Fehler.
+
+B7, 14 Zeilen (7 Paare): die drei Prueflinge von 311/M-77, die drei von
+311/M-78 (je t_E, Nr. 4) und 311/M-79 (um den Pegelbegriff ergaenzt). Alle
+sieben stehen in der ERSTEN Liste von §40.4.
+
+B3c und A16: 0 abweichende Zeilen - genau das, was §40.4 im Absatz "Andere
+Beine" sagt (B3c traegt keine Auslenkung im Bericht, A16 kein dynamisches
+Band im Nulltestmaterial).
+
+KEINE Zeile des Abschnitts C von B6 (RBJ-Goldens, M-82) und keine der
+Abschnitte G, H und H2 (Stereo- und Hexgoldens, M-83, 311/M-61) ist unter den
+58 - sie sind damit bitgleich geblieben.
+
+-----------------------------------------------------------------
+7. Befund an den Dirigenten: die Schranke von 311/M-124
+-----------------------------------------------------------------
+
+Siehe docs/beweise/roh/NAK-311-rot-M-124.txt, Abschnitt 3. Kurz: die vier
+Zahlen aus §39.3 sind der EINSEITIGE Gipfel 10*log10(1 + r); gemessen wird
+aber die zweiseitige SPANNE ueber neun Einstellungen. Die einseitige Zahl
+haelt an allen vier Bandmitten (bei 341 Hz ohne Rand), die Spanne an dreien
+nicht. Der Test prueft deshalb die zweiseitige Form derselben Herleitung,
+10*log10((1 + r)/(1 - r)); keine Fensterlaenge aendert das Verhaeltnis der
+beiden Zahlen.
+
+-----------------------------------------------------------------
+8. Befund an den Dirigenten: die heutige Spanne von 311/M-124
+-----------------------------------------------------------------
+
+§39.3 sagt "Heute liegen sie bis 3,01 dB auseinander". Gemessen am
+Basisstand sind es 5.78 bis 5.79 dB: 3.01 dB nach oben (Attack 0,1 ms mit
+Hold ueber einer halben Periode haelt die Spitze) UND 2.77 dB nach unten
+(Attack 500 ms mit Release 100 ms faellt in jede Luecke der
+Momentanleistung). Der Befund ist damit groesser, als die Matrix ihn
+beziffert hat, nicht kleiner.

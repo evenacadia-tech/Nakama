@@ -485,6 +485,10 @@ private:
         bool          aktiv     { false };
         bool          dynamisch { false };
         bool          nutztSvf  { false };
+        /*  NAK-311 W35 (R-311-15, §41 F-19): der Pegelbegriff ist das
+            SIEBTE Topologiefeld - ein Wechsel ist ein Crossfade, nie eine
+            Interpolation zwischen zwei festgelegten Begriffen. */
+        Pegelbegriff  pegelbegriff { Pegelbegriff::durchschnitt };
         double        freqHzWirksam { 0.0 };
         double        q             { 0.0 };
         double        gainDb        { 0.0 };

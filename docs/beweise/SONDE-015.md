@@ -4527,3 +4527,99 @@ mit.
 **Kein persistenter Wert.** Die Hüllkurvenleistung bleibt Audiohistorie: zwei
 Sekunden eingeschwungenes Audio lassen die Statebytes unverändert
 (`311/M-79`). Es gibt keine neue Stateversion und kein neues Feld.
+
+### 13.5 E-19 — der Rampenweg verlangt seit W03 zusätzlich gleiche Kennungen (NAK-311 Etappen 3 und 5, W03 und W07, 20.09.2026)
+
+**Betroffen:** Entscheid E-19 (`:3412`), Spalte „Entscheid".
+
+**E-19 lautet** „Unterscheiden sich altes und neues Programm nur in
+`rampe`-Werten (`rampenKompatibel`), nimmt der Audiothread am Blockrand den
+Filter- und Hüllkurvenzustand der alten Bank in die neue und interpoliert die
+Koeffizienten über `kRampeSamples` linear". Das nennt nur die **erste**
+Bedingung.
+
+**Nachtrag.** Seit NAK-311 Etappe 3 (W03, R-311-1) verlangt der Rampenweg
+**zusätzlich** gleiche Pfadkennung und gleiche Lebenszykluskennung jedes
+aktiven Slots (`eq-copilot/plugin/dsp/DspKern.cpp`, `blockrand`, erste
+Lesestelle). `rampenKompatibel` kann also wahr sein, während der Rampenweg
+trotzdem nicht läuft; dann blendet der Blockrand über einen Crossfade, der den
+`BandZustand` genau der Slots mit gleicher Kennung übernimmt. Zwei Anlässe
+vergeben eine neue Kennung, ohne dass `rampenKompatibel` es sieht:
+
+- **W03** (Etappe 3, §13.1): der Slot war zwischendurch entfernt und neu
+  belegt, oder eine **verdrängte** Zwischenpublikation hat ihn geändert.
+- **W07** (Etappe 5, R-311-13): der Slot reißt bei sonst gleicher Topologie
+  eines der drei Wertekriterien — Frequenzverhältnis 2,0, Güteverhältnis 4,0,
+  Gaindifferenz 20,0 dB (`eq-copilot/plugin/dsp/DspProgramm.h`). Dann bekommt
+  **nur er** eine neue Kennung, und nur er startet kalt.
+
+`rampenKompatibel` selbst kennt weiterhin keine Wertegrenze; seit W35
+(R-311-15) trägt es als siebtes Topologiefeld den `pegelbegriff` (§13.6).
+**Kein Codewort von E-19 ändert sich** — der Entscheid beschreibt den
+Rampenweg unverändert richtig, nennt nur seine zweite Bedingung nicht.
+
+### 13.6 R7 Feinheit 3 — zwischen Detektor und Hüllkurve liegt der festgelegte Pegelbegriff (NAK-311 Etappe 5, W35, T3-15-06, R-311-15, 20.09.2026)
+
+**Betroffen:** R7 Feinheit 3 (`:1711`), Satz 3 „Der Detektor".
+
+**Sie lautet** „RBJ-Bandpass mit konstanter Spitzenverstärkung auf `freq_hz`
+und `q` desselben Slots, angewandt auf das **Eingangssignal des Bandes**,
+danach quadratischer Mittelwert über eine Ein-Pol-Hüllkurve mit den
+Koeffizienten `exp(−1/(fs · τ))` und getrenntem Hold-Zähler." Die Kette hat
+seit dem Änderungssatz D eine Stufe mehr.
+
+**Nachtrag.** Die Reihe ist **Bandpass → Pegelbegriff → Hüllkurve →
+Kennlinie**. Bandpass, Koeffizientenform und Hold-Zähler bleiben Wort für
+Wort, wie sie hier stehen; neu ist allein der **Pegelbegriff** dazwischen
+(`eq-copilot/plugin/dsp/DspFilter.h`, `PegelZustand`). Er ist **festgelegt**,
+nicht einstellbar: `durchschnitt` ist ein symmetrisches Ein-Pol-Leistungsmittel
+mit derselben Koeffizientenform `exp(−1/(fs · τ))` und der festen
+Zeitkonstante `kPegelFensterMs` = 10,0 ms — derselbe Koeffizient in beide
+Richtungen, also keine Gleichrichtung —, und `spitze` ist **dieselbe Stufe mit
+dem Fenster 0**: sie gibt die Momentanleistung unverändert weiter, ist also
+der bisher gebaute Weg und bitgleich zu ihm. Aktiv ist Durchschnitt;
+`baueProgramm` setzt ihn unbedingt, über den Vertragsweg ist Spitze nicht
+erreichbar (der Umschalter je Band ist Register NAK-331).
+
+Der Grund steht in R-311-15: der eingeschwungene Pegel hing bisher an Hold und
+Attack, weil die asymmetrische Hüllkurve die Welligkeit der Momentanleistung
+gleichrichtete. Der Fixpunkt eines Ein-Pol-Mittels bei konstantem Eingang ist
+bitgenau dieser Eingang; mit welligkeitsfreiem Eingang hängt der Pegel deshalb
+nicht mehr an der Ballistik. Gemessen in B6 (`311/M-120`, `311/M-123`,
+`311/M-124`, `311/M-125`, `311/M-129` bis `311/M-131`, `311/M-141`).
+
+### 13.7 E-25 und M-26 — die Referenz der Sprungantwort bekommt den zweiten Pol (NAK-311 Etappe 5, W35, T3-15-06, R-311-15, 20.09.2026)
+
+**Betroffen:** Entscheid E-25 (`:3419`) und Matrixzeile M-26 (`:1069`).
+
+**E-25 lautet** „Die Sprungantwort misst Attack bis `1 − 1/e` der
+Zielleistung, Hold bis zum Verlassen des Plateaus um 0,01 dB, Release bis
+`1/e`; Toleranz **1 ms** je Stufe." Die Referenz dahinter war ein **einziger**
+Pol.
+
+**Nachtrag.** Seit §13.6 liegen zwei Pole in Reihe, und die gemessene
+Attackzeit wächst um **11,7 bis 11,8 ms** — von 20,0 auf rund 31,7 ms bei
+Attack 20 ms und `kPegelFensterMs` 10 ms. Analytisch ist die Sprungantwort der
+Kaskade 1 − 2·e^(−t/τ_a) + e^(−t/τ_m); mit u = e^(−t/τ_a) folgt aus
+(1 − u)² = 1 − 1/e der 63-%-Punkt t = −τ_a·ln(1 − √(1 − 1/e)) = **31,70 ms**.
+
+**Die Referenz ist seither die ganze Kette, nicht die Polreihe allein:** der
+Sollwert wird im Test aus Detektor-Bandpass, Pegelbegriff, Hüllkurve und
+Steuerraster Sample für Sample ausgeschrieben und liegt damit bei **32,11 /
+32,17 / 32,08 / 32,04 ms** bei 44,1 / 48 / 96 / 192 kHz — 0,34 bis 0,47 ms
+über der reinen Polreihe (Gruppenlaufzeit des Bandpasses und Steuerrate).
+Hold und Release messen weiter **vom Plateau aus** und wachsen um weniger als
+1 ms: Hold +0,00 ms, Release höchstens +0,67 ms.
+
+**Die Toleranz von 1 ms je Stufe bleibt unverändert; geändert hat sich allein
+die Referenz.** Dasselbe gilt für die Toleranz von M-84 (§13.4): ihr t_E
+rechnet seither 5·(τ_a + `kPegelFensterMs`)·fs statt 5·τ_a·fs, die 0,1 dB ab
+t_E bleiben (gemessen höchstens 0,027 dB).
+
+**M-26 bleibt Wort für Wort:** Attack, Hold und Release wirken weiter als drei
+getrennte Stufen in dieser Reihenfolge; die Hüllkurve selbst ist unverändert,
+nur ihr Eingang ist jetzt der Pegelbegriff statt der Momentanleistung. Die
+gemessenen Zeiten verschieben sich, die Zusage nicht. Gemessen in B6
+(`attack_hold_release_als_sprungantwort_bei_vier_raten`,
+`dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit`) und B7 (`311/M-77`,
+`311/M-78`).

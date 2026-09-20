@@ -60,6 +60,14 @@ struct BandZustand
     BiquadZustand     statisch[2] {};
     SvfZustand        svf[2] {};
     BiquadZustand     detektor[2] {};
+
+    /*  NAK-311 R-311-15: der Zustand des PEGELBEGRIFFS, zwischen Detektor
+        und Huellkurve. Er liegt hier im `BandZustand` und wandert damit ueber
+        dieselbe Uebertragung am Blockrand mit wie Filter-, Detektor- und
+        Huellkurvenzustand (W03, 311/M-131); `nullen`, `istEndlich` und
+        `riegleDenormale` fassen ihn wie die Huellkurvenleistung
+        (311/M-130). */
+    PegelZustand      pegel {};
     HuellkurveZustand huelle {};
 
     /*  Die Steuerrate des dynamischen Bandes: `schrittRest` zaehlt bis zum

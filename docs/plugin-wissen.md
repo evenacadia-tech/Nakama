@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A bis C)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A bis D)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -834,6 +834,54 @@ Audiothread liest weiterhin nur zwei 64-Bit-Kennungen je Slot. Im
 Allokationslauf über 4000 Blöcke mit Publikationen über dem Kriterium zählt der
 thread-lokale Zähler 0 Allokationen und 0 Sperren. Manifest
 `docs/beweise/NAK-311.md` §39.1, §40.3 und §57.
+
+**Der festgelegte Pegelbegriff der Dynamikschwelle** (20.09.2026, NAK-311
+Etappe 5 Änderungssatz D, T3-15-06, R-311-15, Karte U45). Bis hierher verglich
+die Kennlinie den Threshold mit dem Ausgang der asymmetrischen Hüllkurve, und
+die richtete die Welligkeit der Momentanleistung gleich: derselbe Threshold
+wirkte je nach Hold und Attack anders — bei den Vertragsdefaults 2,12 dB, über
+neun Einstellungen bis 5,79 dB auseinander. Seither liegt zwischen Detektor
+und Hüllkurve eine Stufe mit **festgelegtem Begriff**: `durchschnitt` ist ein
+symmetrisches Ein-Pol-Leistungsmittel mit der festen Zeitkonstante
+`kPegelFensterMs` = 10,0 ms (`eq-copilot/plugin/dsp/DspFilter.h`, `PegelZustand`),
+`spitze` dieselbe Stufe mit dem Fenster 0 — dort ist sie **kurzgeschlossen**,
+nicht mit 0 multipliziert, und der ganze dynamische Weg ist bitgleich zum Stand
+davor. Der Begriff steht je Slot im `BandProgramm`; `baueProgramm` setzt ihn an
+**genau einer Stelle** unbedingt auf Durchschnitt, über den Vertragsweg ist
+Spitze nicht erreichbar (Register NAK-331 baut den Umschalter je Band). Der
+Pol wird im Worker entworfen (`huellkurveEntwurf`), nie im Callback; im
+Audiothread kostet die Stufe je Sample und laufendem Detektor eine
+Multiplikation, eine Addition und einen `double`.
+
+Warum das den Befund schließt: der Fixpunkt eines Ein-Pol-Mittels bei
+konstantem Eingang ist bitgenau dieser Eingang, also hängt der eingeschwungene
+Pegel bei welligkeitsfreiem Eingang nicht mehr an Hold und Attack. Gemessen bei
+48 kHz mit Bell Q 0,707, Range −12 dB und dem Pegel im Knie: drei Materialien
+gleicher Leistung liegen um **0,02 dB** (1 kHz), 0,06 dB (341 Hz), 0,21 dB
+(100 Hz) und 0,90 dB (20 Hz) auseinander statt um 2,11 dB, Rauschen um 0,32
+statt 4,01 dB; neun Einstellungen aus Attack 0,1/10/500 ms mal Hold
+0/30/500 ms spannen je Bandmitte **0,05 / 0,15 / 0,50 / 2,20 dB** statt 5,78
+bis 5,79 dB. Ein **festes** Fenster lässt unter rund 340 Hz einen Rest, der mit
+fallender Bandmitte wächst (Restwelligkeit r = 1/(4π·f0·τ_m)); das ist die
+bezifferte Folge der Regel, kein Befund.
+
+Der Pegelzustand liegt im `BandZustand` und wandert damit über die Übertragung
+aus W03 mit; `nullen`, `istEndlich` und `riegleDenormale` fassen ihn wie die
+Hüllkurvenleistung, und `verarbeiteBand` nullt ihn mit dem abgeschalteten
+Detektor (E-29 — sonst nähme die frisch genullte Hüllkurve bei der nächsten
+Rampe von 0 weg den Pegel von damals als ersten Eingang). Der Begriff ist
+**topologisch**: `rampenKompatibel` und die Kennungsvergabe tragen ihn, zwischen
+zwei Begriffen wird nie interpoliert. Weder Begriff noch Zustand erreichen
+State, Draht, Bericht oder `state_hash` — Laufzeit wie die Kanalzahl.
+
+Verschoben hat sich die **Referenz** der Sprungantwort, nicht die Zusage: bei
+Attack 20 ms und Fenster 10 ms liegt der 63-%-Punkt der ganzen Kette bei
+**32,04 bis 32,17 ms** statt bei 20 ms (Polreihe allein 31,70 ms; der Rest ist
+Gruppenlaufzeit des Detektor-Bandpasses und Steuerraster), und das t_E der
+Recall-Toleranz rechnet 5·(τ_a + `kPegelFensterMs`)·fs statt 5·τ_a·fs. Die
+Toleranzen — 1 ms je Stufe, 0,1 dB ab t_E — bleiben unverändert. Manifest
+`docs/beweise/NAK-311.md` §39.3, §40.4 und §60; Nachträge in
+`docs/beweise/SONDE-015.md` §13.5 bis §13.7.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

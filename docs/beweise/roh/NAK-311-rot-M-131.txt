@@ -1,0 +1,100 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-131
+=================================================================
+
+Matrixzeile : M-131 (§39.3) - T3-15-06 / R-311-1, der Pegelbegriff ist
+              topologisch
+Zusage      : Ein Wechsel des Pegelbegriffs ist topologisch:
+              `rampenKompatibel` liefert falsch, der Slot bekommt in
+              `vergebeKennungen` eine neue Kennung, und der Crossfade laesst
+              ihn kalt beginnen - der Pol wird nie zwischen zwei Begriffen
+              interpoliert. Bleibt der Begriff gleich, wandert der
+              Pegelzustand mit dem uebrigen Bandzustand.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2; dazu der Abschnitt Q
+              (W03), der unveraendert laeuft
+Test        : 311/M-131 pegelbegriff_ist_topologisch, drei Haelften
+Etikett     : heute nicht messbar
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand:
+  (a) rampenKompatibel bei gleichem Begriff wahr, bei verschiedenem falsch.
+  (b) Das Feld steht im `SlotMerkmal`, `merke` schreibt es fort, und die
+      `bleibt`-Bedingung von `vergebeKennungen` vergleicht es.
+  (c) Bank 0 -> 1 ueber einen Fremdslotwechsel (Typwechsel an Slot 3),
+      Kennung von Slot 0 unveraendert, Pegel vorher 0.124999997615, nachher
+      0.124999997624 (Sollpegel 0.125000000000).
+  Der ganze Abschnitt Q (311/M-43 bis 311/M-56, 311/M-94, 311/M-95) laeuft
+  unveraendert - 0 abweichende Zeilen im Zeilenvergleich.
+
+ABWEICHUNG, benannt: die Haelfte (b) wird am QUELLTEXT gemessen, nicht an
+einem Lauf. Grund: `baueProgramm` setzt den Begriff unbedingt auf
+Durchschnitt (311/M-125), und der Bauplatz `DspKern::vorbau`, aus dem
+`publiziereVorbau` die Bank fuellt, ist privat - zwei Programme DESSELBEN
+Pfades mit verschiedenem Begriff sind ueber die oeffentliche Schnittstelle
+nicht publizierbar. Eine Testluke im Produktcode waere ein neuer, von §40.4
+nicht beauftragter Pfad. Die Quelltextwache ist dieselbe Bauart wie B-13 und
+fail-closed.
+
+-----------------------------------------------------------------
+Haelfte a - aus `rampenKompatibel` genommen
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspProgramm.cpp, `rampenKompatibel`
+SHA256 vorher  : 3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspProgramm.cpp.M-131a.bak
+
+Vorher, woertlich:
+            || a.pegelbegriff != n.pegelbegriff)
+
+Nachher, woertlich:
+            )
+
+Gebaut: EqCopDspGoldenTest, Binary 16:18:56 nach der Quelle 16:18:53.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+  FEHLER  311/M-131 pegelbegriff_ist_topologisch  [(a) rampenKompatibel bei
+  gleichem Begriff wahr, bei verschiedenem falsch: NEIN; (b) ... ja; (c) ...]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - zwei Programme, die sich
+nur im Pegelbegriff unterscheiden, gelten wieder als rampenkompatibel, und
+der Pol liefe durch Zwischenwerte, die keiner der beiden Begriffe sind.
+
+SHA256 nachher : 3DEAF8D4AE735F35FF94D26A7951D9C70B5C056D28EACC56916ABFD573E12F2E
+Bein danach Exit 0 - 389 geprueft, 0 Fehler.
+
+-----------------------------------------------------------------
+Haelfte b - aus der `bleibt`-Bedingung genommen
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspKern.cpp, `DspKern::vergebeKennungen`
+SHA256 vorher  : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspKern.cpp.M-131b.bak
+
+Vorher, woertlich (die eine Zeile der Bedingung):
+                         && s.pegelbegriff == b.pegelbegriff
+
+Nachher: die Zeile entfernt.
+
+Gebaut: EqCopDspGoldenTest, Binary 16:19:20 nach der Quelle 16:19:17.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+  FEHLER  311/M-131 pegelbegriff_ist_topologisch  [(a) ... ja; (b)
+  SlotMerkmal ja, merke ja, bleibt-Bedingung NEIN; (c) ...]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - der Merkzettelvergleich
+kennt den Begriff nicht mehr, ein Slot behielte seine Kennung ueber einen
+Begriffswechsel hinweg und bekaeme den Zustand des anderen Begriffs
+uebertragen.
+
+SHA256 nachher : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Bein danach Exit 0 - 389 geprueft, 0 Fehler.
+
+-----------------------------------------------------------------
+Nebeneffekte
+-----------------------------------------------------------------
+
+MITGEFALLEN in beiden Laeufen: keine - je genau eine Pruefung. GRUEN
+GEBLIEBEN: je 388 Pruefungen, darunter der ganze Abschnitt Q (W03). Beide
+Vergleiche sind im Produkt in jedem Fall wahr, weil `baueProgramm` den
+Begriff unbedingt setzt; ihr Fehlen aendert deshalb KEIN Produktverhalten -
+genau das, was §41 F-19 sagt, und genau deshalb braucht die Zeile eine eigene
+Wache.

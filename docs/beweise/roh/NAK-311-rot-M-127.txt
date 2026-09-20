@@ -1,0 +1,68 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-127
+=================================================================
+
+Matrixzeile : M-127 (§39.3) - T3-15-06, verschobene Bestandszusage,
+              Sprungantwort
+Zusage      : Die drei Stufen bleiben getrennt und in ihrer Reihenfolge, und
+              dieselbe Millisekundenangabe ergibt bei jeder Rate dieselbe
+              Zeit. Gemessen wird gegen eine im Test ausgeschriebene Referenz
+              aus ZWEI Polen in Reihe - `kPegelFensterMs` vor der Attack -,
+              nicht mehr gegen einen; Toleranz je Stufe unveraendert 1 ms.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F
+Tests       : attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)
+              dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit (M-26, B-15)
+Etikett     : heute nicht messbar (die Reihenreferenz entsteht mit der
+              Pegelstufe)
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Gemessen am gebauten Stand (Referenz und Messung getrennt gerechnet):
+
+  Rate       Sollwert (Referenz der ganzen Kette)   gemessen         Abstand
+  44,1 kHz   A 32.11  H 30.20  R 50.43 ms           A 32.11  H 30.20  R 50.43   0.00 ms
+  48,0 kHz   A 32.17  H 30.17  R 50.50 ms           A 32.17  H 30.17  R 50.50   0.00 ms
+  96,0 kHz   A 32.08  H 30.17  R 50.50 ms           A 32.08  H 30.17  R 50.50   0.00 ms
+  192  kHz   A 32.04  H 30.17  R 50.46 ms           A 32.04  H 30.17  R 50.46   0.00 ms
+
+  Abstand der Attackzeit zur reinen Polreihe 31,70 ms: +0.34 bis +0.47 ms.
+  Abstand zur Vorhersage des Matrixpruefers (32,04 bis 32,17 ms): 0,00 ms -
+  die Messung liegt genau in diesem Band (§46.2, Vormerkung H-1).
+  Spanne der Attackzeit ueber die vier Raten: 0.13 ms (Schranke 1 ms).
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/tests/DspGoldenTestMain.cpp, die Referenzkette von
+        311/M-127 - die Zeile, die den Pegelpol in die Referenz bringt
+SHA256 vorher  : 1146FFBC7C717F350DC41266CFB2022220B33BBAFC486CE2C768F9885EE9B798
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspGoldenTestMain.cpp.M-127.bak
+
+Vorher, woertlich:
+                const double pm = refPol (kPegelFensterMs, rate);
+
+Nachher, woertlich (`kPegelFensterMs` in der Referenz auf 0 gesetzt, im
+Produkt auf 10,0 gelassen - die Referenz kennt wieder nur EINEN Pol):
+                const double pm = refPol (0.0, rate);
+
+Gebaut: EqCopDspGoldenTest, Binary 16:16:55 nach der Quelle 16:16:50.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+GEFALLEN ist genau die erwartete Pruefung:
+
+  FEHLER  attack_hold_release_als_sprungantwort_bei_vier_raten (M-26, B-15)
+  [soll 44.1 kHz: A 20.32; 48.0 kHz: A 20.33; 96.0 kHz: A 20.33; 192.0 kHz:
+  A 20.38 ms; gemessen 44.1 kHz: A 32.11; 48.0 kHz: A 32.17; 96.0 kHz:
+  A 32.08; 192.0 kHz: A 32.04 ms]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - die gemessene Attackzeit
+reisst die 1 ms gegen die Referenz um rund 11,8 ms.
+
+MITGEFALLEN: keine. GRUEN GEBLIEBEN: 388 Pruefungen, darunter die zweite
+Haelfte `dieselbe_ms_angabe_ergibt_bei_jeder_rate_dieselbe_zeit` - sie
+vergleicht die vier GEMESSENEN Zeiten untereinander und haengt nicht an der
+Referenz. Genau das trennt die zwei Zusagen von M-127.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : 1146FFBC7C717F350DC41266CFB2022220B33BBAFC486CE2C768F9885EE9B798
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

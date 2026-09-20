@@ -1,0 +1,70 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-141
+=================================================================
+
+Matrixzeile : M-141 (§39.3) - T3-15-06 / E-29 / W-3,
+              aktivieren <-> abklingen
+Zusage      : Ein Detektor, der nicht mehr laeuft, haelt auch keinen PEGEL.
+              Nach der ersten Rampe ist der Pegelzustand bitgenau +0,0, und
+              die zweite Rampe beginnt wie ein FRISCHER Detektor; im ersten
+              Steuerschritt steht kein Sprung auf einen Pegel von damals.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-141 pegelzustand_wird_mit_dem_detektor_genullt
+Etikett     : heute nicht messbar (der Pegelzustand entsteht im Bau)
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand: Pegel nach der ersten Rampe 0.000000000000000
+(bitgenau +0,0), Huellkurvenleistung 0.000000000000000; zweite Rampe gegen
+die im Test ausgeschriebene Referenz des frischen Detektors: erster
+Steuerschritt -0.002104341 dB (soll -0.002104341), groesstes Residuum
+0.000000000000 dB ueber 64 Steuerschritte.
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspKern.cpp, `DspKern::verarbeiteBand`, das
+        Nullen am Ende des Stuecks (E-29 / W-3)
+SHA256 vorher  : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspKern.cpp.M-141.bak
+
+Vorher, woertlich:
+        z.pegel.nullen();
+        z.huelle.nullen();
+
+Nachher, woertlich (der Pegelzustand aus dem Nullen herausgelassen; die
+Huellkurve und die Detektor-Biquads werden weiter genullt):
+        z.huelle.nullen();
+
+Gebaut: EqCopDspGoldenTest, Binary 16:19:42 nach der Quelle 16:19:39.
+Exitcode: 1 - 389 geprueft, 1 Fehler.
+
+GEFALLEN ist genau die erwartete Pruefung:
+
+  FEHLER  311/M-141 pegelzustand_wird_mit_dem_detektor_genullt  [Pegel nach
+  der ersten Rampe 0.404951522531365 (bitgenau +0,0: NEIN),
+  Huellkurvenleistung 0.000000000000000; zweite Rampe gegen die
+  ausgeschriebene Referenz des frischen Detektors: erster Steuerschritt
+  -0.046875000 dB (soll -0.002104341), groesstes Residuum 0.044770658833 dB]
+
+Die Zusage faellt an der erwarteten Pruefung: JA - und an beiden Haelften
+zugleich: der Pegel bleibt als eingefrorener Wert von 0.4049 stehen, und die
+frisch genullte Huellkurve nimmt ihn im ersten Sample der zweiten Rampe als
+Eingang, geht auf den Attack-Zweig und springt sofort auf die volle anteilige
+Range (-0.046875 statt -0.002104 dB). Genau der Zustand, den E-29
+ausschliesst.
+
+MITGEFALLEN: keine.
+
+GRUEN GEBLIEBEN unter derselben Mutation - der BESTANDSFALL faengt es NICHT
+auf, wie §40.4 Risiko 2b es vorhergesagt hat:
+  ok  range_minus_12_nach_0_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)
+  ok  range_0_nach_minus_12_rampt_ueber_die_volle_rampe (M-17, R8, B-4, W-3)
+Er liest ausschliesslich `huelle.leistung` (die `:743` weiterhin nullt) und
+faehrt je Lauf nur EINE Richtung; in der Richtung 0 -> -12 hat der Detektor
+davor nie gelaufen, es gibt also gar keinen Pegel zum Einfrieren.
+Die uebrigen 388 Pruefungen bleiben gruen.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

@@ -1,0 +1,83 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-129
+=================================================================
+
+Matrixzeile : M-129 (§39.3) - T3-15-06, Echtzeit und Kosten
+Zusage      : Die Stufe kostet je Sample und laufendem Detektor eine
+              Multiplikation, eine Addition und einen `double` Zustand; kein
+              `log10`, kein `pow`, keine Verzweigung auf Daten. Im Callback
+              zaehlt der thread-lokale Zaehler 0 Allokationen und 0 Sperren,
+              und `kDynamikSchritt` bleibt 8. Der Pol wird im WORKER
+              entworfen.
+Bein        : B6 (EqCopDspGoldenTest)
+Tests       : 311/M-129 pegelstufe_rechnet_im_callback_nur_mult_und_add
+              (Abschnitt F2, Rechenort am Quelltext)
+              null_allokationen_im_callback_samt_programmwechseln (M-41,
+              M-47, B-25, 311/M-111, 311/M-129) - seit diesem Satz mit ACHT
+              dynamischen Baendern im Zyklus
+              null_sperren_im_callback (M-47)
+Etikett     : Regressionswache
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+Messung am gebauten Stand:
+  4000 Bloecke wechselnder Groesse, 4 179 358 Samples, 121 Blockrand-
+  Uebernahmen, Testzaehler 0 Allokationen, Kernzaehler 0, Sperrenzaehler 0.
+  Kosten je Sample und laufendem Detektor: eine Multiplikation, eine
+  Addition, ein `double` - bei acht Baendern und 192 kHz also 1,54 Millionen
+  Multiplikations-Additionen je Sekunde neben den fuenf Koeffizienten des
+  Detektor-Biquads und dem SVF.
+  Rumpf von `verarbeiteBand`: 9742 Zeichen, genau EIN Aufruf der Pegelstufe,
+  kein `std::exp`, `std::pow`, `std::log10`, `huellkurvePol`,
+  `huellkurveEntwurf`, `new` oder `malloc`.
+
+-----------------------------------------------------------------
+Die Mutation nach dem Bau
+-----------------------------------------------------------------
+
+Datei : eq-copilot/plugin/dsp/DspKern.cpp, `DspKern::verarbeiteBand`, die
+        Zeile der Pegelstufe
+SHA256 vorher  : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspKern.cpp.M-129.bak
+
+Vorher, woertlich:
+                const double pegel = z.pegel.tick (b.huelle.pegelPol, leistungEin);
+
+Nachher, woertlich (den Pol je Sample aus `kPegelFensterMs` gerechnet -
+`huellkurvePol` ruft `std::exp` - statt ihn im Worker zu entwerfen):
+                const double pegel = z.pegel.tick (huellkurvePol (kPegelFensterMs, bank.programm.samplerate), leistungEin);
+
+Gebaut: EqCopDspGoldenTest, Binary 16:17:26 nach der Quelle 16:17:23.
+Exitcode: 1 - 389 geprueft, 2 Fehler.
+
+GEFALLEN ist die erwartete Pruefung:
+
+  FEHLER  311/M-129 pegelstufe_rechnet_im_callback_nur_mult_und_add  [Rumpf
+  von verarbeiteBand 9782 Zeichen, Aufrufe der Pegelstufe 1, Treffer:
+  huellkurvePol; der Pol entsteht in baueProgramm (Worker)]
+
+Die Zusage faellt an der erwarteten Pruefung: JA.
+
+ABWEICHUNG von der Rotbeweisspalte, benannt: §39.3 erwartet, dass "die
+Kostenmessung und der RECHENORTZAEHLER fallen". Der Rechenortzaehler der
+`RtWache` traegt es nicht: `meldeAbleitung` wird ausschliesslich von
+`leiteAutoGainAb` gerufen (`DspProgramm.cpp:89`), ein `std::exp` im Callback
+meldet sich bei ihm nicht von selbst, und die Lastmessung von M-118 ist eine
+Wanduhrzahl, die von Lauf zu Lauf schwankt (ausgenommene Zeilenklasse, §52
+Nr. 5). Der Rechenort wird deshalb wie die Sperrfreiheit in B-13 am
+QUELLTEXT gemessen, fail-closed - dieselbe Bauart, dieselbe Zeile, an der die
+Zusage haengt.
+
+MITGEFALLEN mit Grund:
+  311/M-123 spitze_ist_bitgleich_zum_basisstand [Fingerabdruck
+  13420995249182562793 gegen Basisstand 4420950042542505610] - die Mutation
+  nimmt den Pol nicht mehr aus dem Programm, also gilt auch unter `spitze`
+  das Fenster 10 ms, und der Kurzschluss faellt weg.
+
+GRUEN GEBLIEBEN: 387 Pruefungen, darunter
+`null_allokationen_im_callback_samt_programmwechseln` und
+`null_sperren_im_callback` - ein `std::exp` alloziert nicht und sperrt nicht.
+Genau deshalb braucht die Zusage die Quelltextwache.
+
+RUECKNAHME bytegleich aus der Sicherung:
+SHA256 nachher : CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+LastWriteTime auf jetzt, neu gebaut, Bein danach Exit 0 - 389 geprueft,
+0 Fehler.

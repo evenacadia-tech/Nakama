@@ -49,6 +49,30 @@ enum class Kanalmodus { stereo = 0, left, right, mid, side };
 /** Die drei Vertragswerte von `sidechain_source` in Enumreihenfolge. */
 enum class Sidechain { none = 0, internal, prioritySidechain };
 
+/** NAK-311 R-311-15 (T3-15-06, Karte U45): die zwei FESTGELEGTEN
+    Pegelbegriffe der Dynamikschwelle - die Groesse, mit der die Kennlinie
+    den Threshold vergleicht.
+
+    `durchschnitt` ist ein symmetrisches Ein-Pol-Leistungsmittel mit der
+    festen Zeitkonstante `kPegelFensterMs`, `spitze` dieselbe Stufe mit dem
+    Fenster 0 (kurzgeschlossen; die Spitzenbildung leistet wie bisher die
+    Huellkurve). Aktiv ist Durchschnitt: `baueProgramm` setzt ihn UNBEDINGT
+    und ohne Eingabe, ueber den Vertragsweg ist Spitze nicht erreichbar
+    (311/M-125). Der sichtbare Umschalter je Band ist ein neuer gespeicherter
+    Wert und gehoert zu Register NAK-331 - diese Etappe baut ihn nicht.
+
+    KEIN Statefeld, kein Drahtfeld, keine Revision: abgeleitet wie `kanaele`
+    (311/M-126). */
+enum class Pegelbegriff { durchschnitt = 0, spitze };
+
+/** Die Fensterlaenge eines Pegelbegriffs in Millisekunden. Die eine Stelle,
+    an der die zwei Begriffe zu einer Zahl werden; `huellkurveEntwurf`
+    (DspFilter.h) macht daraus den Pol. */
+constexpr double pegelFensterMs (Pegelbegriff begriff) noexcept
+{
+    return begriff == Pegelbegriff::spitze ? 0.0 : kPegelFensterMs;
+}
+
 /** Die vier Zustaende der Hoermatrix (R10). Transient - kein Parameter,
     kein Feld im DTO, nichts im `state_hash`. */
 enum class Hoermatrix { processed = 0, dry, delta, candidate };
@@ -283,6 +307,15 @@ struct BandProgramm
     bool        detektorLaeuft { false };
     Sidechain   quelle       { Sidechain::none };   ///< der persistente Vertragswert (topologisch)
     Biquad      detektor     {};
+
+    /*  NAK-311 R-311-15: der festgelegte PEGELBEGRIFF dieses Slots. Er ist
+        TOPOLOGISCH (§41 F-19): `rampenKompatibel` nimmt ihn in seine
+        Bedingung auf, und `vergebeKennungen` vergleicht ihn wie die fuenf
+        uebrigen Topologiefelder. Ein Zwischenwert zwischen Fenster 0 und
+        `kPegelFensterMs` waere keiner der beiden festgelegten Begriffe,
+        sondern ein dritter, unbenannter - deshalb wird nie zwischen zwei
+        Begriffen interpoliert, sondern ueberblendet. */
+    Pegelbegriff pegelbegriff { Pegelbegriff::durchschnitt };
     HuellkurveKoeffizienten huelle {};
     double      thresholdDb  { 0.0 };
     double      rangeDb      { 0.0 };
@@ -513,7 +546,15 @@ double autoGainGitterHz (int stelle) noexcept;
     bekommt in `DspKern::vergebeKennungen` eine neue Kennung - der Rampenweg
     faellt damit fuer die ganze Publikation weg, und der Crossfade uebertraegt
     den Zustand nur der Slots, die ihre Kennung behalten haben. Diese Funktion
-    selbst ist unveraendert: sie kennt weiterhin KEINE Wertegrenze. */
+    selbst kennt weiterhin KEINE Wertegrenze.
+
+    SIEBTES TOPOLOGIEFELD seit NAK-311 W35 (R-311-15, §41 F-19): der
+    `pegelbegriff` des Slots. Zwischen zwei festgelegten Begriffen wird nie
+    interpoliert - ein Pol zwischen Fenster 0 und `kPegelFensterMs` waere ein
+    dritter, unbenannter Begriff -, also ist ein Wechsel ein Crossfade. Im
+    Produkt aendert das nichts: `baueProgramm` setzt den Begriff unbedingt auf
+    `durchschnitt` (311/M-125), zwei Programme unterscheiden sich darin nie,
+    und die Bedingung ist in jedem Vertragsfall wahr. */
 bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept;
 
 } // namespace nakama::dsp

@@ -1,0 +1,143 @@
+NAK-311 Etappe 5, Aenderungssatz D - Rotbeweis Matrixzeile M-124
+=================================================================
+
+Matrixzeile : M-124 (§39.3) - T3-15-06 / R-311-15 / R-311-17, der Kern des
+              Befunds
+Zusage      : Derselbe Threshold wirkt nach demselben Begriff - die
+              eingeschwungenen Auslenkungen der neun Einstellungen liegen JE
+              BANDMITTE hoechstens max(0,1 dB; 10*log10(1 + 1/(4*pi*f0*tau_m)))
+              auseinander: 0,1000 / 0,1002 / 0,3325 / 1,4547 dB bei
+              1 kHz / 341 Hz / 100 Hz / 20 Hz.
+Bein        : B6 (EqCopDspGoldenTest), Abschnitt F2
+Test        : 311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack,
+              vier Teilfaelle je Bandmitte (R-311-17)
+Etikett     : heute rot
+Basis-SHA   : cded8a20f6cb533d918862ece1625aba94f4d7af
+
+-----------------------------------------------------------------
+1. Der Lauf VOR der Reparatur, gegen den unveraenderten Kern
+-----------------------------------------------------------------
+
+Der Test ist vor jeder Aenderung am Produktcode geschrieben und einmal rot
+gefahren (§7.1). Geaendert war dabei ausschliesslich
+eq-copilot/plugin/tests/DspGoldenTestMain.cpp; kein Produktcode.
+
+Befehl:
+  eq-copilot/build/plugin/EqCopDspGoldenTest_artefacts/Release/EqCopDspGoldenTest.exe
+Exitcode: 1
+
+  FEHLER  311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack bei f0 = 1000 Hz (NAK-311 T3-15-06, R-311-15, R-311-17)  [neun Einstellungen: kleinste -9.0103 dB (Attack 0.1 ms, Hold 500.0 ms), groesste -3.2273 dB (Attack 500.0 ms, Hold 0.0 ms), Spanne 5.7830 dB gegen 0.1000]
+  FEHLER  311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack bei f0 = 341 Hz (NAK-311 T3-15-06, R-311-15, R-311-17)  [neun Einstellungen: kleinste -9.0103 dB (Attack 0.1 ms, Hold 500.0 ms), groesste -3.2198 dB (Attack 500.0 ms, Hold 0.0 ms), Spanne 5.7905 dB gegen 0.1002]
+  FEHLER  311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack bei f0 = 100 Hz (NAK-311 T3-15-06, R-311-15, R-311-17)  [neun Einstellungen: kleinste -9.0103 dB (Attack 0.1 ms, Hold 500.0 ms), groesste -3.2198 dB (Attack 500.0 ms, Hold 0.0 ms), Spanne 5.7905 dB gegen 0.3325]
+  FEHLER  311/M-124 threshold_wirkt_unabhaengig_von_hold_und_attack bei f0 = 20 Hz (NAK-311 T3-15-06, R-311-15, R-311-17)  [neun Einstellungen: kleinste -9.0103 dB (Attack 0.1 ms, Hold 30.0 ms), groesste -3.2195 dB (Attack 500.0 ms, Hold 0.0 ms), Spanne 5.7908 dB gegen 1.4547]
+
+Alle VIER Teilfaelle fallen, jeder gegen seine eigene Schranke (R-311-17).
+
+Die gemessene Spanne ist mit rund 5,79 dB groesser als die in §39.3 genannten
+"bis 3,01 dB": jene Zahl ist die Abweichung nach OBEN (Attack schnell, Hold
+ueber einer halben Periode haelt die Spitze - gemessen -9,0103 dB, also
+3,01 dB ueber dem Abstand 6,0 dB des Quadraturtons). Dazu kommt eine
+Abweichung nach UNTEN von 2,77 dB (Attack 500 ms, Hold 0 ms: die Huellkurve
+folgt dem Anstieg kaum, faellt aber mit Release 100 ms in jede Luecke der
+Momentanleistung - gemessen -3,2273 dB). Beide Richtungen zusammen ergeben die
+Spanne. Der Befund ist damit groesser als die Matrix ihn beziffert hat, nicht
+kleiner; die Schranke selbst ist unveraendert.
+
+-----------------------------------------------------------------
+2a. Die Mutation der Rotbeweisspalte - sie TRAEGT DIE ZUSAGE NICHT
+-----------------------------------------------------------------
+
+§39.3 nennt als Mutation: "das Mittel asymmetrisch gemacht (steigend Pol 0,
+fallend `kPegelFensterMs`) -> die Gleichrichtung kehrt zurueck, und die Spanne
+waechst an JEDER der vier Bandmitten ueber ihre Schranke -> vier rote
+Teilfaelle". Gemessen wurde das - und es trifft nicht zu.
+
+Datei : eq-copilot/plugin/dsp/DspFilter.h, `PegelZustand::tick`
+SHA256 vorher  : E2ABC8FEA90928D3E42FBB654151C1A0CD0C476EDDC85DA0227B754AC08AEC3D
+Sicherungskopie: %CLAUDE_JOB_DIR%\tmp\sicherung\DspFilter.h.M-124.bak
+
+Vorher, woertlich:
+        if (! (pol > 0.0)) return leistungEin;
+        leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Nachher, woertlich:
+        if (! (pol > 0.0)) return leistungEin;
+        if (leistungEin > leistung) leistung = leistungEin;
+        else leistung = pol * leistung + (1.0 - pol) * leistungEin;
+        return leistung;
+
+Exitcode 1 - 389 geprueft, 7 Fehler. Von 311/M-124 faellt NUR die Bandmitte
+341 Hz (Spanne 0.2210 gegen 0.2027); 1000 Hz, 100 Hz und 20 Hz bleiben gruen.
+
+Die Zusage faellt an der erwarteten Pruefung: NEIN (nur ein Teilfall von vier).
+
+Grund, gemessen: ein asymmetrisches Mittel richtet die Momentanleistung selbst
+gleich und haelt den GIPFEL der Welligkeit fest. Damit sieht jede der neun
+Einstellungen fast denselben, bereits gleichgerichteten Wert: der gemeinsame
+Versatz gegen den Quadraturton waechst auf 3.0103 dB (311/M-120 faellt
+entsprechend mit 2.99 dB), die SPANNE ueber die Einstellungen aber bleibt
+klein und reisst nur an einer Bandmitte:
+
+  f0        Spanne unter der Mutation   Schranke   Urteil
+  1000 Hz   0.0792 dB                   0.1000     gruen
+   341 Hz   0.2210 dB                   0.2027     ROT
+   100 Hz   0.6665 dB                   0.6927     gruen
+    20 Hz   2.2809 dB                   3.6579     gruen
+
+Die Mutation verschiebt also das MATERIALMASS (M-120), nicht das
+Einstellungsmass (M-124).
+
+-----------------------------------------------------------------
+2b. Die Mutation, die die Zusage von M-124 TRAEGT
+-----------------------------------------------------------------
+
+Die Zusage von M-124 ("derselbe Threshold wirkt nach demselben Begriff")
+traegt die Pegelstufe selbst. Ihre Mutation ist die von 311/M-120
+(`docs/beweise/roh/NAK-311-rot-M-120.txt`, Abschnitt 2): die Pegelstufe
+uebersprungen, die Huellkurve bekommt wieder die Momentanleistung.
+
+Datei : eq-copilot/plugin/dsp/DspKern.cpp, `DspKern::verarbeiteBand`
+SHA256 vorher / nachher: CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8
+Exitcode 1 - 389 geprueft, 13 Fehler.
+
+GEFALLEN sind ALLE VIER Teilfaelle von 311/M-124, jeder gegen seine eigene
+Schranke:
+
+  f0 = 1000 Hz: Spanne 5.7830 dB gegen 0.1000 (nach oben 3.0103 gegen 0.1000)
+  f0 =  341 Hz: Spanne 5.7905 dB gegen 0.2027 (nach oben 3.0103 gegen 0.1002)
+  f0 =  100 Hz: Spanne 5.7905 dB gegen 0.6927 (nach oben 3.0103 gegen 0.3325)
+  f0 =   20 Hz: Spanne 5.7908 dB gegen 3.6579 (nach oben 3.0103 gegen 1.4547)
+
+Die Zusage faellt an der erwarteten Pruefung: JA, an allen vier Bandmitten.
+
+RUECKNAHME beider Mutationen bytegleich (SHA256 nachher = SHA256 vorher, je
+Datei), neu gebaut, Bein danach Exit 0 mit 389 geprueft, 0 Fehler.
+
+-----------------------------------------------------------------
+3. Die Schranke selbst - Befund an den Dirigenten
+-----------------------------------------------------------------
+
+Die vier Zahlen aus §39.3 (0,1000 / 0,1002 / 0,3325 / 1,4547 dB) sind der
+EINSEITIGE Gipfel der Restwelligkeit, 10*log10(1 + r). Gemessen wird in M-124
+aber die SPANNE ueber neun Einstellungen, und die ist zweiseitig: schnelle
+Attack mit langem Hold haelt den Gipfel (+10*log10(1 + r)), langsame Attack
+mit schnellem Release faellt in die Senke (10*log10(1 - r) darunter).
+
+Gemessen am gebauten Stand, je Bandmitte gegen den Quadraturton gleicher
+Leistung:
+
+  f0        nach oben   Zahl §39.3   nach unten   Spanne    zweiseitig
+  1000 Hz   0.0343      0.1000       0.0165       0.0507    0.1000
+   341 Hz   0.1002      0.1002       0.0482       0.1484    0.2027
+   100 Hz   0.3315      0.3325       0.1660       0.4975    0.6927
+    20 Hz   1.3662      1.4547       0.8343       2.2005    3.6579
+
+Die einseitige Zahl aus §39.3 haelt an allen vier Bandmitten (bei 341 Hz auf
+0,0000 dB genau - die Schranke ist der exakte Gipfel und laesst keinen Rand).
+Die SPANNE haelt sie an drei von vier nicht. Der Test prueft deshalb die
+zweiseitige Form derselben Herleitung, 10*log10((1 + r)/(1 - r)) mit derselben
+0,1-dB-Schwelle; sie ist keine gemessene, sondern eine hergeleitete Zahl.
+Keine Fensterlaenge aendert daran etwas: das Verhaeltnis der beiden Zahlen ist
+rund 1,5 fuer jedes r, weil beide linear in r sind. Die Abweichung ist im
+Manifest §60 benannt.

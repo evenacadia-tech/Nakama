@@ -230,8 +230,11 @@ bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept
         const auto& n = neu.baender[(size_t) i];
         if (a.aktiv != n.aktiv) return false;
         if (! a.aktiv) continue;
+        // NAK-311 R-311-15 (§41 F-19): der Pegelbegriff ist TOPOLOGISCH -
+        // zwischen zwei festgelegten Begriffen wird nie interpoliert.
         if (a.typ != n.typ || a.modus != n.modus || a.dynamisch != n.dynamisch
-            || a.nutztSvf != n.nutztSvf || a.quelle != n.quelle)
+            || a.nutztSvf != n.nutztSvf || a.quelle != n.quelle
+            || a.pegelbegriff != n.pegelbegriff)
             return false;
     }
     return true;
@@ -328,6 +331,13 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
         // ausdruecklich abgewaehlter Sidechain darf keine Rechenzeit kosten.
         b.detektorLaeuft = b.nutztSvf && detektorGewuenscht && b.rangeDb != 0.0;
 
+        // NAK-311 R-311-15 (T3-15-06, Karte U45): die EINE Setzstelle des
+        // Pegelbegriffs im Produktcode - unbedingt Durchschnitt, ohne jede
+        // Eingabe aus dem `DspSatz`. Ueber den Vertragsweg ist Spitze damit
+        // nicht erreichbar; sie entsteht nur im Programmbau eines Tests
+        // (311/M-125). Der sichtbare Umschalter je Band ist Register NAK-331.
+        b.pegelbegriff = Pegelbegriff::durchschnitt;
+
         // W-2, W-3 (E-29): ENTWORFEN werden Detektor und Huellkurve, sobald
         // das Band einen Detektor HAT - auch bei Range 0. Eine Rampe der Range
         // auf 0 oder von 0 weg interpoliert zwischen beiden Programmen und
@@ -340,7 +350,8 @@ void baueProgramm (const param::DspSatz& satz, double samplerate,
             b.huelle   = huellkurveEntwurf (bandZelle (w, slot, param::kAttackMs).zahl,
                                             bandZelle (w, slot, param::kHoldMs).zahl,
                                             bandZelle (w, slot, param::kReleaseMs).zahl,
-                                            samplerate);
+                                            samplerate,
+                                            pegelFensterMs (b.pegelbegriff));
         }
     }
 

@@ -4659,3 +4659,51 @@ Nachgezogen sind damit das Prüfetikett von `311/M-73` bis `311/M-75`
 (`eq-copilot/plugin/tests/DspGoldenTestMain.cpp`) und die Behauptung des Beins
 B6 (`tools/beweise.ps1`); die Bedingungen und Schranken des Tests messen den
 Bezugspunkt seit dem Änderungssatz D bereits richtig.
+
+### 13.9 E-6 — der Zahlenbereich „1 bis 8 / 8 bis 15 Samples" ist die Rasterzählung (NAK-311 Etappe 5, Nacharbeit 2, T3-15-11, R-311-15, 20.09.2026)
+
+**Betroffen:** der Nachtrag §13.8 (`:4627`), Absatz „Die Zusage und ihre Zahlen
+bleiben".
+
+§13.8 hängt den Zahlenbereich an den Bezugspunkt: „die erste Wirkung liegt je
+nach Steuerphase **1 bis 8**, die volle Wirkung des ersten Entwurfs **8 bis 15
+Samples** nach dem Bezugspunkt". Der Abstand **zum** Bezugspunkt ist in jeder
+gefahrenen Steuerphase und bei jeder Rate konstant 1 und 8; der Zahlenbereich
+ist etwas anderes. §13.8 bleibt als Verlauf stehen, dieser Nachtrag stellt den
+Bezug richtig (`docs/beweise/NAK-311.md` §65 Nr. 1, F1 bis F4).
+
+**Was der Test misst** (`eq-copilot/plugin/tests/DspGoldenTestMain.cpp`, Stand
+dieses Nachtrags):
+
+- Der **Bezugspunkt** ist der erste Steuerschritt mit einer Auslenkung ungleich
+  0 (`:4646-4649`); er liegt im Steuerraster auf der Phase d = (8 − p) mod 8
+  zum Toneinsatz (`basis % kDynamikSchritt == dSoll` in `:4670`, `rasterStimmt`
+  `:4653-4657`).
+- Der Tap bleibt bis einschließlich des Bezugspunkts bitgleich zum
+  Referenzkern; die erste Abweichung liegt **genau 1 Sample** nach ihm
+  (`erste == basis + 1`, `:4671`), und **genau 8 Samples** nach ihm liegt
+  wieder ein Steuerschritt, an dem der dort entworfene Satz mit Gewicht 1 wirkt
+  (`voll = basis + kDynamikSchritt` `:4663`, `volleWirkung` `:4664-4668`).
+- Der **Zahlenbereich 1 bis 8 und 8 bis 15** ist die Rasterzählung 1 + d und
+  8 + d über die vier gefahrenen Steuerphasen — `ersteRaster = erste − basis +
+  dSoll` und `vollRaster = voll − basis + dSoll` (`:4676-4681`), also gezählt
+  ab dem Sample `basis − d`. Die Spanne entsteht allein aus den vier Werten
+  d ∈ {0, 7, 5, 1} der gefahrenen Phasen (`:4570`, `:4592`) und wird in
+  `:4696-4697` gegen 1, 8, 8 und 15 geprüft.
+
+**Der Rasterschritt des Pegelbegriffs steckt nicht in diesen Zahlen.** Seit
+R-311-15 liegt der Bezugspunkt bei manchen Steuerphasen einen **ganzen**
+Rasterschritt nach dem Toneinsatz (§13.8: 48 und 44,1 kHz bei p = 0 →
+Bezugspunkt 8; 96 kHz bei p = 7 → Bezugspunkt 9). Dieser Rasterschritt ist das
+Einschwingen des Pegelbegriffs; weil er ein ganzes Vielfaches von
+`kDynamikSchritt` ist, verschiebt er den Zählnullpunkt `basis − d` um denselben
+Betrag und fällt aus 1 + d und 8 + d heraus.
+
+**Zahlen, ms-Werte und `kDynamikSchritt` bleiben unverändert:** 0,167 bis
+0,3125 ms bei 48 kHz, 0,181 bis 0,340 ms bei 44,1 kHz und 0,083 bis 0,156 ms
+bei 96 kHz, bei 48 und 44,1 kHz weiter gröber als die kürzeste Attack von
+0,1 ms; `kDynamikSchritt` bleibt 8, und das Verhalten ändert sich durch diesen
+Nachtrag nicht. Nachgezogen sind allein der Wortlaut des Prüfetiketts von
+`311/M-73` bis `311/M-75`, die Behauptung des Beins B6 (`tools/beweise.ps1`)
+und zwei Kommentare derselben Testdatei; keine Bedingung, keine Zahl und kein
+Produktcode ist berührt.

@@ -22,9 +22,11 @@
     der Etappe ausgegeben hat; 311/M-66 (Rechenort auch im Monokern) steht
     im M-39-Fall des Abschnitts H. Seit Etappe 4 Teil b (T3-15-11) misst
     Abschnitt F die STEUERRATE gegen einen Referenzkern mit Range 0
-    (311/M-73 bis M-75, §6.4): der erste Entwurf wirkt 1 bis 8 Samples
-    anteilig und 8 bis 15 Samples voll - erlaubtes Verhalten, gemessen, kein
-    geaendertes Verhalten.
+    (311/M-73 bis M-75, §6.4): im Raster ueber die vier gefahrenen
+    Steuerphasen sind es 1 bis 8 Samples bis zur ersten und 8 bis 15 bis zur
+    vollen Wirkung des ersten Entwurfs, gezaehlt ab dem Sample
+    Bezugspunkt - d - erlaubtes Verhalten, gemessen, kein geaendertes
+    Verhalten.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -4632,9 +4634,15 @@ int main()
                     // Auslenkung, nicht aus dem Tonbeginn. Der Pegelbegriff
                     // ist eine dritte kalt startende Stufe; bei manchen Phasen
                     // liegt der erste wirksame Entwurf dadurch einen
-                    // Rasterschritt spaeter. Die Zusage selbst haengt an
+                    // Rasterschritt spaeter - dieser Rasterschritt ist das
+                    // Einschwingen des Pegelbegriffs und steckt NICHT in den
+                    // Zahlen unten. Die Zusage selbst haengt an
                     // `kDynamikSchritt`, nicht am Pegel, und bleibt: erste
-                    // Wirkung 1 bis 8, volle 8 bis 15 Samples NACH dem Entwurf.
+                    // Wirkung 1 bis 8, volle 8 bis 15 Samples sind die
+                    // RASTERZAEHLUNG 1 + d und 8 + d ueber die vier Phasen
+                    // (`ersteRaster` und `vollRaster` weiter unten), gezaehlt
+                    // ab dem Sample `basis - dSoll`; der Abstand ZUM
+                    // Bezugspunkt ist konstant 1 und 8.
                     int basis = -1;
                     for (int i = 0; i < messen && basis < 0; ++i)
                         if (rest[(size_t) i] == kDynamikSchritt - 1 && auslD[(size_t) i] != 0.0)
@@ -4688,9 +4696,13 @@ int main()
                 pruefe (allesTraegt && minErste == 1 && maxErste == kDynamikSchritt
                             && minVoll == kDynamikSchritt && maxVoll == 2 * kDynamikSchritt - 1,
                         std::string (f.zeile) + " " + f.was
-                            + " (NAK-311 T3-15-11): der Tap bleibt bis einschliesslich des Bezugspunkts "
-                              "bitgleich zum Referenzkern (erster Steuerschritt mit Auslenkung ungleich 0), und "
-                              "der dort entworfene Satz wirkt acht Samples spaeter mit Gewicht 1 - erste Wirkung 1 bis 8, volle 8 bis 15 Samples danach",
+                            + " (NAK-311 T3-15-11): der Tap bleibt bis einschliesslich des Bezugspunkts bitgleich zum "
+                              "Referenzkern - der Bezugspunkt ist der erste Steuerschritt mit einer Auslenkung ungleich 0 "
+                              "und liegt im Raster auf der Phase d = (8 - p) mod 8 zum Toneinsatz; die erste Abweichung liegt "
+                              "genau 1 Sample nach ihm, und genau 8 Samples nach ihm liegt wieder ein Steuerschritt, an dem "
+                              "der dort entworfene Satz mit Gewicht 1 wirkt - in jeder der vier gefahrenen Steuerphasen. "
+                              "1 bis 8 und 8 bis 15 Samples sind die Rasterzaehlung 1 + d und 8 + d ueber diese Phasen, "
+                              "gezaehlt ab dem Sample Bezugspunkt - d",
                         d.str());
             }
         }

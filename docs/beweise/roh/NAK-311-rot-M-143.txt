@@ -1,0 +1,93 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-143 (zwei Teilfaelle)
+==========================================================================
+
+Matrixzeile: M-143 (Manifest Paragraph 39.4), Etikett "heute nicht messbar";
+             Regel R-311-20.
+Zusage:      Im 32-kHz-Fenster nimmt `bereiteVor` den Weg von `freigeben` UND
+             nullt `autoGainBericht` und die Zaehler: DspKern::autoGainDb() ist
+             exakt +0,0 (nicht der Wert von 48 kHz), der Bericht meldet
+             auto_gain_db exakt +0,0 und klemmungen leer, und der Zustand ist
+             in BEIDEN gesetzt. Die Kanalzahl des Kerns faellt auf die
+             Vorgabe 2. Nach prepareToPlay (48000) tragen Kern und Bericht
+             wieder denselben abgeleiteten Wert, bitgleich zum Stand vor dem
+             Wechsel, und der Zustand ist in beiden zurueckgefallen.
+Bein:        B7 (EqCopTransactionTest), Fall 311/M-143.
+Mutationen:  eq-copilot/plugin/dsp/DspKern.cpp:116 (autoGainBericht) und :117
+             (zaehlerZuruecksetzen), beide auf dem Ablehnungspfad von
+             `bereiteVor` (gebaute Zeilen).
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Gemessener Endstand (Detailzeile):
+  vor dem Wechsel Kern 15.688900344 dB, Bericht 15.688900344 dB (ungedeckelt,
+  Satz B noch nicht gebaut); im Fenster Kern 0 dB (Vorzeichenbit 0), Bericht
+  0 dB, klemmungen 0, abgelehnt Kern 32000 / Bericht 32000, busKanaele 2,
+  Uebernahmen 1 -> 0, Ausgang bytegleich ja; danach Kern 15.688900344 dB,
+  Bericht 15.688900344 dB, abgelehnt 0 / 0
+
+Zur Zahl: der Pruefling der Zeile ist "Slot 0 als High-Cut 20 Hz Q 0,707" -
+EIN Slot. Gemessen sind +15,688900344 dB. Die in der Zustandsspalte zitierten
++42,99 dB stammen aus der Quellvalidierung Teil B Paragraph 2.1 und gelten
+dort fuer ACHT High-Cuts 20 Hz Q 0,707. Die Zusage der Zeile - "ein Programm
+mit einem abgeleiteten Ausgleich ungleich 0" - ist mit einem Slot erfuellt;
+die Zahl ist gemessen, nicht abgeschrieben (Hinweis an den Dirigenten, §51).
+
+Am Zwischenstand VOR der Reparatur war die Zeile rot:
+  FEHLER  311/M-143  [vor dem Wechsel Kern 15.688900344 dB, Bericht
+  15.688900344 dB; im Fenster Kern 15.6889132903 dB (Vorzeichenbit 0), Bericht
+  15.6889132903 dB, klemmungen 0, abgelehnt Kern 0 / Bericht 0, busKanaele 2,
+  Uebernahmen 1 -> 1, Ausgang bytegleich nein; danach Kern 15.688900344 dB,
+  Bericht 15.688900344 dB, abgelehnt 0 / 0]
+Heute rechnet der Kern bei 32 kHz also weiter und traegt dort den Ausgleich
+eines Programms der nicht unterstuetzten Rate (15,6889132903 dB gegen
+15,688900344 dB bei 48 kHz).
+
+
+--- Teilfall 1: das Nullen von autoGainBericht -----------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspKern.cpp
+  vorher : for (auto& a : autoGainBericht) a.store (0.0, std::memory_order_relaxed);
+  nachher: // MUTATION M-143 (a): das Nullen von autoGainBericht weggelassen
+SHA-256 vorher : 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-143a-DspKern.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T10:59:48, Binary 2026-09-20T10:59:54
+  (Binary neuer als die Quelle: True)
+Bein EqCopTransactionTest Exit 1
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-143 ratenwechsel_nullt_den_ausgleich_und_meldet_beides
+
+Die Zusage faellt an der erwarteten Pruefung: JA - und an keiner anderen.
+Ohne das Nullen traegt DspKern::autoGainDb() im 32-kHz-Fenster weiter den
+48-kHz-Wert, waehrend kein Block klingt.
+
+Mitgefallen: keine. GRUEN geblieben (2): 311/M-135 (die gemerkte Rate faellt
+weiter zurueck) und 311/M-139.
+Ruecknahme bytegleich: SHA-256 nachher
+  5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+Neubau (Exit 0), Bein EqCopTransactionTest Exit 0.
+
+
+--- Teilfall 2: zaehlerZuruecksetzen ---------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspKern.cpp
+  vorher : zaehlerZuruecksetzen();
+  nachher: // MUTATION M-143 (b): zaehlerZuruecksetzen weggelassen
+SHA-256 vorher : 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-143b-DspKern.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T11:00:04, Binary 2026-09-20T11:00:06
+  (Binary neuer als die Quelle: True)
+Bein EqCopTransactionTest Exit 1
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-143 ratenwechsel_nullt_den_ausgleich_und_meldet_beides
+
+Die Zusage faellt an der erwarteten Pruefung: JA. Gemessen wird der Zaehler
+`uebernahmen()`: vor dem Wechsel 1, im Fenster 0. Ohne das Zuruecksetzen steht
+der Zaehler des alten Fensters weiter auf 1.
+
+Mitgefallen: keine. GRUEN geblieben (2): 311/M-135 und 311/M-139.
+Ruecknahme bytegleich: SHA-256 nachher
+  5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+Neubau (Exit 0), Bein EqCopTransactionTest Exit 0.

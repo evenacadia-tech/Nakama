@@ -96,6 +96,34 @@ DspKern::DspKern() = default;
 
 void DspKern::bereiteVor (double samplerate, int maxBlock, int kanaele)
 {
+    // NAK-311 R-311-16 und R-311-20 (F08, Karte U47): die Rate wird als
+    // ERSTES geprueft, vor jeder Pufferzuweisung. Ist sie nicht unterstuetzt,
+    // bereitet der Kern NICHTS vor: er nimmt den Weg von `freigeben` - danach
+    // ist `dryL` leer, und `verarbeiteStueck` kehrt vor dem ersten Sample
+    // zurueck (der Weg des AUSGESCHALTETEN EQ, kein Sample gelesen oder
+    // geschrieben, kein float -> double -> float-Ruecklauf). Die Vergleichs-
+    // richtung steht an genau einer Stelle (`samplerateUnterstuetzt`,
+    // `DspProgramm.h`), damit "genau 44,1 kHz bleibt unterstuetzt" nicht an
+    // zwei Orten gepflegt werden muss.
+    if (! samplerateUnterstuetzt (samplerate))
+    {
+        freigeben();
+
+        // Was `freigeben` NICHT tut und der Weg hier tun muss (R-311-20): der
+        // gemeldete Auto-Gain und die Zaehler gehoeren zum alten Fenster. Ohne
+        // das truege `autoGainDb()` den Wert der letzten unterstuetzten Rate,
+        // waehrend kein Block klingt (M-143).
+        for (auto& a : autoGainBericht) a.store (0.0, std::memory_order_relaxed);
+        zaehlerZuruecksetzen();
+
+        // Der GRUND, lesbar ueber `abgelehnteSamplerateHz()`. Nur eine
+        // endliche Rate ueber 0 ist abgelehnt; 0 und nicht endlich sind das
+        // verriegelte Fenster aus R-311-12 und bleiben bei +0,0 (M-136).
+        abgelehnteRate = (samplerate > 0.0 && samplerate < kMinSamplerateHz) ? samplerate : 0.0;
+        return;
+    }
+
+    abgelehnteRate  = 0.0;   // unterstuetzt: der Zustand faellt zurueck
     abtastrate      = samplerate;
     kanalzahl       = kanaele;   // NAK-311 R-311-3
     maxBlockGroesse = maxBlock > 0 ? maxBlock : 0;
@@ -138,6 +166,10 @@ void DspKern::freigeben()
     // gibt es keinen Bus, dessen Zahl noch gaelte; ein Programmbau danach
     // haette ohnehin `samplerate == 0` und damit Auto-Gain 0,0.
     kanalzahl       = 2;
+    // NAK-311 R-311-16: die abgelehnte Rate ist Hostumgebung wie die beiden
+    // darueber und faellt mit ihnen (bereiteVor <-> releaseResources). Ohne
+    // Vorbereitung gibt es keinen Bus, dessen Rate noch abgelehnt waere.
+    abgelehnteRate  = 0.0;
     // B-12: der Pool setzt seine Ressourcen zurueck, nicht seinen
     // Generationszaehler.
     baenke.zuruecksetzen();

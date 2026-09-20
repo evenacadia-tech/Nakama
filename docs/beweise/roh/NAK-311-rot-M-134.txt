@@ -1,0 +1,52 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-134
+========================================================
+
+Matrixzeile: M-134 (Manifest Paragraph 39.4), Etikett "heute nicht messbar" -
+             die Schranke entsteht erst im Bau.
+Zusage:      Groesser ODER GLEICH entscheidet: genau 44 100 Hz und darueber
+             sind unterstuetzt, jeder Wert darunter - auch 44 100 minus 1 ULP
+             und 44 099 Hz - nicht. Das Praedikat prueft zusaetzlich auf
+             endlich; die Vergleichsrichtung steht an genau einer Stelle.
+Bein:        A16 (EqCopProbeeqNullTest), Fall 311/M-134.
+Mutation:    eq-copilot/plugin/dsp/DspProgramm.h:94 (gebaute Zeile), die
+             Vergleichsrichtung in `samplerateUnterstuetzt`.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Gemessener Endstand (Detailzeile der Pruefung):
+  44100 - 1 ULP = 44099.99999999999272404 -> abgelehnt 44099.99999999999272404,
+  44100 -> abgelehnt 0.000000, Kern-Samplerate 0.0 / 44100.0,
+  Praedikat vollstaendig ja
+Das Praedikat ist einzeln gemessen fuer: 44 100 (an), naechster double darueber
+(an), 48 000 (an), 44 100 minus 1 ULP (aus), 44 099 (aus), 32 000 (aus),
+22 050 (aus), 8 000 (aus), 0 (aus), -48 000 (aus), NaN (aus), +Inf (aus),
+-Inf (aus); dazu kMinSamplerateHz == 44100.0.
+
+
+--- Die Mutation nach dem Bau ---------------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspProgramm.h
+  vorher : return samplerate >= kMinSamplerateHz
+  nachher: return samplerate > kMinSamplerateHz   // MUTATION M-134
+SHA-256 vorher : CEE3AD4853796A00C4047024644EE8F489CD676F32F2BEE02668F1668B6F1AE9
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-134-DspProgramm.h
+Bau (Exit 0), Quellstempel 2026-09-20T10:56:30, Binary 2026-09-20T10:56:39
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (13):
+  FEHLER  311/M-134 groesser_oder_gleich_entscheidet (Teilfall von 311/M-132)
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz
+  dazu dieselben elf Bestandsfaelle bei 44 100 Hz wie in NAK-311-rot-M-133.txt
+
+Die Zusage faellt an der erwarteten Pruefung: JA (311/M-134), und wie die
+Matrix es vorhersagt zusaetzlich an 311/M-133 - `>` statt `>=` nimmt genau
+44 100 Hz aus der Unterstuetzung.
+
+Mitgefallen mit Grund: die elf Bestandsfaelle bei 44 100 Hz (siehe M-133).
+Unter derselben Mutation GRUEN geblieben (13): 311/M-132 (vier), 311/M-137
+(vier), 311/M-139, 311/M-133 bei 48, 96 und 192 kHz, 311/M-136.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  CEE3AD4853796A00C4047024644EE8F489CD676F32F2BEE02668F1668B6F1AE9 (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0.

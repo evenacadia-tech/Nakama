@@ -1,0 +1,173 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-132
+========================================================
+
+Matrixzeile: M-132 (Manifest docs/beweise/NAK-311.md Paragraph 39.4), Etikett
+             "heute rot".
+Zusage:      Bei 32 000 und 22 050 Hz ist der Ausgang bytegleich zum Eingang
+             (memcmp, 0 abweichende Samples), auch fuer Subnormals, +-0 und die
+             Wachmarke; kein Zaehler fuer nicht endliche Eingaenge, geheilte
+             Filterzustaende oder verworfene Analyseframes steigt; 0 Samples
+             Latenz, kein Tail. DspKern::abgelehnteSamplerateHz() traegt genau
+             die abgelehnte Rate, DspKern::autoGainDb() ist exakt +0,0, und die
+             Kanalzahl des Kerns faellt auf die Vorgabe 2.
+Bein:        A16 (EqCopProbeeqNullTest), Fall 311/M-132 in
+             eq-copilot/plugin/tests/SondeNullTestMain.cpp, Abschnitt 15.
+Mutation:    eq-copilot/plugin/dsp/DspKern.cpp:108 (gebaute Zeile), die
+             Schranke am Anfang von DspKern::bereiteVor.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+
+--- 1. Der Test laeuft vor der Reparatur einmal ROT ------------------------
+
+Der Basisstand kennt weder den Getter `DspKern::abgelehnteSamplerateHz()` noch
+`DspKern::busKanaele()` noch das Praedikat `samplerateUnterstuetzt`; der neue
+Fall liesse sich dort nicht uebersetzen. Der Rotlauf laeuft deshalb nach
+Paragraph 7.1 und der Praezisierung des Dirigenten gegen einen ZWISCHENSTAND,
+der woertlich nur Signaturen und Getter traegt:
+
+  * eq-copilot/plugin/dsp/DspProgramm.h: `kMinSamplerateHz` und
+    `samplerateUnterstuetzt` (Konstante und Praedikat, von niemandem gelesen);
+  * eq-copilot/plugin/dsp/DspKern.h: Member `abgelehnteRate`, Getter
+    `abgelehnteSamplerateHz()` und `busKanaele()`;
+  * eq-copilot/plugin/state/NakamaTransaktion.h: Member `abgelehnteRate`,
+    Getter `abgelehnteSamplerateHz()`, Feld `DspBericht::abgelehnteSamplerateHz`;
+  * eq-copilot/plugin/state/NakamaTransaktion.cpp: `baueBericht` schreibt das
+    neue Feld aus dem Getter (der dort immer +0,0 traegt);
+  * die drei Testdateien mit den neuen Faellen.
+
+`DspKern::bereiteVor`, `Transaktionskern::setzeSamplerate` und
+`SondeProcessor::prepareToPlay` rechnen in diesem Zwischenstand UNVERAENDERT
+wie am Basisstand - keine Schranke, keine Ablehnung, keine uebersprungene
+Publikation.
+
+Bein A16 am Zwischenstand: Exit 1, 123 Pruefungen ok, 6 Fehler. Die vier Faelle
+von 311/M-132 (Zeilen woertlich aus der Rohausgabe):
+
+  FEHLER  311/M-132 ... bei 32000 Hz, 2-Kanal-Bus  [460000 Samples, Rauschen
+  453323 abweichend, Muster 13352 von 13352, nicht endlich 6 von 6 veraendert,
+  0 Wachmarken bytegleich, Zaehler 6/0/0, abgelehnteSamplerateHz 0.000000,
+  Kern-Samplerate 32000.000000, autoGainDb -0.397113060814 (Vorzeichenbit 1),
+  busKanaele 2]
+
+  FEHLER  311/M-132 ... bei 32000 Hz, 1-Kanal-Bus  [460000 Samples, Rauschen
+  453317 abweichend, Muster 6676 von 6676, nicht endlich 6 von 6 veraendert,
+  0 Wachmarken bytegleich, Zaehler 12/0/0, abgelehnteSamplerateHz 0.000000,
+  Kern-Samplerate 32000.000000, autoGainDb -0.397113060814 (Vorzeichenbit 1),
+  busKanaele 1]
+
+  FEHLER  311/M-132 ... bei 22050 Hz, 2-Kanal-Bus  [460000 Samples, Rauschen
+  453323 abweichend, Muster 13352 von 13352, nicht endlich 6 von 6 veraendert,
+  0 Wachmarken bytegleich, Zaehler 6/0/0, abgelehnteSamplerateHz 0.000000,
+  Kern-Samplerate 22050.000000, autoGainDb -0.235530218439 (Vorzeichenbit 1),
+  busKanaele 2]
+
+  FEHLER  311/M-132 ... bei 22050 Hz, 1-Kanal-Bus  [460000 Samples, Rauschen
+  453317 abweichend, Muster 6676 von 6676, nicht endlich 6 von 6 veraendert,
+  0 Wachmarken bytegleich, Zaehler 12/0/0, abgelehnteSamplerateHz 0.000000,
+  Kern-Samplerate 22050.000000, autoGainDb -0.235530218439 (Vorzeichenbit 1),
+  busKanaele 1]
+
+Die Phase-16-Zahl ist damit am echten Prozessor reproduziert: -0,397113 dB bei
+32 kHz (Auditwert -0,397113, roh/phase-16-d-dsp.md:24) und -0,235530 dB bei
+22,05 kHz. Der Kern engagiert sich, schreibt jeden Sample, und die Wachmarke
+kommt ruhig heraus (0 von 3 bytegleich).
+
+Nach der Reparatur: derselbe Fall Exit 0, 0 abweichende Samples (Abschnitt 3).
+
+
+--- 2. Die Mutation nach dem Bau ------------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspKern.cpp
+  vorher : if (! samplerateUnterstuetzt (samplerate))
+  nachher: if (false)   // MUTATION M-132: die Schranke aus bereiteVor entfernt
+SHA-256 vorher : 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-132-DspKern.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T10:55:47, Binary 2026-09-20T10:55:49
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (6):
+  FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 2-Kanal-Bus
+  FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 1-Kanal-Bus
+  FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 2-Kanal-Bus
+  FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 1-Kanal-Bus
+  FEHLER  311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz
+  FEHLER  311/M-134 groesser_oder_gleich_entscheidet (Teilfall von 311/M-132)
+
+Die Zusage faellt an der erwarteten Pruefung: JA (alle vier Faelle von
+311/M-132).
+
+Mitgefallen mit Grund:
+  311/M-139 - dieselbe Ursache: ohne Schranke ist der Kern vorbereitet, der
+    fruehe Rueckweg wird nie genommen, und der Kern schreibt bei jeder
+    Blockgroesse.
+  311/M-134 - der Teilfall am echten Prozessor misst, dass 44 100 Hz minus
+    1 ULP abgelehnt WIRD; ohne Schranke lehnt der Kern nichts ab. Der
+    Praedikatsteil derselben Pruefung bleibt richtig.
+
+Unter derselben Mutation GRUEN geblieben (Beleg gegen den Nebeneffekt, 9):
+  311/M-137 (vier Faelle) - Messung und Analyse haengen nicht an der Schranke.
+  311/M-133 (44,1 / 48 / 96 / 192 kHz) - die unterstuetzten Raten sind von der
+    Mutation nicht beruehrt; die vier Fingerabdruecke bleiben unveraendert.
+  311/M-136 - das verriegelte Fenster (Rate 0, nicht endlich, 1e300,
+    maxBlock 0) bleibt, wie es war.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0.
+
+
+--- 3. Der gemessene Endstand ---------------------------------------------
+
+  ok  311/M-132 bei 32000 Hz, 2-Kanal-Bus  [460000 Samples, Rauschen 0
+  abweichend, Muster 0 von 13352, nicht endlich 0 von 6 veraendert, 3
+  Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000,
+  Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0),
+  busKanaele 2]
+
+  ok  311/M-132 bei 32000 Hz, 1-Kanal-Bus  [... Muster 0 von 6676 ...
+  abgelehnteSamplerateHz 32000.000000, busKanaele 2]
+
+  ok  311/M-132 bei 22050 Hz, 2-Kanal-Bus  [... abgelehnteSamplerateHz
+  22050.000000, busKanaele 2]
+
+  ok  311/M-132 bei 22050 Hz, 1-Kanal-Bus  [... abgelehnteSamplerateHz
+  22050.000000, busKanaele 2]
+
+Vollstaendige Ausgabe: docs/beweise/roh/NAK-311-etappe5-a16-zeilenvergleich.txt
+
+--- 4. Zwei Beziehungs-Teilfaelle, nachgereicht und einzeln rot belegt -----
+
+Nach dem Selbstaudit sind zwei Teilfaelle zu 311/M-132 ergaenzt worden
+(CLAUDE.md "Beziehungen mitpruefen" und die Zahlenraender des Auftrags):
+311/M-132 Teilfall zwei_aufrufe_ohne_audio_und_ratenwechsel_im_fenster und
+311/M-132 Teilfall bereiteVor_und_releaseResources_nehmen_die_rate_zurueck.
+Beide sind einzeln gebrochen worden.
+
+(a) Dieselbe Mutation wie in Abschnitt 2, am erweiterten Test wiederholt:
+    vorher : if (! samplerateUnterstuetzt (samplerate))
+    nachher: if (false)   // MUTATION M-132: die Schranke aus bereiteVor entfernt
+    SHA-256 vorher/nachher 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+    Bau Exit 0, Quellstempel 2026-09-20T11:14:40, Binary 2026-09-20T11:14:43
+    Bein EqCopProbeeqNullTest Exit 1, 8 gefallene Pruefungen: die vier Faelle
+    von 311/M-132, 311/M-139, 311/M-134 und BEIDE neuen Teilfaelle.
+    GRUEN geblieben: 311/M-137 (vier), 311/M-133 (vier), 311/M-136.
+    Neubau Exit 0, Bein Exit 0.
+
+(b) Die Ruecknahme in reigeben (eq-copilot/plugin/dsp/DspKern.cpp:172,
+    gebaute Zeile) - die zweite Haelfte des Paares:
+    vorher : abgelehnteRate  = 0.0;
+    nachher: // MUTATION: die Ruecknahme in freigeben entfernt
+    SHA-256 vorher/nachher 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+    Sicherungskopie: C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-132-freigeben-DspKern.cpp
+    Bau Exit 0, Quellstempel 2026-09-20T11:14:27, Binary 2026-09-20T11:14:29
+    Bein EqCopProbeeqNullTest Exit 1, GENAU EINE gefallene Pruefung:
+      FEHLER  311/M-132 Teilfall bereiteVor_und_releaseResources_nehmen_die_rate_zurueck
+    Die Zusage faellt an der erwarteten Pruefung: JA. Mitgefallen: keine.
+    GRUEN geblieben: 16 Pruefungen der Etappe 5, darunter alle vier Faelle von
+    311/M-132 und der Teilfall zwei_aufrufe - ereiteVor nimmt die Rate
+    weiter zurueck, nur eleaseResources nicht mehr.
+    Neubau Exit 0, Bein Exit 0.
+
+Endstand des Beins A16 damit: Exit 0, 131 Pruefungen ok, 0 Fehler.

@@ -269,10 +269,27 @@ public:
         derselbe ist wie der des Kerns; die Vorgabe 2 haelt jeden Aufrufer
         bitgleich, der sie nicht nennt. Die Kanalzahl ist KEIN Statefeld: der
         Kanalwunsch je Band (`channel_mode`) bleibt davon unberuehrt im
-        bestaetigten Zustand und in den Statebytes. */
+        bestaetigten Zustand und in den Statebytes.
+
+        NAK-311 R-311-16 und R-311-20 (F08, Karte U47): geprueft wird die
+        Rate mit demselben Praedikat wie im Kern
+        (`dsp::samplerateUnterstuetzt`, ein Ort). Eine Rate unter
+        `dsp::kMinSamplerateHz` landet nie in `fs` - `fs` bleibt 0, also
+        meldet `baueBericht` wie ohne Samplerate - und wird als
+        `abgelehnteSamplerateHz()` gemerkt. Die Kanalzahl wird in beiden
+        Faellen unveraendert uebernommen (R-311-3); im abgelehnten Fenster
+        liest sie niemand, weil `baueBericht` den Programmzweig nur bei
+        `fs > 0` betritt. */
     void   setzeSamplerate (double samplerate, int kanaele = 2) noexcept;
     double samplerate() const noexcept { return fs; }
     int    kanaele() const noexcept { return kanalzahl; }
+
+    /** NAK-311 R-311-16: die zuletzt abgelehnte Abtastrate in Hz (endlich,
+        ueber 0 und unter `dsp::kMinSamplerateHz`) oder exakt +0,0. Dieselbe
+        Zahl, die `DspKern::abgelehnteSamplerateHz()` traegt, solange beide
+        dieselbe Rate gereicht bekommen; sie geht in den `DspBericht` und
+        NICHT auf den Draht (§38.2, M-140). */
+    double abgelehnteSamplerateHz() const noexcept { return abgelehnteRate; }
     void   setzeSamplegenaueAutomation (bool ja) noexcept { samplegenau = ja; }
     bool   samplegenaueAutomation() const noexcept { return samplegenau; }
 
@@ -314,6 +331,7 @@ private:
     AutomationOverlay automationOverlay;
     double            fs = 0.0;
     int               kanalzahl = 2;   ///< NAK-311 R-311-3, Hostumgebung neben `fs`
+    double            abgelehnteRate = 0.0;   ///< NAK-311 R-311-16, Hostumgebung neben `fs`
     bool              samplegenau = false;
 
     // Arbeitsplatz der Stufen S2 bis S7 - vor dem Commit-Punkt beschrieben,
@@ -393,6 +411,15 @@ struct DspBericht
     std::vector<Klemmung> klemmungen;        ///< aus demselben Programm, in Slotreihenfolge
     std::vector<int>      verletzteBaender;  ///< aus dem WIRKSAMEN Zustand - Automation meldet dieselbe Verletzung (M-70)
     int                   undoTiefe = 0;     ///< jetzt moegliche Undo-Schritte: Ringlaenge minus Cursor
+
+    /** NAK-311 R-311-16 (F08, Karte U47): die abgelehnte Abtastrate in Hz,
+        +0,0 wenn keine abgelehnt ist - der ehrliche GRUND, aus dem der EQ
+        bei dieser Rate neutral bleibt. Das Feld ist C++-lokal: es geht
+        NICHT in das `state_report.dsp`-Dokument, weil `$defs/dsp_bericht`
+        `additionalProperties: false` und ein geschlossenes `required` hat
+        und dieses Ticket den v3-Vertrag nicht aendert (§41.2 F-27, M-138 b,
+        M-140). Das versionierte Drahtfeld ist Registerpunkt zu S26-28. */
+    double                abgelehnteSamplerateHz = 0.0;
 };
 
 /** NAK-311 R-311-5 (T3-15-09 Teil a): die BERICHTSgrenze von `auto_gain_db`

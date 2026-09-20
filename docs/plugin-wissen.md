@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 4b)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssatz A)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -694,6 +694,47 @@ laufenden). Ein **Same-Instance-Ladestart** bei unveränderter Topologie bleibt
 dagegen warm — Ausgang und Tap bitgleich (311/M-76), weil die Kennungen aus W03
 gleich bleiben. Manifest `docs/beweise/NAK-311.md` §6.4, §9.1 F-12 und §34;
 Nachtrag zu E2-7, E-6 und M-84 in `docs/beweise/SONDE-015.md` §13.2 bis §13.4.
+
+**Unter 44,1 kHz bleibt der EQ neutral (20.09.2026, NAK-311 Etappe 5,
+Änderungssatz A, R-311-16 und R-311-20).** Die kleinste unterstützte Abtastrate
+ist `kMinSamplerateHz` = 44 100,0 Hz (`eq-copilot/plugin/dsp/DspProgramm.h`,
+neben `kFadeSamples` und `kRampeSamples`). Das Prädikat
+`samplerateUnterstuetzt` — endlich **und** größer oder gleich der Konstante —
+steht dort einmal; gelesen wird es von `DspKern::bereiteVor`,
+`Transaktionskern::setzeSamplerate` und `SondeProcessor::prepareToPlay`. Ist
+die Rate nicht unterstützt, bereitet `bereiteVor` nichts vor: es nimmt den Weg
+von `freigeben` (Puffer leer, `maxBlockGroesse` 0, Abtastrate 0, Kanalzahl
+zurück auf die Vorgabe 2, Bänke und Pfade zurückgesetzt) und nullt zusätzlich
+`autoGainBericht` und die Zähler des alten Fensters; `verarbeiteStueck` kehrt
+damit vor dem ersten Sample zurück — derselbe frühe Rückweg wie beim
+ausgeschalteten EQ, ohne `float → double → float`-Rücklauf, ohne Tap, ohne
+Zähler. Der Grund ist lesbar: `DspKern::abgelehnteSamplerateHz()` und das
+C++-Feld `DspBericht::abgelehnteSamplerateHz` tragen die abgelehnte Rate in Hz,
+sonst exakt +0,0. Der Transaktionskern hält `fs` = 0, also meldet `baueBericht`
+wie ohne Samplerate (`auto_gain_db` +0,0, `klemmungen` leer). `eq_enabled`
+bleibt im bestätigten Zustand und in den Statebytes, ohne Revision und ohne
+Host-Dirty; `v3Samplerate`, `v3BlockSize` und `v3Channels` bleiben unberührt —
+Messung und Analyse sind vom Entscheid nicht betroffen (Abnahme U47).
+
+Warum: das Auto-Gain-Gitter ist samplerateunabhängig bis 20 kHz definiert und
+setzt nach R4 Feinheit 1 die kleinste Rate 44,1 kHz voraus. Bei 32 kHz liegen
+4 der 121 Stützstellen über Nyquist, bei 22,05 kHz elf, und der Kern
+kompensierte dort spiegelnd statt ehrlich (Phase 16 am echten Kern: −0,397113 dB
+statt −0,234376 dB der Punkte unter Nyquist; im Rotlauf von 311/M-132
+reproduziert, bei 22,05 kHz −0,235530 dB). Der User hat am 19.09.2026 Weg 1
+gewählt: nicht unterstützen, neutral bleiben, den Grund ehrlich melden. Gewählt
+ist der frühe Rückweg und nicht die Neutralprüfung der Etappe 2, weil er die
+Zusage „Ausgang bitgleich zum Eingang" **baulich** trägt statt durch eine
+Rechnung (§41.2 F-26). Genau 44 100 Hz und der nächste `double` darüber bleiben
+unterstützt; 44 100 Hz minus 1 ULP nicht. Rate 0, nicht endlich, über 768 kHz
+und `maxBlock` = 0 bleiben das verriegelte Fenster aus R-311-12: dort gibt
+`prepareToPlay` weder Rate noch Kanalzahl weiter, die letzte Vorbereitung steht,
+und abgelehnt ist nichts. Gemessen in A16 Abschnitt 15 (311/M-132 bis M-134,
+M-136, M-137, M-139), B7 Abschnitt U (311/M-135, M-139, M-143) und B3c
+(311/M-138); Manifest `docs/beweise/NAK-311.md` §39.4 und §51. Das Feld bleibt
+C++-lokal — `$defs/dsp_bericht` ist mit `additionalProperties: false`
+geschlossen, ein Drahtfeld wäre eine Vertragsänderung (§41.2 F-27,
+Registerpunkt zu S26–28).
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

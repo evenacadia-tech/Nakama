@@ -1,0 +1,346 @@
+NAK-311 Etappe 5, Aenderungssatz A - Zeilenvergleich Bein B3c (EqCopSchemaTest)
+=================================================================
+
+Basis-SHA des Aenderungssatzes: 5ee8318c2eea8c7aa94571b433e515098a7c20ab
+Erzeugt am 20.09.2026 vom Bauer des Aenderungssatzes A (NAK-311 Etappe 5).
+Zweck: Bestandszeilen des Vertragsbeins bleiben unveraendert; R-311-22 braucht dieselbe Basis im Satz D.
+Befehl (beide Laeufe): eq-copilot/build/plugin/EqCopSchemaTest_artefacts/Release/EqCopSchemaTest.exe
+Die Basiszeilen bleiben stehen, damit die Worker der Saetze B bis D
+gegen DIESELBE Basis vergleichen.
+
+--- 1. Unterschiede Basis -> Endstand ----------------------------------
+Basis 162 Zeilen, Endstand 164 Zeilen, 4 abweichende Zeilen.
+'>' = nur im Endstand, '<' = nur in der Basis.
+
+> [ok]   311/M-138 bericht_bei_nicht_unterstuetzter_rate (NAK-311 R-311-16, R-311-20, F08): bei 32 kHz haelt der Transaktionskern fs = 0, `baueBericht` meldet wie ohne Samplerate - auto_gain_db exakt +0,0 und klemmungen leer, waehrend derselbe Zustand bei 48 kHz -92,29 dB meldet -, beide tragen die abgelehnte Rate, und der gebaute state_report bleibt gueltig gegen $defs/dsp_bericht  [bei 48 kHz auto_gain_db -92.293932 dB, bei 32 kHz 0.000000 dB (Vorzeichenbit 0), klemmungen 0, Kern-Samplerate 0.0, Transaktionskern-fs 0.0, abgelehnt Kern 32000.0 / Bericht 32000.0, Verletzungen 0]
+> [ok]   311/M-138 (b) der_grund_bleibt_c_plus_plus_lokal (NAK-311 Feinheit F-27, M-140): $defs/dsp_bericht hat additionalProperties: false - derselbe Bericht MIT dem Feld im dsp-Dokument wird abgewiesen, ohne das Feld ist er gueltig; der v3-Vertrag bleibt unberuehrt  [additionalProperties false ja, Verletzungen mit Feld 1 (/dsp/abgelehnte_samplerate_hz gegen additionalProperties), ohne Feld 0]
+> 159 bestanden, 0 gescheitert
+< 157 bestanden, 0 gescheitert
+
+--- 2. Basislauf am Basisstand 5ee8318c (Exit 0) -----------------
+EqCopSchemaTest - v3-Vertrag (SONDE-005a)
+-----------------------------------------
+[ok]   Textriegel deckt die gemeinsame Falltabelle  [102 Faelle]
+[ok]   Falltabelle hat Substanz  [102 Faelle]
+[ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+[ok]   unbekanntes Schluesselwort bricht den Ladevorgang  [unbekanntes Schluesselwort #/multipleOf]
+[ok]   oneOf ohne Discriminator bricht den Ladevorgang  [falscher Werttyp fuer #/oneOf; oneOf ohne x-nakama-discriminator bei #]
+[ok]   additives Objekt ohne maxProperties bricht den Ladevorgang  [additives Objekt # ohne maxProperties]
+[ok]   unbekanntes Muster bricht den Ladevorgang  [unbekanntes Muster #: ^S-1-.*$]
+[ok]   nicht-lokale Referenz bricht den Ladevorgang  [nicht-lokale Referenz bei #: https://fremd/schema.json]
+[ok]   haengende Referenz bricht den Ladevorgang  [haengende Referenz bei #: #/$defs/gibtsnicht hat kein Ziel]
+[ok]   maxLength als Gleitkommazahl bricht den Ladevorgang  [falscher Werttyp fuer #/maxLength]
+[ok]   type als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/type]
+[ok]   required mit Nicht-String bricht den Ladevorgang  [falscher Werttyp fuer #/required]
+[ok]   Discriminator als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/x-nakama-discriminator]
+[ok]   integer akzeptiert 1.0 (draft 2020-12)
+[ok]   integer lehnt 1.5 ab
+[ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+[ok]   unbekannter Discriminator wird abgelehnt
+[ok]   discriminator_boolean_true_false
+[ok]   discriminator_boolean_falscher_typ
+[ok]   discriminator_boolean_fehlt
+[ok]   discriminator_json_pointer_boolean
+[ok]   discriminator_json_pointer_segment_fehlt
+[ok]   Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type
+[ok]   fehlendes Pflichtfeld zeigt auf das Elternobjekt
+[ok]   Laenge zaehlt Codepunkte, nicht Bytes
+[ok]   vier Codepunkte fallen bei maxLength 3
+[ok]   Verletzungen sind kanonisch sortiert und doppelfrei  [3]
+[ok]   objektwertiges const vergleicht reihenfolgeunabhaengig
+[ok]   objektwertiges const sieht einen Unterschied in der Tiefe
+[ok]   objektwertiges const sieht eine fehlende Eigenschaft
+[ok]   Binaerkorpus klassifiziert wie das Manifest (128 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [128 Fixtures]
+[ok]   Binaer-Manifestzahlen passen zur Fixtureliste
+[ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
+[ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
+[ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
+[ok]   JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json
+[ok]   band_stereo_featureframe_to_flatbuffer
+[ok]   nak29_encoder_project_samples_ohne_project_time_bit
+[ok]   nak29_encoder_local_monotonic_mit_project_sample_start
+[ok]   integration_samples_wird_von_beiden_lesern_klassifiziert  [gesetzt: der Leser gibt Bit UND Wert zurueck]
+[ok]   integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null  [abwesend: gueltig, aber ohne Bit â der Wert 0 ist hier NICHT die Aussage]
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ok]   N-18: die Byteinstanz liegt im Korpus
+[ok]   N-18: die Liste `angenommen` traegt Klassen  [14]
+[ok]   N-18: minus_null - wireZahl erzeugt GENAU den Text der Fixture  [0 gegen 0]
+[ok]   N-18: ein_zehntel - wireZahl erzeugt GENAU den Text der Fixture  [0.1 gegen 0.1]
+[ok]   N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.333333333333333]
+[ok]   N-18: kleinster_normaler_float - wireZahl erzeugt GENAU den Text der Fixture  [1.17549435082229e-38 gegen 1.17549435082229e-38]
+[ok]   N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: sichere_ganzzahl - wireZahl erzeugt GENAU den Text der Fixture  [9007199254740991 gegen 9007199254740991]
+[ok]   N-18: nyquist_gekappter_bandwert - wireZahl erzeugt GENAU den Text der Fixture  [18000 gegen 18000]
+[ok]   N-18: samplerate - wireZahl erzeugt GENAU den Text der Fixture  [48000 gegen 48000]
+[ok]   N-18: rangkomponente_2p7e_minus_11 - wireZahl erzeugt GENAU den Text der Fixture  [2.7e-11 gegen 2.7e-11]
+[ok]   N-18: rangkomponente_5p55e_minus_12 - wireZahl erzeugt GENAU den Text der Fixture  [5.55e-12 gegen 5.55e-12]
+[ok]   N-18: rangkomponente_lang - wireZahl erzeugt GENAU den Text der Fixture  [9.03808480367243e-11 gegen 9.03808480367243e-11]
+[ok]   N-18: float_minus_3p3 - wireZahl erzeugt GENAU den Text der Fixture  [-3.29999995231628 gegen -3.29999995231628]
+[ok]   N-18: null_komma_eins_plus_null_komma_zwei - wireZahl erzeugt GENAU den Text der Fixture  [0.3 gegen 0.3]
+[ok]   N-18: die Liste `verweigert` traegt Klassen  [6]
+[ok]   N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: zwei_hoch_53 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: groesster_normaler_float - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: nicht_endlich - wireZahl verweigert, wie die Fixture sagt
+[ok]   v3-Schema haelt die Engine-Teilmenge ein
+[ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+[ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+[ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (402 Fixtures)
+[ok]   Korpus hat Substanz  [402 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide  [ ]
+[ok]   fassung_4_leser_lehnt_state_report_dsp_ab
+[ok]   ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)
+[ok]   Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich
+[ok]   hash_stimmt_mit_der_zeichenkette  [ ]
+[ok]   q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck  [0.70710678118654757]
+[ok]   abweichender_hash_wird_abgewiesen  [state_hash SHA-256(dsp.jcs) = 583dd70cec8181fa632573c160cdb83e1e8fe5360b43109b3f2924d2bead7f0c, state_report.state_hash = 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+[ok]   das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   die mutierte Zeichenkette passiert den DTO-Weg: nur der Hash weist sie ab  [ ]
+[ok]   hash_stimmt_aber_dto_faellt: der Bericht wird GANZ abgewiesen  [struktur Wurzel braucht genau dsp_schema_version, parameters und schutz_zonen]
+[ok]   auch dieses Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze (NAK-311 R-311-5, T3-15-09 Teil a): acht Low-Shelves 1 kHz +12 dB Q 8 bei 48 kHz - `auto_gain_db` ist exakt -120, der Bericht ist gueltig gegen $defs/dsp_bericht  [auto_gain_db -120.000000, Verletzungen 0]
+[ok]   311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer  [Kern -199.767783 dB, autoGainLin 0.000000000102709553 gegen 10^(dB/20) = 0.000000000102709553 (Verhaeltnis 1 + 0.000000000000000000), Bericht -120.000000 dB, klemmungen 0]
+[ok]   311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich (NAK-311 R-311-5): acht Low-Shelves 1 kHz +12 dB Q 0,707 - der gemeldete Wert ist BITGLEICH dem abgeleiteten und gueltig  [Bericht -92.293932124 dB, Kern -92.293932124 dB, gueltig ja]
+[ok]   311/M-69 klemmgrenze_gleich_schemagrenze (NAK-311 R-311-5): die Konstante im C++ ist `minimum`/`maximum` aus dem geladenen Schema; +/-120 kommen unveraendert zurueck, der naechste double darueber und darunter sowie 120,5 werden geklemmt  [Konstante 120.000000, Schema [-120.000000, 120.000000], naechster double ueber der Grenze 120.00000000000001421 -> 120.00000000000000000, 120.5 -> 120.000000, Schema nimmt +/-120 an und weist 120.5 ab ja]
+[ok]   311/M-70 nan_wird_plus_null_und_inf_wird_die_grenze (NAK-311 R-311-5, F-13): NaN wird +0,0 (nicht -0,0), +Inf wird +120, -Inf wird -120 - nie ein nicht endlicher Wert im Bericht; -0,0 und das kleinste Subnormal kommen bitgleich zurueck  [NaN -> 0.000000 (Vorzeichenbit 0), +Inf -> 120.000000, -Inf -> -120.000000]
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert â NaN
+[ok]   N-18b: verweigert â +Inf
+[ok]   N-18b: verweigert â -Inf
+[ok]   N-18b: verweigert â 2^53 — eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert â 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert â groesster normaler float — Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert â 1e300 — Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert â -1e300
+[ok]   N-18b: verweigert â 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert â 9.99e-308 — dez = -308
+[ok]   N-18b: verweigert â 1e-308
+[ok]   N-18b: verweigert â 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+157 bestanden, 0 gescheitert
+
+--- 3. Endstand des Aenderungssatzes A (Exit 0) ------------------------
+EqCopSchemaTest - v3-Vertrag (SONDE-005a)
+-----------------------------------------
+[ok]   Textriegel deckt die gemeinsame Falltabelle  [102 Faelle]
+[ok]   Falltabelle hat Substanz  [102 Faelle]
+[ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+[ok]   unbekanntes Schluesselwort bricht den Ladevorgang  [unbekanntes Schluesselwort #/multipleOf]
+[ok]   oneOf ohne Discriminator bricht den Ladevorgang  [falscher Werttyp fuer #/oneOf; oneOf ohne x-nakama-discriminator bei #]
+[ok]   additives Objekt ohne maxProperties bricht den Ladevorgang  [additives Objekt # ohne maxProperties]
+[ok]   unbekanntes Muster bricht den Ladevorgang  [unbekanntes Muster #: ^S-1-.*$]
+[ok]   nicht-lokale Referenz bricht den Ladevorgang  [nicht-lokale Referenz bei #: https://fremd/schema.json]
+[ok]   haengende Referenz bricht den Ladevorgang  [haengende Referenz bei #: #/$defs/gibtsnicht hat kein Ziel]
+[ok]   maxLength als Gleitkommazahl bricht den Ladevorgang  [falscher Werttyp fuer #/maxLength]
+[ok]   type als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/type]
+[ok]   required mit Nicht-String bricht den Ladevorgang  [falscher Werttyp fuer #/required]
+[ok]   Discriminator als Zahl bricht den Ladevorgang  [falscher Werttyp fuer #/x-nakama-discriminator]
+[ok]   integer akzeptiert 1.0 (draft 2020-12)
+[ok]   integer lehnt 1.5 ab
+[ok]   Typfehler erzeugt keine Lawine  [1 Verletzung(en)]
+[ok]   unbekannter Discriminator wird abgelehnt
+[ok]   discriminator_boolean_true_false
+[ok]   discriminator_boolean_falscher_typ
+[ok]   discriminator_boolean_fehlt
+[ok]   discriminator_json_pointer_boolean
+[ok]   discriminator_json_pointer_segment_fehlt
+[ok]   Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type
+[ok]   fehlendes Pflichtfeld zeigt auf das Elternobjekt
+[ok]   Laenge zaehlt Codepunkte, nicht Bytes
+[ok]   vier Codepunkte fallen bei maxLength 3
+[ok]   Verletzungen sind kanonisch sortiert und doppelfrei  [3]
+[ok]   objektwertiges const vergleicht reihenfolgeunabhaengig
+[ok]   objektwertiges const sieht einen Unterschied in der Tiefe
+[ok]   objektwertiges const sieht eine fehlende Eigenschaft
+[ok]   Binaerkorpus klassifiziert wie das Manifest (128 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [128 Fixtures]
+[ok]   Binaer-Manifestzahlen passen zur Fixtureliste
+[ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
+[ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
+[ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
+[ok]   JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json
+[ok]   band_stereo_featureframe_to_flatbuffer
+[ok]   nak29_encoder_project_samples_ohne_project_time_bit
+[ok]   nak29_encoder_local_monotonic_mit_project_sample_start
+[ok]   integration_samples_wird_von_beiden_lesern_klassifiziert  [gesetzt: der Leser gibt Bit UND Wert zurueck]
+[ok]   integration_samples_abwesend_bleibt_gueltig_und_ist_keine_null  [abwesend: gueltig, aber ohne Bit â der Wert 0 ist hier NICHT die Aussage]
+[ok]   integration_samples_null_ist_ein_senderfehler  [gesetzt auf 0: abgelehnt, nicht als 'fehlt' umgedeutet]
+[ok]   N-18: die Byteinstanz liegt im Korpus
+[ok]   N-18: die Liste `angenommen` traegt Klassen  [14]
+[ok]   N-18: minus_null - wireZahl erzeugt GENAU den Text der Fixture  [0 gegen 0]
+[ok]   N-18: ein_zehntel - wireZahl erzeugt GENAU den Text der Fixture  [0.1 gegen 0.1]
+[ok]   N-18: ein_drittel - wireZahl erzeugt GENAU den Text der Fixture  [0.333333333333333 gegen 0.333333333333333]
+[ok]   N-18: kleinster_normaler_float - wireZahl erzeugt GENAU den Text der Fixture  [1.17549435082229e-38 gegen 1.17549435082229e-38]
+[ok]   N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [1e-307 gegen 1e-307]
+[ok]   N-18: sichere_ganzzahl - wireZahl erzeugt GENAU den Text der Fixture  [9007199254740991 gegen 9007199254740991]
+[ok]   N-18: nyquist_gekappter_bandwert - wireZahl erzeugt GENAU den Text der Fixture  [18000 gegen 18000]
+[ok]   N-18: samplerate - wireZahl erzeugt GENAU den Text der Fixture  [48000 gegen 48000]
+[ok]   N-18: rangkomponente_2p7e_minus_11 - wireZahl erzeugt GENAU den Text der Fixture  [2.7e-11 gegen 2.7e-11]
+[ok]   N-18: rangkomponente_5p55e_minus_12 - wireZahl erzeugt GENAU den Text der Fixture  [5.55e-12 gegen 5.55e-12]
+[ok]   N-18: rangkomponente_lang - wireZahl erzeugt GENAU den Text der Fixture  [9.03808480367243e-11 gegen 9.03808480367243e-11]
+[ok]   N-18: float_minus_3p3 - wireZahl erzeugt GENAU den Text der Fixture  [-3.29999995231628 gegen -3.29999995231628]
+[ok]   N-18: null_komma_eins_plus_null_komma_zwei - wireZahl erzeugt GENAU den Text der Fixture  [0.3 gegen 0.3]
+[ok]   N-18: die Liste `verweigert` traegt Klassen  [6]
+[ok]   N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: zwei_hoch_53 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: groesster_normaler_float - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: eins_e_308 - wireZahl verweigert, wie die Fixture sagt
+[ok]   N-18: nicht_endlich - wireZahl verweigert, wie die Fixture sagt
+[ok]   v3-Schema haelt die Engine-Teilmenge ein
+[ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+[ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+[ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+[ok]   Skalar-Wurzel wird schon im Parser abgelehnt: ungueltig/wurzel-ist-string.json
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+[ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+[ok]   Korpus klassifiziert wie das Manifest (402 Fixtures)
+[ok]   Korpus hat Substanz  [402 Fixtures]
+[ok]   Manifestzahlen passen zur Fixtureliste
+[ok]   Fassung 5 und ihr Rueckbau auf Fassung 4 laden beide  [ ]
+[ok]   fassung_4_leser_lehnt_state_report_dsp_ab
+[ok]   ein Bericht OHNE dsp bleibt in beiden Fassungen gueltig (Altsender)
+[ok]   Gegenprobe: der Rueckbau auf Fassung 4 aendert das Schema wirklich
+[ok]   hash_stimmt_mit_der_zeichenkette  [ ]
+[ok]   q = 0.7071067811865476 kommt bitgenau durch den Wire-Weg zurueck  [0.70710678118654757]
+[ok]   abweichender_hash_wird_abgewiesen  [state_hash SHA-256(dsp.jcs) = 583dd70cec8181fa632573c160cdb83e1e8fe5360b43109b3f2924d2bead7f0c, state_report.state_hash = 508b7f1950d1a1f2f4df079ea63248fdffa4be8ab9b87afa99975f439732f218]
+[ok]   das Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   die mutierte Zeichenkette passiert den DTO-Weg: nur der Hash weist sie ab  [ ]
+[ok]   hash_stimmt_aber_dto_faellt: der Bericht wird GANZ abgewiesen  [struktur Wurzel braucht genau dsp_schema_version, parameters und schutz_zonen]
+[ok]   auch dieses Gegenfixture ist schemagueltig: nur der Leser sieht den Bruch
+[ok]   311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze (NAK-311 R-311-5, T3-15-09 Teil a): acht Low-Shelves 1 kHz +12 dB Q 8 bei 48 kHz - `auto_gain_db` ist exakt -120, der Bericht ist gueltig gegen $defs/dsp_bericht  [auto_gain_db -120.000000, Verletzungen 0]
+[ok]   311/M-71 klemmung_nur_im_bericht (NAK-311 R-311-5, Karte U54): `DspKern::autoGainDb()` und der lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, `klemmungen` bleibt leer  [Kern -199.767783 dB, autoGainLin 0.000000000102709553 gegen 10^(dB/20) = 0.000000000102709553 (Verhaeltnis 1 + 0.000000000000000000), Bericht -120.000000 dB, klemmungen 0]
+[ok]   311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich (NAK-311 R-311-5): acht Low-Shelves 1 kHz +12 dB Q 0,707 - der gemeldete Wert ist BITGLEICH dem abgeleiteten und gueltig  [Bericht -92.293932124 dB, Kern -92.293932124 dB, gueltig ja]
+[ok]   311/M-69 klemmgrenze_gleich_schemagrenze (NAK-311 R-311-5): die Konstante im C++ ist `minimum`/`maximum` aus dem geladenen Schema; +/-120 kommen unveraendert zurueck, der naechste double darueber und darunter sowie 120,5 werden geklemmt  [Konstante 120.000000, Schema [-120.000000, 120.000000], naechster double ueber der Grenze 120.00000000000001421 -> 120.00000000000000000, 120.5 -> 120.000000, Schema nimmt +/-120 an und weist 120.5 ab ja]
+[ok]   311/M-70 nan_wird_plus_null_und_inf_wird_die_grenze (NAK-311 R-311-5, F-13): NaN wird +0,0 (nicht -0,0), +Inf wird +120, -Inf wird -120 - nie ein nicht endlicher Wert im Bericht; -0,0 und das kleinste Subnormal kommen bitgleich zurueck  [NaN -> 0.000000 (Vorzeichenbit 0), +Inf -> 120.000000, -Inf -> -120.000000]
+[ok]   311/M-138 bericht_bei_nicht_unterstuetzter_rate (NAK-311 R-311-16, R-311-20, F08): bei 32 kHz haelt der Transaktionskern fs = 0, `baueBericht` meldet wie ohne Samplerate - auto_gain_db exakt +0,0 und klemmungen leer, waehrend derselbe Zustand bei 48 kHz -92,29 dB meldet -, beide tragen die abgelehnte Rate, und der gebaute state_report bleibt gueltig gegen $defs/dsp_bericht  [bei 48 kHz auto_gain_db -92.293932 dB, bei 32 kHz 0.000000 dB (Vorzeichenbit 0), klemmungen 0, Kern-Samplerate 0.0, Transaktionskern-fs 0.0, abgelehnt Kern 32000.0 / Bericht 32000.0, Verletzungen 0]
+[ok]   311/M-138 (b) der_grund_bleibt_c_plus_plus_lokal (NAK-311 Feinheit F-27, M-140): $defs/dsp_bericht hat additionalProperties: false - derselbe Bericht MIT dem Feld im dsp-Dokument wird abgewiesen, ohne das Feld ist er gueltig; der v3-Vertrag bleibt unberuehrt  [additionalProperties false ja, Verletzungen mit Feld 1 (/dsp/abgelehnte_samplerate_hz gegen additionalProperties), ohne Feld 0]
+[ok]   feines Gitter hat 221 Baender
+[ok]   222 Kanten, 221 Mitten  [222/221]
+[ok]   Kanten streng monoton
+[ok]   jede Mitte liegt echt zwischen ihren Kanten
+[ok]   keine Mitte ist NaN oder unendlich
+[ok]   alle Mitten liegen in 30 Hz .. 18 kHz
+[ok]   grobes Gitter hat 64 Gruppen
+[ok]   65 grobe Kanten
+[ok]   Gruppen sind lueckenlos und ueberlappungsfrei
+[ok]   keine leere Gruppe
+[ok]   Gruppen decken genau 221 feine Baender  [221]
+[ok]   grobe Kanten sind BITGLEICHE Kopien feiner Kanten
+[ok]   Quantisierung stimmt mit den Testvektoren (61)
+[ok]   genug Vektoren  [61]
+[ok]   N-18: -0 wird 0  [0]
+[ok]   N-18: ein Zehntel  [0.1]
+[ok]   N-18: ein Drittel, auf 15 Stellen gedeckelt  [0.333333333333333]
+[ok]   N-18: kleiner Exponent  [1e-7]
+[ok]   N-18: kleinster normaler float  [1.17549435082229e-38]
+[ok]   N-18: kleinster subnormaler float  [1.40129846432482e-45]
+[ok]   N-18: weit unten, aber ueber der Grenze  [1e-300]
+[ok]   N-18: der kleinste angenommene Betrag  [1e-307]
+[ok]   N-18: 2^53-1 als EXAKTE Ganzzahl  [9007199254740991]
+[ok]   N-18: eine Samplerate  [48000]
+[ok]   N-18/R4f: die Eingabe liegt ECHT unter 1e-307 (Wertvergleich)
+[ok]   N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [1e-307]
+[ok]   N-18/R4f: die UNGEDECKELTE Form ist eine andere und faellt am Riegel
+[ok]   N-18b: verweigert â NaN
+[ok]   N-18b: verweigert â +Inf
+[ok]   N-18b: verweigert â -Inf
+[ok]   N-18b: verweigert â 2^53 — eine Ganzzahl ueber der Grenze
+[ok]   N-18b: verweigert â 1e21 an der ES6-Schreibweisengrenze
+[ok]   N-18b: verweigert â groesster normaler float — Ganzzahl ueber 2^53
+[ok]   N-18b: verweigert â 1e300 — Ganzzahl, nicht Betragsgrenze
+[ok]   N-18b: verweigert â -1e300
+[ok]   N-18b: verweigert â 1e308 an der Betragsgrenze
+[ok]   N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+[ok]   N-18b: verweigert â 9.99e-308 — dez = -308
+[ok]   N-18b: verweigert â 1e-308
+[ok]   N-18b: verweigert â 4.9e-324, der kleinste subnormale double
+[ok]   N-18: der Deckel laesst exakte Ganzzahlen unangetastet
+[ok]   N-19: es6Zahl bleibt ungedeckelt (der state_hash laeuft durch keinen Riegel)
+[ok]   N-17: eine Komma-Locale ist verfuegbar
+[ok]   N-17: der Rueckwechsel auf die Ausgangs-Locale gelingt - ohne ihn maesse die Zeile darunter nicht die C-Seite  [C]
+[ok]   N-17: der Hello traegt die nichtganzzahlige Samplerate mit PUNKT  [{"type":"hello","connection_kind":"control","protocol":3,"plugin_version":"0.3.0","plugin_kind":"main","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"audio":{"samplerate":44100.5,"block_size":512,"channels":2}}]
+[ok]   N-17: dieselbe Komma-Locale laesst sich nach dem Rueckwechsel ERNEUT setzen  [de-DE]
+[ok]   N-17: der Heartbeat ist unter Komma-Locale BYTEGLEICH  [771 Bytes]
+[ok]   N-17: und der HELLO-Text ebenso - bytegleich unter beiden Locales  [444 Bytes]
+[ok]   N-17: kein Komma-Dezimaltrenner im Hello - hier faellt der Rotbeweis, wenn `zahl` durch `std::to_string` ersetzt wird
+[ok]   N-17: juce::JSON liest die Samplerate unveraendert zurueck
+[ok]   N-17: und die Ausgangs-Locale steht am Ende wieder - sonst liefe der REST dieses Beins unter Komma
+[ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+[ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+[ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+[ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+-----------------------------------------
+159 bestanden, 0 gescheitert

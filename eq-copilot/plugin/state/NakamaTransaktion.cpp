@@ -349,7 +349,16 @@ param::DspSatz Transaktionskern::wirksam() const
 
 void Transaktionskern::setzeSamplerate (double samplerate, int kanaele) noexcept
 {
-    fs = (std::isfinite (samplerate) && samplerate > 0.0) ? samplerate : 0.0;
+    // NAK-311 R-311-16 und R-311-20 (F08, Karte U47): dieselbe Rate, dasselbe
+    // Praedikat wie im Kern - EIN Ort fuer die Zahl und die
+    // Vergleichsrichtung (`dsp::samplerateUnterstuetzt`, `DspProgramm.h`).
+    // Eine nicht unterstuetzte Rate landet nie in `fs`: der Bericht meldet
+    // dann wie ohne Samplerate (`baueBericht` betritt den Programmzweig nur
+    // bei `fs > 0`), und der GRUND wird gemerkt. Damit tragen Kern und
+    // Bericht im dritten Fenster dasselbe Urteil, ohne dass einer vom
+    // anderen liest.
+    fs = dsp::samplerateUnterstuetzt (samplerate) ? samplerate : 0.0;
+    abgelehnteRate = (samplerate > 0.0 && samplerate < dsp::kMinSamplerateHz) ? samplerate : 0.0;
     // NAK-311 R-311-3: unveraendert uebernommen und in `baueBericht` an
     // `baueProgramm` gereicht. Kein Statefeld, keine Revision, kein
     // Host-Dirty - `channel_mode` im bestaetigten Zustand bleibt unberuehrt.
@@ -803,6 +812,12 @@ bool baueBericht (const Transaktionskern& tk, DspBericht& aus, juce::String& gru
 
     aus.autoGainDb = 0.0;
     aus.klemmungen.clear();
+    // NAK-311 R-311-16 (F08, U47): der GRUND steht im Bericht, auch wenn es
+    // sonst nichts zu melden gibt - gerade dann. Er haengt an der zuletzt
+    // gereichten Rate, nicht am Programm, und wird deshalb VOR dem
+    // Programmzweig gesetzt; im abgelehnten Fenster ist `fs` = 0, der Zweig
+    // bleibt aus, und der Bericht meldet wie ohne Samplerate (M-138 a).
+    aus.abgelehnteSamplerateHz = tk.abgelehnteSamplerateHz();
     const double fs = tk.samplerate();
     if (fs > 0.0)
     {

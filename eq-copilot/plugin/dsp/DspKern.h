@@ -119,7 +119,18 @@ public:
         `prepareToPlay` die gemessene Zahl, und `freigeben` setzt beide
         zurueck, damit keine veraltete Kanalzahl einen Programmbau ohne neue
         Vorbereitung erreicht. Die Vorgabe 2 haelt jeden Aufrufer bitgleich,
-        der sie nicht nennt. */
+        der sie nicht nennt.
+
+        NAK-311 R-311-16 und R-311-20 (F08, Karte U47): eine Rate unter
+        `kMinSamplerateHz` bereitet NICHTS vor. Der Kern nimmt dann den Weg
+        von `freigeben` - danach ist `dryL` leer, und `verarbeiteStueck`
+        kehrt vor dem ersten Sample zurueck (der Weg des AUSGESCHALTETEN EQ,
+        kein Sample gelesen oder geschrieben) -, nullt zusaetzlich den
+        gemeldeten Auto-Gain und die Zaehler des alten Fensters und merkt
+        sich die abgelehnte Rate (`abgelehnteSamplerateHz()`). Die Kanalzahl
+        faellt dabei mit der Rate auf die Vorgabe 2. Bei einer unterstuetzten
+        Rate faellt die gemerkte Rate auf exakt +0,0 zurueck; `freigeben`
+        setzt sie ebenso zurueck (bereiteVor <-> releaseResources). */
     void bereiteVor (double samplerate, int maxBlock, int kanaele = 2);
 
     /** Gibt die Puffer frei und setzt alle Zustaende zurueck. Der
@@ -314,6 +325,25 @@ public:
     /** Derselbe Wert des Candidate-Programms, aus SEINER Kurve (B-6). */
     double autoGainCandidateDb() const noexcept { return autoGainBericht[1].load (std::memory_order_relaxed); }
 
+    /** NAK-311 R-311-16 (F08, Karte U47): die zuletzt ABGELEHNTE Abtastrate
+        in Hz - der Grund, aus dem der EQ neutral bleibt -, oder exakt +0,0,
+        wenn keine abgelehnt ist. Abgelehnt wird nur eine endliche Rate ueber
+        0 und unter `kMinSamplerateHz`; das verriegelte Fenster aus R-311-12
+        (Rate 0 oder nicht endlich) traegt weiter +0,0 und ist damit
+        unterscheidbar. Der Zustand faellt mit dem naechsten `bereiteVor` bei
+        unterstuetzter Rate und mit `freigeben` zurueck.
+
+        Der Audiothread liest ihn nie: er steht neben der Abtastrate und wird
+        nur ausserhalb des Callbacks geschrieben (unter dem Callback-Schloss
+        des Prozessors), wie `abtastrate` und `kanalzahl` selbst. */
+    double abgelehnteSamplerateHz() const noexcept { return abgelehnteRate; }
+
+    /** NAK-311 R-311-20 (§45 Nr. 4): die Kanalzahl des Busses, wie der Kern
+        sie haelt. Lesezugang fuer den Fall der nicht unterstuetzten Rate, in
+        dem sie mit der Rate auf die Vorgabe 2 faellt; geschrieben wird sie
+        nur in `bereiteVor` und `freigeben`, nie im Audiothread. */
+    int busKanaele() const noexcept { return kanalzahl; }
+
     /** Die Quelle fuer `Frame.band_dynamic_gain_db` (R14): die acht
         momentanen Auslenkungen des COMMITTED-Pfads in Slot-Reihenfolge,
         kohaerent zu `post_committed` (B-9). Freie, ausgeschaltete und nicht
@@ -497,6 +527,11 @@ private:
         (`baueVor` -> `baueProgramm`), nie im Audiothread: dort steht die
         Zahl im Programm der gefahrenen Bank. */
     int    kanalzahl   { 2 };
+    /** NAK-311 R-311-16: die zuletzt abgelehnte Abtastrate in Hz, +0,0 wenn
+        keine abgelehnt ist. Steht neben Abtastrate und Kanalzahl, weil sie
+        dieselbe Herkunft und dieselbe Lebensdauer hat; gelesen wird sie nur
+        ausserhalb des Audiothreads (`abgelehnteSamplerateHz()`). */
+    double abgelehnteRate { 0.0 };
     int    maxBlockGroesse { 0 };
 
     // Arbeitspuffer, vorallokiert.

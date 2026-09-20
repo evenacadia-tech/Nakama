@@ -3107,6 +3107,234 @@ void nak311Recall()
     }
 }
 
+//==============================================================================
+// NAK-311 Etappe 5, Aenderungssatz A - F08 (Karte U47), R-311-16 und R-311-20
+//
+// Unter 44 100 Hz ist der EQ nicht unterstuetzt: `bereiteVor` bereitet nichts
+// vor, `verarbeiteStueck` kehrt vor dem ersten Sample zurueck (der Weg des
+// AUSGESCHALTETEN EQ), der Grund steht als Zahl am Kern und im Bericht, und
+// der Wunsch `eq_enabled` bleibt unberuehrt im Zustand und in den Statebytes.
+// Gemessen werden hier die Paarbeziehungen: setzen <-> zuruecknehmen ueber
+// 48 -> 32 -> 48 kHz (311/M-135), Kern UND Bericht im dritten Fenster
+// (311/M-143, R-311-20) und Latenz, Tail und Callback (311/M-139).
+
+/** Der Pruefling von 311/M-143: ein High-Cut 20 Hz Q 0,707 mit Auto-Gain an -
+    ein Programm, dessen abgeleiteter Ausgleich WEIT von 0 liegt (Phase 15,
+    Quellvalidierung Teil B §2.1: +42,99 dB). Satz B (Deckel) ist noch nicht
+    gebaut; hier gilt der ungedeckelte Wert des Basisstands. */
+param::DspSatz nak311HighCutMitAutoGain()
+{
+    auto z = mitEq (true);
+    setzeBand (z, 0, 20.0, 0.0);
+    z.werte[(size_t) iBand (0, param::kType)].enumIndex = (int) dsp::Filtertyp::highCut;
+    z.werte[(size_t) iBand (0, param::kQ)].zahl = 0.70710678118654752;
+    z.werte[(size_t) param::kIndexAutoGain].b = true;
+    return z;
+}
+
+/** Faehrt `bloecke` Bloecke festen Rauschens und meldet, ob JEDER Block
+    bytegleich herauskam - die Messung des neutralen Wegs. */
+bool nak311BleibtBytegleich (Prozessor& p, int bloecke, int groesse, int saat)
+{
+    bool bytegleich = true;
+    juce::Random w (saat);
+    juce::MidiBuffer midi;
+    for (int b = 0; b < bloecke; ++b)
+    {
+        juce::AudioBuffer<float> puffer (2, groesse), kopie (2, groesse);
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+                puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+        kopie.makeCopyOf (puffer);
+        p.processBlock (puffer, midi);
+        for (int k = 0; k < 2; ++k)
+            if (std::memcmp (puffer.getReadPointer (k), kopie.getReadPointer (k),
+                             (size_t) groesse * sizeof (float)) != 0)
+                bytegleich = false;
+    }
+    return bytegleich;
+}
+
+void nak311Ratenschranke()
+{
+    abschnitt ("U - NAK-311 F08/R-311-16: unter 44,1 kHz bleibt der EQ neutral (311/M-135, 311/M-139, 311/M-143)");
+
+    const double fs = 48000.0, fsNiedrig = 32000.0;
+    const int    blk = 512;
+
+    // ── 311/M-135: setzen <-> zuruecknehmen, speichern <-> laden ──────────
+    {
+        auto z = mitEq (true);
+        setzeBand (z, 0, 14000.0, 12.0);
+        z.werte[(size_t) iBand (0, param::kQ)].zahl = 4.0;
+        z.werte[(size_t) param::kIndexAutoGain].b = true;
+
+        auto p   = prozessor (fs, blk);
+        auto ref = prozessor (fs, blk);   // ein Kern, der NIE abgelehnt hat
+        const auto e  = setze (*p, z);
+        const auto er = setze (*ref, z);
+
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        fahreAudio (*p, 20, blk, 135);
+        fahreAudio (*ref, 20, blk, 135);
+
+        juce::MemoryBlock bytesVor;
+        p->getStateInformation (bytesVor);
+        const auto revisionVor = p->stateRevision();
+        const int  dirtyVor    = dirty.nichtParameter;
+        const bool eqVor       = p->bestaetigterZustand().werte[(size_t) param::kIndexEqEnabled].b;
+
+        // --- das dritte Fenster: 32 kHz ---------------------------------
+        p->setRateAndBufferSizeDetails (fsNiedrig, blk);
+        p->prepareToPlay (fsNiedrig, blk);
+        const double abgelehnt = p->dspKernFuerTest().abgelehnteSamplerateHz();
+        const bool   neutral   = nak311BleibtBytegleich (*p, 20, blk, 1351);
+        const bool   latenzNull = p->getLatencySamples() == 0 && p->getTailLengthSeconds() == 0.0;
+
+        // --- und zurueck auf 48 kHz -------------------------------------
+        p->setRateAndBufferSizeDetails (fs, blk);
+        p->prepareToPlay (fs, blk);
+        ref->setRateAndBufferSizeDetails (fs, blk);
+        ref->prepareToPlay (fs, blk);   // dieselbe frische Vorbereitung
+        const double zurueck = p->dspKernFuerTest().abgelehnteSamplerateHz();
+        const auto nachP   = fahreAudio (*p, 40, blk, 136);
+        const auto nachRef = fahreAudio (*ref, 40, blk, 136);
+        const bool hoerbar = p->dspKernFuerTest().samplerate() == fs
+                          && p->dspKernFuerTest().autoGainDb() != 0.0;
+
+        juce::MemoryBlock bytesNach;
+        p->getStateInformation (bytesNach);
+        p->removeListener (&dirty);
+        const bool eqNach = p->bestaetigterZustand().werte[(size_t) param::kIndexEqEnabled].b;
+
+        std::ostringstream d;
+        d << std::setprecision (12) << "abgelehnt im Fenster " << abgelehnt << " Hz, danach " << zurueck
+          << ", Ausgang im Fenster bytegleich " << (neutral ? "ja" : "nein")
+          << ", nach dem Rueckweg bitgleich zum nie abgelehnten Kern "
+          << (bitgleich (nachP, nachRef) ? "ja" : "nein") << ", autoGainDb "
+          << p->dspKernFuerTest().autoGainDb() << " dB, Statebytes " << bytesVor.getSize() << " gleich "
+          << (bytesVor == bytesNach ? "ja" : "nein") << ", Revision " << revisionVor << " -> "
+          << p->stateRevision() << ", Host-Dirty ueber die drei Aufrufe "
+          << (dirty.nichtParameter - dirtyVor) << ", eq_enabled " << (eqVor && eqNach ? "bleibt an" : "GEAENDERT");
+        pruefe (e.ausgang == tx::Ausgang::commit && er.ausgang == tx::Ausgang::commit
+                    && neutral && latenzNull && abgelehnt == fsNiedrig
+                    && zurueck == 0.0 && ! std::signbit (zurueck) && hoerbar
+                    && bitgleich (nachP, nachRef)
+                    && eqVor && eqNach && bytesVor == bytesNach
+                    && p->stateRevision() == revisionVor && dirty.nichtParameter == dirtyVor,
+                "311/M-135 ratenwechsel_nimmt_den_zustand_zurueck (NAK-311 R-311-16, F08): 48 -> 32 -> 48 kHz - "
+                "im 32-kHz-Fenster ist der Ausgang bytegleich zum Eingang und der Getter traegt 32 000, nach dem "
+                "dritten prepareToPlay ist er wieder exakt +0,0, das Band ist hoerbar und der Ausgang bitgleich "
+                "zu einem Kern, der nie abgelehnt hat; eq_enabled, Statebytes, Revision und Host-Dirty bleiben",
+                d.str());
+    }
+
+    // ── 311/M-143 (R-311-20): Kern UND Bericht im dritten Fenster ─────────
+    {
+        const auto z = nak311HighCutMitAutoGain();
+        auto p = prozessor (fs, blk);
+        const auto e = setze (*p, z);
+        fahreAudio (*p, 188, blk, 143);          // rund 2 s bei 48 kHz
+
+        tx::DspBericht vor; juce::String g;
+        const bool berichtVor = p->dspBericht (vor, g);
+        const double kernVor = p->dspKernFuerTest().autoGainDb();
+        const auto uebernahmenVor = p->dspKernFuerTest().uebernahmen();
+
+        // --- 32 kHz: beide nullen, beide melden den Grund ----------------
+        p->setRateAndBufferSizeDetails (fsNiedrig, blk);
+        p->prepareToPlay (fsNiedrig, blk);
+        const bool neutral = nak311BleibtBytegleich (*p, 20, blk, 1431);
+        auto& kern = p->dspKernFuerTest();
+        const double kernImFenster = kern.autoGainDb();
+        const double kernAbgelehnt = kern.abgelehnteSamplerateHz();
+        const int    kernKanaele   = kern.busKanaele();
+        const auto   uebernahmenImFenster = kern.uebernahmen();
+        tx::DspBericht imFenster;
+        const bool berichtImFenster = p->dspBericht (imFenster, g);
+
+        // --- zurueck auf 48 kHz ------------------------------------------
+        p->setRateAndBufferSizeDetails (fs, blk);
+        p->prepareToPlay (fs, blk);
+        fahreAudio (*p, 188, blk, 143);
+        tx::DspBericht nach;
+        const bool berichtNach = p->dspBericht (nach, g);
+        const double kernNach = p->dspKernFuerTest().autoGainDb();
+
+        const auto bitGleich = [] (double a, double b)
+        { return std::memcmp (&a, &b, sizeof (double)) == 0; };
+
+        std::ostringstream d;
+        d << std::setprecision (12) << "vor dem Wechsel Kern " << kernVor << " dB, Bericht " << vor.autoGainDb
+          << " dB (ungedeckelt, Satz B noch nicht gebaut); im Fenster Kern " << kernImFenster
+          << " dB (Vorzeichenbit " << (std::signbit (kernImFenster) ? 1 : 0) << "), Bericht "
+          << imFenster.autoGainDb << " dB, klemmungen " << imFenster.klemmungen.size()
+          << ", abgelehnt Kern " << kernAbgelehnt << " / Bericht " << imFenster.abgelehnteSamplerateHz
+          << ", busKanaele " << kernKanaele << ", Uebernahmen " << uebernahmenVor << " -> "
+          << uebernahmenImFenster << ", Ausgang bytegleich " << (neutral ? "ja" : "nein")
+          << "; danach Kern " << kernNach << " dB, Bericht " << nach.autoGainDb << " dB, abgelehnt "
+          << p->dspKernFuerTest().abgelehnteSamplerateHz() << " / " << nach.abgelehnteSamplerateHz;
+        pruefe (e.ausgang == tx::Ausgang::commit && berichtVor && berichtImFenster && berichtNach
+                    && kernVor != 0.0 && vor.autoGainDb != 0.0 && uebernahmenVor > 0
+                    && neutral
+                    && kernImFenster == 0.0 && ! std::signbit (kernImFenster)
+                    && imFenster.autoGainDb == 0.0 && ! std::signbit (imFenster.autoGainDb)
+                    && imFenster.klemmungen.empty()
+                    && kernAbgelehnt == fsNiedrig && imFenster.abgelehnteSamplerateHz == fsNiedrig
+                    && kernKanaele == 2 && uebernahmenImFenster == 0
+                    && imFenster.jcs == vor.jcs && imFenster.revision == vor.revision
+                    && imFenster.undoTiefe == vor.undoTiefe
+                    && bitGleich (kernNach, kernVor) && bitGleich (nach.autoGainDb, vor.autoGainDb)
+                    && p->dspKernFuerTest().abgelehnteSamplerateHz() == 0.0
+                    && nach.abgelehnteSamplerateHz == 0.0,
+                "311/M-143 ratenwechsel_nullt_den_ausgleich_und_meldet_beides (NAK-311 R-311-20): High-Cut 20 Hz "
+                "Q 0,707 mit Auto-Gain an, 48 -> 32 -> 48 kHz - im 32-kHz-Fenster sind Kern und Bericht exakt "
+                "+0,0, klemmungen leer, die Zaehler des alten Fensters genullt, die Kanalzahl auf 2, und BEIDE "
+                "tragen die abgelehnte Rate; jcs, Revision und Undo-Tiefe bleiben die des bestaetigten Zustands, "
+                "und nach dem Rueckweg tragen beide wieder bitgleich denselben abgeleiteten Wert",
+                d.str());
+    }
+
+    // ── 311/M-139 (Teilfall): Latenz, Tail und der Callback ───────────────
+    {
+        auto z = mitEq (true);
+        setzeBand (z, 0, 14000.0, 12.0);
+        auto p = prozessor (fsNiedrig, blk);
+        const auto e = setze (*p, z);
+
+        dsp::RtWache::zuruecksetzen();
+        juce::AudioBuffer<float> puffer (2, blk);
+        juce::MidiBuffer midi;
+        juce::Random w (139);
+        std::uint64_t imCallback = 0;
+        for (int b = 0; b < 200; ++b)
+        {
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < blk; ++n)
+                    puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+            allokationen = 0;
+            zaehleAllokationen = true;
+            p->processBlock (puffer, midi);
+            zaehleAllokationen = false;
+            imCallback += allokationen;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        std::ostringstream d;
+        d << "Allokationen im Callback " << imCallback << ", gemeldete Sperren im Audiopfad des Kerns "
+          << sperren << ", Latenz " << p->getLatencySamples() << ", Tail " << p->getTailLengthSeconds()
+          << " s, Taplaenge " << p->dspKernFuerTest().tapLaenge() << ", verworfene Analyseframes "
+          << p->dspKernFuerTest().verworfeneAnalyseframes();
+        pruefe (e.ausgang == tx::Ausgang::commit && imCallback == 0 && sperren == 0
+                    && p->getLatencySamples() == 0 && p->getTailLengthSeconds() == 0.0
+                    && p->dspKernFuerTest().verworfeneAnalyseframes() == 0,
+                "311/M-139 der_neutrale_weg_kostet_nichts (Teilfall von 311/M-135, NAK-311 R-311-16): bei 32 kHz "
+                "zaehlt der thread-lokale Zaehler ueber 200 Bloecke 0 Allokationen im Callback, die Echtzeitwache "
+                "des Kerns 0 gemeldete Sperren, getLatencySamples bleibt 0 und getTailLengthSeconds 0,0",
+                d.str());
+    }
+}
+
 } // namespace
 
 int main()
@@ -3145,6 +3373,9 @@ int main()
 
     // NAK-311 Etappe 4 Teil b (F12, R-311-4): Recall und Audiohistorie
     nak311Recall();
+
+    // NAK-311 Etappe 5, Satz A (F08, R-311-16, R-311-20): die Ratenschranke
+    nak311Ratenschranke();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

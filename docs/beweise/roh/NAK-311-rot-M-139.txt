@@ -1,0 +1,84 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-139
+========================================================
+
+Matrixzeile: M-139 (Manifest Paragraph 39.4), Etikett "heute nicht messbar".
+Zusage:      `verarbeiteStueck` kehrt vor dem ersten Sample zurueck (nach
+             `freigeben` ist `dryL` leer): kein Sample wird gelesen oder
+             geschrieben, kein float -> double -> float-Ruecklauf, kein Tap
+             gefuellt, kein Zaehler bewegt. Im Callback zaehlt der
+             thread-lokale Zaehler 0 Allokationen; getLatencySamples() bleibt 0
+             und getTailLengthSeconds() 0,0.
+Beine:       A16 (EqCopProbeeqNullTest), Fall 311/M-139 - Blockgroessen und
+             Zaehler; B7 (EqCopTransactionTest), Fall 311/M-139 - Latenz, Tail,
+             Allokationen und gemeldete Sperren.
+Mutation:    eq-copilot/plugin/dsp/DspKern.cpp:110 (gebaute Zeile), der Weg von
+             `freigeben` auf dem Ablehnungspfad von `bereiteVor`.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Gemessener Endstand:
+  A16  ok 311/M-139  [Blockgroessen 6, bytegleich ja, Latenz 0, Tail 0,
+       Taplaenge 0, Zaehler 0/0/0]   (Bloecke 1, 255, 256, 257, 2048, 4096)
+  B7   ok 311/M-139  [Allokationen im Callback 0, gemeldete Sperren im
+       Audiopfad des Kerns 0, Latenz 0, Tail 0 s, Taplaenge 0, verworfene
+       Analyseframes 0]   (200 Bloecke zu 512 Samples bei 32 kHz)
+
+Am Zwischenstand VOR der Reparatur (Rotlauf, siehe NAK-311-rot-M-132.txt
+Abschnitt 1) war die A16-Haelfte rot:
+  FEHLER  311/M-139  [Blockgroessen 6, bytegleich nein, Latenz 0, Tail 0,
+  Taplaenge 0, Zaehler 5/0/1]
+Die B7-Haelfte (Latenz, Tail, Allokationen, Sperren) war schon dort gruen -
+sie misst, was der Bau NICHT aendern darf, und ist insoweit Regressionswache.
+
+
+--- Die Mutation nach dem Bau ---------------------------------------------
+
+Die Matrixspalte nennt: "`bereiteVor` bei nicht unterstuetzter Rate die Puffer
+trotzdem zuweisen lassen (nur `abtastrate` auf 0)". Gebaut wurde genau das,
+mit einer gemessenen Praezisierung: bliebe `abtastrate` dabei auf 0, koennte
+gar kein Programm publiziert werden (`DspKernAusfuehrung::publiziereWirksam`
+uebergibt bei `kern.samplerate() <= 0.0` nichts), der Pfad ruhte, und der Kern
+schriebe auch mit vollen Puffern keinen Sample - die Mutation waere wirkungslos
+statt rot. Mutiert ist deshalb der ganze Weg von `freigeben`: die Puffer
+werden zugewiesen UND die Rate gesetzt, waehrend die Ablehnung (gemerkte Rate,
+genullter Auto-Gain) stehen bleibt. Der fruehe Rueckweg wird damit nicht mehr
+genommen - genau die Zusage dieser Zeile.
+
+Mutation: eq-copilot/plugin/dsp/DspKern.cpp
+  vorher : freigeben();
+  nachher: // MUTATION M-139: der fruehe Rueckweg wird nicht mehr genommen -
+           // bereiteVor weist die Puffer trotz Ablehnung zu.
+           abtastrate      = samplerate;
+           kanalzahl       = kanaele;
+           maxBlockGroesse = maxBlock > 0 ? maxBlock : 0;
+           { const size_t nMut = (size_t) maxBlockGroesse;
+             for (auto* v : { &dryL, &dryR, &eingL, &eingR, &cVonL, &cVonR,
+                              &cNachL, &cNachR, &cAusL, &cAusR, &cGewicht,
+                              &kVonL, &kVonR, &kNachL, &kNachR, &kAusL,
+                              &kAusR, &kGewicht }) v->assign (nMut, 0.0);
+             tapPuffer.assign ((size_t) kTaps * 2u * nMut, 0.0); }
+SHA-256 vorher : 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-139-DspKern.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T10:59:32, Binary 2026-09-20T10:59:34
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (6):
+  FEHLER  311/M-139 frueher_rueckweg_bei_jeder_blockgroesse bei 32 kHz
+  FEHLER  311/M-132 (vier Faelle: 32 und 22,05 kHz, je Stereo und Mono)
+  FEHLER  311/M-134 groesser_oder_gleich_entscheidet (Teilfall)
+
+Die Zusage faellt an der erwarteten Pruefung: JA (311/M-139).
+
+Mitgefallen mit Grund: 311/M-132 misst denselben neutralen Weg ueber 1000
+Bloecke - schreibt der Kern, faellt auch dort der Bytevergleich; 311/M-134
+prueft am echten Prozessor, dass die abgelehnte Rate den Kern unvorbereitet
+laesst (Kern-Samplerate 0), was mit zugewiesenen Puffern nicht mehr gilt.
+
+Unter derselben Mutation GRUEN geblieben (9): 311/M-137 (vier), 311/M-133
+(vier Raten), 311/M-136 - weder Analyse noch die unterstuetzten Raten noch das
+verriegelte Fenster haengen am Rueckweg.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0.

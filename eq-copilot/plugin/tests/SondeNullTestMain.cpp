@@ -172,6 +172,37 @@ juce::File wurzel()
     return d;
 }
 
+/** NAK-311 311/M-133: ein Fingerabdruck des Ausgangs (FNV-1a ueber die
+    Bytes jedes ausgegebenen float, in Blockreihenfolge). Er traegt den
+    Bitvergleich gegen den Basisstand des Aenderungssatzes: derselbe Lauf
+    gibt dort dieselbe Zahl aus (§7.1, Zeilenvergleich der Beinausgabe).
+    Deterministisch, weil Saat, Blockzahl und Blockgroesse fest sind. */
+std::uint64_t fnvAusgang (Prozessor& p, int bloecke, int groesse, int saat, int kanaele = 2)
+{
+    std::uint64_t h = 1469598103934665603ull;
+    juce::Random w (saat);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> b (kanaele, groesse);
+    for (int i = 0; i < bloecke; ++i)
+    {
+        for (int k = 0; k < kanaele; ++k)
+            for (int n = 0; n < groesse; ++n)
+                b.setSample (k, n, w.nextFloat() * 1.8f - 0.9f);
+        p.processBlock (b, midi);
+        for (int k = 0; k < kanaele; ++k)
+            for (int n = 0; n < groesse; ++n)
+            {
+                const auto bits = std::bit_cast<std::uint32_t> (b.getSample (k, n));
+                for (int byte = 0; byte < 4; ++byte)
+                {
+                    h ^= (std::uint64_t) ((bits >> (byte * 8)) & 0xFFu);
+                    h *= 1099511628211ull;
+                }
+            }
+    }
+    return h;
+}
+
 std::unique_ptr<Prozessor> vorbereitet (double rate, int maxBlock)
 {
     auto p = std::make_unique<Prozessor>();
@@ -1482,6 +1513,311 @@ int main()
                     "311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs "
                     "nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6",
                     detail (lauf, zaehler));
+        }
+    }
+
+    // -- 15. NAK-311 311/M-132: unter 44,1 kHz bleibt der EQ neutral -------
+    // Manifest NAK-311 §39.4 (311/M-132 bis 311/M-139), Regeln R-311-16 und
+    // R-311-20, Abnahme U47 vom 19.09.2026 ("Weg 1 gilt: unter 44,1 kHz ist
+    // der EQ nicht unterstuetzt"). Unter 44 100 Hz bereitet `bereiteVor`
+    // nichts vor, `verarbeiteStueck` kehrt vor dem ersten Sample zurueck -
+    // der Weg des AUSGESCHALTETEN EQ -, und der Grund steht als Zahl am Kern.
+    // Genau 44 100 Hz bleibt unterstuetzt (Gegenfall 311/M-133).
+    abschnitt ("15. NAK-311 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral (M-132 bis M-134, M-136, M-137, M-139)");
+    {
+        namespace dspn = nakama::dsp;
+
+        /** Der Pruefling der Phase 16: Bell 14 kHz, +12 dB, Q 4, Auto-Gain
+            an. Bei 32 kHz liegen vier der 121 Gitterstellen des Ausgleichs
+            ueber Nyquist, bei 22,05 kHz elf - heute rechnet der Kern damit
+            (gemessen -0,397113 dB statt -0,234376 dB). */
+        const auto mitBell14k = [] (param::DspSatz z)
+        {
+            z.werte[(size_t) param::kIndexEqEnabled].b = true;
+            z.werte[(size_t) iGlobal ("v2.global.auto_gain")].b = true;
+            z.werte[(size_t) param::indexOccupied (0)].b = true;
+            z.werte[(size_t) iBand (0, param::kEnabled)].b = true;
+            z.werte[(size_t) iBand (0, param::kType)].enumIndex = (int) dspn::Filtertyp::bell;
+            z.werte[(size_t) iBand (0, param::kFreqHz)].zahl = 14000.0;
+            z.werte[(size_t) iBand (0, param::kQ)].zahl      = 4.0;
+            z.werte[(size_t) iBand (0, param::kGainDb)].zahl = 12.0;
+            return z;
+        };
+        const auto jaNein = [] (bool b) { return juce::String (b ? "ja" : "nein"); };
+        const auto monoBus = [] (Prozessor& p)
+        {
+            juce::AudioProcessor::BusesLayout l;
+            l.inputBuses .add (juce::AudioChannelSet::mono());
+            l.outputBuses.add (juce::AudioChannelSet::mono());
+            return p.setBusesLayout (l);
+        };
+
+        // ── 311/M-132 mit den Teilfaellen 311/M-137 und 311/M-139 ──────────
+        for (const double rate : { 32000.0, 22050.0 })
+            for (const int kanaele : { 2, 1 })
+            {
+                auto p = std::make_unique<Prozessor>();
+                const bool layoutOk = kanaele == 1 ? monoBus (*p) : true;
+                p->setRateAndBufferSizeDetails (rate, 2048);
+                p->prepareToPlay (rate, 2048);
+                const auto hallo = p->v3HelloFuerTest();
+                const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
+                juce::Random wuerfel ((juce::int64) rate + kanaele);
+                Material material;
+                material.kanaele    = kanaele;
+                material.bitmuster  = true;
+                material.nichtEndlich = true;
+                const auto lauf = fahreNull (*p, 1000, wuerfel, 0, 0, material);
+                auto& kern = p->dspKernFuerTest();
+                const double abgelehnt = kern.abgelehnteSamplerateHz();
+                const double autoGain  = kern.autoGainDb();
+                const bool zaehlerRuhen = kern.nichtEndlicheEingaenge() == 0
+                                       && kern.geheilteFilterzustaende() == 0
+                                       && kern.verworfeneAnalyseframes() == 0;
+                pruefe (e.ausgang == tx::Ausgang::commit && layoutOk
+                            && lauf.abweichend == 0 && lauf.latenzNull
+                            && lauf.bitmusterGesetzt > 0 && lauf.bitmusterAbweichend == 0
+                            && lauf.nichtEndlichGesetzt == 6 && lauf.nichtEndlichAbweichend == 0
+                            && lauf.wachmarkenBytegleich == 3 && zaehlerRuhen
+                            && std::memcmp (&abgelehnt, &rate, sizeof (double)) == 0
+                            && kern.samplerate() == 0.0
+                            && autoGain == 0.0 && ! std::signbit (autoGain)
+                            && kern.busKanaele() == 2,
+                        "311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei " + juce::String (rate, 0)
+                            + " Hz, " + juce::String (kanaele) + "-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain "
+                            "an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und "
+                            "+-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, "
+                            "meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2",
+                        juce::String (lauf.samples) + " Samples, Rauschen " + juce::String (lauf.abweichend)
+                            + " abweichend, Muster " + juce::String (lauf.bitmusterAbweichend) + " von "
+                            + juce::String (lauf.bitmusterGesetzt) + ", nicht endlich "
+                            + juce::String (lauf.nichtEndlichAbweichend) + " von "
+                            + juce::String (lauf.nichtEndlichGesetzt) + " veraendert, "
+                            + juce::String (lauf.wachmarkenBytegleich) + " Wachmarken bytegleich, Zaehler "
+                            + juce::String ((juce::int64) kern.nichtEndlicheEingaenge()) + "/"
+                            + juce::String ((juce::int64) kern.geheilteFilterzustaende()) + "/"
+                            + juce::String ((juce::int64) kern.verworfeneAnalyseframes())
+                            + ", abgelehnteSamplerateHz " + juce::String (abgelehnt, 6)
+                            + ", Kern-Samplerate " + juce::String (kern.samplerate(), 6)
+                            + ", autoGainDb " + juce::String (autoGain, 12) + " (Vorzeichenbit "
+                            + juce::String (std::signbit (autoGain) ? 1 : 0) + "), busKanaele "
+                            + juce::String (kern.busKanaele()));
+
+                // 311/M-137 (Regressionswache): Messung und Analyse sind vom
+                // Entscheid NICHT beruehrt - der Analyseweg kennt keine
+                // Mindestrate und traegt weiter die gemessenen Hostwerte.
+                pruefe (hallo.samplerate == rate && hallo.blockSize == 2048 && hallo.channels == kanaele,
+                        "311/M-137 analyse_bleibt_unberuehrt (Teilfall von 311/M-132, Regressionswache) bei "
+                            + juce::String (rate, 0) + " Hz, " + juce::String (kanaele)
+                            + "-Kanal-Bus: v3Samplerate, v3BlockSize und v3Channels tragen die gemessenen "
+                              "Werte des Hosts, nicht 0",
+                        "v3Samplerate " + juce::String (hallo.samplerate, 1) + ", v3BlockSize "
+                            + juce::String (hallo.blockSize) + ", v3Channels " + juce::String (hallo.channels)
+                            + ", Bloecke ohne Audio in der Analysequeue "
+                            + juce::String ((juce::int64) p->analyseDropsOhneAudioFuerTest()));
+            }
+
+        // ── 311/M-139: der fruehe Rueckweg bei jeder Blockgroesse ──────────
+        // Kein Sample gelesen oder geschrieben, auch nicht ueber `maxBlock`
+        // (4096 bei 2048): der Kern ist unvorbereitet, die Stueckelung
+        // (M-48) greift gar nicht, und kein Analyseframe gilt als verworfen.
+        {
+            auto p = vorbereitet (32000.0, 2048);
+            const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
+            juce::MidiBuffer midi;
+            juce::Random w (139);
+            bool alleBytegleich = true;
+            int gefahren = 0;
+            for (const int groesse : { 1, 255, 256, 257, 2048, 4096 })
+            {
+                juce::AudioBuffer<float> b (2, groesse), kopie (2, groesse);
+                fuelle (b, w);
+                if (groesse > 16) b.setSample (0, 16, std::bit_cast<float> (kWachmarke));
+                kopie.makeCopyOf (b);
+                p->processBlock (b, midi);
+                for (int k = 0; k < 2; ++k)
+                    if (std::memcmp (b.getReadPointer (k), kopie.getReadPointer (k),
+                                     (size_t) groesse * sizeof (float)) != 0)
+                        alleBytegleich = false;
+                ++gefahren;
+            }
+            auto& kern = p->dspKernFuerTest();
+            pruefe (e.ausgang == tx::Ausgang::commit && alleBytegleich && gefahren == 6
+                        && p->getLatencySamples() == 0 && p->getTailLengthSeconds() == 0.0
+                        && kern.nichtEndlicheEingaenge() == 0 && kern.geheilteFilterzustaende() == 0
+                        && kern.verworfeneAnalyseframes() == 0 && kern.tapLaenge() == 0,
+                    "311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz: "
+                    "Bloecke 1, 255, 256, 257, 2048 und 4096 (ueber maxBlock 2048) kommen mit Wachmarke "
+                    "bytegleich heraus, kein Tap gefuellt, kein Zaehler bewegt, 0 Samples Latenz, Tail 0,0 s",
+                    "Blockgroessen " + juce::String (gefahren) + ", bytegleich " + jaNein (alleBytegleich)
+                        + ", Latenz " + juce::String (p->getLatencySamples()) + ", Tail "
+                        + juce::String (p->getTailLengthSeconds()) + ", Taplaenge "
+                        + juce::String (kern.tapLaenge()) + ", Zaehler "
+                        + juce::String ((juce::int64) kern.nichtEndlicheEingaenge()) + "/"
+                        + juce::String ((juce::int64) kern.geheilteFilterzustaende()) + "/"
+                        + juce::String ((juce::int64) kern.verworfeneAnalyseframes()));
+        }
+
+        // ── 311/M-133 (Regressionswache): genau 44 100 Hz bleibt unterstuetzt
+        // Der Fingerabdruck ist der Bitvergleich gegen den Basisstand des
+        // Satzes: derselbe Lauf gibt dort dieselbe Zahl aus (§7.1,
+        // Zeilenvergleich in `docs/beweise/roh/NAK-311-etappe5-a16-*`).
+        for (const double rate : { 44100.0, 48000.0, 96000.0, 192000.0 })
+        {
+            auto p = vorbereitet (rate, 2048);
+            const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
+            const auto abdruck = fnvAusgang (*p, 40, 512, (int) rate + 133);
+            auto& kern = p->dspKernFuerTest();
+            const double abgelehnt = kern.abgelehnteSamplerateHz();
+            int aktiv = -1, quelle = -1, kandidat = -1, kandidatQuelle = -1;
+            kern.gefahreneSlots (aktiv, quelle, kandidat, kandidatQuelle);
+            const bool hoerbar = aktiv >= 0 && kern.pool().bank (aktiv).programm.eqEngagiert
+                              && kern.autoGainDb() != 0.0;
+            pruefe (e.ausgang == tx::Ausgang::commit && hoerbar
+                        && kern.samplerate() == rate
+                        && abgelehnt == 0.0 && ! std::signbit (abgelehnt),
+                    "311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei " + juce::String (rate, 0)
+                        + " Hz: der Kern bereitet sich vor, das Band ist hoerbar, "
+                          "abgelehnteSamplerateHz ist exakt +0,0, und der Ausgang traegt den Fingerabdruck "
+                          "des Basisstands",
+                    "Ausgang FNV-1a 0x" + juce::String::toHexString ((juce::int64) abdruck)
+                        + ", Kern-Samplerate " + juce::String (kern.samplerate(), 1)
+                        + ", autoGainDb " + juce::String (kern.autoGainDb(), 12)
+                        + ", abgelehnteSamplerateHz " + juce::String (abgelehnt, 6) + " (Vorzeichenbit "
+                        + juce::String (std::signbit (abgelehnt) ? 1 : 0) + ")");
+        }
+
+        // ── 311/M-134: der Zahlenrand steht an genau einer Stelle ──────────
+        {
+            const double unter1Ulp = std::nextafter (44100.0, 0.0);
+            const double ueber1Ulp = std::nextafter (44100.0, 1.0e9);
+            const double nanWert = std::numeric_limits<double>::quiet_NaN();
+            const double inf     = std::numeric_limits<double>::infinity();
+            const bool praedikat = dspn::kMinSamplerateHz == 44100.0
+                && dspn::samplerateUnterstuetzt (44100.0)
+                && dspn::samplerateUnterstuetzt (ueber1Ulp)
+                && dspn::samplerateUnterstuetzt (48000.0)
+                && ! dspn::samplerateUnterstuetzt (unter1Ulp)
+                && ! dspn::samplerateUnterstuetzt (44099.0)
+                && ! dspn::samplerateUnterstuetzt (32000.0)
+                && ! dspn::samplerateUnterstuetzt (22050.0)
+                && ! dspn::samplerateUnterstuetzt (8000.0)
+                && ! dspn::samplerateUnterstuetzt (0.0)
+                && ! dspn::samplerateUnterstuetzt (-48000.0)
+                && ! dspn::samplerateUnterstuetzt (nanWert)
+                && ! dspn::samplerateUnterstuetzt (inf)
+                && ! dspn::samplerateUnterstuetzt (-inf);
+
+            // Und dieselbe Kante am ECHTEN Prozessor: ein ULP unter der
+            // Schranke wird abgelehnt, genau 44 100 Hz nicht.
+            auto pUnter = vorbereitet (unter1Ulp, 512);
+            auto pGenau = vorbereitet (44100.0, 512);
+            const double abgelehntUnter = pUnter->dspKernFuerTest().abgelehnteSamplerateHz();
+            const double abgelehntGenau = pGenau->dspKernFuerTest().abgelehnteSamplerateHz();
+            pruefe (praedikat
+                        && std::memcmp (&abgelehntUnter, &unter1Ulp, sizeof (double)) == 0
+                        && pUnter->dspKernFuerTest().samplerate() == 0.0
+                        && abgelehntGenau == 0.0 && ! std::signbit (abgelehntGenau)
+                        && pGenau->dspKernFuerTest().samplerate() == 44100.0,
+                    "311/M-134 groesser_oder_gleich_entscheidet (Teilfall von 311/M-132): das Praedikat "
+                    "`samplerateUnterstuetzt` nimmt genau 44 100 Hz und den naechsten double darueber an und "
+                    "lehnt 44 100 minus 1 ULP, 44 099, 32 000, 22 050, 8 000, 0, negativ, NaN und +-Inf ab; "
+                    "am echten Prozessor faellt 44 100 minus 1 ULP, 44 100 nicht",
+                    "44100 - 1 ULP = " + juce::String (unter1Ulp, 17) + " -> abgelehnt "
+                        + juce::String (abgelehntUnter, 17) + ", 44100 -> abgelehnt "
+                        + juce::String (abgelehntGenau, 6) + ", Kern-Samplerate "
+                        + juce::String (pUnter->dspKernFuerTest().samplerate(), 1) + " / "
+                        + juce::String (pGenau->dspKernFuerTest().samplerate(), 1)
+                        + ", Praedikat vollstaendig " + jaNein (praedikat));
+        }
+
+        // ── 311/M-136 (Regressionswache): das verriegelte Fenster bleibt ───
+        // R-311-12 gilt fuer seine zwei Fenster weiter: bei Rate 0, nicht
+        // endlich, ueber 768 kHz oder `maxBlock` = 0 gibt `prepareToPlay`
+        // weder Rate noch Kanalzahl weiter - der Kern behaelt seine letzte
+        // Vorbereitung, und ABGELEHNT ist dabei nichts.
+        {
+            auto p = vorbereitet (48000.0, 512);
+            const auto e = setze (*p, mitBell14k (p->bestaetigterZustand()));
+            juce::MidiBuffer midi;
+            juce::AudioBuffer<float> b (2, 512);
+            juce::Random w (136);
+            for (int i = 0; i < 4; ++i) { fuelle (b, w); p->processBlock (b, midi); }
+
+            tx::DspBericht vorher;
+            juce::String grund;
+            const bool okVorher = p->dspBericht (vorher, grund);
+
+            bool rateStehtStill = true, keineAblehnung = true;
+            const double nanWert = std::numeric_limits<double>::quiet_NaN();
+            const double inf     = std::numeric_limits<double>::infinity();
+            for (const double rate : { 0.0, nanWert, inf, -inf, 1.0e300 })
+            {
+                p->prepareToPlay (rate, 512);
+                if (p->dspKernFuerTest().samplerate() != 48000.0) rateStehtStill = false;
+                if (p->dspKernFuerTest().abgelehnteSamplerateHz() != 0.0) keineAblehnung = false;
+            }
+            p->prepareToPlay (48000.0, 0);   // maxBlock 0, gueltige Rate
+            if (p->dspKernFuerTest().samplerate() != 48000.0) rateStehtStill = false;
+            if (p->dspKernFuerTest().abgelehnteSamplerateHz() != 0.0) keineAblehnung = false;
+
+            tx::DspBericht nachher;
+            const bool okNachher = p->dspBericht (nachher, grund);
+            const bool berichtGleich = okVorher && okNachher
+                && std::memcmp (&vorher.autoGainDb, &nachher.autoGainDb, sizeof (double)) == 0
+                && vorher.revision == nachher.revision && vorher.jcs == nachher.jcs
+                && nachher.abgelehnteSamplerateHz == 0.0;
+            pruefe (e.ausgang == tx::Ausgang::commit && rateStehtStill && keineAblehnung && berichtGleich
+                        && p->dspKernFuerTest().busKanaele() == 2,
+                    "311/M-136 verriegeltes_fenster_bleibt_unterscheidbar (Teilfall von 311/M-132, "
+                    "Regressionswache): `prepareToPlay` mit 0, NaN, +-Inf, 1e300 und mit maxBlock 0 laesst die "
+                    "Vorbereitung von 48 kHz stehen, meldet KEINE abgelehnte Rate, und der dspBericht traegt "
+                    "weiter den Stand der letzten Vorbereitung",
+                    "Kern-Samplerate steht " + jaNein (rateStehtStill) + ", keine Ablehnung "
+                        + jaNein (keineAblehnung) + ", Bericht auto_gain_db "
+                        + juce::String (vorher.autoGainDb, 12) + " -> "
+                        + juce::String (nachher.autoGainDb, 12) + ", abgelehnte Rate im Bericht "
+                        + juce::String (nachher.abgelehnteSamplerateHz, 6));
+        }
+
+        // ── bereiteVor <-> releaseResources (Teilfall von 311/M-132) ───────
+        // CLAUDE.md "Beziehungen mitpruefen": die gemerkte Rate faellt auf
+        // BEIDEN Wegen zurueck. Ohne neue Vorbereitung gibt es keinen Bus,
+        // dessen Rate noch abgelehnt waere.
+        {
+            auto p = vorbereitet (32000.0, 512);
+            const double imFenster = p->dspKernFuerTest().abgelehnteSamplerateHz();
+
+            // Zahlenraender ohne Audio dazwischen: zweimal dieselbe nicht
+            // unterstuetzte Rate, dann eine ANDERE nicht unterstuetzte, dann
+            // maxBlock 0 - der Melder folgt jedem Aufruf, ohne zu haengen.
+            p->prepareToPlay (32000.0, 512);
+            const double zweimal = p->dspKernFuerTest().abgelehnteSamplerateHz();
+            p->prepareToPlay (22050.0, 512);
+            const double gewechselt = p->dspKernFuerTest().abgelehnteSamplerateHz();
+            p->prepareToPlay (32000.0, 0);            // maxBlock 0: R-311-12, kein Durchgriff
+            const double mitMaxBlockNull = p->dspKernFuerTest().abgelehnteSamplerateHz();
+            pruefe (zweimal == 32000.0 && gewechselt == 22050.0 && mitMaxBlockNull == 22050.0,
+                    "311/M-132 Teilfall zwei_aufrufe_ohne_audio_und_ratenwechsel_im_fenster: zweimal dieselbe "
+                    "nicht unterstuetzte Rate meldet dieselbe Zahl, eine andere meldet die neue, und "
+                    "maxBlock 0 laesst den Stand stehen (R-311-12)",
+                    "zweimal 32 kHz -> " + juce::String (zweimal, 1) + ", danach 22,05 kHz -> "
+                        + juce::String (gewechselt, 1) + ", danach maxBlock 0 -> "
+                        + juce::String (mitMaxBlockNull, 1));
+
+            p->releaseResources();
+            const double nachFreigabe = p->dspKernFuerTest().abgelehnteSamplerateHz();
+            pruefe (imFenster == 32000.0 && nachFreigabe == 0.0 && ! std::signbit (nachFreigabe)
+                        && p->dspKernFuerTest().samplerate() == 0.0
+                        && p->dspKernFuerTest().busKanaele() == 2,
+                    "311/M-132 Teilfall bereiteVor_und_releaseResources_nehmen_die_rate_zurueck: nach "
+                    "`releaseResources` steht die gemerkte Rate wieder auf exakt +0,0 - wie Abtastrate und "
+                    "Kanalzahl, mit denen sie dieselbe Lebensdauer hat",
+                    "im Fenster " + juce::String (imFenster, 6) + " Hz, nach releaseResources "
+                        + juce::String (nachFreigabe, 6) + " (Vorzeichenbit "
+                        + juce::String (std::signbit (nachFreigabe) ? 1 : 0) + "), Kern-Samplerate "
+                        + juce::String (p->dspKernFuerTest().samplerate(), 1) + ", busKanaele "
+                        + juce::String (p->dspKernFuerTest().busKanaele()));
         }
     }
 

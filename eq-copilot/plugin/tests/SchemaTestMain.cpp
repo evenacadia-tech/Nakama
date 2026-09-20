@@ -1653,6 +1653,117 @@ void fahreNak311Berichtsgrenze (const juce::var& schemaVar, bool schemaGelesen)
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-311 Etappe 5, Aenderungssatz A · der Bericht bei nicht unterstuetzter
+// Rate (F08, Karte U47; R-311-16, R-311-20)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Manifest NAK-311 §39.4, Zeile 311/M-138 mit ihren zwei Haelften und §41.2
+// F-27. (a) Der Transaktionskern haelt bei einer Rate unter 44 100 Hz `fs` =
+// 0; `baueBericht` betritt den Programmzweig nur bei `fs > 0`, meldet also
+// wie ohne Samplerate: `auto_gain_db` exakt +0,0 und `klemmungen` leer -
+// KEINE Klemmung stammt aus einem Programm der nicht unterstuetzten Rate,
+// weil dort gar keines gebaut wird. (b) Der GRUND steht als Zahl im
+// `DspBericht`, aber NICHT im Dokument: `$defs/dsp_bericht` hat
+// `additionalProperties: false` und ein geschlossenes `required`, ein neues
+// Feld waere eine Vertragsaenderung (M-140). Beides wird hier am GELADENEN
+// Schema gemessen, nicht an einer zweiten Zahl im Test.
+
+void fahreNak311Ratenschranke (const juce::var& schemaVar, bool schemaGelesen)
+{
+    namespace tx = nakama::transaktion;
+
+    if (! schemaGelesen)
+        return;
+
+    bool okVorlage = false;
+    const auto vorlage = lies ("eq-copilot/fixtures/v3/gueltig/state-report-mit-dsp.json", okVorlage);
+    if (! okVorlage)
+        return;
+
+    nakama::vertrag::Schema fassung5;
+    juce::String ladefehler;
+    if (! nakama::vertrag::Schema::laden (schemaVar, fassung5, ladefehler))
+    {
+        pruefe (false, "311/M-138: die Fassung 5 laedt", ladefehler);
+        return;
+    }
+
+    // Derselbe Zustand wie in 311/M-68: acht Low-Shelves 1 kHz +12 dB
+    // Q 0,707, abgeleitet -92,29 dB - ein Wert, der sich von +0,0 klar
+    // unterscheidet (Gegenprobe zu 311/M-143).
+    const auto satz = nak311AchtShelves (0.70710678118654752);
+
+    double bei48 = 0.0;
+    bool   gebaut48 = false;
+    {
+        Nak311Stand st (48000.0);
+        juce::String grund;
+        tx::DspBericht b;
+        gebaut48 = st.tk->ladestart (satz, 0, {}, 0, grund) && tx::baueBericht (*st.tk, b, grund);
+        bei48 = b.autoGainDb;
+    }
+
+    {
+        Nak311Stand st (32000.0);
+        juce::String grund;
+        tx::DspBericht bericht;
+        const bool geladen = st.tk->ladestart (satz, 0, {}, 0, grund);
+        const bool gebaut  = geladen && tx::baueBericht (*st.tk, bericht, grund);
+
+        const auto doc = nak311BerichtAlsDokument (vorlage, bericht);
+        const auto verletzungen = fassung5.pruefe (doc);
+
+        juce::String detail = "bei 48 kHz auto_gain_db " + juce::String (bei48, 6)
+                            + " dB, bei 32 kHz " + juce::String (bericht.autoGainDb, 6)
+                            + " dB (Vorzeichenbit " + juce::String (std::signbit (bericht.autoGainDb) ? 1 : 0)
+                            + "), klemmungen " + juce::String ((int) bericht.klemmungen.size())
+                            + ", Kern-Samplerate " + juce::String (st.kern->samplerate(), 1)
+                            + ", Transaktionskern-fs " + juce::String (st.tk->samplerate(), 1)
+                            + ", abgelehnt Kern " + juce::String (st.kern->abgelehnteSamplerateHz(), 1)
+                            + " / Bericht " + juce::String (bericht.abgelehnteSamplerateHz, 1)
+                            + ", Verletzungen " + juce::String (verletzungen.size());
+        if (! verletzungen.isEmpty())
+            detail += " (" + verletzungen[0].instanz + " gegen " + verletzungen[0].schluessel + ")";
+
+        pruefe (gebaut48 && bei48 != 0.0 && gebaut
+                    && bericht.autoGainDb == 0.0 && ! std::signbit (bericht.autoGainDb)
+                    && bericht.klemmungen.empty()
+                    && st.tk->samplerate() == 0.0 && st.kern->samplerate() == 0.0
+                    && bericht.abgelehnteSamplerateHz == 32000.0
+                    && st.kern->abgelehnteSamplerateHz() == 32000.0
+                    && verletzungen.isEmpty(),
+                "311/M-138 bericht_bei_nicht_unterstuetzter_rate (NAK-311 R-311-16, R-311-20, F08): bei 32 kHz "
+                "haelt der Transaktionskern fs = 0, `baueBericht` meldet wie ohne Samplerate - auto_gain_db exakt "
+                "+0,0 und klemmungen leer, waehrend derselbe Zustand bei 48 kHz -92,29 dB meldet -, beide tragen "
+                "die abgelehnte Rate, und der gebaute state_report bleibt gueltig gegen $defs/dsp_bericht",
+                detail);
+
+        // 311/M-138 (b), §41.2 F-27: WARUM das Feld C++-lokal bleibt. Steht
+        // der Grund im Dokument, weist der geschlossene Vertrag den ganzen
+        // Bericht ab - das waere eine Vertragsaenderung, die dieses Ticket
+        // ausschliesst (M-140).
+        auto mitFeld = doc.clone();
+        if (auto* wurzel = mitFeld.getDynamicObject())
+            if (auto* dsp = wurzel->getProperty ("dsp").getDynamicObject())
+                dsp->setProperty ("abgelehnte_samplerate_hz", bericht.abgelehnteSamplerateHz);
+        const auto verletzungenMitFeld = fassung5.pruefe (mitFeld);
+        const auto& dspDefs = schemaVar["$defs"]["dsp_bericht"];
+        const bool geschlossen = dspDefs.hasProperty ("additionalProperties")
+                              && ! ((bool) dspDefs["additionalProperties"]);
+        pruefe (geschlossen && ! verletzungenMitFeld.isEmpty() && verletzungen.isEmpty(),
+                "311/M-138 (b) der_grund_bleibt_c_plus_plus_lokal (NAK-311 Feinheit F-27, M-140): "
+                "$defs/dsp_bericht hat additionalProperties: false - derselbe Bericht MIT dem Feld im "
+                "dsp-Dokument wird abgewiesen, ohne das Feld ist er gueltig; der v3-Vertrag bleibt unberuehrt",
+                "additionalProperties false " + juce::String (geschlossen ? "ja" : "nein")
+                    + ", Verletzungen mit Feld " + juce::String (verletzungenMitFeld.size())
+                    + (verletzungenMitFeld.isEmpty() ? juce::String()
+                       : (" (" + verletzungenMitFeld[0].instanz + " gegen "
+                          + verletzungenMitFeld[0].schluessel + ")"))
+                    + ", ohne Feld " + juce::String (verletzungen.size()));
+    }
+}
+
 } // namespace
 
 int main (int, char*[])
@@ -1688,6 +1799,7 @@ int main (int, char*[])
 
     fahreFassung5UndDspBericht (schemaVar, ok);
     fahreNak311Berichtsgrenze (schemaVar, ok);
+    fahreNak311Ratenschranke (schemaVar, ok);
 
     fahreBandgitter();
     fahreQuantisierung();

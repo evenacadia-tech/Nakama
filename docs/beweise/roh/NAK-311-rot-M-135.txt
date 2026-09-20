@@ -1,0 +1,71 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-135
+========================================================
+
+Matrixzeile: M-135 (Manifest Paragraph 39.4), Etikett "heute rot".
+Zusage:      Im 32-kHz-Fenster ist der Ausgang bytegleich zum Eingang und
+             abgelehnteSamplerateHz() traegt 32 000; nach dem dritten
+             prepareToPlay ist der Getter wieder exakt +0,0, der Kern rechnet,
+             und das Band ist hoerbar. Ueber die ganze Folge bleiben
+             eq_enabled wahr und die Statebytes bytegleich; die Revision steigt
+             nicht, und der Host bekommt kein Dirty.
+Bein:        B7 (EqCopTransactionTest), Fall 311/M-135 in
+             eq-copilot/plugin/tests/TransactionTestMain.cpp, Abschnitt U.
+Mutation:    eq-copilot/plugin/dsp/DspKern.cpp:126 (gebaute Zeile), die
+             Ruecknahme der gemerkten Rate bei unterstuetzter Rate.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+
+--- 1. Der Test laeuft vor der Reparatur einmal ROT ------------------------
+
+Zwischenstand wie in NAK-311-rot-M-132.txt Abschnitt 1 woertlich beschrieben
+(nur Signaturen und Getter; bereiteVor, setzeSamplerate und prepareToPlay
+rechnen unveraendert). Bein B7 am Zwischenstand: Exit 1, 190 geprueft,
+2 Fehler. Die Zeile woertlich aus der Rohausgabe:
+
+  FEHLER  311/M-135 ratenwechsel_nimmt_den_zustand_zurueck  [abgelehnt im
+  Fenster 0 Hz, danach 0, Ausgang im Fenster bytegleich nein, nach dem
+  Rueckweg bitgleich zum nie abgelehnten Kern ja, autoGainDb -0.853206521983
+  dB, Statebytes 4704 gleich ja, Revision 1 -> 1, Host-Dirty ueber die drei
+  Aufrufe 0, eq_enabled bleibt an]
+
+Heute bereitet `prepareToPlay` den Kern also auch bei 32 kHz vor, der Ausgang
+ist NICHT bytegleich zum Eingang, und abgelehnt ist nichts. Die zweite Haelfte
+der Zeile (speichern <-> laden: Statebytes, Revision, Host-Dirty, eq_enabled)
+haelt schon heute - sie ist Regressionswache innerhalb der Zeile und bleibt
+ueber den Bau unveraendert.
+
+Gemessener Endstand nach der Reparatur:
+  ok  311/M-135  [abgelehnt im Fenster 32000 Hz, danach 0, Ausgang im Fenster
+  bytegleich ja, nach dem Rueckweg bitgleich zum nie abgelehnten Kern ja,
+  autoGainDb -0.853206521983 dB, Statebytes 4704 gleich ja, Revision 1 -> 1,
+  Host-Dirty ueber die drei Aufrufe 0, eq_enabled bleibt an]
+
+
+--- 2. Die Mutation nach dem Bau ------------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspKern.cpp
+  vorher : abgelehnteRate  = 0.0;   // unterstuetzt: der Zustand faellt zurueck
+  nachher: // MUTATION M-135: die Ruecknahme entfernt (abgelehnteRate bleibt stehen)
+SHA-256 vorher : 5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-135-DspKern.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T10:57:06, Binary 2026-09-20T10:57:14
+  (Binary neuer als die Quelle: True)
+Bein EqCopTransactionTest Exit 1
+
+Gefallene Pruefungen (2):
+  FEHLER  311/M-135 ratenwechsel_nimmt_den_zustand_zurueck
+  FEHLER  311/M-143 ratenwechsel_nullt_den_ausgleich_und_meldet_beides
+
+Die Zusage faellt an der erwarteten Pruefung: JA (311/M-135).
+
+Mitgefallen mit Grund: 311/M-143 misst dieselbe Ruecknahme fuer Kern UND
+Bericht ("der Zustand ist in beiden zurueckgefallen"); ohne die Ruecknahme
+traegt der Kern nach dem Rueckweg weiter 32 000.
+
+Unter derselben Mutation GRUEN geblieben (1): 311/M-139 - Latenz, Tail und
+der Callback haengen nicht an der gemerkten Rate.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  5AA249C35A3A49D85146644576ED3D30558B60A014DEAA0F7D0A77EDBAE1E42F (gleich: True)
+Neubau (Exit 0), Bein EqCopTransactionTest Exit 0.

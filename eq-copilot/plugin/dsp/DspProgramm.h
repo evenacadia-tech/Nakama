@@ -36,6 +36,7 @@
 
 #include <array>
 #include <cstdint>
+#include <limits>
 
 namespace nakama::dsp
 {
@@ -64,6 +65,35 @@ inline constexpr int kFadeSamples = 256;
 /** Laenge der Rampe kontinuierlicher Werte, in Samples. "Genau eine
     definierte Rampe" (§53.8, M-17) - es gibt keine zweite Glaettung. */
 inline constexpr int kRampeSamples = 256;
+
+/** NAK-311 R-311-16 (T3-Abdeckungsfeld F08, Karte U47): die kleinste
+    UNTERSTUETZTE Abtastrate in Hz. Keine gewaehlte Zahl, sondern die Zahl
+    einer bestehenden Zusage - R4 Feinheit 1 (`docs/beweise/SONDE-015.md`,
+    Abschnitt R4) nennt 44,1 kHz ausdruecklich als kleinste unterstuetzte
+    Rate und begruendet damit, dass das Auto-Gain-Gitter bis 20 kHz keine
+    Nyquistkappung braucht; die Abnahme U47 vom 19.09.2026 bestaetigt sie
+    woertlich ("genau 44,1 kHz bleibt unterstuetzt"). Darunter bleibt der EQ
+    neutral auf dem Weg des AUSGESCHALTETEN EQ. */
+inline constexpr double kMinSamplerateHz = 44100.0;
+
+/** Der EINE Ort der Vergleichsrichtung (NAK-311 §41.2 F-25): endlich UND
+    groesser oder gleich `kMinSamplerateHz`. Gelesen wird das Praedikat von
+    `DspKern::bereiteVor` (Kern), `Transaktionskern::setzeSamplerate`
+    (Bericht) und `SondeProcessor::prepareToPlay` (Publikation); eine zweite
+    Stelle mit der Zahl waere eine zweite Wahrheit, die driften kann.
+
+    Nicht endlich und 0 sind hier ebenfalls "nicht unterstuetzt" - sie sind
+    aber das VERRIEGELTE Fenster aus R-311-12 und keine abgelehnte Rate. Den
+    Unterschied macht der Aufrufer (`samplerate > 0.0 && samplerate <
+    kMinSamplerateHz` ist die abgelehnte Rate), nicht dieses Praedikat. */
+constexpr bool samplerateUnterstuetzt (double samplerate) noexcept
+{
+    // Kein `std::isfinite`: es ist erst in C++23 constexpr. NaN faellt an der
+    // ersten Vergleichsrichtung (jeder Vergleich mit NaN ist falsch), +Inf an
+    // der zweiten, -Inf an der ersten.
+    return samplerate >= kMinSamplerateHz
+        && samplerate < std::numeric_limits<double>::infinity();
+}
 
 /** Fester Lautheitsabgleich des Delta-Hoerzustands (§5.10 Feinheit 1).
     Fest heisst materialunabhaengig; ein aus dem laufenden Pegel gerechneter

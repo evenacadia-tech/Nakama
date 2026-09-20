@@ -1,0 +1,107 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-138 (zwei Haelften)
+========================================================================
+
+Matrixzeile: M-138 (Manifest Paragraph 39.4), Etikett "zwei Haelften":
+             (a) Regressionswache, (b) heute nicht messbar.
+Bein:        B3c (EqCopSchemaTest), Faelle 311/M-138 und 311/M-138 (b) in
+             eq-copilot/plugin/tests/SchemaTestMain.cpp.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Gemessener Endstand:
+  311/M-138     [bei 48 kHz auto_gain_db -92.293932 dB, bei 32 kHz 0.000000 dB
+                (Vorzeichenbit 0), klemmungen 0, Kern-Samplerate 0.0,
+                Transaktionskern-fs 0.0, abgelehnt Kern 32000.0 / Bericht
+                32000.0, Verletzungen 0]
+  311/M-138 (b) [additionalProperties false ja, Verletzungen mit Feld 1
+                (/dsp/abgelehnte_samplerate_hz gegen additionalProperties),
+                ohne Feld 0]
+
+
+--- Haelfte (a): der Bericht meldet wie ohne Samplerate --------------------
+
+Zusage: Der Transaktionskern haelt im dritten Fenster fs = 0; `baueBericht`
+betritt den Programmzweig nur bei fs > 0, also ist autoGainDb exakt +0,0 und
+klemmungen leer - keine Klemmung stammt aus einem Programm der nicht
+unterstuetzten Rate. jcs, Hash, Revision und Undo-Tiefe bleiben die des
+bestaetigten Zustands.
+
+VORLAUF - die Mutation der Rotbeweisspalte traegt die Zusage NICHT.
+Die Matrixspalte nennt: "den fs > 0-Waechter aus baueBericht entfernt ->
+baueProgramm laeuft mit Samplerate 0, entwirft nicht endliche Koeffizienten,
+und auto_gain_db verlaesst +0,0 -> rot". Gemessen:
+
+  Mutation: eq-copilot/plugin/state/NakamaTransaktion.cpp:822
+    vorher : if (fs > 0.0)
+    nachher: if (true)   // MUTATION M-138 (a) nach Matrixspalte
+  SHA-256 vorher : F26AFA86DE5934F48033F79DEBE9AF1387C7D8A491B2CDB644E1BAE818F648C7
+  Bau Exit 0, Bein EqCopSchemaTest Exit 0 - KEINE Pruefung gefallen.
+
+Grund (an der Quelle nachgemessen): `leiteAutoGainAb` schliesst bei
+`p.samplerate <= 0.0` kurz und liefert exakt 0,0
+(eq-copilot/plugin/dsp/DspProgramm.cpp:96). Ein Programm, das mit Samplerate 0
+gebaut wird, traegt deshalb auto_gain_db +0,0, und `klemmungen` bleibt leer,
+weil die R7-Klemmung an `sidechain_source` haengt und nicht an der Rate. Die
+Mutation der Matrixspalte ist damit an der falschen Zeile gewaehlt: der
+`fs > 0`-Waechter spart Arbeit, traegt die Zusage aber nicht.
+Ruecknahme bytegleich (SHA-256 gleich), Bein Exit 0.
+
+Die Zusage traegt die Zeile in `Transaktionskern::setzeSamplerate`, die die
+nicht unterstuetzte Rate von `fs` fernhaelt. Dort faellt sie:
+
+  Mutation: eq-copilot/plugin/state/NakamaTransaktion.cpp:360
+    vorher : fs = dsp::samplerateUnterstuetzt (samplerate) ? samplerate : 0.0;
+    nachher: fs = samplerate;   // MUTATION M-138 (a): die nicht unterstuetzte Rate landet doch in fs
+  SHA-256 vorher : F26AFA86DE5934F48033F79DEBE9AF1387C7D8A491B2CDB644E1BAE818F648C7
+  Sicherungskopie ausserhalb des Repos:
+    C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-138a-NakamaTransaktion.cpp
+  Bau (Exit 0), Quellstempel 2026-09-20T10:58:21, Binary 2026-09-20T10:58:23
+    (Binary neuer als die Quelle: True)
+  Bein EqCopSchemaTest Exit 1
+
+  Gefallene Pruefungen (1):
+    [ROT]  311/M-138 bericht_bei_nicht_unterstuetzter_rate
+
+  Die Zusage faellt an der erwarteten Pruefung: JA (Haelfte a).
+  Mitgefallen: keine. GRUEN geblieben: 311/M-138 (b) - die Vertragsfrage
+  haengt nicht an fs.
+  Ruecknahme bytegleich: SHA-256 nachher
+    F26AFA86DE5934F48033F79DEBE9AF1387C7D8A491B2CDB644E1BAE818F648C7 (gleich: True)
+  Neubau (Exit 0), Bein EqCopSchemaTest Exit 0.
+
+
+--- Haelfte (b): das neue Feld steht NICHT im Dokument ---------------------
+
+Zusage: `DspBericht` traegt die abgelehnte Rate als Zahl, und der daraus
+gebaute state_report bleibt gueltig gegen $defs/dsp_bericht - das Feld ist
+C++-lokal und wird nicht in das Dokument geschrieben, weil
+`additionalProperties: false` kein zusaetzliches Feld zuliesse.
+
+  Mutation: eq-copilot/plugin/tests/SchemaTestMain.cpp:1457 (gebaute Zeile),
+  der Dokumentbau `nak311BerichtAlsDokument`
+    vorher : dsp->setProperty ("auto_gain_db", b.autoGainDb);
+    nachher: dieselbe Zeile, gefolgt von
+             dsp->setProperty ("abgelehnte_samplerate_hz", b.abgelehnteSamplerateHz);   // MUTATION M-138 (b)
+  SHA-256 vorher : 033FB694E4C919738520ACD81427D03DE7C139968BB1DA12806D7FC0937C5A08
+  Sicherungskopie ausserhalb des Repos:
+    C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-138b-SchemaTestMain.cpp
+  Bau (Exit 0), Quellstempel 2026-09-20T10:58:36, Binary 2026-09-20T10:58:39
+    (Binary neuer als die Quelle: True)
+  Bein EqCopSchemaTest Exit 1
+
+  Gefallene Pruefungen (4):
+    [ROT]  311/M-138 bericht_bei_nicht_unterstuetzter_rate
+    [ROT]  311/M-138 (b) der_grund_bleibt_c_plus_plus_lokal
+    [ROT]  311/M-67 bericht_klemmt_auto_gain_auf_die_vertragsgrenze
+    [ROT]  311/M-68 bericht_innerhalb_der_grenze_bleibt_bitgleich
+
+  Die Zusage faellt an der erwarteten Pruefung: JA (Haelfte b).
+  Mitgefallen mit Grund: 311/M-67 und 311/M-68 (Etappe 4 Teil b) bauen ihr
+  Dokument mit demselben `nak311BerichtAlsDokument`; das zusaetzliche Feld
+  macht auch ihre Berichte schemaungueltig. Das ist genau die Aussage der
+  Zeile: EIN zusaetzliches Feld im dsp-Block bricht den Vertrag fuer jeden
+  Bericht.
+  GRUEN geblieben unter dieser Mutation: keine der vier Berichtspruefungen -
+  der Vertrag ist geschlossen, nicht feldweise.
+  Ruecknahme bytegleich: SHA-256 nachher
+    033FB694E4C919738520ACD81427D03DE7C139968BB1DA12806D7FC0937C5A08 (gleich: True)
+  Neubau (Exit 0), Bein EqCopSchemaTest Exit 0.

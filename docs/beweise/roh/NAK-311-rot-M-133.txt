@@ -1,0 +1,68 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-133
+========================================================
+
+Matrixzeile: M-133 (Manifest Paragraph 39.4), Etikett "Regressionswache" -
+             heute gruen, und der Bau darf es nicht aendern. Einmal
+             absichtlich gebrochen; kein Beleg fuer die Reparatur.
+Zusage:      44 100 Hz bleibt unterstuetzt: der Kern bereitet sich vor, das
+             Band ist hoerbar, der Ausgang ist bitgleich zum Lauf am Basis-SHA
+             des Satzes, und abgelehnteSamplerateHz() ist exakt +0,0. Dasselbe
+             gilt fuer 48, 96 und 192 kHz.
+Bein:        A16 (EqCopProbeeqNullTest), Fall 311/M-133.
+Mutation:    eq-copilot/plugin/dsp/DspProgramm.h:77 (gebaute Zeile), die
+             Konstante kMinSamplerateHz.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Der BITVERGLEICH gegen den Basisstand laeuft ueber den Fingerabdruck des
+Ausgangs (FNV-1a ueber die Bytes jedes ausgegebenen float, 40 Bloecke zu 512
+Samples, feste Saat). Er ist am Zwischenstand VOR der Reparatur und am
+Endstand NACH der Reparatur gleich:
+
+  Rate        Fingerabdruck        autoGainDb            vor  nach
+  44 100 Hz   0xcb14d6eee50e7d7c   -0.759373668958        =    =
+  48 000 Hz   0xbd787728731ba929   -0.853206521983        =    =
+  96 000 Hz   0x5ece3bcf185baff5   -1.275649859551        =    =
+  192 000 Hz  0x33f35b42b6693e06   -1.390377442677        =    =
+
+
+--- Die Mutation nach dem Bau ---------------------------------------------
+
+Mutation: eq-copilot/plugin/dsp/DspProgramm.h
+  vorher : inline constexpr double kMinSamplerateHz = 44100.0;
+  nachher: inline constexpr double kMinSamplerateHz = 44100.00000000001;   // MUTATION M-133
+SHA-256 vorher : CEE3AD4853796A00C4047024644EE8F489CD676F32F2BEE02668F1668B6F1AE9
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-133-DspProgramm.h
+Bau (Exit 0), Quellstempel 2026-09-20T10:56:04, Binary 2026-09-20T10:56:12
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (13):
+  FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz
+  FEHLER  311/M-134 groesser_oder_gleich_entscheidet (Teilfall von 311/M-132)
+  FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz
+  FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz
+  FEHLER  311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 44100 Hz
+  FEHLER  mix_null_ist_bitidentisch bei 44100 Hz
+  FEHLER  311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 44100 Hz
+  FEHLER  311/M-01 lief: Zustand a stereo 44100 Hz, Bitmuster ab Sample 512
+  FEHLER  311/M-01 lief: Zustand a mono 44100 Hz, Bitmuster ab Sample 512
+  FEHLER  311/M-01 lief: Zustand b stereo 44100 Hz, Bitmuster ab Sample 512
+  FEHLER  311/M-01 lief: Zustand b mono 44100 Hz, Bitmuster ab Sample 512
+  FEHLER  daz_ftz_messung_bitmuster (NAK-311 311/M-01)
+  FEHLER  311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz
+
+Die Zusage faellt an der erwarteten Pruefung: JA (311/M-133 bei 44 100 Hz).
+
+Mitgefallen mit Grund: elf Bestandsfaelle des Beins, die bei 44 100 Hz fahren.
+Die Mutation nimmt genau diese Rate aus der Unterstuetzung; jeder Fall, der
+dort einen rechnenden Kern braucht, faellt mit. Das ist der Beleg dafuer, dass
+44,1 kHz im Bein wirklich gefahren wird und nicht nur behauptet ist. Kein
+einziger Fall einer ANDEREN Rate faellt.
+
+Unter derselben Mutation GRUEN geblieben (13): 311/M-132 (vier Faelle),
+311/M-137 (vier), 311/M-139, 311/M-133 bei 48, 96 und 192 kHz, 311/M-136.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  CEE3AD4853796A00C4047024644EE8F489CD676F32F2BEE02668F1668B6F1AE9 (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0.

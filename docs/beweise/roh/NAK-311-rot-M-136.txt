@@ -1,0 +1,49 @@
+NAK-311 Etappe 5, Aenderungssatz A - Rotbeweis 311/M-136
+========================================================
+
+Matrixzeile: M-136 (Manifest Paragraph 39.4), Etikett "Regressionswache" fuer
+             R-311-12.
+Zusage:      Bei Rate 0, NaN, +-Inf, 1e300 und bei maxBlock = 0 gibt
+             `prepareToPlay` weder Rate noch Kanalzahl weiter, der Kern rechnet
+             nicht, und ein dspBericht meldet den Stand der letzten
+             Vorbereitung. abgelehnteSamplerateHz() bleibt +0,0 - abgelehnt
+             wird nur eine endliche Rate unter kMinSamplerateHz, nie eine
+             verriegelte.
+Bein:        A16 (EqCopProbeeqNullTest), Fall 311/M-136.
+Mutation:    eq-copilot/plugin/sonde/SondeProcessor.cpp:258 (gebaute Zeile),
+             der Waechter von R-311-12 in `prepareToPlay`.
+Basis-SHA:   5ee8318c2eea8c7aa94571b433e515098a7c20ab
+
+Gemessener Endstand (Detailzeile der Pruefung):
+  Kern-Samplerate steht ja, keine Ablehnung ja, Bericht auto_gain_db
+  -0.853206521983 -> -0.853206521983, abgelehnte Rate im Bericht 0.000000
+
+
+--- Die Mutation nach dem Bau ---------------------------------------------
+
+Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp
+  vorher : if (sichereRate > 0.0 && maxBlock > 0)
+  nachher: if (maxBlock > 0)   // MUTATION M-136: die Ablehnung gilt auch fuer sichereRate = 0
+SHA-256 vorher : 24A3A37D4BDF59255A1624F3EACAB87EC7E7E3C03D245D8E091050889D98F767
+Sicherungskopie ausserhalb des Repos:
+  C:\Users\phili\.claude\jobs\d73e6cab\tmp\sicherung\M-136-SondeProcessor.cpp
+Bau (Exit 0), Quellstempel 2026-09-20T10:57:27, Binary 2026-09-20T10:57:32
+  (Binary neuer als die Quelle: True)
+Bein EqCopProbeeqNullTest Exit 1
+
+Gefallene Pruefungen (1):
+  FEHLER  311/M-136 verriegeltes_fenster_bleibt_unterscheidbar
+
+Die Zusage faellt an der erwarteten Pruefung: JA - und an keiner anderen.
+Mit dem gefallenen Waechter reicht `prepareToPlay` die verriegelte Rate 0 an
+`bereiteVor` durch; der Kern gibt frei, die Vorbereitung von 48 kHz steht
+nicht mehr, und das verriegelte Fenster waere vom abgelehnten nicht mehr zu
+unterscheiden.
+
+Mitgefallen: keine.
+Unter derselben Mutation GRUEN geblieben (14): 311/M-132 (vier Faelle),
+311/M-137 (vier), 311/M-139, 311/M-133 (vier Raten), 311/M-134.
+
+Ruecknahme bytegleich: SHA-256 nachher
+  24A3A37D4BDF59255A1624F3EACAB87EC7E7E3C03D245D8E091050889D98F767 (gleich: True)
+Neubau (Exit 0), Bein EqCopProbeeqNullTest Exit 0.

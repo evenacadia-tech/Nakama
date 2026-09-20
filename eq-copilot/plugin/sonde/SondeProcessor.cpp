@@ -269,9 +269,26 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
         analyseR.assign ((size_t) maxBlock, 0.0f);
         transaktion->setzeSamplerate (sichereRate, busKanaele);
         dspAusfuehrung->vergissLetztePublikation();
-        publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
-        if (transaktion->preview().aktiv && ! dspAusfuehrung->publizierePreview (transaktion->preview().satz))
-            publikationOffen = true;
+        // NAK-311 R-311-16 (F08, Karte U47): beide Verbraucher bekommen die
+        // ROHE Rate und entscheiden selbst - so geht der Grund (die
+        // abgelehnte Rate) nicht verloren, und keine Stelle bildet eine
+        // zweite Wahrheit. Ist die Rate nicht unterstuetzt, ist der Kern
+        // unvorbereitet und der Pfad ruht: dann gibt es nichts zu
+        // publizieren, und eine Publikation baute nur ein Programm ohne
+        // Samplerate, das kein Block je faehrt. `vergissLetztePublikation`
+        // laeuft trotzdem (die naechste unterstuetzte Rate publiziert den
+        // wirksamen Zustand wieder vollstaendig), und `publikationOffen`
+        // faellt auf falsch - es ist nichts offen.
+        if (nakama::dsp::samplerateUnterstuetzt (sichereRate))
+        {
+            publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
+            if (transaktion->preview().aktiv && ! dspAusfuehrung->publizierePreview (transaktion->preview().satz))
+                publikationOffen = true;
+        }
+        else
+        {
+            publikationOffen = false;
+        }
     }
 
     workerWarte.notify_all();

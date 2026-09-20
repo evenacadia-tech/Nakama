@@ -28,17 +28,6 @@
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
   },
   {
-   "id": "U25",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (ja/nein)",
-   "titel": "Soll Nakama Lautstärke und Panorama anderer Spuren aus einem Fenster steuern?",
-   "was": "Vergleichbare Produkte (iZotope Neutron) bieten einen „Visual Mixer“: alle Spuren in einem Bild, Pegel und Panorama direkt dort verstellbar. Nakama regelt heute ausschließlich Klangfarbe über den EQ. Frage: soll Nakama Pegel und Panorama fremder Spuren mitsteuern — oder bleibt es beim EQ?",
-   "warum": "Register NAK-111. Der Dirigent hat den Punkt am 30.08.2026 als außerhalb des Produktumfangs eingeordnet, ohne dich zu fragen; diese Karte holt die Entscheidung nach. Ein Ja wäre kein kleiner Zusatz: fremde Pegel zu setzen ist ein schreibender Eingriff außerhalb des EQ und braucht eine eigene Nachrichtenfamilie mit Lease, Rückweg und Schutzregeln — nach dem R0-Einfrieren eine Vertragsversionierung, keine Ergänzung.",
-   "wo": "docs/offene-punkte.md NAK-111; docs/beweise/PR1.md §5.1",
-   "seit": "02.09.",
-   "status": "offen"
-  },
-  {
    "id": "U26",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Handgriff in FL (10–15 min)",
@@ -919,6 +908,24 @@
     "warum": "Audit-Befund T3-01-10 (Kartenentwurf PF11-02), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md, Abschnitt 8); bisher gab es dafür keine Karte, U48 nannte den Befund nur. Wann genau FL diesen Anhaltemoment auslöst, ist nicht gemessen. Gebaut wird der offene Teil erst nach deiner Antwort (Planschritt S25k, Ticket NAK-312).",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-10, PF11-02, Arbeitsübersicht W06; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
     "seit": "21.09.",
+    "status": "offen"
+   }
+  },
+  "U25": {
+   "wahl": "1. Nein, es bleibt beim EQ (Empfohlen)",
+   "text": "Nein, es bleibt beim EQ (Empfohlen)",
+   "datum": "2026-09-21 01:05",
+   "status": "eingearbeitet",
+   "ergebnis": "Nakama steuert Pegel und Panorama fremder Spuren nicht; es bleibt beim EQ, der Plan bleibt unverändert, keine neue Nachrichtenfamilie. Register NAK-111 damit geschlossen. Festgehalten in design/abnahmen/2026-09-21-kein-visual-mixer-u25.md. Gestellt über AskUserQuestion in der Dirigentensitzung 90fe90ab mit drei Wegen: „Nein, es bleibt beim EQ (Empfohlen)“, „Ja, später als eigener Block“, „Ja, mit Vorrang“; eingetragen nach dem Ende der laufenden Matrixprüfung.",
+   "karte": {
+    "id": "U25",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Produktentscheid (ja/nein)",
+    "titel": "Soll Nakama Lautstärke und Panorama anderer Spuren aus einem Fenster steuern?",
+    "was": "Vergleichbare Produkte (iZotope Neutron) bieten einen „Visual Mixer“: alle Spuren in einem Bild, Pegel und Panorama direkt dort verstellbar. Nakama regelt heute ausschließlich Klangfarbe über den EQ. Frage: soll Nakama Pegel und Panorama fremder Spuren mitsteuern — oder bleibt es beim EQ?",
+    "warum": "Register NAK-111. Der Dirigent hat den Punkt am 30.08.2026 als außerhalb des Produktumfangs eingeordnet, ohne dich zu fragen; diese Karte holt die Entscheidung nach. Ein Ja wäre kein kleiner Zusatz: fremde Pegel zu setzen ist ein schreibender Eingriff außerhalb des EQ und braucht eine eigene Nachrichtenfamilie mit Lease, Rückweg und Schutzregeln — nach dem R0-Einfrieren eine Vertragsversionierung, keine Ergänzung.",
+    "wo": "docs/offene-punkte.md NAK-111; docs/beweise/PR1.md §5.1",
+    "seit": "02.09.",
     "status": "offen"
    }
   }

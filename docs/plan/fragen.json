@@ -61,17 +61,6 @@
    "status": "offen"
   },
   {
-   "id": "U51",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (Umfang)",
-   "titel": "Mehr als 20 Probeeq-Instanzen in einem Projekt: begrenzen oder erreichbar halten?",
-   "was": "Gens Quellenliste ist für 16 Zeilen zugesagt, heute passen 20; intern nimmt Nakama bis zu 64 Quellen an. Ab der 21. ist eine Quelle zwar angenommen, taucht in der Liste aber gar nicht mehr auf — du siehst nicht, dass sie fehlt. (1) Empfohlen: die Annahme auf 20 begrenzen — eine weitere Probeeq meldet ehrlich „Liste voll“ und misst nicht mit, bis Platz ist. (2) Alle bis 64 annehmen und erreichbar halten — das braucht eine blätterbare Liste und ist deshalb erst nach der geparkten Designarbeit baubar; bis dahin bliebe es beim heutigen Zustand.",
-   "warum": "Audit-Befund T3-07-05 (Kartenentwurf PF11-17), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-B.md, Abschnitt 6 und 8); Text am 21.09.2026 berichtigt. Der Kartenentwurf des Audits bevorzugte Weg 2; die Empfehlung für Weg 1 folgt daraus, dass Weg 2 vor der Designarbeit nicht baubar ist. Gebaut wird erst nach deiner Antwort (Planschritt S25k, NAK-312). Bereits gespeicherte Quellen werden in keinem Fall gelöscht.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-05, PF11-17, Arbeitsübersicht W24; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
-   "seit": "18.09.",
-   "status": "offen"
-  },
-  {
    "id": "U52",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Produktentscheid (Anzeigeverhalten)",
@@ -904,6 +893,24 @@
     "was": "Eine Gen-Instanz kann vom Hauptprogramm zum reinen Messpunkt und zurück wechseln. Heute ist das Ergebnis uneinheitlich: die Liste deiner angemeldeten Messpunkte ist sofort weg, auch ohne Speichern; markierte Passagen, Rollen, Schutzangaben und der Assistentenstand überstehen den Wechsel, solange du nicht speicherst und neu lädst — danach sind auch sie weg. (1) Empfohlen: alles bleibt erhalten, in beiden Fällen gleich; gelöscht wird nur durch einen ausdrücklichen Handgriff. (2) Der Wechsel löscht alles bewusst, in beiden Fällen gleich — dann weißt du sicher, dass der Messpunkt nichts vom Hauptprogramm mitschleppt.",
     "warum": "Audit-Befund T3-02-06 (Kartenentwurf PF11-03), an der Quelle präzisiert am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-B.md, Abschnitt 3 und 8); Text am 21.09.2026 berichtigt: die Messpunktliste geht schon beim Wechsel verloren, nicht erst beim Speichern. Gebaut wird erst nach deiner Antwort (Planschritt S25k, NAK-312); unbekannte gespeicherte Felder bleiben in jedem Fall erhalten.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-02-06, PF11-03, Arbeitsübersicht W22; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
+    "seit": "18.09.",
+    "status": "offen"
+   }
+  },
+  "U51": {
+   "wahl": "1. Auf 20 begrenzen (Empfohlen)",
+   "text": "Auf 20 begrenzen (Empfohlen)",
+   "datum": "2026-09-21 01:02",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: Gen nimmt höchstens 20 Probeeq-Instanzen an; eine weitere meldet ehrlich „Liste voll“ und misst nicht mit, bis Platz ist. Bereits gespeicherte Quellen werden nie gelöscht. Gebaut in NAK-312 (Planschritt S25k) als Etappe 7 mit eigenem Matrixnachtrag; die Regel R-312-6 (kein scharfer Knopf auf ungezeichneter Quelle) läuft unabhängig davon vorher. Festgehalten in design/abnahmen/2026-09-21-quellenannahme-auf-20-begrenzt-u51.md und im Register NAK-312. Gestellt über AskUserQuestion in der Dirigentensitzung 90fe90ab mit zwei Wegen: „Auf 20 begrenzen (Empfohlen)“, „Bis 64 erreichbar halten“; eingetragen nach dem Ende der laufenden Matrixprüfung.",
+   "karte": {
+    "id": "U51",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Produktentscheid (Umfang)",
+    "titel": "Mehr als 20 Probeeq-Instanzen in einem Projekt: begrenzen oder erreichbar halten?",
+    "was": "Gens Quellenliste ist für 16 Zeilen zugesagt, heute passen 20; intern nimmt Nakama bis zu 64 Quellen an. Ab der 21. ist eine Quelle zwar angenommen, taucht in der Liste aber gar nicht mehr auf — du siehst nicht, dass sie fehlt. (1) Empfohlen: die Annahme auf 20 begrenzen — eine weitere Probeeq meldet ehrlich „Liste voll“ und misst nicht mit, bis Platz ist. (2) Alle bis 64 annehmen und erreichbar halten — das braucht eine blätterbare Liste und ist deshalb erst nach der geparkten Designarbeit baubar; bis dahin bliebe es beim heutigen Zustand.",
+    "warum": "Audit-Befund T3-07-05 (Kartenentwurf PF11-17), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-B.md, Abschnitt 6 und 8); Text am 21.09.2026 berichtigt. Der Kartenentwurf des Audits bevorzugte Weg 2; die Empfehlung für Weg 1 folgt daraus, dass Weg 2 vor der Designarbeit nicht baubar ist. Gebaut wird erst nach deiner Antwort (Planschritt S25k, NAK-312). Bereits gespeicherte Quellen werden in keinem Fall gelöscht.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-05, PF11-17, Arbeitsübersicht W24; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
     "seit": "18.09.",
     "status": "offen"
    }

@@ -1,0 +1,844 @@
+NAK-311 Etappe 5, Aenderungssatz C - Schritt C-0: Messlauf der Wertspruenge
+============================================================================
+Ticket        NAK-311 (Planschritt S25j), Etappe 5, Aenderungssatz C
+Zeile         M-144 (R-311-21, Abschnitt 46.2; Entscheidregel Abschnitt 54)
+Basis-SHA     5fd669417f245b231f98cc37697f787bc06b4e27 (= origin/master beim Start)
+Datum         20.09.2026, Windows 11, pwsh, Release-Bau
+Gemessen      DspKern::vergebeKennungen auf dem Publikationsweg (publiziereVorbau),
+              nie im Audio-Thread. Eine Zeile je Publikation und Slot, wenn der
+              Merkzettel gueltig ist, der Slot alt UND neu aktiv ist, die fuenf
+              Topologiefelder der bleibt-Bedingung unveraendert sind und freq_hz
+              wirksam, q oder gain_db sich geaendert hat.
+Kriterien     kSprungFrequenzVerhaeltnis 2,0 | kSprungGueteVerhaeltnis 4,0 |
+              kSprungGainDb 20,0 dB (Vorschlaege aus Abschnitt 40.3; im Code steht
+              zum Zeitpunkt der Messung KEINE davon)
+Schwelle      0,9-Faches: vF >= 1,8 | vQ >= 3,6 | dG >= 18,0 dB
+Spalten       vF/vQ = Verhaeltnis richtungsfrei (groesserer durch kleineren Wert),
+              dG = Betrag der Differenz in dB; nicht endlich oder nicht positiv
+              ergibt inf
+
+ERGEBNIS: ZWEI Faelle auf oder ueber einem Kriterium stehen in KEINER Tabelle
+von Abschnitt 40.3 und fahren Audio ueber einen Blockrand. Nach der vorab
+entschiedenen Entscheidregel des Dirigenten (Abschnitt 54, Fall 3) ist der Bau
+des Kriteriums ANGEHALTEN.
+
+
+1. DIE INSTRUMENTIERUNG, WOERTLICH (git diff; temporaer, nie committet)
+----------------------------------------------------------------------------
+
+    diff --git a/eq-copilot/plugin/dsp/DspKern.cpp b/eq-copilot/plugin/dsp/DspKern.cpp
+    index 044fb351..ddb27e91 100644
+    --- a/eq-copilot/plugin/dsp/DspKern.cpp
+    +++ b/eq-copilot/plugin/dsp/DspKern.cpp
+    @@ -4,6 +4,12 @@
+     #include <algorithm>
+     #include <cstring>
+     #include <utility>
+    +// NAK-311 C-0 (TEMPORAER, nie committet)
+    +#include <atomic>
+    +#include <cmath>
+    +#include <cstdio>
+    +#include <cstdlib>
+    +#include <limits>
+     
+     namespace nakama::dsp
+     {
+    @@ -19,6 +25,101 @@ static_assert (std::atomic<double>::is_always_lock_free,
+     namespace
+     {
+     
+    +// ===========================================================================
+    +// NAK-311 Etappe 5 Satz C, Schritt C-0: TEMPORAERE MESSINSTRUMENTIERUNG.
+    +// NIE COMMITTET. Laeuft ausschliesslich auf dem Publikationsweg im Worker
+    +// (publiziereVorbau -> vergebeKennungen), nie im Audio-Thread. Sie alloziert
+    +// nicht und sperrt nicht: ein statisch vorbelegter Puffer fester Groesse mit
+    +// Ueberlaufzaehler; die Ausgabe geschieht am Prozessende (atexit).
+    +// ===========================================================================
+    +struct Nak311Zeile
+    +{
+    +    int    pfad, slot, pfadGleich;
+    +    double fAlt, fNeu, qAlt, qNeu, gAlt, gNeu;
+    +};
+    +
+    +constexpr long long kNak311Max = 200000;
+    +Nak311Zeile            nak311Puffer[kNak311Max];
+    +std::atomic<long long> nak311Zahl { 0 };
+    +std::atomic<long long> nak311Ueberlauf { 0 };
+    +bool                   nak311Marke = false;
+    +
+    +double nak311Verhaeltnis (double a, double b) noexcept
+    +{
+    +    if (! (std::isfinite (a) && std::isfinite (b) && a > 0.0 && b > 0.0))
+    +        return std::numeric_limits<double>::infinity();
+    +    return a > b ? a / b : b / a;
+    +}
+    +
+    +double nak311Differenz (double a, double b) noexcept
+    +{
+    +    if (! (std::isfinite (a) && std::isfinite (b)))
+    +        return std::numeric_limits<double>::infinity();
+    +    return std::abs (b - a);
+    +}
+    +
+    +void nak311Schreibe()
+    +{
+    +    const char* ziel = std::getenv ("NAK311_C0");
+    +    if (ziel == nullptr) return;
+    +    std::FILE* f = std::fopen (ziel, "wb");
+    +    if (f == nullptr) return;
+    +    const long long n = nak311Zahl.load (std::memory_order_relaxed);
+    +    const long long u = nak311Ueberlauf.load (std::memory_order_relaxed);
+    +    std::fprintf (f, "ZEILEN=%lld UEBERLAUF=%lld PUFFER=%lld\n", n, u, kNak311Max);
+    +    for (long long i = 0; i < n && i < kNak311Max; ++i)
+    +    {
+    +        const auto& z = nak311Puffer[i];
+    +        std::fprintf (f,
+    +                      "%lld\tpfad=%d\tslot=%d\tpfadGleich=%d\tf=%.17g->%.17g\tvF=%.17g"
+    +                      "\tq=%.17g->%.17g\tvQ=%.17g\tg=%.17g->%.17g\tdG=%.17g\n",
+    +                      i, z.pfad, z.slot, z.pfadGleich, z.fAlt, z.fNeu, nak311Verhaeltnis (z.fAlt, z.fNeu),
+    +                      z.qAlt, z.qNeu, nak311Verhaeltnis (z.qAlt, z.qNeu),
+    +                      z.gAlt, z.gNeu, nak311Differenz (z.gAlt, z.gNeu));
+    +    }
+    +    std::fclose (f);
+    +}
+    +
+    +struct Nak311Anmeldung
+    +{
+    +    Nak311Anmeldung()
+    +    {
+    +        nak311Marke = std::getenv ("NAK311_MARKE") != nullptr;
+    +        std::atexit (nak311Schreibe);
+    +    }
+    +};
+    +Nak311Anmeldung nak311Anmeldung;
+    +
+    +void nak311Messe (int pfad, int slot, bool pfadGleich, double fAlt, double fNeu,
+    +                  double qAlt, double qNeu, double gAlt, double gNeu) noexcept
+    +{
+    +    const long long k = nak311Zahl.fetch_add (1, std::memory_order_relaxed);
+    +    if (k < kNak311Max)
+    +    {
+    +        auto& z = nak311Puffer[k];
+    +        z.pfad = pfad; z.slot = slot; z.pfadGleich = pfadGleich ? 1 : 0;
+    +        z.fAlt = fAlt; z.fNeu = fNeu; z.qAlt = qAlt; z.qNeu = qNeu; z.gAlt = gAlt; z.gNeu = gNeu;
+    +    }
+    +    else
+    +    {
+    +        nak311Ueberlauf.fetch_add (1, std::memory_order_relaxed);
+    +    }
+    +
+    +    // Zuordnungslauf (nur mit NAK311_MARKE): eine Marke nach stderr, damit der
+    +    // Fall zwischen zwei Pruefausgaben steht. Der eigentliche Messlauf laeuft
+    +    // OHNE diese Umgebungsvariable.
+    +    if (nak311Marke)
+    +    {
+    +        const double vF = nak311Verhaeltnis (fAlt, fNeu);
+    +        const double vQ = nak311Verhaeltnis (qAlt, qNeu);
+    +        const double dG = nak311Differenz (gAlt, gNeu);
+    +        if (vF >= 1.8 || vQ >= 3.6 || dG >= 18.0)
+    +            std::fprintf (stderr, ">>> NAK311-C0 #%lld pfad=%d slot=%d pfadGleich=%d f=%g->%g (vF=%g)"
+    +                                  " q=%g->%g (vQ=%g) g=%g->%g (dG=%g)\n",
+    +                          k, pfad, slot, pfadGleich ? 1 : 0, fAlt, fNeu, vF, qAlt, qNeu, vQ, gAlt, gNeu, dG);
+    +    }
+    +}
+    +
+     /** Lineare Mischung zweier SVF-Koeffizientensaetze. Zwischen zwei
+         Steuerschritten laeuft der dynamische Gain damit sample-genau weiter
+         statt in Stufen zu springen. */
+    @@ -303,6 +404,10 @@ void DspKern::merke (Pfad p, const DspProgramm& prog) noexcept
+             s.aktiv     = b.aktiv;
+             s.dynamisch = b.dynamisch;
+             s.nutztSvf  = b.nutztSvf;
+    +        // NAK-311 C-0 (TEMPORAER, nie committet)
+    +        s.freqHzWirksam = b.freqHzWirksam;
+    +        s.q             = b.q;
+    +        s.gainDb        = b.gainDb;
+         }
+     }
+     
+    @@ -333,6 +438,9 @@ void DspKern::vergebeKennungen (Pfad p, DspProgramm& prog) noexcept
+             // derselbe Slot), ein inaktiver traegt 0.
+             const bool bleibt = m.gueltig && b.aktiv && s.aktiv && s.typ == b.typ && s.modus == b.modus
+                              && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle;
+    +        // NAK-311 C-0 (TEMPORAER, nie committet): Messung, kein Verhalten.
+    +        if (bleibt && (s.freqHzWirksam != b.freqHzWirksam || s.q != b.q || s.gainDb != b.gainDb))
+    +            nak311Messe ((int) p, i, pfadGleich, s.freqHzWirksam, b.freqHzWirksam, s.q, b.q, s.gainDb, b.gainDb);
+             b.lebenszyklus = ! b.aktiv ? 0 : (bleibt ? s.kennung : naechsteKennung());
+         }
+     
+    diff --git a/eq-copilot/plugin/dsp/DspKern.h b/eq-copilot/plugin/dsp/DspKern.h
+    index de6107fd..248ea833 100644
+    --- a/eq-copilot/plugin/dsp/DspKern.h
+    +++ b/eq-copilot/plugin/dsp/DspKern.h
+    @@ -475,6 +475,11 @@ private:
+             bool          aktiv     { false };
+             bool          dynamisch { false };
+             bool          nutztSvf  { false };
+    +        // NAK-311 C-0 (TEMPORAER, nie committet): die drei Werte des zuletzt
+    +        // publizierten Standes, damit der Messlauf den Wertabstand kennt.
+    +        double        freqHzWirksam { 0.0 };
+    +        double        q             { 0.0 };
+    +        double        gainDb        { 0.0 };
+         };
+     
+         struct Merkzettel
+
+Warum sie weder alloziert noch sperrt: ein statisch vorbelegter Puffer fester
+Groesse (200000 Eintraege zu 64 Byte, BSS) und zwei relaxte Atomics als Zaehler;
+kein new, kein malloc, kein Schloss, keine Datei- und keine Konsolenausgabe im
+Messpfad. Die Ausgabe geschieht am Prozessende ueber std::atexit, angemeldet aus
+einem statischen Initialisierer VOR main. Der Zuordnungslauf (Abschnitt 6)
+schaltet ueber die Umgebungsvariable NAK311_MARKE zusaetzlich eine Marke nach
+stderr; der eigentliche Messlauf laeuft OHNE sie.
+
+Die drei double je Slot im SlotMerkmal sind Teil der Instrumentierung: die
+bleibt-Bedingung liest sie NICHT, sie dienen allein dem Messvergleich gegen den
+zuletzt publizierten Stand desselben Pfades. Das Verhalten des Kerns ist damit
+unveraendert - Abschnitt 2 belegt es.
+
+
+2. URTEILE DER VIER BEINE - OHNE UND MIT INSTRUMENTIERUNG
+----------------------------------------------------------------------------
+
+  Bein  Ziel                     ohne Instrumentierung     im Messlauf
+  B6    EqCopDspGoldenTest       Exit 0, 365 geprueft, 0   Exit 0, 365 geprueft, 0
+  B7    EqCopTransactionTest     Exit 0, 192 geprueft, 0   Exit 0, 192 geprueft, 0
+  A16   EqCopProbeeqNullTest     Exit 0, 131 ok, 0 Fehler  Exit 0, 131 ok, 0 Fehler
+  B3c   EqCopSchemaTest          Exit 0, 162 bestanden, 0  Exit 0, 162 bestanden, 0
+
+B7 verlangt hinter dem Commit-Punkt null Allokationen
+(hinter_dem_commit_punkt_wird_nicht_alloziert, TransactionTestMain.cpp:817);
+vergebeKennungen liegt in diesem Fenster. Die Pruefung bleibt gruen.
+
+Zeilenvergleich der ganzen Ausgaben (Compare-Object):
+  B7  0 Unterschiede    A16  0 Unterschiede    B3c  0 Unterschiede
+  B6  16 Unterschiede - ausschliesslich die ausgenommenen Zeilenklassen mit
+      Wanduhr- und Threadwerten (M-118, M-120, M-122; Abschnitt 52 Nr. 5).
+      Jede dieser Pruefungen ist in BEIDEN Laeufen ok; kein Urteil weicht ab:
+        =>   ok      bankpool_parallel_ohne_rennen (M-122)  [4869 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+        =>   ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2074]
+        =>   MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 2.489 % Echtzeit im Mittel, p99 8.809 %, Maximum 47.996 % - 8000 Callb
+        =>   MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.210 % Echtzeit im Mittel, p99 3.911 %, Maximum 32.704 % - 8000 Callbacks zu 12
+        =>   ok      die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)  [2.489 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im
+        =>   ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.210 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel 
+        =>   ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.845 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 11.79 ms]
+        =>   ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.002 s fuer 0.843 s Audio, groesste Luecke 0.055 ms]
+        <=   ok      bankpool_parallel_ohne_rennen (M-122)  [4528 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+        <=   ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2062]
+        <=   MESSWERT Uebergangslast (vier rechnende Baenke, beide Pfade im Crossfade): 2.423 % Echtzeit im Mittel, p99 7.785 %, Maximum 30.641 % - 8000 Callb
+        <=   MESSWERT stationaere Last (zwei rechnende Baenke, je Pfad eine): 1.209 % Echtzeit im Mittel, p99 3.592 %, Maximum 20.411 % - 8000 Callbacks zu 12
+        <=   ok      die Uebergangslast wurde gemessen, nicht gedeckelt (M-118, R15)  [2.423 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel im
+        <=   ok      die stationaere Last wurde gemessen, nicht gedeckelt (M-118, R15)  [1.209 % Echtzeit im Mittel - der Wert steht im Manifest, kein Deckel 
+        <=   ok      der Realtime-Lauf folgte der Wanduhr (M-120)  [0.843 s fuer 0.843 s Audio, groesste Luecke zwischen zwei Bloecken 12.33 ms]
+        <=   ok      der Offline-Lauf lief ohne Takt, schneller als Echtzeit (M-120)  [0.003 s fuer 0.843 s Audio, groesste Luecke 0.113 ms]
+
+      Gegenprobe: zwei Laeufe desselben UNVERAENDERTEN Binaries (Basisstand vor
+      der Instrumentierung gegen Basisstand nach der Ruecknahme) weichen in
+      genau denselben 16 Zeilen ab - Abschnitt 9.
+
+Kein Ueberlauf: UEBERLAUF=0 in jedem Bein und in jedem Wiederhollauf.
+
+
+3. ZAHL DER ZEILEN UND MAXIMUM JE KRITERIUM
+----------------------------------------------------------------------------
+
+  B6   Zeilen  53   max vF = 5.5714285714285712     max vQ = 4.714045207910317    max dG = 18 dB
+  B7   Zeilen 284   max vF = 2.1000000000000001     max vQ = 1                    max dG = 23 dB
+  A16  Zeilen   2   max vF = 1                      max vQ = 1.4142135623730949   max dG = 15 dB
+  B3c  Zeilen   0   max vF = 0                      max vQ = 0                    max dG = 0 dB
+
+  B6 ohne die nichtdeterministische Zeile aus bankpool_parallel_ohne_rennen:
+     52 Zeilen, max vF = 1,3999999999999999, max vQ = 4,714045207910317,
+     max dG = 18 dB (sechs Wiederholungen, Abschnitt 7).
+
+
+4. JEDE ZEILE AB DEM 0,9-FACHEN, MIT ZUORDNUNG
+----------------------------------------------------------------------------
+
+4.1 B6 - 18 Zeilen ab der Schwelle
+
+  #3 bis #18 (16 Zeilen: Slots 0 bis 7, je zweimal - Kern `mit` und Kern `ohne`)
+     q 0,14999999999999999 -> 0,70710678118654757    vQ = 4,714045207910317
+     f 20 -> 20 (vF 1), g 0 -> 0 (dG 0), pfadGleich = 1, Pfad committed
+     LAGE: Gueteverhaeltnis UEBER kSprungGueteVerhaeltnis (4,0), Abstand +0,714
+     Pruefung: 311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14)
+     Fundstelle: eq-copilot/plugin/tests/DspGoldenTestMain.cpp:4186-4238
+       erste Publikation   :4191 und :4192   achtHighCuts (0.15, ...)
+       zweite Publikation  :4198 und :4199   achtHighCuts (0.70710678118654752, ...)
+       Helfer achtHighCuts :3791-3798 - acht High-Cuts 20 Hz, stereo, 0 dB;
+       Typ, Kanalmodus, dynamisch, nutztSvf und Quelle bleiben gleich, nur q
+       aendert sich, die bleibt-Bedingung ist also wahr
+       Pruefname :4225
+     AUDIO UEBER EINEN BLOCKRAND: JA - je 48 Bloecke zu 512 Samples vor der
+       zweiten Publikation (:4193, :4194) und je 48 Bloecke zu 512 danach
+       (:4200, :4201); Material Gleichanteil 0,25 plus 10-Hz-Ton 0,25
+       (fahreGleichanteil :3816-3845).
+     LIEST DIE PRUEFUNG WEG ODER AUSGANG: JA - keinSprung (:4216-4218) misst
+       den Tap post_committed zweier Laeufe gegeneinander (tapMit/tapOhne,
+       :4207-4215), am ersten Sample nach dem Wechsel und nach 300 Samples.
+     STEHT IN EINER TABELLE VON ABSCHNITT 40.3: NEIN. Die zwei Tabellen sind am
+       Stand der Quellvalidierung der Matrixpruefung 5 gelesen; 311/M-116 ist
+       erst im Aenderungssatz B entstanden (Abschnitt 53, Commit 1166409d).
+     -> BEFUND nach Entscheidregel (3). ANGEHALTEN.
+
+  #46  g 9 -> -9   dG = 18 dB   (f 8000 -> 8000, q 0,707 -> 0,707)
+     LAGE: 2,0 dB UNTER kSprungGainDb (20,0); erreicht nur die 0,9-Schwelle.
+     Pruefung: uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11),
+       DspGoldenTestMain.cpp:4726 und :4732, Pruefname :4752.
+     Bekannt: erste Tabelle von Abschnitt 40.3 - einer der zwei engsten Faelle.
+     Umgebende Pruefausgabe:
+       ok  der_uebergrosse_block_gleicht_sample_exakt_dem_lauf_ohne_ueberlast (M-48, B-22)
+       >>> NAK311-C0 #46 pfad=0 slot=0 pfadGleich=1 f=8000->8000 (vF=1) q=0.707->0.707 (vQ=1) g=9->-9 (dG=18)
+       ok  uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, ...]
+
+  #47  f 3900 -> 700   vF = 5,5714285714285712   (q 3 -> 1 mit vQ 3; g 3 -> 3)
+     LAGE: Frequenzverhaeltnis UEBER kSprungFrequenzVerhaeltnis (2,0).
+     NICHTDETERMINISTISCH: in 1 von 8 Laeufen ueber dem Kriterium (Abschnitt 7).
+     Pruefung: bankpool_parallel_ohne_rennen (M-122) und die drei weiteren
+       Pruefungen desselben Blocks; Abschnitt M DspGoldenTestMain.cpp:5834-5954,
+       Wertzeile :5927-5928
+         belege (v, runde % param::kSlots, Filtertyp::bell,
+                 200.0 + (double) (runde % 40) * 100.0, 1.0 + (double) (runde % 5), 3.0);
+       Pruefnamen :5941, :5944, :5946, :5949.
+     Mechanik: 3000 Publikationen, je EIN belegter Slot (runde % 8). Zwei
+       aufeinanderfolgende ERFOLGREICHE Publikationen desselben Pfades treffen
+       denselben Slot nur, wenn dazwischen genug Runden an busy_retry scheitern
+       (:5935) - wie viele, entscheidet das Rennen mit dem Audiothread. Der
+       Rundenabstand ist dann ein Vielfaches von 8; freq_hz waechst um 800 Hz je
+       8 Runden und springt beim Umlauf von runde % 40 um bis zu 4100 -> 200 Hz
+       (Verhaeltnis 20,5), q um bis zu 1 -> 5 (Verhaeltnis 5,0). Gemessen wurde
+       3900 -> 700 (5,571) bei q 3 -> 1.
+     AUDIO UEBER EINEN BLOCKRAND: JA - ein echter zweiter Thread faehrt waehrend
+       der ganzen Schleife verarbeite (4201 bis 4869 Bloecke je Lauf gemessen).
+     LIEST DIE PRUEFUNG WEG ODER AUSGANG: nein - gemessen werden nur
+       Bankpool-Invarianten, Generationsmonotonie, Pfadkreuzungen und der
+       ACK-Ring; der Ausgang wird verworfen. Gefahren wird er aber.
+     STEHT IN EINER TABELLE VON ABSCHNITT 40.3: NEIN.
+     -> BEFUND nach Entscheidregel (3), weil der Fall Audio ueber einen
+        Blockrand faehrt. ANGEHALTEN.
+
+4.2 B7 - 10 Zeilen ab der Schwelle, ALLE in den Tabellen von Abschnitt 40.3
+
+  #6    f 500 -> 1000, vF = 2 (genau AUF dem Kriterium)
+        Pruefung:    T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet
+        Fundstelle:  TransactionTestMain.cpp:524-531, Pruefname :532
+        Einordnung:  zweite Tabelle, Abstand 0, kein Audio (Ebene Stand ruft nie verarbeite)
+  #29   g 11,25 -> -11,75, dG = 23 dB (UEBER)
+        Pruefung:    Vorlauf dreiunddreissigCommits zu T10 und T11
+        Fundstelle:  TransactionTestMain.cpp:570-583, Schleife :575, Wertzeile :577
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #61   g 11,25 -> -11,75, dG = 23 dB (UEBER)
+        Pruefung:    derselbe Vorlauf dreiunddreissigCommits
+        Fundstelle:  wie #29
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #95   g 11,25 -> -11,75, dG = 23 dB (UEBER)
+        Pruefung:    derselbe Vorlauf dreiunddreissigCommits
+        Fundstelle:  wie #29
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #150  f 1050 -> 500, vF = 2,1000000000000001 (UEBER)
+        Pruefung:    wiederholung_unter_einer_zone_bekommt_nicht_user_schutz
+        Fundstelle:  TransactionTestMain.cpp:1004 -> :1009 -> :1013, Pruefname :1019
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #173  g 11,25 -> -11,75, dG = 23 dB (UEBER)
+        Pruefung:    derselbe Vorlauf dreiunddreissigCommits
+        Fundstelle:  wie #29
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #187  f 1000 -> 500, vF = 2 (genau AUF dem Kriterium)
+        Pruefung:    zone_deaktivieren_ist_eine_transaktion (M-71)
+        Fundstelle:  TransactionTestMain.cpp:1304 -> :1315 -> :1317, Pruefname :1320
+        Einordnung:  zweite Tabelle, Abstand 0, kein Audio
+  #188  f 500 -> 1000, vF = 2 (genau AUF dem Kriterium)
+        Pruefung:    zone_deaktivieren_ist_eine_transaktion (M-71), Rueckrichtung
+        Fundstelle:  wie #187
+        Einordnung:  zweite Tabelle, Abstand 0, kein Audio
+  #211  g 11,5 -> -11,5, dG = 23 dB (UEBER)
+        Pruefung:    undo_ring_haelt_tiefe_32 (M-78)
+        Fundstelle:  TransactionTestMain.cpp:1393-1397, Schleife :1394, Wertzeile :1396, Pruefname :1405
+        Einordnung:  zweite Tabelle, Lage ueber, kein Audio
+  #232  g 9 -> -9, dG = 18 dB (2,0 dB UNTER dem Kriterium)
+        Pruefung:    Gegenprobe im Test capability_entscheidet_den_automationspfad (M-119)
+        Fundstelle:  TransactionTestMain.cpp:2069 -> :2081, pruefe :2085, Pruefname der Gegenprobe :2086
+        Einordnung:  erste Tabelle, MIT Audio, 2,0 dB unter 20,0 - einer der zwei engsten
+
+  Jede dieser zehn Zuordnungen ist am Zuordnungslauf abgelesen (Abschnitt 6),
+  nicht aus der Tabelle geraten.
+
+4.3 A16 - keine Zeile ab der Schwelle
+
+  #0    f 1000->1000 (vF 1)  q 1->0.70710678118654757 (vQ 1.4142135623730949)  g 12->-3 (dG 15)  -> unter jedem Kriterium
+  #1    f 1000->1000 (vF 1)  q 0.70710678118654757->1 (vQ 1.4142135623730949)  g -3->12 (dG 15)  -> unter jedem Kriterium
+  Beide Zeilen gehoeren zu speichern_laden_speichern_bytegleich_in_v2
+  (SondeNullTestMain.cpp:202-203 -> :662-663 und der Undo-Zweig :665-669),
+  zweite Tabelle von Abschnitt 40.3: 15,0 dB und Gueteverhaeltnis 1,4142.
+
+4.4 B3c - 0 Zeilen. Der Schemapfad publiziert kein zweites Programm desselben
+    Pfades mit unveraenderter Topologie und geaendertem Wert.
+
+
+5. VOLLSTAENDIGER DUMP DES MESSLAUFS
+----------------------------------------------------------------------------
+
+5.1 B6 (ZEILEN=53 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->9	dG=6
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1400	vF=1.3999999999999999	q=1->1	vQ=1	g=3->3	dG=0
+  2	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->3	vQ=3	g=3->3	dG=0
+  3	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  4	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  5	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  6	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  7	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  8	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  9	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  10	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  11	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  12	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  13	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  14	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  15	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  16	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  17	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  18	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.70710678118654757	vQ=4.714045207910317	g=0->0	dG=0
+  19	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  20	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  21	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  22	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  23	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  24	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  25	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  26	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  27	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  28	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  29	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  30	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  31	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  32	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  33	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  34	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=0->0	dG=0
+  35	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->2	dG=4
+  36	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  37	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  38	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  39	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  40	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  41	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  42	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  43	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  44	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  45	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  46	pfad=0	slot=0	pfadGleich=1	f=8000->8000	vF=1	q=0.70699999999999996->0.70699999999999996	vQ=1	g=9->-9	dG=18
+  47	pfad=0	slot=5	pfadGleich=1	f=3900->700	vF=5.5714285714285712	q=3->1	vQ=3	g=3->3	dG=0
+  48	pfad=0	slot=0	pfadGleich=1	f=250->250	vF=1	q=1.2->1.2	vQ=1	g=5->-2	dG=7
+  49	pfad=0	slot=0	pfadGleich=1	f=250->250	vF=1	q=1.2->1.2	vQ=1	g=5->-2	dG=7
+  50	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=1->1	vQ=1	g=-12->0	dG=12
+  51	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=2->2	vQ=1	g=12->6	dG=6
+  52	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=2->2	vQ=1	g=12->6	dG=6
+
+5.2 B7 (ZEILEN=284 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->-6	dG=12
+  2	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  3	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  4	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  5	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  6	pfad=0	slot=0	pfadGleich=1	f=500->1000	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  7	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  8	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  9	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  10	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  11	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  12	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  13	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  14	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  15	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  16	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  17	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  18	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  19	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  20	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  21	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  22	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  23	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  24	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  25	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  26	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  27	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  28	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  29	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  30	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  31	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  32	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  33	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  34	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  35	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  36	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  37	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  38	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  39	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  40	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  41	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  42	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  43	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  44	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  45	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  46	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  47	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  48	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  49	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  50	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  51	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  52	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  53	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  54	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  55	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  56	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  57	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  58	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  59	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  60	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  61	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  62	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  63	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  64	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  65	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  66	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  67	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  68	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  69	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  70	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  71	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  72	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->-6	dG=12
+  73	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  74	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  75	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  76	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  77	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  78	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  79	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  80	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  81	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  82	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  83	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  84	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  85	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  86	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  87	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  88	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  89	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  90	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  91	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  92	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  93	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  94	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  95	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  96	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  97	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  98	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  99	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  100	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  101	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  102	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  103	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  104	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  105	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  106	pfad=0	slot=0	pfadGleich=1	f=200->280	vF=1.3999999999999999	q=1->1	vQ=1	g=0->8	dG=8
+  107	pfad=0	slot=1	pfadGleich=1	f=210->290	vF=1.3809523809523809	q=1->1	vQ=1	g=1->9	dG=8
+  108	pfad=0	slot=2	pfadGleich=1	f=220->300	vF=1.3636363636363635	q=1->1	vQ=1	g=2->10	dG=8
+  109	pfad=0	slot=3	pfadGleich=1	f=230->310	vF=1.3478260869565217	q=1->1	vQ=1	g=3->11	dG=8
+  110	pfad=0	slot=4	pfadGleich=1	f=240->320	vF=1.3333333333333333	q=1->1	vQ=1	g=4->0	dG=4
+  111	pfad=0	slot=5	pfadGleich=1	f=250->330	vF=1.3200000000000001	q=1->1	vQ=1	g=5->1	dG=4
+  112	pfad=0	slot=6	pfadGleich=1	f=260->340	vF=1.3076923076923077	q=1->1	vQ=1	g=6->2	dG=4
+  113	pfad=0	slot=7	pfadGleich=1	f=270->350	vF=1.2962962962962963	q=1->1	vQ=1	g=7->3	dG=4
+  114	pfad=0	slot=0	pfadGleich=1	f=280->360	vF=1.2857142857142858	q=1->1	vQ=1	g=8->4	dG=4
+  115	pfad=0	slot=1	pfadGleich=1	f=290->370	vF=1.2758620689655173	q=1->1	vQ=1	g=9->5	dG=4
+  116	pfad=0	slot=2	pfadGleich=1	f=300->380	vF=1.2666666666666666	q=1->1	vQ=1	g=10->6	dG=4
+  117	pfad=0	slot=3	pfadGleich=1	f=310->390	vF=1.2580645161290323	q=1->1	vQ=1	g=11->7	dG=4
+  118	pfad=0	slot=4	pfadGleich=1	f=320->400	vF=1.25	q=1->1	vQ=1	g=0->8	dG=8
+  119	pfad=0	slot=5	pfadGleich=1	f=330->410	vF=1.2424242424242424	q=1->1	vQ=1	g=1->9	dG=8
+  120	pfad=0	slot=6	pfadGleich=1	f=340->420	vF=1.2352941176470589	q=1->1	vQ=1	g=2->10	dG=8
+  121	pfad=0	slot=7	pfadGleich=1	f=350->430	vF=1.2285714285714286	q=1->1	vQ=1	g=3->11	dG=8
+  122	pfad=0	slot=0	pfadGleich=1	f=360->440	vF=1.2222222222222223	q=1->1	vQ=1	g=4->0	dG=4
+  123	pfad=0	slot=1	pfadGleich=1	f=370->450	vF=1.2162162162162162	q=1->1	vQ=1	g=5->1	dG=4
+  124	pfad=0	slot=2	pfadGleich=1	f=380->460	vF=1.2105263157894737	q=1->1	vQ=1	g=6->2	dG=4
+  125	pfad=0	slot=3	pfadGleich=1	f=390->470	vF=1.2051282051282051	q=1->1	vQ=1	g=7->3	dG=4
+  126	pfad=0	slot=4	pfadGleich=1	f=400->480	vF=1.2	q=1->1	vQ=1	g=8->4	dG=4
+  127	pfad=0	slot=5	pfadGleich=1	f=410->490	vF=1.1951219512195121	q=1->1	vQ=1	g=9->5	dG=4
+  128	pfad=0	slot=6	pfadGleich=1	f=420->500	vF=1.1904761904761905	q=1->1	vQ=1	g=10->6	dG=4
+  129	pfad=0	slot=7	pfadGleich=1	f=430->510	vF=1.1860465116279071	q=1->1	vQ=1	g=11->7	dG=4
+  130	pfad=0	slot=0	pfadGleich=1	f=440->520	vF=1.1818181818181819	q=1->1	vQ=1	g=0->8	dG=8
+  131	pfad=0	slot=1	pfadGleich=1	f=450->530	vF=1.1777777777777778	q=1->1	vQ=1	g=1->9	dG=8
+  132	pfad=0	slot=2	pfadGleich=1	f=460->540	vF=1.173913043478261	q=1->1	vQ=1	g=2->10	dG=8
+  133	pfad=0	slot=3	pfadGleich=1	f=470->550	vF=1.1702127659574468	q=1->1	vQ=1	g=3->11	dG=8
+  134	pfad=0	slot=4	pfadGleich=1	f=480->560	vF=1.1666666666666667	q=1->1	vQ=1	g=4->0	dG=4
+  135	pfad=0	slot=5	pfadGleich=1	f=490->570	vF=1.1632653061224489	q=1->1	vQ=1	g=5->1	dG=4
+  136	pfad=0	slot=6	pfadGleich=1	f=500->580	vF=1.1599999999999999	q=1->1	vQ=1	g=6->2	dG=4
+  137	pfad=0	slot=7	pfadGleich=1	f=510->590	vF=1.1568627450980393	q=1->1	vQ=1	g=7->3	dG=4
+  138	pfad=0	slot=7	pfadGleich=1	f=590->510	vF=1.1568627450980393	q=1->1	vQ=1	g=3->7	dG=4
+  139	pfad=0	slot=6	pfadGleich=1	f=580->500	vF=1.1599999999999999	q=1->1	vQ=1	g=2->6	dG=4
+  140	pfad=0	slot=6	pfadGleich=1	f=500->580	vF=1.1599999999999999	q=1->1	vQ=1	g=6->2	dG=4
+  141	pfad=0	slot=7	pfadGleich=1	f=510->590	vF=1.1568627450980393	q=1->1	vQ=1	g=7->3	dG=4
+  142	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  143	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->2	dG=1
+  144	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->3	dG=1
+  145	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->4	dG=1
+  146	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4->5	dG=1
+  147	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5->6	dG=1
+  148	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->7	dG=1
+  149	pfad=0	slot=0	pfadGleich=1	f=1000->1050	vF=1.05	q=1->1	vQ=1	g=3->3	dG=0
+  150	pfad=0	slot=0	pfadGleich=1	f=1050->500	vF=2.1000000000000001	q=1->1	vQ=1	g=3->3	dG=0
+  151	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  152	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  153	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  154	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  155	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  156	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  157	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  158	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  159	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  160	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  161	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  162	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  163	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  164	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  165	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  166	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  167	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  168	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  169	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  170	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  171	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  172	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  173	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  174	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  175	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  176	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  177	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  178	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  179	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  180	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  181	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  182	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  183	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-3.75	dG=1
+  184	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  185	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->-4	dG=7
+  186	pfad=0	slot=0	pfadGleich=1	f=1000->950	vF=1.0526315789473684	q=1->1	vQ=1	g=-4->-4	dG=0
+  187	pfad=0	slot=0	pfadGleich=1	f=1000->500	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  188	pfad=0	slot=0	pfadGleich=1	f=500->1000	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  189	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.5->-9.5	dG=1
+  190	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.5->-8.5	dG=1
+  191	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.5->-7.5	dG=1
+  192	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.5->-6.5	dG=1
+  193	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.5->-5.5	dG=1
+  194	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5->-4.5	dG=1
+  195	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5->-3.5	dG=1
+  196	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.5->-2.5	dG=1
+  197	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.5->-1.5	dG=1
+  198	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.5->-0.5	dG=1
+  199	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.5->0.5	dG=1
+  200	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.5->1.5	dG=1
+  201	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.5->2.5	dG=1
+  202	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.5->3.5	dG=1
+  203	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.5->4.5	dG=1
+  204	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.5->5.5	dG=1
+  205	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.5->6.5	dG=1
+  206	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.5->7.5	dG=1
+  207	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.5->8.5	dG=1
+  208	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.5->9.5	dG=1
+  209	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.5->10.5	dG=1
+  210	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.5->11.5	dG=1
+  211	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.5->-11.5	dG=23
+  212	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.5->-10.5	dG=1
+  213	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.5->-9.5	dG=1
+  214	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.5->-8.5	dG=1
+  215	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.5->-7.5	dG=1
+  216	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.5->-6.5	dG=1
+  217	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.5->-5.5	dG=1
+  218	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5->-4.5	dG=1
+  219	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5->-3.5	dG=1
+  220	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.5->-2.5	dG=1
+  221	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.5->-1.5	dG=1
+  222	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.5->-0.5	dG=1
+  223	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.5->0.5	dG=1
+  224	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.5->1.5	dG=1
+  225	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.5->2.5	dG=1
+  226	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.5->3.5	dG=1
+  227	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.5->4.5	dG=1
+  228	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->1	dG=2
+  229	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->2	dG=1
+  230	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->1	dG=1
+  231	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->9	dG=8
+  232	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9->-9	dG=18
+  233	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->-6	dG=9
+  234	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6->-5.8000001907348633	dG=0.19999980926513672
+  235	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.8000001907348633->-5.5999994277954102	dG=0.20000076293945312
+  236	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5999994277954102->-5.3999996185302734	dG=0.19999980926513672
+  237	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.3999996185302734->-5.1999998092651367	dG=0.19999980926513672
+  238	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.1999998092651367->-5	dG=0.19999980926513672
+  239	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5->-4.8000001907348633	dG=0.19999980926513672
+  240	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.8000001907348633->-4.5999999046325684	dG=0.20000028610229492
+  241	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5999999046325684->-4.4000000953674316	dG=0.19999980926513672
+  242	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.4000000953674316->-4.1999998092651367	dG=0.20000028610229492
+  243	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.1999998092651367->-4	dG=0.19999980926513672
+  244	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4->-3.8000001907348633	dG=0.19999980926513672
+  245	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.8000001907348633->-3.6000003814697266	dG=0.19999980926513672
+  246	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.6000003814697266->-3.3999996185302734	dG=0.20000076293945312
+  247	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.3999996185302734->-3.1999998092651367	dG=0.19999980926513672
+  248	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.1999998092651367->-3	dG=0.19999980926513672
+  249	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3->-2.8000001907348633	dG=0.19999980926513672
+  250	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.8000001907348633->-2.6000003814697266	dG=0.19999980926513672
+  251	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.6000003814697266->-2.3999996185302734	dG=0.20000076293945312
+  252	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.3999996185302734->-2.1999998092651367	dG=0.19999980926513672
+  253	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.1999998092651367->-2	dG=0.19999980926513672
+  254	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2->-1.7999992370605469	dG=0.20000076293945312
+  255	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.7999992370605469->-1.6000003814697266	dG=0.19999885559082031
+  256	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.6000003814697266->-1.3999996185302734	dG=0.20000076293945312
+  257	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.3999996185302734->-1.1999998092651367	dG=0.19999980926513672
+  258	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.1999998092651367->-1	dG=0.19999980926513672
+  259	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1->-0.79999923706054688	dG=0.20000076293945312
+  260	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.79999923706054688->-0.60000038146972656	dG=0.19999885559082031
+  261	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.60000038146972656->-0.39999961853027344	dG=0.20000076293945312
+  262	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.39999961853027344->-0.19999980926513672	dG=0.19999980926513672
+  263	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.19999980926513672->0	dG=0.19999980926513672
+  264	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0->0.20000076293945312	dG=0.20000076293945312
+  265	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.20000076293945312->0.39999961853027344	dG=0.19999885559082031
+  266	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.39999961853027344->0.60000038146972656	dG=0.20000076293945312
+  267	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.60000038146972656->0.80000114440917969	dG=0.20000076293945312
+  268	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.80000114440917969->1	dG=0.19999885559082031
+  269	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->1.2000007629394531	dG=0.20000076293945312
+  270	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.2000007629394531->1.3999996185302734	dG=0.19999885559082031
+  271	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.3999996185302734->1.6000003814697266	dG=0.20000076293945312
+  272	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.6000003814697266->1.7999992370605469	dG=0.19999885559082031
+  273	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.7999992370605469->2	dG=0.20000076293945312
+  274	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->2.1999988555908203	dG=0.19999885559082031
+  275	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.1999988555908203->2.4000005722045898	dG=0.20000171661376953
+  276	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.4000005722045898->2.6000003814697266	dG=0.19999980926513672
+  277	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.6000003814697266->2.8000001907348633	dG=0.19999980926513672
+  278	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.8000001907348633->3	dG=0.19999980926513672
+  279	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->3.1999998092651367	dG=0.19999980926513672
+  280	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.1999998092651367->3.4000015258789062	dG=0.20000171661376953
+  281	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.4000015258789062->3.6000003814697266	dG=0.19999885559082031
+  282	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.6000003814697266->3.8000011444091797	dG=0.20000076293945312
+  283	pfad=0	slot=0	pfadGleich=1	f=1000->1680.000244140625	vF=1.680000244140625	q=1->1	vQ=1	g=3->-11	dG=14
+
+5.3 A16 (ZEILEN=2 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->0.70710678118654757	vQ=1.4142135623730949	g=12->-3	dG=15
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=-3->12	dG=15
+
+5.4 B3c (ZEILEN=0 UEBERLAUF=0 PUFFER=200000)
+
+
+
+6. ZUORDNUNGSLAUF (NAK311_MARKE), zusaetzlich zum Messlauf
+----------------------------------------------------------------------------
+
+Derselbe Bau, zusaetzlich eine Marke nach stderr fuer jede Zeile ab der
+0,9-Schwelle; stdout und stderr zusammengefuehrt, damit die Marke zwischen den
+Pruefausgaben steht. Urteile unveraendert: B6 Exit 0 365/0, B7 Exit 0 192/0,
+A16 Exit 0 131/0, B3c Exit 0 162/0.
+
+B6, die Marken #3 bis #18 zwischen zwei Pruefungen:
+
+    ok      311/M-115 deckel_in_beiden_zweigen (NAK-311 R-311-14, R-311-3, §32.2)  [Monozweig (Programm-Kanalzahl 1) abgeleitet 150.464333526440 dB -> angewandt 2
+  >>> NAK311-C0 #3 pfad=0 slot=0 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #4 pfad=0 slot=1 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #5 pfad=0 slot=2 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #6 pfad=0 slot=3 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #7 pfad=0 slot=4 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #8 pfad=0 slot=5 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #9 pfad=0 slot=6 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #10 pfad=0 slot=7 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #11 pfad=0 slot=0 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #12 pfad=0 slot=1 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #13 pfad=0 slot=2 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #14 pfad=0 slot=3 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #15 pfad=0 slot=4 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #16 pfad=0 slot=5 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #17 pfad=0 slot=6 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+  >>> NAK311-C0 #18 pfad=0 slot=7 pfadGleich=1 f=20->20 (vF=1) q=0.15->0.707107 (vQ=4.71405) g=0->0 (dG=0)
+    ok      311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt; Q 0,707: ab
+  >>> NAK311-C0 #46 pfad=0 slot=0 pfadGleich=1 f=8000->8000 (vF=1) q=0.707->0.707 (vQ=1) g=9->-9 (dG=18)
+
+
+7. SECHS WIEDERHOLUNGEN VON B6 (Nichtdeterminismus des Rennens)
+----------------------------------------------------------------------------
+
+  Lauf 1   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+  Lauf 2   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+  Lauf 3   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+  Lauf 4   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+  Lauf 5   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+  Lauf 6   Exit 0, 365 geprueft, 0 Fehler   Zeilen 52   max vF=1.3999999999999999     max vQ=4.714045207910317    max dG=18
+
+  In allen sechs Wiederholungen: 52 Zeilen, davon 16 ueber dem Guetekriterium
+  (311/M-116) und keine ueber dem Frequenz- oder dem Gainkriterium. Messlauf
+  und Zuordnungslauf trugen je eine zusaetzliche Zeile aus dem Rennen; nur im
+  Messlauf lag sie ueber dem Frequenzkriterium (5,571), im Zuordnungslauf
+  darunter (3100 -> 3900, also 1,258). Das Rennen ist damit als Quelle belegt;
+  seine groesste moegliche Auslenkung (20,5 bzw. 5,0) folgt aus der Wertzeile.
+
+
+8. ANWENDUNG DER ENTSCHEIDREGEL (Abschnitt 54)
+----------------------------------------------------------------------------
+
+(1) In einer Tabelle von Abschnitt 40.3 gefuehrt und damit erwartet:
+    B7 #6, #29, #61, #95, #150, #173, #187, #188, #211, #232; B6 #46;
+    A16 #0 und #1.
+(2) Fall auf oder ueber einem Kriterium, in keiner Tabelle, OHNE Audio ueber
+    einen Blockrand und ohne dass die Pruefung Weg oder Ausgang liest: KEINER.
+(3) Fall auf oder ueber einem Kriterium MIT Audio ueber einem Blockrand, oder
+    mit einer Pruefung, die Weg oder Ausgang liest: ZWEI -
+      a) 311/M-116 deckelzustand_faellt_zurueck: Gueteverhaeltnis 4,714 > 4,0,
+         Audio ja, Pruefung liest den Ausgang;
+      b) bankpool_parallel_ohne_rennen (M-122): Frequenzverhaeltnis 5,571
+         gemessen (bis 20,5 moeglich), Audio ja.
+    -> Der Bauer haelt VOR dem Bau des Kriteriums an und meldet; der Dirigent
+       entscheidet Zahl oder Bestandsfall. Keine stille Ergaenzung, kein
+       angepasster Bestandstest.
+
+Hinweis zur Zahl. Abschnitt 54 nennt als groessten Bestandsfall mit Audio je
+Kriterium Frequenz 1,4 / Guete 3,0 / Gain 18,0 dB. Der Messlauf widerlegt die
+Guetezahl: 4,714 aus 311/M-116, entstanden erst im Aenderungssatz B. Die
+Frequenzzahl 1,4 haelt nur, wenn das Rennen in bankpool_parallel_ohne_rennen
+nicht als Bestandsfall zaehlt.
+
+
+9. RUECKNAHME DER INSTRUMENTIERUNG
+----------------------------------------------------------------------------
+
+Beruehrt waren genau zwei Dateien: eq-copilot/plugin/dsp/DspKern.cpp und
+eq-copilot/plugin/dsp/DspKern.h. Der instrumentierte Stand liegt als Kopie
+AUSSERHALB des Repos ($CLAUDE_JOB_DIR/tmp/DspKern.cpp.instrumentiert und
+DspKern.h.instrumentiert), der Diff steht in Abschnitt 1 dieser Datei.
+
+  SHA-256 MIT Instrumentierung (vor der Ruecknahme)
+    8FBFB38D7A7340E5BF932520B29D793E7366DB49FE3F81E449A13658D993743F  DspKern.cpp
+    C6B76B75D385EBF929FD7F5DDF9C59475D2BB15E2FF0A35C575DD74E01F321F8  DspKern.h
+
+  SHA-256 NACH der Ruecknahme (git checkout -- <datei>)
+    5D02A08FBECF93CDAFC82EA64FCDF86D1E28C38748AC507FD9F1F04A6ED99554  DspKern.cpp
+    B70B8DDEDA356C3F3FB9BCE4175890C111E9F3FA13E03CFBACCFA04CBEBF7370  DspKern.h
+
+  Beleg der Bytegleichheit zum Basisstand - staerker als ein selbst genommener
+  Vorher-Hash, weil er gegen das committete Objekt misst:
+    git status --short   ->  nur `?? briefing-hub/` und `?? nimbalyst-local/`
+    git diff --stat      ->  leer
+    git diff             ->  leer
+  Der Arbeitsbaum war beim Start des Satzes sauber (dieselben zwei fremden
+  Ordner, Kopf Zeile Basis-SHA); der zurueckgenommene Inhalt ist damit
+  bytegleich dem Stand, an dem gemessen wurde.
+
+  Neubau nach der Ruecknahme (LastWriteTime der zwei Quellen auf jetzt gesetzt,
+  NAK-230), Binary-Zeitstempel gegen die Quelle geprueft:
+    B6   Binary 14:02:53 > Quelle 14:02:45   Exit 0, 365 geprueft, 0 Fehler
+    B7   Binary 14:03:01 > Quelle 14:02:45   Exit 0, 192 geprueft, 0 Fehler
+    A16  Binary 14:03:10 > Quelle 14:02:45   Exit 0, 131 ok, 0 Fehler
+    B3c  Binary 14:03:14 > Quelle 14:02:45   Exit 0, 162 bestanden, 0 gescheitert
+
+  Ausgabe nach der Ruecknahme gegen den Basisstand: B7 0, A16 0, B3c 0
+  Unterschiede; B6 16 Unterschiede, wieder ausschliesslich die ausgenommenen
+  Zeilenklassen M-118, M-120 und M-122 (Wanduhr- und Threadwerte). Dass diese
+  16 Zeilen zwischen ZWEI Laeufen desselben unveraenderten Binaries abweichen,
+  ist damit selbst belegt.
+

@@ -81,17 +81,6 @@
    "wo": "docs/offene-punkte.md NAK-335; Skill /dirigent §3.2 und §3.6",
    "seit": "19.09.",
    "status": "offen"
-  },
-  {
-   "id": "U56",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Produktentscheid (Verhalten)",
-   "titel": "FL hält die Verarbeitung an, während eine Passage markiert klingt: gilt die Markierung danach weiter?",
-   "was": "Du kannst dir in Gen eine Passage hörbar markieren lassen. Hält FL mitten in dieser Markierung die Verarbeitung des Plugins an (zum Beispiel beim Anhalten der Audioausgabe oder beim Wechsel der Audioeinstellungen), passiert heute nichts Bestimmtes: die Markierung bleibt intern stehen und klingt beim Weiterlaufen weiter, und der Zeitraum, den Nakama als „durch die Markierung eingefärbt“ führt, wird nie geschlossen. Dass die Markierung in diesem Moment sauber verstummt und der eingefärbte Zeitraum geschlossen wird, baut Nakama in jedem Fall. Offen ist nur: (1) Empfohlen: dein Auftrag bleibt bestehen — läuft FL weiter, beginnt die Markierung von vorn. (2) Das Anhalten beendet auch den Auftrag — danach ist nichts mehr markiert, bis du es neu auslöst.",
-   "warum": "Audit-Befund T3-01-10 (Kartenentwurf PF11-02), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md, Abschnitt 8); bisher gab es dafür keine Karte, U48 nannte den Befund nur. Wann genau FL diesen Anhaltemoment auslöst, ist nicht gemessen. Gebaut wird der offene Teil erst nach deiner Antwort (Planschritt S25k, Ticket NAK-312).",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-10, PF11-02, Arbeitsübersicht W06; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
-   "seit": "21.09.",
-   "status": "offen"
   }
  ],
  "geparkt": [
@@ -912,6 +901,24 @@
     "warum": "Audit-Befund T3-07-05 (Kartenentwurf PF11-17), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-B.md, Abschnitt 6 und 8); Text am 21.09.2026 berichtigt. Der Kartenentwurf des Audits bevorzugte Weg 2; die Empfehlung für Weg 1 folgt daraus, dass Weg 2 vor der Designarbeit nicht baubar ist. Gebaut wird erst nach deiner Antwort (Planschritt S25k, NAK-312). Bereits gespeicherte Quellen werden in keinem Fall gelöscht.",
     "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-05, PF11-17, Arbeitsübersicht W24; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
     "seit": "18.09.",
+    "status": "offen"
+   }
+  },
+  "U56": {
+   "wahl": "1. Auftrag bleibt bestehen (Empfohlen)",
+   "text": "Auftrag bleibt bestehen (Empfohlen)",
+   "datum": "2026-09-21 01:02",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1: hält FL die Verarbeitung an, verstummt die Markierung sauber, der eingefärbte Zeitraum wird geschlossen, der Auftrag bleibt bestehen und die Markierung beginnt beim Weiterlaufen von vorn. Das deckt die Regel R-312-5 in NAK-312 (Planschritt S25k, Etappe 6); ein Nachzug in Etappe 7 entfällt. Festgehalten in design/abnahmen/2026-09-21-markierungsauftrag-bleibt-nach-anhalten-u56.md und im Register NAK-312. Gestellt über AskUserQuestion in der Dirigentensitzung 90fe90ab mit zwei Wegen: „Auftrag bleibt bestehen (Empfohlen)“, „Anhalten beendet den Auftrag“; eingetragen nach dem Ende der laufenden Matrixprüfung.",
+   "karte": {
+    "id": "U56",
+    "dringlichkeit": "wenn du dazu kommst",
+    "art": "Produktentscheid (Verhalten)",
+    "titel": "FL hält die Verarbeitung an, während eine Passage markiert klingt: gilt die Markierung danach weiter?",
+    "was": "Du kannst dir in Gen eine Passage hörbar markieren lassen. Hält FL mitten in dieser Markierung die Verarbeitung des Plugins an (zum Beispiel beim Anhalten der Audioausgabe oder beim Wechsel der Audioeinstellungen), passiert heute nichts Bestimmtes: die Markierung bleibt intern stehen und klingt beim Weiterlaufen weiter, und der Zeitraum, den Nakama als „durch die Markierung eingefärbt“ führt, wird nie geschlossen. Dass die Markierung in diesem Moment sauber verstummt und der eingefärbte Zeitraum geschlossen wird, baut Nakama in jedem Fall. Offen ist nur: (1) Empfohlen: dein Auftrag bleibt bestehen — läuft FL weiter, beginnt die Markierung von vorn. (2) Das Anhalten beendet auch den Auftrag — danach ist nichts mehr markiert, bis du es neu auslöst.",
+    "warum": "Audit-Befund T3-01-10 (Kartenentwurf PF11-02), an der Quelle bestätigt am 20.09.2026 (docs/beweise/roh/NAK-312-quellvalidierung-teil-A.md, Abschnitt 8); bisher gab es dafür keine Karte, U48 nannte den Befund nur. Wann genau FL diesen Anhaltemoment auslöst, ist nicht gemessen. Gebaut wird der offene Teil erst nach deiner Antwort (Planschritt S25k, Ticket NAK-312).",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-01-10, PF11-02, Arbeitsübersicht W06; docs/beweise/NAK-312.md §3; docs/offene-punkte.md NAK-312",
+    "seit": "21.09.",
     "status": "offen"
    }
   }

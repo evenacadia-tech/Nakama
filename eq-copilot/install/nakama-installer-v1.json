@@ -49,7 +49,7 @@
       "art": "broker",
       "name": "eqcop-broker.exe",
       "quelle": "broker/target/release/eqcop-broker.exe",
-      "sha256": "B81B040C99036B8E70B4C62B305FE6C89A610B368D18D248CE99DBF647D9BB5D",
+      "sha256": "F29F4AC43330F00FED43773A5D7AD69D9999F78A74B16CFA6FCF968D1B4F52AA",
       "hinweis": "Seit SONDE-011 Phase B startet ausschliesslich ein als Main klassifiziertes Plugin mit offenem Editor den Broker ueber den vorhandenen Lifecycle-Haken. Vor jedem Spawn prueft es diesen Manifest-Hash und bei gesetztem Thumbprint zusaetzlich WinVerifyTrust; das Plugin beendet keinen Brokerprozess, die Idle-Selbstende liegt im Broker."
     }
   ],

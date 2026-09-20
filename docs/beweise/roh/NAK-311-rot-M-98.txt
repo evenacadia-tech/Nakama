@@ -1,0 +1,25 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-98
+============================================================================
+Matrixzeile   M-98 (Teilfall der Pruefung 311/M-96)
+Zusage        wie M-96: der Sprung laeuft als Crossfade, die Uebergangsspitze
+              liegt hoechstens 1 dB ueber der groesseren stationaeren Spitze,
+              und der gesprungene Slot bekommt eine neue Kennung.
+Bein          B6 (EqCopDspGoldenTest)
+Datum         20.09.2026
+
+Die Mutation nach dem Bau ist dieselbe wie fuer M-96 (Frequenzkriterium aus
+der bleibt-Bedingung entfernt); die Rotbeweisspalte nennt sie fuer alle drei
+Zeilen. Der vollstaendige Beleg steht in NAK-311-rot-M-96.txt - dort faellt
+auch diese Zeile namentlich. Hier steht der Lauf vor der Reparatur.
+
+ZUSATZ: DER LAUF GEGEN DEN UNVERAENDERTEN KERN VOR DER REPARATUR
+----------------------------------------------------------------------------
+
+Nach 7.1 laeuft eine "heute rot"-Zeile VOR der Reparatur einmal gegen den
+unveraenderten Kern. Stand: Basis a93f3c79 plus Abschnitt R und die drei
+Konstanten in DspProgramm.h, aber OHNE die drei Vergleiche in der
+bleibt-Bedingung von DspKern::vergebeKennungen. B6 Exit 1, 378 geprueft,
+10 Fehler - die zehn Zeilen, die das Kriterium erst herstellt.
+
+  FEHLER  311/M-98 grosser_frequenzsprung_wird_ueberblendet: Teilfall Low-Cut 2000 -> 20 Hz (R-311-13, U44)  [freq_hz 2000.0 -> 20.0 (Verhaeltnis 100.0000 gegen Kriterium 2.0000); Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze ueber 0,5 s 6.441144 gegen groessere stationaere Spitze 0.499800 (vorher 0.120215, nachher 0.499800) = 22.2033 dB gegen 1 dB; Uebernahmen 1]
+

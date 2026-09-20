@@ -1,0 +1,57 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-142a
+============================================================================
+Matrixzeile   M-142a
+Zusage        Wertwache ueber kSprungGainDb: eine Gainaenderung UNTER dem Kriterium (3,0 -> 9,0 dB = 6,0 dB) bleibt auf dem Rampenweg und folgt der im Test ausgeschriebenen Koeffizientenrampe unter 1e-5.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspProgramm.h
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  eq-copilot\plugin\dsp\DspProgramm.h
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-142a-DspProgramm.h
+
+2. Mutation, woertlich
+   VORHER:
+     inline constexpr double kSprungGainDb = 20.0;
+   NACHHER:
+     inline constexpr double kSprungGainDb = 5.0;   // MUTATION M-142 (a)
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:01:43 juenger als die Quelle 15:01:36: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.100790839303 (-100 dBFS = 1e-5)]
+
+   Erwartete Pruefung: bandwert_gain_db_rampt_ohne_zustandsreset
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:01:55 juenger als die Quelle 15:01:48: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-110.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

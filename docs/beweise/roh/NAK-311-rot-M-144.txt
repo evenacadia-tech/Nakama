@@ -1,0 +1,104 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-144
+============================================================================
+Matrixzeile   M-144 (R-311-21, R-311-25)
+Zusage        Kein Bestandsfall mit Audio ueber einem Blockrand, dessen Pruefung
+              den Ausgang, einen Tap, die Uebergangsart oder ein Golden liest,
+              liegt AUF oder UEBER einem der drei Kriterien - gemessen, nicht
+              gelesen.
+Beleg         der Messlauf C-0 und seine AUSWERTUNG ueber B6, B7, A16 und B3c
+              (Rohdatei docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt).
+              Kein Produktcode, kein neues Bein, keine neue Pruefung im Bein.
+Datum         20.09.2026
+
+Die Mutation fasst NUR die Auswertung an, nie das Produkt (so nennt es die
+Rotbeweisspalte): die Gainschranke der Auswertung wird von 20,0 auf 17,0
+gesetzt, also unter die zwei bekannten Audiofaelle mit 18,0 dB.
+
+1. Die Auswertung, woertlich
+
+   # -*- coding: utf-8 -*-
+   # NAK-311 Etappe 5, Satz C: Auswertung des Messlaufs C-0 fuer die Matrixzeile
+   # M-144, auf der praezisierten Zusage (R-311-25, Manifest 56.1): geschuetzt ist
+   # jeder Bestandsfall mit Audio ueber einem Blockrand, dessen Pruefung den
+   # AUSGANG, einen TAP, die UEBERGANGSART oder ein GOLDEN liest. Nur ueber diese
+   # Ja-Faelle urteilt die Auswertung.
+   #
+   # Aufruf: py -3.13 auswertung-m144.py <Gainschranke>
+   import os, sys
+   
+   T = r"C:\Users\phili\.claude\jobs\89bfc69d\tmp"
+   KF, KQ = 2.0, 4.0
+   KG = float(sys.argv[1]) if len(sys.argv) > 1 else 20.0
+   
+   # Die Ja-Faelle aus der Zuordnung (Rohdatei Abschnitt 4 und 10.4): je Bein die
+   # Zeilenindizes, deren Pruefung Ausgang, Tap, Uebergangsart oder Golden liest
+   # UND die Audio ueber einen Blockrand fahren.
+   JA = {
+       "B6":  {1, 2, 46},   # bandwert_freq/gain/q_rampt_ohne_zustandsreset, uebernahme_nur_am_aeusseren_blockrand
+       "B7":  {232},        # Gegenprobe in capability_entscheidet_den_automationspfad
+       "A16": set(),
+       "B3c": set(),
+   }
+   
+   def lies(bein):
+       p = os.path.join(T, "c02-%s.tsv" % bein)
+       zeilen = open(p, encoding="utf-8").read().splitlines()
+       daten = []
+       for z in zeilen[1:]:
+           t = z.split("\t")
+           d = {"i": int(t[0]), "roh": z}
+           for feld in t[1:]:
+               k, v = feld.split("=", 1)
+               d[k] = v
+           daten.append(d)
+       return daten
+   
+   print("AUSWERTUNG M-144  Kriterien: Frequenz %.17g  Guete %.17g  Gain %.17g dB" % (KF, KQ, KG))
+   gerissen = []
+   for bein in ("B6", "B7", "A16", "B3c"):
+       for d in lies(bein):
+           ja = d["i"] in JA[bein]
+           if not ja:
+               continue
+           auf = (float(d["vF"]) >= KF) or (float(d["vQ"]) >= KQ) or (float(d["dG"]) >= KG)
+           if auf:
+               gerissen.append((bein, d))
+   
+   print("Ja-Faelle auf oder ueber einem Kriterium: %d" % len(gerissen))
+   for bein, d in gerissen:
+       print("  BEFUND %s #%d  f=%s vF=%s  q=%s vQ=%s  g=%s dG=%s" %
+             (bein, d["i"], d["f"], d["vF"], d["q"], d["vQ"], d["g"], d["dG"]))
+   if gerissen:
+       print("URTEIL: ROT - jeder dieser Faelle ist ein Befund an den Dirigenten VOR dem Bau des Kriteriums.")
+       sys.exit(1)
+   print("URTEIL: GRUEN - kein geschuetzter Bestandsfall liegt auf oder ueber einem Kriterium.")
+   sys.exit(0)
+
+2. Lauf mit der GEBAUTEN Schranke 20,0 - gruen
+
+   AUSWERTUNG M-144  Kriterien: Frequenz 2  Guete 4  Gain 20 dB
+   Ja-Faelle auf oder ueber einem Kriterium: 0
+   URTEIL: GRUEN - kein geschuetzter Bestandsfall liegt auf oder ueber einem Kriterium.
+   Exitcode 0
+
+3. Lauf mit der MUTIERTEN Schranke 17,0 - rot
+
+   AUSWERTUNG M-144  Kriterien: Frequenz 2  Guete 4  Gain 17 dB
+   Ja-Faelle auf oder ueber einem Kriterium: 2
+     BEFUND B6 #46  f=8000->8000 vF=1  q=0.70699999999999996->0.70699999999999996 vQ=1  g=9->-9 dG=18
+     BEFUND B7 #232  f=1000->1000 vF=1  q=1->1 vQ=1  g=9->-9 dG=18
+   URTEIL: ROT - jeder dieser Faelle ist ein Befund an den Dirigenten VOR dem Bau des Kriteriums.
+   Exitcode 1
+
+4. Die Zusage faellt an der erwarteten Stelle: JA
+   Gemeldet werden genau die zwei bekannten Faelle mit 18,0 dB und Audio:
+   uebernahme_nur_am_aeusseren_blockrand (DspGoldenTestMain.cpp:4726 -> :4732,
+   Pruefname :4752) und die Gegenprobe in capability_entscheidet_den_automationspfad
+   (TransactionTestMain.cpp:2069 -> :2081, Pruefname der Gegenprobe :2086).
+   Beide stehen in der ERSTEN Tabelle von 40.3 und sind Ja-Faelle nach R-311-25.
+
+5. Ruecknahme
+   Die Mutation lebte ausschliesslich im Argument der Auswertung (Schranke
+   als Parameter); am Produkt und an den Rohdaten des Messlaufs wurde nichts
+   veraendert. Der Lauf aus Schritt 2 ist mit der gebauten Schranke wiederholbar.
+

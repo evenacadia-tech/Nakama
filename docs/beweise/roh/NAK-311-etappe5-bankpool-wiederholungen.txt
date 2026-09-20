@@ -1,0 +1,107 @@
+NAK-311 Etappe 5, Aenderungssatz C - R-311-25: bankpool_parallel_ohne_rennen unter dem Kriterium
+============================================================================
+Fortsetzungsauftrag Nr. 2 (Manifest 56.1). Zwanzig Laeufe von B6 auf dem
+End-Codestand des Aenderungssatzes C. Je Lauf Exit, Zaehlzeile und die vier
+Pruefzeilen des Blocks M-122 (Pruefnamen DspGoldenTestMain.cpp:6859, :6862,
+:6864 und :6868, am End-Stand nachgemessen).
+
+--- Lauf 01  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4971 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2079]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 02  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4629 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2029]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 03  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4593 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2126]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 04  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4684 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2048]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 05  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [5238 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2116]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 06  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4913 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2066]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 07  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [5211 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2135]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 08  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [5197 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2111]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 09  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4487 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2033]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 10  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [5304 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2191]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 11  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4811 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2060]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 12  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4796 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2144]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 13  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4112 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2021]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 14  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [3559 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 1932]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 15  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4853 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2069]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 16  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4542 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2048]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 17  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [3999 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2026]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 18  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [3947 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2020]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 19  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [4553 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 2067]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]
+--- Lauf 20  Exit 0  378 geprueft, 0 Fehler
+    ok      bankpool_parallel_ohne_rennen (M-122)  [3841 Bloecke, 3000 Publikationen, 0 Invariantenbrueche]
+    ok      generationen_bleiben_streng_monoton (M-122)  [je Pfad; letzte Generation 1955]
+    ok      keine_bank_liegt_je_in_zwei_pfaden (M-122, B-1)  [Committed und Candidate publizieren parallel, 0 Kreuzungen]
+    ok      kein stiller Ringverlust unter Last (M-43, M-45)  [Ueberlaeufe=0, Verriegelungen=0, Maske=0]

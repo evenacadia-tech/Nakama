@@ -1,0 +1,50 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-102
+============================================================================
+Matrixzeile   M-102
+Zusage        Das Guetekriterium traegt seine eigene Kante: der Sprung q 1,0 -> 1,0 * (kSprungGueteVerhaeltnis + 1 ULP) verlaesst den Rampenweg.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-102-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+                              && ! sprungImVerhaeltnis (s.q, b.q, kSprungGueteVerhaeltnis)
+   NACHHER:
+                              && true   // MUTATION M-102: Guetekriterium aus der bleibt-Bedingung entfernt
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:56:55 juenger als die Quelle 14:56:53: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 2
+     FEHLER  311/M-101 frequenzkriterium_an_seinen_drei_kanten (Teilfaelle 311/M-102 Guete und 311/M-103 Gain; R-311-13, F-20)  [18 Kanten, 2 gegen die Erwartung: Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Crossfade; Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Crossfade; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Rampe; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Rampe; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade]
+     FEHLER  311/M-109 nicht_endliche_werte_erzwingen_eine_neue_kennung (R-311-13, F-21)  [freq_hz NaN -> neue Kennung; q NaN -> KENNUNG BEHALTEN; q +Inf -> KENNUNG BEHALTEN; q 0 -> KENNUNG BEHALTEN; q negativ -> KENNUNG BEHALTEN; gain_db NaN -> neue Kennung; gain_db +Inf -> neue Kennung; gain_db -Inf -> neue Kennung; nicht endlicher Ausgangssample in: freq_hz NaN, q NaN, q 0, gain_db NaN, gain_db +Inf, gain_db -Inf (BEFUND zum zweiten Satz der Zeile, Manifest 57)]
+
+   Erwartete Pruefung: 311/M-101
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 376 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:57:04 juenger als die Quelle 14:57:01: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

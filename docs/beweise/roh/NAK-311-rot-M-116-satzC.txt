@@ -1,0 +1,61 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-116-satzC
+============================================================================
+Matrixzeile   M-116-satzC
+Zusage        Der Deckelzustand haengt am gefahrenen Programm und faellt zurueck, sobald das Programm die Grenze nicht mehr reisst - am geaenderten Pruefling q 0,5.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+Anmerkung     Neubelegung des Rotbeweises von M-116 am geaenderten Pruefling (Fortsetzungsauftrag Nr. 1); die Rohdatei des Satzes B bleibt unveraendert.
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-116-satzC-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+         autoGainGedeckeltBericht[(size_t) p].store (prog.autoGainGedeckelt(), std::memory_order_relaxed);
+   NACHHER:
+         autoGainGedeckeltBericht[(size_t) p].store (prog.autoGainGedeckelt() || autoGainGedeckeltBericht[(size_t) p].load (std::memory_order_relaxed), std::memory_order_relaxed);   // MUTATION M-116: Sticky-Flag
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:03:37 juenger als die Quelle 15:03:34: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt; Q 0,5: abgeleitet 66.940862302 dB, angewandt 24.000000000000 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand GESETZT; angewandter Faktor am ersten Sample nach dem Wechsel 15.822167895 (altes Ziel 15.848931925), nach 300 Samples 8.997340287 (neues Ziel 8.997340287, Rampe 256 Samples)]
+
+   Erwartete Pruefung: 311/M-116
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:03:45 juenger als die Quelle 15:03:42: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-110.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142a.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

@@ -1,0 +1,73 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-106
+============================================================================
+Matrixzeile   M-106
+Zusage        Kein Wert geht verloren: der zuletzt publizierte ist am Ende der wirksame, der Audiothread nimmt je Blockrand hoechstens eine Publikation, und eine VERDRAENGTE Zwischenpublikation aendert die Kennung trotzdem (Muster M-41).
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+Anmerkung     Haelfte (a). Haelfte (b) - Echtzeit - ist in derselben Pruefung gemessen; ihre in der Matrix genannte Mutation traegt nicht (siehe Manifest 57 und NAK-311-rot-M-111.txt).
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-106-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+         vergebeKennungen (p, bank.programm);
+   NACHHER:
+         { const int lauf = pfade[(size_t) p].aktiv; if (lauf >= 0) merke (p, baenke.bank (lauf).programm); }   // MUTATION M-106 (a): gegen die vom Audiothread GENOMMENE Belegung vergleichen
+         vergebeKennungen (p, bank.programm);
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:11:29 juenger als die Quelle 15:11:26: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 2
+     FEHLER  311/M-41 verdraengte_zwischenpublikation_bricht_den_lebenszyklus (NAK-311 T3-14-02, M-121, R-311-1)  [A eingeschwungen -12.0000 dB; leer und B vor demselben Blockrand, Uebernahmen +1; betragsgroesste Meldung von Slot 0 ab dem ersten Block -12.000000 dB (ueber 32 Bloecke Stille); Spitze bei Stille ab Sample 256: 0.000000018]
+     FEHLER  311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (E-17, M-41)  [(a) 64 Publikationen im Abstand eines Blocks zu 64, 0 busy_retry; zuletzt publiziert 200.0 Hz, gefahren 200.0 Hz; verdraengte Zwischenpublikation aendert die Kennung: NEIN; 17 Blockrand-Uebernahmen bei 128 Blockraendern; (b) Testzaehler 0, Kernzaehler 0, Sperren 0, Ableitungen im Audiopfad 0]
+
+   Erwartete Pruefung: 311/M-106
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 376 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:11:38 juenger als die Quelle 15:11:35: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-a16-zeilenvergleich.txt
+    M docs/beweise/roh/NAK-311-etappe5-b3c-zeilenvergleich.txt
+    M docs/beweise/roh/NAK-311-etappe5-b6-zeilenvergleich.txt
+    M docs/beweise/roh/NAK-311-etappe5-b7-zeilenvergleich.txt
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M docs/plugin-wissen.md
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+    M tools/beweise.ps1
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-etappe5-wertekriterien.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-110.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-111.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-116-satzC.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142a.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-144.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

@@ -465,7 +465,17 @@ private:
     /*  NAK-311 W03 (R-311-1, §9 F-6): der MERKZETTEL der zuletzt
         PUBLIZIERTEN Belegung eines Pfades - nicht der vom Audiothread
         genommenen, die der Worker nicht kennt. Genau die Felder, die
-        `rampenKompatibel` topologisch nennt, dazu die vergebene Kennung. */
+        `rampenKompatibel` topologisch nennt, dazu die vergebene Kennung.
+
+        NAK-311 W07 (R-311-13, §41 F-22): dazu die drei WERTE des Slots. Sie
+        liegen hier im Worker, NICHT im `DspProgramm` und nicht am Blockrand -
+        `DspProgramm` traegt sie ohnehin, und der Audiothread braucht sie nicht:
+        er liest weiterhin nur zwei 64-Bit-Kennungen je Slot. Ein zweiter
+        Vergleichsweg am Blockrand waere genau das, was R-311-13 ausschliesst.
+        `freqHzWirksam` ist der Wert NACH der Nyquistkappung, derselbe, den der
+        Entwurf benutzt; ein Band, das nur durch einen Ratenwechsel gekappt
+        wird, springt dadurch nicht zusaetzlich, weil ein Ratenwechsel schon
+        die Pfadkennung wechselt (§9 F-8). */
     struct SlotMerkmal
     {
         std::uint64_t kennung   { 0 };
@@ -475,6 +485,9 @@ private:
         bool          aktiv     { false };
         bool          dynamisch { false };
         bool          nutztSvf  { false };
+        double        freqHzWirksam { 0.0 };
+        double        q             { 0.0 };
+        double        gainDb        { 0.0 };
     };
 
     struct Merkzettel
@@ -491,7 +504,17 @@ private:
     /** Vergibt die Kennungen des Programms einer noch nicht publizierten Bank
         und schreibt den Merkzettel fort. NUR der Worker, in
         `publiziereVorbau` nach `bank.programm = prog` und VOR der Uebergabe
-        der Bank (M-52). */
+        der Bank (M-52).
+
+        Ein Slot behaelt seine Kennung, wenn er belegt bleibt, seine fuenf
+        topologischen Felder haelt UND keines der drei Wertekriterien reisst
+        (NAK-311 R-311-13: `kSprungFrequenzVerhaeltnis`,
+        `kSprungGueteVerhaeltnis`, `kSprungGainDb` in `DspProgramm.h`). Reisst
+        eines, bekommt GENAU DIESER Slot eine neue Kennung; alle anderen
+        behalten ihre, und der Blockrand nimmt den bestehenden Crossfade-Weg
+        aus W03 - ohne neuen Vergleichsweg, ohne zweiten Filterlauf und ohne
+        Aenderung an `blockrand`. Die drei Vergleiche laufen einmal je
+        Publikation im Worker, unter dem Zustandsschloss des Prozessors. */
     void vergebeKennungen (Pfad p, DspProgramm& prog) noexcept;
     void merke (Pfad p, const DspProgramm& prog) noexcept;
 

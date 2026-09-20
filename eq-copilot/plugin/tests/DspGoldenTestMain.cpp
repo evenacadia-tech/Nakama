@@ -752,6 +752,936 @@ double rundungR31110 (double groessterBetrag)
     return 2.0 * std::ldexp (1.0, e - 1 - 23);           // float: 23 Mantissenbits
 }
 
+//==============================================================================
+// NAK-311 W07, Abschnitt R (Manifest NAK-311 39.1 und 40.3, R-311-13, Karte
+// U44): die Kennungsvergabe kennt seit diesem Aenderungssatz auch WERTE.
+// Reisst ein Slot eines der drei Wertekriterien, bekommt NUR dieser Slot eine
+// neue Lebenszykluskennung; der Blockrand nimmt dann den bestehenden
+// Crossfade-Weg aus W03, und nur dieser Slot startet kalt. Unter dem Kriterium
+// und GENAU auf ihm bleibt alles auf dem Rampenweg.
+//
+// DAS MASS (W07): Uebergangsspitze = groesster Betrag eines Ausgangssamples im
+// Fenster von 0,5 s ab dem Umschaltsample, beide Kanaele. Stationaere Spitze =
+// groesster Betrag ueber eine volle Periode des Prueftons, eingeschwungen vor
+// dem Wechsel beziehungsweise nach Fade und Einschwingzeit. Mass =
+// 20*log10 (Uebergangsspitze / groessere der beiden stationaeren Spitzen); die
+// Zusage ist hoechstens 1 dB.
+//
+// DIE UEBERGANGSART wird DIREKT gelesen, nicht erraten: `rechnendeSlots` meldet
+// die Quellbank NUR in einem laufenden Crossfade (DspKern.h); eine Rampe meldet
+// dort -1. Die gemeldete AUSLENKUNG taugt dafuer nicht - ein statisches Band
+// meldet auf beiden Wegen 0,0. Zweite, ebenso direkte Probe ist die
+// LEBENSZYKLUSKENNUNG des gefahrenen Programms: sie ist die Zusage selbst.
+//
+// NAK-175: jede Matrixzeile bekommt eine EIGENE Funktion. Ein `param::DspSatz`
+// hat einen nichttrivialen Destruktor; MSVC legt die Rahmen solcher Objekte
+// ueber getrennte Bloecke NICHT zusammen, und der Abschnitt im Rumpf von `main`
+// sprengte dessen 1-MiB-Rahmen schon beim Eintritt (gemessen:
+// STATUS_STACK_OVERFLOW ohne eine Zeile Ausgabe).
+
+constexpr double fsR      = 48000.0;
+constexpr int    bsR      = 64;
+constexpr int    mbR      = 512;
+constexpr int    per1k    = 48;              // eine Periode 1 kHz bei 48 kHz
+constexpr int    vorlaufR = 1000 * per1k;    // 48 000 Samples = 750 Bloecke zu 64
+constexpr int    fensterR = 1000 * per1k;    // 1 s; die Uebergangsspitze misst die erste halbe
+const double     w1kR     = 2.0 * kPiRef * 1000.0 / fsR;
+
+void tonR (long long n, float& l, float& r)
+{
+    l = r = (float) (0.5 * std::sin (w1kR * (double) n));
+}
+
+void quadR (long long n, float& l, float& r)
+{
+    l = (float) (0.5 * std::sin (w1kR * (double) n));
+    r = (float) (0.5 * std::cos (w1kR * (double) n));
+}
+
+/** Groesster Betrag in `anzahl` Samples ab Sample `von`, beide Kanaele (die
+    Aufzeichnung ist L und R verschraenkt). */
+double spitzeVon (const std::vector<double>& x, size_t von, size_t anzahl)
+{
+    double m = 0.0;
+    for (size_t i = 2 * von; i < 2 * (von + anzahl) && i < x.size(); ++i)
+        m = std::max (m, std::abs (x[i]));
+    return m;
+}
+
+/** FNV-1a ueber die Bitmuster der Aufzeichnung - der Bitvergleich von M-100 in
+    EINER Zahl, im Test eigenstaendig ausgeschrieben. */
+std::uint64_t fingerabdruck (const std::vector<double>& x)
+{
+    std::uint64_t h = 1469598103934665603ull;
+    for (double v : x)
+    {
+        std::uint64_t bits = 0;
+        std::memcpy (&bits, &v, sizeof (bits));
+        for (int i = 0; i < 8; ++i)
+        {
+            h ^= (std::uint64_t) ((bits >> (8 * i)) & 0xFFu);
+            h *= 1099511628211ull;
+        }
+    }
+    return h;
+}
+
+/** Die acht Lebenszykluskennungen des GEFAHRENEN Committed-Programms. */
+std::array<std::uint64_t, (size_t) param::kSlots> kennungenVon (DspKern& k)
+{
+    std::array<std::uint64_t, (size_t) param::kSlots> id {};
+    int cA = -1, cQ = -1, kA = -1, kQ = -1;
+    k.gefahreneSlots (cA, cQ, kA, kQ);
+    if (cA >= 0)
+        for (int i = 0; i < param::kSlots; ++i)
+            id[(size_t) i] = k.pool().bank (cA).programm.baender[(size_t) i].lebenszyklus;
+    return id;
+}
+
+const DspProgramm* gefahrenesR (DspKern& k)
+{
+    int cA = -1, cQ = -1, kA = -1, kQ = -1;
+    k.gefahreneSlots (cA, cQ, kA, kQ);
+    return cA >= 0 ? &k.pool().bank (cA).programm : nullptr;
+}
+
+struct SprungErgebnis
+{
+    double spitzeVorher = 0.0, spitzeNachher = 0.0, uebergangsspitze = 0.0, mass = 0.0;
+    int    kreuzErster  = -1;
+    std::uint64_t uebernahmen = 0;
+    std::array<std::uint64_t, (size_t) param::kSlots> idVorher {}, idNachher {};
+    W03Lauf fenster;
+};
+
+/** Ein Sprunglauf auf dem Committed-Pfad: `vorlaufR` Samples Vorgeschichte (die
+    letzten drei Bloecke aufgezeichnet), EINE Publikation, dann `fensterR`
+    Samples. Der Umschaltblock beginnt auf einer Periodengrenze - 48 000 ist
+    durch 48 UND durch 64 teilbar. */
+template <typename Quelle>
+SprungErgebnis fahreSprung (const param::DspSatz& vorherSatz, const param::DspSatz& nachherSatz,
+                            const Quelle& quelle, int blockGroesse)
+{
+    SprungErgebnis e;
+    auto k = neuerKern (fsR, mbR);
+    k->uebernehmeZustand (vorherSatz);
+    long long n = 0;
+    fahreW03 (*k, quelle, n, vorlaufR - 3 * bsR, bsR, nullptr);
+    W03Lauf letzte;
+    fahreW03 (*k, quelle, n, 3 * bsR, bsR, &letzte);
+    k->pflege();
+    e.spitzeVorher = spitzeVon (letzte.aus, (size_t) (3 * bsR - per1k), (size_t) per1k);
+    e.idVorher = kennungenVon (*k);
+
+    const std::uint64_t u0 = k->uebernahmen();
+    k->uebernehmeZustand (nachherSatz);
+    fahreW03 (*k, quelle, n, fensterR, blockGroesse, &e.fenster);
+    e.uebernahmen = k->uebernahmen() - u0;
+    e.idNachher   = kennungenVon (*k);
+    e.kreuzErster = e.fenster.kreuzQuelle.empty() ? -1 : e.fenster.kreuzQuelle[0];
+    e.uebergangsspitze = spitzeVon (e.fenster.aus, 0, (size_t) (fensterR / 2));
+    e.spitzeNachher    = spitzeVon (e.fenster.aus, (size_t) (fensterR - per1k), (size_t) per1k);
+    const double bezug = std::max (e.spitzeVorher, e.spitzeNachher);
+    e.mass = bezug > 0.0 ? 20.0 * std::log10 (e.uebergangsspitze / bezug)
+                         : std::numeric_limits<double>::infinity();
+    return e;
+}
+
+/** Nur die Uebergangsart nach einer Publikation: >= 0 heisst Crossfade, -1
+    heisst Rampe. Kurze Vorgeschichte - hier zaehlt die Kennung, nicht der
+    eingeschwungene Pegel. */
+int wegNachSprung (const param::DspSatz& a, const param::DspSatz& b)
+{
+    auto k = neuerKern (fsR, mbR);
+    k->uebernehmeZustand (a);
+    long long n = 0;
+    fahreW03 (*k, tonR, n, 8 * bsR, bsR, nullptr);
+    k->pflege();
+    k->uebernehmeZustand (b);
+    W03Lauf l;
+    fahreW03 (*k, tonR, n, bsR, bsR, &l);
+    return l.kreuzQuelle.empty() ? -1 : l.kreuzQuelle[0];
+}
+
+param::DspSatz mitFreq (param::DspSatz s, int slot, double f)
+{
+    s.werte[(size_t) param::indexBandV1 (slot, param::kFreqHz)].zahl = f;
+    return s;
+}
+
+param::DspSatz mitQR (param::DspSatz s, int slot, double q)
+{
+    s.werte[(size_t) param::indexBandV1 (slot, param::kQ)].zahl = q;
+    return s;
+}
+
+param::DspSatz mitGainR (param::DspSatz s, int slot, double g)
+{
+    s.werte[(size_t) param::indexBandV1 (slot, param::kGainDb)].zahl = g;
+    return s;
+}
+
+void r96()
+{
+    // ---- 311/M-96 mit den Teilfaellen 311/M-97 und 311/M-98 ------------
+    // Der Pruefling der Quellvalidierung Teil B 1.1: Low-Shelf +6 dB
+    // Q 0,707, 1-kHz-Sinus 0,5 auf beiden Kanaelen. Heute rot - der Sprung
+    // bleibt auf dem Rampenweg, Phase 15 misst +17,41 dB (Shelf) und
+    // +22,20 dB (Cut).
+    {
+        struct Fall { const char* id; const char* name; Filtertyp typ; double gain, von, nach; };
+        const Fall faelle[] = {
+            { "311/M-96", "grosser_frequenzsprung_wird_ueberblendet",
+              Filtertyp::lowShelf, 6.0, 5000.0, 50.0 },
+            { "311/M-97", "grosser_frequenzsprung_wird_ueberblendet: Teilfall Gegenrichtung 50 -> 5000 Hz",
+              Filtertyp::lowShelf, 6.0, 50.0, 5000.0 },
+            { "311/M-98", "grosser_frequenzsprung_wird_ueberblendet: Teilfall Low-Cut 2000 -> 20 Hz",
+              Filtertyp::lowCut, 0.0, 2000.0, 20.0 },
+        };
+        for (const auto& f : faelle)
+        {
+            auto vorher = machSatz (true);
+            belege (vorher, 0, f.typ, f.von, 0.707, f.gain);
+            const auto nachher = mitFreq (vorher, 0, f.nach);
+            const auto e = fahreSprung (vorher, nachher, tonR, bsR);
+            const bool kennungNeu = e.idNachher[0] != e.idVorher[0] && e.idNachher[0] != 0;
+            pruefe (e.kreuzErster >= 0 && kennungNeu && e.mass <= 1.0 && e.uebernahmen == 1,
+                    std::string (f.id) + " " + f.name + " (R-311-13, U44)",
+                    "freq_hz " + zahl (f.von, 1) + " -> " + zahl (f.nach, 1) + " (Verhaeltnis "
+                    + zahl (std::max (f.von, f.nach) / std::min (f.von, f.nach), 4) + " gegen Kriterium "
+                    + zahl (kSprungFrequenzVerhaeltnis, 4) + "); Uebergang "
+                    + (e.kreuzErster >= 0 ? "Crossfade" : "RAMPE") + ", Kennung Slot 0 "
+                    + std::to_string (e.idVorher[0]) + " -> " + std::to_string (e.idNachher[0])
+                    + "; Uebergangsspitze ueber 0,5 s " + zahl (e.uebergangsspitze, 6)
+                    + " gegen groessere stationaere Spitze "
+                    + zahl (std::max (e.spitzeVorher, e.spitzeNachher), 6) + " (vorher "
+                    + zahl (e.spitzeVorher, 6) + ", nachher " + zahl (e.spitzeNachher, 6) + ") = "
+                    + zahl (e.mass, 4) + " dB gegen 1 dB; Uebernahmen "
+                    + std::to_string (e.uebernahmen));
+        }
+    }
+}
+
+void r99()
+{
+    // ---- 311/M-99: dynamisches Band mit Range 0 ------------------------
+    // nutztSvf wahr, detektorLaeuft falsch (DspProgramm.cpp): der Sprung
+    // laeuft ueber den SVF-Weg mit Neuentwurf je kDynamikSchritt. Das
+    // Kriterium greift unabhaengig von dynamisch und nutztSvf.
+    {
+        auto vorher = machSatz (true);
+        belege (vorher, 0, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+        machDynamisch (vorher, 0, 0.0, -40.0);
+        const auto nachher = mitFreq (vorher, 0, 50.0);
+        const auto e = fahreSprung (vorher, nachher, tonR, bsR);
+        const bool kennungNeu = e.idNachher[0] != e.idVorher[0] && e.idNachher[0] != 0;
+        pruefe (e.kreuzErster >= 0 && kennungNeu && e.mass <= 1.0 && e.uebernahmen == 1,
+                "311/M-99 grosser_sprung_am_dynamischen_band_mit_range_null (R-311-13)",
+                "dynamisch mit Range 0 dB (SVF-Weg), freq_hz 5000 -> 50; Uebergang "
+                + std::string (e.kreuzErster >= 0 ? "Crossfade" : "RAMPE") + ", Kennung Slot 0 "
+                + std::to_string (e.idVorher[0]) + " -> " + std::to_string (e.idNachher[0])
+                + "; Uebergangsspitze " + zahl (e.uebergangsspitze, 6) + " gegen stationaer "
+                + zahl (std::max (e.spitzeVorher, e.spitzeNachher), 6) + " = " + zahl (e.mass, 4)
+                + " dB gegen 1 dB");
+    }
+}
+
+void r100()
+{
+    // ---- 311/M-100: zwanzig kleine Stufen ------------------------------
+    // Dieselbe Strecke 5000 -> 50 Hz in 20 gleichen Stufen: Verhaeltnis je
+    // Stufe 100^(1/20) = 1,2589, also UNTER dem Kriterium. Jede Stufe bleibt
+    // auf dem Rampenweg, kein Slot wechselt seine Kennung, und der Ausgang
+    // ist ueber den ganzen Lauf bitgleich zum Lauf am Basisstand.
+    //
+    // Der Fingerabdruck ist ein GOLDEN im Sinne der Golden-Regel: er stammt
+    // aus dem UNVERAENDERTEN Kern am Basisstand dieses Aenderungssatzes
+    // (a93f3c79), aufgeschrieben in
+    // docs/beweise/roh/NAK-311-etappe5-wertekriterien.txt, und wird hier nie
+    // nachgezogen - er IST die Wache.
+    {
+        constexpr std::uint64_t kM100Golden = 0xB754D7603137E70Bull;
+        auto satz = machSatz (true);
+        belege (satz, 0, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+        auto k = neuerKern (fsR, mbR);
+        k->uebernehmeZustand (satz);
+        long long n = 0;
+        fahreW03 (*k, tonR, n, vorlaufR - 3 * bsR, bsR, nullptr);
+        W03Lauf letzteVor;
+        fahreW03 (*k, tonR, n, 3 * bsR, bsR, &letzteVor);
+        k->pflege();
+        const double spitze0 = spitzeVon (letzteVor.aus, (size_t) (3 * bsR - per1k), (size_t) per1k);
+        const auto idVor = kennungenVon (*k);
+        const std::uint64_t u0 = k->uebernahmen();
+
+        W03Lauf lauf;
+        int kreuze = 0;
+        double stufenVerhaeltnisMax = 0.0;
+        double f = 5000.0;
+        for (int i = 1; i <= 20; ++i)
+        {
+            const double fNeu = 5000.0 * std::pow (50.0 / 5000.0, (double) i / 20.0);
+            stufenVerhaeltnisMax = std::max (stufenVerhaeltnisMax, f / fNeu);
+            f = fNeu;
+            k->uebernehmeZustand (mitFreq (satz, 0, fNeu));
+            const size_t vorBloecke = lauf.kreuzQuelle.size();
+            fahreW03 (*k, tonR, n, 8 * kRampeSamples, bsR, &lauf);
+            for (size_t b = vorBloecke; b < lauf.kreuzQuelle.size(); ++b)
+                if (lauf.kreuzQuelle[b] >= 0) ++kreuze;
+            k->pflege();
+        }
+        const auto idNach = kennungenVon (*k);
+        const std::uint64_t uebernahmen = k->uebernahmen() - u0;
+        const std::uint64_t fp = fingerabdruck (lauf.aus);
+        const size_t samples = lauf.aus.size() / 2;
+
+        // Das Mass JE STUFE (W07): Uebergangsspitze im Fenster der Stufe
+        // gegen die groessere der beiden stationaeren Spitzen dieser Stufe.
+        // Ueber den ganzen Lauf gemessen waere es keine Uebergangsspitze,
+        // sondern der Pegelunterschied zwischen 5 kHz und 50 Hz Shelf.
+        const size_t jeStufe = (size_t) (8 * kRampeSamples);
+        double massMax = 0.0, vorSpitze = spitze0;
+        int massStufe = 0;
+        for (int i = 0; i < 20; ++i)
+        {
+            const double uSpitze    = spitzeVon (lauf.aus, (size_t) i * jeStufe, jeStufe);
+            const double nachSpitze = spitzeVon (lauf.aus, (size_t) (i + 1) * jeStufe - (size_t) per1k,
+                                                 (size_t) per1k);
+            const double m = 20.0 * std::log10 (uSpitze / std::max (vorSpitze, nachSpitze));
+            if (m > massMax) { massMax = m; massStufe = i + 1; }
+            vorSpitze = nachSpitze;
+        }
+
+        pruefe (kreuze == 0 && idNach[0] == idVor[0] && uebernahmen == 20 && fp == kM100Golden
+                    && massMax <= 1.0,
+                "311/M-100 zwanzig_kleine_stufen_bleiben_auf_dem_rampenweg (R-311-13, M-17)",
+                "20 Stufen zu hoechstens " + zahl (stufenVerhaeltnisMax, 6) + " (Kriterium "
+                + zahl (kSprungFrequenzVerhaeltnis, 4) + "), Uebernahmen " + std::to_string (uebernahmen)
+                + ", Crossfade-Bloecke " + std::to_string (kreuze) + ", Kennung Slot 0 unveraendert "
+                + (idNach[0] == idVor[0] ? "ja" : "NEIN") + " (" + std::to_string (idVor[0]) + " -> "
+                + std::to_string (idNach[0]) + "); Fingerabdruck des Ausgangs ueber "
+                + std::to_string (samples) + " Samples " + std::to_string (fp) + " gegen Basisstand "
+                + std::to_string (kM100Golden) + "; groesstes Mass je Stufe " + zahl (massMax, 4)
+                + " dB gegen 1 dB (Stufe " + std::to_string (massStufe) + ")");
+    }
+}
+
+void r101()
+{
+    // ---- 311/M-101 mit den Teilfaellen 311/M-102 und 311/M-103 ---------
+    // STRIKT GROESSER entscheidet. Je Kriterium drei Kanten - eine ULP
+    // darunter, genau auf der Grenze und eine ULP darueber -, jede in
+    // beiden Richtungen, weil das Verhaeltnis richtungsfrei gebildet wird.
+    // Gemessen wird die Uebergangsart, nicht der Pegel: hier entscheidet
+    // die Kennungsvergabe, nicht das Ohr.
+    {
+        const double unendlich = std::numeric_limits<double>::infinity();
+        const double fUnter = std::nextafter (kSprungFrequenzVerhaeltnis, 0.0);
+        const double fUeber = std::nextafter (kSprungFrequenzVerhaeltnis, unendlich);
+        const double qUnter = std::nextafter (kSprungGueteVerhaeltnis, 0.0);
+        const double qUeber = std::nextafter (kSprungGueteVerhaeltnis, unendlich);
+        const double gUnter = std::nextafter (kSprungGainDb, 0.0);
+        const double gUeber = std::nextafter (kSprungGainDb, unendlich);
+
+        struct Kante { const char* was; param::DspSatz a, b; bool crossfadeErwartet; };
+        std::vector<Kante> kanten;
+        const auto basisSatz = [] (double f, double q, double g)
+        {
+            auto s = machSatz (true);
+            belege (s, 0, Filtertyp::bell, f, q, g);
+            return s;
+        };
+
+        // Frequenz, f = 1000 Hz (M-101)
+        for (int richtung = 0; richtung < 2; ++richtung)
+            for (int kante = 0; kante < 3; ++kante)
+            {
+                const double v = kante == 0 ? fUnter : (kante == 1 ? kSprungFrequenzVerhaeltnis : fUeber);
+                const auto a = basisSatz (1000.0, 1.0, 0.0);
+                const double ziel = richtung == 0 ? 1000.0 * v : 1000.0 / v;
+                kanten.push_back ({ kante == 0 ? "Frequenz - 1 ULP" : (kante == 1 ? "Frequenz genau auf der Grenze"
+                                                                                 : "Frequenz + 1 ULP"),
+                                    a, mitFreq (a, 0, ziel), kante == 2 });
+            }
+        // Guete (M-102): aufwaerts von q = 1, abwaerts von q = 4
+        for (int richtung = 0; richtung < 2; ++richtung)
+            for (int kante = 0; kante < 3; ++kante)
+            {
+                const double v = kante == 0 ? qUnter : (kante == 1 ? kSprungGueteVerhaeltnis : qUeber);
+                const double basis = richtung == 0 ? 1.0 : 4.0;
+                const auto a = basisSatz (1000.0, basis, 0.0);
+                const double ziel = richtung == 0 ? basis * v : basis / v;
+                kanten.push_back ({ kante == 0 ? "Guete - 1 ULP" : (kante == 1 ? "Guete genau auf der Grenze"
+                                                                              : "Guete + 1 ULP"),
+                                    a, mitQR (a, 0, ziel), kante == 2 });
+            }
+        // Gain (M-103): Differenz. Aufwaerts von -12 dB, abwaerts von +12 dB -
+        // so bleiben alle sechs Kanten im Vertragsbereich +/-12 dB.
+        for (int richtung = 0; richtung < 2; ++richtung)
+            for (int kante = 0; kante < 3; ++kante)
+            {
+                const double d = kante == 0 ? gUnter : (kante == 1 ? kSprungGainDb : gUeber);
+                const double basis = richtung == 0 ? -12.0 : 12.0;
+                const auto a = basisSatz (1000.0, 1.0, basis);
+                const double ziel = richtung == 0 ? basis + d : basis - d;
+                kanten.push_back ({ kante == 0 ? "Gain - 1 ULP" : (kante == 1 ? "Gain genau auf der Grenze"
+                                                                             : "Gain + 1 ULP"),
+                                    a, mitGainR (a, 0, ziel), kante == 2 });
+            }
+
+        int falsch = 0;
+        std::string bericht;
+        for (const auto& kt : kanten)
+        {
+            const bool crossfade = wegNachSprung (kt.a, kt.b) >= 0;
+            if (crossfade != kt.crossfadeErwartet) ++falsch;
+            if (! bericht.empty()) bericht += "; ";
+            bericht += std::string (kt.was) + " -> " + (crossfade ? "Crossfade" : "Rampe");
+        }
+        pruefe (falsch == 0, "311/M-101 frequenzkriterium_an_seinen_drei_kanten "
+                             "(Teilfaelle 311/M-102 Guete und 311/M-103 Gain; R-311-13, F-20)",
+                std::to_string (kanten.size()) + " Kanten, " + std::to_string (falsch)
+                + " gegen die Erwartung: " + bericht);
+    }
+}
+
+void r104()
+{
+    // ---- 311/M-104: nur der gesprungene Slot startet kalt ---------------
+    // (a) die Zusage selbst, an den Kennungen des gefahrenen Programms:
+    //     Slot 3 springt, Slot 0 bleibt. (b) die hoerbare Haelfte am
+    //     Perioden-RMS gegen einen Referenzkern ohne Wechsel.
+    {
+        const int per50 = 960;                      // 50 Hz bei 48 kHz
+        const double w50R = 2.0 * kPiRef * 50.0 / fsR;
+        const auto beide = [w50R] (long long n, float& l, float& r)
+        {
+            const double x = 0.25 * std::sin (w50R * (double) n) + 0.5 * std::sin (w1kR * (double) n);
+            l = r = (float) x;
+        };
+        const auto nur50R = [w50R] (long long n, float& l, float& r)
+        { l = r = (float) (0.25 * std::sin (w50R * (double) n)); };
+
+        // (a) Der Pruefling der Matrix: Slot 0 Bell 50 Hz Q 8 +12 dB,
+        //     Slot 3 der M-96-Pruefling.
+        auto vorher = machSatz (true);
+        belege (vorher, 0, Filtertyp::bell, 50.0, 8.0, 12.0);
+        belege (vorher, 3, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+        const auto nachher = mitFreq (vorher, 3, 50.0);
+
+        auto k = neuerKern (fsR, mbR);
+        k->uebernehmeZustand (vorher);
+        long long n = 0;
+        fahreW03 (*k, beide, n, 100 * per50, per50, nullptr);
+        k->pflege();
+        const auto idVor = kennungenVon (*k);
+        k->uebernehmeZustand (nachher);
+        W03Lauf fenster;
+        fahreW03 (*k, beide, n, 100 * per50, bsR, &fenster);
+        const auto idNach = kennungenVon (*k);
+
+        bool andereGleich = true;
+        for (int i = 0; i < param::kSlots; ++i)
+            if (i != 3 && idNach[(size_t) i] != idVor[(size_t) i]) andereGleich = false;
+        const bool nurDrei = idNach[3] != idVor[3] && idNach[3] != 0 && andereGleich;
+        const int kreuz = fenster.kreuzQuelle.empty() ? -1 : fenster.kreuzQuelle[0];
+
+        // (b) Die hoerbare Haelfte. Der springende Slot muss dafuer im
+        //     gemessenen Band stumm sein: ein Low-Shelf, der auf 50 Hz
+        //     springt, aendert den 50-Hz-Pegel selbst um rund 3 dB und
+        //     verdeckte damit genau die Historie, die gemessen werden soll.
+        //     Gemessen wird deshalb mit einem BELL auf Slot 3, der von
+        //     5 kHz auf 15 kHz springt (Verhaeltnis 3,0, ueber dem
+        //     Kriterium) und bei 50 Hz nichts tut.
+        auto vorherB = machSatz (true);
+        belege (vorherB, 0, Filtertyp::bell, 50.0, 8.0, 12.0);
+        belege (vorherB, 3, Filtertyp::bell, 5000.0, 0.707, 6.0);
+        const auto nachherB = mitFreq (vorherB, 3, 15000.0);
+        const auto e = fahrePaar (fsR, mbR, vorherB, nachherB, Pfad::committed,
+                                  beide, 100 * per50, per50, nur50R, 100 * per50, bsR);
+        double erste = 0.0;
+        int schlimmste = -1;
+        const double mass = periodenMass (e.test.aus, e.ref.aus, 2u * (size_t) per50, 100,
+                                          &erste, &schlimmste);
+
+        pruefe (nurDrei && kreuz >= 0 && mass <= 0.5,
+                "311/M-104 nur_der_gesprungene_slot_startet_kalt (R-311-1, R-311-13, M-121)",
+                "(a) Kennungen: Slot 3 " + std::to_string (idVor[3]) + " -> " + std::to_string (idNach[3])
+                + ", alle anderen unveraendert " + (andereGleich ? "ja" : "NEIN") + ", Uebergang "
+                + (kreuz >= 0 ? "Crossfade" : "RAMPE") + "; (b) Slot 0 warm: Perioden-RMS "
+                + zahl (mass, 6) + " dB gegen 0,5 dB (Periode 960 Samples, 100 Perioden; erste Periode "
+                + zahl (erste, 6) + " dB, groesste Abweichung in Periode " + std::to_string (schlimmste)
+                + "), gemessen mit einem Bell 5000 -> 15000 Hz auf Slot 3");
+    }
+}
+
+void r105()
+{
+    // ---- 311/M-105: zweiter grosser Sprung im laufenden Crossfade -------
+    // E-17: ein laufender Uebergang nimmt keine Publikation. Der zweite
+    // Sprung wird am ersten Blockrand NACH dem Ende genommen; uebernahmen()
+    // steigt um genau 2, nie um 3, und das Mass haelt ueber beide.
+    {
+        auto p1 = machSatz (true);
+        belege (p1, 0, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+        const auto p2 = mitFreq (p1, 0, 50.0);
+        const auto p3 = mitFreq (p1, 0, 4000.0);
+
+        auto k = neuerKern (fsR, mbR);
+        k->uebernehmeZustand (p1);
+        long long n = 0;
+        fahreW03 (*k, tonR, n, vorlaufR - 3 * bsR, bsR, nullptr);
+        W03Lauf letzte;
+        fahreW03 (*k, tonR, n, 3 * bsR, bsR, &letzte);
+        k->pflege();
+        const double spitzeVorher = spitzeVon (letzte.aus, (size_t) (3 * bsR - per1k), (size_t) per1k);
+        const std::uint64_t u0 = k->uebernahmen();
+
+        k->uebernehmeZustand (p2);
+        W03Lauf teil1;
+        fahreW03 (*k, tonR, n, bsR, bsR, &teil1);      // ein Block: der Crossfade laeuft noch
+        const int kreuzImFade = teil1.kreuzQuelle.empty() ? -1 : teil1.kreuzQuelle[0];
+        k->uebernehmeZustand (p3);                      // trifft mitten im Fade ein
+        // Blockweise, damit der ZEITPUNKT der zweiten Uebernahme messbar ist:
+        // sie muss am ersten Blockrand NACH dem Ende des ersten Fades liegen,
+        // also fruehestens kFadeSamples Samples nach der ersten Uebernahme.
+        W03Lauf teil2;
+        long long zweiteBei = -1;
+        std::uint64_t vorige = k->uebernahmen();
+        for (int blk = 0; blk * bsR < fensterR; ++blk)
+        {
+            fahreW03 (*k, tonR, n, bsR, bsR, &teil2);
+            const std::uint64_t jetzt = k->uebernahmen();
+            if (jetzt > vorige && zweiteBei < 0) zweiteBei = (long long) (blk + 1) * bsR;
+            vorige = jetzt;
+        }
+        k->pflege();
+        const std::uint64_t uebernahmen = k->uebernahmen() - u0;
+
+        std::vector<double> ganz = teil1.aus;
+        ganz.insert (ganz.end(), teil2.aus.begin(), teil2.aus.end());
+        const size_t samples = ganz.size() / 2;
+        const double uebergang = spitzeVon (ganz, 0, (size_t) (fensterR / 2));
+        const double spitzeNachher = spitzeVon (ganz, samples - (size_t) per1k, (size_t) per1k);
+        const double mass = 20.0 * std::log10 (uebergang / std::max (spitzeVorher, spitzeNachher));
+
+        pruefe (uebernahmen == 2 && kreuzImFade >= 0 && mass <= 1.0
+                    && zweiteBei >= (long long) kFadeSamples - bsR,
+                "311/M-105 zweiter_grosser_sprung_im_laufenden_crossfade (E-17, R-311-13)",
+                "Uebernahmen " + std::to_string (uebernahmen) + " (Soll genau 2), erster Block nach der"
+                " ersten Publikation im Crossfade " + (kreuzImFade >= 0 ? "ja" : "NEIN")
+                + "; zweite Uebernahme " + std::to_string (zweiteBei) + " Samples nach der ersten (Soll"
+                " erst nach dem Fadeende, also mindestens " + std::to_string (kFadeSamples - bsR) + ")"
+                + "; Uebergangsspitze ueber beide Uebergaenge " + zahl (uebergang, 6)
+                + " gegen stationaer " + zahl (std::max (spitzeVorher, spitzeNachher), 6) + " = "
+                + zahl (mass, 4) + " dB gegen 1 dB");
+    }
+}
+
+void r106()
+{
+    // ---- 311/M-106: Automationstreppe, zwei Haelften -------------------
+    // 64 Publikationen, jede mit einem Sprung ueber dem Frequenzkriterium,
+    // im Abstand von je einem Block zu 64 - also dichter als kFadeSamples.
+    // (a) Kein Wert geht verloren: der zuletzt publizierte ist am Ende der
+    //     wirksame, und der Audiothread nimmt je Blockrand hoechstens eine.
+    // (b) Echtzeit: 0 Allokationen, 0 Sperren, 0 Ableitungen im Audiopfad.
+    {
+        auto satz = machSatz (true);
+        belege (satz, 0, Filtertyp::bell, 200.0, 1.0, 0.0);
+        auto k = neuerKern (fsR, mbR);
+        k->uebernehmeZustand (satz);
+        long long n = 0;
+        fahreW03 (*k, tonR, n, 8 * bsR, bsR, nullptr);
+        k->pflege();
+        const std::uint64_t u0 = k->uebernahmen();
+
+        RtWache::zuruecksetzen();
+        std::vector<float> a ((size_t) bsR), b ((size_t) bsR);
+        float* kan[2] = { a.data(), b.data() };
+        std::uint64_t testAllokationen = 0;
+        int bloecke = 0, busy = 0;
+        double letzteFreq = 0.0;
+        for (int i = 0; i < 64; ++i)
+        {
+            // abwechselnd 200 Hz und 20 000 Hz: Verhaeltnis 100, weit ueber
+            // dem Kriterium, und beide Werte sind vertragsgueltig.
+            letzteFreq = (i % 2 == 0) ? 20000.0 : 200.0;
+            if (! k->uebernehmeZustand (mitFreq (satz, 0, letzteFreq))) ++busy;
+            for (int s = 0; s < bsR; ++s)
+            {
+                float l = 0.0f, r = 0.0f;
+                tonR (n + s, l, r);
+                a[(size_t) s] = l;
+                b[(size_t) s] = r;
+            }
+            zaehleAllokationen = true;
+            allokationen = 0;
+            k->verarbeite (kan, 2, bsR);
+            zaehleAllokationen = false;
+            testAllokationen += allokationen;
+            n += bsR;
+            ++bloecke;
+            k->pflege();
+        }
+        for (int blk = 0; blk < 4096 / bsR; ++blk)
+        {
+            for (int s = 0; s < bsR; ++s)
+            {
+                float l = 0.0f, r = 0.0f;
+                tonR (n + s, l, r);
+                a[(size_t) s] = l;
+                b[(size_t) s] = r;
+            }
+            zaehleAllokationen = true;
+            allokationen = 0;
+            k->verarbeite (kan, 2, bsR);
+            zaehleAllokationen = false;
+            testAllokationen += allokationen;
+            n += bsR;
+            ++bloecke;
+            k->pflege();
+        }
+        const std::uint64_t uebernahmen = k->uebernahmen() - u0;
+        const DspProgramm* prog = gefahrenesR (*k);
+        const double wirksam = prog != nullptr ? prog->baender[0].freqHzWirksam : -1.0;
+        const bool letzterWertWirkt = prog != nullptr && wirksam == letzteFreq;
+
+        // (a) zweite Haelfte, Muster M-41: eine VERDRAENGTE Zwischenpublikation
+        // aendert die Kennung trotzdem. A -> B -> A ohne Audioblock dazwischen,
+        // beide Sprunge ueber dem Kriterium: der Audiothread sieht B nie, nimmt
+        // aber das zweite A - und weil der Worker gegen die zuletzt PUBLIZIERTE
+        // Belegung vergleicht (nicht gegen die gefahrene), traegt dieses A eine
+        // andere Kennung als das laufende. Der Uebergang ist ein Crossfade.
+        bool verdraengungSichtbar = false;
+        {
+            auto kv = neuerKern (fsR, mbR);
+            auto a = machSatz (true);
+            belege (a, 0, Filtertyp::bell, 200.0, 1.0, 0.0);
+            kv->uebernehmeZustand (a);
+            long long nv = 0;
+            fahreW03 (*kv, tonR, nv, 8 * bsR, bsR, nullptr);
+            kv->pflege();
+            kv->uebernehmeZustand (mitFreq (a, 0, 20000.0));   // B, wird verdraengt
+            kv->uebernehmeZustand (a);                          // wieder A
+            W03Lauf lv;
+            fahreW03 (*kv, tonR, nv, bsR, bsR, &lv);
+            verdraengungSichtbar = ! lv.kreuzQuelle.empty() && lv.kreuzQuelle[0] >= 0;
+        }
+
+        pruefe (letzterWertWirkt && verdraengungSichtbar
+                    && uebernahmen <= (std::uint64_t) bloecke && uebernahmen >= 2
+                    && testAllokationen == 0 && RtWache::allokationen() == 0 && RtWache::sperren() == 0
+                    && RtWache::ableitungenImAudiopfad() == 0,
+                "311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (E-17, M-41)",
+                "(a) 64 Publikationen im Abstand eines Blocks zu 64, " + std::to_string (busy)
+                + " busy_retry; zuletzt publiziert " + zahl (letzteFreq, 1) + " Hz, gefahren "
+                + zahl (wirksam, 1) + " Hz; verdraengte Zwischenpublikation aendert die Kennung: "
+                + (verdraengungSichtbar ? "ja" : "NEIN") + "; " + std::to_string (uebernahmen)
+                + " Blockrand-Uebernahmen bei " + std::to_string (bloecke)
+                + " Blockraendern; (b) Testzaehler " + std::to_string (testAllokationen)
+                + ", Kernzaehler " + std::to_string (RtWache::allokationen()) + ", Sperren "
+                + std::to_string (RtWache::sperren()) + ", Ableitungen im Audiopfad "
+                + std::to_string (RtWache::ableitungenImAudiopfad()));
+        RtWache::zuruecksetzen();
+    }
+}
+
+void r107()
+{
+    // ---- 311/M-107: Ruhe, Hard-Bypass, Candidate -----------------------
+    {
+        auto satz = machSatz (true);
+        belege (satz, 0, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+        const auto gesprungen = mitFreq (satz, 0, 50.0);
+
+        // (a) Aus der Ruhe: ausschalten, ausblenden lassen, in der Ruhe den
+        //     Sprung publizieren, wieder einschalten. Es wird nichts
+        //     uebertragen - der Weg ist der Einblend-Crossfade aus M-07.
+        bool ruheOk = false;
+        double ruheMass = 0.0;
+        {
+            auto aus = gesprungen;
+            aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+            auto k = neuerKern (fsR, mbR);
+            k->uebernehmeZustand (satz);
+            long long n = 0;
+            fahreW03 (*k, tonR, n, vorlaufR, bsR, nullptr);
+            k->uebernehmeZustand (aus);
+            fahreW03 (*k, tonR, n, 4 * kFadeSamples, bsR, nullptr);
+            k->pflege();
+            k->uebernehmeZustand (gesprungen);
+            W03Lauf ein;
+            fahreW03 (*k, tonR, n, fensterR, bsR, &ein);
+            k->pflege();
+
+            // Gegenprobe: ein frischer Kern mit demselben Programm - und
+            // demselben Stromindex, sonst laege der Pruefton in anderer Phase.
+            auto frisch = neuerKern (fsR, mbR);
+            frisch->uebernehmeZustand (gesprungen);
+            long long nf = n - fensterR;
+            W03Lauf einF;
+            fahreW03 (*frisch, tonR, nf, fensterR, bsR, &einF);
+            const long long abw = ersteBitAbweichung (ein.aus, einF.aus, 0);
+            ruheOk = abw == -1;
+            ruheMass = 0.0;
+            (void) ruheMass;
+        }
+
+        // (b) Beide Programme im Hard-Bypass: rampenKompatibel ist schon
+        //     wegen hardBypass falsch, der Ausgang bleibt bitgleich zum
+        //     Eingang, und kein Band rechnet.
+        bool bypassBitgleich = true;
+        {
+            auto bypAlt = satz, bypNeu = gesprungen;
+            setzeGlobalBool (bypAlt, "v1.global.bypass", true);
+            setzeGlobalBool (bypNeu, "v1.global.bypass", true);
+            auto k = neuerKern (fsR, mbR);
+            k->uebernehmeZustand (bypAlt);
+            std::vector<float> a ((size_t) bsR), b ((size_t) bsR), aE ((size_t) bsR), bE ((size_t) bsR);
+            float* kan[2] = { a.data(), b.data() };
+            long long n = 0;
+            for (int blk = 0; blk < 64 && bypassBitgleich; ++blk)
+            {
+                if (blk == 8) k->uebernehmeZustand (bypNeu);
+                for (int s = 0; s < bsR; ++s)
+                {
+                    float l = 0.0f, r = 0.0f;
+                    tonR (n + s, l, r);
+                    a[(size_t) s] = aE[(size_t) s] = l;
+                    b[(size_t) s] = bE[(size_t) s] = r;
+                }
+                k->verarbeite (kan, 2, bsR);
+                for (int s = 0; s < bsR; ++s)
+                    if (std::memcmp (&a[(size_t) s], &aE[(size_t) s], sizeof (float)) != 0
+                        || std::memcmp (&b[(size_t) s], &bE[(size_t) s], sizeof (float)) != 0)
+                        bypassBitgleich = false;
+                n += bsR;
+                k->pflege();
+            }
+        }
+
+        // (c) Derselbe Sprung auf dem Candidate-Pfad, bei laufendem
+        //     Committed-Pfad: eigener Merkzettel, eigener Uebergang, keine
+        //     Wirkung auf den Committed-Pfad.
+        bool candidateOk = false, committedUnberuehrt = false;
+        {
+            auto k = neuerKern (fsR, mbR);
+            k->uebernehmeZustand (satz);                       // committed
+            k->uebernehmeZustand (satz, Pfad::candidate);
+            long long n = 0;
+            fahreW03 (*k, tonR, n, vorlaufR, bsR, nullptr);
+            k->pflege();
+            const auto idVor = kennungenVon (*k);
+            k->uebernehmeZustand (gesprungen, Pfad::candidate);
+            W03Lauf l;
+            fahreW03 (*k, tonR, n, 4 * kFadeSamples, bsR, &l);
+            int klingend = -1, quelle = -1;
+            k->rechnendeSlots (Pfad::candidate, klingend, quelle);
+            (void) klingend;
+            const auto idNach = kennungenVon (*k);
+            candidateOk = l.kreuzQuelle.empty() ? false : true;
+            // Der Committed-Pfad hat weder Kennung noch Uebergang bewegt.
+            committedUnberuehrt = idNach[0] == idVor[0];
+            bool committedOhneKreuz = true;
+            for (int q : l.kreuzQuelle) if (q >= 0) committedOhneKreuz = false;
+            candidateOk = committedOhneKreuz;
+        }
+
+        pruefe (ruheOk && bypassBitgleich && candidateOk && committedUnberuehrt,
+                "311/M-107 sprung_in_ruhe_bypass_und_candidate (M-07, R-311-13)",
+                "(a) aus der Ruhe bytegleich zum frischen Kern: " + std::string (ruheOk ? "ja" : "NEIN")
+                + "; (b) beide Programme hard-bypassed, Ausgang bitgleich zum Eingang: "
+                + (bypassBitgleich ? "ja" : "NEIN")
+                + "; (c) Sprung auf dem Candidate-Pfad laesst den Committed-Pfad ohne Crossfade: "
+                + (candidateOk ? "ja" : "NEIN") + ", Committed-Kennung unveraendert: "
+                + (committedUnberuehrt ? "ja" : "NEIN"));
+    }
+}
+
+void r108()
+{
+    // ---- 311/M-108: acht Slots springen gleichzeitig -------------------
+    // Acht Bells mit Mitten eine Oktave auseinander (125 Hz bis 16 kHz),
+    // Q 2, +6 dB. Eine Publikation teilt jede Mitte durch 100. Alle acht
+    // bekommen eine neue Kennung, der Crossfade laeuft EINMAL, und
+    // uebernahmen() steigt um genau 1.
+    {
+        auto vorher = machSatz (true);
+        for (int i = 0; i < param::kSlots; ++i)
+            belege (vorher, i, Filtertyp::bell, 125.0 * std::pow (2.0, (double) i), 2.0, 6.0);
+        auto nachher = vorher;
+        for (int i = 0; i < param::kSlots; ++i)
+            nachher = mitFreq (nachher, i, 125.0 * std::pow (2.0, (double) i) / 100.0);
+
+        const auto e = fahreSprung (vorher, nachher, tonR, bsR);
+        bool alleNeu = true;
+        for (int i = 0; i < param::kSlots; ++i)
+            if (e.idNachher[(size_t) i] == e.idVorher[(size_t) i] || e.idNachher[(size_t) i] == 0)
+                alleNeu = false;
+        pruefe (alleNeu && e.kreuzErster >= 0 && e.uebernahmen == 1 && e.mass <= 1.0,
+                "311/M-108 acht_slots_springen_gleichzeitig (R-311-13, M-49)",
+                "alle acht Kennungen neu: " + std::string (alleNeu ? "ja" : "NEIN") + ", Uebergang "
+                + (e.kreuzErster >= 0 ? "Crossfade" : "RAMPE") + " (einmal fuer die ganze Publikation), "
+                "Uebernahmen " + std::to_string (e.uebernahmen) + "; Uebergangsspitze "
+                + zahl (e.uebergangsspitze, 6) + " gegen stationaer "
+                + zahl (std::max (e.spitzeVorher, e.spitzeNachher), 6) + " = " + zahl (e.mass, 4)
+                + " dB gegen 1 dB");
+    }
+}
+
+void r109()
+{
+    // ---- 311/M-109: NaN und +/-Inf -------------------------------------
+    // Ueber den Vertragsweg nicht erreichbar (`validiere` laesst es nicht
+    // zu); der Riegel steht gegen den Programmbau im Test und gegen
+    // kuenftige Aufrufer. HINWEIS: +/-Inf in `freq_hz` erreicht
+    // `freqHzWirksam` NIE - `kappeNyquist` kappt +Inf auf den Deckel und
+    // laesst NaN durch (die Vergleichsrichtung faellt mit NaN). Der nicht
+    // endliche Frequenzfall ist deshalb NaN; +/-Inf wird an `q` und
+    // `gain_db` gemessen, wo nicht gekappt wird.
+    {
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double inf = std::numeric_limits<double>::infinity();
+        // NAK-175: die acht Faelle tragen je zwei `DspSatz` - auf den HEAP,
+        // nicht in den 1-MiB-Rahmen.
+        struct Fall { const char* was; param::DspSatz a, b; };
+        auto basis = machSatz (true);
+        belege (basis, 0, Filtertyp::bell, 1000.0, 1.0, 0.0);
+        std::vector<Fall> faelle;
+        faelle.push_back ({ "freq_hz NaN",  basis, mitFreq  (basis, 0, nan) });
+        faelle.push_back ({ "q NaN",        basis, mitQR    (basis, 0, nan) });
+        faelle.push_back ({ "q +Inf",       basis, mitQR    (basis, 0, inf) });
+        faelle.push_back ({ "q 0",          basis, mitQR    (basis, 0, 0.0) });
+        faelle.push_back ({ "q negativ",    basis, mitQR    (basis, 0, -1.0) });
+        faelle.push_back ({ "gain_db NaN",  basis, mitGainR (basis, 0, nan) });
+        faelle.push_back ({ "gain_db +Inf", basis, mitGainR (basis, 0, inf) });
+        faelle.push_back ({ "gain_db -Inf", basis, mitGainR (basis, 0, -inf) });
+        int rampe = 0;
+        std::string bericht, nichtEndlich;
+        bool alleEndlich = true;
+        for (const auto& f : faelle)
+        {
+            auto k = neuerKern (fsR, mbR);
+            k->uebernehmeZustand (f.a);
+            long long n = 0;
+            fahreW03 (*k, tonR, n, 8 * bsR, bsR, nullptr);
+            k->pflege();
+            const auto idVor = kennungenVon (*k);
+            k->uebernehmeZustand (f.b);
+            W03Lauf l;
+            fahreW03 (*k, tonR, n, 4 * kFadeSamples, bsR, &l);
+            const auto idNach = kennungenVon (*k);
+            const bool neu = idNach[0] != idVor[0] && idNach[0] != 0;
+            if (! neu) ++rampe;
+            bool endlich = true;
+            for (double v : l.aus) if (! std::isfinite (v)) endlich = false;
+            if (! endlich)
+            {
+                alleEndlich = false;
+                if (! nichtEndlich.empty()) nichtEndlich += ", ";
+                nichtEndlich += f.was;
+            }
+            if (! bericht.empty()) bericht += "; ";
+            bericht += std::string (f.was) + (neu ? " -> neue Kennung" : " -> KENNUNG BEHALTEN");
+        }
+        // Gemessen wird die ZUSAGE dieser Zeile: jeder nicht endliche oder nicht
+        // positive Wert an einem der drei Vergleiche fuehrt zu einer neuen
+        // Kennung, nie zur Uebertragung. Der ZWEITE Satz der Matrixzeile ("der
+        // Kern schreibt danach keinen nicht endlichen Sample") ist eine Aussage
+        // ueber BESTEHENDE Riegel und faellt in der Messung: der Eingangsriegel
+        // (R9) prueft den Eingang, `heileZustaende` den Filterzustand, und die
+        // Verengungswache (NAK-283 F12) greift nur, wenn der double endlich war.
+        // Ein Programm mit nicht endlichen KOEFFIZIENTEN rechnet dagegen
+        // unmittelbar nicht endlich. Der Aenderungssatz C aendert daran nichts -
+        // die Abweichung ist gemessen, benannt und dem Dirigenten gemeldet
+        // (Manifest 57), nicht still angepasst.
+        pruefe (rampe == 0,
+                "311/M-109 nicht_endliche_werte_erzwingen_eine_neue_kennung (R-311-13, F-21)",
+                bericht + "; nicht endlicher Ausgangssample in: "
+                + (alleEndlich ? std::string ("keinem Fall")
+                               : nichtEndlich + " (BEFUND zum zweiten Satz der Zeile, Manifest 57)"));
+    }
+}
+
+void r110()
+{
+    // ---- 311/M-110: Umschaltsample und Fadedauer je Blockgroesse -------
+    // Mass am Quadraturbetrag wie M-94, Toleranz nach R-311-10. Der Fade
+    // dauert kFadeSamples SAMPLES, nicht Bloecke: bei Blockgroesse 1 endet
+    // er nach genau 256 Bloecken.
+    {
+        const int groessen[] = { 1, 255, 256, 257, 4096 };
+        int falsch = 0;
+        std::string bericht;
+        for (int bg : groessen)
+        {
+            auto vorher = machSatz (true);
+            belege (vorher, 0, Filtertyp::lowShelf, 5000.0, 0.707, 6.0);
+            const auto nachher = mitFreq (vorher, 0, 50.0);
+
+            auto k = neuerKern (fsR, std::max (mbR, bg));
+            k->uebernehmeZustand (vorher);
+            long long n = 0;
+            fahreW03 (*k, quadR, n, vorlaufR - bsR, bsR, nullptr);
+            W03Lauf letzte;
+            fahreW03 (*k, quadR, n, bsR, bsR, &letzte);
+            k->pflege();
+            k->uebernehmeZustand (nachher);
+            W03Lauf l;
+            fahreW03 (*k, quadR, n, 4 * kFadeSamples + 2 * bg, bg, &l);
+
+            const auto betragM = [] (const std::vector<double>& x, size_t i)
+            { return std::sqrt (x[2 * i] * x[2 * i] + x[2 * i + 1] * x[2 * i + 1]); };
+            const size_t nVor = letzte.aus.size() / 2;
+            const double mVorher = betragM (letzte.aus, nVor - 1);
+            double groessterBetrag = 0.0;
+            for (double v : l.aus) groessterBetrag = std::max (groessterBetrag, std::abs (v));
+            const double toleranz = rundungR31110 (groessterBetrag);
+            const size_t nNach = l.aus.size() / 2;
+            const double mNachher = betragM (l.aus, nNach - 1);
+            const double fadeschritt = std::abs (mNachher - mVorher) / (double) kFadeSamples;
+            const double amUmschalt = std::abs (betragM (l.aus, 0) - mVorher);
+
+            // Ende des Crossfades: der erste Block, der keine Quellbank mehr
+            // meldet. Die bis dahin gefahrenen Samples liegen zwischen
+            // kFadeSamples und kFadeSamples + Blockgroesse - 1.
+            long long gefahren = 0, ende = -1;
+            for (size_t blk = 0; blk < l.kreuzQuelle.size(); ++blk)
+            {
+                gefahren += bg;
+                if (l.kreuzQuelle[blk] < 0) { ende = gefahren; break; }
+            }
+            const bool dauerOk = ende >= kFadeSamples && ende < kFadeSamples + bg;
+            const bool kanteOk = amUmschalt <= fadeschritt + toleranz;
+            if (! dauerOk || ! kanteOk) ++falsch;
+            if (! bericht.empty()) bericht += "; ";
+            bericht += "bs " + std::to_string (bg) + ": Sprung am Umschaltsample "
+                     + zahl (amUmschalt, 9) + " gegen Fadeschritt " + zahl (fadeschritt, 9)
+                     + " + Toleranz " + zahl (toleranz, 9) + ", Fade endet nach "
+                     + std::to_string (ende) + " Samples";
+        }
+        pruefe (falsch == 0, "311/M-110 umschaltsample_haelt_e31_bei_jeder_blockgroesse (E-31, R-311-10, M-03)",
+                std::to_string (falsch) + " von 5 Blockgroessen gegen die Erwartung: " + bericht);
+    }
+}
+
+void abschnittR()
+{
+    std::cout << std::endl << "== R - Grosse Wertspruenge werden ueberblendet (NAK-311 W07) ==" << std::endl;
+    r96();
+    r99();
+    r100();
+    r101();
+    r104();
+    r105();
+    r106();
+    r107();
+    r108();
+    r109();
+    r110();
+}
+
 } // namespace
 
 //==============================================================================
@@ -3786,8 +4716,11 @@ int main()
                 Wunsch - der Pruefling der Abnahme U54. Ueber `q` faehrt der
                 abgeleitete Ausgleich von +150 dB (Q 0,15) ueber +43 dB
                 (Q 0,707) bis unter den Deckel (Q 1,0); Typ, Kanalmodus und
-                Belegung bleiben dabei gleich, ein Wechsel der Guete allein ist
-                also ein reiner Rampenwechsel. */
+                Belegung bleiben dabei gleich. Ein Wechsel der Guete allein ist
+                ein Rampenwechsel, SOLANGE das Verhaeltnis der beiden Guetewerte
+                `kSprungGueteVerhaeltnis` nicht reisst (NAK-311 Satz C, R-311-13);
+                darueber vergibt `vergebeKennungen` eine neue Kennung und der
+                Blockrand blendet ueber. */
             auto achtHighCuts = [] (double q, bool autoGainAn)
             {
                 auto s = machSatz (true);
@@ -4176,10 +5109,23 @@ int main()
 
             // ---- 311/M-116: der Zustand faellt zurueck ----------------------
             // setzen <-> zuruecknehmen am selben Kern: Q 0,15 (+150 dB, ueber
-            // dem Deckel) -> Q 0,707 (+43 dB, immer noch darueber) -> Q 1,0
-            // (unter dem Deckel). Typ, Kanalmodus und Belegung bleiben gleich,
-            // der Wechsel ist also ein Rampenwechsel: die Auto-Gain-Rampe laeuft
-            // ueber `kRampeSamples` auf das neue Ziel, sie springt nicht (M-02).
+            // dem Deckel) -> Q 0,5 (ueber dem Deckel, Zahl in der Ausgabe) ->
+            // Q 1,0 (unter dem Deckel). Typ, Kanalmodus und Belegung bleiben
+            // gleich, der Wechsel ist also ein Rampenwechsel: die Auto-Gain-Rampe
+            // laeuft ueber `kRampeSamples` auf das neue Ziel, sie springt nicht
+            // (M-02).
+            //
+            // Warum Q 0,5 und nicht das frueher benutzte Q 0,707 (NAK-311 Satz C,
+            // Messlauf C-0, Entscheid des Dirigenten §56.1): die Zusage dieses
+            // Tests ist der DECKELZUSTAND (darueber -> darueber -> darunter),
+            // nicht ein bestimmter Guetewert. Mit 0,707 waere der Sprung
+            // 0,15 -> 0,707 ein Gueteverhaeltnis von 4,714 und risse damit
+            // `kSprungGueteVerhaeltnis` = 4,0; der Wechsel liefe als Crossfade
+            // statt als Rampe, und die Rampenzusage dieses Tests haette keinen
+            // Pruefling mehr. Mit 0,5 sind beide Schritte unter dem Kriterium:
+            // 0,15 -> 0,5 ist 3,333 und 0,5 -> 1,0 ist 2,0. Der abgeleitete
+            // Ausgleich bleibt bei 0,5 ueber dem Deckel - die Ableitung
+            // ueberschreitet ihn erst bei Q 0,931 (311/M-113 (d)).
             // Gemessen am Verhaeltnis zweier Laeufe, die sich NUR in
             // `v2.global.auto_gain` unterscheiden - es ist der angewandte
             // Faktor selbst.
@@ -4195,8 +5141,8 @@ int main()
                 const bool   zustand1 = mit->autoGainGedeckelt();
                 const double db1      = mit->autoGainDb();
 
-                mit ->uebernehmeZustand (achtHighCuts (0.70710678118654752, true));
-                ohne->uebernehmeZustand (achtHighCuts (0.70710678118654752, false));
+                mit ->uebernehmeZustand (achtHighCuts (0.5, true));
+                ohne->uebernehmeZustand (achtHighCuts (0.5, false));
                 fahreGleichanteil (*mit,  nMit,  48, 512, nullptr);
                 fahreGleichanteil (*ohne, nOhne, 48, 512, nullptr);
                 const bool   zustand2 = mit->autoGainGedeckelt();
@@ -4224,7 +5170,7 @@ int main()
                             && keinSprung,
                         "311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)",
                         "Q 0,15: angewandt " + zahl (db1, 12) + " dB, Zustand "
-                            + (zustand1 ? "gesetzt" : "FALSCH") + "; Q 0,707: abgeleitet " + zahl (roh2, 9)
+                            + (zustand1 ? "gesetzt" : "FALSCH") + "; Q 0,5: abgeleitet " + zahl (roh2, 9)
                             + " dB, angewandt " + zahl (db2, 12) + " dB, Zustand "
                             + (zustand2 ? "gesetzt" : "FALSCH") + "; Q 1,0: abgeleitet " + zahl (roh3, 9)
                             + " dB, angewandt " + zahl (db3, 9) + " dB (bitgleich "
@@ -4556,6 +5502,14 @@ int main()
         // geht Slot 6 wieder, zugleich mit einem Wertewechsel an Slot 0.
         auto fremd = rampe;
         belege (fremd, 6, Filtertyp::notch, 2500.0, 3.0, 0.0);
+        // NAK-311 M-111 (W07, R-311-13): eine Publikation UEBER dem
+        // Frequenzkriterium im selben Zyklus - topologisch gleich zu `rampe`,
+        // aber Slot 0 springt um den Faktor 100. Sie nimmt den Crossfade-Weg;
+        // der Zaehler muss trotzdem bei 0 bleiben, denn die drei Vergleiche
+        // laufen im Worker und `blockrand` bleibt unveraendert.
+        auto grosserSprung = rampe;
+        grosserSprung.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl
+            = rampe.werte[(size_t) param::indexBandV1 (0, param::kFreqHz)].zahl * 100.0;
 
         const std::uint64_t uebernahmenVorher = kern->uebernahmen();
         std::uint64_t gesamt = 0, testAllokationen = 0;
@@ -4571,6 +5525,8 @@ int main()
                 case  90: ok = kern->uebernehmeZustand (kand1, Pfad::candidate); break;
                 case 140: ok = kern->uebernehmeZustand (s); break;
                 case 190: ok = kern->uebernehmeZustand (kand2, Pfad::candidate); break;
+                case 215: ok = kern->uebernehmeZustand (grosserSprung); break;   // M-111
+                case 265: ok = kern->uebernehmeZustand (rampe); break;           // zurueck unter das Kriterium
                 case 240: kern->beendeCandidate(); break;
                 case 290: ok = kern->uebernehmeZustand (aus); break;
                 case 340: ok = kern->uebernehmeZustand (s); break;
@@ -4600,7 +5556,7 @@ int main()
         const std::uint64_t uebernahmen = kern->uebernahmen() - uebernahmenVorher;
 
         pruefe (testAllokationen == 0 && RtWache::allokationen() == 0 && uebernahmen >= 60 && geerntet >= 30,
-                "null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25)",
+                "null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111)",
                 "4000 Bloecke, " + std::to_string (gesamt) + " Samples, " + std::to_string (uebernahmen)
                 + " Blockrand-Uebernahmen, " + std::to_string (geerntet) + " Baenke geerntet, busy_retry "
                 + std::to_string (busy) + ", Testzaehler " + std::to_string (testAllokationen)
@@ -7461,6 +8417,9 @@ int main()
                     + (abw == -1 ? std::string ("ja") : "nein, erste Abweichung an Sample " + std::to_string (abw / 2)));
         }
     }
+
+    //==========================================================================
+    abschnittR();
 
     //==========================================================================
     std::cout << std::endl;

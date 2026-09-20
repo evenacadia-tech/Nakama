@@ -1,0 +1,48 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-101
+============================================================================
+Matrixzeile   M-101
+Zusage        Strikt groesser entscheidet: genau auf der Grenze bleibt der Slot auf dem Rampenweg.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspProgramm.h
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  eq-copilot\plugin\dsp\DspProgramm.h
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-101-DspProgramm.h
+
+2. Mutation, woertlich
+   VORHER:
+         return gross > grenze * klein;
+   NACHHER:
+         return gross >= grenze * klein;   // MUTATION M-101
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:55:59 juenger als die Quelle 14:55:50: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  311/M-101 frequenzkriterium_an_seinen_drei_kanten (Teilfaelle 311/M-102 Guete und 311/M-103 Gain; R-311-13, F-20)  [18 Kanten, 4 gegen die Erwartung: Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Crossfade; Frequenz + 1 ULP -> Crossfade; Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Crossfade; Frequenz + 1 ULP -> Crossfade; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Crossfade; Guete + 1 ULP -> Crossfade; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Crossfade; Guete + 1 ULP -> Crossfade; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade]
+
+   Erwartete Pruefung: 311/M-101
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:56:16 juenger als die Quelle 14:56:05: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

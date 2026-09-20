@@ -95,6 +95,98 @@ constexpr bool samplerateUnterstuetzt (double samplerate) noexcept
         && samplerate < std::numeric_limits<double>::infinity();
 }
 
+/** NAK-311 R-311-13 (T3-15-07, Karte U44): die drei WERTEKRITERIEN eines
+    Slots. Aendert ein Slot bei sonst gleicher Topologie seine Frequenz, seine
+    Guete oder seinen Gain UEBER eines dieser Kriterien hinaus, bekommt er in
+    `DspKern::vergebeKennungen` eine neue Lebenszykluskennung; der Blockrand
+    blendet dann ueber, statt die Koeffizienten zu rampen. Darunter UND genau
+    auf dem Kriterium bleibt alles auf dem Rampenweg.
+
+    Warum ueberhaupt eine Grenze: Phase 15 des Tiefenaudits misst an einem
+    Low-Shelf +6 dB Q 0,707, dessen `freq_hz` in EINER Publikation von 5 kHz
+    auf 50 Hz springt, eine Uebergangsspitze von +17,41 dB ueber dem
+    eingeschwungenen Pegel (derselbe Sprung am Low-Cut: +22,20 dB). Die Rampe
+    faehrt dabei durch Zwischenentwuerfe, die keinem eingestellten Filter
+    entsprechen. Der Crossfade kennt das nicht - er mischt zwei fertige
+    Entwuerfe.
+
+    Frequenz und Guete werden als VERHAELTNIS verglichen (groesserer durch
+    kleineren Wert, richtungsfrei), Gain als DIFFERENZ in dB. Grund: Frequenz
+    und Guete wirken multiplikativ auf Polfrequenz und Polguete und sind im
+    Vertrag strikt positiv (20 bis 20 000 Hz, 0,15 bis 24); `gain_db` ist
+    additiv in dB definiert und enthaelt die 0, fuer die kein Verhaeltnis
+    existiert. */
+
+/** Eine Oktave. Gemessen sicher ist dieselbe Strecke in 20 Stufen, also
+    Verhaeltnis 1,2589 je Stufe: +0,02 dB. Gemessen schlecht ist das
+    Verhaeltnis 100: +17,41 dB. Die Oktave liegt mit Faktor 1,59 ueber dem
+    gemessen sicheren Schritt und mit Faktor 50 unter dem gemessen schlechten;
+    der groesste Bestandsfall mit Audio (1000 -> 1400 Hz) behaelt Abstand
+    1,43. */
+inline constexpr double kSprungFrequenzVerhaeltnis = 2.0;
+
+/** Zwei Verdopplungen der Guete. Der Vertragsbereich von `q` ist 0,15 bis 24,
+    also ein Verhaeltnis von 160. Die Guete verschiebt bei gleicher
+    Mittenfrequenz die POLGUETE, nicht die Polfrequenz; der Ausschlag, den
+    Phase 15 gemessen hat, kam von der Frequenz. Die Gueteschranke ist deshalb
+    bewusst groeber als die Frequenzschranke. Der groesste Bestandsfall mit
+    Audio (0,15 -> 0,5) behaelt Abstand 1,2. */
+inline constexpr double kSprungGueteVerhaeltnis = 4.0;
+
+/** DIFFERENZ in dB, kein Verhaeltnis. Der Vertragsbereich ist +/-12 dB, die
+    groesste moegliche Differenz also 24 dB; 20 dB sind fuenf Sechstel davon
+    und nur durch Presetladen oder einen getippten Wert erreichbar, nie durch
+    eine Reglerfahrt. Den groessten Bestandswert mit Audio teilen sich zwei
+    Faelle mit je 18,0 dB (+9 -> -9 dB), die damit 2,0 dB Abstand behalten. Ein
+    reiner Gainsprung bewegt bei RBJ Pole und Nullstellen gemeinsam mit
+    A = 10^(g/40) und regt keine neue Polstelle an - deshalb ist diese Grenze
+    die groebste der drei. */
+inline constexpr double kSprungGainDb = 20.0;
+
+/** Reisst ein Wertepaar sein VERHAELTNISkriterium? Richtungsfrei: verglichen
+    wird der groessere durch den kleineren Wert. STRIKT GROESSER entscheidet -
+    genau auf der Grenze bleibt der Slot auf dem Rampenweg.
+
+    NAK-311 F-21 (NaN-Ehrlichkeit): ein Vergleich der Form
+    `verhaeltnis > grenze` ist mit NaN FALSCH und liesse den Slot seine Kennung
+    behalten - der Zustand wanderte in eine Bank mit nicht endlichen
+    Koeffizienten. Die Bedingung prueft deshalb POSITIV auf den brauchbaren
+    Fall: nicht endlich, 0 und negativ heissen "Kriterium gerissen", und der
+    sichere Ausgang ist der kalte Start, nicht die Uebertragung.
+
+    Verglichen wird `gross > grenze * klein` statt `gross / klein > grenze`.
+    Beide Grenzen sind exakte Zweierpotenzen, das Produkt ist damit exakt, und
+    die Kante "genau auf der Grenze" faellt bitgenau. Laeuft das Produkt ueber
+    (nur fuer `klein` jenseits von DBL_MAX/grenze moeglich), ist es +inf und
+    der Vergleich falsch - richtig so, denn das wahre Verhaeltnis ist dann
+    kleiner als die Grenze.
+
+    Kein `std::isfinite`: es ist erst in C++23 constexpr (Muster
+    `samplerateUnterstuetzt`). */
+constexpr bool sprungImVerhaeltnis (double alt, double neu, double grenze) noexcept
+{
+    const bool brauchbar = alt > 0.0 && neu > 0.0
+                        && alt < std::numeric_limits<double>::infinity()
+                        && neu < std::numeric_limits<double>::infinity();
+    if (! brauchbar) return true;
+    const double gross = alt > neu ? alt : neu;
+    const double klein = alt > neu ? neu : alt;
+    return gross > grenze * klein;
+}
+
+/** Reisst ein Wertepaar sein DIFFERENZkriterium in dB? STRIKT GROESSER
+    entscheidet. 0 dB und negative Werte sind gueltige Gainwerte; nicht endlich
+    heisst "gerissen" (F-21), mit derselben positiven Pruefung wie oben. */
+constexpr bool sprungInDb (double alt, double neu, double grenze) noexcept
+{
+    const bool brauchbar = alt > -std::numeric_limits<double>::infinity()
+                        && alt <  std::numeric_limits<double>::infinity()
+                        && neu > -std::numeric_limits<double>::infinity()
+                        && neu <  std::numeric_limits<double>::infinity();
+    if (! brauchbar) return true;
+    return (alt > neu ? alt - neu : neu - alt) > grenze;
+}
+
 /** Fester Lautheitsabgleich des Delta-Hoerzustands (§5.10 Feinheit 1).
     Fest heisst materialunabhaengig; ein aus dem laufenden Pegel gerechneter
     Abgleich waere ein Kompressor im Hoerweg (§49.2 Gate 5). */
@@ -412,7 +504,16 @@ double autoGainGitterHz (int stelle) noexcept;
     die beiden Programme; die Kennungen tragen auch den Wechsel einer
     VERDRAENGTEN Zwischenpublikation, die der Audiothread nie gesehen hat.
     Sonst laeuft ein Crossfade, in dem die neue Bank den Zustand genau der
-    Slots mit gleicher Kennung uebernimmt (`DspKern::blockrand`). */
+    Slots mit gleicher Kennung uebernimmt (`DspKern::blockrand`).
+
+    DRITTE BEDINGUNG seit NAK-311 W07 (R-311-13): dieselben Kennungen tragen
+    seither auch die WERTE. Ein Slot, dessen `freq_hz` (wirksam), `q` oder
+    `gain_db` eines der drei Kriterien aus dieser Datei reisst
+    (`kSprungFrequenzVerhaeltnis`, `kSprungGueteVerhaeltnis`, `kSprungGainDb`),
+    bekommt in `DspKern::vergebeKennungen` eine neue Kennung - der Rampenweg
+    faellt damit fuer die ganze Publikation weg, und der Crossfade uebertraegt
+    den Zustand nur der Slots, die ihre Kennung behalten haben. Diese Funktion
+    selbst ist unveraendert: sie kennt weiterhin KEINE Wertegrenze. */
 bool rampenKompatibel (const DspProgramm& alt, const DspProgramm& neu) noexcept;
 
 } // namespace nakama::dsp

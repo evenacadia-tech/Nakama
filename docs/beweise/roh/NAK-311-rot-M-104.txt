@@ -1,0 +1,56 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-104
+============================================================================
+Matrixzeile   M-104
+Zusage        NUR der gesprungene Slot bekommt eine neue Kennung und startet kalt; jeder andere Slot behaelt Kennung und Zustand (Perioden-RMS hoechstens 0,5 dB).
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-104-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+                              && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+                              && ! sprungImVerhaeltnis (s.q, b.q, kSprungGueteVerhaeltnis)
+                              && ! sprungInDb (s.gainDb, b.gainDb, kSprungGainDb);
+   NACHHER:
+                              && ! [&] { for (int j = 0; j < kSlots; ++j) { const auto& bb = prog.baender[(size_t) j]; const auto& ss = m.slots[(size_t) j]; if (! (bb.aktiv && ss.aktiv)) continue; if (sprungImVerhaeltnis (ss.freqHzWirksam, bb.freqHzWirksam, kSprungFrequenzVerhaeltnis) || sprungImVerhaeltnis (ss.q, bb.q, kSprungGueteVerhaeltnis) || sprungInDb (ss.gainDb, bb.gainDb, kSprungGainDb)) return true; } return false; } ();   // MUTATION M-104: Kriterium auf ALLE Slots statt auf den geaenderten
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:00:28 juenger als die Quelle 15:00:25: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  311/M-104 nur_der_gesprungene_slot_startet_kalt (R-311-1, R-311-13, M-121)  [(a) Kennungen: Slot 3 3 -> 5, alle anderen unveraendert NEIN, Uebergang Crossfade; (b) Slot 0 warm: Perioden-RMS 7.986102 dB gegen 0,5 dB (Periode 960 Samples, 100 Perioden; erste Periode -7.986102 dB, groesste Abweichung in Periode 0), gemessen mit einem Bell 5000 -> 15000 Hz auf Slot 3]
+
+   Erwartete Pruefung: 311/M-104
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:00:36 juenger als die Quelle 15:00:34: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

@@ -1,0 +1,118 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-111
+============================================================================
+Matrixzeile   M-111
+Zusage        Im Callback zaehlt der thread-lokale Zaehler 0 Allokationen und 0
+              Sperren; am Blockrand entsteht NICHTS Neues: die zwei Lesestellen
+              bleiben Wort fuer Wort, wie die Etappe 3 sie gebaut hat, und die
+              drei Vergleiche laufen ausschliesslich im Worker.
+Bein          B6 (EqCopDspGoldenTest), Pruefung
+              null_allokationen_im_callback_samt_programmwechseln (M-41, M-47,
+              B-25, 311/M-111) - um Publikationen UEBER dem Kriterium ergaenzt
+              (case 215 und case 265 im Zyklus), dazu der git diff ueber blockrand
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+
+Besonderheit dieser Zeile: der Rotbeweis faellt NICHT an einer Pruefung des
+Beins, sondern an der DIFFPRUEFUNG ueber blockrand - genau so nennt es die
+Rotbeweisspalte ("der Zaehler bleibt zwar 0, aber der Diff ueber blockrand ist
+nicht leer -> rot an der Diffpruefung"). Beides ist unten belegt.
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp (Stand vor der Mutation; Schritt 5 misst denselben Wert nach der Ruecknahme)
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-111-DspKern.cpp
+
+2. Mutation, woertlich (git diff)
+   diff --git a/eq-copilot/plugin/dsp/DspKern.cpp b/eq-copilot/plugin/dsp/DspKern.cpp
+   index 044fb351..74d4b8b5 100644
+   --- a/eq-copilot/plugin/dsp/DspKern.cpp
+   +++ b/eq-copilot/plugin/dsp/DspKern.cpp
+   @@ -304,4 +304,9 @@ void DspKern::merke (Pfad p, const DspProgramm& prog) noexcept
+            s.dynamisch = b.dynamisch;
+            s.nutztSvf  = b.nutztSvf;
+   +        // NAK-311 W07 (R-311-13): die drei Werte des Slots, wirksam - also
+   +        // nach der Nyquistkappung (DspProgramm.cpp).
+   +        s.freqHzWirksam = b.freqHzWirksam;
+   +        s.q             = b.q;
+   +        s.gainDb        = b.gainDb;
+        }
+    }
+   @@ -332,6 +337,16 @@ void DspKern::vergebeKennungen (Pfad p, DspProgramm& prog) noexcept
+            // (F-7: gleiche Topologie nach Remove und Neubelegung ist NICHT
+            // derselbe Slot), ein inaktiver traegt 0.
+   +        //
+   +        // NAK-311 W07 (R-311-13, T3-15-07): dazu die drei WERTEKRITERIEN.
+   +        // Reisst der Slot eines davon, ist er fuer den Blockrand ein anderer
+   +        // Slot - er bekommt eine neue Kennung, der Uebergang wird ein
+   +        // Crossfade, und NUR er startet kalt. Die Vergleiche stehen einmal in
+   +        // `DspProgramm.h`; nicht endlich, 0 und negativ heissen dort
+   +        // "gerissen" (F-21), damit ein NaN nie zur Uebertragung fuehrt.
+            const bool bleibt = m.gueltig && b.aktiv && s.aktiv && s.typ == b.typ && s.modus == b.modus
+   -                         && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle;
+   +                         && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle
+   +                         && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+   +                         && ! sprungImVerhaeltnis (s.q, b.q, kSprungGueteVerhaeltnis)
+   +                         && ! sprungInDb (s.gainDb, b.gainDb, kSprungGainDb);
+            b.lebenszyklus = ! b.aktiv ? 0 : (bleibt ? s.kennung : naechsteKennung());
+        }
+   @@ -555,4 +570,17 @@ void DspKern::blockrand (Pfad p) noexcept
+        const bool nurRampen = kennungenGleich && rampenKompatibel (*pAlt, pNeu);
+    
+   +    // MUTATION Rotbeweis M-111: die drei Wertvergleiche zusaetzlich AM BLOCKRAND.
+   +    if (pAlt != nullptr)
+   +        for (int i = 0; i < kSlots; ++i)
+   +        {
+   +            const auto& am = pAlt->baender[(size_t) i];
+   +            const auto& nm = pNeu.baender[(size_t) i];
+   +            if (am.aktiv && nm.aktiv
+   +                && (sprungImVerhaeltnis (am.freqHzWirksam, nm.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+   +                    || sprungImVerhaeltnis (am.q, nm.q, kSprungGueteVerhaeltnis)
+   +                    || sprungInDb (am.gainDb, nm.gainDb, kSprungGainDb)))
+   +                zaehlerZustaende.fetch_add (0, std::memory_order_relaxed);
+   +        }
+   +
+        if (nurRampen)
+        {
+
+3. Lauf mit der Mutation
+   B6 Exitcode 0 - das Bein bleibt GRUEN: 378 geprueft, 0 Fehler.
+   ok      null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111)  [4000 Bloecke, 4179358 Samples, 111 Blockrand-Uebernahmen, 90 Baenke geerntet, busy_retry 0, Testzaehler 0, Kernzaehler 0]
+   Der Allokations- und Sperrenzaehler bleibt also bei 0, wie die
+   Rotbeweisspalte es vorhersagt.
+
+4. Die Zusage faellt an der DIFFPRUEFUNG: JA
+   git diff ueber blockrand ist NICHT leer (50 Diffzeilen, Abschnitt 2);
+   die zweite Haelfte der Zusage - "am Blockrand entsteht nichts Neues" -
+   ist damit verletzt, obwohl kein Zaehler steigt. Genau dafuer steht die
+   Diffpruefung neben dem Zaehler.
+
+5. Ruecknahme, bytegleich
+   SHA-256 nach der Ruecknahme 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E
+   git diff der Datei nach der Ruecknahme: leer (Schritt 6)
+   Neubau, Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler | DSP-GOLDEN OK
+
+6. git status --short
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-110.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-116-satzC.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142a.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

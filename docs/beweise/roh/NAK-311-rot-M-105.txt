@@ -1,0 +1,56 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-105
+============================================================================
+Matrixzeile   M-105
+Zusage        Der laufende Uebergang wird zu Ende gefuehrt; die zweite Publikation wird am ersten Blockrand NACH dem Ende genommen, uebernahmen() steigt um genau 2.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-105-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+         if (z.uebergang != Uebergang::keiner) return;
+   NACHHER:
+         if (false) return;   // MUTATION M-105: frueher Rueckweg aus E-17 entfernt
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:58:57 juenger als die Quelle 14:58:55: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 5
+     FEHLER  wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.411267102 gegen hergeleitete Schranke 0.002956120]
+     FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 1, belegt 2, Candidate-Slots -1/-1, max Sprung 0.0975341 gegen Fadeschritt 0.0019224, danach gleich Processed: ja]
+     FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.000000000, Ende Einblenden = Beginn Ausblenden 0.029001713, Ruhebeginn 0.000000000 gegen Fadeschritt 0.029001820 + 0.000000477; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 1.428339601 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 5.568349584)]
+     FEHLER  311/M-105 zweiter_grosser_sprung_im_laufenden_crossfade (E-17, R-311-13)  [Uebernahmen 2 (Soll genau 2), erster Block nach der ersten Publikation im Crossfade ja; zweite Uebernahme 64 Samples nach der ersten (Soll erst nach dem Fadeende, also mindestens 192); Uebergangsspitze ueber beide Uebergaenge 0.994958 gegen stationaer 0.996061 = -0.0096 dB gegen 1 dB]
+     FEHLER  311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (E-17, M-41)  [(a) 64 Publikationen im Abstand eines Blocks zu 64, 46 busy_retry; zuletzt publiziert 200.0 Hz, gefahren 20000.0 Hz; verdraengte Zwischenpublikation aendert die Kennung: ja; 18 Blockrand-Uebernahmen bei 128 Blockraendern; (b) Testzaehler 0, Kernzaehler 0, Sperren 0, Ableitungen im Audiopfad 0]
+
+   Erwartete Pruefung: 311/M-105
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 373 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:59:06 juenger als die Quelle 14:59:03: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

@@ -511,7 +511,7 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A und B)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A bis C)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
@@ -777,6 +777,63 @@ die Wachmarke von B6 — ein signalisierender NaN — wurde von MSVC
 konstantgefaltet und dabei ruhig (`0x7F800001` → `0x7FC00001`), weil der
 Compiler Gleitkommakonstanten intern als `double` hält; seither läuft sie über
 `ausBitmuster` mit einem `volatile` Zwischenschritt, der die Faltung verbietet.
+
+**Große Wertsprünge werden überblendet** (20.09.2026, NAK-311 Etappe 5
+Änderungssatz C, T3-15-07, R-311-13, Karte U44). Bis hierher kannte die
+Kennungsvergabe nur Topologie: ein Slot, der belegt blieb und Typ, Kanalmodus,
+`dynamic_enabled`, SVF-Nutzung und Sidechain hielt, behielt seine
+Lebenszykluskennung — gleichgültig, wie weit sein Wert sprang. Der Blockrand
+nahm dann den Rampenweg und interpolierte die Koeffizienten linear über
+`kRampeSamples`. Bei einem großen Sprung führt dieser Weg durch
+Zwischenentwürfe, die keinem eingestellten Filter entsprechen: ein Low-Shelf
++6 dB Q 0,707, dessen `freq_hz` in **einer** Publikation von 5 kHz auf 50 Hz
+springt, erzeugte dabei eine Übergangsspitze von **+17,41 dB** über dem
+eingeschwungenen Pegel, derselbe Sprung an einem Low-Cut 2 kHz → 20 Hz
+**+22,20 dB**.
+
+Seither tragen drei **Wertekriterien** in `DspProgramm.h` die Entscheidung:
+`kSprungFrequenzVerhaeltnis` = 2,0 (eine Oktave), `kSprungGueteVerhaeltnis` =
+4,0 und `kSprungGainDb` = 20,0 dB. Frequenz und Güte werden als **Verhältnis**
+verglichen (größerer durch kleineren Wert, richtungsfrei), `gain_db` als
+**Differenz** in dB — es ist additiv definiert und enthält die 0, für die kein
+Verhältnis existiert. **Strikt größer** entscheidet: genau auf der Grenze
+bleibt der Slot auf dem Rampenweg. Geprüft wird in der `bleibt`-Bedingung von
+`DspKern::vergebeKennungen` gegen den Merkzettel desselben Pfades, der seit
+diesem Satz die drei Werte je Slot mitführt (die **wirksame** Frequenz, also
+nach der Nyquistkappung). Reißt ein Slot ein Kriterium, bekommt **nur dieser**
+Slot eine neue Kennung; der Blockrand nimmt daraufhin den bestehenden
+Crossfade-Weg aus W03, überträgt den Zustand genau der Slots mit gleicher
+Kennung, und nur der gesprungene startet kalt. `blockrand` selbst ist Wort für
+Wort unverändert, `rampenKompatibel` ebenso — es kennt weiterhin keine
+Wertegrenze.
+
+Nicht endliche und nicht positive Werte heißen „Kriterium gerissen": ein
+Vergleich der Form `verhaeltnis > grenze` ist mit NaN falsch und ließe den
+Zustand in eine Bank mit nicht endlichen Koeffizienten wandern. Die zwei
+`constexpr`-Prädikate `sprungImVerhaeltnis` und `sprungInDb` prüfen deshalb
+positiv auf den brauchbaren Fall. Verglichen wird `gross > grenze * klein`
+statt `gross / klein > grenze`: beide Grenzen sind exakte Zweierpotenzen, das
+Produkt ist damit exakt, und die Kante „genau auf der Grenze" fällt bitgenau.
+
+Gemessen (B6 Abschnitt R, 311/M-96 bis M-110, dazu 311/M-111 im
+Allokationslauf): +17,41 → **−0,22 dB**, +22,20 → **+0,13 dB**, die
+Gegenrichtung 50 → 5000 Hz +1,91 → **0,00 dB**; ein dynamisches Band mit
+Range 0 hält dasselbe Maß. Dieselbe Strecke in zwanzig Stufen zu je 1,2589
+bleibt auf dem Rampenweg, behält ihre Kennung und ist über alle 40 960 Samples
+**bitgleich zum Basisstand**. Die drei Zahlen sind an Messreihen bestätigt, je
+mit erzwungenem Rampen- und Crossfade-Weg
+(`docs/beweise/roh/NAK-311-etappe5-wertekriterien.txt`): auf dem Rampenweg
+hält das Maß von R-311-13 bis einschließlich Frequenzverhältnis 8,0 und reißt
+erst bei 100; Güte und Gain reißen es über die ganze Reihe nicht. Die Zahlen
+sind damit **strenger als das Maß allein verlangt** — sie folgen der Herleitung
+in Manifest §40.3, nicht der Messgrenze.
+
+Kosten im Audiothread: **keine**. Die drei Vergleiche laufen einmal je
+Publikation im Worker, unter dem Zustandsschloss des Prozessors; der
+Audiothread liest weiterhin nur zwei 64-Bit-Kennungen je Slot. Im
+Allokationslauf über 4000 Blöcke mit Publikationen über dem Kriterium zählt der
+thread-lokale Zähler 0 Allokationen und 0 Sperren. Manifest
+`docs/beweise/NAK-311.md` §39.1, §40.3 und §57.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

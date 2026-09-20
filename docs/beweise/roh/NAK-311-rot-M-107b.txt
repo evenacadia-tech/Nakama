@@ -1,0 +1,60 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-107b
+============================================================================
+Matrixzeile   M-107b
+Zusage        Zweiter Versuch fuer M-107: der Candidate-Pfad hat einen EIGENEN Merkzettel (DspKern.cpp). Mutation: beide Pfade teilen sich den Merkzettel des Committed-Pfades.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+Anmerkung     Ersatzmutation, nachdem die in der Rotbeweisspalte genannte nicht fiel (Muster M-138 (a)).
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-107b-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+         const auto& m = merkzettel[(size_t) p];
+   NACHHER:
+         const auto& m = merkzettel[0];   // MUTATION M-107 (zweiter Versuch): beide Pfade teilen einen Merkzettel
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:03:20 juenger als die Quelle 15:03:18: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  311/M-53 candidate_slot_behaelt_historie (E-16, R-311-1)  [Mass am Tap post_candidate 8.002865 dB gegen 0,5 dB (erste Periode -8.002865 dB, groesste Abweichung in Periode 0); Tap ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 256]
+
+   Erwartete Pruefung: 311/M-107
+   Die Zusage faellt an der erwarteten Pruefung: NEIN
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:03:29 juenger als die Quelle 15:03:26: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-107.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-110.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142a.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-142b.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

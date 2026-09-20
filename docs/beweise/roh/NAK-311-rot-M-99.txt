@@ -1,0 +1,67 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-99
+============================================================================
+Matrixzeile   M-99
+Zusage        Das Kriterium greift unabhaengig von dynamisch und nutztSvf: auch ein dynamisches Band mit Range 0 bekommt eine neue Kennung und wird ueberblendet.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+Anmerkung     Kriterienpruefung auf ! b.dynamisch eingeschraenkt, wie die Rotbeweisspalte es nennt.
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-99-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+                              && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+   NACHHER:
+                              && (b.dynamisch || ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis))   // MUTATION M-99
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:55:05 juenger als die Quelle 14:55:01: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 1
+     FEHLER  311/M-99 grosser_sprung_am_dynamischen_band_mit_range_null (R-311-13)  [dynamisch mit Range 0 dB (SVF-Weg), freq_hz 5000 -> 50; Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze 0.995839 gegen stationaer 0.996061 = -0.0019 dB gegen 1 dB]
+
+   Erwartete Pruefung: 311/M-99
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 377 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:55:14 juenger als die Quelle 14:55:11: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? nimbalyst-local/
+
+
+ZUSATZ: DER LAUF GEGEN DEN UNVERAENDERTEN KERN VOR DER REPARATUR
+----------------------------------------------------------------------------
+
+Nach 7.1 laeuft eine "heute rot"-Zeile VOR der Reparatur einmal gegen den
+unveraenderten Kern. Stand: Basis a93f3c79 plus Abschnitt R und die drei
+Konstanten in DspProgramm.h, aber OHNE die drei Vergleiche in der
+bleibt-Bedingung von DspKern::vergebeKennungen. B6 Exit 1, 378 geprueft,
+10 Fehler - die zehn Zeilen, die das Kriterium erst herstellt.
+
+  FEHLER  311/M-99 grosser_sprung_am_dynamischen_band_mit_range_null (R-311-13)  [dynamisch mit Range 0 dB (SVF-Weg), freq_hz 5000 -> 50; Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze 0.995839 gegen stationaer 0.996061 = -0.0019 dB gegen 1 dB]
+
+BEFUND zur Erwartung dieser Zeile (40.3: "die Erwartung ist die Schranke
+selbst"): die Zeile faellt am Basisstand - aber NICHT am Maass. Gemessen wird
+-0,0019 dB, die Schranke von 1 dB haelt also schon ohne Kriterium. Rot ist die
+Zeile an ihrer ANDEREN Haelfte: der Uebergang ist eine RAMPE und der Slot
+behaelt seine Kennung. Der SVF-Weg mit Range 0 erzeugt am gemessenen
+Pruefling keine Uebergangsspitze. Gemeldet im Manifest 57, nicht still
+umetikettiert.
+

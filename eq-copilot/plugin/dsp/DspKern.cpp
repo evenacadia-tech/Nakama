@@ -303,6 +303,11 @@ void DspKern::merke (Pfad p, const DspProgramm& prog) noexcept
         s.aktiv     = b.aktiv;
         s.dynamisch = b.dynamisch;
         s.nutztSvf  = b.nutztSvf;
+        // NAK-311 W07 (R-311-13): die drei Werte des Slots, wirksam - also
+        // nach der Nyquistkappung (DspProgramm.cpp).
+        s.freqHzWirksam = b.freqHzWirksam;
+        s.q             = b.q;
+        s.gainDb        = b.gainDb;
     }
 }
 
@@ -331,8 +336,18 @@ void DspKern::vergebeKennungen (Pfad p, DspProgramm& prog) noexcept
         // behaelt seine Kennung; jeder andere aktive Slot bekommt eine neue
         // (F-7: gleiche Topologie nach Remove und Neubelegung ist NICHT
         // derselbe Slot), ein inaktiver traegt 0.
+        //
+        // NAK-311 W07 (R-311-13, T3-15-07): dazu die drei WERTEKRITERIEN.
+        // Reisst der Slot eines davon, ist er fuer den Blockrand ein anderer
+        // Slot - er bekommt eine neue Kennung, der Uebergang wird ein
+        // Crossfade, und NUR er startet kalt. Die Vergleiche stehen einmal in
+        // `DspProgramm.h`; nicht endlich, 0 und negativ heissen dort
+        // "gerissen" (F-21), damit ein NaN nie zur Uebertragung fuehrt.
         const bool bleibt = m.gueltig && b.aktiv && s.aktiv && s.typ == b.typ && s.modus == b.modus
-                         && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle;
+                         && s.dynamisch == b.dynamisch && s.nutztSvf == b.nutztSvf && s.quelle == b.quelle
+                         && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+                         && ! sprungImVerhaeltnis (s.q, b.q, kSprungGueteVerhaeltnis)
+                         && ! sprungInDb (s.gainDb, b.gainDb, kSprungGainDb);
         b.lebenszyklus = ! b.aktiv ? 0 : (bleibt ? s.kennung : naechsteKennung());
     }
 

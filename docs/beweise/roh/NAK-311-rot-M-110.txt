@@ -1,0 +1,220 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-110
+============================================================================
+Matrixzeile   M-110
+Zusage        Der Fade dauert kFadeSamples SAMPLES, nicht Bloecke - bei jeder Blockgroesse; am Umschaltsample haelt E-31 nach R-311-10.
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-110-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+                 --rest;
+   NACHHER:
+                 if (i == 0) --rest;   // MUTATION M-110: Rest in Bloecken statt in Samples gezaehlt
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 15:00:44 juenger als die Quelle 15:00:42: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 166
+     FEHLER  ausschalten_gibt_jede_bank_frei (M-07, B-10)  [eingeschaltet belegt=1, nach aus/Fade/Pflege belegt=1, audio_active=1]
+     FEHLER  unity_kurzschluss_statt_multiplikation (M-02)  [eq an, bypass aus, 120 Werte auf Default]
+     FEHLER  311/M-12 neutraler_kern_schreibt_nicht (NAK-311 T3-01-01)  [eq an, sonst Default, nach Fade und Rampen: geaenderte Samples 3 von 512 (Wachmarke, NaN, +-Inf, Bitmuster), Tap 0,0 an 0 von 6 Stellen, Riegel +6]
+     FEHLER  fade_ist_in_samples_gezaehlt_nicht_in_bloecken (M-03)  [Blockgroesse 1 gegen 2048: 318 Abweichungen]
+     FEHLER  nach_dem_fade_wieder_bitidentisch (M-04)  [nicht nur numerisch nahe - bitgleich, auch im Fadeblock selbst]
+     FEHLER  bypasswechsel_ist_klickfrei (M-06)  [max Sprung 0.00284120 gegen Fadeschritt 0.00009989]
+     FEHLER  bypasswechsel_endet_bitgleich (M-06)
+     FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + eq_enabled aus  [vorher 0.33124, max Sprung 0.0034713 gegen Fadeschritt 0.0001220, Fadeende 0.345127]
+     FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+     FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): delta + hard-bypass  [vorher 0.33124, max Sprung 0.0034713 gegen Fadeschritt 0.0001220, Fadeende 0.345127]
+     FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): delta + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+     FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + eq_enabled aus  [vorher 0.31050, max Sprung 0.0011663 gegen Fadeschritt 0.0000410, Fadeende 0.315162]
+     FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + eq_enabled aus  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+     FEHLER  hoermatrix_blendet_bei_aus_klickfrei_auf_den_eingang (M-05, B-3): candidate + hard-bypass  [vorher 0.31050, max Sprung 0.0011663 gegen Fadeschritt 0.0000410, Fadeende 0.315162]
+     FEHLER  nach_dem_fade_schreibt_keine_hoermatrix_ein_sample (M-05, B-3): candidate + hard-bypass  [Wachmarke und Signal bitgleich ueber 4 Bloecke]
+     FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 256 von 256, Wachmarken an 256, 300 und 511]
+     FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): processed + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 256 von 256, Wachmarken an 256, 300 und 511]
+     FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + eq_enabled aus  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 256 von 256, Wachmarken an 256, 300 und 511]
+     FEHLER  schreibverzicht_beginnt_exakt_am_fade_ende (M-05, B-3, W-1): delta + hard-bypass  [der Fade schreibt Sample 0: ja, geaenderte Samples hinter dem Fade-Ende im selben Teilstueck: 256 von 256, Wachmarken an 256, 300 und 511]
+     FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 255  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 509, Wachmarken an 256, 257 und 511 und am letzten Sample 764]
+     FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 256  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 3 von 256, Wachmarken an 256, 257 und 511]
+     FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 257  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 258, Wachmarken an 256, 257 und 511 und am letzten Sample 513]
+     FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 180  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 284, Wachmarken an 256, 257 und 511 und am letzten Sample 539]
+     FEHLER  311/M-13 schreibende_exakt_am_uebergangsende_in_neutral (NAK-311 T3-01-01, E-32): Blockgroesse 4096  [der Fade schreibt Sample 0 und 255: ja, geaenderte Samples ab 256: 4 von 3840, Wachmarken an 256, 257 und 511 und am letzten Sample 4095]
+     FEHLER  311/M-14 rampe_auf_neutral_schreibt_bis_zum_rampenende (Teilfall von 311/M-13)  [Output-Trim +6 -> 0 dB: groesste Abweichung der 256 Rampensamples von der Ideallinie 0.242983957, geaenderte Samples ab 256: 256 von 256, Wachmarken an 256, 257 und 511]
+     FEHLER  wache_der_kalt_startenden_bank_ueber_den_ganzen_lauf (B-5, W-4)  [max Sprung 0.002130926 gegen hergeleitete Schranke 0.002115210]
+     FEHLER  der_zweite_wechsel_wird_nach_dem_fade_uebernommen (B-5, E-17)  [Ende 0.404415 gegen 0.423761]
+     FEHLER  ausgeschaltet_rechnet_nichts_und_startet_kalt (M-07)  [max nach Wiedereinschalten 0.000041463682]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.8344 dB bei 1000.0 Hz, Rand 0.0042 dB, 241 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 3.3348 dB bei 931.6 Hz, Rand 11.4822 dB, 241 Stellen]
+     FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.8327 dB bei 20.6 Hz, Rand 5.8328 dB, 243 Stellen]
+     FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 5.9287 dB bei 19330.5 Hz, Rand 5.9288 dB, 242 Stellen]
+     FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 59.8293 dB bei 1000.0 Hz, Rand 0.0007 dB, 241 Stellen]
+     FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 27.2873 dB bei 20.6 Hz, Rand 27.7885 dB, 241 Stellen]
+     FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 44100 Hz  [typisch 35.8788 dB bei 19330.5 Hz, Rand 39.5976 dB, 241 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.8342 dB bei 1000.0 Hz, Rand 0.0040 dB, 242 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 3.3378 dB bei 931.6 Hz, Rand 11.4775 dB, 242 Stellen]
+     FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.8327 dB bei 20.6 Hz, Rand 5.8327 dB, 244 Stellen]
+     FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 5.9286 dB bei 19897.0 Hz, Rand 5.9286 dB, 243 Stellen]
+     FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 59.8292 dB bei 1000.0 Hz, Rand 0.0006 dB, 242 Stellen]
+     FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 27.2872 dB bei 20.6 Hz, Rand 27.7885 dB, 242 Stellen]
+     FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 48000 Hz  [typisch 31.8136 dB bei 19897.0 Hz, Rand 32.2767 dB, 242 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.8335 dB bei 1000.0 Hz, Rand 0.0124 dB, 242 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 3.3601 dB bei 931.6 Hz, Rand 11.4145 dB, 242 Stellen]
+     FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.8330 dB bei 20.6 Hz, Rand 5.8330 dB, 244 Stellen]
+     FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 5.9159 dB bei 19897.0 Hz, Rand 5.9163 dB, 243 Stellen]
+     FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 59.8284 dB bei 1000.0 Hz, Rand 0.0008 dB, 242 Stellen]
+     FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 27.2900 dB bei 20.6 Hz, Rand 27.7913 dB, 242 Stellen]
+     FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 96000 Hz  [typisch 18.0651 dB bei 19897.0 Hz, Rand 18.1848 dB, 242 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.8331 dB bei 1000.0 Hz, Rand 0.0153 dB, 242 Stellen]
+     FEHLER  bell_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 3.3765 dB bei 931.6 Hz, Rand 11.2836 dB, 242 Stellen]
+     FEHLER  low_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.8337 dB bei 20.6 Hz, Rand 5.8338 dB, 244 Stellen]
+     FEHLER  high_shelf_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 5.9083 dB bei 19897.0 Hz, Rand 5.9088 dB, 243 Stellen]
+     FEHLER  notch_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 59.8242 dB bei 1000.0 Hz, Rand 0.0007 dB, 242 Stellen]
+     FEHLER  low_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 27.2942 dB bei 20.6 Hz, Rand 27.7956 dB, 242 Stellen]
+     FEHLER  high_cut_gegen_analytische_antwort (M-10/M-11) 192000 Hz  [typisch 16.2984 dB bei 19897.0 Hz, Rand 16.3928 dB, 242 Stellen]
+     FEHLER  impulsantwort_misst_wie_ein_eingeschwungener_sinus (M-13)  [groesste Abweichung 5.3654 dB ueber drei Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 5.8637 dB, Rand 5.8637 dB, 243 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @44100  [typisch 12.6697 dB, Rand 11.9037 dB, 243 Stellen]
+     FEHLER  dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @44100  [typisch 5.8332 dB, Rand 5.8332 dB, 243 Stellen]
+     FEHLER  dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @44100  [typisch 8.8911 dB, Rand 0.0023 dB, 241 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 5.8639 dB, Rand 5.8639 dB, 244 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @48000  [typisch 12.6700 dB, Rand 11.9145 dB, 244 Stellen]
+     FEHLER  dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @48000  [typisch 5.8331 dB, Rand 5.8331 dB, 244 Stellen]
+     FEHLER  dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @48000  [typisch 8.8910 dB, Rand 0.0022 dB, 242 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 5.8650 dB, Rand 5.8650 dB, 244 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @96000  [typisch 12.6706 dB, Rand 12.0010 dB, 244 Stellen]
+     FEHLER  dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @96000  [typisch 5.8329 dB, Rand 5.8329 dB, 244 Stellen]
+     FEHLER  dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @96000  [typisch 8.8904 dB, Rand 0.0053 dB, 242 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 5.8655 dB, Rand 5.8655 dB, 244 Stellen]
+     FEHLER  dynamisches_high_shelf_ruhe_gegen_rbj (M-19, B-2) -12 dB @192000  [typisch 12.6706 dB, Rand 12.0287 dB, 244 Stellen]
+     FEHLER  dynamisches_low_shelf_ruhe_gegen_rbj (M-19, B-2) 6 dB @192000  [typisch 5.8343 dB, Rand 5.8343 dB, 244 Stellen]
+     FEHLER  dynamisches_bell_ruhe_gegen_rbj (M-19, B-2) -9 dB @192000  [typisch 8.8901 dB, Rand 0.0064 dB, 242 Stellen]
+     FEHLER  dynamischer_high_shelf_bei_minus_24_db_gegen_rbj (M-19, U15, B-2)  [250 Hz: -0.483 gegen -0.259 dB; 1000 Hz: -5.686 gegen -12.000 dB; 4000 Hz: -5.431 gegen -23.761 dB; ]
+     FEHLER  kaskade_gegen_produkt_der_einzelantworten (M-15)  [gemessen 0.4887 dB, Produkt 12.0000 dB]
+     FEHLER  richtung_null_nach_sieben_gegen_geordnetes_golden (M-15)  [Abweichung vorwaerts 0.019183232230]
+     FEHLER  die_rampe_folgt_der_ausgeschriebenen_ideallinie (M-17)  [groesste Abweichung 0.995262315]
+     FEHLER  rampe_endet_bitgenau_auf_dem_ziel (M-02)  [Ende 1.000000000 gegen Ziel 1.995262315]
+     FEHLER  bandwert_gain_db_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.836543706416 (-100 dBFS = 1e-5)]
+     FEHLER  bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.197182646838 (-100 dBFS = 1e-5)]
+     FEHLER  bandwert_q_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.197182646838 (-100 dBFS = 1e-5)]
+     FEHLER  huellkurvenwert_attack_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.658768340156 von Pss, Auslenkung 2.371386465 dB, Holdzaehler 0 Samples; Leistung beim Wechsel 0.3292 Pss]
+     FEHLER  huellkurvenwert_hold_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.000000000401 von Pss, Auslenkung 0.000000003 dB, Holdzaehler 5963 Samples; Leistung beim Wechsel 0.3292 Pss]
+     FEHLER  huellkurvenwert_hold_ms_holdzaehler_rundet_exakt (NAK-289)  [groesster Abstand zu llround der Idealrampe: 5963 Samples]
+     FEHLER  huellkurvenwert_release_ms_rampt_ohne_zustandsreset (M-17, R8, B-4, W-2)  [Residuum gegen die Idealrampe: Leistung 0.020100521503 von Pss, Auslenkung 0.277677034 dB, Holdzaehler ungemessen (kein Anstieg); Leistung beim Wechsel 0.2697 Pss]
+     FEHLER  ms_stufe_ist_bei_width_eins_bitgenau_reversibel (M-30, B-19)  [Stufe lief, 71 Samples waeren in float anders, Samples ab Rampenende bitgleich]
+     FEHLER  311/M-90 ms_stufe_rechnet_am_tap_bitgenau_reversibel (NAK-311 R-311-6, M-30, B-19)  [Tap post_committed ueber die Samples 255 bis 511 beider Kanaele: 514 von 514 Stellen ungleich dem Eingang als double]
+     FEHLER  width_null_ist_mono (M-30)  [groesste L/R-Differenz 0.784375027]
+     FEHLER  input_trim_wirkt_mit_seinem_gesamtgain (M-31)  [0.255832 gegen 0.498816]
+     FEHLER  output_trim_liegt_hinter_mix (M-31, B-16)  [Mix 0, Output-Trim +6 dB: 0.259719 gegen 0.498816]
+     FEHLER  mix_eins_umgeht_den_dry_zweig (M-32)  [der NaN wird im Wet-Zweig verriegelt und kommt nicht ueber den Dry-Zweig zurueck]
+     FEHLER  der_ausgleich_wirkt_bei_aus_nicht (M-35)  [erster IR-Sample 1.03496]
+     FEHLER  auto_gain_und_output_trim_addieren_sich (M-40)  [Verhaeltnis 1.03834 gegen 1,99526]
+     FEHLER  311/M-112 auto_gain_deckel_greift_und_meldet (NAK-311 R-311-14, T3-15-09 Teil b, U54)  [acht High-Cuts 20 Hz Q 0,15 bei 48 kHz: abgeleitet 150.464333526 dB (lesbar ueber autoGainRohDb), ANGEWANDT 24.000000000000000 dB = kAutoGainDeckelDb bitgenau ja, autoGainLin 15.848931924611 gegen dbInLinear(24) 15.848931924611; Spitze am Tap post_committed mit Auto-Gain 0.921998781 gegen denselben Lauf ohne 0.378576420 = Faktor 2.435436363 (Deckel laesst hoechstens 15.848931925 zu; ungedeckelt waere der Faktor 33359280.6); Zustand gesetzt]
+     FEHLER  311/M-116 deckelzustand_faellt_zurueck (NAK-311 R-311-14, aktivieren<->abklingen)  [Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt; Q 0,5: abgeleitet 66.940862302 dB, angewandt 24.000000000000 dB, Zustand gesetzt; Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand falsch; angewandter Faktor am ersten Sample nach dem Wechsel 4.427056883 (altes Ziel 15.848931925), nach 300 Samples 4.541767235 (neues Ziel 8.997340287, Rampe 256 Samples)]
+     FEHLER  vier_baenke_im_schlimmsten_fall (M-46)  [beide Pfade mitten im Crossfade: Committed rechnet 0 mit Quelle -1, Candidate 1 mit Quelle -1, freie Slots 0]
+     FEHLER  null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111)  [4000 Bloecke, 4179358 Samples, 34 Blockrand-Uebernahmen, 20 Baenke geerntet, busy_retry 33, Testzaehler 0, Kernzaehler 0]
+     FEHLER  uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)  [Haken 3 mal, Uebernahmen im Aufruf 0, groesste Abweichung im Block 0.008523673, naechster Aufruf endet bei 0.351142]
+     FEHLER  kein_nan_vergiftet_den_filterzustand (M-49)
+     FEHLER  der_pfad_bleibt_dauerhaft_endlich (M-49)  [100 Bloecke nach dem NaN]
+     FEHLER  endlicher_eingang_erzeugt_keinen_nichtendlichen_floatausgang (M-39, R-283-6)  [ueber dem float-Rand 0 von 1024 Werten, am Ausgang nicht endlich 0, abweichend von der Erwartung 0, Zaehler +0]
+     FEHLER  delta_bei_gleichheit_ist_exakt_null (M-54)
+     FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: processed laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+     FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: dry laesst_den_puffer_unberuehrt  [wirksam ja, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+     FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: delta schreibt_plus_null_und_den_ungezaehmten_dry_anteil  [wirksam ja, geaenderte Samples 512 von 512, Wachmarken bytegleich nein, Delta ungleich +0,0 an 1021 endlichen Stellen]
+     FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: candidate schreibt_den_candidate_ausgang  [wirksam nein, geaenderte Samples 2 von 512, Wachmarken bytegleich nein]
+     FEHLER  311/M-18 neutral_mit_delta_und_candidate_schreibt: der hoermatrix_fade_schreibt_bis_zu_seinem_ende  [Wachmarke an 100 im Fade geschrieben: ja, geaenderte Samples ab 256: 1 von 256]
+     FEHLER  delta_ist_differenz_mit_festem_abgleich (M-54, B-23)  [Verhaeltnis bei 0,1 und 0,5: 1.138854 / 1.150425 gegen Soll 3.962211]
+     FEHLER  hoermatrixwechsel_ist_klickfrei (M-55)  [max Sprung 0.00215611 gegen Fadeschritt 0.00016308]
+     FEHLER  hoermatrix_wechsel_zu_drittem_zustand_wartet_das_fade_ende_ab (M-55, E-30)  [am Umschaltsample 0.000209570, max Sprung 0.002422690 gegen Fadeschritt 0.000206536, Fade zu Dry laeuft zu Ende: nein, Ende 0.396709 gegen Delta 0.210492]
+     FEHLER  mit_kandidat_greift_die_auswahl (M-56)
+     FEHLER  candidate_fuehrt_eigene_rampen (§3.0, B-6)  [Candidate 0.255832 gegen 0.498816, Committed 0.250000]
+     FEHLER  candidate_auto_gain_aus_eigener_kurve (§3.0, B-6)  [Candidate -5.9970 dB, Committed 0.0000 dB, Candidate-Tap bei DC 0.218348 gegen 0.125340]
+     FEHLER  candidate_ende_blendet_aus_und_gibt_beide_baenke_frei (M-46, B-8)  [geerntet 0, belegt 2, Candidate-Slots 1/-1, max Sprung 0.0011663 gegen Fadeschritt 0.0011663, danach gleich Processed: ja]
+     FEHLER  candidate_abbruch_im_hoermatrix_fade_blendet_vom_mischstand_zurueck (M-46, B-8, W-5)  [am Abbruchsample 0.000000000, max Sprung 0.000000000 gegen Fadeschritt 0.002130918, geerntet 0, belegt 2, Candidate-Slots 1/-1]
+     FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (a) im Einblenden  [groesste Abweichung zu Processed 0.039654970 an Sample 2081 von 2144, Toleranz 0.000000119]
+     FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (a) im Einblenden  [in der Rueckblende gehalten: nein, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots 1/-1]
+     FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (b) nach abgeschlossenem Fade  [groesste Abweichung zu Processed 0.057149827 an Sample 3041 von 3104, Toleranz 0.000000119]
+     FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (b) nach abgeschlossenem Fade  [in der Rueckblende gehalten: nein, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots 1/-1]
+     FEHLER  candidate_abbruch_bei_identischen_zustaenden_nullt (M-55, X-1) (c) im Ausblenden  [groesste Abweichung zu Processed 0.058316141 an Sample 3105 von 3168, Toleranz 0.000000119]
+     FEHLER  candidate_bank_klingt_bis_zum_ende_der_rueckblende_und_dient_dann_aus (M-46, X-1) (c) im Ausblenden  [in der Rueckblende gehalten: nein, ACK dort 0, danach geerntet 0, belegt 2, Candidate-Slots 1/-1]
+     FEHLER  candidate_einblendung_bei_identischen_zustaenden_nullt (M-55, E-34)  [groesste Abweichung zu Processed 0.041987628 an Sample 2241 von 2304, Auswahl am Ende wirksam: nein]
+     FEHLER  auslenkungen_liegen_je_pfad_getrennt (M-27, R14, B-9)  [Committed bei freiem Candidate-Slot -3.0000 dB; mit Candidate-Range -12: Committed -3.0000 dB, Candidate 0.0000 dB]
+     FEHLER  hoermatrix_liegt_hinter_den_taps (M-57)  [Tapenergie processed 46.302527 gegen delta 50.798496]
+     FEHLER  remove_verwirft_die_alte_auslenkung (M-121)  [vorher -9.0000 dB, nach dem Remove -4.646191854216692]
+     FEHLER  311/M-41 verdraengte_zwischenpublikation_bricht_den_lebenszyklus (NAK-311 T3-14-02, M-121, R-311-1)  [A eingeschwungen -12.0000 dB; leer und B vor demselben Blockrand, Uebernahmen +0; betragsgroesste Meldung von Slot 0 ab dem ersten Block -12.000000 dB (ueber 32 Bloecke Stille); Spitze bei Stille ab Sample 256: 0.000000007]
+     FEHLER  jede Publikation des Messlaufs kam durch (kein busy_retry)  [7876 abgewiesen]
+     FEHLER  worst_case_vier_baenke_laeuft (M-118): mitten in jedem Uebergang rechnen vier verschiedene Baenke - zwei je Pfad, keine Passthrough, keine geteilt  [3884/4000 Stichproben; erster Bruch: Uebergang 0: Committed rechnet 0 mit Quelle -1, Candidate 1 mit Quelle -1]
+     FEHLER  jeder Uebergangscallback rechnet vier echte Bankdurchlaeufe (M-118)  [7768/8000; erster Bruch: Uebergang 0, Callback 0: 2 Bankdurchlaeufe]
+     FEHLER  jeder stationaere Callback rechnet zwei Baenke, je Pfad eine (M-118)  [232/8000; erster Bruch: Uebergang 55, Callback 0: 4 Bankdurchlaeufe, Committed 2/0, Candidate 3/1]
+     FEHLER  beide Laeufe nehmen dieselben sechs Publikationen (Einschalten, Rampe, Candidate, Crossfade, Candidate-Ende, Ausschalten)  [2 und 2]
+     FEHLER  311/M-23 wiedereinschalten_nach_ruhe_wie_frischer_kern (NAK-311 T3-15-05, M-03, E-31, M-07)  [Output-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.7841747, groesste Abweichung von 1,0 2.784174681, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.029001832 gegen 0 + 2^-23]
+     FEHLER  311/M-35 rampenlaenge_256_an_den_raendern (Teilfall von 311/M-23)  [Ausgang/Eingang an den Indizes 0, 1, 127, 128, 255, 256: 2.8561165 / 2.9141202 / 2.9721239 / 2.9721239 / 3.0881310 / 3.0881310 - verlangt exakt 1,0]
+     FEHLER  311/M-24 wiedereinschalten_nach_ruhe_wie_frischer_kern_input_trim (Teilfall von 311/M-23)  [Input-Trim +24 dB, aus, in der Ruhe 0 dB, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.7841747, groesste Abweichung von 1,0 2.784174681, Sprung am Umschaltsample 0.000000000, groesster Sprung ueber 1024 Samples 0.029001832 gegen 0 + 2^-23]
+     FEHLER  311/M-25 wiedereinschalten_nach_ruhe_wie_frischer_kern_mix (Teilfall von 311/M-23)  [Bell +12 dB, Mix 0, aus, in der Ruhe Mix 1, ein: bytegleich zum frischen Kern mit Mix 1: nein, erste Abweichung an Sample 1, Zusatzsprung am Umschaltsample 0.000000000 gegen Fadeschritt 0.000090975 (Abstand Programm zu Eingang 0.02329)]
+     FEHLER  311/M-26 wiedereinschalten_nach_ruhe_wie_frischer_kern_width (Teilfall von 311/M-23)  [Width 2,0 auf Seitensignal, aus, in der Ruhe Width 1,0, ein: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze 0.5937500 gegen 0,5 + 1e-6]
+     FEHLER  311/M-27 wiedereinschalten_nach_ruhe_wie_frischer_kern_auto_gain (Teilfall von 311/M-23)  [Ausgleich vorher 11.7758 dB, flach 0.0000 dB; bytegleich zum frischen Kern mit der flachen Kurve: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 1.5423634, groesste Abweichung von 1,0 0.542363405]
+     FEHLER  311/M-28 wiedereinschalten_nach_ruhe_wie_frischer_kern_rueckweg_alter_wert: bytegleich (Teilfall von 311/M-23)  [in der Ruhe 0 dB, dann +24 dB, ein mit +24 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, groesste Abweichung von x(1 + n(n+1)(g-1)/K^2) 6.264393159 gegen 0.000000477; Ausgang/Eingang bei n = 1: 3.1461346 (Kurve 1,000453)]
+     FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: E-17-Folge (Teilfall von 311/M-23)  [Spruenge am Umschaltsample: Einblenden 0.000000000, Ende Einblenden = Beginn Ausblenden 0.000000000, Ruhebeginn 0.000000000 gegen Fadeschritt 0.029001820 + 0.000000119; Wiedereinschalten 0.000000000 gegen 2^-23; groesster Sprung 0.029001832 gegen 0.057777064; das Ausblenden beginnt bei Sample 256 (groesste Abweichung von der ausgeschriebenen Kurve 7.308458694)]
+     FEHLER  311/M-29 wiedereinschalten_nach_ruhe_wie_frischer_kern_aus_im_laufenden_crossfade: Wiedereinschalten (Teilfall von 311/M-23)  [ein mit 0 dB nach dem Ausblenden: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.0881310]
+     FEHLER  311/M-30 trimwechsel_im_hard_bypass (Gegenfall M-06, E-7)  [+24 dB, Hard-Bypass, im Bypass 0 dB, Bypass aus: Spitze Ausgang/Eingang 4.2482038 gegen 1 + 1e-6, Sprung am Umschaltsample 0.000000000 gegen 0 + 2^-23]
+     FEHLER  311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: Hoerhalt (Gegenfall E-33)  [32 Samples nach dem Candidate-Ende gehalten: nein, groesste Abweichung post_candidate zu post_committed 0.000000000000 - die endende Bank klingt mit ihren Rampen (+6 dB)]
+     FEHLER  311/M-31 zweiter_candidate_nach_hoerhalt_wie_frisch: zweiter Candidate  [nach dem Halt ausgedient: nein; zweiter Candidate 0 dB aus der Ruhe, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Sample 1: 1.3848867 x Eingang]
+     FEHLER  311/M-32 wiedereinschalten_nach_ruhe_wie_frischer_kern_aenderung_in_der_ruhe_nach_beende_audiohistorie (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: nein, danach ruhend: nein), 512 Samples Ruhe, in der Ruhe 0 dB, ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 15.1528883]
+     FEHLER  311/M-33 wiedereinschalten_nach_ruhe_wie_frischer_kern_beende_audiohistorie_im_ausblenden (Teilfall von 311/M-23)  [Output-Trim +24 dB, aus, beendeAudiohistorie 64 Samples ins Ausblenden (ausblendend: nein, danach ruhend: nein), gleich ein mit 0 dB: bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 15.7909279]
+     FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 255  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, zur Blockgroesse 1: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 2.6241019]
+     FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 256  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, zur Blockgroesse 1: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 2.3920875]
+     FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 257  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, zur Blockgroesse 1: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 2.3920875]
+     FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 180  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, zur Blockgroesse 1: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.0881310]
+     FEHLER  311/M-36 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): Blockgroesse 4096  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, zur Blockgroesse 1: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 1.7540473]
+     FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 44.1 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.7841747]
+     FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 48.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.7841747]
+     FEHLER  311/M-37 wiedereinschalten_nach_ruhe_wie_frischer_kern (Teilfall von 311/M-23): 96.0 kHz  [bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0, Spitze Ausgang/Eingang 3.7841747]
+     FEHLER  311/M-38 candidate_nach_ende_wie_frisch (E-16, B-6, B-8)  [Candidate +24 dB beendet, ruhend: nein; neuer Candidate 0 dB, Tap post_candidate bytegleich zum frischen Kern: nein, erste Abweichung an Sample 0 (Sample 1: 3.6101638 x Eingang); Committed-Tap ueber 1792 Samples bytegleich auf 0.562203895: nein]
+     FEHLER  311/M-48 globaler_wechsel_macht_alle_slots_kalt: (a) Mono-Bass 0 -> 120 Hz (R-311-1, E-20)  [Slot 0 vorher -12.0000 dB; danach betragsgroesste Auslenkung aller Slots ab dem ersten Block 0.000000 dB, Spitze bei Stille ab Sample 256: 0.695349038]
+     FEHLER  311/M-49 slotzahl_null_und_acht: (c) alle acht Slots zugleich geaendert - keiner uebertragen  [betragsgroesste Auslenkung aller Slots ab dem ersten Block 0.000000 dB, Spitze bei Stille ab Sample 256: 0.071111776]
+     FEHLER  311/M-51 crossfade_mit_uebertragung_haelt_e31: Wache ueber den Lauf (E-31, kaltSchranke)  [groesster Sprung 0.002130926 gegen kaltSchranke (Low-Shelf 8 kHz Q 0,707 +3 dB, x0, x0) = 0.000759276 + Toleranz R-311-10 0.000000119 (groesster Betrag des Laufs 0.4022841); Ende 0.402284 gegen 0.520081]
+     FEHLER  311/M-53 candidate_slot_behaelt_historie (E-16, R-311-1)  [Mass am Tap post_candidate 0.000000 dB gegen 0,5 dB (erste Periode 0.000000 dB, groesste Abweichung in Periode 13); Tap ab Fade-Ende bytegleich zum Referenzkern: nein, erste Abweichung an Sample 259]
+     FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (a) statisch, gain_db +12 -> +6 dB - (3) ab Fade-Ende plus T_E neben dem Referenzkern (R-311-8)  [ab Sample 882 bis 4799 hoechstens 5.759768 dB neben der Rampe (an Sample 887); m am Fensterende 0.849823 (Soll 0.4988)]
+     FEHLER  311/M-94 uebertragung_mit_wertaenderung_haelt_e31_spitze_und_referenz: (b) dynamisch, Range -12 -> -6 dB - (3) ab Fade-Ende plus T_E neben dem Referenzkern (R-311-8)  [ab Sample 578 bis 4799 hoechstens 5.668714 dB neben der Rampe (an Sample 584); m am Fensterende 0.162215 (Soll 0.2506)]
+     FEHLER  311/M-101 frequenzkriterium_an_seinen_drei_kanten (Teilfaelle 311/M-102 Guete und 311/M-103 Gain; R-311-13, F-20)  [18 Kanten, 6 gegen die Erwartung: Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Rampe; Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Rampe; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Rampe; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Rampe; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Rampe; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Rampe]
+     FEHLER  311/M-104 nur_der_gesprungene_slot_startet_kalt (R-311-1, R-311-13, M-121)  [(a) Kennungen: Slot 3 3 -> 4, alle anderen unveraendert ja, Uebergang RAMPE; (b) Slot 0 warm: Perioden-RMS 0.001144 dB gegen 0,5 dB (Periode 960 Samples, 100 Perioden; erste Periode 0.000000 dB, groesste Abweichung in Periode 25), gemessen mit einem Bell 5000 -> 15000 Hz auf Slot 3]
+     FEHLER  311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (E-17, M-41)  [(a) 64 Publikationen im Abstand eines Blocks zu 64, 0 busy_retry; zuletzt publiziert 200.0 Hz, gefahren 200.0 Hz; verdraengte Zwischenpublikation aendert die Kennung: NEIN; 0 Blockrand-Uebernahmen bei 128 Blockraendern; (b) Testzaehler 0, Kernzaehler 0, Sperren 0, Ableitungen im Audiopfad 0]
+     FEHLER  311/M-107 sprung_in_ruhe_bypass_und_candidate (M-07, R-311-13)  [(a) aus der Ruhe bytegleich zum frischen Kern: NEIN; (b) beide Programme hard-bypassed, Ausgang bitgleich zum Eingang: ja; (c) Sprung auf dem Candidate-Pfad laesst den Committed-Pfad ohne Crossfade: ja, Committed-Kennung unveraendert: ja]
+     FEHLER  311/M-109 nicht_endliche_werte_erzwingen_eine_neue_kennung (R-311-13, F-21)  [freq_hz NaN -> KENNUNG BEHALTEN; q NaN -> KENNUNG BEHALTEN; q +Inf -> KENNUNG BEHALTEN; q 0 -> KENNUNG BEHALTEN; q negativ -> KENNUNG BEHALTEN; gain_db NaN -> KENNUNG BEHALTEN; gain_db +Inf -> KENNUNG BEHALTEN; gain_db -Inf -> KENNUNG BEHALTEN; nicht endlicher Ausgangssample in: keinem Fall]
+     FEHLER  311/M-110 umschaltsample_haelt_e31_bei_jeder_blockgroesse (E-31, R-311-10, M-03)  [4 von 5 Blockgroessen gegen die Erwartung: bs 1: Sprung am Umschaltsample 0.000000004 gegen Fadeschritt 0.001940988 + Toleranz 0.000000119, Fade endet nach 256 Samples; bs 255: Sprung am Umschaltsample 0.000000004 gegen Fadeschritt 0.000053185 + Toleranz 0.000000119, Fade endet nach -1 Samples; bs 256: Sprung am Umschaltsample 0.000000004 gegen Fadeschritt 0.000045587 + Toleranz 0.000000119, Fade endet nach -1 Samples; bs 257: Sprung am Umschaltsample 0.000000004 gegen Fadeschritt 0.000045587 + Toleranz 0.000000119, Fade endet nach -1 Samples; bs 4096: Sprung am Umschaltsample 0.000000004 gegen Fadeschritt 0.000022794 + Toleranz 0.000000119, Fade endet nach -1 Samples]
+
+   Erwartete Pruefung: 311/M-110
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 212 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 15:00:53 juenger als die Quelle 15:00:50: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-100.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-101.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-102.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-103.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-104.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-105.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-108.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-109.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

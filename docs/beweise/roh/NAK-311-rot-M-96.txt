@@ -1,0 +1,67 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-96
+============================================================================
+Matrixzeile   M-96
+Zusage        Ein Frequenzsprung ueber kSprungFrequenzVerhaeltnis laeuft als Crossfade; die Uebergangsspitze liegt hoechstens 1 dB ueber der groesseren stationaeren Spitze. Deckt auch M-97 und M-98 (Teilfaelle derselben Pruefung).
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspKern.cpp
+Datum         20.09.2026
+Anmerkung     Dieselbe Mutation belegt M-96, M-97 und M-98; die Rotbeweisspalte nennt sie fuer alle drei.
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  eq-copilot\plugin\dsp\DspKern.cpp
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-96-DspKern.cpp
+
+2. Mutation, woertlich
+   VORHER:
+                              && ! sprungImVerhaeltnis (s.freqHzWirksam, b.freqHzWirksam, kSprungFrequenzVerhaeltnis)
+   NACHHER:
+                              && true   // MUTATION Rotbeweis M-96/M-97/M-98: Frequenzkriterium entfernt
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:52:25 juenger als die Quelle 14:52:21: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 10
+     FEHLER  311/M-96 grosser_frequenzsprung_wird_ueberblendet (R-311-13, U44)  [freq_hz 5000.0 -> 50.0 (Verhaeltnis 100.0000 gegen Kriterium 2.0000); Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze ueber 0,5 s 7.392906 gegen groessere stationaere Spitze 0.996061 (vorher 0.996061, nachher 0.499852) = 17.4106 dB gegen 1 dB; Uebernahmen 1]
+     FEHLER  311/M-97 grosser_frequenzsprung_wird_ueberblendet: Teilfall Gegenrichtung 50 -> 5000 Hz (R-311-13, U44)  [freq_hz 50.0 -> 5000.0 (Verhaeltnis 100.0000 gegen Kriterium 2.0000); Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze ueber 0,5 s 1.240699 gegen groessere stationaere Spitze 0.996061 (vorher 0.499852, nachher 0.996061) = 1.9076 dB gegen 1 dB; Uebernahmen 1]
+     FEHLER  311/M-98 grosser_frequenzsprung_wird_ueberblendet: Teilfall Low-Cut 2000 -> 20 Hz (R-311-13, U44)  [freq_hz 2000.0 -> 20.0 (Verhaeltnis 100.0000 gegen Kriterium 2.0000); Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze ueber 0,5 s 6.441144 gegen groessere stationaere Spitze 0.499800 (vorher 0.120215, nachher 0.499800) = 22.2033 dB gegen 1 dB; Uebernahmen 1]
+     FEHLER  311/M-99 grosser_sprung_am_dynamischen_band_mit_range_null (R-311-13)  [dynamisch mit Range 0 dB (SVF-Weg), freq_hz 5000 -> 50; Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze 0.995839 gegen stationaer 0.996061 = -0.0019 dB gegen 1 dB]
+     FEHLER  311/M-101 frequenzkriterium_an_seinen_drei_kanten (Teilfaelle 311/M-102 Guete und 311/M-103 Gain; R-311-13, F-20)  [18 Kanten, 2 gegen die Erwartung: Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Rampe; Frequenz - 1 ULP -> Rampe; Frequenz genau auf der Grenze -> Rampe; Frequenz + 1 ULP -> Rampe; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Crossfade; Guete - 1 ULP -> Rampe; Guete genau auf der Grenze -> Rampe; Guete + 1 ULP -> Crossfade; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade; Gain - 1 ULP -> Rampe; Gain genau auf der Grenze -> Rampe; Gain + 1 ULP -> Crossfade]
+     FEHLER  311/M-104 nur_der_gesprungene_slot_startet_kalt (R-311-1, R-311-13, M-121)  [(a) Kennungen: Slot 3 3 -> 3, alle anderen unveraendert ja, Uebergang RAMPE; (b) Slot 0 warm: Perioden-RMS 0.002119 dB gegen 0,5 dB (Periode 960 Samples, 100 Perioden; erste Periode 0.002119 dB, groesste Abweichung in Periode 0), gemessen mit einem Bell 5000 -> 15000 Hz auf Slot 3]
+     FEHLER  311/M-105 zweiter_grosser_sprung_im_laufenden_crossfade (E-17, R-311-13)  [Uebernahmen 2 (Soll genau 2), erster Block nach der ersten Publikation im Crossfade NEIN; Uebergangsspitze ueber beide Uebergaenge 1.293283 gegen stationaer 0.996061 = 2.2682 dB gegen 1 dB]
+     FEHLER  311/M-108 acht_slots_springen_gleichzeitig (R-311-13, M-49)  [alle acht Kennungen neu: NEIN, Uebergang RAMPE (einmal fuer die ganze Publikation), Uebernahmen 1; Uebergangsspitze 6.380149 gegen stationaer 1.189534 = 14.5891 dB gegen 1 dB]
+     FEHLER  311/M-109 nicht_endliche_werte_erzwingen_eine_neue_kennung (R-311-13, F-21)  [freq_hz NaN -> KENNUNG BEHALTEN; q NaN -> neue Kennung; q +Inf -> neue Kennung; q 0 -> neue Kennung; q negativ -> neue Kennung; gain_db NaN -> neue Kennung; gain_db +Inf -> neue Kennung; gain_db -Inf -> neue Kennung; nicht endlicher Ausgangssample in: freq_hz NaN, q NaN, q 0, gain_db NaN, gain_db +Inf, gain_db -Inf (BEFUND zum zweiten Satz der Zeile, Manifest 57)]
+     FEHLER  311/M-110 umschaltsample_haelt_e31_bei_jeder_blockgroesse (E-31, R-311-10, M-03)  [2 von 5 Blockgroessen gegen die Erwartung: bs 1: Sprung am Umschaltsample 0.000321145 gegen Fadeschritt 0.001509360 + Toleranz 0.000000954, Fade endet nach 1 Samples; bs 255: Sprung am Umschaltsample 0.000321145 gegen Fadeschritt 0.001854159 + Toleranz 0.000000954, Fade endet nach 255 Samples; bs 256: Sprung am Umschaltsample 0.000321145 gegen Fadeschritt 0.002007918 + Toleranz 0.000000954, Fade endet nach 256 Samples; bs 257: Sprung am Umschaltsample 0.000321145 gegen Fadeschritt 0.002159907 + Toleranz 0.000000954, Fade endet nach 257 Samples; bs 4096: Sprung am Umschaltsample 0.000321145 gegen Fadeschritt 0.001939794 + Toleranz 0.000000954, Fade endet nach 4096 Samples]
+
+   Erwartete Pruefung: 311/M-96
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 368 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 2124262FF54F3436FFCE0374400BB482F89811D9B62DA56A1ECD5C9215BB317E  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:52:34 juenger als die Quelle 14:52:31: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? nimbalyst-local/
+
+
+ZUSATZ: DER LAUF GEGEN DEN UNVERAENDERTEN KERN VOR DER REPARATUR
+----------------------------------------------------------------------------
+
+Nach 7.1 laeuft eine "heute rot"-Zeile VOR der Reparatur einmal gegen den
+unveraenderten Kern. Stand: Basis a93f3c79 plus Abschnitt R und die drei
+Konstanten in DspProgramm.h, aber OHNE die drei Vergleiche in der
+bleibt-Bedingung von DspKern::vergebeKennungen. B6 Exit 1, 378 geprueft,
+10 Fehler - die zehn Zeilen, die das Kriterium erst herstellt.
+
+  FEHLER  311/M-96 grosser_frequenzsprung_wird_ueberblendet (R-311-13, U44)  [freq_hz 5000.0 -> 50.0 (Verhaeltnis 100.0000 gegen Kriterium 2.0000); Uebergang RAMPE, Kennung Slot 0 2 -> 2; Uebergangsspitze ueber 0,5 s 7.392906 gegen groessere stationaere Spitze 0.996061 (vorher 0.996061, nachher 0.499852) = 17.4106 dB gegen 1 dB; Uebernahmen 1]
+

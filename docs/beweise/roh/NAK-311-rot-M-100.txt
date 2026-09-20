@@ -1,0 +1,48 @@
+NAK-311 Etappe 5, Aenderungssatz C - Rotbeweis M-100
+============================================================================
+Matrixzeile   M-100
+Zusage        Eine Aenderung unter dem Kriterium und dieselbe Strecke in kleinen Stufen bleiben auf dem Rampenweg, bitgleich zum Basisstand (Wertwache ueber kSprungFrequenzVerhaeltnis).
+Bein          B6 (EqCopDspGoldenTest)
+Datei         eq-copilot\plugin\dsp\DspProgramm.h
+Datum         20.09.2026
+
+1. SHA-256 der unveraenderten Datei und Sicherungskopie ausserhalb des Repos
+   0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  eq-copilot\plugin\dsp\DspProgramm.h
+   Sicherung: C:\Users\phili\.claude\jobs\89bfc69d\tmp\rot-sicherung-M-100-DspProgramm.h
+
+2. Mutation, woertlich
+   VORHER:
+     inline constexpr double kSprungFrequenzVerhaeltnis = 2.0;
+   NACHHER:
+     inline constexpr double kSprungFrequenzVerhaeltnis = 1.2;   // MUTATION M-100
+
+3. Nur das betroffene Ziel gebaut
+   Bau-Exit 0; Binary 14:55:29 juenger als die Quelle 14:55:20: True
+
+4. Lauf mit der Mutation
+   Exitcode 1
+   Gefallene Pruefungen: 2
+     FEHLER  bandwert_freq_hz_rampt_ohne_zustandsreset (M-17, R8, B-4)  [groesstes Residuum gegen die stetige Rampe 0.025489143155 (-100 dBFS = 1e-5)]
+     FEHLER  311/M-100 zwanzig_kleine_stufen_bleiben_auf_dem_rampenweg (R-311-13, M-17)  [20 Stufen zu hoechstens 1.258925 (Kriterium 1.2000), Uebernahmen 20, Crossfade-Bloecke 60, Kennung Slot 0 unveraendert NEIN (2 -> 22); Fingerabdruck des Ausgangs ueber 40960 Samples 9623439540131472751 gegen Basisstand 13210420415127086859; groesstes Mass je Stufe 0.1343 dB gegen 1 dB (Stufe 19)]
+
+   Erwartete Pruefung: 311/M-100
+   Die Zusage faellt an der erwarteten Pruefung: JA
+   Unter derselben Mutation gruen geblieben: 376 Pruefungen
+
+5. Ruecknahme, bytegleich
+   SHA-256 nachher 0A6C1113C05BBF39062EC530CB4DC283BE7036FA208A1DCCEFC57909348AA3F0  gleich Schritt 1: True
+   Neubau Exit 0; Binary 14:55:44 juenger als die Quelle 14:55:36: True
+   Bein wieder gruen: Exit 0 - 378 geprueft, 0 Fehler
+
+6. git diff --stat der Etappe nennt keine mutierte Datei ausserhalb der Ticketpfade
+    M docs/beweise/roh/NAK-311-etappe5-wertspruenge.txt
+    M eq-copilot/plugin/dsp/DspKern.cpp
+    M eq-copilot/plugin/dsp/DspKern.h
+    M eq-copilot/plugin/dsp/DspProgramm.h
+    M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   ?? briefing-hub/
+   ?? docs/beweise/roh/NAK-311-etappe5-bankpool-wiederholungen.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-96.txt
+   ?? docs/beweise/roh/NAK-311-rot-M-99.txt
+   ?? nimbalyst-local/
+

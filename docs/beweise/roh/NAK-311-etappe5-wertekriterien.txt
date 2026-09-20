@@ -1,0 +1,158 @@
+NAK-311 Etappe 5, Aenderungssatz C - die drei Zahlen, gemessen
+============================================================================
+Ticket        NAK-311, Etappe 5, Aenderungssatz C (R-311-13, Karte U44)
+Basis         a93f3c793f3a20dcf41e380f5477e27c1cea8b3e
+Datum         20.09.2026, Windows 11, pwsh, Release-Bau
+Maass         R-311-13 woertlich: Uebergangsspitze (groesster Betrag eines
+              Ausgangssamples im Fenster von 0,5 s ab dem Umschaltsample, beide
+              Kanaele) gegen die GROESSERE der beiden stationaeren Spitzen (je
+              eine volle Periode des Prueftons, eingeschwungen). Zusage:
+              hoechstens 1 dB. Toleranzregel R-311-10 gilt fuer die
+              E-31-Messung in 311/M-110, nicht fuer diese Reihe.
+Pruefling     Frequenz: Low-Shelf 5000 Hz Q 0,707 +6 dB, 1-kHz-Sinus 0,5,
+              48 kHz, Blockgroesse 64; die Frequenz springt auf 5000/v.
+              Gain: Low-Shelf 1000 Hz Q 0,707, Sprung von +d/2 auf -d/2.
+              Guete: Bell 1000 Hz +6 dB, Sprung q 0,15 -> 0,15*v.
+Messweg       EINE temporaere Messreihe im Bein B6 (nie committet, nach 7.1
+              wieder entfernt), dreimal gefahren: einmal mit den gebauten
+              Zahlen und zweimal mit temporaer veraenderten Konstanten, die
+              JEDEN Schritt auf den Rampenweg beziehungsweise in den Crossfade
+              zwingen. Nur so steht je Stufe BEIDER Weg nebeneinander.
+
+HINWEIS zum Vertragsbereich: die Gainstufen 36 und 48 dB liegen ausserhalb
+von +/-12 dB und sind nur ueber den Programmbau im Test erreichbar; der
+Vertragsweg laesst sie nicht zu. Sie stehen in der Reihe, weil 43.2 sie nennt.
+
+
+1. LAUF MIT DEN GEBAUTEN ZAHLEN (2,0 / 4,0 / 20,0)
+----------------------------------------------------------------------------
+
+  MESSREIHE kSprungFrequenzVerhaeltnis=2 kSprungGueteVerhaeltnis=4 kSprungGainDb=20
+  MESSREIHE Frequenz Stufe 1.258925 Weg Rampe Uebergangsspitze 0.996658444 stationaer vorher 0.996060789 nachher 0.994881988 Mass 0.005210 dB
+  MESSREIHE Frequenz Stufe 2.000000 Weg Rampe Uebergangsspitze 1.000986338 stationaer vorher 0.996060789 nachher 0.978975236 Mass 0.042846 dB
+  MESSREIHE Frequenz Stufe 4.000000 Weg Crossfade Uebergangsspitze 0.986743689 stationaer vorher 0.996060789 nachher 0.811471999 Mass -0.081630 dB
+  MESSREIHE Frequenz Stufe 8.000000 Weg Crossfade Uebergangsspitze 0.979526818 stationaer vorher 0.996060789 nachher 0.550108612 Mass -0.145390 dB
+  MESSREIHE Frequenz Stufe 100.000000 Weg Crossfade Uebergangsspitze 0.971361578 stationaer vorher 0.996060789 nachher 0.499851584 Mass -0.218098 dB
+  MESSREIHE Gain Stufe 12.000000 Weg Rampe Uebergangsspitze 0.677152634 stationaer vorher 0.705636978 nachher 0.353656232 Mass -0.357895 dB
+  MESSREIHE Gain Stufe 18.000000 Weg Rampe Uebergangsspitze 0.783887804 stationaer vorher 0.838134825 nachher 0.297381461 Mass -0.581200 dB
+  MESSREIHE Gain Stufe 20.000000 Weg Rampe Uebergangsspitze 0.821269691 stationaer vorher 0.889136434 nachher 0.281169623 Mass -0.689652 dB
+  MESSREIHE Gain Stufe 24.000000 Weg Crossfade Uebergangsspitze 0.920150995 stationaer vorher 0.997599006 nachher 0.250585526 Mass -0.701938 dB
+  MESSREIHE Gain Stufe 36.000000 Weg Crossfade Uebergangsspitze 1.360461593 stationaer vorher 1.409188747 nachher 0.177406356 Mass -0.305658 dB
+  MESSREIHE Gain Stufe 48.000000 Weg Crossfade Uebergangsspitze 1.987552643 stationaer vorher 1.987552643 nachher 0.125406086 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 2.000000 Weg Rampe Uebergangsspitze 0.997688413 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000499 dB
+  MESSREIHE Guete Stufe 4.000000 Weg Rampe Uebergangsspitze 0.997633159 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000018 dB
+  MESSREIHE Guete Stufe 8.000000 Weg Crossfade Uebergangsspitze 0.997631967 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000007 dB
+  MESSREIHE Guete Stufe 16.000000 Weg Crossfade Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 160.000000 Weg Crossfade Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+
+2. RAMPENWEG ERZWUNGEN (Konstanten temporaer auf 1e300)
+----------------------------------------------------------------------------
+
+  MESSREIHE kSprungFrequenzVerhaeltnis=1e+300 kSprungGueteVerhaeltnis=1e+300 kSprungGainDb=1e+300
+  MESSREIHE Frequenz Stufe 1.258925 Weg Rampe Uebergangsspitze 0.996658444 stationaer vorher 0.996060789 nachher 0.994881988 Mass 0.005210 dB
+  MESSREIHE Frequenz Stufe 2.000000 Weg Rampe Uebergangsspitze 1.000986338 stationaer vorher 0.996060789 nachher 0.978975236 Mass 0.042846 dB
+  MESSREIHE Frequenz Stufe 4.000000 Weg Rampe Uebergangsspitze 1.024705052 stationaer vorher 0.996060789 nachher 0.811471999 Mass 0.246261 dB
+  MESSREIHE Frequenz Stufe 8.000000 Weg Rampe Uebergangsspitze 1.083007932 stationaer vorher 0.996060789 nachher 0.550108612 Mass 0.726916 dB
+  MESSREIHE Frequenz Stufe 100.000000 Weg Rampe Uebergangsspitze 7.392905712 stationaer vorher 0.996060789 nachher 0.499851584 Mass 17.410586 dB
+  MESSREIHE Gain Stufe 12.000000 Weg Rampe Uebergangsspitze 0.677152634 stationaer vorher 0.705636978 nachher 0.353656232 Mass -0.357895 dB
+  MESSREIHE Gain Stufe 18.000000 Weg Rampe Uebergangsspitze 0.783887804 stationaer vorher 0.838134825 nachher 0.297381461 Mass -0.581200 dB
+  MESSREIHE Gain Stufe 20.000000 Weg Rampe Uebergangsspitze 0.821269691 stationaer vorher 0.889136434 nachher 0.281169623 Mass -0.689652 dB
+  MESSREIHE Gain Stufe 24.000000 Weg Rampe Uebergangsspitze 0.903814435 stationaer vorher 0.997599006 nachher 0.250585526 Mass -0.857535 dB
+  MESSREIHE Gain Stufe 36.000000 Weg Rampe Uebergangsspitze 1.360461593 stationaer vorher 1.409188747 nachher 0.177406356 Mass -0.305658 dB
+  MESSREIHE Gain Stufe 48.000000 Weg Rampe Uebergangsspitze 1.987552643 stationaer vorher 1.987552643 nachher 0.125406086 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 2.000000 Weg Rampe Uebergangsspitze 0.997688413 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000499 dB
+  MESSREIHE Guete Stufe 4.000000 Weg Rampe Uebergangsspitze 0.997633159 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000018 dB
+  MESSREIHE Guete Stufe 8.000000 Weg Rampe Uebergangsspitze 0.997631192 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000001 dB
+  MESSREIHE Guete Stufe 16.000000 Weg Rampe Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 160.000000 Weg Rampe Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+
+3. CROSSFADE-WEG ERZWUNGEN (Konstanten temporaer auf 1,0 / 1,0 / 0,0)
+----------------------------------------------------------------------------
+
+  MESSREIHE kSprungFrequenzVerhaeltnis=1 kSprungGueteVerhaeltnis=1 kSprungGainDb=0
+  MESSREIHE Frequenz Stufe 1.258925 Weg Crossfade Uebergangsspitze 0.996000648 stationaer vorher 0.996060789 nachher 0.994881988 Mass -0.000524 dB
+  MESSREIHE Frequenz Stufe 2.000000 Weg Crossfade Uebergangsspitze 0.994116068 stationaer vorher 0.996060789 nachher 0.978975236 Mass -0.016975 dB
+  MESSREIHE Frequenz Stufe 4.000000 Weg Crossfade Uebergangsspitze 0.986743689 stationaer vorher 0.996060789 nachher 0.811471999 Mass -0.081630 dB
+  MESSREIHE Frequenz Stufe 8.000000 Weg Crossfade Uebergangsspitze 0.979526818 stationaer vorher 0.996060789 nachher 0.550108612 Mass -0.145390 dB
+  MESSREIHE Frequenz Stufe 100.000000 Weg Crossfade Uebergangsspitze 0.971361578 stationaer vorher 0.996060789 nachher 0.499851584 Mass -0.218098 dB
+  MESSREIHE Gain Stufe 12.000000 Weg Crossfade Uebergangsspitze 0.676392436 stationaer vorher 0.705636978 nachher 0.353656232 Mass -0.367652 dB
+  MESSREIHE Gain Stufe 18.000000 Weg Crossfade Uebergangsspitze 0.788117349 stationaer vorher 0.838134825 nachher 0.297381461 Mass -0.534460 dB
+  MESSREIHE Gain Stufe 20.000000 Weg Crossfade Uebergangsspitze 0.828328609 stationaer vorher 0.889136434 nachher 0.281169623 Mass -0.615315 dB
+  MESSREIHE Gain Stufe 24.000000 Weg Crossfade Uebergangsspitze 0.920150995 stationaer vorher 0.997599006 nachher 0.250585526 Mass -0.701938 dB
+  MESSREIHE Gain Stufe 36.000000 Weg Crossfade Uebergangsspitze 1.360461593 stationaer vorher 1.409188747 nachher 0.177406356 Mass -0.305658 dB
+  MESSREIHE Gain Stufe 48.000000 Weg Crossfade Uebergangsspitze 1.987552643 stationaer vorher 1.987552643 nachher 0.125406086 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 2.000000 Weg Crossfade Uebergangsspitze 1.001712799 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.035465 dB
+  MESSREIHE Guete Stufe 4.000000 Weg Crossfade Uebergangsspitze 0.997787476 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.001361 dB
+  MESSREIHE Guete Stufe 8.000000 Weg Crossfade Uebergangsspitze 0.997631967 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000007 dB
+  MESSREIHE Guete Stufe 16.000000 Weg Crossfade Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+  MESSREIHE Guete Stufe 160.000000 Weg Crossfade Uebergangsspitze 0.997631133 stationaer vorher 0.997631133 nachher 0.997631133 Mass 0.000000 dB
+
+4. DER ENTSCHEID JE ZAHL
+----------------------------------------------------------------------------
+
+Regel (Abschnitt 54, nachgezogen im Fortsetzungsauftrag Nr. 4): haelt die
+vorgeschlagene Zahl das Maass - bleibt also JEDE Stufe bis einschliesslich der
+Zahl auf dem Rampenweg im Maass - und liegt sie strikt ueber jedem
+Bestandsfall mit Audio (Frequenz 1,4; Guete 3,33; Gain 18,0 dB), bleibt sie.
+
+  kSprungFrequenzVerhaeltnis = 2,0  BESTAETIGT
+    Rampenweg: 1,2589 -> 0,005210 dB | 2,0 -> 0,042846 dB | 4,0 -> 0,246261 dB
+               8,0 -> 0,726916 dB | 100 -> 17,410586 dB
+    Bis einschliesslich der vorgeschlagenen Zahl 2,0 haelt der Rampenweg das
+    Maass mit 0,042846 dB, also weit unter 1 dB. Der Rampenweg reisst das
+    Maass erst zwischen 8,0 (0,726916 dB) und 100 (17,410586 dB). Die Zahl
+    2,0 liegt strikt ueber dem groessten Bestandsfall mit Audio (1,4;
+    bandwert_freq_hz_rampt_ohne_zustandsreset, 1000 -> 1400 Hz).
+    ANMERKUNG, gemessen und nicht geschoent: das Maass allein wuerde bis 8,0
+    tragen. 2,0 ist damit die STRENGERE Zahl - die Herleitung in 40.3 waehlt
+    die Oktave, weil sie mit Faktor 1,59 ueber dem gemessen sicheren Schritt
+    und mit Faktor 50 unter dem gemessen schlechten liegt. Ein Wechsel auf
+    8,0 waere ein Produktentscheid, kein Messergebnis; der Bauer nimmt ihn
+    nicht vor.
+
+  kSprungGueteVerhaeltnis = 4,0  BESTAETIGT
+    Rampenweg: 2,0 -> 0,000499 dB | 4,0 -> 0,000018 dB | 8,0 -> 0,000001 dB
+               16 -> 0,000000 dB | 160 -> 0,000000 dB
+    Der Rampenweg haelt das Maass ueber die GANZE Reihe bis zum
+    Vertragsrand 160. Die vorgeschlagene Zahl haelt damit ohne Ausnahme und
+    liegt strikt ueber dem groessten Bestandsfall mit Audio (3,33;
+    311/M-116 nach dem Wechsel des Prueflings auf q 0,5).
+    ANMERKUNG: eine reine Gueteaenderung erzeugt am gemessenen Pruefling
+    KEINE Uebergangsspitze - der Ausschlag, den Phase 15 gemessen hat, kam
+    von der Frequenz (so steht es in der Herleitung in 40.3). Die
+    Gueteschranke ist damit eine Vorsichtsschranke, keine Not.
+
+  kSprungGainDb = 20,0 dB  BESTAETIGT
+    Rampenweg: 12 -> -0,357895 dB | 18 -> -0,581200 dB | 20 -> -0,689652 dB
+               24 -> -0,857535 dB | 36 -> -0,305658 dB | 48 -> 0,000000 dB
+    Kein Wert der Reihe ist positiv: die Uebergangsspitze bleibt UNTER der
+    groesseren stationaeren Spitze. Der Rampenweg haelt das Maass ueber die
+    ganze Reihe, auch bei 48 dB. Die vorgeschlagene Zahl haelt damit und
+    liegt strikt ueber den zwei Bestandsfaellen mit Audio (je 18,0 dB).
+    ANMERKUNG: das deckt sich mit der Herleitung - ein reiner Gainsprung
+    bewegt bei RBJ Pole und Nullstellen gemeinsam mit A = 10^(g/40) und regt
+    keine neue Polstelle an.
+
+  ZUSAMMEN: keine der drei Zahlen musste gesenkt werden; keine Stelle
+  ausserhalb der Matrix war nachzuziehen.
+
+5. DER GOLDEN VON 311/M-100
+----------------------------------------------------------------------------
+
+Der Fingerabdruck des Ausgangs der zwanzig kleinen Stufen ist ein Golden im
+Sinne der Golden-Regel (7.1): er stammt aus dem UNVERAENDERTEN Kern am
+Basisstand dieses Aenderungssatzes, bevor eine Zeile des Kriteriums gebaut
+war. Erzeuger ist der Lauf des neu geschriebenen Tests gegen den
+unveraenderten Kern (Abschnitt "Tests vor der Reparatur"):
+
+  Bau        a93f3c79 plus Abschnitt R, OHNE die drei Vergleiche in der
+             bleibt-Bedingung von DspKern::vergebeKennungen
+  Verfahren  FNV-1a ueber die Bitmuster aller 40 960 aufgezeichneten
+             Ausgangssamples (beide Kanaele verschraenkt), im Test
+             eigenstaendig ausgeschrieben
+  Wert       13210420415127086859 (dezimal; 0xB754D7603137E70B)
+
+Nach dem Bau des Kriteriums liefert derselbe Lauf denselben Wert - das ist
+die Zusage von M-100: die zwanzig Stufen liegen unter dem Kriterium und
+bleiben bitgleich zum Basisstand.
+

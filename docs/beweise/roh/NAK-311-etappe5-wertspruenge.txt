@@ -842,3 +842,481 @@ DspKern.h.instrumentiert), der Diff steht in Abschnitt 1 dieser Datei.
   16 Zeilen zwischen ZWEI Laeufen desselben unveraenderten Binaries abweichen,
   ist damit selbst belegt.
 
+
+
+10. ZWEITER MESSLAUF - nach dem Wechsel des Pruefling-q in 311/M-116
+============================================================================
+
+Anlass: Fortsetzungsauftrag Nr. 3 (Entscheid des Dirigenten, Abschnitt 56.1,
+R-311-25). Stand: Basis a93f3c79 plus die EINE Aenderung an
+eq-copilot/plugin/tests/DspGoldenTestMain.cpp - der zweite Pruefling von
+311/M-116 traegt q 0,5 statt 0,70710678118654752 -, weiterhin OHNE Kriterium
+im Code (DspProgramm.h, DspKern.h und DspKern.cpp unveraendert).
+Instrumentierung bytegleich dieselbe wie im ersten Lauf (SHA-256 der
+instrumentierten Dateien identisch zu Abschnitt 9), dieselben Regeln aus
+R-311-24.
+
+10.1 Das geaenderte 311/M-116 am Basisstand OHNE Kriterium
+----------------------------------------------------------------------------
+
+  vorher (q 0,70710678118654752):
+    Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt;
+    Q 0,707: abgeleitet 42.978122765 dB, angewandt 24.000000000000 dB, Zustand gesetzt;
+    Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand falsch;
+    angewandter Faktor am ersten Sample nach dem Wechsel 15.822167895
+    (altes Ziel 15.848931925), nach 300 Samples 8.997340287
+    (neues Ziel 8.997340287, Rampe 256 Samples)
+
+  nachher (q 0,5):
+    Q 0,15: angewandt 24.000000000000 dB, Zustand gesetzt;
+    Q 0,5: abgeleitet 66.940862302 dB, angewandt 24.000000000000 dB, Zustand gesetzt;
+    Q 1,0: abgeleitet 19.082282924 dB, angewandt 19.082282924 dB (bitgleich ja), Zustand falsch;
+    angewandter Faktor am ersten Sample nach dem Wechsel 15.822167895
+    (altes Ziel 15.848931925), nach 300 Samples 8.997340287
+    (neues Ziel 8.997340287, Rampe 256 Samples)
+
+  Die Zusage von M-116 traegt: 66,940862302 dB liegt ueber kAutoGainDeckelDb
+  = 24,0 - die Ableitung ueberschreitet den Deckel erst bei
+  Q 0,931076192540312, gemessen in 311/M-113 (d). Der Zustand ist im zweiten
+  Schritt gesetzt und faellt im dritten zurueck. Beide Schritte liegen unter
+  dem Kriterium:
+    0,14999999999999999 -> 0,5 = 3,3333333333333335
+    0,5 -> 1,0                 = 2
+  B6 mit der Aenderung, OHNE Kriterium: Exit 0, 365 geprueft, 0 Fehler - die
+  Aenderung allein bewegt das Urteil nicht.
+
+10.2 Urteile der vier Beine im zweiten Messlauf
+----------------------------------------------------------------------------
+
+  Bein  ohne Instrumentierung          mit Instrumentierung
+  B6    Exit 0, 365 geprueft, 0        Exit 0, 365 geprueft, 0
+  B7    Exit 0, 192 geprueft, 0        Exit 0, 192 geprueft, 0
+  A16   Exit 0, 131 ok, 0 Fehler       Exit 0, 131 ok, 0 Fehler
+  B3c   Exit 0, 162 bestanden, 0       Exit 0, 162 bestanden, 0
+
+  Zeilenvergleich: B7 0, A16 0, B3c 0 Unterschiede; B6 16 Unterschiede, wieder
+  ausschliesslich die ausgenommenen Klassen M-118, M-120 und M-122.
+  UEBERLAUF=0 in jedem Bein.
+
+10.3 Zeilen und Maximum je Kriterium
+----------------------------------------------------------------------------
+
+  B6   Zeilen  52   max vF = 1.3999999999999999     max vQ = 3.3333333333333335     max dG = 18 dB
+  B7   Zeilen 284   max vF = 2.1000000000000001     max vQ = 1                      max dG = 23 dB
+  A16  Zeilen   2   max vF = 1                      max vQ = 1.4142135623730949     max dG = 15 dB
+  B3c  Zeilen   0   max vF = 0                      max vQ = 0                      max dG = 0 dB
+
+  B6 traegt jetzt 52 statt 53 Zeilen: das Rennen in
+  bankpool_parallel_ohne_rennen hat in diesem Lauf keine Zeile erzeugt.
+
+10.4 Jede Zeile ab dem 0,9-Fachen, mit der Spalte nach R-311-25
+----------------------------------------------------------------------------
+
+  Geschuetzt durch M-144 ist ein Bestandsfall mit Audio ueber einem Blockrand,
+  dessen Pruefung den AUSGANG, einen TAP, die UEBERGANGSART oder ein GOLDEN
+  liest. Nur ueber diese Ja-Faelle urteilt die Auswertung.
+
+  Fall     Wert              Lage   Audio  A/T/U/G  Pruefung
+  B6 #46   dG 18,0 dB        unter  ja     JA       uebernahme_nur_am_aeusseren_blockrand (M-25, R9, B-11)
+  B7 #6    vF 2 (genau auf)  AUF    nein   nein     T9 retry_nach_zonenloesung_mit_aktueller_base_revision_committet
+  B7 #29   dG 23,0 dB        UEBER  nein   nein     Vorlauf dreiunddreissigCommits (T10/T11)
+  B7 #61   dG 23,0 dB        UEBER  nein   nein     derselbe Vorlauf
+  B7 #95   dG 23,0 dB        UEBER  nein   nein     derselbe Vorlauf
+  B7 #150  vF 2,1            UEBER  nein   nein     wiederholung_unter_einer_zone_bekommt_nicht_user_schutz
+  B7 #173  dG 23,0 dB        UEBER  nein   nein     derselbe Vorlauf
+  B7 #187  vF 2 (genau auf)  AUF    nein   nein     zone_deaktivieren_ist_eine_transaktion (M-71)
+  B7 #188  vF 2 (genau auf)  AUF    nein   nein     dieselbe Pruefung, Rueckrichtung
+  B7 #211  dG 23,0 dB        UEBER  nein   nein     undo_ring_haelt_tiefe_32 (M-78)
+  B7 #232  dG 18,0 dB        unter  ja     JA       Gegenprobe in capability_entscheidet_den_automationspfad (M-119)
+
+  Die neun Nein-Faelle von B7 fahren gar kein Audio: die Ebene Stand ruft nie
+  verarbeite (TransactionTestMain.cpp:156-161). Ihre Urteile lesen
+  Transaktionsausgang, Stufe, Revision, Register und Hash - nie den
+  Audioausgang, einen Tap, die Uebergangsart oder ein Golden.
+
+  Der EINE Nein-Fall MIT Audio bleibt bankpool_parallel_ohne_rennen (M-122).
+  Er hat in diesem Lauf keine Zeile erzeugt, ist aber weiter moeglich; er steht
+  mit Grund in Abschnitt 56.1 (R-311-25) und blockiert nicht.
+
+10.5 Ergebnis
+----------------------------------------------------------------------------
+
+  KEIN Ja-Fall liegt auf oder ueber einem der drei Kriterien.
+
+  Groesster Ja-Fall je Kriterium, gemessen ueber alle vier Beine:
+    Frequenz  1,3999999999999999   bandwert_freq_hz_rampt_ohne_zustandsreset
+                                   (1000 -> 1400 Hz, B6 Zeile 1)
+    Guete     3,3333333333333335   311/M-116 deckelzustand_faellt_zurueck nach
+                                   der Aenderung (0,15 -> 0,5, B6 Zeilen 3..18)
+    Gain      18 dB                zwei Faelle: uebernahme_nur_am_aeusseren_blockrand
+                                   (B6 46) und die Gegenprobe in
+                                   capability_entscheidet_den_automationspfad (B7 232)
+
+  Das deckt sich Zahl fuer Zahl mit der Erwartung des Fortsetzungsauftrags
+  Nr. 3. Die vorgeschlagenen Kriterien 2,0 / 4,0 / 20,0 liegen strikt darueber;
+  die Regel zu den drei Zahlen (Abschnitt 54, nachgezogen in Nr. 4) hat damit
+  ihre Referenz.
+
+10.6 Ruecknahme
+----------------------------------------------------------------------------
+
+  SHA-256 nach der Ruecknahme, identisch zu Abschnitt 9:
+    5D02A08FBECF93CDAFC82EA64FCDF86D1E28C38748AC507FD9F1F04A6ED99554  DspKern.cpp
+    B70B8DDEDA356C3F3FB9BCE4175890C111E9F3FA13E03CFBACCFA04CBEBF7370  DspKern.h
+  git status --short nach der Ruecknahme: nur
+  eq-copilot/plugin/tests/DspGoldenTestMain.cpp (die gewollte M-116-Aenderung)
+  und die zwei fremden Ordner; git diff nennt keine Datei unter dsp/.
+
+10.7 Vollstaendiger Dump des zweiten Messlaufs
+----------------------------------------------------------------------------
+
+10.7.1 B6 (ZEILEN=52 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->9	dG=6
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1400	vF=1.3999999999999999	q=1->1	vQ=1	g=3->3	dG=0
+  2	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->3	vQ=3	g=3->3	dG=0
+  3	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  4	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  5	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  6	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  7	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  8	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  9	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  10	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  11	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  12	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  13	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  14	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  15	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  16	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  17	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  18	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.14999999999999999->0.5	vQ=3.3333333333333335	g=0->0	dG=0
+  19	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  20	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  21	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  22	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  23	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  24	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  25	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  26	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  27	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  28	pfad=0	slot=1	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  29	pfad=0	slot=2	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  30	pfad=0	slot=3	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  31	pfad=0	slot=4	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  32	pfad=0	slot=5	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  33	pfad=0	slot=6	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  34	pfad=0	slot=7	pfadGleich=1	f=20->20	vF=1	q=0.5->1	vQ=2	g=0->0	dG=0
+  35	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->2	dG=4
+  36	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  37	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  38	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  39	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  40	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  41	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  42	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  43	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  44	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  45	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->6	dG=4
+  46	pfad=0	slot=0	pfadGleich=1	f=8000->8000	vF=1	q=0.70699999999999996->0.70699999999999996	vQ=1	g=9->-9	dG=18
+  47	pfad=0	slot=0	pfadGleich=1	f=250->250	vF=1	q=1.2->1.2	vQ=1	g=5->-2	dG=7
+  48	pfad=0	slot=0	pfadGleich=1	f=250->250	vF=1	q=1.2->1.2	vQ=1	g=5->-2	dG=7
+  49	pfad=0	slot=0	pfadGleich=1	f=20->20	vF=1	q=1->1	vQ=1	g=-12->0	dG=12
+  50	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=2->2	vQ=1	g=12->6	dG=6
+  51	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=2->2	vQ=1	g=12->6	dG=6
+
+10.7.2 B7 (ZEILEN=284 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->-6	dG=12
+  2	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  3	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  4	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  5	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  6	pfad=0	slot=0	pfadGleich=1	f=500->1000	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  7	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  8	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  9	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  10	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  11	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  12	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  13	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  14	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  15	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  16	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  17	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  18	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  19	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  20	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  21	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  22	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  23	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  24	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  25	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  26	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  27	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  28	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  29	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  30	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  31	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  32	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  33	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  34	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  35	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  36	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  37	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  38	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  39	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  40	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  41	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  42	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  43	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  44	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  45	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  46	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  47	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  48	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  49	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  50	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  51	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  52	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  53	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  54	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  55	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  56	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  57	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  58	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  59	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  60	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  61	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  62	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  63	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  64	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  65	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  66	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  67	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  68	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  69	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  70	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  71	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  72	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->-6	dG=12
+  73	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  74	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  75	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  76	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  77	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  78	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  79	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  80	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  81	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  82	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  83	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  84	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  85	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  86	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  87	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  88	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  89	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  90	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  91	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  92	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  93	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  94	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  95	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  96	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  97	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  98	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  99	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  100	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  101	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  102	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  103	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  104	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  105	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  106	pfad=0	slot=0	pfadGleich=1	f=200->280	vF=1.3999999999999999	q=1->1	vQ=1	g=0->8	dG=8
+  107	pfad=0	slot=1	pfadGleich=1	f=210->290	vF=1.3809523809523809	q=1->1	vQ=1	g=1->9	dG=8
+  108	pfad=0	slot=2	pfadGleich=1	f=220->300	vF=1.3636363636363635	q=1->1	vQ=1	g=2->10	dG=8
+  109	pfad=0	slot=3	pfadGleich=1	f=230->310	vF=1.3478260869565217	q=1->1	vQ=1	g=3->11	dG=8
+  110	pfad=0	slot=4	pfadGleich=1	f=240->320	vF=1.3333333333333333	q=1->1	vQ=1	g=4->0	dG=4
+  111	pfad=0	slot=5	pfadGleich=1	f=250->330	vF=1.3200000000000001	q=1->1	vQ=1	g=5->1	dG=4
+  112	pfad=0	slot=6	pfadGleich=1	f=260->340	vF=1.3076923076923077	q=1->1	vQ=1	g=6->2	dG=4
+  113	pfad=0	slot=7	pfadGleich=1	f=270->350	vF=1.2962962962962963	q=1->1	vQ=1	g=7->3	dG=4
+  114	pfad=0	slot=0	pfadGleich=1	f=280->360	vF=1.2857142857142858	q=1->1	vQ=1	g=8->4	dG=4
+  115	pfad=0	slot=1	pfadGleich=1	f=290->370	vF=1.2758620689655173	q=1->1	vQ=1	g=9->5	dG=4
+  116	pfad=0	slot=2	pfadGleich=1	f=300->380	vF=1.2666666666666666	q=1->1	vQ=1	g=10->6	dG=4
+  117	pfad=0	slot=3	pfadGleich=1	f=310->390	vF=1.2580645161290323	q=1->1	vQ=1	g=11->7	dG=4
+  118	pfad=0	slot=4	pfadGleich=1	f=320->400	vF=1.25	q=1->1	vQ=1	g=0->8	dG=8
+  119	pfad=0	slot=5	pfadGleich=1	f=330->410	vF=1.2424242424242424	q=1->1	vQ=1	g=1->9	dG=8
+  120	pfad=0	slot=6	pfadGleich=1	f=340->420	vF=1.2352941176470589	q=1->1	vQ=1	g=2->10	dG=8
+  121	pfad=0	slot=7	pfadGleich=1	f=350->430	vF=1.2285714285714286	q=1->1	vQ=1	g=3->11	dG=8
+  122	pfad=0	slot=0	pfadGleich=1	f=360->440	vF=1.2222222222222223	q=1->1	vQ=1	g=4->0	dG=4
+  123	pfad=0	slot=1	pfadGleich=1	f=370->450	vF=1.2162162162162162	q=1->1	vQ=1	g=5->1	dG=4
+  124	pfad=0	slot=2	pfadGleich=1	f=380->460	vF=1.2105263157894737	q=1->1	vQ=1	g=6->2	dG=4
+  125	pfad=0	slot=3	pfadGleich=1	f=390->470	vF=1.2051282051282051	q=1->1	vQ=1	g=7->3	dG=4
+  126	pfad=0	slot=4	pfadGleich=1	f=400->480	vF=1.2	q=1->1	vQ=1	g=8->4	dG=4
+  127	pfad=0	slot=5	pfadGleich=1	f=410->490	vF=1.1951219512195121	q=1->1	vQ=1	g=9->5	dG=4
+  128	pfad=0	slot=6	pfadGleich=1	f=420->500	vF=1.1904761904761905	q=1->1	vQ=1	g=10->6	dG=4
+  129	pfad=0	slot=7	pfadGleich=1	f=430->510	vF=1.1860465116279071	q=1->1	vQ=1	g=11->7	dG=4
+  130	pfad=0	slot=0	pfadGleich=1	f=440->520	vF=1.1818181818181819	q=1->1	vQ=1	g=0->8	dG=8
+  131	pfad=0	slot=1	pfadGleich=1	f=450->530	vF=1.1777777777777778	q=1->1	vQ=1	g=1->9	dG=8
+  132	pfad=0	slot=2	pfadGleich=1	f=460->540	vF=1.173913043478261	q=1->1	vQ=1	g=2->10	dG=8
+  133	pfad=0	slot=3	pfadGleich=1	f=470->550	vF=1.1702127659574468	q=1->1	vQ=1	g=3->11	dG=8
+  134	pfad=0	slot=4	pfadGleich=1	f=480->560	vF=1.1666666666666667	q=1->1	vQ=1	g=4->0	dG=4
+  135	pfad=0	slot=5	pfadGleich=1	f=490->570	vF=1.1632653061224489	q=1->1	vQ=1	g=5->1	dG=4
+  136	pfad=0	slot=6	pfadGleich=1	f=500->580	vF=1.1599999999999999	q=1->1	vQ=1	g=6->2	dG=4
+  137	pfad=0	slot=7	pfadGleich=1	f=510->590	vF=1.1568627450980393	q=1->1	vQ=1	g=7->3	dG=4
+  138	pfad=0	slot=7	pfadGleich=1	f=590->510	vF=1.1568627450980393	q=1->1	vQ=1	g=3->7	dG=4
+  139	pfad=0	slot=6	pfadGleich=1	f=580->500	vF=1.1599999999999999	q=1->1	vQ=1	g=2->6	dG=4
+  140	pfad=0	slot=6	pfadGleich=1	f=500->580	vF=1.1599999999999999	q=1->1	vQ=1	g=6->2	dG=4
+  141	pfad=0	slot=7	pfadGleich=1	f=510->590	vF=1.1568627450980393	q=1->1	vQ=1	g=7->3	dG=4
+  142	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  143	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->2	dG=1
+  144	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->3	dG=1
+  145	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->4	dG=1
+  146	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4->5	dG=1
+  147	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5->6	dG=1
+  148	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6->7	dG=1
+  149	pfad=0	slot=0	pfadGleich=1	f=1000->1050	vF=1.05	q=1->1	vQ=1	g=3->3	dG=0
+  150	pfad=0	slot=0	pfadGleich=1	f=1050->500	vF=2.1000000000000001	q=1->1	vQ=1	g=3->3	dG=0
+  151	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  152	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  153	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  154	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  155	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  156	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  157	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  158	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  159	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-1.75	dG=1
+  160	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.75->-0.75	dG=1
+  161	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.75->0.25	dG=1
+  162	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.25->1.25	dG=1
+  163	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.25->2.25	dG=1
+  164	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.25->3.25	dG=1
+  165	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.25->4.25	dG=1
+  166	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.25->5.25	dG=1
+  167	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.25->6.25	dG=1
+  168	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.25->7.25	dG=1
+  169	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.25->8.25	dG=1
+  170	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.25->9.25	dG=1
+  171	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.25->10.25	dG=1
+  172	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.25->11.25	dG=1
+  173	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.25->-11.75	dG=23
+  174	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.75->-10.75	dG=1
+  175	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.75->-9.75	dG=1
+  176	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.75->-8.75	dG=1
+  177	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.75->-7.75	dG=1
+  178	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.75->-6.75	dG=1
+  179	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.75->-5.75	dG=1
+  180	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.75->-4.75	dG=1
+  181	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.75->-3.75	dG=1
+  182	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.75->-2.75	dG=1
+  183	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.75->-3.75	dG=1
+  184	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->6	dG=3
+  185	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->-4	dG=7
+  186	pfad=0	slot=0	pfadGleich=1	f=1000->950	vF=1.0526315789473684	q=1->1	vQ=1	g=-4->-4	dG=0
+  187	pfad=0	slot=0	pfadGleich=1	f=1000->500	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  188	pfad=0	slot=0	pfadGleich=1	f=500->1000	vF=2	q=1->1	vQ=1	g=3->3	dG=0
+  189	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.5->-9.5	dG=1
+  190	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.5->-8.5	dG=1
+  191	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.5->-7.5	dG=1
+  192	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.5->-6.5	dG=1
+  193	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.5->-5.5	dG=1
+  194	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5->-4.5	dG=1
+  195	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5->-3.5	dG=1
+  196	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.5->-2.5	dG=1
+  197	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.5->-1.5	dG=1
+  198	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.5->-0.5	dG=1
+  199	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.5->0.5	dG=1
+  200	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.5->1.5	dG=1
+  201	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.5->2.5	dG=1
+  202	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.5->3.5	dG=1
+  203	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.5->4.5	dG=1
+  204	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=4.5->5.5	dG=1
+  205	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=5.5->6.5	dG=1
+  206	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=6.5->7.5	dG=1
+  207	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=7.5->8.5	dG=1
+  208	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=8.5->9.5	dG=1
+  209	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9.5->10.5	dG=1
+  210	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=10.5->11.5	dG=1
+  211	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=11.5->-11.5	dG=23
+  212	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-11.5->-10.5	dG=1
+  213	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-10.5->-9.5	dG=1
+  214	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-9.5->-8.5	dG=1
+  215	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-8.5->-7.5	dG=1
+  216	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-7.5->-6.5	dG=1
+  217	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6.5->-5.5	dG=1
+  218	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5->-4.5	dG=1
+  219	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5->-3.5	dG=1
+  220	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.5->-2.5	dG=1
+  221	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.5->-1.5	dG=1
+  222	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.5->-0.5	dG=1
+  223	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.5->0.5	dG=1
+  224	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.5->1.5	dG=1
+  225	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.5->2.5	dG=1
+  226	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.5->3.5	dG=1
+  227	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.5->4.5	dG=1
+  228	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->1	dG=2
+  229	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->2	dG=1
+  230	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->1	dG=1
+  231	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->9	dG=8
+  232	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=9->-9	dG=18
+  233	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->-6	dG=9
+  234	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-6->-5.8000001907348633	dG=0.19999980926513672
+  235	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.8000001907348633->-5.5999994277954102	dG=0.20000076293945312
+  236	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.5999994277954102->-5.3999996185302734	dG=0.19999980926513672
+  237	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.3999996185302734->-5.1999998092651367	dG=0.19999980926513672
+  238	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5.1999998092651367->-5	dG=0.19999980926513672
+  239	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-5->-4.8000001907348633	dG=0.19999980926513672
+  240	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.8000001907348633->-4.5999999046325684	dG=0.20000028610229492
+  241	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.5999999046325684->-4.4000000953674316	dG=0.19999980926513672
+  242	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.4000000953674316->-4.1999998092651367	dG=0.20000028610229492
+  243	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4.1999998092651367->-4	dG=0.19999980926513672
+  244	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-4->-3.8000001907348633	dG=0.19999980926513672
+  245	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.8000001907348633->-3.6000003814697266	dG=0.19999980926513672
+  246	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.6000003814697266->-3.3999996185302734	dG=0.20000076293945312
+  247	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.3999996185302734->-3.1999998092651367	dG=0.19999980926513672
+  248	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3.1999998092651367->-3	dG=0.19999980926513672
+  249	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-3->-2.8000001907348633	dG=0.19999980926513672
+  250	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.8000001907348633->-2.6000003814697266	dG=0.19999980926513672
+  251	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.6000003814697266->-2.3999996185302734	dG=0.20000076293945312
+  252	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.3999996185302734->-2.1999998092651367	dG=0.19999980926513672
+  253	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2.1999998092651367->-2	dG=0.19999980926513672
+  254	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-2->-1.7999992370605469	dG=0.20000076293945312
+  255	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.7999992370605469->-1.6000003814697266	dG=0.19999885559082031
+  256	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.6000003814697266->-1.3999996185302734	dG=0.20000076293945312
+  257	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.3999996185302734->-1.1999998092651367	dG=0.19999980926513672
+  258	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1.1999998092651367->-1	dG=0.19999980926513672
+  259	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-1->-0.79999923706054688	dG=0.20000076293945312
+  260	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.79999923706054688->-0.60000038146972656	dG=0.19999885559082031
+  261	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.60000038146972656->-0.39999961853027344	dG=0.20000076293945312
+  262	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.39999961853027344->-0.19999980926513672	dG=0.19999980926513672
+  263	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=-0.19999980926513672->0	dG=0.19999980926513672
+  264	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0->0.20000076293945312	dG=0.20000076293945312
+  265	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.20000076293945312->0.39999961853027344	dG=0.19999885559082031
+  266	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.39999961853027344->0.60000038146972656	dG=0.20000076293945312
+  267	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.60000038146972656->0.80000114440917969	dG=0.20000076293945312
+  268	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=0.80000114440917969->1	dG=0.19999885559082031
+  269	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1->1.2000007629394531	dG=0.20000076293945312
+  270	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.2000007629394531->1.3999996185302734	dG=0.19999885559082031
+  271	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.3999996185302734->1.6000003814697266	dG=0.20000076293945312
+  272	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.6000003814697266->1.7999992370605469	dG=0.19999885559082031
+  273	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=1.7999992370605469->2	dG=0.20000076293945312
+  274	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2->2.1999988555908203	dG=0.19999885559082031
+  275	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.1999988555908203->2.4000005722045898	dG=0.20000171661376953
+  276	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.4000005722045898->2.6000003814697266	dG=0.19999980926513672
+  277	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.6000003814697266->2.8000001907348633	dG=0.19999980926513672
+  278	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=2.8000001907348633->3	dG=0.19999980926513672
+  279	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3->3.1999998092651367	dG=0.19999980926513672
+  280	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.1999998092651367->3.4000015258789062	dG=0.20000171661376953
+  281	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.4000015258789062->3.6000003814697266	dG=0.19999885559082031
+  282	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->1	vQ=1	g=3.6000003814697266->3.8000011444091797	dG=0.20000076293945312
+  283	pfad=0	slot=0	pfadGleich=1	f=1000->1680.000244140625	vF=1.680000244140625	q=1->1	vQ=1	g=3->-11	dG=14
+
+10.7.3 A16 (ZEILEN=2 UEBERLAUF=0 PUFFER=200000)
+
+  0	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=1->0.70710678118654757	vQ=1.4142135623730949	g=12->-3	dG=15
+  1	pfad=0	slot=0	pfadGleich=1	f=1000->1000	vF=1	q=0.70710678118654757->1	vQ=1.4142135623730949	g=-3->12	dG=15
+
+10.7.4 B3c (ZEILEN=0 UEBERLAUF=0 PUFFER=200000)
+
+

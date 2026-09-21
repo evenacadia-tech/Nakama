@@ -1,0 +1,47 @@
+# NAK-312 Rotbeweis M-04 - 312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block, Bein B7
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-04 (T3-01-03, R-312-1, Messgeraet, E-312-10), Etikett zwei Haelften. Etappen 2 bis 4: heute nicht messbar. Ab Etappe 5: die Zeile misst 0 (Umstellung im Aenderungssatz von 312/M-40) - in Etappe 2 nicht Gegenstand.
+Zusage (bis Etappe 4): legt das Bein den Bereich wie der Wrapper um setNonRealtime (true) und processBlock, ist RtWache::sperren() ueber 200 Bloecke = 200; ohne den Wechsel nach offline bleibt sie 0.
+Bein: B7 EqCopTransactionTest, Abschnitt W, Fall 312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 1376 (Stand Etappe 2), die Sperre in setNonRealtime.
+
+Heute nicht messbar, belegt: der Lauf des neuen Tests gegen den unveraenderten Basisstand (Rohdatei NAK-312-rot-M-01.txt, Teil 1) zaehlt 0 Sperren, weil juce::ScopedLock den Zaehler nicht meldet.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-04: vor jedem setNonRealtime (true) 0 statt 200).
+Mitgefallen: keine.
+Gruen geblieben: 312/M-01, 312/M-02, die Offline-Faelle von [SONDE-015] M-120 (dieselbe Sperre, nur ungemeldet) und alle uebrigen Pruefungen von B7.
+
+## Rohprotokoll (rot-M-04-roh.txt)
+
+```
+== Rotbeweis M-04 - Rohprotokoll ==
+[2026-09-21 04:26:14] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-04-SondeProcessor.cpp
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 1376
+--- vorher (woertlich) ---
+        GemeldetesSchloss gemeldet { zustandSchloss };
+        const nakama::dsp::RtWache::GemeldeteSperre<GemeldetesSchloss> l (gemeldet);
+--- nachher (woertlich) ---
+        const juce::ScopedLock l (zustandSchloss);   // MUTATION M-04
+SHA-256 mutiert: B48D5C316E35E6698793EBABBE664610487841E98DBD8F95E4CAA856DD237957
+[2026-09-21 04:26:15] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:26:20.864 > Quelle 04:26:15.006 -> frisch
+[2026-09-21 04:26:21] Lauf (mutiert) EqCopTransactionTest: Exit 1, 1,0 s
+      FEHLER  312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke genau 200 - jede Nahme von zustandSchloss beim Wechsel nach offline ist ueber den gemeldeten Adapter sichtbar; ohne den Wechsel bleibt sie 0  [gemeldete Sperren ueber 200 Bloecke: vor jedem setNonRealtime (true) 0, vor jedem setNonRealtime (false) 0]
+    195 geprueft, 1 Fehler
+    TRANSAKTION FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:26:21.974
+[2026-09-21 04:26:21] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:26:27.903 > Quelle 04:26:21.974 -> frisch
+[2026-09-21 04:26:28] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,0 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:26:28] Ende
+```

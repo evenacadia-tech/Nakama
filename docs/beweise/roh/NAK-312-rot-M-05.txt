@@ -1,0 +1,46 @@
+# NAK-312 Rotbeweis M-05 - 312/M-05 testkonstruktor_ist_fail_closed, Bein B31
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-05 (T3-04-01, R-312-7, Testzugang), Etikett heute nicht messbar (vor der Etappe 2 hatte die Sonde keinen Testkonstruktor).
+Zusage: v3PipeNameFuerTest() liefert genau den uebergebenen Probe-Namen; ein Name ausserhalb des Probe-Namensraums ergibt den leeren Pipenamen, aus dem beide v3-Clients entstehen (fail-closed).
+Bein: B31 EqCopSondeLebenslaufTest (neu), Fall 312/M-05 testkonstruktor_ist_fail_closed.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 163 (Stand Etappe 2), die istProbePipename-Pruefung im Testkonstruktor.
+Sicherheit des Laufs: der fail-closed-Fall startet keinen Client; unter der Mutation wird der synthetische Name \\.\pipe\evenacadia.nakama.nak312.nicht-probe uebernommen (weder Probe- noch Produktionsname), und keine Pipe wird geoeffnet (Control getrennt nach 0 Versuchen).
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-05: uebernommen ist der fremde Name statt des leeren).
+Mitgefallen: keine.
+Gruen geblieben: die drei Wachen 312/M-08, beide Haelften von 312/M-06 und 312/M-07.
+
+## Rohprotokoll (rot-M-05-roh.txt)
+
+```
+== Rotbeweis M-05 - Rohprotokoll ==
+[2026-09-21 04:26:34] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-05-SondeProcessor.cpp
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 163
+--- vorher (woertlich) ---
+              v.pipeName = nakama::ipc::istProbePipename (probePipename) ? probePipename
+                                                                          : std::string();
+--- nachher (woertlich) ---
+              v.pipeName = probePipename;   // MUTATION M-05
+SHA-256 mutiert: 7567B6179BFF53425B76D6103959BA7BD9ADD8E8817A55A7B4E903F31C08AD52
+[2026-09-21 04:26:34] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:26:41.253 > Quelle 04:26:34.720 -> frisch
+[2026-09-21 04:26:41] Lauf (mutiert) EqCopSondeLebenslaufTest: Exit 1, 0,1 s
+      FEHLER  312/M-05 testkonstruktor_ist_fail_closed (R-312-7): v3PipeNameFuerTest() liefert genau den uebergebenen Probe-Namen; ein Name ausserhalb des Probe-Namensraums wird als LEERER Pipename uebernommen - beide v3-Clients entstehen aus diesem einen Namen, und keiner hat verbunden  [Probe-Name uebernommen ja, fremder Name im Probe-Namensraum nein, uebernommen '\\.\pipe\evenacadia.nakama.nak312.nicht-probe', Control getrennt nach 0 Versuchen, Telemetrie getrennt]
+    8 geprueft, 1 Fehler
+    SONDE-LEBENSLAUF FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:26:41.497
+[2026-09-21 04:26:41] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:26:47.312 > Quelle 04:26:41.497 -> frisch
+[2026-09-21 04:26:47] Lauf (zurueck) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+[2026-09-21 04:26:47] Ende
+```

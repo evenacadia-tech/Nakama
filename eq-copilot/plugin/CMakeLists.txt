@@ -449,6 +449,14 @@ nakama_sonde012_test(EqCopSonde012HostChannelContextTest
 nakama_sonde012_test(EqCopSonde012LoudnessSourceTest
                      tests/Sonde012LoudnessSourceTest.cpp)
 
+# ── NAK-312 Etappe 2 (R-312-7): das Sonde-Lebenslaufbein ───────────────────
+# Das erste Bein, das eine Sonde mit LAUFENDEN v3-Clients baut: Testkonstruktor
+# mit Probe-Pipe, Starthaken gegen den geteilten v3-Testserver, Abbau. Dieselbe
+# Vorschrift wie die zwei Beine darueber (Probeeq-Quelle, Testdefine, nie die
+# Produktions-Pipe); der Prozessor liegt im Bein auf dem Heap (NAK-175).
+nakama_sonde012_test(EqCopSondeLebenslaufTest
+                     tests/SondeLebenslaufTestMain.cpp)
+
 # ── NAK-286 Etappe 2: der Diagnose-Briefkasten im Plugin (Kanon B30) ───────
 # Ein Ziel mit BEIDEN Prozessoren (Gen und Probeeq), weil die Matrix beide
 # Rollen am selben Briefkasten misst. Wie jedes Konsolenbein ohne Produktpfad:
@@ -1358,7 +1366,8 @@ foreach(ziel NakamaKern
              NakamaProbeeq EqCopProbeeqNullTest EqCopTransactionTest
              EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest
              EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
-             EqCopSonde012SourcesLatencyTest EqCopSessionSoak EqCopBriefkastenTest)
+             EqCopSonde012SourcesLatencyTest EqCopSessionSoak EqCopBriefkastenTest
+             EqCopSondeLebenslaufTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

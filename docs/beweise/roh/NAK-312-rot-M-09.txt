@@ -1,0 +1,89 @@
+# NAK-312 Rotbeweis M-09 - Etappe 2 aendert kein Produktverhalten, Beine A16, B6, B7 und voller Kanon
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-09 (Etappe 2, Grundgesetz), Etikett Regressionswache.
+Zusage: kein Produktverhalten aendert sich; Nulltest bitidentisch, Goldens bytegleich, 0 Allokationen und 0 Sperren in allen bestehenden Echtzeitfaellen; die Aenderungen sind Zaehler, Testzugaenge und Behauptungszeilen.
+Bein: A16, B6, B7 einzeln und der volle Kanon (Kanon nachher im Manifest); gebrochen wird hier die Stelle, an der die Etappe 2 in einem Produktweg etwas umbaut: setNonRealtime.
+
+## Teil a - die Mutation der Matrixzeile: die zwei Anweisungen in setNonRealtime getauscht (kein Rot)
+
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 1378 (Stand Etappe 2).
+Ergebnis: B7 Exit 0, 195 von 195 gruen. Die Matrixzeile erwartet "312/M-41 rot"; 312/M-41 entsteht erst in Etappe 5 (§6.5) und existiert in Etappe 2 nicht. Unter derselben Sperre und aus einem Thread ist die Reihenfolge von beendePreview und setzeHoermatrix fuer keinen bestehenden Fall beobachtbar.
+
+## Teil b - Ersatzmutation am umgebauten Produktweg
+
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 1378 (Stand Etappe 2): transaktion->beendePreview() unter der gemeldeten Sperre entfernt - eine Verhaltensaenderung genau an der Stelle, die die Etappe 2 umbaut.
+Die Zusage faellt an der erwarteten Pruefung: JA - [SONDE-015] M-120 offline_render_nutzt_den_bestaetigten_zustand faellt (die Vorschau bleibt aktiv, der Render ist nicht mehr bitgleich zum Lauf ohne Vorschau): die bestehende Wache sieht eine Verhaltensaenderung in setNonRealtime.
+Mitgefallen: keine. Gruen geblieben: 312/M-04 (die Sperre ist weiter gemeldet) und alle uebrigen Pruefungen von B7.
+
+## Rohprotokoll (rot-M-09a-woertlich-roh.txt)
+
+```
+== Rotbeweis M-09 - Rohprotokoll ==
+[2026-09-21 04:29:12] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-09-SondeProcessor.cpp
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 1378
+--- vorher (woertlich) ---
+        transaktion->beendePreview();
+        dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+    }
+--- nachher (woertlich) ---
+        dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);   // MUTATION M-09: Reihenfolge getauscht
+        transaktion->beendePreview();
+    }
+SHA-256 mutiert: 15D25F18BC88ADE68A159E1A232BDDBA5497F22F04FE84865FE41C0BED8271C4
+[2026-09-21 04:29:13] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:29:18.794 > Quelle 04:29:13.059 -> frisch
+[2026-09-21 04:29:19] Lauf (mutiert) EqCopTransactionTest: Exit 0, 1,0 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:29:19.926
+[2026-09-21 04:29:19] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:29:25.691 > Quelle 04:29:19.926 -> frisch
+[2026-09-21 04:29:26] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,1 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:29:26] Ende
+```
+
+## Rohprotokoll (rot-M-09b-ersatz-roh.txt)
+
+```
+== Rotbeweis M-09 - Rohprotokoll ==
+[2026-09-21 04:29:32] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-09-SondeProcessor.cpp
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 1378
+--- vorher (woertlich) ---
+        transaktion->beendePreview();
+        dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+    }
+--- nachher (woertlich) ---
+        // MUTATION M-09 (Ersatz): transaktion->beendePreview() entfernt
+        dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+    }
+SHA-256 mutiert: 829FCD579DB29D00C3110E32218D1C302E9764A17FD5E2BBC6125CE5848A5F92
+[2026-09-21 04:29:32] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:29:37.824 > Quelle 04:29:32.076 -> frisch
+[2026-09-21 04:29:38] Lauf (mutiert) EqCopTransactionTest: Exit 1, 1,0 s
+      FEHLER  offline_render_nutzt_den_bestaetigten_zustand (M-120): der Wechsel in den Offline-Betrieb beendet die Vorschau; der Render ist bitgleich zum Lauf ohne Vorschau
+    195 geprueft, 1 Fehler
+    TRANSAKTION FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:29:38.963
+[2026-09-21 04:29:38] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:29:44.738 > Quelle 04:29:38.963 -> frisch
+[2026-09-21 04:29:45] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,1 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:29:45] Ende
+```

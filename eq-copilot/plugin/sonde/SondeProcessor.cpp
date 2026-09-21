@@ -129,17 +129,57 @@ float hostWertAus (int index, const nakama::parameter::Zelle& z)
 }
 } // namespace
 
+// ── NAK-312 Etappe 2 (R-312-7): EIN Konstruktor, zwei Zugaenge ─────────────
+//
+// Muster Gen (NAK-246 D2): Produkt- und Testkonstruktor delegieren an den
+// privaten Konstruktor mit `V3Verdrahtung`. Der Produktpfad ist unveraendert:
+// SID, `pipeNameV3 (SID)` und die Installbindung wie bisher; nur der Ort, an
+// dem sie entstehen, ist `produktVerdrahtung()`.
+
+SondeProcessor::V3Verdrahtung SondeProcessor::produktVerdrahtung()
+{
+    V3Verdrahtung v;
+    v.logonSid  = nakama::ipc::aktuelleLogonSid();
+    v.pipeName  = nakama::ipc::pipeNameV3 (v.logonSid);
+    v.erwartung = brokerServerErwartung();
+    return v;
+}
+
 SondeProcessor::SondeProcessor()
+    : SondeProcessor (produktVerdrahtung())
+{
+}
+
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+SondeProcessor::SondeProcessor (const std::string& probePipename,
+                                nakama::ipc::ServerErwartung erwartung)
+    : SondeProcessor ([&]
+      {
+          V3Verdrahtung v;
+          v.logonSid = nakama::ipc::aktuelleLogonSid();
+          // Fail-closed (Entwurf §48.3): nur der Probe-Namensraum. Ein anderer
+          // Name wird nicht "repariert", sondern LEER - damit oeffnet sich nie
+          // eine Pipe, und ein Bein sieht es an `v3PipeNameFuerTest()`.
+          v.pipeName = nakama::ipc::istProbePipename (probePipename) ? probePipename
+                                                                      : std::string();
+          v.erwartung = std::move (erwartung);
+          return v;
+      }())
+{
+}
+#endif
+
+SondeProcessor::SondeProcessor (V3Verdrahtung verdrahtung)
     : juce::AudioProcessor (BusesProperties()
           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      v3LogonSid (nakama::ipc::aktuelleLogonSid()),
-      v3PipeName (nakama::ipc::pipeNameV3 (v3LogonSid)),
+      v3LogonSid (std::move (verdrahtung.logonSid)),
+      v3PipeName (std::move (verdrahtung.pipeName)),
       v3RuntimeNonce (uuidHex32()),
       controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
-                 [this] { return v3Status(); }, {}, {}, brokerServerErwartung()),
+                 [this] { return v3Status(); }, {}, {}, verdrahtung.erwartung),
       telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName, {},
-                   brokerServerErwartung()),
+                   verdrahtung.erwartung),
       parameterBaum (*this, nullptr, "NakamaProbeeqParameter", baueParameterLayout())
 {
     // SONDE-015 4a: DSP-Kern und Transaktionskern entstehen VOR dem Worker,
@@ -368,6 +408,13 @@ bool SondeProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
 
 void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiBuffer&)
 {
+    // NAK-312 Etappe 2 (R-312-1): die Echtzeitwache deckt den Callback ab
+    // seinem Eintritt, nicht erst ab `dspKern->verarbeite` - Playhead,
+    // Stempel, Analysekopie und Queue liegen damit im gemessenen Bereich. Er
+    // ist eine thread-lokale Tiefe: er schreibt kein Sample und aendert keinen
+    // Programmzustand, und der Bereich des Kerns liegt verschachtelt darin.
+    // Sperren, die JUCE VOR dem Plugincode nimmt, sieht die Wache nicht.
+    const nakama::dsp::RtWache::Bereich wache;
     juce::ScopedNoDenormals keineDenormals;
     const int kanaele = std::min (puffer.getNumChannels(), 2);
     const int samples = puffer.getNumSamples();
@@ -1322,7 +1369,12 @@ void SondeProcessor::setNonRealtime (bool offline) noexcept
 {
     juce::AudioProcessor::setNonRealtime (offline);
     if (! offline) return;
-    const juce::ScopedLock l (zustandSchloss);
+    // NAK-312 Etappe 2 (R-312-1, 312/M-04): dieselbe Sperre wie zuvor, aber
+    // gemeldet. Der VST3-Wrapper ruft diese Funktion im Audio-Callback VOR
+    // `processBlock`; ein Bein, das den Bereich der Wache dort oeffnet, sieht
+    // jede Nahme im Sperrenzaehler.
+    GemeldetesSchloss gemeldet { zustandSchloss };
+    const nakama::dsp::RtWache::GemeldeteSperre<GemeldetesSchloss> l (gemeldet);
     transaktion->beendePreview();
     dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
 }

@@ -128,6 +128,17 @@ inline nakama::state::Bundle bundleVertrag()
    #endif
 }
 
+/** NAK-312 Etappe 2 (R-312-1): `dsp::RtWache::GemeldeteSperre` ruft `lock()`
+    und `unlock()`, `juce::CriticalSection` kennt nur `enter()` und `exit()`.
+    Der Adapter nimmt DIESELBE Sperre in derselben Ordnung; gezaehlt wird sie
+    nur, wenn der Aufrufer im Bereich der Echtzeitwache steht. */
+struct GemeldetesSchloss
+{
+    const juce::CriticalSection& schloss;
+    void lock() const noexcept   { schloss.enter(); }
+    void unlock() const noexcept { schloss.exit(); }
+};
+
 class SondeProcessor final : public juce::AudioProcessor,
                              public eqcop::hostbruecke::Senke,
                              private juce::AudioProcessorParameter::Listener
@@ -135,6 +146,25 @@ class SondeProcessor final : public juce::AudioProcessor,
 public:
     SondeProcessor();
     ~SondeProcessor() override;
+
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    /** NAK-312 Etappe 2 (R-312-7): der Testkonstruktor mit Probe-Pipe und
+        Servererwartung, nach dem Muster Gen (`src/PluginProcessor.h`,
+        NAK-246 D2).
+
+        Beide v3-Clients (`controlV3`, `telemetryV3`) bekommen Pipenamen und
+        Erwartung bei der Konstruktion. Der Produktkonstruktor delegiert an
+        denselben privaten Konstruktor und reicht `pipeNameV3 (v3LogonSid)` und
+        die Installbindung durch; der Produktpfad aendert sich damit nicht.
+
+        Fail-closed: liegt `probePipename` nicht im Probe-Namensraum
+        (`istProbePipename`), bekommen beide Clients einen LEEREN Pipenamen,
+        mit dem sich nie eine Verbindung oeffnen laesst - die Produktionspipe
+        wird aus einem Bein heraus nie zum Ziel. `v3PipeNameFuerTest()` zeigt,
+        was uebernommen wurde. */
+    SondeProcessor (const std::string& probePipename,
+                    nakama::ipc::ServerErwartung erwartung);
+#endif
 
     void prepareToPlay (double samplerate, int maxBlock) override;
     void releaseResources() override;
@@ -254,6 +284,16 @@ public:
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
+
+    /** NAK-312 Etappe 2 (R-312-7): die Starthaken nach dem Muster Gen. Im
+        Testbau laeuft der Produktzweig mit `controlV3.start()` nicht; ohne
+        diese Haken bleiben beide Clients getrennt. Die Telemetrie koppelt erst,
+        wenn `controlV3` sein `welcome` hat - wie im Produkt. */
+    void v3StartFuerTest()           { controlV3.start(); }
+    void v3TelemetrieStartFuerTest() { telemetryV3.start(); }
+    /// Der Pipename, den beide v3-Clients bei der Konstruktion bekommen haben
+    /// (Testkonstruktor: der Probe-Name, fail-closed leer; sonst der Produktname).
+    const std::string& v3PipeNameFuerTest() const noexcept { return v3PipeName; }
 
     /** SONDE-015 4a: der DSP-Kern fuer Pool- und Zaehlerbeobachtung (B7, A16). */
     nakama::dsp::DspKern& dspKernFuerTest() noexcept { return *dspKern; }
@@ -407,6 +447,19 @@ public:
 #endif
 
 private:
+    /** NAK-312 Etappe 2 (R-312-7): was die beiden v3-Clients bei der
+        Konstruktion bekommen (Muster Gen, `V3Verdrahtung`). Das Produkt
+        liefert SID, `pipeNameV3 (SID)` und die Installbindung; ein Bein einen
+        Probe-Pipenamen und seine eigene Servererwartung. */
+    struct V3Verdrahtung
+    {
+        std::string logonSid;
+        std::string pipeName;
+        nakama::ipc::ServerErwartung erwartung;
+    };
+    static V3Verdrahtung produktVerdrahtung();
+    explicit SondeProcessor (V3Verdrahtung verdrahtung);
+
     void workerLauf();
     void producerStandLeeren() noexcept;
     /// NAK-286 (F-5, F-12, P-9): Start und Antwortquelle des Diagnose-Briefkastens.

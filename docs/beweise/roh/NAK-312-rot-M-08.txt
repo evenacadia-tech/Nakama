@@ -1,0 +1,46 @@
+# NAK-312 Rotbeweis M-08 - 312/M-08 kein_bein_oeffnet_die_produktions_pipe, Bein B31
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-08 (T3-04-01, R-312-7 Schluss), Etikett Regressionswache.
+Zusage: kein Bein oeffnet die Produktions-Pipe; jeder Name, mit dem ein Client startet, und der Name des Testservers liegen im Probe-Namensraum, geprueft an nakama::ipc::istProbePipename VOR dem Aufbau des Servers und VOR jedem Start. Die uebrigen Beine, die eine Sonde bauen (A16, B7, B11, B12, B30, A24), nutzen den Produktkonstruktor im Testbau und starten keinen Client (Gegenhaelfte von 312/M-06).
+Bein: B31 EqCopSondeLebenslaufTest (neu), drei Wachen 312/M-08.
+Datei der Mutation: eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp, Zeile 193 (Stand Etappe 2): der Fall 312/M-06 bekommt den Produktionsnamen pipeNameV3 (aktuelleLogonSid()) statt testPipeName.
+Sicherheit des Laufs: die Wache steht vor dem Aufbau des Servers; sie faellt, der Fall bricht ab, bevor ein Server entsteht oder eine Sonde gebaut wird. Nichts hat die Produktions-Pipe geoeffnet.
+Schwaerzung: der aus der Logon-SID abgeleitete Teil des Produktionsnamens ist unten als <SID-Ableitung> geschrieben.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-08: "M-06: der Name des Testservers liegt im Probe-Namensraum" - FEHLER; 3 geprueft, 1 Fehler).
+Mitgefallen: keine; die Faelle 312/M-06 und 312/M-07 laufen unter der Mutation gar nicht (Abbruch vor dem Aufbau).
+Gruen geblieben: 312/M-05 und seine Wache.
+
+## Rohprotokoll (rot-M-08-roh.txt)
+
+```
+== Rotbeweis M-08 - Rohprotokoll ==
+[2026-09-21 04:28:49] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: 456CF06BD04B37453488F8AB7C4395808F6C6E48BEC89B36D52514BA300087C6  eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-08-SondeLebenslaufTestMain.cpp
+Mutation 1 von 1 in eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp, ab Zeile 193
+--- vorher (woertlich) ---
+        const auto pipe = testPipeName ("nak312-m06");
+--- nachher (woertlich) ---
+        const auto pipe = pipeNameV3 (aktuelleLogonSid());   // MUTATION M-08: der Produktionsname
+SHA-256 mutiert: 3CB687BD1FA569E533CFC7E9065D774D27C6B79AED5D2485610B1E8A2BCBD386
+[2026-09-21 04:28:49] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:28:55.831 > Quelle 04:28:49.815 -> frisch
+[2026-09-21 04:28:56] Lauf (mutiert) EqCopSondeLebenslaufTest: Exit 1, 0,1 s
+      FEHLER  312/M-08 kein_bein_oeffnet_die_produktions_pipe (R-312-7): M-06: der Name des Testservers liegt im Probe-Namensraum  [\\.\pipe\evenacadia.nakama.v3.<SID-Ableitung>]
+    3 geprueft, 1 Fehler
+    SONDE-LEBENSLAUF FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: 456CF06BD04B37453488F8AB7C4395808F6C6E48BEC89B36D52514BA300087C6 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:28:56.030
+[2026-09-21 04:28:56] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:29:02.099 > Quelle 04:28:56.030 -> frisch
+[2026-09-21 04:29:02] Lauf (zurueck) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+[2026-09-21 04:29:02] Ende
+```

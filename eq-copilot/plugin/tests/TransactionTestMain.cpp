@@ -27,13 +27,24 @@
          geladene oder neu vorbereitete Instanz haelt ab t_E die bezifferte
          Toleranz von M-84 (Manifest NAK-311 §9.1 F-12), und zwei Sekunden
          Audio lassen die Statebytes unveraendert. Kein Produktcode - die
-         Huellkurvenleistung bleibt Audiohistorie.
+         Huellkurvenleistung bleibt Audiohistorie. Seit NAK-312 Etappe 2
+         (R-312-1, Abschnitt W) misst die Echtzeitwache ab dem Eintritt in
+         `SondeProcessor::processBlock`, nicht erst ab `DspKern::verarbeite`:
+         ein Testplayhead nimmt je Block eine gemeldete Sperre VOR dem Kern
+         (312/M-01), ein Workerzug ausserhalb des Blocks zaehlt nicht
+         (312/M-02), und das Offlineflag nimmt je Aufruf eine gemeldete Sperre,
+         wenn das Bein den Bereich wie der Wrapper um `setNonRealtime` und
+         `processBlock` legt (312/M-04). Sperren, die JUCE vor dem Plugincode
+         nimmt, sieht der Zaehler bauartbedingt nicht.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
 
     ALLOKATIONSZAEHLER: thread_local und nur um die gemessene Stelle
-    eingeschaltet - den Nachschlag S0 und alles hinter dem Commit-Punkt.
+    eingeschaltet - den Nachschlag S0 und alles hinter dem Commit-Punkt. Seit
+    NAK-312 Etappe 2 (E-312-11) meldet dieselbe Stelle zusaetzlich an
+    `RtWache::meldeAllokation()`; `RtWache::allokationen()` zaehlt damit jede
+    eingeschaltete Allokation, die im Bereich der Echtzeitwache liegt.
 
     Exit 0 nur bei "TRANSAKTION OK".
 */
@@ -55,6 +66,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <new>
 #include <random>
 #include <sstream>
@@ -73,9 +85,13 @@ namespace
     thread_local std::uint64_t allokationen       = 0;
 }
 
+// NAK-312 Etappe 2 (E-312-11): beide Operatoren melden zusaetzlich an die
+// Echtzeitwache, wortgleich nach B6 (`DspGoldenTestMain.cpp`). Der eigene
+// Zaehler bleibt; `meldeAllokation()` zaehlt ohnehin nur im Audiopfad, also
+// allein innerhalb eines `RtWache::Bereich`.
 void* operator new (std::size_t groesse)
 {
-    if (zaehleAllokationen) ++allokationen;
+    if (zaehleAllokationen) { ++allokationen; dsp::RtWache::meldeAllokation(); }
     if (groesse == 0) groesse = 1;
     if (void* p = std::malloc (groesse)) return p;
     throw std::bad_alloc();
@@ -84,7 +100,7 @@ void operator delete (void* p) noexcept { std::free (p); }
 void operator delete (void* p, std::size_t) noexcept { std::free (p); }
 void* operator new[] (std::size_t groesse)
 {
-    if (zaehleAllokationen) ++allokationen;
+    if (zaehleAllokationen) { ++allokationen; dsp::RtWache::meldeAllokation(); }
     if (groesse == 0) groesse = 1;
     if (void* p = std::malloc (groesse)) return p;
     throw std::bad_alloc();
@@ -3453,6 +3469,158 @@ void nak311AutoGainDeckel()
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 2 (R-312-1, E-312-11): die Echtzeitwache ab dem
+// Callback-Eintritt der Sonde.
+//
+// Der Testplayhead sitzt an der einzigen Produktstelle zwischen dem Eintritt in
+// `SondeProcessor::processBlock` und `dspKern->verarbeite`, an der Testcode im
+// echten Pfad laeuft (`getPlayHead()->getPosition()`). Er nimmt je Aufruf eine
+// gemeldete Sperre ueber einen eigenen `std::mutex` und macht den Bereich
+// damit lebendig messbar, ohne Produktcode zu verbiegen. Liegt der Bereich erst
+// im Kern, laeuft der Playhead davor, und der Zaehler bleibt 0.
+
+struct Testplayhead final : juce::AudioPlayHead
+{
+    mutable std::mutex schloss;
+    mutable int        aufrufe = 0;
+
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        const dsp::RtWache::GemeldeteSperre<std::mutex> sperre (schloss);
+        ++aufrufe;
+        PositionInfo p;
+        p.setIsPlaying (true);
+        p.setTimeInSamples ((juce::int64) aufrufe * 256);
+        return p;
+    }
+};
+
+void nak312Messgeraete()
+{
+    abschnitt ("W - NAK-312 Etappe 2: die Echtzeitwache ab dem Callback-Eintritt der Sonde (312/M-01, 312/M-02, 312/M-04)");
+
+    const double fs      = 48000.0;
+    const int    blk     = 256;
+    const int    bloecke = 200;
+
+    // ── 312/M-01 und 312/M-02: Testplayhead gesetzt ────────────────────────
+    {
+        auto kopf = std::make_unique<Testplayhead>();   // ueberlebt den Prozessor
+        auto p    = prozessor (fs, blk);
+        p->setPlayHead (kopf.get());
+
+        juce::AudioBuffer<float> puffer (2, blk);
+        juce::MidiBuffer midi;
+        juce::Random w (312);
+        const auto fuelle = [&]
+        {
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < blk; ++n)
+                    puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+        };
+
+        dsp::RtWache::zuruecksetzen();
+        std::uint64_t eigene = 0;
+        for (int b = 0; b < bloecke; ++b)
+        {
+            fuelle();
+            allokationen = 0;
+            zaehleAllokationen = true;
+            p->processBlock (puffer, midi);
+            zaehleAllokationen = false;
+            eigene += allokationen;
+        }
+        const auto sperren     = dsp::RtWache::sperren();
+        const auto rtAllok     = dsp::RtWache::allokationen();
+        const int  kopfAufrufe = kopf->aufrufe;
+        {
+            std::ostringstream d;
+            d << "gemeldete Sperren " << sperren << " bei " << kopfAufrufe << " Playhead-Aufrufen in "
+              << bloecke << " Bloecken, RtWache::allokationen " << rtAllok << ", eigener Zaehler " << eigene;
+            pruefe (sperren == (std::uint64_t) bloecke && kopfAufrufe == bloecke && rtAllok == 0 && eigene == 0,
+                    "312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz "
+                    "Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperren() genau 200, eine je "
+                    "Block an der Playhead-Stelle VOR dspKern->verarbeite, und RtWache::allokationen() bleibt 0",
+                    d.str());
+        }
+
+        // 312/M-02: ein Workerzug mit Programmbau ZWISCHEN zwei Bloecken, auf
+        // demselben Thread wie der Callback. Die Transaktion baut und
+        // publiziert ein Programm, der Takt verarbeitet ein Hostereignis, und
+        // der Testplayhead nimmt seine Sperre einmal ausserhalb eines Blocks.
+        auto z = mitEq (true);
+        setzeBand (z, 0, 1000.0, 6.0);
+        const auto sperrenVor = dsp::RtWache::sperren();
+        const auto allokVor   = dsp::RtWache::allokationen();
+        allokationen = 0;
+        zaehleAllokationen = true;
+        const auto e = setze (*p, z);
+        hostSchreibt (*p, iBand (0, param::kGainDb), 3.0f);
+        p->kontrollTaktFuerTest();
+        const bool ausserhalb = ! dsp::RtWache::imAudiopfad();
+        (void) kopf->getPosition();
+        zaehleAllokationen = false;
+        const auto zugAllok    = allokationen;
+        const auto sperrenZug  = dsp::RtWache::sperren();
+        const auto allokZug    = dsp::RtWache::allokationen();
+        fuelle();
+        p->processBlock (puffer, midi);   // der zweite Block: der Zaehler lebt weiter
+        const auto sperrenDanach = dsp::RtWache::sperren();
+        {
+            std::ostringstream d;
+            d << "Workerzug: eigener Zaehler " << zugAllok << " Allokationen, RtWache::allokationen "
+              << allokVor << " -> " << allokZug << ", RtWache::sperren " << sperrenVor << " -> " << sperrenZug
+              << " (Playhead-Sperre ausserhalb eines Blocks), im Audiopfad " << (ausserhalb ? "nein" : "JA")
+              << "; der Block danach " << sperrenZug << " -> " << sperrenDanach;
+            pruefe (e.ausgang == tx::Ausgang::commit && ausserhalb && zugAllok > 0
+                        && allokZug == allokVor && sperrenZug == sperrenVor
+                        && sperrenDanach == sperrenZug + 1 && kopf->aufrufe == bloecke + 2,
+                    "312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): "
+                    "ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und RtWache::allokationen() und "
+                    "RtWache::sperren() steigen darin um 0; eine Sperre, die der Testplayhead ausserhalb eines Blocks "
+                    "nimmt, zaehlt 0, die im naechsten Block wieder genau 1",
+                    d.str());
+        }
+    }
+
+    // ── 312/M-04: Testplayhead aus, das Bein oeffnet den Bereich wie der
+    // Wrapper. Der VST3-Wrapper ruft `setNonRealtime` im selben Callback VOR
+    // `processBlock`; der Bereich der Sonde beginnt erst in `processBlock` und
+    // saehe die Sperre des Offlineflags sonst gar nicht. ────────────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::AudioBuffer<float> puffer (2, blk);
+        juce::MidiBuffer midi;
+        juce::Random w (3124);
+        const auto lauf = [&] (bool offline)
+        {
+            dsp::RtWache::zuruecksetzen();
+            for (int b = 0; b < bloecke; ++b)
+            {
+                for (int k = 0; k < 2; ++k)
+                    for (int n = 0; n < blk; ++n)
+                        puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+                const dsp::RtWache::Bereich wieDerWrapper;
+                p->setNonRealtime (offline);
+                p->processBlock (puffer, midi);
+            }
+            return dsp::RtWache::sperren();
+        };
+        const auto offline  = lauf (true);
+        const auto echtzeit = lauf (false);
+        std::ostringstream d;
+        d << "gemeldete Sperren ueber " << bloecke << " Bloecke: vor jedem setNonRealtime (true) " << offline
+          << ", vor jedem setNonRealtime (false) " << echtzeit;
+        pruefe (offline == (std::uint64_t) bloecke && echtzeit == 0,
+                "312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): "
+                "legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt "
+                "RtWache::sperren() ueber 200 Bloecke genau 200 - jede Nahme von zustandSchloss beim Wechsel nach "
+                "offline ist ueber den gemeldeten Adapter sichtbar; ohne den Wechsel bleibt sie 0",
+                d.str());
+    }
+}
+
 } // namespace
 
 int main()
@@ -3497,6 +3665,9 @@ int main()
 
     // NAK-311 Etappe 5, Satz B (U54, R-311-14): die Obergrenze des Ausgleichs
     nak311AutoGainDeckel();
+
+    // NAK-312 Etappe 2 (R-312-1, E-312-11): die Echtzeitwache ab dem Callback-Eintritt
+    nak312Messgeraete();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

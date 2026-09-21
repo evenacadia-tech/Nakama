@@ -1,0 +1,64 @@
+# NAK-312 Rotbeweis M-01 - 312/M-01 wache_beginnt_am_callback_eintritt, Bein B7
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-01 (T3-01-02, T3-01-03, R-312-1; E-312-11), Etikett heute rot.
+Zusage: echter SondeProcessor 48 kHz, Block 256, Testplayhead gesetzt, RtWache::zuruecksetzen(); ueber 200 Bloecke processBlock ist RtWache::sperren() = 200 (genau eine gemeldete Sperre je Block, gezaehlt an einer Stelle VOR dspKern->verarbeite) und RtWache::allokationen() = 0.
+Bein: B7 EqCopTransactionTest, Abschnitt W, Fall 312/M-01 wache_beginnt_am_callback_eintritt.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 417 (Stand Etappe 2): die erste Anweisung von processBlock, const nakama::dsp::RtWache::Bereich wache;
+
+## Teil 1 - heute rot: der neue Test gegen den unveraenderten Basisstand
+
+Der Test wurde vor dem Produktbau geschrieben und einmal gegen den unveraenderten Produktcode gefahren: SondeProcessor.cpp am Basisstand (SHA-256 24A3A37D4BDF59255A1624F3EACAB87EC7E7E3C03D245D8E091050889D98F767, gleich HEAD f96bdd4a), Testdatei im Stand der Etappe 2 (TransactionTestMain.cpp SHA-256 52267B621E72BBFB0DCDF3BDB92BE0A8BFEA40E2B09613728654BE585669516E). Bau 04:13:24 bis 04:14:11 (Binary 04:14:11, Quelle 04:13:14), Lauf 04:14, Exit 1.
+
+```
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+== W - NAK-312 Etappe 2: die Echtzeitwache ab dem Callback-Eintritt der Sonde (312/M-01, 312/M-02, 312/M-04) ==
+  FEHLER  312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperren() genau 200, eine je Block an der Playhead-Stelle VOR dspKern->verarbeite, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 0 bei 200 Playhead-Aufrufen in 200 Bloecken, RtWache::allokationen 0, eigener Zaehler 0]
+  FEHLER  312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und RtWache::allokationen() und RtWache::sperren() steigen darin um 0; eine Sperre, die der Testplayhead ausserhalb eines Blocks nimmt, zaehlt 0, die im naechsten Block wieder genau 1  [Workerzug: eigener Zaehler 1137 Allokationen, RtWache::allokationen 0 -> 0, RtWache::sperren 0 -> 0 (Playhead-Sperre ausserhalb eines Blocks), im Audiopfad nein; der Block danach 0 -> 0]
+  FEHLER  312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke genau 200 - jede Nahme von zustandSchloss beim Wechsel nach offline ist ueber den gemeldeten Adapter sichtbar; ohne den Wechsel bleibt sie 0  [gemeldete Sperren ueber 200 Bloecke: vor jedem setNonRealtime (true) 0, vor jedem setNonRealtime (false) 0]
+195 geprueft, 3 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+```
+
+Urteil Teil 1: 312/M-01 faellt mit 0 gemeldeten Sperren bei 200 Playhead-Aufrufen - der einzige RtWache::Bereich des Produkts steht in DspKern::verarbeite, der Playhead laeuft davor (Gegenprobe der Matrixzeile bestaetigt). 312/M-04 faellt am Basisstand ebenfalls mit 0 (heute nicht messbar, eigene Rohdatei NAK-312-rot-M-04.txt). 312/M-02 faellt am Basisstand nur an seiner Klausel "der Block danach genau 1" (0 -> 0): ohne Bereich in processBlock zaehlt auch der naechste Block nicht; der Workerzug selbst zaehlt schon am Basisstand 0 (Regressionswache, gilt ab dem Bau dieser Etappe).
+
+## Teil 2 - Mutation nach dem Bau
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-01: gemeldete Sperren 0 statt 200).
+Mitgefallen mit Grund: 312/M-02 an der Klausel "der Block danach genau 1" (der Zaehler bleibt im naechsten Block bei 0 -> 0 statt um 1 zu steigen) - dieselbe Zusagezeile traegt den Zaehler auch dort.
+Gruen geblieben: 312/M-04 (das Bein oeffnet den Bereich dort selbst wie der Wrapper), 311/M-139 (misst 0 Sperren und 0 eigene Allokationen, beides haelt auch ohne Bereich), alle uebrigen Pruefungen von B7 (195 geprueft, 2 Fehler).
+
+## Rohprotokoll (rot-M-01-roh.txt)
+
+```
+== Rotbeweis M-01 - Rohprotokoll ==
+[2026-09-21 04:23:49] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-01-SondeProcessor.cpp
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 417
+--- vorher (woertlich) ---
+        const nakama::dsp::RtWache::Bereich wache;
+        juce::ScopedNoDenormals keineDenormals;
+--- nachher (woertlich) ---
+        juce::ScopedNoDenormals keineDenormals;
+SHA-256 mutiert: D0A73FD7F0E824A75792D6982E8DB76125E2E27CADF4E9FD116E3DAC3BB81482
+[2026-09-21 04:23:49] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:23:55.647 > Quelle 04:23:49.829 -> frisch
+[2026-09-21 04:23:56] Lauf (mutiert) EqCopTransactionTest: Exit 1, 1,2 s
+      FEHLER  312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperren() genau 200, eine je Block an der Playhead-Stelle VOR dspKern->verarbeite, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 0 bei 200 Playhead-Aufrufen in 200 Bloecken, RtWache::allokationen 0, eigener Zaehler 0]
+      FEHLER  312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und RtWache::allokationen() und RtWache::sperren() steigen darin um 0; eine Sperre, die der Testplayhead ausserhalb eines Blocks nimmt, zaehlt 0, die im naechsten Block wieder genau 1  [Workerzug: eigener Zaehler 1137 Allokationen, RtWache::allokationen 0 -> 0, RtWache::sperren 0 -> 0 (Playhead-Sperre ausserhalb eines Blocks), im Audiopfad nein; der Block danach 0 -> 0]
+    195 geprueft, 2 Fehler
+    TRANSAKTION FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:23:57.007
+[2026-09-21 04:23:57] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:24:03.074 > Quelle 04:23:57.007 -> frisch
+[2026-09-21 04:24:04] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,1 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:24:04] Ende
+```

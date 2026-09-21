@@ -1,0 +1,100 @@
+# NAK-312 Rotbeweis M-07 - 312/M-07 sonde_mit_laufenden_clients_wird_abgebaut, Bein B31
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-07 (T3-04-01, Bauvoraussetzung; R-312-7), Etikett heute nicht messbar.
+Zusage: das Bein baut eine Sonde mit laufenden v3-Clients, zerstoert sie und endet mit Exitcode 0; der Kanon faehrt es als eigenes Bein (B31) mit eigener Behauptungszeile.
+Bein: B31 EqCopSondeLebenslaufTest (neu), Fall 312/M-07 sonde_mit_laufenden_clients_wird_abgebaut, und der Exitcode des Beins.
+
+## Teil a - die Mutation der Matrixzeile: Prozessor auf den Stack (kein Rot)
+
+Datei: eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp, Zeile 164 (Stand Etappe 2): beide Prozessoren des Falls 312/M-05 im Rahmen statt auf dem Heap.
+Ergebnis: Exit 0, 8 von 8 gruen. Die Mutation ist hier KEIN Rotbeweis: sizeof (SondeProcessor) = 81664 Bytes (vom Bein selbst ausgegeben), zwei davon liegen weit unter dem MSVC-Standardstack von 1 MiB; die Annahme der Matrixzeile (FeatureEngine-Objekte von rund 0,5 MB im Rahmen, NAK-175) trifft auf die Sonde nicht zu - die FeatureEngine haelt ihre grossen Puffer nicht im Objekt. Die Heapregel bleibt im Bein (Projektregel), belegt ist sie hier nicht.
+
+## Teil b - Ersatzmutation an der Zeile, die "zerstoert sie und endet mit Exitcode 0" traegt
+
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp, Zeile 266 (Stand Etappe 2), der Destruktor: der Worker wird nicht mehr gejoint.
+Ergebnis: B31 endet mit Exit -1073740791 (0xC0000409, std::terminate aus dem Destruktor von std::thread) beim ersten Abbau einer Sonde, am Ende des Falls 312/M-05 und damit vor der Pruefung 312/M-07 selbst; die Zusage "endet mit Exitcode 0" faellt. Mitgefallen mit Grund: B7 EqCopTransactionTest mit demselben Exitcode (jedes Bein, das eine Sonde abbaut; gefahren wurde von diesen nur B7).
+Die Zusage faellt an der erwarteten Pruefung: JA fuer die Exitcode-Haelfte; die Pruefzeile 312/M-07 wird unter dieser Mutation nicht erreicht.
+
+Ausgabe von B31 unter der Ersatzmutation (vollstaendig):
+```
+== Nakama NAK-312 - Sonde-Lebenslaufbein (EqCopSondeLebenslaufTest) ==
+Gate: Manifest NAK-312 §6.1 (312/M-05 bis 312/M-08), R-312-7.
+
+== 312/M-05 - der Testkonstruktor ist fail-closed (R-312-7) ==
+  ok      312/M-08 kein_bein_oeffnet_die_produktions_pipe (R-312-7): M-05: der Probe-Name des Beins liegt im Probe-Namensraum  [\\.\pipe\evenacadia.nakama.v3.probe.test.86648.0.nak312-m05]
+  ok      312/M-05 testkonstruktor_ist_fail_closed (R-312-7): v3PipeNameFuerTest() liefert genau den uebergebenen Probe-Namen; ein Name ausserhalb des Probe-Namensraums wird als LEERER Pipename uebernommen - beide v3-Clients entstehen aus diesem einen Namen, und keiner hat verbunden  [Probe-Name uebernommen ja, fremder Name im Probe-Namensraum nein, uebernommen '', Control getrennt nach 0 Versuchen, Telemetrie getrennt]
+```
+
+## Rohprotokoll (rot-M-07a-woertlich-roh.txt)
+
+```
+== Rotbeweis M-07 - Rohprotokoll ==
+[2026-09-21 04:27:39] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: 456CF06BD04B37453488F8AB7C4395808F6C6E48BEC89B36D52514BA300087C6  eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-07-SondeLebenslaufTestMain.cpp
+Mutation 1 von 1 in eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp, ab Zeile 164
+--- vorher (woertlich) ---
+        auto mitProbe = std::make_unique<Sonde> (probe, testExeErwartung());
+        auto mitFremd = std::make_unique<Sonde> (fremd, testExeErwartung());
+--- nachher (woertlich) ---
+        Sonde mitProbeImRahmen (probe, testExeErwartung());   // MUTATION M-07: Prozessor auf dem Stack
+        Sonde mitFremdImRahmen (fremd, testExeErwartung());   // MUTATION M-07
+        auto* mitProbe = &mitProbeImRahmen;
+        auto* mitFremd = &mitFremdImRahmen;
+SHA-256 mutiert: EA5285A6F19C60AA9A7D829CE0F4395E0907B0DA811267380CE7E156A1457AE4
+[2026-09-21 04:27:39] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:27:45.746 > Quelle 04:27:39.575 -> frisch
+[2026-09-21 04:27:45] Lauf (mutiert) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: 456CF06BD04B37453488F8AB7C4395808F6C6E48BEC89B36D52514BA300087C6 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:27:45.997
+[2026-09-21 04:27:45] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:27:51.923 > Quelle 04:27:45.997 -> frisch
+[2026-09-21 04:27:52] Lauf (zurueck) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+[2026-09-21 04:27:52] Ende
+```
+
+## Rohprotokoll (rot-M-07b-ersatz-roh.txt)
+
+```
+== Rotbeweis M-07 - Rohprotokoll ==
+[2026-09-21 04:27:58] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-07-SondeProcessor.cpp
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 266
+--- vorher (woertlich) ---
+        if (worker.joinable())
+            worker.join();
+        telemetryV3.stop();
+--- nachher (woertlich) ---
+        telemetryV3.stop();   // MUTATION M-07 (Ersatz): der Worker wird nicht mehr gejoint
+SHA-256 mutiert: E7E24BB31B6EC00F421D46B45DEAD5C6C6E946F8FB664034861343E8DF1E91FD
+[2026-09-21 04:27:58] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:28:04.226 > Quelle 04:27:58.510 -> frisch
+    Zeitstempel EqCopTransactionTest: Binary 04:28:11.301 > Quelle 04:27:58.510 -> frisch
+[2026-09-21 04:28:11] Lauf (mutiert) EqCopSondeLebenslaufTest: Exit -1073740791, 0,2 s
+[2026-09-21 04:28:11] Lauf (mutiert) EqCopTransactionTest: Exit -1073740791, 0,3 s
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: D65F75EC0899D8E5472A959EFD009C5F7555305C99A9E2DA464B118CDCECED32 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:28:11.854
+[2026-09-21 04:28:11] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:28:17.763 > Quelle 04:28:11.854 -> frisch
+    Zeitstempel EqCopTransactionTest: Binary 04:28:23.478 > Quelle 04:28:11.854 -> frisch
+[2026-09-21 04:28:23] Lauf (zurueck) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+[2026-09-21 04:28:24] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,1 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:28:24] Ende
+```

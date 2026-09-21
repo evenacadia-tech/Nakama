@@ -1,0 +1,69 @@
+# NAK-312 Rotbeweis M-03 - Verhaltensneutralitaet der Hebung des Bereichs, Beine A16, B6, B7
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-03 (T3-01-02, Verhaltensneutralitaet), Etikett Regressionswache.
+Zusage: der Nulltest bleibt bitgleich und die RBJ-Goldens bytegleich; kein Ausgangssample aendert sich durch die Hebung des Bereichs.
+Beine: A16 EqCopProbeeqNullTest (eq_an_bypass_aus_alles_neutral_ist_bitidentisch und alle Nulltestfaelle), B6 EqCopDspGoldenTest (Goldenabschnitte), dazu B7, weil der Bereich jetzt in SondeProcessor::processBlock beginnt.
+Datei der Mutation: eq-copilot/plugin/dsp/DspRtWache.h, Zeile 117 (Bereich-Konstruktor) und Zeile 24 (das dafuer noetige #include <vector>). Die Datei ist nicht Ticketpfad der Etappe 2; die Mutation ist voruebergehend und bytegleich zurueckgenommen (SHA-256 vorher und nachher B6B882D957F52A679C88BBA6C617C4D866D4A1EFBDC463217FE3DEC0244D8D65, gleich dem Stand an HEAD f96bdd4a). Die Rotbeweisspalte nennt genau diesen Ort.
+
+Die Zusage faellt an der erwarteten Pruefung: JA, an der Haelfte, die die Rotbeweisspalte nennt - "Allokationszaehler steigt und die Etappe ist nicht mehr neutral": B6 null_allokationen_im_callback_samt_programmwechseln (Testzaehler 4000), B6 311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (Testzaehler 128), B7 311/M-139 (400 Allokationen im Callback) und B7 312/M-01 (RtWache::allokationen 200, eigener Zaehler 400).
+Gruen geblieben, erwartet: A16 mit allen 131 Pruefungen und die Golden- und Bitgleichheitsfaelle von B6 (387 von 389 gruen) - ein std::vector im Bereich schreibt kein Sample; die Bitgleichheit bewachen diese Faelle selbst, ihre Rotbeweise liegen in ihren Tickets.
+Beobachtung: in B6 bleibt der Kernzaehler RtWache::allokationen() 0, weil der Vektor VOR betrete() entsteht und der Bereich des Kerns dort der aeusserste ist; in B7 zaehlt er 200 = einen je Block, weil der aeussere Bereich in processBlock schon offen ist, wenn der innere Bereich des Kerns alloziert. Das ist die Hebung, sichtbar gemacht.
+
+## Rohprotokoll (rot-M-03-roh.txt)
+
+```
+== Rotbeweis M-03 - Rohprotokoll ==
+[2026-09-21 04:25:03] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: B6B882D957F52A679C88BBA6C617C4D866D4A1EFBDC463217FE3DEC0244D8D65  eq-copilot/plugin/dsp/DspRtWache.h
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-03-DspRtWache.h
+Mutation 1 von 2 in eq-copilot/plugin/dsp/DspRtWache.h, ab Zeile 24
+--- vorher (woertlich) ---
+    #include <atomic>
+    #include <cstdint>
+--- nachher (woertlich) ---
+    #include <atomic>
+    #include <cstdint>
+    #include <vector>   // MUTATION M-03
+Mutation 2 von 2 in eq-copilot/plugin/dsp/DspRtWache.h, ab Zeile 117
+--- vorher (woertlich) ---
+            Bereich() noexcept  { RtWache::betrete(); }
+--- nachher (woertlich) ---
+            Bereich() noexcept  { std::vector<int> ballast (1); RtWache::betrete(); }   // MUTATION M-03
+SHA-256 mutiert: 1AAC51555DD45ED2AF330956504FF8D07E71417DA044BEF5DCBCE169276F1C55
+[2026-09-21 04:25:03] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopDspGoldenTest EqCopTransactionTest EqCopProbeeqNullTest
+    Bau-Exit 0
+    Zeitstempel EqCopDspGoldenTest: Binary 04:25:11.158 > Quelle 04:25:03.535 -> frisch
+    Zeitstempel EqCopTransactionTest: Binary 04:25:18.153 > Quelle 04:25:03.535 -> frisch
+    Zeitstempel EqCopProbeeqNullTest: Binary 04:25:26.093 > Quelle 04:25:03.535 -> frisch
+[2026-09-21 04:25:32] Lauf (mutiert) EqCopDspGoldenTest: Exit 1, 6,7 s
+      FEHLER  null_allokationen_im_callback_samt_programmwechseln (M-41, M-47, B-25, 311/M-111, 311/M-129)  [4000 Bloecke, 4179358 Samples, 121 Blockrand-Uebernahmen, 100 Baenke geerntet, busy_retry 0, Testzaehler 4000, Kernzaehler 0]
+      FEHLER  311/M-106 automationstreppe_staut_ohne_verlust_und_ohne_allokation (E-17, M-41)  [(a) 64 Publikationen im Abstand eines Blocks zu 64, 0 busy_retry; zuletzt publiziert 200.0 Hz, gefahren 200.0 Hz; verdraengte Zwischenpublikation aendert die Kennung: ja; 17 Blockrand-Uebernahmen bei 128 Blockraendern; (b) Testzaehler 128, Kernzaehler 0, Sperren 0, Ableitungen im Audiopfad 0]
+    389 geprueft, 2 Fehler
+    DSP-GOLDEN FEHLGESCHLAGEN
+[2026-09-21 04:25:33] Lauf (mutiert) EqCopTransactionTest: Exit 1, 1,1 s
+      FEHLER  311/M-139 der_neutrale_weg_kostet_nichts (Teilfall von 311/M-135, NAK-311 R-311-16): bei 32 kHz zaehlt der thread-lokale Zaehler ueber 200 Bloecke 0 Allokationen im Callback, die Echtzeitwache des Kerns 0 gemeldete Sperren, getLatencySamples bleibt 0 und getTailLengthSeconds 0,0  [Allokationen im Callback 400, gemeldete Sperren im Audiopfad des Kerns 0, Latenz 0, Tail 0 s, Taplaenge 0, verworfene Analyseframes 0]
+      FEHLER  312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperren() genau 200, eine je Block an der Playhead-Stelle VOR dspKern->verarbeite, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 200 bei 200 Playhead-Aufrufen in 200 Bloecken, RtWache::allokationen 200, eigener Zaehler 400]
+    195 geprueft, 2 Fehler
+    TRANSAKTION FEHLGESCHLAGEN
+[2026-09-21 04:25:34] Lauf (mutiert) EqCopProbeeqNullTest: Exit 0, 0,7 s
+    SONDE-NULLTEST OK - 131 Pruefungen ok, 0 Fehler
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: B6B882D957F52A679C88BBA6C617C4D866D4A1EFBDC463217FE3DEC0244D8D65 -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:25:34.664
+[2026-09-21 04:25:34] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopDspGoldenTest EqCopTransactionTest EqCopProbeeqNullTest
+    Bau-Exit 0
+    Zeitstempel EqCopDspGoldenTest: Binary 04:25:42.250 > Quelle 04:25:34.664 -> frisch
+    Zeitstempel EqCopTransactionTest: Binary 04:25:49.200 > Quelle 04:25:34.664 -> frisch
+    Zeitstempel EqCopProbeeqNullTest: Binary 04:25:57.370 > Quelle 04:25:34.664 -> frisch
+[2026-09-21 04:26:03] Lauf (zurueck) EqCopDspGoldenTest: Exit 0, 6,2 s
+    389 geprueft, 0 Fehler
+    DSP-GOLDEN OK
+[2026-09-21 04:26:04] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,0 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:26:05] Lauf (zurueck) EqCopProbeeqNullTest: Exit 0, 0,7 s
+    SONDE-NULLTEST OK - 131 Pruefungen ok, 0 Fehler
+[2026-09-21 04:26:05] Ende
+```

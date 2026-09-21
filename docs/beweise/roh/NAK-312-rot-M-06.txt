@@ -1,0 +1,45 @@
+# NAK-312 Rotbeweis M-06 - 312/M-06 starthaken_verbinden_ueber_die_probe_pipe, Bein B31
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-06 (T3-04-01, R-312-7, Starthaken), Etikett heute nicht messbar.
+Zusage: mit v3StartFuerTest() meldet der ControlClient binnen 8 s verbunden, und die Telemetrie koppelt nach dessen welcome (v3TelemetrieStartFuerTest()); ohne die Haken bleibt er getrennt, weil controlV3.start() im Produktzweig unter dem Testdefine nicht laeuft.
+Bein: B31 EqCopSondeLebenslaufTest (neu), Faelle 312/M-06 starthaken_verbinden_ueber_die_probe_pipe und 312/M-06 ohne_starthaken_bleiben_beide_clients_getrennt.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.h, Zeile 292 (Stand Etappe 2), der Rumpf von v3StartFuerTest.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-06: Control getrennt nach 8809 ms, Telemetrie wartetAufKopplung, der Server sah 0 Verbindungen).
+Mitgefallen mit Grund: 312/M-07 ("beide Clients vor dem Abbau verbunden NEIN") - der Abbau mit laufenden Clients setzt die Verbindung aus 312/M-06 voraus.
+Gruen geblieben: 312/M-05, die Gegenhaelfte ohne Starthaken und die drei Wachen 312/M-08.
+
+## Rohprotokoll (rot-M-06-roh.txt)
+
+```
+== Rotbeweis M-06 - Rohprotokoll ==
+[2026-09-21 04:26:52] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: A4C534FEB5BD4CAB49343BA6BBC0449E66A0214E21C494ECA514E8046CB053DB  eq-copilot/plugin/sonde/SondeProcessor.h
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-06-SondeProcessor.h
+Mutation 1 von 1 in eq-copilot/plugin/sonde/SondeProcessor.h, ab Zeile 292
+--- vorher (woertlich) ---
+        void v3StartFuerTest()           { controlV3.start(); }
+--- nachher (woertlich) ---
+        void v3StartFuerTest()           {}   // MUTATION M-06
+SHA-256 mutiert: 17B278E286C3E95121E7AAD6145980E4CE22839193CCCC827FE23F77CFC0C9D0
+[2026-09-21 04:26:52] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:26:58.445 > Quelle 04:26:52.266 -> frisch
+[2026-09-21 04:27:16] Lauf (mutiert) EqCopSondeLebenslaufTest: Exit 1, 17,7 s
+      FEHLER  312/M-06 starthaken_verbinden_ueber_die_probe_pipe (R-312-7): nach v3StartFuerTest() meldet der ControlClient binnen 8 s verbunden, und die Telemetrie koppelt nach dessen welcome - beide ueber die Probe-Pipe des Testservers, das Hello traegt plugin_kind active_probe  [Control getrennt nach 8809 ms, Telemetrie wartetAufKopplung nach 8782 ms, Serververbindungen 0, Control-Hello 0 Bytes]
+      FEHLER  312/M-07 sonde_mit_laufenden_clients_wird_abgebaut (R-312-7): eine Sonde auf dem Heap mit verbundenem Control- und Telemetrieclient wird zerstoert, und der Destruktor kehrt zurueck  [beide Clients vor dem Abbau verbunden NEIN, Destruktor 3 ms]
+    8 geprueft, 2 Fehler
+    SONDE-LEBENSLAUF FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: A4C534FEB5BD4CAB49343BA6BBC0449E66A0214E21C494ECA514E8046CB053DB -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:27:16.262
+[2026-09-21 04:27:16] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopSondeLebenslaufTest
+    Bau-Exit 0
+    Zeitstempel EqCopSondeLebenslaufTest: Binary 04:27:22.666 > Quelle 04:27:16.262 -> frisch
+[2026-09-21 04:27:22] Lauf (zurueck) EqCopSondeLebenslaufTest: Exit 0, 0,1 s
+    8 geprueft, 0 Fehler
+    SONDE-LEBENSLAUF OK
+[2026-09-21 04:27:22] Ende
+```

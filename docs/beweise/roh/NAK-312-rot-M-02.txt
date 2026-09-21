@@ -1,0 +1,49 @@
+# NAK-312 Rotbeweis M-02 - 312/M-02 der_zaehler_sieht_den_workerzug_nicht, Bein B7
+
+Bauer: Etappe 2 (Messgeraete), 21.09.2026. Basis HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d, im Arbeitsbaum der Stand der Etappe 2 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1: SHA-256 und Sicherung ausserhalb des Repos, Mutation genau an der genannten Stelle, nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release --target ...), Binaryzeitstempel gegen die Quelle, Lauf, bytegleiche Ruecknahme aus der Sicherung mit SHA-256, LastWriteTime der Quelle auf jetzt (NAK-230), Neubau, Zeitstempel, Lauf gruen. Uhrzeiten aus Get-Date im Rohprotokoll. Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und Urteilszeilen; die vollstaendigen Ausgaben lagen im Job-Temp-Ordner des Bauers.
+
+Matrixzeile: M-02 (T3-01-02, Grenze der Wache; R-312-1 Satz 2 und 3; E-312-11), Etikett Regressionswache (gilt ab dem Bau dieser Etappe; einmal gebrochen, kein Beleg).
+Zusage: ein Workerzug mit Programmbau zwischen zwei Bloecken bewegt RtWache::allokationen() und RtWache::sperren() um 0; eine Sperre, die der Testplayhead ausserhalb eines Blocks nimmt, zaehlt 0.
+Bein: B7 EqCopTransactionTest, Abschnitt W, Teilfall 312/M-02 der_zaehler_sieht_den_workerzug_nicht.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.h, Zeile 493 (Stand Etappe 2), vor dem ersten Datenmitglied zustand.
+
+Form der Mutation: die Matrix nennt "Bereich zusaetzlich in den Konstruktor oder in setNonRealtime gesetzt". Ein Bereich als lokale Variable im Konstruktorrumpf endete mit dem Rumpf und wirkte nicht; gebaut ist deshalb der Bereich als Mitglied, das im Konstruktor auf dem konstruierenden Thread entsteht und bis zum Destruktor lebt - genau das Risiko aus §7.2 (ein zweiter Bereich an einer Stelle, die auch vom Nachrichtenthread laeuft). Die Variante setNonRealtime traefe den Fall nicht, weil 312/M-02 setNonRealtime nicht ruft.
+
+Die Zusage faellt an der erwarteten Pruefung: JA (312/M-02: RtWache::allokationen 0 -> 1137 im Workerzug, RtWache::sperren 200 -> 201 durch die Playhead-Sperre ausserhalb eines Blocks, im Audiopfad JA).
+Mitgefallen: keine.
+Gruen geblieben: 312/M-01 (im Block bleiben 200 Sperren und 0 Allokationen - processBlock alloziert nicht), 312/M-04, 311/M-139 und alle uebrigen Pruefungen von B7.
+
+## Rohprotokoll (rot-M-02-roh.txt)
+
+```
+== Rotbeweis M-02 - Rohprotokoll ==
+[2026-09-21 04:24:21] HEAD f96bdd4a3834ef4469e110d2a286df0b86f4ff5d
+SHA-256 vor der Mutation: A4C534FEB5BD4CAB49343BA6BBC0449E66A0214E21C494ECA514E8046CB053DB  eq-copilot/plugin/sonde/SondeProcessor.h
+Sicherungskopie ausserhalb des Repos: C:\Users\phili\.claude\jobs\56137fde\tmp\sicherung-M-02-SondeProcessor.h
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.h, ab Zeile 493
+--- vorher (woertlich) ---
+        nakama::state::Zustand zustand;
+        nakama::state::Lebenslauf lebenslauf { kProduktklasse };
+--- nachher (woertlich) ---
+        const nakama::dsp::RtWache::Bereich wacheImKonstruktor;   // MUTATION M-02
+        nakama::state::Zustand zustand;
+        nakama::state::Lebenslauf lebenslauf { kProduktklasse };
+SHA-256 mutiert: CF14837F4210D0F6E43C09FF3762E5ED4319EBA0CBFEA28C31A89D0399A80720
+[2026-09-21 04:24:21] Bau (mutiert): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:24:28.914 > Quelle 04:24:21.601 -> frisch
+[2026-09-21 04:24:30] Lauf (mutiert) EqCopTransactionTest: Exit 1, 1,2 s
+      FEHLER  312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und RtWache::allokationen() und RtWache::sperren() steigen darin um 0; eine Sperre, die der Testplayhead ausserhalb eines Blocks nimmt, zaehlt 0, die im naechsten Block wieder genau 1  [Workerzug: eigener Zaehler 1137 Allokationen, RtWache::allokationen 0 -> 1137, RtWache::sperren 200 -> 201 (Playhead-Sperre ausserhalb eines Blocks), im Audiopfad JA; der Block danach 201 -> 202]
+    195 geprueft, 1 Fehler
+    TRANSAKTION FEHLGESCHLAGEN
+--- Ruecknahme ---
+SHA-256 nach der Ruecknahme: A4C534FEB5BD4CAB49343BA6BBC0449E66A0214E21C494ECA514E8046CB053DB -> gleich dem Wert vor der Mutation (bytegleich)
+LastWriteTime der Quelle auf jetzt gesetzt: 04:24:30.270
+[2026-09-21 04:24:30] Bau (zurueck): cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+    Bau-Exit 0
+    Zeitstempel EqCopTransactionTest: Binary 04:24:37.188 > Quelle 04:24:30.270 -> frisch
+[2026-09-21 04:24:38] Lauf (zurueck) EqCopTransactionTest: Exit 0, 1,1 s
+    195 geprueft, 0 Fehler
+    TRANSAKTION OK
+[2026-09-21 04:24:38] Ende
+```

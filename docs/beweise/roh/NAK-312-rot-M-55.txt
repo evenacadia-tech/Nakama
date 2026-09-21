@@ -1,0 +1,75 @@
+# NAK-312 Rotbeweis M-55 - 312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker, Bein A3
+
+Bauer: Etappe 6a, Aenderungssatz A (Rollenwechsel und drei Netze, T3-07-02), 21.09.2026. Basis HEAD fd287d3c8ea277814c80e67365ea782e6af9994d, im Arbeitsbaum der Stand des Aenderungssatzes A vor dem Commit (Tests in ihrer Endfassung, SHA-256 in docs/beweise/roh/NAK-312-etappe6a-gegenprobe-A.txt). Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation per Textersatz mit genau einer Fundstelle, nur das betroffene Ziel bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER- und 312/-Zeilen.
+
+Matrixzeile: M-55 (T3-07-02, R-312-8 in der Fassung von E-312-8, Szenario S1 zu Main), Etikett heute rot; Gegenprobe am Basisstand docs/beweise/roh/NAK-312-etappe6a-gegenprobe-A.txt
+Zusage: in der Richtung zu Main entsteht nichts - der Ausgang ist ueber alle 40 Bloecke nach dem Rollenwechsel bitgleich zum Eingang, im Interventionsring steht weder ein begin noch ein end; der in Legacy eingereichte Auftrag ist zurueckgenommen, bevor istMainKlassifiziert kippt.
+Bein: A3 EqCopMarkierungTest, Fall 312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker (Funktion nak312M55).
+Datei der Mutation: eq-copilot/plugin/src/prozessor/State.cpp, spiegleKlassifikation, die Ruecknahme vor dem Store.
+Mutation: Matrix: die Ruecknahme vor dem Store entfernen -> Einblenden ab dem ersten Block, ein begin im Ring -> rot. Gebaut: genau das.
+
+Rohprotokoll rot-M-55.log:
+Start 2026-09-21 21:26:26
+Basis HEAD fd287d3c8ea277814c80e67365ea782e6af9994d
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/src/prozessor/State.cpp
+SHA-256 vorher: 2B2609874832E3EA3720A40DE4AFAAFCC1A1572C30612A3609AF791C390F11F9
+Sicherung: C:\Users\phili\.claude\jobs\b1dc89c2\tmp\sicherung\State.cpp.M-55 (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/src/prozessor/State.cpp, git diff --no-index gegen die Sicherung (VORHER -, NACHHER +):
+@@ -286,5 +286,3 @@ void EqCopilotProcessor::spiegleKlassifikation()
+     const bool main = lebenslauf.audioAusnahmeErlaubt();
+-    if (main != istMainKlassifiziert.load (std::memory_order_relaxed)
+-        && markierung.zielGesetzt())
+-        markierung.reicheAus();
++    // Mutation 312/M-55: die Ruecknahme vor dem Store entfernt
+     istMainKlassifiziert.store (main);
+SHA-256 mutiert eq-copilot/plugin/src/prozessor/State.cpp: C4D2F23B40BE249CD53CC08AB7AFEC06E3F359A3B772337372BE3DEF3FC259D7
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 21:26:27.709
+Bau (EqCopMarkierungTest) Exit 0, 5 s
+Binary eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe LastWriteTime 21:26:32.981 - juenger als die juengste Quelle (21:26:27.709): JA
+Lauf EqCopMarkierungTest: Exitcode 1, 8 s, letzte Zeile: MARKIERUNGSTEST FEHLGESCHLAGEN
+Gefallene Pruefungen in EqCopMarkierungTest (8):
+  FEHLER  312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker - 40 Bloecke nach dem Wechsel zu Main bitgleich zum Eingang, kein Block hoerbar, im Ring weder begin noch end  [40 abweichend, 40 hoerbar, 1 im Ring]
+  FEHLER  312/M-55: und der Sender findet nichts zu senden  [1 begin, 0 end]
+  FEHLER  312/M-57 rueckwechsel_hinterlaesst_keinen_scharfen_marker (Teilfall von 312/M-55) - nach sensor, hub, sensor 40 Bloecke bitgleich, kein Ereignis im Ring  [8 abweichend, 1 im Ring]
+  FEHLER  312/M-57: kein Bedienelement behauptet einen scharfen Marker - kein Auftrag, kein Latch, Aus-Knopf in der Legacy-Flaeche unsichtbar
+  FEHLER  312/M-57 editorhaelfte_kein_aus_knopf_ohne_auftrag - nach dem Wechsel weg von Main traegt der Editor keinen Latch, der Aus-Knopf ist unsichtbar, der Status sagt warum  [Markierung beendet — diese Instanz ist nicht mehr Main.]
+  FEHLER  312/M-84 rollenwechsel_weg_von_main_schliesst_das_intervall - nach dem zweiten Wechsel zu Main entsteht ohne neuen Handgriff KEIN neues begin, 40 Bloecke bitgleich  [40 abweichend, 1 begin, 1 end]
+  FEHLER  312/M-84: genau ein begin und genau ein end dazu, mit der gezaehlten Hoerdauer  [44544 Samples gehoert, tail 52928 (erwartet 93888)]
+  FEHLER  312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade - der Wechsel zurueck zu Main mitten im Ausfade blendet nicht wieder ein: der Ausfade laeuft zu Ende, genau ein begin und ein end  [letzte Abweichung in Block 39, 1 begin, 0 end]
+Unter derselben Mutation gruen gebliebene NAK-312-Pruefungen (16):
+  ok      312/M-55: Aufbau - Rolle sensor (legacy), Legacy-Flaeche, Senderpause bestaetigt
+  ok      312/M-58 legacy_solo_reicht_nichts_ein (Teilfall von 312/M-55) - der Editor fragt denselben Term wie das Audio und reicht in Legacy keinen Auftrag ein
+  ok      312/M-58: kein Latch im Editor und kein Aus-Knopf ohne Auftrag
+  ok      312/M-58: der Status behauptet kein Einfaerben, er nennt die Lage, die wirklich eintritt  [Markierung nicht möglich — nur ein Main färbt hörbar, diese Instanz bleibt neutral.]
+  ok      312/M-55: in Legacy bleibt der eingereichte Auftrag stumm (40 Bloecke bitgleich, Ring leer)
+  ok      312/M-57 (Editorhaelfte): Aufbau - in Main ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 (a, Freilauf): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (a, Freilauf) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Offline-Render/Freilauf erkannt. | letzte Abweichung in Block 7]
+  ok      312/M-56 (b, Samplerate): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (b, Samplerate) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Samplerate gewechselt. | letzte Abweichung in Block -1]
+  ok      312/M-56 (c, 10 Minuten): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (c, 10 Minuten) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung nach 10 Minuten ohne Bedienung beendet. | letzte Abweichung in Block 7]
+  ok      312/M-84: Aufbau - in Main hoerbar, sein begin ist gesendet  [1 begin, 0 end]
+  ok      312/M-84: der Ausfade laeuft WEICH - der Nachbarsprung am Umschaltsample liegt innerhalb der Schranke aus [SONDE-015] E-31 (Fadeschritt plus 2^-23)  [0.0000781250 <= 0.0000782442]
+  ok      312/M-84: und im ganzen Ausfade kein groesserer Sprung (Wache)  [0.0000781417]
+  ok      312/M-84: danach still und bitgleich  [7]
+
+== 5. Ruecknahme ==
+eq-copilot/plugin/src/prozessor/State.cpp: bytegleich aus der Sicherung zurueck, SHA-256 2B2609874832E3EA3720A40DE4AFAAFCC1A1572C30612A3609AF791C390F11F9 - gleich dem Wert vor der Mutation: JA
+Quellen LastWriteTime auf jetzt gesetzt: 21:26:41.857
+Bau (EqCopMarkierungTest) Exit 0, 6 s
+Binary eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe LastWriteTime 21:26:47.430 - juenger als die juengste Quelle (21:26:41.857): JA
+Lauf EqCopMarkierungTest: Exitcode 0, 8 s, letzte Zeile: MARKIERUNGSTEST OK
+Gefallene Pruefungen in EqCopMarkierungTest (0):
+Ende 2026-09-21 21:26:55
+
+== 6. Bewertung (nach dem Lauf, gemessen) ==
+Die Zusage faellt an der erwarteten Pruefung (312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker: 40 abweichend, 40 hoerbar, 1 im Ring; der Sender findet 1 begin): JA
+Mitgefallen, mit Grund: 312/M-57 (Prozessorhaelfte, beide Pruefungen) und die zweite Haelfte von 312/M-84 - ihre Rotbeweisspalten sagen "Mutation wie M-55"; sie tragen eigene Rohdateien mit diesem Lauf (NAK-312-rot-M-57.txt, NAK-312-rot-M-84.txt). 312/M-57 editorhaelfte faellt ebenfalls: der Editor raeumt seinen Latch, aber der Auftrag bleibt beim Publisher gesetzt. Der Teilfall 312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade faellt, weil der nie zurueckgenommene Auftrag beim Wechsel zurueck zu Main wieder einblendet (letzte Abweichung in Block 39, kein end).
+Gruen geblieben: 312/M-58, 312/M-56 (a, b, c) und die erste Haelfte von 312/M-84 (weicher Ausfade) - sie haengen nicht an der Ruecknahme.

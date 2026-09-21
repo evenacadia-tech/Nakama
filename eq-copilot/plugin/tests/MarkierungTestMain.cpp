@@ -9,7 +9,11 @@
 //  · Das Lebenszeichen selbst (T3/T10): ECHTE Taktung — Freilauf-Blöcke
 //    bleiben bitgleich (Render-Beweis), wanduhr-getaktete Blöcke schalten
 //    nach ~1 s frei, Transport-Stopp und setNonRealtime schneiden hart.
+//  · NAK-312 Etappe 6a: Rollenwechsel und die drei Netze (312/M-55 bis M-58,
+//    M-84) am echten Prozessor mit Editor; die Editorhaelfte tickt ueber
+//    `timerTickFuerTest`, Ereignisse erntet das Bein synchron vom Sender.
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 #include "HoerMarkierung.h"
 
 #include <pluginterfaces/vst/ivstprocesscontext.h>
@@ -1414,6 +1418,436 @@ static void nak246D1Besitz (const Pruefer& pruefe, double fs, int bs)
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 6a, erster Aenderungssatz: Rollenwechsel und die drei Netze
+// (T3-07-02; R-312-8 in der Fassung von E-312-8; Manifest §6.7).
+//
+// Jeder Wechsel der Klassifikation von Gen nimmt einen eingereichten
+// Markierungsauftrag zurueck, BEVOR die neue Klassifikation im Audiothread
+// wirkt: ein hoerbarer Marker endet ueber den weichen Ausfade mit genau einem
+// `end`, ein nie hoerbarer erzeugt kein Ereignis, und danach wird ohne neuen
+// Handgriff kein Marker wieder wirksam. Die drei Netze ticken in jeder
+// Flaeche. Die Faelle messen Ausgang und Editorzustand gemeinsam; die
+// Editorhaelfte tickt ueber `timerTickFuerTest`, nie ueber den
+// Nachrichtenloop.
+namespace nak312
+{
+/// Gleichanteil statt Sinus: die Zone 120-300 Hz sperrt ihn, der Wet-Anteil
+/// ist nach dem Einschwingen 0, beide Seiten eines Ausfades sind konstant, und
+/// der Nachbarsprung am Umschaltsample ist exakt gegen die Fadeschrittweite
+/// pruefbar ([SONDE-015] E-31).
+constexpr float kGleich = 0.3f;
+
+/// Die Befundkarte, deren SOLO der Editor einreicht: dieselbe Zone wie der
+/// Auftrag, den die Faelle ueber `markierungEinreichen` geben.
+static Befund mulmBefund()
+{
+    Befund b;
+    b.klasse = BefundKlasse::mulm;
+    b.fVon = 120.0;
+    b.fBis = 300.0;
+    b.fSchwerpunkt = 200.0;
+    return b;
+}
+
+struct Lauf
+{
+    int abweichend = 0;          ///< Bloecke, deren Ausgang vom Eingang abweicht
+    int letzteAbweichung = -1;   ///< Index des letzten abweichenden Blocks
+    int hoerbar = 0;             ///< Bloecke, nach denen `markierungHoerbar()` gilt
+    float sprungAmAnfang = 0.0f; ///< Nachbarsprung am ersten Sample des Laufs
+    float groessterSprung = 0.0f;
+};
+
+struct Ernte
+{
+    int begins = 0;
+    int ends = 0;
+    std::vector<juce::var> liste;
+};
+
+/// Ein Gen auf dem Heap (NAK-175) mit laufendem Transport ueber die Bruecke
+/// und ruhendem Sender.
+struct Stand
+{
+    Stand (double fsIn, int bsIn)
+        : fs (fsIn), bs (bsIn), puffer (2, bsIn), kopie (2, bsIn),
+          p (std::make_unique<EqCopilotProcessor>())
+    {
+        p->setPlayConfigDetails (2, 2, fs, bs);
+        p->prepareToPlay (fs, bs);
+        p->testForciereEchtzeit (true);
+        transport = std::make_unique<LaufenderTransport> (*p);
+        // Der Sender des Workers ruht BESTAETIGT (NAK-180 WA-02): jedes
+        // Ereignis bleibt im Ring, bis das Bein selbst erntet - die Zaehlung
+        // haengt damit nicht am Takt des Workers.
+        p->senderAnhaltenFuerTest (true);
+        pauseBestaetigt = p->warteAufSenderPauseFuerTest();
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.istResonanz = false;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0;
+        w.fs = fs;
+        gebaut = baueMarkierungsAuftrag (auftrag, w);
+    }
+    ~Stand()
+    {
+        editor.reset();            // vor dem Prozessor: der Destruktor ruft ihn
+        transport.reset();
+        p->senderAnhaltenFuerTest (false);
+    }
+
+    void oeffneEditor()
+    {
+        editor.reset (static_cast<EqCopilotEditor*> (p->createEditor()));
+    }
+    /// Ein Timertick. Die Bloecke laufen schneller als Echtzeit, also meldet
+    /// `lebenszeichen` an der Wanduhr womoeglich Freilauf, sobald ein Auftrag
+    /// steht; dieses Signal wird vor dem Tick verworfen, damit kein Fall an
+    /// Wandzeit haengt. Nur 312/M-56 (a) loest es gezielt aus.
+    void tick()
+    {
+        (void) p->markierungKillGemeldet();
+        editor->timerTickFuerTest();
+    }
+    bool klassifikationIst (nakama::state::Klassifikation k) const
+    {
+        return p->holeKlassifikation() == k;
+    }
+
+    Lauf bloecke (int n)
+    {
+        Lauf l;
+        for (int b = 0; b < n; ++b)
+        {
+            for (int k = 0; k < 2; ++k)
+                for (int i = 0; i < bs; ++i)
+                    puffer.setSample (k, i, kGleich);
+            kopie.makeCopyOf (puffer);
+            transport->vorBlock (bs);
+            p->processBlock (puffer, midi);
+            transport->weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+            {
+                ++l.abweichend;
+                l.letzteAbweichung = b;
+            }
+            const float* d = puffer.getReadPointer (0);
+            const float amAnfang = std::abs (d[0] - letztes);
+            if (b == 0)
+                l.sprungAmAnfang = amAnfang;
+            l.groessterSprung = std::max (l.groessterSprung, amAnfang);
+            for (int i = 1; i < bs; ++i)
+                l.groessterSprung = std::max (l.groessterSprung, std::abs (d[i] - d[i - 1]));
+            letztes = d[bs - 1];
+            if (p->markierungHoerbar())
+            {
+                ++l.hoerbar;
+                hoerDauer += (std::uint64_t) bs;   // wie `hoerbareSamples` im Produkt
+            }
+        }
+        return l;
+    }
+
+    /// Der Sendezug SYNCHRON, danach der Wire-Commit ohne Draht; geerntet wird
+    /// der Mitschnitt des echten Senders (NAK-180 EP-13/R7).
+    Ernte ernte()
+    {
+        Ernte e;
+        p->interventionenSendenFuerTest();
+        p->zustelleAllesFuerTest();
+        for (;;)
+        {
+            const auto text = p->naechstesInterventionsJsonFuerTest (0);
+            if (text.empty())
+                break;
+            const auto v = juce::JSON::parse (juce::String (text));
+            const auto typ = v.getProperty ("type", {}).toString();
+            if (typ == "audible_intervention_begin") ++e.begins;
+            if (typ == "audible_intervention_end")   ++e.ends;
+            e.liste.push_back (v);
+        }
+        return e;
+    }
+
+    double fs;
+    int bs;
+    juce::AudioBuffer<float> puffer, kopie;
+    juce::MidiBuffer midi;
+    std::unique_ptr<EqCopilotProcessor> p;
+    std::unique_ptr<LaufenderTransport> transport;
+    std::unique_ptr<EqCopilotEditor> editor;
+    MarkierungsAuftrag auftrag;
+    bool gebaut = false;
+    bool pauseBestaetigt = false;
+    float letztes = kGleich;
+    std::uint64_t hoerDauer = 0;
+};
+
+static juce::String ereignisText (const Ernte& e)
+{
+    return juce::String (e.begins) + " begin, " + juce::String (e.ends) + " end";
+}
+} // namespace nak312
+
+/** 312/M-55 (Szenario S1, zu Main) mit den Teilfaellen 312/M-58 (ehrliche
+    Meldung in Legacy) und 312/M-57 (Rueckwechsel). */
+static void nak312M55 (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    nak312::Stand s (fs, bs);
+    s.oeffneEditor();                          // setzeEditorOffen (true) im Konstruktor
+    const bool legacy = s.p->setzeBindung ("sensor", "M-55", {})
+                     && s.klassifikationIst (Klassifikation::legacy);
+    s.tick();
+    pruefe (s.gebaut && s.pauseBestaetigt && legacy && ! s.editor->mainFlaecheAktivFuerTest(),
+            "312/M-55: Aufbau - Rolle sensor (legacy), Legacy-Flaeche, Senderpause bestaetigt");
+
+    // ── 312/M-58: SOLO ueber die Befundkarte in der Legacy-Rolle ─────────
+    s.editor->schalteMarkierungFuerTest (nak312::mulmBefund(), MarkierungsModus::solo);
+    s.tick();
+    const auto status = s.editor->statusMeldungFuerTest();
+    pruefe (! s.p->markierungZielGesetztFuerTest(),
+            "312/M-58 legacy_solo_reicht_nichts_ein (Teilfall von 312/M-55) - der Editor "
+            "fragt denselben Term wie das Audio und reicht in Legacy keinen Auftrag ein");
+    pruefe (s.editor->markModusFuerTest() == MarkierungsModus::aus
+                && ! s.editor->markierungAusKnopfSichtbarFuerTest(),
+            "312/M-58: kein Latch im Editor und kein Aus-Knopf ohne Auftrag");
+    pruefe (! status.contains ("nur dieser Bereich spielt") && status.contains ("nur ein Main"),
+            "312/M-58: der Status behauptet kein Einfaerben, er nennt die Lage, die wirklich "
+            "eintritt", status);
+
+    // ── 312/M-55: Auftrag in Legacy, dann Rollenwechsel zu Main ──────────
+    s.p->markierungEinreichen (s.auftrag);
+    const auto inLegacy = s.bloecke (40);
+    pruefe (inLegacy.abweichend == 0 && s.p->interventionsRingFuellstandFuerTest() == 0,
+            "312/M-55: in Legacy bleibt der eingereichte Auftrag stumm (40 Bloecke bitgleich, "
+            "Ring leer)");
+    const bool main = s.p->setzeBindung ("hub", "M-55", {})
+                   && s.klassifikationIst (Klassifikation::main);
+    // SOFORT danach, ohne Timertick: die Ruecknahme haengt nicht am Editor.
+    const auto nachWechsel = s.bloecke (40);
+    const int imRing = s.p->interventionsRingFuellstandFuerTest();
+    pruefe (main && nachWechsel.abweichend == 0 && nachWechsel.hoerbar == 0 && imRing == 0,
+            "312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker - 40 Bloecke nach dem "
+            "Wechsel zu Main bitgleich zum Eingang, kein Block hoerbar, im Ring weder begin "
+            "noch end",
+            juce::String (nachWechsel.abweichend) + " abweichend, "
+                + juce::String (nachWechsel.hoerbar) + " hoerbar, "
+                + juce::String (imRing) + " im Ring");
+    const auto ernteMain = s.ernte();
+    pruefe (ernteMain.begins == 0 && ernteMain.ends == 0,
+            "312/M-55: und der Sender findet nichts zu senden",
+            nak312::ereignisText (ernteMain));
+
+    // ── 312/M-57: zurueck nach sensor ─────────────────────────────────────
+    s.tick();                                  // die Flaeche folgt: Main
+    const bool mainFlaeche = s.editor->mainFlaecheAktivFuerTest();
+    const bool zurueck = s.p->setzeBindung ("sensor", "M-55", {})
+                      && s.klassifikationIst (Klassifikation::legacy);
+    s.tick();                                  // die Flaeche folgt: Legacy
+    const auto nachRueck = s.bloecke (40);
+    const int imRingRueck = s.p->interventionsRingFuellstandFuerTest();
+    pruefe (mainFlaeche && zurueck && nachRueck.abweichend == 0 && nachRueck.hoerbar == 0
+                && imRingRueck == 0,
+            "312/M-57 rueckwechsel_hinterlaesst_keinen_scharfen_marker (Teilfall von "
+            "312/M-55) - nach sensor, hub, sensor 40 Bloecke bitgleich, kein Ereignis im Ring",
+            juce::String (nachRueck.abweichend) + " abweichend, "
+                + juce::String (imRingRueck) + " im Ring");
+    pruefe (! s.p->markierungZielGesetztFuerTest()
+                && s.editor->markModusFuerTest() == MarkierungsModus::aus
+                && ! s.editor->markierungAusKnopfSichtbarFuerTest()
+                && ! s.editor->mainFlaecheAktivFuerTest(),
+            "312/M-57: kein Bedienelement behauptet einen scharfen Marker - kein Auftrag, kein "
+            "Latch, Aus-Knopf in der Legacy-Flaeche unsichtbar");
+}
+
+/** 312/M-57, Editorhaelfte: ein ueber den Editor in Main eingeschalteter
+    Marker, danach Rollenwechsel weg von Main. Der Editor raeumt seinen
+    Anzeigezustand; ein sichtbarer Aus-Knopf ohne Auftrag waere selbst ein
+    totes Element. */
+static void nak312M57Editor (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    nak312::Stand s (fs, bs);
+    s.oeffneEditor();
+    const bool main = s.p->setzeBindung ("hub", "M-57", {})
+                   && s.klassifikationIst (Klassifikation::main);
+    s.tick();
+    s.editor->schalteMarkierungFuerTest (nak312::mulmBefund(), MarkierungsModus::solo);
+    const auto an = s.bloecke (20);
+    pruefe (s.gebaut && main && s.editor->markModusFuerTest() == MarkierungsModus::solo
+                && an.hoerbar > 0,
+            "312/M-57 (Editorhaelfte): Aufbau - in Main ueber den Editor eingeschaltet, er klingt");
+    const bool weg = s.p->setzeBindung ("sensor", "M-57", {})
+                  && s.klassifikationIst (Klassifikation::legacy);
+    s.tick();
+    const auto status = s.editor->statusMeldungFuerTest();
+    pruefe (weg && ! s.editor->mainFlaecheAktivFuerTest()
+                && ! s.p->markierungZielGesetztFuerTest()
+                && s.editor->markModusFuerTest() == MarkierungsModus::aus
+                && ! s.editor->markierungAusKnopfSichtbarFuerTest()
+                && status.contains ("nicht mehr Main"),
+            "312/M-57 editorhaelfte_kein_aus_knopf_ohne_auftrag - nach dem Wechsel weg von "
+            "Main traegt der Editor keinen Latch, der Aus-Knopf ist unsichtbar, der Status "
+            "sagt warum", status);
+}
+
+/** 312/M-56: die drei Netze ticken auch in der Main-Flaeche. Je Netz ein
+    frischer Stand; jeder Fall beginnt mit einem Marker, den der Editor in der
+    Main-Flaeche eingeschaltet hat. */
+static void nak312M56 (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    enum class Netz { freilauf, samplerate, totmann };
+    auto fall = [&] (Netz netz, const char* name, const char* grundWort)
+    {
+        nak312::Stand s (fs, bs);
+        s.oeffneEditor();
+        const bool main = s.p->setzeBindung ("hub", "M-56", {})
+                       && s.klassifikationIst (Klassifikation::main);
+        s.tick();
+        s.editor->schalteMarkierungFuerTest (nak312::mulmBefund(), MarkierungsModus::solo);
+        const auto an = s.bloecke (20);
+        pruefe (s.gebaut && main && s.editor->mainFlaecheAktivFuerTest()
+                    && s.editor->markModusFuerTest() == MarkierungsModus::solo
+                    && an.hoerbar > 0 && s.p->markierungHoerbar(),
+                juce::String ("312/M-56 (") + name + "): Aufbau - Main-Flaeche, Marker ueber "
+                    "den Editor eingeschaltet, er klingt");
+        // Ein echtes Freilaufsignal aus den schnell gefahrenen Bloecken wird
+        // vorher verworfen: gemessen wird genau EIN Netz je Fall, und der Tick
+        // danach laeuft direkt, damit (a) sein eigenes Signal behaelt.
+        (void) s.p->markierungKillGemeldet();
+        switch (netz)
+        {
+            case Netz::freilauf:   s.p->meldeFreilaufFuerTest(); break;
+            case Netz::samplerate: s.p->prepareToPlay (96000.0, bs); break;
+            case Netz::totmann:    s.editor->letzteBedienungVorFuerTest (10u * 60u * 1000u + 1u); break;
+        }
+        s.editor->timerTickFuerTest();
+        const auto status = s.editor->statusMeldungFuerTest();
+        const bool beendet = s.editor->markModusFuerTest() == MarkierungsModus::aus
+                          && ! s.p->markierungZielGesetztFuerTest();
+        const auto danach = s.bloecke (40);
+        // Der weiche Ausfade (80 ms, 7,5 Bloecke bei 48 kHz und 512 Samples)
+        // darf die ersten zehn Bloecke fuellen; danach ist der Ausgang bitgleich.
+        const bool bitgleich = danach.letzteAbweichung < 10 && ! s.p->markierungHoerbar();
+        pruefe (beendet && bitgleich && status.contains (grundWort),
+                juce::String ("312/M-56 die_drei_netze_ticken_in_jeder_flaeche (") + name
+                    + ") - in der Main-Flaeche endet die Markierung, der Ausgang wird "
+                      "bitgleich, der Grund steht im Status",
+                status + " | letzte Abweichung in Block "
+                    + juce::String (danach.letzteAbweichung));
+    };
+    fall (Netz::freilauf, "a, Freilauf", "Freilauf");
+    fall (Netz::samplerate, "b, Samplerate", "Samplerate");
+    fall (Netz::totmann, "c, 10 Minuten", "10 Minuten");
+}
+
+/** 312/M-84 (Szenario S2, weg von Main): hier entsteht das `begin` wirklich. */
+static void nak312M84 (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    nak312::Stand s (fs, bs);
+    s.p->setzeEditorOffen (true);
+    const bool main = s.p->setzeBindung ("hub", "M-84", {})
+                   && s.klassifikationIst (Klassifikation::main);
+    s.p->markierungEinreichen (s.auftrag);
+    s.hoerDauer = 0;
+    const auto an = s.bloecke (40);
+    const auto ersteErnte = s.ernte();
+    juce::String beginId;
+    for (const auto& v : ersteErnte.liste)
+        if (v.getProperty ("type", {}).toString() == "audible_intervention_begin")
+            beginId = v.getProperty ("intervention_id", {}).toString();
+    // Die erste Ernte ist zugleich die Gegenprobe fuer 312/M-55: der Sender
+    // dieses Aufbaus findet Ereignisse, wenn es welche gibt.
+    pruefe (s.gebaut && s.pauseBestaetigt && main && an.hoerbar == 40
+                && ersteErnte.begins == 1 && ersteErnte.ends == 0,
+            "312/M-84: Aufbau - in Main hoerbar, sein begin ist gesendet",
+            nak312::ereignisText (ersteErnte));
+
+    // Der Rollenwechsel weg von Main. `letztes` ist der Ausgang bei voller
+    // Blende, also der Wet-Anteil (der Gleichanteil ist gesperrt).
+    const float wet = s.letztes;
+    const bool legacy = s.p->setzeBindung ("sensor", "M-84", {})
+                     && s.klassifikationIst (Klassifikation::legacy);
+    const auto aus = s.bloecke (16);
+    const double schritt = 1.0 / (double) std::lround (0.080 * fs);   // Solo-Fade 80 ms
+    const double schranke = schritt * std::abs ((double) nak312::kGleich - (double) wet)
+                          + std::ldexp (1.0, -23);
+    pruefe (legacy && aus.sprungAmAnfang > 0.0f && (double) aus.sprungAmAnfang <= schranke,
+            "312/M-84: der Ausfade laeuft WEICH - der Nachbarsprung am Umschaltsample liegt "
+            "innerhalb der Schranke aus [SONDE-015] E-31 (Fadeschritt plus 2^-23)",
+            juce::String (aus.sprungAmAnfang, 10) + " <= " + juce::String (schranke, 10));
+    pruefe ((double) aus.groessterSprung <= schranke,
+            "312/M-84: und im ganzen Ausfade kein groesserer Sprung (Wache)",
+            juce::String (aus.groessterSprung, 10));
+    pruefe (aus.letzteAbweichung < 10 && ! s.p->markierungHoerbar(),
+            "312/M-84: danach still und bitgleich",
+            juce::String (aus.letzteAbweichung));
+
+    // Der zweite Wechsel zu Main, ohne neuen Handgriff.
+    const bool wieder = s.p->setzeBindung ("hub", "M-84", {})
+                     && s.klassifikationIst (Klassifikation::main);
+    const auto zweiter = s.bloecke (40);
+    const auto zweiteErnte = s.ernte();
+    pruefe (wieder && zweiter.abweichend == 0 && zweiter.hoerbar == 0
+                && zweiteErnte.begins == 0,
+            "312/M-84 rollenwechsel_weg_von_main_schliesst_das_intervall - nach dem zweiten "
+            "Wechsel zu Main entsteht ohne neuen Handgriff KEIN neues begin, 40 Bloecke "
+            "bitgleich",
+            juce::String (zweiter.abweichend) + " abweichend, "
+                + nak312::ereignisText (zweiteErnte));
+
+    juce::String endeId;
+    juce::int64 tail = -1;
+    for (const auto& v : zweiteErnte.liste)
+        if (v.getProperty ("type", {}).toString() == "audible_intervention_end")
+        {
+            endeId = v.getProperty ("intervention_id", {}).toString();
+            tail = (juce::int64) v.getProperty ("tail_samples", {});
+        }
+    // Der Nachlauf ist eine Formel (NAK-180 R5): doppelte Hoerdauer plus ein
+    // Zehntel der Rate.
+    const auto erwartetTail = (juce::int64) (2u * s.hoerDauer) + (juce::int64) (fs / 10.0);
+    pruefe (ersteErnte.begins + zweiteErnte.begins == 1
+                && ersteErnte.ends + zweiteErnte.ends == 1
+                && endeId.isNotEmpty() && endeId == beginId && tail == erwartetTail,
+            "312/M-84: genau ein begin und genau ein end dazu, mit der gezaehlten Hoerdauer",
+            juce::String ((juce::int64) s.hoerDauer) + " Samples gehoert, tail "
+                + juce::String (tail) + " (erwartet " + juce::String (erwartetTail) + ")");
+}
+
+/** Teilfall zu 312/M-84 (Selbstaudit der Etappe 6a): der Wechsel zurueck zu
+    Main faellt MITTEN in den Ausfade des ersten Wechsels. Die Ruecknahme ist
+    schon publiziert; der zweite Wechsel findet keinen Auftrag mehr, und der
+    laufende Ausfade darf nicht wieder einblenden. */
+static void nak312M84ImAusfade (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    nak312::Stand s (fs, bs);
+    s.p->setzeEditorOffen (true);
+    const bool main = s.p->setzeBindung ("hub", "M-84a", {})
+                   && s.klassifikationIst (Klassifikation::main);
+    s.p->markierungEinreichen (s.auftrag);
+    const auto an = s.bloecke (40);
+    const bool weg = s.p->setzeBindung ("sensor", "M-84a", {});
+    const auto halb = s.bloecke (2);          // 1024 von 3840 Samples Ausfade
+    const bool zurueck = s.p->setzeBindung ("hub", "M-84a", {})
+                      && s.klassifikationIst (Klassifikation::main);
+    const auto rest = s.bloecke (40);
+    const auto e = s.ernte();
+    pruefe (main && weg && zurueck && an.hoerbar == 40 && halb.hoerbar == 2
+                && rest.letzteAbweichung < 8 && ! s.p->markierungHoerbar()
+                && e.begins == 1 && e.ends == 1,
+            "312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade - der Wechsel zurueck zu "
+            "Main mitten im Ausfade blendet nicht wieder ein: der Ausfade laeuft zu Ende, "
+            "genau ein begin und ein end",
+            juce::String ("letzte Abweichung in Block ") + juce::String (rest.letzteAbweichung)
+                + ", " + nak312::ereignisText (e));
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -1574,6 +2008,11 @@ int main()
     nak283WetVerengung (pruefer);
     sonde013Nacharbeit1 (pruefer, fs, bs);
     nak246D1Besitz (pruefer, fs, bs);
+    nak312M55 (pruefer, fs, bs);
+    nak312M57Editor (pruefer, fs, bs);
+    nak312M56 (pruefer, fs, bs);
+    nak312M84 (pruefer, fs, bs);
+    nak312M84ImAusfade (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {

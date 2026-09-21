@@ -871,7 +871,10 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // das Produkt nicht hat.
     const bool aufnahmeAus = aufnahmeGueltig.load (std::memory_order_relaxed)
                           && ! aufnahmeAktiv.load (std::memory_order_relaxed);
-    const bool erlaubt = istMainKlassifiziert.load (std::memory_order_relaxed)
+    // NAK-312 E-312-8: acquire, nicht relaxed - wer die neue Klassifikation
+    // sieht, sieht auch die Ruecknahme des Auftrags, die `spiegleKlassifikation`
+    // vor dem Store publiziert (State.cpp).
+    const bool erlaubt = istMainKlassifiziert.load (std::memory_order_acquire)
                       && (echtzeitOk.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed))
                       && spielt

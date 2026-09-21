@@ -1,0 +1,82 @@
+# NAK-312 Rotbeweis M-58 - 312/M-58 legacy_solo_reicht_nichts_ein (Teilfall von 312/M-55), Bein A3
+
+Bauer: Etappe 6a, Aenderungssatz A (Rollenwechsel und drei Netze, T3-07-02), 21.09.2026. Basis HEAD fd287d3c8ea277814c80e67365ea782e6af9994d, im Arbeitsbaum der Stand des Aenderungssatzes A vor dem Commit (Tests in ihrer Endfassung, SHA-256 in docs/beweise/roh/NAK-312-etappe6a-gegenprobe-A.txt). Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation per Textersatz mit genau einer Fundstelle, nur das betroffene Ziel bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER- und 312/-Zeilen.
+
+Matrixzeile: M-58 (T3-07-02, ehrliche Meldung), Etikett heute rot; Gegenprobe am Basisstand docs/beweise/roh/NAK-312-etappe6a-gegenprobe-A.txt
+Zusage: es wird nichts eingereicht, und der Statustext behauptet nicht "nur dieser Bereich spielt": er nennt die Lage, die wirklich eintritt.
+Bein: A3 EqCopMarkierungTest, Teilfall 312/M-58 in nak312M55; die Statuspruefung liest den Editorzustand.
+Datei der Mutation: eq-copilot/plugin/src/PluginEditor.cpp, schalteMarkierung: die Klassifikationsabfrage vor processor.markierungEinreichen.
+Mutation: Matrix: die neue Abfrage entfernen -> rot. Gebaut: genau das.
+
+Rohprotokoll rot-M-58.log:
+Start 2026-09-21 21:27:26
+Basis HEAD fd287d3c8ea277814c80e67365ea782e6af9994d
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/src/PluginEditor.cpp
+SHA-256 vorher: 0418A5EA5D3887D1A325C3FCD5B72C8813D165A3D85CB20AC50511F6C69CA1F6
+Sicherung: C:\Users\phili\.claude\jobs\b1dc89c2\tmp\sicherung\PluginEditor.cpp.M-58 (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/src/PluginEditor.cpp, git diff --no-index gegen die Sicherung (VORHER -, NACHHER +):
+--- "a/C:\\Users\\phili\\.claude\\jobs\\b1dc89c2\\tmp\\sicherung\\PluginEditor.cpp.M-58"
++++ b/eq-copilot/plugin/src/PluginEditor.cpp
+@@ -850,10 +850,3 @@ void EqCopilotEditor::schalteMarkierung (const Befund& b, MarkierungsModus modus
+     // Handgriff hörbar.
+-    if (processor.holeKlassifikation() != nakama::state::Klassifikation::main)
+-    {
+-        statusMeldung = u8 ("Markierung nicht möglich — nur ein Main färbt hörbar, "
+-                            "diese Instanz bleibt neutral.");
+-        statusMeldungBisMs = letzteInteraktionMs + 6000;
+-        uiDirty = true;
+-        return;
+-    }
++    // Mutation 312/M-58: die Klassifikationsabfrage vor dem Einreichen entfernt
+     processor.markierungEinreichen (auftrag);
+SHA-256 mutiert eq-copilot/plugin/src/PluginEditor.cpp: DF2F2D4CD41121249425D523FD0959A09372B4FE5340A6D47ED1316FB753AD1D
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 21:27:27.298
+Bau (EqCopMarkierungTest) Exit 0, 6 s
+Binary eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe LastWriteTime 21:27:33.099 - juenger als die juengste Quelle (21:27:27.298): JA
+Lauf EqCopMarkierungTest: Exitcode 1, 8 s, letzte Zeile: MARKIERUNGSTEST FEHLGESCHLAGEN
+Gefallene Pruefungen in EqCopMarkierungTest (2):
+  FEHLER  312/M-58 legacy_solo_reicht_nichts_ein (Teilfall von 312/M-55) - der Editor fragt denselben Term wie das Audio und reicht in Legacy keinen Auftrag ein
+  FEHLER  312/M-58: der Status behauptet kein Einfaerben, er nennt die Lage, die wirklich eintritt  [Markierung beendet — diese Instanz ist nicht mehr Main.]
+Unter derselben Mutation gruen gebliebene NAK-312-Pruefungen (22):
+  ok      312/M-55: Aufbau - Rolle sensor (legacy), Legacy-Flaeche, Senderpause bestaetigt
+  ok      312/M-58: kein Latch im Editor und kein Aus-Knopf ohne Auftrag
+  ok      312/M-55: in Legacy bleibt der eingereichte Auftrag stumm (40 Bloecke bitgleich, Ring leer)
+  ok      312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker - 40 Bloecke nach dem Wechsel zu Main bitgleich zum Eingang, kein Block hoerbar, im Ring weder begin noch end  [0 abweichend, 0 hoerbar, 0 im Ring]
+  ok      312/M-55: und der Sender findet nichts zu senden  [0 begin, 0 end]
+  ok      312/M-57 rueckwechsel_hinterlaesst_keinen_scharfen_marker (Teilfall von 312/M-55) - nach sensor, hub, sensor 40 Bloecke bitgleich, kein Ereignis im Ring  [0 abweichend, 0 im Ring]
+  ok      312/M-57: kein Bedienelement behauptet einen scharfen Marker - kein Auftrag, kein Latch, Aus-Knopf in der Legacy-Flaeche unsichtbar
+  ok      312/M-57 (Editorhaelfte): Aufbau - in Main ueber den Editor eingeschaltet, er klingt
+  ok      312/M-57 editorhaelfte_kein_aus_knopf_ohne_auftrag - nach dem Wechsel weg von Main traegt der Editor keinen Latch, der Aus-Knopf ist unsichtbar, der Status sagt warum  [Markierung beendet — diese Instanz ist nicht mehr Main.]
+  ok      312/M-56 (a, Freilauf): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (a, Freilauf) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Offline-Render/Freilauf erkannt. | letzte Abweichung in Block 7]
+  ok      312/M-56 (b, Samplerate): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (b, Samplerate) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Samplerate gewechselt. | letzte Abweichung in Block -1]
+  ok      312/M-56 (c, 10 Minuten): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+  ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (c, 10 Minuten) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung nach 10 Minuten ohne Bedienung beendet. | letzte Abweichung in Block 7]
+  ok      312/M-84: Aufbau - in Main hoerbar, sein begin ist gesendet  [1 begin, 0 end]
+  ok      312/M-84: der Ausfade laeuft WEICH - der Nachbarsprung am Umschaltsample liegt innerhalb der Schranke aus [SONDE-015] E-31 (Fadeschritt plus 2^-23)  [0.0000781250 <= 0.0000782442]
+  ok      312/M-84: und im ganzen Ausfade kein groesserer Sprung (Wache)  [0.0000781417]
+  ok      312/M-84: danach still und bitgleich  [7]
+  ok      312/M-84 rollenwechsel_weg_von_main_schliesst_das_intervall - nach dem zweiten Wechsel zu Main entsteht ohne neuen Handgriff KEIN neues begin, 40 Bloecke bitgleich  [0 abweichend, 0 begin, 1 end]
+  ok      312/M-84: genau ein begin und genau ein end dazu, mit der gezaehlten Hoerdauer  [24064 Samples gehoert, tail 52928 (erwartet 52928)]
+  ok      312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade - der Wechsel zurueck zu Main mitten im Ausfade blendet nicht wieder ein: der Ausfade laeuft zu Ende, genau ein begin und ein end  [letzte Abweichung in Block 5, 1 begin, 1 end]
+
+== 5. Ruecknahme ==
+eq-copilot/plugin/src/PluginEditor.cpp: bytegleich aus der Sicherung zurueck, SHA-256 0418A5EA5D3887D1A325C3FCD5B72C8813D165A3D85CB20AC50511F6C69CA1F6 - gleich dem Wert vor der Mutation: JA
+Quellen LastWriteTime auf jetzt gesetzt: 21:27:41.932
+Bau (EqCopMarkierungTest) Exit 0, 6 s
+Binary eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe LastWriteTime 21:27:47.616 - juenger als die juengste Quelle (21:27:41.932): JA
+Lauf EqCopMarkierungTest: Exitcode 0, 8 s, letzte Zeile: MARKIERUNGSTEST OK
+Gefallene Pruefungen in EqCopMarkierungTest (0):
+Ende 2026-09-21 21:27:55
+
+== 6. Bewertung (nach dem Lauf, gemessen) ==
+Die Zusage faellt an der erwarteten Pruefung (312/M-58 legacy_solo_reicht_nichts_ein: ein Auftrag steht beim Publisher; 312/M-58 Status: nicht die wirkliche Lage): JA
+Gruen unter der Mutation blieb die zweite M-58-Pruefung (kein Latch, kein Aus-Knopf): die Anzeigeraeumung in wechsleFlaecheWennNoetig raeumt den Latch beim naechsten Tick, weil die Klassifikation nicht Main ist, und der Status sagt dann "nicht mehr Main" (Abweichung A-76). Die Zusage "es wird nichts eingereicht" faellt trotzdem - sie haengt allein an der Abfrage.
+Mitgefallen: keine.

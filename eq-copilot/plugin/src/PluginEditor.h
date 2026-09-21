@@ -65,6 +65,24 @@ public:
         sourcesLabelFeld.setText (text, juce::dontSendNotification);
         uebernehmeSourcesLabel();
     }
+    // NAK-312 (312/M-55 bis M-58): der Timertick auf Zuruf. Der Editor erbt
+    // `juce::Timer` privat; ohne diesen Zugang hinge die Editorhaelfte am
+    // Nachrichtenloop und damit an der Wanduhr. Dazu der Handgriff und die
+    // Leser des Anzeigezustands, die die Faelle neben dem Ausgang messen.
+    void timerTickFuerTest() { timerCallback(); }
+    void schalteMarkierungFuerTest (const Befund& b, MarkierungsModus modus)
+    {
+        schalteMarkierung (b, modus);
+    }
+    MarkierungsModus markModusFuerTest() const { return markModus; }
+    bool markierungAusKnopfSichtbarFuerTest() const { return markierungAusKnopf.isVisible(); }
+    juce::String statusMeldungFuerTest() const { return statusMeldung; }
+    bool mainFlaecheAktivFuerTest() const { return mainFlaecheAktiv; }
+    /// 312/M-56 (c): die letzte Bedienung liegt `abstandMs` zurueck.
+    void letzteBedienungVorFuerTest (juce::uint32 abstandMs)
+    {
+        letzteInteraktionMs = juce::Time::getMillisecondCounter() - abstandMs;
+    }
 #endif
 
 private:
@@ -88,8 +106,10 @@ private:
     std::vector<juce::Rectangle<int>> sourcesZeilen() const;
 
     // ── Hör-Markierung (Konzept v2 §6): Latch lebt im Editor ──
-    // Klick auf [Solo]/[Puls] einer Befundkarte = Latch an/aus; endet hart bei
-    // Fensterschluss, Samplerate-Wechsel, Freilauf-Meldung und 10-min-Totmann.
+    // Klick auf [Solo]/[Puls] einer Befundkarte = Latch an/aus, nur in der
+    // Main-Klassifikation; endet bei Fensterschluss, Samplerate-Wechsel,
+    // Freilauf-Meldung, 10-min-Totmann (in jeder Fläche) und mit jedem Wechsel
+    // der Klassifikation (NAK-312 R-312-8).
     // Interims-UI im alten Editor (NAKAMA §7.6 bringt Marker-Glyphe + Halten):
     // Aus-Knopf in der Statuszeile + Feld-Tönung im Graph, puls-phasensynchron.
     void schalteMarkierung (const Befund&, MarkierungsModus);

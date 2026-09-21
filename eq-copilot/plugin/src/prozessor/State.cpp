@@ -267,9 +267,27 @@ void EqCopilotProcessor::spiegleKlassifikation()
     // Der Store bleibt bewusst seq_cst (Vorgabe) wie `editorOffen` und
     // `echtzeitOk` daneben: er laeuft nie im Audiothread, die Ordnung kostet
     // hier nichts, und eine dritte Ordnungsregel im selben Zustandsblock waere
-    // eine Frage, die ein Leser jedes Mal neu beantworten muesste. Gelesen
-    // wird im processBlock relaxed - dort haengt kein anderer Wert daran.
-    istMainKlassifiziert.store (lebenslauf.audioAusnahmeErlaubt());
+    // eine Frage, die ein Leser jedes Mal neu beantworten muesste.
+    //
+    // 🔑 NAK-312 E-312-8 (R-312-8): jeder WECHSEL der Klassifikation - zu Main
+    // und weg von Main, ueber `setzeBindung` oder `setStateInformation` -
+    // nimmt einen eingereichten Markierungsauftrag zurueck, BEVOR die neue
+    // Klassifikation im Audiothread wirkt. Zu Main wird ein Auftrag aus der
+    // Legacy-Rolle sonst ohne Handgriff hoerbar; weg von Main bliebe er scharf
+    // und klaenge beim naechsten Wechsel zu Main wieder. Die Ruecknahme ist ein
+    // Aus-Auftrag, kein Schnitt: ein hoerbarer Marker blendet weich aus
+    // (NAK-47) und meldet sein `end` am Fadeende. Einziger Publisher ist der
+    // Nachrichtenthread (`reicheEin`); `zielGesetzt` ist sein eigener Stand.
+    //
+    // Gelesen wird im processBlock mit acquire: ein Block, der die neue
+    // Klassifikation sieht, sieht damit auch die Ruecknahme davor - sie liegt
+    // im Briefkasten, der mit acq_rel tauscht. Ohne diese Ordnung faerbte ein
+    // Block mit der neuen Klassifikation noch den alten Auftrag.
+    const bool main = lebenslauf.audioAusnahmeErlaubt();
+    if (main != istMainKlassifiziert.load (std::memory_order_relaxed)
+        && markierung.zielGesetzt())
+        markierung.reicheAus();
+    istMainKlassifiziert.store (main);
 }
 
 nakama::state::Klassifikation EqCopilotProcessor::holeKlassifikation() const

@@ -242,6 +242,22 @@ EqCopilotEditor::~EqCopilotEditor()
 void EqCopilotEditor::timerCallback()
 {
     wechsleFlaecheWennNoetig();
+
+    // Hör-Markierung: Sicherheitsnetz-Ticks (Konzept v2 §4/N2) — Freilauf-
+    // Meldung löst den Latch sichtbar, Samplerate-Wechsel und Totmann ebenso.
+    // NAK-312 R-312-8: die drei Netze ticken in JEDER Fläche, deshalb vor der
+    // Abzweigung in die Main-Fläche; bis dahin kehrte der Tick dort vorher
+    // zurück, und ein Marker in der Main-Fläche hatte kein Netz.
+    if (processor.markierungKillGemeldet() && markModus != MarkierungsModus::aus)
+        markierungBeenden (u8 ("Markierung beendet — Offline-Render/Freilauf erkannt."));
+    if (markModus != MarkierungsModus::aus)
+    {
+        if (processor.holeSamplerate() != markEngageSr)
+            markierungBeenden (u8 ("Markierung beendet — Samplerate gewechselt."));
+        else if (juce::Time::getMillisecondCounter() - letzteInteraktionMs > 10u * 60u * 1000u)
+            markierungBeenden (u8 ("Markierung nach 10 Minuten ohne Bedienung beendet."));
+    }
+
     if (mainFlaecheAktiv)
     {
         processor.sourcesTick();
@@ -265,17 +281,7 @@ void EqCopilotEditor::timerCallback()
     // oder geschlossen wird. Nie still (Plan §8.4).
     konfliktKnopf.setVisible (processor.konfliktGemeldet());
 
-    // Hör-Markierung: Sicherheitsnetz-Ticks (Konzept v2 §4/N2) — Freilauf-
-    // Meldung löst den Latch sichtbar, Samplerate-Wechsel und Totmann ebenso.
-    if (processor.markierungKillGemeldet() && markModus != MarkierungsModus::aus)
-        markierungBeenden (u8 ("Markierung beendet — Offline-Render/Freilauf erkannt."));
-    if (markModus != MarkierungsModus::aus)
-    {
-        if (processor.holeSamplerate() != markEngageSr)
-            markierungBeenden (u8 ("Markierung beendet — Samplerate gewechselt."));
-        else if (juce::Time::getMillisecondCounter() - letzteInteraktionMs > 10u * 60u * 1000u)
-            markierungBeenden (u8 ("Markierung nach 10 Minuten ohne Bedienung beendet."));
-    }
+    // Der Aus-Knopf folgt dem Latch: ohne Auftrag wäre er ein totes Element.
     markierungAusKnopf.setVisible (markModus != MarkierungsModus::aus);
     if (markModus != MarkierungsModus::aus)
         uiDirty = true;               // Feld-Tönung folgt der Puls-Phase
@@ -837,6 +843,19 @@ void EqCopilotEditor::schalteMarkierung (const Befund& b, MarkierungsModus modus
         uiDirty = true;
         return;
     }
+    // NAK-312 R-312-8: derselbe Term, den das Audio fragt (§53.5, gespiegelt
+    // in `spiegleKlassifikation`). Ohne Main färbt kein Sample; ein Latch mit
+    // „nur dieser Bereich spielt" wäre eine Behauptung ohne Wirkung, und ein
+    // eingereichter Auftrag würde beim nächsten Wechsel zu Main ohne neuen
+    // Handgriff hörbar.
+    if (processor.holeKlassifikation() != nakama::state::Klassifikation::main)
+    {
+        statusMeldung = u8 ("Markierung nicht möglich — nur ein Main färbt hörbar, "
+                            "diese Instanz bleibt neutral.");
+        statusMeldungBisMs = letzteInteraktionMs + 6000;
+        uiDirty = true;
+        return;
+    }
     processor.markierungEinreichen (auftrag);
     markModus = modus;
     markKlasse = b.klasse;
@@ -872,6 +891,20 @@ bool EqCopilotEditor::istMainFlaeche() const
 
 void EqCopilotEditor::wechsleFlaecheWennNoetig()
 {
+    // NAK-312 E-312-8: den Auftrag nimmt `spiegleKlassifikation` beim Wechsel
+    // der Klassifikation zurück — synchron, vor dem Store, ohne auf diesen
+    // Tick zu warten. Hier wird NUR der Anzeigezustand geräumt: ein Latch, der
+    // nicht mehr wirkt, trüge sonst einen sichtbaren Aus-Knopf ohne Auftrag.
+    // Gefragt wird derselbe Term wie beim Einschalten (`schalteMarkierung`).
+    if (markModus != MarkierungsModus::aus
+        && processor.holeKlassifikation() != nakama::state::Klassifikation::main)
+    {
+        markModus = MarkierungsModus::aus;
+        statusMeldung = u8 ("Markierung beendet — diese Instanz ist nicht mehr Main.");
+        statusMeldungBisMs = juce::Time::getMillisecondCounter() + 5000;
+        uiDirty = true;
+    }
+
     const bool sollMain = istMainFlaeche();
     if (sollMain == mainFlaecheAktiv)
         return;

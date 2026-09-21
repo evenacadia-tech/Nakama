@@ -659,6 +659,14 @@ public:
     int interventionsRingFuellstandFuerTest() const
     { return interventionsRing.fuellstand(); }
 
+    /// NAK-312 312/M-56 (a): das Freilaufsignal, das im Produkt allein
+    /// `lebenszeichen` an der Wanduhr setzt. Die Editorhaelfte misst damit ihr
+    /// Netz, ohne an Wandzeit zu haengen.
+    void meldeFreilaufFuerTest() { freilaufKill.store (true); }
+    /// NAK-312 312/M-58: steht beim Publisher ein eingereichter Auftrag?
+    /// Nur vom Nachrichtenthread lesen - er ist der einzige Publisher.
+    bool markierungZielGesetztFuerTest() const { return markierung.zielGesetzt(); }
+
     /** NAK-180 Nacharbeit 1 (EP-18/R3b): DER Heartbeat-Schritt der
         Sendeschleife, gefahren vom Bein - mit dem echten Hello und dem echten
         Status des Prozessors.

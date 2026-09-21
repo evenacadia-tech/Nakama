@@ -10,10 +10,16 @@
 // Das Ziel linkt den ECHTEN Produktcode (plugin/state/, PluginProcessor) -
 // keine Testkopie (§66.1).
 //
+// Seit NAK-312 Etappe 5 (312/M-49, R-312-4) liest das Bein zusaetzlich die
+// eingefrorenen Statebytes des Parametergoldens (docs/beweise/roh/, erzeugt
+// am Basis-SHA der Etappe ueber den unveraenderten Sondenprozessor): sie
+// passen zu ihrer Zeile im Golden, laden normal und kommen bytegleich zurueck.
+//
 //   EqCopStateMigrationTest.exe                    misst
 //   EqCopStateMigrationTest.exe --schreibe-goldens schreibt fixtures/state/schema2/*.bin
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_cryptography/juce_cryptography.h>
 #include <juce_data_structures/juce_data_structures.h>
 
 #include "NakamaKanon.h"
@@ -2506,6 +2512,45 @@ int main (int argc, char* argv[])
         p->removeListener (&dirty);
         a.schliesse ("NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener "
                      "Handgriff laesst die Bytes bytegleich");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // NAK-312 Etappe 5 (312/M-49, R-312-4): die Statebytes des Basis-SHA.
+    // Das Parametergolden der Etappe 5 hat der unveraenderte Prozessor am
+    // Basis-SHA 12300f1e ausgegeben (EqCopTransactionTest --parameter-golden,
+    // Rohdatei docs/beweise/roh/NAK-312-parameter-golden-erzeugung.txt); B7
+    // vergleicht den Prozessor damit, hier der Schreiber: die eingefrorenen
+    // Bytes passen zu ihrer Zeile im Golden, laden normal und kommen aus
+    // `speichere` bytegleich zurueck.
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        const auto binDatei  = finde ("docs/beweise/roh/NAK-312-parameter-golden-s1.bin");
+        const auto textDatei = finde ("docs/beweise/roh/NAK-312-parameter-golden.txt");
+        juce::MemoryBlock s1;
+        const bool gelesen = binDatei.existsAsFile() && binDatei.loadFileAsData (s1) && s1.getSize() > 0;
+        juce::String s1Zeile;
+        for (const auto& zeile : juce::StringArray::fromLines (textDatei.loadFileAsString()))
+            if (zeile.startsWith ("s1\t"))
+                s1Zeile = zeile.trimEnd();
+        const auto erwartet = juce::String ("s1\t") + juce::String ((juce::int64) s1.getSize()) + "\t"
+                            + juce::SHA256 (s1.getData(), s1.getSize()).toHexString();
+        pruefe (gelesen && s1Zeile.isNotEmpty() && s1Zeile == erwartet,
+                "312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)",
+                s1Zeile.replace ("\t", " ") + " / " + erwartet.replace ("\t", " "));
+        state::Zustand z;
+        const auto ergebnis = gelesen ? state::lade (s1.getData(), s1.getSize(), state::Bundle::nkac(), z)
+                                      : state::LadeErgebnis::ignoriert;
+        juce::MemoryBlock wieder;
+        if (ergebnis == state::LadeErgebnis::geladen)
+            state::speichere (z, wieder);
+        pruefe (ergebnis == state::LadeErgebnis::geladen && ! z.nurLesen && z.hatParameters && wieder == s1,
+                "312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten "
+                "Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere "
+                "bytegleich zurueck",
+                juce::String ((juce::int64) s1.getSize()) + " Byte, zurueck " + juce::String ((juce::int64) wieder.getSize())
+                    + " Byte, " + (wieder == s1 ? "bytegleich" : "VERSCHIEDEN"));
+        a.schliesse ("NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich");
     }
 
     std::cout << std::endl

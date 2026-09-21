@@ -1,0 +1,413 @@
+# NAK-312 Rotbeweis M-49 - 312/M-49 statebytes_und_epochenfolge_gleich_dem_golden, Beine B7 und B2
+
+Bauer: Etappe 5, zweiter Aenderungssatz (Parameteranbindung, T3-01-02), 21.09.2026. Basis HEAD 19ddf5d3 (Commit des ersten Aenderungssatzes), im Arbeitsbaum der Stand des zweiten Aenderungssatzes vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen. Das Parametergolden: docs/beweise/roh/NAK-312-parameter-golden.txt und NAK-312-parameter-golden-s1.bin, erzeugt am Basis-SHA 12300f1e (NAK-312-parameter-golden-erzeugung.txt).
+
+Matrixzeile: M-49 (T3-01-02, R-312-4, CLAUDE.md State verlustfrei), Etikett Regressionswache
+Zusage: die Statebytes sind ueber den Umbau hinweg bytegleich zu denen des Basis-SHA, und eine Automationsfahrt erzeugt dieselbe Epochenfolge wie vorher.
+Bein: B7 EqCopTransactionTest, Fall 312/M-49; B2 EqCopStateMigrationTest, Faelle 312/M-49 (B2).
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, Teil a hostParameterAnlegen (ParameterID), Teil b hostParameterAbgleichen (Herkunftstag), Teil c getStateInformation (die Zeile, die die Reihenfolgespalte nennt).
+Mutation: Matrix: die Parameter ohne den bisherigen Namensraum anlegen -> State weicht ab -> rot. Gebaut in drei Teilen: Teil a genau die Matrixmutation (ParameterID ohne das Praefix v1./v2.); Teil b und Teil c Ersatz an den Zeilen, die die zwei Haelften der Zusage tragen (Abweichung im Manifest).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 5). Start 2026-09-21 15:03:23.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC
+Sicherung: C:\Users\phili\.claude\jobs\c594801d\tmp\sicherung\SondeProcessor.cpp.M-49 (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/sonde/SondeProcessor.cpp, Stelle ab Zeile 101 (Zeilenenden CRLF), VORHER woertlich:
+            const juce::ParameterID id { b.id, 1 };
+-- NACHHER woertlich:
+            const juce::ParameterID id { b.id.fromFirstOccurrenceOf (".", false, false), 1 };   // Mutation 312/M-49 Teil a: ohne Namensraum
+SHA-256 mutiert eq-copilot/plugin/sonde/SondeProcessor.cpp: 2C11A1C692A6ADD5241F33E4ABDE8AB418FFBC2365E5077D355E81CD183E8869
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 15:03:23.772
+Bau (EqCopTransactionTest, EqCopStateMigrationTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:03:29.648 - juenger als die jungste Quelle (15:03:23.772): JA
+Lauf EqCopTransactionTest: Exitcode 1, 2 s, Summe: 247 geprueft, 4 Fehler | TRANSAKTION FEHLGESCHLAGEN
+Binary eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe LastWriteTime 14:59:25.744 - juenger als die jungste Quelle (15:03:23.772): NEIN
+Lauf EqCopStateMigrationTest: Exitcode 0, 1 s, Summe: STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler
+
+Gefallene Pruefungen in EqCopTransactionTest (4):
+  FEHLER  prozessor_fuehrt_112_parameter_in_vertragsreihenfolge (M-88; bis NAK-312 Etappe 5 apvts_fuehrt_..., seither ohne APVTS direkt am Prozessor): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [112 Parameter, Reihenfolge 0, Typ/Grenzen 112]
+  FEHLER  v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  FEHLER  jede_v2_kennung_erklaert_ihren_ort (M-87): host_parameter genau dann, wenn sie in der Hostliste steht  [8/11]
+  FEHLER  312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der Hostparameter und ihre Hostsicht (convertTo0to1 an Minimum, Default, Maximum; convertFrom0to1, getText und getValueForText an 0, 0,37 und 1) sind Zeile fuer Zeile und Bit fuer Bit die des Goldens von 12300f1e  [114 Zeilen gegen 114 im Golden, erste Abweichung Zeile 3: Golden 'p	0	0	v1.global.bypass	v1.global.bypass	bool		1	00000000	3F800000	3F800000	3F800000	0	00000000	00000000	00000000	2	1	1	1' gegen 'p	0	0	global.bypass	v1.global.bypass	bool		1	00000000	3F800000	3F800000	3F800000	0	00000000	00000000	00000000	2	1	1	1	0	']
+Gefallene Pruefungen in EqCopStateMigrationTest (0):
+Die Zusage faellt an der erwarteten Pruefung (312/M-48 ): JA
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (58):
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81): 50 Automationspunkte auf Output
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revisio
+  ok        312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84, R-312-4): nach setStateInformat
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden der
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel in den Offline-Betrieb ist der Render ab Sample 0 bitgleic
+  ok        312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperr
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und 
+  ok      312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): le
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der M
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Ho
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirk
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB uebe
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Output-Trim wieder auf ihrem neutrale
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltiger eigener Stand mit eq an, dies
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danac
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) w
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInformation nach der Quittierung und vo
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Event
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Parametern erreichen den Blockrand a
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bl
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - 
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt 
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Par
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sind bitgleich, der Blockrand setzt
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt (ein Rampenuebergang laeuft noch
+  ok      312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.m
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle des Blockrands; unter der Takts
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockran
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsperre liegt der Umschaltblock von A
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Output-Trim ueber den Ueberlauf hi
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, 
+  ok      312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand mit eq an, unter der Taktsperre O
+  ok      312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Pr
+  ok      312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein 
+  ok      312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): unmittelbar nach der Rueckkehr des ersten setNonReal
+  ok        312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum bestaetigten Lauf, und alle 200 Bloecke sind es  [erster Block 
+  ok      312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten setNonRealtime (true) und einem ausdruecklichen kontrollTaktFue
+  ok      312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch
+  ok        312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate (Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Samp
+  ok        312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von Processed nach Candidate, endet dieser Fade mit dem har
+  ok      312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und aus kehrt die Hoermatrix zu Candidate zurueck, und der
+  ok      312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, Offline aus und Takt ist keine Vorschau aktiv, die Ausw
+  ok      312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist der Lauf nach setNonRealtime (true) ab Sample 0 bitgleic
+  ok      312/M-47 blockgroesse_1 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das 
+  ok      312/M-47 blockgroesse_64 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das
+  ok      312/M-47 blockgroesse_256 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), da
+  ok      312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): speichern, laden, speichern liefert die Bytes des Basis-S
+  ok      312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse - die zweite Sperrfamilie existier
+  ok      312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostpa
+  ok      312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512), waehrend 
+  ok      312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged mit Index -1 und 112 laesst die Mailbox unveraendert, 0 
+  ok      312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2
+  ok      312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_p
+  ok      == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+
+Bewertung (nach dem Lauf, gemessen): TEIL A (die Matrixmutation, ParameterID ohne Praefix v1./v2.): 312/M-49 bleibt GRUEN - gemessen; es fallen 312/M-48 (Zeile 3: global.bypass statt v1.global.bypass) und die drei Kennungsfaelle aus M-88/M-87. Die Statebytes haengen bauartbedingt nicht an den Parameterkennungen: getStateInformation schreibt den bestaetigten Zustand des Transaktionskerns (Kennungen aus parameter::tabelle()), und die Epochenfolge haengt an Hostereignis und Ruhegrenze, nicht an der Kennung. Die Matrixmutation ist deshalb fuer M-49 kein Rotbeweis (Abweichung im Manifest); den Rotbeweis tragen Teil c (Statehaelfte) und Teil d (Epochenhaelfte), beide unten. Hinweis zu B2 in allen Teilen: B2 uebersetzt SondeProcessor.cpp nicht (CMake-Ziel EqCopStateMigrationTest), sein Binary bleibt deshalb aelter als die mutierte Quelle - die Zeile frisch NEIN ist dort erwartet, B2 misst den Schreiber und bleibt unter jeder Teilmutation gruen (294/0).
+
+== 5. Bytegleiche Ruecknahme, Neubau, Lauf ==
+eq-copilot/plugin/sonde/SondeProcessor.cpp: SHA-256 nach Ruecknahme 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC - gleich vorher: JA
+Quellen LastWriteTime auf jetzt gesetzt: 15:03:33.758
+Bau (EqCopTransactionTest, EqCopStateMigrationTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:03:39.588 - juenger als die jungste Quelle (15:03:33.752): JA
+Lauf EqCopTransactionTest: Exitcode 0, 2 s, Summe: 247 geprueft, 0 Fehler | TRANSAKTION OK
+  gruen nach Ruecknahme: JA (0 FEHLER-Zeilen)
+Binary eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe LastWriteTime 14:59:25.744 - juenger als die jungste Quelle (15:03:33.752): NEIN
+Lauf EqCopStateMigrationTest: Exitcode 0, 1 s, Summe: STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler
+  gruen nach Ruecknahme: NEIN (0 FEHLER-Zeilen)
+Ende 15:03:43
+
+== Teil b: der Herkunftstag des eigenen Abgleichs faellt weg (Epochenhaelfte) ==
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 5). Start 2026-09-21 15:03:43.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC
+Sicherung: C:\Users\phili\.claude\jobs\c594801d\tmp\sicherung\SondeProcessor.cpp.M-49b (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/sonde/SondeProcessor.cpp, Stelle ab Zeile 1732 (Zeilenenden CRLF), VORHER woertlich:
+        const AbgleichHerkunft herkunft;
+-- NACHHER woertlich:
+        // Mutation 312/M-49 Teil b: ohne Herkunftstag - der eigene Abgleich liest sich als Automation
+SHA-256 mutiert eq-copilot/plugin/sonde/SondeProcessor.cpp: 2CE31206F6C41CBF62C5FC149C548FC4850FA700E7491FD3C2A6213ECDAB6976
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 15:03:43.564
+Bau (EqCopTransactionTest) Exit 0, 5 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:03:49.365 - juenger als die jungste Quelle (15:03:43.564): JA
+Lauf EqCopTransactionTest: Exitcode 1, 2 s, Summe: 247 geprueft, 4 Fehler | TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen in EqCopTransactionTest (4):
+  FEHLER  epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [1 -> 1 -> 1 -> 2]
+  FEHLER  312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81): 50 Automationspunkte auf Output-Trim, den der Blockrand uebernimmt - die Epoche wechselt genau zweimal, die Ruhegrenze zaehlt verarbeitete Samples (unter 12000 kein Ende, nach 12480 das Ende)  [1 -> 1 -> 1 -> 2]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [-6 / -9 / 3 / -3 dB, Epoche 2 -> 2 -> 3]
+  FEHLER  312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged mit Index -1 und 112 laesst die Mailbox unveraendert, 0 und 111 erreichen sie je genau einmal; der eigene Abgleich nach einem Commit stellt den Regler, ohne ein Hostereignis zu melden (abgleichTiefe > 0)  [ungueltig ohne Wirkung, Rand 0/111 je +1, andere bewegt 0, Abgleich MIT EREIGNIS, Regler folgt]
+Die Zusage faellt an der erwarteten Pruefung (312/M-49 statebytes_und_epochenfolge): NEIN
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (53):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revisio
+  ok        312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84, R-312-4): nach setStateInformat
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden der
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel in den Offline-Betrieb ist der Render ab Sample 0 bitgleic
+  ok        312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperr
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und 
+  ok      312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): le
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der M
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Ho
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirk
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB uebe
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Output-Trim wieder auf ihrem neutrale
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltiger eigener Stand mit eq an, dies
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danac
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInformation nach der Quittierung und vo
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Event
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Parametern erreichen den Blockrand a
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bl
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - 
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt 
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Par
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sind bitgleich, der Blockrand setzt
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt (ein Rampenuebergang laeuft noch
+  ok      312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.m
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle des Blockrands; unter der Takts
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockran
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsperre liegt der Umschaltblock von A
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Output-Trim ueber den Ueberlauf hi
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, 
+  ok      312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand mit eq an, unter der Taktsperre O
+  ok      312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Pr
+  ok      312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein 
+  ok      312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): unmittelbar nach der Rueckkehr des ersten setNonReal
+  ok        312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum bestaetigten Lauf, und alle 200 Bloecke sind es  [erster Block 
+  ok      312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten setNonRealtime (true) und einem ausdruecklichen kontrollTaktFue
+  ok      312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch
+  ok        312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate (Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Samp
+  ok        312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von Processed nach Candidate, endet dieser Fade mit dem har
+  ok      312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und aus kehrt die Hoermatrix zu Candidate zurueck, und der
+  ok      312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, Offline aus und Takt ist keine Vorschau aktiv, die Ausw
+  ok      312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist der Lauf nach setNonRealtime (true) ab Sample 0 bitgleic
+  ok      312/M-47 blockgroesse_1 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das 
+  ok      312/M-47 blockgroesse_64 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das
+  ok      312/M-47 blockgroesse_256 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), da
+  ok      312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der H
+  ok      312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): speichern, laden, speichern liefert die Bytes des Basis-S
+  ok      312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse - die zweite Sperrfamilie existier
+  ok      312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostpa
+  ok      312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512), waehrend 
+
+Bewertung (nach dem Lauf, gemessen): Ohne Herkunftstag liest der Prozessor seinen eigenen Abgleich als Hostereignis: 312/M-54 faellt (Abgleich MIT EREIGNIS), ebenso die Epochenfaelle epoche_wechselt_genau_zweimal_je_geste und 312/M-24 (Beginn 1 statt 0) und 312/M-19. 312/M-49 bleibt GRUEN - gemessen: im Goldenlauf ist das Echo des Abgleichs genau der bestaetigte Wert (zelleAusHost bildet es auf ihn ab), die Epochenfolge der Fahrt aendert es nicht. Teil b ist damit kein Rotbeweis fuer M-49; er belegt die Abgleichhaelfte von 312/M-54 ein zweites Mal.
+
+== 5. Bytegleiche Ruecknahme, Neubau, Lauf ==
+eq-copilot/plugin/sonde/SondeProcessor.cpp: SHA-256 nach Ruecknahme 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC - gleich vorher: JA
+Quellen LastWriteTime auf jetzt gesetzt: 15:03:51.312
+Bau (EqCopTransactionTest) Exit 0, 5 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:03:57.062 - juenger als die jungste Quelle (15:03:51.306): JA
+Lauf EqCopTransactionTest: Exitcode 0, 2 s, Summe: 247 geprueft, 0 Fehler | TRANSAKTION OK
+  gruen nach Ruecknahme: JA (0 FEHLER-Zeilen)
+Ende 15:03:59
+
+== Teil c: getStateInformation schreibt den gehaltenen Stand ohne die Dsp-Haelfte des Kerns (Statehaelfte) ==
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 5). Start 2026-09-21 15:03:59.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC
+Sicherung: C:\Users\phili\.claude\jobs\c594801d\tmp\sicherung\SondeProcessor.cpp.M-49c (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/sonde/SondeProcessor.cpp, Stelle ab Zeile 1204 (Zeilenenden CRLF), VORHER woertlich:
+        nakama::state::speichere (gehaltenerStand(), ziel);
+-- NACHHER woertlich:
+        nakama::state::speichere (zustand, ziel);   // Mutation 312/M-49 Teil c: ohne transaktion->schreibeIn
+SHA-256 mutiert eq-copilot/plugin/sonde/SondeProcessor.cpp: A156614C8257F98106152993A9F3223AF9E8CC8716E498C52914B7616FFE449B
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 15:03:59.074
+Bau (EqCopTransactionTest, EqCopStateMigrationTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:04:04.732 - juenger als die jungste Quelle (15:03:59.074): JA
+Lauf EqCopTransactionTest: Exitcode 1, 2 s, Summe: 247 geprueft, 19 Fehler | TRANSAKTION FEHLGESCHLAGEN
+Binary eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe LastWriteTime 14:59:25.744 - juenger als die jungste Quelle (15:03:59.074): NEIN
+Lauf EqCopStateMigrationTest: Exitcode 0, 1 s, Summe: STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler
+
+Gefallene Pruefungen in EqCopTransactionTest (19):
+  FEHLER  prozessor_speichert_und_laedt_das_kind_dsp (M-89, Prozessorhaelfte): Revision, Belegung, Zonen, Undo-Ring und Cursor kommen an  [3537 Bytes]
+  FEHLER  eq_enabled_ueberlebt_speichern_laden (M-08): im bestaetigten Zustand und im Hostparameter
+  FEHLER  bank_wird_erst_beim_ersten_block_aktiv (M-08): nach Laden und Vorbereitung keine aktive Bank, nach dem ersten Block genau eine  [vor 0, nach 0]
+  FEHLER  reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  FEHLER    312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84, R-312-4): nach setStateInformation in eine frische Instanz traegt jeder der 112 Hostparameter den Wert des geladenen Standes in Hostgenauigkeit  [112 von 112 gleich, 0 davon nicht auf dem Default]
+  FEHLER  312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden derselben Bytes und einem Kontrolltakt sind bestaetigter Zustand, state_hash, Undo-Ring, Cursor und Revision die der Quelle  [Revision 1 -> 0, Ring 1 -> 0]
+  FEHLER  311/M-76 gleicher_ladestart_bleibt_warm (NAK-311 F12, M-84): dynamisches Bell 1 kHz Q 2, Range -12 dB, Threshold -15 dB, Attack 500 ms, eingeschwungen - `setStateInformation` mit den EIGENEN Bytes laesst Ausgang und Tap bitgleich zum ununterbrochenen Vergleichskern  [Commits ja, 48128 Samples nach dem Ladestart, Ausgang bitgleich nein, Tap bitgleich nein]
+  FEHLER  311/M-77 recall_in_neue_instanz_innerhalb_der_toleranz_pruefling_1 (NAK-311 R-311-4, M-84, F-12): eine NEUE Instanz aus den Bytes von A - der Quadraturbetrag weicht ab t_E hoechstens 0,1 dB ab, davor im Betrag hoechstens |g0| + |Range| + 0,1 dB  [Attack 0.100000 ms, Knie: t_E 2745.577491 Samples, ab t_E hoechstens 5.969100 dB (bei Sample 2746), davor hoechstens 5.969100 dB gegen 12.100000 TRAEGT NICHT; Attack 0.100000 ms, Plateau: t_E 2745.577491 Samples, ab t_E hoechstens 12.000001 dB (bei Sample 2747), davor hoechstens 12.000001 dB gegen 12.100000 TRAEGT NICHT; Attack 10.000000 ms, Knie: t_E 5121.577491 Samples, ab t_E hoechstens 5.969100 dB (bei Sample 5126), davor hoechstens 5.969100 dB gegen 12.100000 TRAEGT NICHT; Attack 10.000000 ms, Plateau: t_E 5121.577491 Samples, ab t_E hoechstens 12.000001 dB (bei Sample 5131), davor hoechstens 12.000001 dB gegen 12.100000 TRAEGT NICHT; Attack 500.000000 ms, Knie: t_E 122721.577491 Samples, ab t_E hoechstens 5.969100 dB (bei Sample 123567), davor hoechstens 5.969100 dB gegen 12.100000 TRAEGT NICHT; Attack 500.000000 ms, Plateau: t_E 122721.577491 Samples, ab t_E hoechstens 12.000001 dB (bei Sample 122727), davor hoechstens 12.000001 dB gegen 12.100000 TRAEGT NICHT]
+  FEHLER  311/M-77 recall_in_neue_instanz_innerhalb_der_toleranz_pruefling_2 (NAK-311 R-311-4, M-84, F-12): eine NEUE Instanz aus den Bytes von A - der Quadraturbetrag weicht ab t_E hoechstens 0,1 dB ab, davor im Betrag hoechstens |g0| + |Range| + 0,1 dB  [Attack 0.100000 ms, Knie: t_E 2592.788745 Samples, ab t_E hoechstens 5.969100 dB (bei Sample 2594), davor hoechstens 5.969100 dB gegen 12.100000 TRAEGT NICHT; Attack 0.100000 ms, Plateau: t_E 2592.788745 Samples, ab t_E hoechstens 12.000001 dB (bei Sample 2599), davor hoechstens 12.000001 dB gegen 12.100000 TRAEGT NICHT]
+  FEHLER  311/M-77 recall_in_neue_instanz_innerhalb_der_toleranz_pruefling_3 (NAK-311 R-311-4, M-84, F-12): eine NEUE Instanz aus den Bytes von A - der Quadraturbetrag weicht ab t_E hoechstens 0,1 dB ab, davor im Betrag hoechstens |g0| + |Range| + 0,1 dB  [Attack 0.100000 ms, Knie: t_E 2745.577491 Samples, ab t_E hoechstens 5.969100 dB (bei Sample 2746), davor hoechstens 5.969100 dB gegen 12.100000 TRAEGT NICHT; Attack 0.100000 ms, Plateau: t_E 2745.577491 Samples, ab t_E hoechstens 12.000000 dB (bei Sample 2746), davor hoechstens 12.000000 dB gegen 12.100000 TRAEGT NICHT]
+  FEHLER  312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20)  [wirksam nach dem Takt 0 dB, nach der Wiederoeffnung 0 dB, Regler 0 dB, groesste Abweichung 0.412537544623 ueber 1024 Werte]
+  FEHLER  312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Hostereignis NACH dem Laden, dann ein Takt - wirksam exakt -6 dB, Regler und Klang folgen  [geladen 0 dB, danach wirksam -6 dB, groesste Abweichung von 10^(-6/20) 0.498812766373]
+  FEHLER  312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - derselbe Ausgang wie 312/M-10, exakt +3 dB  [wirksam 0 dB, groesste Abweichung 0.412537544623]
+  FEHLER  312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danach - der wirksame Zustand bleibt der bestaetigte, jedes Ausgangssample ist endlich; im read-only-Stand bleibt der Ausgang bitgleich zum Eingang  [Output-Trim 0 dB, Input-Trim 0 dB, groesste Abweichung 0.412537544623, read-only abweichend 0]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [-6 / -9 / 0 / -3 dB, Epoche 2 -> 2 -> 2]
+  FEHLER  312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInformation nach der Quittierung und vor dem Abgleich steht - wirksam exakt -6 dB, der Regler liest nach dem Abgleich genau diesen Wert, und kein Sample nach dem Einschwingen klingt nach +3 dB  [Haken lief, Regler -6 dB, wirksam -6 dB, groesste Abweichung von 10^(-6/20) 0.498812766373]
+  FEHLER  312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt (ein Rampenuebergang laeuft noch) ein Ladestart in dieselbe Instanz, davor ein alter Hostwert -20 dB in der Mailbox - ab dem Ladestart ist der Ausgang bitgleich zum Lauf ohne den alten Wert, ein Hostwert danach (+6 dB) wirkt am naechsten Blockrand, bestaetigter Zustand und Hash sind die der Quelle  [nach dem Laden 0 abweichend, am Ende 1 (Soll 10^(6/20)), geladen NEIN]
+  FEHLER  312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand mit eq an, unter der Taktsperre OHNE Kontrolltakt Output-Trim +6 dB vor Block 10 - A ist bitgleich zu einem Lauf mit Takt nach jedem Block, und Ausgang/Eingang steht am Ende bei 10^(6/20)  [zwischendurch read-only ja, danach schreibbar ja, A/B 0 abweichend, am Ende 1 (Soll 10^(6/20))]
+  FEHLER  312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): speichern, laden, speichern liefert die Bytes des Basis-SHA (s1 bytegleich zur eingefrorenen Datei, s1 = s2), und die Automationsfahrt dieselbe Epochenfolge, Revision, state_hash und Host-Dirty  [9 Zeilen gegen 9 im Golden, erste Abweichung Zeile 2: Golden 's1	5745	4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810' gegen 's1	3537	8bd79e0b216b1ae8f7429b071c623e4f5925d47aabc5cd398d620ca6482b2416', s1 3537 Byte, VERSCHIEDEN von der Datei]
+Gefallene Pruefungen in EqCopStateMigrationTest (0):
+Die Zusage faellt an der erwarteten Pruefung (312/M-49 statebytes_und_epochenfolge): JA
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (48):
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81): 50 Automationspunkte auf Output
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revisio
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel in den Offline-Betrieb ist der Render ab Sample 0 bitgleic
+  ok        312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperr
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und 
+  ok      312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): le
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirk
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB uebe
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Output-Trim wieder auf ihrem neutrale
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltiger eigener Stand mit eq an, dies
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Event
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Parametern erreichen den Blockrand a
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bl
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - 
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt 
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Par
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sind bitgleich, der Blockrand setzt
+  ok      312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.m
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle des Blockrands; unter der Takts
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockran
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsperre liegt der Umschaltblock von A
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Output-Trim ueber den Ueberlauf hi
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, 
+  ok      312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Pr
+  ok      312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein 
+  ok      312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): unmittelbar nach der Rueckkehr des ersten setNonReal
+  ok        312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum bestaetigten Lauf, und alle 200 Bloecke sind es  [erster Block 
+  ok      312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten setNonRealtime (true) und einem ausdruecklichen kontrollTaktFue
+  ok      312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch
+  ok        312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate (Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Samp
+  ok        312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von Processed nach Candidate, endet dieser Fade mit dem har
+  ok      312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und aus kehrt die Hoermatrix zu Candidate zurueck, und der
+  ok      312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, Offline aus und Takt ist keine Vorschau aktiv, die Ausw
+  ok      312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist der Lauf nach setNonRealtime (true) ab Sample 0 bitgleic
+  ok      312/M-47 blockgroesse_1 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das 
+  ok      312/M-47 blockgroesse_64 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das
+  ok      312/M-47 blockgroesse_256 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), da
+  ok      312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der H
+  ok      312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse - die zweite Sperrfamilie existier
+  ok      312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostpa
+  ok      312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512), waehrend 
+  ok      312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged mit Index -1 und 112 laesst die Mailbox unveraendert, 0 
+  ok      312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2
+  ok      312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_p
+  ok      == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+
+Bewertung (nach dem Lauf, gemessen): getStateInformation ohne die Dsp-Haelfte des Kerns schreibt 3537 statt 5745 Byte: 312/M-49 faellt an der Zeile s1 (SHA-256 8bd79e0b... statt 4ea7c41e..., s1 VERSCHIEDEN von der Datei) - die Statehaelfte der Zusage. Mitgefallen, mit Grund: jeder Fall, der ueber getStateInformation speichert und neu laedt (M-89, M-08, M-84 samt 312/M-51 und 312/M-14, 311/M-76 und M-77, 312/M-10 bis M-12, M-18, M-19, M-78, M-29, M-87 (ii)). B2 bleibt gruen (misst den Schreiber, nicht den Prozessor).
+
+== 5. Bytegleiche Ruecknahme, Neubau, Lauf ==
+eq-copilot/plugin/sonde/SondeProcessor.cpp: SHA-256 nach Ruecknahme 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC - gleich vorher: JA
+Quellen LastWriteTime auf jetzt gesetzt: 15:04:08.632
+Bau (EqCopTransactionTest, EqCopStateMigrationTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:04:14.270 - juenger als die jungste Quelle (15:04:08.625): JA
+Lauf EqCopTransactionTest: Exitcode 0, 2 s, Summe: 247 geprueft, 0 Fehler | TRANSAKTION OK
+  gruen nach Ruecknahme: JA (0 FEHLER-Zeilen)
+Binary eq-copilot/build/plugin/EqCopStateMigrationTest_artefacts/Release/EqCopStateMigrationTest.exe LastWriteTime 14:59:25.744 - juenger als die jungste Quelle (15:04:08.625): NEIN
+Lauf EqCopStateMigrationTest: Exitcode 0, 1 s, Summe: STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler
+  gruen nach Ruecknahme: NEIN (0 FEHLER-Zeilen)
+Ende 15:04:18
+
+== Teil d: die Hostparameter melden sich nicht beim Prozessor an (Epochenhaelfte an der Anbindung) ==
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 5). Start 2026-09-21 15:06:13.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC
+Sicherung: C:\Users\phili\.claude\jobs\c594801d\tmp\sicherung\SondeProcessor.cpp.M-49d (ausserhalb des Repos)
+
+== 3. Mutation ==
+-- eq-copilot/plugin/sonde/SondeProcessor.cpp, Stelle ab Zeile 267 (Zeilenenden CRLF), VORHER woertlich:
+            parameterListe[i]->addListener (this);
+-- NACHHER woertlich:
+            // Mutation 312/M-49 Teil d: keine Anmeldung - Hostautomation erreicht den Prozessor nicht
+SHA-256 mutiert eq-copilot/plugin/sonde/SondeProcessor.cpp: 29C549E0A3D4B54C904F037D234F7414A8E3FA0E6D6EE6BBA31411CFB27C676E
+
+== 4. Bau und Lauf MIT Mutation ==
+Quellen LastWriteTime auf jetzt gesetzt: 15:06:13.167
+Bau (EqCopTransactionTest) Exit 0, 5 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:06:18.976 - juenger als die jungste Quelle (15:06:13.167): JA
+Lauf EqCopTransactionTest: Exitcode 1, 2 s, Summe: 247 geprueft, 25 Fehler | TRANSAKTION FEHLGESCHLAGEN
+
+Gefallene Pruefungen in EqCopTransactionTest (25):
+  FEHLER  automation_auf_freien_slot_aendert_werte_nicht_klang (M-63): der Parameter folgt; Belegung, Programm und Audio bleiben gleich  [51200 Samples verglichen, Programmuebernahmen 1 / 1]
+  FEHLER    Gegenprobe: kontinuierliche Automation (gain_db) wirkt blockweise
+  FEHLER  epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 0 -> 0 -> 0]
+  FEHLER  312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81): 50 Automationspunkte auf Output-Trim, den der Blockrand uebernimmt - die Epoche wechselt genau zweimal, die Ruhegrenze zaehlt verarbeitete Samples (unter 12000 kein Ende, nach 12480 das Ende)  [0 -> 0 -> 0 -> 0]
+  FEHLER  abgeschlossener_gestus_ist_eine_revision (M-82): zwei ueberlappende Gesten mit 25 Zwischenwerten, eine Revision, die Endwerte bestaetigt  [r 1 -> 1, gain 3.000000, freq 1000.000000]
+  FEHLER  312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Hostereignis NACH dem Laden, dann ein Takt - wirksam exakt -6 dB, Regler und Klang folgen  [geladen 3 dB, danach wirksam 3 dB, groesste Abweichung von 10^(-6/20) 0.911350393137]
+  FEHLER  312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirksam danach -9 dB, der Ausgang folgt  [wirksam 3 dB, groesste Abweichung von 10^(-9/20) 1.0577242335]
+  FEHLER  312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Output-Trim wieder auf ihrem neutralen Wert - kein Regler zeigt einen Zustand, den es nicht gibt  [eq_enabled 1, Output-Trim 6 dB]
+  FEHLER  312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltiger eigener Stand mit eq an, dieselbe Hostautomation - Ausgang/Eingang innerhalb 1e-6 von 10^(6/20)  [wirksam 0 dB, groesste Abweichung 0.995262314969]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [3 / 3 / 3 / 3 dB, Epoche 0 -> 0 -> 0]
+  FEHLER  312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInformation nach der Quittierung und vor dem Abgleich steht - wirksam exakt -6 dB, der Regler liest nach dem Abgleich genau diesen Wert, und kein Sample nach dem Einschwingen klingt nach +3 dB  [Haken lief, Regler 3 dB, wirksam 3 dB, groesste Abweichung von 10^(-6/20) 0.911350391279]
+  FEHLER  312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Eventfolge (Block 10 Extremwert, 11 Standard, 12 Extremwert, 13 Standard) bei 48 kHz und Blockgroesse 64, im neutralen Stand und mit Band - A unter der Taktsperre ohne Takt ist BITGLEICH zu B mit Takt nach jedem Block (0 abweichende Samples), und B weicht vom Lauf ohne Ereignis ab, wo der Parameter hoerbar ist  [neutral/v1.global.input_trim_db A/B 0 B/C 0; neutral/v1.global.output_trim_db A/B 0 B/C 0; neutral/v1.global.width A/B 0 B/C 0; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 0 B/C 0; Band/v1.global.output_trim_db A/B 0 B/C 0; Band/v1.global.width A/B 0 B/C 0; Band/v2.global.mix A/B 0 B/C 0; ]
+  FEHLER  312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Parametern erreichen den Blockrand als bestaetigter Wert - der Ausgang bleibt endlich und bitgleich zum Lauf ohne Ereignis  [Ausgang endlich, gegen den Lauf ohne Ereignis 0 abweichend, Blockrandziele 0 (3 Ereignisse x 4 Parameter, je auf den bestaetigten Wert)]
+  FEHLER  312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bloecken - der Offlineausgang ist fuer die vier abgedeckten Parameter bitgleich zum Echtzeitausgang desselben Event- und Blockverlaufs  [neutral/v1.global.input_trim_db A/B 0 B/C 0; neutral/v1.global.output_trim_db A/B 0 B/C 0; neutral/v1.global.width A/B 0 B/C 0; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 0 B/C 0; Band/v1.global.output_trim_db A/B 0 B/C 0; Band/v1.global.width A/B 0 B/C 0; Band/v2.global.mix A/B 0 B/C 0; Geschwindigkeit 28.518123151-fach Echtzeit (Messung, keine Schranke)]
+  FEHLER  312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - A ist fuer die vier abgedeckten Parameter bitgleich zu B; bei Blockgroesse 1 bindet jeder Block genau einen Wert  [Blockgroesse 1: 0 Blockrandziele fuer 2 Staende x 4 Parameter x 4 Ereignisse; Blockgroesse 1: 7 von 8 Laeufen abweichend; Blockgroesse 64: 7 von 8 Laeufen abweichend; Blockgroesse 185: 7 von 8 Laeufen abweichend; Blockgroesse 240: 7 von 8 Laeufen abweichend; Blockgroesse 256: 7 von 8 Laeufen abweichend; Blockgroesse 512: 7 von 8 Laeufen abweichend; ]
+  FEHLER  312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt je Block, danach Halt - A und B sind bitgleich, und nach dem Ende tragen beide exakt den Endwert +12 dB  [A/B 0 abweichend, Endwert A 2.98107170553, B 2.98107170553 von 10^(12/20)]
+  FEHLER  312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt in DEMSELBEN Block, an dessen Rand er gelesen wurde: am Ende von Block 10 steht der Ausgang auf 10^(24/20), am Ende von Block 9 noch auf 1  [A/B 0, Ende Block 9 1, Ende Block 10 1]
+  FEHLER  312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt (ein Rampenuebergang laeuft noch) ein Ladestart in dieselbe Instanz, davor ein alter Hostwert -20 dB in der Mailbox - ab dem Ladestart ist der Ausgang bitgleich zum Lauf ohne den alten Wert, ein Hostwert danach (+6 dB) wirkt am naechsten Blockrand, bestaetigter Zustand und Hash sind die der Quelle  [nach dem Laden 0 abweichend, am Ende 1.41253755511 (Soll 10^(6/20)), geladen ja]
+  FEHLER  312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.mix; fuer diese vier ist A bitgleich zu B (312/M-20), und nach je einem Hostereignis auf jedem der 112 Hostparameter setzt der Blockrand genau vier Rampenziele  [Tabelle: v1.global.input_trim_db v1.global.output_trim_db v1.global.width v2.global.mix; Blockrandziele nach je einem Ereignis auf allen 112: 0]
+  FEHLER  312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle des Blockrands; unter der Taktsperre weicht A von B ab, mit Kontrolltakt nach jedem Block sind beide bitgleich, und der Endwert ist in beiden Laeufen exakt der letzte gesetzte (-6 dB). Keine Gleichheitszusage fuer Bandwerte - Teil b geht an NAK-340  [ohne Takt 0 abweichend, mit Takt 0, Endwert A 0 / B 0 dB]
+  FEHLER  312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsperre liegt der Umschaltblock von A hinter dem von B, mit Kontrolltakt sind beide bitgleich, der Endzustand stimmt in beiden Laeufen. Keine Gleichheitszusage fuer die elf booleschen Hostparameter  [ohne Takt 0 abweichend, mit Takt 0]
+  FEHLER  312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Output-Trim ueber den Ueberlauf hinweg - der Blockrand vergleicht auf Ungleichheit: jedes Ereignis setzt genau ein Rampenziel (3), das nach dem Ueberlauf wirkt, A ist bitgleich zu B, am Ende +12 dB  [A/B 0, Blockrandziele 0, Verhaeltnis nach Block 11 1, nach Block 13 1, am Ende 1]
+  FEHLER  312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand mit eq an, unter der Taktsperre OHNE Kontrolltakt Output-Trim +6 dB vor Block 10 - A ist bitgleich zu einem Lauf mit Takt nach jedem Block, und Ausgang/Eingang steht am Ende bei 10^(6/20)  [zwischendurch read-only ja, danach schreibbar ja, A/B 0 abweichend, am Ende 1 (Soll 10^(6/20))]
+  FEHLER  312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): speichern, laden, speichern liefert die Bytes des Basis-SHA (s1 bytegleich zur eingefrorenen Datei, s1 = s2), und die Automationsfahrt dieselbe Epochenfolge, Revision, state_hash und Host-Dirty  [9 Zeilen gegen 9 im Golden, erste Abweichung Zeile 9: Golden 'epochen	0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2' gegen 'epochen	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0', s1 5745 Byte, bytegleich zur Datei]
+  FEHLER  312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostparameter den Zaehler des Beins, aber keinen Listener des Prozessors mehr (Mailbox unveraendert); vorher erreichte derselbe Weg ihn  [vorher erreicht NEIN, Zaehler 112, Mailbox 0 -> 0, offen nein]
+Die Zusage faellt an der erwarteten Pruefung (312/M-49 statebytes_und_epochenfolge): JA
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (35):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revisio
+  ok        312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84, R-312-4): nach setStateInformat
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden der
+  ok      offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel in den Offline-Betrieb ist der Render ab Sample 0 bitgleic
+  ok        312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperr
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwischen zwei Bloecken alloziert, und 
+  ok      312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): le
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der M
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), 
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB uebe
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danac
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Par
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sind bitgleich, der Blockrand setzt
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockran
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, 
+  ok      312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Pr
+  ok      312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein 
+  ok      312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): unmittelbar nach der Rueckkehr des ersten setNonReal
+  ok        312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum bestaetigten Lauf, und alle 200 Bloecke sind es  [erster Block 
+  ok      312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten setNonRealtime (true) und einem ausdruecklichen kontrollTaktFue
+  ok      312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch
+  ok        312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate (Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Samp
+  ok        312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von Processed nach Candidate, endet dieser Fade mit dem har
+  ok      312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und aus kehrt die Hoermatrix zu Candidate zurueck, und der
+  ok      312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, Offline aus und Takt ist keine Vorschau aktiv, die Ausw
+  ok      312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist der Lauf nach setNonRealtime (true) ab Sample 0 bitgleic
+  ok      312/M-47 blockgroesse_1 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das 
+  ok      312/M-47 blockgroesse_64 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das
+  ok      312/M-47 blockgroesse_256 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), da
+  ok      312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der H
+  ok      312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse - die zweite Sperrfamilie existier
+  ok      312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512), waehrend 
+  ok      312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged mit Index -1 und 112 laesst die Mailbox unveraendert, 0 
+
+Bewertung (nach dem Lauf, gemessen): Ohne Anmeldung erreicht keine Hostautomation den Prozessor: 312/M-49 faellt an der Zeile epochen (0 ueber die ganze Fahrt statt 0, 1 x44, 2 x6) - die Epochenhaelfte der Zusage, an der Anbindung selbst. Mitgefallen, mit Grund: jeder Fall, der auf Hostautomation baut (M-63-Gegenprobe, M-81, M-82, 312/M-11 bis M-29 und M-78 bis M-87 (ii) soweit Automation, 312/M-52 an seiner Gegenprobe vorher).
+
+== 5. Bytegleiche Ruecknahme, Neubau, Lauf ==
+eq-copilot/plugin/sonde/SondeProcessor.cpp: SHA-256 nach Ruecknahme 51531C5DB207B952A919D9AD7B978EE3856E1270247A2BB2FAFCAA824EB36FCC - gleich vorher: JA
+Quellen LastWriteTime auf jetzt gesetzt: 15:06:20.897
+Bau (EqCopTransactionTest) Exit 0, 5 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 15:06:26.671 - juenger als die jungste Quelle (15:06:20.892): JA
+Lauf EqCopTransactionTest: Exitcode 0, 2 s, Summe: 247 geprueft, 0 Fehler | TRANSAKTION OK
+  gruen nach Ruecknahme: JA (0 FEHLER-Zeilen)
+Ende 15:06:28

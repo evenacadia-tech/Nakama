@@ -82,20 +82,28 @@ struct AbgleichHerkunft
 };
 
 /** Die 112 Host-Parameter in Vertragsreihenfolge, aus `parameter::tabelle()`.
-    Name = Vertragskennung: eine Anzeigebezeichnung ist Oberflaeche (S31b). */
-juce::AudioProcessorValueTreeState::ParameterLayout baueParameterLayout()
+    Name = Vertragskennung: eine Anzeigebezeichnung ist Oberflaeche (S31b).
+
+    NAK-312 Etappe 5 (T3-01-02, R-312-4): sie haengen DIREKT am Prozessor -
+    dieselben Klassen, Kennungen samt Versionshinweis, Namen, Bereiche und
+    Defaults in derselben Reihenfolge wie zuvor im APVTS-Layout, aber ohne
+    dessen Adapter, der je Wertaenderung eine eigene Hoerer-Sperre nahm (die
+    zweite Sperrfamilie). Belegt gegen das Parametergolden des Basis-SHA
+    (B7, 312/M-48 und 312/M-49). Die JUCE-eigene Sperre in
+    `sendValueChangedMessageToListeners` bleibt; sie liegt vor dem Plugincode. */
+void hostParameterAnlegen (juce::AudioProcessor& prozessor)
 {
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
     const auto& t = nakama::parameter::tabelle();
     for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
     {
         const auto& b = t[(size_t) i];
         jassert (b.hostParameter);
         const juce::ParameterID id { b.id, 1 };
+        std::unique_ptr<juce::RangedAudioParameter> neu;
         switch (b.typ)
         {
             case nakama::parameter::Typ::boolean:
-                layout.add (std::make_unique<juce::AudioParameterBool> (id, b.id, b.standardBool));
+                neu = std::make_unique<juce::AudioParameterBool> (id, b.id, b.standardBool);
                 break;
             case nakama::parameter::Typ::gleitkomma:
             {
@@ -105,15 +113,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout baueParameterLayout()
                 if (b.id.endsWith (".freq_hz") || b.id.endsWith (".q")
                     || b.id.endsWith (".attack_ms") || b.id.endsWith (".release_ms"))
                     bereich.setSkewForCentre ((float) b.standardZahl);
-                layout.add (std::make_unique<juce::AudioParameterFloat> (id, b.id, bereich, (float) b.standardZahl));
+                neu = std::make_unique<juce::AudioParameterFloat> (id, b.id, bereich, (float) b.standardZahl);
                 break;
             }
             case nakama::parameter::Typ::aufzaehlung:
-                layout.add (std::make_unique<juce::AudioParameterChoice> (id, b.id, b.werte, b.standardIndex));
+                neu = std::make_unique<juce::AudioParameterChoice> (id, b.id, b.werte, b.standardIndex);
                 break;
         }
+        if (neu != nullptr)
+            prozessor.addParameter (neu.release());
     }
-    return layout;
 }
 
 /** Vertragszelle -> Hostwert (denormiert). */
@@ -225,9 +234,14 @@ SondeProcessor::SondeProcessor (V3Verdrahtung verdrahtung)
                            return v3TelemetryHello();
                        return nakama::ipc::TelemetryHello {};
                    },
-                   v3PipeName, {}, verdrahtung.erwartung),
-      parameterBaum (*this, nullptr, "NakamaProbeeqParameter", baueParameterLayout())
+                   v3PipeName, {}, verdrahtung.erwartung)
 {
+    // NAK-312 Etappe 5 (R-312-4): die 112 Hostparameter direkt am Prozessor,
+    // als ERSTES im Rumpf. Zuvor legte sie die APVTS in der
+    // Initialisierungsliste an; dazwischen liegt nur die Vorgabeinitialisierung
+    // der uebrigen Mitglieder, die keinen Parameter liest.
+    hostParameterAnlegen (*this);
+
     // SONDE-015 4a: DSP-Kern und Transaktionskern entstehen VOR dem Worker,
     // der ab seinem ersten Takt ihre Pflege uebernimmt.
     dspKern        = std::make_unique<nakama::dsp::DspKern>();

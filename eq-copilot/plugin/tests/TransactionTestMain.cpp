@@ -65,6 +65,13 @@
          oder Hoerhalt hinein -, der Rueckweg blendet weich, und die Vorschau
          verbucht der naechste Kontrolltakt; gefragt wird sie wie die
          Bankfreigabe nur nach einem ausdruecklichen `kontrollTaktFuerTest()`.
+         Seit dem zweiten Aenderungssatz der Etappe 5 (Abschnitt ZB, 312/M-51
+         in Abschnitt O) die Parameteranbindung ohne APVTS: das
+         Parametergolden des Basis-SHA (`parameterGolden`, erzeugt mit
+         `--parameter-golden <text> <bin>`) gilt Zeile fuer Zeile und Byte fuer
+         Byte, der Sondenordner nennt die APVTS-Klasse nicht mehr, die
+         Listener sind paarweise, und unter Hostautomation aus einem zweiten
+         Thread bleibt die Echtzeitwache bei 0.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -86,6 +93,8 @@
 #include "IpcVerbindung.h"
 #include "PipeToken.h"
 #include "WireEnvelope.h"
+
+#include <juce_cryptography/juce_cryptography.h>   // NAK-312 Etappe 5: SHA-256 im Parametergolden
 
 #include <algorithm>
 #include <array>
@@ -1867,6 +1876,158 @@ int aktiveBaenke (Prozessor& p)
     return n;
 }
 
+//==============================================================================
+// NAK-312 Etappe 5 (312/M-48, 312/M-49; R-312-4): das PARAMETERGOLDEN.
+//
+// Der Identitaetsbeweis der Parameteranbindung in drei Teilen, als Text:
+// (a) Zahl, Reihenfolge, IDs, Bereiche und Defaults der Hostparameter,
+// (b) die Hostsicht - `convertTo0to1` an Minimum, Default und Maximum,
+// `convertFrom0to1` und `getText` an 0, 0,37 und 1 -, jede Zahl als Bitmuster,
+// (c) die Statebytes ueber speichern, laden, speichern und die Epochenfolge
+// einer Automationsfahrt. Erzeugt wird es mit
+// `EqCopTransactionTest --parameter-golden <text> <bin>` am Basis-SHA der
+// Etappe 5 (`12300f1e`) ueber den UNVERAENDERTEN Prozessor (§7.1: nie von
+// Hand); verglichen wird am Endstand mit demselben Code.
+
+std::string bitsVon (float f)
+{
+    std::uint32_t u = 0;
+    std::memcpy (&u, &f, sizeof u);
+    std::ostringstream o;
+    o << std::hex << std::uppercase << std::setw (8) << std::setfill ('0') << u;
+    return o.str();
+}
+
+std::string sha256Von (const juce::MemoryBlock& m)
+{
+    return juce::SHA256 (m.getData(), m.getSize()).toHexString().toStdString();
+}
+
+/** Teil (a) und (b): eine Zeile je Hostparameter, Felder durch Tabulator. */
+std::string parameterGoldenText (Prozessor& p)
+{
+    std::ostringstream o;
+    const auto& liste = p.getParameters();
+    o << "anzahl\t" << liste.size() << "\n";
+    o << "gruppen\t" << p.getParameterTree().getSubgroups (true).size() << "\n";
+    for (int i = 0; i < liste.size(); ++i)
+    {
+        auto* q = dynamic_cast<juce::RangedAudioParameter*> (liste[i]);
+        if (q == nullptr) { o << "p\t" << i << "\tKEIN_RANGED\n"; continue; }
+        std::string typ = "unbekannt", werte;
+        if (dynamic_cast<juce::AudioParameterBool*> (q) != nullptr)        typ = "bool";
+        else if (dynamic_cast<juce::AudioParameterFloat*> (q) != nullptr)  typ = "float";
+        else if (auto* c = dynamic_cast<juce::AudioParameterChoice*> (q))  { typ = "choice"; werte = c->choices.joinIntoString (",").toStdString(); }
+        const auto& r = q->getNormalisableRange();
+        const float def = q->convertFrom0to1 (q->getDefaultValue());
+        o << "p\t" << i << "\t" << q->getParameterIndex() << "\t" << str (q->paramID) << "\t" << str (q->getName (1024))
+          << "\t" << typ << "\t" << werte << "\t" << q->getVersionHint()
+          << "\t" << bitsVon (r.start) << "\t" << bitsVon (r.end) << "\t" << bitsVon (r.interval)
+          << "\t" << bitsVon (r.skew) << "\t" << (r.symmetricSkew ? 1 : 0)
+          << "\t" << bitsVon (q->getDefaultValue()) << "\t" << bitsVon (def) << "\t" << bitsVon (q->getValue())
+          << "\t" << q->getNumSteps() << "\t" << (q->isDiscrete() ? 1 : 0) << "\t" << (q->isBoolean() ? 1 : 0)
+          << "\t" << (q->isAutomatable() ? 1 : 0) << "\t" << (q->isMetaParameter() ? 1 : 0)
+          << "\t" << (int) q->getCategory() << "\t" << str (q->getLabel())
+          << "\t" << bitsVon (q->convertTo0to1 (r.start)) << "\t" << bitsVon (q->convertTo0to1 (def))
+          << "\t" << bitsVon (q->convertTo0to1 (r.end));
+        for (const float v : { 0.0f, 0.37f, 1.0f })
+            o << "\t" << bitsVon (q->convertFrom0to1 (v)) << "\t" << str (q->getText (v, 1024))
+              << "\t" << bitsVon (q->getValueForText (q->getText (v, 1024)));
+        o << "\n";
+    }
+    return o.str();
+}
+
+/** Teil (c): der Stand und seine Bytes. `s1` ist der gespeicherte Stand mit
+    belegten Slots; er wird zusaetzlich als Binaerdatei eingefroren (B2 liest
+    ihn). Der Stand beginnt mit Bytes aus dem Schreiber mit fester
+    instance_id, damit keine Zufallskennung in die Bytes geraet. */
+struct ZustandsGolden
+{
+    std::string text;
+    juce::MemoryBlock s1;
+};
+
+ZustandsGolden zustandsGolden()
+{
+    ZustandsGolden g;
+    auto z0 = state::frisch ("312e5a00000000000000000000000005");
+    z0.common.klasse = state::Klasse::active_probe;
+    z0.hatParameters = true;
+    juce::MemoryBlock s0;
+    state::speichere (z0, s0);
+
+    const int trim = param::indexVonId ("v1.global.output_trim_db");
+    auto p1 = prozessor (48000.0, 480);
+    DirtyZaehler dirty;
+    p1->addListener (&dirty);
+    p1->setStateInformation (s0.getData(), (int) s0.getSize());
+    auto z = mitEq (true);
+    setzeBand (z, 0, 120.0, 4.5);
+    setzeBand (z, 2, 2500.0, -3.0);
+    setzeBand (z, 5, 9000.0, 2.0);
+    z.werte[(size_t) trim].zahl = -1.5;
+    const auto e1 = setze (*p1, z);
+    auto z2 = z;
+    z2.werte[(size_t) iBand (2, param::kGainDb)].zahl = -4.0;
+    const auto e2 = setze (*p1, z2);
+    p1->getStateInformation (g.s1);
+
+    // Die Automationsfahrt unter der Taktsperre: jeder Takt ist ausdruecklich.
+    std::string epochen;
+    p1->mitAngehaltenemTaktFuerTest ([&]
+    {
+        epochen += zahl (p1->automationEpoche());
+        for (int i = 0; i < 20; ++i)
+        {
+            hostSchreibt (*p1, iBand (0, param::kGainDb), 4.5f - 0.25f * (float) i);
+            hostSchreibt (*p1, trim, -1.5f + 0.1f * (float) i);
+            fahreAudio (*p1, 1, 480, 700 + i);
+            p1->kontrollTaktFuerTest();
+            epochen += "," + zahl (p1->automationEpoche());
+        }
+        for (int i = 0; i < 30; ++i)
+        {
+            fahreAudio (*p1, 1, 480, 800 + i);
+            p1->kontrollTaktFuerTest();
+            epochen += "," + zahl (p1->automationEpoche());
+        }
+    });
+    juce::MemoryBlock s1NachFahrt;
+    p1->getStateInformation (s1NachFahrt);
+    const int dirtyMeldungen = dirty.nichtParameter;
+    p1->removeListener (&dirty);
+
+    auto p2 = prozessor (48000.0, 480);
+    p2->setStateInformation (g.s1.getData(), (int) g.s1.getSize());
+    juce::MemoryBlock s2;
+    p2->getStateInformation (s2);
+
+    std::ostringstream o;
+    o << "s0\t" << s0.getSize() << "\t" << sha256Von (s0) << "\n";
+    o << "s1\t" << g.s1.getSize() << "\t" << sha256Von (g.s1) << "\n";
+    o << "s1_nach_fahrt\t" << s1NachFahrt.getSize() << "\t" << sha256Von (s1NachFahrt) << "\n";
+    o << "s2\t" << s2.getSize() << "\t" << sha256Von (s2) << "\n";
+    o << "commits\t" << tx::wort (e1.ausgang) << "," << tx::wort (e2.ausgang) << "\n";
+    o << "revision\t" << zahl (p1->stateRevision()) << "\t" << zahl (p2->stateRevision()) << "\n";
+    o << "hash\t" << str (p1->stateHashText()) << "\t" << str (p2->stateHashText()) << "\n";
+    o << "dirty\t" << dirtyMeldungen << "\n";
+    o << "epochen\t" << epochen << "\n";
+    g.text = o.str();
+    return g;
+}
+
+/** Das ganze Golden: Kopfzeilen, Teil (a) und (b), Teil (c). */
+ZustandsGolden parameterGolden()
+{
+    auto p = prozessor();
+    auto g = zustandsGolden();
+    g.text = "# NAK-312 Etappe 5 - Parametergolden (312/M-48, 312/M-49; R-312-4)\n"
+             "# Erzeugt von EqCopTransactionTest --parameter-golden ueber den Prozessor; nie von Hand.\n"
+           + parameterGoldenText (*p) + g.text;
+    return g;
+}
+
 void prozessorParameter()
 {
     abschnitt ("M - Prozessor: 112 Host-Parameter in Vertragsreihenfolge (M-64, M-87, M-88)");
@@ -1899,7 +2060,8 @@ void prozessorParameter()
     const auto idVon = [&] (int i) { const auto* m = dynamic_cast<juce::AudioProcessorParameterWithID*> (liste[i]); return m != nullptr ? m->paramID : juce::String(); };
     const bool anzahl = liste.size() == param::kHostParameter;
     pruefe (anzahl && reihenfolge == param::kHostParameter && typUndGrenzen == param::kHostParameter,
-            "apvts_fuehrt_112_parameter_in_vertragsreihenfolge (M-88): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()",
+            "prozessor_fuehrt_112_parameter_in_vertragsreihenfolge (M-88; bis NAK-312 Etappe 5 apvts_fuehrt_..., seither ohne "
+            "APVTS direkt am Prozessor): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()",
             std::to_string (liste.size()) + " Parameter, Reihenfolge " + std::to_string (reihenfolge) + ", Typ/Grenzen " + std::to_string (typUndGrenzen));
     pruefe (anzahl && idVon (param::kIndexEqEnabled) == "v2.global.eq_enabled" && idVon (param::kIndexMix) == "v2.global.mix"
                 && idVon (param::kIndexAutoGain) == "v2.global.auto_gain" && idVon (param::kAnzahlV1 - 1) == "v1.band.7.sidechain_source",
@@ -2302,6 +2464,39 @@ void prozessorAutomation()
         pruefe (b->stateHashText() == a->stateHashText() && bitgleich (ya, yb),
                 "reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)",
                 std::to_string (ya.size()) + " Samples");
+
+        // NAK-312 Etappe 5 (312/M-51, R-312-4): nach dem Laden traegt jeder
+        // Hostparameter den Wert des geladenen Standes in Hostgenauigkeit -
+        // der Abgleich zum Host ueberlebt den Umbau der Parameteranbindung.
+        // Das Soll rechnet der Test aus der Vertragszelle und der Hostsicht
+        // des Parameters selbst, nicht ueber eine Produktfunktion.
+        {
+            const auto geladen = b->bestaetigterZustand();
+            int gleich = 0, abweichendVomDefault = 0;
+            std::string ersteAbweichung;
+            for (int i = 0; i < param::kHostParameter; ++i)
+            {
+                auto& q = hostParam (*b, i);
+                const auto& zelle = geladen.werte[(size_t) i];
+                float denormiert = 0.0f;
+                switch (param::tabelle()[(size_t) i].typ)
+                {
+                    case param::Typ::boolean:     denormiert = zelle.b ? 1.0f : 0.0f; break;
+                    case param::Typ::gleitkomma:  denormiert = (float) zelle.zahl; break;
+                    case param::Typ::aufzaehlung: denormiert = (float) zelle.enumIndex; break;
+                }
+                const float soll = q.convertTo0to1 (denormiert);
+                if (q.getValue() == soll) ++gleich;
+                else if (ersteAbweichung.empty()) ersteAbweichung = str (q.paramID);
+                if (soll != q.getDefaultValue()) ++abweichendVomDefault;
+            }
+            pruefe (gleich == param::kHostParameter && abweichendVomDefault > 0,
+                    "  312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, "
+                    "[SONDE-015] M-84, R-312-4): nach setStateInformation in eine frische Instanz traegt jeder der 112 "
+                    "Hostparameter den Wert des geladenen Standes in Hostgenauigkeit",
+                    std::to_string (gleich) + " von 112 gleich, " + std::to_string (abweichendVomDefault)
+                    + " davon nicht auf dem Default" + (ersteAbweichung.empty() ? std::string() : ", erste Abweichung " + ersteAbweichung));
+        }
 
         // NAK-312 Etappe 3 (312/M-14, Hashhaelfte von [SONDE-015] M-84): derselbe
         // Ladestart in DIESELBE Instanz, waehrend ein Hostwert (Output-Trim
@@ -5443,10 +5638,273 @@ void nak312OfflineUebergang()
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 5, zweiter Aenderungssatz (T3-01-02; R-312-4): die
+// Parameteranbindung. Die 112 Hostparameter haengen direkt am Prozessor; der
+// APVTS-Adapter und seine Hoerer-Sperre sind weg. Der Identitaetsbeweis ist
+// das Parametergolden des Basis-SHA (oben, `parameterGolden`).
+
+/** Die Zeilen eines Golden-Textes: ohne Zeilenendezeichen, ohne Leerzeilen
+    und ohne Kommentarzeilen - die Datei darf auf einem Rechner mit CRLF
+    ausgecheckt sein. */
+std::vector<std::string> goldenZeilen (const std::string& text)
+{
+    std::vector<std::string> zeilen;
+    std::istringstream ein (text);
+    std::string z;
+    while (std::getline (ein, z))
+    {
+        if (! z.empty() && z.back() == '\r') z.pop_back();
+        if (z.empty() || z[0] == '#') continue;
+        zeilen.push_back (z);
+    }
+    return zeilen;
+}
+
+bool istParameterZeile (const std::string& z)
+{
+    return z.rfind ("p\t", 0) == 0 || z.rfind ("anzahl\t", 0) == 0 || z.rfind ("gruppen\t", 0) == 0;
+}
+
+/** Vergleicht eine Teilmenge zweier Golden-Texte Zeile fuer Zeile. */
+std::string vergleicheZeilen (const std::vector<std::string>& soll, const std::vector<std::string>& ist,
+                              bool parameterTeil, bool& gleich)
+{
+    std::vector<std::string> a, b;
+    for (const auto& z : soll) if (istParameterZeile (z) == parameterTeil) a.push_back (z);
+    for (const auto& z : ist)  if (istParameterZeile (z) == parameterTeil) b.push_back (z);
+    gleich = ! a.empty() && a == b;
+    std::string d = std::to_string (b.size()) + " Zeilen gegen " + std::to_string (a.size()) + " im Golden";
+    for (size_t i = 0; i < std::max (a.size(), b.size()); ++i)
+    {
+        const std::string sa = i < a.size() ? a[i] : "<fehlt>";
+        const std::string sb = i < b.size() ? b[i] : "<fehlt>";
+        if (sa != sb)
+        {
+            d += ", erste Abweichung Zeile " + std::to_string (i + 1) + ": Golden '" + sa.substr (0, 120)
+               + "' gegen '" + sb.substr (0, 120) + "'";
+            break;
+        }
+    }
+    return d;
+}
+
+void nak312Parameteranbindung()
+{
+    abschnitt ("ZB - NAK-312 Etappe 5: die Parameteranbindung ohne APVTS (312/M-48 bis 312/M-50, 312/M-52 bis 312/M-54; "
+               "312/M-51 in Abschnitt O)");
+
+    // ── 312/M-48 und 312/M-49: gegen das Golden des Basis-SHA. ───────────────
+    {
+        const auto textDatei = wurzel().getChildFile ("docs/beweise/roh/NAK-312-parameter-golden.txt");
+        const auto binDatei  = wurzel().getChildFile ("docs/beweise/roh/NAK-312-parameter-golden-s1.bin");
+        const bool vorhanden = textDatei.existsAsFile() && binDatei.existsAsFile();
+        const auto soll = goldenZeilen (textDatei.loadFileAsString().toStdString());
+        juce::MemoryBlock s1Golden;
+        binDatei.loadFileAsData (s1Golden);
+        const auto g = parameterGolden();
+        const auto ist = goldenZeilen (g.text);
+        bool parameterGleich = false, zustandGleich = false;
+        const auto dParameter = vergleicheZeilen (soll, ist, true, parameterGleich);
+        const auto dZustand   = vergleicheZeilen (soll, ist, false, zustandGleich);
+        pruefe (vorhanden && parameterGleich,
+                "312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, "
+                "Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der Hostparameter und ihre Hostsicht "
+                "(convertTo0to1 an Minimum, Default, Maximum; convertFrom0to1, getText und getValueForText an 0, 0,37 "
+                "und 1) sind Zeile fuer Zeile und Bit fuer Bit die des Goldens von 12300f1e",
+                dParameter);
+        pruefe (vorhanden && zustandGleich && g.s1 == s1Golden && s1Golden.getSize() > 0,
+                "312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): "
+                "speichern, laden, speichern liefert die Bytes des Basis-SHA (s1 bytegleich zur eingefrorenen Datei, "
+                "s1 = s2), und die Automationsfahrt dieselbe Epochenfolge, Revision, state_hash und Host-Dirty",
+                dZustand + ", s1 " + std::to_string (g.s1.getSize()) + " Byte, "
+                + (g.s1 == s1Golden ? "bytegleich zur Datei" : "VERSCHIEDEN von der Datei"));
+    }
+
+    // ── 312/M-50: der Textriegel ueber eq-copilot/plugin/sonde/. ───────────
+    {
+        const auto ordner = wurzel().getChildFile ("eq-copilot/plugin/sonde");
+        int dateien = 0;
+        std::string treffer;
+        if (ordner.isDirectory())
+        {
+            for (const auto& f : ordner.findChildFiles (juce::File::findFiles, false))
+            {
+                ++dateien;
+                if (f.loadFileAsString().contains ("AudioProcessorValueTreeState"))
+                    treffer += str (f.getFileName()) + "; ";
+            }
+        }
+        pruefe (dateien >= 3 && treffer.empty(),
+                "312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ "
+                "nennt die APVTS-Klasse - die zweite Sperrfamilie existiert nicht mehr; fail-closed: fehlt der Ordner "
+                "oder sind es weniger als 3 Dateien, ist es rot",
+                std::to_string (dateien) + " Dateien unter " + str (ordner.getFullPathName())
+                + (treffer.empty() ? std::string (", kein Treffer") : ", Treffer: " + treffer));
+    }
+
+    // ── 312/M-52: addListener und removeListener paarweise. Gemessen am Ende
+    // des Destruktorrumpfs (der Prozessor lebt dort noch, der Worker ist
+    // gejoint): ein Wert an jedem der 112 Parameter erreicht einen Zaehler
+    // des Beins, den Prozessor nicht mehr. ────────────────────────────────
+    {
+        struct Zaehler final : juce::AudioProcessorParameter::Listener
+        {
+            std::atomic<int> werte { 0 };
+            void parameterValueChanged (int, float) override { ++werte; }
+            void parameterGestureChanged (int, bool) override {}
+        } zaehler;
+        auto p = prozessor();
+        auto* roh = p.get();
+        const auto summe = [roh]
+        {
+            std::uint64_t s = 0;
+            for (int i = 0; i < param::kHostParameter; ++i) s += roh->hostEreignisFuerTest (i);
+            return s;
+        };
+        // Gegenprobe vorher: derselbe Weg erreicht den lebenden Prozessor.
+        const auto vorLebend = summe();
+        hostSchreibt (*p, iBand (3, param::kGainDb), 5.0f);
+        const bool lebendErreicht = summe() == vorLebend + 1;
+        for (auto* q : p->getParameters())
+            q->addListener (&zaehler);
+        std::uint64_t vorAbbau = 0, nachAbbau = 0;
+        bool offenNachAbbau = true;
+        int erreicht = -1;
+        p->setzeAbbauEndeHakenFuerTest ([&, roh]
+        {
+            roh->kontrollTaktFuerTest();   // leert die Mailbox; der Worker ist hier schon gejoint
+            vorAbbau = summe();
+            for (auto* q : roh->getParameters())
+                q->setValueNotifyingHost (q->getValue() >= 0.5f ? 0.0f : 1.0f);
+            nachAbbau = summe();
+            offenNachAbbau = roh->hostEreignisOffenFuerTest();
+            erreicht = zaehler.werte.load();
+        });
+        p.reset();
+        pruefe (lebendErreicht && erreicht == param::kHostParameter && nachAbbau == vorAbbau && ! offenNachAbbau,
+                "312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende "
+                "des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostparameter den Zaehler des Beins, aber "
+                "keinen Listener des Prozessors mehr (Mailbox unveraendert); vorher erreichte derselbe Weg ihn",
+                std::string ("vorher erreicht ") + (lebendErreicht ? "ja" : "NEIN") + ", Zaehler " + std::to_string (erreicht)
+                + ", Mailbox " + zahl (vorAbbau) + " -> " + zahl (nachAbbau) + ", offen " + (offenNachAbbau ? "JA" : "nein"));
+    }
+
+    // ── 312/M-53: 4000 Bloecke, Hostautomation aus einem zweiten Thread. ────
+    {
+        auto p = prozessor (48000.0, 512);
+        auto z = mitEq (true);
+        setzeBand (z, 0, 1000.0, 3.0);
+        setze (*p, z);
+        std::atomic<bool> halt { false };
+        std::atomic<std::uint64_t> geschrieben { 0 };
+        std::thread host ([&]
+        {
+            juce::Random r (5300);
+            while (! halt.load())
+            {
+                for (const auto& bp : blockParameter())
+                    hostSchreibt (*p, bp.index, r.nextBool() ? bp.extrem : bp.standard);
+                hostSchreibt (*p, iBand (0, param::kGainDb), r.nextFloat() * 12.0f - 6.0f);
+                geschrieben.fetch_add (1);
+            }
+        });
+        while (geschrieben.load() == 0)
+            std::this_thread::yield();
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::Random w (5301);
+        std::mt19937 zufall (5302);
+        std::uniform_int_distribution<int> groessen (1, 512);
+        const auto geschriebenVor = geschrieben.load();
+        dsp::RtWache::zuruecksetzen();
+        std::uint64_t eigene = 0;
+        for (int blockNr = 0; blockNr < 4000; ++blockNr)
+        {
+            const int n = groessen (zufall);
+            puffer.setSize (2, n, false, false, true);
+            for (int k = 0; k < 2; ++k)
+                for (int s = 0; s < n; ++s)
+                    puffer.setSample (k, s, w.nextFloat() * 1.6f - 0.8f);
+            allokationen = 0;
+            zaehleAllokationen = true;
+            p->processBlock (puffer, midi);
+            zaehleAllokationen = false;
+            eigene += allokationen;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        const auto rtAllok = dsp::RtWache::allokationen();
+        const auto geschriebenWaehrend = geschrieben.load() - geschriebenVor;
+        halt.store (true);
+        host.join();
+        pruefe (sperren == 0 && rtAllok == 0 && eigene == 0 && geschriebenWaehrend > 0,
+                "312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): "
+                "4000 Bloecke wechselnder Groesse (1 bis 512), waehrend ein zweiter Thread Hostautomation auf die vier "
+                "blockgebundenen Parameter und einen Bandwert schreibt - RtWache::sperren() und RtWache::allokationen() "
+                "bleiben ab Callback-Eintritt 0. Gezaehlt wird, was der Prozessor ab processBlock tut; die Sperre, die "
+                "JUCE vor dem Plugincode nimmt (sendValueChangedMessageToListeners), sieht der Zaehler bauartbedingt nicht",
+                "RtWache::sperren " + zahl (sperren) + ", RtWache::allokationen " + zahl (rtAllok) + ", eigener Zaehler "
+                + zahl (eigene) + ", Hostschreibrunden waehrend der Bloecke " + zahl (geschriebenWaehrend));
+    }
+
+    // ── 312/M-54: Zahlenrand Parameterindex; der eigene Abgleich meldet nichts.
+    {
+        auto p = prozessor();
+        const auto stand = [&p]
+        {
+            std::array<std::uint32_t, (size_t) param::kHostParameter> s {};
+            for (int i = 0; i < param::kHostParameter; ++i) s[(size_t) i] = p->hostEreignisFuerTest (i);
+            return s;
+        };
+        const auto vor = stand();
+        p->parameterValueChangedFuerTest (-1, 0.25f);
+        p->parameterValueChangedFuerTest (param::kHostParameter, 0.25f);
+        const auto nachUngueltig = stand();
+        p->parameterValueChangedFuerTest (0, 0.25f);
+        p->parameterValueChangedFuerTest (param::kHostParameter - 1, 0.25f);
+        const auto nachGueltig = stand();
+        int andereBewegt = 0;
+        for (int i = 1; i < param::kHostParameter - 1; ++i)
+            if (nachGueltig[(size_t) i] != vor[(size_t) i]) ++andereBewegt;
+        const bool randGueltig = nachGueltig[0] == vor[0] + 1
+                              && nachGueltig[(size_t) param::kHostParameter - 1] == vor[(size_t) param::kHostParameter - 1] + 1;
+        // Der eigene Abgleich (Commit -> hostParameterAbgleichen) schreibt die
+        // Regler mit Herkunftstag: abgleichTiefe > 0, keine Rueckmeldung.
+        auto z = mitEq (true);
+        setzeBand (z, 0, 1000.0, 6.0);
+        const auto vorCommit = stand();
+        const auto e = setze (*p, z);
+        const auto nachCommit = stand();
+        auto& gainParam = hostParam (*p, iBand (0, param::kGainDb));
+        const bool reglerFolgt = gainParam.getValue() == gainParam.convertTo0to1 (6.0f);
+        pruefe (nachUngueltig == vor && randGueltig && andereBewegt == 0 && e.ausgang == tx::Ausgang::commit
+                    && reglerFolgt && nachCommit == vorCommit,
+                "312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged "
+                "mit Index -1 und 112 laesst die Mailbox unveraendert, 0 und 111 erreichen sie je genau einmal; der "
+                "eigene Abgleich nach einem Commit stellt den Regler, ohne ein Hostereignis zu melden (abgleichTiefe > 0)",
+                std::string ("ungueltig ") + (nachUngueltig == vor ? "ohne Wirkung" : "WIRKT") + ", Rand 0/111 "
+                + (randGueltig ? "je +1" : "FALSCH") + ", andere bewegt " + std::to_string (andereBewegt)
+                + ", Abgleich " + (nachCommit == vorCommit ? "ohne Ereignis" : "MIT EREIGNIS") + ", Regler "
+                + (reglerFolgt ? "folgt" : "FOLGT NICHT"));
+    }
+}
+
 } // namespace
 
-int main()
+int main (int argc, char* argv[])
 {
+    // NAK-312 Etappe 5 (312/M-48, 312/M-49): der Erzeuger des Parametergoldens.
+    // Er schreibt nur und prueft nichts; der Kanon faehrt das Bein ohne Argument.
+    if (argc == 4 && std::string (argv[1]) == "--parameter-golden")
+    {
+        const auto g = parameterGolden();
+        const bool text = juce::File (argv[2]).replaceWithData (g.text.data(), g.text.size());
+        const bool bin  = juce::File (argv[3]).replaceWithData (g.s1.getData(), g.s1.getSize());
+        std::cout << "Parametergolden: " << argv[2] << " (" << g.text.size() << " Byte), "
+                  << argv[3] << " (" << g.s1.getSize() << " Byte)" << std::endl;
+        return text && bin ? 0 : 2;
+    }
+
     std::cout << "== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==" << std::endl;
     std::cout << "Gate: Manifest SONDE-015 §5.11.4 (S0-S8, I1-I6, T1-T17), Matrix §3.1, §3.7-§3.11, §3.14." << std::endl;
 
@@ -5502,6 +5960,9 @@ int main()
 
     // NAK-312 Etappe 5, erster Aenderungssatz (T3-01-03, T3-01-04; R-312-3, E-312-7): der Offline-Uebergang
     nak312OfflineUebergang();
+
+    // NAK-312 Etappe 5, zweiter Aenderungssatz (T3-01-02; R-312-4): die Parameteranbindung ohne APVTS
+    nak312Parameteranbindung();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

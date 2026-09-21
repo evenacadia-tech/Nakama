@@ -50,7 +50,8 @@
     HOSTPARAMETER (SONDE-015 R1): Probeeq meldet die 112 Host-Parameter des
     Layouts v2 in Vertragsreihenfolge - die 109 v1-Kennungen, danach
     `eq_enabled`, `mix` und `auto_gain`; `occupied` ist keiner (R5). Die Liste
-    kommt aus `nakama::parameter::tabelle()`, nie aus einer zweiten Liste.
+    kommt aus `nakama::parameter::tabelle()`, nie aus einer zweiten Liste, und
+    haengt seit NAK-312 Etappe 5 direkt am Prozessor (keine APVTS, R-312-4).
     Hostwerte wirken als fluechtiger AutomationOverlay ohne Revision (§44.3);
     gespeichert wird ausschliesslich der bestaetigte Zustand des
     Transaktionskerns (`state/NakamaTransaktion.h`). Die vier Parameter der
@@ -446,6 +447,15 @@ public:
     {
         return hostCallbackAufMessageThread.load();
     }
+    /** NAK-312 Etappe 5 (312/M-52 bis 312/M-54): die Hostwert-Mailbox lesen
+        (ausserhalb 0 bis 111 liefert der Zugang 0) und den Parameter-Listener
+        so rufen, wie JUCE ihn ruft. */
+    std::uint32_t hostEreignisFuerTest (int index) const noexcept
+    {
+        return index >= 0 && index < nakama::parameter::kHostParameter ? hostEreignis[(size_t) index].load() : 0u;
+    }
+    bool hostEreignisOffenFuerTest() const noexcept { return hostEreignisOffen.load(); }
+    void parameterValueChangedFuerTest (int index, float neuNormiert) { parameterValueChanged (index, neuNormiert); }
 
     /** Die Grenzzaehler der FeatureEngine (NAK-181 Nacharbeit 1, EP-07/NR-07).
 
@@ -725,12 +735,13 @@ private:
 
     // ── SONDE-015 Etappe 4a: Parameter, DSP-Kern, Transaktionskern ─────────
     //
-    // Die 112 Host-Parameter leben in der APVTS; gespeichert wird aber nicht
-    // die APVTS, sondern der bestaetigte Zustand des Transaktionskerns (Kinder
+    // Die 112 Host-Parameter besitzt der Prozessor selbst (`addParameter`,
+    // seit NAK-312 Etappe 5 ohne APVTS und ohne deren Adapter, R-312-4);
+    // `hostParameter` zeigt nur auf sie. Gespeichert wird nicht ihr Wert,
+    // sondern der bestaetigte Zustand des Transaktionskerns (Kinder
     // `Parameters` und `Dsp`). DSP-Kern und Transaktionskern liegen auf dem
     // Heap, weil Konsolenbeine Prozessoren im Rahmen anlegen und der
     // MSVC-Standardstack 1 MiB fasst (NAK-175).
-    juce::AudioProcessorValueTreeState parameterBaum;
     std::array<juce::RangedAudioParameter*, (size_t) nakama::parameter::kHostParameter> hostParameter {};
     std::unique_ptr<nakama::dsp::DspKern>                    dspKern;
     std::unique_ptr<nakama::transaktion::DspKernAusfuehrung> dspAusfuehrung;

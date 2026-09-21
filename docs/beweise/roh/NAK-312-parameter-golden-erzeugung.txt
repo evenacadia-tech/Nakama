@@ -1,0 +1,55 @@
+NAK-312 Etappe 5 - Erzeugung des Parametergoldens (312/M-48, 312/M-49; R-312-4, §7.1, §7.5)
+=======================================================================================
+
+Wann: 21.09.2026, Bau 14:33:55 bis 14:34:52, Lauf 14:34:59 (Get-Date), VOR jeder
+Produktaenderung der Etappe 5.
+
+Basis-SHA der Etappe 5: 12300f1e429c38354f9d216d7ade395b71f71b70 (= git rev-parse HEAD).
+
+Produktquellen beim Lauf, SHA-256 (gleich HEAD, unveraendert):
+  09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB  eq-copilot/plugin/sonde/SondeProcessor.cpp
+  F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E  eq-copilot/plugin/sonde/SondeProcessor.h
+  E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42  eq-copilot/plugin/dsp/DspKern.cpp
+  B0681BCF33F8A3C14B7FC0CE0F9977298B03069D544821A23820223B834112DD  eq-copilot/plugin/dsp/DspKern.h
+
+Erzeuger: eq-copilot/plugin/tests/TransactionTestMain.cpp (B7) mit den Funktionen
+bitsVon, sha256Von, parameterGoldenText, zustandsGolden, parameterGolden und dem
+Argument --parameter-golden <text> <bin> in main - dieselben Zeilen, die der
+zweite Aenderungssatz der Etappe 5 committet (dort vergleicht der Test den am
+Endstand erzeugten Text mit dieser Datei). Nur die Testdatei trug den Erzeuger;
+sie wurde danach bytegleich auf HEAD zurueckgesetzt:
+  vorher   18F63AA9AC417096C60AE47A1B3608E6CE35205F21C2E8F8F15420853C8393A3 (HEAD)
+  Erzeuger 15B1BEA2888B71B7FA681A38E7F3704C3B161D5B6BE7D569FEB61B5CA5EE7AC5
+  nachher  18F63AA9AC417096C60AE47A1B3608E6CE35205F21C2E8F8F15420853C8393A3 (gleich HEAD)
+
+Bau: cmake --build eq-copilot/build --config Release --target EqCopTransactionTest
+  -> Exit 0; Binary 14:34:52 juenger als die Quelle 14:33:39.
+
+Befehl:
+  EqCopTransactionTest.exe --parameter-golden docs/beweise/roh/NAK-312-parameter-golden.txt docs/beweise/roh/NAK-312-parameter-golden-s1.bin
+Ausgabe:
+  Parametergolden: docs/beweise/roh/NAK-312-parameter-golden.txt (29665 Byte), docs/beweise/roh/NAK-312-parameter-golden-s1.bin (5745 Byte)
+  EXIT=0
+
+Wiederholbarkeit: dreimal erneut in einen Ordner ausserhalb des Repos erzeugt,
+jede Datei bytegleich zur eingefrorenen:
+  Text SHA-256 98D29988196F03C80B5AD3A42F3DD4122F0431AB6D4D406218213DBB73DE7BEF (4 von 4 Laeufen)
+  Bin  SHA-256 4EA7C41E26E7C53CFB99D7038B45F391CBFA8F16AC2E6738F98482448A917810 (4 von 4 Laeufen)
+
+Inhalt:
+  (a) anzahl 112, gruppen 0, je Hostparameter eine Zeile: Index, getParameterIndex,
+      paramID, Name, Klasse (bool/float/choice) mit Auswahlliste, Versionshinweis,
+      NormalisableRange (start, end, interval, skew, symmetricSkew) als Bitmuster,
+      Default normiert und denormiert, Wert nach der Konstruktion, numSteps,
+      diskret, boolesch, automatisierbar, Meta, Kategorie, Einheit.
+  (b) Hostsicht: convertTo0to1 an Minimum, Default und Maximum; convertFrom0to1,
+      getText und getValueForText (getText) an 0, 0,37 und 1 - jede Zahl als Bitmuster.
+  (c) Stand: s0 (Schreiberbytes, feste instance_id 312e5a00000000000000000000000005),
+      s1 nach zwei Commits (drei belegte Slots 0, 2, 5, Output-Trim -1,5 dB),
+      s1 nach einer Automationsfahrt (20 Hostpunkte auf Band 0 Gain und Output-Trim,
+      dann 30 Bloecke Ruhe, jeder Takt ausdruecklich unter der Taktsperre),
+      s2 = speichern nach Laden von s1 in eine zweite Instanz; Laenge und SHA-256,
+      Revision und state_hash beider Instanzen, Host-Dirty, Epochenfolge der Fahrt.
+      Die Bytes von s1 liegen zusaetzlich als NAK-312-parameter-golden-s1.bin (B2).
+  Gemessen am Basis-SHA: s1 = s1_nach_fahrt = s2 (5745 Byte, SHA-256 4ea7c41e...),
+  Revision 2 in beiden, Dirty 2 (die zwei Commits), Epochenfolge 0, 1 (x44), 2 (x6).

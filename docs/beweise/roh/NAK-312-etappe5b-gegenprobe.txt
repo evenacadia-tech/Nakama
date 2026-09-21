@@ -1,0 +1,69 @@
+NAK-312 Etappe 5, zweiter Aenderungssatz - Gegenprobe am Stand vor dem Umbau (APVTS noch da), Lauf 14:59:31 bis 14:59:35 (Get-Date)
+Basis des Aenderungssatzes: Commit 19ddf5d3 (erster Aenderungssatz). Produktquellen: 19ddf5d3 plus allein die Testzugaenge hostEreignisFuerTest, hostEreignisOffenFuerTest, parameterValueChangedFuerTest in SondeProcessor.h (unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3), SHA-256:
+  1B900F2A8CC1CF75E4BA499050B01C9E558E8C1B5E8236B4F5B848A949AB243D  eq-copilot/plugin/sonde/SondeProcessor.cpp  (gleich HEAD 19ddf5d3: True)
+  59391DB2F3753044F47EE7389CCFEBAFA30926E7FB0F68CFB869FDB0BC820D36  eq-copilot/plugin/sonde/SondeProcessor.h  (gleich HEAD 19ddf5d3: False)
+  E6693B2401823DFBC469510C2D0B5A24E1C32000DB481C63497C69FA7CE6C073  eq-copilot/plugin/dsp/DspKern.cpp  (gleich HEAD 19ddf5d3: True)
+  7CA7267E107B207413C57A589825C971D1F21AA3E6661BFCA65D12023AF872C8  eq-copilot/plugin/dsp/DspKern.h  (gleich HEAD 19ddf5d3: True)
+Tests in der Endfassung dieses Laufs: C9D843DBC1A9AD67233D515E84727ACBC361972E0B8B78DB6B31B499C18F36DF  eq-copilot/plugin/tests/TransactionTestMain.cpp
+                                     B309F1E5BDD57F76C7CA8833813E9370EFDBF5BF42EB6E24F24084AE40C9D631  eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+Binaries: EqCopTransactionTest 14:59:10, EqCopStateMigrationTest 14:59:25, juenger als die juengste Quelle 14:58:55.
+Ergebnis: B7 Exit 1, 247 geprueft, 1 Fehler - genau 312/M-50 (heute rot: SondeProcessor.cpp und SondeProcessor.h nennen die APVTS-Klasse). Gruen: 312/M-48 und 312/M-49 (das Golden des Basis-SHA 12300f1e gilt auch nach dem ersten Aenderungssatz - er hat die Parameter nicht beruehrt), 312/M-51 bis 312/M-54 (Regressionswachen). B2 Exit 0, 294 Pruefungen, 312/M-49 (B2) gruen.
+
+--- Rohausgabe B7 (Abschnitt ZB, 312/M-51, Summe) ---
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+  ok      T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  ok      T3 der Fehler ist nicht gemerkt: dieselbe tid mit gueltiger Nutzlast committet  [commit @S8 rev=2 memo]
+  ok      T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=2 memo]
+  ok      T10 fensterrand_erste_transaktion_ist_draussen  [konflikt @S1 rev=33 nicht-memo, r danach 33, nicht im Register | soll konflikt @S1 r=33 nicht-memo]
+  ok      T11 fensterrand_zweite_transaktion_ist_drinnen  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+  ok      T15 fehler_in_S7_laesst_committed_und_hash_unveraendert  [fehler @S7 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S7 r=1 nicht-memo]
+== B - Fehler in jeder fehlbaren Stufe S1 bis S7, je an ihrer Tabellenzeile (M-75) ==
+  ok      fehler_in_S1_laesst_committed_und_hash_unveraendert (T2)  [konflikt @S1 rev=1 nicht-memo]
+  ok      fehler_in_S2_laesst_committed_und_hash_unveraendert (T3)  [fehler @S2 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S3_laesst_committed_und_hash_unveraendert (T4)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      fehler_in_S4_laesst_committed_und_hash_unveraendert (T13)  [fehler @S4 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [fehler @S6 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [commit @S8 rev=2 memo]
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  ok      zehntausend_transaktionen_erzeugen_hoechstens_eine_revision  [r0=7, r - r0 = 1; T1 9993, T2 6, T6 1, andere 0, Mischzustaende 0]
+  ok      remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  ok      undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  ok      acht_belegte_slots_ueberschreiben_nichts (M-62): eigener Fehler, kein Opfer  [fehler @S4 rev=9 nicht-memo grund=alle_slots_belegt]
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  ok      zone_deaktivieren_ist_eine_transaktion (M-71): danach ist kein Band verletzt und der Weg hinein frei  [commit @S8 rev=5 memo]
+  ok      zone_entfernen_ist_eine_transaktion (M-71)  [commit @S8 rev=7 memo]
+  ok      neunte_zone_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_anzahl @ schutz_zonen]
+  ok      doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_doppelt @ schutz_zonen[1].id]
+  ok      neue_transaktion_schneidet_den_redo_zweig_ab (M-79): ein Cursor im selben Ring  [fehler @S4 rev=5 nicht-memo grund=redo_leer]
+  ok      apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=nichtendlich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.q]
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich (M-24, ueber zwei Transaktionen)
+  ok      channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S2 rev=2 nicht-memo grund=enum @ v1.band.0.channel_mode]
+  ok      preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  ok      unbekanntes_preset_major_wird_abgelehnt (M-99): klarer Fehler preset_schema_version, keine read-only-Haltung
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+  ok      fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt (M-92, Prozessorhaelfte): read-only mit Originalbytes, eq_enabled aus, keine Transaktion  [fehler @keine rev=0 nicht-memo grund=schreibgeschuetzt, 186 Bytes]
+  ok        312/M-51 hostparameter_spiegeln_den_geladenen_stand (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84, R-312-4): nach setStateInformation in eine frische Instanz traegt jeder der 112 Hostparameter den Wert des geladenen Standes in Hostgenauigkeit  [112 von 112 gleich, 9 davon nicht auf dem Default]
+== ZB - NAK-312 Etappe 5: die Parameteranbindung ohne APVTS (312/M-48 bis 312/M-50, 312/M-52 bis 312/M-54; 312/M-51 in Abschnitt O) ==
+  ok      312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der Hostparameter und ihre Hostsicht (convertTo0to1 an Minimum, Default, Maximum; convertFrom0to1, getText und getValueForText an 0, 0,37 und 1) sind Zeile fuer Zeile und Bit fuer Bit die des Goldens von 12300f1e  [114 Zeilen gegen 114 im Golden]
+  ok      312/M-49 statebytes_und_epochenfolge_gleich_dem_golden (T3-01-02, R-312-4, CLAUDE.md State verlustfrei): speichern, laden, speichern liefert die Bytes des Basis-SHA (s1 bytegleich zur eingefrorenen Datei, s1 = s2), und die Automationsfahrt dieselbe Epochenfolge, Revision, state_hash und Host-Dirty  [9 Zeilen gegen 9 im Golden, s1 5745 Byte, bytegleich zur Datei]
+  FEHLER  312/M-50 kein_apvts_mehr_in_der_sonde (T3-01-02, R-312-4): kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse - die zweite Sperrfamilie existiert nicht mehr; fail-closed: fehlt der Ordner oder sind es weniger als 3 Dateien, ist es rot  [3 Dateien unter C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\sonde, Treffer: SondeProcessor.cpp; SondeProcessor.h; ]
+  ok      312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostparameter den Zaehler des Beins, aber keinen Listener des Prozessors mehr (Mailbox unveraendert); vorher erreichte derselbe Weg ihn  [vorher erreicht ja, Zaehler 112, Mailbox 1 -> 1, offen nein]
+  ok      312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512), waehrend ein zweiter Thread Hostautomation auf die vier blockgebundenen Parameter und einen Bandwert schreibt - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0. Gezaehlt wird, was der Prozessor ab processBlock tut; die Sperre, die JUCE vor dem Plugincode nimmt (sendValueChangedMessageToListeners), sieht der Zaehler bauartbedingt nicht  [RtWache::sperren 0, RtWache::allokationen 0, eigener Zaehler 0, Hostschreibrunden waehrend der Bloecke 122908]
+  ok      312/M-54 parameterindex_rand_und_abgleichtiefe (Teilfall von 312/M-50, Zahlenrand): parameterValueChanged mit Index -1 und 112 laesst die Mailbox unveraendert, 0 und 111 erreichen sie je genau einmal; der eigene Abgleich nach einem Commit stellt den Regler, ohne ein Hostereignis zu melden (abgleichTiefe > 0)  [ungueltig ohne Wirkung, Rand 0/111 je +1, andere bewegt 0, Abgleich ohne Ereignis, Regler folgt]
+247 geprueft, 1 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+
+--- Rohausgabe B2 (312/M-49, Summe) ---
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810 / s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810]
+  ok      312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 5745 Byte, bytegleich]
+  ok      == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler

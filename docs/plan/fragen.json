@@ -67,7 +67,7 @@
    "titel": "Bau-Worker auf der Stufe xhigh: dabei bleiben oder zurück auf max?",
    "was": "Seit 19.09.2026 laufen die Opus-Worker (Bauer, Matrix- und Nacharbeits-Worker) auf deinen Entscheid mit der Denkstufe xhigh statt max; Prüfer und Validierer bleiben auf max. Der Dirigent legt dir zu dieser Karte die Zahlen aus zwei Tagen vor: Nacharbeitsrunden bis PASS und Defekte je Prüfung, Laufzeit je Worker, verbrauchter Wochenanteil je Tag, verglichen mit NAK-309 und NAK-311 unter max. (1) Bei xhigh bleiben. (2) Zurück auf max. (3) Nach Rolle trennen (heikle Audio-, State- und Vertragstickets max, der Rest xhigh).",
    "warum": "Dein Wort vom 19.09.2026: „in 2 tagen evaluieren wir dann neu“. Ohne Antwort bleibt es bei xhigh.",
-   "wo": "docs/offene-punkte.md NAK-335; Skill /dirigent §3.2 und §3.6",
+   "wo": "docs/offene-punkte.md NAK-335; Skill /dirigent §3.2 und §3.6; Zahlen (Stand 21.09.2026, tragen keine Empfehlung): docs/beweise/roh/NAK-335-u55-zahlen.md",
    "seit": "19.09.",
    "status": "offen"
   }

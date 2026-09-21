@@ -5,6 +5,11 @@
 //   prepareToPlay            Samplerate, Blockgroesse und Kanaele uebernehmen,
 //                            Engines und Puffer dafuer vorbereiten. Laeuft VOR
 //                            dem ersten Block und darf deshalb allokieren.
+//   reset, releaseResources  Der Host haelt an beziehungsweise gibt frei: die
+//                            Hoermarkierung verstummt, ihr offenes Intervall
+//                            schliesst (NAK-312 R-312-5). reset() kann nach
+//                            VST3 im Audiothread laufen und nimmt deshalb weder
+//                            Sperre noch Speicher.
 //   isBusesLayoutSupported   Welche Buslayouts die Instanz annimmt.
 //   setzeEditorOffen         Der Host oeffnet oder schliesst das Fenster.
 //   meldeHostDirty           Die einzige Stelle, an der die Instanz dem Host
@@ -101,7 +106,18 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
         // Uebergang auf das Begin, das noch im Ring liegt. Steht schon ein
         // Wartender, gaebe es zwei zu schliessende Intervalle und nur einen
         // Platz — dann sagt der Ueberlauf die Wahrheit (fail-closed, §34.2).
-        const bool anLebendes = offenesBegin.gueltig && ! offenesBegin.tot;
+        //
+        // 🔑 NAK-312 R-312-5: lebend heisst auch "desselben Eingriffs". Das
+        // offene Begin des Senders kann zu einem Eingriff gehoeren, dessen
+        // `end` schon im Ring liegt (reset/releaseResources schliessen ueber
+        // den Ring, und ein Block kann ein `end` geschrieben haben, das der
+        // Worker noch nicht abgeholt hat); dann gehoert das abbrechende
+        // Intervall zu einem juengeren Begin, das noch im Ring wartet. Die
+        // Nummer des Eingriffs trennt beide: der Audiothread hat die des
+        // laufenden als letzte gezogen, und er laeuft hier nicht.
+        const bool anLebendes = offenesBegin.gueltig && ! offenesBegin.tot
+            && offenesBegin.ereignis.nummer
+                   == interventionsNummer.load (std::memory_order_relaxed) - 1;
         const bool alsWartender = ! anLebendes && ! ausstehenderTotUebergang.gueltig;
         if (! anLebendes && ! alsWartender)
         {
@@ -144,6 +160,67 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // Der v3-Hello-Provider liest Samplerate/Block/Kanaele erst beim Aufbau.
     // Prepare laeuft auf dem Host-/Nachrichtenthread, nie im Audiocallback.
     controlV3.reconnect();
+}
+
+void EqCopilotProcessor::reset()
+{
+    // 🔑 NAK-312 R-312-5 (T3-01-10, starten↔stoppen): der VST3-Wrapper ruft
+    // reset() aus `setProcessing (false)` (juce_audio_plugin_client_VST3.cpp),
+    // weder prepareToPlay noch releaseResources. Bis hierher lief die leere
+    // JUCE-Basis: ein hoerbarer Marker klang ueber das Anhalten hinaus weiter,
+    // und sein Interventionsintervall blieb beim Broker offen.
+    //
+    // Der Auftrag bleibt eingereicht (U56, "Auftrag bleibt bestehen"): beim
+    // naechsten erlaubten Block klingt er neu, mit neuem begin.
+    markierungAbbrechen();
+}
+
+void EqCopilotProcessor::releaseResources()
+{
+    // Dasselbe Ende wie reset() (M-64), danach die Blockpuffer: die
+    // Trockenkopie des Vergleichspegels und den Wet-Puffer der Markierung.
+    // Ein Block ohne neues prepareToPlay laeuft unberuehrt durch - die
+    // Pegelkopie prueft ihre Groesse, die Markierung sieht einen
+    // Oversizeblock, in dem nichts klingt.
+    markierungAbbrechen();
+    std::vector<float>().swap (versuchTrocken);
+    markierung.gibPufferFrei();
+}
+
+void EqCopilotProcessor::markierungAbbrechen() noexcept
+{
+    // 🔑 NAK-312 R-312-5: ohne Sperre und ohne Speicher. `setProcessing`, aus
+    // dem der Wrapper reset() ruft, darf der Host im Audiothread rufen
+    // (Steinberg, VST 3 API Documentation: "could be called in an Audio
+    // Thread, avoid any memory allocation"). Der Abschluss aus prepareToPlay
+    // nimmt `sendeZustandMutex` und taugt dafuer nicht; dieser hier geht den
+    // Weg jedes anderen `end`: in den RT-Ring, in Sequenzordnung, abgeholt
+    // vom Worker. Nie gleichzeitig mit processBlock - dieselbe Annahme, unter
+    // der prepareToPlay die Markierung zuruecksetzt.
+    const auto uebergang = markierung.brichAb();
+    if (! uebergang.endete)
+        return;                     // nichts klang: kein Ereignis (M-65)
+
+    nakama::ipc::Interventionsereignis e;
+    e.beginn = false;
+    e.nummer = interventionsNummer.load (std::memory_order_relaxed) - 1;
+    e.projektzeitGesetzt = false;   // die Endzeit ist ehrlich unbekannt
+    e.dauerSamples = uebergang.dauerSamples;
+    e.tailSamples = nakama::ipc::tailSamplesFuer (
+        uebergang.dauerSamples,
+        letzteGueltigeSamplerate.load (std::memory_order_relaxed));
+    // Die Sequenz wird NUR gezogen, wenn sie auch reist (wie im Abschluss aus
+    // prepareToPlay): ein voller Ring nimmt das `end` nicht, der Ueberlauf
+    // sagt die Wahrheit (fail-closed, §34.2). Einziger Schreiber ist hier der
+    // Aufrufer, der Worker leert nur - was jetzt Platz hat, behaelt ihn.
+    if (interventionsRing.fuellstand() >= nakama::ipc::InterventionsRing::kPlaetze)
+    {
+        interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
+        return;
+    }
+    e.sequenz = interventionsSequenz.fetch_add (1, std::memory_order_relaxed) + 1;
+    if (! interventionsRing.schreibe (e))
+        interventionsRingUeberlauf.store (true, std::memory_order_relaxed);
 }
 
 bool EqCopilotProcessor::isBusesLayoutSupported (const BusesLayout& layout) const

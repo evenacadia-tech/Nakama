@@ -12,6 +12,8 @@
 //  · NAK-312 Etappe 6a: Rollenwechsel und die drei Netze (312/M-55 bis M-58,
 //    M-84) am echten Prozessor mit Editor; die Editorhaelfte tickt ueber
 //    `timerTickFuerTest`, Ereignisse erntet das Bein synchron vom Sender.
+//    Dazu reset und releaseResources (312/M-59 bis M-65, M-86; M-61 im
+//    Oversize-Fall von SONDE-013 M-36).
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "HoerMarkierung.h"
@@ -529,6 +531,27 @@ static void sonde013M36 (const Pruefer& pruefe, double fs, int bs)
                 "M-36: oversize_block_fades_within_capacity_then_latches - danach "
                 "blendet sie NICHT wieder ein, auch nicht nach 60 gueltigen Bloecken");
         pruefe (! p.markierungHoerbar(), "M-36: und meldet sich als still", {});
+
+        // NAK-312 312/M-61 (R-312-5): reset() loest den Riegel NICHT - er gilt
+        // bis zum naechsten prepareToPlay. Ein neu eingereichter Auftrag
+        // blendet nach reset() in 60 gueltigen Bloecken nicht ein.
+        p.reset();
+        p.markierungEinreichen (auftrag);
+        bool nachResetGefaerbt = false;
+        for (int block = 0; block < 60; ++block)
+        {
+            fuelleSinus (puffer);
+            kopie.makeCopyOf (puffer);
+            transport.vorBlock (bs);
+            p.processBlock (puffer, midi);
+            transport.weiter (bs);
+            if (! blockBitgleich (puffer, kopie))
+                nachResetGefaerbt = true;
+        }
+        pruefe (! nachResetGefaerbt && ! p.markierungHoerbar(),
+                "312/M-61 reset_loest_den_oversize_riegel_nicht - nach reset() blendet ein "
+                "neuer Auftrag in 60 gueltigen Bloecken nicht ein; erst prepareToPlay loest "
+                "den Riegel (die Pruefung darunter)");
 
         // Erst `prepareToPlay` loest den Riegel - die Blockgroesse ist neu
         // ausgehandelt, also ist der Grund fuer die Verriegelung entfallen.
@@ -1848,6 +1871,380 @@ static void nak312M84ImAusfade (const Pruefer& pruefe, double fs, int bs)
                 + ", " + nak312::ereignisText (e));
 }
 
+//==============================================================================
+// NAK-312 Etappe 6a, zweiter Aenderungssatz: reset und releaseResources
+// (T3-01-10 sicherer Teil; R-312-5; Manifest §6.7, M-59 bis M-65, M-86).
+//
+// reset() und releaseResources() beenden den Markierungsklang und schliessen
+// das offene Interventionsintervall mit genau einem `end` je `begin`
+// (`project_sample_end` null, gezaehlte Hoerdauer); reset() allokiert nicht;
+// der Oversize-Riegel bleibt bis zum naechsten prepareToPlay; der Ueberlauf
+// bleibt fail-closed; der Auftrag bleibt eingereicht (U56).
+namespace nak312
+{
+/// Main mit gueltiger Adresse, Auftrag eingereicht, 40 Bloecke bei laufendem
+/// Transport: der Marker klingt, sein `begin` ist geerntet. `hoerDauer`
+/// zaehlt ab dem Einreichen.
+static bool klingtInMain (Stand& s, const char* label, Ernte& ernteDanach)
+{
+    s.p->setzeEditorOffen (true);
+    const bool main = s.p->setzeBindung ("hub", label, {})
+                   && s.klassifikationIst (nakama::state::Klassifikation::main);
+    s.p->markierungEinreichen (s.auftrag);
+    s.hoerDauer = 0;
+    const auto an = s.bloecke (40);
+    ernteDanach = s.ernte();
+    return s.gebaut && s.pauseBestaetigt && main && an.hoerbar == 40
+        && s.p->markierungHoerbar() && ernteDanach.begins == 1 && ernteDanach.ends == 0;
+}
+
+static juce::String kennung (const juce::var& v)
+{
+    return v.getProperty ("intervention_id", {}).toString();
+}
+static juce::String typ (const juce::var& v)
+{
+    return v.getProperty ("type", {}).toString();
+}
+static juce::String letzteKennung (const Ernte& e, const char* welcherTyp)
+{
+    juce::String k;
+    for (const auto& v : e.liste)
+        if (typ (v) == welcherTyp)
+            k = kennung (v);
+    return k;
+}
+
+/// Das `end` einer Ernte, wie es auf der Leitung steht.
+struct Ende
+{
+    int anzahl = 0;
+    juce::String id;
+    bool projektzeitNull = false;
+    juce::int64 tail = -1;
+};
+static Ende endeAus (const Ernte& e)
+{
+    Ende aus;
+    for (const auto& v : e.liste)
+        if (typ (v) == "audible_intervention_end")
+        {
+            ++aus.anzahl;
+            aus.id = kennung (v);
+            const auto* o = v.getDynamicObject();
+            aus.projektzeitNull = o != nullptr && o->hasProperty ("project_sample_end")
+                               && v.getProperty ("project_sample_end", 1).isVoid();
+            aus.tail = (juce::int64) v.getProperty ("tail_samples", -1);
+        }
+    return aus;
+}
+/// Der Nachlauf ist eine Formel (NAK-180 R5): doppelte Hoerdauer plus ein
+/// Zehntel der Rate.
+static juce::int64 tailFuer (std::uint64_t dauer, double fs)
+{
+    return (juce::int64) (2u * dauer) + (juce::int64) (fs / 10.0);
+}
+static juce::String endeText (const Ende& e)
+{
+    return juce::String (e.anzahl) + " end, project_sample_end "
+         + (e.projektzeitNull ? "null" : "gesetzt") + ", tail " + juce::String (e.tail);
+}
+
+struct Dirty final : juce::AudioProcessorListener
+{
+    std::atomic<int> nichtParameter { 0 };
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
+    {
+        if (d.nonParameterStateChanged)
+            ++nichtParameter;
+    }
+};
+} // namespace nak312
+
+/** 312/M-59 mit den Teilfaellen 312/M-60 (keine Allokation) und 312/M-63
+    (der Auftrag bleibt). M-59 haelt den Transport vor reset() an, M-63 laesst
+    ihn weiterlaufen - verschiedene Transportlagen (H1). */
+static void nak312M59 (const Pruefer& pruefe, double fs, int bs)
+{
+    {
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        const bool klingt = nak312::klingtInMain (s, "M-59", vorher);
+        const auto beginId = nak312::letzteKennung (vorher, "audible_intervention_begin");
+        const auto dauer = s.hoerDauer;
+        pruefe (klingt, "312/M-59: Aufbau - in Main hoerbar, sein begin ist gesendet",
+                nak312::ereignisText (vorher));
+
+        // Der Host haelt an - das ist die Lage, in der er reset() ruft.
+        s.transport->kopf.spielt = false;
+        const auto zuteilungenVorher = s.p->markierungsPufferZuteilungenFuerTest();
+        const auto pufferVorher = s.p->blockpufferFuerTest();
+        allokationen = 0;
+        zaehleAllokationen = true;
+        s.p->reset();
+        zaehleAllokationen = false;
+        const auto allokiert = allokationen;
+        const auto zuteilungenNachher = s.p->markierungsPufferZuteilungenFuerTest();
+        const auto nach = s.bloecke (40);
+        const auto ernte = s.ernte();
+        const auto ende = nak312::endeAus (ernte);
+        pruefe (nach.abweichend == 0 && nach.hoerbar == 0 && ernte.begins == 0
+                    && ende.anzahl == 1 && ende.id == beginId && ende.projektzeitNull
+                    && ende.tail == nak312::tailFuer (dauer, fs),
+                "312/M-59 reset_beendet_klang_und_intervall - nach reset() sind 40 Bloecke "
+                "bitgleich zum Eingang, und es kommt genau EIN end zum offenen begin, mit "
+                "project_sample_end null und der gezaehlten Hoerdauer",
+                juce::String (nach.abweichend) + " abweichend, " + nak312::endeText (ende)
+                    + " (erwartet " + juce::String (nak312::tailFuer (dauer, fs)) + ")");
+        pruefe (allokiert == 0 && zuteilungenNachher == zuteilungenVorher
+                    && s.p->blockpufferFuerTest() == pufferVorher,
+                "312/M-60 reset_allokiert_nicht (Teilfall von 312/M-59) - ueber reset() "
+                "steigt der Allokationszaehler des Beins um 0, der Wet-Puffer wird nicht neu "
+                "zugeteilt, die Blockpuffer bleiben",
+                juce::String ((juce::int64) allokiert) + " Allokationen, Zuteilungen "
+                    + juce::String ((int) zuteilungenVorher) + " -> "
+                    + juce::String ((int) zuteilungenNachher));
+    }
+    {
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        const bool klingt = nak312::klingtInMain (s, "M-63", vorher);
+        const auto beginId = nak312::letzteKennung (vorher, "audible_intervention_begin");
+        // Der Transport laeuft ueber reset() hinweg weiter.
+        s.p->reset();
+        const auto nach = s.bloecke (40);
+        const auto ernte = s.ernte();
+        const auto ende = nak312::endeAus (ernte);
+        const auto neuesBegin = nak312::letzteKennung (ernte, "audible_intervention_begin");
+        pruefe (klingt && ende.anzahl == 1 && ende.id == beginId && ende.projektzeitNull
+                    && ernte.begins == 1 && neuesBegin.isNotEmpty() && neuesBegin != beginId
+                    && nach.hoerbar > 0 && s.p->markierungHoerbar()
+                    && s.p->markierungZielGesetztFuerTest(),
+                "312/M-63 auftrag_bleibt_ueber_reset (Teilfall von 312/M-59, U56) - der "
+                "Auftrag bleibt eingereicht und beginnt beim naechsten erlaubten Block NEU: "
+                "ein neues begin, kein zweites end zum alten Intervall",
+                nak312::ereignisText (ernte) + ", " + nak312::endeText (ende));
+    }
+}
+
+/** 312/M-86: jedes begin hat genau ein end ueber reset(), Bloecke ohne und
+    mit Erlaubnis und ein spaeteres prepareToPlay; dazu die Folge reset(),
+    releaseResources(), prepareToPlay. */
+static void nak312M86 (const Pruefer& pruefe, double fs, int bs)
+{
+    {
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        const bool klingt = nak312::klingtInMain (s, "M-86", vorher);
+        const auto beginA = nak312::letzteKennung (vorher, "audible_intervention_begin");
+        s.transport->kopf.spielt = false;
+        s.p->reset();
+        const auto ohne = s.bloecke (40);
+        const int nachOhne = s.p->interventionsRingFuellstandFuerTest();
+        s.transport->kopf.spielt = true;
+        const auto ersterMit = s.bloecke (1);
+        const int nachErstem = s.p->interventionsRingFuellstandFuerTest();
+        const auto mit = s.bloecke (39);
+        s.p->prepareToPlay (fs, bs);
+        const auto ernte = s.ernte();
+        // Auf der Leitung, in dieser Ordnung: end(A), begin(B), end(B).
+        juce::StringArray folge;
+        for (const auto& v : ernte.liste)
+            folge.add (nak312::typ (v).fromLastOccurrenceOf ("_", false, false) + ":"
+                       + (nak312::kennung (v) == beginA ? "A" : "B"));
+        const auto beginB = nak312::letzteKennung (ernte, "audible_intervention_begin");
+        pruefe (klingt && ohne.abweichend == 0 && nachOhne == 1
+                    && ersterMit.abweichend == 1 && nachErstem == 2 && mit.hoerbar == 39
+                    && vorher.begins + ernte.begins == 2 && ernte.ends == 2
+                    && beginB.isNotEmpty() && beginB != beginA
+                    && folge.joinIntoString (" ") == "end:A begin:B end:B",
+                "312/M-86 jedes_begin_hat_genau_ein_end_ueber_reset - das end aus reset() "
+                "kommt in 40 Bloecken ohne Erlaubnis kein zweites Mal, der erste Block mit "
+                "Erlaubnis meldet sein begin im selben Block, in dem er faerbt, und "
+                "prepareToPlay schliesst genau dieses Intervall: zwei begin, zwei end",
+                folge.joinIntoString (" ") + ", Ring nach den Bloecken ohne Erlaubnis "
+                    + juce::String (nachOhne) + ", nach dem ersten mit Erlaubnis "
+                    + juce::String (nachErstem));
+    }
+    {
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        const bool klingt = nak312::klingtInMain (s, "M-86b", vorher);
+        s.transport->kopf.spielt = false;
+        s.p->reset();
+        s.p->releaseResources();
+        s.p->prepareToPlay (fs, bs);
+        const auto ernte = s.ernte();
+        const auto ende = nak312::endeAus (ernte);
+        pruefe (klingt && ernte.begins == 0 && ende.anzahl == 1,
+                "312/M-86 teilfall_reset_release_prepare - reset(), releaseResources() und "
+                "prepareToPlay nacheinander schliessen das Intervall genau einmal",
+                nak312::endeText (ende));
+    }
+}
+
+/** 312/M-62: der Ueberlauf bleibt fail-closed. */
+static void nak312M62 (const Pruefer& pruefe, double fs, int bs)
+{
+    {
+        // (a) Zwei offene Intervalle: prepareToPlay hat den Marker abgeschaltet,
+        //     waehrend sein begin noch im Ring lag - der Uebergang WARTET
+        //     (EP-08); der Auftrag bleibt und klingt neu, dann reset().
+        nak312::Stand s (fs, bs);
+        s.p->setzeEditorOffen (true);
+        const bool main = s.p->setzeBindung ("hub", "M-62a", {})
+                       && s.klassifikationIst (nakama::state::Klassifikation::main);
+        s.p->markierungEinreichen (s.auftrag);
+        (void) s.bloecke (40);
+        s.p->prepareToPlay (fs, bs);
+        const auto wieder = s.bloecke (40);
+        s.p->reset();
+        const bool ueberlauf = s.p->interventionsRingUeberlaufFuerTest();
+        const auto ernte = s.ernte();
+        juce::String folge;
+        bool lueckenlos = ! ernte.liste.empty();
+        juce::int64 letzte = -1;
+        for (const auto& v : ernte.liste)
+        {
+            const auto seq = (juce::int64) v.getProperty ("event_sequence", -1);
+            if (letzte >= 0 && seq != letzte + 1)
+                lueckenlos = false;
+            letzte = seq;
+            folge << nak312::typ (v).fromLastOccurrenceOf ("_", false, false) << "@"
+                  << juce::String (seq) << " ";
+        }
+        pruefe (s.gebaut && main && wieder.hoerbar > 0 && ! ueberlauf && lueckenlos
+                    && ernte.begins == 2 && ernte.ends == 2,
+                "312/M-62 (a) zwei_offene_intervalle_ueber_reset - ein wartender Uebergang "
+                "aus prepareToPlay und ein zweites offenes Intervall: reset() schliesst es "
+                "hinter dem ersten, die Sequenz bleibt lueckenlos, zwei begin, zwei end",
+                folge.trim() + (ueberlauf ? ", Ueberlauf" : ", kein Ueberlauf"));
+    }
+    {
+        // (b) Kein Platz fuer das end: der Ring ist voll.
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        const bool klingt = nak312::klingtInMain (s, "M-62b", vorher);
+        const auto seqVorher = vorher.liste.empty()
+            ? (juce::int64) -1
+            : (juce::int64) vorher.liste.front().getProperty ("event_sequence", -1);
+        const int platz = s.p->interventionsRingFuellenFuerTest();
+        const bool bitVorher = s.p->interventionsRingUeberlaufFuerTest();
+        s.p->reset();
+        const bool bitNachher = s.p->interventionsRingUeberlaufFuerTest();
+        s.p->interventionsRingLeerenFuerTest();
+        const auto weiter = s.bloecke (40);       // der Auftrag bleibt, der Transport laeuft
+        const auto ernte = s.ernte();
+        juce::int64 seqNeu = -1;
+        for (const auto& v : ernte.liste)
+            if (nak312::typ (v) == "audible_intervention_begin")
+                seqNeu = (juce::int64) v.getProperty ("event_sequence", -1);
+        pruefe (klingt && platz > 0 && ! bitVorher && bitNachher
+                    && s.p->v3StatusFuerTest().interventionStateUnknown
+                    && weiter.hoerbar > 0 && ernte.ends == 0 && ernte.begins == 1
+                    && seqNeu == seqVorher + 1,
+                "312/M-62 (b) voller_ring_bleibt_fail_closed - findet reset() keinen Platz "
+                "fuer das end, steht das Ueberlaufbit, und es wird KEINE Sequenznummer "
+                "gezogen, die nicht reist: das naechste begin folgt lueckenlos",
+                juce::String ("Ueberlauf vorher ") + (bitVorher ? "ja" : "nein") + ", nachher "
+                    + (bitNachher ? "ja" : "nein") + ", begin " + juce::String (seqVorher)
+                    + " dann " + juce::String (seqNeu));
+    }
+}
+
+/** 312/M-64: releaseResources und prepareToPlay statt reset(). */
+static void nak312M64 (const Pruefer& pruefe, double fs, int bs)
+{
+    enum class Weg { reset, release, prepare };
+    struct Ergebnis { bool klingt = false; nak312::Ende ende; juce::String beginId;
+                      juce::int64 erwartet = 0; std::size_t puffer = 0;
+                      nak312::Lauf danach; };
+    auto fahre = [&] (Weg weg, const char* label)
+    {
+        Ergebnis r;
+        nak312::Stand s (fs, bs);
+        nak312::Ernte vorher;
+        r.klingt = nak312::klingtInMain (s, label, vorher);
+        r.beginId = nak312::letzteKennung (vorher, "audible_intervention_begin");
+        r.erwartet = nak312::tailFuer (s.hoerDauer, fs);
+        s.transport->kopf.spielt = false;
+        switch (weg)
+        {
+            case Weg::reset:   s.p->reset(); break;
+            case Weg::release: s.p->releaseResources(); break;
+            case Weg::prepare:
+                s.p->prepareToPlay (fs, bs);
+                // Das tote Ende aus prepareToPlay liegt im Sendezustand, nicht
+                // im Ring; im Produkt reist es mit dem Linkaufbau, den
+                // `controlV3.reconnect()` am Ende von prepareToPlay anstoesst
+                // (EP-08). Ohne Pipe faehrt das Bein diesen Aufbau selbst.
+                s.p->v3LinkFuerTest (true);
+                break;
+        }
+        r.puffer = s.p->blockpufferFuerTest();
+        r.ende = nak312::endeAus (s.ernte());
+        // Bloecke ohne neues prepareToPlay bei laufendem Transport: nach
+        // releaseResources ohne Puffer, der Auftrag steht noch.
+        s.transport->kopf.spielt = true;
+        r.danach = s.bloecke (5);
+        return r;
+    };
+    const auto r = fahre (Weg::reset, "M-64r");
+    const auto a = fahre (Weg::release, "M-64a");
+    const auto b = fahre (Weg::prepare, "M-64b");
+    auto gleich = [] (const Ergebnis& x)
+    {
+        return x.klingt && x.ende.anzahl == 1 && x.ende.id == x.beginId
+            && x.ende.projektzeitNull && x.ende.tail == x.erwartet;
+    };
+    pruefe (gleich (r) && gleich (a) && a.puffer == 0 && r.puffer > 0,
+            "312/M-64 (a) release_schliesst_wie_reset (Teilfall von 312/M-59) - "
+            "releaseResources() erzeugt dasselbe end wie reset() und gibt zusaetzlich die "
+            "Blockpuffer frei",
+            juce::String ("reset: ") + nak312::endeText (r.ende) + ", Puffer "
+                + juce::String ((juce::int64) r.puffer) + "; release: "
+                + nak312::endeText (a.ende) + ", Puffer " + juce::String ((juce::int64) a.puffer));
+    pruefe (a.danach.abweichend == 0 && a.danach.hoerbar == 0,
+            "312/M-64 (a): ein Block ohne neues prepareToPlay laeuft nach releaseResources "
+            "unberuehrt durch - ohne Puffer faerbt nichts, der Ausgang ist bitgleich",
+            juce::String (a.danach.abweichend) + " abweichend von 5");
+    pruefe (gleich (b),
+            "312/M-64 (b) prepare_schliesst_wie_bisher (Teilfall von 312/M-59) - "
+            "prepareToPlay erzeugt dasselbe end wie reset() und wie vor diesem "
+            "Aenderungssatz",
+            nak312::endeText (b.ende));
+}
+
+/** 312/M-65: ohne Auftrag erzeugen reset() und releaseResources() nichts. */
+static void nak312M65 (const Pruefer& pruefe, double fs, int bs)
+{
+    nak312::Stand s (fs, bs);
+    s.p->setzeEditorOffen (true);
+    const bool main = s.p->setzeBindung ("hub", "M-65", {})
+                   && s.klassifikationIst (nakama::state::Klassifikation::main);
+    (void) s.bloecke (10);
+    (void) s.ernte();
+    juce::MemoryBlock vorher, nachher;
+    s.p->getStateInformation (vorher);
+    nak312::Dirty dirty;
+    s.p->addListener (&dirty);
+    s.p->reset();
+    s.p->releaseResources();
+    s.p->removeListener (&dirty);
+    s.p->getStateInformation (nachher);
+    const int imRing = s.p->interventionsRingFuellstandFuerTest();
+    const auto ernte = s.ernte();
+    pruefe (main && imRing == 0 && ernte.begins == 0 && ernte.ends == 0
+                && vorher == nachher && dirty.nichtParameter.load() == 0,
+            "312/M-65 ohne_auftrag_kein_ereignis (Teilfall von 312/M-59) - reset() und "
+            "releaseResources() ohne Auftrag: kein Ereignis, Statebytes bytegleich, kein "
+            "Host-Dirty",
+            juce::String (imRing) + " im Ring, " + nak312::ereignisText (ernte) + ", "
+                + juce::String ((int) vorher.getSize()) + "/" + juce::String ((int) nachher.getSize())
+                + " Byte, Dirty " + juce::String (dirty.nichtParameter.load()));
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -2013,6 +2410,11 @@ int main()
     nak312M56 (pruefer, fs, bs);
     nak312M84 (pruefer, fs, bs);
     nak312M84ImAusfade (pruefer, fs, bs);
+    nak312M59 (pruefer, fs, bs);
+    nak312M86 (pruefer, fs, bs);
+    nak312M62 (pruefer, fs, bs);
+    nak312M64 (pruefer, fs, bs);
+    nak312M65 (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {

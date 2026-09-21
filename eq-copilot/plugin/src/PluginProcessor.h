@@ -109,7 +109,13 @@ public:
 
     // ── AudioProcessor ──
     void prepareToPlay (double samplerate, int blockSize) override;
-    void releaseResources() override {}
+    // NAK-312 R-312-5: beide schliessen das offene Interventionsintervall der
+    // Hoermarkierung mit genau einem `end` und beenden ihren Klang; der
+    // Auftrag bleibt (U56). reset() nimmt keine Sperre und keinen Speicher
+    // (VST3: setProcessing darf im Audiothread laufen); releaseResources gibt
+    // zusaetzlich die Blockpuffer frei (prozessor/Hostbruecke.cpp).
+    void releaseResources() override;
+    void reset() override;
     bool isBusesLayoutSupported (const BusesLayout& layout) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
@@ -666,6 +672,18 @@ public:
     /// NAK-312 312/M-58: steht beim Publisher ein eingereichter Auftrag?
     /// Nur vom Nachrichtenthread lesen - er ist der einzige Publisher.
     bool markierungZielGesetztFuerTest() const { return markierung.zielGesetzt(); }
+    /// NAK-312 312/M-62: das Ueberlaufbit des PROZESSORS allein - `v3Status()`
+    /// verodert es mit dem des Rings, und `interventionsRingFuellenFuerTest`
+    /// setzt schon das des Rings.
+    bool interventionsRingUeberlaufFuerTest() const
+    { return interventionsRingUeberlauf.load (std::memory_order_relaxed); }
+    /// NAK-312 312/M-60, 312/M-64: die Blockpuffer (Trockenkopie des
+    /// Vergleichspegels in Samples, Wet-Puffer der Markierung in Samples je
+    /// Kanal) und die Zuteilungen des Wet-Puffers. Nur ohne laufenden Block.
+    std::size_t blockpufferFuerTest() const
+    { return versuchTrocken.capacity() + (std::size_t) markierung.pufferKapazitaet(); }
+    std::uint32_t markierungsPufferZuteilungenFuerTest() const
+    { return markierung.pufferZuteilungen(); }
 
     /** NAK-180 Nacharbeit 1 (EP-18/R3b): DER Heartbeat-Schritt der
         Sendeschleife, gefahren vom Bein - mit dem echten Hello und dem echten
@@ -1384,6 +1402,10 @@ private:
     // Setzt die Spiegelung nach jeder Zustandsaenderung. Ruft der Aufrufer
     // unter gehaltenem `bindungMutex`.
     void spiegleKlassifikation();
+    // NAK-312 R-312-5: der gemeinsame Abschluss von reset() und
+    // releaseResources() - Markierung hart aus, ein faelliges `end` ueber den
+    // RT-Ring, ohne Sperre und ohne Speicher (prozessor/Hostbruecke.cpp).
+    void markierungAbbrechen() noexcept;
     // Meldet dem Host eine gespeicherte Aenderung (withNonParameterStateChanged)
     // — der VST3-Wrapper setzt daraus IComponentHandler2::setDirty.
     void meldeHostDirty();

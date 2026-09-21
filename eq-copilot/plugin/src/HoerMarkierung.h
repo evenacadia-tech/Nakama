@@ -304,6 +304,7 @@ public:
         }
         wetKapazitaet = std::max (maxBlock, 16);
         wet.calloc ((size_t) wetKapazitaet * 2);
+        ++zuteilungen;
         hartAus();
         // §7.1 E-01: der Oversize-Riegel gilt "bis zum naechsten
         // prepareToPlay". Der ruft beide Vorbereiter, also loesen ihn auch
@@ -317,6 +318,45 @@ public:
         // frueh gelten - genau die Seite des Fehlers, die §34.2 ausschliesst.
         // Der Prozessor fuehrt die Sendebuchfuehrung als dritten Term (E1).
         return uebergang;
+    }
+
+    /** reset()/releaseResources()-Kontext (nie gleichzeitig mit verarbeite).
+
+        🔑 NAK-312 R-312-5: derselbe Abbruch wie in `vorbereiten` - hart aus,
+        der faellige Uebergang wird mit der GEZAEHLTEN Hoerdauer
+        zurueckgegeben, und `warHoerbar` und `hoerbareSamples` fallen wie dort
+        und in `setzeSamplerate` (H1: sonst meldete der naechste Block ohne
+        Erlaubnis ein zweites `endete`, und ein Block mit Erlaubnis faerbte,
+        ohne `begann` zu melden). Anders als `vorbereiten` teilt er nichts zu:
+        der VST3-Wrapper ruft reset() aus `setProcessing (false)`, und das darf
+        der Host im Audiothread rufen.
+
+        Unberuehrt bleiben der Oversize-Riegel (er gilt bis zum naechsten
+        prepareToPlay, §7.1 E-01) und der Auftrag (`ausGewuenscht`, `lokal`,
+        Briefkasten): er klingt beim naechsten erlaubten Block neu (U56). */
+    Schritt brichAb() noexcept
+    {
+        Schritt uebergang;
+        if (warHoerbar)
+        {
+            uebergang.endete = true;
+            uebergang.dauerSamples = hoerbareSamples;
+        }
+        hartAus();
+        warHoerbar = false;
+        hoerbareSamples = 0;
+        // `hoerbarAtomic` bleibt UNBERUEHRT - dieselbe Begruendung wie in
+        // `vorbereiten`.
+        return uebergang;
+    }
+
+    /** releaseResources-Kontext: gibt den Wet-Puffer frei. Bis zum naechsten
+        `vorbereiten` ist jeder Block ein Oversizeblock; nach `brichAb` klingt
+        nichts, also bleibt er unberuehrt. */
+    void gibPufferFrei() noexcept
+    {
+        wet.free();
+        wetKapazitaet = 0;
     }
 
     // ── Übergabe Message-Thread → Audiothread (NAK-246 D1, R-D1) ──────────
@@ -696,6 +736,13 @@ public:
     float phase() const       { return phaseAtomic.load (std::memory_order_relaxed); }
     bool  zielGesetzt() const { return zielGesetztAtomic.load (std::memory_order_relaxed); }
 
+    /** NAK-312 312/M-60, 312/M-64: wie oft `vorbereiten` den Wet-Puffer neu
+        zugeteilt hat, und wie viele Samples je Kanal er gerade fasst. Nur
+        lesen, wenn kein `verarbeite` laeuft. `HeapBlock` teilt mit
+        `std::calloc` zu - ein Zaehler auf `operator new` saehe das nicht. */
+    std::uint32_t pufferZuteilungen() const noexcept { return zuteilungen; }
+    int pufferKapazitaet() const noexcept { return wetKapazitaet; }
+
 private:
     struct Zust { double s1 = 0.0, s2 = 0.0; };
 
@@ -805,6 +852,7 @@ private:
 
     juce::HeapBlock<float> wet;
     int wetKapazitaet = 0;
+    std::uint32_t zuteilungen = 0;   // NAK-312: Zuteilungen des Wet-Puffers (prepareToPlay-Kontext)
 
     // Audiothread → UI/Heartbeat
     std::atomic<bool>  hoerbarAtomic { false };

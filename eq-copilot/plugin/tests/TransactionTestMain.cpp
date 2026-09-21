@@ -71,7 +71,10 @@
          `--parameter-golden <text> <bin>`) gilt Zeile fuer Zeile und Byte fuer
          Byte, der Sondenordner nennt die APVTS-Klasse nicht mehr, die
          Listener sind paarweise, und unter Hostautomation aus einem zweiten
-         Thread bleibt die Echtzeitwache bei 0.
+         Thread bleibt die Echtzeitwache bei 0. Seit der Nacharbeit 1 der
+         Etappe 5 (Abschnitt ZC, Kanonteil von 312/M-88, R-312-19) ein
+         Textriegel: kein Quelltext der zwei ausgelieferten Buendel ruft einen
+         Weg, der den Hostprozess beendet oder sein Fenster schliesst.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -5889,6 +5892,85 @@ void nak312Parameteranbindung()
     }
 }
 
+/*  NAK-312 Etappe 5, Nacharbeit 1 (R-312-19, 312/M-88 Kanonteil). LZ-1 war ein
+    regulaeres Programmende von FL (Exit 0, FL schreibt seine Einstellungen,
+    Energie-Ereignis beim Ende - dieselbe Spur wie ein WM_CLOSE an das
+    Hauptfenster), gemessen auch am Produktstand der Etappe 4. Ohne Host
+    messbar ist davon allein die Pluginseite: kein Quelltext der zwei
+    ausgelieferten Buendel ruft einen Weg, der den Hostprozess beendet oder
+    sein Fenster schliesst. Textriegel, fail-closed; Kommentare zaehlen mit. */
+bool nennt (const std::string& text, const std::string& wort, bool nurAufruf)
+{
+    const auto istBezeichner = [] (char c)
+    {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+    };
+    for (auto pos = text.find (wort); pos != std::string::npos; pos = text.find (wort, pos + 1))
+    {
+        if (pos > 0 && istBezeichner (text[pos - 1]))
+            continue;
+        // Ein Mitgliedsaufruf (`schloss.exit()`, `p->exit()`) ist kein Prozessende.
+        if (nurAufruf && pos > 0 && (text[pos - 1] == '.' || text[pos - 1] == '>'))
+            continue;
+        auto nach = pos + wort.size();
+        if (nach < text.size() && istBezeichner (text[nach]))
+            continue;
+        if (! nurAufruf)
+            return true;
+        while (nach < text.size() && (text[nach] == ' ' || text[nach] == '\t'))
+            ++nach;
+        if (nach < text.size() && text[nach] == '(')
+            return true;
+    }
+    return false;
+}
+
+void nak312HostEnde()
+{
+    abschnitt ("ZC - NAK-312 Etappe 5 Nacharbeit 1: kein Weg zum Hostende im Pluginquelltext (312/M-88 Kanonteil, R-312-19)");
+
+    // Die Quellordner der Buendel EqCopilot und NakamaProbeeq (CMakeLists.txt:
+    // NAKAMA_PROZESSOR_QUELLEN, NAKAMA_KERN_QUELLEN, die Sondenziele) samt der
+    // Hostbruecke; tests/, probe/, hostprobe/ und spike/ liefern kein Buendel.
+    const char* const ordner[] = { "src", "sonde", "dsp", "state", "vertrag", "core", "hostbridge" };
+    // Beendet den Prozess, schliesst sein Fenster oder beendet seine Nachrichtenschleife.
+    const char* const woerter[] = { "ExitProcess", "TerminateProcess", "PostQuitMessage", "FatalAppExit",
+                                    "quick_exit", "_Exit", "WM_CLOSE", "WM_QUIT", "SC_CLOSE",
+                                    "systemRequestedQuit", "JUCEApplicationBase" };
+    // Als Aufruf: exit (...) und _exit (...); dazu JUCEs Process::terminate, das ExitProcess (1) ruft.
+    // std::terminate bleibt erlaubt (NAK-289): es endet mit WER-Spur, nie still wie LZ-1.
+    const char* const aufrufe[] = { "exit", "_exit" };
+    int dateien = 0;
+    bool alleOrdner = true;
+    std::string treffer;
+    for (const auto* o : ordner)
+    {
+        const auto dir = wurzel().getChildFile ("eq-copilot/plugin").getChildFile (o);
+        if (! dir.isDirectory()) { alleOrdner = false; treffer += std::string ("Ordner fehlt: ") + o + "; "; continue; }
+        for (const auto& f : dir.findChildFiles (juce::File::findFiles, true, "*.cpp;*.h"))
+        {
+            ++dateien;
+            const auto text = f.loadFileAsString().toStdString();
+            const auto name = str (f.getRelativePathFrom (wurzel()));
+            for (const auto* w : woerter)
+                if (nennt (text, w, false))
+                    treffer += name + ": " + w + "; ";
+            for (const auto* a : aufrufe)
+                if (nennt (text, a, true))
+                    treffer += name + ": " + a + " (...); ";
+            if (text.find ("Process::terminate") != std::string::npos)
+                treffer += name + ": Process::terminate; ";
+        }
+    }
+    pruefe (alleOrdner && dateien >= 100 && treffer.empty(),
+            "312/M-88 kein_weg_zum_hostende_im_pluginquelltext (Kanonteil von M-88, R-312-19): kein Quelltext unter "
+            "src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ruft ExitProcess, "
+            "TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder "
+            "systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase; fail-closed: fehlt "
+            "ein Ordner oder sind es weniger als 100 Dateien, ist es rot",
+            std::to_string (dateien) + " Dateien" + (treffer.empty() ? std::string (", kein Treffer") : ", Treffer: " + treffer));
+}
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -5963,6 +6045,9 @@ int main (int argc, char* argv[])
 
     // NAK-312 Etappe 5, zweiter Aenderungssatz (T3-01-02; R-312-4): die Parameteranbindung ohne APVTS
     nak312Parameteranbindung();
+
+    // NAK-312 Etappe 5, Nacharbeit 1 (R-312-19): kein Weg zum Hostende im Pluginquelltext
+    nak312HostEnde();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

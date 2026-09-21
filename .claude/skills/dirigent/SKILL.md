@@ -8,8 +8,8 @@ Der Dirigent ist eine interaktive Fable-Session:
 pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 ```
 
-Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, zeigt
-`tools/dirigent/logo.ps1` und ruft Claude mit `claude-fable-5-1[1m]`, `xhigh`,
+Der Starter öffnet das Terminalprofil `Nakama · Champagne Night` und ruft
+Claude mit `claude-fable-5-1[1m]`, `xhigh`,
 Modus nach §1, `--remote-control nakama-dirigent` (User 30.08.2026)
 und `/dirigent` auf (User 01.09.2026; `[1m]` trägt das 1M-Fenster für
 §5). Endet Claude, bleibt das Fenster: liegt
@@ -185,8 +185,8 @@ Kein Selbstbericht zählt:
   und fährt die Szenarien. Exit 0 = gemessen oder begründet übersprungen
   (Diff ohne Produktpfad, fremdes FL-Projekt offen), Exit 4 = Szenario
   verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
-  `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest.
-  FL-Zugriff, MCP-Server und Diagnoseprojekt: `tools/fl/LIES-MICH.md`.
+  `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest
+  (`tools/fl/LIES-MICH.md`).
 
 Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
 `origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler
@@ -326,8 +326,7 @@ Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids
 nur als Datum, Wortlaut bleibt in Abnahmen und Register. Ein Riss der
 Codebase wird datierter Registerpunkt [Planarbeit · Pflegeschritt] oder
 [Werkzeug], nie stilles Nachbessern. Bei Phasengates zusätzlich der volle
-`/freshen`-Lauf nach dem Playbook. Übergaben stehen im Manifest, Planstand
-und Register; `docs/NEXT-SESSION.md` ist nur ein Zeiger.
+`/freshen`-Lauf nach dem Playbook.
 
 Dann: temporäre Codex-Dateien und `$env:TEMP\nakama-dirigent-<session-id>-*.json`
 löschen, `claude rm <worker-id>`, mit beendetem Beobachter, `CronList` und
@@ -339,10 +338,12 @@ Opus baut, Codex prüft (User 01.09.2026): Der Bauer ist ein frischer
 Opus-Worker, Effort `xhigh` (User 19.09.2026, NAK-335), kompiliert, fährt
 Tests und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der
 Prüfer ist ein frischer Codex-Thread (§3.4); Bauer und Prüfer sind nie
-derselbe Thread. Codex als Bauer (`workspace-write`, Astra max) nur als
-Fallback ab 85 % Claude-Wochennutzung; der Dirigent committet dessen Stand
-nach eigenem Kanonlauf als Zwischenstand (§3.1). Codex an der Grenze →
-frischer Opus-Thread prüft; Opus-Prüfer und -Validierer immer `max`.
+derselbe Thread. Codex an der Grenze → frischer Opus-Thread prüft;
+Opus-Prüfer und -Validierer immer `max`. Ab 90 % Claude-Woche (User
+21.09.2026) kein Opus-Lauf mehr: auf den Codex-Reset warten, dann baut Codex
+(`workspace-write`, `gpt-5.6-sol` xhigh) und prüft `gpt-6-astra` high, nie
+max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent nach eigenem
+Kanonlauf als Zwischenstand (§3.1).
 
 ### 3.7 Phasengate-Prüfung
 
@@ -401,7 +402,7 @@ Produktfragen und Handgriffe nur 9:00–23:00 PC-Lokalzeit (`Get-Date`; User
   keine Kontextmaße; ohne Messung heißt es „nicht gemessen". Nach einer
   Compaction bleibt der Anker unbestätigt, bis Planstand, Ticketquelle und
   HEAD neu abgeglichen sind.
-- Kontingente: ab 85 % warnen, ab 95 % keine neue Arbeitsphase; laufender
+- Kontingente: ab 85 % warnen, ab 95 % (Claude 90 %, §3.6) keine neue Arbeitsphase; laufender
   Abschluss nur ohne Qualitätsverlust. Ausnahme bei absehbarem Wochenreset
   (User 11.09.2026): Worker und Prüfrunden laufen weiter, ein Abbruch
   hinterlässt einen Ticketstand nach §3.1.

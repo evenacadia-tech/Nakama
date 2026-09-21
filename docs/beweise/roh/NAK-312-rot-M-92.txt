@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis M-92 (Manifest §7.1)
+
+Matrixzeile: 312/M-92 (NAK-349, oeffnen<->schliessen, Handgriff bleibt; Manifest §35.2), Etikett Regressionswache (in der Gegenprobe gruen).
+Zusage: der normale Handgriff bleibt derselbe - die Instanz bekommt eine neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-92 normaler_handgriff_bleibt.
+Mutation (Matrix): die Lebendpruefung scheitert unbedingt.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:22:23) ==
+3ECDD6EA3BA6A36A1AC649CD47725EB0C0DE45836F83A1E892E2FCFD18457D24  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:22:23) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 633
+-- vorher:
+   |             auto* ed = safe.getComponent();
+   |             if (ed == nullptr)
+   |                 return;
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest()
+-- nachher:
+   |             auto* ed = safe.getComponent();
+   |             if (ed == nullptr || ed != nullptr) // ROTBEWEIS 312/M-92: Lebendpruefung scheitert unbedingt
+   |                 return;
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest()
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:22:23) ==
+Bau Exit 0 (2026-09-21 23:22:29)
+Binary EqCopShot.exe 23:22:29, juengste mutierte Quelle PluginEditor.cpp 23:22:23, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+     FEHLER  312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+   NAK-312 KONFLIKT 3 geprueft, 1 Fehler
+Lauf Exit 1 (2026-09-21 23:22:34)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:22:34) ==
+3ECDD6EA3BA6A36A1AC649CD47725EB0C0DE45836F83A1E892E2FCFD18457D24  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:22:34) ==
+Bau Exit 0 (2026-09-21 23:22:40)
+Binary EqCopShot.exe 23:22:40, juengste mutierte Quelle PluginEditor.cpp 23:22:34, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+   NAK-312 KONFLIKT 3 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:22:45)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - bei lebendem Editor keine neue Kennung, 0 Host-Dirty, keine Statusmeldung; die Box schliesst trotzdem (dismiss im Panel).
+Mitgefallen: keine; 312/M-91 bleibt gruen. Nach der bytegleichen Ruecknahme gruen (3/3).

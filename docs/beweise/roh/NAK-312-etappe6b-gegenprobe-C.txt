@@ -1,0 +1,17 @@
+# NAK-312 Etappe 6b, Aenderungssatz C - Gegenprobe am Stand B (heute rot, R-312-23)
+
+Basisvariante: Stand B (53754c66c68692397c0ee983ee0c07ad4f8b7267) plus allein der Testzugang in eq-copilot/plugin/src/PluginEditor.cpp: die Funktion testzugang::konfliktMarkeFuerTest() und die Marke als ERSTE Anweisung des Rueckrufs in zeigeKonflikt, ohne Editorzustand zu benutzen (R-312-23: der Prozessorverweis liegt im Editor; jede Marke nach einer Dereferenzierung von this liefe im toten Editor). Der Rueckruf faengt weiter rohes this. Tests in der Endfassung.
+SHA-256 der Basisvariante: E1E1A80DDA13EC63E5272506F790C3DE576A93064F2819C840F76EBEED896DF9 eq-copilot/plugin/src/PluginEditor.cpp; git diff --stat 53754c66 ueber eq-copilot/plugin/src: allein PluginEditor.cpp, 20 Zeilen hinzu (der Testzugang).
+Bau EqCopShot 2026-09-21 23:20:48 bis 23:20:55, Exit 0; Binary 23:20:55. Lauf 23:20:55 bis 23:21:00.
+
+B15 EqCopShot --sonde012-suite: Exit 1 (der Prozess endet regulaer)
+SONDE-012 SHOTS 29/29 gruen
+NAK-312 PANEL 3 geprueft, 0 Fehler
+NAK-312 LABEL 15 geprueft, 0 Fehler
+NAK-312 ZIEL 11 geprueft, 0 Fehler
+  FEHLER  312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 0, Kennung unveraendert, Status '']
+  FEHLER  312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 0, Kennung unveraendert, Status '']
+  ok      312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status 'Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.']
+NAK-312 KONFLIKT 3 geprueft, 2 Fehler
+
+Auswertung: rot sind genau die Pruefungen mit Etikett heute rot - 312/M-91 (a) und (b): der gepostete Klick wird nach dem Ende des Editors zugestellt und erreicht den Rueckruf (Marke 1); ohne die Marke laese er this->processor aus freigegebenem Speicher (docs/beweise/roh/NAK-349-quellvalidierung.md V-3). Gruen: 312/M-92 (Regressionswache) und alle uebrigen Faelle des Beins.

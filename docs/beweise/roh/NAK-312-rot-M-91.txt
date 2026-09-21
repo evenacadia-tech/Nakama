@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis M-91 (Manifest §7.1)
+
+Matrixzeile: 312/M-91 (NAK-349, R-312-2, R-312-23; Manifest §35.2), Etikett heute rot; Gegenprobe am Stand B in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-C.txt (Marke 1 in beiden Varianten).
+Zusage: der Rueckruf ist nach dem Ende des Editors wirkungslos - die Marke zaehlt 0 Zugriffe nach dem Ende, die instanceId ist unveraendert, 0 Host-Dirty-Meldungen.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-91 (a) Prozessor lebt, (b) Prozessor danach zerstoert.
+Mutation an der Zeile, die die Zusage traegt (Matrix): die Lebendpruefung ueber den SafePointer entfernt. Die Marke steht dahinter und vor jedem Zugriff auf Editor und Prozessor; sie zaehlt und kehrt zurueck, bevor der Nullzeiger oder ein toter Prozessor beruehrt wird (R-312-12, R-312-23) - kein Lauf in undefiniertem Verhalten.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:22:01) ==
+3ECDD6EA3BA6A36A1AC649CD47725EB0C0DE45836F83A1E892E2FCFD18457D24  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:22:01) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 633
+-- vorher:
+   |             auto* ed = safe.getComponent();
+   |             if (ed == nullptr)
+   |                 return;
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest()
+-- nachher:
+   |             auto* ed = safe.getComponent();
+   |             // ROTBEWEIS 312/M-91: Lebendpruefung entfernt
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest()
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:22:01) ==
+Bau Exit 0 (2026-09-21 23:22:07)
+Binary EqCopShot.exe 23:22:07, juengste mutierte Quelle PluginEditor.cpp 23:22:01, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+     FEHLER  312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 0, Kennung unveraendert, Status '']
+     FEHLER  312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 0, Kennung unveraendert, Status '']
+   NAK-312 KONFLIKT 3 geprueft, 2 Fehler
+Lauf Exit 1 (2026-09-21 23:22:12)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:22:12) ==
+3ECDD6EA3BA6A36A1AC649CD47725EB0C0DE45836F83A1E892E2FCFD18457D24  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:22:12) ==
+Bau Exit 0 (2026-09-21 23:22:18)
+Binary EqCopShot.exe 23:22:18, juengste mutierte Quelle PluginEditor.cpp 23:22:12, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+   NAK-312 KONFLIKT 3 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:22:23)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - (a) und (b): der gepostete Klick erreicht nach dem Ende des Editors den Zugriffspunkt, Marke 1; Kennung unveraendert und 0 Host-Dirty nur, weil die Marke den Rueckruf anhaelt.
+Mitgefallen: keine; 312/M-92 bleibt gruen (der Editor lebt dort). Nach der bytegleichen Ruecknahme gruen (3/3).

@@ -20,7 +20,10 @@
 // 312/M-71, R-312-9) am echten Editor auf einem echten Main, das
 // Ersatz-Hauptziel und die Aktionssteuerung (312/M-73 bis M-75, M-85,
 // R-312-6; dazu vier Bilder mit 20, 21, 32 und 64 Quellen im Sichtsatz und
-// das Bild nak312-hauptziel-ausserhalb.png eines Hauptziels hinter Zeile 20).
+// das Bild nak312-hauptziel-ausserhalb.png eines Hauptziels hinter Zeile 20)
+// und das Kennungskonflikt-Panel (312/M-91, 312/M-92, R-312-2, R-312-23):
+// gepostete Klicks nach dem Ende des Editors sind wirkungslos, der normale
+// Handgriff bleibt.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -292,6 +295,7 @@ namespace eqcop::testzugang
 {
 // Definiert in src/PluginEditor.cpp unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3.
 std::function<bool()>& messpunktMarkeFuerTest();
+std::function<bool()>& konfliktMarkeFuerTest();   // NAK-312 Etappe 6b (NAK-349)
 }
 
 namespace
@@ -1053,6 +1057,149 @@ bool nak312Ersatzziel (const juce::File& ordner)
     std::printf ("NAK-312 ZIEL %d geprueft, %d Fehler\n", zielGeprueft, zielFehler);
     return zielFehler == 0 && zielGeprueft == 11;
 }
+
+//==============================================================================
+// NAK-312 Etappe 6b, Aenderungssatz C (NAK-349, R-312-2, R-312-23): das
+// Kennungskonflikt-Panel.
+//
+// Der Knopf "Dieser Instanz eine neue Kennung geben" loest seinen Rueckruf ueber
+// eine gepostete Nachricht aus, wenn Enter oder die Barrierefreiheit ihn
+// drueckt (`Button::triggerClick`). Baut der Host den Editor zwischen Einstellen
+// und Zustellung ab, steht die Aufraeumnachricht des Modal-Managers HINTER dem
+// Klick (docs/beweise/roh/NAK-349-quellvalidierung.md V-2): der Rueckruf laeuft
+// bei lebender Box auf totem Editor. R-312-2: nach dem Ende des Editors ist er
+// wirkungslos, und der Handgriff bleibt derselbe. Die MARKE steht vor jedem
+// Zugriff auf Editor und Prozessor (R-312-23); ein Rueckruf, der sie nach dem
+// Ende erreicht, wird gezaehlt und kehrt ohne Zugriff zurueck. Der Beleg ist die
+// gezaehlte Marke, nie ein Absturz.
+
+enum class KonfliktFolge { editorEnde, editorUndProzessorEnde, editorLebt };
+
+struct KonfliktLauf
+{
+    bool geoeffnet = false, panelWeg = false;
+    int  marke = 0, dirty = 0;
+    juce::String kennungVorher, kennungBeimEnde, status;
+};
+
+/** Ein Legacy-Gen mit offenem Editor, das Kennungskonflikt-Popover ueber den
+    normalen Handgriff geoeffnet (derselbe onClick wie ein Klick auf "Kennung
+    doppelt!"), dann `triggerClick()` auf den Knopf im Panel. */
+KonfliktLauf konfliktLauf (KonfliktFolge folge)
+{
+    KonfliktLauf l;
+    struct Vogel { bool lebt = true; int marke = 0; };
+    auto vogel = std::make_shared<Vogel>();
+    eqcop::testzugang::konfliktMarkeFuerTest() = [vogel]
+    {
+        if (! vogel->lebt)
+        {
+            ++vogel->marke;
+            return false;      // zurueck, ohne Editor oder Prozessor anzufassen
+        }
+        return true;
+    };
+
+    auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+    PanelDirty dirty;
+    proz->addListener (&dirty);
+    l.kennungVorher = proz->holeZustandKopie().common.instanceId;
+    auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
+    editor->setSize (1200, 832);
+
+    juce::TextButton* knopf = nullptr;
+    for (auto* kind : editor->getChildren())
+        if (auto* b = dynamic_cast<juce::TextButton*> (kind))
+            if (b->getButtonText() == "Kennung doppelt!" && b->onClick)
+                knopf = b;
+    if (knopf != nullptr)
+        knopf->onClick();
+    auto* box = erstesKind<juce::CallOutBox> (*editor);
+    juce::Component* panel = box != nullptr ? box->getChildComponent (0) : nullptr;
+    auto* neuKnopf = panel != nullptr ? erstesKind<juce::TextButton> (*panel) : nullptr;
+    l.geoeffnet = knopf != nullptr && box != nullptr && panel != nullptr && neuKnopf != nullptr;
+    const juce::Component::SafePointer<juce::Component> panelSicher (panel);
+
+    if (neuKnopf != nullptr)
+        neuKnopf->triggerClick();   // der gepostete Weg von Enter
+    if (folge == KonfliktFolge::editorLebt)
+    {
+        // 312/M-92: der Klick laeuft bei lebendem Editor; danach Panel, Editor, Prozessor.
+        l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
+        if (auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get()))
+            l.status = ed->statusMeldungFuerTest();
+        editor.reset();
+        vogel->lebt = false;
+    }
+    else
+    {
+        // 312/M-91: Editor zerstoeren, in der zweiten Variante danach auch den
+        // Prozessor, DANN die Nachrichtenschleife pumpen.
+        editor.reset();
+        vogel->lebt = false;             // Ende des Eigentuemers
+        if (folge == KonfliktFolge::editorUndProzessorEnde)
+        {
+            l.kennungBeimEnde = proz->holeZustandKopie().common.instanceId;
+            l.dirty = dirty.nichtParameter;
+            proz->removeListener (&dirty);
+            proz.reset();
+        }
+        l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
+    }
+    if (proz != nullptr)
+    {
+        l.kennungBeimEnde = proz->holeZustandKopie().common.instanceId;
+        l.dirty = dirty.nichtParameter;
+        proz->removeListener (&dirty);
+        proz.reset();
+    }
+    l.marke = vogel->marke;
+    eqcop::testzugang::konfliktMarkeFuerTest() = {};
+    return l;
+}
+
+std::string konfliktText (const KonfliktLauf& l)
+{
+    return "geoeffnet " + std::string (l.geoeffnet ? "ja" : "NEIN") + ", Panel abgebaut "
+         + (l.panelWeg ? "ja" : "NEIN") + ", Marke " + std::to_string (l.marke) + ", Host-Dirty "
+         + std::to_string (l.dirty) + ", Kennung " + (l.kennungBeimEnde == l.kennungVorher ? "unveraendert" : "NEU")
+         + (l.kennungBeimEnde.isEmpty() ? " (leer)" : "") + ", Status '" + l.status.toStdString() + "'";
+}
+
+bool nak312Konfliktpanel()
+{
+    std::printf ("== NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91, 312/M-92, R-312-2, R-312-23) ==\n");
+    int geprueft = 0, fehler = 0;
+    const auto pruefe = [&] (bool ok, const std::string& was, const std::string& detail)
+    {
+        ++geprueft;
+        if (! ok) ++fehler;
+        std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+    };
+
+    const auto a = konfliktLauf (KonfliktFolge::editorEnde);
+    pruefe (a.geoeffnet && a.panelWeg && a.marke == 0 && a.dirty == 0 && a.kennungBeimEnde == a.kennungVorher,
+            "312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover "
+            "offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die "
+            "Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty",
+            konfliktText (a));
+    const auto b = konfliktLauf (KonfliktFolge::editorUndProzessorEnde);
+    pruefe (b.geoeffnet && b.panelWeg && b.marke == 0 && b.dirty == 0 && b.kennungBeimEnde == b.kennungVorher,
+            "312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, "
+            "der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, "
+            "0 Host-Dirty",
+            konfliktText (b));
+    const auto c = konfliktLauf (KonfliktFolge::editorLebt);
+    pruefe (c.geoeffnet && c.panelWeg && c.marke == 0 && c.dirty == 1 && c.kennungBeimEnde != c.kennungVorher
+                && c.kennungBeimEnde.isNotEmpty() && c.status.startsWith ("Neue Kennung vergeben"),
+            "312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft "
+            "bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box "
+            "schliesst",
+            konfliktText (c));
+
+    std::printf ("NAK-312 KONFLIKT %d geprueft, %d Fehler\n", geprueft, fehler);
+    return fehler == 0 && geprueft == 3;
+}
 } // namespace
 
 int main (int argc, char* argv[])
@@ -1072,7 +1219,9 @@ int main (int argc, char* argv[])
         const bool label = nak312Labelentwurf();
         // NAK-312 Etappe 6b (R-312-6): Ersatzziel und Aktionssteuerung.
         const bool ziel = nak312Ersatzziel (ordner);
-        return shots == 0 && panel && label && ziel ? 0 : 1;
+        // NAK-312 Etappe 6b (NAK-349, R-312-2): das Kennungskonflikt-Panel.
+        const bool konflikt = nak312Konfliktpanel();
+        return shots == 0 && panel && label && ziel && konflikt ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

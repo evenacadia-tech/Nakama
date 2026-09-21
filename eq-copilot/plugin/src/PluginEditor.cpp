@@ -548,6 +548,23 @@ void EqCopilotEditor::zeigeHinweise()
                                             hinweisKnopf.getBounds(), this);
 }
 
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace testzugang
+{
+/** NAK-312 Etappe 6b (NAK-349, R-312-12, R-312-23): die Marke des
+    Kennungskonflikt-Panels. Der Rückruf fragt sie hinter der Lebendprüfung
+    und vor seinem ersten Zugriff auf Editor oder Prozessor; liefert sie
+    false, kehrt er ohne Zugriff zurück. Sie liegt außerhalb von Editor und
+    Prozessor, weil ein Bein sie nach deren Ende lesen muss (B15, 312/M-91).
+    Im Produkt gibt es sie nicht. */
+std::function<bool()>& konfliktMarkeFuerTest()
+{
+    static std::function<bool()> marke;
+    return marke;
+}
+} // namespace testzugang
+#endif
+
 // M2, Plan §8.4: die sichtbare Entscheidung beim Kennungs-Konflikt. Zwei
 // Instanzen melden dieselbe Sensor-ID (typisch: Plugin in FL dupliziert) —
 // der User gibt DIESER Instanz eine neue Kennung, die andere behält ihre.
@@ -593,6 +610,15 @@ void EqCopilotEditor::zeigeKonflikt()
         }
     };
 
+    // NAK-312 Etappe 6b (NAK-349, R-312-2): die Box kann den Editor
+    // ueberleben. Ein per Enter oder Barrierefreiheit ausgeloester Klick ist
+    // eine gepostete Nachricht; baut der Host den Editor vor ihrer Zustellung
+    // ab, laeuft der Rueckruf bei lebender Box. Er faengt den Editor deshalb
+    // als SafePointer und prueft ihn VOR jedem Zugriff - ist der Editor fort,
+    // kehrt er zurueck: kein Zugriff, keine Mutation, keine Dirty-Meldung. Den
+    // Prozessor erreicht er nur ueber den lebenden Editor (JUCE zerstoert den
+    // Editor vor seinem Prozessor). Der Handgriff bleibt derselbe.
+    const juce::Component::SafePointer<EqCopilotEditor> safe (this);
     auto inhalt = std::make_unique<KonfliktPanel> (
         u8 ("Zwei Messpunkte melden dieselbe Kennung.\n\n"
             "Das passiert, wenn das Plugin in FL dupliziert wurde — beide Kopien "
@@ -602,12 +628,19 @@ void EqCopilotEditor::zeigeKonflikt()
             "eine neue Kennung. Die andere Instanz behält ihre — dort musst du "
             "nichts tun."),
         s,
-        [this]
+        [safe]
         {
-            statusMeldung = processor.neueSensorId()
+            auto* ed = safe.getComponent();
+            if (ed == nullptr)
+                return;
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+            if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
+                return;   // R-312-12, R-312-23: gezählt, kein Zugriff
+#endif
+            ed->statusMeldung = ed->processor.neueSensorId()
                 ? u8 ("Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.")
-                : juce::String ("State read-only: " + processor.holeStateGrund() + ". No new identity assigned.");
-            statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
+                : juce::String ("State read-only: " + ed->processor.holeStateGrund() + ". No new identity assigned.");
+            ed->statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
         });
 
     juce::CallOutBox::launchAsynchronously (std::move (inhalt),

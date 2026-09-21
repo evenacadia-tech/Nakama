@@ -2631,6 +2631,99 @@ void labelentwurf_ueberlebt_speichern_und_laden()
             beleg.trim() + ", Host-Dirty beim Laden " + juce::String (dirtyNach.nonParam.load()));
     nach->removeListener (&dirtyNach);
 }
+
+/// Eine hex32-instance_id je Nummer (die `id (char)` oben kennt nur 16).
+std::string nummer (int n)
+{
+    return juce::String::toHexString (0x7000 + n).paddedLeft ('0', 32).toStdString();
+}
+
+/// M-76 · der Bestand bleibt unter der Sichtgrenze: ein geladener Stand mit 40
+/// bestaetigten Mitgliedern und einer unbekannten additiven Eigenschaft in
+/// MainProject durchlaeuft die Folge aus 312/M-73 - Editor auf der
+/// Main-Flaeche bei 760x430, die lebende Sicht der 40 Quellen ohne Hauptziel,
+/// das Ersatzziel ueber `stelleZielSicher`, 20 gezeichnete Zeilen -, danach
+/// speichern und in eine frische Instanz laden.
+void bestand_ueberlebt_die_sichtgrenze()
+{
+    std::cout << "== NAK-312 M-76 bestand_ueberlebt_die_sichtgrenze ==\n";
+    std::vector<std::string> ids;
+    for (int i = 0; i < 40; ++i)
+        ids.push_back (nummer (i));
+    juce::MemoryBlock saat;
+    {
+        auto aufbau = nak246d3::mainAnlegen (false, true);
+        for (const auto& instanz : ids)
+            aufbau->v3AntwortFuerTest (ack (aufbau->merkeSourcesCommandFuerTest (Art::confirmJoin, instanz), true));
+        aufbau->sourcesTick();
+        aufbau->getStateInformation (saat);
+    }
+    auto baum = juce::ValueTree::readFromData (saat.getData(), saat.getSize());
+    const juce::var zukunft ("nak312: dieser Build kennt das Feld nicht");
+    baum.getChildWithName ("MainProject").setProperty ("nak312_zukunft_v9", zukunft, nullptr);
+    juce::MemoryBlock mitZukunft;
+    {
+        juce::MemoryOutputStream strom (mitZukunft, false);
+        baum.writeToStream (strom);
+    }
+
+    auto p = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+    p->setzeWorkerDrainFuerTest (false);
+    p->setStateInformation (mitZukunft.getData(), (int) mitZukunft.getSize());
+    const auto geladen = namen (*p);
+    const bool vorher = ! p->stateNurLesen() && geladen.size() == 40
+                     && p->sourcesPersistenteMitgliederFuerTest().size() == 40;
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    std::size_t gezeichnet = 0;
+    bool ersatzGezeichnet = false;
+    {
+        eqcop::EqCopilotEditor editor (*p);
+        editor.timerTickFuerTest();
+        Sm::Sicht sicht;
+        sicht.subscriptionAktiv = true;
+        sicht.fuehrendesMain = id ('f');
+        sicht.mainDarfSchreiben = true;
+        for (int i = 0; i < 40; ++i)
+            sicht.quellen.push_back (zeile (ids[(std::size_t) i], nummer (100 + i), "Eingeschleust",
+                                            (std::uint64_t) (40 - i), false));
+        p->setzeSourcesFixtureFuerTest (std::move (sicht));
+        editor.timerTickFuerTest();
+        gezeichnet = editor.sourcesZeilenFuerTest().size();
+        const auto s = p->sourcesSicht();
+        ersatzGezeichnet = ! s.quellen.empty() && s.quellen.front().hauptziel
+                        && editor.sourcesAktionsZielFuerTest() == s.quellen.front().instanceId;
+    }
+    juce::MemoryBlock gespeichert;
+    p->getStateInformation (gespeichert);
+    const auto zurueck = juce::ValueTree::readFromData (gespeichert.getData(), gespeichert.getSize());
+    const auto nachSpeichern = namen (*p);
+    const bool modellHaelt = p->sourcesPersistenteMitgliederFuerTest().size() == 40;
+    const bool eigenschaftBleibt = zurueck.getChildWithName ("MainProject").getProperty ("nak312_zukunft_v9") == zukunft;
+    p->removeListener (&dirty);
+
+    auto nach = std::make_unique<eqcop::EqCopilotProcessor>();
+    nach->setStateInformation (gespeichert.getData(), (int) gespeichert.getSize());
+    const auto neuGeladen = namen (*nach);
+    pruefe (gezeichnet == 20 && ersatzGezeichnet,
+            "312/M-76 Vorbedingung (Folge aus 312/M-73): 20 gezeichnete Zeilen, das Ersatzziel steht in der "
+            "ersten und traegt die Aktionssteuerung",
+            juce::String ("gezeichnet ") + juce::String ((int) gezeichnet) + ", Ersatz in Zeile 1 "
+                + (ersatzGezeichnet ? "ja" : "NEIN"));
+    pruefe (vorher && nachSpeichern == geladen && modellHaelt
+                && eigenschaftBleibt && neuGeladen == geladen
+                && nach->sourcesPersistenteMitgliederFuerTest().size() == 40 && dirty.nonParam == 0,
+            "312/M-76 bestand_ueberlebt_die_sichtgrenze (R-312-6 Satz 2, speichern<->laden): 40 bestaetigte "
+            "Mitglieder vorher und nachher - im State, im Modell und nach dem Laden in eine frische "
+            "Instanz -, obwohl die Flaeche 20 Zeilen zeichnet und das Ersatzziel in der ersten steht; die "
+            "unbekannte additive Eigenschaft in MainProject reist unveraendert; kein Host-Dirty",
+            juce::String ("geladen ") + juce::String ((int) geladen.size()) + ", Modell nach der Folge "
+                + juce::String ((int) p->sourcesPersistenteMitgliederFuerTest().size()) + ", gezeichnet "
+                + juce::String ((int) gezeichnet) + ", Ersatz in Zeile 1 mit Aktionssteuerung "
+                + (ersatzGezeichnet ? "ja" : "NEIN") + ", gespeichert " + juce::String ((int) nachSpeichern.size())
+                + ", Eigenschaft " + (eigenschaftBleibt ? "gleich" : "WEICHT AB") + ", frisch geladen "
+                + juce::String ((int) neuGeladen.size()) + ", Host-Dirty " + juce::String (dirty.nonParam.load()));
+}
 } // namespace nak312
 } // namespace
 
@@ -2685,6 +2778,8 @@ int main (int argc, char** argv)
     nak283::reloadablehnung_und_ueberholung_sind_unterscheidbar();
     // NAK-312 Etappe 6b (R-312-9): speichern und laden nach dem Labelentwurf (M-72).
     nak312::labelentwurf_ueberlebt_speichern_und_laden();
+    // NAK-312 Etappe 6b (R-312-6): der Bestand bleibt unter der Sichtgrenze (M-76).
+    nak312::bestand_ueberlebt_die_sichtgrenze();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

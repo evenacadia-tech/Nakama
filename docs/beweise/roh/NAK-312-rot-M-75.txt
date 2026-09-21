@@ -1,0 +1,52 @@
+# NAK-312 Rotbeweis M-75 (Manifest §7.1)
+
+Matrixzeile: 312/M-75 (T3-07-05, Zahlenrand Quellenzahl), Etikett Regressionswache (in der Gegenprobe gruen).
+Zusage: 0 Quellen - kein Ersatzziel, keine sichtbare Aktionssteuerung; 1 und 16 Quellen - jede Quelle ist gezeichnet und erreichbar.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-75 (0 Quellen), (1 Quelle), (16 Quellen).
+Mutation (Form Abweichung A-98): die gezeichnete Menge der Aktionssteuerung um eins zu kurz gerechnet. Die Matrixform ('die Ersatzwahl ohne den leeren Fall') liefe mit leerer Liste in undefiniertes Verhalten (Dereferenz von end() einer std::map) und ist deshalb nicht gefahren.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:09:06) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:09:06) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1001
+-- vorher:
+   |     const auto gezeichnet = std::min (sourcesZeilen().size(), sourcesAnzeige.quellen.size());
+-- nachher:
+   |     const auto gezeichnet = std::min (sourcesZeilen().size(), sourcesAnzeige.quellen.size()) - (sourcesAnzeige.quellen.empty() ? 0u : 1u); // ROTBEWEIS 312/M-75: gezeichnete Menge um eins zu kurz
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:09:06) ==
+Bau Exit 0 (2026-09-21 23:09:11)
+Binary EqCopShot.exe 23:09:11, juengste mutierte Quelle PluginEditor.cpp 23:09:06, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel leer]
+     FEHLER  312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+     FEHLER  312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft 2', Aktionsziel A]
+     FEHLER  312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B 'Beta', Host-Dirty 0, Feld '', Aktionsziel leer]
+     FEHLER  312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha draft', Aktionsziel leer]
+   NAK-312 LABEL 15 geprueft, 5 Fehler
+     FEHLER  312/M-75 (1 Quelle) jede_quelle_gezeichnet_und_erreichbar: jede Zeile ist gezeichnet, und ein Klick darauf macht sie zum Hauptziel mit sichtbarem Knopf und Labelfeld  [gezeichnet 1, erreichbar 0 von 1]
+     FEHLER  312/M-75 (16 Quellen) jede_quelle_gezeichnet_und_erreichbar: jede Zeile ist gezeichnet, und ein Klick darauf macht sie zum Hauptziel mit sichtbarem Knopf und Labelfeld  [gezeichnet 16, erreichbar 15 von 16]
+   NAK-312 ZIEL 11 geprueft, 2 Fehler
+Lauf Exit 1 (2026-09-21 23:09:16)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:09:16) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:09:16) ==
+Bau Exit 0 (2026-09-21 23:09:21)
+Binary EqCopShot.exe 23:09:21, juengste mutierte Quelle PluginEditor.cpp 23:09:16, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:09:26)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - (1 Quelle): die einzige Quelle bekommt keine Aktionssteuerung; (16 Quellen): die letzte gezeichnete Zeile ist nicht erreichbar. (0 Quellen) bleibt gruen (dort ist nichts zu verkuerzen).
+Mitgefallen, Grund: 312/M-66 (alle drei), M-67 und M-69 (a) - in ihren Buehnen mit zwei Quellen steht B in der letzten gezeichneten Zeile und wird nie Aktionsziel.
+Nach der bytegleichen Ruecknahme gruen.

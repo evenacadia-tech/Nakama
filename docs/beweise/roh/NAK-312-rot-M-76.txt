@@ -1,0 +1,47 @@
+# NAK-312 Rotbeweis M-76 (Manifest §7.1)
+
+Matrixzeile: 312/M-76 (T3-07-05, Gegenwache State), Etikett Regressionswache (in der Gegenprobe gruen; dort fiel allein die Vorbedingung, die Folge aus 312/M-73).
+Zusage: der State-Bestand bleibt unveraendert - 40 Mitglieder vorher und nachher, kein Mitglied wird zur Anpassung an eine Sichtgrenze geloescht; eine unbekannte additive Eigenschaft bleibt erhalten.
+Bein: B14 EqCopSonde012ProjectReloadTest, Fall 312/M-76 bestand_ueberlebt_die_sichtgrenze.
+Mutation (Matrix: die Sichtgrenze im Modell auf den Bestand anwenden): projektReload in eq-copilot/plugin/src/SourcesModel.cpp uebernimmt hoechstens 20 Mitglieder.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:09:26) ==
+E94ADAFF9F294F9F0C3CF8FCAD53308518BDE4092B4435EFA00D0AB4EEDF20C2  eq-copilot/plugin/src/SourcesModel.cpp
+
+== 2. Mutation (2026-09-21 23:09:26) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 484
+-- vorher:
+   |             && persistent.size() < static_cast<std::size_t> (
+   |                    nakama::state::maxMainProjectMitglieder))
+-- nachher:
+   |             && persistent.size() < 20) // ROTBEWEIS 312/M-76: die Sichtgrenze auf den Bestand angewandt
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:09:26) ==
+Bau Exit 0 (2026-09-21 23:09:31)
+Binary EqCopSonde012ProjectReloadTest.exe 23:09:31, juengste mutierte Quelle SourcesModel.cpp 23:09:26, Binary juenger: True
+     ok      312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty  [2 Mitglieder, Host-Dirty 1]
+     ok      312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern, das Laden meldet kein Dirty  [aaaa='Alpha draft' bbbb='Beta', Host-Dirty beim Laden 0]
+     ok      312/M-76 Vorbedingung (Folge aus 312/M-73): 20 gezeichnete Zeilen, das Ersatzziel steht in der ersten und traegt die Aktionssteuerung  [gezeichnet 20, Ersatz in Zeile 1 ja]
+     FEHLER  312/M-76 bestand_ueberlebt_die_sichtgrenze (R-312-6 Satz 2, speichern<->laden): 40 bestaetigte Mitglieder vorher und nachher - im State, im Modell und nach dem Laden in eine frische Instanz -, obwohl die Flaeche 20 Zeilen zeichnet und das Ersatzziel in der ersten steht; die unbekannte additive Eigenschaft in MainProject reist unveraendert; kein Host-Dirty  [geladen 40, Modell nach der Fo …
+   SONDE-012 ProjectReload: 236/237 gruen
+Lauf Exit 1 (2026-09-21 23:09:40)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:09:40) ==
+E94ADAFF9F294F9F0C3CF8FCAD53308518BDE4092B4435EFA00D0AB4EEDF20C2  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:09:40) ==
+Bau Exit 0 (2026-09-21 23:09:45)
+Binary EqCopSonde012ProjectReloadTest.exe 23:09:45, juengste mutierte Quelle SourcesModel.cpp 23:09:40, Binary juenger: True
+     ok      312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty  [2 Mitglieder, Host-Dirty 1]
+     ok      312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern, das Laden meldet kein Dirty  [aaaa='Alpha draft' bbbb='Beta', Host-Dirty beim Laden 0]
+     ok      312/M-76 Vorbedingung (Folge aus 312/M-73): 20 gezeichnete Zeilen, das Ersatzziel steht in der ersten und traegt die Aktionssteuerung  [gezeichnet 20, Ersatz in Zeile 1 ja]
+     ok      312/M-76 bestand_ueberlebt_die_sichtgrenze (R-312-6 Satz 2, speichern<->laden): 40 bestaetigte Mitglieder vorher und nachher - im State, im Modell und nach dem Laden in eine frische Instanz -, obwohl die Flaeche 20 Zeilen zeichnet und das Ersatzziel in der ersten steht; die unbekannte additive Eigenschaft in MainProject reist unveraendert; kein Host-Dirty  [geladen 40, Modell nach der Fo …
+   SONDE-012 ProjectReload: 237/237 gruen
+Lauf Exit 0 (2026-09-21 23:09:53)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - das Modell traegt nach dem Laden 20 statt 40 Mitglieder.
+Mitgefallen: keine (236/237). Nach der bytegleichen Ruecknahme gruen (237/237).

@@ -115,6 +115,10 @@ public:
     juce::String sourcesLabelTextFuerTest() const { return sourcesLabelFeld.getText(); }
     std::string sourcesAktionsZielFuerTest() const { return sourcesAktionsZiel; }
     std::vector<juce::Rectangle<int>> sourcesZeilenFuerTest() const { return sourcesZeilen(); }
+    // NAK-312 Etappe 6b (312/M-73 bis M-76, M-85, R-312-6): der Zustand der
+    // Aktionssteuerung, wie ihn die Flaeche zeigt.
+    bool sourcesAktionKnopfSichtbarFuerTest() const { return sourcesAktionKnopf.isVisible(); }
+    bool sourcesLabelSichtbarFuerTest() const { return sourcesLabelFeld.isVisible(); }
 #endif
 
 private:

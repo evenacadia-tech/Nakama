@@ -344,6 +344,27 @@ bool inkompatiblerFehler (const std::string& text)
         || text.find ("Broker lehnt ab") != std::string::npos;
 }
 
+/// NAK-312 R-312-6 (T3-07-05 Teil a): die Anzeigeordnung der Quellenliste -
+/// Mixerindex, dann sichtbarer Name (Sortierschluessel, dann Codepunkte),
+/// dann instance_id. EINE Ordnung fuer beide Verbraucher: `sicht()` sortiert
+/// damit, und `stelleZielSicher()` waehlt damit das Ersatz-Hauptziel.
+template <typename Schluessel>
+bool vorInAnzeige (const SourcesModel::Zeile& a, const SourcesModel::Zeile& b,
+                   Schluessel schluessel)
+{
+    if (a.hostMixerIndexVorhanden != b.hostMixerIndexVorhanden)
+        return a.hostMixerIndexVorhanden;
+    if (a.hostMixerIndexVorhanden && a.hostMixerIndex != b.hostMixerIndex)
+        return a.hostMixerIndex < b.hostMixerIndex;
+    const auto af = schluessel (a.sichtbarerName);
+    const auto bf = schluessel (b.sichtbarerName);
+    if (af != bf) return af < bf;
+    const auto ac = a.sichtbarerName.toStdString();
+    const auto bc = b.sichtbarerName.toStdString();
+    if (ac != bc) return ac < bc;
+    return a.instanceId < b.instanceId;
+}
+
 } // namespace
 
 SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
@@ -1650,17 +1671,7 @@ SourcesModel::Sicht SourcesModel::sicht() const
         s.quellen.push_back (e.zeile);
     std::sort (s.quellen.begin(), s.quellen.end(), [] (const Zeile& a, const Zeile& b)
     {
-        if (a.hostMixerIndexVorhanden != b.hostMixerIndexVorhanden)
-            return a.hostMixerIndexVorhanden;
-        if (a.hostMixerIndexVorhanden && a.hostMixerIndex != b.hostMixerIndex)
-            return a.hostMixerIndex < b.hostMixerIndex;
-        const auto af = sortierSchluessel (a.sichtbarerName);
-        const auto bf = sortierSchluessel (b.sichtbarerName);
-        if (af != bf) return af < bf;
-        const auto ac = a.sichtbarerName.toStdString();
-        const auto bc = b.sichtbarerName.toStdString();
-        if (ac != bc) return ac < bc;
-        return a.instanceId < b.instanceId;
+        return vorInAnzeige (a, b, sortierSchluessel);
     });
     for (auto& q : s.quellen)
         q.hauptziel = q.instanceId == hauptziel;
@@ -1773,7 +1784,18 @@ void SourcesModel::stelleZielSicher()
 {
     if (! hauptziel.empty() && eintraege.count (hauptziel) != 0)
         return;
-    hauptziel = eintraege.empty() ? std::string() : eintraege.begin()->first;
+    // NAK-312 R-312-6 (T3-07-05 Teil a): der Ersatz ist die erste Quelle in
+    // ANZEIGEordnung, nicht die kleinste instance_id - dieselbe Ordnung, in
+    // der `sicht()` sortiert und die Flaeche zeichnet. Sie steht damit in der
+    // ersten gezeichneten Zeile, sobald die Flaeche ueberhaupt eine Zeile
+    // herstellt; die Zeilenzahl gehoert der Geometrie und geht nicht in die
+    // Wahl ein. Ohne Eintrag gibt es kein erfundenes Ziel.
+    const auto erste = std::min_element (eintraege.begin(), eintraege.end(),
+        [] (const auto& a, const auto& b)
+        {
+            return vorInAnzeige (a.second.zeile, b.second.zeile, sortierSchluessel);
+        });
+    hauptziel = erste == eintraege.end() ? std::string() : erste->first;
 }
 
 void SourcesModel::aktualisiereName (Eintrag& e)

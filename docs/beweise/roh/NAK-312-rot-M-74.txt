@@ -1,0 +1,134 @@
+# NAK-312 Rotbeweis M-74 (Manifest §7.1)
+
+Matrixzeile: 312/M-74 (T3-07-05, scharfer Knopf, E-312-9, Umordnungsfall), Etikett heute rot; Gegenprobe am Stand A in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-B.txt (Knopf und Labelfeld sichtbar auf dem ungezeichneten Hauptziel).
+Zusage: kein sichtbarer, scharfer Knopf steht auf einer ungezeichneten Quelle - sourcesAktionKnopf und sourcesLabelFeld unsichtbar, sourcesAktionsZiel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch an das Modell. Dazu gemessen (A-99, A-100): der Status sagt, dass das Hauptziel ausserhalb der gezeichneten Liste liegt, und die Beschriftung des Labelfelds verschwindet mit ihm.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-74 (Umordnung durch Beitritt) und (Umordnung durch Hostbusnamen).
+
+# Teil 1 von 3: Mutation an der Zeile, die die Zusage traegt (Matrix) - aktualisiereSourcesSteuerung sucht wieder ueber die ganze Liste
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:07:46) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:07:46) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1001
+-- vorher:
+   |     const auto gezeichnet = std::min (sourcesZeilen().size(), sourcesAnzeige.quellen.size());
+-- nachher:
+   |     const auto gezeichnet = sourcesAnzeige.quellen.size(); // ROTBEWEIS 312/M-74: Suche ueber die ganze Liste
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:07:46) ==
+Bau Exit 0 (2026-09-21 23:07:52)
+Binary EqCopShot.exe 23:07:52, juengste mutierte Quelle PluginEditor.cpp 23:07:46, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Beitritt): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden  [v …
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Hostbusnamen): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden …
+     FEHLER  312/M-85 offener_entwurf_wird_vor_dem_leeren_des_ziels_bestaetigt (E-312-9, R-312-9): 25 bestaetigte Mitglieder, Entwurf fuer das Hauptziel, dieselbe Umordnung, Tick - der Entwurf steht auf der Startquelle, keine fremde Quelle geschrieben, genau 1 Host-Dirty; danach Knopf und Labelfeld unsichtbar  [Label der Startquelle 'Eingeschleust', fremd geschrieben 0; Hauptziel in Anzeigezeile 21,  …
+   NAK-312 ZIEL 11 geprueft, 3 Fehler
+Lauf Exit 1 (2026-09-21 23:07:56)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:07:56) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:07:56) ==
+Bau Exit 0 (2026-09-21 23:08:02)
+Binary EqCopShot.exe 23:08:01, juengste mutierte Quelle PluginEditor.cpp 23:07:56, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:08:06)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+Faellt: beide Umordnungen (Knopf und Labelfeld sichtbar auf dem Hauptziel in Anzeigezeile 21); mitgefallen 312/M-85 an derselben Zeile (das Aktionsziel wird nicht leer, der Entwurf nicht abgeschlossen).
+
+# Teil 2 von 3: die Beschriftung des Labelfelds ohne Bedingung gezeichnet (paintMainFlaeche)
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:08:06) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:08:06) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1470
+-- vorher:
+   |     if (sourcesLabelFeld.isVisible())
+   |     {
+   |         g.setColour (leise);
+-- nachher:
+   |     // ROTBEWEIS 312/M-74: Beschriftung ohne Bedingung
+   |     {
+   |         g.setColour (leise);
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:08:06) ==
+Bau Exit 0 (2026-09-21 23:08:12)
+Binary EqCopShot.exe 23:08:12, juengste mutierte Quelle PluginEditor.cpp 23:08:06, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Beitritt): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden  [v …
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Hostbusnamen): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden …
+   NAK-312 ZIEL 11 geprueft, 2 Fehler
+Lauf Exit 1 (2026-09-21 23:08:16)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:08:16) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:08:16) ==
+Bau Exit 0 (2026-09-21 23:08:21)
+Binary EqCopShot.exe 23:08:21, juengste mutierte Quelle PluginEditor.cpp 23:08:16, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:08:26)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+Faellt: beide Umordnungen allein an der Pixelpruefung der Feldbeschriftung.
+
+# Teil 3 von 3: der Statuszweig 'Main target is outside the drawn list' entfernt
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:08:26) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:08:26) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1029
+-- vorher:
+   |         if (zielUngezeichnet)
+   |             sourcesBedienstatus =
+   |                 "Main target is outside the drawn list - select a drawn source.";
+   |         else if (bestaetigt
+-- nachher:
+   |         // ROTBEWEIS 312/M-74: Statuszweig entfernt
+   |         if (bestaetigt
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:08:26) ==
+Bau Exit 0 (2026-09-21 23:08:31)
+Binary EqCopShot.exe 23:08:31, juengste mutierte Quelle PluginEditor.cpp 23:08:26, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Beitritt): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden  [v …
+     FEHLER  312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Hostbusnamen): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden …
+   NAK-312 ZIEL 11 geprueft, 2 Fehler
+Lauf Exit 1 (2026-09-21 23:08:36)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:08:36) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:08:36) ==
+Bau Exit 0 (2026-09-21 23:08:41)
+Binary EqCopShot.exe 23:08:41, juengste mutierte Quelle PluginEditor.cpp 23:08:36, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:08:45)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+Faellt: beide Umordnungen allein am Status (dort stuende 'Bind the source before editing its stored label.' - fuer eine bestaetigte Quelle falsch).
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - Teil 1 an der Suche ueber die gezeichneten Zeilen; Teil 2 und Teil 3 brechen die zwei dazugemessenen Haelften je einzeln. Nach jeder bytegleichen Ruecknahme gruen (11/11).

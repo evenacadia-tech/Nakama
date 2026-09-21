@@ -1,0 +1,50 @@
+# NAK-312 Rotbeweis M-73 (Manifest §7.1)
+
+Matrixzeile: 312/M-73 (T3-07-05 Teil a, R-312-6), Etikett heute rot; Gegenprobe am Stand A in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-B.txt (das Ersatzziel steht in der letzten Anzeigezeile).
+Zusage: das Ersatzziel ist immer die erste ANGEZEIGTE Quelle in Anzeigeordnung, also eine der Zeilen, die sourcesZeilen() wirklich herstellt - bei 21, 32 und 64 Quellen sind das genau 20.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-73 mit 16, 20, 21, 32 und 64 Quellen (kleinste instance_id in der letzten Anzeigezeile).
+Mutation an der Zeile, die die Zusage traegt (Matrix): stelleZielSicher nimmt wieder eintraege.begin() (die kleinste instance_id) statt der ersten Quelle in Anzeigeordnung.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:07:28) ==
+E94ADAFF9F294F9F0C3CF8FCAD53308518BDE4092B4435EFA00D0AB4EEDF20C2  eq-copilot/plugin/src/SourcesModel.cpp
+
+== 2. Mutation (2026-09-21 23:07:28) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 1798
+-- vorher:
+   |     hauptziel = erste == eintraege.end() ? std::string() : erste->first;
+-- nachher:
+   |     hauptziel = eintraege.empty() ? std::string() : eintraege.begin()->first; // ROTBEWEIS 312/M-73
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:07:28) ==
+Bau Exit 0 (2026-09-21 23:07:32)
+Binary EqCopShot.exe 23:07:32, juengste mutierte Quelle SourcesModel.cpp 23:07:28, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (16 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 16 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 16, gezeichnet 16 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (20 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 20, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (21 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 21, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the  …
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (32 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 32, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the  …
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (64 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 64, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the  …
+   NAK-312 ZIEL 11 geprueft, 5 Fehler
+Lauf Exit 1 (2026-09-21 23:07:37)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:07:37) ==
+E94ADAFF9F294F9F0C3CF8FCAD53308518BDE4092B4435EFA00D0AB4EEDF20C2  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:07:37) ==
+Bau Exit 0 (2026-09-21 23:07:42)
+Binary EqCopShot.exe 23:07:41, juengste mutierte Quelle SourcesModel.cpp 23:07:37, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:07:46)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - in allen fuenf Faellen steht das Ersatzziel in der letzten Anzeigezeile (16, 20, 21, 32, 64); bei 21, 32 und 64 liegt es damit hinter der letzten gezeichneten Zeile, und die Aktionssteuerung bindet an keine Zeile (Aktionsziel leer, Status 'outside the drawn list').
+Mitgefallen: keine. Gruen unter derselben Mutation: 29 Shots, Panel, Labelfaelle, 312/M-74, M-85, M-75 (dort ist das Hauptziel gesetzt oder die Liste leer oder einzeilig).
+Nach der bytegleichen Ruecknahme gruen (11/11).

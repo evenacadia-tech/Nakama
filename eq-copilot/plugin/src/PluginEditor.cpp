@@ -993,14 +993,28 @@ void EqCopilotEditor::uebernehmeSourcesLabel()
 void EqCopilotEditor::aktualisiereSourcesSteuerung()
 {
     const auto vorherigesZiel = sourcesAktionsZiel;
-    const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
-                                  sourcesAnzeige.quellen.end(),
+    // NAK-312 R-312-6, E-312-9: die Aktionssteuerung bindet nur an eine
+    // GEZEICHNETE Zeile - dieselbe Rechnung wie Zeichnen und Klick
+    // (`sourcesZeilen()`). Liegt das Hauptziel dahinter, gibt es kein
+    // Aktionsziel: Knopf und Labelfeld sind unsichtbar, und das Modell bleibt,
+    // wie es ist - kein automatischer Zielwechsel (SONDE-012 U02).
+    const auto gezeichnet = std::min (sourcesZeilen().size(), sourcesAnzeige.quellen.size());
+    const auto gezeichnetEnde = sourcesAnzeige.quellen.begin() + (std::ptrdiff_t) gezeichnet;
+    const auto it = std::find_if (sourcesAnzeige.quellen.begin(), gezeichnetEnde,
         [] (const auto& q) { return q.hauptziel; });
-    sourcesAktionsZiel = it == sourcesAnzeige.quellen.end()
-                           ? std::string() : it->instanceId;
+    const bool hatZiel = it != gezeichnetEnde;
+    const bool zielUngezeichnet = ! hatZiel
+        && std::any_of (gezeichnetEnde, sourcesAnzeige.quellen.end(),
+                        [] (const auto& q) { return q.hauptziel; });
+    // M-85: ein offener Labelentwurf wird nach R-312-9 abgeschlossen, BEVOR
+    // das Aktionsziel leer wird - sonst fiele er in den stillen Rueckweg von
+    // `uebernehmeSourcesLabel`. Das Hauptziel im Modell ist unveraendert, die
+    // Bestaetigung geht also an die Startquelle.
+    if (! hatZiel && ! vorherigesZiel.empty())
+        uebernehmeSourcesLabel();
+    sourcesAktionsZiel = hatZiel ? it->instanceId : std::string();
     if (sourcesAktionsZiel != vorherigesZiel)
         sourcesSchreibfehlerAktiv = false;
-    const bool hatZiel = it != sourcesAnzeige.quellen.end();
     const bool bestaetigt = hatZiel
         && it->mitgliedschaft == SourcesModel::Mitgliedschaft::bestaetigt;
     sourcesAktionKnopf.setButtonText (bestaetigt ? "Remove source" : "Bind source");
@@ -1012,7 +1026,10 @@ void EqCopilotEditor::aktualisiereSourcesSteuerung()
     sourcesLabelFeld.setEnabled (labelSchreibbar);
     if (! sourcesSchreibfehlerAktiv)
     {
-        if (bestaetigt && ! sourcesAnzeige.mainDarfSchreiben)
+        if (zielUngezeichnet)
+            sourcesBedienstatus =
+                "Main target is outside the drawn list - select a drawn source.";
+        else if (bestaetigt && ! sourcesAnzeige.mainDarfSchreiben)
             sourcesBedienstatus =
                 "Label editing disabled - only the leading Main can write.";
         else if (! bestaetigt)
@@ -1447,11 +1464,17 @@ void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
     g.drawText (findingsText, findings.reduced (9),
                 juce::Justification::centredLeft);
 
-    g.setColour (leise);
-    g.setFont (juce::FontOptions (9.5f));
-    g.drawText ("Stored label fallback (untrusted user text)",
-                juce::Rectangle<int> { links.getRight() + 14, getHeight() - 57, 190, 14 },
-                juce::Justification::centredLeft);
+    // NAK-312 R-312-6: die Beschriftung gehoert zum Labelfeld. Liegt das
+    // Hauptziel hinter der letzten gezeichneten Zeile, ist das Feld
+    // unsichtbar, und eine Beschriftung ohne Feld waere ein totes Element.
+    if (sourcesLabelFeld.isVisible())
+    {
+        g.setColour (leise);
+        g.setFont (juce::FontOptions (9.5f));
+        g.drawText ("Stored label fallback (untrusted user text)",
+                    juce::Rectangle<int> { links.getRight() + 14, getHeight() - 57, 190, 14 },
+                    juce::Justification::centredLeft);
+    }
 }
 
 void EqCopilotEditor::paint (juce::Graphics& g)

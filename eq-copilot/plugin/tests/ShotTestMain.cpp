@@ -17,7 +17,10 @@
 // Prozessor, normaler Handgriff mit und ohne Aenderung; dazu das Bild
 // nak312-messpunkt-panel.png des geoeffneten Panels im selben Ordner. Seit
 // NAK-312 Etappe 6b danach der Labelentwurf der Main-Flaeche (312/M-66 bis
-// 312/M-71, R-312-9) am echten Editor auf einem echten Main.
+// 312/M-71, R-312-9) am echten Editor auf einem echten Main, das
+// Ersatz-Hauptziel und die Aktionssteuerung (312/M-73 bis M-75, M-85,
+// R-312-6; dazu vier Bilder mit 20, 21, 32 und 64 Quellen im Sichtsatz und
+// das Bild nak312-hauptziel-ausserhalb.png eines Hauptziels hinter Zeile 20).
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -89,6 +92,23 @@ Model::Sicht sicht (int n)
     return s;
 }
 
+/// NAK-312 (312/M-73, R-312-6): n Quellen OHNE Hauptziel, die Anzeigeordnung
+/// umgekehrt zur Ordnung der instance_id - die kleinste instance_id steht in
+/// der letzten Anzeigezeile, das Ersatz-Hauptziel waehlt das Modell.
+Model::Sicht ersatzSicht (int n)
+{
+    auto s = sicht (n);
+    for (int i = 0; i < n; ++i)
+    {
+        auto& q = s.quellen[(std::size_t) i];
+        q.hauptziel = false;
+        q.hostMixerIndex = (std::uint64_t) (n - i);
+        q.sichtbarerName = "Host Bus " + juce::String (n - i);
+        q.hostBusName = q.sichtbarerName;
+    }
+    return s;
+}
+
 bool schreibeShot (eqcop::EqCopilotProcessor& proz, const juce::File& ordner,
                     const char* name, Model::Sicht fixture)
 {
@@ -133,6 +153,11 @@ int sonde012Suite (const juce::File& ordner)
     faelle.push_back ({ "sonde012-0-sources.png", sicht (0) });
     faelle.push_back ({ "sonde012-1-source.png", sicht (1) });
     faelle.push_back ({ "sonde012-16-sources.png", sicht (16) });
+    // NAK-312 (312/M-73): das Ersatz-Hauptziel folgt der Anzeigeordnung.
+    faelle.push_back ({ "sonde012-20-sources-ersatzziel.png", ersatzSicht (20) });
+    faelle.push_back ({ "sonde012-21-sources-ersatzziel.png", ersatzSicht (21) });
+    faelle.push_back ({ "sonde012-32-sources-ersatzziel.png", ersatzSicht (32) });
+    faelle.push_back ({ "sonde012-64-sources-ersatzziel.png", ersatzSicht (64) });
     faelle.push_back ({ "sonde012-fresh.png", sicht (1) });
 
     auto partial = sicht (1);
@@ -772,6 +797,262 @@ bool nak312Labelentwurf()
     std::printf ("NAK-312 LABEL %d geprueft, %d Fehler\n", labelGeprueft, labelFehler);
     return labelFehler == 0 && labelGeprueft == 15;
 }
+
+//==============================================================================
+// NAK-312 Etappe 6b, Aenderungssatz B (T3-07-05 Teil a, R-312-6, E-312-9):
+// Ersatz-Hauptziel und Aktionssteuerung.
+//
+// Das Ersatzziel ist die erste ANGEZEIGTE Quelle in Anzeigeordnung, und die
+// Aktionssteuerung bindet nur an eine Zeile, die `sourcesZeilen()` wirklich
+// herstellt. Rueckt das Hauptziel durch Umordnung hinter die letzte
+// gezeichnete Zeile, sind Knopf und Labelfeld unsichtbar, das Aktionsziel ist
+// leer, und das Modell bleibt unveraendert - kein automatischer Zielwechsel;
+// ein offener Labelentwurf wird vorher nach R-312-9 bestaetigt. Bei exakt
+// 760x430 zeichnet die Flaeche ab 20 Quellen genau 20 Zeilen (Manifest
+// Paragraph 6.7, M-73 und M-74: 366 / jlimit (18, 34, 366 / n), nachgerechnet).
+
+int zielFehler = 0, zielGeprueft = 0;
+
+void zielPruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    ++zielGeprueft;
+    if (! ok) ++zielFehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+}
+
+/// Ein Main mit der Sicht `fixture`, Editor offen und einmal getickt; wahlweise
+/// mit den Quellen als bestaetigten Mitgliedern im Prozessorzustand.
+struct ZielBuehne
+{
+    std::unique_ptr<eqcop::EqCopilotProcessor> p;
+    PanelDirty dirty;
+    std::unique_ptr<eqcop::EqCopilotEditor> ed;
+    bool aufgebaut = false;
+
+    ZielBuehne (Model::Sicht fixture, bool mitMitgliedern)
+        : p (std::make_unique<eqcop::EqCopilotProcessor>())   // NAK-175: Heap
+    {
+        p->setzeWorkerDrainFuerTest (false);
+        p->setzeEditorOffen (true);
+        aufgebaut = p->setzeBindung ("hub", "Gen", "");
+        if (mitMitgliedern)
+        {
+            for (const auto& q : fixture.quellen)
+                p->v3AntwortFuerTest (ackAngewandt (p->merkeSourcesCommandFuerTest (Art::confirmJoin, q.instanceId)));
+            p->sourcesTick();
+            aufgebaut = aufgebaut && p->holeZustandKopie().mainProjectMitglieder.size() == fixture.quellen.size();
+        }
+        p->setzeSourcesFixtureFuerTest (std::move (fixture));
+        p->addListener (&dirty);
+        ed = std::make_unique<eqcop::EqCopilotEditor> (*p);
+        ed->timerTickFuerTest();
+    }
+
+    ~ZielBuehne()
+    {
+        ed.reset();
+        p->removeListener (&dirty);
+        p.reset();
+    }
+
+    std::string hauptziel() const
+    {
+        for (const auto& q : p->sourcesSicht().quellen)
+            if (q.hauptziel)
+                return q.instanceId;
+        return {};
+    }
+
+    int anzeigeIndex (const std::string& id) const
+    {
+        const auto s = p->sourcesSicht();
+        for (std::size_t i = 0; i < s.quellen.size(); ++i)
+            if (s.quellen[i].instanceId == id)
+                return (int) i;
+        return -1;
+    }
+
+    std::string beleg (const std::string& ziel) const
+    {
+        const auto aktion = ed->sourcesAktionsZielFuerTest();
+        return "Hauptziel in Anzeigezeile " + std::to_string (anzeigeIndex (ziel) + 1) + ", gezeichnet "
+             + std::to_string (ed->sourcesZeilenFuerTest().size()) + " Zeilen, Aktionsziel "
+             + (aktion.empty() ? std::string ("leer") : aktion == ziel ? std::string ("= Hauptziel")
+                                                                        : std::string ("fremd"))
+             + ", Knopf " + (ed->sourcesAktionKnopfSichtbarFuerTest() ? "sichtbar" : "unsichtbar")
+             + ", Labelfeld " + (ed->sourcesLabelSichtbarFuerTest() ? "sichtbar" : "unsichtbar")
+             + ", Host-Dirty " + std::to_string (dirty.nichtParameter) + ", Status '"
+             + ed->sourcesBedienstatusFuerTest().toStdString() + "'";
+    }
+};
+
+/// 25 Quellen, das Hauptziel per Handgriff auf die Quelle in Zeile 5; dazu die
+/// Umordnung, die es hinter Zeile 20 schiebt - (i) 16 Quellen mit kleinerem
+/// Mixerindex treten bei, (ii) 16 Quellen dahinter bekommen einen Hostbusnamen,
+/// der davor sortiert (Quellen ohne Mixerindex, Ordnung nach Namen).
+Model::Sicht umordnungsSicht (bool umbenennen, bool nachher, const std::string& haupt)
+{
+    auto s = sicht (25);
+    for (int i = 0; i < 25; ++i)
+    {
+        auto& q = s.quellen[(std::size_t) i];
+        q.hauptziel = q.instanceId == haupt;
+        if (umbenennen)
+        {
+            q.hostMixerIndexVorhanden = false;
+            const bool davor = nachher && i >= 5 && i < 21;
+            q.hostBusName = (davor ? "Aux " : "Bus ") + juce::String (davor ? i - 4 : i + 1).paddedLeft ('0', 2);
+        }
+        else
+        {
+            q.hostMixerIndex = (std::uint64_t) (100 + i);
+            q.hostBusName = "Host Bus " + juce::String (100 + i);
+        }
+        q.sichtbarerName = q.hostBusName;
+    }
+    if (! umbenennen && nachher)
+        for (int j = 0; j < 16; ++j)
+        {
+            auto q = quelle (0);
+            q.instanceId = hex (0x400 + (unsigned) j);
+            q.runtimeNonce = hex (0x500 + (unsigned) j);
+            q.hostMixerIndex = (std::uint64_t) (1 + j);
+            q.hostBusName = "Joined Bus " + juce::String (1 + j);
+            q.sichtbarerName = q.hostBusName;
+            q.hauptziel = false;
+            s.quellen.push_back (q);
+        }
+    return s;
+}
+
+bool nak312Ersatzziel (const juce::File& ordner)
+{
+    std::printf ("== NAK-312 Etappe 6b - Ersatzziel und Aktionssteuerung (312/M-73 bis M-75, M-85, R-312-6) ==\n");
+
+    for (const int n : { 16, 20, 21, 32, 64 })
+    {
+        ZielBuehne b (ersatzSicht (n), false);
+        const auto ziel = b.hauptziel();
+        const int erwartet = n < 20 ? n : 20;
+        zielPruefe (b.aufgebaut && ! ziel.empty() && b.anzeigeIndex (ziel) == 0
+                        && (int) b.ed->sourcesZeilenFuerTest().size() == erwartet
+                        && b.ed->sourcesAktionsZielFuerTest() == ziel && b.ed->sourcesAktionKnopfSichtbarFuerTest()
+                        && b.ed->sourcesLabelSichtbarFuerTest(),
+                    "312/M-73 ersatzziel_folgt_der_anzeigeordnung (" + std::to_string (n) + " Quellen, 760x430, "
+                        + "kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste "
+                        + "angezeigte Quelle, gezeichnet " + std::to_string (erwartet) + " Zeilen, Knopf und Labelfeld "
+                        + "stehen auf ihr",
+                    b.beleg (ziel));
+    }
+
+    for (const bool umbenennen : { false, true })
+    {
+        const auto haupt = hex (24);   // quelle (4): Zeile 5
+        ZielBuehne b (umordnungsSicht (umbenennen, false, {}), false);
+        const bool gewaehlt = b.p->waehleSourcesHauptziel (haupt);
+        b.ed->timerTickFuerTest();
+        const bool vorher = gewaehlt && b.anzeigeIndex (haupt) == 4 && b.ed->sourcesAktionsZielFuerTest() == haupt
+                         && b.ed->sourcesAktionKnopfSichtbarFuerTest() && b.ed->sourcesLabelSichtbarFuerTest();
+        b.p->setzeSourcesFixtureFuerTest (umordnungsSicht (umbenennen, true, haupt));
+        const auto revisionVor = b.p->sourcesSicht().revision;
+        const int dirtyVor = b.dirty.nichtParameter;
+        b.ed->timerTickFuerTest();
+        const bool nachher = b.hauptziel() == haupt && b.anzeigeIndex (haupt) == 20
+                          && b.p->sourcesSicht().revision == revisionVor && b.dirty.nichtParameter == dirtyVor
+                          && b.ed->sourcesAktionsZielFuerTest().empty() && ! b.ed->sourcesAktionKnopfSichtbarFuerTest()
+                          && ! b.ed->sourcesLabelSichtbarFuerTest()
+                          && b.ed->sourcesBedienstatusFuerTest().containsIgnoreCase ("outside the drawn list");
+        // Ohne Labelfeld auch keine Beschriftung des Feldes: im Bild ist ihre
+        // Zeile (x 324 bis 513, y 373 bis 386 bei 760x430, `paintMainFlaeche`)
+        // leer - jedes Pixel gleich dem Hintergrund rechts daneben.
+        const auto bild = b.ed->createComponentSnapshot (b.ed->getLocalBounds(), true, 1.0f);
+        int beschriftungsPixel = 0;
+        const auto grund = bild.getPixelAt (700, 380);
+        for (int y = 373; y < 387; ++y)
+            for (int x = 324; x < 514; ++x)
+                if (bild.getPixelAt (x, y) != grund)
+                    ++beschriftungsPixel;
+        if (umbenennen)
+        {
+            // Das Bild der Flaeche in diesem Zustand, neben dem Sichtsatz.
+            const auto ziel = ordner.getChildFile ("nak312-hauptziel-ausserhalb.png");
+            ziel.deleteFile();
+            juce::FileOutputStream strom (ziel);
+            juce::PNGImageFormat png;
+            if (strom.openedOk())
+                png.writeImageToStream (bild, strom);
+        }
+        zielPruefe (b.aufgebaut && vorher && nachher && beschriftungsPixel == 0,
+                    std::string ("312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (") + (umbenennen
+                        ? "Umordnung durch Hostbusnamen" : "Umordnung durch Beitritt")
+                        + "): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und "
+                        + "Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein "
+                        + "Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die "
+                        + "Beschriftung des Labelfelds ist mit ihm verschwunden",
+                    std::string ("vorher ") + (vorher ? "ja" : "NEIN") + "; nachher: " + b.beleg (haupt)
+                        + ", Pixel der Feldbeschriftung " + std::to_string (beschriftungsPixel));
+    }
+
+    {
+        // 312/M-85: dieselbe Umordnung mit offenem Labelentwurf der Startquelle.
+        const auto haupt = hex (24);
+        ZielBuehne b (umordnungsSicht (true, false, haupt), true);
+        b.ed->sourcesLabelTippenFuerTest ("Target draft");
+        b.p->setzeSourcesFixtureFuerTest (umordnungsSicht (true, true, haupt));
+        b.ed->timerTickFuerTest();
+        int fremdGeschrieben = 0;
+        juce::String zielLabel;
+        for (const auto& m : b.p->holeZustandKopie().mainProjectMitglieder)
+        {
+            if (m.instanceId.toStdString() == haupt)
+                zielLabel = m.label;
+            else if (m.label != kLabelEingeschleust)
+                ++fremdGeschrieben;
+        }
+        zielPruefe (b.aufgebaut && zielLabel == "Target draft" && fremdGeschrieben == 0 && b.dirty.nichtParameter == 1
+                        && b.hauptziel() == haupt && b.ed->sourcesAktionsZielFuerTest().empty()
+                        && ! b.ed->sourcesAktionKnopfSichtbarFuerTest() && ! b.ed->sourcesLabelSichtbarFuerTest(),
+                    "312/M-85 offener_entwurf_wird_vor_dem_leeren_des_ziels_bestaetigt (E-312-9, R-312-9): 25 "
+                    "bestaetigte Mitglieder, Entwurf fuer das Hauptziel, dieselbe Umordnung, Tick - der Entwurf "
+                    "steht auf der Startquelle, keine fremde Quelle geschrieben, genau 1 Host-Dirty; danach Knopf "
+                    "und Labelfeld unsichtbar",
+                    "Label der Startquelle '" + zielLabel.toStdString() + "', fremd geschrieben "
+                        + std::to_string (fremdGeschrieben) + "; " + b.beleg (haupt));
+    }
+
+    {
+        ZielBuehne b (sicht (0), false);
+        zielPruefe (b.aufgebaut && b.hauptziel().empty() && b.ed->sourcesZeilenFuerTest().empty()
+                        && b.ed->sourcesAktionsZielFuerTest().empty() && ! b.ed->sourcesAktionKnopfSichtbarFuerTest()
+                        && ! b.ed->sourcesLabelSichtbarFuerTest(),
+                    "312/M-75 (0 Quellen) kein_ersatzziel_keine_aktionssteuerung (R-312-6): kein Hauptziel, keine "
+                    "gezeichnete Zeile, Knopf und Labelfeld unsichtbar",
+                    b.beleg ({}));
+    }
+    for (const int n : { 1, 16 })
+    {
+        ZielBuehne b (sicht (n), false);
+        int erreichbar = 0;
+        const auto quellen = b.p->sourcesSicht().quellen;
+        for (std::size_t i = 0; i < quellen.size(); ++i)
+        {
+            klicke (*b.ed, i);
+            b.ed->timerTickFuerTest();
+            if (b.hauptziel() == quellen[i].instanceId && b.ed->sourcesAktionsZielFuerTest() == quellen[i].instanceId
+                && b.ed->sourcesAktionKnopfSichtbarFuerTest() && b.ed->sourcesLabelSichtbarFuerTest())
+                ++erreichbar;
+        }
+        zielPruefe (b.aufgebaut && (int) b.ed->sourcesZeilenFuerTest().size() == n && erreichbar == n,
+                    "312/M-75 (" + std::to_string (n) + (n == 1 ? " Quelle" : " Quellen")
+                        + ") jede_quelle_gezeichnet_und_erreichbar: jede Zeile ist gezeichnet, und ein Klick darauf "
+                        + "macht sie zum Hauptziel mit sichtbarem Knopf und Labelfeld",
+                    "gezeichnet " + std::to_string (b.ed->sourcesZeilenFuerTest().size()) + ", erreichbar "
+                        + std::to_string (erreichbar) + " von " + std::to_string (quellen.size()));
+    }
+
+    std::printf ("NAK-312 ZIEL %d geprueft, %d Fehler\n", zielGeprueft, zielFehler);
+    return zielFehler == 0 && zielGeprueft == 11;
+}
 } // namespace
 
 int main (int argc, char* argv[])
@@ -789,7 +1070,9 @@ int main (int argc, char* argv[])
         const bool panel = nak312Messpunktpanel (ordner);
         // NAK-312 Etappe 6b (R-312-9): der Labelentwurf der Main-Flaeche.
         const bool label = nak312Labelentwurf();
-        return shots == 0 && panel && label ? 0 : 1;
+        // NAK-312 Etappe 6b (R-312-6): Ersatzziel und Aktionssteuerung.
+        const bool ziel = nak312Ersatzziel (ordner);
+        return shots == 0 && panel && label && ziel ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

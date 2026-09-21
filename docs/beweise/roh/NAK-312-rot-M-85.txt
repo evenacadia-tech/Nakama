@@ -1,0 +1,49 @@
+# NAK-312 Rotbeweis M-85 (Manifest §7.1)
+
+Matrixzeile: 312/M-85 (T3-07-05 mit T3-14-01, E-312-9 mit R-312-9), Etikett heute rot; Gegenprobe am Stand A in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-B.txt (das Ziel bleibt gesetzt, der Entwurf unbestaetigt).
+Zusage: der offene Entwurf wird nach R-312-9 abgeschlossen, BEVOR sourcesAktionsZiel geleert wird - As Label traegt den Entwurf, keine fremde Quelle wird geschrieben, genau 1 Host-Dirty; danach Knopf und Labelfeld unsichtbar.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-85 offener_entwurf_wird_vor_dem_leeren_des_ziels_bestaetigt (25 bestaetigte Mitglieder).
+Mutation an der Zeile, die die Zusage traegt (Matrix): der Abschluss des Entwurfs steht HINTER dem Leeren des Ziels.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 23:08:45) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 23:08:45) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1013
+-- vorher:
+   |     if (! hatZiel && ! vorherigesZiel.empty())
+   |         uebernehmeSourcesLabel();
+   |     sourcesAktionsZiel = hatZiel ? it->instanceId : std::string();
+-- nachher:
+   |     sourcesAktionsZiel = hatZiel ? it->instanceId : std::string();
+   |     if (! hatZiel && ! vorherigesZiel.empty())
+   |         uebernehmeSourcesLabel(); // ROTBEWEIS 312/M-85: Abschluss hinter dem Leeren des Ziels
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 23:08:45) ==
+Bau Exit 0 (2026-09-21 23:08:51)
+Binary EqCopShot.exe 23:08:51, juengste mutierte Quelle PluginEditor.cpp 23:08:45, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+     FEHLER  312/M-85 offener_entwurf_wird_vor_dem_leeren_des_ziels_bestaetigt (E-312-9, R-312-9): 25 bestaetigte Mitglieder, Entwurf fuer das Hauptziel, dieselbe Umordnung, Tick - der Entwurf steht auf der Startquelle, keine fremde Quelle geschrieben, genau 1 Host-Dirty; danach Knopf und Labelfeld unsichtbar  [Label der Startquelle 'Eingeschleust', fremd geschrieben 0; Hauptziel in Anzeigezeile 21,  …
+   NAK-312 ZIEL 11 geprueft, 1 Fehler
+Lauf Exit 1 (2026-09-21 23:08:55)
+
+== 4. Ruecknahme bytegleich (2026-09-21 23:08:55) ==
+1668F23313C7F3AA68D122AF89A590457393D111B06AEC48B2807E5564C8F8D7  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 23:08:55) ==
+Bau Exit 0 (2026-09-21 23:09:01)
+Binary EqCopShot.exe 23:09:01, juengste mutierte Quelle PluginEditor.cpp 23:08:55, Binary juenger: True
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 23:09:06)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - uebernehmeSourcesLabel kehrt bei leerem Aktionsziel still zurueck, der Entwurf verfaellt ohne Mutation und ohne Meldung (Label der Startquelle unveraendert, 0 Host-Dirty).
+Mitgefallen: keine. Nach der bytegleichen Ruecknahme gruen (11/11).

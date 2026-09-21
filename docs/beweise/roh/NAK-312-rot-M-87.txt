@@ -1,0 +1,194 @@
+# NAK-312 Rotbeweis M-87 - 312/M-87 read_only_ladestart_nimmt_kein_blockrandziel, Bein B7
+
+Bauer: Etappe 3, Nacharbeit 1 (L-1, E-312-13, R-312-16), 21.09.2026. Basis HEAD 529b824200e49db95a3ea24560b270f7b710c1a0, im Arbeitsbaum der Stand der Nacharbeit 1 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation an der Zusagezeile, nur das betroffene Ziel bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen. A ist der Pruefling mit Hostwerten nach dem Laden, C der Lauf ohne sie.
+
+Matrixzeile: M-87 (Etappe 3, R-312-16; Quelle R-312-10 zweiter Teil, SONDE-015 M-92, Gate T3-05-02; Wortlaut NAK-312.md §23.4), Etikett heute rot.
+Zusage: A und C je eq an und Output-Trim +3 dB committet und eingeschwungen, Taktsperre; in beiden das fremde Major geladen, nur in A danach Input-Trim +24 dB, Output-Trim +24 dB, Width 2, Mix 0; dieselben Bloecke mit fester Saat ueber mindestens 512 Samples: A ist ab dem ersten Sample des ersten Blocks nach dem Laden bitgleich zu C (0 abweichende Samples), und die Zahl der Blockrandziele von A steigt um 0. Teilfall (i): beim Laden laeuft ein Uebergang (Commit Output-Trim +6 dB und genau ein Block zu 64), danach Bloecke zu 185 und zu 512 - dieselbe Zusage. Teilfall (ii): Rueckweg - fremdes Major, dann eigener schreibbarer Stand mit eq an, ohne Kontrolltakt Output-Trim +6 dB: A bitgleich zu einem Lauf mit Takt nach jedem Block, Ausgang/Eingang bei 10^(6/20).
+Bein: B7 EqCopTransactionTest, Faelle 312/M-87 (Hauptfall), 312/M-87 Teilfall (i), 312/M-87 Teilfall (ii).
+Teil a - Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, processBlock, die Flaglesung am Blockrand (Zeile 524, Stand Nacharbeit 1) - die Zeile, die die Zusage traegt.
+Mutation (Matrix, Teil a): Flaglesung in processBlock entfernt -> Hauptfall und (i) rot; (ii) bleibt gruen (der Rueckweg haengt nicht an der Lesung).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3, Nacharbeit 1). Start 2026-09-21 10:00:08.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 12C936248E32E76DD352CB4A9D105F90593A994FB1FBFC38080A25CD9D06EFFA
+Sicherung: C:\Users\phili\.claude\jobs\4e1e2c6e\tmp\sicherung\SondeProcessor.cpp.M-87 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 524, VORHER wortlich:
+            if (blockrandNurLesen.load (std::memory_order_seq_cst))
+                continue;
+-- NACHHER wortlich:
+            // Mutation: Flaglesung entfernt
+SHA-256 mutiert: 345A55BD14E2359B9EABE6C260AF73A4A89689B4E7A0E888712BF8B07C4073C2
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 10:00:08.746; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 10:00:15.012 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 2 s, Summe: 225 geprueft, 2 Fehler
+Gefallene Pruefungen (2):
+  FEHLER  312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3 dB committet und eingeschwungen, unter der Taktsperre in beiden das fremde Major geladen, nur in A danach Input-Trim +24 dB, Output-Trim +24 dB, Width 2 und Mix 0 als Hostwerte, dann dieselben Bloecke zu 256 mit fester Saat (1024 Samples je Kanal) - A ist ab dem ersten Sample des ersten Blocks nach dem Laden bitgleich zu C, und die Blockrandziele von A steigen um 0  [A gegen C links 256, rechts 256 abweichend (Samples 0 bis 255 nach dem Laden), Blockrandziele A +4, read-only A ja / C ja; Messung ohne Bedingung, nur Output-Trim +24 dB in einer dritten Instanz: groesstes Ausgang/Eingang 13.7101164912 dB, Blockrandziele +1 (C 2.99999979594 dB)]
+  FEHLER  312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, danach Bloecke zu 185 und zu 512 - dieselbe Zusage: A ist ab dem ersten Sample nach dem Laden bitgleich zu C, und die Blockrandziele von A steigen um 0  [Bloecke zu 185: Uebergang beim Laden lief, A gegen C links 626, rechts 626 abweichend (Samples 0 bis 625 nach dem Laden), Blockrandziele A +4; Bloecke zu 512: Uebergang beim Laden lief, A gegen C links 768, rechts 768 abweichend (Samples 0 bis 767 nach dem Laden), Blockrandziele A +4; ]
+Die Zusage faellt an der erwarteten Pruefung (312/M-87 read_only_ladestart|312/M-87 Teilfall \(i\)): JA
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (36):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dies
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der 
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Para
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true)
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ue
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomatio
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B si
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sin
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt 
+  ok      312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, outpu
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in de
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsper
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Ou
+  ok      312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand m
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 12C936248E32E76DD352CB4A9D105F90593A994FB1FBFC38080A25CD9D06EFFA - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 10:00:17.308; Bau (EqCopTransactionTest) Exit 0, 7 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 10:00:23.983 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 2 s, Summe: 225 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== Gegenprobe am Basisstand (heute rot, §7.1) ==
+Aus docs/beweise/roh/NAK-312-etappe3-nacharbeit1-gegenprobe.txt: der Test in seiner Endfassung gegen den Stand vor dem Fix (HEAD 529b8242, Produktcode unveraendert):
+  FEHLER  312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3 dB committet und eingeschwungen, unter der Taktsperre in beiden das fremde Major geladen, nur in A danach Input-Trim +24 dB, Output-Trim +24 dB, Width 2 und Mix 0 als Hostwerte, dann dieselben Bloecke zu 256 mit fester Saat (1024 Samples je Kanal) - A ist ab dem ersten Sample des ersten Blocks nach dem Laden bitgleich zu C, und die Blockrandziele von A steigen um 0  [A gegen C links 256, rechts 256 abweichend (Samples 0 bis 255 nach dem Laden), Blockrandziele A +4, read-only A ja / C ja; Messung ohne Bedingung, nur Output-Trim +24 dB in einer dritten Instanz: groesstes Ausgang/Eingang 13.7101164912 dB, Blockrandziele +1 (C 2.99999979594 dB)]
+  FEHLER  312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden laeuft dessen Uebergang noch -, danach Bloecke zu 185 und zu 512 - dieselbe Zusage: A ist ab dem ersten Sample nach dem Laden bitgleich zu C, und die Blockrandziele von A steigen um 0  [Bloecke zu 185: Uebergang beim Laden lief, A gegen C links 626, rechts 626 abweichend (Samples 0 bis 625 nach dem Laden), Blockrandziele A +4; Bloecke zu 512: Uebergang beim Laden lief, A gegen C links 768, rechts 768 abweichend (Samples 0 bis 767 nach dem Laden), Blockrandziele A +4; ]
+225 geprueft, 2 Fehler
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/dsp/DspKern.cpp               |  27 ++-
+ eq-copilot/plugin/dsp/DspKern.h                 |  12 +-
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      |  42 ++++-
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  15 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 213 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 289 insertions(+), 22 deletions(-)
+
+Ende 2026-09-21 10:00:26.
+
+== Bewertung ==
+Teil a (Matrixmutation: die Flaglesung am Blockrand in processBlock entfernt): die Zusage faellt an den erwarteten Pruefungen: JA - an genau zwei, dem Hauptfall 312/M-87 (A gegen C links 256, rechts 256 abweichend, Samples 0 bis 255 nach dem Laden, Blockrandziele A +4; die Messung mit Output-Trim allein zeigt wieder +13,71 dB) und Teilfall (i) (bei Bloecken zu 185 626, bei 512 768 Samples je Kanal, je Ziele +4). Das ist Zahl fuer Zahl der Befund der Gegenprobe am Stand vor dem Fix. Mitgefallen: keine. Gruen bleibt Teilfall (ii): der Rueckweg haengt an der Speicherung im Ladestart, nicht an dieser Lesung.
+
+==================== Teil b ====================
+
+# NAK-312 Rotbeweis M-87 - 312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt, Bein B7
+
+Bauer: Etappe 3, Nacharbeit 1 (L-1, E-312-13, R-312-16), 21.09.2026. Basis HEAD 529b824200e49db95a3ea24560b270f7b710c1a0, im Arbeitsbaum der Stand der Nacharbeit 1 vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 wie Teil a.
+
+Matrixzeile: M-87 (Etappe 3, R-312-16), Teilfall (ii) Rueckweg.
+Zusage: fremdes Major, dann eigener schreibbarer Stand mit eq an, unter der Taktsperre OHNE Kontrolltakt Output-Trim +6 dB: A ist bitgleich zu einem Lauf mit Takt nach jedem Block, Ausgang/Eingang bei 10^(6/20) - nach einem schreibbaren Stand wirkt Automation am Blockrand wieder (R-312-16 Schluss).
+Bein: B7 EqCopTransactionTest, Fall 312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt.
+Teil b - Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, setStateInformation, die Speicherung des Flags im Ladestart (Zeile 1209, Stand Nacharbeit 1) - die Zeile, die den Rueckweg traegt.
+Mutation (Matrix, Teil b): Flag nur gesetzt, nie geloescht -> (ii) rot; Hauptfall und (i) bleiben gruen (dort bleibt das Flag ohnehin gesetzt).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3, Nacharbeit 1). Start 2026-09-21 10:00:26.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 12C936248E32E76DD352CB4A9D105F90593A994FB1FBFC38080A25CD9D06EFFA
+Sicherung: C:\Users\phili\.claude\jobs\4e1e2c6e\tmp\sicherung\SondeProcessor.cpp.M-87b (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1209, VORHER wortlich:
+        blockrandNurLesen.store (transaktion->nurLesen(), std::memory_order_seq_cst);
+-- NACHHER wortlich:
+        if (transaktion->nurLesen()) blockrandNurLesen.store (true, std::memory_order_seq_cst);   // Mutation: nur setzen, nie loeschen
+SHA-256 mutiert: 1225A9DD9A5460C4AD935F9CDCF7E274D779340E2219E904132C6E1CF160BE9B
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 10:00:26.691; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 10:00:32.938 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 2 s, Summe: 225 geprueft, 1 Fehler
+Gefallene Pruefungen (1):
+  FEHLER  312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand mit eq an, unter der Taktsperre OHNE Kontrolltakt Output-Trim +6 dB vor Block 10 - A ist bitgleich zu einem Lauf mit Takt nach jedem Block, und Ausgang/Eingang steht am Ende bei 10^(6/20)  [zwischendurch read-only ja, danach schreibbar ja, A/B 1664 abweichend, am Ende 1 (Soll 10^(6/20))]
+Die Zusage faellt an der erwarteten Pruefung (312/M-87 Teilfall \(ii\)): JA
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (37):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dies
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der 
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Para
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true)
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ue
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomatio
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B si
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sin
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt 
+  ok      312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, outpu
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in de
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsper
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Ou
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A u
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden 
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 12C936248E32E76DD352CB4A9D105F90593A994FB1FBFC38080A25CD9D06EFFA - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 10:00:35.258; Bau (EqCopTransactionTest) Exit 0, 7 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 10:00:42.094 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 2 s, Summe: 225 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/dsp/DspKern.cpp               |  27 ++-
+ eq-copilot/plugin/dsp/DspKern.h                 |  12 +-
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      |  42 ++++-
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  15 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 213 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 289 insertions(+), 22 deletions(-)
+
+Ende 2026-09-21 10:00:44.
+
+== Bewertung ==
+Teil b (Matrixmutation: das Flag im Ladestart nur gesetzt, nie geloescht): die Zusage faellt an der erwarteten Pruefung: JA - allein an Teilfall (ii) (A/B 1664 abweichend, Ausgang/Eingang am Ende 1,0 statt 10^(6/20)): nach dem fremden Major bleibt das Flag stehen, der schreibbare Stand danach nimmt am Blockrand keinen Hostwert, und ohne Kontrolltakt bleibt A beim geladenen Klang. Mitgefallen: keine. Gruen bleiben der Hauptfall und Teilfall (i) (dort bleibt das Flag ohnehin gesetzt) und 312/M-17 (sein Rueckweg laeuft ueber den Kontrolltakt, nicht ueber den Blockrand) - genau deshalb traegt (ii) den Rueckweg ohne Takt.

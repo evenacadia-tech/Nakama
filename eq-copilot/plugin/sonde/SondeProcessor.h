@@ -39,7 +39,8 @@
     Passthrough von bisher: sampleidentisch, 0 Samples Latenz, kein Tail,
     keine Bank (SONDE-015 R2, Bein A16). `processBlock` haelt keine Sperre,
     allokiert nicht, protokolliert nicht und fasst keine Datei an: er liest
-    die Hostmailbox der Abdeckungstabelle (nur Atomics, NAK-312 Etappe 3b),
+    die Hostmailbox der Abdeckungstabelle und das read-only des geladenen
+    Standes (nur Atomics, NAK-312 Etappe 3b und Nacharbeit 1),
     ruft den DSP-Kern (`dsp::DspKern::verarbeite`) und kopiert den Tap
     `post_committed` in die vorallokierte Analysequeue. Programmbau,
     Transaktionen, Auswertung und I/O bleiben ausserhalb des Audiothreads.
@@ -53,8 +54,9 @@
     Transaktionskerns (`state/NakamaTransaktion.h`). Die vier Parameter der
     Abdeckungstabelle (`dsp::DspKern::kBlockrandParameter`: Trims, Width, Mix)
     uebernimmt der Kern zusaetzlich am Blockrand, bevor der Worker sie ins
-    Overlay schreibt (NAK-312 Etappe 3b, T3-01-05 Teil a); alle uebrigen folgen
-    dem Kontrolltakt.
+    Overlay schreibt (NAK-312 Etappe 3b, T3-01-05 Teil a) - nach einem
+    read-only-Ladestart nicht, bis ein schreibbarer Stand geladen ist
+    (R-312-16); alle uebrigen folgen dem Kontrolltakt.
 
     KEINE ERFUNDENE OBERFLAECHE: `hasEditor()` meldet false. Die Gestaltung
     kommt aus dem Figma-Stand des Users ueber design/ (CLAUDE.md: "Claude
@@ -679,6 +681,13 @@ private:
     std::array<std::atomic<double>, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl>        bestaetigtBlock {};
     std::array<std::atomic<std::uint64_t>, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl> blockrandQuittung {};
     std::array<double, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl> blockrandMin {}, blockrandMax {};
+    // NAK-312 Etappe 3, Nacharbeit 1 (L-1, E-312-13, R-312-16): das read-only
+    // des zuletzt geladenen Standes fuer den Blockrand. Der Ladestart speichert
+    // es bei jedem erfolgreichen Laden in beide Richtungen, VOR der Quittierung;
+    // der Blockrand liest es im Ereignisfall NACH dem Zaehler und setzt bei
+    // gesetztem Flag kein Rampenziel - auch nicht fuer das Ausblenden des
+    // vorigen Standes und nicht waehrend eines beim Laden laufenden Uebergangs.
+    std::atomic<bool> blockrandNurLesen { false };
 
     std::atomic<std::uint64_t> verarbeiteteSamples { 0 };   ///< Audiothread zaehlt, Worker liest (Ruhegrenze)
     std::uint64_t samplesBeiLetzterAutomation = 0;          ///< unter Zustandsschloss

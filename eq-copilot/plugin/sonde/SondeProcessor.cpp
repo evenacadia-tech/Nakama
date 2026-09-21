@@ -497,11 +497,16 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
         // die Zelle. Nur Atomics und die reine Arithmetik des Hostparameters:
         // keine Sperre, keine Allokation, kein Warten. `hostEreignisOffen`
         // bleibt allein beim Worker - der Blockrand liest und tauscht es nicht.
+        // Seit der Nacharbeit 1 (R-312-16) liest er im Ereignisfall zusaetzlich
+        // das read-only des geladenen Standes und uebergibt dann keinen Wert.
         nakama::dsp::DspKern::BlockrandHostwerte hostwerte {};
         for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
         {
             const int i = nakama::dsp::DspKern::kBlockrandParameter[(size_t) k];
-            const auto n = hostEreignis[(size_t) i].load (std::memory_order_acquire);
+            // `seq_cst` statt `acquire` (Nacharbeit 1, E-312-13): diese Lesung
+            // und die Flaglesung unten stehen mit Speicherung und Zaehlerlesung
+            // des Ladestarts in einer Ordnung (`setStateInformation`).
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_seq_cst);
             if (n == dspKern->blockrandStand (k))
                 continue;
             auto& h = hostwerte[(size_t) k];
@@ -510,6 +515,13 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
             // W02 am Blockrand: ein Ereignis, das der Ladestart quittiert hat,
             // ist kein Hostgestus und setzt kein Ziel.
             if ((std::uint64_t) n == blockrandQuittung[(size_t) k].load (std::memory_order_acquire))
+                continue;
+            // R-312-16 (L-1): nach einem read-only-Ladestart setzt der Blockrand
+            // aus keinem Hostwert ein Ziel - `neu` ohne `wert`, der Blockrandstand
+            // zieht nach. Gelesen NACH dem Zaehler: liest der Blockrand den Stand
+            // eines Hostwerts, den der Ladestart nicht mehr quittiert hat, sieht
+            // er auch das Flag dieses Ladestarts.
+            if (blockrandNurLesen.load (std::memory_order_seq_cst))
                 continue;
             h.wert = true;
             h.zahl = zelleAmBlockrand (k, hostWert[(size_t) i].load (std::memory_order_relaxed));
@@ -1184,6 +1196,18 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
             juce::ignoreUnused (neutral);
         }
 
+        // NAK-312 Etappe 3, Nacharbeit 1 (L-1, E-312-13, R-312-16): das read-only
+        // des geladenen Standes fuer den Blockrand - bei jedem erfolgreichen
+        // Laden in beide Richtungen, aus dem Kern gelesen (`nurLesen()` wechselt
+        // nur mit einem erfolgreichen `ladestart`), und VOR dem Tausch des Flags
+        // und der Zaehlerlesung der Quittierung. `seq_cst` hier, an der
+        // Zaehlerlesung unten und an Zaehler- und Flaglesung am Blockrand: liest
+        // der Blockrand einen Zaehlerstand, den diese Quittierung nicht mehr
+        // gesehen hat, liegen alle vier Zugriffe in einer Ordnung, und er sieht
+        // dieses Flag. Kein Schloss im Audiothread; auf x64 bleiben die
+        // Lesungen gewoehnliche Ladebefehle.
+        blockrandNurLesen.store (transaktion->nurLesen(), std::memory_order_seq_cst);
+
         // NAK-312 W02 (T3-05-01, R-312-10 zweiter Teil): die QUITTIERUNG der
         // Hostwert-Mailbox. Was vor diesem Punkt eingetroffen ist, gehoert zum
         // Stand vor dem Laden und wird wirkungslos: der Takt vergleicht auf
@@ -1198,7 +1222,7 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         hostEreignisOffen.exchange (false);
         for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
         {
-            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_seq_cst);   // Nacharbeit 1, s. o.
             hostEreignisGesehen[(size_t) i] = n;
             quittiert[(size_t) i]           = n;
         }
@@ -1474,8 +1498,9 @@ void SondeProcessor::parameterValueChanged (int index, float neuNormiert)
     if (abgleichTiefe > 0 || index < 0 || index >= nakama::parameter::kHostParameter)
         return;
     // NAK-312 Etappe 3b (E-312-6): der Zaehler steigt mit `release` - wer ihn
-    // mit `acquire` liest (Blockrand, Takt), sieht den Hostwert mindestens so
-    // neu wie das Ereignis, dessen Stand er uebernimmt.
+    // mit `acquire` oder staerker liest (Takt `acquire`, Blockrand seit der
+    // Nacharbeit 1 `seq_cst`), sieht den Hostwert mindestens so neu wie das
+    // Ereignis, dessen Stand er uebernimmt.
     hostWert[(size_t) index].store (neuNormiert, std::memory_order_relaxed);
     hostEreignis[(size_t) index].fetch_add (1, std::memory_order_release);
     hostEreignisOffen.store (true, std::memory_order_relaxed);
@@ -1628,8 +1653,13 @@ void SondeProcessor::hostParameterAbgleichen (const nakama::parameter::Satz& wer
 
     // Die zweite Pruefung nach der Schleife: traf ein Hostwert ein, WAEHREND
     // die Schleife den Regler schrieb, steht der Regler wieder auf dem
-    // Hostwert - derselbe, den der naechste Takt ins Overlay schreibt. Ein
-    // nicht endlicher Hostwert wirkt dort nie (`zelleAusHost`); dann bleibt der
+    // Hostwert - derselbe, den der naechste Takt ins Overlay schreibt. Einen
+    // nicht endlichen Hostwert schreibt sie nicht; er wirkt nie
+    // (`zelleAusHost`, E4-10), der Klang bleibt beim bestaetigten Wert. Was der
+    // Regler dann zeigt, haengt am Zeitpunkt: traf der Wert VOR der Pruefung
+    // der ersten Schleife ein (sie ueberspringt den Parameter) oder NACH ihrem
+    // Schreiben (der Host ueberschreibt den geschriebenen Wert), zeigt der
+    // Regler den Hostwert; nur ZWISCHEN Pruefung und Schreiben bleibt der
     // geschriebene bestaetigte Wert.
     for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
     {

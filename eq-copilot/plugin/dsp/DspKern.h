@@ -65,7 +65,12 @@
     - Ein ruhender Pfad traegt die Ruhewerte 1,0 seiner fuenf Rampen (NAK-311,
       T3-15-05): gesetzt am Ende des Ausblendens, am Ende des Hoerhalts und
       in `beendeAudiohistorie`. Das Ausblenden selbst klingt mit den Gains
-      der ausblendenden Bank (M-06); das Einschalten aus der Ruhe ist das
+      der ausblendenden Bank (M-06) - einschliesslich eines Ziels, das der
+      Blockrand seit NAK-312 Etappe 3b im Block, in dem eine ENDE-Blende
+      beginnt, noch setzen kann: er liest die Hostmailbox VOR der Uebernahme,
+      die Bank ist dort noch aktiv, und im schreibbaren Stand formt ein
+      Hostwert dieses Blocks die ausblendende Bank. Im read-only-Stand setzt
+      er keines (NAK-312 R-312-16). Das Einschalten aus der Ruhe ist das
       Einschalten eines frischen Kerns (M-07).
     - Kein A/B-Wechsel laeuft ueber einen zweiten Fade nach Dry (M-55): mischt
       die Hoermatrix beim Candidate-Ende noch Candidate-Anteile, ist IHRE
@@ -237,8 +242,9 @@ public:
         genau dann, wenn der Ereigniszaehler UNGLEICH dem Blockrandstand ist
         (nie ein Ordnungsvergleich, der Zaehler laeuft ueber); `wert`, wenn das
         Ereignis ein Hostgestus ist und `zahl` traegt - ein vom Ladestart
-        quittiertes Ereignis kommt mit `neu` und ohne `wert` (W02). `zahl` ist
-        die Vertragszelle wie `zelleAusHost`, nicht das Rampenziel. */
+        quittiertes Ereignis (W02) und jedes Ereignis nach einem
+        read-only-Ladestart (NAK-312 R-312-16) kommen mit `neu` und ohne `wert`.
+        `zahl` ist die Vertragszelle wie `zelleAusHost`, nicht das Rampenziel. */
     struct BlockrandHostwert
     {
         std::uint32_t stand = 0;

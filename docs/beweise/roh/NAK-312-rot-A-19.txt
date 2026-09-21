@@ -1,0 +1,93 @@
+# NAK-312 Rotlauf A-19 - die Korrektur an der Nulltestkante (cRampenEnde im Schreibende der Neutralpruefung), Bein B7, mitgefahren B6
+
+Bauer: Etappe 3, Nacharbeit 1 (N-4, R-312-18), 21.09.2026. Basis HEAD 529b824200e49db95a3ea24560b270f7b710c1a0, im Arbeitsbaum der Stand der Nacharbeit 1 vor dem Commit (die Korrektur A-19 selbst ist unveraendert seit Etappe 3b, Commit ad18d984). Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen).
+
+Gegenstand: A-19 (§21.8) - seit der Blockbindung laeuft eine Parameterrampe auch ohne Programmuebergang, und das Schreibende der Neutralpruefung (NAK-311) liegt fruehestens am Ende der laengsten laufenden Rampe (`cRampenEnde`). Regel R-312-18 (§23.4): eine Aenderung an der Nulltestkante traegt ihren eigenen Rotlauf.
+Erwartung nach der Rechnung der Validierung (docs/beweise/roh/NAK-312-etappe-3-erstpruefung-validierung.md, Teil 2 Punkt 3): rot werden 312/M-20, M-21, M-22, M-27 und M-79; gruen bleiben 312/M-23, M-82, M-28, M-29, der Teilfall nicht_endliche_hostwerte_am_blockrand, M-80, M-81, M-26 und B6.
+Bein: B7 EqCopTransactionTest; mitgefahren B6 EqCopDspGoldenTest (Neutral- und Schreibendefaelle des Kerns ohne Hostwerte).
+Datei der Mutation: eq-copilot/plugin/dsp/DspKern.cpp, verarbeiteStueck, das Schreibende der Neutralpruefung (Zeile 1448, Stand Nacharbeit 1; Zeile 1437 im Stand 3b).
+Mutation: cRampenEnde im Schreibende zurueckgenommen - die Zeile wird wortgleich die des Stands 3a (`git show c94b8dd9:eq-copilot/plugin/dsp/DspKern.cpp`, Zeile 1336).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3, Nacharbeit 1). Start 2026-09-21 09:47:52.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/dsp/DspKern.cpp
+SHA-256 vorher: E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42
+Sicherung: C:\Users\phili\.claude\jobs\4e1e2c6e\tmp\sicherung\DspKern.cpp.A-19 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1448, VORHER wortlich:
+            schreibBis = std::min (schreibBis, std::max ({ cUebergangsEnde, cRampenEnde, (size_t) std::max (0, hoerFadeRest) }));
+-- NACHHER wortlich:
+            schreibBis = std::min (schreibBis, std::max (cUebergangsEnde, (size_t) std::max (0, hoerFadeRest)));   // Mutation: cRampenEnde zurueckgenommen (Zeile des Stands 3a)
+SHA-256 mutiert: CF0A2E8C0576BA6B084B36B7BC86FB3359B278286A6B3CE5729FC4D37428E61F
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 09:47:52.261; Bau (EqCopTransactionTest,EqCopDspGoldenTest) Exit 0, 10 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 09:47:55.922 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 2 s, Summe: 225 geprueft, 5 Fehler
+Zusatzbein EqCopDspGoldenTest.exe: Binary 09:48:01.652 - juenger als die Quelle: JA; Exitcode 0, Summe: 389 geprueft, 0 Fehler
+Gefallene Pruefungen (5):
+  FEHLER  312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Eventfolge (Block 10 Extremwert, 11 Standard, 12 Extremwert, 13 Standard) bei 48 kHz und Blockgroesse 64, im neutralen Stand und mit Band - A unter der Taktsperre ohne Takt ist BITGLEICH zu B mit Takt nach jedem Block (0 abweichende Samples), und B weicht vom Lauf ohne Ereignis ab, wo der Parameter hoerbar ist  [neutral/v1.global.input_trim_db A/B 126 B/C 894; neutral/v1.global.output_trim_db A/B 126 B/C 894; neutral/v1.global.width A/B 126 B/C 894; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 0 B/C 1551; Band/v1.global.output_trim_db A/B 0 B/C 894; Band/v1.global.width A/B 0 B/C 1382; Band/v2.global.mix A/B 0 B/C 894; ]
+  FEHLER  312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bloecken - der Offlineausgang ist fuer die vier abgedeckten Parameter bitgleich zum Echtzeitausgang desselben Event- und Blockverlaufs  [neutral/v1.global.input_trim_db A/B 126 B/C 894; neutral/v1.global.output_trim_db A/B 126 B/C 894; neutral/v1.global.width A/B 126 B/C 894; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 0 B/C 1494; Band/v1.global.output_trim_db A/B 0 B/C 894; Band/v1.global.width A/B 0 B/C 1371; Band/v2.global.mix A/B 0 B/C 894; Geschwindigkeit 18.7894824851-fach Echtzeit (Messung, keine Schranke)]
+  FEHLER  312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - A ist fuer die vier abgedeckten Parameter bitgleich zu B; bei Blockgroesse 1 bindet jeder Block genau einen Wert  [Blockgroesse 1: 32 Blockrandziele fuer 2 Staende x 4 Parameter x 4 Ereignisse; Blockgroesse 1: 0 von 8 Laeufen abweichend; Blockgroesse 64: 3 von 8 Laeufen abweichend; Blockgroesse 185: 3 von 8 Laeufen abweichend; Blockgroesse 240: 3 von 8 Laeufen abweichend; Blockgroesse 256: 4 von 8 Laeufen abweichend; Blockgroesse 512: 4 von 8 Laeufen abweichend; ]
+  FEHLER  312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt in DEMSELBEN Block, an dessen Rand er gelesen wurde: am Ende von Block 10 steht der Ausgang auf 10^(24/20), am Ende von Block 9 noch auf 1  [A/B 1020, Ende Block 9 1, Ende Block 10 15.8489322263]
+  FEHLER  312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.mix; fuer diese vier ist A bitgleich zu B (312/M-20), und nach je einem Hostereignis auf jedem der 112 Hostparameter setzt der Blockrand genau vier Rampenziele  [Tabelle: v1.global.input_trim_db v1.global.output_trim_db v1.global.width v2.global.mix; Blockrandziele nach je einem Ereignis auf allen 112: 4]
+Die Zusage faellt an der erwarteten Pruefung (312/M-20 hostwerte|312/M-21 offline|312/M-22 blockbindung|312/M-27 wert|312/M-79 genau): JA
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (33):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dies
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Para
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ue
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomatio
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sin
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt 
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in de
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsper
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Ou
+  ok      312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] M-92, Gate T3-05-02): A u
+  ok      312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein Block zu 64 - beim Laden 
+  ok      312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein eigener schreibbarer Stand m
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 09:48:10.118; Bau (EqCopTransactionTest,EqCopDspGoldenTest) Exit 0, 5 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 09:48:13.320 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 2 s, Summe: 225 geprueft, 0 Fehler
+Zusatzbein EqCopDspGoldenTest.exe: Binary 09:48:14.519 - juenger als die Quelle: JA; Exitcode 0, Summe: 389 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/dsp/DspKern.cpp               |  27 ++-
+ eq-copilot/plugin/dsp/DspKern.h                 |  12 +-
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      |  41 ++++-
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  15 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 213 +++++++++++++++++++++++-
+ 5 files changed, 287 insertions(+), 21 deletions(-)
+
+Ende 2026-09-21 09:48:23.
+
+== Bewertung ==
+Die Korrektur A-19 faellt an den erwarteten Pruefzeilen: JA - rot sind genau die fuenf, die die Validierung gerechnet hat, und keine weitere: 312/M-20 (im neutralen Stand je 126 abweichende Werte fuer Input-Trim, Output-Trim und Width - deckungsgleich mit den 126 Samples aus A-19: A laesst das Stueck unbeschrieben, in dem die letzte Rampe endet, B schreibt es im Uebergang; Mix im neutralen Stand und der ganze Stand mit Band bleiben A/B 0), 312/M-21 (derselbe Lauf offline, dieselben 126), 312/M-22 (Blockgroessen 64, 185, 240, 256 und 512 mit 3 bis 4 von 8 Laeufen abweichend; Blockgroesse 1 bleibt 0 von 8, weil das unbeschriebene Stueck das letzte Rampensample mit Gain genau 1,0 ist - wie gerechnet), 312/M-27 (A/B 1020 bei Blockgroesse 4096; die Endwerte der Pruefung bleiben richtig, gefallen ist die Bitgleichheit) und 312/M-79 (ueber seine Klausel vierBitgleich aus 312/M-20; Tabelle und 4 Ziele bleiben richtig). Gruen unter derselben Mutation, wie gerechnet: 312/M-23, M-26, M-28, M-29, M-80, M-81, M-82, der Teilfall nicht_endliche_hostwerte_am_blockrand, 312/M-87 mit beiden Teilfaellen und B6 mit 389 von 389 (ohne Hostwerte ist cRampenEnde hoechstens cUebergangsEnde; die Neutral- und Schreibendefaelle des Kerns sehen die Korrektur nicht). Damit ist A-19 einmal absichtlich gebrochen (Pruefliste E, R-312-18); die Wache der Korrektur sind 312/M-20 bis M-22, M-27 und M-79 im neutralen Stand, nicht B6.

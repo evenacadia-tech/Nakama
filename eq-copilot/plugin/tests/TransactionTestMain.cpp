@@ -47,6 +47,12 @@
          ohne Kontrolltakt bitgleich zu einem mit Takt nach jedem Block, auch
          offline, bei jeder gefahrenen Blockgroesse und ueber den Zaehlerrand;
          Bandwerte und Schalter bleiben messend taktgebunden (Teil b, NAK-340).
+         Seit der Nacharbeit 1 der Etappe 3 (L-1, R-312-16, 312/M-87 in
+         Abschnitt Y) setzt der Blockrand nach einem read-only-Ladestart aus
+         keinem Hostwert ein Rampenziel - auch nicht im Ausblenden des vorigen
+         Standes und nicht waehrend eines beim Laden laufenden Uebergangs -,
+         und ein schreibbarer Stand danach laesst ihn ohne Kontrolltakt wieder
+         wirken.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -4272,9 +4278,60 @@ std::vector<float> eingangVon (int bloecke, int groesse, int saat)
     return ein;
 }
 
+/** Abweichende Samples zweier Ausgaben im Format von `fahreFolge`, je Kanal,
+    und das Fenster: erstes und letztes abweichendes Sample, gezaehlt ab dem
+    ersten Sample des Laufs (312/M-87). */
+struct Abweichungsbild { int links = 0; int rechts = 0; long long erstes = -1; long long letztes = -1; };
+
+Abweichungsbild abweichungsbild (const std::vector<float>& a, const std::vector<float>& b, int groesse)
+{
+    Abweichungsbild bild;
+    if (a.size() != b.size())
+    {
+        bild.links = bild.rechts = std::numeric_limits<int>::max();
+        return bild;
+    }
+    const size_t jeBlock = (size_t) groesse * 2u;
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+        if (std::memcmp (&a[i], &b[i], sizeof (float)) == 0)
+            continue;
+        const size_t imBlock = i % jeBlock;
+        const bool   rechts  = imBlock >= (size_t) groesse;
+        const auto   sample  = (long long) ((i / jeBlock) * (size_t) groesse
+                                            + (rechts ? imBlock - (size_t) groesse : imBlock));
+        ++(rechts ? bild.rechts : bild.links);
+        if (bild.erstes < 0 || sample < bild.erstes) bild.erstes = sample;
+        if (sample > bild.letztes) bild.letztes = sample;
+    }
+    return bild;
+}
+
+std::string beschreibe (const Abweichungsbild& b)
+{
+    std::string t = "links " + std::to_string (b.links) + ", rechts " + std::to_string (b.rechts) + " abweichend";
+    if (b.erstes >= 0)
+        t += " (Samples " + std::to_string (b.erstes) + " bis " + std::to_string (b.letztes) + " nach dem Laden)";
+    return t;
+}
+
+/** Das groesste Verhaeltnis Ausgang/Eingang in dB ueber alle Samples mit
+    Eingang ungleich 0. Aussagekraeftig nur, solange der Pfad je Sample einen
+    reinen Faktor rechnet (Trims, kein Width, kein Mix) - 312/M-87 misst damit
+    ohne Bedingung die Spitze, die ein Output-Trim-Hostwert ins Ausblenden
+    traegt. */
+double groessterFaktorDb (const std::vector<float>& aus, const std::vector<float>& ein)
+{
+    double groesster = 0.0;
+    for (size_t i = 0; i < aus.size() && i < ein.size(); ++i)
+        if (ein[i] != 0.0f)
+            groesster = std::max (groesster, (double) aus[i] / (double) ein[i]);
+    return 20.0 * std::log10 (groesster);
+}
+
 void nak312Blockbindung()
 {
-    abschnitt ("Y - NAK-312 Etappe 3b: Blockbindung der Hostwerte (312/M-20 bis 312/M-23, 312/M-26 bis 312/M-29, 312/M-79 bis 312/M-82; 312/M-24 und 312/M-25 in Abschnitt O)");
+    abschnitt ("Y - NAK-312 Etappe 3b: Blockbindung der Hostwerte (312/M-20 bis 312/M-23, 312/M-26 bis 312/M-29, 312/M-79 bis 312/M-82, seit der Nacharbeit 1 312/M-87; 312/M-24 und 312/M-25 in Abschnitt O)");
 
     const int blk = 64;
     const auto bloeckeFuer = [] (int groesse) { return 14 + std::max (6, (2048 + groesse - 1) / groesse); };
@@ -4687,6 +4744,160 @@ void nak312Blockbindung()
                 "Ereignis setzt genau ein Rampenziel (3), das nach dem Ueberlauf wirkt, A ist bitgleich zu B, am Ende +12 dB",
                 "A/B " + std::to_string (ab) + ", Blockrandziele " + zahl (ziele) + ", Verhaeltnis nach Block 11 " + text (nach10)
                 + ", nach Block 13 " + text (nach12) + ", am Ende " + text (amEnde));
+    }
+
+    // ── 312/M-87: nach einem read-only-Ladestart kein Blockrandziel ────────
+    // Nacharbeit 1 der Etappe 3 (L-1, E-312-13, R-312-16). A und C tragen
+    // denselben eingeschwungenen Stand (eq an, Output-Trim +3 dB committet) und
+    // laden dasselbe fremde Major; nur A bekommt danach Hostwerte auf die vier
+    // Parameter der Abdeckungstabelle. Im ersten Block nach dem Laden ist die
+    // Bank des vorigen Standes noch aktiv und blendet aus - ab dem ersten
+    // Sample dieses Blocks muss A bitgleich zu C sein, und der Blockrand von A
+    // setzt kein Rampenziel. Jeder Lauf steht ganz unter EINER Taktsperre ohne
+    // Kontrolltakt: der Worker zieht weder zwischen Laden und Hostwerten noch
+    // vor dem ersten Block.
+    {
+        juce::MemoryBlock fremd;
+        const bool fremdGelesen = wurzel().getChildFile ("eq-copilot/fixtures/state/schema2/fremdes-major-3.bin").loadFileAsData (fremd);
+        auto plusDrei = mitEq (true);
+        plusDrei.werte[(size_t) kOutTrim].zahl = 3.0;
+
+        using Hostwerte = std::function<void (Prozessor&)>;
+        const Hostwerte keine;
+        const Hostwerte vier = [] (Prozessor& p)
+        {
+            // Input-Trim +24 dB, Output-Trim +24 dB, Width 2, Mix 0
+            for (const auto& bp : blockParameter())
+                hostSchreibt (p, bp.index, bp.extrem);
+        };
+        const Hostwerte nurAusgang = [] (Prozessor& p) { hostSchreibt (p, kOutTrim, 24.0f); };
+
+        struct Lauf
+        {
+            std::vector<float> aus;
+            bool          commit = true, uebergangLief = false, lesend = false;
+            std::uint64_t ziele = 0;
+        };
+        /** Bei `mitUebergang` zuerst ein Commit Output-Trim +6 dB und genau ein
+            Block zu 64 - der Uebergang dieses Commits laeuft beim Laden noch -,
+            dann das fremde Major, die Hostwerte und `bloecke` Bloecke zu
+            `groesse`. `aus` beginnt mit dem ersten Block nach dem Laden. */
+        const auto lauf = [&fremd, &plusDrei] (Prozessor& p, bool mitUebergang, const Hostwerte& hostwerte,
+                                               int groesse, int bloecke, int saat)
+        {
+            Lauf l;
+            p.mitAngehaltenemTaktFuerTest ([&]
+            {
+                if (mitUebergang)
+                {
+                    auto plusSechs = plusDrei;
+                    plusSechs.werte[(size_t) kOutTrim].zahl = 6.0;
+                    l.commit = setze (p, plusSechs).ausgang == tx::Ausgang::commit;
+                    fahreAudio (p, 1, 64, saat + 1);
+                }
+                int aktiv = -1, quelle = -1, candidate = -1, candidateQuelle = -1;
+                p.dspKernFuerTest().gefahreneSlots (aktiv, quelle, candidate, candidateQuelle);
+                l.uebergangLief = quelle >= 0;
+                const auto ziele0 = p.dspKernFuerTest().blockrandZiele();
+                p.setStateInformation (fremd.getData(), (int) fremd.getSize());
+                l.lesend = p.zustandLesen().nurLesen;
+                if (hostwerte)
+                    hostwerte (p);
+                l.aus   = fahreFolge (p, bloecke, groesse, {}, false, saat);   // die Taktsperre ist rekursiv
+                l.ziele = p.dspKernFuerTest().blockrandZiele() - ziele0;
+            });
+            return l;
+        };
+
+        // Hauptfall: Bloecke zu 256, der Pfad steht beim Laden.
+        {
+            const int groesse = 256, bloecke = 4;
+            auto a  = blockPruefling (groesse, plusDrei);
+            auto a1 = blockPruefling (groesse, plusDrei);
+            auto c  = blockPruefling (groesse, plusDrei);
+            const auto la  = lauf (*a,  false, vier,       groesse, bloecke, 3871);
+            const auto la1 = lauf (*a1, false, nurAusgang, groesse, bloecke, 3871);
+            const auto lc  = lauf (*c,  false, keine,      groesse, bloecke, 3871);
+            const auto bild = abweichungsbild (la.aus, lc.aus, groesse);
+            const auto ein  = eingangVon (bloecke, groesse, 3871);
+            pruefe (fremdGelesen && la.lesend && lc.lesend && bild.links == 0 && bild.rechts == 0 && la.ziele == 0,
+                    "312/M-87 read_only_ladestart_nimmt_kein_blockrandziel (L-1, R-312-16, R-312-10 zweiter Teil, [SONDE-015] "
+                    "M-92, Gate T3-05-02): A und C je eq an und Output-Trim +3 dB committet und eingeschwungen, unter der "
+                    "Taktsperre in beiden das fremde Major geladen, nur in A danach Input-Trim +24 dB, Output-Trim +24 dB, "
+                    "Width 2 und Mix 0 als Hostwerte, dann dieselben Bloecke zu 256 mit fester Saat (1024 Samples je Kanal) - "
+                    "A ist ab dem ersten Sample des ersten Blocks nach dem Laden bitgleich zu C, und die Blockrandziele von A "
+                    "steigen um 0",
+                    "A gegen C " + beschreibe (bild) + ", Blockrandziele A +" + zahl (la.ziele) + ", read-only A "
+                    + (la.lesend ? "ja" : "NEIN") + " / C " + (lc.lesend ? "ja" : "NEIN")
+                    + "; Messung ohne Bedingung, nur Output-Trim +24 dB in einer dritten Instanz: groesstes Ausgang/Eingang "
+                    + text (groessterFaktorDb (la1.aus, ein)) + " dB, Blockrandziele +" + zahl (la1.ziele) + " (C "
+                    + text (groessterFaktorDb (lc.aus, ein)) + " dB)");
+        }
+
+        // Teilfall (i): beim Laden laeuft ein Uebergang, danach Bloecke zu 185
+        // (FL) und zu 512.
+        {
+            bool ok = fremdGelesen;
+            std::ostringstream d;
+            for (const int groesse : { 185, 512 })
+            {
+                const int bloecke = std::max (4, (2048 + groesse - 1) / groesse);
+                auto a = blockPruefling (512, plusDrei);
+                auto c = blockPruefling (512, plusDrei);
+                const auto la = lauf (*a, true, vier,  groesse, bloecke, 3872 + groesse);
+                const auto lc = lauf (*c, true, keine, groesse, bloecke, 3872 + groesse);
+                const auto bild = abweichungsbild (la.aus, lc.aus, groesse);
+                ok = ok && la.commit && lc.commit && la.uebergangLief && lc.uebergangLief && la.lesend
+                        && bild.links == 0 && bild.rechts == 0 && la.ziele == 0;
+                d << "Bloecke zu " << groesse << ": Uebergang beim Laden " << (la.uebergangLief ? "lief" : "lief NICHT")
+                  << ", A gegen C " << beschreibe (bild) << ", Blockrandziele A +" << la.ziele << "; ";
+            }
+            pruefe (ok,
+                    "312/M-87 Teilfall (i) uebergang_beim_laden (R-312-16): vorher ein Commit Output-Trim +6 dB und genau ein "
+                    "Block zu 64 - beim Laden laeuft dessen Uebergang noch -, danach Bloecke zu 185 und zu 512 - dieselbe "
+                    "Zusage: A ist ab dem ersten Sample nach dem Laden bitgleich zu C, und die Blockrandziele von A steigen um 0",
+                    d.str());
+        }
+
+        // Teilfall (ii): der Rueckweg in einen schreibbaren Stand, OHNE
+        // Kontrolltakt - dort wirkt der Hostwert nur ueber den Blockrand.
+        {
+            auto quelle = prozessor (48000.0, 64);
+            setze (*quelle, mitEq (true));
+            juce::MemoryBlock eigen;
+            quelle->getStateInformation (eigen);
+            const int groesse = 64, bloecke = 24;
+            const auto folge = [&fremd, &eigen] (bool* lesend, bool* schreibbar) -> Ereignisse
+            {
+                return [&fremd, &eigen, lesend, schreibbar] (Prozessor& x, int b)
+                {
+                    if (b == 0)
+                    {
+                        x.setStateInformation (fremd.getData(), (int) fremd.getSize());
+                        *lesend = x.zustandLesen().nurLesen;
+                        x.setStateInformation (eigen.getData(), (int) eigen.getSize());
+                        *schreibbar = ! x.zustandLesen().nurLesen;
+                    }
+                    if (b == 10) hostSchreibt (x, kOutTrim, 6.0f);
+                };
+            };
+            bool lesendA = false, schreibbarA = false, lesendB = false, schreibbarB = false;
+            auto a = prozessor (48000.0, groesse);
+            auto b = prozessor (48000.0, groesse);
+            const auto ya  = fahreFolge (*a, bloecke, groesse, folge (&lesendA, &schreibbarA), false, 3879);
+            const auto yb  = fahreFolge (*b, bloecke, groesse, folge (&lesendB, &schreibbarB), true,  3879);
+            const auto ein = eingangVon (bloecke, groesse, 3879);
+            const int    ab     = abweichend (ya, yb);
+            const double amEnde = letztesVerhaeltnis (ya, ein, bloecke - 1, groesse);
+            pruefe (fremdGelesen && lesendA && schreibbarA && lesendB && schreibbarB && ab == 0
+                        && std::abs (amEnde - dbFaktor (6.0)) <= 1.0e-5,
+                    "312/M-87 Teilfall (ii) rueckweg_ohne_kontrolltakt (R-312-16 Schluss): erst das fremde Major, dann ein "
+                    "eigener schreibbarer Stand mit eq an, unter der Taktsperre OHNE Kontrolltakt Output-Trim +6 dB vor Block 10 "
+                    "- A ist bitgleich zu einem Lauf mit Takt nach jedem Block, und Ausgang/Eingang steht am Ende bei 10^(6/20)",
+                    std::string ("zwischendurch read-only ") + (lesendA ? "ja" : "NEIN") + ", danach schreibbar "
+                    + (schreibbarA ? "ja" : "NEIN") + ", A/B " + std::to_string (ab) + " abweichend, am Ende " + text (amEnde)
+                    + " (Soll 10^(6/20))");
+        }
     }
 #endif
 

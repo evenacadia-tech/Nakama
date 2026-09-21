@@ -548,7 +548,11 @@ void DspKern::blockrand (Pfad p) noexcept
         z.quelle = alt;
         z.aktiv  = -1;
         // Die Rampen behalten ihre Ziele: die ausblendende Bank klingt mit
-        // IHREN Gains aus, genau wie beim Hard-Bypass-Wechsel (M-06).
+        // IHREN Gains aus, genau wie beim Hard-Bypass-Wechsel (M-06). Dazu
+        // gehoert im schreibbaren Stand ein Ziel, das der Blockrand in DIESEM
+        // Block vor der Uebernahme aus einem Hostwert gesetzt hat
+        // (`uebernimmBlockrandHostwerte`, NAK-312 Etappe 3b) - es formt das
+        // Ausblenden; im read-only-Stand setzt er keines (R-312-16).
 
         // X-1 (Entscheid E-33): mischt die Hoermatrix noch Candidate-Anteile,
         // ist IHRE Rueckblende die einzige Blende. Die Bank fadet dann nicht
@@ -669,14 +673,19 @@ void DspKern::uebernimmBlockrandHostwerte (const BlockrandHostwerte& w) noexcept
         blockStand[(size_t) k]       = h.stand;
         blockZielGueltig[(size_t) k] = h.wert;
         if (! h.wert)
-            continue;   // vom Ladestart quittiert: kein Hostgestus (W02)
+            continue;   // vom Ladestart quittiert (W02) oder read-only geladen (R-312-16): kein Ziel
 
         const int index = kBlockrandParameter[(size_t) k];
         blockZiel[(size_t) k] = rampenzielAusZelle (index, h.zahl);
 
-        // NAK-311 (T3-15-05): ein ruhender oder ausblendender Pfad nimmt kein
-        // Ziel - das naechste Einschalten beginnt wie ein frischer Kern, und
-        // die ausblendende Bank klingt mit IHREN Gains aus (M-06). Das
+        // NAK-311 (T3-15-05): ein ruhender Pfad und einer, dessen Ausblenden in
+        // einem FRUEHEREN Block begonnen hat (`z.aktiv < 0`), nimmt kein Ziel -
+        // das naechste Einschalten beginnt wie ein frischer Kern (M-07), und
+        // die ausblendende Bank klingt mit IHREN Gains aus (M-06). Im Block, in
+        // dem eine ENDE-Blende beginnt, ist die Bank hier noch aktiv (die
+        // Uebernahme folgt erst in `blockrand`): im schreibbaren Stand setzt
+        // der Blockrand dann ein Ziel, das die ausblendende Bank formt; nach
+        // einem read-only-Ladestart kommt kein `wert` an (R-312-16). Das
         // Blockrandziel bleibt gemerkt; das Programm, das den Pfad wieder
         // aktiv macht, entscheidet nach der Schiedsregel.
         if (z.aktiv < 0)
@@ -1126,9 +1135,11 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
 
         // NAK-311 (T3-15-05): endet der Uebergang in der Ruhe, stehen die fuenf
         // Rampen auf den Ruhewerten 1,0 wie nach `bereiteVor`. Ausgeblendet hat
-        // die Bank mit IHREN Gains (M-06); das naechste Einschalten aus der
-        // Ruhe rampt wie ein frischer Kern von 1,0 aus (M-07), nie von einem
-        // Ziel aus der Zeit vor der Ruhe.
+        // die Bank mit IHREN Gains (M-06) - im schreibbaren Stand einschliesslich
+        // eines Blockrandziels aus dem ersten Block der Blende (`blockrand`,
+        // NAK-312 Etappe 3b), im read-only-Stand ohne (R-312-16); das naechste
+        // Einschalten aus der Ruhe rampt wie ein frischer Kern von 1,0 aus
+        // (M-07), nie von einem Ziel aus der Zeit vor der Ruhe.
         if (z.aktiv < 0) z.rampen.setzeSofort (1.0);
     }
 }

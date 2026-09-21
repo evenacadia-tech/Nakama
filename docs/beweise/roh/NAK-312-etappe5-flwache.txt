@@ -1,0 +1,9 @@
+FL-Prozesswache des Dirigenten, 21.09.2026, waehrend des zweiten Laufzeit-Laufs der Etappe 5 von NAK-312 (Stand 64ece9e1).
+Werkzeug: tasklist im 1-s-Takt, protokolliert ist jede Aenderung der FL64-PIDs. Runner-Log desselben Laufs: FL gestartet PID 124160 um 16:06:02, vom Runner beendet 16:06:24 (frischer_start), FL gestartet PID 316548 um 16:06:25; kein weiteres Beenden durch den Runner.
+
+16:05:56 FL64-PIDs: [214832 ]
+16:06:00 FL64-PIDs: [210200 ]
+16:06:03 FL64-PIDs: [124160 ]
+16:06:24 FL64-PIDs: []
+16:06:25 FL64-PIDs: [316548 ]
+16:08:10 FL64-PIDs: []

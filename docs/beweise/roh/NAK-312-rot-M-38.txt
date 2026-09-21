@@ -1,0 +1,50 @@
+# NAK-312 Rotbeweis M-38 (Manifest §7.1)
+
+Matrixzeile: 312/M-38 (W09, Grundgesetz, E-312-11), Etikett zwei Haelften. Zaehlerhaelfte: Regressionswache - dieser Rotlauf. Schleusenhaelfte (der Callbackpfad der Schleuse arbeitet nur mit Atomics): ausdruecklich ohne eigene Mutation (E-312-11 Punkt 3, E-312-10: kein Haken in Schleuse.h).
+Zusage: weder Schleuse noch Lebendpruefung liegen im Audiopfad - RtWache::sperren() = 0 und RtWache::allokationen() = 0 ueber 4000 Bloecke mit laufenden v3-Clients.
+Bein: B7 EqCopTransactionTest, Fall 312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (Abschnitt Z).
+Mutation an der Zeile, die die Zusage traegt (Matrix: den Provider v3Status() aus processBlock rufen): eq-copilot/plugin/sonde/SondeProcessor.cpp, processBlock - `(void) v3Status();` unmittelbar hinter dem Bereich der Echtzeitwache. Erwartet: seine Zeichenketten (Hash als Text, Messpunkt, Label) allozieren im Bereich, RtWache::allokationen() steigt. Behauptet wird KEIN Sperrenanstieg: die drei Sperren auf diesem Weg sind juce::ScopedLock und fuer RtWache::sperren() unsichtbar.
+Zeile der Mutation (zum Endstand): eingefuegt nach eq-copilot/plugin/sonde/SondeProcessor.cpp:496 (Bereich der Echtzeitwache in processBlock).
+
+Start 2026-09-21 12:02:28. SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+    const nakama::dsp::RtWache::Bereich wache;
+    juce::ScopedNoDenormals keineDenormals;
+```
+nachher:
+```
+    const nakama::dsp::RtWache::Bereich wache;
+    (void) v3Status();   // ROTBEWEIS 312/M-38: der Provider im Audiopfad
+    juce::ScopedNoDenormals keineDenormals;
+```
+Bau EqCopTransactionTest: BAU EXIT=0; Binary 12:02:37, Quelle 12:02:28, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (12:02:37 bis 12:02:39): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  FEHLER  311/M-139 der_neutrale_weg_kostet_nichts (Teilfall von 311/M-135, NAK-311 R-311-16): bei 32 kHz zaehlt der thread-lokale Zaehler ueber 200 Bloecke 0 Allokationen im Callback, die Echtzeitwache des Kerns 0 gemeldete Sperren, getLatencySamples bleibt 0 und getTailLengthSeconds 0,0  [Allokationen im Callback 400, gemeldete Sperren im Audiopfad des Kerns 0, Latenz 0, Tail 0 s, Taplaenge 0, verworfene Analyseframes 0]
+  FEHLER  312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke zaehlt RtWache::sperren() genau 200, eine je Block an der Playhead-Stelle VOR dspKern->verarbeite, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 200 bei 200 Playhead-Aufrufen in 200 Bloecken, RtWache::allokationen 400, eigener Zaehler 400]
+  FEHLER  312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Parametern - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso  [RtWache::sperren 0, RtWache::allokationen 8000, eigener Zaehler 8000]
+  FEHLER  312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Probe-Pipe verbunden sind und ihre Provider durch die Besitzschleuse laufen - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso  [4000 Bloecke, Schleuse betreten 4 -> 8 im Messfenster, Control verbunden ja, RtWache::sperren 0, RtWache::allokationen 8000, eigener Zaehler 8000]
+226 geprueft, 4 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau EqCopTransactionTest: BAU EXIT=0; Binary 12:02:45, Quelle 12:02:39, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (12:02:45 bis 12:02:48): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+226 geprueft, 0 Fehler
+TRANSAKTION OK
+```
+Ende 2026-09-21 12:02:48. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Zaehlerhaelfte: Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-38 rot mit RtWache::allokationen 8000 (zwei je Block ueber 4000 Bloecke) und RtWache::sperren 0: die Zeichenketten des Providers allozieren im Bereich; einen Sperrenanstieg behauptet die Zeile nicht, und er tritt nicht auf (die Sperren auf dem Weg sind juce::ScopedLock).
+- Mitgefallen, mit Grund: 311/M-139, 312/M-01 und 312/M-26 - jeder Echtzeitfall von B7, dessen Sonde einen Stand mit Parametern traegt, ruft den Provider jetzt im Block und zaehlt dessen Allokationen (400, 400, 8000).
+- Schleusenhaelfte (der Callbackpfad der Schleuse arbeitet nur mit Atomics): ausdruecklich ohne eigene Mutation (E-312-11 Punkt 3; E-312-10: kein Haken in Schleuse.h). Gemessen ist sie im gruenen Einzellauf von B7 um 11:32: waehrend der 4000 Bloecke lief die Schleuse (betreten 4 -> 6), die Wache blieb bei 0; der Lauf nach der Ruecknahme hier ist ebenfalls gruen (226 geprueft, 0 Fehler).

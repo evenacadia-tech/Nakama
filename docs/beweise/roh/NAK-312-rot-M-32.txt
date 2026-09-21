@@ -1,0 +1,42 @@
+# NAK-312 Rotbeweis M-32 (Manifest §7.1)
+
+Matrixzeile: 312/M-32 (T3-04-01, starten<->stoppen, Frist), Etikett Regressionswache.
+Zusage: stop() kehrt zurueck, stopFristUeberschritten steigt um 1, der Thread wird abgeloest; der Destruktor wartet danach hoechstens die Restdauer des laufenden Rueckrufs, nie unbegrenzt.
+Bein: B31 EqCopSondeLebenslaufTest, Fall 312/M-32 stoppfrist_loest_ab_und_der_destruktor_wartet_nur_den_rest (Teilfall von 312/M-30).
+Mutation (Matrix: schliessen() VOR stop() rufen): eq-copilot/plugin/sonde/SondeProcessor.cpp, ~SondeProcessor - ein `callbackSchleuse->schliessen();` unmittelbar vor `telemetryV3.stop();` eingefuegt; der Aufruf nach den stop() bleibt stehen und ist laut Schleuse.h idempotent, die Wirkung ist also genau das Vorziehen.
+Zeile der Mutation (zum Endstand): eingefuegt vor eq-copilot/plugin/sonde/SondeProcessor.cpp:333 (`telemetryV3.stop();`); der Aufruf in :343 bleibt.
+
+Start 2026-09-21 11:50:47. SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+        worker.join();
+    telemetryV3.stop();
+```
+nachher:
+```
+        worker.join();
+    callbackSchleuse->schliessen();   // ROTBEWEIS 312/M-32: vor stop() (der spaetere Aufruf ist idempotent)
+    telemetryV3.stop();
+```
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:50:53, Quelle 11:50:47, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (11:50:53 bis 11:52:01): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+  FEHLER  312/M-32 stoppfrist_loest_ab_und_der_destruktor_wartet_nur_den_rest (Teilfall von 312/M-30, R-D2 Satz 4): stop() des gehaltenen ControlClients kehrt nach der 2-s-Frist zurueck, stopFristUeberschritten steigt genau um 1 (die Telemetrie um 0), der Thread ist abgeloest; danach wartet der Destruktor hoechstens die Restdauer des laufenden Providers - gewartetMs liegt innerhalb der Destruktordauer jenseits der Frist  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 0; im Destruktor: geschlossen ja, aktiv 0, betreten 187, abgewiesen 0, gewartetMs 2; danach: geschlossen ja, aktiv 0, betreten 187, abgewiesen 0, gewartetMs 2; stopFristUeberschritten Control 0, Telemetrie 0; Destruktor 7 ms; Stempel geschlossen 1, Freigabe 2, Marke lebend 3, Abbauende 4, Rueckkehr 5; Laufzeit beendet ja]
+  FEHLER  312/M-34 destruktor_stoppt_vor_dem_schliessen (Teilfall von 312/M-30, CLAUDE.md starten<->stoppen): beide stop() laufen VOR dem Schliessen - der gehaltene Provider war beim Schliessen schon von stop() abgeloest (Frist 1) und wurde danach zu Ende GEWARTET statt abgewiesen -, und erst nach dem Schliessen enden die Mitglieder: der Abbauende-Haken sieht die Schleuse zu und ohne laufenden Rueckruf  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 0; im Destruktor: geschlossen ja, aktiv 0, betreten 187, abgewiesen 0, gewartetMs 2; danach: geschlossen ja, aktiv 0, betreten 187, abgewiesen 0, gewartetMs 2; stopFristUeberschritten Control 0, Telemetrie 0; Destruktor 7 ms; Stempel geschlossen 1, Freigabe 2, Marke lebend 3, Abbauende 4, Rueckkehr 5; Laufzeit beendet ja]
+17 geprueft, 2 Fehler
+SONDE-LEBENSLAUF FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:52:07, Quelle 11:52:01, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (11:52:07 bis 11:53:18): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+17 geprueft, 0 Fehler
+SONDE-LEBENSLAUF OK
+```
+Ende 2026-09-21 11:53:18. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-32 rot: stopFristUeberschritten des gehaltenen ControlClients 0 statt 1. Die Schranke gibt beim Schliessen frei; schliesst die Schleuse VOR stop(), endet der gehaltene Provider, bevor stop() ihn abloesen muesste, und stop() joint ihn. Die Matrix erwartet an dieser Stelle einen Destruktor, der auf einen nie abgebrochenen Rueckruf wartet und die Beinfrist reisst; das Bein gibt beim Schliessen frei und ordnet ueber Zustaende statt ueber die Wanduhr (E-312-10), deshalb faellt die Zusage an ihrer Zaehlerhaelfte statt an der Laufzeit.
+- Mitgefallen, mit Grund: 312/M-34 (dieselbe Reihenfolge ist sein Gegenstand: beim Schliessen war noch kein stop() gelaufen).
+- Gruen unter derselben Mutation: 312/M-30 und 312/M-39 Fall 1 bis 3 (die Schleuse schliesst weiterhin vor den Mitgliedern), 312/M-33, 312/M-31, 312/NAK-345, 312/M-05 bis M-08.

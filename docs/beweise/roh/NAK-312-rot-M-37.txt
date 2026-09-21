@@ -1,0 +1,97 @@
+# NAK-312 Rotbeweis M-37a (Manifest §7.1)
+
+Matrixzeile: 312/M-37 (T3-04-03, Gegenfall ohne Aenderung), Etikett Regressionswache.
+Zusage: keine Mutation und keine Dirty-Meldung - der Fruehausstieg wegen fehlender Aenderung bleibt, wo er ist (State.cpp innerhalb der Sperre).
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35).
+Teil a - die Matrixmutation (den Fruehausstieg vor die Sperre ziehen): eq-copilot/plugin/src/prozessor/State.cpp, EqCopilotProcessor::setzeBindung - derselbe Vergleich unmittelbar VOR `std::lock_guard<std::mutex> l (bindungMutex);`; der Vergleich innerhalb der Sperre bleibt stehen und wird fuer den Fall ohne Aenderung nicht mehr erreicht. State.cpp ist nicht Ticketpfad der Etappe 4: voruebergehend mutiert, bytegleich zurueckgenommen (Muster A-6).
+Zeilen der Mutation (zum Stand HEAD, Datei unveraendert): Teil a vor eq-copilot/plugin/src/prozessor/State.cpp:304, Teil b eq-copilot/plugin/src/prozessor/State.cpp:318-319.
+
+Start 2026-09-21 12:04:13. SHA-256 vorher eq-copilot/plugin/src/prozessor/State.cpp C9A136D91E8B216B5B4FC8C266E28514D1CF8971F08D88D9E444A49A54DC158C; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen)
+            return false;
+        auto neu = zustand.common;
+```
+nachher:
+```
+    {
+        // ROTBEWEIS 312/M-37 (Matrixmutation): der Fruehausstieg VOR der Sperre
+        auto vorab = zustand.common;
+        vorab.klasse = klasse;
+        vorab.position = position;
+        vorab.label = lbl;
+        vorab.pairId = p;
+        if (vorab == zustand.common)
+            return false;
+    }
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen)
+            return false;
+        auto neu = zustand.common;
+```
+Bau EqCopShot: BAU EXIT=0; Binary 12:04:18, Quelle 12:04:13, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (12:04:18 bis 12:04:21): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 0 Fehler
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 C9A136D91E8B216B5B4FC8C266E28514D1CF8971F08D88D9E444A49A54DC158C - gleich vorher: JA
+Bau EqCopShot: BAU EXIT=0; Binary 12:04:26, Quelle 12:04:21, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (12:04:27 bis 12:04:29): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 0 Fehler
+```
+Ende 2026-09-21 12:04:29. Rot-Exit 0, Gruen-Exit 0.
+
+## Teil b
+Teil b - Ersatz an der Zeile, die die Zusage traegt: eq-copilot/plugin/src/prozessor/State.cpp, EqCopilotProcessor::setzeBindung - der Fruehausstieg `if (neu == zustand.common) return false;` innerhalb der Sperre entfernt.
+
+Start 2026-09-21 12:04:54. SHA-256 vorher eq-copilot/plugin/src/prozessor/State.cpp C9A136D91E8B216B5B4FC8C266E28514D1CF8971F08D88D9E444A49A54DC158C; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+        if (neu == zustand.common)
+            return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+
+```
+nachher:
+```
+        // ROTBEWEIS 312/M-37 Teil b: Fruehausstieg entfernt
+
+```
+Bau EqCopShot: BAU EXIT=0; Binary 12:05:00, Quelle 12:04:54, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (12:05:01 bis 12:05:03): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  FEHLER  312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 1 Fehler
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 C9A136D91E8B216B5B4FC8C266E28514D1CF8971F08D88D9E444A49A54DC158C - gleich vorher: JA
+Bau EqCopShot: BAU EXIT=0; Binary 12:05:09, Quelle 12:05:03, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (12:05:09 bis 12:05:12): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 0 Fehler
+```
+Ende 2026-09-21 12:05:12. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Teil a (Matrixmutation, den Fruehausstieg vor die Sperre ziehen) ist KEIN Rotbeweis: B15 bleibt 3/3 gruen. Das Bein laeuft auf einem Thread; zwischen Vergleich und Sperre schreibt niemand, also aendert die Lage des Vergleichs weder Mutation noch Dirty-Zaehlung (Abweichung im Manifest, Muster A-4, A-5, A-12).
+- Teil b (Ersatz an der Zeile, die die Zusage traegt: der Fruehausstieg entfernt): Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-37 rot mit Host-Dirty 1 bei unveraenderter Bindung.
+- Mitgefallen: keiner. Gruen unter beiden Mutationen: 312/M-35, 312/M-36 und die 25 SONDE-012-Shots. State.cpp ist nicht Ticketpfad der Etappe 4; beide Mutationen sind bytegleich zurueckgenommen (SHA-256 gleich vorher), `git diff` der Etappe enthaelt die Datei nicht.

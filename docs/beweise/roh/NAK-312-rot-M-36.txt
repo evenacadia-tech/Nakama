@@ -1,0 +1,47 @@
+# NAK-312 Rotbeweis M-36 (Manifest §7.1)
+
+Matrixzeile: 312/M-36 (T3-04-03, oeffnen<->schliessen), Etikett Regressionswache.
+Zusage: der normale Handgriff bleibt unveraendert - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35).
+Mutation (Matrix: die Lebendpruefung so bauen, dass sie den Editor im Abbau bereits als tot fuehrt, bevor das Panel schliesst): eq-copilot/plugin/src/PluginEditor.cpp, MesspunktPanel::uebernehmen - die Pruefung verlangt zusaetzlich `ed->isShowing()`. Ein Editor ohne sichtbares Fenster - wie im Abbau des Hostfensters und im Bein ohne Desktop - gilt damit als tot.
+Zeile der Mutation (zum Endstand): eq-copilot/plugin/src/PluginEditor.cpp:731.
+
+Start 2026-09-21 12:12:17. SHA-256 vorher eq-copilot/plugin/src/PluginEditor.cpp 7C633CF9BE5F485B32C5881E66B5DEBAB7405DF201246F0828D1F7A220011FD8; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+            if (ed == nullptr)
+                return;
+
+```
+nachher:
+```
+            if (ed == nullptr || ! ed->isShowing())   // ROTBEWEIS 312/M-36: Editor ohne sichtbares Fenster gilt als tot
+                return;
+
+```
+Bau EqCopShot: BAU EXIT=0; Binary 12:12:23, Quelle 12:12:17, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (12:12:23 bis 12:12:26): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  FEHLER  312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '', Bild nak312-messpunkt-panel.png]
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 1 Fehler
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 7C633CF9BE5F485B32C5881E66B5DEBAB7405DF201246F0828D1F7A220011FD8 - gleich vorher: JA
+Bau EqCopShot: BAU EXIT=0; Binary 12:12:32, Quelle 12:12:26, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (12:12:32 bis 12:12:35): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+SONDE-012 SHOTS 25/25 gruen
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+NAK-312 PANEL 3 geprueft, 0 Fehler
+```
+Ende 2026-09-21 12:12:35. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-36 rot: die Aenderung geht verloren (Label nach dem Panel leer statt "NAK-312 Etappe 4") und Host-Dirty 0 statt 1, weil die Pruefung den lebenden, aber unsichtbaren Editor als tot fuehrt.
+- Mitgefallen: keiner.
+- Gruen unter derselben Mutation: 312/M-35, 312/M-37, die 25 SONDE-012-Shots.

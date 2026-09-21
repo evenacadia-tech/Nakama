@@ -11,13 +11,29 @@
 // --state laedt vor dem Render einen Host-State (z. B. den read-only-Fall
 // fixtures/state/schema2/fremdes-major-3.bin, SONDE-006) — der Sichtbeweis,
 // dass der Editor einen Zustand zeigt, den es gibt.
+// --sonde012-suite <ordner> (Kanon B15) rendert den SONDE-012-Sichtsatz und
+// faehrt seit NAK-312 Etappe 4 danach das Messpunkt-Panel am echten Editor
+// (312/M-35 bis 312/M-37, R-312-2): Abbau nach dem Ende von Editor und
+// Prozessor, normaler Handgriff mit und ohne Aenderung; dazu das Bild
+// nak312-messpunkt-panel.png des geoeffneten Panels im selben Ordner.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <iomanip>
+#include <memory>
 #include <sstream>
+#include <string>
+
+#ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+ #define NOMINMAX
+#endif
+#include <windows.h>
 
 namespace
 {
@@ -229,6 +245,214 @@ int sonde012Suite (const juce::File& ordner)
 }
 } // namespace
 
+//==============================================================================
+// NAK-312 Etappe 4 (T3-04-03, R-312-2, R-312-12): das Messpunkt-Panel.
+//
+// Das Panel ist eine CallOutBox, die ihren Editor ueberleben kann: FL schliesst
+// das Fenster mit offenem Popover, der Editor stirbt, die Box erst im naechsten
+// Durchlauf der Nachrichtenschleife (ModalComponentManager). Ihr Destruktor
+// ruft `uebernehmen()`. R-312-2: nach dem Ende seines Eigentuemers ist dieser
+// Rueckruf wirkungslos - kein Zugriff, keine Mutation, keine Dirty-Meldung -,
+// und der normale Handgriff bleibt derselbe.
+//
+// Die MARKE sitzt in `uebernehmen()` unmittelbar vor dem ersten Zugriff auf den
+// Prozessor (R-312-12). Sie liegt ausserhalb von Editor und Prozessor, weil sie
+// deren Ende ueberleben muss; ein Rueckruf, der sie nach dem Ende erreicht,
+// wird gezaehlt und kehrt ohne Zugriff zurueck. Der Beleg ist die gezaehlte
+// Marke, nie ein Absturz.
+
+namespace eqcop::testzugang
+{
+// Definiert in src/PluginEditor.cpp unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3.
+std::function<bool()>& messpunktMarkeFuerTest();
+}
+
+namespace
+{
+int panelFehler = 0, panelGeprueft = 0;
+
+void panelPruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    ++panelGeprueft;
+    if (! ok) ++panelFehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+}
+
+/** Die Nachrichtenschleife, wie ein Host sie pumpt (Muster B30): JUCE stellt
+    Nachrichten, Timer und die Aufraeumrunde des ModalComponentManagers ueber
+    ein verstecktes Fenster zu. Endet, sobald `bis` erfuellt ist; die Frist ist
+    nur eine Obergrenze gegen einen haengenden Lauf. */
+bool pumpe (int fristMs, const std::function<bool()>& bis)
+{
+    const auto ende = juce::Time::getMillisecondCounterHiRes() + (double) fristMs;
+    for (;;)
+    {
+        MSG nachricht;
+        while (PeekMessageW (&nachricht, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage (&nachricht);
+            DispatchMessageW (&nachricht);
+        }
+        if (bis())
+            return true;
+        if (juce::Time::getMillisecondCounterHiRes() >= ende)
+            return bis();
+        MsgWaitForMultipleObjects (0, nullptr, FALSE, 5, QS_ALLINPUT);
+    }
+}
+
+struct PanelDirty final : juce::AudioProcessorListener
+{
+    int nichtParameter = 0;
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
+    {
+        if (d.nonParameterStateChanged) ++nichtParameter;
+    }
+};
+
+template <typename Typ>
+Typ* erstesKind (juce::Component& eltern)
+{
+    for (auto* kind : eltern.getChildren())
+        if (auto* treffer = dynamic_cast<Typ*> (kind))
+            return treffer;
+    return nullptr;
+}
+
+enum class PanelFolge { editorVorPanel, panelVorEditor };
+
+struct PanelLauf
+{
+    bool geoeffnet = false, panelWeg = false;
+    int  marke = 0, dirty = 0;
+    juce::String labelVorher, labelNachPanel, labelBeimEnde;
+};
+
+constexpr const char* kNeuesLabel = "NAK-312 Etappe 4";
+
+/** Ein Legacy-Gen mit offenem Editor, das Messpunkt-Popover ueber den
+    normalen Handgriff geoeffnet (derselbe onClick wie ein Klick), im Panel
+    wahlweise eine echte Aenderung gesetzt. */
+PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
+{
+    PanelLauf l;
+    struct Vogel { bool lebt = true; int marke = 0; };
+    auto vogel = std::make_shared<Vogel>();
+    eqcop::testzugang::messpunktMarkeFuerTest() = [vogel]
+    {
+        if (! vogel->lebt)
+        {
+            ++vogel->marke;
+            return false;      // zurueck, ohne den Prozessor anzufassen
+        }
+        return true;
+    };
+
+    auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+    PanelDirty dirty;
+    proz->addListener (&dirty);
+    l.labelVorher = proz->holeLabel();
+    auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
+    editor->setSize (1200, 832);
+
+    juce::TextButton* knopf = nullptr;
+    for (auto* kind : editor->getChildren())
+        if (auto* b = dynamic_cast<juce::TextButton*> (kind))
+            if (b->getButtonText().startsWith ("Messpunkt") && b->onClick)
+                knopf = b;
+    if (knopf != nullptr)
+        knopf->onClick();
+    auto* box = erstesKind<juce::CallOutBox> (*editor);
+    juce::Component* panel = box != nullptr ? box->getChildComponent (0) : nullptr;
+    auto* feld = panel != nullptr ? erstesKind<juce::TextEditor> (*panel) : nullptr;
+    l.geoeffnet = knopf != nullptr && box != nullptr && panel != nullptr && feld != nullptr;
+    const juce::Component::SafePointer<juce::Component> panelSicher (panel);
+
+    if (l.geoeffnet && aendern)
+        feld->setText (kNeuesLabel, juce::dontSendNotification);
+    if (l.geoeffnet && bildZiel != nullptr)
+    {
+        const auto bild = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+        bildZiel->deleteFile();
+        juce::FileOutputStream strom (*bildZiel);
+        juce::PNGImageFormat png;
+        if (strom.openedOk())
+            png.writeImageToStream (bild, strom);
+    }
+
+    if (folge == PanelFolge::editorVorPanel)
+    {
+        // 312/M-35: Editor zerstoeren, danach Prozessor zerstoeren, DANN der
+        // Nachrichtenschleife einen Durchlauf geben.
+        editor.reset();
+        vogel->lebt = false;             // Ende des Eigentuemers
+        l.labelBeimEnde = proz->holeLabel();
+        proz->removeListener (&dirty);
+        proz.reset();
+        l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
+    }
+    else
+    {
+        // 312/M-36 und 312/M-37: das Panel schliesst, DANN Editor, DANN Prozessor.
+        if (box != nullptr)
+            box->dismiss();
+        l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
+        l.labelNachPanel = proz->holeLabel();
+        editor.reset();
+        vogel->lebt = false;
+        l.labelBeimEnde = proz->holeLabel();
+        proz->removeListener (&dirty);
+        proz.reset();
+    }
+    l.marke = vogel->marke;
+    l.dirty = dirty.nichtParameter;
+    eqcop::testzugang::messpunktMarkeFuerTest() = {};
+    return l;
+}
+
+std::string panelText (const PanelLauf& l)
+{
+    return "geoeffnet " + std::string (l.geoeffnet ? "ja" : "NEIN") + ", Panel abgebaut "
+         + (l.panelWeg ? "ja" : "NEIN") + ", Marke " + std::to_string (l.marke) + ", Host-Dirty "
+         + std::to_string (l.dirty) + ", Label vorher '" + l.labelVorher.toStdString() + "', nach dem Panel '"
+         + l.labelNachPanel.toStdString() + "', beim Ende '" + l.labelBeimEnde.toStdString() + "'";
+}
+
+bool nak312Messpunktpanel (const juce::File& ordner)
+{
+    std::printf ("== NAK-312 Etappe 4 - das Messpunkt-Panel (312/M-35 bis 312/M-37, R-312-2) ==\n");
+
+    const auto m35 = panelLauf (PanelFolge::editorVorPanel, true, nullptr);
+    panelPruefe (m35.geoeffnet && m35.panelWeg && m35.marke == 0 && m35.dirty == 0
+                     && m35.labelBeimEnde == m35.labelVorher,
+                 "312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover "
+                 "offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die "
+                 "Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), "
+                 "die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty",
+                 panelText (m35));
+
+    const auto bild = ordner.getChildFile ("nak312-messpunkt-panel.png");
+    const auto m36 = panelLauf (PanelFolge::panelVorEditor, true, &bild);
+    panelPruefe (m36.geoeffnet && m36.panelWeg && m36.marke == 0 && m36.dirty == 1
+                     && m36.labelNachPanel == kNeuesLabel && m36.labelBeimEnde == kNeuesLabel,
+                 "312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel "
+                 "schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-"
+                 "Meldung entsteht",
+                 panelText (m36) + ", Bild " + bild.getFileName().toStdString());
+
+    const auto m37 = panelLauf (PanelFolge::panelVorEditor, false, nullptr);
+    panelPruefe (m37.geoeffnet && m37.panelWeg && m37.marke == 0 && m37.dirty == 0
+                     && m37.labelNachPanel == m37.labelVorher,
+                 "312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): "
+                 "dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung",
+                 panelText (m37));
+
+    std::printf ("NAK-312 PANEL %d geprueft, %d Fehler\n", panelGeprueft, panelFehler);
+    return panelFehler == 0 && panelGeprueft == 3;
+}
+} // namespace
+
 int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI init;
@@ -239,7 +463,10 @@ int main (int argc, char* argv[])
                   juce::String (juce::CharPointer_UTF8 (argv[2])))
             : juce::File::getCurrentWorkingDirectory().getChildFile (
                   "eq-copilot/build/sonde012-shots");
-        return sonde012Suite (ordner);
+        const int shots = sonde012Suite (ordner);
+        // NAK-312 Etappe 4 (R-312-2): das Messpunkt-Panel am echten Editor.
+        const bool panel = nak312Messpunktpanel (ordner);
+        return shots == 0 && panel ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

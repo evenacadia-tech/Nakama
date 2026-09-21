@@ -52,7 +52,11 @@
          keinem Hostwert ein Rampenziel - auch nicht im Ausblenden des vorigen
          Standes und nicht waehrend eines beim Laden laufenden Uebergangs -,
          und ein schreibbarer Stand danach laesst ihn ohne Kontrolltakt wieder
-         wirken.
+         wirken. Seit NAK-312 Etappe 4 (Abschnitt Z, 312/M-38) laufen 4000 und
+         mehr Bloecke, waehrend beide v3-Clients ueber den geteilten
+         Testserver (`V3TestServer.h`) auf einer Probe-Pipe verbunden sind und
+         ihre Provider durch die Besitzschleuse der Sonde laufen: die
+         Echtzeitwache bleibt dabei bei 0.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -71,6 +75,9 @@
 #include "NakamaKanon.h"
 #include "DspKern.h"
 #include "SondeProcessor.h"
+#include "IpcVerbindung.h"
+#include "PipeToken.h"
+#include "WireEnvelope.h"
 
 #include <algorithm>
 #include <array>
@@ -92,6 +99,16 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+// NAK-312 Etappe 4 (312/M-38): der geteilte v3-Testserver braucht die
+// Windows-Pipes.
+#ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+ #define NOMINMAX
+#endif
+#include <windows.h>
 
 namespace tx    = nakama::transaktion;
 namespace param = nakama::parameter;
@@ -4949,6 +4966,128 @@ void nak312Blockbindung()
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 4 (W09, R-312-7, E-312-11): die Besitzschleuse liegt nicht im
+// Audiopfad.
+//
+// Die Provider der v3-Clients laufen auf den Clientthreads durch die
+// Besitzschleuse der Sonde; die Echtzeitwache zaehlt nur auf dem Thread, der
+// im Bereich von `processBlock` steht (`DspRtWache.h`). 312/M-38 faehrt deshalb
+// 4000 und mehr Bloecke, WAEHREND beide Clients ueber einen Testserver auf der
+// Probe-Pipe verbunden sind und die Provider nachweislich durch die Schleuse
+// laufen (`betreten` steigt im Messfenster). Gemessen wird wie in 312/M-01.
+// Die Lebendpruefung des Gen-Panels liegt im Editor (Nachrichtenthread) und
+// kann dieses Ziel nicht bauen.
+
+namespace m38
+{
+using namespace nakama::ipc;
+#include "V3TestServer.h"
+}
+
+void nak312Besitz()
+{
+    abschnitt ("Z - NAK-312 Etappe 4: die Besitzschleuse liegt nicht im Audiopfad (312/M-38)");
+
+    const auto pipe = m38::testPipeName ("nak312-m38");
+    if (! nakama::ipc::istProbePipename (pipe))
+    {
+        pruefe (false, "312/M-38: der Testserver liegt im Probe-Namensraum", pipe);
+        return;
+    }
+    m38::TestServer server (pipe);
+    if (! server.starten())
+    {
+        pruefe (false, "312/M-38: der Testserver steht auf der Probe-Pipe");
+        return;
+    }
+
+    auto p = std::make_unique<Prozessor> (pipe, m38::testExeErwartung());
+    {
+        // Bindung und erlaubter Messpunkt, sonst weist der Client sein eigenes
+        // Hello ab; der Stand traegt Parameter, der Status also Hash und
+        // Messpunkt als Zeichenketten.
+        auto z = state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        z.common.klasse = state::Klasse::active_probe;
+        z.common.position = state::Messposition::insert;
+        z.common.projectBindingId = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        z.hatParameters = true;
+        juce::MemoryBlock bytes;
+        state::speichere (z, bytes);
+        p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+    }
+    p->setRateAndBufferSizeDetails (48000.0, 512);
+    p->prepareToPlay (48000.0, 512);
+    setze (*p, mitEq (true));
+    const auto schleuse = p->callbackSchleuseFuerTest();
+
+    const auto warte = [] (int ms, const std::function<bool()>& bis)
+    {
+        for (int i = 0; i < ms / 5; ++i)
+        {
+            if (bis())
+                return true;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        return bis();
+    };
+    p->v3StartFuerTest();
+    const bool control = warte (8000, [&] {
+        return p->controlV3FuerTest().status == nakama::ipc::ControlClient::Status::verbunden;
+    });
+    p->v3TelemetrieStartFuerTest();
+    const bool tele = warte (8000, [&] {
+        return p->telemetryV3FuerTest().status == nakama::ipc::TelemetryClient::Status::verbunden;
+    });
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> puffer (2, 512);
+    juce::Random w (3380);
+    std::mt19937 zufall (3381);
+    std::uniform_int_distribution<int> groessen (1, 512);
+    const auto betretenVor = schleuse->stand().betreten;
+    const auto beginn = std::chrono::steady_clock::now();
+    dsp::RtWache::zuruecksetzen();
+    std::uint64_t eigene = 0;
+    int bloecke = 0;
+    // Mindestens 4000 Bloecke, und so lange weiter, bis ein Provider im
+    // Messfenster durch die Schleuse gelaufen ist (Heartbeat-Takt 1 s). Die
+    // 10 s sind nur eine Obergrenze gegen einen haengenden Lauf.
+    while (bloecke < 4000
+           || (schleuse->stand().betreten == betretenVor
+               && std::chrono::steady_clock::now() - beginn < std::chrono::seconds (10)))
+    {
+        const int n = groessen (zufall);
+        puffer.setSize (2, n, false, false, true);
+        for (int k = 0; k < 2; ++k)
+            for (int s = 0; s < n; ++s)
+                puffer.setSample (k, s, w.nextFloat() * 1.6f - 0.8f);
+        allokationen = 0;
+        zaehleAllokationen = true;
+        p->processBlock (puffer, midi);
+        zaehleAllokationen = false;
+        eigene += allokationen;
+        ++bloecke;
+    }
+    const auto sperren = dsp::RtWache::sperren();
+    const auto rtAllok = dsp::RtWache::allokationen();
+    const auto stand   = schleuse->stand();
+    const bool nochVerbunden = p->controlV3FuerTest().status == nakama::ipc::ControlClient::Status::verbunden;
+    pruefe (control && tele && nochVerbunden && bloecke >= 4000 && stand.betreten > betretenVor
+                && ! stand.geschlossen && sperren == 0 && rtAllok == 0 && eigene == 0,
+            "312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke "
+            "wechselnder Groesse, waehrend beide v3-Clients ueber die Probe-Pipe verbunden sind und ihre Provider "
+            "durch die Besitzschleuse laufen - RtWache::sperren() und RtWache::allokationen() bleiben ab "
+            "Callback-Eintritt 0, der eigene Zaehler ebenso",
+            zahl ((std::uint64_t) bloecke) + " Bloecke, Schleuse betreten " + zahl (betretenVor) + " -> "
+                + zahl (stand.betreten) + " im Messfenster, Control verbunden " + (nochVerbunden ? "ja" : "NEIN")
+                + ", RtWache::sperren " + zahl (sperren) + ", RtWache::allokationen " + zahl (rtAllok)
+                + ", eigener Zaehler " + zahl (eigene));
+
+    p.reset();
+    server.stoppen();
+}
+
 } // namespace
 
 int main()
@@ -5002,6 +5141,9 @@ int main()
 
     // NAK-312 Etappe 3b (T3-01-05 Teil a, E-312-5, E-312-6): die Blockbindung
     nak312Blockbindung();
+
+    // NAK-312 Etappe 4 (W09, R-312-7): die Besitzschleuse liegt nicht im Audiopfad
+    nak312Besitz();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

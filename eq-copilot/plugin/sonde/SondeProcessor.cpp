@@ -176,10 +176,56 @@ SondeProcessor::SondeProcessor (V3Verdrahtung verdrahtung)
       v3LogonSid (std::move (verdrahtung.logonSid)),
       v3PipeName (std::move (verdrahtung.pipeName)),
       v3RuntimeNonce (uuidHex32()),
-      controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
-                 [this] { return v3Status(); }, {}, {}, verdrahtung.erwartung),
-      telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName, {},
-                   verdrahtung.erwartung),
+      // NAK-312 Etappe 4 (R-312-7, NAK-246 R-D2): die drei Provider fangen
+      // `this` UND die Besitzschleuse und fassen den Prozessor nur innerhalb
+      // eines Zugs an. Nach dem Schliessen liefert jeder Provider seinen
+      // neutralen Wert (Hello mit leerer Adresse - der Client sendet nichts;
+      // Status-Default; Telemetrie-Hello ohne Kopplung). Muster Gen,
+      // `src/PluginProcessor.cpp` (Konstruktor).
+      callbackSchleuse (std::make_shared<nakama::ipc::CallbackSchleuse>()),
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+      providerHaken (std::make_shared<ProviderHakenFuerTest>()),
+#endif
+      controlV3 ([this, s = callbackSchleuse]
+                 {
+                     if (auto zug = s->betreten())
+                         return v3Hello();
+                     return nakama::ipc::ControlHello {};
+                 },
+                 v3PipeName, {},
+                 [this, s = callbackSchleuse
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+                  , h = providerHaken
+#endif
+                 ]
+                 {
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+                     // 312/M-39 Fall 2, 312/M-31: die Schranke VOR dem Betreten.
+                     if (h->vorEintritt)
+                         h->vorEintritt();
+#endif
+                     if (auto zug = s->betreten())
+                     {
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+                         // 312/M-30, 312/M-39 Fall 1: die Schranke HINTER dem
+                         // Betreten; danach die Marke unmittelbar vor dem ersten
+                         // Besitzerzugriff (R-312-12).
+                         if (h->imZug)
+                             h->imZug();
+                         if (h->vorBesitz && ! h->vorBesitz())
+                             return nakama::ipc::ControlStatus {};
+#endif
+                         return v3Status();
+                     }
+                     return nakama::ipc::ControlStatus {};
+                 }, {}, {}, verdrahtung.erwartung),
+      telemetryV3 ([this, s = callbackSchleuse]
+                   {
+                       if (auto zug = s->betreten())
+                           return v3TelemetryHello();
+                       return nakama::ipc::TelemetryHello {};
+                   },
+                   v3PipeName, {}, verdrahtung.erwartung),
       parameterBaum (*this, nullptr, "NakamaProbeeqParameter", baueParameterLayout())
 {
     // SONDE-015 4a: DSP-Kern und Transaktionskern entstehen VOR dem Worker,
@@ -269,8 +315,9 @@ nakama::diagnose::Startgrund SondeProcessor::briefkastenStarten (bool mitTimer)
 
 SondeProcessor::~SondeProcessor()
 {
-    // NAK-286 (F-12, M-34): ERSTER Destruktorschritt - Takt aus, Schleuse zu,
-    // noch vor dem Listener-Abbau und lange vor dem Join des Workers.
+    // NAK-286 (F-12, M-34): ERSTER Destruktorschritt - Takt aus, die Schleuse
+    // des Briefkastens zu, noch vor dem Listener-Abbau und lange vor dem Join
+    // des Workers. (Die Besitzschleuse der v3-Provider schliesst erst unten.)
     briefkasten.stoppe();
 
     // Gegenstueck zu addListener im Konstruktor: kein Parameterereignis und
@@ -285,6 +332,19 @@ SondeProcessor::~SondeProcessor()
         worker.join();
     telemetryV3.stop();
     controlV3.stop();
+    // NAK-312 Etappe 4 (R-312-7, NAK-246 R-D2): die Schleuse schliesst NACH
+    // den zwei `stop()` und VOR der Zerstoerung der Mitglieder - die Stelle,
+    // die Gens Destruktor einnimmt. Hat `stop()` einen Clientthread nach
+    // `kStopFristMs` abgeloest, wartet DIESER Aufruf den dort noch laufenden
+    // Provider zu Ende (`gewartetMs`); jeder Provider, der ab hier beginnt,
+    // wird abgewiesen und gezaehlt. Erst danach sterben die Mitglieder -
+    // darunter `transaktion`, das der Statusprovider liest und das vor
+    // `controlV3` stirbt.
+    callbackSchleuse->schliessen();
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    if (abbauEndeHakenFuerTest)
+        abbauEndeHakenFuerTest();
+#endif
 }
 
 void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)

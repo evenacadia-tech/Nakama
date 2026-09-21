@@ -1,0 +1,38 @@
+# NAK-312 Rotbeweis NAK-345 (Manifest §7.1)
+
+Zusatz aus dem Register NAK-345 Punkt 2 (Haertung H-2 der Erstpruefung der Etappe 2), vom Dirigenten fuer Etappe 4 entschieden; Regressionswache ueber die Produktverdrahtung.
+Zusage: eine Sonde aus dem PRODUKTkonstruktor traegt im Testbau genau pipeNameV3 (aktuelleLogonSid()); kein Client startet, keine Pipe wird geoeffnet.
+Bein: B31 EqCopSondeLebenslaufTest, Fall 312/NAK-345 produktverdrahtung_traegt_den_produktnamen; Rotlauf mit Argument 312/NAK-345 (allein dieser Fall - kein anderer Fall baut eine Sonde aus dem Produktkonstruktor).
+Mutation (Auftrag: im Produktweg einen anderen Namen durchreichen): eq-copilot/plugin/sonde/SondeProcessor.cpp, SondeProcessor::produktVerdrahtung - an pipeNameV3 (SID) wird ".x" angehaengt.
+Zeile der Mutation (zum Endstand): eq-copilot/plugin/sonde/SondeProcessor.cpp:143.
+
+Start 2026-09-21 12:05:21. SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+    v.pipeName  = nakama::ipc::pipeNameV3 (v.logonSid);
+```
+nachher:
+```
+    v.pipeName  = nakama::ipc::pipeNameV3 (v.logonSid) + ".x";   // ROTBEWEIS 312/NAK-345: anderer Name im Produktweg
+```
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 12:05:27, Quelle 12:05:21, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (12:05:27 bis 12:05:28): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+  FEHLER  312/NAK-345 produktverdrahtung_traegt_den_produktnamen (Register NAK-345 Punkt 2): eine Sonde aus dem PRODUKTkonstruktor traegt im Testbau genau pipeNameV3 (aktuelleLogonSid()) - dieselbe Verdrahtung wie im Bundle -, und ohne Starthaken hat kein Client einen Versuch gemacht, keine Pipe ist geoeffnet  [gleich NEIN, Laenge verdrahtet 58 / erwartet 56, Probe-Namensraum nein, Control getrennt nach 0 Versuchen, Telemetrie getrennt]
+1 geprueft, 1 Fehler
+SONDE-LEBENSLAUF FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 12:05:34, Quelle 12:05:28, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (12:05:34 bis 12:05:34): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+1 geprueft, 0 Fehler
+SONDE-LEBENSLAUF OK
+```
+Ende 2026-09-21 12:05:34. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/NAK-345 rot: der verdrahtete Name ist ein anderer (Laenge 58 statt 56); kein Client hat einen Versuch gemacht, keine Pipe ist geoeffnet. Der Name selbst traegt die SID und steht nicht in der Ausgabe.
+- Mitgefallen: keiner - der Lauf faehrt mit dem Argument 312/NAK-345 allein diesen Fall; kein anderer Fall baut eine Sonde aus dem Produktkonstruktor.
+- Nach der Ruecknahme: 1 geprueft, 0 Fehler (derselbe Fall); das volle Bein ist in den Einzelbeinen und im Kanon nachher gefahren.

@@ -1,0 +1,126 @@
+# NAK-312 Rotbeweis M-31 (Manifest §7.1)
+
+Matrixzeile: 312/M-31 (T3-04-01, Wiederholung, R-312-12), Etikett heute rot; die Gegenprobe steht in docs/beweise/roh/NAK-312-etappe4-gegenprobe.txt (20 von 20 Zyklen an der Marke gezaehlt).
+Zusage: in jedem von 20 Zyklen nachEndeErreicht = 0; Handles und Threads nach dem letzten Zyklus nicht hoeher als nach dem ersten; je Zyklus eine eigene Schleuse, sie gehoert dem Prozessor.
+Bein: B31 EqCopSondeLebenslaufTest, Fall 312/M-31 zwanzig_gegenzyklen_ohne_zugriff_nach_dem_ende; Rotlauf mit Argument 312/M-31 (allein dieser Fall, Abweichung im Manifest: die Faelle mit Schranke HINTER betreten() liefen in diesem Bau in ein Rennen innerhalb von Schleuse.h, das R-312-12 ausschliesst).
+Mutation (Matrix: die Schleuse als Mitglied statt als shared_ptr halten), zwei Dateien: eq-copilot/plugin/sonde/SondeProcessor.h (Mitglied und der Testzugang ohne Besitz) und eq-copilot/plugin/sonde/SondeProcessor.cpp (Initialisierung, die drei Lambdas greifen `callbackSchleuse` ueber `this`, Destruktor). Weil der erste Besitzerzugriff des Statusproviders damit die Mitglied-Schleuse selbst ist, steht die Marke im Mutantenbau davor (R-312-12: Marke unmittelbar vor der ersten Zeile, die Besitzerzustand anfasst).
+
+Zeilen der Mutation (zum Endstand): eq-copilot/plugin/sonde/SondeProcessor.h:700 (Mitglied) und der Testzugang callbackSchleuseFuerTest; eq-copilot/plugin/sonde/SondeProcessor.cpp:185 (Initialisierung), die drei Lambdas in der Initialisierungsliste und :343 (Destruktor).
+SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.h F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E
+SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB
+Start 2026-09-21 11:59:47
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.h, vorher:
+```
+    std::shared_ptr<const nakama::ipc::CallbackSchleuse> callbackSchleuseFuerTest() const
+    { return callbackSchleuse; }
+```
+nachher:
+```
+    std::shared_ptr<const nakama::ipc::CallbackSchleuse> callbackSchleuseFuerTest() const   // ROTBEWEIS 312/M-31: ohne Besitz
+    { return std::shared_ptr<const nakama::ipc::CallbackSchleuse> (std::shared_ptr<void>(), &callbackSchleuse); }
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.h, vorher:
+```
+    std::shared_ptr<nakama::ipc::CallbackSchleuse> callbackSchleuse;
+```
+nachher:
+```
+    nakama::ipc::CallbackSchleuse callbackSchleuse;   // ROTBEWEIS 312/M-31: Mitglied statt shared_ptr
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+      callbackSchleuse (std::make_shared<nakama::ipc::CallbackSchleuse>()),
+
+```
+nachher:
+```
+      // ROTBEWEIS 312/M-31: die Schleuse ist ein Mitglied, kein shared_ptr
+
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+      controlV3 ([this, s = callbackSchleuse]
+                 {
+                     if (auto zug = s->betreten())
+                         return v3Hello();
+```
+nachher:
+```
+      controlV3 ([this]
+                 {
+                     if (auto zug = callbackSchleuse.betreten())
+                         return v3Hello();
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+                 [this, s = callbackSchleuse
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+```
+nachher:
+```
+                 [this
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+                     if (auto zug = s->betreten())
+                     {
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+```
+nachher:
+```
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+                     // ROTBEWEIS 312/M-31: der erste Besitzerzugriff ist jetzt die
+                     // Mitglied-Schleuse selbst - die Marke steht davor (R-312-12).
+                     if (h->vorBesitz && ! h->vorBesitz())
+                         return nakama::ipc::ControlStatus {};
+#endif
+                     if (auto zug = callbackSchleuse.betreten())
+                     {
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+      telemetryV3 ([this, s = callbackSchleuse]
+                   {
+                       if (auto zug = s->betreten())
+```
+nachher:
+```
+      telemetryV3 ([this]
+                   {
+                       if (auto zug = callbackSchleuse.betreten())
+```
+Mutation in eq-copilot/plugin/sonde/SondeProcessor.cpp, vorher:
+```
+    callbackSchleuse->schliessen();
+```
+nachher:
+```
+    callbackSchleuse.schliessen();   // ROTBEWEIS 312/M-31
+```
+Bau unter der Mutation EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:59:54, Quellen 11:59:47, Binary juenger als die Quellen: JA
+Lauf unter der Mutation, Argumente '312/M-31' (11:59:54 bis 12:00:55): Exit 1. Auszug:
+```
+== Nakama NAK-312 - Sonde-Lebenslaufbein (EqCopSondeLebenslaufTest) ==
+Auswahl: nur Faelle mit '312/M-31'
+  FEHLER  312/M-31 zwanzig_gegenzyklen_ohne_zugriff_nach_dem_ende (Teilfall von 312/M-30, R-312-12): in jedem von 20 Zyklen - je eigene Sonde, eigene Schleuse, eigener Testserver - ist nachEndeErreicht 0, und nach dem letzten Zyklus stehen Handles und Threads des Prozesses nicht hoeher als nach dem ersten  [20 Zyklen, nicht vollstaendig gemessen 0, nachEndeErreicht Summe 20 in 20 Zyklen; Threads nach Zyklus 1 / 20: 4 / 1, Handles 160 / 160]
+1 geprueft, 1 Fehler
+SONDE-LEBENSLAUF FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: eq-copilot/plugin/sonde/SondeProcessor.h SHA-256 F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E - gleich vorher: JA
+Ruecknahme bytegleich aus der Sicherung: eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau nach der Ruecknahme EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 12:01:02, Quellen 12:00:55, Binary juenger als die Quellen: JA
+Lauf nach der Ruecknahme, Argumente '' (12:01:03 bis 12:02:14): Exit 0. Auszug:
+```
+== Nakama NAK-312 - Sonde-Lebenslaufbein (EqCopSondeLebenslaufTest) ==
+17 geprueft, 0 Fehler
+SONDE-LEBENSLAUF OK
+```
+Ende 2026-09-21 12:02:14. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-31 rot, nachEndeErreicht in 20 von 20 Zyklen je 1 (Summe 20). Der Provider beginnt nach dem Ende des Eigentuemers; die Mutante haelt die Schleuse als Mitglied des toten Prozessors, die Marke davor zaehlt, bevor sie sie anfasst (R-312-12, kein Absturz). Handles 160 / 160 und Threads 4 / 1 bleiben erwartungsgemaess unauffaellig.
+- Mitgefallen: keiner - der Lauf faehrt mit dem Argument 312/M-31 allein diesen Fall. Begruendung im Manifest (Abweichung): im Mutantenbau erreichten die Faelle mit Schranke HINTER betreten() ein Rennen im Verlassen des Zugs innerhalb von Schleuse.h (Zugriff auf die sterbende Mitglied-Schleuse nach dem letzten Dekrement), das R-312-12 fuer jeden Rotlauf ausschliesst und das E-312-10 ohne Haken in Schleuse.h nicht messbar macht.
+- Nach der Ruecknahme laeuft das volle Bein ohne Argument: 17 geprueft, 0 Fehler.

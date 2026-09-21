@@ -1,0 +1,43 @@
+# NAK-312 Rotbeweis M-34 (Manifest §7.1)
+
+Matrixzeile: 312/M-34 (T3-04-01, starten<->stoppen), Etikett heute nicht messbar.
+Zusage: Reihenfolge im Destruktor wie bei Gen - Briefkasten stoppen, Listener abmelden, Worker joinen, telemetryV3.stop(), controlV3.stop(), danach Schleuse schliessen, und erst dann enden die Mitglieder.
+Bein: B31 EqCopSondeLebenslaufTest, Fall 312/M-34 destruktor_stoppt_vor_dem_schliessen (Teilfall von 312/M-30).
+Mutation (Matrix: das schliessen() an den Anfang des Destruktors ziehen): eq-copilot/plugin/sonde/SondeProcessor.cpp, ~SondeProcessor - `callbackSchleuse->schliessen();` als erste Anweisung vor `briefkasten.stoppe();` eingefuegt; der spaetere Aufruf bleibt und ist idempotent, die Wirkung ist genau das Vorziehen.
+Zeile der Mutation (zum Endstand): eingefuegt vor eq-copilot/plugin/sonde/SondeProcessor.cpp:321 (`briefkasten.stoppe();`); der Aufruf in :343 bleibt.
+
+Start 2026-09-21 11:53:28. SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+    // des Workers. (Die Besitzschleuse der v3-Provider schliesst erst unten.)
+    briefkasten.stoppe();
+```
+nachher:
+```
+    // des Workers. (Die Besitzschleuse der v3-Provider schliesst erst unten.)
+    callbackSchleuse->schliessen();   // ROTBEWEIS 312/M-34: an den Anfang gezogen (der spaetere Aufruf ist idempotent)
+    briefkasten.stoppe();
+```
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:53:34, Quelle 11:53:28, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (11:53:34 bis 11:54:41): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+  FEHLER  312/M-32 stoppfrist_loest_ab_und_der_destruktor_wartet_nur_den_rest (Teilfall von 312/M-30, R-D2 Satz 4): stop() des gehaltenen ControlClients kehrt nach der 2-s-Frist zurueck, stopFristUeberschritten steigt genau um 1 (die Telemetrie um 0), der Thread ist abgeloest; danach wartet der Destruktor hoechstens die Restdauer des laufenden Providers - gewartetMs liegt innerhalb der Destruktordauer jenseits der Frist  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 0; im Destruktor: geschlossen ja, aktiv 0, betreten 186, abgewiesen 0, gewartetMs 1; danach: geschlossen ja, aktiv 0, betreten 186, abgewiesen 0, gewartetMs 1; stopFristUeberschritten Control 0, Telemetrie 0; Destruktor 7 ms; Stempel geschlossen 1, Freigabe 2, Marke lebend 3, Abbauende 4, Rueckkehr 5; Laufzeit beendet ja]
+  FEHLER  312/M-34 destruktor_stoppt_vor_dem_schliessen (Teilfall von 312/M-30, CLAUDE.md starten<->stoppen): beide stop() laufen VOR dem Schliessen - der gehaltene Provider war beim Schliessen schon von stop() abgeloest (Frist 1) und wurde danach zu Ende GEWARTET statt abgewiesen -, und erst nach dem Schliessen enden die Mitglieder: der Abbauende-Haken sieht die Schleuse zu und ohne laufenden Rueckruf  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 0; im Destruktor: geschlossen ja, aktiv 0, betreten 186, abgewiesen 0, gewartetMs 1; danach: geschlossen ja, aktiv 0, betreten 186, abgewiesen 0, gewartetMs 1; stopFristUeberschritten Control 0, Telemetrie 0; Destruktor 7 ms; Stempel geschlossen 1, Freigabe 2, Marke lebend 3, Abbauende 4, Rueckkehr 5; Laufzeit beendet ja]
+  FEHLER  312/M-39 Fall 3 (E-312-10): Freigabe VOR Beginn der Zerstoerung - der Provider laeuft lebend durch, (abgewiesen, gewartetMs) = (0, 0) ist korrektes Verhalten, nachEndeErreicht 0  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 0; im Destruktor: geschlossen ja, aktiv 0, betreten 186, abgewiesen 1, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 186, abgewiesen 1, gewartetMs 0; stopFristUeberschritten Control 0, Telemetrie 0; Destruktor 6 ms; Stempel geschlossen 0, Freigabe 1, Marke lebend 2, Abbauende 3, Rueckkehr 4; Laufzeit beendet ja]
+17 geprueft, 3 Fehler
+SONDE-LEBENSLAUF FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:54:47, Quelle 11:54:41, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (11:54:48 bis 11:55:59): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+17 geprueft, 0 Fehler
+SONDE-LEBENSLAUF OK
+```
+Ende 2026-09-21 11:55:59. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-34 rot: stopFristUeberschritten 0 - beim Schliessen am Anfang des Destruktors hatte noch kein stop() den gehaltenen Provider abgeloest; er wurde gewartet (gewartetMs 1) und danach von stop() gejoint. Die Matrix nennt als Folge "abgewiesen steigt, wo gewartetMs stehen muesste": das zeigt in diesem Lauf 312/M-39 Fall 3 (abgewiesen 1, gewartetMs 0) - ein Provider zwischen dem vorgezogenen Schliessen und stop() wurde abgewiesen.
+- Mitgefallen, mit Grund: 312/M-32 (dieselbe Zaehlerhaelfte), 312/M-39 Fall 3 (siehe oben; zulaessig ist dort nur (0, 0)).
+- Gruen unter derselben Mutation: 312/M-30, 312/M-39 Fall 1 und 2, 312/M-33, 312/M-31 - die Schleuse ist beim Ende der Mitglieder zu, niemand erreicht die Marke; 312/NAK-345, 312/M-05 bis M-08.

@@ -1,0 +1,48 @@
+# NAK-312 Rotbeweis M-33 (Manifest §7.1)
+
+Matrixzeile: 312/M-33 (T3-04-01, R-312-7, verbinden<->trennen), Etikett heute nicht messbar.
+Zusage: ein Reconnect schliesst eine offene Schleuse nicht und oeffnet eine geschlossene nicht - istGeschlossen() ist vor und nach dem Reconnect gleich, und betreten steigt weiter.
+Bein: B31 EqCopSondeLebenslaufTest, Fall 312/M-33 reconnect_ruehrt_die_schleuse_nicht_an.
+Mutation (Matrix: reconnect die Schleuse neu anlegen lassen): eq-copilot/plugin/sonde/SondeProcessor.cpp, Ende von setStateInformation - nach `controlV3.reconnect(); telemetryV3.reconnect();` legt der Ladestart ein neues `callbackSchleuse` an; die Provider-Lambdas halten weiter die alte.
+Zeile der Mutation (zum Endstand): eingefuegt nach eq-copilot/plugin/sonde/SondeProcessor.cpp:1319-1321 (Abgleich und Reconnect am Ende von setStateInformation).
+
+Start 2026-09-21 11:56:14. SHA-256 vorher eq-copilot/plugin/sonde/SondeProcessor.cpp 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB; Sicherung ausserhalb des Repos.
+Mutation, vorher:
+```
+    hostParameterAbgleichen (abgleich, &quittiert);
+    controlV3.reconnect();
+    telemetryV3.reconnect();
+```
+nachher:
+```
+    hostParameterAbgleichen (abgleich, &quittiert);
+    controlV3.reconnect();
+    telemetryV3.reconnect();
+    callbackSchleuse = std::make_shared<nakama::ipc::CallbackSchleuse>();   // ROTBEWEIS 312/M-33: der Reconnect legt die Schleuse neu an
+```
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:56:20, Quelle 11:56:14, Binary juenger als die Quelle: JA
+Lauf unter der Mutation (11:56:21 bis 11:57:40): Exit 1. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+  FEHLER  312/M-30 provider_fasst_nach_dem_schliessen_nichts_mehr_an (R-312-7, R-312-12): der Statusprovider steht HINTER betreten() in der Schranke, die Sonde wird zerstoert und die Schranke erst freigegeben, als die Schleuse geschlossen ist - nach dem Ende des Eigentuemers erreicht kein Provider den Besitzerzugriff (nachEndeErreicht 0), die Schleuse hat gewartet (gewartetMs >= 1) und nichts abgewiesen, und der Destruktor ist erst nach dem Provider zurueckgekehrt  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 1; im Destruktor: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; stopFristUeberschritten Control 1, Telemetrie 0; Destruktor 2006 ms; Stempel geschlossen 0, Freigabe 2, Marke lebend 0, Abbauende 1, Rueckkehr 3; Laufzeit beendet ja]
+  FEHLER  312/M-34 destruktor_stoppt_vor_dem_schliessen (Teilfall von 312/M-30, CLAUDE.md starten<->stoppen): beide stop() laufen VOR dem Schliessen - der gehaltene Provider war beim Schliessen schon von stop() abgeloest (Frist 1) und wurde danach zu Ende GEWARTET statt abgewiesen -, und erst nach dem Schliessen enden die Mitglieder: der Abbauende-Haken sieht die Schleuse zu und ohne laufenden Rueckruf  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 1; im Destruktor: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; stopFristUeberschritten Control 1, Telemetrie 0; Destruktor 2006 ms; Stempel geschlossen 0, Freigabe 2, Marke lebend 0, Abbauende 1, Rueckkehr 3; Laufzeit beendet ja]
+  FEHLER  312/M-39 Fall 1 schleuse_ist_ueber_zustaende_geordnet (E-312-10, R-312-12): Schranke HINTER betreten(), Freigabe sobald die Schleuse geschlossen ist und den Provider als laufend fuehrt - (abgewiesen, gewartetMs) = (0, >= 1), nachEndeErreicht 0, und der Destruktor kehrt nicht zurueck, waehrend aktiv > 0 ist  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 1; im Destruktor: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; stopFristUeberschritten Control 1, Telemetrie 0; Destruktor 2006 ms; Stempel geschlossen 0, Freigabe 2, Marke lebend 0, Abbauende 1, Rueckkehr 3; Laufzeit beendet ja]
+  FEHLER  312/M-39 Fall 2 (E-312-10, R-312-12): Schranke VOR betreten(), Freigabe nach der Rueckkehr des Destruktors (Join des zerstoerenden Threads) - der Provider wird abgewiesen: (abgewiesen, gewartetMs) = (>= 1, 0), nachEndeErreicht 0, der Destruktor kehrt nicht zurueck, waehrend aktiv > 0 ist  [aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 1; im Destruktor: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; stopFristUeberschritten Control 1, Telemetrie 0; Destruktor 2006 ms; Stempel geschlossen 0, Freigabe 3, Marke lebend 0, Abbauende 1, Rueckkehr 2; Laufzeit beendet ja]
+  FEHLER  312/M-33 reconnect_ruehrt_die_schleuse_nicht_an (R-312-7, CLAUDE.md verbinden<->trennen): ein Ladestart mit gueltigem Stand laesst beide Clients neu verbinden - die Schleuse ist dieselbe, istGeschlossen() ist vor und nach dem Reconnect falsch, betreten steigt weiter, und der Abbau danach schliesst genau die Schleuse, durch die die Provider laufen (nachEndeErreicht 0, gewartet statt abgewiesen)  [Reconnect verbunden NEIN, dieselbe Schleuse NEIN, geschlossen vor/nach nein/nein, betreten 0 -> 0; aufgebaut ja, verbunden ja, gehalten ja, nachEndeErreicht 1; im Destruktor: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; danach: geschlossen ja, aktiv 0, betreten 0, abgewiesen 0, gewartetMs 0; stopFristUeberschritten Control 1, Telemetrie 0; Destruktor 2004 ms; Stempel geschlossen 0, Freigabe 2, Marke lebend 0, Abbauende 1, Rueckkehr 3; Laufzeit beendet ja]
+  FEHLER  312/M-31 zwanzig_gegenzyklen_ohne_zugriff_nach_dem_ende (Teilfall von 312/M-30, R-312-12): in jedem von 20 Zyklen - je eigene Sonde, eigene Schleuse, eigener Testserver - ist nachEndeErreicht 0, und nach dem letzten Zyklus stehen Handles und Threads des Prozesses nicht hoeher als nach dem ersten  [20 Zyklen, nicht vollstaendig gemessen 0, nachEndeErreicht Summe 20 in 20 Zyklen; Threads nach Zyklus 1 / 20: 4 / 1, Handles 160 / 160]
+17 geprueft, 6 Fehler
+SONDE-LEBENSLAUF FEHLGESCHLAGEN
+```
+Ruecknahme bytegleich aus der Sicherung: SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB - gleich vorher: JA
+Bau EqCopSondeLebenslaufTest: BAU EXIT=0; Binary 11:57:46, Quelle 11:57:40, Binary juenger als die Quelle: JA
+Lauf nach der Ruecknahme (11:57:46 bis 11:58:57): Exit 0. Auszug (Pruefzeilen mit FEHLER und Summe):
+```
+17 geprueft, 0 Fehler
+SONDE-LEBENSLAUF OK
+```
+Ende 2026-09-21 11:58:57. Rot-Exit 1, Gruen-Exit 0.
+
+## Auswertung
+
+- Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-33 rot: dieselbe Schleuse NEIN, und der Abbau danach laesst den gehaltenen Provider durch die alte, nie geschlossene Schleuse an die Marke (nachEndeErreicht 1, gezaehlt, kein Absturz). Weil die neue Schleuse nie betreten wird, meldet der Fall auch betreten 0 -> 0 und damit Reconnect verbunden NEIN.
+- Mitgefallen, mit Grund: jeder Fall mit gehaltenem Provider - 312/M-30, 312/M-34, 312/M-39 Fall 1 und Fall 2, 312/M-31 (20 von 20) -, weil jeder Aufbau ueber setStateInformation laedt und der Ladestart in dieser Mutante die Schleuse ersetzt; der Destruktor schliesst dann eine Schleuse, durch die kein Provider laeuft.
+- Gruen unter derselben Mutation: 312/M-05 bis M-08, 312/NAK-345, 312/M-32, 312/M-39 Fall 3.

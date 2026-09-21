@@ -58,6 +58,14 @@
     read-only-Ladestart nicht, bis ein schreibbarer Stand geladen ist
     (R-312-16); alle uebrigen folgen dem Kontrolltakt.
 
+    BESITZ (NAK-312 Etappe 4, R-312-7): die drei Provider der v3-Clients
+    (Hello, Status, Telemetrie-Hello) laufen durch dieselbe Besitzschleuse wie
+    Gens IPC-Rueckrufe (NAK-246 R-D2, `controlclient/Schleuse.h`). Der
+    Destruktor schliesst sie nach `stop()` beider Clients und vor der
+    Zerstoerung der Mitglieder: ein Rueckruf, der danach beginnt, wird
+    abgewiesen, ein laufender zu Ende gewartet - auch einer, dessen Thread
+    `stop()` nach der Stoppfrist abgeloest hat.
+
     KEINE ERFUNDENE OBERFLAECHE: `hasEditor()` meldet false. Die Gestaltung
     kommt aus dem Figma-Stand des Users ueber design/ (CLAUDE.md: "Claude
     erfindet keine Richtung"), und die Suna-Kachel ist dort nicht begonnen.
@@ -73,6 +81,7 @@
 #include "DspKern.h"
 #include "AnalyseEngine.h"
 #include "ControlClient.h"
+#include "controlclient/Schleuse.h"
 #include "NakamaHostBridge.h"
 #include "StampedAudioQueue.h"
 #include "TelemetryClient.h"
@@ -301,6 +310,34 @@ public:
     /// Der Pipename, den beide v3-Clients bei der Konstruktion bekommen haben
     /// (Testkonstruktor: der Probe-Name, fail-closed leer; sonst der Produktname).
     const std::string& v3PipeNameFuerTest() const noexcept { return v3PipeName; }
+
+    /** NAK-312 Etappe 4 (R-312-7): die Besitzschleuse selbst - als
+        `shared_ptr`, damit ein Bein ihre Zaehler NACH der Zerstoerung des
+        Prozessors lesen kann (Muster Gen, NAK-246 M-06 bis M-09). */
+    std::shared_ptr<const nakama::ipc::CallbackSchleuse> callbackSchleuseFuerTest() const
+    { return callbackSchleuse; }
+
+    /** NAK-312 Etappe 4 (R-312-12): die Haken im Statusprovider des
+        ControlClients - die Schranke VOR `betreten()` (`vorEintritt`), die
+        Schranke HINTER `betreten()` (`imZug`) und die Marke unmittelbar vor
+        dem ersten Besitzerzugriff (`vorBesitz`; false heisst: der Provider
+        kehrt zurueck, ohne den Prozessor anzufassen). Sie liegen in einem
+        eigenen `shared_ptr`, den das Provider-Lambda faengt: ein Bein erreicht
+        sie so auch aus einer abgeloesten Client-Laufzeit nach dem Ende des
+        Prozessors. Vor dem ersten `v3StartFuerTest()` gesetzt, danach
+        unveraendert. Im Produkt gibt es sie nicht. */
+    struct ProviderHakenFuerTest
+    {
+        std::function<void()> vorEintritt;
+        std::function<void()> imZug;
+        std::function<bool()> vorBesitz;
+    };
+    void setzeProviderHakenFuerTest (ProviderHakenFuerTest haken) { *providerHaken = std::move (haken); }
+
+    /** NAK-312 Etappe 4 (312/M-30): laeuft am ENDE des Destruktorrumpfs, nach
+        dem Schliessen der Besitzschleuse und vor der Zerstoerung der
+        Mitglieder - der Prozessor lebt dort noch. */
+    void setzeAbbauEndeHakenFuerTest (std::function<void()> haken) { abbauEndeHakenFuerTest = std::move (haken); }
 
     /** SONDE-015 4a: der DSP-Kern fuer Pool- und Zaehlerbeobachtung (B7, A16). */
     nakama::dsp::DspKern& dspKernFuerTest() noexcept { return *dspKern; }
@@ -603,6 +640,7 @@ private:
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     std::function<void()>      diagnoseHakenFuerTest;           ///< M-54, M-83: nur im Testbau
     std::function<void()>      ladeHakenFuerTest;               ///< NAK-312 312/M-78: nur im Testbau
+    std::function<void()>      abbauEndeHakenFuerTest;          ///< NAK-312 312/M-30: nur im Testbau
 #endif
     nakama::diagnose::Briefkasten briefkasten;
 
@@ -647,6 +685,24 @@ private:
     std::atomic<double> v3Samplerate { 0.0 };
     std::atomic<int> v3BlockSize { 0 };
     std::atomic<int> v3Channels { 0 };
+    /** NAK-312 Etappe 4 (R-312-7, NAK-246 R-D2): die Besitzschleuse, durch die
+        die drei Provider der v3-Clients laufen (Hello, Status,
+        Telemetrie-Hello). Jedes Lambda faengt `this` UND diesen `shared_ptr`
+        und ruft den Prozessor nur innerhalb eines Zugs. Der Destruktor
+        schliesst sie NACH `telemetryV3.stop()` und `controlV3.stop()` und VOR
+        der Zerstoerung der Mitglieder; ein Rueckruf, der danach beginnt, wird
+        abgewiesen, ein laufender zu Ende gewartet. Eine nach der Stoppfrist
+        abgeloeste Client-Laufzeit haelt danach ueber ihre `std::function` nur
+        noch eine geschlossene Schleuse. Ein Reconnect legt sie nicht neu an.
+
+        Steht VOR `controlV3` und `telemetryV3`: deren Lambdas kopieren den
+        Zeiger bei der Konstruktion, und die Clients sterben vor ihr. */
+    std::shared_ptr<nakama::ipc::CallbackSchleuse> callbackSchleuse;
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    /// NAK-312 Etappe 4 (R-312-12): die Haken des Statusproviders, nur im
+    /// Testbau. Steht vor `controlV3`, weil dessen Lambda den Zeiger faengt.
+    std::shared_ptr<ProviderHakenFuerTest> providerHaken;
+#endif
     nakama::ipc::ControlClient controlV3;
     nakama::ipc::TelemetryClient telemetryV3;
 

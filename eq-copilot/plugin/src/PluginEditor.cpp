@@ -608,6 +608,22 @@ void EqCopilotEditor::comboBoxChanged (juce::ComboBox* c)
     }
 }
 
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace testzugang
+{
+/** NAK-312 Etappe 4 (R-312-12): die Marke des Messpunkt-Panels. `uebernehmen()`
+    fragt sie unmittelbar vor seinem ersten Zugriff auf den Prozessor; liefert
+    sie false, kehrt der Rückruf ohne Zugriff zurück. Sie liegt außerhalb von
+    Editor und Prozessor, weil ein Bein sie nach deren Ende lesen muss (B15,
+    312/M-35). Im Produkt gibt es sie nicht. */
+std::function<bool()>& messpunktMarkeFuerTest()
+{
+    static std::function<bool()> marke;
+    return marke;
+}
+} // namespace testzugang
+#endif
+
 // ── Messpunkt-Popover: die OPTIONALE Bindung (Aufgabe/Name/Paar) — bewusst
 // nicht im Dauer-Kopf, damit kein Setup-Gefühl entsteht (USER-VORGABE:
 // laden → Musik spielen → Befund; alles andere ist Beiwerk). ───────────────
@@ -624,16 +640,22 @@ void EqCopilotEditor::zeigeMesspunkt()
 
     struct MesspunktPanel : juce::Component, juce::ComboBox::Listener, juce::TextEditor::Listener
     {
-        EqCopilotProcessor& proz;
+        // NAK-312 Etappe 4 (T3-04-03, R-312-2): der Eigentümer des Panels ist
+        // der Editor. Das Panel hält ihn als SafePointer und erreicht den
+        // Prozessor nur über ihn - ein lebender Editor ist ein lebender
+        // Prozessor, weil JUCE den Editor vor seinem Prozessor zerstört.
+        juce::Component::SafePointer<EqCopilotEditor> editor;
         std::function<void()> geaendert;   // Editor neu malen (Kopf zeigt Rolle/Name)
         juce::Label hinweis, rolleEtikett, labelEtikett, paarEtikett;
         juce::ComboBox rolleWahl;
         juce::TextEditor labelFeld, paarFeld;
         float s;
 
-        MesspunktPanel (EqCopilotProcessor& p, float skala, std::function<void()> beiAenderung)
-            : proz (p), geaendert (std::move (beiAenderung)), s (skala)
+        MesspunktPanel (const juce::Component::SafePointer<EqCopilotEditor>& e, float skala,
+                        std::function<void()> beiAenderung)
+            : editor (e), geaendert (std::move (beiAenderung)), s (skala)
         {
+            auto& proz = editor->processor;   // beim Öffnen lebt der Editor
             const auto tinte = farbe (leitstand::copilot_text_light);
             auto initEtikett = [&] (juce::Label& l, const juce::String& text)
             {
@@ -697,14 +719,27 @@ void EqCopilotEditor::zeigeMesspunkt()
         // Übernimmt NUR bei echter Änderung — setzeBindung löst einen
         // Reconnect aus, und der wäre bei jedem Öffnen/Schließen oder
         // Fokuswechsel ohne Änderung reines Verbindungs-Geflacker.
+        //
+        // NAK-312 R-312-2: die Lebendprüfung steht VOR jedem Zugriff. Ist der
+        // Editor weg, kehrt der Rückruf zurück - kein Zugriff, keine
+        // Mutation, keine Dirty-Meldung. `getComponent()` castet dynamisch
+        // und liefert null, sobald der Editor seinen eigenen Destruktor
+        // verlassen hat (dessen Basisteil läuft dann noch).
         void uebernehmen()
         {
+            auto* ed = editor.getComponent();
+            if (ed == nullptr)
+                return;
             const auto id = rolleWahl.getSelectedId();
             const juce::String rolle = id == 2 ? "hub" : id == 3 ? "pre" : id == 4 ? "post" : "sensor";
             const bool paar = (id == 3 || id == 4);
             const auto label = labelFeld.getText().substring (0, 120);
             const auto paarId = paar ? paarFeld.getText().substring (0, 60) : juce::String();
-            if (proz.setzeBindung (rolle, label, paarId) && geaendert)
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+            if (auto& marke = testzugang::messpunktMarkeFuerTest(); marke && ! marke())
+                return;   // R-312-12: gezählt, kein Zugriff
+#endif
+            if (ed->processor.setzeBindung (rolle, label, paarId) && geaendert)
                 geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
         }
         void comboBoxChanged (juce::ComboBox*) override { paarSichtbarkeit(); uebernehmen(); }
@@ -728,13 +763,18 @@ void EqCopilotEditor::zeigeMesspunkt()
         }
     };
 
-    // SafePointer statt rohem this: der Panel-Destruktor ruft uebernehmen()
-    // auch dann, wenn FL das Editorfenster MIT offenem Popover schließt —
-    // der Editor ist dann schon im Abbau (Component nullt SafePointer sofort).
+    // Die Box kann den Editor überleben: FL schließt das Editorfenster MIT
+    // offenem Popover, die Box stirbt erst in der nächsten Runde der
+    // Nachrichtenschleife, und ihr Panel-Destruktor ruft uebernehmen() - dann
+    // ist der Prozessor womöglich schon fort. Das Panel bekommt deshalb den
+    // Editor als SafePointer statt des Prozessors und prüft ihn, bevor es den
+    // Prozessor anfasst (NAK-312 R-312-2). Derselbe SafePointer schützt im
+    // Änderungs-Callback das Neuzeichnen.
+    const juce::Component::SafePointer<EqCopilotEditor> safe (this);
     juce::CallOutBox::launchAsynchronously (
         std::make_unique<MesspunktPanel> (
-            processor, s,
-            [safe = juce::Component::SafePointer<EqCopilotEditor> (this)]
+            safe, s,
+            [safe]
             {
                 if (auto* editor = safe.getComponent())
                     editor->uiDirty = true;

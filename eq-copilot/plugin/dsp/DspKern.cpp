@@ -1207,12 +1207,33 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     // die Hoermatrix noch nicht da. Sie blendet erst nach seinem Einblenden
     // auf Candidate; sonst liefe ihr Fade ueber seinen Fade von Dry her, und
     // zwei identische A/B-Zustaende nullten nicht (M-55, Gegenstueck zu X-1).
+    //
+    // NAK-312 Etappe 5 (T3-01-04, R-312-3, E-312-7): das HARTE SCHALTEN beim
+    // Wechsel in den Offline-Betrieb (`setzeOfflineRiegel`). Die Anforderung
+    // wird ZUERST gelesen (acquire): wer sie sieht, sieht auch Riegel und
+    // Hoerwunsch, die der Aufrufer davor gespeichert hat. Verbraucht wird sie
+    // hier, allein vom Audiothread; ohne Anforderung bleibt es bei einer Lesung.
+    const bool hart = hartSchalten.load (std::memory_order_acquire)
+                   && hartSchalten.exchange (false, std::memory_order_acq_rel);
     const auto& zk = pfade[1];
     const bool candEinblendend = zk.uebergang == Uebergang::crossfade && zk.quelle < 0;
     const bool candDa  = candidateAktiv.load (std::memory_order_acquire) && zk.aktiv >= 0 && ! candEinblendend;
     Hoermatrix wirksam = hoerwunsch.load (std::memory_order_acquire);
     if (wirksam == Hoermatrix::candidate && ! candDa) wirksam = Hoermatrix::processed;
+    // Der Offline-Riegel: solange er steht, wirkt jeder Hoerwunsch als
+    // Processed - auch einer, der nach dem Wechsel von aussen kommt.
+    if (offlineRiegelAn.load (std::memory_order_acquire)) wirksam = Hoermatrix::processed;
     hoerwirksam.store (wirksam, std::memory_order_release);
+    if (hart)
+    {
+        // Ab dem ersten Sample dieses Stuecks steht die Hoermatrix ohne Fade
+        // auf dem wirksamen Stand. Ein laufender Fade - in jede Richtung -
+        // endet mit, sonst bliebe ein Mischstand stehen; ein Hoerhalt endet am
+        // Ende dieses Stuecks (`beendeHoerHalt`).
+        hoerVorher   = wirksam;
+        hoerLaufend  = wirksam;
+        hoerFadeRest = 0;
+    }
 
     const bool tapPlatz = numSamples <= maxBlockGroesse && ! tapPuffer.empty();
 
@@ -1339,7 +1360,9 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     }
 
     // --- Hoermatrix, HINTER allen drei Taps (§44.2 letzter Absatz) --------
-    // M-55: der Wechsel ist KLICKFREI - ein eigener Uebergang.
+    // M-55: der Wechsel ist KLICKFREI - ein eigener Uebergang. Allein der
+    // Wechsel in den Offline-Betrieb schaltet hart (oben, NAK-312 Etappe 5);
+    // der Rueckweg in die Echtzeit blendet hier weich.
     if (wirksam != hoerLaufend)
     {
         if (hoerFadeRest <= 0)

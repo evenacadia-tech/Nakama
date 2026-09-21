@@ -32,9 +32,10 @@
          `SondeProcessor::processBlock`, nicht erst ab `DspKern::verarbeite`:
          ein Testplayhead nimmt je Block eine gemeldete Sperre VOR dem Kern
          (312/M-01), ein Workerzug ausserhalb des Blocks zaehlt nicht
-         (312/M-02), und das Offlineflag nimmt je Aufruf eine gemeldete Sperre,
-         wenn das Bein den Bereich wie der Wrapper um `setNonRealtime` und
-         `processBlock` legt (312/M-04). Sperren, die JUCE vor dem Plugincode
+         (312/M-02), und legt das Bein den Bereich wie der Wrapper um
+         `setNonRealtime` und `processBlock`, zaehlt er je Aufruf des
+         Offlineflags seit Etappe 5 keine Sperre mehr (312/M-04; bis Etappe 4
+         je Aufruf `setNonRealtime (true)` eine). Sperren, die JUCE vor dem Plugincode
          nimmt, sieht der Zaehler bauartbedingt nicht. Seit NAK-312 Etappe 3a
          (W02, Abschnitt X und 312/M-14 in Abschnitt O) der Ladestart: Hostwerte,
          die vor ihm in der Mailbox lagen, bleiben wirkungslos, ein Hostwert
@@ -56,7 +57,14 @@
          mehr Bloecke, waehrend beide v3-Clients ueber den geteilten
          Testserver (`V3TestServer.h`) auf einer Probe-Pipe verbunden sind und
          ihre Provider durch die Besitzschleuse der Sonde laufen: die
-         Echtzeitwache bleibt dabei bei 0.
+         Echtzeitwache bleibt dabei bei 0. Seit NAK-312 Etappe 5 (Abschnitt ZA,
+         312/M-42 als Umbau von `offline_render_nutzt_den_bestaetigten_zustand`
+         in Abschnitt O) der Offline-Uebergang: das Offlineflag nimmt keine
+         Sperre, der erste Block danach traegt ab Sample 0 den bestaetigten
+         Zustand - bei Blockgroesse 1, 64 und 256, auch in einen laufenden Fade
+         oder Hoerhalt hinein -, der Rueckweg blendet weich, und die Vorschau
+         verbucht der naechste Kontrolltakt; gefragt wird sie wie die
+         Bankfreigabe nur nach einem ausdruecklichen `kontrollTaktFuerTest()`.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -2345,13 +2353,27 @@ void prozessorAutomation()
         const bool gesetzt = a->setzePreview (vorschau, g);
         a->setzeHoermatrix (dsp::Hoermatrix::candidate);
         fahreAudio (*a, 20, 256, 50); fahreAudio (*b, 20, 256, 50);
+        // NAK-312 Etappe 5 (312/M-42, E-312-7): KEINE Verwurfsbloecke mehr -
+        // der erste Block nach dem Offlineflag traegt ab Sample 0 den
+        // bestaetigten Zustand. Die Vorschau selbst verbucht der naechste
+        // Kontrolltakt; `previewAktiv()` wird deshalb erst nach einem
+        // ausdruecklichen Takt gefragt (312/M-83), nie am Workertakt.
         a->setNonRealtime (true); b->setNonRealtime (true);
-        fahreAudio (*a, 8, 256, 51); fahreAudio (*b, 8, 256, 51);
+        const bool sofortProcessed = a->gewuenschteHoermatrix() == dsp::Hoermatrix::processed;
         const auto ya = fahreAudio (*a, 100, 256, 52);
         const auto yb = fahreAudio (*b, 100, 256, 52);
-        pruefe (gesetzt && ! a->previewAktiv() && a->gewuenschteHoermatrix() == dsp::Hoermatrix::processed && bitgleich (ya, yb),
-                "offline_render_nutzt_den_bestaetigten_zustand (M-120): der Wechsel in den Offline-Betrieb beendet die Vorschau; der Render ist bitgleich zum Lauf ohne Vorschau",
-                str (g));
+        float groessteAbweichung = 0.0f;   // ueber die ersten 256 Samples beider Kanaele
+        for (size_t i = 0; i < 512 && i < ya.size() && i < yb.size(); ++i)
+            groessteAbweichung = std::max (groessteAbweichung, std::abs (ya[i] - yb[i]));
+        pruefe (gesetzt && sofortProcessed && bitgleich (ya, yb) && groessteAbweichung == 0.0f,
+                "offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel "
+                "in den Offline-Betrieb ist der Render ab Sample 0 bitgleich zum Lauf ohne Vorschau - ohne Verwurfsbloecke, "
+                "max |ya - yb| ueber die ersten 256 Samples 0",
+                "Grund '" + str (g) + "', gewuenscht sofort " + (sofortProcessed ? "processed" : "NICHT processed")
+                + ", groesste Abweichung der ersten 256 Samples " + std::to_string (groessteAbweichung));
+        a->kontrollTaktFuerTest();
+        pruefe (! a->previewAktiv(),
+                "  312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false");
     }
 }
 
@@ -3692,7 +3714,13 @@ void nak312Messgeraete()
     // ── 312/M-04: Testplayhead aus, das Bein oeffnet den Bereich wie der
     // Wrapper. Der VST3-Wrapper ruft `setNonRealtime` im selben Callback VOR
     // `processBlock`; der Bereich der Sonde beginnt erst in `processBlock` und
-    // saehe die Sperre des Offlineflags sonst gar nicht. ────────────────────
+    // saehe eine Sperre des Offlineflags sonst gar nicht. Zwei Haelften mit
+    // Etappenwechsel (E-312-10): bis Etappe 4 zaehlte derselbe Lauf 200 - jeder
+    // Aufruf `setNonRealtime (true)` nahm `zustandSchloss` ueber den gemeldeten
+    // Adapter. Seit Etappe 5 (T3-01-03) nimmt `setNonRealtime` keine Sperre
+    // mehr, der Lauf zaehlt 0 und faellt mit 312/M-40 zusammen; dass der
+    // Bereich eine Sperre dort ueberhaupt saehe, traegt der Rotbeweis von
+    // 312/M-40. ──────────────────────────────────────────────────────────────
     {
         auto p = prozessor (fs, blk);
         juce::AudioBuffer<float> puffer (2, blk);
@@ -3715,13 +3743,13 @@ void nak312Messgeraete()
         const auto offline  = lauf (true);
         const auto echtzeit = lauf (false);
         std::ostringstream d;
-        d << "gemeldete Sperren ueber " << bloecke << " Bloecke: vor jedem setNonRealtime (true) " << offline
-          << ", vor jedem setNonRealtime (false) " << echtzeit;
-        pruefe (offline == (std::uint64_t) bloecke && echtzeit == 0,
-                "312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): "
-                "legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt "
-                "RtWache::sperren() ueber 200 Bloecke genau 200 - jede Nahme von zustandSchloss beim Wechsel nach "
-                "offline ist ueber den gemeldeten Adapter sichtbar; ohne den Wechsel bleibt sie 0",
+        d << "gemeldete Sperren ueber " << bloecke << " Bloecke: mit Aufruf setNonRealtime (true) " << offline
+          << ", mit Aufruf setNonRealtime (false) " << echtzeit;
+        pruefe (offline == 0 && echtzeit == 0,
+                "312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 "
+                "offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): legt das Bein den Bereich wie der Wrapper um "
+                "setNonRealtime und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke 0 - je Aufruf "
+                "setNonRealtime (true) wie je Aufruf setNonRealtime (false); faellt mit 312/M-40 zusammen",
                 d.str());
     }
 }
@@ -5088,6 +5116,333 @@ void nak312Besitz()
     server.stoppen();
 }
 
+//==============================================================================
+// NAK-312 Etappe 5, erster Aenderungssatz (T3-01-03, T3-01-04; R-312-3,
+// E-312-7): der Offline-Uebergang. `setNonRealtime` erkennt den Wechsel an
+// einem Atomic, nimmt keine Sperre, schaltet die Hoermatrix hart auf Processed
+// und setzt den Offline-Riegel; die Vorschau verbucht der naechste
+// Kontrolltakt. Keine Zeile haengt an der Wanduhr: `previewAktiv()` und die
+// Bankfreigabe werden nur nach einem ausdruecklichen `kontrollTaktFuerTest()`
+// gefragt (der Worker darf frueher ziehen, `beendePreview` ist idempotent).
+
+/** Der Aufbau von 312/M-40 bis 312/M-47: A traegt den bestaetigten Satz (eq an,
+    Bell 1 kHz +6 dB) und - mit `mitVorschau` - eine Vorschau (-12 dB) mit dem
+    Hoerwunsch `wunsch`; B nur den bestaetigten Satz; C (mit `mitC`) ist ein
+    Zwilling von A, der nie offline geht. Alle drei schwingen mit demselben
+    Eingang ein; `ya`, `yb`, `yc` sind die Ausgaenge des Einschwingens. */
+struct OfflineAufbau
+{
+    std::unique_ptr<Prozessor> a, b, c;
+    std::vector<float> ya, yb, yc;
+};
+
+OfflineAufbau offlineAufbau (int block, bool mitVorschau = true, bool mitC = false,
+                             dsp::Hoermatrix wunsch = dsp::Hoermatrix::candidate, int einschwingSamples = 2048)
+{
+    OfflineAufbau x;
+    x.a = prozessor (48000.0, block);
+    x.b = prozessor (48000.0, block);
+    if (mitC) x.c = prozessor (48000.0, block);
+    auto z = mitEq (true);
+    setzeBand (z, 0, 1000.0, 6.0);
+    auto vorschau = z;
+    vorschau.werte[(size_t) iBand (0, param::kGainDb)].zahl = -12.0;
+    for (auto* p : { x.a.get(), x.b.get(), x.c.get() })
+    {
+        if (p == nullptr) continue;
+        setze (*p, z);
+        if (mitVorschau && p != x.b.get())
+        {
+            juce::String g;
+            p->setzePreview (vorschau, g);
+            p->setzeHoermatrix (wunsch);
+        }
+    }
+    const int bloecke = std::max (1, einschwingSamples / block);
+    x.ya = fahreAudio (*x.a, bloecke, block, 60);
+    x.yb = fahreAudio (*x.b, bloecke, block, 60);
+    if (x.c != nullptr) x.yc = fahreAudio (*x.c, bloecke, block, 60);
+    return x;
+}
+
+/** Faehrt `bloecke` Bloecke mit dem Gleichanteil `dc` auf beiden Kanaelen und
+    liefert den Ausgang des linken Kanals. */
+std::vector<float> fahreGleichanteil (Prozessor& p, int bloecke, int groesse, float dc)
+{
+    std::vector<float> aus;
+    aus.reserve ((size_t) (bloecke * groesse));
+    juce::MidiBuffer midi;
+    for (int b = 0; b < bloecke; ++b)
+    {
+        juce::AudioBuffer<float> puffer (2, groesse);
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+                puffer.setSample (k, n, dc);
+        p.processBlock (puffer, midi);
+        for (int n = 0; n < groesse; ++n)
+            aus.push_back (puffer.getSample (0, n));
+    }
+    return aus;
+}
+
+int candidateSlot (Prozessor& p)
+{
+    int c = -1, cq = -1, k = -1, kq = -1;
+    p.dspKernFuerTest().gefahreneSlots (c, cq, k, kq);
+    return k;
+}
+
+void nak312OfflineUebergang()
+{
+    abschnitt ("ZA - NAK-312 Etappe 5: der Offline-Uebergang (312/M-40, 312/M-41, 312/M-83, 312/M-43 bis 312/M-47; "
+               "312/M-42 in Abschnitt O, 312/M-04 in Abschnitt W)");
+
+    const int fade = nakama::dsp::kFadeSamples;
+
+    // ── 312/M-40 und 312/M-41: 200 Bloecke, das Bein oeffnet den Bereich wie
+    // der Wrapper um `setNonRealtime (true)` und `processBlock` (312/M-04). ──
+    {
+        auto x = offlineAufbau (256);
+        const bool candidateHoerbar = x.a->dspKernFuerTest().wirksameHoermatrix() == dsp::Hoermatrix::candidate
+                                   && ! bitgleich (x.ya, x.yb);
+        x.b->setNonRealtime (true);
+        juce::AudioBuffer<float> pa (2, 256), pb (2, 256);
+        juce::MidiBuffer midi;
+        juce::Random w (3140);
+        bool gewuenschtSofort = false, wirksamNachErstemBlock = false, ersterBitgleich = false, alleBitgleich = true;
+        dsp::RtWache::zuruecksetzen();
+        for (int blockNr = 0; blockNr < 200; ++blockNr)
+        {
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < 256; ++n)
+                {
+                    const float s = w.nextFloat() * 1.6f - 0.8f;
+                    pa.setSample (k, n, s);
+                    pb.setSample (k, n, s);
+                }
+            {
+                const dsp::RtWache::Bereich wieDerWrapper;
+                x.a->setNonRealtime (true);
+                if (blockNr == 0)
+                    gewuenschtSofort = x.a->gewuenschteHoermatrix() == dsp::Hoermatrix::processed;
+                x.a->processBlock (pa, midi);
+            }
+            x.b->processBlock (pb, midi);
+            const bool gleich = std::memcmp (pa.getReadPointer (0), pb.getReadPointer (0), 256 * sizeof (float)) == 0
+                             && std::memcmp (pa.getReadPointer (1), pb.getReadPointer (1), 256 * sizeof (float)) == 0;
+            if (blockNr == 0)
+            {
+                ersterBitgleich = gleich;
+                wirksamNachErstemBlock = x.a->dspKernFuerTest().wirksameHoermatrix() == dsp::Hoermatrix::processed;
+            }
+            alleBitgleich = alleBitgleich && gleich;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        pruefe (candidateHoerbar && sperren == 0,
+                "312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit "
+                "hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein den Bereich wie der Wrapper um setNonRealtime (true) "
+                "und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke 0",
+                "Candidate vorher hoerbar " + std::string (candidateHoerbar ? "ja" : "NEIN") + ", RtWache::sperren " + zahl (sperren));
+        pruefe (candidateHoerbar && gewuenschtSofort && wirksamNachErstemBlock,
+                "312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): "
+                "unmittelbar nach der Rueckkehr des ersten setNonRealtime (true) ist gewuenschteHoermatrix() Processed, "
+                "und im ersten Block danach wirkt Processed",
+                std::string ("gewuenscht sofort ") + (gewuenschtSofort ? "processed" : "NICHT processed")
+                + ", wirksam nach dem ersten Block " + (wirksamNachErstemBlock ? "processed" : "NICHT processed"));
+        pruefe (candidateHoerbar && ersterBitgleich && alleBitgleich,
+                "  312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum "
+                "bestaetigten Lauf, und alle 200 Bloecke sind es",
+                std::string ("erster Block ") + (ersterBitgleich ? "bitgleich" : "VERSCHIEDEN")
+                + ", alle 200 " + (alleBitgleich ? "bitgleich" : "NICHT bitgleich"));
+    }
+
+    // ── 312/M-83 und 312/M-46: die Buchhaltung folgt im Kontrolltakt, und keine
+    // Bank bleibt haengen - gemessen nach ausdruecklichen Takten. ────────────
+    {
+        auto x = offlineAufbau (256);
+        const int slot = candidateSlot (*x.a);
+        x.a->setNonRealtime (true);
+        x.a->kontrollTaktFuerTest();
+        const bool verbucht = ! x.a->previewAktiv();
+        const int bloecke = (fade + 256 - 1) / 256 + 1;
+        fahreAudio (*x.a, bloecke, 256, 61);
+        x.a->kontrollTaktFuerTest();
+        int c = -1, cq = -1, k = -1, kq = -1;
+        x.a->dspKernFuerTest().gefahreneSlots (c, cq, k, kq);
+        const bool frei = slot >= 0 && x.a->dspKernFuerTest().pool().zustand (slot) == dsp::BankZustand::frei;
+        const std::string detail = "Candidate-Slot " + std::to_string (slot) + ", previewAktiv nach dem ersten Takt "
+                                 + (verbucht ? "false" : "TRUE") + ", nach " + std::to_string (bloecke)
+                                 + " Bloecken und dem zweiten Takt Slot " + (frei ? "frei" : "BELEGT")
+                                 + ", Candidate aktiv/Quelle " + std::to_string (k) + "/" + std::to_string (kq);
+        pruefe (slot >= 0 && verbucht && frei,
+                "312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten "
+                "setNonRealtime (true) und einem ausdruecklichen kontrollTaktFuerTest() ist previewAktiv() false; nach "
+                "ceil (kFadeSamples / Blockgroesse) + 1 Bloecken und einem zweiten Takt ist die Candidate-Bank frei",
+                detail);
+        pruefe (slot >= 0 && frei && k == -1 && kq == -1 && ! x.a->dspKernFuerTest().candidateVorhanden(),
+                "312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - "
+                "die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch wenn die Hoermatrix nie blendete",
+                detail);
+    }
+
+    // ── 312/M-46 Teilfall: beim Schalten laeuft ein HOERHALT (die Vorschau
+    // endete in Echtzeit, die Hoermatrix blendet von Candidate zurueck). Das
+    // harte Schalten beendet den Fade, der Hoerhalt endet am Ende desselben
+    // Stuecks, der naechste Takt gibt die Bank frei. ─────────────────────────
+    {
+        auto x = offlineAufbau (64);
+        const int slot = candidateSlot (*x.a);
+        x.a->beendePreview();
+        fahreAudio (*x.a, 1, 64, 62); fahreAudio (*x.b, 1, 64, 62);   // 64 von 256 Samples der Rueckblende
+        int c = -1, cq = -1, k = -1, kq = -1;
+        x.a->dspKernFuerTest().gefahreneSlots (c, cq, k, kq);
+        const bool hoerHaltLaeuft = slot >= 0 && k == -1 && kq == slot;
+        x.a->setNonRealtime (true); x.b->setNonRealtime (true);
+        x.a->kontrollTaktFuerTest();
+        const auto ya = fahreAudio (*x.a, (fade + 64 - 1) / 64 + 1, 64, 63);
+        const auto yb = fahreAudio (*x.b, (fade + 64 - 1) / 64 + 1, 64, 63);
+        x.a->kontrollTaktFuerTest();
+        x.a->dspKernFuerTest().gefahreneSlots (c, cq, k, kq);
+        const bool frei = slot >= 0 && x.a->dspKernFuerTest().pool().zustand (slot) == dsp::BankZustand::frei;
+        pruefe (hoerHaltLaeuft && bitgleich (ya, yb) && frei && k == -1 && kq == -1,
+                "  312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate "
+                "(Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Sample 0 bitgleich zum bestaetigten Lauf, und nach "
+                "Takt, ceil (kFadeSamples / 64) + 1 Bloecken und Takt ist die gehaltene Bank frei",
+                std::string ("Hoerhalt vorher ") + (hoerHaltLaeuft ? "ja" : "NEIN") + ", Ausgang "
+                + (bitgleich (ya, yb) ? "bitgleich" : "VERSCHIEDEN") + ", Slot " + std::to_string (slot)
+                + (frei ? " frei" : " BELEGT") + ", Candidate aktiv/Quelle " + std::to_string (k) + "/" + std::to_string (kq));
+    }
+
+    // ── 312/M-42 Teilfall: ein laufender Fade in die GEGENRICHTUNG (Processed
+    // nach Candidate, 64 von 256 Samples) endet mit dem harten Schalten. ──────
+    {
+        auto x = offlineAufbau (64, true, false, dsp::Hoermatrix::processed);
+        x.a->setzeHoermatrix (dsp::Hoermatrix::candidate);
+        const auto ya0 = fahreAudio (*x.a, 1, 64, 64);
+        const auto yb0 = fahreAudio (*x.b, 1, 64, 64);
+        const bool fadeLaeuft = ! bitgleich (ya0, yb0);
+        x.a->setNonRealtime (true); x.b->setNonRealtime (true);
+        const auto ya = fahreAudio (*x.a, 8, 64, 65);
+        const auto yb = fahreAudio (*x.b, 8, 64, 65);
+        pruefe (fadeLaeuft && bitgleich (ya, yb),
+                "  312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von "
+                "Processed nach Candidate, endet dieser Fade mit dem harten Schalten - der Ausgang ist ab Sample 0 bitgleich "
+                "zum bestaetigten Lauf",
+                std::string ("Fade vorher hoerbar ") + (fadeLaeuft ? "ja" : "NEIN") + ", danach "
+                + (bitgleich (ya, yb) ? "bitgleich" : "VERSCHIEDEN"));
+    }
+
+    // ── 312/M-43: der Rueckweg blendet weiter WEICH. Gleichanteil 0,3 auf
+    // beiden Kanaelen; der bestaetigte Satz ist neutral (Ausgang = Eingang), die
+    // Vorschau traegt Output-Trim +6 dB. Nach Offline an, Takt und Offline aus
+    // kehrt die Auswahl ueber eine neue Vorschau zu Candidate zurueck; gemessen
+    // wird der Nachbarsprung nach [SONDE-015] E-31. ───────────────────────────
+    {
+        const int trim = param::indexVonId ("v1.global.output_trim_db");
+        auto a = prozessor (48000.0, 64);
+        const auto z = mitEq (true);
+        setze (*a, z);
+        auto vorschau = z;
+        vorschau.werte[(size_t) trim].zahl = 6.0;
+        juce::String g;
+        const bool gesetzt = a->setzePreview (vorschau, g);
+        a->setzeHoermatrix (dsp::Hoermatrix::candidate);
+        fahreGleichanteil (*a, 32, 64, 0.3f);
+        const bool candidateHoerbar = a->dspKernFuerTest().wirksameHoermatrix() == dsp::Hoermatrix::candidate;
+        a->setNonRealtime (true);
+        fahreGleichanteil (*a, 8, 64, 0.3f);
+        a->kontrollTaktFuerTest();
+        fahreGleichanteil (*a, 8, 64, 0.3f);
+        a->kontrollTaktFuerTest();
+        a->setNonRealtime (false);
+        fahreGleichanteil (*a, 8, 64, 0.3f);
+        const bool zurueck = a->setzePreview (vorschau, g);
+        a->setzeHoermatrix (dsp::Hoermatrix::candidate);
+        const auto y = fahreGleichanteil (*a, 32, 64, 0.3f);
+        const double ziel = 0.3 * std::pow (10.0, 6.0 / 20.0);
+        const double schritt = (ziel - 0.3) / (double) fade;
+        const double toleranz = 1.0 / 8388608.0;   // 2^-23, [SONDE-015] E-31
+        double groessterSprung = 0.0, ersterSprung = -1.0;
+        for (size_t i = 1; i < y.size(); ++i)
+        {
+            const double sprung = std::abs ((double) y[i] - (double) y[i - 1]);
+            groessterSprung = std::max (groessterSprung, sprung);
+            if (ersterSprung < 0.0 && y[i] != y[0]) ersterSprung = sprung;
+        }
+        const bool amZiel = ! y.empty() && std::abs ((double) y.back() - ziel) < 1.0e-6 && y.front() == 0.3f;
+        std::ostringstream d;
+        d << std::setprecision (9) << "erster Sprung " << ersterSprung << ", groesster " << groessterSprung
+          << ", Fadeschritt " << schritt << " + 2^-23, Anfang " << y.front() << ", Ende " << y.back();
+        pruefe (gesetzt && zurueck && candidateHoerbar && amZiel && ersterSprung >= 0.0
+                    && ersterSprung <= schritt + toleranz && groessterSprung <= schritt + toleranz,
+                "312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und "
+                "aus kehrt die Hoermatrix zu Candidate zurueck, und der Nachbarsprung am Umschaltsample wie ueber den ganzen "
+                "Lauf ist hoechstens die Fadeschrittweite plus 2^-23 - die harte Umstellung gilt nur in die Offlinerichtung",
+                d.str());
+    }
+
+    // ── 312/M-44: Offline an, aus, wieder an. ───────────────────────────────
+    {
+        auto x = offlineAufbau (256);
+        x.a->setNonRealtime (true); x.b->setNonRealtime (true);
+        fahreAudio (*x.a, 4, 256, 66); fahreAudio (*x.b, 4, 256, 66);
+        x.a->kontrollTaktFuerTest();
+        x.a->setNonRealtime (false); x.b->setNonRealtime (false);
+        x.a->kontrollTaktFuerTest();
+        const bool nachRueckweg = ! x.a->previewAktiv() && x.a->gewuenschteHoermatrix() == dsp::Hoermatrix::processed;
+        const auto ya1 = fahreAudio (*x.a, 20, 256, 67);
+        const auto yb1 = fahreAudio (*x.b, 20, 256, 67);
+        x.a->setNonRealtime (true); x.b->setNonRealtime (true);
+        const auto ya2 = fahreAudio (*x.a, 20, 256, 68);
+        const auto yb2 = fahreAudio (*x.b, 20, 256, 68);
+        x.a->kontrollTaktFuerTest();
+        pruefe (nachRueckweg && bitgleich (ya1, yb1) && bitgleich (ya2, yb2) && ! x.a->previewAktiv(),
+                "312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, "
+                "Offline aus und Takt ist keine Vorschau aktiv, die Auswahl Processed und der Echtzeitlauf bitgleich zum "
+                "bestaetigten; ein zweiter Wechsel nach offline findet keine Vorschau und aendert am Ausgang nichts",
+                std::string ("nach dem Rueckweg ") + (nachRueckweg ? "ohne Vorschau, Processed" : "VORSCHAU ODER AUSWAHL BELEBT")
+                + ", Echtzeit " + (bitgleich (ya1, yb1) ? "bitgleich" : "VERSCHIEDEN")
+                + ", zweites Offline " + (bitgleich (ya2, yb2) ? "bitgleich" : "VERSCHIEDEN"));
+    }
+
+    // ── 312/M-45: derselbe Ablauf ohne Vorschau. ────────────────────────────
+    {
+        auto x = offlineAufbau (256, false);
+        x.a->setNonRealtime (true);
+        const auto ya = fahreAudio (*x.a, 20, 256, 69);
+        const auto yb = fahreAudio (*x.b, 20, 256, 69);
+        pruefe (bitgleich (x.ya, x.yb) && bitgleich (ya, yb),
+                "312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist "
+                "der Lauf nach setNonRealtime (true) ab Sample 0 bitgleich zum Lauf ohne Offlineflag");
+    }
+
+    // ── 312/M-47: Blockgroessen 1, 64 und 256 - Sampleindex, nicht Blockindex.
+    for (const int groesse : { 1, 64, 256 })
+    {
+        auto x = offlineAufbau (groesse, true, true);
+        const size_t n = (size_t) groesse;
+        // fahreAudio legt je Block erst den linken, dann den rechten Kanal ab.
+        const size_t letzterL = x.ya.size() - 2 * n + (n - 1);
+        const size_t letzterR = x.ya.size() - 1;
+        const bool vorherUnveraendert = x.ya[letzterL] == x.yc[letzterL] && x.ya[letzterR] == x.yc[letzterR];
+        const bool vorherCandidate    = x.ya[letzterL] != x.yb[letzterL] || x.ya[letzterR] != x.yb[letzterR];
+        x.a->setNonRealtime (true);
+        const auto ya = fahreAudio (*x.a, 1, groesse, 70);
+        const auto yb = fahreAudio (*x.b, 1, groesse, 70);
+        const auto yc = fahreAudio (*x.c, 1, groesse, 70);
+        const bool erstesBestaetigt = ya[0] == yb[0] && ya[n] == yb[n];
+        const bool erstesGewechselt = ya[0] != yc[0] || ya[n] != yc[n];
+        pruefe (vorherUnveraendert && vorherCandidate && erstesBestaetigt && erstesGewechselt && bitgleich (ya, yb),
+                "312/M-47 blockgroesse_" + std::to_string (groesse) + " (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample "
+                "vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das ERSTE danach ist bestaetigt "
+                "(gleich dem Lauf ohne Vorschau, ungleich dem Zwilling)"
+                + std::string (groesse == 1 ? " - bei Blockgroesse 1 genau ein Sample" : ""),
+                std::string ("vorher unveraendert ") + (vorherUnveraendert ? "ja" : "NEIN") + ", vorher Candidate "
+                + (vorherCandidate ? "ja" : "NEIN") + ", erstes bestaetigt " + (erstesBestaetigt ? "ja" : "NEIN")
+                + ", erstes gewechselt " + (erstesGewechselt ? "ja" : "NEIN"));
+    }
+}
+
 } // namespace
 
 int main()
@@ -5144,6 +5499,9 @@ int main()
 
     // NAK-312 Etappe 4 (W09, R-312-7): die Besitzschleuse liegt nicht im Audiopfad
     nak312Besitz();
+
+    // NAK-312 Etappe 5, erster Aenderungssatz (T3-01-03, T3-01-04; R-312-3, E-312-7): der Offline-Uebergang
+    nak312OfflineUebergang();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

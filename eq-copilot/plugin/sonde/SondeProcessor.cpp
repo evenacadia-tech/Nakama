@@ -1395,8 +1395,13 @@ nakama::ipc::ControlStatus SondeProcessor::v3Status() const
         bool suspendiert = false;
         {
             // `AudioProcessor::suspended` ist in JUCE 8.0.9 kein Atomic. Der
-            // Control-Thread liest ihn deshalb unter JUCEs Callback-Lock;
-            // der Audiothread nimmt nie unseren Runtime-/State-Lock.
+            // Control-Thread liest ihn deshalb unter JUCEs Callback-Lock - und
+            // haelt dabei KEIN Zustandsschloss (der Block darueber ist zu). Die
+            // Ordnung beider Sperren ist ueberall Callback-Lock vor
+            // Zustandsschloss (prepareToPlay, releaseResources, reset), und
+            // seit NAK-312 Etappe 5 nimmt der Audio-Callback das
+            // Zustandsschloss gar nicht mehr (`setNonRealtime` arbeitet mit
+            // Atomics).
             const juce::ScopedLock l (getCallbackLock());
             suspendiert = isSuspended();
         }
@@ -1541,15 +1546,37 @@ bool SondeProcessor::dspBericht (nakama::transaktion::DspBericht& aus, juce::Str
 void SondeProcessor::setNonRealtime (bool offline) noexcept
 {
     juce::AudioProcessor::setNonRealtime (offline);
-    if (! offline) return;
-    // NAK-312 Etappe 2 (R-312-1, 312/M-04): dieselbe Sperre wie zuvor, aber
-    // gemeldet. Der VST3-Wrapper ruft diese Funktion im Audio-Callback VOR
-    // `processBlock`; ein Bein, das den Bereich der Wache dort oeffnet, sieht
-    // jede Nahme im Sperrenzaehler.
-    GemeldetesSchloss gemeldet { zustandSchloss };
-    const nakama::dsp::RtWache::GemeldeteSperre<GemeldetesSchloss> l (gemeldet);
-    transaktion->beendePreview();
+
+    // NAK-312 Etappe 5 (T3-01-03, T3-01-04; R-312-3, E-312-7): der
+    // VST3-Wrapper ruft diese Funktion im Audio-Callback vor JEDEM
+    // `processBlock`. Keine Sperre, keine Allokation - nur Atomics, die dem
+    // Callback gehoeren oder ausdruecklich geteilt sind. Merkzettel,
+    // Publikation und Bankfreigabe bleiben beim Worker.
+    //
+    // 1. Wechselerkennung: bei gleichem Wert sofort zurueck - der Normalfall
+    //    in jedem Offlineblock. Der Tausch sorgt dafuer, dass genau EIN Aufruf
+    //    den Wechsel ausfuehrt, auch wenn Host und Callback zugleich riefen.
+    if (offlineGesehen.load (std::memory_order_acquire) == offline
+        || offlineGesehen.exchange (offline, std::memory_order_acq_rel) == offline)
+        return;
+
+    if (! offline)
+    {
+        // Rueckweg: der Riegel faellt, eine nicht verbrauchte Anforderung des
+        // harten Schaltens verfaellt - die Echtzeitrichtung blendet weich
+        // (M-55). Die Vorschau lebt nicht wieder auf; ein angefordertes
+        // Vorschauende bleibt angefordert.
+        dspKern->setzeOfflineRiegel (false);
+        return;
+    }
+
+    // 2. Hoermatrix sofort: der Wunsch auf Processed, dann Riegel und harte
+    //    Umschaltung - der Audiothread verbraucht sie im naechsten Stueck und
+    //    liest dabei zuerst die Anforderung, dann Riegel und Wunsch.
     dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
+    dspKern->setzeOfflineRiegel (true);
+    // 3. Buchhaltung beim naechsten Kontrolltakt (`dspKontrollTakt`).
+    vorschauEndeAngefordert.store (true, std::memory_order_release);
 }
 
 void SondeProcessor::parameterValueChanged (int index, float neuNormiert)
@@ -1756,6 +1783,17 @@ void SondeProcessor::dspKontrollTakt()
 
         // §44.2: erst nach dem ACK des Audiothreads ist eine Bank wieder frei.
         dspKern->pflege();
+
+        // NAK-312 Etappe 5 (E-312-7): das Vorschauende, das der Wechsel nach
+        // offline im Callback angefordert hat. Hier, unter dem Schloss, das der
+        // Takt ohnehin haelt, und auf dem Worker: `beendePreview` ->
+        // `beendeCandidate` setzt Merkzettel und ENDE-Marke wie bisher; der
+        // naechste Blockrand nimmt die Marke, und ein spaeterer Takt gibt die
+        // Bank frei (`pflege`). Idempotent - ein frueherer Takt aendert das
+        // Ergebnis nach einem ausdruecklichen Takt nicht.
+        if (vorschauEndeAngefordert.load (std::memory_order_acquire)
+            && vorschauEndeAngefordert.exchange (false, std::memory_order_acq_rel))
+            transaktion->beendePreview();
 
         // Hostereignisse -> AutomationOverlay (M-81): keine Revision, kein Undo.
         if (hostEreignisOffen.exchange (false, std::memory_order_relaxed))

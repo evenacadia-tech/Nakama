@@ -37,7 +37,9 @@
     GRUNDGESETZ (CLAUDE.md, Wahrheitskern): nichts Ungefragtes. Solange
     `v2.global.eq_enabled` aus ist - der Default -, ist Probeeq der
     Passthrough von bisher: sampleidentisch, 0 Samples Latenz, kein Tail,
-    keine Bank (SONDE-015 R2, Bein A16). `processBlock` haelt keine Sperre,
+    keine Bank (SONDE-015 R2, Bein A16). `setNonRealtime`, das der
+    VST3-Wrapper im selben Callback davor ruft, fasst nur Atomics an (NAK-312
+    Etappe 5). `processBlock` haelt keine Sperre,
     allokiert nicht, protokolliert nicht und fasst keine Datei an: er liest
     die Hostmailbox der Abdeckungstabelle und das read-only des geladenen
     Standes (nur Atomics, NAK-312 Etappe 3b und Nacharbeit 1),
@@ -144,17 +146,6 @@ inline nakama::state::Bundle bundleVertrag()
    #endif
 }
 
-/** NAK-312 Etappe 2 (R-312-1): `dsp::RtWache::GemeldeteSperre` ruft `lock()`
-    und `unlock()`, `juce::CriticalSection` kennt nur `enter()` und `exit()`.
-    Der Adapter nimmt DIESELBE Sperre in derselben Ordnung; gezaehlt wird sie
-    nur, wenn der Aufrufer im Bereich der Echtzeitwache steht. */
-struct GemeldetesSchloss
-{
-    const juce::CriticalSection& schloss;
-    void lock() const noexcept   { schloss.enter(); }
-    void unlock() const noexcept { schloss.exit(); }
-};
-
 class SondeProcessor final : public juce::AudioProcessor,
                              public eqcop::hostbruecke::Senke,
                              private juce::AudioProcessorParameter::Listener
@@ -220,9 +211,19 @@ public:
     double getTailLengthSeconds() const override        { return 0.0; }
 
     /** Offline-Render laeuft mit dem bestaetigten Zustand, nie mit einer
-        Vorschau (§44.4, §49.2 Gate 3, M-120): der Wechsel in den
-        Offline-Betrieb beendet die Preview und stellt die Hoermatrix auf
-        Processed. */
+        Vorschau (§44.4, §49.2 Gate 3, M-120). Der VST3-Wrapper ruft diese
+        Funktion im Audio-Callback vor JEDEM `processBlock`; sie nimmt keine
+        Sperre, allokiert nicht und fasst nur Atomics an (NAK-312 Etappe 5,
+        T3-01-03, T3-01-04, E-312-7).
+
+        Gleicher Wert wie beim letzten Aufruf: sofortige Rueckkehr. Der
+        WECHSEL nach offline stellt den Hoerwunsch auf Processed, setzt den
+        Offline-Riegel des Kerns (jeder Hoerwunsch wirkt als Processed, bis
+        `setNonRealtime (false)` ihn loest) und schaltet die Hoermatrix HART:
+        ab dem ersten Sample des naechsten Blocks, ohne Fade - in die
+        Echtzeitrichtung blendet sie weiter weich. Die Vorschau selbst beendet
+        der naechste Kontrolltakt (`dspKontrollTakt`, Buchhaltung); der Rueckweg
+        belebt sie nicht wieder. */
     void setNonRealtime (bool offline) noexcept override;
 
     int getNumPrograms() override                       { return 1; }
@@ -266,7 +267,9 @@ public:
     /** Die lokale Nutzlast von `state_report.dsp` (R13); der Sender ist 4b. */
     bool dspBericht (nakama::transaktion::DspBericht& aus, juce::String& grund) const;
 
-    /** Die transiente Hoermatrix (R10): kein Parameter, nichts im Zustand. */
+    /** Die transiente Hoermatrix (R10): kein Parameter, nichts im Zustand.
+        Im Offline-Betrieb wirkt jeder Wunsch als Processed (Offline-Riegel,
+        NAK-312 Etappe 5); `gewuenschteHoermatrix` meldet den Wunsch. */
     void setzeHoermatrix (nakama::dsp::Hoermatrix h) noexcept { dspKern->setzeHoermatrix (h); }
     nakama::dsp::Hoermatrix gewuenschteHoermatrix() const noexcept { return dspKern->gewuenschteHoermatrix(); }
 
@@ -548,8 +551,10 @@ private:
     void parameterValueChanged (int parameterIndex, float neuNormiert) override;
     void parameterGestureChanged (int parameterIndex, bool beginnt) override;
 
-    /** Ein Takt des Control-Workers: ACKs ernten, Hostereignisse in den
-        AutomationOverlay, Ruhegrenze, wirksamen Zustand publizieren. Traegt
+    /** Ein Takt des Control-Workers: ACKs ernten, das Vorschauende eines
+        Wechsels nach offline verbuchen (NAK-312 Etappe 5, E-312-7),
+        Hostereignisse in den AutomationOverlay, Ruhegrenze, wirksamen Zustand
+        publizieren. Traegt
         der geladene Stand read-only, wirkt das Overlay nicht, und der Takt
         stellt die Hostregler nach dem Loslassen des Schlosses auf den
         neutralen bestaetigten Satz zurueck (NAK-312, 312/M-16). */
@@ -602,7 +607,19 @@ private:
 
     nakama::state::Zustand zustand;
     nakama::state::Lebenslauf lebenslauf { kProduktklasse };
-    juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
+    /// Nachrichten-, Host- und Workerthread (`dspKontrollTakt`); nie im
+    /// Audio-Callback - weder `processBlock` noch, seit NAK-312 Etappe 5,
+    /// `setNonRealtime`, das der VST3-Wrapper dort vor `processBlock` ruft.
+    juce::CriticalSection zustandSchloss;
+
+    /** NAK-312 Etappe 5 (T3-01-03, E-312-7): die Wechselerkennung des
+        Offlineflags - der zuletzt gesehene Wert; nur `setNonRealtime` liest
+        und schreibt ihn. `vorschauEndeAngefordert` ist AUSDRUECKLICH GETEILT:
+        der Wechsel nach offline setzt es im Audio-Callback, verbraucht wird es
+        in `dspKontrollTakt` unter dem Zustandsschloss, das der Takt ohnehin
+        haelt (`beendePreview` ist idempotent). */
+    std::atomic<bool> offlineGesehen { false };
+    std::atomic<bool> vorschauEndeAngefordert { false };
 
     /** Hostname ist Message-Thread-Zustand, wird aber vom Control-Thread
         gelesen. Er bleibt strikt getrennt vom persistenten User-Label. */

@@ -310,8 +310,47 @@ public:
 
     /** Der WIRKSAME Zustand - nicht der gewuenschte. `Candidate` ohne
         Kandidat faellt hier sichtbar auf Processed zurueck (M-56), ebenso
-        solange der Kandidat noch aus der Ruhe einblendet (E-34). */
+        solange der Kandidat noch aus der Ruhe einblendet (E-34); solange der
+        Offline-Riegel steht, faellt JEDER Wunsch auf Processed (NAK-312
+        Etappe 5). */
     Hoermatrix wirksameHoermatrix() const noexcept { return hoerwirksam.load (std::memory_order_acquire); }
+
+    /** NAK-312 Etappe 5 (T3-01-03, T3-01-04; R-312-3, E-312-7): der
+        OFFLINE-RIEGEL und das HARTE SCHALTEN. Der Prozessor setzt beide beim
+        WECHSEL in den Offline-Betrieb - im VST3-Wrapper aus dem Audio-Callback
+        vor `processBlock` - und loest sie beim Wechsel zurueck; beides sind
+        Atomics, keine Sperre, keine Allokation (Entwurf: "Preview, Focus und
+        Delta sind im Offline-Render neutral").
+
+        `an = true` setzt den Riegel und fordert das harte Schalten an. Unter
+        dem Riegel wirkt jeder Hoerwunsch als Processed, auch einer, der danach
+        von aussen gesetzt wird. Die Anforderung verbraucht der Audiothread im
+        naechsten Stueck selbst: die Hoermatrix steht ab dessen erstem Sample
+        ohne Fade auf dem wirksamen Stand, und ein laufender Fade - in jede
+        Richtung - endet dabei mit, sonst bliebe ein Mischstand stehen.
+        `an = false` loest den Riegel und nimmt eine noch nicht verbrauchte
+        Anforderung zurueck: der Rueckweg in die Echtzeit blendet weich (M-55).
+
+        Merkzettel, Publikation und Bankfreigabe fasst das nicht an: die
+        Vorschau beendet der Worker im naechsten Kontrolltakt
+        (`beendeCandidate`), und der Audiothread gibt nie eine Bank frei. Ein
+        Hoerhalt, der beim Schalten lief, endet am Ende desselben Stuecks
+        (`beendeHoerHalt`), weil die Hoermatrix dann keinen Candidate mehr
+        mischt. */
+    void setzeOfflineRiegel (bool an) noexcept
+    {
+        if (an)
+        {
+            offlineRiegelAn.store (true, std::memory_order_release);
+            hartSchalten.store (true, std::memory_order_release);
+        }
+        else
+        {
+            hartSchalten.store (false, std::memory_order_release);
+            offlineRiegelAn.store (false, std::memory_order_release);
+        }
+    }
+    bool offlineRiegel() const noexcept { return offlineRiegelAn.load (std::memory_order_acquire); }
 
     //== Taps ===============================================================
 
@@ -693,6 +732,15 @@ private:
 
     std::atomic<Hoermatrix> hoerwunsch  { Hoermatrix::processed };
     std::atomic<Hoermatrix> hoerwirksam { Hoermatrix::processed };
+
+    /*  NAK-312 Etappe 5 (E-312-7): AUSDRUECKLICH GETEILT zwischen dem Aufrufer
+        von `setzeOfflineRiegel` und dem Audiothread. Der Riegel ist ein Pegel,
+        den der Audiothread nur liest; das harte Schalten ein Ereignis, das
+        allein der Audiothread verbraucht (`verarbeiteStueck`). Den Zustand der
+        Hoermatrix darunter (`hoerLaufend`, `hoerVorher`, `hoerFadeRest`)
+        schreibt weiter nur der Audiothread. */
+    std::atomic<bool> offlineRiegelAn { false };
+    std::atomic<bool> hartSchalten    { false };
 
     /*  Der eigene Uebergang der Hoermatrix (M-55). Nur der Audiothread liest
         und schreibt ihn. */

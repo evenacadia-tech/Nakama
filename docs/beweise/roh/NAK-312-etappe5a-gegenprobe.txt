@@ -1,0 +1,70 @@
+NAK-312 Etappe 5, erster Aenderungssatz - Gegenprobe am Basisstand (heute rot), Lauf 14:39:25 bis 14:39:28 (Get-Date)
+Produktquellen unveraendert auf HEAD 12300f1e, SHA-256:
+  09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB  eq-copilot/plugin/sonde/SondeProcessor.cpp  (gleich HEAD: True)
+  F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E  eq-copilot/plugin/sonde/SondeProcessor.h  (gleich HEAD: True)
+  E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42  eq-copilot/plugin/dsp/DspKern.cpp  (gleich HEAD: True)
+  B0681BCF33F8A3C14B7FC0CE0F9977298B03069D544821A23820223B834112DD  eq-copilot/plugin/dsp/DspKern.h  (gleich HEAD: True)
+Testdatei mit den Faellen der Etappe 5 (Endfassung dieses Laufs): 04CA455923F977C96C92E91D261B1305096D67960F9E8B3BD33E7C4C394FB8B1  eq-copilot/plugin/tests/TransactionTestMain.cpp
+Binary EqCopTransactionTest.exe 14:39:17, juenger als die Quelle 14:39:03.
+Ergebnis: Exit 1, 240 geprueft, 9 Fehler - genau die heute-rot-Zeilen (312/M-42 in O und im Bereich, 312/M-04 zweite Haelfte, 312/M-40, 312/M-42-Teilfall Gegenrichtung, 312/M-46-Teilfall Hoerhalt am Ausgang, 312/M-47 bei 1, 64 und 256).
+Gruen am Basisstand, wie ihre Etiketten sagen: 312/M-41 (Regressionswache), 312/M-83 und 312/M-46 Hauptfall (heute nicht messbar: die synchrone Vorschaubeendigung erfuellt sie heute auch), 312/M-43, 312/M-44, 312/M-45 (Regressionswachen).
+
+--- Rohausgabe (Abschnitte O, W, ZA und Fehlerzeilen) ---
+== Nakama SONDE-015 B7 - Transaktionskern und Prozessorseite ==
+  ok      T3 ungueltige_nutzlast_faellt_und_wird_nicht_gemerkt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db, r danach 1, nicht im Register | soll fehler @S2 r=1 nicht-memo]
+  ok      T3 der Fehler ist nicht gemerkt: dieselbe tid mit gueltiger Nutzlast committet  [commit @S8 rev=2 memo]
+  ok      T8 Vorlauf: das Loesen der Zone ist selbst eine Transaktion (M-71)  [commit @S8 rev=2 memo]
+  ok      T10 fensterrand_erste_transaktion_ist_draussen  [konflikt @S1 rev=33 nicht-memo, r danach 33, nicht im Register | soll konflikt @S1 r=33 nicht-memo]
+  ok      T11 fensterrand_zweite_transaktion_ist_drinnen  [gespeichertes_ergebnis @S0 rev=2 memo, r danach 33, im Register | soll gespeichertes_ergebnis @S0 r=33 memo]
+  ok      T13 fehler_in_S4_laesst_committed_und_hash_unveraendert  [fehler @S4 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S4 r=1 nicht-memo]
+  ok      T14 fehler_in_S6_laesst_committed_und_hash_unveraendert  [fehler @S6 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S6 r=1 nicht-memo]
+  ok      T15 fehler_in_S7_laesst_committed_und_hash_unveraendert  [fehler @S7 rev=1 nicht-memo grund=einspritzung, r danach 1, nicht im Register | soll fehler @S7 r=1 nicht-memo]
+== B - Fehler in jeder fehlbaren Stufe S1 bis S7, je an ihrer Tabellenzeile (M-75) ==
+  ok      fehler_in_S1_laesst_committed_und_hash_unveraendert (T2)  [konflikt @S1 rev=1 nicht-memo]
+  ok      fehler_in_S2_laesst_committed_und_hash_unveraendert (T3)  [fehler @S2 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S3_laesst_committed_und_hash_unveraendert (T4)  [user_schutz @S3 rev=1 nicht-memo]
+  ok      fehler_in_S4_laesst_committed_und_hash_unveraendert (T13)  [fehler @S4 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S5_laesst_committed_und_hash_unveraendert (T5)  [busy_retry @S5 rev=1 nicht-memo]
+  ok      fehler_in_S6_laesst_committed_und_hash_unveraendert (T14)  [fehler @S6 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_in_S7_laesst_committed_und_hash_unveraendert (T15)  [fehler @S7 rev=1 nicht-memo grund=einspritzung]
+  ok      fehler_hinterlaesst_keinen_registereintrag: nach sieben Fehlern committet dieselbe tid  [commit @S8 rev=2 memo]
+== D - Sieben Transaktionen, je genau eine Revision (M-74) ==
+== E - 10.000 doppelte, vertauschte und veraltete Eingaben EINER logischen Transaktion (M-76) ==
+  ok      zehntausend_transaktionen_erzeugen_hoechstens_eine_revision  [r0=7, r - r0 = 1; T1 9993, T2 6, T6 1, andere 0, Mischzustaende 0]
+  ok      remove_ist_eine_transaktion_und_eine_revision (M-60): occupied false UND alle 13 Werte auf Default  [commit @S8 rev=2 memo]
+  ok      undo_stellt_das_entfernte_band_als_ein_objekt_her (M-61): Slot 4, Typ, channel_mode, Dynamic und alle Werte in EINER Transaktion  [commit @S8 rev=3 memo]
+  ok      acht_belegte_slots_ueberschreiben_nichts (M-62): eigener Fehler, kein Opfer  [fehler @S4 rev=9 nicht-memo grund=alle_slots_belegt]
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  ok      zone_deaktivieren_ist_eine_transaktion (M-71): danach ist kein Band verletzt und der Weg hinein frei  [commit @S8 rev=5 memo]
+  ok      zone_entfernen_ist_eine_transaktion (M-71)  [commit @S8 rev=7 memo]
+  ok      neunte_zone_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_anzahl @ schutz_zonen]
+  ok      doppelte_zonen_id_wird_abgewiesen (M-73)  [fehler @S2 rev=1 nicht-memo grund=zone_doppelt @ schutz_zonen[1].id]
+  ok      neue_transaktion_schneidet_den_redo_zweig_ab (M-79): ein Cursor im selben Ring  [fehler @S4 rev=5 nicht-memo grund=redo_leer]
+  ok      apply_mit_bereichsverletzung_wird_abgewiesen (M-14): abgelehnt, nicht geklemmt  [fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=nichtendlich @ v1.band.0.gain_db / fehler @S2 rev=1 nicht-memo grund=bereich @ v1.band.0.q]
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich (M-24, ueber zwei Transaktionen)
+  ok      channel_mode_ist_diskret_und_ungekoppelt (M-28)  [fehler @S2 rev=2 nicht-memo grund=enum @ v1.band.0.channel_mode]
+  ok      preset_laden_ist_eine_transaktion (M-100): eine Revision, ein Undo-Eintrag; der bestehende Ring wird ergaenzt, nicht ersetzt
+  ok      unbekanntes_preset_major_wird_abgelehnt (M-99): klarer Fehler preset_schema_version, keine read-only-Haltung
+  ok      angenommene_transaktion_meldet_dirty (M-85): je Commit genau eine nonParameterStateChanged-Meldung  [1 / 2]
+  ok      fremdes_major_laedt_neutral_und_bleibt_schreibgeschuetzt (M-92, Prozessorhaelfte): read-only mit Originalbytes, eq_enabled aus, keine Transaktion  [fehler @keine rev=0 nicht-memo grund=schreibgeschuetzt, 186 Bytes]
+== O - Prozessor: Automation, Gestus, Vorschau, Reload, Offline, nicht-endlicher Hostwert (M-52, M-63, M-81 bis M-84, M-119, M-120) ==
+  FEHLER  offline_render_nutzt_den_bestaetigten_zustand (M-120; seit NAK-312 Etappe 5 312/M-42): nach dem Wechsel in den Offline-Betrieb ist der Render ab Sample 0 bitgleich zum Lauf ohne Vorschau - ohne Verwurfsbloecke, max |ya - yb| ueber die ersten 256 Samples 0  [Grund '', gewuenscht sofort processed, groesste Abweichung der ersten 256 Samples 0.323985]
+  ok        312/M-83 (Teil dieses Falls): nach einem ausdruecklichen kontrollTaktFuerTest() ist die Vorschau verbucht - previewAktiv() false
+== W - NAK-312 Etappe 2: die Echtzeitwache ab dem Callback-Eintritt der Sonde (312/M-01, 312/M-02, 312/M-04) ==
+  FEHLER  312/M-04 offlineflag_nimmt_keine_gemeldete_sperre_mehr (R-312-1, E-312-10, ab Etappe 5; bis Etappe 4 offlineflag_nimmt_eine_gemeldete_sperre_je_block mit 200): legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke 0 - je Aufruf setNonRealtime (true) wie je Aufruf setNonRealtime (false); faellt mit 312/M-40 zusammen  [gemeldete Sperren ueber 200 Bloecke: mit Aufruf setNonRealtime (true) 200, mit Aufruf setNonRealtime (false) 0]
+== ZA - NAK-312 Etappe 5: der Offline-Uebergang (312/M-40, 312/M-41, 312/M-83, 312/M-43 bis 312/M-47; 312/M-42 in Abschnitt O, 312/M-04 in Abschnitt W) ==
+  FEHLER  312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein den Bereich wie der Wrapper um setNonRealtime (true) und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke 0  [Candidate vorher hoerbar ja, RtWache::sperren 200]
+  ok      312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): unmittelbar nach der Rueckkehr des ersten setNonRealtime (true) ist gewuenschteHoermatrix() Processed, und im ersten Block danach wirkt Processed  [gewuenscht sofort processed, wirksam nach dem ersten Block processed]
+  FEHLER    312/M-42 im Bereich wie der Wrapper: der erste Block nach dem Flag ist ab Sample 0 bitgleich zum bestaetigten Lauf, und alle 200 Bloecke sind es  [erster Block VERSCHIEDEN, alle 200 NICHT bitgleich]
+  ok      312/M-83 vorschauende_wird_im_kontrolltakt_verbucht (E-312-7 Buchhaltungshaelfte): nach dem ersten setNonRealtime (true) und einem ausdruecklichen kontrollTaktFuerTest() ist previewAktiv() false; nach ceil (kFadeSamples / Blockgroesse) + 1 Bloecken und einem zweiten Takt ist die Candidate-Bank frei  [Candidate-Slot 1, previewAktiv nach dem ersten Takt false, nach 2 Bloecken und dem zweiten Takt Slot frei, Candidate aktiv/Quelle -1/-1]
+  ok      312/M-46 keine_bank_bleibt_haengen (Teilfall von 312/M-42, E-312-7, [SONDE-015] E-33): dieselbe Folge - die Candidate-Bank ist frei, der Candidate-Pfad ruht, auch wenn die Hoermatrix nie blendete  [Candidate-Slot 1, previewAktiv nach dem ersten Takt false, nach 2 Bloecken und dem zweiten Takt Slot frei, Candidate aktiv/Quelle -1/-1]
+  FEHLER    312/M-46 Teilfall hoerhalt_beim_schalten: laeuft beim Wechsel nach offline die Rueckblende von Candidate (Hoerhalt, 64 von 256 Samples), ist der Ausgang ab Sample 0 bitgleich zum bestaetigten Lauf, und nach Takt, ceil (kFadeSamples / 64) + 1 Bloecken und Takt ist die gehaltene Bank frei  [Hoerhalt vorher ja, Ausgang VERSCHIEDEN, Slot 1 frei, Candidate aktiv/Quelle -1/-1]
+  FEHLER    312/M-42 Teilfall fade_in_der_gegenrichtung: blendet die Hoermatrix beim Wechsel nach offline gerade von Processed nach Candidate, endet dieser Fade mit dem harten Schalten - der Ausgang ist ab Sample 0 bitgleich zum bestaetigten Lauf  [Fade vorher hoerbar ja, danach VERSCHIEDEN]
+  ok      312/M-43 der_rueckweg_blendet_weich (Teilfall von 312/M-42, [SONDE-015] E-31 und M-55): nach Offline an und aus kehrt die Hoermatrix zu Candidate zurueck, und der Nachbarsprung am Umschaltsample wie ueber den ganzen Lauf ist hoechstens die Fadeschrittweite plus 2^-23 - die harte Umstellung gilt nur in die Offlinerichtung  [erster Sprung 0.00116631389, groesster 0.00116634369, Fadeschritt 0.00116632303 + 2^-23, Anfang 0.300000012, Ende 0.598578691]
+  ok      312/M-44 offline_hin_und_zurueck_belebt_die_vorschau_nicht (Teilfall von 312/M-42): nach Offline an, Takt, Offline aus und Takt ist keine Vorschau aktiv, die Auswahl Processed und der Echtzeitlauf bitgleich zum bestaetigten; ein zweiter Wechsel nach offline findet keine Vorschau und aendert am Ausgang nichts  [nach dem Rueckweg ohne Vorschau, Processed, Echtzeit bitgleich, zweites Offline bitgleich]
+  ok      312/M-45 ohne_vorschau_ab_sample_0_bitgleich (Teilfall von 312/M-42, Gegenfall): ohne aktive Vorschau ist der Lauf nach setNonRealtime (true) ab Sample 0 bitgleich zum Lauf ohne Offlineflag
+  FEHLER  312/M-47 blockgroesse_1 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das ERSTE danach ist bestaetigt (gleich dem Lauf ohne Vorschau, ungleich dem Zwilling) - bei Blockgroesse 1 genau ein Sample  [vorher unveraendert ja, vorher Candidate ja, erstes bestaetigt NEIN, erstes gewechselt NEIN]
+  FEHLER  312/M-47 blockgroesse_64 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das ERSTE danach ist bestaetigt (gleich dem Lauf ohne Vorschau, ungleich dem Zwilling)  [vorher unveraendert ja, vorher Candidate ja, erstes bestaetigt NEIN, erstes gewechselt NEIN]
+  FEHLER  312/M-47 blockgroesse_256 (Teilfall von 312/M-42, Zahlenrand): das LETZTE Sample vor dem Flag ist unveraendert (gleich dem Zwilling ohne Flag, noch Candidate), das ERSTE danach ist bestaetigt (gleich dem Lauf ohne Vorschau, ungleich dem Zwilling)  [vorher unveraendert ja, vorher Candidate ja, erstes bestaetigt NEIN, erstes gewechselt NEIN]
+240 geprueft, 9 Fehler
+TRANSAKTION FEHLGESCHLAGEN

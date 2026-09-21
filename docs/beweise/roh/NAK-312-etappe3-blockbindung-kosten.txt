@@ -1,0 +1,80 @@
+# NAK-312 Etappe 3b - Kosten der Blockbindung (Manifest §7.3 "Kosten, statt kein Speicherzuwachs")
+
+Bauer, 21.09.2026. Gemessen mit dem Messfall "312/Kosten" in B7 (EqCopTransactionTest,
+Abschnitt Y; eine Ausgabezeile MESSUNG, keine Pruefung und keine Schranke). Derselbe
+Messfall lief zweimal:
+
+- Basis: am Stand der Etappe 3a (HEAD c94b8dd9, ohne Blockbindung), innerhalb der
+  Gegenprobe docs/beweise/roh/NAK-312-etappe3b-gegenprobe.txt, Lauf 21.09.2026 07:11.
+- Etappe 3b: am Endstand der Etappe 3b (Arbeitsbaum vor dem Commit), Einzellauf B7
+  21.09.2026 07:17:55 bis 07:17:58 (Binary 07:17:01, nach der letzten Ruecknahme der
+  Rotbeweise gebaut); ein frueherer Einzellauf nach dem Umbau des Messfalls auf
+  reine processBlock-Zeit (vor 07:11) ist als Streuung mitgenannt.
+
+Rechner: SCHUBBINATOR200, Windows 10.0.26200, Release-Bau (MSVC), 48 kHz, Block 64,
+eq an, keine Baender.
+
+## 1. Speicher (sizeof, vom Compiler gemessen)
+
+| Objekt | Stand 3a | Stand 3b | Zuwachs |
+|---|---|---|---|
+| dsp::DspKern | 25296 Byte | 25440 Byte | +144 Byte |
+| SondeProcessor | 81728 Byte | 81856 Byte | +128 Byte |
+
+Aufschluesselung (aus dem Quelltext, Summe gegen die Messung gerechnet):
+
+- DspKern (+144 Byte): blockStand 4 x uint32 = 16; blockZiel 4 x double = 32;
+  blockZielGueltig 4 x bool = 4; publikationsStand 4 x uint32 = 16; bankStand
+  4 Baenke x 4 x uint32 = 64; zaehlerBlockrandZiele atomic<uint64> = 8; Summe 140,
+  mit Ausrichtung 144. Der Bauplan nannte 16 Byte im Kern und 96 Byte "je Programm"
+  (vier Baenke und zwei Vorbauplaetze); gebaut ist der Stand je BANK (64 Byte) plus
+  EIN Publikationsstand des Workers (16 Byte) statt je Vorbauplatz - der Vorbau
+  gehoert ohnehin dem Worker, der den Stand in publiziereVorbau in die Bank schreibt.
+  Hinzu kommen das gemerkte Blockrandziel mit Gueltigkeit (36 Byte), das die
+  Schiedsregel bei einer aelteren Publikation und beim Einschalten aus der Ruhe
+  braucht, und der Zielzaehler (8 Byte, Testzugang und Messung).
+- SondeProcessor (+128 Byte): bestaetigtBlock 4 x atomic<double> = 32 (der Bauplan
+  sah zusaetzlich 4 x atomic<float> fuer den Vergleichswert vor; gebaut ist EIN
+  Atomic je Parameter, der Vergleichswert wird am Blockrand aus ihm gerechnet -
+  Abweichung A-18); blockrandQuittung 4 x atomic<uint64> = 32 (die Quittung des
+  Ladestarts fuer den Blockrand, Abweichung A-20); blockrandMin und blockrandMax
+  2 x 4 x double = 64 (Bereichsgrenzen, konstant ab dem Konstruktor, damit der
+  Audiothread die Parametertabelle nicht liest).
+- Stapel je Block: BlockrandHostwerte 4 x 24 Byte = 96 Byte (stand, zahl, neu,
+  wert), im Audiothread auf dem Stapel, keine Allokation.
+
+## 2. Arbeit je Block (aus dem Quelltext)
+
+Ohne Hostereignis: vier acquire-Loads der Ereigniszaehler, vier Vergleiche auf
+Gleichheit mit dem Blockrandstand, das Nullen von 96 Byte Stapel, im Kern eine
+Schleife ueber vier Plaetze ohne Arbeit. Bei einer Programmuebernahme zusaetzlich
+je Rampe eine Tabellensuche (hoechstens vier Vergleiche) und ein Standvergleich.
+
+Je Hostereignis auf einem abgedeckten Parameter zusaetzlich: ein acquire-Load der
+Quittung, ein relaxed-Load des Hostwerts, ein relaxed-Load des bestaetigten Werts,
+convertTo0to1 und - ausser im Ausnahmeweg - convertFrom0to1 des Hostparameters
+(virtuelle Aufrufe, reine NormalisableRange-Arithmetik), isfinite, jlimit; im Kern
+das Rampenziel (bei Trims ungleich 0 dB ein std::pow ueber dbInLinear, wie
+baueProgramm), setzeZiel und ein relaxed-Inkrement des Zielzaehlers. Kein exchange,
+keine Sperre, keine Allokation, kein Warten - gemessen in 312/M-26: 4000 Bloecke
+wechselnder Groesse mit Automation auf allen vier Parametern, RtWache::sperren() 0,
+RtWache::allokationen() 0, eigener Allokationszaehler 0.
+
+## 3. Zeit je Block (Zeit in processBlock, 20 000 Bloecke, Minimum aus drei Durchgaengen)
+
+| Lauf | Stand 3a (07:11) | Stand 3b (07:17) | Stand 3b (frueherer Lauf) |
+|---|---|---|---|
+| ohne Hostereignis | 927,41 ns | 954,735 ns | 955,155 ns |
+| mit je einem Ereignis auf den vier Parametern (Ausnahmeweg, Rampenziel bleibt) | 961,385 ns | 1039,04 ns | 1097,95 ns |
+
+Lesart: am Stand 3a liest processBlock die Mailbox nicht; der Unterschied von
+34 ns zwischen seinen beiden Zeilen ist allein die Wirkung der vor dem Block
+geschriebenen Ereignisse (JUCE-Listener, Caches). Am Stand 3b kostet die
+Blockrandlesung ohne Ereignis rund 27 ns je Block (955 gegen 927 ns, in der
+Groessenordnung des Messrauschens), mit vier Ereignissen zwischen rund 50 und
+110 ns je Block (84 bzw. 143 ns Differenz der Stand-3b-Zeilen minus 34 ns
+Cachewirkung) - die zwei Laeufe streuen um 59 ns, das ist die Genauigkeit dieser
+Messung. Je Ereignis sind das rund 13 bis 27 ns. Bei 48 kHz und Block 64 dauert ein
+Block 1 333 333 ns; die Blockbindung kostet damit hoechstens rund 0,01 Prozent der
+Blockzeit. Die Zahlen sind Einzelmessungen auf einem Rechner, keine Schranke; kein
+Bein prueft sie.

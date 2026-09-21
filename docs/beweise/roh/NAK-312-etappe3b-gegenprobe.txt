@@ -1,0 +1,67 @@
+# NAK-312 Gegenprobe am Basisstand - Etappe 3b (Manifest §7.1, heute rot)
+
+Lauf 2026-09-21 07:11:14. Die Produktdateien der Etappe voruebergehend auf HEAD c94b8dd9be55a57477a17618018b1c82ee2f7c07 (Commit der Etappe 3a, ohne Blockbindung) gesetzt; die Testdatei ist die Endfassung der Etappe 3b (SHA-256 8B60E16AAA0044B9A32DBE7C8B856FA1938FB2D1A734F89A0BCD7595397821D9) mit vorangestelltem #define NAK312_GEGENPROBE_OHNE_BLOCKRAND 1 - er blendet allein die Faelle und Klauseln aus, die Testzugaenge des Mechanismus lesen (Abdeckungstabelle, Blockrandstand, Zielzaehler): 312/M-79, 312/M-82, die Mengenhaelften von 312/M-80 und 312/M-81 und die Zielzaehlerklauseln von 312/M-22 und 312/M-28.
+  Basisvariante eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 6B55477074E59927161EBD40842420D56D93773625F7C63CEAF9E73035CABDE3
+  Basisvariante eq-copilot/plugin/sonde/SondeProcessor.h SHA-256 B36B9C5A707DDAA919294EFCC8E722719906B3F8114E0838205BE417FDB2A770
+  Basisvariante eq-copilot/plugin/state/NakamaTransaktion.cpp SHA-256 C520D51DC9E7CF018A26DE25301FE09A978BFF12E811D5A1F22FD364CEA10639
+  Basisvariante eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 20D727ED7A93EC17CBF1C1424366D5940D75713C21EB94CEAECC397A49623691
+  Basisvariante eq-copilot/plugin/dsp/DspKern.cpp SHA-256 13471C9F4F23BFF7349B8472727935E366FDF630809A12BB3285895971593758
+  Basisvariante eq-copilot/plugin/dsp/DspKern.h SHA-256 55F7E2D836C498E2023B8F1C26D5B53D0372D3E1F92C05027D979872EFB236AB
+  Basisvariante eq-copilot/plugin/tests/TransactionTestMain.cpp SHA-256 EC1FE18F95A9B1DE1C44F49EC13B9248B4AA4430D9C44C68D9CEA007519091F6
+Bau B7: BAU EXIT=0; Binary 07:11:24, gebaut nach dem Setzen der LastWriteTime aller Quellen auf jetzt
+Lauf B7 Exit 1. Auszug (FEHLER-Zeilen, Faelle der Etappe 3b, Summe):
+```
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81): 50 Automationspunkte auf Output-Trim, den der Blockrand uebernimmt - die Epoche wechselt genau zweimal, die Ruhegrenze zaehlt verarbeitete Samples (unter 12000 kein Ende, nach 12480 das Ende)  [0 -> 1 -> 1 -> 2]
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revision, kein Host-Dirty, und die Statebytes sind bytegleich zu denen vor der Fahrt  [Revision 1 -> 1, Dirty 0, Statebytes gleich]
+== Y - NAK-312 Etappe 3b: Blockbindung der Hostwerte (312/M-20 bis 312/M-23, 312/M-26 bis 312/M-29, 312/M-79 bis 312/M-82; 312/M-24 und 312/M-25 in Abschnitt O) ==
+  FEHLER  312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der abgedeckten Menge dieselbe Eventfolge (Block 10 Extremwert, 11 Standard, 12 Extremwert, 13 Standard) bei 48 kHz und Blockgroesse 64, im neutralen Stand und mit Band - A unter der Taktsperre ohne Takt ist BITGLEICH zu B mit Takt nach jedem Block (0 abweichende Samples), und B weicht vom Lauf ohne Ereignis ab, wo der Parameter hoerbar ist  [neutral/v1.global.input_trim_db A/B 1022 B/C 1022; neutral/v1.global.output_trim_db A/B 1022 B/C 1022; neutral/v1.global.width A/B 1022 B/C 1022; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 1742 B/C 1742; Band/v1.global.output_trim_db A/B 1022 B/C 1022; Band/v1.global.width A/B 1530 B/C 1530; Band/v2.global.mix A/B 1022 B/C 1022; ]
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Parametern erreichen den Blockrand als bestaetigter Wert - der Ausgang bleibt endlich und bitgleich zum Lauf ohne Ereignis  [Ausgang endlich, gegen den Lauf ohne Ereignis 0 abweichend]
+  FEHLER  312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true) und ohne Warten zwischen den Bloecken - der Offlineausgang ist fuer die vier abgedeckten Parameter bitgleich zum Echtzeitausgang desselben Event- und Blockverlaufs  [neutral/v1.global.input_trim_db A/B 1022 B/C 1022; neutral/v1.global.output_trim_db A/B 1022 B/C 1022; neutral/v1.global.width A/B 1022 B/C 1022; neutral/v2.global.mix A/B 0 B/C 0; Band/v1.global.input_trim_db A/B 1684 B/C 1684; Band/v1.global.output_trim_db A/B 1022 B/C 1022; Band/v1.global.width A/B 1578 B/C 1578; Band/v2.global.mix A/B 1022 B/C 1022; Geschwindigkeit 19.020102905-fach Echtzeit (Messung, keine Schranke)]
+  FEHLER  312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im neutralen Stand und mit Band - A ist fuer die vier abgedeckten Parameter bitgleich zu B; bei Blockgroesse 1 bindet jeder Block genau einen Wert  [Blockgroesse 1: 7 von 8 Laeufen abweichend; Blockgroesse 64: 7 von 8 Laeufen abweichend; Blockgroesse 185: 7 von 8 Laeufen abweichend; Blockgroesse 240: 7 von 8 Laeufen abweichend; Blockgroesse 256: 7 von 8 Laeufen abweichend; Blockgroesse 512: 7 von 8 Laeufen abweichend; ]
+  FEHLER  312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt je Block, danach Halt - A und B sind bitgleich, und nach dem Ende tragen beide exakt den Endwert +12 dB  [A/B 30592 abweichend, Endwert A 2.23549388778e-07, B 2.23549388778e-07 von 10^(12/20)]
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Parametern - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso  [RtWache::sperren 0, RtWache::allokationen 0, eigener Zaehler 0]
+  FEHLER  312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B sind bitgleich, und der Wert wirkt in DEMSELBEN Block, an dessen Rand er gelesen wurde: am Ende von Block 10 steht der Ausgang auf 10^(24/20), am Ende von Block 9 noch auf 1  [A/B 17404, Ende Block 9 1, Ende Block 10 1]
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sind bitgleich, der Blockrand setzt kein Rampenziel, und die Programmuebernahmen sind in beiden Laeufen gleich  [A/B 0, Uebernahmen A +0, B +0]
+  FEHLER  312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt (ein Rampenuebergang laeuft noch) ein Ladestart in dieselbe Instanz, davor ein alter Hostwert -20 dB in der Mailbox - ab dem Ladestart ist der Ausgang bitgleich zum Lauf ohne den alten Wert, ein Hostwert danach (+6 dB) wirkt am naechsten Blockrand, bestaetigter Zustand und Hash sind die der Quelle  [nach dem Laden 0 abweichend, am Ende 1.41253755511 (Soll 10^(6/20)), geladen ja]
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle des Blockrands; unter der Taktsperre weicht A von B ab, mit Kontrolltakt nach jedem Block sind beide bitgleich, und der Endwert ist in beiden Laeufen exakt der letzte gesetzte (-6 dB). Keine Gleichheitszusage fuer Bandwerte - Teil b geht an NAK-340  [ohne Takt 4480 abweichend, mit Takt 0, Endwert A -6 / B -6 dB]
+  ok      312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockrands
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsperre liegt der Umschaltblock von A hinter dem von B, mit Kontrolltakt sind beide bitgleich, der Endzustand stimmt in beiden Laeufen. Keine Gleichheitszusage fuer die elf booleschen Hostparameter  [ohne Takt 1187 abweichend, mit Takt 0]
+  MESSUNG 312/Kosten sizeof(dsp::DspKern) 25296 Byte, sizeof(SondeProcessor) 81728 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 927.41 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 961.385 ns je Block
+220 geprueft, 6 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+```
+Ruecknahme eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 5443D7DF75CE8181D53C040D3839AB222E7573900220D2E2876D84B5B9B68EE7 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/sonde/SondeProcessor.h SHA-256 74E7CD68091B20679D8DAF26A338A4332259FD0A8F347E85070E8487618AF665 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/state/NakamaTransaktion.cpp SHA-256 C520D51DC9E7CF018A26DE25301FE09A978BFF12E811D5A1F22FD364CEA10639 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 20D727ED7A93EC17CBF1C1424366D5940D75713C21EB94CEAECC397A49623691 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/dsp/DspKern.cpp SHA-256 09E6C0B53D38AD1FA75A24C96B6541B96A441E6D40AC15705661C016EAF94122 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/dsp/DspKern.h SHA-256 112B871917A39D4E228965A958C021247A5170E4D4306D21CABB54CB4BCB520A - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/tests/TransactionTestMain.cpp SHA-256 8B60E16AAA0044B9A32DBE7C8B856FA1938FB2D1A734F89A0BCD7595397821D9 - gleich vorher: JA
+Neubau nach der Ruecknahme: BAU EXIT=0, Binary 07:11:36; Lauf B7 Exit 0, 222 geprueft, 0 Fehler
+git status --short nach der Ruecknahme:
+   M eq-copilot/plugin/dsp/DspKern.cpp
+   M eq-copilot/plugin/dsp/DspKern.h
+   M eq-copilot/plugin/sonde/SondeProcessor.cpp
+   M eq-copilot/plugin/sonde/SondeProcessor.h
+   M eq-copilot/plugin/tests/TransactionTestMain.cpp
+   M tools/beweise.ps1
+  ?? briefing-hub/
+  ?? docs/beweise/roh/NAK-312-etappe3b-gegenprobe.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-20-teil-a.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-20-teil-b.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-21.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-22.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-23.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-24.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-25.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-26.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-27.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-28-teil-a.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-28-teil-b.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-29.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-79-teil-a.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-79-teil-b.tmp
+  ?? docs/beweise/roh/NAK-312-rot-M-80.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-81.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-82.txt
+  ?? nimbalyst-local/

@@ -34,7 +34,10 @@
 
     3. Engagiert, aber bauartbedingt ohne Wirkung, wird ebenfalls nichts
        geschrieben (NAK-311, die Neutralpruefung in `verarbeiteStueck`). Das
-       gilt ab dem ersten Sample nach Crossfade, Rampe und Hoermatrix-Fade,
+       gilt ab dem ersten Sample nach Crossfade, Rampe und Hoermatrix-Fade
+       und - seit der Blockbindung (NAK-312 Etappe 3b), die eine
+       Parameterrampe auch ohne Programmuebergang startet - nach dem Ende der
+       laengsten laufenden Parameterrampe,
        wenn der Committed-Pfad entweder das Programm mit dem Merkmal
        `DspProgramm::neutral` faehrt und alle fuenf Rampen in Ruhe auf 1,0
        stehen (SONDE-015 M-02), oder Mix in Ruhe auf 0,0 und Output-Trim in
@@ -214,6 +217,55 @@ public:
 
     //== Audiothread-Seite ==================================================
 
+    //== NAK-312 Etappe 3b: die Blockbindung der Hostwerte ====================
+    //   (T3-01-05 Teil a; R-312-10 in der Fassung von E-312-5, Schiedsregel E-312-6)
+
+    /** Die ABDECKUNGSTABELLE des Blockrands: genau diese Hostparameter
+        uebernimmt der Kern am Blockrand selbst - die vier kontinuierlichen,
+        fuer die er ein Rampenziel fuehrt (Input-Trim, Output-Trim, Width,
+        Mix; dieselben Indizes wie `baueProgramm`). Bandwerte, `mono_bass_hz`,
+        die Schalter und das abgeleitete Auto-Gain-Ziel wirken weiter nur ueber
+        ein Programm, das der Worker baut (Teil b, NAK-340). */
+    static constexpr int kIndexInputTrim  = 1;   ///< v1.global.input_trim_db
+    static constexpr int kIndexOutputTrim = 2;   ///< v1.global.output_trim_db
+    static constexpr int kIndexWidth      = 3;   ///< v1.global.width
+    static constexpr std::array kBlockrandParameter { kIndexInputTrim, kIndexOutputTrim, kIndexWidth,
+                                                      nakama::parameter::kIndexMix };
+    static constexpr int kBlockrandAnzahl = (int) kBlockrandParameter.size();
+
+    /** Was der Audiothread vor `verarbeite` je Tabellenplatz uebergibt: `neu`
+        genau dann, wenn der Ereigniszaehler UNGLEICH dem Blockrandstand ist
+        (nie ein Ordnungsvergleich, der Zaehler laeuft ueber); `wert`, wenn das
+        Ereignis ein Hostgestus ist und `zahl` traegt - ein vom Ladestart
+        quittiertes Ereignis kommt mit `neu` und ohne `wert` (W02). `zahl` ist
+        die Vertragszelle wie `zelleAusHost`, nicht das Rampenziel. */
+    struct BlockrandHostwert
+    {
+        std::uint32_t stand = 0;
+        double        zahl  = 0.0;
+        bool          neu   = false;
+        bool          wert  = false;
+    };
+    using BlockrandHostwerte = std::array<BlockrandHostwert, (size_t) kBlockrandAnzahl>;
+    using Blockrandstaende   = std::array<std::uint32_t, (size_t) kBlockrandAnzahl>;
+
+    /** Audiothread: der zuletzt am Blockrand genommene Zaehlerstand des
+        Tabellenplatzes `k`. Gehoert allein dem Audiothread. */
+    std::uint32_t blockrandStand (int k) const noexcept { return blockStand[(size_t) k]; }
+
+    /** Worker (unter dem Schloss des Besitzers): die Zaehlerstaende, aus denen
+        die Werte der NAECHSTEN Publikation stammen (E-312-6 Punkt 3). Sie
+        reisen mit der Bank ueber dieselbe Release-/Acquire-Uebergabe wie ihr
+        Programm. */
+    void setzePublikationsStand (const Blockrandstaende& s) noexcept { publikationsStand = s; }
+
+    /** Wie oft der Blockrand ein Rampenziel aus der Hostmailbox gesetzt hat. */
+    std::uint64_t blockrandZiele() const noexcept { return zaehlerBlockrandZiele.load (std::memory_order_relaxed); }
+
+    /** NUR fuer B7 (312/M-82): den Blockrandstand setzen, waehrend kein
+        `verarbeite` laeuft. */
+    void setzeBlockrandStandFuerTest (int k, std::uint32_t s) noexcept { blockStand[(size_t) k] = s; }
+
     /** Verarbeitet einen Block in-place. `kanaele` zeigt auf 1 oder 2
         Kanaele. Schreibt bei ausgeschaltetem Kern KEINEN Sample, und ebenso
         keinen, sobald der engagierte Pfad bauartbedingt den Eingang ausgibt
@@ -223,8 +275,14 @@ public:
         vor dem ersten Sample (B-11). Ein Block groesser als `maxBlock` laeuft
         in Stuecken durch: die Stueckelung begrenzt nur den Puffer, sie
         erzeugt keine Uebernahmegrenze; verworfen wird die ANALYSE, nie Audio
-        (M-48). */
-    void verarbeite (float* const* kanaele, int numKanaele, int numSamples) noexcept;
+        (M-48).
+
+        NAK-312 Etappe 3b: mit `hostwerte` uebernimmt der Kern die
+        Hostmailbox der Abdeckungstabelle am Blockrand, VOR der
+        Programmuebernahme, in diesem Block. Ohne sie (Vorgabe) arbeitet er
+        wie bisher allein aus Programmen. Keine Sperre, keine Allokation. */
+    void verarbeite (float* const* kanaele, int numKanaele, int numSamples,
+                     const BlockrandHostwerte* hostwerte = nullptr) noexcept;
 
     /** NUR fuer B6 (B-11): wird zwischen zwei Teilstuecken eines
         uebergrossen Blocks gerufen, damit der Test deterministisch eine
@@ -602,6 +660,30 @@ private:
         Release-/Acquire-Uebergabe wie das uebrige Programm (M-52). */
     std::array<Merkzettel, (size_t) kPfade> merkzettel {};
     std::uint64_t kennungsZaehler { 0 };
+
+    /*  NAK-312 Etappe 3b (E-312-6): der Blockrand. `blockStand`, `blockZiel`
+        und `blockZielGueltig` gehoeren ALLEIN dem Audiothread - kein Atomic,
+        keine Sperre. `publikationsStand` gehoert dem Worker; `bankStand` je
+        Bank schreibt der Worker VOR der Uebergabe der Bank und liest der
+        Audiothread NACH ihrer Uebernahme, ueber dieselbe
+        Release-/Acquire-Uebergabe wie das Programm (M-52). */
+    Blockrandstaende blockStand {};
+    std::array<double, (size_t) kBlockrandAnzahl> blockZiel {};
+    std::array<bool,   (size_t) kBlockrandAnzahl> blockZielGueltig {};
+    Blockrandstaende publikationsStand {};
+    std::array<Blockrandstaende, (size_t) DspBankPool::kBaenke> bankStand {};
+    std::atomic<std::uint64_t> zaehlerBlockrandZiele { 0 };
+
+    /** Die Mailboxlesung am Blockrand (E-312-6 Punkte 1 und 2): uebernimmt
+        jeden neuen Stand und setzt bei einem aktiven Committed-Pfad das
+        Rampenziel. Ein ruhender Pfad nimmt kein Ziel (NAK-311 T3-15-05). */
+    void uebernimmBlockrandHostwerte (const BlockrandHostwerte& w) noexcept;
+
+    /** Die Programmuebernahme eines Rampenziels (E-312-6 Punkt 4): ein
+        Programm setzt das Ziel eines abgedeckten Parameters nur, wenn sein
+        Publikationsstand GLEICH dem Blockrandstand ist; sonst gilt das
+        Blockrandziel. */
+    void setzeProgrammziel (Pfad p, int bank, Rampe& r, int parameterIndex, double programmwert) noexcept;
 
     std::atomic<Hoermatrix> hoerwunsch  { Hoermatrix::processed };
     std::atomic<Hoermatrix> hoerwirksam { Hoermatrix::processed };

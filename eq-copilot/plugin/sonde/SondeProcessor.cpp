@@ -190,8 +190,13 @@ SondeProcessor::SondeProcessor (V3Verdrahtung verdrahtung)
 
     // M-119: FL meldet `sample_accurate_automation` = unsupported
     // (identity/host-capabilities-fl-v1.json, Termin B), und ein samplegenauer
-    // Pfad ist nicht gebaut. Die Sonde rampt blockweise, und
-    // Topologieautomation wirkt nicht (§44.3 letzter Absatz).
+    // Pfad ist nicht gebaut. Topologieautomation wirkt nicht (§44.3 letzter
+    // Absatz). Blockweise gebunden - im Audiothread am Blockrand, vom vorigen
+    // zum letzten Blockwert gerampt - sind seit NAK-312 Etappe 3b (T3-01-05
+    // Teil a) nur die vier Hostparameter der Abdeckungstabelle
+    // (`DspKern::kBlockrandParameter`: Trims, Width, Mix). Bandwerte,
+    // `mono_bass_hz`, die Schalter und das Auto-Gain-Ziel folgen weiter dem
+    // Kontrolltakt des Workers, also der Wanduhr (Teil b, NAK-340).
     transaktion->setzeSamplegenaueAutomation (false);
 
     const auto& parameterListe = getParameters();
@@ -201,6 +206,19 @@ SondeProcessor::SondeProcessor (V3Verdrahtung verdrahtung)
         hostParameter[(size_t) i] = dynamic_cast<juce::RangedAudioParameter*> (parameterListe[i]);
         hostWert[(size_t) i].store (parameterListe[i]->getValue());
         parameterListe[i]->addListener (this);
+    }
+
+    // NAK-312 Etappe 3b: was der Blockrand ohne Schloss liest.
+    for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+    {
+        const auto& b = nakama::parameter::tabelle()[(size_t) nakama::dsp::DspKern::kBlockrandParameter[(size_t) k]];
+        blockrandMin[(size_t) k] = b.min;
+        blockrandMax[(size_t) k] = b.max;
+        blockrandQuittung[(size_t) k].store (kKeineQuittung);
+    }
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        bestaetigteBlockwerteVeroeffentlichen();
     }
     tidHoch = (std::uint64_t) juce::Random::getSystemRandom().nextInt64();
 
@@ -321,6 +339,7 @@ void SondeProcessor::prepareToPlay (double samplerate, int maxBlock)
         // faellt auf falsch - es ist nichts offen.
         if (nakama::dsp::samplerateUnterstuetzt (sichereRate))
         {
+            publikationsStandSetzen (false);   // NAK-312 E-312-6: das Overlay bis `hostEreignisGesehen`
             publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
             if (transaktion->preview().aktiv && ! dspAusfuehrung->publizierePreview (transaktion->preview().satz))
                 publikationOffen = true;
@@ -471,12 +490,38 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
             }
         }
 
+        // NAK-312 Etappe 3b (T3-01-05 Teil a, E-312-5, E-312-6): die
+        // Blockrandlesung der Hostmailbox fuer die vier Parameter der
+        // Abdeckungstabelle. Je Platz ein Zaehler; nur ein UNGLEICHER Stand
+        // (nie ein Ordnungsvergleich) laedt Quittung und Hostwert und rechnet
+        // die Zelle. Nur Atomics und die reine Arithmetik des Hostparameters:
+        // keine Sperre, keine Allokation, kein Warten. `hostEreignisOffen`
+        // bleibt allein beim Worker - der Blockrand liest und tauscht es nicht.
+        nakama::dsp::DspKern::BlockrandHostwerte hostwerte {};
+        for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+        {
+            const int i = nakama::dsp::DspKern::kBlockrandParameter[(size_t) k];
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_acquire);
+            if (n == dspKern->blockrandStand (k))
+                continue;
+            auto& h = hostwerte[(size_t) k];
+            h.neu   = true;
+            h.stand = n;
+            // W02 am Blockrand: ein Ereignis, das der Ladestart quittiert hat,
+            // ist kein Hostgestus und setzt kein Ziel.
+            if ((std::uint64_t) n == blockrandQuittung[(size_t) k].load (std::memory_order_acquire))
+                continue;
+            h.wert = true;
+            h.zahl = zelleAmBlockrand (k, hostWert[(size_t) i].load (std::memory_order_relaxed));
+        }
+
         // SONDE-015 4a: der aktive Kern (Manifest §3.0). Bei `eq_enabled` aus
         // und beim Hard-Bypass schreibt er keinen Sample und sanitisiert nichts
-        // (M-01, M-05, M-50); ein neues Programm uebernimmt er am Blockrand.
+        // (M-01, M-05, M-50); ein neues Programm uebernimmt er am Blockrand,
+        // die Hostwerte der Abdeckungstabelle unmittelbar davor.
         float* kanalZeiger[2] = { puffer.getWritePointer (0),
                                   kanaele > 1 ? puffer.getWritePointer (1) : nullptr };
-        dspKern->verarbeite (kanalZeiger, kanaele, samples);
+        dspKern->verarbeite (kanalZeiger, kanaele, samples, &hostwerte);
         verarbeiteteSamples.fetch_add ((std::uint64_t) samples, std::memory_order_relaxed);
 
         // Die Analyse misst `post_committed` (§44.2: Session-Landkarte und
@@ -1158,11 +1203,21 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
             quittiert[(size_t) i]           = n;
         }
 
+        // NAK-312 Etappe 3b: dieselbe Quittierung fuer den Blockrand, der die
+        // Mailbox der Abdeckungstabelle selbst liest; dazu der neue bestaetigte
+        // Zustand. Die Publikation unten traegt den quittierten Stand
+        // (Ladestart quittiert, E-312-6 Punkt 3).
+        for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+            blockrandQuittung[(size_t) k].store (quittiert[(size_t) nakama::dsp::DspKern::kBlockrandParameter[(size_t) k]],
+                                                 std::memory_order_release);
+        bestaetigteBlockwerteVeroeffentlichen();
+
         // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
         dspKern->setzeHoermatrix (nakama::dsp::Hoermatrix::processed);
         gesteOffen.fill (false);
         gesteBeteiligt.fill (false);
         abgleich = transaktion->bestaetigt().werte;
+        publikationsStandSetzen (false);
         if (dspKern->samplerate() > 0.0)
             publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
 
@@ -1318,6 +1373,9 @@ nakama::transaktion::Ergebnis SondeProcessor::fuehreTransaktionAus (const nakama
             ergebnis.grund    = "schreibgeschuetzt";
             return ergebnis;
         }
+        // NAK-312 Etappe 3b (E-312-6 Punkt 3): der Commit quittiert - seine
+        // Publikation traegt den aktuellen Zaehlerstand.
+        publikationsStandSetzen (true);
         ergebnis = transaktion->fuehreAus (auftrag);
         commit = ergebnis.ausgang == nakama::transaktion::Ausgang::commit;
         if (commit)
@@ -1326,6 +1384,7 @@ nakama::transaktion::Ergebnis SondeProcessor::fuehreTransaktionAus (const nakama
             // direkt aus dem Kern (`gehaltenerStand`, M-89, M-93).
             abgleich = transaktion->bestaetigt().werte;
             publikationOffen = false;
+            bestaetigteBlockwerteVeroeffentlichen();
         }
     }
 
@@ -1414,8 +1473,11 @@ void SondeProcessor::parameterValueChanged (int index, float neuNormiert)
     // Laeuft auch im Audiothread: nur Atomics, kein Schloss, keine Allokation.
     if (abgleichTiefe > 0 || index < 0 || index >= nakama::parameter::kHostParameter)
         return;
+    // NAK-312 Etappe 3b (E-312-6): der Zaehler steigt mit `release` - wer ihn
+    // mit `acquire` liest (Blockrand, Takt), sieht den Hostwert mindestens so
+    // neu wie das Ereignis, dessen Stand er uebernimmt.
     hostWert[(size_t) index].store (neuNormiert, std::memory_order_relaxed);
-    hostEreignis[(size_t) index].fetch_add (1, std::memory_order_relaxed);
+    hostEreignis[(size_t) index].fetch_add (1, std::memory_order_release);
     hostEreignisOffen.store (true, std::memory_order_relaxed);
 }
 
@@ -1501,6 +1563,44 @@ nakama::parameter::Zelle SondeProcessor::zelleAusHost (int index, float normiert
     return z;
 }
 
+double SondeProcessor::zelleAmBlockrand (int k, float normiert) const noexcept
+{
+    // Dieselbe Reihenfolge wie `zelleAusHost`: erst die Ausnahme "gleich dem
+    // bestaetigten Wert in Hostgenauigkeit" (derselbe Vergleichswert
+    // `convertTo0to1 (hostWertAus (…))`, hier aus EINEM veroeffentlichten
+    // Wert gerechnet, damit Vergleichswert und Rueckgabe nie aus zwei
+    // Publikationen stammen), dann die Endlichkeitsregel, dann der Bereich.
+    const int i = nakama::dsp::DspKern::kBlockrandParameter[(size_t) k];
+    const auto* p = hostParameter[(size_t) i];
+    const double bestaetigt = bestaetigtBlock[(size_t) k].load (std::memory_order_relaxed);
+    if (p->convertTo0to1 ((float) bestaetigt) == normiert)
+        return bestaetigt;
+    if (! std::isfinite (normiert))
+        return bestaetigt;
+    const float wert = p->convertFrom0to1 (normiert);
+    return juce::jlimit (blockrandMin[(size_t) k], blockrandMax[(size_t) k], (double) wert);
+}
+
+void SondeProcessor::bestaetigteBlockwerteVeroeffentlichen() noexcept
+{
+    const auto& werte = transaktion->bestaetigt().werte;
+    for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+        bestaetigtBlock[(size_t) k].store (werte[(size_t) nakama::dsp::DspKern::kBlockrandParameter[(size_t) k]].zahl,
+                                           std::memory_order_relaxed);
+}
+
+void SondeProcessor::publikationsStandSetzen (bool aktuellerZaehler) noexcept
+{
+    nakama::dsp::DspKern::Blockrandstaende s {};
+    for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+    {
+        const int i = nakama::dsp::DspKern::kBlockrandParameter[(size_t) k];
+        s[(size_t) k] = aktuellerZaehler ? hostEreignis[(size_t) i].load (std::memory_order_acquire)
+                                         : hostEreignisGesehen[(size_t) i];
+    }
+    dspKern->setzePublikationsStand (s);
+}
+
 void SondeProcessor::hostParameterAbgleichen (const nakama::parameter::Satz& werte,
                                               const Zaehlerstand* quittiert)
 {
@@ -1572,7 +1672,10 @@ void SondeProcessor::dspKontrollTakt()
         {
             for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
             {
-                const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+                // NAK-312 Etappe 3b: `acquire` gegen das `release` des Listeners -
+                // der gelesene Hostwert ist mindestens so neu wie der Stand, den
+                // die Publikation unten traegt (E-312-6 Punkt 3).
+                const auto n = hostEreignis[(size_t) i].load (std::memory_order_acquire);
                 if (n == hostEreignisGesehen[(size_t) i]) continue;
                 hostEreignisGesehen[(size_t) i] = n;
                 transaktion->automationSchreiben (i, zelleAusHost (i, hostWert[(size_t) i].load (std::memory_order_relaxed)));
@@ -1594,8 +1697,12 @@ void SondeProcessor::dspKontrollTakt()
             transaktion->automationRuht();
 
         // Den wirksamen Zustand publizieren; bei busy_retry im naechsten Takt.
+        // NAK-312 Etappe 3b: die Publikation traegt `hostEreignisGesehen`.
         if (publikationOffen && dspKern->samplerate() > 0.0)
+        {
+            publikationsStandSetzen (false);
             publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), false);
+        }
 
         if (lesendAbgleichen)
             lesendAbgleich = transaktion->bestaetigt().werte;

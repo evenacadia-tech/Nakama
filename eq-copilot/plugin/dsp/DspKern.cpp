@@ -426,6 +426,10 @@ void DspKern::publiziereVorbau (Pfad p) noexcept
         z.svfVon = z.svfNach = bank.programm.baender[(size_t) i].svfRuhe;
     }
 
+    // NAK-312 Etappe 3b (E-312-6 Punkt 3): der Publikationsstand reist mit der
+    // Bank - geschrieben VOR ihrer Uebergabe, wie Programm und Kennungen.
+    bankStand[(size_t) slot] = publikationsStand;
+
     baenke.publiziere (p, slot);
     meldeProgramm (p, bank.programm);
     if (p == Pfad::candidate) candidateAktiv.store (true, std::memory_order_release);
@@ -615,15 +619,91 @@ void DspKern::blockrand (Pfad p) noexcept
     z.uebergang = nurRampen ? Uebergang::rampe : Uebergang::crossfade;
     z.rest      = nurRampen ? kRampeSamples : kFadeSamples;
 
-    // B-6: die Rampen DIESES Pfades laufen auf die Ziele DIESES Programms.
+    // B-6: die Rampen DIESES Pfades laufen auf die Ziele DIESES Programms -
+    // seit NAK-312 Etappe 3b mit der Schiedsregel E-312-6: fuer die vier
+    // abgedeckten Parameter des Committed-Pfades nur, wenn das Programm nicht
+    // aelter ist als der Blockrand (`setzeProgrammziel`).
     const auto& pn = bankNeu.programm;
-    z.rampen.input.setzeZiel (pn.inputTrimLin);
-    z.rampen.output.setzeZiel (pn.outputTrimLin);
-    z.rampen.mix.setzeZiel (pn.mix);
-    z.rampen.width.setzeZiel (pn.width);
+    setzeProgrammziel (p, neu, z.rampen.input,  kIndexInputTrim,  pn.inputTrimLin);
+    setzeProgrammziel (p, neu, z.rampen.output, kIndexOutputTrim, pn.outputTrimLin);
+    setzeProgrammziel (p, neu, z.rampen.mix,    nakama::parameter::kIndexMix, pn.mix);
+    setzeProgrammziel (p, neu, z.rampen.width,  kIndexWidth,      pn.width);
     // M-35: angewandt nur bei eingeschaltetem Schalter - gerechnet und
     // lesbar ist der Wert immer.
     z.rampen.autoGain.setzeZiel (pn.autoGainAn ? pn.autoGainLin : 1.0);
+}
+
+//==============================================================================
+// NAK-312 Etappe 3b: die Blockbindung der Hostwerte (T3-01-05 Teil a, E-312-5,
+// E-312-6). Der Blockrand rechnet fuer die vier abgedeckten Parameter aus der
+// Vertragszelle DASSELBE Rampenziel wie `baueProgramm` (`DspProgramm.cpp`:
+// Trims mit dem Unity-Kurzschluss bei 0 dB, Width und Mix als Wert) - nur so
+// ist ein Lauf ohne Worker bitgleich zu einem mit Takt nach jedem Block.
+
+namespace
+{
+int blockrandPlatz (int parameterIndex) noexcept
+{
+    for (int k = 0; k < DspKern::kBlockrandAnzahl; ++k)
+        if (DspKern::kBlockrandParameter[(size_t) k] == parameterIndex)
+            return k;
+    return -1;
+}
+
+double rampenzielAusZelle (int parameterIndex, double zahl) noexcept
+{
+    if (parameterIndex == DspKern::kIndexInputTrim || parameterIndex == DspKern::kIndexOutputTrim)
+        return zahl == 0.0 ? 1.0 : dbInLinear (zahl);
+    return zahl;
+}
+} // namespace
+
+void DspKern::uebernimmBlockrandHostwerte (const BlockrandHostwerte& w) noexcept
+{
+    auto& z = pfade[(size_t) Pfad::committed];
+    for (int k = 0; k < kBlockrandAnzahl; ++k)
+    {
+        const auto& h = w[(size_t) k];
+        if (! h.neu)
+            continue;
+        blockStand[(size_t) k]       = h.stand;
+        blockZielGueltig[(size_t) k] = h.wert;
+        if (! h.wert)
+            continue;   // vom Ladestart quittiert: kein Hostgestus (W02)
+
+        const int index = kBlockrandParameter[(size_t) k];
+        blockZiel[(size_t) k] = rampenzielAusZelle (index, h.zahl);
+
+        // NAK-311 (T3-15-05): ein ruhender oder ausblendender Pfad nimmt kein
+        // Ziel - das naechste Einschalten beginnt wie ein frischer Kern, und
+        // die ausblendende Bank klingt mit IHREN Gains aus (M-06). Das
+        // Blockrandziel bleibt gemerkt; das Programm, das den Pfad wieder
+        // aktiv macht, entscheidet nach der Schiedsregel.
+        if (z.aktiv < 0)
+            continue;
+        Rampe* r = index == kIndexInputTrim  ? &z.rampen.input
+                 : index == kIndexOutputTrim ? &z.rampen.output
+                 : index == kIndexWidth      ? &z.rampen.width
+                 : index == nakama::parameter::kIndexMix ? &z.rampen.mix
+                 : nullptr;
+        if (r == nullptr)
+            continue;
+        r->setzeZiel (blockZiel[(size_t) k]);
+        zaehlerBlockrandZiele.fetch_add (1, std::memory_order_relaxed);
+    }
+}
+
+void DspKern::setzeProgrammziel (Pfad p, int bank, Rampe& r, int parameterIndex, double programmwert) noexcept
+{
+    const int k = p == Pfad::committed ? blockrandPlatz (parameterIndex) : -1;
+    // Gleichheit, nie Ordnung: ein UNGLEICHER Publikationsstand ist immer der
+    // aeltere, weil der Blockrand in diesem Block schon vorher gelesen hat.
+    if (k < 0 || bankStand[(size_t) bank][(size_t) k] == blockStand[(size_t) k] || ! blockZielGueltig[(size_t) k])
+    {
+        r.setzeZiel (programmwert);
+        return;
+    }
+    r.setzeZiel (blockZiel[(size_t) k]);
 }
 
 void DspKern::heileZustaende (int slot) noexcept
@@ -1054,11 +1134,19 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
 }
 
 //==============================================================================
-void DspKern::verarbeite (float* const* kanaele, int numKanaele, int numSamples) noexcept
+void DspKern::verarbeite (float* const* kanaele, int numKanaele, int numSamples,
+                          const BlockrandHostwerte* hostwerte) noexcept
 {
     RtWache::Bereich wache;
 
     if (kanaele == nullptr || numKanaele <= 0 || numSamples <= 0) return;
+
+    // NAK-312 Etappe 3b (E-312-6 Punkt 2): die Mailboxlesung steht VOR der
+    // Programmuebernahme desselben Blocks - und vor dem fruehen Ruecksprung
+    // von `blockrand` bei laufendem Uebergang: ein Hostwert wirkt in DEM Block,
+    // an dessen Rand er gelesen wurde.
+    if (hostwerte != nullptr)
+        uebernimmBlockrandHostwerte (*hostwerte);
 
     // B-11: die Uebernahme beider Pfade laeuft GENAU EINMAL je aeusserem
     // Aufruf, vor dem ersten Sample (M-25, R9). Die Stueckelung unten
@@ -1141,6 +1229,17 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     // Crossfade wie Rampe, gezaehlt wie `z.rest` (M-13, M-14).
     const bool cRampe = zc.uebergang == Uebergang::rampe && zc.rest > 0;
     const size_t cUebergangsEnde = (cCrossfade || cRampe) ? (size_t) zc.rest : 0;
+
+    // NAK-312 Etappe 3b: seit der Blockbindung laeuft eine Parameterrampe auch
+    // OHNE Programmuebergang - der Blockrand setzt ihr Ziel. Das Schreibende
+    // der Neutralpruefung liegt deshalb fruehestens am Ende der laengsten noch
+    // laufenden Rampe, gezaehlt wie `Rampe::rest` ab Stueckbeginn. Mit einem
+    // Programmuebergang ist das dasselbe Sample wie `cUebergangsEnde`: Rampe
+    // und Uebergang beginnen am selben Blockrand, und kRampeSamples ist
+    // kFadeSamples.
+    const auto& rs = zc.rampen;
+    const size_t cRampenEnde = (size_t) std::max ({ rs.input.rest, rs.output.rest, rs.mix.rest,
+                                                    rs.width.rest, rs.autoGain.rest, 0 });
 
     // §9 F-4: ein Einheitsband, das in diesem Stueck noch rechnet - Rest einer
     // Bandrampe im Zustand oder eine Rampe von einem wirksamen Entwurf her,
@@ -1319,8 +1418,10 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     // der Wet-Zweig geht nicht ein, Dry ist pre_nakama). "In Ruhe" fragt den
     // Rampenzustand, nie nur das Ziel - eine Rampe, die durch 0,99999994
     // laeuft, ruht nicht. Die Grenze liegt wie bei W-1 auf dem Sample, auch
-    // mitten im Stueck: am Ende von Crossfade, Rampe und Hoermatrix-Fade. Eine
-    // Handvoll Vergleiche je Stueck, keine Arbeit je Sample.
+    // mitten im Stueck: am Ende von Crossfade, Rampe und Hoermatrix-Fade und -
+    // seit NAK-312 Etappe 3b - am Ende der laengsten laufenden
+    // Parameterrampe (`cRampenEnde`). Eine Handvoll Vergleiche je Stueck,
+    // keine Arbeit je Sample.
     const auto& rc = zc.rampen;
     const bool pfadSteht  = zc.uebergang == Uebergang::keiner && zc.aktiv >= 0 && ! istPassthrough (zc.aktiv);
     const bool hoertPfad  = hoerLaufend == Hoermatrix::processed || hoerLaufend == Hoermatrix::dry;
@@ -1333,7 +1434,7 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
                               && rc.input.ruhtBei (rc.input.ziel) && rc.width.ruhtBei (rc.width.ziel)
                               && rc.autoGain.ruhtBei (rc.autoGain.ziel);
         if (neutralRuht || mixNullRuht)
-            schreibBis = std::min (schreibBis, std::max (cUebergangsEnde, (size_t) std::max (0, hoerFadeRest)));
+            schreibBis = std::min (schreibBis, std::max ({ cUebergangsEnde, cRampenEnde, (size_t) std::max (0, hoerFadeRest) }));
     }
 
     for (size_t i = 0; i < schreibBis; ++i)

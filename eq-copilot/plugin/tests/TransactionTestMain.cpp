@@ -41,7 +41,12 @@
          danach wirkt und der Regler zeigt ihn, reset() bewahrt die Mailbox,
          und ein read-only geladener Stand bleibt unter Hostautomation
          audio-neutral. Die Taktsperre (`mitAngehaltenemTaktFuerTest`) haelt den
-         Worker dabei an; kein Fall haengt an der Wanduhr.
+         Worker dabei an; kein Fall haengt an der Wanduhr. Seit NAK-312 Etappe 3b
+         (T3-01-05 Teil a, Abschnitt Y und 312/M-24, 312/M-25 in Abschnitt O) die
+         Blockbindung: fuer Input-Trim, Output-Trim, Width und Mix ist ein Lauf
+         ohne Kontrolltakt bitgleich zu einem mit Takt nach jedem Block, auch
+         offline, bei jeder gefahrenen Blockgroesse und ueber den Zaehlerrand;
+         Bandwerte und Schalter bleiben messend taktgebunden (Teil b, NAK-340).
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -63,10 +68,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
@@ -2135,6 +2142,50 @@ void prozessorAutomation()
                 zahl (e0) + " -> " + zahl (e1) + " -> " + zahl (e2) + " -> " + zahl (e3));
     }
     {
+        // NAK-312 Etappe 3b (312/M-24, 312/M-25): derselbe Ablauf auf dem
+        // BLOCKGEBUNDENEN Weg (Output-Trim, T3-01-05 Teil a). Der Blockrand
+        // setzt nur Rampenziele; Overlay, Epoche und Ruhegrenze bleiben beim
+        // Worker, und der Stand bleibt ohne Revision und ohne Dirty.
+        auto p = prozessor (48000.0, 480);
+        auto z = mitEq (true);
+        z.werte[(size_t) param::indexVonId ("v1.global.output_trim_db")].zahl = 3.0;
+        setze (*p, z);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        juce::MemoryBlock vorher;
+        p->getStateInformation (vorher);
+        const auto r  = p->stateRevision();
+        const auto e0 = p->automationEpoche();
+        for (int i = 0; i < 50; ++i)
+        {
+            hostSchreibt (*p, param::indexVonId ("v1.global.output_trim_db"), -6.0f + 0.2f * (float) i);
+            fahreAudio (*p, 1, 480, 40 + i);          // der Blockrand nimmt den Wert
+            p->kontrollTaktFuerTest();                // der Worker fuehrt Overlay und Epoche
+        }
+        const auto e1 = p->automationEpoche();
+        fahreAudio (*p, 20, 480, 97);                 // 9600 Samples: unter der Ruhegrenze (12000)
+        p->kontrollTaktFuerTest();
+        const auto e2 = p->automationEpoche();
+        fahreAudio (*p, 6, 480, 96);                  // 12480 Samples seit dem letzten Punkt
+        p->kontrollTaktFuerTest();
+        const auto e3 = p->automationEpoche();
+        juce::MemoryBlock nachher;
+        p->getStateInformation (nachher);
+        const int dirtyMeldungen = dirty.nichtParameter;
+        p->removeListener (&dirty);
+        pruefe (e1 == e0 + 1 && e2 == e1 && e3 == e1 + 1,
+                "312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, "
+                "[SONDE-015] M-81): 50 Automationspunkte auf Output-Trim, den der Blockrand uebernimmt - die Epoche wechselt "
+                "genau zweimal, die Ruhegrenze zaehlt verarbeitete Samples (unter 12000 kein Ende, nach 12480 das Ende)",
+                zahl (e0) + " -> " + zahl (e1) + " -> " + zahl (e2) + " -> " + zahl (e3));
+        pruefe (p->stateRevision() == r && dirtyMeldungen == 0 && nachher == vorher,
+                "312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, "
+                "[SONDE-015] M-81): dieselbe Fahrt erzeugt keine Revision, kein Host-Dirty, und die Statebytes sind bytegleich "
+                "zu denen vor der Fahrt",
+                "Revision " + zahl (r) + " -> " + zahl (p->stateRevision()) + ", Dirty " + std::to_string (dirtyMeldungen)
+                + ", Statebytes " + (nachher == vorher ? "gleich" : "VERSCHIEDEN"));
+    }
+    {
         auto p = prozessor();
         auto z = mitEq (true);
         setzeBand (z, 0, 1000.0, 3.0);
@@ -4057,6 +4108,636 @@ void nak312Ladestart()
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 3, zweiter Aenderungssatz (T3-01-05 Teil a; R-312-10 in der
+// Fassung von E-312-5, Schiedsregel E-312-6): die Blockbindung der Hostwerte.
+//
+// Pruefling A faehrt seine Bloecke unter der Taktsperre OHNE Kontrolltakt -
+// der Worker kann dort beweisbar nicht ziehen. Der Referenzlauf B faehrt
+// dieselben Bloecke und bekommt nach JEDEM Block `kontrollTaktFuerTest()`:
+// das ist die Ausgabe, die der Entwurfssatz "vom vorigen zum letzten
+// Blockwert" beschreibt. Beide faehren dasselbe Rauschen und dieselbe
+// Eventfolge, beide unter der Taktsperre, also ohne Wettlauf mit dem Worker.
+//
+// NAK312_GEGENPROBE_OHNE_BLOCKRAND blendet die Faelle aus, die Testzugaenge
+// des Mechanismus lesen (Abdeckungstabelle, Blockrandstand, Zielzaehler). Die
+// Gegenprobe "heute rot" (Manifest §7.1) setzt ihn nur im Basislauf, damit
+// die heute-rot-Faelle gegen den unveraenderten Produktcode bauen.
+
+using Ereignisse = std::function<void (Prozessor&, int)>;
+
+constexpr int kBreite = 3;   // v1.global.width
+
+/** Faehrt `bloecke` Bloecke unter der Taktsperre: vor jedem Block `ereignis`,
+    dann das Rauschen des Blocks, danach bei `taktJeBlock` ein Kontrolltakt. */
+std::vector<float> fahreFolge (Prozessor& p, int bloecke, int groesse, const Ereignisse& ereignis,
+                               bool taktJeBlock, int saat)
+{
+    std::vector<float> aus;
+    aus.reserve ((size_t) bloecke * (size_t) groesse * 2u);
+    juce::Random w (saat);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> puffer (2, groesse);
+    p.mitAngehaltenemTaktFuerTest ([&]
+    {
+        for (int b = 0; b < bloecke; ++b)
+        {
+            if (ereignis)
+                ereignis (p, b);
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < groesse; ++n)
+                    puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+            p.processBlock (puffer, midi);
+            for (int k = 0; k < 2; ++k)
+                for (int n = 0; n < groesse; ++n)
+                    aus.push_back (puffer.getSample (k, n));
+            if (taktJeBlock)
+                p.kontrollTaktFuerTest();
+        }
+    });
+    return aus;
+}
+
+int abweichend (const std::vector<float>& a, const std::vector<float>& b)
+{
+    if (a.size() != b.size())
+        return std::numeric_limits<int>::max();
+    int n = 0;
+    for (size_t i = 0; i < a.size(); ++i)
+        if (std::memcmp (&a[i], &b[i], sizeof (float)) != 0)
+            ++n;
+    return n;
+}
+
+/** Ein Pruefling mit dem committeten Stand `z`, eingeschwungen (die
+    Publikation des Commits ist genommen, Uebergaenge sind zu Ende). */
+std::unique_ptr<Prozessor> blockPruefling (int groesse, const param::DspSatz& z)
+{
+    auto p = prozessor (48000.0, groesse);
+    setze (*p, z);
+    fahreAudio (*p, std::max (8, 2048 / groesse), groesse, 3200);
+    return p;
+}
+
+/** Die Eventfolge aus 312/M-20: Block 10 = Extremwert, 11 = Standardwert,
+    12 = Extremwert, 13 = Standardwert. */
+Ereignisse folgeM20 (int index, float extrem, float standard)
+{
+    return [index, extrem, standard] (Prozessor& p, int b)
+    {
+        if (b == 10 || b == 12) hostSchreibt (p, index, extrem);
+        if (b == 11 || b == 13) hostSchreibt (p, index, standard);
+    };
+}
+
+struct BlockParameter { int index; const char* name; float extrem; float standard; };
+
+/** Die zwei Staende, in denen 312/M-20 bis 312/M-22 fahren: der NEUTRALE
+    (eq an, keine Baender - der Kern schreibt dort nur, solange eine Rampe
+    laeuft, die Neutralpruefung ist also mitgemessen) und einer mit Band (Bell
+    1 kHz +6 dB), in dem auch Mix hoerbar ist. Im neutralen Stand ist Mix
+    bauartbedingt ohne Wirkung (Nass gleich Trocken); dort wird fuer Mix nur
+    A gegen B verlangt. */
+struct Blockstand { const char* name; param::DspSatz satz; };
+
+std::array<Blockstand, 2> blockStaende()
+{
+    auto mitBand = mitEq (true);
+    setzeBand (mitBand, 0, 1000.0, 6.0);
+    return { { { "neutral", mitEq (true) }, { "Band", mitBand } } };
+}
+
+/** Die vier abgedeckten Parameter mit einem Extremwert ungleich ihrem Standard.
+    Mix steht im Standard am oberen Rand (1,0); sein Extremwert ist deshalb der
+    untere (0,0). */
+const std::array<BlockParameter, 4>& blockParameter()
+{
+    static const std::array<BlockParameter, 4> t { {
+        { kInTrim,          "v1.global.input_trim_db",  24.0f, 0.0f },
+        { kOutTrim,         "v1.global.output_trim_db", 24.0f, 0.0f },
+        { kBreite,          "v1.global.width",           2.0f, 1.0f },
+        { param::kIndexMix, "v2.global.mix",             0.0f, 1.0f } } };
+    return t;
+}
+
+/** A (Taktsperre, kein Takt) gegen B (Takt nach jedem Block) und C (ohne
+    Ereignis): A muss bitgleich zu B sein, und B muss sich von C
+    unterscheiden, sonst misst der Fall nichts. */
+struct Vergleich { int aGegenB = 0; int bGegenC = 0; std::uint64_t zieleA = 0; };
+
+Vergleich vergleicheAB (const param::DspSatz& stand, int groesse, int bloecke, const Ereignisse& ereignis, int saat,
+                        bool offlineA = false)
+{
+    auto a = blockPruefling (groesse, stand);
+    auto b = blockPruefling (groesse, stand);
+    auto c = blockPruefling (groesse, stand);
+    if (offlineA)
+        a->setNonRealtime (true);
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+    const auto zieleVor = a->dspKernFuerTest().blockrandZiele();
+#endif
+    const auto ya = fahreFolge (*a, bloecke, groesse, ereignis, false, saat);
+    const auto yb = fahreFolge (*b, bloecke, groesse, ereignis, true, saat);
+    const auto yc = fahreFolge (*c, bloecke, groesse, {}, true, saat);
+    Vergleich v;
+    v.aGegenB = abweichend (ya, yb);
+    v.bGegenC = abweichend (yb, yc);
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+    v.zieleA = a->dspKernFuerTest().blockrandZiele() - zieleVor;
+#endif
+    return v;
+}
+
+/** Ausgang/Eingang am letzten Sample eines Blocks, links. */
+double letztesVerhaeltnis (const std::vector<float>& aus, const std::vector<float>& ein, int block, int groesse)
+{
+    const size_t i = (size_t) block * (size_t) groesse * 2u + (size_t) groesse - 1u;
+    return (double) aus[i] / (double) ein[i];
+}
+
+/** Das Eingangsrauschen von `fahreFolge` mit derselben Saat, im selben Format. */
+std::vector<float> eingangVon (int bloecke, int groesse, int saat)
+{
+    std::vector<float> ein;
+    ein.reserve ((size_t) bloecke * (size_t) groesse * 2u);
+    juce::Random w (saat);
+    for (int b = 0; b < bloecke; ++b)
+    {
+        std::vector<float> block ((size_t) groesse * 2u);
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+                block[(size_t) k * (size_t) groesse + (size_t) n] = w.nextFloat() * 1.6f - 0.8f;
+        ein.insert (ein.end(), block.begin(), block.end());
+    }
+    return ein;
+}
+
+void nak312Blockbindung()
+{
+    abschnitt ("Y - NAK-312 Etappe 3b: Blockbindung der Hostwerte (312/M-20 bis 312/M-23, 312/M-26 bis 312/M-29, 312/M-79 bis 312/M-82; 312/M-24 und 312/M-25 in Abschnitt O)");
+
+    const int blk = 64;
+    const auto bloeckeFuer = [] (int groesse) { return 14 + std::max (6, (2048 + groesse - 1) / groesse); };
+    const auto text = [] (double x) { std::ostringstream s; s << std::setprecision (12) << x; return s.str(); };
+
+    /** Die Eventfolge von 312/M-20 fuer die vier Parameter in beiden
+        Staenden. Zaehlt die Laeufe, in denen A von B abweicht oder B (wo der
+        Parameter hoerbar ist) nicht von C, und summiert die Blockrandziele. */
+    struct Menge { int schlecht = 0; std::uint64_t ziele = 0; std::string text; };
+    const auto mengeLauf = [&] (int groesse, int saat, bool offline)
+    {
+        Menge m;
+        std::ostringstream d;
+        for (const auto& st : blockStaende())
+            for (const auto& bp : blockParameter())
+            {
+                const auto v = vergleicheAB (st.satz, groesse, bloeckeFuer (groesse),
+                                             folgeM20 (bp.index, bp.extrem, bp.standard), saat, offline);
+                const bool hoerbar = ! (bp.index == param::kIndexMix && std::string (st.name) == "neutral");
+                if (v.aGegenB != 0 || (hoerbar && v.bGegenC == 0))
+                    ++m.schlecht;
+                m.ziele += v.zieleA;
+                d << st.name << "/" << bp.name << " A/B " << v.aGegenB << " B/C " << v.bGegenC << "; ";
+            }
+        m.text = d.str();
+        return m;
+    };
+
+    // ── 312/M-20: je Parameter der abgedeckten Menge ──────────────────────
+    bool vierBitgleich = true;
+    {
+        const auto m = mengeLauf (blk, 3201, false);
+        vierBitgleich = m.schlecht == 0;
+        pruefe (m.schlecht == 0,
+                "312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): "
+                "je Parameter der abgedeckten Menge dieselbe Eventfolge (Block 10 Extremwert, 11 Standard, 12 Extremwert, "
+                "13 Standard) bei 48 kHz und Blockgroesse 64, im neutralen Stand und mit Band - A unter der Taktsperre ohne "
+                "Takt ist BITGLEICH zu B mit Takt nach jedem Block (0 abweichende Samples), und B weicht vom Lauf ohne "
+                "Ereignis ab, wo der Parameter hoerbar ist",
+                m.text);
+    }
+
+    // ── Teilfall von 312/M-20: nicht endliche Hostwerte am Blockrand ───────
+    // Der Blockrand rechnet dieselbe Zelle wie `zelleAusHost`: NaN und +-Inf
+    // zaehlen als unveraendert (E4-10) - das Rampenziel wird der bestaetigte
+    // Wert, der Ausgang bleibt der des Laufs ohne Ereignis.
+    {
+        const float nan = std::numeric_limits<float>::quiet_NaN();
+        const float inf = std::numeric_limits<float>::infinity();
+        const Ereignisse nichtEndlich = [nan, inf] (Prozessor& p, int b)
+        {
+            for (const auto& bp : blockParameter())
+            {
+                if (b == 10) hostParam (p, bp.index).setValueNotifyingHost (nan);
+                if (b == 11) hostParam (p, bp.index).setValueNotifyingHost (inf);
+                if (b == 12) hostParam (p, bp.index).setValueNotifyingHost (-inf);
+            }
+        };
+        const auto& mitBand = blockStaende()[1].satz;
+        auto a = blockPruefling (blk, mitBand);
+        auto c = blockPruefling (blk, mitBand);
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        const auto ziele0 = a->dspKernFuerTest().blockrandZiele();
+#endif
+        const auto ya = fahreFolge (*a, 40, blk, nichtEndlich, false, 3205);
+        const auto yc = fahreFolge (*c, 40, blk, {}, false, 3205);
+        const bool endlich = std::all_of (ya.begin(), ya.end(), [] (float x) { return std::isfinite (x); });
+        bool ok = endlich && abweichend (ya, yc) == 0;
+        std::string d = std::string ("Ausgang ") + (endlich ? "endlich" : "NICHT endlich") + ", gegen den Lauf ohne Ereignis "
+                      + std::to_string (abweichend (ya, yc)) + " abweichend";
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        const auto ziele = a->dspKernFuerTest().blockrandZiele() - ziele0;
+        ok = ok && ziele == 12;
+        d += ", Blockrandziele " + zahl (ziele) + " (3 Ereignisse x 4 Parameter, je auf den bestaetigten Wert)";
+#endif
+        pruefe (ok,
+                "312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den "
+                "vier abgedeckten Parametern erreichen den Blockrand als bestaetigter Wert - der Ausgang bleibt endlich und "
+                "bitgleich zum Lauf ohne Ereignis",
+                d);
+    }
+
+    // ── 312/M-21: derselbe Lauf offline ────────────────────────────────────
+    {
+        const auto start = std::chrono::steady_clock::now();
+        const auto m = mengeLauf (blk, 3211, true);
+        const double sekunden = std::chrono::duration<double> (std::chrono::steady_clock::now() - start).count();
+        const double audio = 2.0 * 4.0 * 3.0 * (double) (bloeckeFuer (blk) * blk) / 48000.0;
+        pruefe (m.schlecht == 0,
+                "312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit "
+                "setNonRealtime (true) und ohne Warten zwischen den Bloecken - der Offlineausgang ist fuer die vier "
+                "abgedeckten Parameter bitgleich zum Echtzeitausgang desselben Event- und Blockverlaufs",
+                m.text + "Geschwindigkeit " + text (audio / std::max (sekunden, 1.0e-9))
+                + "-fach Echtzeit (Messung, keine Schranke)");
+    }
+
+    // ── 312/M-22: Blockgroessen ──────────────────────────────────────────
+    {
+        std::ostringstream d;
+        bool ok = true;
+        // 185: die typische FL-Blockgroesse (identity/host-capabilities-fl-v1.json, Beleg
+        // sample_accurate_automation: "~180-190 Samples je Block"); 4096 traegt 312/M-27.
+        for (const int groesse : { 1, 64, 185, 240, 256, 512 })
+        {
+            const auto m = mengeLauf (groesse, 3220 + groesse, false);
+            ok = ok && m.schlecht == 0;
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+            if (groesse == 1)
+            {
+                ok = ok && m.ziele == 32;
+                d << "Blockgroesse 1: " << m.ziele << " Blockrandziele fuer 2 Staende x 4 Parameter x 4 Ereignisse; ";
+            }
+#endif
+            d << "Blockgroesse " << groesse << ": " << m.schlecht << " von 8 Laeufen abweichend; ";
+        }
+        pruefe (ok,
+                "312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), "
+                "240, 256 und 512, je im neutralen Stand und mit Band - A ist fuer die vier abgedeckten Parameter bitgleich "
+                "zu B; bei Blockgroesse 1 bindet jeder Block genau einen Wert",
+                d.str());
+    }
+
+    // ── 312/M-23: bewegte Automation und Endwert ──────────────────────────
+    {
+        const int bloecke = 240;
+        const Ereignisse rampe = [] (Prozessor& p, int b)
+        {
+            if (b < 200)
+                hostSchreibt (p, kOutTrim, -12.0f + 24.0f * (float) b / 199.0f);
+        };
+        auto a = blockPruefling (blk, mitEq (true));
+        auto b = blockPruefling (blk, mitEq (true));
+        const auto ya = fahreFolge (*a, bloecke, blk, rampe, false, 3231);
+        const auto yb = fahreFolge (*b, bloecke, blk, rampe, true, 3231);
+        // Endwert: nach dem Lauf ein Takt, dann eingeschwungen messen.
+        a->kontrollTaktFuerTest();
+        b->kontrollTaktFuerTest();
+        const auto va = verhaeltnisNach (*a, 12, blk, 8 * blk, dbFaktor (12.0), 3232);
+        const auto vb = verhaeltnisNach (*b, 12, blk, 8 * blk, dbFaktor (12.0), 3232);
+        const int ab = abweichend (ya, yb);
+        pruefe (ab == 0 && va.endlich && vb.endlich && va.groessteAbweichung <= 1.0e-6 && vb.groessteAbweichung <= 1.0e-6,
+                "312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim "
+                "von -12 nach +12 dB ueber 200 Bloecke mit einem Punkt je Block, danach Halt - A und B sind bitgleich, und "
+                "nach dem Ende tragen beide exakt den Endwert +12 dB",
+                "A/B " + std::to_string (ab) + " abweichend, Endwert A " + text (va.groessteAbweichung) + ", B "
+                + text (vb.groessteAbweichung) + " von 10^(12/20)");
+    }
+
+    // ── 312/M-26: echtzeitfest ──────────────────────────────────────────
+    {
+        auto p = prozessor (48000.0, 512);
+        setze (*p, mitEq (true));
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::Random w (3260);
+        std::mt19937 zufall (3261);
+        std::uniform_int_distribution<int> groessen (1, 512);
+        dsp::RtWache::zuruecksetzen();
+        std::uint64_t eigene = 0;
+        for (int blockNr = 0; blockNr < 4000; ++blockNr)
+        {
+            const int n = groessen (zufall);
+            for (const auto& bp : blockParameter())
+                hostSchreibt (*p, bp.index, (blockNr % 2) == 0 ? bp.extrem : bp.standard);
+            puffer.setSize (2, n, false, false, true);
+            for (int k = 0; k < 2; ++k)
+                for (int s = 0; s < n; ++s)
+                    puffer.setSample (k, s, w.nextFloat() * 1.6f - 0.8f);
+            allokationen = 0;
+            zaehleAllokationen = true;
+            p->processBlock (puffer, midi);
+            zaehleAllokationen = false;
+            eigene += allokationen;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        const auto rtAllok = dsp::RtWache::allokationen();
+        pruefe (sperren == 0 && rtAllok == 0 && eigene == 0,
+                "312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) "
+                "mit Hostautomation auf allen vier abgedeckten Parametern - RtWache::sperren() und RtWache::allokationen() "
+                "bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso",
+                "RtWache::sperren " + zahl (sperren) + ", RtWache::allokationen " + zahl (rtAllok) + ", eigener Zaehler " + zahl (eigene));
+    }
+
+    // ── 312/M-27: grosse Bloecke, derselbe Block ──────────────────────────
+    {
+        const int groesse = 4096;
+        const int bloecke = 16;
+        const auto folge = folgeM20 (kOutTrim, 24.0f, 0.0f);
+        auto a = blockPruefling (groesse, mitEq (true));
+        auto b = blockPruefling (groesse, mitEq (true));
+        const auto ya = fahreFolge (*a, bloecke, groesse, folge, false, 3271);
+        const auto yb = fahreFolge (*b, bloecke, groesse, folge, true, 3271);
+        const auto ein = eingangVon (bloecke, groesse, 3271);
+        const double imBlock10 = letztesVerhaeltnis (ya, ein, 10, groesse);
+        const double imBlock9  = letztesVerhaeltnis (ya, ein, 9, groesse);
+        const int ab = abweichend (ya, yb);
+        pruefe (ab == 0 && std::abs (imBlock10 - dbFaktor (24.0)) <= 1.0e-5 && std::abs (imBlock9 - 1.0) <= 1.0e-6,
+                "312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem "
+                "Workertakt) - A und B sind bitgleich, und der Wert wirkt in DEMSELBEN Block, an dessen Rand er gelesen "
+                "wurde: am Ende von Block 10 steht der Ausgang auf 10^(24/20), am Ende von Block 9 noch auf 1",
+                "A/B " + std::to_string (ab) + ", Ende Block 9 " + text (imBlock9) + ", Ende Block 10 " + text (imBlock10));
+    }
+
+    // ── 312/M-28: ohne Ereignisse ─────────────────────────────────────────
+    {
+        const int bloecke = 200;
+        auto a = blockPruefling (blk, mitEq (true));
+        auto b = blockPruefling (blk, mitEq (true));
+        const auto uebernahmenA0 = a->dspKernFuerTest().uebernahmen();
+        const auto uebernahmenB0 = b->dspKernFuerTest().uebernahmen();
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        const auto zieleA0 = a->dspKernFuerTest().blockrandZiele();
+        const auto zieleB0 = b->dspKernFuerTest().blockrandZiele();
+#endif
+        const auto ya = fahreFolge (*a, bloecke, blk, {}, false, 3281);
+        const auto yb = fahreFolge (*b, bloecke, blk, {}, true, 3281);
+        bool ok = abweichend (ya, yb) == 0
+               && a->dspKernFuerTest().uebernahmen() - uebernahmenA0 == b->dspKernFuerTest().uebernahmen() - uebernahmenB0;
+        std::string d = "A/B " + std::to_string (abweichend (ya, yb)) + ", Uebernahmen A +"
+                      + zahl (a->dspKernFuerTest().uebernahmen() - uebernahmenA0) + ", B +"
+                      + zahl (b->dspKernFuerTest().uebernahmen() - uebernahmenB0);
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        const auto zieleA = a->dspKernFuerTest().blockrandZiele() - zieleA0;
+        const auto zieleB = b->dspKernFuerTest().blockrandZiele() - zieleB0;
+        ok = ok && zieleA == 0 && zieleB == 0;
+        d += ", Blockrandziele A +" + zahl (zieleA) + ", B +" + zahl (zieleB);
+#endif
+        pruefe (ok,
+                "312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne "
+                "Hostereignis - A und B sind bitgleich, der Blockrand setzt kein Rampenziel, und die Programmuebernahmen "
+                "sind in beiden Laeufen gleich",
+                d);
+    }
+
+    // ── 312/M-29: Ladestart mitten in der Fahrt ────────────────────────────
+    {
+        auto z = mitEq (true);
+        z.werte[(size_t) kOutTrim].zahl = 3.0;
+        auto p = blockPruefling (blk, z);
+        auto q = blockPruefling (blk, z);
+        juce::MemoryBlock bytes;
+        p->getStateInformation (bytes);
+        const auto hashQuelle = p->stateHashText();
+        // Die Fahrt: je Block ein Hostwert auf Output-Trim; nach Block 9 ein
+        // Takt, dessen Publikation Block 10 als Rampenuebergang nimmt. Nach
+        // Block 10 liegt in P ein alter Wert (-20 dB) in der Mailbox, dann der
+        // Ladestart; Q laedt ohne diesen Wert. Ab Block 16 neue Hostwerte.
+        const auto fahrt = [&] (Prozessor& x, bool mitAltwert)
+        {
+            return [&x, mitAltwert, &bytes] (Prozessor&, int b)
+            {
+                if (b <= 10) hostSchreibt (x, kOutTrim, -6.0f + 0.5f * (float) b);
+                if (b == 10) x.kontrollTaktFuerTest();   // vor dem Block: dessen Rand nimmt die Publikation
+                if (b == 11)
+                {
+                    if (mitAltwert) hostSchreibt (x, kOutTrim, -20.0f);
+                    x.setStateInformation (bytes.getData(), (int) bytes.getSize());
+                }
+                if (b == 16) hostSchreibt (x, kOutTrim, 6.0f);
+            };
+        };
+        const int bloecke = 40;
+        const auto yp = fahreFolge (*p, bloecke, blk, fahrt (*p, true), false, 3291);
+        const auto yq = fahreFolge (*q, bloecke, blk, fahrt (*q, false), false, 3291);
+        const auto ein = eingangVon (bloecke, blk, 3291);
+        // ab Block 11 (dem Ladestart) muessen P und Q bitgleich sein
+        const size_t ab11 = (size_t) 11 * (size_t) blk * 2u;
+        const std::vector<float> pNach (yp.begin() + (std::ptrdiff_t) ab11, yp.end());
+        const std::vector<float> qNach (yq.begin() + (std::ptrdiff_t) ab11, yq.end());
+        const int nachLaden = abweichend (pNach, qNach);
+        const double amEnde = letztesVerhaeltnis (yp, ein, bloecke - 1, blk);
+        const bool geladen = p->bestaetigterZustand().werte[(size_t) kOutTrim].zahl == 3.0 && p->stateHashText() == hashQuelle;
+        pruefe (nachLaden == 0 && std::abs (amEnde - dbFaktor (6.0)) <= 1.0e-5 && geladen,
+                "312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in "
+                "einer Automationsfahrt (ein Rampenuebergang laeuft noch) ein Ladestart in dieselbe Instanz, davor ein alter "
+                "Hostwert -20 dB in der Mailbox - ab dem Ladestart ist der Ausgang bitgleich zum Lauf ohne den alten Wert, "
+                "ein Hostwert danach (+6 dB) wirkt am naechsten Blockrand, bestaetigter Zustand und Hash sind die der Quelle",
+                "nach dem Laden " + std::to_string (nachLaden) + " abweichend, am Ende " + text (amEnde)
+                + " (Soll 10^(6/20)), geladen " + (geladen ? "ja" : "NEIN"));
+    }
+
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+    // ── 312/M-79: die Abdeckung, namentlich ────────────────────────────────
+    {
+        const auto& tabelle = dsp::DspKern::kBlockrandParameter;
+        std::vector<std::string> namen;
+        for (const int i : tabelle)
+            namen.push_back (str (param::tabelle()[(size_t) i].id));
+        const std::vector<std::string> soll { "v1.global.input_trim_db", "v1.global.output_trim_db", "v1.global.width", "v2.global.mix" };
+        auto p = blockPruefling (blk, mitEq (true));
+        const auto ziele0 = p->dspKernFuerTest().blockrandZiele();
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            for (int i = 0; i < param::kHostParameter; ++i)
+                hostParam (*p, i).setValueNotifyingHost (0.75f);
+            fahreAudio (*p, 1, blk, 3790);
+        });
+        const auto ziele = p->dspKernFuerTest().blockrandZiele() - ziele0;
+        std::string d = "Tabelle:";
+        for (const auto& n : namen) d += " " + n;
+        d += "; Blockrandziele nach je einem Ereignis auf allen 112: " + zahl (ziele);
+        pruefe (namen == soll && vierBitgleich && ziele == 4,
+                "312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt "
+                "input_trim_db, output_trim_db, width und v2.global.mix; fuer diese vier ist A bitgleich zu B (312/M-20), und "
+                "nach je einem Hostereignis auf jedem der 112 Hostparameter setzt der Blockrand genau vier Rampenziele",
+                d);
+    }
+#endif
+
+    // ── 312/M-80 und 312/M-81: der taktgebundene Rest ──────────────────────
+    {
+        // Slot 5 ist im Stand BELEGT (Bell 1 kHz): auf einem freien Slot
+        // aenderte gain_db den Klang nicht ([SONDE-015] M-63).
+        auto z = mitEq (true);
+        setzeBand (z, 5, 1000.0, 0.0);
+        const int gainIndex = iBand (5, param::kGainDb);
+        const Ereignisse gainFolge = [gainIndex] (Prozessor& p, int b)
+        {
+            if (b == 10 || b == 12) hostSchreibt (p, gainIndex, 12.0f);
+            if (b == 11) hostSchreibt (p, gainIndex, 0.0f);
+            if (b == 13) hostSchreibt (p, gainIndex, -6.0f);
+        };
+        const Ereignisse eqFolge = [] (Prozessor& p, int b)
+        {
+            if (b == 10 || b == 12) hostSchreibt (p, param::kIndexEqEnabled, 0.0f);
+            if (b == 11 || b == 13) hostSchreibt (p, param::kIndexEqEnabled, 1.0f);
+        };
+        const int bloecke = bloeckeFuer (blk);
+        const auto laeufe = [&] (const param::DspSatz& stand, const Ereignisse& folge, int saat,
+                                 int& ohneTakt, int& mitTakt, param::DspSatz& endeA, param::DspSatz& endeB)
+        {
+            auto a  = blockPruefling (blk, stand);
+            auto a2 = blockPruefling (blk, stand);
+            auto b  = blockPruefling (blk, stand);
+            const auto ya  = fahreFolge (*a,  bloecke, blk, folge, false, saat);
+            const auto ya2 = fahreFolge (*a2, bloecke, blk, folge, true,  saat);
+            const auto yb  = fahreFolge (*b,  bloecke, blk, folge, true,  saat);
+            ohneTakt = abweichend (ya, yb);
+            mitTakt  = abweichend (ya2, yb);
+            a->kontrollTaktFuerTest();
+            b->kontrollTaktFuerTest();
+            endeA = a->wirksamerZustand();
+            endeB = b->wirksamerZustand();
+        };
+        int ohneTakt = 0, mitTakt = 0;
+        param::DspSatz endeA, endeB;
+        laeufe (z, gainFolge, 3801, ohneTakt, mitTakt, endeA, endeB);
+        bool menge = true;
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        for (const int i : dsp::DspKern::kBlockrandParameter)
+            if (i == gainIndex) menge = false;
+#endif
+        pruefe (menge && ohneTakt > 0 && mitTakt == 0 && gain (endeA, 5) == -6.0 && gain (endeB, 5) == -6.0,
+                "312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in "
+                "der Abdeckungstabelle des Blockrands; unter der Taktsperre weicht A von B ab, mit Kontrolltakt nach jedem "
+                "Block sind beide bitgleich, und der Endwert ist in beiden Laeufen exakt der letzte gesetzte (-6 dB). Keine "
+                "Gleichheitszusage fuer Bandwerte - Teil b geht an NAK-340",
+                "ohne Takt " + std::to_string (ohneTakt) + " abweichend, mit Takt " + std::to_string (mitTakt)
+                + ", Endwert A " + text (gain (endeA, 5)) + " / B " + text (gain (endeB, 5)) + " dB");
+
+        // Mit Band (Bell 1 kHz +6 dB): im neutralen Stand klaengen An und Aus gleich.
+        auto zEq = mitEq (true);
+        setzeBand (zEq, 0, 1000.0, 6.0);
+        laeufe (zEq, eqFolge, 3811, ohneTakt, mitTakt, endeA, endeB);
+        bool mengeEq = true;
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+        for (const int i : dsp::DspKern::kBlockrandParameter)
+            if (i == param::kIndexEqEnabled) mengeEq = false;
+#endif
+        const bool endeEq = endeA.werte[(size_t) param::kIndexEqEnabled].b && endeB.werte[(size_t) param::kIndexEqEnabled].b;
+        pruefe (mengeEq, "312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): "
+                "v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockrands");
+        pruefe (ohneTakt > 0 && mitTakt == 0 && endeEq,
+                "312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - "
+                "unter der Taktsperre liegt der Umschaltblock von A hinter dem von B, mit Kontrolltakt sind beide bitgleich, "
+                "der Endzustand stimmt in beiden Laeufen. Keine Gleichheitszusage fuer die elf booleschen Hostparameter",
+                "ohne Takt " + std::to_string (ohneTakt) + " abweichend, mit Takt " + std::to_string (mitTakt));
+    }
+
+#if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)
+    // ── 312/M-82: der Zaehlerrand der Schiedsregel ─────────────────────────
+    {
+        const int bloecke = 30;
+        const Ereignisse folge = [] (Prozessor& p, int b)
+        {
+            if (b == 10) hostSchreibt (p, kOutTrim, 6.0f);     // Zaehler 0xFFFFFFFF
+            if (b == 12) hostSchreibt (p, kOutTrim, -6.0f);    // Zaehler 0: der Ueberlauf
+            if (b == 14) hostSchreibt (p, kOutTrim, 12.0f);    // Zaehler 1
+        };
+        auto a = blockPruefling (blk, mitEq (true));
+        auto b = blockPruefling (blk, mitEq (true));
+        a->setzeHostZaehlerFuerTest (kOutTrim, 0xFFFFFFFEu);
+        b->setzeHostZaehlerFuerTest (kOutTrim, 0xFFFFFFFEu);
+        const auto ziele0 = a->dspKernFuerTest().blockrandZiele();
+        std::vector<double> nachEreignis;
+        const auto ya = fahreFolge (*a, bloecke, blk, folge, false, 3821);
+        const auto yb = fahreFolge (*b, bloecke, blk, folge, true, 3821);
+        const auto ein = eingangVon (bloecke, blk, 3821);
+        const auto ziele = a->dspKernFuerTest().blockrandZiele() - ziele0;
+        // Rampe 256 Samples = 4 Bloecke: am Ende des jeweils uebernaechsten
+        // Ereignisblocks ist der Wert erreicht
+        const double nach10 = letztesVerhaeltnis (ya, ein, 11, blk);
+        const double nach12 = letztesVerhaeltnis (ya, ein, 13, blk);
+        const double amEnde = letztesVerhaeltnis (ya, ein, bloecke - 1, blk);
+        const int ab = abweichend (ya, yb);
+        pruefe (ab == 0 && ziele == 3 && std::abs (amEnde - dbFaktor (12.0)) <= 1.0e-5
+                    && nach12 < nach10,
+                "312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei "
+                "Hostereignisse auf Output-Trim ueber den Ueberlauf hinweg - der Blockrand vergleicht auf Ungleichheit: jedes "
+                "Ereignis setzt genau ein Rampenziel (3), das nach dem Ueberlauf wirkt, A ist bitgleich zu B, am Ende +12 dB",
+                "A/B " + std::to_string (ab) + ", Blockrandziele " + zahl (ziele) + ", Verhaeltnis nach Block 11 " + text (nach10)
+                + ", nach Block 13 " + text (nach12) + ", am Ende " + text (amEnde));
+    }
+#endif
+
+    // ── Kosten der Blockbindung (Messung, keine Schranke; Manifest §7.3) ───
+    {
+        auto p = blockPruefling (blk, mitEq (true));
+        const int n = 20000;
+        // Gemessen wird allein die Zeit IN processBlock (die Ereignisse schreibt
+        // der Test davor, ungemessen). Das Ereignis traegt den bestaetigten
+        // Wert: der Blockrand laeuft den ganzen Lesepfad (Zaehler, Quittung,
+        // Hostwert, Vergleichswert), und das Rampenziel bleibt, damit die
+        // Audioarbeit beider Laeufe gleich ist. Je Lauf das Minimum aus drei
+        // Durchgaengen.
+        const auto messe = [&] (bool mitEreignis)
+        {
+            juce::MidiBuffer midi;
+            juce::AudioBuffer<float> puffer (2, blk);
+            juce::Random w (3290);
+            for (int k = 0; k < 2; ++k)
+                for (int s = 0; s < blk; ++s)
+                    puffer.setSample (k, s, w.nextFloat() * 0.2f - 0.1f);
+            double bestes = std::numeric_limits<double>::infinity();
+            for (int durchgang = 0; durchgang < 3; ++durchgang)
+            {
+                double sekunden = 0.0;
+                p->mitAngehaltenemTaktFuerTest ([&]
+                {
+                    for (int i = 0; i < n; ++i)
+                    {
+                        if (mitEreignis)
+                            for (const auto& bp : blockParameter())
+                                hostSchreibt (*p, bp.index, bp.standard);
+                        const auto start = std::chrono::steady_clock::now();
+                        p->processBlock (puffer, midi);
+                        sekunden += std::chrono::duration<double> (std::chrono::steady_clock::now() - start).count();
+                    }
+                });
+                bestes = std::min (bestes, sekunden * 1.0e9 / (double) n);
+            }
+            return bestes;
+        };
+        const double ohne = messe (false);
+        const double mit  = messe (true);
+        std::cout << "  MESSUNG 312/Kosten sizeof(dsp::DspKern) " << sizeof (dsp::DspKern)
+                  << " Byte, sizeof(SondeProcessor) " << sizeof (Prozessor) << " Byte; " << n
+                  << " Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis "
+                  << text (ohne) << " ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern "
+                  << text (mit) << " ns je Block" << std::endl;
+    }
+}
+
 } // namespace
 
 int main()
@@ -4107,6 +4788,9 @@ int main()
 
     // NAK-312 Etappe 3a (W02, R-312-10 zweiter Teil, R-312-11): der Ladestart
     nak312Ladestart();
+
+    // NAK-312 Etappe 3b (T3-01-05 Teil a, E-312-5, E-312-6): die Blockbindung
+    nak312Blockbindung();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

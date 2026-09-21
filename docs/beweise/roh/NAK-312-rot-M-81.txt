@@ -1,0 +1,92 @@
+# NAK-312 Rotbeweis M-81 - 312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung, Bein B7
+
+Bauer: Etappe 3, zweiter Aenderungssatz (Blockbindung, T3-01-05 Teil a), 21.09.2026. Basis HEAD c94b8dd9be55a57477a17618018b1c82ee2f7c07 (Commit der Etappe 3a), im Arbeitsbaum der Stand der Etappe 3b vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen. A ist der Pruefling unter der Taktsperre ohne Kontrolltakt, B der Referenzlauf mit Kontrolltakt nach jedem Block.
+
+Matrixzeile: M-81 (T3-01-05 Teil b, E-312-5, E-312-12), Etikett zwei Haelften: Mengenhaelfte Regressionswache, Verhaltenshaelfte messend ohne eigene Mutation (E-312-12).
+Zusage: MENGE: v2.global.eq_enabled steht NICHT in der Abdeckungstabelle (eigene Behauptung). VERHALTEN: unter der Taktsperre liegt der Umschaltblock von A hinter dem von B, mit Kontrolltakt sind beide bitgleich, der Endzustand stimmt.
+Bein: B7 EqCopTransactionTest, Fall 312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung.
+Datei der Mutation: eq-copilot/plugin/dsp/DspKern.h, DspKern::kBlockrandParameter (Zeile 232, Stand Etappe 3b).
+Mutation: Matrix, Mengenhaelfte: eq_enabled in die Abdeckungstabelle aufnehmen -> die eigene Mengenbehauptung faellt -> rot. Die wahre Folge: der Blockrand schreibt nur blockrandStand und fasst hostEreignisOffen nicht an, der Worker quittiert weiter selbst, der Schalter wirkt weiter ueber aus.eqEngagiert - die Verhaltenshaelfte bleibt deshalb gruen.
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 07:16:22.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/dsp/DspKern.h
+SHA-256 vorher: 112B871917A39D4E228965A958C021247A5170E4D4306D21CABB54CB4BCB520A
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\DspKern.h.M-81 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 232, VORHER wortlich:
+    static constexpr std::array kBlockrandParameter { kIndexInputTrim, kIndexOutputTrim, kIndexWidth,
+                                                      nakama::parameter::kIndexMix };
+-- NACHHER wortlich:
+    static constexpr std::array kBlockrandParameter { kIndexInputTrim, kIndexOutputTrim, kIndexWidth,
+                                                      nakama::parameter::kIndexMix,
+                                                      nakama::parameter::kIndexEqEnabled };   // Mutation: eq_enabled aufgenommen
+SHA-256 mutiert: BE2AA3B1D62332744A1083BA53CC275A589481C314B83800ACC73CB9761118C0
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 07:16:22.141; Bau (EqCopTransactionTest) Exit 0, 10 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 07:16:32.038 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 2 s, Summe: 222 geprueft, 2 Fehler
+Gefallene Pruefungen (2):
+  FEHLER  312/M-79 genau_vier_parameter_sind_blockgebunden (E-312-5): die Abdeckungstabelle des Blockrands traegt exakt input_trim_db, output_trim_db, width und v2.global.mix; fuer diese vier ist A bitgleich zu B (312/M-20), und nach je einem Hostereignis auf jedem der 112 Hostparameter setzt der Blockrand genau vier Rampenziele  [Tabelle: v1.global.input_trim_db v1.global.output_trim_db v1.global.width v2.global.mix v2.global.eq_enabled; Blockrandziele nach je einem Ereignis auf allen 112: 4]
+  FEHLER  312/M-81 Mengenhaelfte eq_enabled_steht_nicht_in_der_abdeckung (T3-01-05 Teil b, E-312-12): v2.global.eq_enabled steht NICHT in der Abdeckungstabelle des Blockrands
+Die Zusage faellt an der erwarteten Pruefung (312/M-81 Mengenhaelfte): JA
+Mitgefallene Pruefungen ausser der erwarteten: 1 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (33):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      312/M-24 epoche_wechselt_genau_zweimal_auch_blockgebunden (Teilfall von epoche_wechselt_genau_zweimal_je_geste, [SONDE-015] M-81):
+  ok      312/M-25 blockgebundene_automation_erzeugt_keine_revision (Teilfall von automation_erzeugt_keine_revision, [SONDE-015] M-81): dies
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+  ok      312/M-20 hostwerte_sind_blockgebunden (T3-01-05 Teil a, R-312-10 in der Fassung von E-312-5, [SONDE-015] M-120): je Parameter der 
+  ok      312/M-20 Teilfall nicht_endliche_hostwerte_am_blockrand (E4-10, NaN-Ehrlichkeit): NaN, +Inf und -Inf auf den vier abgedeckten Para
+  ok      312/M-21 offline_gleich_echtzeit_fuer_die_vier (Teilfall von 312/M-20, [SONDE-015] M-120): derselbe Lauf mit setNonRealtime (true)
+  ok      312/M-22 blockbindung_haelt_bei_jeder_blockgroesse (Teilfall von 312/M-20): Blockgroessen 1, 64, 185 (FL), 240, 256 und 512, je im
+  ok      312/M-23 bewegte_automation_bitgleich_und_endwert_exakt (Teilfall von 312/M-20, Entwurf §44.3): Output-Trim von -12 nach +12 dB ue
+  ok      312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomatio
+  ok      312/M-27 wert_wirkt_im_block_seines_randes (Teilfall von 312/M-20): Blockgroesse 4096 (85 ms, ueber jedem Workertakt) - A und B si
+  ok      312/M-28 ohne_ereignis_setzt_der_blockrand_kein_ziel (Teilfall von 312/M-20, E-312-6): 200 Bloecke ohne Hostereignis - A und B sin
+  ok      312/M-29 ladestart_und_blockbindung_greifen_ineinander (R-312-10 beide Teile, [SONDE-015] M-84): mitten in einer Automationsfahrt 
+  ok      312/M-80 bandwert_bleibt_taktgebunden (T3-01-05 Teil b, E-312-5, R-312-15): v1.band.5.gain_db steht NICHT in der Abdeckungstabelle
+  ok      312/M-81 Verhaltenshaelfte schalter_bleibt_taktgebunden (messend, E-312-12): eq_enabled je Block umgeschaltet - unter der Taktsper
+  ok      312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Ou
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 112B871917A39D4E228965A958C021247A5170E4D4306D21CABB54CB4BCB520A - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 07:16:34.443; Bau (EqCopTransactionTest) Exit 0, 10 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 07:16:43.918 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 2 s, Summe: 222 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/dsp/DspKern.cpp               | 119 +++-
+ eq-copilot/plugin/dsp/DspKern.h                 |  88 ++-
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 119 +++-
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  57 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 686 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 1044 insertions(+), 27 deletions(-)
+
+Ende 2026-09-21 07:16:46.
+
+== Bewertung ==
+Die Mengenhaelfte faellt an ihrer eigenen Behauptung - die Zusage faellt an der erwarteten Pruefung: JA. Die Verhaltenshaelfte bleibt gruen (E-312-12): der Blockrand schreibt nur seinen Stand und fasst hostEreignisOffen nicht an, der Worker quittiert weiter selbst, der Schalter wirkt weiter ueber aus.eqEngagiert. Mitgefallen mit Grund: 312/M-79 (dieselbe Tabelle).

@@ -38,10 +38,11 @@
     `v2.global.eq_enabled` aus ist - der Default -, ist Probeeq der
     Passthrough von bisher: sampleidentisch, 0 Samples Latenz, kein Tail,
     keine Bank (SONDE-015 R2, Bein A16). `processBlock` haelt keine Sperre,
-    allokiert nicht, protokolliert nicht und fasst keine Datei an: er ruft den
-    DSP-Kern (`dsp::DspKern::verarbeite`) und kopiert den Tap `post_committed`
-    in die vorallokierte Analysequeue. Programmbau, Transaktionen,
-    Auswertung und I/O bleiben ausserhalb des Audiothreads.
+    allokiert nicht, protokolliert nicht und fasst keine Datei an: er liest
+    die Hostmailbox der Abdeckungstabelle (nur Atomics, NAK-312 Etappe 3b),
+    ruft den DSP-Kern (`dsp::DspKern::verarbeite`) und kopiert den Tap
+    `post_committed` in die vorallokierte Analysequeue. Programmbau,
+    Transaktionen, Auswertung und I/O bleiben ausserhalb des Audiothreads.
 
     HOSTPARAMETER (SONDE-015 R1): Probeeq meldet die 112 Host-Parameter des
     Layouts v2 in Vertragsreihenfolge - die 109 v1-Kennungen, danach
@@ -49,7 +50,11 @@
     kommt aus `nakama::parameter::tabelle()`, nie aus einer zweiten Liste.
     Hostwerte wirken als fluechtiger AutomationOverlay ohne Revision (§44.3);
     gespeichert wird ausschliesslich der bestaetigte Zustand des
-    Transaktionskerns (`state/NakamaTransaktion.h`).
+    Transaktionskerns (`state/NakamaTransaktion.h`). Die vier Parameter der
+    Abdeckungstabelle (`dsp::DspKern::kBlockrandParameter`: Trims, Width, Mix)
+    uebernimmt der Kern zusaetzlich am Blockrand, bevor der Worker sie ins
+    Overlay schreibt (NAK-312 Etappe 3b, T3-01-05 Teil a); alle uebrigen folgen
+    dem Kontrolltakt.
 
     KEINE ERFUNDENE OBERFLAECHE: `hasEditor()` meldet false. Die Gestaltung
     kommt aus dem Figma-Stand des Users ueber design/ (CLAUDE.md: "Claude
@@ -382,14 +387,18 @@ public:
         INNERHALB des Zustandsschlosses, nach der Quittierung der Hostmailbox
         und vor dem Abgleich zum Host. */
     void setzeLadeHakenFuerTest (std::function<void()> haken) { ladeHakenFuerTest = std::move (haken); }
-    /** NAK-312 Etappe 3 (312/M-19): setzt Hostereigniszaehler und
+    /** NAK-312 Etappe 3 (312/M-19, 312/M-82): setzt Hostereigniszaehler und
         Quittierungsstand EINES Parameters auf `stand` - fuer den Zaehlerrand
-        dicht unter dem Ueberlauf. Nur zwischen zwei Bloecken. */
+        dicht unter dem Ueberlauf -, bei einem Parameter der Abdeckungstabelle
+        auch den Blockrandstand des Kerns. Nur zwischen zwei Bloecken. */
     void setzeHostZaehlerFuerTest (int index, std::uint32_t stand)
     {
         const juce::ScopedLock l (zustandSchloss);
         hostEreignis[(size_t) index].store (stand);
         hostEreignisGesehen[(size_t) index] = stand;
+        for (int k = 0; k < nakama::dsp::DspKern::kBlockrandAnzahl; ++k)
+            if (nakama::dsp::DspKern::kBlockrandParameter[(size_t) k] == index)
+                dspKern->setzeBlockrandStandFuerTest (k, stand);
     }
     bool hostCallbackAufMessageThreadFuerTest() const noexcept
     {
@@ -526,6 +535,27 @@ private:
         in Hostgenauigkeit oder ist er nicht endlich, ist es GENAU der bestaetigte Wert. Unter Schloss. */
     nakama::parameter::Zelle zelleAusHost (int index, float normiert) const;
 
+    //== NAK-312 Etappe 3b: die Blockbindung (T3-01-05 Teil a, E-312-5, E-312-6)
+
+    /** Audiothread: dieselbe Zelle wie `zelleAusHost` fuer den Platz `k` der
+        Abdeckungstabelle - einschliesslich der Ausnahme "gleich dem
+        bestaetigten Wert in Hostgenauigkeit" und der Endlichkeitsregel -,
+        aber ohne Transaktionskern und ohne Schloss: der bestaetigte Wert
+        kommt aus `bestaetigtBlock`, Bereich und Normierung sind die reine
+        Arithmetik des Hostparameters. */
+    double zelleAmBlockrand (int k, float normiert) const noexcept;
+
+    /** Unter Zustandsschloss, wo der bestaetigte Zustand sich aendert
+        (Konstruktion, Ladestart, Commit): veroeffentlicht die bestaetigten
+        Werte der Abdeckungstabelle fuer den Audiothread. */
+    void bestaetigteBlockwerteVeroeffentlichen() noexcept;
+
+    /** Unter Zustandsschloss, vor jeder Publikation des Committed-Pfades: der
+        Zaehlerstand, aus dem ihre Werte stammen (E-312-6 Punkt 3) - im Takt,
+        beim Vorbereiten und beim Ladestart `hostEreignisGesehen`, beim Commit
+        der aktuelle Zaehler (der Commit quittiert). */
+    void publikationsStandSetzen (bool aktuellerZaehler) noexcept;
+
     void gestusAbschliessen();
     bool committedRuhtImPassthrough() const noexcept;
     /** Unter dem Zustandsschloss: `zustand` mit der Dsp-Haelfte aus dem Kern. */
@@ -637,6 +667,19 @@ private:
     std::array<std::atomic<std::uint32_t>, (size_t) nakama::parameter::kHostParameter> hostEreignis {};
     std::array<std::uint32_t, (size_t) nakama::parameter::kHostParameter>              hostEreignisGesehen {};   ///< unter Zustandsschloss
     std::atomic<bool>          hostEreignisOffen { false };
+
+    // NAK-312 Etappe 3b (E-312-5, E-312-6): was der Blockrand ohne Schloss
+    // liest. `bestaetigtBlock` schreibt nur, wer den bestaetigten Zustand
+    // aendert (unter Zustandsschloss); `blockrandQuittung` traegt je Platz den
+    // Zaehlerstand der letzten Quittierung eines Ladestarts (oder
+    // `kKeineQuittung`), damit der Blockrand einen Hostwert von VOR dem
+    // Ladestart als wirkungslos erkennt. Bereichsgrenzen: konstant ab dem
+    // Konstruktor.
+    static constexpr std::uint64_t kKeineQuittung = ~std::uint64_t { 0 };
+    std::array<std::atomic<double>, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl>        bestaetigtBlock {};
+    std::array<std::atomic<std::uint64_t>, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl> blockrandQuittung {};
+    std::array<double, (size_t) nakama::dsp::DspKern::kBlockrandAnzahl> blockrandMin {}, blockrandMax {};
+
     std::atomic<std::uint64_t> verarbeiteteSamples { 0 };   ///< Audiothread zaehlt, Worker liest (Ruhegrenze)
     std::uint64_t samplesBeiLetzterAutomation = 0;          ///< unter Zustandsschloss
     bool          publikationOffen = false;                 ///< unter Zustandsschloss

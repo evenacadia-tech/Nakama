@@ -59,6 +59,17 @@
    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-07-03, PF11-16, Arbeitsübersicht W27; docs/offene-punkte.md NAK-316",
    "seit": "18.09.",
    "status": "offen"
+  },
+  {
+   "id": "U57",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Produktentscheid (Bedienverhalten)",
+   "titel": "Messpunkt-Popover in Gen: getippter, noch nicht bestätigter Name, wenn das Pluginfenster geschlossen wird",
+   "was": "Im Messpunkt-Popover von Gen tippst du einen Namen oder Paarnamen. Bestätigt wird er mit Enter oder mit einem Klick daneben; die Rollenwahl gilt sofort. Schließt du stattdessen das Pluginfenster, während das Popover noch offen ist, wurde der getippte Text bisher trotzdem übernommen. Seit der Reparatur, die einen möglichen Absturz beim Schließen beseitigt, wird er in diesem einen Fall verworfen. (1) Empfohlen: so lassen — unbestätigter Text gilt nicht, genau wie beim Namensfeld der Quellenliste im selben Fenster, das sich immer schon so verhält. (2) Der getippte Text wird beim Schließen des Fensters übernommen wie früher.",
+   "warum": "Erstprüfung der Etappe 4 von NAK-312, Befund L-1, an der Quelle validiert. Ohne Antwort bleibt es bei Weg 1 (der gebaute Stand). Weg 2 würde in Etappe 7 von NAK-312 gebaut. Nicht gemessen ist, ob FL beim Schließen des Fensters den Fokus vorher abgibt — dann träte der Fall gar nicht auf.",
+   "wo": "docs/beweise/NAK-312.md §29; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-urteil.md L-1; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-validierung.md V-1 bis V-4",
+   "seit": "21.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

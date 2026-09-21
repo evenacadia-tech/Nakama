@@ -204,10 +204,19 @@ public:
         Register ist leer, beide Overlays sind leer. false mit `grund`, wenn
         der Zustand nicht validiert, sich nicht hashen laesst, die Revision
         ueber `kHoechsteRevision` liegt oder Ring und Cursor unzulaessig sind -
-        dann bleibt der Kern, wie er war. */
+        dann bleibt der Kern, wie er war.
+
+        NAK-312 (T3-05-02, R-312-10 zweiter Teil): `nurLesen` ist die
+        Eigenschaft des geladenen Standes (read-only mit Originalbytes). Sie
+        gilt bis zum naechsten erfolgreichen Ladestart und wird dort in BEIDE
+        Richtungen gesetzt; solange sie steht, legt `wirksam()` kein Overlay
+        ueber den bestaetigten Satz. */
     bool ladestart (const parameter::DspSatz& satz, std::uint64_t revision,
                     const std::vector<state::UndoEintrag>& undoRing, int undoCursor,
-                    juce::String& grund);
+                    juce::String& grund, bool nurLesen = false);
+
+    /** Traegt der zuletzt geladene Stand read-only (NAK-312, T3-05-02)? */
+    bool nurLesen() const noexcept { return nurLesenStand; }
 
     /** Eine Eingabe durch die Stufen S0 bis S8 (§5.11.4 Teil 2). */
     Ergebnis fuehreAus (const Auftrag& auftrag);
@@ -258,7 +267,9 @@ public:
     /** Der WIRKSAME Zustand: bestaetigt, ueberlagert von der Automation.
         Topologische Parameter werden nur bei samplegenauer Automation
         ueberlagert (§44.3 letzter Absatz: sonst "Topologieautomation wird
-        deaktiviert", M-119). */
+        deaktiviert", M-119). Ein read-only geladener Stand (`nurLesen()`)
+        bekommt KEIN Overlay: er bleibt audio-neutral (SONDE-015 M-92,
+        NAK-312 T3-05-02). */
     parameter::DspSatz wirksam() const;
 
     //== Umgebung =============================================================
@@ -333,6 +344,7 @@ private:
     int               kanalzahl = 2;   ///< NAK-311 R-311-3, Hostumgebung neben `fs`
     double            abgelehnteRate = 0.0;   ///< NAK-311 R-311-16, Hostumgebung neben `fs`
     bool              samplegenau = false;
+    bool              nurLesenStand = false;   ///< NAK-312 T3-05-02: aus dem letzten Ladestart
 
     // Arbeitsplatz der Stufen S2 bis S7 - vor dem Commit-Punkt beschrieben,
     // in S8 nur noch getauscht oder verschoben.

@@ -1,0 +1,81 @@
+# NAK-312 Rotbeweis M-15 - 312/M-15 read_only_bleibt_audio_neutral, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen.
+
+Matrixzeile: M-15 (T3-05-02, R-312-10 zweiter Teil, SONDE-015 M-92), Etikett heute rot.
+Zusage: fremdes-major-3.bin geladen (nurLesen), danach eq_enabled 1 und Output-Trim +6 dB ueber hostSchreibt und ein Kontrolltakt: der Ausgang bleibt ueber 512 Samples BITGLEICH zum Eingang (0 abweichende Samples), zustandLesen().nurLesen bleibt true, getStateInformation bytegleich zur Fixture, kein Host-Dirty.
+Bein: B7 EqCopTransactionTest, Fall 312/M-15 read_only_bleibt_audio_neutral.
+Datei der Mutation: eq-copilot/plugin/state/NakamaTransaktion.cpp, Transaktionskern::wirksam, die Bedingung ! nurLesenStand (Zeile 349, Stand Etappe 3a; Bauplan :345).
+Mutation: Matrix: nurLesen-Bedingung dort entfernen -> rot. Gebaut: genau das.
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:39:59.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/state/NakamaTransaktion.cpp
+SHA-256 vorher: C520D51DC9E7CF018A26DE25301FE09A978BFF12E811D5A1F22FD364CEA10639
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\NakamaTransaktion.cpp.M-15 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: LF) ==
+-- Stelle ab Zeile 349, VORHER wortlich:
+        if (automationOverlay.gesetzt[(size_t) i] && ! nurLesenStand && (samplegenau || ! t[(size_t) i].topologisch))
+-- NACHHER wortlich:
+        if (automationOverlay.gesetzt[(size_t) i] && (samplegenau || ! t[(size_t) i].topologisch))
+SHA-256 mutiert: 12504C2550285AB89FD4B7775A4308D004BDBD30826B0397DDC3B06E4AF17C1D
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:59.505; Bau (EqCopTransactionTest) Exit 0, 3 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:40:02.736 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 1 s, Summe: 206 geprueft, 1 Fehler
+Gefallene Pruefungen (1):
+  FEHLER  312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB ueber hostSchreibt und ein Takt - der Ausgang bleibt ueber 512 Samples bitgleich zum Eingang, nurLesen bleibt, getStateInformation liefert die Fixture bytegleich, kein Host-Dirty  [vor der Automation 0, danach 1022 von 1024 Werten abweichend, Dirty 0]
+Die Zusage faellt an der erwarteten Pruefung (312/M-15 ): JA
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (18):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: C520D51DC9E7CF018A26DE25301FE09A978BFF12E811D5A1F22FD364CEA10639 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:40:03.977; Bau (EqCopTransactionTest) Exit 0, 3 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:40:07.307 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== Gegenprobe am Basisstand (heute rot, §7.1) ==
+Aus docs/beweise/roh/NAK-312-etappe3a-gegenprobe.txt: der Test in seiner Endfassung gegen den Basisstand (HEAD cb473944 plus allein die Testzugaenge), Lauf 06:27, B7 Exit 1, 206 geprueft, 7 Fehler:
+== X - NAK-312 Etappe 3a: W02 Ladestart - Hostmailbox und read-only (312/M-10 bis 312/M-13, 312/M-15 bis 312/M-19, 312/M-78; 312/M-14 in Abschnitt O) ==
+  FEHLER  312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB ueber hostSchreibt und ein Takt - der Ausgang bleibt ueber 512 Samples bitgleich zum Eingang, nurLesen bleibt, getStateInformation liefert die Fixture bytegleich, kein Host-Dirty  [vor der Automation 0, danach 1022 von 1024 Werten abweichend, Dirty 0]
+Neubau nach der Ruecknahme: BAU EXIT=0, Binary 06:38:08; Lauf B7 Exit 0, 206 geprueft, 0 Fehler
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:40:08.
+
+== Bewertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA. 312/M-15 faellt mit 1022 von 1024 abweichenden Ausgangswerten: ohne die nurLesen-Bedingung legt Transaktionskern::wirksam das Overlay (eq_enabled 1, Output-Trim +6 dB) ueber den neutralen Stand, und der Kern rechnet.
+
+Mitgefallen: keine. 312/M-16 bleibt gruen, weil der Regler-Abgleich am Kontrolltakt haengt (nurLesen() des Kerns), nicht an wirksam(); getStateInformation bleibt bytegleich (Originalbytes), kein Dirty. Gruen geblieben: die uebrigen 205 Pruefungen.

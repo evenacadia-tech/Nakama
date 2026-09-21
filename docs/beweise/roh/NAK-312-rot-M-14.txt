@@ -1,0 +1,180 @@
+# NAK-312 Rotbeweis M-14 - 312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1.
+
+Matrixzeile: M-14 (T3-05-01, Hashhaelfte von SONDE-015 M-84), Etikett Regressionswache.
+Zusage: nach dem Laden derselben Bytes in DIESELBE Instanz, waehrend ein Hostwert (Output-Trim -9 dB) noch in der Mailbox liegt, und einem Kontrolltakt traegt bestaetigterZustand() weiter den Stand der Quelle, stateHashText() ist gleich dem der Quelle, der Undo-Ring (und Cursor, Revision) ist unveraendert.
+Bein: B7 EqCopTransactionTest, Abschnitt O, Teilfall 312/M-14 von reload_rekonstruiert_denselben_audioausgang (bestehender Fall, um den Hashvergleich in derselben Instanz ergaenzt).
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, setStateInformation, die Quittierung und der Ladestart (Zeilen 1130-1159, Stand Etappe 3a).
+Mutation laut Matrix: die Quittierung vor ladestart statt danach setzen und dabei die Revision mitziehen -> Hash weicht ab -> rot. Teil a faehrt den baubaren Teil woertlich (Quittierung vor den Ladestart verschoben); Teil b die Ersatzmutation an derselben Stelle (Begruendung in der Bewertung).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:39:28.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\SondeProcessor.cpp.M-14 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1130, VORHER wortlich:
+        juce::String grund;
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+-- NACHHER wortlich:
+        hostEreignisOffen.exchange (false);
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        {
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+            hostEreignisGesehen[(size_t) i] = n;
+            quittiert[(size_t) i]           = n;
+        }
+        juce::String grund;
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+-- Stelle ab Zeile 1160, VORHER wortlich:
+        hostEreignisOffen.exchange (false);
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        {
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+            hostEreignisGesehen[(size_t) i] = n;
+            quittiert[(size_t) i]           = n;
+        }
+
+        // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
+-- NACHHER wortlich:
+
+        // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
+SHA-256 mutiert: 36E8F05F0F9EF94BFC7A6CB30994FD0B88DCD1B2F2AA9AACFFAC7EC42F6BF1BB
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:28.348; Bau (EqCopTransactionTest) Exit 0, 7 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:34.831 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen (0):
+Die Zusage faellt an der erwarteten Pruefung (312/M-14 ): NEIN
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (19):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:36.090; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:42.379 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:39:43.
+
+== Bewertung ==
+siehe Bewertung am Dateiende
+
+==================== Teil b ====================
+
+# NAK-312 Rotbeweis M-14 - 312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1.
+
+Matrixzeile: M-14 (T3-05-01, Hashhaelfte von SONDE-015 M-84), Etikett Regressionswache.
+Zusage: nach dem Laden derselben Bytes in DIESELBE Instanz, waehrend ein Hostwert (Output-Trim -9 dB) noch in der Mailbox liegt, und einem Kontrolltakt traegt bestaetigterZustand() weiter den Stand der Quelle, stateHashText() ist gleich dem der Quelle, der Undo-Ring (und Cursor, Revision) ist unveraendert.
+Bein: B7 EqCopTransactionTest, Abschnitt O, Teilfall 312/M-14 von reload_rekonstruiert_denselben_audioausgang (bestehender Fall, um den Hashvergleich in derselben Instanz ergaenzt).
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, setStateInformation, die Quittierung und der Ladestart (Zeilen 1130-1159, Stand Etappe 3a).
+Mutation laut Matrix: die Quittierung vor ladestart statt danach setzen und dabei die Revision mitziehen -> Hash weicht ab -> rot. Teil a faehrt den baubaren Teil woertlich (Quittierung vor den Ladestart verschoben); Teil b die Ersatzmutation an derselben Stelle (Begruendung in der Bewertung).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:39:43.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\SondeProcessor.cpp.M-14 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1130, VORHER wortlich:
+        juce::String grund;
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+-- NACHHER wortlich:
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+            if (hostEreignis[(size_t) i].load (std::memory_order_relaxed) != hostEreignisGesehen[(size_t) i])
+                zustand.parameters[(size_t) i] = zelleAusHost (i, hostWert[(size_t) i].load (std::memory_order_relaxed));
+        juce::String grund;
+        const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
+SHA-256 mutiert: 9B8B3A80EE8E72CC568B48363002C878D4660C972151DC618A7DCC2557CCF15F
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:43.958; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:50.184 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 1 s, Summe: 206 geprueft, 5 Fehler
+Gefallene Pruefungen (5):
+  FEHLER  312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden derselben Bytes und einem Kontrolltakt sind bestaetigter Zustand, state_hash, Undo-Ring, Cursor und Revision die der Quelle  [Revision 1 -> 1, Ring 1 -> 1]
+  FEHLER  312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20)  [wirksam nach dem Takt -9 dB, nach der Wiederoeffnung -9 dB, Regler -9 dB, groesste Abweichung 1.05772417534 ueber 1024 Werte]
+  FEHLER  312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Hostereignis NACH dem Laden, dann ein Takt - wirksam exakt -6 dB, Regler und Klang folgen  [geladen -9 dB, danach wirksam -6 dB, groesste Abweichung von 10^(-6/20) 2.97045966713e-08]
+  FEHLER  312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - derselbe Ausgang wie 312/M-10, exakt +3 dB  [wirksam -9 dB, groesste Abweichung 1.05772417598]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [-6 / -9 / -12 / -3 dB, Epoche 2 -> 2 -> 2]
+Die Zusage faellt an der erwarteten Pruefung (312/M-14 ): JA
+Mitgefallene Pruefungen ausser der erwarteten: 4 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (14):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:51.531; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:57.763 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:39:59.
+
+== Bewertung ==
+Teil a (Matrixmutation, baubarer Teil woertlich: die Quittierung vor den Ladestart verschoben): B7 bleibt gruen, 206 geprueft, 0 Fehler. Kein Rotbeweis: die Quittierung beruehrt allein die Mailbox (hostEreignisGesehen, hostEreignisOffen, quittiert), der Ladestart allein den Transaktionskern - ihre Reihenfolge unter demselben Schloss ist ohne Wirkung auf bestaetigten Zustand, Hash und Revision. Der Halbsatz "und dabei die Revision mitziehen" ist an keiner Stelle der Quittierung baubar, weil sie keine Revision kennt.
+
+Teil b (Ersatzmutation an derselben Stelle: der ausstehende Hostwert wird vor dem Ladestart in den geladenen Stand uebernommen, statt ihn zu quittieren): die Zusage faellt an der erwarteten Pruefung: JA. 312/M-14 faellt am Hash und am bestaetigten Zustand (Revision und Ring bleiben 1 -> 1, der geladene Stand traegt aber -9 dB Output-Trim). Das ist die Wirkung, gegen die die Hashhaelfte von SONDE-015 M-84 wacht: ein Ladestart, der die Mailbox mitnimmt, erzeugt einen anderen bestaetigten Zustand als die Quelle.
+
+Mitgefallen in Teil b mit Grund: 312/M-10, 312/M-11, 312/M-12 und 312/M-19 - dieselbe Uebernahme macht dort den alten Wert zum bestaetigten Zustand.

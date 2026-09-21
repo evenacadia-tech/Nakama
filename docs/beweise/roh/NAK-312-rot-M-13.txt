@@ -1,0 +1,82 @@
+# NAK-312 Rotbeweis M-13 - 312/M-13 reset_bewahrt_die_hostmailbox, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen.
+
+Matrixzeile: M-13 (T3-05-01, Absichtskommentar SondeProcessor.cpp (reset), CLAUDE.md Beziehungen), Etikett Regressionswache.
+Zusage: Output-Trim +3 dB committet, -9 dB ueber hostSchreibt, KEIN Ladestart, reset() zwischen Schreiben und Kontrolltakt: wirksamerZustand() traegt danach -9,0 dB - reset bewahrt die Hostwert-Mailbox.
+Bein: B7 EqCopTransactionTest, Fall 312/M-13 reset_bewahrt_die_hostmailbox.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, reset(), hinter dspKern->beendeAudiohistorie() (Zeile 382, Stand Etappe 3a).
+Mutation: Matrix: die Quittierung zusaetzlich in reset einziehen -> der Hostwert verschwindet -> rot. Gebaut: genau das (Flag und Quittierungsschleife hinter beendeAudiohistorie).
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:39:12.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\SondeProcessor.cpp.M-13 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 380, VORHER wortlich:
+    const juce::ScopedLock callback (getCallbackLock());
+    const juce::ScopedLock l (zustandSchloss);
+    dspKern->beendeAudiohistorie();
+-- NACHHER wortlich:
+    const juce::ScopedLock callback (getCallbackLock());
+    const juce::ScopedLock l (zustandSchloss);
+    dspKern->beendeAudiohistorie();
+    hostEreignisOffen.store (false, std::memory_order_relaxed);
+    for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        hostEreignisGesehen[(size_t) i] = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+SHA-256 mutiert: B98B32F7CAC1F900B7B689DAB51746E0A4682E66F79CE69D93FE8467D93C7A87
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:12.724; Bau (EqCopTransactionTest) Exit 0, 7 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:19.190 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 1 s, Summe: 206 geprueft, 1 Fehler
+Gefallene Pruefungen (1):
+  FEHLER  312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirksam danach -9 dB, der Ausgang folgt  [wirksam 3 dB, groesste Abweichung von 10^(-9/20) 1.0577242335]
+Die Zusage faellt an der erwarteten Pruefung (312/M-13 ): JA
+Mitgefallene Pruefungen ausser der erwarteten: 0 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (18):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:39:20.506; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:39:26.700 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:39:28.
+
+== Bewertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA. 312/M-13 faellt mit wirksam +3 dB statt -9 dB: eine Quittierung in reset() macht den Hostwert wirkungslos, obwohl kein Ladestart stattfand.
+
+Mitgefallen: keine. Gruen geblieben: alle uebrigen 205 Pruefungen von B7 - kein anderer Fall ruft reset() mit einem offenen Hostwert.

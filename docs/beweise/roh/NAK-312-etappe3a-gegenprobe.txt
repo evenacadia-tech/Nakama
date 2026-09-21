@@ -1,0 +1,55 @@
+# NAK-312 Gegenprobe am Basisstand - Etappe 3a (Manifest §7.1, heute rot)
+
+Lauf 2026-09-21 06:37:48. Produktdateien der Etappe voruebergehend auf HEAD cb473944a12410e17f3205e231b32f35f92805ac gesetzt; in SondeProcessor.h und SondeProcessor.cpp zusaetzlich allein die Testzugaenge der Etappe (Taktsperre, Ladehaken, Zaehlersetzer; nur unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3). Die Testdatei ist die Endfassung der Etappe (TransactionTestMain.cpp SHA-256 26B50F3D7D701FD2D206808413538C155F296CD4DACC73BCA901A3666120350F).
+  Basisvariante eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 F8A28AFB0DF0AF2B89BD16AE22F91236B86DBACB8DA77B586D3AC4AF384315CD
+  Basisvariante eq-copilot/plugin/sonde/SondeProcessor.h SHA-256 0B86C68B590A93BD8845146119EC142F96B1D3CA14BF5D3D4C2B6C17B88F963B
+  Basisvariante eq-copilot/plugin/state/NakamaTransaktion.cpp SHA-256 80037FB3185320529C0AE84398CAD9AE9CD810E20706C0E9D32516ABD58270DE
+  Basisvariante eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 4857666F5F9EBCE1F60E60826EB4A68B27A967E6D02F639DA3591E6E7488A800
+  Basisvariante eq-copilot/plugin/dsp/DspKern.cpp SHA-256 13471C9F4F23BFF7349B8472727935E366FDF630809A12BB3285895971593758
+  Basisvariante eq-copilot/plugin/dsp/DspKern.h SHA-256 55F7E2D836C498E2023B8F1C26D5B53D0372D3E1F92C05027D979872EFB236AB
+Bau B7: BAU EXIT=0; Binary 06:37:57, gebaut nach dem Setzen der LastWriteTime aller Quellen auf jetzt
+Lauf B7 Exit 1. Auszug (FEHLER-Zeilen, Faelle der Etappe, Summe):
+```
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 Hashhaelfte): nach dem Laden derselben Bytes und einem Kontrolltakt sind bestaetigter Zustand, state_hash, Undo-Ring, Cursor und Revision die der Quelle  [Revision 1 -> 1, Ring 1 -> 1]
+== X - NAK-312 Etappe 3a: W02 Ladestart - Hostmailbox und read-only (312/M-10 bis 312/M-13, 312/M-15 bis 312/M-19, 312/M-78; 312/M-14 in Abschnitt O) ==
+  FEHLER  312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20)  [wirksam nach dem Takt -9 dB, nach der Wiederoeffnung -9 dB, Regler 3 dB, groesste Abweichung 1.05772417534 ueber 1024 Werte]
+  FEHLER  312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Hostereignis NACH dem Laden, dann ein Takt - wirksam exakt -6 dB, Regler und Klang folgen  [geladen -9 dB, danach wirksam -6 dB, groesste Abweichung von 10^(-6/20) 2.97045966713e-08]
+  FEHLER  312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - derselbe Ausgang wie 312/M-10, exakt +3 dB  [wirksam -9 dB, groesste Abweichung 1.05772417598]
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben und Takt, KEIN Ladestart - wirksam danach -9 dB, der Ausgang folgt  [wirksam -9 dB, groesste Abweichung von 10^(-9/20) 2.04733128228e-08]
+  FEHLER  312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enabled 1 und Output-Trim +6 dB ueber hostSchreibt und ein Takt - der Ausgang bleibt ueber 512 Samples bitgleich zum Eingang, nurLesen bleibt, getStateInformation liefert die Fixture bytegleich, kein Host-Dirty  [vor der Automation 0, danach 1022 von 1024 Werten abweichend, Dirty 0]
+  FEHLER  312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Output-Trim wieder auf ihrem neutralen Wert - kein Regler zeigt einen Zustand, den es nicht gibt  [eq_enabled 1, Output-Trim 6 dB]
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltiger eigener Stand mit eq an, dieselbe Hostautomation - Ausgang/Eingang innerhalb 1e-6 von 10^(6/20)  [wirksam 6 dB, groesste Abweichung 1.14318723377e-07]
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danach - der wirksame Zustand bleibt der bestaetigte, jedes Ausgangssample ist endlich; im read-only-Stand bleibt der Ausgang bitgleich zum Eingang  [Output-Trim 3 dB, Input-Trim 0 dB, groesste Abweichung 8.17192968849e-08, read-only abweichend 0]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [-6 / -9 / -12 / -3 dB, Epoche 2 -> 2 -> 3]
+  FEHLER  312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInformation nach der Quittierung und vor dem Abgleich steht - wirksam exakt -6 dB, der Regler liest nach dem Abgleich genau diesen Wert, und kein Sample nach dem Einschwingen klingt nach +3 dB  [Haken lief, Regler 3 dB, wirksam -6 dB, groesste Abweichung von 10^(-6/20) 2.85035109959e-08]
+206 geprueft, 7 Fehler
+TRANSAKTION FEHLGESCHLAGEN
+```
+Ruecknahme eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/sonde/SondeProcessor.h SHA-256 AA792AA6C48C7E4DAFBA8110E719BF7ECF048835DAC5BDC8845E6003F543624F - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/state/NakamaTransaktion.cpp SHA-256 C520D51DC9E7CF018A26DE25301FE09A978BFF12E811D5A1F22FD364CEA10639 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 20D727ED7A93EC17CBF1C1424366D5940D75713C21EB94CEAECC397A49623691 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/dsp/DspKern.cpp SHA-256 CE7A5B1F4AA2A8D6C1BD6C1A2BF38F460F759656A5450DA72F43EED0C2C05AF8 - gleich vorher: JA
+Ruecknahme eq-copilot/plugin/dsp/DspKern.h SHA-256 D66CA755FAACD831FF0E6681E4A819C330654E383E6BD7CCE549858F9C8DB8E5 - gleich vorher: JA
+Neubau nach der Ruecknahme: BAU EXIT=0, Binary 06:38:08; Lauf B7 Exit 0, 206 geprueft, 0 Fehler
+git status --short nach der Ruecknahme:
+   M eq-copilot/plugin/sonde/SondeProcessor.cpp
+   M eq-copilot/plugin/sonde/SondeProcessor.h
+   M eq-copilot/plugin/state/NakamaTransaktion.cpp
+   M eq-copilot/plugin/state/NakamaTransaktion.h
+   M eq-copilot/plugin/tests/TransactionTestMain.cpp
+   M tools/beweise.ps1
+  ?? briefing-hub/
+  ?? docs/beweise/roh/NAK-312-etappe3a-gegenprobe.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-10.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-11.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-12.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-13.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-14.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-15.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-16.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-17.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-18.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-19.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-78.txt
+  ?? nimbalyst-local/

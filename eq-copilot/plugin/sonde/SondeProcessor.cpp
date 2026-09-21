@@ -1110,6 +1110,7 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         return;
 
     nakama::parameter::Satz abgleich;
+    Zaehlerstand quittiert {};
     {
         const juce::ScopedLock l (zustandSchloss);
         // §53.5: erst der Restore klassifiziert. `read-only` faellt auf neutral
@@ -1124,15 +1125,37 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         // Register ist leer, Preview und Automation enden. Ein read-only
         // gehaltener Stand laedt NEUTRAL (§44.4) - `eq_enabled` aus, der
         // Passthrough -, und seine Originalbytes bleiben im `zustand`.
+        // NAK-312 (T3-05-02): das read-only des Standes geht in den Kern, damit
+        // dort, wo der wirksame Satz entsteht, kein Hostwert auf Audio wirkt.
         juce::String grund;
         const bool eigenerStand = ! zustand.nurLesen && zustand.hatParameters
             && transaktion->ladestart (zustand.dspDto(), (std::uint64_t) zustand.stateRevision,
-                                       zustand.undoRing, zustand.undoCursor, grund);
+                                       zustand.undoRing, zustand.undoCursor, grund, false);
         if (! eigenerStand)
         {
-            const bool neutral = transaktion->ladestart (nakama::parameter::DspSatz {}, 0, {}, 0, grund);
+            const bool neutral = transaktion->ladestart (nakama::parameter::DspSatz {}, 0, {}, 0, grund,
+                                                         zustand.nurLesen);
             jassert (neutral);
             juce::ignoreUnused (neutral);
+        }
+
+        // NAK-312 W02 (T3-05-01, R-312-10 zweiter Teil): die QUITTIERUNG der
+        // Hostwert-Mailbox. Was vor diesem Punkt eingetroffen ist, gehoert zum
+        // Stand vor dem Laden und wird wirkungslos: der Takt vergleicht auf
+        // Gleichheit (`dspKontrollTakt`) und findet diese Zaehler erledigt. Erst
+        // das Flag, dann die Zaehler - ein Hostwert, dessen Zaehler nach dem
+        // Lesen steigt, setzt das Flag danach wieder und wirkt im naechsten
+        // Takt (R-312-11). Das Flag faellt per Tausch wie im Takt: ein Tausch
+        // ordnet sich vor die folgenden Lesezugriffe, eine blosse Speicherung
+        // nicht. Vorhandene Felder unter dem gehaltenen Schloss: keine
+        // Allokation, kein Statefeld. Steht VOR dem Abgleich, der sonst seine
+        // eigenen Ereignisse quittierte.
+        hostEreignisOffen.exchange (false);
+        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        {
+            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+            hostEreignisGesehen[(size_t) i] = n;
+            quittiert[(size_t) i]           = n;
         }
 
         // R10: nach dem Laden steht die Hoermatrix IMMER auf Processed (M-52).
@@ -1142,12 +1165,19 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         abgleich = transaktion->bestaetigt().werte;
         if (dspKern->samplerate() > 0.0)
             publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), true);
+
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+        if (ladeHakenFuerTest)
+            ladeHakenFuerTest();
+#endif
     }
 
     // M-08, M-84: State lesen -> validieren -> Committed setzen ->
     // Hostparameter synchronisieren -> der erste Block uebernimmt die Bank.
-    // Laden meldet kein Host-Dirty (M-85, Bestandsregel).
-    hostParameterAbgleichen (abgleich);
+    // Laden meldet kein Host-Dirty (M-85, Bestandsregel). NAK-312 R-312-11:
+    // ein Parameter, dessen Zaehler seit der Quittierung gestiegen ist, traegt
+    // einen neuen Hostgestus und bleibt stehen.
+    hostParameterAbgleichen (abgleich, &quittiert);
     controlV3.reconnect();
     telemetryV3.reconnect();
 }
@@ -1471,15 +1501,44 @@ nakama::parameter::Zelle SondeProcessor::zelleAusHost (int index, float normiert
     return z;
 }
 
-void SondeProcessor::hostParameterAbgleichen (const nakama::parameter::Satz& werte)
+void SondeProcessor::hostParameterAbgleichen (const nakama::parameter::Satz& werte,
+                                              const Zaehlerstand* quittiert)
 {
     const AbgleichHerkunft herkunft;
+    // NAK-312 R-312-11: steht der Zaehler nicht mehr GLEICH dem quittierten
+    // Stand (nie ein Ordnungsvergleich - der Zaehler laeuft ueber), kam nach
+    // der Quittierung ein Hostwert; er ist ein neuer Gestus und wirkt im
+    // naechsten Takt. Der Regler zeigt ihn schon.
+    const auto neuerGestus = [this, quittiert] (int i) noexcept
+    {
+        return quittiert != nullptr
+            && hostEreignis[(size_t) i].load (std::memory_order_relaxed) != (*quittiert)[(size_t) i];
+    };
     for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
     {
+        if (neuerGestus (i))
+            continue;
         auto* p = hostParameter[(size_t) i];
         const float soll = p->convertTo0to1 (hostWertAus (i, werte[(size_t) i]));
         if (p->getValue() != soll)
             p->setValueNotifyingHost (soll);
+    }
+    if (quittiert == nullptr)
+        return;
+
+    // Die zweite Pruefung nach der Schleife: traf ein Hostwert ein, WAEHREND
+    // die Schleife den Regler schrieb, steht der Regler wieder auf dem
+    // Hostwert - derselbe, den der naechste Takt ins Overlay schreibt. Ein
+    // nicht endlicher Hostwert wirkt dort nie (`zelleAusHost`); dann bleibt der
+    // geschriebene bestaetigte Wert.
+    for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+    {
+        if (! neuerGestus (i))
+            continue;
+        auto* p = hostParameter[(size_t) i];
+        const float host = hostWert[(size_t) i].load (std::memory_order_relaxed);
+        if (std::isfinite (host) && p->getValue() != host)
+            p->setValueNotifyingHost (host);
     }
 }
 
@@ -1498,35 +1557,52 @@ bool SondeProcessor::committedRuhtImPassthrough() const noexcept
 
 void SondeProcessor::dspKontrollTakt()
 {
-    const juce::ScopedLock l (zustandSchloss);
-
-    // §44.2: erst nach dem ACK des Audiothreads ist eine Bank wieder frei.
-    dspKern->pflege();
-
-    // Hostereignisse -> AutomationOverlay (M-81): keine Revision, kein Undo.
-    if (hostEreignisOffen.exchange (false, std::memory_order_relaxed))
+    // NAK-312 (312/M-16): der Abgleich eines read-only gehaltenen Standes ruft
+    // in den Host und folgt deshalb erst NACH dem Loslassen des Schlosses.
+    nakama::parameter::Satz lesendAbgleich;
+    bool lesendAbgleichen = false;
     {
-        for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+        const juce::ScopedLock l (zustandSchloss);
+
+        // §44.2: erst nach dem ACK des Audiothreads ist eine Bank wieder frei.
+        dspKern->pflege();
+
+        // Hostereignisse -> AutomationOverlay (M-81): keine Revision, kein Undo.
+        if (hostEreignisOffen.exchange (false, std::memory_order_relaxed))
         {
-            const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
-            if (n == hostEreignisGesehen[(size_t) i]) continue;
-            hostEreignisGesehen[(size_t) i] = n;
-            transaktion->automationSchreiben (i, zelleAusHost (i, hostWert[(size_t) i].load (std::memory_order_relaxed)));
-            samplesBeiLetzterAutomation = verarbeiteteSamples.load (std::memory_order_relaxed);
-            publikationOffen = true;
+            for (int i = 0; i < nakama::parameter::kHostParameter; ++i)
+            {
+                const auto n = hostEreignis[(size_t) i].load (std::memory_order_relaxed);
+                if (n == hostEreignisGesehen[(size_t) i]) continue;
+                hostEreignisGesehen[(size_t) i] = n;
+                transaktion->automationSchreiben (i, zelleAusHost (i, hostWert[(size_t) i].load (std::memory_order_relaxed)));
+                samplesBeiLetzterAutomation = verarbeiteteSamples.load (std::memory_order_relaxed);
+                publikationOffen = true;
+                // T3-05-02: ein read-only gehaltener Stand bleibt audio-neutral
+                // (`Transaktionskern::wirksam`), und sein Regler kehrt auf den
+                // neutralen Wert zurueck - derselbe Weg wie beim abgewiesenen
+                // Gestus (`gestusAbschliessen`).
+                lesendAbgleichen = lesendAbgleichen || transaktion->nurLesen();
+            }
         }
+
+        // Die Ruhegrenze, gezaehlt in verarbeiteten Audiosamples (§44.3, M-120).
+        const double fs = transaktion->samplerate();
+        if (transaktion->automation().laeuft && fs > 0.0
+            && verarbeiteteSamples.load (std::memory_order_relaxed) - samplesBeiLetzterAutomation
+                   >= (std::uint64_t) (nakama::transaktion::kAutomationsRuheSekunden * fs))
+            transaktion->automationRuht();
+
+        // Den wirksamen Zustand publizieren; bei busy_retry im naechsten Takt.
+        if (publikationOffen && dspKern->samplerate() > 0.0)
+            publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), false);
+
+        if (lesendAbgleichen)
+            lesendAbgleich = transaktion->bestaetigt().werte;
     }
 
-    // Die Ruhegrenze, gezaehlt in verarbeiteten Audiosamples (§44.3, M-120).
-    const double fs = transaktion->samplerate();
-    if (transaktion->automation().laeuft && fs > 0.0
-        && verarbeiteteSamples.load (std::memory_order_relaxed) - samplesBeiLetzterAutomation
-               >= (std::uint64_t) (nakama::transaktion::kAutomationsRuheSekunden * fs))
-        transaktion->automationRuht();
-
-    // Den wirksamen Zustand publizieren; bei busy_retry im naechsten Takt.
-    if (publikationOffen && dspKern->samplerate() > 0.0)
-        publikationOffen = ! dspAusfuehrung->publiziereWirksam (transaktion->wirksam(), false);
+    if (lesendAbgleichen)
+        hostParameterAbgleichen (lesendAbgleich);
 }
 
 } // namespace nakama::sonde

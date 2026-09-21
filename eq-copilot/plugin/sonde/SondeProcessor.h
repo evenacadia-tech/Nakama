@@ -364,6 +364,33 @@ public:
         std::lock_guard<std::mutex> l (analyseSchloss);
         f (analyseQueue);
     }
+    /** NAK-312 Etappe 3 (Matrixregel §6): die TAKTSPERRE. Haelt
+        `zustandSchloss`, solange `f` laeuft - `dspKontrollTakt` nimmt dieses
+        Schloss als erste Anweisung, der Worker kann in diesem Fenster also
+        beweisbar nicht ticken. `processBlock` nimmt es nie; `f` darf Bloecke
+        fahren, Hostwerte schreiben, laden, vorbereiten und
+        `kontrollTaktFuerTest` rufen (das Schloss ist rekursiv), aber auf
+        keinen Thread warten, der dasselbe Schloss nimmt. Muster
+        `mitAngehaltenerAnalyseFuerTest`. */
+    template <typename Funktion>
+    void mitAngehaltenemTaktFuerTest (Funktion&& f)
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        f();
+    }
+    /** NAK-312 Etappe 3 (312/M-78, R-312-11): laeuft in `setStateInformation`
+        INNERHALB des Zustandsschlosses, nach der Quittierung der Hostmailbox
+        und vor dem Abgleich zum Host. */
+    void setzeLadeHakenFuerTest (std::function<void()> haken) { ladeHakenFuerTest = std::move (haken); }
+    /** NAK-312 Etappe 3 (312/M-19): setzt Hostereigniszaehler und
+        Quittierungsstand EINES Parameters auf `stand` - fuer den Zaehlerrand
+        dicht unter dem Ueberlauf. Nur zwischen zwei Bloecken. */
+    void setzeHostZaehlerFuerTest (int index, std::uint32_t stand)
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        hostEreignis[(size_t) index].store (stand);
+        hostEreignisGesehen[(size_t) index] = stand;
+    }
     bool hostCallbackAufMessageThreadFuerTest() const noexcept
     {
         return hostCallbackAufMessageThread.load();
@@ -474,12 +501,26 @@ private:
     void parameterGestureChanged (int parameterIndex, bool beginnt) override;
 
     /** Ein Takt des Control-Workers: ACKs ernten, Hostereignisse in den
-        AutomationOverlay, Ruhegrenze, wirksamen Zustand publizieren. */
+        AutomationOverlay, Ruhegrenze, wirksamen Zustand publizieren. Traegt
+        der geladene Stand read-only, wirkt das Overlay nicht, und der Takt
+        stellt die Hostregler nach dem Loslassen des Schlosses auf den
+        neutralen bestaetigten Satz zurueck (NAK-312, 312/M-16). */
     void dspKontrollTakt();
 
+    using Zaehlerstand = std::array<std::uint32_t, (size_t) nakama::parameter::kHostParameter>;
+
     /** Setzt die Hostparameter auf `werte` - mit Herkunftstag, damit der
-        eigene Listener den Abgleich nicht als Automation liest. */
-    void hostParameterAbgleichen (const nakama::parameter::Satz& werte);
+        eigene Listener den Abgleich nicht als Automation liest.
+
+        NAK-312 R-312-11: mit `quittiert` (der Zaehlerstand der Quittierung
+        eines Ladestarts) laesst der Abgleich jeden Parameter stehen, dessen
+        Hostereigniszaehler seit der Quittierung nicht mehr GLEICH diesem Stand
+        ist - dort liegt ein neuer Hostgestus, der wirkt. Nach der Schleife
+        prueft er das ein zweites Mal und stellt einen Regler, den ein
+        Hostwert WAEHREND des Schreibens erreicht hat, auf diesen Hostwert
+        zurueck. Regler und Klang zeigen danach denselben Wert. */
+    void hostParameterAbgleichen (const nakama::parameter::Satz& werte,
+                                  const Zaehlerstand* quittiert = nullptr);
 
     /** Hostwert (normiert) -> Vertragszelle. Gleicht er dem bestaetigten Wert
         in Hostgenauigkeit oder ist er nicht endlich, ist es GENAU der bestaetigte Wert. Unter Schloss. */
@@ -529,6 +570,7 @@ private:
     nakama::diagnose::MaterialZaehler material;                 ///< Worker, unter analyseSchloss
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     std::function<void()>      diagnoseHakenFuerTest;           ///< M-54, M-83: nur im Testbau
+    std::function<void()>      ladeHakenFuerTest;               ///< NAK-312 312/M-78: nur im Testbau
 #endif
     nakama::diagnose::Briefkasten briefkasten;
 

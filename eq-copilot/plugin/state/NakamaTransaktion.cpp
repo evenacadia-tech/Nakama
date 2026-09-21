@@ -233,7 +233,7 @@ Transaktionskern::Transaktionskern (Ausfuehrung& ausfuehrung)
 
 bool Transaktionskern::ladestart (const param::DspSatz& satz, std::uint64_t revision,
                                   const std::vector<state::UndoEintrag>& undoRing, int undoCursor,
-                                  juce::String& grund)
+                                  juce::String& grund, bool nurLesen)
 {
     juce::String wo, hex;
     if (! param::validiere (satz, grund, wo)) return false;
@@ -266,6 +266,10 @@ bool Transaktionskern::ladestart (const param::DspSatz& satz, std::uint64_t revi
     automationOverlay.gesetzt.fill (false);
     if (automationOverlay.laeuft) { automationOverlay.laeuft = false; ++automationOverlay.epoche; }
     beendePreview();
+
+    // NAK-312 (T3-05-02): in BEIDE Richtungen - ein gueltiger Stand nach einem
+    // read-only-Stand oeffnet die Automation wieder (312/M-17).
+    nurLesenStand = nurLesen;
     return true;
 }
 
@@ -342,7 +346,7 @@ param::DspSatz Transaktionskern::wirksam() const
     auto s = committed;
     const auto& t = param::tabelle();
     for (int i = 0; i < param::kHostParameter; ++i)
-        if (automationOverlay.gesetzt[(size_t) i] && (samplegenau || ! t[(size_t) i].topologisch))
+        if (automationOverlay.gesetzt[(size_t) i] && ! nurLesenStand && (samplegenau || ! t[(size_t) i].topologisch))
             s.werte[(size_t) i] = automationOverlay.werte[(size_t) i];
     return s;
 }

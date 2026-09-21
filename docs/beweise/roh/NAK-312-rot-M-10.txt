@@ -1,0 +1,88 @@
+# NAK-312 Rotbeweis M-10 - 312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen.
+
+Matrixzeile: M-10 (T3-05-01, R-312-10 zweiter Teil, SONDE-015 M-84), Etikett heute rot.
+Zusage: wirksamerZustand() traegt Output-Trim exakt +3,0 dB - auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat -, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20); der vor dem Ladestart eingetroffene Hostwert (-9 dB) wirkt nicht.
+Bein: B7 EqCopTransactionTest, Fall 312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, setStateInformation, die Quittierung hostEreignisGesehen[i] = n (Zeile 1157, Stand Etappe 3a).
+Mutation: Matrix: Quittierungsschleife entfernen -> der alte Wert wird wieder geschrieben -> rot. Gebaut: die Quittierungszeile entfernt; der Zaehlerstand fuer den Abgleich (quittiert) bleibt, damit allein die Quittierung faellt.
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:38:10.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\SondeProcessor.cpp.M-10 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1157, VORHER wortlich:
+            hostEreignisGesehen[(size_t) i] = n;
+            quittiert[(size_t) i]           = n;
+-- NACHHER wortlich:
+            quittiert[(size_t) i]           = n;
+SHA-256 mutiert: 2B912BF5BBA3E56BD8CC2040AE3A7FD95C94A2FF6535ED618FF28D486101870F
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:38:10.396; Bau (EqCopTransactionTest) Exit 0, 7 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:38:16.836 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 1 s, Summe: 206 geprueft, 3 Fehler
+Gefallene Pruefungen (3):
+  FEHLER  312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20)  [wirksam nach dem Takt 3 dB, nach der Wiederoeffnung -9 dB, Regler 3 dB, groesste Abweichung 1.05772417534 ueber 1024 Werte]
+  FEHLER  312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - derselbe Ausgang wie 312/M-10, exakt +3 dB  [wirksam -9 dB, groesste Abweichung 1.05772417598]
+  FEHLER  312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der Mailbox, -3 dB danach wirkt  [-6 / -9 / -12 / -3 dB, Epoche 2 -> 2 -> 2]
+Die Zusage faellt an der erwarteten Pruefung (312/M-10 ): JA
+Mitgefallene Pruefungen ausser der erwarteten: 1 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (16):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach de
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:38:18.162; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:38:24.484 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== Gegenprobe am Basisstand (heute rot, §7.1) ==
+Aus docs/beweise/roh/NAK-312-etappe3a-gegenprobe.txt: der Test in seiner Endfassung gegen den Basisstand (HEAD cb473944 plus allein die Testzugaenge), Lauf 06:27, B7 Exit 1, 206 geprueft, 7 Fehler:
+== X - NAK-312 Etappe 3a: W02 Ladestart - Hostmailbox und read-only (312/M-10 bis 312/M-13, 312/M-15 bis 312/M-19, 312/M-78; 312/M-14 in Abschnitt O) ==
+  FEHLER  312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem Einschwingen innerhalb 1e-6 von 10^(3/20)  [wirksam nach dem Takt -9 dB, nach der Wiederoeffnung -9 dB, Regler 3 dB, groesste Abweichung 1.05772417534 ueber 1024 Werte]
+  FEHLER  312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - derselbe Ausgang wie 312/M-10, exakt +3 dB  [wirksam -9 dB, groesste Abweichung 1.05772417598]
+  ok      312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danach - der wirksame Zustand bleibt der bestaetigte, jedes Ausgangssample ist endlich; im read-only-Stand bleibt der Ausgang bitgleich zum Eingang  [Output-Trim 3 dB, Input-Trim 0 dB, groesste Abweichung 8.17192968849e-08, read-only abweichend 0]
+Neubau nach der Ruecknahme: BAU EXIT=0, Binary 06:38:08; Lauf B7 Exit 0, 206 geprueft, 0 Fehler
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:38:25.
+
+== Bewertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA. 312/M-10 faellt an der Klausel "auch nachdem ein Hostereignis auf einem freien Slot die Mailbox wieder geoeffnet hat": ohne die Quittierung lebt der alte Wert -9 dB bei der Wiederoeffnung auf (wirksam nach der Wiederoeffnung -9 dB, Ausgang um 1,06 vom Soll 10^(3/20) entfernt).
+
+Befund im Bau, festgehalten: die erste Fassung des Tests (ohne Wiederoeffnungsschritt) blieb unter derselben Mutation gruen, weil das zurueckgesetzte Flag hostEreignisOffen den alten Wert allein verdeckt - bis irgendein anderes Hostereignis die Mailbox wieder oeffnet. Der Test ist deshalb um genau diesen Schritt ergaenzt (ebenso 312/M-12 und 312/M-19); die Gegenprobe am Basisstand ist mit der Endfassung gefahren (NAK-312-etappe3a-gegenprobe.txt).
+
+Mitgefallen mit Grund: 312/M-12 (derselbe Aufbau mit prepareToPlay, dieselbe Wiederoeffnung) und 312/M-19 (-12 dB vor dem Ladestart lebt nach der Wiederoeffnung auf) - beide haengen an derselben Quittierungszeile.
+
+Gruen geblieben: alle uebrigen 203 Pruefungen von B7, darunter 312/M-11 (der neue Gestus wirkt ohnehin), 312/M-13 (reset quittiert nicht), 312/M-15 bis 312/M-18 und 312/M-78 (der Abgleich nutzt den Zaehlerstand quittiert, der unter der Mutation bleibt).

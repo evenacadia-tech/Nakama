@@ -1,0 +1,77 @@
+# NAK-312 Rotbeweis M-18 - 312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos, Bein B7
+
+Bauer: Etappe 3, erster Aenderungssatz (W02), 21.09.2026. Basis HEAD cb473944a12410e17f3205e231b32f35f92805ac, im Arbeitsbaum der Stand der Etappe 3a vor dem Commit. Ablauf nach Manifest NAK-312 §7.1 (SHA-256 und Sicherung ausserhalb des Repos, Mutation, nur die betroffenen Ziele bauen, LastWriteTime der Quelle auf jetzt und Binaryzeitstempel gegen die Quelle (NAK-230), Lauf, bytegleiche Ruecknahme mit SHA-256, Neubau, Lauf gruen). Das Rohprotokoll wiederholt aus der Beinausgabe nur FEHLER-, Summen- und NAK-312-Zeilen.
+
+Matrixzeile: M-18 (W02, CLAUDE.md NaN-Ehrlichkeit), Etikett Regressionswache.
+Zusage: NaN vor und nach dem Ladestart, +Inf und -Inf danach: kein Ausgangssample wird nicht endlich, der wirksame Zustand bleibt der bestaetigte (zelleAusHost), im read-only-Stand bleibt der Ausgang bitgleich zum Eingang; die Quittierung aendert dieses Urteil nicht.
+Bein: B7 EqCopTransactionTest, Fall 312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos.
+Datei der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, zelleAusHost, die Endlichkeitspruefung (Zeile 1490, Stand Etappe 3a).
+Mutation: Matrix: die Endlichkeitspruefung in zelleAusHost entfernen -> ein NaN erreicht das Overlay -> rot. Gebaut: genau das.
+
+Rohdatei erzeugt von einem Ablauf nach Manifest §7.1 (Bauer Etappe 3). Start 2026-09-21 06:40:34.
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/sonde/SondeProcessor.cpp
+SHA-256 vorher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1
+Sicherung: C:\Users\phili\.claude\jobs\9592aeef\tmp\sicherung\SondeProcessor.cpp.M-18 (ausserhalb des Repos)
+
+== 3. Mutation (Zeilenenden der Datei: CRLF) ==
+-- Stelle ab Zeile 1490, VORHER wortlich:
+    if (! std::isfinite (normiert))
+        return bestaetigt;
+-- NACHHER wortlich:
+    // Mutation 312/M-18: Endlichkeitspruefung entfernt
+SHA-256 mutiert: DC1E87114FB3634071918D7E59251BBEB853E128554545100C25BC69D718796D
+
+== 4. Bau und Lauf MIT Mutation ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:40:34.671; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:40:40.973 - juenger als die Quelle: JA
+Lauf: Exitcode 1, 1 s, Summe: 206 geprueft, 2 Fehler
+Gefallene Pruefungen (2):
+  FEHLER  nichtendlicher_hostwert_erreicht_das_programm_nie (E4-10): NaN und +Inf ueber den Hostparameter lassen den wirksamen Zustand beim bestaetigten Wert, der Ausgang bleibt endlich  [gain nan, freq 20000.000000]
+  FEHLER  312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): NaN vor und nach dem Ladestart, +Inf und -Inf danach - der wirksame Zustand bleibt der bestaetigte, jedes Ausgangssample ist endlich; im read-only-Stand bleibt der Ausgang bitgleich zum Eingang  [Output-Trim nan dB, Input-Trim 24 dB, groesste Abweichung nan, read-only abweichend 0]
+Die Zusage faellt an der erwarteten Pruefung (312/M-18 ): JA
+Mitgefallene Pruefungen ausser der erwarteten: 1 (Grund: siehe Bewertung)
+Unter derselben Mutation gruen gebliebene NAK-312- und Nachbarpruefungen (18):
+  ok      automation_erzeugt_keine_revision (M-81): 100 Automationspunkte, r, Ring und Register unveraendert
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81)  [0 -> 1 -> 2 -> 2]
+  ok      automation_erzeugt_keine_revision (M-81, Prozessor): 50 Automationspunkte ueber den Hostparameter, keine Revision
+  ok      epoche_wechselt_genau_zweimal_je_geste (M-81, Prozessor): Beginn, dann Ende nach 0,25 s verarbeitetem Audio  [0 -> 1 -> 1 -> 2]
+  ok      reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)  [153600 Samples]
+  ok      312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, [SONDE-015] M-84 
+  ok      312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 2
+  ok      312/M-02 der_zaehler_sieht_den_workerzug_nicht (Teilfall von 312/M-01, R-312-1 Satz 2 und 3): ein Workerzug mit Programmbau zwisch
+  ok      312/M-04 offlineflag_nimmt_eine_gemeldete_sperre_je_block (R-312-1, E-312-10, gilt bis Etappe 4): legt das Bein den Bereich wie de
+  ok      312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): Output-Trim +3 dB 
+  ok      312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): Aufbau wie 312/M-10, danach -6 dB 
+  ok      312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): zwischen Laden und Takt 
+  ok      312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, reset() zwischen Schreiben
+  ok      312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major geladen, danach eq_enab
+  ok      312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen eq_enabled und Outpu
+  ok      312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde Major, dann ein gueltig
+  ok      312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, -6 dB (Zaehler 0xF
+  ok      312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, waehrend setStateInforma
+
+== 5. Ruecknahme ==
+Aus der Sicherung bytegleich zurueckgespielt. SHA-256 nachher: 7B6432139403BA8B78F47C36DC9DC541841F6CDB75CF9D042D2EF31F8D62A9D1 - gleich vorher: JA
+== 5. Neubau und Lauf NACH der Ruecknahme ==
+Quelle LastWriteTime auf jetzt gesetzt: 06:40:42.454; Bau (EqCopTransactionTest) Exit 0, 6 s
+Binary eq-copilot/build/plugin/EqCopTransactionTest_artefacts/Release/EqCopTransactionTest.exe LastWriteTime 06:40:48.624 - juenger als die Quelle: JA
+Lauf: Exitcode 0, 1 s, Summe: 206 geprueft, 0 Fehler
+Gefallene Pruefungen nach der Ruecknahme: 0
+
+== 6. git diff --stat nach der Ruecknahme ==
+ eq-copilot/plugin/sonde/SondeProcessor.cpp      | 132 +++++--
+ eq-copilot/plugin/sonde/SondeProcessor.h        |  48 ++-
+ eq-copilot/plugin/state/NakamaTransaktion.cpp   |   8 +-
+ eq-copilot/plugin/state/NakamaTransaktion.h     |  18 +-
+ eq-copilot/plugin/tests/TransactionTestMain.cpp | 441 +++++++++++++++++++++++-
+ tools/beweise.ps1                               |   2 +-
+ 6 files changed, 611 insertions(+), 38 deletions(-)
+
+Ende 2026-09-21 06:40:49.
+
+== Bewertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA. 312/M-18 faellt: Output-Trim wird NaN (der NaN nach dem Ladestart erreicht das Overlay), Input-Trim +24 dB (+Inf wird von der Normierung auf 1,0 geklemmt und wirkt), die Abweichung ist NaN.
+
+Mitgefallen mit Grund: nichtendlicher_hostwert_erreicht_das_programm_nie (E4-10), der bestehende Fall derselben Endlichkeitsregel (gain NaN). Der read-only-Teil von 312/M-18 bleibt bitgleich - dort legt wirksam() kein Overlay. Gruen geblieben: die uebrigen 204 Pruefungen.

@@ -35,7 +35,13 @@
          (312/M-02), und das Offlineflag nimmt je Aufruf eine gemeldete Sperre,
          wenn das Bein den Bereich wie der Wrapper um `setNonRealtime` und
          `processBlock` legt (312/M-04). Sperren, die JUCE vor dem Plugincode
-         nimmt, sieht der Zaehler bauartbedingt nicht.
+         nimmt, sieht der Zaehler bauartbedingt nicht. Seit NAK-312 Etappe 3a
+         (W02, Abschnitt X und 312/M-14 in Abschnitt O) der Ladestart: Hostwerte,
+         die vor ihm in der Mailbox lagen, bleiben wirkungslos, ein Hostwert
+         danach wirkt und der Regler zeigt ihn, reset() bewahrt die Mailbox,
+         und ein read-only geladener Stand bleibt unter Hostautomation
+         audio-neutral. Die Taktsperre (`mitAngehaltenemTaktFuerTest`) haelt den
+         Worker dabei an; kein Fall haengt an der Wanduhr.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -71,6 +77,7 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace tx    = nakama::transaktion;
@@ -2213,6 +2220,30 @@ void prozessorAutomation()
         pruefe (b->stateHashText() == a->stateHashText() && bitgleich (ya, yb),
                 "reload_rekonstruiert_denselben_audioausgang (M-84): derselbe Hash und derselbe Ausgang (hier bitgleich)",
                 std::to_string (ya.size()) + " Samples");
+
+        // NAK-312 Etappe 3 (312/M-14, Hashhaelfte von [SONDE-015] M-84): derselbe
+        // Ladestart in DIESELBE Instanz, waehrend ein Hostwert (Output-Trim
+        // -9 dB) noch in der Mailbox liegt. Die Taktsperre haelt den Worker an;
+        // gemessen wird nach dem Kontrolltakt.
+        const auto bestaetigtVorher = a->bestaetigterZustand();
+        const auto hashVorher       = a->stateHashText();
+        const auto ringVorher       = a->zustandLesen().undoRing;
+        const auto cursorVorher     = a->zustandLesen().undoCursor;
+        const auto revisionVorher   = a->stateRevision();
+        a->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*a, param::indexVonId ("v1.global.output_trim_db"), -9.0f);
+            a->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            a->kontrollTaktFuerTest();
+        });
+        pruefe (a->bestaetigterZustand() == bestaetigtVorher && a->stateHashText() == hashVorher
+                    && a->zustandLesen().undoRing == ringVorher && a->zustandLesen().undoCursor == cursorVorher
+                    && a->stateRevision() == revisionVorher,
+                "312/M-14 ladestart_in_dieselbe_instanz_haelt_den_hash (Teilfall von reload_rekonstruiert_denselben_audioausgang, "
+                "[SONDE-015] M-84 Hashhaelfte): nach dem Laden derselben Bytes und einem Kontrolltakt sind bestaetigter "
+                "Zustand, state_hash, Undo-Ring, Cursor und Revision die der Quelle",
+                "Revision " + zahl (revisionVorher) + " -> " + zahl (a->stateRevision()) + ", Ring "
+                + std::to_string (ringVorher.size()) + " -> " + std::to_string (a->zustandLesen().undoRing.size()));
     }
     {
         auto p = prozessor();
@@ -3621,6 +3652,411 @@ void nak312Messgeraete()
     }
 }
 
+//==============================================================================
+// NAK-312 Etappe 3, erster Aenderungssatz (W02; R-312-10 zweiter Teil,
+// R-312-11): der Ladestart kennt seine Nachbarn - die Hostwert-Mailbox und das
+// read-only des geladenen Standes.
+//
+// Keine Zeile haengt an der Wanduhr: die Taktsperre
+// (`mitAngehaltenemTaktFuerTest`) haelt das Zustandsschloss, in dem der Worker
+// beweisbar nicht tickt, und jeder Takt ist ein ausdrueckliches
+// `kontrollTaktFuerTest()`. Hostwerte kommen ueber `hostSchreibt` wie aus dem
+// VST3-Wrapper.
+
+constexpr int kInTrim  = 1;   // v1.global.input_trim_db
+constexpr int kOutTrim = 2;   // v1.global.output_trim_db
+
+double dbFaktor (double db) { return std::pow (10.0, db / 20.0); }
+
+/** Ausgang/Eingang gegen einen Sollfaktor, je Sample und Kanal. */
+struct Verhaeltnis
+{
+    double groessteAbweichung = 0.0;
+    int    gemessen = 0;
+    bool   endlich  = true;
+};
+
+/** Faehrt `bloecke` Bloecke eines Signals mit wechselndem Vorzeichen und Betrag
+    in [0,2; 0,8] - nie 0, damit Ausgang/Eingang an jedem Sample definiert ist -
+    und misst ab Sample `ab` die groesste Abweichung des Verhaeltnisses von `g`.
+    Ein nicht endliches Verhaeltnis macht die Abweichung NaN, und jeder
+    Vergleich `<= Schranke` faellt dann. */
+Verhaeltnis verhaeltnisNach (Prozessor& p, int bloecke, int groesse, int ab, double g, int saat)
+{
+    Verhaeltnis v;
+    juce::Random w (saat);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> puffer (2, groesse), eingang (2, groesse);
+    int index = 0;
+    for (int b = 0; b < bloecke; ++b)
+    {
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+            {
+                const float x = (0.2f + 0.6f * w.nextFloat()) * ((n & 1) != 0 ? -1.0f : 1.0f);
+                puffer.setSample (k, n, x);
+                eingang.setSample (k, n, x);
+            }
+        p.processBlock (puffer, midi);
+        for (int n = 0; n < groesse; ++n, ++index)
+            for (int k = 0; k < 2; ++k)
+            {
+                const float y = puffer.getSample (k, n);
+                if (! std::isfinite (y)) v.endlich = false;
+                if (index < ab) continue;
+                const double d = std::abs ((double) y / (double) eingang.getSample (k, n) - g);
+                if (! (d <= v.groessteAbweichung)) v.groessteAbweichung = d;
+                ++v.gemessen;
+            }
+    }
+    return v;
+}
+
+/** Ausgang gegen Eingang, bitweise je Sample und Kanal. */
+struct Bitvergleich
+{
+    int  abweichend = 0;
+    int  gemessen   = 0;
+    bool endlich    = true;
+};
+
+Bitvergleich gegenEingang (Prozessor& p, int bloecke, int groesse, int saat)
+{
+    Bitvergleich v;
+    juce::Random w (saat);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> puffer (2, groesse), eingang (2, groesse);
+    for (int b = 0; b < bloecke; ++b)
+    {
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+                puffer.setSample (k, n, w.nextFloat() * 1.6f - 0.8f);
+        eingang.makeCopyOf (puffer);
+        p.processBlock (puffer, midi);
+        for (int k = 0; k < 2; ++k)
+            for (int n = 0; n < groesse; ++n)
+            {
+                const float y = puffer.getSample (k, n), x = eingang.getSample (k, n);
+                if (! std::isfinite (y)) v.endlich = false;
+                if (std::memcmp (&y, &x, sizeof (float)) != 0) ++v.abweichend;
+                ++v.gemessen;
+            }
+    }
+    return v;
+}
+
+void nak312Ladestart()
+{
+    abschnitt ("X - NAK-312 Etappe 3a: W02 Ladestart - Hostmailbox und read-only (312/M-10 bis 312/M-13, 312/M-15 bis 312/M-19, 312/M-78; 312/M-14 in Abschnitt O)");
+
+    const double fs    = 48000.0;
+    const int    blk   = 256;
+    const int    ab    = 4 * blk;   // Einschwingen: Rampe und Crossfade sind je 256 Samples
+    const int    bloecke = 6;       // gemessen werden 512 Samples je Kanal
+
+    /** Der Stand aus 312/M-10: eq an, Output-Trim +3 dB ueber eine echte
+        Transaktion, Audio gefahren, dann die Statebytes. */
+    const auto plusDrei = [&] (Prozessor& p, juce::MemoryBlock& bytes)
+    {
+        auto z = mitEq (true);
+        z.werte[(size_t) kOutTrim].zahl = 3.0;
+        const auto e = setze (p, z);
+        fahreAudio (p, 8, blk, 3100);
+        p.getStateInformation (bytes);
+        return e.ausgang == tx::Ausgang::commit;
+    };
+    const auto wirksamDb = [] (Prozessor& p, int index) { return p.wirksamerZustand().werte[(size_t) index].zahl; };
+    const auto reglerDb  = [] (Prozessor& p, int index)
+    {
+        auto& q = hostParam (p, index);
+        return (double) q.convertFrom0to1 (q.getValue());
+    };
+    const auto text = [] (double x) { std::ostringstream s; s << std::setprecision (12) << x; return s.str(); };
+
+    // ── 312/M-10 und 312/M-11 ────────────────────────────────────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        double nachTakt = 0.0;
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, kOutTrim, -9.0f);   // OHNE Kontrolltakt: liegt in der Mailbox
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->kontrollTaktFuerTest();
+            nachTakt = wirksamDb (*p, kOutTrim);
+            // Ein Hostereignis auf einem FREIEN Slot oeffnet die Mailbox
+            // wieder (ohne Wirkung auf Klang, [SONDE-015] M-63); der alte Wert
+            // darf dabei nicht aufleben.
+            hostSchreibt (*p, iBand (5, param::kGainDb), 4.0f);
+            p->kontrollTaktFuerTest();
+        });
+        const double wirksam = wirksamDb (*p, kOutTrim);
+        const double regler  = reglerDb (*p, kOutTrim);
+        const auto   v       = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (3.0), 3101);
+        pruefe (commit && nachTakt == 3.0 && wirksam == 3.0 && regler == 3.0 && v.endlich && v.gemessen == 1024
+                    && v.groessteAbweichung <= 1.0e-6,
+                "312/M-10 ladestart_macht_ausstehende_hostwerte_wirkungslos (T3-05-01, R-312-10 zweiter Teil, [SONDE-015] M-84): "
+                "Output-Trim +3 dB committet, danach -9 dB in der Mailbox ohne Kontrolltakt, dieselben Bytes in DIESELBE "
+                "Instanz geladen, dann ein Takt - wirksam exakt +3 dB, auch nachdem ein Hostereignis auf einem freien Slot die "
+                "Mailbox wieder geoeffnet hat; der Regler zeigt +3 dB, und Ausgang/Eingang liegt ueber 512 Samples nach dem "
+                "Einschwingen innerhalb 1e-6 von 10^(3/20)",
+                "wirksam nach dem Takt " + text (nachTakt) + " dB, nach der Wiederoeffnung " + text (wirksam) + " dB, Regler "
+                + text (regler) + " dB, groesste Abweichung " + text (v.groessteAbweichung) + " ueber "
+                + std::to_string (v.gemessen) + " Werte");
+
+    }
+    {
+        // 312/M-11 in einer eigenen Instanz mit demselben Aufbau: der neue
+        // Gestus ist das ERSTE Hostereignis nach dem Laden.
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        double geladen = 0.0;
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, kOutTrim, -9.0f);
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->kontrollTaktFuerTest();
+            geladen = wirksamDb (*p, kOutTrim);
+            hostSchreibt (*p, kOutTrim, -6.0f);
+            p->kontrollTaktFuerTest();
+        });
+        const double neu = wirksamDb (*p, kOutTrim);
+        const auto   v   = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (-6.0), 3111);
+        pruefe (commit && geladen == 3.0 && neu == -6.0 && reglerDb (*p, kOutTrim) == -6.0 && v.endlich
+                    && v.groessteAbweichung <= 1.0e-6,
+                "312/M-11 neuer_hostgestus_nach_dem_recall_wirkt (Teilfall von 312/M-10, R-312-10 zweiter Teil): "
+                "Aufbau wie 312/M-10, danach -6 dB ueber hostSchreibt als erstes Hostereignis NACH dem Laden, dann ein "
+                "Takt - wirksam exakt -6 dB, Regler und Klang folgen",
+                "geladen " + text (geladen) + " dB, danach wirksam " + text (neu) + " dB, groesste Abweichung von 10^(-6/20) "
+                + text (v.groessteAbweichung));
+    }
+
+    // ── 312/M-12: ein prepareToPlay zwischen Laden und Takt ────────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, kOutTrim, -9.0f);
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->setRateAndBufferSizeDetails (fs, blk);
+            p->prepareToPlay (fs, blk);
+            p->kontrollTaktFuerTest();
+            hostSchreibt (*p, iBand (5, param::kGainDb), 4.0f);   // oeffnet die Mailbox wieder, wie 312/M-10
+            p->kontrollTaktFuerTest();
+        });
+        const double wirksam = wirksamDb (*p, kOutTrim);
+        const auto   v       = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (3.0), 3121);
+        pruefe (commit && wirksam == 3.0 && v.endlich && v.gemessen == 1024 && v.groessteAbweichung <= 1.0e-6,
+                "312/M-12 prepare_nach_dem_laden_publiziert_den_geladenen_stand (Teilfall von 312/M-10, [SONDE-015] M-84): "
+                "zwischen Laden und Takt ein prepareToPlay (48000, 256), danach wie 312/M-10 die Wiederoeffnung der Mailbox - "
+                "derselbe Ausgang wie 312/M-10, exakt +3 dB",
+                "wirksam " + text (wirksam) + " dB, groesste Abweichung " + text (v.groessteAbweichung));
+    }
+
+    // ── 312/M-13: reset bewahrt die Mailbox (Regressionswache) ─────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, kOutTrim, -9.0f);
+            p->reset();
+            p->kontrollTaktFuerTest();
+        });
+        const double wirksam = wirksamDb (*p, kOutTrim);
+        const auto   v       = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (-9.0), 3131);
+        pruefe (commit && wirksam == -9.0 && v.endlich && v.groessteAbweichung <= 1.0e-6,
+                "312/M-13 reset_bewahrt_die_hostmailbox (Teilfall von 312/M-10, Regressionswache): -9 dB in der Mailbox, "
+                "reset() zwischen Schreiben und Takt, KEIN Ladestart - wirksam danach -9 dB, der Ausgang folgt",
+                "wirksam " + text (wirksam) + " dB, groesste Abweichung von 10^(-9/20) " + text (v.groessteAbweichung));
+    }
+
+    // ── 312/M-15, 312/M-16, 312/M-17: read-only und der Rueckweg ─────────
+    juce::MemoryBlock fremd;
+    const bool fremdGelesen = wurzel().getChildFile ("eq-copilot/fixtures/state/schema2/fremdes-major-3.bin").loadFileAsData (fremd);
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);                // vorher engagiert
+        p->setStateInformation (fremd.getData(), (int) fremd.getSize());
+        fahreAudio (*p, 8, blk, 3150);                            // der Pfad blendet in die Ruhe
+        const auto referenz = gegenEingang (*p, 2, blk, 3151);   // vor der Automation
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, param::kIndexEqEnabled, 1.0f);
+            hostSchreibt (*p, kOutTrim, 6.0f);
+            p->kontrollTaktFuerTest();
+        });
+        const auto nachher = gegenEingang (*p, 2, blk, 3152);
+        juce::MemoryBlock zurueck;
+        p->getStateInformation (zurueck);
+        const bool nurLesen = p->zustandLesen().nurLesen;
+        const int  dirtyMeldungen = dirty.nichtParameter;
+        p->removeListener (&dirty);
+        pruefe (fremdGelesen && commit && referenz.abweichend == 0 && nachher.gemessen == 1024 && nachher.abweichend == 0
+                    && nachher.endlich && nurLesen && zurueck == fremd && dirtyMeldungen == 0,
+                "312/M-15 read_only_bleibt_audio_neutral (T3-05-02, R-312-10 zweiter Teil, [SONDE-015] M-92): fremdes Major "
+                "geladen, danach eq_enabled 1 und Output-Trim +6 dB ueber hostSchreibt und ein Takt - der Ausgang bleibt ueber "
+                "512 Samples bitgleich zum Eingang, nurLesen bleibt, getStateInformation liefert die Fixture bytegleich, kein Host-Dirty",
+                "vor der Automation " + std::to_string (referenz.abweichend) + ", danach " + std::to_string (nachher.abweichend)
+                + " von " + std::to_string (nachher.gemessen) + " Werten abweichend, Dirty " + std::to_string (dirtyMeldungen));
+
+        auto& eq  = hostParam (*p, param::kIndexEqEnabled);
+        auto& out = hostParam (*p, kOutTrim);
+        pruefe (eq.getValue() == 0.0f && out.getValue() == out.convertTo0to1 (0.0f),
+                "312/M-16 read_only_regler_springt_auf_neutral (Teilfall von 312/M-15, [SONDE-015] M-92): nach dem Takt stehen "
+                "eq_enabled und Output-Trim wieder auf ihrem neutralen Wert - kein Regler zeigt einen Zustand, den es nicht gibt",
+                "eq_enabled " + text (eq.getValue()) + ", Output-Trim " + text (reglerDb (*p, kOutTrim)) + " dB");
+    }
+    {
+        auto quelle = prozessor (fs, blk);
+        setze (*quelle, mitEq (true));
+        juce::MemoryBlock eigen;
+        quelle->getStateInformation (eigen);
+        auto p = prozessor (fs, blk);
+        p->setStateInformation (fremd.getData(), (int) fremd.getSize());   // read-only ...
+        const bool warLesend = p->zustandLesen().nurLesen;
+        p->setStateInformation (eigen.getData(), (int) eigen.getSize());   // ... und zurueck
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostSchreibt (*p, param::kIndexEqEnabled, 1.0f);
+            hostSchreibt (*p, kOutTrim, 6.0f);
+            p->kontrollTaktFuerTest();
+        });
+        const auto v = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (6.0), 3171);
+        pruefe (fremdGelesen && warLesend && ! p->zustandLesen().nurLesen && wirksamDb (*p, kOutTrim) == 6.0
+                    && v.endlich && v.gemessen == 1024 && v.groessteAbweichung <= 1.0e-6,
+                "312/M-17 nach_read_only_wirkt_automation_wieder (Teilfall von 312/M-15, Regressionswache): erst das fremde "
+                "Major, dann ein gueltiger eigener Stand mit eq an, dieselbe Hostautomation - Ausgang/Eingang innerhalb 1e-6 "
+                "von 10^(6/20)",
+                "wirksam " + text (wirksamDb (*p, kOutTrim)) + " dB, groesste Abweichung " + text (v.groessteAbweichung));
+    }
+
+    // ── 312/M-18: nicht endliche Hostwerte vor und nach dem Ladestart ──────
+    {
+        const float nan    = std::numeric_limits<float>::quiet_NaN();
+        const float inf    = std::numeric_limits<float>::infinity();
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostParam (*p, kOutTrim).setValueNotifyingHost (nan);          // vor dem Ladestart
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            hostParam (*p, kOutTrim).setValueNotifyingHost (nan);          // danach
+            hostParam (*p, kInTrim).setValueNotifyingHost (inf);
+            hostParam (*p, param::indexVonId ("v1.global.width")).setValueNotifyingHost (-inf);
+            p->kontrollTaktFuerTest();
+        });
+        const auto w = p->wirksamerZustand();
+        const auto v = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (3.0), 3181);
+        const bool eigenerStand = commit && w.werte[(size_t) kOutTrim].zahl == 3.0 && w.werte[(size_t) kInTrim].zahl == 0.0
+                               && w.werte[(size_t) param::indexVonId ("v1.global.width")].zahl == 1.0
+                               && v.endlich && v.groessteAbweichung <= 1.0e-6;
+
+        auto r = prozessor (fs, blk);
+        r->setStateInformation (fremd.getData(), (int) fremd.getSize());
+        fahreAudio (*r, 8, blk, 3182);
+        r->mitAngehaltenemTaktFuerTest ([&]
+        {
+            hostParam (*r, param::kIndexEqEnabled).setValueNotifyingHost (nan);
+            hostParam (*r, kOutTrim).setValueNotifyingHost (inf);
+            hostParam (*r, kInTrim).setValueNotifyingHost (-inf);
+            r->kontrollTaktFuerTest();
+        });
+        const auto lesend = gegenEingang (*r, 2, blk, 3183);
+        pruefe (eigenerStand && fremdGelesen && lesend.endlich && lesend.abweichend == 0,
+                "312/M-18 nicht_endlicher_hostwert_bleibt_wirkungslos (Teilfaelle von 312/M-10 und 312/M-15, Regressionswache): "
+                "NaN vor und nach dem Ladestart, +Inf und -Inf danach - der wirksame Zustand bleibt der bestaetigte, jedes "
+                "Ausgangssample ist endlich; im read-only-Stand bleibt der Ausgang bitgleich zum Eingang",
+                "Output-Trim " + text (w.werte[(size_t) kOutTrim].zahl) + " dB, Input-Trim " + text (w.werte[(size_t) kInTrim].zahl)
+                + " dB, groesste Abweichung " + text (v.groessteAbweichung) + ", read-only abweichend "
+                + std::to_string (lesend.abweichend));
+    }
+
+    // ── 312/M-19: der Zaehlerrand der Quittierung ──────────────────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        double a = 0.0, b = 0.0, c = 0.0, d = 0.0;
+        std::uint64_t e0 = 0, e1 = 0, e2 = 0;
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            p->setzeHostZaehlerFuerTest (kOutTrim, 0xFFFFFFFEu);
+            hostSchreibt (*p, kOutTrim, -6.0f);    // Zaehler 0xFFFFFFFF
+            p->kontrollTaktFuerTest();
+            a = wirksamDb (*p, kOutTrim);
+            hostSchreibt (*p, kOutTrim, -9.0f);    // Zaehler 0: der Ueberlauf
+            p->kontrollTaktFuerTest();
+            b = wirksamDb (*p, kOutTrim);
+            fahreAudio (*p, 50, blk, 3190);        // 12 800 Samples: ueber der Ruhegrenze
+            p->kontrollTaktFuerTest();             // Ende der Hostgeste
+            e0 = p->automationEpoche();
+            p->kontrollTaktFuerTest();             // kein neues Ereignis: nichts wird verbraucht
+            e1 = p->automationEpoche();
+            hostSchreibt (*p, kOutTrim, -12.0f);   // Zaehler 1, OHNE Takt
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->kontrollTaktFuerTest();
+            e2 = p->automationEpoche();             // der Takt nach dem Laden verbraucht nichts
+            hostSchreibt (*p, iBand (5, param::kGainDb), 4.0f);   // oeffnet die Mailbox wieder, wie 312/M-10
+            p->kontrollTaktFuerTest();
+            c = wirksamDb (*p, kOutTrim);
+            hostSchreibt (*p, kOutTrim, -3.0f);    // Zaehler 2
+            p->kontrollTaktFuerTest();
+            d = wirksamDb (*p, kOutTrim);
+        });
+        pruefe (commit && a == -6.0 && b == -9.0 && e1 == e0 && c == 3.0 && e2 == e1 && d == -3.0,
+                "312/M-19 quittierung_ist_ueberlaufsicher (R-312-10 zweiter Teil): Zaehler und Quittierungsstand bei 0xFFFFFFFE, "
+                "-6 dB (Zaehler 0xFFFFFFFF) und -9 dB (Zaehler 0) wirken je nach einem Takt, ein Takt ohne Ereignis verbraucht "
+                "nichts doppelt (Epoche steht), -12 dB vor dem Ladestart bleibt wirkungslos, auch nach der Wiederoeffnung der "
+                "Mailbox, -3 dB danach wirkt",
+                text (a) + " / " + text (b) + " / " + text (c) + " / " + text (d) + " dB, Epoche " + zahl (e0) + " -> "
+                + zahl (e1) + " -> " + zahl (e2));
+    }
+
+    // ── 312/M-78: ein Hostwert WAEHREND des Ladens ─────────────────────────
+    {
+        auto p = prozessor (fs, blk);
+        juce::MemoryBlock bytes;
+        const bool commit = plusDrei (*p, bytes);
+        bool hakenLief = false;
+        p->setzeLadeHakenFuerTest ([&]
+        {
+            // Die Schranke: setStateInformation steht INNERHALB des
+            // Zustandsschlosses, nach der Quittierung und vor dem Abgleich,
+            // bis ein zweiter Thread den Hostwert geschrieben hat.
+            hakenLief = true;
+            std::thread zweiter ([&] { hostSchreibt (*p, kOutTrim, -6.0f); });
+            zweiter.join();
+        });
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->kontrollTaktFuerTest();
+        });
+        p->setzeLadeHakenFuerTest ({});
+        auto& q = hostParam (*p, kOutTrim);
+        const bool   reglerGleich = q.getValue() == q.convertTo0to1 (-6.0f);
+        const double wirksam      = wirksamDb (*p, kOutTrim);
+        const auto   v            = verhaeltnisNach (*p, bloecke, blk, ab, dbFaktor (-6.0), 3781);
+        pruefe (commit && hakenLief && reglerGleich && wirksam == -6.0 && v.endlich && v.gemessen == 1024
+                    && v.groessteAbweichung <= 1.0e-6,
+                "312/M-78 hostwert_nach_der_quittierung_wirkt_und_wird_gezeigt (R-312-11): -6 dB aus einem zweiten Thread, "
+                "waehrend setStateInformation nach der Quittierung und vor dem Abgleich steht - wirksam exakt -6 dB, der "
+                "Regler liest nach dem Abgleich genau diesen Wert, und kein Sample nach dem Einschwingen klingt nach +3 dB",
+                std::string ("Haken ") + (hakenLief ? "lief" : "lief NICHT") + ", Regler " + text (reglerDb (*p, kOutTrim))
+                + " dB, wirksam " + text (wirksam) + " dB, groesste Abweichung von 10^(-6/20) " + text (v.groessteAbweichung));
+    }
+}
+
 } // namespace
 
 int main()
@@ -3668,6 +4104,9 @@ int main()
 
     // NAK-312 Etappe 2 (R-312-1, E-312-11): die Echtzeitwache ab dem Callback-Eintritt
     nak312Messgeraete();
+
+    // NAK-312 Etappe 3a (W02, R-312-10 zweiter Teil, R-312-11): der Ladestart
+    nak312Ladestart();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

@@ -1,0 +1,104 @@
+NAK-312 Etappe 5, Nacharbeit 1 - Eingrenzung zwischen den Staenden (Bauer, 21.09.2026).
+
+Verfahren nach dem Auftrag: die vier Produktdateien eines Standes mit git checkout <sha> -- <pfade> holen,
+LastWriteTime auf jetzt, NakamaProbeeq_VST3 und EqCopilot_VST3 bauen, Binaryzeitstempel pruefen, ueber den
+Laufzeit-Arm (erhoehte Aufgabe \Nakama\installieren) installieren und messen, danach git checkout HEAD -- <pfade>
+bytegleich zurueck (SHA-256 vorher und nachher), neu bauen. Die Produktdateien von dc2665ba sind gleich denen von
+12300f1e (git diff --stat dc2665ba 12300f1e -- eq-copilot/plugin broker/src eq-copilot/schemas: leer).
+
+== Produktstand Etappe 4 (dc2665ba) holen und bauen ==
+Stand bauen: dc2665ba, Start 2026-09-21 17:02:58, HEAD 5f1ca5a69cba08de08c95e2f2349f57c4f87b510
+Vorher:
+  eq-copilot/plugin/sonde/SondeProcessor.cpp  SHA-256 07EF9E6B1ED4966F6CD1714A0791F77F1F1507FFA034807E32003DC8E01A2DC6  Blob Arbeitsbaum ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  Blob HEAD ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  gleich HEAD
+  eq-copilot/plugin/sonde/SondeProcessor.h  SHA-256 73E35EB30310277AF1D5187AE3996C8EFA3517D4CC455914C84CC65D95D354AB  Blob Arbeitsbaum 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  Blob HEAD 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  gleich HEAD
+  eq-copilot/plugin/dsp/DspKern.cpp  SHA-256 E6693B2401823DFBC469510C2D0B5A24E1C32000DB481C63497C69FA7CE6C073  Blob Arbeitsbaum 1af25243872c9e516096a71307fedb8eefde4438  Blob HEAD 1af25243872c9e516096a71307fedb8eefde4438  gleich HEAD
+  eq-copilot/plugin/dsp/DspKern.h  SHA-256 7CA7267E107B207413C57A589825C971D1F21AA3E6661BFCA65D12023AF872C8  Blob Arbeitsbaum 1919b5093f4491ace2db29341c7764ac0634d24e  Blob HEAD 1919b5093f4491ace2db29341c7764ac0634d24e  gleich HEAD
+git checkout dc2665ba -- <vier Pfade>: Exit 0
+Nachher (Stand im Arbeitsbaum):
+  eq-copilot/plugin/sonde/SondeProcessor.cpp  SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB  Blob Arbeitsbaum b94b6a14cd75ce6f3c15a903862d620bad15f435  Blob HEAD ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  ungleich HEAD
+  eq-copilot/plugin/sonde/SondeProcessor.h  SHA-256 F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E  Blob Arbeitsbaum 95087138878bafdb509892fdfdf135305cd2b415  Blob HEAD 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  ungleich HEAD
+  eq-copilot/plugin/dsp/DspKern.cpp  SHA-256 E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42  Blob Arbeitsbaum e745cca53ddd7c5bfa30da6f01cf2cae6901a0c3  Blob HEAD 1af25243872c9e516096a71307fedb8eefde4438  ungleich HEAD
+  eq-copilot/plugin/dsp/DspKern.h  SHA-256 B0681BCF33F8A3C14B7FC0CE0F9977298B03069D544821A23820223B834112DD  Blob Arbeitsbaum 6a3f7720cf5d2447c71218ca37e5158fcd5a6d19  Blob HEAD 1919b5093f4491ace2db29341c7764ac0634d24e  ungleich HEAD
+  eq-copilot/plugin/sonde/SondeProcessor.cpp gleich dc2665ba: True
+  eq-copilot/plugin/sonde/SondeProcessor.h gleich dc2665ba: True
+  eq-copilot/plugin/dsp/DspKern.cpp gleich dc2665ba: True
+  eq-copilot/plugin/dsp/DspKern.h gleich dc2665ba: True
+LastWriteTime der vier Quellen auf 17:02:59.880 gesetzt
+Bau NakamaProbeeq_VST3 EqCopilot_VST3 ab 17:02:59
+Bau Exit 0, Ende 17:05:01
+  Nakama Probeeq.vst3: 17:04:26.348, SHA-256 C1E1304A646F01A26CD7A40EFDCC8704AB4E0473E83C85ED3FF4E3227BE93D8E, juenger als die Quellen: True
+  EQ-Copilot.vst3: 17:05:00.664, SHA-256 E6E08AC261A496AD52450C83F58945C932DC7160B8264F8A4A77583233F28CF1, juenger als die Quellen: True
+
+== Laufzeit-Arm am Produktstand Etappe 4 (Kopfzeile, Szenarien) ==
+[2026-09-21 17:05:21]   installieren: Exit 0, Zustand Ready, Log:   ok      EQ-Copilot installiert  [C:\Program Files\Common Files\VST3\EQ-Copilot.vst3] |   ok      Nakama Probeeq installiert  [C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3] |   ok      eqcop-broker.exe installiert  [C:\Program Files\evenacadia\Nakama\eqcop-broker.exe] | INSTALLATION OK
+[2026-09-21 17:05:32] FL gestartet: PID 283736 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:05:47] Szenario bereitschaft.json: Exit 0
+[2026-09-21 17:05:49] Szenario fenster.json: Exit 0
+[2026-09-21 17:05:53] Szenario nulltest-host.json: Exit 5
+[2026-09-21 17:05:53] Szenario schleife-dauerlauf.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 17:05:54] FL gestartet: PID 303340 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:10:10] Szenario schleife-dauerlauf.json: Exit 0
+[2026-09-21 17:10:10] Szenario snapshot-runde01.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 17:10:11] FL gestartet: PID 176680 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:16:02] Szenario snapshot-runde01.json: Exit 0
+[2026-09-21 17:16:07] Szenario u40-aktivitaetsgate.json: Exit 3
+LAUFZEIT NAK-312 5f1ca5a6 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=6 verfehlt=2 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=5,schleife-dauerlauf.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=3] fl=Producer Edition v26.1.4 [build 5589] roh=C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-312-n1-gegenprobe-dc2665ba.md
+EXIT=3
+
+== Ruecknahme auf HEAD und Neubau ==
+Stand bauen: HEAD, Start 2026-09-21 17:18:46, HEAD 5f1ca5a69cba08de08c95e2f2349f57c4f87b510
+Vorher:
+  eq-copilot/plugin/sonde/SondeProcessor.cpp  SHA-256 09DC9F647D5565DE640B554D75B7A8A90BC845695CA6FB6945047318EBCBA6EB  Blob Arbeitsbaum b94b6a14cd75ce6f3c15a903862d620bad15f435  Blob HEAD ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  ungleich HEAD
+  eq-copilot/plugin/sonde/SondeProcessor.h  SHA-256 F9B1A7B9F758DFD81850A16442BACFBF2006A321F7D83224655FDF8ABBCDEC8E  Blob Arbeitsbaum 95087138878bafdb509892fdfdf135305cd2b415  Blob HEAD 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  ungleich HEAD
+  eq-copilot/plugin/dsp/DspKern.cpp  SHA-256 E7A53DDC311A0C0F25A0018E12BA15BD78AB50A5A7CC621767373D59AD36BC42  Blob Arbeitsbaum e745cca53ddd7c5bfa30da6f01cf2cae6901a0c3  Blob HEAD 1af25243872c9e516096a71307fedb8eefde4438  ungleich HEAD
+  eq-copilot/plugin/dsp/DspKern.h  SHA-256 B0681BCF33F8A3C14B7FC0CE0F9977298B03069D544821A23820223B834112DD  Blob Arbeitsbaum 6a3f7720cf5d2447c71218ca37e5158fcd5a6d19  Blob HEAD 1919b5093f4491ace2db29341c7764ac0634d24e  ungleich HEAD
+git checkout HEAD -- <vier Pfade>: Exit 0
+Nachher (Stand im Arbeitsbaum):
+  eq-copilot/plugin/sonde/SondeProcessor.cpp  SHA-256 07EF9E6B1ED4966F6CD1714A0791F77F1F1507FFA034807E32003DC8E01A2DC6  Blob Arbeitsbaum ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  Blob HEAD ffc2f55f48b2ce8c336f8c7bf4ed3e9ba8250e61  gleich HEAD
+  eq-copilot/plugin/sonde/SondeProcessor.h  SHA-256 73E35EB30310277AF1D5187AE3996C8EFA3517D4CC455914C84CC65D95D354AB  Blob Arbeitsbaum 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  Blob HEAD 6c7bf6a0db0c8f48b420f8ab1667ed8f4044b24e  gleich HEAD
+  eq-copilot/plugin/dsp/DspKern.cpp  SHA-256 E6693B2401823DFBC469510C2D0B5A24E1C32000DB481C63497C69FA7CE6C073  Blob Arbeitsbaum 1af25243872c9e516096a71307fedb8eefde4438  Blob HEAD 1af25243872c9e516096a71307fedb8eefde4438  gleich HEAD
+  eq-copilot/plugin/dsp/DspKern.h  SHA-256 7CA7267E107B207413C57A589825C971D1F21AA3E6661BFCA65D12023AF872C8  Blob Arbeitsbaum 1919b5093f4491ace2db29341c7764ac0634d24e  Blob HEAD 1919b5093f4491ace2db29341c7764ac0634d24e  gleich HEAD
+LastWriteTime der vier Quellen auf 17:18:47.759 gesetzt
+Bau NakamaProbeeq_VST3 EqCopilot_VST3 ab 17:18:47
+Bau Exit 0, Ende 17:20:44
+  Nakama Probeeq.vst3: 17:20:09.499, SHA-256 DD912E9F56BB67EE1A9DAD01DEDB022CFED223551EF354C4E37AEBB69BF69EFC, juenger als die Quellen: True
+  EQ-Copilot.vst3: 17:20:43.823, SHA-256 EB82718C38EA83C152879532F781519564A830B8208CDBA81EF3E1734408FEFB, juenger als die Quellen: True
+
+== HEAD (Produkt = 64ece9e1), nur schleife-dauerlauf, Lauf 16:26 ==
+[2026-09-21 16:26:46] FL gestartet: PID 324712 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 16:26:58] Szenario schleife-dauerlauf.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 16:26:59] FL gestartet: PID 231228 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 16:31:15] Szenario schleife-dauerlauf.json: Exit 0
+LAUFZEIT NAK-312 5f1ca5a6 GEMESSEN installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=1 verfehlt=0 [schleife-dauerlauf.json=0] fl=Producer Edition v26.1.4 [build 5589] roh=docs/beweise/roh/NAK-312-n1-repro-head.md
+EXIT=0
+
+== HEAD, voller Satz, Lauf 16:32 ==
+[2026-09-21 16:32:36] FL gestartet: PID 91628 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 16:32:51] Szenario bereitschaft.json: Exit 0
+[2026-09-21 16:32:54] Szenario fenster.json: Exit 0
+[2026-09-21 16:32:57] Szenario nulltest-host.json: Exit 5
+[2026-09-21 16:32:57] Szenario schleife-dauerlauf.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 16:32:58] FL gestartet: PID 97364 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 16:37:13] Szenario schleife-dauerlauf.json: Exit 0
+[2026-09-21 16:37:13] Szenario snapshot-runde01.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 16:37:15] FL gestartet: PID 75884 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 16:42:14] Szenario snapshot-runde01.json: Exit 0
+[2026-09-21 16:42:56] Szenario u40-aktivitaetsgate.json: Exit 0
+LAUFZEIT NAK-312 5f1ca5a6 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=6 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=5,schleife-dauerlauf.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Producer Edition v26.1.4 [build 5589] roh=C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-312-n1-repro-head-voll.md
+EXIT=3
+
+== HEAD nach der Ruecknahme, voller Satz, Lauf 17:28 ==
+[2026-09-21 17:28:14] FL gestartet: PID 245412 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:28:30] Szenario bereitschaft.json: Exit 0
+[2026-09-21 17:28:31] Szenario fenster.json: Exit 0
+[2026-09-21 17:28:35] Szenario nulltest-host.json: Exit 5
+[2026-09-21 17:28:35] Szenario schleife-dauerlauf.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 17:28:36] FL gestartet: PID 238660 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:32:52] Szenario schleife-dauerlauf.json: Exit 0
+[2026-09-21 17:32:52] Szenario snapshot-runde01.json: frischer_start - Diagnose-FL neu starten
+[2026-09-21 17:32:53] FL gestartet: PID 139208 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+[2026-09-21 17:38:42] Szenario snapshot-runde01.json: Exit 0
+[2026-09-21 17:39:22] Szenario u40-aktivitaetsgate.json: Exit 0
+LAUFZEIT NAK-312 5f1ca5a6 VORAUSSETZUNG installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=6 verfehlt=1 [bereitschaft.json=0,fenster.json=0,nulltest-host.json=5,schleife-dauerlauf.json=0,snapshot-runde01.json=0,u40-aktivitaetsgate.json=0] fl=Producer Edition v26.1.4 [build 5589] roh=C:\Users\phili\Projekte\Nakama\docs\beweise\roh\NAK-312-n1-head-voll2.md
+EXIT=3
+

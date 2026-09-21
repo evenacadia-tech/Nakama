@@ -1,0 +1,102 @@
+NAK-312 Etappe 5, Nacharbeit 1 - Historie der vom Laufzeit-Arm gestarteten Diagnose-FLs (Bauer, 21.09.2026).
+Werkzeug: <job>/tmp/fl-historie.ps1 (nur lesen). Start und Beenden aus %LOCALAPPDATA%\evenacadia\nakama-laufzeit\laufzeit.log
+(Zeilen 'FL gestartet: PID' und 'Diagnose-FL beenden: PID'), dazu je PID die Energie-Ereignisse des UserModePowerService
+(Systemprotokoll, Id 12, FL64.exe). Jedes FL erzeugt eines rund 1 s nach dem Start; ein zweites beim Ende nur, wenn FL selbst
+endet (gemessen: Stop-Process mit Exit -1 ohne, Render und WM_CLOSE mit Exit 0 mit Ende-Ereignis; NAK-312-n1-spuren.txt).
+Urteil 'SELBST GEENDET nach n s' = letztes Ereignis minus Startzeile (Sekundenaufloesung des Runner-Logs); genaue Lebensdauer
+aus den zwei Ereignissen siehe unten.
+
+Anmerkungen:
+- 25152 (12.09.) und 2324 (15.09.) 'SELBST GEENDET nach 1 s': PID-Wiederverwendung - das fruehere Ereignis gehoert einem
+  anderen Prozess gleicher PID (15:48:07 bzw. 06.08.); beide wurden vom Runner beendet.
+- 284032 (21.09. 17:21:56): kein Selbstende - der Bauer schloss es per WM_CLOSE (Rotbeweis M-88), Exit 0.
+- 139208 (21.09. 17:32:53): vom Bauer vor dem Kanon per Stop-Process beendet (Exit -1), daher ohne Ende-Ereignis.
+- 218184 (21.09. 18:49:05): das Snapshot-FL des zweiten Laufs am Endstand, bei Abschluss dieser Datei noch offen.
+- 176680 (21.09. 17:10:11): Selbstende am Produktstand der Etappe 4 (Gegenprobe), Exit 0 laut Prozesswache.
+
+Genaue Lebensdauer der selbst geendeten Runner-FLs (erstes bis letztes Energie-Ereignis):
+  29372  12.09. 16:41:51,774 -> 17:49:09,462 = 4037,7 s  (PROBE ea2a9bec)
+  1736   15.09. 13:33:57,851 -> 13:43:07,812 =  550,0 s  (NAK-286 d6382571)
+  6968   15.09. 14:02:36,509 -> 14:06:03,783 =  207,3 s  (NAK-286 e11dcfcb; waehrend snapshot-runde01, u40 Exit 3 = NAK-307)
+  29248  15.09. 18:47:58,955 -> 16.09. 18:34:44,265 = 85605,3 s  (NAK-289 c8286582)
+  281856 21.09. 08:05:47,604 -> 08:27:30,181 = 1302,6 s  (NAK-312 dc2aaf1c)
+  154952 21.09. 10:07:36,826 -> 12:55:26,422 = 10069,6 s (NAK-312 32813efd)
+  78568  21.09. 12:59:58,336 -> 13:21:40,739 = 1302,4 s  (NAK-312 dc2665ba, installiert war das Produkt der Etappe 4)
+  381456 21.09. 15:57:37,190 -> 16:00:47,873 =  190,7 s  (NAK-312 64ece9e1, Lauf 1 des Dirigenten, LZ-1)
+  316548 21.09. 16:06:26,076 -> 16:08:08,838 =  102,8 s  (NAK-312 64ece9e1, Lauf 2 des Dirigenten, LZ-1)
+  176680 21.09. 17:10:12,380 -> 17:15:07,661 =  295,3 s  (Gegenprobe Produkt dc2665ba, dieser Auftrag)
+
+Aeltester Eintrag im Systemprotokoll: 2026-03-02 08:40:19
+Spalten: Start | PID | Lauf (Kopf) | Runner beendet | Energie-Ereignisse | Urteil
+2026-09-12 16:20:51 | 25152 | PROBE ea2a9bec | 09-12 16:24:58 | 09-12 15:48:07, 09-12 16:20:51 | SELBST GEENDET nach 1 s
+2026-09-12 16:24:58 | 29008 | PROBE ea2a9bec | 09-12 16:28:45 | 09-12 16:24:59 | vom Runner beendet
+2026-09-12 16:28:45 | 21252 | PROBE ea2a9bec | - | 09-12 16:28:46 | kein Ende-Ereignis, nicht vom Runner beendet
+2026-09-12 16:41:50 | 29372 | PROBE ea2a9bec | - | 09-12 16:41:51, 09-12 17:49:09 | SELBST GEENDET nach 4.039 s
+2026-09-13 21:13:54 | 4028 | NAK-283 7ad6b6f2 | - | 09-13 21:13:56 | kein Ende-Ereignis, nicht vom Runner beendet
+2026-09-14 13:43:24 | 14520 | NAK-286 a2887462 | - | 09-14 13:43:25 | kein Ende-Ereignis, nicht vom Runner beendet
+2026-09-14 19:29:35 | 26236 | NAK-286 ec06f7d0 | 09-14 22:12:03 | 09-14 19:29:37 | vom Runner beendet
+2026-09-14 22:12:09 | 4640 | NAK-286 8b3bfc3c | 09-15 00:42:00 | 09-14 22:12:10 | vom Runner beendet
+2026-09-15 00:42:06 | 25776 | NAK-286 bcdbf920 | 09-15 03:17:37 | 09-15 00:42:07 | vom Runner beendet
+2026-09-15 03:17:47 | 25560 | NAK-286 34bdf159 | 09-15 03:18:05 | 09-15 03:17:48 | vom Runner beendet
+2026-09-15 03:18:06 | 28220 | NAK-286 34bdf159 | 09-15 03:38:04 | 09-15 03:18:07 | vom Runner beendet
+2026-09-15 03:38:14 | 16072 | NAK-286 34bdf159 | 09-15 03:38:33 | 09-15 03:38:15 | vom Runner beendet
+2026-09-15 03:38:33 | 23696 | NAK-286 34bdf159 | 09-15 03:51:33 | 09-15 03:38:34 | vom Runner beendet
+2026-09-15 03:51:43 | 18692 | NAK-286 34bdf159 | 09-15 03:52:02 | 09-15 03:51:44 | vom Runner beendet
+2026-09-15 03:52:02 | 24644 | NAK-286 34bdf159 | 09-15 04:02:01 | 09-15 03:52:03 | vom Runner beendet
+2026-09-15 04:02:11 | 18880 | NAK-286 34bdf159 | 09-15 04:02:30 | 09-15 04:02:11 | vom Runner beendet
+2026-09-15 04:02:30 | 16304 | NAK-286 34bdf159 | 09-15 06:23:45 | 09-15 04:02:31 | vom Runner beendet
+2026-09-15 06:23:56 | 1168 | NAK-286 e35e3de5 | 09-15 06:24:16 | 09-15 06:23:57 | vom Runner beendet
+2026-09-15 06:24:16 | 24796 | NAK-286 e35e3de5 | 09-15 06:36:23 | 09-15 06:24:17 | vom Runner beendet
+2026-09-15 06:36:33 | 27576 | NAK-286 e35e3de5 | 09-15 06:36:52 | 09-15 06:36:34 | vom Runner beendet
+2026-09-15 06:36:53 | 6452 | NAK-286 e35e3de5 | 09-15 06:59:05 | 09-15 06:36:53 | vom Runner beendet
+2026-09-15 06:59:15 | 26060 | NAK-286 e35e3de5 | 09-15 06:59:34 | 09-15 06:59:16 | vom Runner beendet
+2026-09-15 06:59:35 | 28388 | NAK-286 e35e3de5 | 09-15 07:26:43 | 09-15 06:59:35 | vom Runner beendet
+2026-09-15 07:26:53 | 26464 | NAK-286 e35e3de5 | 09-15 07:27:12 | 09-15 07:26:54 | vom Runner beendet
+2026-09-15 07:27:12 | 24172 | NAK-286 e35e3de5 | 09-15 08:11:53 | 09-15 07:27:13 | vom Runner beendet
+2026-09-15 08:12:03 | 27732 | NAK-286 c0d0526b | 09-15 08:12:22 | 09-15 08:12:04 | vom Runner beendet
+2026-09-15 08:12:23 | 27792 | NAK-286 c0d0526b | 09-15 10:35:25 | 09-15 08:12:23 | vom Runner beendet
+2026-09-15 10:35:35 | 17516 | NAK-286 7e39db9a | 09-15 10:35:54 | 09-15 10:35:36 | vom Runner beendet
+2026-09-15 10:35:55 | 29068 | NAK-286 7e39db9a | 09-15 13:33:25 | 09-15 10:35:55 | vom Runner beendet
+2026-09-15 13:33:36 | 25460 | NAK-286 d6382571 | 09-15 13:33:56 | 09-15 13:33:37 | vom Runner beendet
+2026-09-15 13:33:57 | 1736 | NAK-286 d6382571 | - | 09-15 13:33:57, 09-15 13:43:07 | SELBST GEENDET nach 551 s
+2026-09-15 14:02:13 | 2324 | NAK-286 e11dcfcb | 09-15 14:02:35 | 08-06 02:00:36, 09-15 14:02:14 | SELBST GEENDET nach 1 s
+2026-09-15 14:02:35 | 6968 | NAK-286 e11dcfcb | - | 09-15 14:02:36, 09-15 14:06:03 | SELBST GEENDET nach 209 s
+2026-09-15 18:47:34 | 28116 | NAK-289 c8286582 | 09-15 18:47:57 | 09-15 18:47:35 | vom Runner beendet
+2026-09-15 18:47:58 | 29248 | NAK-289 c8286582 | - | 09-15 18:47:58, 09-16 18:34:44 | SELBST GEENDET nach 85.606 s
+2026-09-19 09:36:49 | 181404 | NAK-309 1d41b460 | 09-19 09:37:10 | 09-19 09:36:50 | vom Runner beendet
+2026-09-19 09:37:11 | 130312 | NAK-309 1d41b460 | 09-19 09:43:28 | 09-19 09:37:12 | vom Runner beendet
+2026-09-20 21:23:14 | 362828 | NAK-311 5f17bb56 | 09-20 21:23:35 | 09-20 21:23:14 | vom Runner beendet
+2026-09-20 21:23:37 | 48152 | NAK-311 5f17bb56 | - | 09-20 21:23:37 | kein Ende-Ereignis, nicht vom Runner beendet
+2026-09-20 23:19:22 | 53132 | NAK-311 2d6519e8 | 09-20 23:19:42 | 09-20 23:19:22 | vom Runner beendet
+2026-09-20 23:19:44 | 339568 | NAK-311 2d6519e8 | 09-21 05:29:42 | 09-20 23:19:44 | vom Runner beendet
+2026-09-21 05:29:57 | 287632 | NAK-312 aa074e42 | 09-21 05:30:18 | 09-21 05:29:58 | vom Runner beendet
+2026-09-21 05:30:19 | 116904 | NAK-312 aa074e42 | 09-21 08:05:09 | 09-21 05:30:19 | vom Runner beendet
+2026-09-21 08:05:25 | 196972 | NAK-312 dc2aaf1c | 09-21 08:05:45 | 09-21 08:05:25 | vom Runner beendet
+2026-09-21 08:05:46 | 281856 | NAK-312 dc2aaf1c | - | 09-21 08:05:47, 09-21 08:27:30 | SELBST GEENDET nach 1.304 s
+2026-09-21 10:07:14 | 326756 | NAK-312 32813efd | 09-21 10:07:34 | 09-21 10:07:15 | vom Runner beendet
+2026-09-21 10:07:36 | 154952 | NAK-312 32813efd | - | 09-21 10:07:36, 09-21 12:55:26 | SELBST GEENDET nach 10.070 s
+2026-09-21 12:59:33 | 152660 | NAK-312 dc2665ba | 09-21 12:59:56 | 09-21 12:59:34 | vom Runner beendet
+2026-09-21 12:59:57 | 78568 | NAK-312 dc2665ba | - | 09-21 12:59:58, 09-21 13:21:40 | SELBST GEENDET nach 1.304 s
+2026-09-21 15:57:13 | 234816 | NAK-312 64ece9e1 | 09-21 15:57:35 | 09-21 15:57:14 | vom Runner beendet
+2026-09-21 15:57:36 | 381456 | NAK-312 64ece9e1 | - | 09-21 15:57:37, 09-21 16:00:47 | SELBST GEENDET nach 192 s
+2026-09-21 16:06:02 | 124160 | NAK-312 64ece9e1 | 09-21 16:06:24 | 09-21 16:06:03 | vom Runner beendet
+2026-09-21 16:06:25 | 316548 | NAK-312 64ece9e1 | - | 09-21 16:06:26, 09-21 16:08:08 | SELBST GEENDET nach 104 s
+2026-09-21 16:26:46 | 324712 | NAK-312 5f1ca5a6 | 09-21 16:26:58 | 09-21 16:26:47 | vom Runner beendet
+2026-09-21 16:26:59 | 231228 | NAK-312 5f1ca5a6 | 09-21 16:32:20 | 09-21 16:27:00 | vom Runner beendet
+2026-09-21 16:32:36 | 91628 | NAK-312 5f1ca5a6 | 09-21 16:32:57 | 09-21 16:32:37 | vom Runner beendet
+2026-09-21 16:32:58 | 97364 | NAK-312 5f1ca5a6 | 09-21 16:37:14 | 09-21 16:32:59 | vom Runner beendet
+2026-09-21 16:37:15 | 75884 | NAK-312 5f1ca5a6 | 09-21 17:05:15 | 09-21 16:37:15 | vom Runner beendet
+2026-09-21 17:05:32 | 283736 | NAK-312 5f1ca5a6 | 09-21 17:05:53 | 09-21 17:05:32 | vom Runner beendet
+2026-09-21 17:05:54 | 303340 | NAK-312 5f1ca5a6 | 09-21 17:10:10 | 09-21 17:05:55 | vom Runner beendet
+2026-09-21 17:10:11 | 176680 | NAK-312 5f1ca5a6 | - | 09-21 17:10:12, 09-21 17:15:07 | SELBST GEENDET nach 297 s
+2026-09-21 17:21:42 | 231732 | NAK-312 5f1ca5a6 | 09-21 17:21:55 | 09-21 17:21:43 | vom Runner beendet
+2026-09-21 17:21:56 | 284032 | NAK-312 5f1ca5a6 | - | 09-21 17:21:57, 09-21 17:23:26 | SELBST GEENDET nach 91 s
+2026-09-21 17:28:14 | 245412 | NAK-312 5f1ca5a6 | 09-21 17:28:35 | 09-21 17:28:15 | vom Runner beendet
+2026-09-21 17:28:36 | 238660 | NAK-312 5f1ca5a6 | 09-21 17:32:52 | 09-21 17:28:37 | vom Runner beendet
+2026-09-21 17:32:53 | 139208 | NAK-312 5f1ca5a6 | - | 09-21 17:32:54 | kein Ende-Ereignis, nicht vom Runner beendet
+2026-09-21 18:33:49 | 71884 | NAK-312 2c138b2d | 09-21 18:34:12 | 09-21 18:33:50 | vom Runner beendet
+2026-09-21 18:34:13 | 334432 | NAK-312 2c138b2d | 09-21 18:38:29 | 09-21 18:34:14 | vom Runner beendet
+2026-09-21 18:38:30 | 146108 | NAK-312 2c138b2d | 09-21 18:44:13 | 09-21 18:38:30 | vom Runner beendet
+2026-09-21 18:44:27 | 368912 | NAK-312 2c138b2d | 09-21 18:44:47 | 09-21 18:44:27 | vom Runner beendet
+2026-09-21 18:44:48 | 124548 | NAK-312 2c138b2d | 09-21 18:49:04 | 09-21 18:44:49 | vom Runner beendet
+2026-09-21 18:49:05 | 218184 | NAK-312 2c138b2d | - | 09-21 18:49:06 | kein Ende-Ereignis, nicht vom Runner beendet

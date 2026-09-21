@@ -1,0 +1,83 @@
+NAK-312 Etappe 5, Nacharbeit 1 - Spuren zu LZ-1 (Bauer, 21.09.2026). Nur lesend gesammelt; keine neue Infrastruktur,
+keine Systemeinstellung geaendert. Uhrzeiten aus Ereignisprotokoll, Dateizeitstempeln, Get-Date und den Prozesswachen.
+
+1. Werkzeuge auf dem Rechner
+   - Kein Debugger und kein ProcDump vorhanden: gesucht nach procdump*.exe, cdb.exe, windbg*.exe, ntsd.exe in
+     C:\Program Files, C:\Program Files (x86), %USERPROFILE%\scoop, WinGet-Pakete, C:\ProgramData\chocolatey\bin,
+     C:\Tools, C:\SysinternalsSuite, Downloads (Tiefe 6) und im PATH - kein Treffer (16:21).
+   - WER: HKLM ...\Windows Error Reporting "Disabled" nicht gesetzt, LocalDumps nicht eingerichtet; HKCU
+     ExcludedApplications nennt nur SOFFICE.EXE, nicht FL64.exe.
+   - Prozessende-Audit (Sicherheitsprotokoll 4689) nicht verfuegbar (keine Ereignisse, auditpol ohne Recht).
+
+2. Absturzspuren: keine
+   - Anwendungsprotokoll 21.09.2026: kein Eintrag Id 1000/1001/1002 fuer FL64.exe (ganzer Tag).
+   - Vergleich, dass FL-Abstuerze hier protokolliert werden: 16.08.2026 23:34:52 Id 1000 APPCRASH FL64.exe 26.1.3.5570,
+     Modul Kontakt 8.vst3, 0xc0000005; 18.08.2026 13:59:28 Id 1001 AppHangB1 FL64.exe. LZ-1 hinterliess keine solche Spur.
+   - Kein Dump unter %LOCALAPPDATA%\CrashDumps fuer FL64 (dort nur eqcop-broker-v3probe.exe, siehe Hinweis 9).
+   - FL-Logs: Support\Logs\Startup nur Startprotokolle; nichts beim Ende.
+   - Systemprotokoll: kein Id 2004 (Resource-Exhaustion-Detector) am 21.09.2026.
+
+3. Das Ende selbst: Energie-Ereignis des UserModePowerService (System, Id 12, "Richtlinienschema zurueckgesetzt")
+   Jedes FL64 erzeugt ein Ereignis rund 1 s nach dem Start. Ein zweites beim Ende entsteht nur, wenn FL selbst endet:
+     - per Stop-Process (TerminateProcess) beendet, ExitCode -1 gemessen: kein Ende-Ereignis - zehn vom Runner
+       (324712, 231228, 91628, 97364, 75884, 283736, 303340, 231732, 245412, 238660), eines vom Bauer vor dem Kanon (139208).
+     - Render FL64.exe /R endet selbst, ExitCode 0 gemessen: Ende-Ereignis (62828 16:32:31,873; 32752 16:32:35,926;
+       51272 17:05:27,522; 147556 17:05:30,874; 101208 17:28:10,522; 56368 17:28:13,985).
+     - WM_CLOSE an das Hauptfenster, ExitCode 0 gemessen: Ende-Ereignis (284032 17:23:26,884).
+   Die LZ-1-Enden tragen ein Ende-Ereignis: 381456 16:00:47,873 (Lauf 1 des Dirigenten), 316548 16:08:08,838 (Lauf 2),
+   176680 17:15:07,661 (Produktstand Etappe 4, dieser Auftrag). Das LZ-1-Ende ist damit kein Abschuss von aussen und
+   kein Absturz, sondern ein prozesseigenes Ende.
+
+4. FL schreibt beim regulaeren Programmende seine Einstellungen, beim Abschuss nicht
+   Dateien unter Dokumente\Image-Line\FL Studio\Settings (Auto saved.ncp, Browser\Tab_*.tabconfig, Browser\Recent files.scr,
+   Mapping\Vel curve 0.env und 1.env):
+     - Render 32752 (Exit 0): geschrieben 16:32:35.
+     - Abschuss 75884 durch den Runner 17:05:15,999 (Exit -1): Recent files.scr blieb auf 16:32:35.
+     - Selbstende 176680 (Etappe 4, Exit 0): geschrieben 17:15:06,446 bis 17:15:07,676.
+     - WM_CLOSE 284032 (Exit 0): geschrieben 17:23:26,435 bis 17:23:26,893.
+   Das Selbstende am Etappe-4-Stand trug also FLs vollstaendige eigene Schliessroutine.
+
+5. Ressourcen bis zum Ende (Prozesswache, NAK-312-n1-flwache.txt)
+   PID 176680: privater Speicher 321,3 bis 321,9 MB, Handles 6123 bis 6134, Threads 64 bis 73 ueber die ganze Laufzeit;
+   17:15:04 Handles 6125 -> 6147 und Threads 64 -> 65, 17:15:06 Threads 48, 17:15:07 Threads 1, Ende 17:15:07,810.
+   Kein Leck, kein Wachstum. Was die +22 Handles und den Thread 17:15:04 ausloeste, ist nicht gemessen.
+
+6. Ereignisprotokolle rund um die Enden (alle aktivierten Protokolle, je 10 s ab 5 s vor dem Ende)
+   16:00:42-16:00:52, 16:08:03-16:08:13, 13:21:35-13:21:45, 08:27:25-08:27:35: ausser dem Energie-Ereignis nur
+   Hintergrund (Store-Lizenzdienst, Telemetrie-Client, Konsolenstarts von PowerShell) - kein Eintrag zu FL, Audio,
+   Grafiktreiber, Sitzungssperre oder Abmeldung.
+
+7. Wege, auf denen ein Plugin FL regulaer beenden koennte - ausgeschlossen an der Quelle
+   - Pluginquelltext (eq-copilot/plugin ohne tests/): kein ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit,
+     exit/_exit/quick_exit/_Exit, Process::terminate, systemRequestedQuit, WM_CLOSE, WM_QUIT, SC_CLOSE, PostMessage,
+     SendMessage, DestroyWindow, FindWindow, SendInput (Grep, 21.09.2026). Dauerhaft haelt der Kanonteil 312/M-88
+     (B7, Abschnitt ZC) die Liste aus seinem Pruefnamen.
+   - JUCE 8.0.9 (eq-copilot/build/_deps/juce-src/modules): ExitProcess nur in Process::terminate
+     (juce_core/native/juce_Threads_windows.cpp:292-299), aufgerufen nur im Linux-X11-Pfad
+     (juce_gui_basics/native/juce_XWindowSystem_linux.cpp:1484); kein PostQuitMessage; SetUnhandledExceptionFilter nur
+     in SystemStats::setApplicationCrashHandler (juce_core/system/juce_SystemStats.cpp:266), das das Plugin nicht ruft.
+   - Ein Abbruch ueber std::terminate endet mit __fastfail und WER-Eintrag (wie beim Probe-Broker, Hinweis 9), nicht
+     still und nicht mit FLs Schliessroutine.
+   - FL64.exe ist ein GUI-Programm (PE-Subsystem 2); FL64.exe und FLEngine_x64.dll importieren kein AttachConsole,
+     AllocConsole, SetConsoleCtrlHandler oder GenerateConsoleCtrlEvent - ein Konsolen-Steuerereignis erreicht FL nicht.
+   - Das Controller-Skript des FL-MCP (fl_controller/device_FLStudioMCP.py, SCRIPT_VERSION 2026-09-18) fuehrt nur
+     Befehle aus der Befehlsdatei aus; OnIdle ist leer; kein Befehl beendet FL. Der MCP-Server verbindet sich erst beim
+     ersten Werkzeugaufruf mit dem MIDI-Port (utils/connection.py ensure_connected), nicht beim Sessionstart.
+   - Laufzeit-Arm und szenario.py senden FL keine Fenster- oder Quit-Nachricht (Grep nach CloseMainWindow, taskkill,
+     WM_CLOSE, PostMessage: kein Treffer ausser dem Lesezugriff OpenProcess in szenario.py:2651); analyze-track.py
+     (F-28-Rechnung) importiert nur sys, json, warnings, numpy.
+
+8. Umgebung zu den Zeitpunkten (Beobachtung, keine Deutung)
+   - Spielsitzungen laut Zeitstempeln der Spiellogs (C:\Riot Games\League of Legends\Logs\GameLogs, nur Ordner- und
+     Dateizeiten gelesen): 15:10-15:30, 15:34-15:52, 15:54:38-16:10:02, 16:14:34-16:32:49. Beide LZ-1-Enden des Dirigenten
+     (16:00:47, 16:08:08) fielen in die Sitzung 15:54-16:10; mein HEAD-Lauf 16:26-16:32 (gruen) in die Sitzung 16:14-16:32;
+     das Selbstende am Etappe-4-Stand (17:15:07) in keine.
+   - Benutzereingaben: Wache 3 (17:18:34 bis 18:55:57) misst die Leerlaufzeit der Sitzung; sie lag zwischen 0 und 509 s
+     (der Rechner wurde zeitweise bedient, zeitweise nicht). Jedes vom Runner gestartete FL lag rund 2 s nach seinem Start
+     kurz im Vordergrund. Zum Zeitpunkt des Selbstendes 17:15:07 lief Wache 3 noch nicht: ob eine Eingabe vorausging, ist
+     nicht gemessen; in Wache 3 endete kein FL selbst.
+   - FL startet sichtbar und spielt das Diagnoseprojekt hoerbar ueber das Audiogeraet (tools/fl/LIES-MICH.md, Uhrzeit).
+
+9. Hinweis ausserhalb des Auftrags (nicht untersucht): eqcop-broker-v3probe.exe endete heute fuenfmal mit 0xc0000409
+   (BEX64, Offset 0x467a5; 04:54, 07:26, 10:50, 12:22, 15:17; Dumps unter %LOCALAPPDATA%\CrashDumps) - Testbroker der
+   Kanonbeine auf der Probe-Pipe, nicht FL.

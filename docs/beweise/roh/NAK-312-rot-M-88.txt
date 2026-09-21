@@ -1,0 +1,115 @@
+Rotbeweis Matrixzeile M-88 (NAK-312 Etappe 5, Nacharbeit 1; R-312-19; §31.3). Bauer, 21.09.2026. Zwei Teile.
+
+Zusage M-88 (§31.3): Zustand Diagnoseprojekt mit beiden Plugins am Endstand, Ereignis Wiedergabe im Songloop ueber
+fuenf Umlaeufe; der Host lebt und antwortet nach jedem Umlauf, und beide Rollen beantworten den Briefkasten.
+
+================================================================================================================
+TEIL A - Laufzeit-Szenario docs/gesundheit/szenarien/schleife-dauerlauf.json (Laufzeit-Arm)
+================================================================================================================
+Bein: tools/fl/laufzeit.ps1 -Ticket NAK-312 -Basis 12300f1e429c38354f9d216d7ade395b71f71b70 -Szenarien <schleife-dauerlauf.json>
+Zeile, die die Zusage traegt: die Pruefungen nach jedem Umlauf (Schritte 11-13, 15-17, 19-21, 23-25, 27-29:
+transport.getStatus, transport.getPosition, lokal.briefkasten gen und probeeq).
+
+Etikett laut §31.3 "heute rot" (Stand 64ece9e1). Gemessen: am Produktstand 64ece9e1 (installiert aus dem Arbeitsbaum
+auf HEAD 5f1ca5a6, Produktdateien gleich 64ece9e1) war das Szenario in drei Laeufen gruen (16:26, 16:32, 17:28; Kopf-
+zeilen in NAK-312-n1-repro-head.md, NAK-312-n1-repro-head-voll.md, NAK-312-n1-head-voll2.md); LZ-1 trat dort in keinem
+meiner Laeufe auf. Der natuerliche Rotlauf "am Stand 64ece9e1" ist damit NICHT gemessen. Gemessen ist LZ-1 am
+Produktstand der Etappe 4 (dc2665ba, Lauf 17:05) - dort im Folgeszenario snapshot-runde01, nachdem schleife-dauerlauf
+gruen gelaufen war (NAK-312-n1-gegenprobe-dc2665ba.md).
+
+Mutation (an der Umgebung, dieselbe Art Ende wie LZ-1): das Diagnose-FL, das der Runner fuer dieses Szenario mit
+frischer_start gestartet hat (PID 284032), wird 90 s nach seinem Start regulaer geschlossen - WM_CLOSE an das
+Hauptfenster (Process.CloseMainWindow). Werkzeug: <job>/tmp/rot-m88-eingriff.ps1 (nur diese PID aus dem Runner-Log).
+Protokoll des Eingriffs, woertlich:
+Eingriff Rotbeweis M-88, Start 2026-09-21 17:21:35, Runner-Log C:\Users\phili\.claude\jobs\2b0c2f22\tmp\laufzeit-rot-m88.log, Schliessen 90 s nach dem FL-Start
+17:21:56.455 Runner-Log: [2026-09-21 17:21:56] FL gestartet: PID 284032 (C:\Program Files\Image-Line\FL Studio 2026\FL64.exe) mit C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp
+17:21:56.601 FL PID 284032, Start 17:21:56.274, Titel '', Befehlszeile "C:\Program Files\Image-Line\FL Studio 2026\FL64.exe" "C:\Users\phili\AppData\Local\evenacadia\nakama-laufzeit\projekt\Nakama-Diagnose.flp"
+17:23:26.396 vor dem Eingriff: Handles 6128, Threads 70, Privat 321,3 MB, lebt True
+17:23:26.399 CloseMainWindow (WM_CLOSE an das Hauptfenster) gesendet: True
+17:23:27.009 FL beendet: ExitTime 17:23:26.991, ExitCode 0 (0x00000000)
+
+Spur dieses Endes (gemessen): ExitCode 0; FL schrieb seine Einstellungsdateien 17:23:26,435 bis 17:23:26,893
+(Auto saved.ncp, Tab_*.tabconfig, Recent files.scr, Vel curve 0/1.env); Energie-Ereignis UserModePowerService Id 12
+fuer PID 284032 um 17:23:26,884; kein WER-Eintrag. Dieselbe Spur wie das Selbstende am Produktstand der Etappe 4
+(PID 176680: Einstellungsdateien 17:15:06,446 bis 17:15:07,676, Energie-Ereignis 17:15:07,661, ExitCode 0).
+
+Ergebnis (Rohdatei NAK-312-n1-rot-M-88-lauf.md, Kopfzeile woertlich):
+Kopfzeile: LAUFZEIT NAK-312 5f1ca5a6 VERFEHLT installation=installiert; pruefen Exit 0, 3 Artefakt(e) aktuell szenarien=1 verfehlt=1 [schleife-dauerlauf.json=4] fl=Producer Edition v26.1.4 [build 5589]
+Runner-Exit: EXIT=4
+
+Schritte ab dem Start der Wiedergabe (Auszug der Rohdatei, gekuerzt auf 260 Zeichen):
+| 9 | `transport.start` | `{}` | `request_id=fd2479ceb71a887499b65763174577f9 {"is_playing": true, "success": true}` | ok |
+| 10 | warte | 46 s | — | — |
+| 11 | `transport.getStatus` | `{}` | `request_id=0d886b03c2eaaed1025b7536a4843b6f {"is_playing": true, "is_recording": false, "loop_mode": "song", "position": "1:04:00", "success": true}` | ok · roh: position="1:04:00" |
+| 12 | `transport.getPosition` | `{}` | `request_id=99006c206867e5995be6a69b7273720d {"hint": "1:04:10", "ms": 366, "seconds": 0, "success": true}` | ok · roh: ms=366 |
+| 13 | `lokal.briefkasten` | `{"rollen": ["gen", "probeeq"]}` | beantwortet: gen, probeeq | ok (Details unten) |
+| 14 | warte | 46 s | — | — |
+| 15 | `transport.getStatus` | `{}` | `request_id=ce9805007372500dd4c9db22e8f3c6a5 {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "success"
+| 16 | `transport.getPosition` | `{}` | `request_id=ce467c0f15e7d9cbac072a52aafdd4c6 {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "succes
+| 17 | `lokal.briefkasten` | `{"rollen": ["gen", "probeeq"]}` | Rolle ohne Antwort nach 10 s: gen, probeeq | VERFEHLT (Details unten) |
+| 18 | warte | 46 s | — | — |
+| 19 | `transport.getStatus` | `{}` | `request_id=01bbd9140f9fe66e9b5e6a9608192f15 {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "success"
+| 20 | `transport.getPosition` | `{}` | `request_id=af1c29dd4cadc33c036ed1c49b2995e6 {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "succes
+| 21 | `lokal.briefkasten` | `{"rollen": ["gen", "probeeq"]}` | Rolle ohne Antwort nach 10 s: gen, probeeq | VERFEHLT (Details unten) |
+| 22 | warte | 46 s | — | — |
+| 23 | `transport.getStatus` | `{}` | `request_id=7664acade23cb8d4379616d6c36d7cda {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "success"
+| 24 | `transport.getPosition` | `{}` | `request_id=2ade73c78fba61451a87e322740c505a {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "succes
+| 25 | `lokal.briefkasten` | `{"rollen": ["gen", "probeeq"]}` | Rolle ohne Antwort nach 10 s: gen, probeeq | VERFEHLT (Details unten) |
+| 26 | warte | 46 s | — | — |
+| 27 | `transport.getStatus` | `{}` | `request_id=8fe9a04dde09cf4769cdd4fc41590acc {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "success"
+| 28 | `transport.getPosition` | `{}` | `request_id=f92cb1b8b12e6564333d053adb796610 {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "succes
+| 29 | `lokal.briefkasten` | `{"rollen": ["gen", "probeeq"]}` | Rolle ohne Antwort nach 10 s: gen, probeeq | VERFEHLT (Details unten) |
+| 30 | `transport.stop` | `{}` | `request_id=5306c766e94196476887178b4c76fb1a {"_wiederholt": true, "error": "Timeout waiting for FL Studio response after 2.0s. Make sure FL Studio is running and the MCP controller is enabled in MIDI Settings.", "success": fal
+
+**Ergebnis:** 17 von 30 Schritten bestanden.
+
+Die Zusage faellt an der erwarteten Pruefung: JA - erster verfehlter Schritt ist 15 (transport.getStatus nach dem
+zweiten Umlauf, zweimal Timeout), dann 16 und 17 (Briefkasten: "Rolle ohne Antwort nach 10 s: gen, probeeq"); die
+Schritte 1-14 vor dem Schliessen bleiben gruen. Szenario-Exit 4 (VERFEHLT), nicht 3: die Pruefungen nach dem Umlauf
+sind keine Pings (ein Ping-Ausfall waere Szenario-Exit 3).
+Ruecknahme: keine Datei veraendert; der naechste Lauf startet FL frisch. Gruen am Endstand: siehe Manifest (zwei Laeufe).
+
+================================================================================================================
+TEIL B - Kanonteil 312/M-88 kein_weg_zum_hostende_im_pluginquelltext (B7 EqCopTransactionTest, Abschnitt ZC)
+================================================================================================================
+Zusage des Kanonteils: kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin
+ruft ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate
+oder systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase (Textriegel, fail-closed).
+Etikett: Regressionswache (heute gruen, 103 Dateien ohne Treffer); einmal absichtlich gebrochen.
+Datei und Zeile der Mutation: eq-copilot/plugin/sonde/SondeProcessor.cpp, SondeProcessor::setNonRealtime, die Zeile
+nach juce::AudioProcessor::setNonRealtime (offline); (Anker am Stand 2c138b2d Zeile 1562, Mutation als neue Zeile 1563).
+Werkzeug: <job>/tmp/rot-m88-kanon.py (Sicherung ausserhalb des Repos, SHA-256, Mutation, Bau, Lauf, Ruecknahme aus der
+Sicherung, Bau, Lauf). Protokoll, woertlich:
+Rotbeweis 312/M-88 Kanonteil, Start 2026-09-21 17:42:03
+Datei der Mutation: eq-copilot\plugin\sonde\SondeProcessor.cpp, in SondeProcessor::setNonRealtime nach dem JUCE-Aufruf
+SHA-256 unveraendert: 07EF9E6B1ED4966F6CD1714A0791F77F1F1507FFA034807E32003DC8E01A2DC6
+Sicherung: C:\Users\phili\.claude\jobs\2b0c2f22\tmp\SondeProcessor.cpp.sicherung-m88 (SHA-256 07EF9E6B1ED4966F6CD1714A0791F77F1F1507FFA034807E32003DC8E01A2DC6)
+Mutation, vorher (wörtlich):
+        juce::AudioProcessor::setNonRealtime (offline);
+nachher (wörtlich):
+        juce::AudioProcessor::setNonRealtime (offline);
+        if (offline && getTotalNumInputChannels() < 0) std::exit (0);   // Rotbeweis 312/M-88
+[17:42:11] mutiert: Bau Exit 0 (8 s); Binary 17:42:11, Quelle 17:42:03, juenger: True
+[17:42:14] mutiert: B7 Exit 1
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  248 geprueft, 1 Fehler
+  TRANSAKTION FEHLGESCHLAGEN
+  == ZC - NAK-312 Etappe 5 Nacharbeit 1: kein Weg zum Hostende im Pluginquelltext (312/M-88 Kanonteil, R-312-19) ==
+  FEHLER  312/M-88 kein_weg_zum_hostende_im_pluginquelltext (Kanonteil von M-88, R-312-19): kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ruft ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase; fail-closed: fehlt ein Ordner oder sind es weniger als 100 Dateien, ist es rot  [103 Dateien, Treffer: eq-copilot\plugin\sonde\SondeProcessor.cpp: exit (...); ]
+  gefallene Pruefungen: 1
+    FEHLER  312/M-88 kein_weg_zum_hostende_im_pluginquelltext (Kanonteil von M-88, R-312-19): kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ruft ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase; fail-c
+Die Zusage faellt an der erwarteten Pruefung: JA (Exit 1, 1 gefallene Pruefung(en), keine mitgefallen)
+Ruecknahme aus der Sicherung: SHA-256 07EF9E6B1ED4966F6CD1714A0791F77F1F1507FFA034807E32003DC8E01A2DC6, gleich dem Wert vor der Mutation: True
+[17:42:22] zurueckgenommen: Bau Exit 0 (8 s); Binary 17:42:21, Quelle 17:42:14, juenger: True
+[17:42:24] zurueckgenommen: B7 Exit 0
+  ok      zone_dto_grenzen (M-66): 20 <= low < high <= 20000 und id 0..7 im DTO geprueft, die Raender selbst gueltig  [commit @S8 rev=2 memo]
+  248 geprueft, 0 Fehler
+  TRANSAKTION OK
+  == ZC - NAK-312 Etappe 5 Nacharbeit 1: kein Weg zum Hostende im Pluginquelltext (312/M-88 Kanonteil, R-312-19) ==
+  ok      312/M-88 kein_weg_zum_hostende_im_pluginquelltext (Kanonteil von M-88, R-312-19): kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ruft ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase; fail-closed: fehlt ein Ordner oder sind es weniger als 100 Dateien, ist es rot  [103 Dateien, kein Treffer]
+  gefallene Pruefungen: 0
+git status --short SondeProcessor.cpp: '' (leer = gleich HEAD)
+Ende 17:42:24
+
+Mitgefallene Pruefungen: keine. Unter derselben Mutation gruen: alle 247 uebrigen Pruefungen von B7.
+git diff --stat nach der Ruecknahme: SondeProcessor.cpp unveraendert gegenueber HEAD (git status leer).

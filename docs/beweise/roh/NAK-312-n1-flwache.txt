@@ -1,0 +1,507 @@
+NAK-312 Etappe 5, Nacharbeit 1 - FL-Prozesswachen des Bauers, 21.09.2026 (Auszug; Takt 1 s, nur lesen).
+Werkzeug: Get-Process je Sekunde (Arbeitssatz, privater Speicher, Handles, Threads, CPU-Zeit); ab Wache 2 haelt
+die Wache beim ersten Sehen ein Prozesshandle, damit Exitcode und Endzeit lesbar bleiben; Wache 3 dazu die
+Leerlaufzeit der Sitzung (GetLastInputInfo) und ob das Vordergrundfenster einer FL64-Instanz gehoert (nur ja/nein).
+Die Wachen beenden nichts. Spalten: Zeit PID WS_MB Privat_MB Handles Threads CPU_s [| Leerlauf_s | Vordergrund] Titel.
+
+Vergleichsmass fuer die Art des Endes (gemessen in denselben Laeufen):
+  vom Runner beendet (Stop-Process, TerminateProcess): ExitCode -1 (0xFFFFFFFF)
+  Render FL64.exe /R endet selbst:                      ExitCode 0
+
+== Alle Starts und Enden (neu PID / ENDE PID) je Wache ==
+-- Wache 2, Reproduktion HEAD nur schleife-dauerlauf (Lauf 16:26) [flwache2-repro-head.txt]
+16:28:13 neu PID 231228, Start 16:26:59.905, Handle offen
+16:32:21 ENDE PID 231228: ExitTime 16:32:20.860, ExitCode -1 (0xFFFFFFFF)
+16:32:28 neu PID 62828, Start 16:32:27.713, Handle offen
+16:32:32 ENDE PID 62828: ExitTime 16:32:31.979, ExitCode 0 (0x00000000)
+16:32:33 neu PID 32752, Start 16:32:33.011, Handle offen
+16:32:36 neu PID 91628, Start 16:32:36.194, Handle offen
+16:32:36 ENDE PID 32752: ExitTime 16:32:36.043, ExitCode 0 (0x00000000)
+16:32:58 ENDE PID 91628: ExitTime 16:32:57.497, ExitCode -1 (0xFFFFFFFF)
+16:32:59 neu PID 97364, Start 16:32:58.506, Handle offen
+16:37:15 ENDE PID 97364: ExitTime 16:37:14.117, ExitCode -1 (0xFFFFFFFF)
+16:37:16 neu PID 75884, Start 16:37:15.134, Handle offen
+
+-- Wache 2, Reproduktion HEAD voller Satz (Lauf 16:32) [flwache2-repro-voll.txt]
+16:32:18 neu PID 231228, Start 16:26:59.905, Handle offen
+16:32:21 ENDE PID 231228: ExitTime 16:32:20.860, ExitCode -1 (0xFFFFFFFF)
+16:32:28 neu PID 62828, Start 16:32:27.713, Handle offen
+16:32:32 ENDE PID 62828: ExitTime 16:32:31.979, ExitCode 0 (0x00000000)
+16:32:33 neu PID 32752, Start 16:32:33.011, Handle offen
+16:32:36 neu PID 91628, Start 16:32:36.194, Handle offen
+16:32:36 ENDE PID 32752: ExitTime 16:32:36.043, ExitCode 0 (0x00000000)
+16:32:57 ENDE PID 91628: ExitTime 16:32:57.497, ExitCode -1 (0xFFFFFFFF)
+16:32:58 neu PID 97364, Start 16:32:58.506, Handle offen
+16:37:14 ENDE PID 97364: ExitTime 16:37:14.117, ExitCode -1 (0xFFFFFFFF)
+16:37:15 neu PID 75884, Start 16:37:15.134, Handle offen
+
+-- Wache 2, Gegenprobe Produktstand Etappe 4 dc2665ba (Lauf 17:05) [flwache2-dc2665ba.txt]
+17:05:13 neu PID 75884, Start 16:37:15.134, Handle offen
+17:05:16 ENDE PID 75884: ExitTime 17:05:15.999, ExitCode -1 (0xFFFFFFFF)
+17:05:23 neu PID 51272, Start 17:05:23.507, Handle offen
+17:05:27 ENDE PID 51272: ExitTime 17:05:27.646, ExitCode 0 (0x00000000)
+17:05:28 neu PID 147556, Start 17:05:27.807, Handle offen
+17:05:31 ENDE PID 147556: ExitTime 17:05:30.975, ExitCode 0 (0x00000000)
+17:05:32 neu PID 283736, Start 17:05:32.058, Handle offen
+17:05:53 ENDE PID 283736: ExitTime 17:05:53.377, ExitCode -1 (0xFFFFFFFF)
+17:05:54 neu PID 303340, Start 17:05:54.408, Handle offen
+17:10:10 ENDE PID 303340: ExitTime 17:10:10.448, ExitCode -1 (0xFFFFFFFF)
+17:10:11 neu PID 176680, Start 17:10:11.482, Handle offen
+17:15:07 ENDE PID 176680: ExitTime 01:00:00.000, ExitCode 0 (0x00000000)
+17:21:42 neu PID 231732, Start 17:21:42.486, Handle offen
+17:21:55 ENDE PID 231732: ExitTime 17:21:55.224, ExitCode -1 (0xFFFFFFFF)
+17:21:56 neu PID 284032, Start 17:21:56.274, Handle offen
+17:23:27 ENDE PID 284032: ExitTime 17:23:26.991, ExitCode 0 (0x00000000)
+17:28:07 neu PID 101208, Start 17:28:06.729, Handle offen
+17:28:11 neu PID 56368, Start 17:28:11.006, Handle offen
+17:28:11 ENDE PID 101208: ExitTime 17:28:10.615, ExitCode 0 (0x00000000)
+17:28:14 neu PID 245412, Start 17:28:14.214, Handle offen
+17:28:14 ENDE PID 56368: ExitTime 17:28:14.081, ExitCode 0 (0x00000000)
+17:28:36 ENDE PID 245412: ExitTime 17:28:35.615, ExitCode -1 (0xFFFFFFFF)
+17:28:37 neu PID 238660, Start 17:28:36.648, Handle offen
+
+-- Wache 2 lang (ab 16:47) [flwache2-lang.txt]
+16:47:30 neu PID 75884, Start 16:37:15.134, Handle offen
+17:05:16 ENDE PID 75884: ExitTime 17:05:15.999, ExitCode -1 (0xFFFFFFFF)
+17:05:23 neu PID 51272, Start 17:05:23.507, Handle offen
+17:05:27 ENDE PID 51272: ExitTime 17:05:27.646, ExitCode 0 (0x00000000)
+17:05:28 neu PID 147556, Start 17:05:27.807, Handle offen
+17:05:31 ENDE PID 147556: ExitTime 17:05:30.975, ExitCode 0 (0x00000000)
+17:05:32 neu PID 283736, Start 17:05:32.058, Handle offen
+17:05:54 ENDE PID 283736: ExitTime 17:05:53.377, ExitCode -1 (0xFFFFFFFF)
+17:05:55 neu PID 303340, Start 17:05:54.408, Handle offen
+17:10:10 ENDE PID 303340: ExitTime 17:10:10.448, ExitCode -1 (0xFFFFFFFF)
+17:10:11 neu PID 176680, Start 17:10:11.482, Handle offen
+17:15:08 ENDE PID 176680: ExitTime 17:15:07.810, ExitCode 0 (0x00000000)
+17:21:43 neu PID 231732, Start 17:21:42.486, Handle offen
+17:21:55 ENDE PID 231732: ExitTime 17:21:55.224, ExitCode -1 (0xFFFFFFFF)
+17:21:56 neu PID 284032, Start 17:21:56.274, Handle offen
+17:23:27 ENDE PID 284032: ExitTime 17:23:26.991, ExitCode 0 (0x00000000)
+17:28:07 neu PID 101208, Start 17:28:06.729, Handle offen
+17:28:11 neu PID 56368, Start 17:28:11.006, Handle offen
+17:28:11 ENDE PID 101208: ExitTime 17:28:10.615, ExitCode 0 (0x00000000)
+17:28:14 neu PID 245412, Start 17:28:14.214, Handle offen
+17:28:14 ENDE PID 56368: ExitTime 17:28:14.081, ExitCode 0 (0x00000000)
+17:28:36 ENDE PID 245412: ExitTime 17:28:35.615, ExitCode -1 (0xFFFFFFFF)
+17:28:37 neu PID 238660, Start 17:28:36.648, Handle offen
+17:32:53 ENDE PID 238660: ExitTime 17:32:52.633, ExitCode -1 (0xFFFFFFFF)
+17:32:54 neu PID 139208, Start 17:32:53.665, Handle offen
+17:44:47 ENDE PID 139208: ExitTime 17:44:46.688, ExitCode -1 (0xFFFFFFFF)
+18:33:38 neu PID 289640, Start 18:33:38.749, Handle offen
+18:33:44 ENDE PID 289640: ExitTime 18:33:44.294, ExitCode 0 (0x00000000)
+18:33:46 neu PID 53636, Start 18:33:45.162, Handle offen
+18:33:49 ENDE PID 53636: ExitTime 18:33:48.338, ExitCode 0 (0x00000000)
+18:33:50 neu PID 71884, Start 18:33:49.377, Handle offen
+18:34:13 ENDE PID 71884: ExitTime 18:34:12.369, ExitCode -1 (0xFFFFFFFF)
+18:34:14 neu PID 334432, Start 18:34:13.412, Handle offen
+18:38:30 ENDE PID 334432: ExitTime 18:38:29.226, ExitCode -1 (0xFFFFFFFF)
+18:38:31 neu PID 146108, Start 18:38:30.241, Handle offen
+18:44:13 ENDE PID 146108: ExitTime 18:44:13.398, ExitCode -1 (0xFFFFFFFF)
+18:44:20 neu PID 86848, Start 18:44:19.817, Handle offen
+18:44:23 ENDE PID 86848: ExitTime 18:44:23.231, ExitCode 0 (0x00000000)
+18:44:24 neu PID 239460, Start 18:44:24.022, Handle offen
+18:44:26 ENDE PID 239460: ExitTime 18:44:26.578, ExitCode 0 (0x00000000)
+18:44:27 neu PID 368912, Start 18:44:27.177, Handle offen
+18:44:48 ENDE PID 368912: ExitTime 18:44:47.490, ExitCode -1 (0xFFFFFFFF)
+18:44:49 neu PID 124548, Start 18:44:48.516, Handle offen
+18:49:04 ENDE PID 124548: ExitTime 18:49:04.182, ExitCode -1 (0xFFFFFFFF)
+18:49:05 neu PID 218184, Start 18:49:05.214, Handle offen
+
+-- Wache 3 lang (ab 17:18, mit Leerlauf und Vordergrund) [flwache3-lang.txt]
+17:21:42 neu PID 231732, Start 17:21:42.486, Handle offen
+17:21:55 ENDE PID 231732: ExitTime 17:21:55.224, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,0 s, Vordergrund anderes
+17:21:56 neu PID 284032, Start 17:21:56.274, Handle offen
+17:23:27 ENDE PID 284032: ExitTime 17:23:26.991, ExitCode 0 (0x00000000), Leerlauf 0,0 s, Vordergrund anderes
+17:28:07 neu PID 101208, Start 17:28:06.729, Handle offen
+17:28:11 neu PID 56368, Start 17:28:11.006, Handle offen
+17:28:11 ENDE PID 101208: ExitTime 17:28:10.615, ExitCode 0 (0x00000000), Leerlauf 0,0 s, Vordergrund anderes
+17:28:14 neu PID 245412, Start 17:28:14.214, Handle offen
+17:28:14 ENDE PID 56368: ExitTime 17:28:14.081, ExitCode 0 (0x00000000), Leerlauf 0,6 s, Vordergrund anderes
+17:28:35 ENDE PID 245412: ExitTime 17:28:35.615, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,0 s, Vordergrund anderes
+17:28:36 neu PID 238660, Start 17:28:36.648, Handle offen
+17:32:52 ENDE PID 238660: ExitTime 17:32:52.633, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,1 s, Vordergrund anderes
+17:32:53 neu PID 139208, Start 17:32:53.665, Handle offen
+17:44:47 ENDE PID 139208: ExitTime 17:44:46.688, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,0 s, Vordergrund anderes
+18:33:38 neu PID 289640, Start 18:33:38.749, Handle offen
+18:33:44 ENDE PID 289640: ExitTime 18:33:44.294, ExitCode 0 (0x00000000), Leerlauf 0,5 s, Vordergrund anderes
+18:33:45 neu PID 53636, Start 18:33:45.162, Handle offen
+18:33:49 ENDE PID 53636: ExitTime 18:33:48.338, ExitCode 0 (0x00000000), Leerlauf 1,4 s, Vordergrund anderes
+18:33:50 neu PID 71884, Start 18:33:49.377, Handle offen
+18:34:13 ENDE PID 71884: ExitTime 18:34:12.369, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,1 s, Vordergrund anderes
+18:34:14 neu PID 334432, Start 18:34:13.412, Handle offen
+18:38:30 ENDE PID 334432: ExitTime 18:38:29.226, ExitCode -1 (0xFFFFFFFF), Leerlauf 74,6 s, Vordergrund anderes
+18:38:31 neu PID 146108, Start 18:38:30.241, Handle offen
+18:44:13 ENDE PID 146108: ExitTime 18:44:13.398, ExitCode -1 (0xFFFFFFFF), Leerlauf 418,4 s, Vordergrund anderes
+18:44:19 neu PID 86848, Start 18:44:19.817, Handle offen
+18:44:23 ENDE PID 86848: ExitTime 18:44:23.231, ExitCode 0 (0x00000000), Leerlauf 428,5 s, Vordergrund anderes
+18:44:24 neu PID 239460, Start 18:44:24.022, Handle offen
+18:44:27 ENDE PID 239460: ExitTime 18:44:26.578, ExitCode 0 (0x00000000), Leerlauf 431,6 s, Vordergrund anderes
+18:44:28 neu PID 368912, Start 18:44:27.177, Handle offen
+18:44:48 ENDE PID 368912: ExitTime 18:44:47.490, ExitCode -1 (0xFFFFFFFF), Leerlauf 452,8 s, Vordergrund anderes
+18:44:49 neu PID 124548, Start 18:44:48.516, Handle offen
+18:49:05 ENDE PID 124548: ExitTime 18:49:04.182, ExitCode -1 (0xFFFFFFFF), Leerlauf 1,0 s, Vordergrund anderes
+18:49:06 neu PID 218184, Start 18:49:05.214, Handle offen
+
+== Selbstende am Produktstand der Etappe 4 (Snapshot-FL PID 176680, Lauf 17:05, Szenario snapshot-runde01) ==
+Jede Zeile der Wache 2 zu PID 176680 (Start 17:10:11, Ende 17:15:07,810 laut Wache 2 lang):
+17:10:11 neu PID 176680, Start 17:10:11.482, Handle offen
+17:10:11 176680 121,0 104,0 515 19 0,4 
+17:10:12 176680 223,9 188,6 5709 41 1,4 
+17:10:13 176680 306,5 261,9 5932 54 2,3 FL Studio 2026
+17:10:14 176680 353,6 322,9 6130 74 2,9 Nakama-Diagnose.flp - FL Studio 2026
+17:10:15 176680 354,0 323,2 6130 74 3,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:16 176680 354,2 323,2 6132 74 3,4 Nakama-Diagnose.flp - FL Studio 2026
+17:10:17 176680 354,1 323,1 6132 74 3,6 Nakama-Diagnose.flp - FL Studio 2026
+17:10:18 176680 354,2 323,2 6132 74 3,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:19 176680 354,2 323,2 6132 74 4,1 Nakama-Diagnose.flp - FL Studio 2026
+17:10:20 176680 354,2 323,2 6132 74 4,3 Nakama-Diagnose.flp - FL Studio 2026
+17:10:21 176680 354,1 323,2 6134 74 4,5 Nakama-Diagnose.flp - FL Studio 2026
+17:10:23 176680 354,2 323,2 6134 74 4,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:24 176680 354,2 323,2 6134 74 5,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:25 176680 354,3 323,2 6134 74 5,4 Nakama-Diagnose.flp - FL Studio 2026
+17:10:26 176680 353,2 320,3 6134 74 5,7 Nakama-Diagnose.flp - FL Studio 2026
+17:10:27 176680 353,5 320,9 6134 74 6,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:28 176680 353,3 320,5 6134 74 6,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:29 176680 353,4 320,5 6134 74 6,6 Nakama-Diagnose.flp - FL Studio 2026
+17:10:30 176680 353,4 320,5 6134 74 6,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:31 176680 353,3 320,5 6134 74 7,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:32 176680 353,4 320,5 6134 74 7,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:33 176680 353,4 320,9 6134 74 7,5 Nakama-Diagnose.flp - FL Studio 2026
+17:10:34 176680 353,4 320,5 6134 74 7,9 Nakama-Diagnose.flp - FL Studio 2026
+17:10:35 176680 353,6 320,9 6134 74 8,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:36 176680 353,5 320,7 6134 74 8,4 Nakama-Diagnose.flp - FL Studio 2026
+17:10:37 176680 353,4 320,6 6134 74 8,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:38 176680 353,5 320,6 6134 74 9,1 Nakama-Diagnose.flp - FL Studio 2026
+17:10:39 176680 353,5 320,6 6134 74 9,5 Nakama-Diagnose.flp - FL Studio 2026
+17:10:40 176680 353,6 320,9 6134 74 9,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:41 176680 353,6 320,9 6134 74 10,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:42 176680 354,2 321,7 6134 73 10,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:43 176680 354,2 321,7 6134 73 10,5 Nakama-Diagnose.flp - FL Studio 2026
+17:10:44 176680 354,1 321,2 6134 73 10,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:45 176680 354,1 321,3 6134 73 11,1 Nakama-Diagnose.flp - FL Studio 2026
+17:10:46 176680 354,2 322,2 6134 73 11,4 Nakama-Diagnose.flp - FL Studio 2026
+17:10:47 176680 354,1 321,3 6134 73 11,7 Nakama-Diagnose.flp - FL Studio 2026
+17:10:48 176680 354,1 321,3 6134 73 12,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:49 176680 354,2 321,3 6134 73 12,2 Nakama-Diagnose.flp - FL Studio 2026
+17:10:50 176680 354,2 321,3 6134 73 12,6 Nakama-Diagnose.flp - FL Studio 2026
+17:10:51 176680 354,0 321,1 6134 73 12,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:52 176680 354,1 321,2 6134 73 13,0 Nakama-Diagnose.flp - FL Studio 2026
+17:10:53 176680 354,2 321,3 6134 73 13,3 Nakama-Diagnose.flp - FL Studio 2026
+17:10:54 176680 354,1 321,3 6134 73 13,6 Nakama-Diagnose.flp - FL Studio 2026
+17:10:55 176680 354,1 321,3 6134 73 13,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:56 176680 354,2 321,3 6134 73 14,1 Nakama-Diagnose.flp - FL Studio 2026
+17:10:57 176680 354,1 321,3 6134 73 14,4 Nakama-Diagnose.flp - FL Studio 2026
+17:10:58 176680 354,3 322,2 6134 73 14,8 Nakama-Diagnose.flp - FL Studio 2026
+17:10:59 176680 354,6 322,2 6134 73 15,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:00 176680 354,6 321,7 6134 73 15,3 Nakama-Diagnose.flp - FL Studio 2026
+17:11:01 176680 354,6 322,2 6134 73 15,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:02 176680 354,6 322,2 6134 73 16,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:03 176680 354,5 321,6 6134 73 16,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:04 176680 354,6 322,2 6134 73 16,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:05 176680 354,5 321,6 6134 73 16,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:06 176680 354,6 321,7 6134 73 16,9 Nakama-Diagnose.flp - FL Studio 2026
+17:11:07 176680 354,6 322,2 6134 73 17,3 Nakama-Diagnose.flp - FL Studio 2026
+17:11:08 176680 354,6 321,7 6134 73 17,6 Nakama-Diagnose.flp - FL Studio 2026
+17:11:09 176680 354,7 322,2 6134 73 17,9 Nakama-Diagnose.flp - FL Studio 2026
+17:11:10 176680 354,6 321,7 6134 73 18,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:11 176680 354,5 321,6 6134 73 18,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:12 176680 354,3 321,4 6130 70 18,9 Nakama-Diagnose.flp - FL Studio 2026
+17:11:13 176680 354,3 321,4 6130 70 19,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:14 176680 354,6 321,8 6130 70 19,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:15 176680 354,6 321,8 6130 70 19,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:16 176680 354,3 321,4 6130 70 20,1 Nakama-Diagnose.flp - FL Studio 2026
+17:11:17 176680 354,6 321,8 6130 70 20,3 Nakama-Diagnose.flp - FL Studio 2026
+17:11:18 176680 354,6 321,8 6130 70 20,6 Nakama-Diagnose.flp - FL Studio 2026
+17:11:19 176680 354,6 321,8 6130 70 20,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:20 176680 354,6 321,8 6130 70 21,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:21 176680 354,6 321,8 6130 70 21,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:22 176680 354,6 321,8 6130 70 21,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:23 176680 354,3 321,4 6130 70 21,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:24 176680 354,6 321,8 6130 70 22,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:25 176680 354,6 321,9 6130 70 22,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:26 176680 354,4 321,4 6130 70 23,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:27 176680 354,4 321,4 6130 70 23,4 Nakama-Diagnose.flp - FL Studio 2026
+17:11:28 176680 354,6 321,9 6130 70 23,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:29 176680 354,6 321,8 6130 70 24,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:30 176680 354,6 321,8 6130 70 24,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:31 176680 354,6 321,8 6130 70 25,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:32 176680 354,6 321,8 6130 70 25,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:34 176680 354,6 321,9 6130 70 25,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:35 176680 354,6 321,9 6130 70 26,1 Nakama-Diagnose.flp - FL Studio 2026
+17:11:36 176680 354,7 321,9 6130 70 26,4 Nakama-Diagnose.flp - FL Studio 2026
+17:11:37 176680 354,7 321,9 6130 70 26,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:38 176680 354,4 321,4 6130 70 27,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:39 176680 354,7 321,9 6130 70 27,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:40 176680 354,7 321,9 6130 70 28,1 Nakama-Diagnose.flp - FL Studio 2026
+17:11:41 176680 354,7 321,9 6130 70 28,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:42 176680 354,7 321,9 6130 70 28,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:43 176680 354,7 321,9 6130 70 29,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:44 176680 354,7 321,9 6130 70 29,6 Nakama-Diagnose.flp - FL Studio 2026
+17:11:45 176680 354,7 321,9 6130 70 29,9 Nakama-Diagnose.flp - FL Studio 2026
+17:11:46 176680 354,7 321,9 6130 70 30,4 Nakama-Diagnose.flp - FL Studio 2026
+17:11:47 176680 354,7 321,9 6130 70 30,7 Nakama-Diagnose.flp - FL Studio 2026
+17:11:48 176680 354,6 321,9 6130 70 31,0 Nakama-Diagnose.flp - FL Studio 2026
+17:11:49 176680 354,6 321,9 6130 70 31,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:50 176680 354,4 321,4 6130 70 31,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:51 176680 354,7 321,9 6130 70 32,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:52 176680 354,4 321,4 6130 70 32,5 Nakama-Diagnose.flp - FL Studio 2026
+17:11:53 176680 354,7 321,9 6130 70 32,8 Nakama-Diagnose.flp - FL Studio 2026
+17:11:54 176680 354,7 321,9 6130 70 33,2 Nakama-Diagnose.flp - FL Studio 2026
+17:11:55 176680 354,7 321,9 6130 70 33,6 Nakama-Diagnose.flp - FL Studio 2026
+17:11:56 176680 354,7 321,9 6130 70 33,9 Nakama-Diagnose.flp - FL Studio 2026
+17:11:57 176680 354,6 321,9 6130 70 34,3 Nakama-Diagnose.flp - FL Studio 2026
+17:11:58 176680 354,6 321,9 6130 70 34,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:00 176680 354,6 321,9 6130 70 35,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:01 176680 354,6 321,9 6130 70 35,6 Nakama-Diagnose.flp - FL Studio 2026
+17:12:02 176680 354,6 321,9 6130 70 36,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:03 176680 354,6 321,9 6130 70 36,3 Nakama-Diagnose.flp - FL Studio 2026
+17:12:04 176680 354,6 321,9 6132 70 36,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:05 176680 354,4 321,8 6132 70 37,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:06 176680 354,6 321,9 6132 70 37,5 Nakama-Diagnose.flp - FL Studio 2026
+17:12:07 176680 354,6 321,9 6132 70 37,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:08 176680 354,6 321,9 6132 70 38,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:09 176680 354,3 321,4 6132 70 38,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:10 176680 354,6 321,9 6132 70 38,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:11 176680 354,6 321,9 6132 70 39,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:12 176680 354,3 321,4 6132 70 39,6 Nakama-Diagnose.flp - FL Studio 2026
+17:12:13 176680 354,6 321,9 6131 70 40,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:14 176680 354,6 321,9 6131 70 40,3 Nakama-Diagnose.flp - FL Studio 2026
+17:12:15 176680 354,6 321,9 6131 70 40,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:16 176680 354,3 321,4 6129 69 41,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:17 176680 354,6 321,8 6129 69 41,5 Nakama-Diagnose.flp - FL Studio 2026
+17:12:18 176680 354,6 321,9 6131 69 41,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:19 176680 354,6 321,9 6131 69 42,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:20 176680 354,6 321,8 6131 69 42,5 Nakama-Diagnose.flp - FL Studio 2026
+17:12:21 176680 354,6 321,8 6131 69 42,9 Nakama-Diagnose.flp - FL Studio 2026
+17:12:22 176680 354,6 321,8 6131 69 43,3 Nakama-Diagnose.flp - FL Studio 2026
+17:12:24 176680 354,6 321,8 6131 69 43,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:25 176680 354,6 321,8 6131 69 44,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:26 176680 354,5 321,7 6123 65 44,5 Nakama-Diagnose.flp - FL Studio 2026
+17:12:27 176680 354,5 321,7 6123 64 44,9 Nakama-Diagnose.flp - FL Studio 2026
+17:12:28 176680 354,5 321,7 6123 64 45,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:29 176680 354,5 321,7 6123 64 45,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:30 176680 354,5 321,7 6123 64 46,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:31 176680 354,5 321,7 6123 64 46,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:32 176680 354,5 321,7 6123 64 46,9 Nakama-Diagnose.flp - FL Studio 2026
+17:12:33 176680 354,5 321,7 6123 64 47,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:34 176680 354,5 321,7 6123 64 47,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:35 176680 354,5 321,7 6123 64 48,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:36 176680 354,5 321,7 6123 64 48,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:37 176680 354,5 321,7 6123 64 48,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:38 176680 354,5 321,7 6123 64 49,3 Nakama-Diagnose.flp - FL Studio 2026
+17:12:39 176680 354,5 321,7 6123 64 49,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:40 176680 354,5 321,7 6123 64 50,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:41 176680 354,5 321,7 6123 64 50,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:42 176680 354,5 321,7 6123 64 50,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:43 176680 354,5 321,7 6123 64 51,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:44 176680 354,5 321,7 6123 64 51,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:46 176680 354,5 321,7 6123 64 51,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:47 176680 354,5 321,7 6123 64 52,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:48 176680 354,5 321,7 6123 64 52,5 Nakama-Diagnose.flp - FL Studio 2026
+17:12:49 176680 354,5 321,7 6123 64 53,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:50 176680 354,5 321,7 6123 64 53,3 Nakama-Diagnose.flp - FL Studio 2026
+17:12:51 176680 354,5 321,7 6123 64 53,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:52 176680 354,5 321,7 6123 64 54,0 Nakama-Diagnose.flp - FL Studio 2026
+17:12:53 176680 354,5 321,7 6123 64 54,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:54 176680 354,5 321,7 6123 64 54,7 Nakama-Diagnose.flp - FL Studio 2026
+17:12:55 176680 354,2 321,2 6123 64 55,1 Nakama-Diagnose.flp - FL Studio 2026
+17:12:56 176680 354,5 321,7 6123 64 55,4 Nakama-Diagnose.flp - FL Studio 2026
+17:12:57 176680 354,5 321,7 6123 64 55,8 Nakama-Diagnose.flp - FL Studio 2026
+17:12:58 176680 354,2 321,2 6123 64 56,2 Nakama-Diagnose.flp - FL Studio 2026
+17:12:59 176680 354,5 321,7 6123 64 56,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:00 176680 354,5 321,7 6123 64 56,8 Nakama-Diagnose.flp - FL Studio 2026
+17:13:01 176680 354,5 321,7 6123 64 57,2 Nakama-Diagnose.flp - FL Studio 2026
+17:13:02 176680 354,5 321,7 6123 64 57,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:03 176680 354,5 321,7 6123 64 58,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:04 176680 354,5 321,7 6123 64 58,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:05 176680 354,5 321,7 6123 64 58,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:06 176680 354,5 321,7 6123 64 59,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:08 176680 354,5 321,7 6123 64 59,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:09 176680 354,5 321,7 6123 64 59,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:10 176680 354,5 321,7 6123 64 60,1 Nakama-Diagnose.flp - FL Studio 2026
+17:13:11 176680 354,5 321,7 6123 64 60,4 Nakama-Diagnose.flp - FL Studio 2026
+17:13:12 176680 354,5 321,7 6123 64 60,8 Nakama-Diagnose.flp - FL Studio 2026
+17:13:13 176680 354,5 321,7 6123 64 61,2 Nakama-Diagnose.flp - FL Studio 2026
+17:13:14 176680 354,5 321,7 6123 64 61,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:15 176680 354,5 321,7 6123 64 62,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:16 176680 354,5 321,7 6123 64 62,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:17 176680 354,5 321,7 6123 64 62,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:18 176680 354,5 321,7 6123 64 63,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:19 176680 354,5 321,7 6123 64 63,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:20 176680 354,5 321,7 6123 64 63,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:21 176680 354,5 321,7 6123 64 64,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:22 176680 354,5 321,7 6123 64 64,4 Nakama-Diagnose.flp - FL Studio 2026
+17:13:23 176680 354,5 321,7 6123 64 64,9 Nakama-Diagnose.flp - FL Studio 2026
+17:13:24 176680 354,2 321,2 6123 64 65,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:25 176680 354,5 321,7 6123 64 65,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:26 176680 354,5 321,7 6123 64 66,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:28 176680 354,5 321,7 6123 64 66,5 Nakama-Diagnose.flp - FL Studio 2026
+17:13:29 176680 354,5 321,7 6123 64 66,8 Nakama-Diagnose.flp - FL Studio 2026
+17:13:30 176680 354,2 321,2 6123 64 67,1 Nakama-Diagnose.flp - FL Studio 2026
+17:13:31 176680 354,5 321,7 6123 64 67,4 Nakama-Diagnose.flp - FL Studio 2026
+17:13:32 176680 354,5 321,7 6123 64 67,8 Nakama-Diagnose.flp - FL Studio 2026
+17:13:33 176680 354,5 321,7 6123 64 68,2 Nakama-Diagnose.flp - FL Studio 2026
+17:13:34 176680 354,5 321,7 6123 64 68,5 Nakama-Diagnose.flp - FL Studio 2026
+17:13:35 176680 354,5 321,7 6123 64 68,8 Nakama-Diagnose.flp - FL Studio 2026
+17:13:36 176680 354,5 321,7 6123 64 69,1 Nakama-Diagnose.flp - FL Studio 2026
+17:13:37 176680 354,5 321,7 6123 64 69,4 Nakama-Diagnose.flp - FL Studio 2026
+17:13:38 176680 354,5 321,7 6123 64 69,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:39 176680 354,5 321,7 6123 64 70,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:40 176680 354,5 321,7 6123 64 70,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:41 176680 354,2 321,2 6123 64 70,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:42 176680 354,5 321,7 6123 64 70,9 Nakama-Diagnose.flp - FL Studio 2026
+17:13:43 176680 354,5 321,7 6123 64 71,1 Nakama-Diagnose.flp - FL Studio 2026
+17:13:44 176680 354,5 321,7 6123 64 71,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:45 176680 354,5 321,7 6123 64 71,6 Nakama-Diagnose.flp - FL Studio 2026
+17:13:46 176680 354,5 321,7 6123 64 71,9 Nakama-Diagnose.flp - FL Studio 2026
+17:13:47 176680 354,5 321,7 6123 64 72,2 Nakama-Diagnose.flp - FL Studio 2026
+17:13:48 176680 354,5 321,7 6125 64 72,5 Nakama-Diagnose.flp - FL Studio 2026
+17:13:49 176680 354,5 321,7 6125 64 72,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:50 176680 354,5 321,7 6125 64 73,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:51 176680 354,5 321,7 6125 64 73,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:52 176680 354,5 321,7 6125 64 73,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:53 176680 354,5 321,7 6125 64 74,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:54 176680 354,5 321,7 6125 64 74,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:55 176680 354,5 321,7 6125 64 74,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:56 176680 354,5 321,7 6125 64 75,0 Nakama-Diagnose.flp - FL Studio 2026
+17:13:57 176680 354,5 321,7 6125 64 75,3 Nakama-Diagnose.flp - FL Studio 2026
+17:13:58 176680 354,5 321,6 6125 64 75,7 Nakama-Diagnose.flp - FL Studio 2026
+17:13:59 176680 354,5 321,6 6125 64 76,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:01 176680 354,5 321,7 6125 64 76,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:02 176680 354,5 321,7 6125 64 77,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:03 176680 354,5 321,7 6125 64 77,4 Nakama-Diagnose.flp - FL Studio 2026
+17:14:04 176680 354,2 321,2 6125 64 77,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:05 176680 354,5 321,7 6125 64 78,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:06 176680 354,5 321,7 6125 64 78,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:07 176680 354,5 321,7 6125 64 79,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:08 176680 354,2 321,2 6125 64 79,3 Nakama-Diagnose.flp - FL Studio 2026
+17:14:09 176680 354,5 321,7 6125 64 79,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:10 176680 354,5 321,7 6125 64 80,0 Nakama-Diagnose.flp - FL Studio 2026
+17:14:11 176680 354,5 321,7 6125 64 80,4 Nakama-Diagnose.flp - FL Studio 2026
+17:14:12 176680 354,5 321,7 6125 64 80,7 Nakama-Diagnose.flp - FL Studio 2026
+17:14:13 176680 354,5 321,7 6125 64 81,0 Nakama-Diagnose.flp - FL Studio 2026
+17:14:14 176680 354,5 321,7 6125 64 81,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:15 176680 354,5 321,7 6125 64 81,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:16 176680 354,5 321,7 6125 64 82,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:17 176680 354,5 321,7 6125 64 82,7 Nakama-Diagnose.flp - FL Studio 2026
+17:14:18 176680 354,5 321,7 6125 64 83,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:19 176680 354,5 321,7 6125 64 83,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:20 176680 354,5 321,7 6125 64 83,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:21 176680 354,5 321,7 6125 64 84,0 Nakama-Diagnose.flp - FL Studio 2026
+17:14:22 176680 354,5 321,7 6125 64 84,4 Nakama-Diagnose.flp - FL Studio 2026
+17:14:23 176680 354,5 321,7 6125 64 84,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:24 176680 354,5 321,7 6125 64 85,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:26 176680 354,5 321,7 6125 64 85,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:27 176680 354,5 321,6 6125 64 85,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:28 176680 354,5 321,7 6125 64 86,4 Nakama-Diagnose.flp - FL Studio 2026
+17:14:29 176680 354,5 321,7 6125 64 86,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:30 176680 354,5 321,7 6125 64 87,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:31 176680 354,5 321,7 6125 64 87,4 Nakama-Diagnose.flp - FL Studio 2026
+17:14:32 176680 354,5 321,7 6125 64 87,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:33 176680 354,5 321,7 6125 64 88,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:34 176680 354,5 321,7 6125 64 88,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:35 176680 354,5 321,7 6125 64 88,8 Nakama-Diagnose.flp - FL Studio 2026
+17:14:36 176680 354,2 321,2 6125 64 89,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:37 176680 354,5 321,7 6125 64 89,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:38 176680 354,5 321,7 6125 64 90,1 Nakama-Diagnose.flp - FL Studio 2026
+17:14:39 176680 354,5 321,7 6125 64 90,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:40 176680 354,5 321,7 6125 64 90,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:41 176680 354,5 321,7 6125 64 91,3 Nakama-Diagnose.flp - FL Studio 2026
+17:14:42 176680 354,5 321,7 6125 64 91,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:43 176680 354,5 321,7 6125 64 91,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:44 176680 354,5 321,7 6125 64 92,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:45 176680 354,5 321,7 6125 64 92,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:47 176680 354,2 321,2 6125 64 92,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:48 176680 354,5 321,7 6125 64 93,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:49 176680 354,2 321,2 6125 64 93,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:50 176680 354,5 321,7 6125 64 93,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:51 176680 354,5 321,7 6125 64 94,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:52 176680 354,5 321,7 6125 64 94,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:53 176680 354,2 321,2 6125 64 94,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:54 176680 354,5 321,7 6125 64 95,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:55 176680 354,5 321,7 6125 64 95,5 Nakama-Diagnose.flp - FL Studio 2026
+17:14:56 176680 354,5 321,7 6125 64 95,9 Nakama-Diagnose.flp - FL Studio 2026
+17:14:57 176680 354,5 321,7 6125 64 96,2 Nakama-Diagnose.flp - FL Studio 2026
+17:14:58 176680 354,5 321,7 6125 64 96,6 Nakama-Diagnose.flp - FL Studio 2026
+17:14:59 176680 354,5 321,7 6125 64 96,9 Nakama-Diagnose.flp - FL Studio 2026
+17:15:00 176680 354,5 321,7 6125 64 97,2 Nakama-Diagnose.flp - FL Studio 2026
+17:15:01 176680 354,5 321,7 6125 64 97,5 Nakama-Diagnose.flp - FL Studio 2026
+17:15:02 176680 354,5 321,7 6125 64 97,9 Nakama-Diagnose.flp - FL Studio 2026
+17:15:03 176680 354,5 321,7 6125 64 98,2 Nakama-Diagnose.flp - FL Studio 2026
+17:15:04 176680 356,8 321,8 6147 65 98,5 Nakama-Diagnose.flp - FL Studio 2026
+17:15:05 176680 356,6 321,3 6147 65 98,9 Nakama-Diagnose.flp - FL Studio 2026
+17:15:06 176680 347,8 311,6 6058 48 99,2 Nakama-Diagnose.flp - FL Studio 2026
+17:15:07 176680 93,8 75,5 787 1 99,6 
+17:15:07 ENDE PID 176680: ExitTime 01:00:00.000, ExitCode 0 (0x00000000)
+Wache 2 lang, Ende:
+17:10:11 neu PID 176680, Start 17:10:11.482, Handle offen
+17:15:08 ENDE PID 176680: ExitTime 17:15:07.810, ExitCode 0 (0x00000000)
+
+== Reguläres Schliessen per WM_CLOSE (Rotbeweis M-88, runner-eigenes FL PID 284032, Lauf 17:21) ==
+17:23:16 284032 354,4 321,2 6128 70 24,8 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:17 284032 354,5 321,3 6128 70 25,2 | 0,1 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:18 284032 354,5 321,3 6128 70 25,4 | 0,1 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:19 284032 354,5 321,3 6128 70 25,7 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:20 284032 354,5 321,3 6130 70 26,0 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:21 284032 354,5 321,3 6128 70 26,2 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:22 284032 354,5 321,3 6128 70 26,5 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:23 284032 354,5 321,3 6128 70 26,8 | 0,1 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:24 284032 354,5 321,3 6128 70 27,2 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:25 284032 354,5 321,3 6128 70 27,4 | 0,1 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:26 284032 354,6 321,3 6128 70 27,7 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:23:27 ENDE PID 284032: ExitTime 17:23:26.991, ExitCode 0 (0x00000000), Leerlauf 0,0 s, Vordergrund anderes
+
+== HEAD, voller Satz, Snapshot-FL PID 75884 (Lauf 16:32): lebte bis zum Beenden durch den naechsten Runner ==
+16:37:15 neu PID 75884, Start 16:37:15.134, Handle offen
+16:37:15 75884 120,9 104,0 515 19 0,3 
+16:37:16 75884 228,4 191,0 5735 42 1,4 
+...
+17:05:13 75884 354,0 322,2 6078 64 412,0 Nakama-Diagnose.flp - FL Studio 2026
+17:05:14 75884 354,0 322,2 6078 64 412,2 Nakama-Diagnose.flp - FL Studio 2026
+17:05:15 75884 354,0 322,2 6078 64 412,4 Nakama-Diagnose.flp - FL Studio 2026
+17:05:16 ENDE PID 75884: ExitTime 17:05:15.999, ExitCode -1 (0xFFFFFFFF)
+
+== HEAD, voller Satz 2, Snapshot-FL PID 139208 (Lauf 17:28): lebte bis 17:44:46 (vor dem Kanon vom Bauer beendet) ==
+17:32:53 neu PID 139208, Start 17:32:53.665, Handle offen
+17:32:53 139208 14,3 2,8 338 6 0,1 | 0,0 | anderes | 
+17:32:54 139208 202,2 174,3 5592 34 1,1 | 0,1 | anderes | 
+...
+17:44:44 139208 356,9 326,2 6122 64 205,0 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:44:45 139208 356,9 326,2 6122 64 205,2 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:44:46 139208 356,9 326,2 6122 64 205,4 | 0,0 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+17:44:47 ENDE PID 139208: ExitTime 17:44:46.688, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,0 s, Vordergrund anderes
+
+== Wache 3 zu den zwei Laeufen am Endstand 2c138b2d (18:33 und 18:44) ==
+Starts und Enden:
+18:33:39 neu PID 289640, Start 18:33:38.749, Handle offen
+18:33:44 ENDE PID 289640: ExitTime 18:33:44.294, ExitCode 0 (0x00000000), Leerlauf 0,3 s, Vordergrund anderes
+18:33:45 neu PID 53636, Start 18:33:45.162, Handle offen
+18:33:48 ENDE PID 53636: ExitTime 18:33:48.338, ExitCode 0 (0x00000000), Leerlauf 1,2 s, Vordergrund anderes
+18:33:49 neu PID 71884, Start 18:33:49.377, Handle offen
+18:34:13 ENDE PID 71884: ExitTime 18:34:12.369, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,0 s, Vordergrund anderes
+18:34:14 neu PID 334432, Start 18:34:13.412, Handle offen
+18:38:29 ENDE PID 334432: ExitTime 18:38:29.226, ExitCode -1 (0xFFFFFFFF), Leerlauf 74,4 s, Vordergrund anderes
+18:38:30 neu PID 146108, Start 18:38:30.241, Handle offen
+18:44:13 ENDE PID 146108: ExitTime 01:00:00.000, ExitCode -1 (0xFFFFFFFF), Leerlauf 417,9 s, Vordergrund anderes
+18:44:20 neu PID 86848, Start 18:44:19.817, Handle offen
+18:44:23 ENDE PID 86848: ExitTime 18:44:23.231, ExitCode 0 (0x00000000), Leerlauf 428,1 s, Vordergrund anderes
+18:44:24 neu PID 239460, Start 18:44:24.022, Handle offen
+18:44:26 ENDE PID 239460: ExitTime 18:44:26.578, ExitCode 0 (0x00000000), Leerlauf 431,2 s, Vordergrund anderes
+18:44:27 neu PID 368912, Start 18:44:27.177, Handle offen
+18:44:47 ENDE PID 368912: ExitTime 18:44:47.490, ExitCode -1 (0xFFFFFFFF), Leerlauf 452,4 s, Vordergrund anderes
+18:44:48 neu PID 124548, Start 18:44:48.516, Handle offen
+18:49:04 ENDE PID 124548: ExitTime 18:49:04.182, ExitCode -1 (0xFFFFFFFF), Leerlauf 0,5 s, Vordergrund anderes
+18:49:05 neu PID 218184, Start 18:49:05.214, Handle offen
+
+Das Snapshot-FL des zweiten Laufs (PID 218184), erste und letzte Zeilen bis zum Abschluss der Wache:
+18:49:05 218184 121,4 104,5 515 19 0,4 | 0,1 | anderes | 
+18:49:06 218184 223,8 188,3 5709 41 1,5 | 0,7 | anderes | 
+18:49:07 218184 307,1 261,7 5932 54 2,5 | 1,7 | anderes | FL Studio 2026
+...
+18:56:44 218184 356,0 324,6 6124 64 140,3 | 4,6 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+18:56:45 218184 355,1 323,7 6124 64 140,5 | 5,6 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+18:56:46 218184 355,1 323,7 6124 64 140,8 | 6,6 | anderes | Nakama-Diagnose.flp - FL Studio 2026
+
+Beobachtung Leerlauf und Vordergrund (Wache 3, 17:18:34 bis 18:55:57): Leerlaufzeit der Sitzung 0 bis 509 s;
+jedes vom Runner gestartete FL lag rund 2 s nach seinem Start fuer eine Abtastung (1 s) im Vordergrund, 334432 dazu
+18:36:53 bis 18:38:29 (Leerlauf dort ueber 60 s). Kein FL endete in diesem Zeitraum selbst.

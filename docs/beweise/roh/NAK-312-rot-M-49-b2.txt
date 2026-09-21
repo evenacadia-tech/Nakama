@@ -1,0 +1,43 @@
+# NAK-312 Rotlauf H-3 - B2-Haelfte von 312/M-49, Bein B2
+
+Bauer: Etappe 6a, Aenderungssatz C, 21.09.2026. Basis HEAD 9aa776da3fc8da375b07aa1229884b3bbb3a0aeb. Auftrag §34.3 H-3: die B2-Haelfte von 312/M-49 einmal rot fahren - eine lokale Kopie von docs/beweise/roh/NAK-312-parameter-golden-s1.bin mit einem veraenderten Byte an die Stelle der Datei legen, B2 fahren, die Datei bytegleich zuruecklegen (SHA-256, git status unveraendert), B2 gruen. Nichts davon ist committet.
+
+Matrixzeile: M-49 (T3-01-02, R-312-4), B2-Haelfte: 312/M-49 (B2) und 312/M-49 statebytes_des_basis_sha_reisen_bytegleich.
+Bein: B2 EqCopStateMigrationTest.
+
+Rohprotokoll rot-H-3.log:
+Start 2026-09-21 22:11:14
+Basis HEAD 9aa776da3fc8da375b07aa1229884b3bbb3a0aeb
+
+== 2. Vorher ==
+Datei: docs/beweise/roh/NAK-312-parameter-golden-s1.bin (5745 Byte)
+SHA-256 vorher: 4EA7C41E26E7C53CFB99D7038B45F391CBFA8F16AC2E6738F98482448A917810
+Sicherung: C:\Users\phili\.claude\jobs\b1dc89c2\tmp\sicherung\NAK-312-parameter-golden-s1.bin.H-3 (ausserhalb des Repos)
+git status --short vorher: ''
+
+== 3. Mutation ==
+Lokale Kopie mit einem veraenderten Byte an die Stelle der Datei gelegt: Offset 2000, 0x2E -> 0x2F (XOR 0x01)
+SHA-256 mutiert: B3D001539988CF74F17D0927ED595C1B70AE4D47FB482FA89F9E61038F491E91
+Binary eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe LastWriteTime 22:10:44 (liest die Datei zur Laufzeit; kein Neubau)
+
+== 4. Lauf B2 MIT Mutation ==
+Lauf EqCopStateMigrationTest: Exitcode 1, 1 s, letzte Zeile: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 291 Pruefungen ok, 3 Fehler
+Gefallene Pruefungen (3):
+  FEHLER  312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810 / s1 5745 b3d001539988cf74f17d0927ed595c1b70ae4d47fb482fa89f9e61038f491e91]
+  FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+  FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+Zeilen zu 312/M-49:
+  FEHLER  312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810 / s1 5745 b3d001539988cf74f17d0927ed595c1b70ae4d47fb482fa89f9e61038f491e91]
+  FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+  FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+
+== 5. Ruecknahme ==
+bytegleich aus der Sicherung zurueck, SHA-256 4EA7C41E26E7C53CFB99D7038B45F391CBFA8F16AC2E6738F98482448A917810 - gleich dem Wert vor der Mutation: JA
+git status --short danach: '' (leer = unveraendert)
+Lauf EqCopStateMigrationTest: Exitcode 0, 1 s, letzte Zeile: STATE-MIGRATION-TEST OK - 294 Pruefungen ok, 0 Fehler
+Gefallene Pruefungen (0)
+Ende 2026-09-21 22:11:17
+
+== 6. Bewertung (nach dem Lauf, gemessen) ==
+Die Zusage faellt an der erwarteten Pruefung (312/M-49 (B2): SHA-256 der Datei ungleich ihrer Zeile im Golden; statebytes_des_basis_sha_reisen_bytegleich: der veraenderte Stand laedt nicht normal, 0 Byte zurueck): JA
+Mitgefallen: keine uebrigen Pruefungen von B2 (291 ok).

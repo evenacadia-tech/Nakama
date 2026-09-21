@@ -74,7 +74,12 @@
          Thread bleibt die Echtzeitwache bei 0. Seit der Nacharbeit 1 der
          Etappe 5 (Abschnitt ZC, Kanonteil von 312/M-88, R-312-19) ein
          Textriegel: kein Quelltext der zwei ausgelieferten Buendel ruft einen
-         Weg, der den Hostprozess beendet oder sein Fenster schliesst.
+         Weg, der den Hostprozess beendet oder sein Fenster schliesst. Seit
+         NAK-312 Etappe 6a (Zusaetze aus der Erstpruefung der Etappe 5) in
+         Abschnitt ZA: ein im Render gesetzter Hoerwunsch wirkt als Processed
+         (312/M-89), Offline an und aus ohne Block dazwischen schaltet den
+         ersten Echtzeitblock nicht hart (312/M-90), 312/M-40 zaehlt auch die
+         Allokationen, und der Textriegel liest auch die Vorlagen `*.in`.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -5393,7 +5398,7 @@ int candidateSlot (Prozessor& p)
 void nak312OfflineUebergang()
 {
     abschnitt ("ZA - NAK-312 Etappe 5: der Offline-Uebergang (312/M-40, 312/M-41, 312/M-83, 312/M-43 bis 312/M-47; "
-               "312/M-42 in Abschnitt O, 312/M-04 in Abschnitt W)");
+               "312/M-42 in Abschnitt O, 312/M-04 in Abschnitt W; Zusaetze der Etappe 6a: 312/M-89, 312/M-90)");
 
     const int fade = nakama::dsp::kFadeSamples;
 
@@ -5409,6 +5414,10 @@ void nak312OfflineUebergang()
         juce::Random w (3140);
         bool gewuenschtSofort = false, wirksamNachErstemBlock = false, ersterBitgleich = false, alleBitgleich = true;
         dsp::RtWache::zuruecksetzen();
+        // NAK-312 Etappe 6a (R-312-22, H-2): der Allokationszaehler ist ueber
+        // setNonRealtime und processBlock scharf - er meldet an die
+        // Echtzeitwache, und die zaehlt im Bereich wie der Wrapper.
+        std::uint64_t eigene = 0;
         for (int blockNr = 0; blockNr < 200; ++blockNr)
         {
             for (int k = 0; k < 2; ++k)
@@ -5418,6 +5427,8 @@ void nak312OfflineUebergang()
                     pa.setSample (k, n, s);
                     pb.setSample (k, n, s);
                 }
+            allokationen = 0;
+            zaehleAllokationen = true;
             {
                 const dsp::RtWache::Bereich wieDerWrapper;
                 x.a->setNonRealtime (true);
@@ -5425,6 +5436,8 @@ void nak312OfflineUebergang()
                     gewuenschtSofort = x.a->gewuenschteHoermatrix() == dsp::Hoermatrix::processed;
                 x.a->processBlock (pa, midi);
             }
+            zaehleAllokationen = false;
+            eigene += allokationen;
             x.b->processBlock (pb, midi);
             const bool gleich = std::memcmp (pa.getReadPointer (0), pb.getReadPointer (0), 256 * sizeof (float)) == 0
                              && std::memcmp (pa.getReadPointer (1), pb.getReadPointer (1), 256 * sizeof (float)) == 0;
@@ -5436,11 +5449,14 @@ void nak312OfflineUebergang()
             alleBitgleich = alleBitgleich && gleich;
         }
         const auto sperren = dsp::RtWache::sperren();
-        pruefe (candidateHoerbar && sperren == 0,
-                "312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, [SONDE-015] M-47): echter SondeProcessor mit "
-                "hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein den Bereich wie der Wrapper um setNonRealtime (true) "
-                "und processBlock, zaehlt RtWache::sperren() ueber 200 Bloecke 0",
-                "Candidate vorher hoerbar " + std::string (candidateHoerbar ? "ja" : "NEIN") + ", RtWache::sperren " + zahl (sperren));
+        const auto rtAllok = dsp::RtWache::allokationen();
+        pruefe (candidateHoerbar && sperren == 0 && rtAllok == 0 && eigene == 0,
+                "312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, R-312-22, [SONDE-015] M-47): echter "
+                "SondeProcessor mit hoerbarer Vorschau (Hoerwunsch Candidate); legt das Bein den Bereich wie der Wrapper um "
+                "setNonRealtime (true) und processBlock, zaehlen RtWache::sperren() und RtWache::allokationen() ueber 200 "
+                "Bloecke 0",
+                "Candidate vorher hoerbar " + std::string (candidateHoerbar ? "ja" : "NEIN") + ", RtWache::sperren " + zahl (sperren)
+                    + ", RtWache::allokationen " + zahl (rtAllok) + ", eigener Zaehler " + zahl (eigene));
         pruefe (candidateHoerbar && gewuenschtSofort && wirksamNachErstemBlock,
                 "312/M-41 der_erste_aufruf_stellt_die_hoermatrix_sofort_um (Teilfall von 312/M-40, E-312-7 Hoermatrixhaelfte): "
                 "unmittelbar nach der Rueckkehr des ersten setNonRealtime (true) ist gewuenschteHoermatrix() Processed, "
@@ -5638,6 +5654,100 @@ void nak312OfflineUebergang()
                 std::string ("vorher unveraendert ") + (vorherUnveraendert ? "ja" : "NEIN") + ", vorher Candidate "
                 + (vorherCandidate ? "ja" : "NEIN") + ", erstes bestaetigt " + (erstesBestaetigt ? "ja" : "NEIN")
                 + ", erstes gewechselt " + (erstesGewechselt ? "ja" : "NEIN"));
+    }
+
+    // ── NAK-312 Etappe 6a, Zusaetze aus der Erstpruefung der Etappe 5 (§34):
+    // 312/M-89 (R-312-20) und 312/M-90 (R-312-22). Beide laufen unter der
+    // Taktsperre: der Worker verbucht das angeforderte Vorschauende nicht
+    // mitten in der Messung, die Vorschau bleibt stehen, und kein Ergebnis
+    // haengt an der Wanduhr. ────────────────────────────────────────────────
+
+    // 312/M-89: ein WAEHREND des Renders gesetzter Hoerwunsch (Dry, Delta,
+    // Candidate) wirkt als Processed - jeder Offlineblock ist ab Sample 0
+    // bitgleich zum bestaetigten Lauf, bei Blockgroesse 1, 64 und 256.
+    for (const int groesse : { 1, 64, 256 })
+    {
+        auto x = offlineAufbau (groesse);
+        const bool candidateHoerbar = x.a->dspKernFuerTest().wirksameHoermatrix() == dsp::Hoermatrix::candidate
+                                   && ! bitgleich (x.ya, x.yb);
+        const int bloecke = std::max (1, 512 / groesse);
+        bool alleGleich = true, vorschauStand = false;
+        std::string detail;
+        x.a->mitAngehaltenemTaktFuerTest ([&]
+        {
+            x.a->setNonRealtime (true);
+            x.b->setNonRealtime (true);
+            int saat = 71;
+            const std::pair<dsp::Hoermatrix, const char*> wuensche[] = {
+                { dsp::Hoermatrix::dry, "Dry" }, { dsp::Hoermatrix::delta, "Delta" },
+                { dsp::Hoermatrix::candidate, "Candidate" } };
+            for (const auto& [wunsch, name] : wuensche)
+            {
+                x.a->setzeHoermatrix (wunsch);
+                const auto ya = fahreAudio (*x.a, bloecke, groesse, saat);
+                const auto yb = fahreAudio (*x.b, bloecke, groesse, saat);
+                ++saat;
+                const bool gleich = bitgleich (ya, yb);
+                alleGleich = alleGleich && gleich;
+                detail += std::string (name) + (gleich ? " bitgleich, " : " VERSCHIEDEN, ");
+            }
+            vorschauStand = x.a->previewAktiv();
+        });
+        pruefe (candidateHoerbar && vorschauStand && alleGleich,
+                "312/M-89 hoerwunsch_im_render_wirkt_als_processed_blockgroesse_" + std::to_string (groesse)
+                + " (R-312-20, E-312-7): echter SondeProcessor mit gesetzter Vorschau, nach setNonRealtime (true) im Render "
+                "nacheinander Hoerwunsch Dry, Delta und Candidate - jeder Offlineblock ist ab Sample 0 bitgleich zum "
+                "bestaetigten Lauf",
+                detail + "je " + std::to_string (bloecke) + " Bloecke, Vorschau vorher hoerbar "
+                + (candidateHoerbar ? "ja" : "NEIN") + ", am Ende noch gesetzt " + (vorschauStand ? "ja" : "NEIN"));
+    }
+
+    // 312/M-90: Offline an und sofort wieder aus, OHNE Block dazwischen - der
+    // erste Echtzeitblock schaltet nicht hart. Aufbau wie 312/M-43: Gleichanteil
+    // 0,3, neutraler bestaetigter Satz, Vorschau Output-Trim +6 dB, Hoermatrix
+    // Processed; danach Wechsel auf Candidate, Nachbarsprung nach [SONDE-015]
+    // E-31.
+    {
+        const int trim = param::indexVonId ("v1.global.output_trim_db");
+        auto a = prozessor (48000.0, 64);
+        const auto z = mitEq (true);
+        setze (*a, z);
+        auto vorschau = z;
+        vorschau.werte[(size_t) trim].zahl = 6.0;
+        juce::String g;
+        const bool gesetzt = a->setzePreview (vorschau, g);
+        a->setzeHoermatrix (dsp::Hoermatrix::processed);
+        const auto vorher = fahreGleichanteil (*a, 32, 64, 0.3f);
+        const bool candidateDa = a->dspKernFuerTest().candidateVorhanden();
+        std::vector<float> y;
+        a->mitAngehaltenemTaktFuerTest ([&]
+        {
+            a->setNonRealtime (true);
+            a->setNonRealtime (false);                 // kein Block dazwischen
+            a->setzeHoermatrix (dsp::Hoermatrix::candidate);
+            y = fahreGleichanteil (*a, 32, 64, 0.3f);
+        });
+        const double ziel = 0.3 * std::pow (10.0, 6.0 / 20.0);
+        const double schritt = (ziel - 0.3) / (double) fade;
+        const double toleranz = 1.0 / 8388608.0;       // 2^-23, [SONDE-015] E-31
+        const double ersterSprung = y.empty() || vorher.empty()
+            ? -1.0 : std::abs ((double) y.front() - (double) vorher.back());
+        double groessterSprung = ersterSprung;
+        for (size_t i = 1; i < y.size(); ++i)
+            groessterSprung = std::max (groessterSprung, std::abs ((double) y[i] - (double) y[i - 1]));
+        const bool amZiel = ! y.empty() && ! vorher.empty() && vorher.back() == 0.3f
+                         && std::abs ((double) y.back() - ziel) < 1.0e-6;
+        std::ostringstream d;
+        d << std::setprecision (9) << "erster Sprung " << ersterSprung << ", groesster " << groessterSprung
+          << ", Fadeschritt " << schritt << " + 2^-23, vorher " << (vorher.empty() ? -1.0f : vorher.back())
+          << ", Ende " << (y.empty() ? -1.0f : y.back());
+        pruefe (gesetzt && candidateDa && amZiel && ersterSprung >= 0.0
+                    && ersterSprung <= schritt + toleranz && groessterSprung <= schritt + toleranz,
+                "312/M-90 hin_und_zurueck_ohne_block_schaltet_nicht_hart (R-312-22, dient 312/M-43 und [SONDE-015] M-55): "
+                "setNonRealtime (true) und sofort setNonRealtime (false) ohne Block dazwischen, danach Echtzeitbloecke mit "
+                "Wechsel auf Candidate - der Nachbarsprung am Umschaltsample wie ueber den ganzen Lauf ist hoechstens die "
+                "Fadeschrittweite plus 2^-23",
+                d.str());
     }
 }
 
@@ -5947,7 +6057,10 @@ void nak312HostEnde()
     {
         const auto dir = wurzel().getChildFile ("eq-copilot/plugin").getChildFile (o);
         if (! dir.isDirectory()) { alleOrdner = false; treffer += std::string ("Ordner fehlt: ") + o + "; "; continue; }
-        for (const auto& f : dir.findChildFiles (juce::File::findFiles, true, "*.cpp;*.h"))
+        // NAK-312 Etappe 6a (H-4): auch die Vorlagen `*.in`, aus denen der Bau
+        // Kopfdateien erzeugt (core/ipc, hostbridge) - die Behauptung sagt
+        // "kein Quelltext", nicht "keine .cpp und .h".
+        for (const auto& f : dir.findChildFiles (juce::File::findFiles, true, "*.cpp;*.h;*.in"))
         {
             ++dateien;
             const auto text = f.loadFileAsString().toStdString();

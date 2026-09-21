@@ -1,0 +1,36 @@
+# NAK-312 Rotlauf H-4 - Textriegel 312/M-88 liest die Vorlagen *.in, Bein B7
+
+Bauer: Etappe 6a, Aenderungssatz C, 21.09.2026. Basis HEAD 9aa776da3fc8da375b07aa1229884b3bbb3a0aeb. Auftrag §34.3 H-4: das Muster des Textriegels 312/M-88 um *.in erweitert. Diese Rohdatei belegt, dass die erweiterte Pruefung eine der zwei getrackten Vorlagen wirklich liest (Prueflistenregel E: jede neue Pruefung einmal gebrochen).
+
+Pruefung: Kanonteil 312/M-88 (R-312-19) dieses Manifests, Abschnitt ZC von B7.
+Bein: B7 EqCopTransactionTest, Abschnitt ZC.
+
+Rohprotokoll rot-M-88in.log:
+Start 2026-09-21 22:11:50
+Basis HEAD 9aa776da3fc8da375b07aa1229884b3bbb3a0aeb
+
+== 2. Vorher ==
+Datei: eq-copilot/plugin/core/ipc/BrokerInstallBinding.h.in
+SHA-256 vorher: E62105DFCDB04B68074B0072E311EC767E9B4E1AFA0D8D5BE607791B32011504
+Sicherung: C:\Users\phili\.claude\jobs\b1dc89c2\tmp\sicherung\BrokerInstallBinding.h.in.H-4 (ausserhalb des Repos)
+
+== 3. Mutation ==
+Erste Zeile vorangestellt, woertlich: // Mutation 312/M-88 (H-4): WM_CLOSE
+SHA-256 mutiert: F3FC963ABDA2BDB57A00D29C026EFE476125950BD743C5BEC5AD464DEC326E2D
+Kein Neubau: der Textriegel 312/M-88 liest die Quellen zur Laufzeit; Binary eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe LastWriteTime 22:10:17
+
+== 4. Lauf B7 MIT Mutation ==
+Lauf EqCopTransactionTest: Exitcode 1, letzte Zeile: TRANSAKTION FEHLGESCHLAGEN
+Gefallene Pruefungen (1):
+  FEHLER  312/M-88 kein_weg_zum_hostende_im_pluginquelltext (Kanonteil von M-88, R-312-19): kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ruft ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder systemRequestedQuit oder nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase; fail-closed: fehlt ein Ordner oder sind es weniger als 100 Dateien, ist es rot  [105 Dateien, Treffer: eq-copilot\plugin\core\ipc\BrokerInstallBinding.h.in: WM_CLOSE; ]
+
+== 5. Ruecknahme ==
+bytegleich aus der Sicherung zurueck, SHA-256 E62105DFCDB04B68074B0072E311EC767E9B4E1AFA0D8D5BE607791B32011504 - gleich dem Wert vor der Mutation: JA
+git status --short danach: '' (leer = unveraendert)
+Lauf EqCopTransactionTest: Exitcode 0, letzte Zeile: TRANSAKTION OK
+Gefallene Pruefungen (0)
+Ende 2026-09-21 22:11:54
+
+== 6. Bewertung (nach dem Lauf, gemessen) ==
+Die Pruefung faellt an der erwarteten Stelle (312/M-88: 105 Dateien, Treffer eq-copilot\plugin\core\ipc\BrokerInstallBinding.h.in: WM_CLOSE): JA. Vor der Erweiterung las der Riegel laut Manifest §34.3 (H-4, Bestand 103) die Vorlagen nicht; der gruene Lauf nach der Erweiterung zaehlt 105 Dateien.
+Mitgefallen: keine.

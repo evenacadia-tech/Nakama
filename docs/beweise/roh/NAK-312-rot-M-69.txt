@@ -1,0 +1,27 @@
+# NAK-312 Rotbeweis M-69 (Manifest §7.1)
+
+Matrixzeile: 312/M-69 (T3-14-01, Startquelle verschwindet, R-312-9 letzter Satz), Etikett heute rot; Gegenprobe in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-A.txt ((a) Entwurf auf B, (b) und (c) Entwurf auf A trotz neuer Nonce).
+Zusage: der Entwurf verfaellt ohne Mutation - weder A noch B werden geschrieben, und es entsteht kein Host-Dirty.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-69 (a) startquelle_faellt_weg, (b) neue_runtime_nonce_mit_tick, (c) neue_runtime_nonce_ohne_tick.
+Mutation: wie M-66 (Matrix) - der Kennungsvergleich (instance_id und Runtime-Nonce) faellt an beiden Stellen; derselbe Lauf (Teil 1), vollstaendig in docs/beweise/roh/NAK-312-rot-M-66.txt.
+
+Aus dem Lauf:
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:47:34) ==
+== 2. Mutation (2026-09-21 22:47:34) ==
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:47:34) ==
+Bau Exit 0 (2026-09-21 22:47:41)
+Binary EqCopShot.exe 22:47:41, juengste mutierte Quelle PluginEditor.cpp 22:47:34, Binary juenger: True
+     FEHLER  312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B]
+     FEHLER  312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+     FEHLER  312/M-69 (c) neue_runtime_nonce_ohne_tick (Teilfall von 312/M-66): dasselbe, Enter VOR dem naechsten Tick - der Kennungsvergleich faellt gegen das Modell von jetzt, nicht gegen die Anzeige des letzten Ticks  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+   NAK-312 LABEL 15 geprueft, 9 Fehler
+Lauf Exit 1 (2026-09-21 22:47:44)
+== 4. Ruecknahme bytegleich (2026-09-21 22:47:44) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:47:44) ==
+Bau Exit 0 (2026-09-21 22:47:50)
+Binary EqCopShot.exe 22:47:50, juengste mutierte Quelle PluginEditor.cpp 22:47:44, Binary juenger: True
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:47:53)
+
+Die Zusage faellt an der erwarteten Pruefung: JA - (a) der Entwurf landet auf B, (b) und (c) auf A trotz neuer Nonce, je 1 Host-Dirty; nach der bytegleichen Ruecknahme gruen (15/15). (c) belegt zusaetzlich, dass der Vergleich gegen das Modell von jetzt faellt (Enter vor dem Tick).

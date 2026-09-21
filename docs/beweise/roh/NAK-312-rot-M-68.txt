@@ -1,0 +1,112 @@
+# NAK-312 Rotbeweis M-68 (Manifest §7.1)
+
+Matrixzeile: 312/M-68 (T3-14-01, Escape und Fokusverlust, R-312-9 Satz 2), zwei Haelften: (a) Regressionswache fuer 'Escape schreibt nichts' (a1) und heute rot fuer 'Escape verwirft den Entwurf' (a2, Abweichung A-90); (b) heute rot. Gegenprobe in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-A.txt ((a1) gruen, (a2) und (b) rot).
+Zusage: (a) Escape verwirft den Entwurf ohne Mutation; (b) der Fokusverlust folgt der heutigen Regel - bestaetigen, angewandt auf die Startquelle.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-68 (a1), (a2), (b).
+
+# Teil 1 von 3: Mutation wie M-66 (Kennungsvergleich entfernt), derselbe Lauf wie docs/beweise/roh/NAK-312-rot-M-66.txt Teil 1
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:47:34) ==
+== 2. Mutation (2026-09-21 22:47:34) ==
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:47:34) ==
+Bau Exit 0 (2026-09-21 22:47:41)
+Binary EqCopShot.exe 22:47:41, juengste mutierte Quelle PluginEditor.cpp 22:47:34, Binary juenger: True
+     FEHLER  312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha draft', B 'Alpha draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel B, Feld nach Escape 'Alpha draft']
+     FEHLER  312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha draft', B 'Alpha draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel B]
+   NAK-312 LABEL 15 geprueft, 9 Fehler
+Lauf Exit 1 (2026-09-21 22:47:44)
+== 4. Ruecknahme bytegleich (2026-09-21 22:47:44) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:47:44) ==
+Bau Exit 0 (2026-09-21 22:47:50)
+Binary EqCopShot.exe 22:47:50, juengste mutierte Quelle PluginEditor.cpp 22:47:44, Binary juenger: True
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:47:53)
+Faellt: (a2) und (b); (a1) bleibt gruen - Escape selbst schreibt auch unter dieser Mutation nichts.
+
+# Teil 2 von 3: die Bestaetigung beim Auswahlwechsel (mouseDown) entfernt
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:48:11) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:48:11) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1108
+-- vorher:
+   |             if (gewaehlt != sourcesAktionsZiel)
+   |                 uebernehmeSourcesLabel();
+   | 
+-- nachher:
+   |             // ROTBEWEIS 312/M-68 (b): Bestaetigung beim Auswahlwechsel entfernt
+   | 
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:48:11) ==
+Bau Exit 0 (2026-09-21 22:48:17)
+Binary EqCopShot.exe 22:48:16, juengste mutierte Quelle PluginEditor.cpp 22:48:11, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Beta', Aktionsziel B]
+     FEHLER  312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha', Aktionsziel A]
+     FEHLER  312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha draft 2', Aktionsziel A]
+     FEHLER  312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Beta', Aktionsziel B]
+   NAK-312 LABEL 15 geprueft, 4 Fehler
+Lauf Exit 1 (2026-09-21 22:48:20)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:48:20) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:48:20) ==
+Bau Exit 0 (2026-09-21 22:48:25)
+Binary EqCopShot.exe 22:48:25, juengste mutierte Quelle PluginEditor.cpp 22:48:20, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:48:29)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+Faellt: (b) - ohne die Bestaetigung beim Auswahlwechsel verfaellt der Entwurf beim Tick, A bleibt 'Alpha'. An derselben Zeile faellt 312/M-66 (As Name traegt den Entwurf nicht) mit (Gegenrichtung); (eigenes Ziel) als Folgefehler derselben Buehne.
+
+# Teil 3 von 3: Escape nicht mehr verdrahtet (onEscapeKey entfernt)
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:48:29) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:48:29) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 214
+-- vorher:
+   |     sourcesLabelFeld.onEscapeKey = [this]
+   |     {
+   |         sourcesLabelFuerId.clear();
+   |         sourcesLabelFuerNonce.clear();
+   |         aktualisiereSourcesSteuerung();
+   |         uiDirty = true;
+   |     };
+   | 
+-- nachher:
+   |     // ROTBEWEIS 312/M-68 (a2): Escape nicht mehr verdrahtet
+   | 
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:48:29) ==
+Bau Exit 0 (2026-09-21 22:48:34)
+Binary EqCopShot.exe 22:48:34, juengste mutierte Quelle PluginEditor.cpp 22:48:29, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Beta', Aktionsziel B, Feld nach Escape 'Alpha draft']
+   NAK-312 LABEL 15 geprueft, 1 Fehler
+Lauf Exit 1 (2026-09-21 22:48:38)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:48:38) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:48:38) ==
+Bau Exit 0 (2026-09-21 22:48:43)
+Binary EqCopShot.exe 22:48:43, juengste mutierte Quelle PluginEditor.cpp 22:48:38, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:48:47)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+Faellt: allein (a2) - ohne die Escape-Verdrahtung bleibt der verworfene Text im Feld, und der naechste Auswahlwechsel bestaetigt ihn auf A.
+
+Die Zusage faellt an der erwarteten Pruefung: JA, je Haelfte an ihrer Zeile (Kennungsvergleich, Bestaetigung im Auswahlwechsel, Escape-Verdrahtung). Nach jeder bytegleichen Ruecknahme gruen (15/15).

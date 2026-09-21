@@ -83,6 +83,38 @@ public:
     {
         letzteInteraktionMs = juce::Time::getMillisecondCounter() - abstandMs;
     }
+    // NAK-312 Etappe 6b (312/M-66 bis M-72, R-312-9): der Labelentwurf. Ein
+    // Bein ohne Fenster bekommt keinen Systemfokus; `sourcesLabelTippenFuerTest`
+    // stellt den Zustand her, den Tippen ins fokussierte Feld hinterlaesst, und
+    // Enter, Escape und Fokusverlust rufen die verdrahteten Rueckrufe des Feldes.
+    void sourcesLabelTippenFuerTest (const juce::String& text)
+    {
+        sourcesLabelFokusFuerTest = true;
+        sourcesLabelFeld.setText (text, juce::dontSendNotification);
+    }
+    /// 312/M-71: Einfuegen wie ueber die Tastatur - mit der Eingabebeschraenkung.
+    void sourcesLabelEinfuegenFuerTest (const juce::String& text)
+    {
+        sourcesLabelFokusFuerTest = true;
+        sourcesLabelFeld.clear();
+        sourcesLabelFeld.insertTextAtCaret (text);
+    }
+    void sourcesLabelEnterFuerTest()
+    {
+        if (sourcesLabelFeld.onReturnKey) sourcesLabelFeld.onReturnKey();
+    }
+    void sourcesLabelEscapeFuerTest()
+    {
+        if (sourcesLabelFeld.onEscapeKey) sourcesLabelFeld.onEscapeKey();
+    }
+    void sourcesLabelFokusVerlustFuerTest()
+    {
+        sourcesLabelFokusFuerTest = false;
+        if (sourcesLabelFeld.onFocusLost) sourcesLabelFeld.onFocusLost();
+    }
+    juce::String sourcesLabelTextFuerTest() const { return sourcesLabelFeld.getText(); }
+    std::string sourcesAktionsZielFuerTest() const { return sourcesAktionsZiel; }
+    std::vector<juce::Rectangle<int>> sourcesZeilenFuerTest() const { return sourcesZeilen(); }
 #endif
 
 private:
@@ -101,6 +133,7 @@ private:
     void wechsleFlaecheWennNoetig();
     void aktualisiereSourcesSteuerung();
     void uebernehmeSourcesLabel();
+    bool sourcesLabelHatFokus() const;
     void paintMainFlaeche (juce::Graphics&);
     juce::Rectangle<int> sourcesSpalte() const;
     std::vector<juce::Rectangle<int>> sourcesZeilen() const;
@@ -151,6 +184,14 @@ private:
     SourcesModel::Sicht sourcesAnzeige;
     juce::uint64 sourcesRevision = 0;
     std::string sourcesAktionsZiel;
+    // NAK-312 R-312-9: die Quelle, fuer die der Inhalt von `sourcesLabelFeld`
+    // gilt (instance_id und Runtime-Nonce), gesetzt dort, wo der Text geladen
+    // wird. Ein Entwurf gehoert ihr und wird nie auf ein anderes Ziel
+    // geschrieben. Leer: das Feld traegt den Text keiner Quelle.
+    std::string sourcesLabelFuerId, sourcesLabelFuerNonce;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    bool sourcesLabelFokusFuerTest = false;
+#endif
     juce::String sourcesBedienstatus;
     bool sourcesSchreibfehlerAktiv = false;
     bool mainFlaecheAktiv = false;

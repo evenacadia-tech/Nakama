@@ -1,0 +1,42 @@
+# NAK-312 Rotbeweis M-72 (Manifest §7.1)
+
+Matrixzeile: 312/M-72 (T3-14-01, speichern<->laden), Etikett Regressionswache (in der Gegenprobe gruen; dort fiel allein die Vorbedingung, der Fall 312/M-66).
+Zusage: beide Namen kommen unveraendert zurueck; die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern.
+Bein: B14 EqCopSonde012ProjectReloadTest, Fall 312/M-72 labelentwurf_ueberlebt_speichern_und_laden.
+Mutation (Matrix: 'den Entwurf statt des bestaetigten Labels speichern'; Form Abweichung A-94): der Schreiber der Mitgliederliste (eq-copilot/plugin/state/NakamaState.cpp) legt fuer jedes Mitglied das Label des ersten ab - der gespeicherte Name weicht vom bestaetigten ab. NakamaState.cpp ist nicht Ticketpfad; bytegleich zurueck (Muster A-43).
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:41:00) ==
+A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9  eq-copilot/plugin/state/NakamaState.cpp
+
+== 2. Mutation (2026-09-21 22:41:00) ==
+Datei eq-copilot/plugin/state/NakamaState.cpp, ab Zeile 852
+-- vorher:
+   |                 flach.add (m.label);
+-- nachher:
+   |                 flach.add (mitglieder.front().label); // ROTBEWEIS 312/M-72
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:41:00) ==
+Bau Exit 0 (2026-09-21 22:41:09)
+Binary EqCopSonde012ProjectReloadTest.exe 22:41:09, juengste mutierte Quelle NakamaState.cpp 22:41:00, Binary juenger: True
+     ok      312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty  [2 Mitglieder, Host-Dirty 1]
+     FEHLER  312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern, das Laden meldet kein Dirty  [aaaa='Alpha draft' bbbb='Alpha draft', Host-Dirty beim Laden 0]
+   SONDE-012 ProjectReload: 233/234 gruen
+Lauf Exit 1 (2026-09-21 22:41:17)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:41:17) ==
+A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9  eq-copilot/plugin/state/NakamaState.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:41:17) ==
+Bau Exit 0 (2026-09-21 22:41:21)
+Binary EqCopSonde012ProjectReloadTest.exe 22:41:21, juengste mutierte Quelle NakamaState.cpp 22:41:17, Binary juenger: True
+     ok      312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty  [2 Mitglieder, Host-Dirty 1]
+     ok      312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern, das Laden meldet kein Dirty  [aaaa='Alpha draft' bbbb='Beta', Host-Dirty beim Laden 0]
+   SONDE-012 ProjectReload: 234/234 gruen
+Lauf Exit 0 (2026-09-21 22:41:30)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-72: die frische Instanz laedt fuer B das Label von A.
+Mitgefallen: keine (233/234). Nach der bytegleichen Ruecknahme gruen (234/234).

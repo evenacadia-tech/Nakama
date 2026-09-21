@@ -1,0 +1,107 @@
+# NAK-312 Rotbeweis M-66 (Manifest §7.1)
+
+Matrixzeile: 312/M-66 (T3-14-01, R-312-9), Etikett heute rot; Gegenprobe am Basisstand in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-A.txt.
+Zusage: Bs Label ist unveraendert, As Label traegt den Entwurf, die Zahl der Host-Dirty-Meldungen ist gleich der Zahl der wirklich geaenderten Namen (hier 1).
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-66 labelentwurf_gehoert_seiner_startquelle mit den Selbstauditpruefungen (Gegenrichtung) und (eigenes Ziel) in derselben Buehne.
+
+# Teil 1: Mutation an der Zeile, die die Zusage traegt (Matrix: den Kennungsvergleich entfernen)
+eq-copilot/plugin/src/PluginEditor.cpp - der Vergleich der Entwurfskennung (instance_id und Runtime-Nonce) faellt in uebernehmeSourcesLabel und beim Laden des Textes in aktualisiereSourcesSteuerung; dort gilt wieder die Fokusbedingung des Basisstands. Die Bestaetigung beim Auswahlwechsel (mouseDown) bleibt.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:47:34) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:47:34) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 967
+-- vorher:
+   |     if (sourcesLabelFuerId != ziel)
+   |         return;
+   |     const auto frisch
+-- nachher:
+   |     // ROTBEWEIS 312/M-66: Kennungsvergleich im Commit entfernt
+   |     const auto frisch
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 972
+-- vorher:
+   |         || it->runtimeNonce != sourcesLabelFuerNonce
+   | 
+-- nachher:
+   | 
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1035
+-- vorher:
+   |     else if (sourcesLabelFuerId != it->instanceId || sourcesLabelFuerNonce != it->runtimeNonce
+   |              || (! sourcesLabelHatFokus() && sourcesLabelFeld.getText() != it->userLabel))
+-- nachher:
+   |     else if (! sourcesLabelHatFokus() && sourcesLabelFeld.getText() != it->userLabel) // ROTBEWEIS 312/M-66: Kennungsvergleich beim Laden entfernt
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:47:34) ==
+Bau Exit 0 (2026-09-21 22:47:41)
+Binary EqCopShot.exe 22:47:41, juengste mutierte Quelle PluginEditor.cpp 22:47:34, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha draft', B 'Alpha draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel B]
+     FEHLER  312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label  [A 'Beta draft', B 'Beta draft', Host-Dirty 4, Feld 'Beta draft', Aktionsziel A]
+     FEHLER  312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Beta draft', B 'Beta draft', Host-Dirty 4, Feld 'Alpha draft 2', Aktionsziel A]
+     FEHLER  312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B '', Host-Dirty 1, Feld '', Aktionsziel B]
+     FEHLER  312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha draft', B 'Alpha draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel B, Feld nach Escape 'Alpha draft']
+     FEHLER  312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha draft', B 'Alpha draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel B]
+     FEHLER  312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B]
+     FEHLER  312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+     FEHLER  312/M-69 (c) neue_runtime_nonce_ohne_tick (Teilfall von 312/M-66): dasselbe, Enter VOR dem naechsten Tick - der Kennungsvergleich faellt gegen das Modell von jetzt, nicht gegen die Anzeige des letzten Ticks  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+   NAK-312 LABEL 15 geprueft, 9 Fehler
+Lauf Exit 1 (2026-09-21 22:47:44)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:47:44) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:47:44) ==
+Bau Exit 0 (2026-09-21 22:47:50)
+Binary EqCopShot.exe 22:47:50, juengste mutierte Quelle PluginEditor.cpp 22:47:44, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:47:53)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+# Teil 2: die Pruefung (eigenes Ziel) einmal gebrochen - die Bedingung 'nur bei einem anderen Ziel' vor der Bestaetigung in mouseDown entfernt
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:47:53) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:47:53) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1108
+-- vorher:
+   |             if (gewaehlt != sourcesAktionsZiel)
+   |                 uebernehmeSourcesLabel();
+   | 
+-- nachher:
+   |             uebernehmeSourcesLabel(); // ROTBEWEIS 312/M-66 (eigenes Ziel): Bedingung des Auswahlwechsels entfernt
+   | 
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:47:53) ==
+Bau Exit 0 (2026-09-21 22:47:59)
+Binary EqCopShot.exe 22:47:59, juengste mutierte Quelle PluginEditor.cpp 22:47:53, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Alpha draft 2', B 'Beta draft', Host-Dirty 3, Feld 'Alpha draft 2', Aktionsziel A]
+   NAK-312 LABEL 15 geprueft, 1 Fehler
+Lauf Exit 1 (2026-09-21 22:48:02)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:48:02) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:48:02) ==
+Bau Exit 0 (2026-09-21 22:48:08)
+Binary EqCopShot.exe 22:48:08, juengste mutierte Quelle PluginEditor.cpp 22:48:02, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:48:11)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - Teil 1: 312/M-66 unter der Mutation: der Entwurf landet nach der Bestaetigung auf A zusaetzlich auf B, 2 Host-Dirty.
+Mitgefallen, Grund: (Gegenrichtung) an derselben Zeile; (eigenes Ziel) als Folgefehler derselben Buehne (As Name ist dort schon ein anderer); 312/M-67, M-68 (a2), M-68 (b), M-69 (a) bis (c) haengen am selben Kennungsvergleich (Matrix: Mutation wie M-66), ihre Rohdateien verweisen auf diesen Lauf.
+Gruen unter derselben Mutation: SONDE-012 25/25 Shots, 3 Panelfaelle, 312/M-68 (a1), M-70, M-71 (a) bis (d).
+Teil 2: allein (eigenes Ziel) faellt - ein Klick auf die eigene Zeile bestaetigte den Entwurf.
+Nach jeder bytegleichen Ruecknahme gruen (15/15).

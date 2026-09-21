@@ -1,0 +1,25 @@
+# NAK-312 Rotbeweis M-67 (Manifest §7.1)
+
+Matrixzeile: 312/M-67 (T3-14-01, leerer Entwurf, R-312-9), Etikett heute rot; Gegenprobe in docs/beweise/roh/NAK-312-etappe6b-gegenprobe-A.txt (Bs Name geloescht).
+Zusage: Bs Name wird NICHT geloescht - ein leerer Entwurf der Startquelle A schreibt nie auf B.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-67 leerer_entwurf_loescht_keinen_fremden_namen.
+Mutation: wie M-66 (Matrix) - derselbe Lauf (Teil 1), vollstaendig mit SHA-256, Mutation, Zeitstempeln, Ruecknahme und Gruenlauf in docs/beweise/roh/NAK-312-rot-M-66.txt.
+
+Aus dem Lauf:
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:47:34) ==
+== 2. Mutation (2026-09-21 22:47:34) ==
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:47:34) ==
+Bau Exit 0 (2026-09-21 22:47:41)
+Binary EqCopShot.exe 22:47:41, juengste mutierte Quelle PluginEditor.cpp 22:47:34, Binary juenger: True
+     FEHLER  312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B '', Host-Dirty 1, Feld '', Aktionsziel B]
+   NAK-312 LABEL 15 geprueft, 9 Fehler
+Lauf Exit 1 (2026-09-21 22:47:44)
+== 4. Ruecknahme bytegleich (2026-09-21 22:47:44) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:47:44) ==
+Bau Exit 0 (2026-09-21 22:47:50)
+Binary EqCopShot.exe 22:47:50, juengste mutierte Quelle PluginEditor.cpp 22:47:44, Binary juenger: True
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:47:53)
+
+Die Zusage faellt an der erwarteten Pruefung: JA - unter der Mutation ist Bs Name leer, 1 Host-Dirty; nach der bytegleichen Ruecknahme gruen (15/15).

@@ -1,0 +1,30 @@
+# NAK-312 Etappe 6b, Aenderungssatz A - Gegenprobe am Basisstand (heute rot)
+
+Basisvariante: HEAD ed1722d992f64567e131aaa7fa5ae887bdef96bf plus allein die Testzugaenge in eq-copilot/plugin/src/PluginEditor.h (Tippen, Einfuegen, Enter, Escape, Fokusverlust, Feldtext, Aktionsziel, gezeichnete Zeilen) und die produktneutrale Fokus-Naht in eq-copilot/plugin/src/PluginEditor.cpp (sourcesLabelHatFokus() ersetzt sourcesLabelFeld.hasKeyboardFocus (true) an seiner einzigen Stelle; im Produktbau liefert sie genau diesen Wert, A-91). Kein Teil des Fixes. Tests in der Endfassung (ShotTestMain.cpp, Sonde012ProjectReloadTest.cpp); einzige spaetere Aenderung: der Beleg kuerzt den Feldtext auf 24 Zeichen (Ausgabe, keine Pruefung).
+SHA-256 der Basisvariante: F0D33C868482263E1F694CF7CBEBCD91AB6AA847B86466F29FAF5CF038F5ED4D eq-copilot/plugin/src/PluginEditor.cpp, 54BBC06DF62771D28D212DFF4BACD1F7CFCA1799476322F9B5E127E3D67A0EA8 eq-copilot/plugin/src/PluginEditor.h. SHA-256 am HEAD: 0418A5EA5D3887D1A325C3FCD5B72C8813D165A3D85CB20AC50511F6C69CA1F6 (PluginEditor.cpp), FF7DB2F6B3EA258139EBCEF8A16D539335C2200427E49333159B56CD79C04F45 (PluginEditor.h).
+Bau EqCopShot und EqCopSonde012ProjectReloadTest 2026-09-21 22:32:49 bis 22:33:03, Exit 0; Binaries 22:32:55 und 22:33:03, juengste Quelle 22:32:37 - beide juenger. Lauf 22:33:41 bis 22:33:53.
+
+B15 EqCopShot --sonde012-suite: Exit 1
+SONDE-012 SHOTS 25/25 gruen
+NAK-312 PANEL 3 geprueft, 0 Fehler
+  FEHLER  312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B]
+  FEHLER  312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B '', Host-Dirty 1, Feld '', Aktionsziel B]
+  ok      312/M-68 (a1) escape_schreibt_nichts (Teilfall von 312/M-66): Escape statt Enter - keine Mutation, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha draft', Aktionsziel A]
+  FEHLER  312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B, Feld nach Escape 'Alpha draft']
+  FEHLER  312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B]
+  FEHLER  312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Alpha draft', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel B]
+  FEHLER  312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+  FEHLER  312/M-69 (c) neue_runtime_nonce_ohne_tick (Teilfall von 312/M-66): dasselbe, Enter VOR dem naechsten Tick - der Kennungsvergleich faellt gegen das Modell von jetzt, nicht gegen die Anzeige des letzten Ticks  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Alpha draft', Aktionsziel A]
+  ok      312/M-70 unveraenderter_text_mutiert_nicht (Teilfall von 312/M-66): Enter ohne Aenderung - keine Mutation, 0 Host-Dirty, keine Fehlermeldung  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha', Aktionsziel A, Status '']
+  ok      312/M-71 (a) eingabebeschraenkung_120 (Teilfall von 312/M-66): 121 Codepoints ausserhalb der BMP eingefuegt - das Feld haelt 120  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld '<120 x U+1F3B9>', Aktionsziel A, Feldlaenge 120]
+  ok      312/M-71 (b) kappung_120: 121 Codepoints im Feld, Enter - gespeichert werden die ersten 120, genau 1 Host-Dirty  [gespeichert 120 Codepoints, Host-Dirty 1]
+  ok      312/M-71 (c) null_und_120_werden_angenommen: 0 Codepoints, danach 120 - beide gespeichert, je 1 Host-Dirty  [0 angenommen ja, danach 120 Codepoints, Host-Dirty 3]
+  ok      312/M-71 (d) 121_wird_abgewiesen: 121 Codepoints am Prozessor - abgewiesen, der gespeicherte Name bleibt, kein Host-Dirty  [abgewiesen ja, gespeichert 120 Codepoints, Host-Dirty 3]
+NAK-312 LABEL 13 geprueft, 7 Fehler
+
+B14 EqCopSonde012ProjectReloadTest: Exit 1
+  FEHLER  312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty  [2 Mitglieder, Host-Dirty 1]
+  ok      312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern, das Laden meldet kein Dirty  [aaaa='Alpha' bbbb='Alpha draft', Host-Dirty beim Laden 0]
+SONDE-012 ProjectReload: 233/234 gruen
+
+Auswertung: rot sind genau die Pruefungen mit Etikett heute rot - 312/M-66, M-67, M-68 (a2), M-68 (b), M-69 (a), (b), (c) - und die Vorbedingung von 312/M-72 (sie ist der Fall 312/M-66). Gruen, wie ihre Etiketten sagen: 312/M-68 (a1) 'Escape schreibt nichts', M-70 und M-71 (a) bis (d) (Regressionswachen) sowie die Save/Load-Haelfte von M-72 (die Namen, die der Basisstand geschrieben hat - A 'Alpha', B mit dem Entwurf -, reisen bytegleich). Heute landet der Entwurf von A auf B (M-66, M-68 b, M-69 a), ein leerer Entwurf loescht Bs Namen (M-67), ein mit Escape verlassener Entwurf wird beim naechsten Enter auf B geschrieben (M-68 a2), und eine neue Runtime-Nonce haelt den Entwurf nicht auf (M-69 b, c).

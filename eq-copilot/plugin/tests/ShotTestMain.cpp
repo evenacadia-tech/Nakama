@@ -15,7 +15,9 @@
 // faehrt seit NAK-312 Etappe 4 danach das Messpunkt-Panel am echten Editor
 // (312/M-35 bis 312/M-37, R-312-2): Abbau nach dem Ende von Editor und
 // Prozessor, normaler Handgriff mit und ohne Aenderung; dazu das Bild
-// nak312-messpunkt-panel.png des geoeffneten Panels im selben Ordner.
+// nak312-messpunkt-panel.png des geoeffneten Panels im selben Ordner. Seit
+// NAK-312 Etappe 6b danach der Labelentwurf der Main-Flaeche (312/M-66 bis
+// 312/M-71, R-312-9) am echten Editor auf einem echten Main.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -451,6 +453,325 @@ bool nak312Messpunktpanel (const juce::File& ordner)
     std::printf ("NAK-312 PANEL %d geprueft, %d Fehler\n", panelGeprueft, panelFehler);
     return panelFehler == 0 && panelGeprueft == 3;
 }
+
+//==============================================================================
+// NAK-312 Etappe 6b, Aenderungssatz A (T3-14-01, R-312-9): der Labelentwurf.
+//
+// Ein Entwurf im Labelfeld gehoert der Quelle, fuer die sein Text geladen
+// wurde. Beim Auswahlwechsel gilt die Regel des Fokusverlusts (bestaetigen),
+// angewandt auf die Startquelle; auf die neue Auswahl wird ohne neuen Edit nie
+// geschrieben; ein leerer Entwurf loescht keinen fremden Namen; faellt die
+// Startquelle weg oder kommt sie mit neuer Runtime-Nonce zurueck, verfaellt der
+// Entwurf ohne Mutation. Gemessen am echten Editor auf einem echten Main: die
+// Namen stehen im Prozessorzustand (bestaetigte Mitglieder, Join ueber den
+// ACK-Weg), der Klick laeuft durch `mouseDown` wie bei JUCE - die Komponente
+// selbst und danach ihr eigener Listener (`addMouseListener (this, true)`),
+// also zweimal -, der Tick ueber den Tick-Testzugang, ohne Nachrichtenschleife.
+
+using Art = eqcop::EqCopilotProcessor::SourcesCommandArt;
+
+int labelFehler = 0, labelGeprueft = 0;
+
+void labelPruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    ++labelGeprueft;
+    if (! ok) ++labelFehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+}
+
+std::string ackAngewandt (const std::string& commandId)
+{
+    return std::string (R"({"type":"command_ack","command_id":")") + commandId
+         + R"(","ergebnis":"angewandt","state_revision":1,"state_hash":")"
+         + std::string (64, 'e') + R"("})";
+}
+
+const std::string kQuelleA = hex (0xa1), kQuelleB = hex (0xb2);
+const std::string kNonceA = hex (0xa100), kNonceA2 = hex (0xa200), kNonceB = hex (0xb100);
+const juce::String kEntwurf ("Alpha draft");
+constexpr const char* kLabelEingeschleust = "Eingeschleust";   // Label des Joins im Testweg
+
+/// Eine lebende, bestaetigte Zeile; der Mixerindex legt die Anzeigeordnung fest.
+Model::Zeile labelZeile (const std::string& id, const std::string& nonce,
+                         const juce::String& label, std::uint64_t mixer, bool haupt)
+{
+    auto q = quelle (0);
+    q.instanceId = id;
+    q.runtimeNonce = nonce;
+    q.userLabel = label;
+    q.hostMixerIndex = mixer;
+    q.sichtbarerName = "Host Bus " + juce::String ((juce::int64) mixer);
+    q.hostBusName = q.sichtbarerName;
+    q.hauptziel = haupt;
+    return q;
+}
+
+/// Ein Main mit den bestaetigten Mitgliedern A und B und ihren Namen im
+/// Prozessorzustand, Hauptziel A, Editor offen und einmal getickt.
+struct LabelBuehne
+{
+    std::unique_ptr<eqcop::EqCopilotProcessor> p;
+    PanelDirty dirty;
+    std::unique_ptr<eqcop::EqCopilotEditor> ed;
+    bool aufgebaut = false;
+
+    LabelBuehne (const juce::String& labelA, const juce::String& labelB)
+        : p (std::make_unique<eqcop::EqCopilotProcessor>())   // NAK-175: Heap
+    {
+        p->setzeWorkerDrainFuerTest (false);   // der Tick ist der einzige Drain
+        p->setzeEditorOffen (true);
+        bool ok = p->setzeBindung ("hub", "Gen", "");
+        for (const auto* id : { &kQuelleA, &kQuelleB })
+            p->v3AntwortFuerTest (ackAngewandt (p->merkeSourcesCommandFuerTest (Art::confirmJoin, *id)));
+        p->sourcesTick();
+        ok = ok && label (kQuelleA) == kLabelEingeschleust && label (kQuelleB) == kLabelEingeschleust;
+        setzeSicht (true, kNonceA, kQuelleA);
+        ok = ok && p->benenneSourcesHauptziel (kQuelleA, labelA);
+        ok = ok && p->waehleSourcesHauptziel (kQuelleB) && p->benenneSourcesHauptziel (kQuelleB, labelB);
+        ok = ok && p->waehleSourcesHauptziel (kQuelleA);
+        aufgebaut = ok && label (kQuelleA) == labelA && label (kQuelleB) == labelB;
+        p->addListener (&dirty);
+        ed = std::make_unique<eqcop::EqCopilotEditor> (*p);
+        ed->timerTickFuerTest();
+        aufgebaut = aufgebaut && ed->sourcesLabelTextFuerTest() == labelA
+                 && ed->sourcesAktionsZielFuerTest() == kQuelleA;
+    }
+
+    ~LabelBuehne()
+    {
+        ed.reset();   // der Editor stirbt vor seinem Prozessor
+        p->removeListener (&dirty);
+        p.reset();
+    }
+
+    juce::String label (const std::string& id) const
+    {
+        for (const auto& m : p->holeZustandKopie().mainProjectMitglieder)
+            if (m.instanceId.toStdString() == id)
+                return m.label;
+        return "<kein Mitglied>";
+    }
+
+    /// Die fluechtige Sicht neu setzen: A wahlweise fehlend oder mit anderer
+    /// Nonce, die Labels aus dem Prozessorzustand, Hauptziel `haupt` (leer =
+    /// das Modell waehlt den Ersatz).
+    void setzeSicht (bool mitA, const std::string& nonceA, const std::string& haupt)
+    {
+        Model::Sicht s;
+        s.subscriptionAktiv = true;
+        s.fuehrendesMain = hex (10);
+        s.mainDarfSchreiben = true;
+        if (mitA)
+            s.quellen.push_back (labelZeile (kQuelleA, nonceA, label (kQuelleA), 1, haupt == kQuelleA));
+        s.quellen.push_back (labelZeile (kQuelleB, kNonceB, label (kQuelleB), 2, haupt == kQuelleB));
+        p->setzeSourcesFixtureFuerTest (std::move (s));
+    }
+
+    std::string beleg() const
+    {
+        return std::string (aufgebaut ? "" : "AUFBAU FEHLGESCHLAGEN, ") + "A '"
+             + label (kQuelleA).toStdString() + "', B '" + label (kQuelleB).toStdString()
+             + "', Host-Dirty " + std::to_string (dirty.nichtParameter) + ", Feld '"
+             + ed->sourcesLabelTextFuerTest().substring (0, 24).toStdString() + "', Aktionsziel "
+             + (ed->sourcesAktionsZielFuerTest() == kQuelleA ? "A"
+                : ed->sourcesAktionsZielFuerTest() == kQuelleB ? "B"
+                : ed->sourcesAktionsZielFuerTest().empty() ? "leer" : "fremd");
+    }
+};
+
+/// Ein Klick in Zeile `zeile` der gezeichneten Liste, zugestellt wie von JUCE.
+void klicke (eqcop::EqCopilotEditor& ed, std::size_t zeile)
+{
+    const auto zeilen = ed.sourcesZeilenFuerTest();
+    if (zeile >= zeilen.size())
+        return;
+    const auto punkt = zeilen[zeile].getCentre().toFloat();
+    const auto jetzt = juce::Time::getCurrentTime();
+    const juce::MouseEvent e (juce::Desktop::getInstance().getMainMouseSource(), punkt,
+                              juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier),
+                              juce::MouseInputSource::defaultPressure,
+                              juce::MouseInputSource::defaultOrientation,
+                              juce::MouseInputSource::defaultRotation,
+                              juce::MouseInputSource::defaultTiltX,
+                              juce::MouseInputSource::defaultTiltY,
+                              &ed, &ed, jetzt, punkt, jetzt, 1, false);
+    auto& komponente = static_cast<juce::Component&> (ed);
+    komponente.mouseDown (e);   // die Komponente selbst ...
+    komponente.mouseDown (e);   // ... und ihr eigener Listener
+}
+
+bool nak312Labelentwurf()
+{
+    std::printf ("== NAK-312 Etappe 6b - der Labelentwurf (312/M-66 bis 312/M-71, R-312-9) ==\n");
+
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        klicke (*b.ed, 1);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == kEntwurf && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 1 && b.ed->sourcesLabelTextFuerTest() == "Beta"
+                         && b.ed->sourcesAktionsZielFuerTest() == kQuelleB,
+                     "312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im "
+                     "fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist "
+                     "unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label",
+                     b.beleg());
+        // Selbstaudit: dieselbe Regel in der Gegenrichtung (Entwurf auf B, Klick auf A).
+        b.ed->sourcesLabelTippenFuerTest ("Beta draft");
+        klicke (*b.ed, 0);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == kEntwurf && b.label (kQuelleB) == "Beta draft"
+                         && b.dirty.nichtParameter == 2 && b.ed->sourcesLabelTextFuerTest() == kEntwurf
+                         && b.ed->sourcesAktionsZielFuerTest() == kQuelleA,
+                     "312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den "
+                     "Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label",
+                     b.beleg());
+        // Selbstaudit: ein Klick auf das eigene Ziel ist kein Auswahlwechsel.
+        b.ed->sourcesLabelTippenFuerTest ("Alpha draft 2");
+        klicke (*b.ed, 0);
+        b.ed->timerTickFuerTest();
+        labelPruefe (b.label (kQuelleA) == kEntwurf && b.dirty.nichtParameter == 2
+                         && b.ed->sourcesLabelTextFuerTest() == "Alpha draft 2",
+                     "312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein "
+                     "Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("", "Beta");
+        b.ed->sourcesLabelTippenFuerTest ("");
+        klicke (*b.ed, 1);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA).isEmpty() && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 0 && b.ed->sourcesLabelTextFuerTest() == "Beta",
+                     "312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne "
+                     "Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        b.ed->sourcesLabelEscapeFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == "Alpha" && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 0,
+                     "312/M-68 (a1) escape_schreibt_nichts (Teilfall von 312/M-66): Escape statt Enter - keine "
+                     "Mutation, 0 Host-Dirty",
+                     b.beleg());
+        const auto feldNachEscape = b.ed->sourcesLabelTextFuerTest();
+        klicke (*b.ed, 1);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && feldNachEscape == "Alpha" && b.label (kQuelleA) == "Alpha"
+                         && b.label (kQuelleB) == "Beta" && b.dirty.nichtParameter == 0,
+                     "312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das "
+                     "Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A "
+                     "noch B",
+                     b.beleg() + ", Feld nach Escape '" + feldNachEscape.toStdString() + "'");
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        klicke (*b.ed, 1);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelFokusVerlustFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == kEntwurf && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 1,
+                     "312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick "
+                     "auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B "
+                     "unveraendert, genau 1 Host-Dirty",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        b.setzeSicht (false, kNonceA, {});
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == "Alpha" && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 0 && b.ed->sourcesAktionsZielFuerTest() == kQuelleB
+                         && b.ed->sourcesLabelTextFuerTest() == "Beta",
+                     "312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem "
+                     "Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        b.setzeSicht (true, kNonceA2, kQuelleA);
+        b.ed->timerTickFuerTest();
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == "Alpha" && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 0 && b.ed->sourcesLabelTextFuerTest() == "Alpha",
+                     "312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer "
+                     "Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest (kEntwurf);
+        b.setzeSicht (true, kNonceA2, kQuelleA);
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == "Alpha" && b.label (kQuelleB) == "Beta"
+                         && b.dirty.nichtParameter == 0,
+                     "312/M-69 (c) neue_runtime_nonce_ohne_tick (Teilfall von 312/M-66): dasselbe, Enter VOR "
+                     "dem naechsten Tick - der Kennungsvergleich faellt gegen das Modell von jetzt, nicht gegen "
+                     "die Anzeige des letzten Ticks",
+                     b.beleg());
+    }
+    {
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelTippenFuerTest ("Alpha");
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.aufgebaut && b.label (kQuelleA) == "Alpha" && b.dirty.nichtParameter == 0
+                         && ! b.ed->sourcesBedienstatusFuerTest().containsIgnoreCase ("failed"),
+                     "312/M-70 unveraenderter_text_mutiert_nicht (Teilfall von 312/M-66): Enter ohne Aenderung "
+                     "- keine Mutation, 0 Host-Dirty, keine Fehlermeldung",
+                     b.beleg() + ", Status '" + b.ed->sourcesBedienstatusFuerTest().toStdString() + "'");
+    }
+    {
+        // 312/M-71: Zahlenrand in Codepoints, mit einem Zeichen ausserhalb der BMP.
+        const auto zeichen = juce::String::charToString ((juce::juce_wchar) 0x1F3B9);
+        const auto s120 = juce::String::repeatedString (zeichen, 120);
+        const auto s121 = juce::String::repeatedString (zeichen, 121);
+        LabelBuehne b ("Alpha", "Beta");
+        b.ed->sourcesLabelEinfuegenFuerTest (s121);
+        const int eingefuegt = b.ed->sourcesLabelTextFuerTest().length();
+        labelPruefe (b.aufgebaut && eingefuegt == 120 && b.dirty.nichtParameter == 0,
+                     "312/M-71 (a) eingabebeschraenkung_120 (Teilfall von 312/M-66): 121 Codepoints ausserhalb "
+                     "der BMP eingefuegt - das Feld haelt 120",
+                     b.beleg() + ", Feldlaenge " + std::to_string (eingefuegt));
+        b.ed->sourcesLabelTippenFuerTest (s121);
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (b.label (kQuelleA) == s120 && b.label (kQuelleA).length() == 120 && b.dirty.nichtParameter == 1,
+                     "312/M-71 (b) kappung_120: 121 Codepoints im Feld, Enter - gespeichert werden die ersten "
+                     "120, genau 1 Host-Dirty",
+                     "gespeichert " + std::to_string (b.label (kQuelleA).length()) + " Codepoints, Host-Dirty "
+                         + std::to_string (b.dirty.nichtParameter));
+        b.ed->sourcesLabelTippenFuerTest ("");
+        b.ed->sourcesLabelEnterFuerTest();
+        const bool nullAngenommen = b.label (kQuelleA).isEmpty() && b.dirty.nichtParameter == 2;
+        b.ed->sourcesLabelTippenFuerTest (s120);
+        b.ed->sourcesLabelEnterFuerTest();
+        labelPruefe (nullAngenommen && b.label (kQuelleA) == s120 && b.dirty.nichtParameter == 3,
+                     "312/M-71 (c) null_und_120_werden_angenommen: 0 Codepoints, danach 120 - beide gespeichert, "
+                     "je 1 Host-Dirty",
+                     std::string ("0 angenommen ") + (nullAngenommen ? "ja" : "NEIN") + ", danach "
+                         + std::to_string (b.label (kQuelleA).length()) + " Codepoints, Host-Dirty "
+                         + std::to_string (b.dirty.nichtParameter));
+        const bool abgewiesen = ! b.p->benenneSourcesHauptziel (kQuelleA, s121);
+        labelPruefe (abgewiesen && b.label (kQuelleA) == s120 && b.dirty.nichtParameter == 3,
+                     "312/M-71 (d) 121_wird_abgewiesen: 121 Codepoints am Prozessor - abgewiesen, der gespeicherte "
+                     "Name bleibt, kein Host-Dirty",
+                     std::string ("abgewiesen ") + (abgewiesen ? "ja" : "NEIN") + ", gespeichert "
+                         + std::to_string (b.label (kQuelleA).length()) + " Codepoints, Host-Dirty "
+                         + std::to_string (b.dirty.nichtParameter));
+    }
+
+    std::printf ("NAK-312 LABEL %d geprueft, %d Fehler\n", labelGeprueft, labelFehler);
+    return labelFehler == 0 && labelGeprueft == 15;
+}
 } // namespace
 
 int main (int argc, char* argv[])
@@ -466,7 +787,9 @@ int main (int argc, char* argv[])
         const int shots = sonde012Suite (ordner);
         // NAK-312 Etappe 4 (R-312-2): das Messpunkt-Panel am echten Editor.
         const bool panel = nak312Messpunktpanel (ordner);
-        return shots == 0 && panel ? 0 : 1;
+        // NAK-312 Etappe 6b (R-312-9): der Labelentwurf der Main-Flaeche.
+        const bool label = nak312Labelentwurf();
+        return shots == 0 && panel && label ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

@@ -1,0 +1,107 @@
+# NAK-312 Rotbeweis M-70 (Manifest §7.1)
+
+Matrixzeile: 312/M-70 (T3-14-01, Gegenfall unveraenderter Text), Etikett Regressionswache (in der Gegenprobe gruen).
+Zusage: Keine Mutation und kein Host-Dirty.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-70 unveraenderter_text_mutiert_nicht.
+Mutation (Matrix: den No-op-Riegel entfernen): der Riegel liegt an zwei Stellen hintereinander - der fruehe Rueckweg in uebernehmeSourcesLabel (eq-copilot/plugin/src/PluginEditor.cpp) und der Vergleich gefunden->label == label in benenneSourcesHauptziel (eq-copilot/plugin/src/prozessor/Ipc.cpp). Teil a nimmt allein den Riegel aus Ipc.cpp (die Matrixform), Teil b beide. Ipc.cpp ist nicht Ticketpfad; beide Dateien bytegleich zurueck (Muster A-43).
+
+# Teil a
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:48:47) ==
+B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97  eq-copilot/plugin/src/prozessor/Ipc.cpp
+
+== 2. Mutation (2026-09-21 22:48:47) ==
+Datei eq-copilot/plugin/src/prozessor/Ipc.cpp, ab Zeile 1222
+-- vorher:
+   |         if (gefunden == zustand.mainProjectMitglieder.end() || gefunden->label == label)
+   |             return false;
+   |         gefunden->label = label;
+-- nachher:
+   |         if (gefunden == zustand.mainProjectMitglieder.end()) // ROTBEWEIS 312/M-70: No-op-Riegel entfernt
+   |             return false;
+   |         gefunden->label = label;
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:48:47) ==
+Bau Exit 0 (2026-09-21 22:48:53)
+Binary EqCopShot.exe 22:48:53, juengste mutierte Quelle Ipc.cpp 22:48:47, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:48:56)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:48:56) ==
+B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97  eq-copilot/plugin/src/prozessor/Ipc.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:48:56) ==
+Bau Exit 0 (2026-09-21 22:49:02)
+Binary EqCopShot.exe 22:49:02, juengste mutierte Quelle Ipc.cpp 22:48:56, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:49:05)
+
+ERGEBNIS: unter der Mutation Exit 0, nach der Ruecknahme Exit 0
+
+Teil a bleibt gruen: der Editor ruft den Prozessor bei unveraendertem Text gar nicht erst (frueher Rueckweg); die Matrixmutation allein ist deshalb kein Rotbeweis (Abweichung A-93).
+
+# Teil b
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:49:05) ==
+B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97  eq-copilot/plugin/src/prozessor/Ipc.cpp
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:49:05) ==
+Datei eq-copilot/plugin/src/prozessor/Ipc.cpp, ab Zeile 1222
+-- vorher:
+   |         if (gefunden == zustand.mainProjectMitglieder.end() || gefunden->label == label)
+   |             return false;
+   |         gefunden->label = label;
+-- nachher:
+   |         if (gefunden == zustand.mainProjectMitglieder.end()) // ROTBEWEIS 312/M-70: No-op-Riegel entfernt
+   |             return false;
+   |         gefunden->label = label;
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 977
+-- vorher:
+   |     if (label == it->userLabel)
+   |         return;
+   |     if (processor.benenneSourcesHauptziel (ziel, label))
+-- nachher:
+   |     // ROTBEWEIS 312/M-70: frueher Rueckweg bei unveraendertem Text entfernt
+   |     if (processor.benenneSourcesHauptziel (ziel, label))
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:49:05) ==
+Bau Exit 0 (2026-09-21 22:49:11)
+Binary EqCopShot.exe 22:49:11, juengste mutierte Quelle PluginEditor.cpp 22:49:05, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha draft', B 'Beta', Host-Dirty 2, Feld 'Beta', Aktionsziel B]
+     FEHLER  312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label  [A 'Alpha draft', B 'Beta draft', Host-Dirty 4, Feld 'Alpha draft', Aktionsziel A]
+     FEHLER  312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Alpha draft', B 'Beta draft', Host-Dirty 4, Feld 'Alpha draft 2', Aktionsziel A]
+     FEHLER  312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B 'Beta', Host-Dirty 2, Feld 'Beta', Aktionsziel B]
+     FEHLER  312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha', B 'Beta', Host-Dirty 2, Feld 'Beta', Aktionsziel B, Feld nach Escape 'Alpha']
+     FEHLER  312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha draft', B 'Beta', Host-Dirty 2, Feld 'Beta', Aktionsziel B]
+     FEHLER  312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 1, Feld 'Beta', Aktionsziel B]
+     FEHLER  312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 1, Feld 'Alpha', Aktionsziel A]
+     FEHLER  312/M-70 unveraenderter_text_mutiert_nicht (Teilfall von 312/M-66): Enter ohne Aenderung - keine Mutation, 0 Host-Dirty, keine Fehlermeldung  [A 'Alpha', B 'Beta', Host-Dirty 1, Feld 'Alpha', Aktionsziel A, Status 'Stored fallback label saved.']
+   NAK-312 LABEL 15 geprueft, 9 Fehler
+Lauf Exit 1 (2026-09-21 22:49:15)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:49:15) ==
+B74AC525AD97CEEC36A0E0F56AA24599ECF7782B617164845A2B562C947B4B97  eq-copilot/plugin/src/prozessor/Ipc.cpp  gleich dem Wert vorher: True
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:49:15) ==
+Bau Exit 0 (2026-09-21 22:49:21)
+Binary EqCopShot.exe 22:49:21, juengste mutierte Quelle PluginEditor.cpp 22:49:15, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:49:24)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - Teil b: 312/M-70 meldet 1 Host-Dirty bei unveraendertem Text.
+Mitgefallen, Grund: 312/M-66 bis M-69 - ohne beide Riegel meldet jede Bestaetigung ohne Aenderung Dirty (Klick, Enter und Fokusverlust auf das eigene, unveraenderte Label).
+Gruen unter derselben Mutation: SONDE-012 25/25, 3 Panelfaelle, M-68 (a1), M-69 (c), M-71 (a) bis (d).
+Nach der bytegleichen Ruecknahme beider Dateien gruen (15/15).

@@ -23,6 +23,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -2510,6 +2511,127 @@ bool nak246d6Fall (const std::string& name)
     return false;
 }
 } // namespace nak246d6
+
+//==============================================================================
+// NAK-312 Etappe 6b (T3-14-01, R-312-9; Manifest docs/beweise/NAK-312.md
+// Paragraph 6.7 M-72): speichern und laden nach dem Labelentwurf.
+//==============================================================================
+//
+// Der Fall aus 312/M-66 am echten Editor (B15 misst ihn dort einzeln): Main mit
+// den bestaetigten Mitgliedern A und B und verschiedenen Namen, Hauptziel A,
+// ein Entwurf im Labelfeld, Klick auf B, Tick, Enter. Danach speichert der Host,
+// und eine frische Instanz laedt: beide Namen kommen unveraendert zurueck, und
+// die Zuordnung Name zu instance_id ist dieselbe wie vor dem Speichern.
+
+namespace nak312
+{
+using Art = eqcop::EqCopilotProcessor::SourcesCommandArt;
+using Sm = eqcop::SourcesModel;
+
+std::map<std::string, juce::String> namen (const eqcop::EqCopilotProcessor& p)
+{
+    std::map<std::string, juce::String> aus;
+    for (const auto& m : p.holeZustandKopie().mainProjectMitglieder)
+        aus[m.instanceId.toStdString()] = m.label;
+    return aus;
+}
+
+/// Eine lebende, bestaetigte Zeile; der Mixerindex legt die Anzeigeordnung fest.
+Sm::Zeile zeile (const std::string& instanz, const std::string& nonce,
+                 const juce::String& label, std::uint64_t mixer, bool haupt)
+{
+    auto q = lebendeQuelle (instanz).quellen.front();
+    q.runtimeNonce = nonce;
+    q.mitgliedschaft = Sm::Mitgliedschaft::bestaetigt;
+    q.userLabel = label;
+    q.hostMixerIndexVorhanden = true;
+    q.hostMixerIndex = mixer;
+    q.sichtbarerName = "Host Bus " + juce::String ((juce::int64) mixer);
+    q.hostBusName = q.sichtbarerName;
+    q.hauptziel = haupt;
+    return q;
+}
+
+/// Ein Klick in Zeile `nr` der gezeichneten Liste, zugestellt wie von JUCE:
+/// die Komponente selbst und danach ihr eigener Listener.
+void klicke (eqcop::EqCopilotEditor& ed, std::size_t nr)
+{
+    const auto zeilen = ed.sourcesZeilenFuerTest();
+    if (nr >= zeilen.size())
+        return;
+    const auto punkt = zeilen[nr].getCentre().toFloat();
+    const auto jetzt = juce::Time::getCurrentTime();
+    const juce::MouseEvent e (juce::Desktop::getInstance().getMainMouseSource(), punkt,
+                              juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier),
+                              juce::MouseInputSource::defaultPressure,
+                              juce::MouseInputSource::defaultOrientation,
+                              juce::MouseInputSource::defaultRotation,
+                              juce::MouseInputSource::defaultTiltX,
+                              juce::MouseInputSource::defaultTiltY,
+                              &ed, &ed, jetzt, punkt, jetzt, 1, false);
+    auto& komponente = static_cast<juce::Component&> (ed);
+    komponente.mouseDown (e);
+    komponente.mouseDown (e);
+}
+
+void labelentwurf_ueberlebt_speichern_und_laden()
+{
+    std::cout << "== NAK-312 M-72 labelentwurf_ueberlebt_speichern_und_laden ==\n";
+    const auto a = id ('a');
+    const auto b = id ('b');
+    const juce::String entwurf ("Alpha draft");
+    auto vor = nak246d3::mainAnlegen (false, true);   // Worker-Drain aus: der Tick drainiert
+    for (const auto* instanz : { &a, &b })
+        vor->v3AntwortFuerTest (ack (vor->merkeSourcesCommandFuerTest (Art::confirmJoin, *instanz), true));
+    vor->sourcesTick();
+    Sm::Sicht sicht;
+    sicht.subscriptionAktiv = true;
+    sicht.fuehrendesMain = id ('f');
+    sicht.mainDarfSchreiben = true;
+    sicht.quellen.push_back (zeile (a, id ('c'), "Eingeschleust", 1, true));
+    sicht.quellen.push_back (zeile (b, id ('d'), "Eingeschleust", 2, false));
+    vor->setzeSourcesFixtureFuerTest (std::move (sicht));
+    const bool aufgebaut = vor->benenneSourcesHauptziel (a, "Alpha")
+        && vor->waehleSourcesHauptziel (b) && vor->benenneSourcesHauptziel (b, "Beta")
+        && vor->waehleSourcesHauptziel (a);
+
+    DirtyZaehler dirty;
+    vor->addListener (&dirty);
+    {
+        eqcop::EqCopilotEditor editor (*vor);
+        editor.timerTickFuerTest();
+        editor.sourcesLabelTippenFuerTest (entwurf);
+        klicke (editor, 1);
+        editor.timerTickFuerTest();
+        editor.sourcesLabelEnterFuerTest();
+    }
+    const auto vorher = namen (*vor);
+    pruefe (aufgebaut && vorher.size() == 2 && vorher.at (a) == entwurf && vorher.at (b) == "Beta"
+                && dirty.nonParam == 1,
+            "312/M-72 Vorbedingung (Fall 312/M-66): A traegt den Entwurf, B seinen Namen, 1 Host-Dirty",
+            juce::String ((int) vorher.size()) + " Mitglieder, Host-Dirty "
+                + juce::String (dirty.nonParam.load()));
+
+    juce::MemoryBlock state;
+    vor->getStateInformation (state);
+    vor->removeListener (&dirty);
+
+    auto nach = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+    DirtyZaehler dirtyNach;
+    nach->addListener (&dirtyNach);
+    nach->setStateInformation (state.getData(), (int) state.getSize());
+    const auto geladen = namen (*nach);
+    juce::String beleg;
+    for (const auto& [ident, name] : geladen)
+        beleg += juce::String (ident.substr (0, 4)) + "='" + name + "' ";
+    pruefe (geladen == vorher && dirtyNach.nonParam == 0,
+            "312/M-72 labelentwurf_ueberlebt_speichern_und_laden (R-312-9, speichern<->laden): die "
+            "frische Instanz laedt beide Namen unveraendert, die Zuordnung Name zu instance_id ist "
+            "dieselbe wie vor dem Speichern, das Laden meldet kein Dirty",
+            beleg.trim() + ", Host-Dirty beim Laden " + juce::String (dirtyNach.nonParam.load()));
+    nach->removeListener (&dirtyNach);
+}
+} // namespace nak312
 } // namespace
 
 int main (int argc, char** argv)
@@ -2561,6 +2683,8 @@ int main (int argc, char** argv)
     nak283::state_und_modell_sind_nach_ruhe_gleich();
     nak283::mitgliederfolge_wrappt_nicht();
     nak283::reloadablehnung_und_ueberholung_sind_unterscheidbar();
+    // NAK-312 Etappe 6b (R-312-9): speichern und laden nach dem Labelentwurf (M-72).
+    nak312::labelentwurf_ueberlebt_speichern_und_laden();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

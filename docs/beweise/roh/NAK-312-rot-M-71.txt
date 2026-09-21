@@ -1,0 +1,46 @@
+# NAK-312 Rotbeweis M-71 (Manifest §7.1)
+
+Matrixzeile: 312/M-71 (T3-14-01, Zahlenrand Label), Etikett Regressionswache (in der Gegenprobe gruen).
+Zusage: 0 und 120 Codepoints werden angenommen und zweimal gleich beschnitten (Eingabebeschraenkung 120 im Konstruktor, Kappung 120 in uebernehmeSourcesLabel); 121 wird abgewiesen (Ipc.cpp, Laengenwache), der gespeicherte Name bleibt unveraendert. Gezaehlt in Codepoints, gemessen mit U+1F3B9 ausserhalb der BMP.
+Bein: B15 EqCopShot --sonde012-suite, Faelle 312/M-71 (a) bis (d).
+Mutation (Matrix): die Kappung in uebernehmeSourcesLabel auf 121 gestellt.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-21 22:49:24) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-21 22:49:24) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 976
+-- vorher:
+   |     const auto label = sourcesLabelFeld.getText().substring (0, 120);
+-- nachher:
+   |     const auto label = sourcesLabelFeld.getText().substring (0, 121); // ROTBEWEIS 312/M-71
+
+== 3. Bau und Lauf unter der Mutation (2026-09-21 22:49:24) ==
+Bau Exit 0 (2026-09-21 22:49:30)
+Binary EqCopShot.exe 22:49:30, juengste mutierte Quelle PluginEditor.cpp 22:49:24, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+     FEHLER  312/M-71 (b) kappung_120: 121 Codepoints im Feld, Enter - gespeichert werden die ersten 120, genau 1 Host-Dirty  [gespeichert 5 Codepoints, Host-Dirty 0]
+     FEHLER  312/M-71 (c) null_und_120_werden_angenommen: 0 Codepoints, danach 120 - beide gespeichert, je 1 Host-Dirty  [0 angenommen NEIN, danach 120 Codepoints, Host-Dirty 2]
+     FEHLER  312/M-71 (d) 121_wird_abgewiesen: 121 Codepoints am Prozessor - abgewiesen, der gespeicherte Name bleibt, kein Host-Dirty  [abgewiesen ja, gespeichert 120 Codepoints, Host-Dirty 2]
+   NAK-312 LABEL 15 geprueft, 3 Fehler
+Lauf Exit 1 (2026-09-21 22:49:33)
+
+== 4. Ruecknahme bytegleich (2026-09-21 22:49:33) ==
+4D06E4633CA43799E1BBF60C807DB3C330A57DF3F05E0926FB1EF4896CB5AB90  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-21 22:49:33) ==
+Bau Exit 0 (2026-09-21 22:49:39)
+Binary EqCopShot.exe 22:49:39, juengste mutierte Quelle PluginEditor.cpp 22:49:33, Binary juenger: True
+   SONDE-012 SHOTS 25/25 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+Lauf Exit 0 (2026-09-21 22:49:42)
+
+ERGEBNIS: unter der Mutation Exit 1, nach der Ruecknahme Exit 0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - (b): 121 Codepoints erreichen den Prozessor, die Laengenwache weist ab, der Name bleibt 'Alpha' (5 Codepoints), 0 Host-Dirty statt 1.
+Mitgefallen, Grund: (c) und (d) pruefen die fortlaufende Host-Dirty-Summe (erwartet 2 und 3). Weil (b) nicht schrieb, stehen dort 1 und 2; das leere Label und die 120 Codepoints selbst wurden angenommen (gespeichert 120).
+Gruen unter derselben Mutation: (a) Eingabebeschraenkung, alle uebrigen Label- und Panelfaelle, 25 Shots. Nach der bytegleichen Ruecknahme gruen (15/15).

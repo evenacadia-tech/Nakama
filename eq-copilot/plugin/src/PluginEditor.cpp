@@ -208,6 +208,16 @@ EqCopilotEditor::EqCopilotEditor (EqCopilotProcessor& p)
                                 juce::Colours::white);
     sourcesLabelFeld.onReturnKey = [this] { uebernehmeSourcesLabel(); };
     sourcesLabelFeld.onFocusLost = [this] { uebernehmeSourcesLabel(); };
+    // NAK-312 R-312-9 (312/M-68 a): Escape verwirft den Entwurf ohne Mutation -
+    // die Kennung verfaellt, und das Feld laedt das gespeicherte Label wieder.
+    // Sonst bestaetigte der naechste Auswahlwechsel einen verworfenen Text.
+    sourcesLabelFeld.onEscapeKey = [this]
+    {
+        sourcesLabelFuerId.clear();
+        sourcesLabelFuerNonce.clear();
+        aktualisiereSourcesSteuerung();
+        uiDirty = true;
+    };
     addAndMakeVisible (sourcesLabelFeld);
     sourcesAktionKnopf.setVisible (false);
     sourcesRecoveryKnopf.setVisible (false);
@@ -949,10 +959,18 @@ void EqCopilotEditor::uebernehmeSourcesLabel()
     if (! mainFlaecheAktiv || sourcesAktionsZiel.empty())
         return;
     const auto ziel = sourcesAktionsZiel;
-    const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
-                                  sourcesAnzeige.quellen.end(),
+    // NAK-312 R-312-9: der Entwurf gehoert der Quelle, fuer die sein Text
+    // geladen wurde. Nur wenn sie das Aktionsziel ist, wird geschrieben - und
+    // verglichen wird gegen das Modell von JETZT, nicht gegen die Anzeige des
+    // letzten Ticks: ist die Quelle seither weggefallen, nicht mehr Hauptziel
+    // oder mit neuer Runtime-Nonce zurueck, verfaellt der Entwurf ohne Mutation.
+    if (sourcesLabelFuerId != ziel)
+        return;
+    const auto frisch = processor.sourcesSicht();
+    const auto it = std::find_if (frisch.quellen.begin(), frisch.quellen.end(),
         [&] (const auto& q) { return q.instanceId == ziel && q.hauptziel; });
-    if (it == sourcesAnzeige.quellen.end()
+    if (it == frisch.quellen.end()
+        || it->runtimeNonce != sourcesLabelFuerNonce
         || it->mitgliedschaft != SourcesModel::Mitgliedschaft::bestaetigt)
         return;
     const auto label = sourcesLabelFeld.getText().substring (0, 120);
@@ -1004,9 +1022,25 @@ void EqCopilotEditor::aktualisiereSourcesSteuerung()
     }
     sourcesLabelFeld.setTooltip (sourcesBedienstatus);
     sourcesLabelFeld.setVisible (mainFlaecheAktiv && hatZiel);
-    if (hatZiel && ! sourcesLabelFeld.hasKeyboardFocus (true)
-        && sourcesLabelFeld.getText() != it->userLabel)
+    // NAK-312 R-312-9: hier wird der Text geladen, und hier entsteht die
+    // Kennung seines Entwurfs. Gehoert der Feldinhalt einer anderen Quelle als
+    // dem Ziel - oder derselben mit neuer Runtime-Nonce -, verfaellt er ohne
+    // Mutation, auch mit Fokus: der Wechsel per Klick hat ihn in `mouseDown`
+    // schon bestaetigt, jeder andere Wechsel (die Startquelle ist weg) laesst
+    // ihn verfallen. Fuer dieselbe Quelle schuetzt der Fokus den Entwurf wie
+    // bisher.
+    if (! hatZiel)
+    {
+        sourcesLabelFuerId.clear();
+        sourcesLabelFuerNonce.clear();
+    }
+    else if (sourcesLabelFuerId != it->instanceId || sourcesLabelFuerNonce != it->runtimeNonce
+             || (! sourcesLabelHatFokus() && sourcesLabelFeld.getText() != it->userLabel))
+    {
         sourcesLabelFeld.setText (it->userLabel, juce::dontSendNotification);
+        sourcesLabelFuerId = it->instanceId;
+        sourcesLabelFuerNonce = it->runtimeNonce;
+    }
 
     // L15: nur Broker-unavailable hat in diesem Client einen echten,
     // vollstaendigen Recovery-Handgriff. Die anderen Diagnosen bleiben Text.
@@ -1014,6 +1048,17 @@ void EqCopilotEditor::aktualisiereSourcesSteuerung()
         mainFlaecheAktiv
         && sourcesAnzeige.diagnose == SourcesModel::Diagnose::brokerUnavailable
         && sourcesAnzeige.diagnoseHatHandgriff);
+}
+
+bool EqCopilotEditor::sourcesLabelHatFokus() const
+{
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    // NAK-312 (312/M-66 ff.): ein Bein ohne Fenster bekommt keinen
+    // Systemfokus; der Testzugang stellt den Zustand des Tippens her.
+    if (sourcesLabelFokusFuerTest)
+        return true;
+#endif
+    return sourcesLabelFeld.hasKeyboardFocus (true);
 }
 
 juce::Rectangle<int> EqCopilotEditor::sourcesSpalte() const
@@ -1054,7 +1099,15 @@ void EqCopilotEditor::mouseDown (const juce::MouseEvent& e)
     for (size_t i = 0; i < zeilen.size(); ++i)
         if (zeilen[i].contains (p))
         {
-            processor.waehleSourcesHauptziel (sourcesAnzeige.quellen[i].instanceId);
+            const auto gewaehlt = sourcesAnzeige.quellen[i].instanceId;
+            // NAK-312 R-312-9: der Auswahlwechsel folgt der Regel des
+            // Fokusverlusts - ein offener Entwurf wird BESTAETIGT, unter
+            // seiner Startquelle und bevor sie das Hauptziel abgibt; danach
+            // schreibt `benenneSourcesHauptziel` nur noch auf das neue Ziel
+            // (SONDE-012 U03). Ein Klick auf das eigene Ziel wechselt nichts.
+            if (gewaehlt != sourcesAktionsZiel)
+                uebernehmeSourcesLabel();
+            processor.waehleSourcesHauptziel (gewaehlt);
             uiDirty = true;
             return;
         }

@@ -116,12 +116,15 @@ Der Planstand selbst wird **nicht von Hand** angefasst. Nach der Einarbeitung
 `py -3.13 tools/plan/planstand.py` ausführen und die erzeugte Datei zusammen
 mit den bewusst geänderten Quellen per explizitem Pathspec committen.
 
+Jede Antwort zieht im selben Änderungssatz `docs/ZIELBILD.md` nach (Stelle in
+Alltagssprache; neue Karte unter „Noch offen“), dann `py -3.13 tools/plan/zielbild.py abgleichen`.
+
 ## 6. Committen
 
 Ein Commit je Karte, mit **explizitem Pathspec** (parallele Sessions!):
 
 ```
-git add -- docs/plan/fragen.json <konkreter Entscheidungsort> <weitere betroffene Pfade>
+git add -- docs/plan/fragen.json docs/ZIELBILD.md <konkreter Entscheidungsort> <weitere betroffene Pfade>
 git commit -m "Antwort U9 eingearbeitet: <was jetzt gilt> — User-Wort 23.08."
 git push
 ```

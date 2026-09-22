@@ -26,7 +26,8 @@ unbekannter Anker oder ein zusätzliches Worktree ist nie grün.
 
 **Plan-Tab und STAND (NAK-256, 11.09.2026):** Der Starter öffnet im selben
 Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, lesend);
-`start-dirigent.ps1 -NurPlanTab` öffnet ihn neu. Statuszeile und Tab zeigen
+`start-dirigent.ps1 -NurPlanTab` öffnet ihn neu.
+Taste Z zeigt dort das Zielbild (`docs/ZIELBILD.md`), P den Plan (23.09.2026). Statuszeile und Tab zeigen
 `STAND` aus „Als Nächstes" oder dem Ticketanker: bei Ticketbeginn
 `pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket <NAK-nnn>`,
 beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt „Etappe n von m"
@@ -314,7 +315,8 @@ Nacharbeitsrunden; 08.09., 12.09.2026), gemessen per Kommando, nie aus dem
 Gedächtnis: `py -3.13 tools/plan/gesundheit.py` (Kontextfläche gegen
 `docs/context-hygiene-playbook.md` und Codebase-Schwellen; Bein A32),
 `dokuriegel.py` auf CLAUDE.md und Skill, `py -3.13 tools/plan/tidy.py`
-(clang-tidy-Ratsche, Bein A33); Exit 4 = gerissen, beide nicht
+(clang-tidy-Ratsche, Bein A33), `py -3.13 tools/plan/zielbild.py pruefen` (Exit 4: Zielbild selbst
+nachziehen, `abgleichen`, Pathspec-Commit); Exit 4 = gerissen, alle nicht
 blockierend. Ein Riss der
 Kontextfläche (Bytes, Redundanz, Prosa, entbehrliche Zitate) wird im selben
 Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids

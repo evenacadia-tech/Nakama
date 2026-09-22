@@ -14,8 +14,10 @@ KONZEPT §4.6). Dateien:
 Aufruf des Dirigenten nach grünem Kanon (Skill §3.3):
 
 ```powershell
-pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>
+pwsh -NoProfile -File tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha> -Beenden
 ```
+
+`-Beenden` gehört zu jedem Aufruf: kein FL bleibt nach dem Lauf offen (User 22.09.2026, Register NAK-358).
 
 Exit 0 = gemessen oder begründet übersprungen, 3 = Voraussetzung fehlt (auch
 eine Szenario-Voraussetzung: Szenario-Exit 5), 4 = Szenario verfehlt oder

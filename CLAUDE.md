@@ -216,12 +216,13 @@ Der Runner baut, fährt die deklarierten Beine, legt Rohausgaben unter
 `docs/beweise/roh/` ab (Manifest trägt Kopf, Urteilszeile, Übersicht) und
 verweigert die Beglaubigung, wenn Prüfbinaries älter sind als ihre Quellen.
 Einzelbefehle und Zielnamen stehen im Skript. Nach grünem Kanon fährt der
-Laufzeit-Arm `tools/fl/laufzeit.ps1 -Ticket <T> -Basis <sha>` (installiert,
-startet FL mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`, fährt die
-Szenarien aus `docs/gesundheit/szenarien/`; Exit 4 = Szenario verfehlt;
-`tools/fl/LIES-MICH.md`). Editor-Sichtprüfung ohne FL
-über `EqCopShot.exe`. Installation läuft seit 12.09.2026 ohne User-Handgriff
-über die erhöhten Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
+Laufzeit-Arm `tools/fl/laufzeit.ps1 -Ticket <T> -Basis <sha> -Beenden`
+(installiert, startet FL mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`,
+fährt die Szenarien aus `docs/gesundheit/szenarien/`, beendet FL danach —
+kein FL bleibt offen, User 22.09.2026; Exit 4 = Szenario verfehlt;
+`tools/fl/LIES-MICH.md`). Editor-Sichtprüfung ohne FL über `EqCopShot.exe`.
+Installation läuft seit 12.09.2026 ohne User-Handgriff über die erhöhten
+Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
 `\Nakama\rueckweg` (User-Entscheid, Register NAK-285; je Rechner einmal
 erhöht `tools/dirigent/install-aufgaben-registrieren.ps1`; Log unter
 `%LOCALAPPDATA%\evenacadia\nakama-installer\<modus>.log`, Exitcode =

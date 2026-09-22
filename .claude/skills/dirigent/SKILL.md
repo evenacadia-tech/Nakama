@@ -178,13 +178,16 @@ Kein Selbstbericht zählt:
   null.
 - **Laufzeit-Arm** (User 12.09.2026, Register NAK-286, Plan S25e): nach
   grünem Kanon auf dem End-Stand `pwsh -NoProfile -File
-  tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha>`. Der Runner
-  entscheidet selbst, ob der Diff lohnt (Plugin, Schemas,
-  Broker, Installer), zieht die Manifest-Hashes nach, installiert über die
-  erhöhte Aufgabe `\Nakama\installieren`, startet FL mit dem Diagnoseprojekt
-  und fährt die Szenarien. Exit 0 = gemessen oder begründet übersprungen
-  (Diff ohne Produktpfad, fremdes FL-Projekt offen), Exit 4 = Szenario
-  verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
+  tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha> -Beenden`
+  (`-Beenden` immer; User 22.09.2026, NAK-358). Der Runner entscheidet
+  selbst, ob der Diff lohnt (Plugin, Schemas, Broker, Installer), zieht die
+  Manifest-Hashes nach, installiert über die erhöhte Aufgabe
+  `\Nakama\installieren`, startet FL mit dem Diagnoseprojekt und fährt die
+  Szenarien. Ein vorgefundenes FL ist Claudes: eigenes beendet der Runner,
+  einen Rest ohne Besitzeintrag der Dirigent per `Stop-Process`; nie den
+  User bitten. Exit 0 = gemessen oder begründet übersprungen (Diff ohne
+  Produktpfad, fremdes FL), Exit 4 = Szenario verfehlt → Nacharbeit wie ein
+  Codex-Defekt. Rohdaten
   `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest
   (`tools/fl/LIES-MICH.md`).
 
@@ -314,13 +317,11 @@ und pushen.
 
 **Hygiene in jedem Abschlussfenster** (auch nach Etappen und
 Nacharbeitsrunden; User 08.09. und 12.09.2026), gemessen per Kommando, nie
-aus dem Gedächtnis: Bytes von `MEMORY.md`, Root-`CLAUDE.md` und diesem
-Skill gegen die Grenzen in `docs/context-hygiene-playbook.md`, Indexzeilen
-über 250 Zeichen, Memory-Dateien ohne Indexlink, `dokuriegel.py` auf
-CLAUDE.md und Skill, dazu `py -3.13 tools/plan/gesundheit.py` (Exit 4 =
-Schwelle gerissen; im Kanon Bein A32, nicht blockierend) und `py -3.13
-tools/plan/tidy.py` (clang-tidy-Ratsche des Plugins, Bein A33, gleiche
-Exitcodes). Ein Riss der
+aus dem Gedächtnis: `py -3.13 tools/plan/gesundheit.py` (Kontextfläche
+gegen `docs/context-hygiene-playbook.md` und Codebase-Schwellen; Exit 4 =
+gerissen; Kanon-Bein A32, nicht blockierend), `dokuriegel.py` auf CLAUDE.md
+und Skill, `py -3.13 tools/plan/tidy.py` (clang-tidy-Ratsche des Plugins,
+Bein A33, gleiche Exitcodes). Ein Riss der
 Kontextfläche (Bytes, Redundanz, Prosa, entbehrliche Zitate) wird im selben
 Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids
 nur als Datum, Wortlaut bleibt in Abnahmen und Register. Ein Riss der
@@ -363,9 +364,9 @@ Ein Haltgrund stoppt nur das Ticket: Frage stellen (nur Design-/Produktfrage
 oder User-Handgriff) und sofort das nächste Ticket ohne Haltgrund vorziehen;
 erst ohne solches Ticket wartet die Sitzung.
 
-- User- oder Figma-Handgriff (FL-Start, Installation und Messung laufen
-  seit 12.09.2026 automatisch, §3.3, und sind keiner; einziger FL-Handgriff
-  bleibt das Diagnoseprojekt nach NAK-30 neu anzulegen),
+- User- oder Figma-Handgriff (FL-Start, FL-Ende, Installation und Messung
+  sind keiner, §3.3; einziger FL-Handgriff: das Diagnoseprojekt nach NAK-30
+  neu anlegen),
 - Produktentscheid,
 - überlappende fremde Änderungen,
 - Befund, der nur durch Produktentscheid oder User-Handgriff schließbar ist

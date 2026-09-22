@@ -1,0 +1,31 @@
+== NAK-353 - Ursache der Dumps von eqcop-broker-v3probe.exe ==
+Stand: 2026-09-22 22:29:56, HEAD 9118b066 (sichtbarer Checkout); gemessen in der Recherchesession nakama-1f
+Werkzeug: docs/beweise/roh/NAK-353-dumpleser.py (SHA-256 585C46BDEB52F0A6935E8A8EBAE99ED1A16C3503DD6263288782F037B522B536)
+Aufruf je Dump: py -3.13 docs/beweise/roh/NAK-353-dumpleser.py <dump> broker/target/debug
+Symbole: PDB des Debug-Baus (broker/target/debug/eqcop_broker_v3probe.pdb); kein Debugger installiert, gelesen mit der Windows-eigenen dbghelp.dll
+Gegenprobe mit Debugger, sobald WinDbg installiert ist (enthaelt cdbX64.exe seit 1.2506):
+  cdbX64 -z <dump> -y "broker\target\debug" -lines -c ".ecxr; kn; q"
+
+Population: alle Dumps unter %LOCALAPPDATA%\CrashDumps am Messzeitpunkt (10 Stueck, alle von eqcop-broker-v3probe.exe)
+Spalten: Dateizeit, Datei, Ausnahmecode [Parameter 0], Absturzstelle <- Ruecksprungkandidaten mit Quellzeile
+
+2026-09-20 20:43:17  eqcop-broker-v3probe.exe.152912.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-20 22:42:38  eqcop-broker-v3probe.exe.40572.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 04:54:37  eqcop-broker-v3probe.exe.361348.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 07:26:26  eqcop-broker-v3probe.exe.66412.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 10:50:48  eqcop-broker-v3probe.exe.141220.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 12:22:42  eqcop-broker-v3probe.exe.152348.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 15:17:27  eqcop-broker-v3probe.exe.344784.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 17:51:57  eqcop-broker-v3probe.exe.146712.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-21 23:46:33  eqcop-broker-v3probe.exe.99696.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+2026-09-22 21:49:27  eqcop-broker-v3probe.exe.173652.dmp  0xC0000409 ['0x7']  std::process::abort+0x5 <- revertieren (auth.rs:35) <- client_sid_authentisieren (auth.rs:169) <- spur (auth.rs:20)
+
+Lesart
+- 0xC0000409 mit Parameter 7 ist __fastfail(FAST_FAIL_FATAL_APP_EXIT); das ist der Weg von std::process::abort unter x86_64-pc-windows-msvc.
+- Aufrufkette: std::process::abort <- VerbindungsSicherheitsCleanup::revertieren (broker/src/transport/server_v3/auth.rs:33, Ruecksprung :35) <- client_sid_authentisieren (auth.rs:169). Der dritte Kandidat (spur, auth.rs:20) ist ein veralteter Stapelplatz der heuristischen Suche, kein Aufrufer.
+- Ausgeloest absichtlich: der Test revert_fehlschlag_beendet_testbrokerprozess_fail_fast (broker/tests/security_vectors.rs:582) startet den Probe-Broker mit --security-revert-fail (broker/src/bin/eqcop-broker-v3probe.rs:47); die Bedingung in auth.rs:30 (Testfehler Revert) fuehrt dann gewollt zum Abbruch in auth.rs:33. Der Test laeuft im Kanon-Bein A4 (cargo test ueber alle Brokertests). Kein Befund gegen den Broker.
+
+Folge fuer die Absturzdiagnose
+- WER behaelt im gemeinsamen Ordner %LOCALAPPDATA%\CrashDumps hoechstens zehn Dumps (DumpCount-Vorgabe 10) und ersetzt den aeltesten. Jeder Kanon legt einen erwarteten Dump ab; ein echter Absturzdump (etwa FL64.exe mit dem Plugin) ist nach spaetestens zehn Kanons verdraengt.
+- Beobachtet in dieser Session: die Listung zu Sitzungsbeginn enthielt als aeltesten Dump eqcop-broker-v3probe.exe.196444.dmp (2026-09-20 16:48:12); nach dem Kanon mit dem Dump 173652 (2026-09-22 21:49:27) ist er verschwunden.
+- Schliessweg nach der Registerzeile: den Dump fuer dieses Bein vermeiden oder als erwartet ausweisen; eine eigene LocalDumps-Ablage je Programm (HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\<exe>, DumpFolder und DumpCount) braucht Administratorrechte.

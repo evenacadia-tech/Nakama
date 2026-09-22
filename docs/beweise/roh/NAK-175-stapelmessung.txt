@@ -1,0 +1,29 @@
+== NAK-175-Klasse - Stapelrahmen der main-Funktionen grosser Testprogramme ==
+Stand: 2026-09-22 22:31:00, HEAD 9118b066 (sichtbarer Checkout); gemessen in der Recherchesession nakama-1f
+Quellen unveraendert seit: AnalysisGoldenTestMain.cpp 20b2b4d9 (2026-09-06), QueueStressTestMain.cpp 348d15c3 (2026-09-07)
+
+Methode
+- Uebersetzung einer Einheit mit ihrem Eintrag aus eq-copilot/build-tidy/compile_commands.json (Release-Schalter des
+  Produktbaus: /O2 /Ob2 /Ox -MD /EHsc /W4 /bigobj /utf-8 -std:c++20; /Fo, /Fd, /MP, /FS entfernt) plus /FA fuer ein
+  Assemblerlisting, im Verzeichnis eq-copilot/build-tidy, Umgebung aus vcvars64.bat der Build Tools 2022 (cl 19.44).
+- Rahmengroesse = Operand von `mov eax, N` unmittelbar vor `call __chkstk` in der Prozedur `main` des Listings.
+- Stapelreserve der gebauten Testprogramme: `dumpbin /headers` auf
+  eq-copilot/build/plugin/EqCopAnalysisGoldenTest_artefacts/Release/EqCopAnalysisGoldenTest.exe und
+  eq-copilot/build/plugin/EqCopQueueStressTest_artefacts/Release/EqCopQueueStressTest.exe (Bau 2026-09-22 20:58):
+  "100000 size of stack reserve" = 1 048 576 Bytes, MSVC-Vorgabe; eq-copilot/plugin/CMakeLists.txt setzt kein /STACK.
+
+main-Rahmen (Bytes, Anteil an 1 MiB)
+  EqCopAnalysisGoldenTest   1 001 008   95,5 %   (in dieser Session selbst neu uebersetzt und gemessen)
+  EqCopQueueStressTest        930 816   88,8 %   (Listing einer Recherche-Hilfssitzung derselben Methode)
+  EqCopMarkierungTest         352 608   33,6 %   (ebenso)
+  EqCopLebenslaufTest         312 912   29,8 %   (ebenso)
+
+Lesart
+- Der Rahmen enthaelt die vom Optimierer in main eingebetteten Lokalen aller eingebetteten Aufrufe. Fuer alles, was
+  main nicht eingebettet aufruft, bleiben bei EqCopAnalysisGoldenTest rund 47 KB, bei EqCopQueueStressTest rund 117 KB.
+  Beide Beine sind heute gruen; ein weiteres grosses Objekt im Rahmen oder ein tieferer Aufruf reisst den Stapel mit
+  0xC00000FD, sichtbar erst im Kanon (Klasse NAK-175, Nachbar NAK-205).
+- Statische Wache ohne neues Werkzeug: MSVC-Codeanalyse, Warnung C6262 (`cl /analyze:only /analyze:stacksize N`),
+  auch fuer Testeinheiten (tidy.py laesst Tests aus). C6262 schaetzt je Funktion und weicht vom Listing ab
+  (Probelauf der Hilfssitzung: MarkierungTest main geschaetzt 1 049 124, Listing 352 608; QueueStressTest geschaetzt
+  859 988, Listing 930 816); die Schwelle braucht deshalb Abstand zur Reserve.

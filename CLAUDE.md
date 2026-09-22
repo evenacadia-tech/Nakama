@@ -137,6 +137,7 @@ logische Commits gehen ohne Rückfrage raus.
 |---|---|
 | Nächster Schritt | `docs/PLAN-STAND.md`, danach die konkrete Ticketquelle |
 | Planstand / offene Fragen | `docs/PLAN-STAND.md`, `docs/plan/plan.json`, `docs/plan/fragen.json`, `docs/plan/LIES-MICH.md` |
+| Zielbild (Produkt aus Usersicht) | `docs/ZIELBILD.md` |
 | Plugin heute | `docs/plugin-wissen.md` |
 | Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.5), `docs/bauaufteilung-sonden.md` |
 | Verträge v3 | `eq-copilot/schemas/v3/README.md`, `eq-copilot/schemas/v3/flatbuffers/README.md` |

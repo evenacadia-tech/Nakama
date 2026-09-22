@@ -88,6 +88,37 @@ Was du tust, wenn du etwas **änderst**:
 | eine Frage an den User | Karte in `fragen.json` → `offen[]`, Bild nach `bilder/` |
 | eine Antwort bekommen | **`/fragen`** benutzen; nie von Hand zusammenfassen |
 
+## Das Zielbild
+
+Seit dem 23.09.2026 steht neben dem Planstand das **Zielbild**: `docs/ZIELBILD.md`
+beschreibt in Alltagssprache, wie Nakama arbeitet, wenn der heutige Plan mit allen
+bisherigen Entscheidungen fertig ist. Der User sieht es im Plan-Tab (Taste Z). Sein
+Auftrag:
+
+> „ich brauche ein sich stets aktualisierendes standbild in form einer übersichtlichen
+> beschreibung was nakama aus sicht eines potentiellen users können würde"
+
+Getrennt wie beim Planstand: der **Text ist autoriert**, seine **Aktualität gerechnet**.
+Der Fußblock `ZIELBILD-ABGLEICH` hält fest, welche Entscheidquellen eingearbeitet sind:
+beantwortete, offene und geparkte Karten aus `fragen.json`, die Abnahmen unter
+`design/abnahmen/`, die Registerzeilen mit einer Klasse „Produkt…" und die Planschritte.
+Jede neue oder geänderte Quelle macht das Zielbild *veraltet*, bis sie eingearbeitet ist.
+
+| Befehl | Wirkung |
+|---|---|
+| `py -3.13 tools/plan/zielbild.py pruefen` | Exit 0 aktuell · 4 veraltet, jede neue oder geänderte Quelle beim Namen · 2 Werkzeugfehler |
+| `py -3.13 tools/plan/zielbild.py abgleichen` | schreibt nur den Fußblock; verweigert mit Exit 4, solange eine offene oder geparkte Karte im Text fehlt oder eine Planmarke ins Leere zeigt |
+| `py -3.13 tools/plan/zielbild.py anzeige` | das Bild für den Plan-Tab |
+| `py -3.13 tools/plan/zielbild_test.py` | Proben des Werkzeugs |
+
+Wer nachzieht: `/fragen` im selben Änderungssatz wie die Antwort, alles andere der
+Dirigent im Abschlussfenster. Nachziehen heißt: die betroffene Stelle in Alltagssprache
+ändern — nur Entschiedenes und den gültigen Plan, nie Vorschläge —, dann `abgleichen`,
+dann `py -3.13 tools/plan/dokuriegel.py docs/ZIELBILD.md`, dann mit Pathspec committen.
+Eine Planmarke `<!-- plan: P4–P5 -->` steht als eigene Zeile unter einer Überschrift oder
+am Ende einer Listenzeile; die Anzeige rechnet daraus den Stand aus `docs/PLAN-STAND.md`
+(✓ fertig · ◐ läuft · ○ offen).
+
 ## Was es nicht mehr gibt
 
 - Die Briefing-Seite `nakama-briefing.philipld.chatgpt.site`. Der Ordner

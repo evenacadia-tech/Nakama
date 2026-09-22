@@ -1,0 +1,72 @@
+# NAK-312 Rotbeweis M-93 (Manifest §7.1)
+
+Matrixzeile: 312/M-93 (L-5, R-312-2 Satz 2, R-312-23; Manifest §6.7 und §42), Etikett heute rot; Gegenprobe am Stand vor dem Bau in docs/beweise/roh/NAK-312-etappe6-nacharbeit1-gegenprobe.txt (Marke 1).
+Zusage: baut der Host den Editor synchron innerhalb von neueSensorId() ab, erfolgt danach kein Zugriff auf den Editor (Marke 0, weder statusMeldung noch statusMeldungBisMs); die Kennung wechselt trotzdem, genau 1 Host-Dirty.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf.
+Mutation an der Zeile, die die Zusage traegt (Matrix): die zweite Lebendpruefung nach neueSensorId() entfernt (ed = safe.getComponent(); if (ed == nullptr) return;). ed bleibt der Zeiger vom Eintritt. Die Marke steht dahinter und vor dem ersten Schreibzugriff; sie zaehlt und kehrt zurueck, bevor der abgebaute Editor beruehrt wird (R-312-12, R-312-23) - kein Lauf in undefiniertem Verhalten.
+
+
+== 1. SHA-256 vorher und Sicherung (2026-09-22 20:56:41) ==
+C6C2EF907E55B37D176422DBDC92AB9FF717BE53DB8568D698A69B5A2CF0F3CD  eq-copilot/plugin/src/PluginEditor.cpp
+
+== 2. Mutation (2026-09-22 20:56:41) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 658
+-- vorher:
+   |             const bool neueKennung = proz.neueSensorId();
+   |             ed = safe.getComponent();
+   |             if (ed == nullptr)
+   |                 return;
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
+   |                 return;   // 312/M-93: gezählt, kein Zugriff
+   | #endif
+-- nachher:
+   |             const bool neueKennung = proz.neueSensorId();
+   |             // ROTBEWEIS 312/M-93: zweite Lebendpruefung entfernt
+   | #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+   |             if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
+   |                 return;   // 312/M-93: gezählt, kein Zugriff
+   | #endif
+SHA-256 mutiert: CBCCA5D891CA4E32429B95D2A960399B7259D9B9F39D276F41A4DA8B5BA9DD3E
+
+== 3. Bau und Lauf unter der Mutation (2026-09-22 20:56:41) ==
+Bau Exit 0 (2026-09-22 20:56:41 bis 2026-09-22 20:56:46)
+Binary EqCopShot.exe 20:56:46, juengste Quelle PluginEditor.cpp 20:56:41, Binary juenger: True
+Lauf abgekoppelt: GESTARTET PID=44280 2026-09-22 20:56:46 EqCopShot.exe
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+   == NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23) ==
+     ok      312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status 'Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.']
+     FEHLER  312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf (R-312-2 Satz 2): der Klick beginnt bei lebendem Editor, der Host baut ihn in seiner Reaktion auf die Host-Dirty-Meldung ab (Listener in audioProcessorChanged, innerhalb von neueSensorId) - die Kennung wechselt trotzdem, genau EINE Host-Dirty-Meldung, danach kein Zugriff auf den Editor (Marke 0)  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 1, Kennung NEU, Status '', Abbau im Rueckruf 1 nach 1 Eintritt(en), Kennung beim Abbau schon NEU]
+   NAK-312 KONFLIKT 4 geprueft, 1 Fehler
+Lauf EXIT=1 (2026-09-22 20:56:51)
+
+== 4. Ruecknahme bytegleich (2026-09-22 20:56:51) ==
+C6C2EF907E55B37D176422DBDC92AB9FF717BE53DB8568D698A69B5A2CF0F3CD  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 20:56:51
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-22 20:56:51) ==
+Bau Exit 0 (2026-09-22 20:56:51 bis 2026-09-22 20:56:57)
+Binary EqCopShot.exe 20:56:57, juengste Quelle PluginEditor.cpp 20:56:51, Binary juenger: True
+Lauf abgekoppelt: GESTARTET PID=167420 2026-09-22 20:56:57 EqCopShot.exe
+   SONDE-012 SHOTS 29/29 gruen
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+   == NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23) ==
+     ok      312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status 'Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.']
+     ok      312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf (R-312-2 Satz 2): der Klick beginnt bei lebendem Editor, der Host baut ihn in seiner Reaktion auf die Host-Dirty-Meldung ab (Listener in audioProcessorChanged, innerhalb von neueSensorId) - die Kennung wechselt trotzdem, genau EINE Host-Dirty-Meldung, danach kein Zugriff auf den Editor (Marke 0)  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status '', Abbau im Rueckruf 1 nach 1 Eintritt(en), Kennung beim Abbau schon NEU]
+   NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+Lauf EXIT=0 (2026-09-22 20:57:02)
+
+ERGEBNIS: unter der Mutation EXIT=1, nach der Ruecknahme EXIT=0
+
+== Auswertung ==
+Die Zusage faellt an der erwarteten Pruefung: JA - 312/M-93: ohne die zweite Lebendpruefung erreicht der Rueckruf nach dem Abbau innerhalb von neueSensorId() die Stelle seines ersten Schreibzugriffs auf den abgebauten Editor, Marke 1; der Aufbau ist derselbe wie im gruenen Lauf (Abbau im Rueckruf 1 nach 1 Eintritt, Kennung beim Abbau schon neu, 1 Host-Dirty, Kennung am Ende neu, Box abgebaut).
+Mitgefallen: keine; 312/M-91 (a), (b) und 312/M-92 bleiben gruen. Nach der bytegleichen Ruecknahme gruen (4/4).

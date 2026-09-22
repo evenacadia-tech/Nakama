@@ -1,0 +1,34 @@
+# NAK-312 Etappe 6, Nacharbeit 1 - Gegenprobe am Stand vor dem Bau (heute rot, R-312-23), Matrixzeile 312/M-93
+
+Basisvariante: HEAD 6cc849eb3a10860c8d48d46e0336edf916778cbb plus allein der Testzugang in eq-copilot/plugin/src/PluginEditor.cpp, zeigeKonflikt: die Anweisung "ed->statusMeldung = ed->processor.neueSensorId() ? ... : ...;" ist geteilt in "const bool gegenprobeNeu = ed->processor.neueSensorId();" und die Zuweisung "ed->statusMeldung = gegenprobeNeu ? ... : ...;" - dieselben Zugriffe in derselben Reihenfolge (C++17: die rechte Seite einer Zuweisung ist vor der linken sequenziert). Dazwischen steht die Marke testzugang::konfliktMarkeFuerTest() unmittelbar nach dem Hostaufruf und vor der naechsten Dereferenzierung von ed (R-312-23: der tote Zugriff wird als Marke gezaehlt, nie als Lauf in undefiniertem Verhalten). KEINE zweite Lebendpruefung, der Prozessor wird weiter ueber ed->processor erreicht. Tests in der Endfassung (312/M-93 neu in eq-copilot/plugin/tests/ShotTestMain.cpp).
+SHA-256 Basis HEAD: 0AAE38FF8C13BB64E8A753B9C71D22E20D9C6006ABC1C3A376B8022319A4F5C2 eq-copilot/plugin/src/PluginEditor.cpp; 907224348D2DDD026117AA170CCE608864814F3A1B34DC95301A1A2CE60FB547 eq-copilot/plugin/tests/ShotTestMain.cpp.
+SHA-256 der Basisvariante: 39F3C6775DAD0C106D4C43D80965CFB635E841DF59CFCB6EA7FF16D57A1C82A1 eq-copilot/plugin/src/PluginEditor.cpp; 7DBFC2141CBB15C0EA3EE4EA936F6E4F143EADF1151DAF2AC8DCB355C703DE08 eq-copilot/plugin/tests/ShotTestMain.cpp. git diff --stat 6cc849eb ueber eq-copilot/plugin/src: allein PluginEditor.cpp, 8 Zeilen hinzu, 1 entfernt:
+
+-            ed->statusMeldung = ed->processor.neueSensorId()
++            const bool gegenprobeNeu = ed->processor.neueSensorId();
++#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
++            // GEGENPROBE 312/M-93 (R-312-23): die Marke direkt nach dem Hostaufruf,
++            // vor der naechsten Dereferenzierung von ed - ohne zweite Lebendpruefung.
++            if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
++                return;
++#endif
++            ed->statusMeldung = gegenprobeNeu
+
+Bau EqCopShot 2026-09-22 20:46:52 bis 20:47:50, Exit 0; Binary 20:47:50, juenger als PluginEditor.cpp (20:46:16) und ShotTestMain.cpp (20:45:45).
+Lauf abgekoppelt (eigenes pwsh, Log mit EXIT-Zeile) 2026-09-22 20:48:16 bis 20:48:22.
+
+B15 EqCopShot --sonde012-suite eq-copilot/build/sonde012-shots: Exit 1 (der Prozess endet regulaer, EXIT=1)
+SONDE-012 SHOTS 29/29 gruen
+NAK-312 PANEL 3 geprueft, 0 Fehler
+NAK-312 LABEL 15 geprueft, 0 Fehler
+NAK-312 ZIEL 11 geprueft, 0 Fehler
+== NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23) ==
+  ok      312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+  ok      312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+  ok      312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status 'Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.']
+  FEHLER  312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf (R-312-2 Satz 2): der Klick beginnt bei lebendem Editor, der Host baut ihn in seiner Reaktion auf die Host-Dirty-Meldung ab (Listener in audioProcessorChanged, innerhalb von neueSensorId) - die Kennung wechselt trotzdem, genau EINE Host-Dirty-Meldung, danach kein Zugriff auf den Editor (Marke 0)  [geoeffnet ja, Panel abgebaut ja, Marke 1, Host-Dirty 1, Kennung NEU, Status '', Abbau im Rueckruf 1 nach 1 Eintritt(en), Kennung beim Abbau schon NEU]
+NAK-312 KONFLIKT 4 geprueft, 1 Fehler
+
+Bilder: 31 PNG in eq-copilot/build/sonde012-shots, alle in diesem Lauf geschrieben (20:48:17 bis 20:48:21); SHA-256 fuer den Vergleich mit dem Endstand festgehalten.
+
+Auswertung: rot ist genau die Pruefung mit Etikett heute rot - 312/M-93: der Aufbau steht (Popover offen, der Klick beginnt bei lebendem Editor, der Abbau laeuft innerhalb von neueSensorId nach genau einem Eintritt, die Kennung ist beim Abbau schon neu, genau 1 Host-Dirty, am Ende neue Kennung, Box abgebaut), und der Rueckruf erreicht nach dem Abbau die Stelle seines naechsten Zugriffs auf ed: Marke 1. Ohne die Marke schriebe er ed->statusMeldung und ed->statusMeldungBisMs in den freigegebenen Editor (Erstpruefung L-5, Validierung docs/beweise/roh/NAK-312-etappe-6-erstpruefung-validierung.md). Gruen: 312/M-91 (a) und (b), 312/M-92 und alle uebrigen Faelle des Beins.

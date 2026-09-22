@@ -21,9 +21,10 @@
 // Ersatz-Hauptziel und die Aktionssteuerung (312/M-73 bis M-75, M-85,
 // R-312-6; dazu vier Bilder mit 20, 21, 32 und 64 Quellen im Sichtsatz und
 // das Bild nak312-hauptziel-ausserhalb.png eines Hauptziels hinter Zeile 20)
-// und das Kennungskonflikt-Panel (312/M-91, 312/M-92, R-312-2, R-312-23):
-// gepostete Klicks nach dem Ende des Editors sind wirkungslos, der normale
-// Handgriff bleibt.
+// und das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23):
+// gepostete Klicks nach dem Ende des Editors sind wirkungslos, baut der Host
+// den Editor waehrend des Rueckrufs ab, fasst der Rueckruf ihn danach nicht
+// mehr an, und der normale Handgriff bleibt.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -1072,14 +1073,43 @@ bool nak312Ersatzziel (const juce::File& ordner)
 // Zugriff auf Editor und Prozessor (R-312-23); ein Rueckruf, der sie nach dem
 // Ende erreicht, wird gezaehlt und kehrt ohne Zugriff zurueck. Der Beleg ist die
 // gezaehlte Marke, nie ein Absturz.
+//
+// Nacharbeit 1 der Etappe 6 (L-5, 312/M-93, R-312-2 Satz 2): der Klick beginnt
+// bei lebendem Editor, und der Host baut ihn WAEHREND des Rueckrufs ab.
+// `neueSensorId()` meldet Host-Dirty, `updateHostDisplay` ruft die Listener
+// synchron (juce_AudioProcessor.cpp:431-436), der VST3-Wrapper auf dem
+// Nachrichtenthread ebenso `setDirty` und `restartComponent` des Hosts
+// (juce_VST3Common.h:1639-1656), und ein Host darf darin den Editor
+// schliessen. Hier tut das ein Listener in `audioProcessorChanged`. Dieselbe
+// Marke steht auch hinter der zweiten Lebendpruefung, vor dem ersten
+// Schreibzugriff nach dem Hostaufruf.
 
-enum class KonfliktFolge { editorEnde, editorUndProzessorEnde, editorLebt };
+enum class KonfliktFolge { editorEnde, editorUndProzessorEnde, editorLebt, editorEndeImRueckruf };
 
 struct KonfliktLauf
 {
     bool geoeffnet = false, panelWeg = false;
     int  marke = 0, dirty = 0;
-    juce::String kennungVorher, kennungBeimEnde, status;
+    int  abgebaut = 0, eintritteBeimAbbau = 0;   // 312/M-93
+    juce::String kennungVorher, kennungBeimEnde, kennungBeimAbbau, status;
+};
+
+/** 312/M-93: baut den Editor ab, wie ein Host in seiner Reaktion auf die
+    Host-Dirty-Meldung (VST3: in `setDirty` oder `restartComponent`) - im
+    Rueckruf von `updateHostDisplay`, also innerhalb von `neueSensorId()`.
+    Leer ausser in 312/M-93; laeuft hoechstens einmal. */
+struct KonfliktAbbauer final : juce::AudioProcessorListener
+{
+    std::function<void()> abbau;
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& d) override
+    {
+        if (! d.nonParameterStateChanged || ! abbau)
+            return;
+        const auto einmal = std::move (abbau);
+        abbau = nullptr;
+        einmal();
+    }
 };
 
 /** Ein Legacy-Gen mit offenem Editor, das Kennungskonflikt-Popover ueber den
@@ -1088,7 +1118,7 @@ struct KonfliktLauf
 KonfliktLauf konfliktLauf (KonfliktFolge folge)
 {
     KonfliktLauf l;
-    struct Vogel { bool lebt = true; int marke = 0; };
+    struct Vogel { bool lebt = true; int marke = 0, eintritte = 0; };
     auto vogel = std::make_shared<Vogel>();
     eqcop::testzugang::konfliktMarkeFuerTest() = [vogel]
     {
@@ -1097,12 +1127,14 @@ KonfliktLauf konfliktLauf (KonfliktFolge folge)
             ++vogel->marke;
             return false;      // zurueck, ohne Editor oder Prozessor anzufassen
         }
+        ++vogel->eintritte;    // 312/M-93: die Marke wurde bei lebendem Editor gefragt
         return true;
     };
 
     auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
     PanelDirty dirty;
     proz->addListener (&dirty);
+    KonfliktAbbauer abbauer;   // 312/M-93; in den uebrigen Folgen nicht angemeldet
     l.kennungVorher = proz->holeZustandKopie().common.instanceId;
     auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
     editor->setSize (1200, 832);
@@ -1120,6 +1152,22 @@ KonfliktLauf konfliktLauf (KonfliktFolge folge)
     l.geoeffnet = knopf != nullptr && box != nullptr && panel != nullptr && neuKnopf != nullptr;
     const juce::Component::SafePointer<juce::Component> panelSicher (panel);
 
+    if (folge == KonfliktFolge::editorEndeImRueckruf)
+    {
+        // 312/M-93: der Host baut den Editor in seiner Reaktion auf die
+        // Host-Dirty-Meldung ab - nach dem Eintritt des Rueckrufs, innerhalb von
+        // neueSensorId(), vor dem Statuszugriff.
+        abbauer.abbau = [&]
+        {
+            l.eintritteBeimAbbau = vogel->eintritte;
+            l.kennungBeimAbbau = proz->holeZustandKopie().common.instanceId;
+            editor.reset();
+            vogel->lebt = false;             // Ende des Eigentuemers
+            ++l.abgebaut;
+        };
+        proz->addListener (&abbauer);
+    }
+
     if (neuKnopf != nullptr)
         neuKnopf->triggerClick();   // der gepostete Weg von Enter
     if (folge == KonfliktFolge::editorLebt)
@@ -1130,6 +1178,19 @@ KonfliktLauf konfliktLauf (KonfliktFolge folge)
             l.status = ed->statusMeldungFuerTest();
         editor.reset();
         vogel->lebt = false;
+    }
+    else if (folge == KonfliktFolge::editorEndeImRueckruf)
+    {
+        // 312/M-93: pumpen, bis die Box nach dem Abbau im Rueckruf fort ist; der
+        // Prozessor lebt weiter. Lief kein Abbau (dann rot), baut der Lauf den
+        // Editor vor dem Prozessor ab.
+        l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
+        abbauer.abbau = nullptr;
+        if (editor != nullptr)
+        {
+            editor.reset();
+            vogel->lebt = false;
+        }
     }
     else
     {
@@ -1151,6 +1212,7 @@ KonfliktLauf konfliktLauf (KonfliktFolge folge)
         l.kennungBeimEnde = proz->holeZustandKopie().common.instanceId;
         l.dirty = dirty.nichtParameter;
         proz->removeListener (&dirty);
+        proz->removeListener (&abbauer);
         proz.reset();
     }
     l.marke = vogel->marke;
@@ -1168,7 +1230,7 @@ std::string konfliktText (const KonfliktLauf& l)
 
 bool nak312Konfliktpanel()
 {
-    std::printf ("== NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91, 312/M-92, R-312-2, R-312-23) ==\n");
+    std::printf ("== NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23) ==\n");
     int geprueft = 0, fehler = 0;
     const auto pruefe = [&] (bool ok, const std::string& was, const std::string& detail)
     {
@@ -1196,9 +1258,20 @@ bool nak312Konfliktpanel()
             "bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box "
             "schliesst",
             konfliktText (c));
+    const auto d = konfliktLauf (KonfliktFolge::editorEndeImRueckruf);
+    pruefe (d.geoeffnet && d.panelWeg && d.abgebaut == 1 && d.eintritteBeimAbbau == 1
+                && d.kennungBeimAbbau != d.kennungVorher && d.marke == 0 && d.dirty == 1
+                && d.kennungBeimEnde != d.kennungVorher && d.kennungBeimEnde.isNotEmpty(),
+            "312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf (R-312-2 Satz 2): der Klick beginnt bei "
+            "lebendem Editor, der Host baut ihn in seiner Reaktion auf die Host-Dirty-Meldung ab (Listener in "
+            "audioProcessorChanged, innerhalb von neueSensorId) - die Kennung wechselt trotzdem, genau EINE "
+            "Host-Dirty-Meldung, danach kein Zugriff auf den Editor (Marke 0)",
+            konfliktText (d) + ", Abbau im Rueckruf " + std::to_string (d.abgebaut) + " nach "
+                + std::to_string (d.eintritteBeimAbbau) + " Eintritt(en), Kennung beim Abbau "
+                + (d.kennungBeimAbbau != d.kennungVorher ? "schon NEU" : "noch alt"));
 
     std::printf ("NAK-312 KONFLIKT %d geprueft, %d Fehler\n", geprueft, fehler);
-    return fehler == 0 && geprueft == 3;
+    return fehler == 0 && geprueft == 4;
 }
 } // namespace
 

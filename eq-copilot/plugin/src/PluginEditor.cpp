@@ -552,11 +552,13 @@ void EqCopilotEditor::zeigeHinweise()
 namespace testzugang
 {
 /** NAK-312 Etappe 6b (NAK-349, R-312-12, R-312-23): die Marke des
-    Kennungskonflikt-Panels. Der Rückruf fragt sie hinter der Lebendprüfung
-    und vor seinem ersten Zugriff auf Editor oder Prozessor; liefert sie
-    false, kehrt er ohne Zugriff zurück. Sie liegt außerhalb von Editor und
-    Prozessor, weil ein Bein sie nach deren Ende lesen muss (B15, 312/M-91).
-    Im Produkt gibt es sie nicht. */
+    Kennungskonflikt-Panels. Der Rückruf fragt sie hinter jeder seiner zwei
+    Lebendprüfungen: am Eintritt vor seinem ersten Zugriff auf Editor oder
+    Prozessor, nach `neueSensorId()` vor seinem ersten Schreibzugriff auf den
+    Editor (Nacharbeit 1 der Etappe 6, 312/M-93); liefert sie false, kehrt er
+    ohne Zugriff zurück. Sie liegt außerhalb von Editor und Prozessor, weil ein
+    Bein sie nach deren Ende lesen muss (B15, 312/M-91, 312/M-93). Im Produkt
+    gibt es sie nicht. */
 std::function<bool()>& konfliktMarkeFuerTest()
 {
     static std::function<bool()> marke;
@@ -614,10 +616,16 @@ void EqCopilotEditor::zeigeKonflikt()
     // ueberleben. Ein per Enter oder Barrierefreiheit ausgeloester Klick ist
     // eine gepostete Nachricht; baut der Host den Editor vor ihrer Zustellung
     // ab, laeuft der Rueckruf bei lebender Box. Er faengt den Editor deshalb
-    // als SafePointer und prueft ihn VOR jedem Zugriff - ist der Editor fort,
-    // kehrt er zurueck: kein Zugriff, keine Mutation, keine Dirty-Meldung. Den
-    // Prozessor erreicht er nur ueber den lebenden Editor (JUCE zerstoert den
-    // Editor vor seinem Prozessor). Der Handgriff bleibt derselbe.
+    // als SafePointer und prueft ihn VOR jedem Zugriff - am Eintritt und nach
+    // neueSensorId() noch einmal, weil der Host den Editor auch in seiner
+    // Reaktion auf deren Host-Dirty-Meldung abbauen darf (Nacharbeit 1 der
+    // Etappe 6, L-5). Ist der Editor am Eintritt fort, kehrt er zurueck: kein
+    // Zugriff, keine Mutation, keine Dirty-Meldung. Stirbt er erst in
+    // neueSensorId(), laeuft diese eine Prozessoroperation zu Ende (neue
+    // Kennung, genau eine Dirty-Meldung), und der Rueckruf fasst den Editor
+    // danach nicht mehr an. Den Prozessor nimmt er am Eintritt vom lebenden
+    // Editor (JUCE zerstoert den Editor vor seinem Prozessor). Der Handgriff
+    // bleibt derselbe.
     const juce::Component::SafePointer<EqCopilotEditor> safe (this);
     auto inhalt = std::make_unique<KonfliktPanel> (
         u8 ("Zwei Messpunkte melden dieselbe Kennung.\n\n"
@@ -637,9 +645,26 @@ void EqCopilotEditor::zeigeKonflikt()
             if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
                 return;   // R-312-12, R-312-23: gezählt, kein Zugriff
 #endif
-            ed->statusMeldung = ed->processor.neueSensorId()
+            // NAK-312 Etappe 6, Nacharbeit 1 (L-5, R-312-2 Satz 2): erst die
+            // Kennung, dann der Editor. Den Prozessor nimmt der Rueckruf hier
+            // vom lebenden Editor und haelt ihn danach ueber diese Referenz.
+            // neueSensorId() meldet Host-Dirty; updateHostDisplay ruft die
+            // Listener synchron, der VST3-Wrapper auf dem Nachrichtenthread
+            // ebenso setDirty und restartComponent des Hosts. Baut der Host
+            // darin den Editor ab, ist ed danach tot. Kein Zugriff auf ed
+            // zwischen dem Hostaufruf und der zweiten Lebendpruefung.
+            auto& proz = ed->processor;
+            const bool neueKennung = proz.neueSensorId();
+            ed = safe.getComponent();
+            if (ed == nullptr)
+                return;
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+            if (auto& marke = testzugang::konfliktMarkeFuerTest(); marke && ! marke())
+                return;   // 312/M-93: gezählt, kein Zugriff
+#endif
+            ed->statusMeldung = neueKennung
                 ? u8 ("Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.")
-                : juce::String ("State read-only: " + ed->processor.holeStateGrund() + ". No new identity assigned.");
+                : juce::String ("State read-only: " + proz.holeStateGrund() + ". No new identity assigned.");
             ed->statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
         });
 

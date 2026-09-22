@@ -33,6 +33,8 @@ Fensterneustart (vgl. NAK-257 fuer den Starter).
 -BindenAn  Prozess, mit dessen Ende der Tab sauber endet (Exit 0, Windows Terminal
            schliesst den Tab); der Starter bindet ihn an sein Dirigentenfenster.
 Ein zweiter Tab in derselben Anmeldung endet sofort (benannter Mutex).
+Ende-zu-Ende-Probe (Pseudokonsole, Tasten, Mausrad, Neuladen):
+`pwsh -NoProfile -File tools/dirigent/plan-tab-probe.ps1`.
 #>
 [CmdletBinding()]
 param(

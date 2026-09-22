@@ -204,7 +204,7 @@ Pipelines in `pwsh` (5.1 schreibt `Tee-Object` als UTF-16), Temp unter
 
 ```powershell
 $baseSha = '<Stand vor dem Ticket>'; $headSha = git rev-parse HEAD
-$pruefModell = 'gpt-6-astra'; $pruefEffort = 'max'   # nie 'ultra', nie Sol
+$pruefModell = 'gpt-6-astra'; $pruefEffort = 'xhigh'   # nie 'ultra', nie Sol
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast  = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 # $reviewPrompt nur aus tools/dirigent/pruefauftrag-vorlage.md (A: Erst-/
@@ -225,8 +225,9 @@ geprüft; fehlt die Urteilszeile und der Kopf sagt „bleiben offen" →
 sondern `tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <datei> -HeadSha
 <sha>` mit Monitor auf der `-start.log` bis `EXIT=`.
 
-**Modell:** jede Codex-Aufgabe `gpt-6-astra`, Effort `max` oder `xhigh`
-(10.09.2026; ab 90 % Claude-Woche gilt §3.6), `ultra` nie (delegiert an
+**Modell:** jede Codex-Aufgabe `gpt-6-astra`; Prüfer und Validierer `xhigh`
+(22.09.2026, NAK-362), sonst `max` oder `xhigh` (10.09.2026); ab 90 %
+Claude-Woche gilt §3.6; `ultra` nie (delegiert an
 Unteragenten); `gpt-5.6-sol` max nur für sicherheitsnahe Prüfungen (Pipes,
 Impersonation, Token, Signaturen; 15.09.2026, Astra reguliert dort hart).
 Codex-CLI ≥ 0.153.4, sonst `codex update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer

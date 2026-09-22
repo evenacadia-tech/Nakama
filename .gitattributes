@@ -66,3 +66,5 @@ eq-copilot/fixtures/p4-korpus/** -text
 # jedem Rechner anders aus.
 eq-copilot/fixtures/p5-korpus/** -text
 eq-copilot/fixtures/diagnose/** -text
+# Dirigenten-Skill und weitere Claude-Skills: Bytegrenze (gesundheit.py) ist zeilenendenfest nur mit LF
+.claude/skills/**  -text

@@ -8,14 +8,12 @@ Der Dirigent ist eine interaktive Fable-Session:
 pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 ```
 
-Der Starter öffnet das Terminalprofil `Nakama · Champagne Night` und ruft
-Claude mit `claude-fable-5-1[1m]`, `xhigh`,
-Modus nach §1, `--remote-control nakama-dirigent` (User 30.08.2026)
-und `/dirigent` auf (User 01.09.2026; `[1m]` trägt das 1M-Fenster für
-§5). Endet Claude, bleibt das Fenster: liegt
-`nakama-dirigent-neustart.marker` im Temp-Ordner (`[IO.Path]::GetTempPath()`),
-startet der Starter sofort eine frische Session im selben Fenster; sonst
-wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne Starter:
+Der Starter öffnet das Terminalprofil `Nakama · Champagne Night`, ruft Claude
+wie unten auf (30.08., 01.09.2026; Modus nach §1; `[1m]` trägt das 1M-Fenster
+für §5) und hält das Fenster: liegt `nakama-dirigent-neustart.marker` im
+Temp-Ordner (`[IO.Path]::GetTempPath()`), startet sofort eine frische Session
+darin, sonst wartet er auf Enter (neu) oder Esc (schließen). Ersatzaufruf ohne
+Starter:
 
 ```powershell
 claude --remote-control nakama-dirigent --model claude-fable-5-1[1m] --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
@@ -26,14 +24,13 @@ dem ersten Worker müssen dort Fable/xhigh, echtes Kontextfenster, Claude- und
 Codex-Kontingente und frischer Planstand lesbar sein; `nicht verfügbar`, ein
 unbekannter Anker oder ein zusätzliches Worktree ist nie grün.
 
-**Plan-Tab und STAND (NAK-256, User 11.09.2026):** Der Starter öffnet im
-selben Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, lesend);
+**Plan-Tab und STAND (NAK-256, 11.09.2026):** Der Starter öffnet im selben
+Fenster den Tab „Nakama · Plan" (`tools/dirigent/plan-tab.ps1`, lesend);
 `start-dirigent.ps1 -NurPlanTab` öffnet ihn neu. Statuszeile und Tab zeigen
 `STAND` aus „Als Nächstes" oder dem Ticketanker: bei Ticketbeginn
 `pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Anker -Ticket <NAK-nnn>`,
-beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt die Zeile „Etappe"
-mit „Etappe n von m" und dem laufenden Schritt als letztem Fettsatz (≤ 70
-Zeichen).
+beim Abschluss `-Anker` ohne Ticket. Der Manifestkopf trägt „Etappe n von m"
+und den laufenden Schritt als letzten Fettsatz (≤ 70 Zeichen).
 
 `/dirigent stand`: `cockpit.ps1 -Plan` (im Ticket `-Plan -CurrentStep <ID>`);
 die Zahlen müssen `docs/PLAN-STAND.md` entsprechen. Kein Ticketlauf beginnt
@@ -41,11 +38,11 @@ mit ungeprüfter nativer Fähigkeit (Ersatzwege: §4).
 
 ## 1. Rolle
 
-- Keine Berechtigungsfragen (User 11.09., 19.09.2026): Dirigent `auto`, wenn
-  der Hook `tools/hooks/keine-rueckfrage.sh` verdrahtet ist (lehnt Rückfragen
-  ab; der Starter prüft es), sonst wie jeder Worker `dontAsk`. Klassifikator
-  blockt → Worker fährt es; `dontAsk` blockt (`.claude/`) → Dirigent; gehäufte
-  Ablehnungen → Neustart (§5). Nie `ask`, nie `bypassPermissions`.
+- Keine Berechtigungsfragen (11.09., 19.09.2026): Dirigent `auto`, solange der
+  Hook `tools/hooks/keine-rueckfrage.sh` verdrahtet ist (der Starter prüft es),
+  sonst `dontAsk` wie jeder Worker. Klassifikator blockt → Worker fährt es;
+  `dontAsk` blockt (`.claude/`) → Dirigent; gehäufte Ablehnungen → Neustart
+  (§5).
 - Der Dirigent entscheidet und misst, baut nie; bei laufendem Worker bleibt
   er an Repo-Dateien lesend.
 - Technik innerhalb von Ticket, Invarianten und Designrichtung entscheidet
@@ -102,19 +99,19 @@ er fremd → Halt (§4).
 
 ### 3.2 Bauen
 
-Worker = frischer Opus-Hintergrundprozess im sichtbaren Checkout; der
-Auftrag steht als **erstes Positionsargument**, weil `--allowed-tools`
-variadisch ist (ein Auftrag dahinter wird Werkzeugeintrag, der Worker startet
-„idle"):
+Worker = frischer Opus-Hintergrundprozess im sichtbaren Checkout; Auftrag als
+**erstes Positionsargument** (`--allowed-tools` ist variadisch; dahinter wird
+er Werkzeugeintrag, der Worker startet „idle"):
 
 ```powershell
-claude "<selbsttragender Ticketauftrag>" --model opus --effort xhigh --permission-mode dontAsk `
+claude "<selbsttragender Ticketauftrag>" --model opus --effort max --permission-mode dontAsk `
   --name "nakama-<ticket>-<basis-kurz>-bau" --allowed-tools <liste, keine Wildcard> --bg
 ```
 
 Der Auftrag nennt Ticketgrenze, verbindliche Quellen, Manifestpfad,
-Beweislauf, Git-Regeln (nie `git add -A`, nie `--amend`, fremde uncommittete
-Dateien nie anfassen) und `tools/dirigent/pruefliste.md`. Direkt nach dem
+Beweislauf, die Git-Regeln aus §6, `tools/dirigent/pruefliste.md` und den
+Satz: beim Warten auf den Kanon einen abgelaufenen Wächter neu setzen und bei
+jeder Rückkehr zuerst das Log lesen (NAK-354). Direkt nach dem
 Start muss `claude agents --json` `working` zeigen. Kein eigenes
 Konsolenfenster: `claude agents`, `claude logs`, `claude attach`.
 
@@ -134,7 +131,7 @@ Beobachter als Hintergrundkommando derselben Session, mit `Monitor`
 ```powershell
 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
   -WorkerId <id> -BaseSha <sha> -Aufsicht <LOCKER|NORMAL|ENG> `
-  -StartModel Opus -StartEffort xhigh -DirigentSessionId <session-id>
+  -StartModel Opus -StartEffort max -DirigentSessionId <session-id>
 ```
 
 Er meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und alte oder
@@ -156,10 +153,12 @@ belegen.
 `needs input`: `claude logs <id>` (nur die letzten KB, Escape-Sequenzen
 bereinigt). Der User wird nicht gefragt. Eine erwartete, nicht destruktive
 Aktion gibt der Dirigent frei: Worker stoppen, Session-ID aus `claude agents
---json --all`, fortsetzen mit `claude "<Zusatz>" --resume <session-id>
---model opus --effort xhigh --permission-mode dontAsk --name <gleicher Name>
---allowed-tools … --bg`; die `deny`-Regel bleibt, der Zusatz nennt den
-zulässigen Ersatzweg. Produktentscheid → Frage an den User, sofort anderes
+--json --all`, fortsetzen mit `claude "<Zusatz>" --resume <session-id> --bg`
+ohne Modell-, Effort-, Modus-, Namens- und Werkzeugflags (mit ihnen startet
+eine Kopie unter neuer Kennung: Beobachter und Cron umstellen, alte Session
+`claude rm`; NAK-354); die `deny`-Regel bleibt, der Zusatz nennt den
+zulässigen Ersatzweg. Ein Worker, der „ich warte auf die Benachrichtigung"
+schreibt und steht, ist nicht blockiert, sondern ohne Wächter (NAK-354). Produktentscheid → Frage an den User, sofort anderes
 Ticket. Destruktiv, ticketfremd, unerklärlich → stoppen, Ersatzworker mit
 engerer Grenze.
 
@@ -179,15 +178,14 @@ Kein Selbstbericht zählt:
 - **Laufzeit-Arm** (User 12.09.2026, Register NAK-286, Plan S25e): nach
   grünem Kanon auf dem End-Stand `pwsh -NoProfile -File
   tools/fl/laufzeit.ps1 -Ticket <TICKET> -Basis <basis-sha> -Beenden`
-  (`-Beenden` immer; User 22.09.2026, NAK-358). Der Runner entscheidet
-  selbst, ob der Diff lohnt (Plugin, Schemas, Broker, Installer), zieht die
-  Manifest-Hashes nach, installiert über die erhöhte Aufgabe
-  `\Nakama\installieren`, startet FL mit dem Diagnoseprojekt und fährt die
-  Szenarien. Ein vorgefundenes FL ist Claudes: eigenes beendet der Runner,
-  einen Rest ohne Besitzeintrag der Dirigent per `Stop-Process`; nie den
-  User bitten. Exit 0 = gemessen oder begründet übersprungen (Diff ohne
-  Produktpfad, fremdes FL), Exit 4 = Szenario verfehlt → Nacharbeit wie ein
-  Codex-Defekt. Rohdaten
+  (`-Beenden` immer; 22.09.2026, NAK-358). Ob der Diff lohnt, entscheidet der
+  Runner; er zieht die Manifest-Hashes nach, installiert, startet FL und fährt
+  die Szenarien. Ein vorgefundenes FL ist Claudes: eigenes beendet der Runner,
+  einen Rest ohne Besitzeintrag der Dirigent per `Stop-Process`; nie den User
+  bitten. Exit 0 = gemessen oder begründet übersprungen (Diff ohne
+  Produktpfad, fremdes FL); Exit 3 = Voraussetzung fehlt → Ursache beheben und
+  wiederholen, nur die bekannte Karte U43 (Referenzprojekt) ist kein Befund;
+  Exit 4 = Szenario verfehlt → Nacharbeit wie ein Codex-Defekt. Rohdaten
   `docs/beweise/roh/<TICKET>-laufzeit-<sha>.md`, Kopfzeile ins Manifest
   (`tools/fl/LIES-MICH.md`).
 
@@ -195,8 +193,8 @@ Beendet heißt: Baum sauber, Basis-SHA Vorfahr von HEAD, HEAD auf
 `origin/master`. Fremde Commits → Halt. Eigene Reste oder nur lokaler
 Commit → genau ein Fortsetzungs-Worker (`-fort`, gleicher Basis-SHA,
 Auftrag: fertig committen und pushen, nie verwerfen); scheitert auch das →
-Halt. Nach rund drei Stunden oder ~30 Kompaktierungen wird ein Thread
-fehleranfällig: Rest in enge Einzelaufträge. Unerwarteter Drift → Halt.
+Halt. Ab ~3 h oder ~30 Kompaktierungen wird ein Thread fehleranfällig: Rest in
+enge Einzelaufträge. Unerwarteter Drift → Halt.
 
 ### 3.4 Prüfen und nacharbeiten (Codex)
 
@@ -218,10 +216,9 @@ $reviewPrompt | codex -a never exec --ignore-user-config `
   -C . -s read-only review --json -o $reviewLast - | Tee-Object -FilePath $reviewJsonl
 ```
 
-Eigener Prompt und `--base` schließen sich aus: der Prompt begrenzt Codex auf
-`git diff $baseSha...$headSha`, Gate und Manifest. Die Sandbox-Auswahl ist
-nötig, weil `--ignore-user-config` sonst lesende Git-Prozesse blockiert. HEAD
-vor und nach dem Lauf gleich, sonst ungültig. Thread-ID aus dem JSONL, fehlt
+Eigener Prompt und `--base` schließen sich aus; die Sandbox-Zeile ist nötig,
+weil `--ignore-user-config` sonst lesende Git-Prozesse blockiert. HEAD vor und
+nach dem Lauf gleich, sonst ungültig. Thread-ID aus dem JSONL, fehlt
 sie → `BLOCKED`. Urteil `PASS`, `NEEDS_WORK`, `BLOCKED` mit geprüft / nicht
 geprüft; fehlt die Urteilszeile und der Kopf sagt „bleiben offen" →
 `NEEDS_WORK`. Läufe über zehn Minuten nie als Session-Hintergrundbefehl,
@@ -229,11 +226,10 @@ sondern `tools/dirigent/codex-lauf.ps1 -Kennung <k> -Prompt <datei> -HeadSha
 <sha>` mit Monitor auf der `-start.log` bis `EXIT=`.
 
 **Modell:** jede Codex-Aufgabe `gpt-6-astra`, Effort `max` oder `xhigh`
-(User 10.09.2026); `ultra` delegiert an Unteragenten und ist ausgeschlossen,
-`gpt-5.6-sol` nur für sicherheitsnahe Prüfungen (Pipes, Impersonation,
-Token, Signaturen; User 15.09.2026, Astra reguliert dort hart), Effort
-max. Codex-CLI ≥ 0.153.4, sonst `codex
-update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer
+(10.09.2026; ab 90 % Claude-Woche gilt §3.6), `ultra` nie (delegiert an
+Unteragenten); `gpt-5.6-sol` max nur für sicherheitsnahe Prüfungen (Pipes,
+Impersonation, Token, Signaturen; 15.09.2026, Astra reguliert dort hart).
+Codex-CLI ≥ 0.153.4, sonst `codex update`. Kapazitätsabbruch: `resume` desselben Threads, dann neuer
 Astra-Thread; wiederholte Kapazitäts-/API-Fehler → frischer Opus-Thread prüft
 (nie der Bauer). Nacharbeit behält Modell und Effort; Wiederprüfung senkt nie
 ab. Modell und Effort stehen bei Review-Beginn im Manifest.
@@ -252,13 +248,9 @@ Einordnung bleibt Dirigentensache:
   Regel darf Nacharbeit auslösen.
 - **Härtung** — von keiner Zusage verlangt → datiert ins Register.
 
-Ein Lauf ohne Defekt ist `PASS`. Der Prüfauftrag nennt die drei Klassen und
-die Matrix, zitiert das Gate wörtlich, schließt `docs/**` aus, nennt
-Register-Härtungen als Ausschluss und stellt klar: `pruefliste.md` ist
-Arbeitsliste, keine Anforderung; §2.4 von `sondenplan-audit` gilt nur für
-Gate-Audits. Ein Befund gegen Prüfskript, Riegel oder Runner, der Sabotage
-in repo-eigenen Quellen voraussetzt, ist Härtung; geprüft wird gegen den
-wörtlichen Gate-Satz, nicht die zitierte Paragraphennummer.
+Ein Lauf ohne Defekt ist `PASS`. Klassen, Ausschlüsse und der Sabotagesatz
+stehen in der Vorlage; geprüft wird gegen den wörtlichen Gate-Satz, nicht
+gegen die Paragraphennummer.
 
 **Nacharbeit:** Der Auftrag enthält nur die bestätigten Defekte wörtlich, je
 Defekt die schließende Regel und die Prüfliste — keine Dirigentenwünsche,
@@ -302,9 +294,10 @@ Start-Process pwsh -WindowStyle Hidden -WorkingDirectory (Get-Location) -Argumen
 
 Fertig, wenn die letzte Logzeile mit `EXIT=` beginnt; bis dahin höchstens
 alle 15 Minuten `Get-Content $log -Tail 3`. Ein hängendes Bein beendet der
-Runner nach 60 Minuten (Exit 124); kein `EXIT=` nach drei Stunden ist ein
-Befund gegen den Runner. Rohausgaben unter `docs/beweise/roh/<TICKET>-<sha>.md`,
-im Manifest nur die Kopfzeile. Nach `EXIT=0` folgt der Laufzeit-Arm (§3.3); die
+Runner nach 60 Minuten (Exit 124), einen Bauschritt nach 180; steht das Log
+länger ohne Fortschritt bei 0 % CPU, zuerst die `vctip.exe`-Landmine
+(CLAUDE.md), sonst Befund gegen den Runner. Rohausgaben unter
+`docs/beweise/roh/<TICKET>-<sha7>[-dirty].md`, im Manifest nur die Kopfzeile. Nach `EXIT=0` folgt der Laufzeit-Arm (§3.3); die
 dabei nachgezogenen Hashes in `eq-copilot/install/nakama-installer-v1.json`
 gehören zu den Abschlussdateien. Beim Abschluss den lebenden Kopf nachziehen;
 über ~3 000 Zeilen wandert der Rundenverlauf unverändert nach
@@ -316,12 +309,12 @@ rechnen; Plandokumente durch `py -3.13 tools/plan/dokuriegel.py <dateien>`
 und pushen.
 
 **Hygiene in jedem Abschlussfenster** (auch nach Etappen und
-Nacharbeitsrunden; User 08.09. und 12.09.2026), gemessen per Kommando, nie
-aus dem Gedächtnis: `py -3.13 tools/plan/gesundheit.py` (Kontextfläche
-gegen `docs/context-hygiene-playbook.md` und Codebase-Schwellen; Exit 4 =
-gerissen; Kanon-Bein A32, nicht blockierend), `dokuriegel.py` auf CLAUDE.md
-und Skill, `py -3.13 tools/plan/tidy.py` (clang-tidy-Ratsche des Plugins,
-Bein A33, gleiche Exitcodes). Ein Riss der
+Nacharbeitsrunden; 08.09., 12.09.2026), gemessen per Kommando, nie aus dem
+Gedächtnis: `py -3.13 tools/plan/gesundheit.py` (Kontextfläche gegen
+`docs/context-hygiene-playbook.md` und Codebase-Schwellen; Bein A32),
+`dokuriegel.py` auf CLAUDE.md und Skill, `py -3.13 tools/plan/tidy.py`
+(clang-tidy-Ratsche, Bein A33); Exit 4 = gerissen, beide nicht
+blockierend. Ein Riss der
 Kontextfläche (Bytes, Redundanz, Prosa, entbehrliche Zitate) wird im selben
 Fenster behoben: Logik identisch, Kommandos exakt, Herkunft eines Entscheids
 nur als Datum, Wortlaut bleibt in Abnahmen und Register. Ein Riss der
@@ -335,28 +328,27 @@ löschen, `claude rm <worker-id>`, mit beendetem Beobachter, `CronList` und
 
 ### 3.6 Bauer und Prüfer
 
-Opus baut, Codex prüft (User 01.09.2026): Der Bauer ist ein frischer
-Opus-Worker, Effort `xhigh` (User 19.09.2026, NAK-335), kompiliert, fährt
-Tests und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der
-Prüfer ist ein frischer Codex-Thread (§3.4); Bauer und Prüfer sind nie
-derselbe Thread. Codex an der Grenze → frischer Opus-Thread prüft;
+Opus baut, Codex prüft (01.09.2026): Der Bauer ist ein frischer Opus-Worker
+(`opus` = 5.5), Effort `max` (22.09.2026, NAK-359), kompiliert, fährt Tests
+und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der Prüfer
+ist ein frischer Codex-Thread (§3.4). Codex an der Grenze → frischer
+Opus-Thread prüft;
 Opus-Prüfer und -Validierer immer `max`. Ab 90 % Claude-Woche (User
 21.09.2026) kein Opus-Lauf mehr: auf den Codex-Reset warten, dann baut Codex
 (`workspace-write`, `gpt-5.6-sol` xhigh) und prüft `gpt-6-astra` high, nie
-max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent nach eigenem
-Kanonlauf als Zwischenstand (§3.1).
+max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent nach
+eigenem Kanonlauf als Zwischenstand (§3.1).
 
 ### 3.7 Phasengate-Prüfung
 
 An jedem Gate G6–G9 auf sauberem, kanongrünem, gepushtem Stand fährt der
 Dirigent als ersten Torschritt die Torläufe aus `docs/gesundheit/KONZEPT.md`
 §6.6 als Prüfsessions (§7): Tiefenaudit, fällige Spezialaudits,
-Mutanten-Vollmodus, voller `/freshen`-Lauf. Kein Worker auf diesem Stand,
-bis ihre Köpfe gelesen sind. Ultra-Review und Astra-Audit sind kein
-Torschritt, der User tut am Tor nichts (User 12.09.2026, Karte U39).
-Ergebnisse und jeder vom User
-selbst angesetzte externe Audit werden wie NAK-246 behandelt
-(`docs/audits/`): validieren, einordnen, Defekte als Ticket oder Nacharbeit.
+Mutanten-Vollmodus, voller `/freshen`-Lauf. Kein Worker auf diesem Stand, bis
+ihre Köpfe gelesen sind. Ultra-Review und Astra-Audit sind kein Torschritt,
+der User tut am Tor nichts (12.09.2026, U39). Ergebnisse und jeder externe
+Audit des Users laufen wie NAK-246 (`docs/audits/`): validieren, einordnen,
+Defekte als Ticket oder Nacharbeit.
 
 ## 4. Haltgründe
 
@@ -364,9 +356,8 @@ Ein Haltgrund stoppt nur das Ticket: Frage stellen (nur Design-/Produktfrage
 oder User-Handgriff) und sofort das nächste Ticket ohne Haltgrund vorziehen;
 erst ohne solches Ticket wartet die Sitzung.
 
-- User- oder Figma-Handgriff (FL-Start, FL-Ende, Installation und Messung
-  sind keiner, §3.3; einziger FL-Handgriff: das Diagnoseprojekt nach NAK-30
-  neu anlegen),
+- User- oder Figma-Handgriff (FL und Installation sind keiner, §3.3; einziger
+  FL-Handgriff: Diagnoseprojekt nach NAK-30 neu anlegen),
 - Produktentscheid,
 - überlappende fremde Änderungen,
 - Befund, der nur durch Produktentscheid oder User-Handgriff schließbar ist
@@ -387,8 +378,8 @@ Produktfragen und Handgriffe nur 9:00–23:00 PC-Lokalzeit (`Get-Date`; User
 
 ## 5. Kontexthaushalt
 
-- Bei **600k Kontext-Tokens** frische Session (User 30.08.2026); ab 500k kein
-  neues Ticket und keine neue Prüfrunde. Im nächsten sauberen Abschlussfenster
+- Bei **600k Kontext-Tokens** frische Session (30.08.2026); ab 500k kein neues
+  Ticket, keine neue Prüfrunde. Im nächsten sauberen Abschlussfenster
   (kein Worker, kein Kanon, Urteil im Manifest, Planstand gepusht, Loop und
   Beobachter weg) Marker anlegen — `New-Item -ItemType File (Join-Path
   ([IO.Path]::GetTempPath()) 'nakama-dirigent-neustart.marker') -Force` — und
@@ -409,10 +400,9 @@ Produktfragen und Handgriffe nur 9:00–23:00 PC-Lokalzeit (`Get-Date`; User
   hinterlässt einen Ticketstand nach §3.1.
 - Gezielt lesen: Diffs erst `--stat`; vom JSONL nur Thread-ID und Urteil; vom
   Worker-Log nur den Blockadegrund; Rohausgaben bleiben in Temp-Dateien.
-- Keine Meldungen an den User (User 29.08.2026): keine Spurlage-, Runden- oder
-  Abschlusstexte; Loop-Ticks und Beobachter-Ereignisse mit höchstens einer
-  Zeile; der einzige Text ist eine Design-/Produktfrage oder ein
-  User-Handgriff.
+- Keine Meldungen an den User (29.08.2026): keine Spurlage-, Runden- oder
+  Abschlusstexte; Loop-Ticks und Beobachter-Ereignisse höchstens einzeilig;
+  der einzige Text ist eine Design-/Produktfrage oder ein User-Handgriff.
 - Nichts im Kopf führen, was im Repo steht; nach jedem Ticketabschluss ist
   der Kontext verzichtbar.
 - Kontextdruck (Compaction gelaufen, Tragendes nur aus Zusammenfassungen):
@@ -449,12 +439,12 @@ Nie Zustand raten, nie eine Recovery-Datei bauen.
 ## 7. Prüfsystem und Kanal
 
 Die Prüfspur neben Kanon und Codex-Review steht in
-`docs/gesundheit/KONZEPT.md` (User-Abnahme 12.09.2026, Register NAK-259) und
-bindet, sobald der jeweilige Aufbauschritt (§10 dort) gebaut ist: §3.1
-(Prüfgang vor dem Ticket), §3.2 (Wächter im Auftrag), §3.4 (Klassen-Kennung
-K1–K8 je Befund), §3.5 (Zweitbefund-Prüfung, fällige Prüfsession) und den
-Pflegebetrieb nach dem Plan. Der Dirigent auditiert nie selbst: Audits laufen
-als Prüfsession zwischen zwei Tickets, er liest nur Kopf und Befundliste.
+`docs/gesundheit/KONZEPT.md` (Abnahme 12.09.2026, NAK-259) und bindet, sobald
+ihr Aufbauschritt (§10 dort) gebaut ist: §3.1 (Prüfgang vor dem Ticket), §3.2
+(Wächter im Auftrag), §3.4 (Kennung K1–K8 je Befund), §3.5 (Zweitbefund,
+fällige Prüfsession) und den Pflegebetrieb. Der Dirigent auditiert nie selbst:
+Audits laufen als Prüfsession zwischen zwei Tickets, er liest nur Kopf und
+Befundliste.
 Nachrichten anderer Sessions (`SendMessage`, Absender `nakama-*`) tragen
 Zeiger und Entscheid, nie Inhalt; der Dirigent antwortet mit Entscheidung und
 Ort im Repo, verarbeitet sie im Abschlussfenster, nimmt sie nie als Haltgrund

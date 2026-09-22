@@ -38,22 +38,24 @@ Die Einzelkommandos unten bleiben als Gegenprobe gültig.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~6,7 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (19,2 KB am 12.09.2026, **Grenze ≤ 20 KB** —
+auto-editieren) + Repo-`CLAUDE.md` (**Grenze 20 480 Bytes**, gemessen je Lauf mit `gesundheit.py` —
 von Claude gepflegt; ein Riss wird im selben Abschlussfenster behoben, User
 12.09.2026) + `MEMORY.md` (Hebel). Dazu die Dirigenten-Fläche, die jeder
-`/dirigent`-Aufruf lädt: `.claude/skills/dirigent/SKILL.md` (24,2 KB am
-12.09.2026 abends, **Grenze ≤ 24 KB**, Kürzungsliste in Register NAK-255; am
-12.09. von 38,4 KB gekürzt: Vorgeschichten, Wiederholungen und Zitatwortlaute
-raus, Logik und Kommandos unverändert) mit
+`/dirigent`-Aufruf lädt: `.claude/skills/dirigent/SKILL.md` (**Grenze
+24 576 Bytes**, Kürzungsliste in Register NAK-255; am 12.09. von 38 448 Bytes
+gekürzt, am 22.09.2026 erneut um ~1,5 KB: Vorgeschichten, Wiederholungen und
+Zitatwortlaute raus, Logik und Kommandos unverändert; `.claude/skills/**` ist
+seit 22.09.2026 `-text`, sonst reißt CRLF die Grenze in jeder frischen
+Arbeitskopie) mit
 `tools/dirigent/pruefliste.md` und `pruefauftrag-vorlage.md`. Jede Runde neu
 messen und im Report nennen; `gesundheit.py` trägt dieselben Grenzen. Codex'
-Always-on-Fläche (`AGENTS.md`, ~7 KB, und `.agents/skills/`) ist ungemessen;
+Always-on-Fläche (`AGENTS.md`, ~6,7 KB, und `.agents/skills/`) ist ungemessen;
 bei jeder CLAUDE.md-Änderung auf Widerspruch prüfen.
 
 **Der Korpus** (die Memory-*Dateien* auf Platte) ist die dritte Fläche —
-Recall-Qualität, nicht Kontextkosten. Stand 12.09.2026: 25 Dateien
-(20 `feedback_`, 4 `reference_`, 1 `user_`; junges Repo; die Sonifold-Marke
-„80–90 gesund" gilt hier NICHT als Ziel). Die Klasse der datierten
+Recall-Qualität, nicht Kontextkosten. Stand 22.09.2026: 28 Dateien
+(22 `feedback_`, 1 `project_`, 4 `reference_`, 1 `user_`; junges Repo; die
+Sonifold-Marke „80–90 gesund" gilt hier NICHT als Ziel). Die Klasse der datierten
 `project_session_*`-Memos (derzeit leer) hat **Cap 6** (CLAUDE.md
 „Arbeitsweise": eine Lehre pro Datei, mit dem Warum; Falsches löschen statt
 stapeln).
@@ -72,7 +74,7 @@ Kandidat für Eviction. Nein → tragend, behalten.
 | Offene Punkte / NAK-IDs | `docs/offene-punkte.md` (durabel; schließen NUR mit ID + Commit-SHA, nie still löschen) |
 | Nächste Schritte | `docs/PLAN-STAND.md` („Als Nächstes", gerechnet) und das dort genannte Manifest unter `docs/beweise/` |
 | Session-Übergaben | `docs/PLAN-STAND.md` — **gerechnet**, nicht gepflegt (seit 23.08.; Quelle `docs/plan/` + die Urteilsmarken in `docs/beweise/`); `docs/NEXT-SESSION.md` ist seit 08.09.2026 nur ein Zeiger (Kontexthygiene, User-Wort). Zwei Vorgänger sind entfallen, beide aus demselben Grund — sie kosteten Handarbeit, die jemand vergaß: die Auto-Handoffs unter `docs/handoffs/` (22.08., `ef1efee`, geschrieben aber nie gelesen) und `docs/hub/hub.json` + Briefing-Seite (23.08., NAK-50, gepflegt aber nie automatisch) |
-| Verworfene Wege (nie neu vorschlagen) | CLAUDE.md „Was NICHT mehr gilt" + `eq-copilot/design/archive/LIES-MICH.md` + `docs/archiv/LIES-MICH.md` |
+| Verworfene Wege (nie neu vorschlagen) | CLAUDE.md Wahrheitskern „Geparkt:" + Tabellenzeile „Verlauf, nie Vorgabe" + `eq-copilot/design/archive/LIES-MICH.md` + `docs/archiv/LIES-MICH.md` |
 
 ## Phasen
 
@@ -81,7 +83,7 @@ Kandidat für Eviction. Nein → tragend, behalten.
 1. `MEMORY.md` **mit dem Read-Tool von Platte** lesen (liefert auch den
    Teil hinter der Trunkierungsgrenze).
 2. CLAUDE.md-Bestand **gitignore-bewusst**: `git ls-files '**/CLAUDE.md'
-   CLAUDE.md` (Stand 20.08.2026: nur das Root-CLAUDE.md) — nie
+   CLAUDE.md` (Stand 22.09.2026: nur das Root-CLAUDE.md) — nie
    `find`/`Glob` (Worktree-Duplikate).
 3. Memory-Verzeichnis listen:
    `ls ~/.claude/projects/C--Users-phili-Projekte-Nakama/memory/`.
@@ -177,7 +179,9 @@ vorlegen (Surface ≠ Menü).
 4. **Hook-Informativität**: Index-Zeile, die nur den Titel paraphrasiert,
    → auf den tragenden Fakt umschreiben.
 5. **Selbstbeschreibung**: `/freshen`-Launcher-Phasen ↔ dieses Playbook
-   abgleichen, wenn sich Phasen ändern.
+   abgleichen, wenn sich Phasen ändern. Der Launcher ist rechnerlokal
+   (`~/.claude/commands/freshen.md`; sein Projekt-Routing nennt Nakama seit
+   22.09.2026 — auf dem Laptop nachziehen).
 
 ## Harte Regeln
 

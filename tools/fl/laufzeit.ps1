@@ -40,9 +40,9 @@
     Exit 0 = gemessen oder begruendet uebersprungen, 3 = Voraussetzung fehlt
     (Hashes, Installation, Port, Ping, MCP-Stand; ein Szenario mit Exit 3
     oder 5), 4 = mindestens ein Szenario verfehlt. Diagnose- und
-    Referenzprojekte werden nie gespeichert; FL bleibt danach offen (-Beenden
-    schliesst es, z. B. im naechtlichen Lauf). Der Runner startet nie den
-    Broker.
+    Referenzprojekte werden nie gespeichert. Ohne -Beenden bleibt FL danach
+    offen; der Dirigent ruft immer mit -Beenden (User 22.09.2026, Register
+    NAK-358). Der Runner startet nie den Broker.
 
     Besitz (NAK-309, R-309-1'): eigen ist nur ein FL-Prozess, den dieser
     Runner gestartet hat - ein Eintrag in

@@ -4,9 +4,8 @@ Plugin-Familie für FL Studio unter Windows 11 (JUCE 8/C++20, CMake) mit
 eigenständigem Rust-Broker über Named Pipes. Seit 23.08.2026 zwei Apps mit
 einer Design-Identität: **Nakama Gen** (zwei Oberflächen; „Overview" und
 „EQ-Zentrale" sind Arbeitsnamen) und **Nakama Probeeq** (frühere Suna- und
-Probeeq-Rolle: misst passiv auf dem Bus und beliefert Gen; mit zugeschaltetem
-EQ führt dieselbe Instanz Gens Fernsteuerung auf ihrem Bus aus). Bundle-Name
-**Nakama Studio**. Legacy-Bezeichner `EQ-Copilot`, `EqCop*`, `Eqcp` bleiben
+Probeeq-Rolle; mit zugeschaltetem EQ führt dieselbe Instanz Gens Fernsteuerung
+auf ihrem Bus aus). Bundle-Name **Nakama Studio**. Legacy-Bezeichner `EQ-Copilot`, `EqCop*`, `Eqcp` bleiben
 bis NAK-30.
 
 Repo eigenständig und privat; `design/` gehört seit 22.08.2026 dazu.
@@ -39,15 +38,9 @@ logische Commits gehen ohne Rückfrage raus.
   User-Wort keine Designfragen, keine Figma-, Skizzen- oder Blueprint-Arbeit,
   keine Spiegelung von Designständen nach `eq-copilot/`; die Karten U23 und
   U28–U37 liegen in `docs/plan/fragen.json` unter `geparkt`, Schritt S31b
-  steht am Planende. Stand beim Parken: Funktionsneustart vom 31.08.2026
-  (Blueprint designneutral, Fünferblöcke 01–05 integriert, Block 06 bei 1 von
-  5; `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`),
-  visuelle Phase seit 02.09.2026 in Figma `fable-dummy` (Key
-  `DvMbHg0MWCPwibDj8q6hI8`; Skizze Layout-Wahrheit, Figma visuelle Wahrheit,
-  Figma-Stand ist Vorschlag bis zur datierten Abnahme;
-  `design/visuell/LIES-MICH.md`); frühere Figma-Nodes, Exporte und die drei
-  Rework-Bilder sind Verlauf. Produktsprache Englisch; Docs, Commits,
-  Gespräch Deutsch.
+  steht am Planende. Stand und Arbeitsmodell beim Parken: Abschnitt
+  „Design-Arbeitsmodell". Produktsprache Englisch; Docs, Commits, Gespräch
+  Deutsch.
 - **Keine toten UI-Elemente** (User 24.08.2026): jedes sichtbare Element
   führt einen Handgriff aus oder meldet ehrlich einen Zustand.
 - **Tasten sind Material** (User 25.08.2026): Zustände wechseln Fläche,
@@ -134,9 +127,8 @@ logische Commits gehen ohne Rückfrage raus.
 - Rechnerwechsel: PC und Laptop committen parallel auf `master`; Memory und
   `~/.claude/CLAUDE.md` sind rechnerlokal. Alles, was die andere Seite
   braucht, steht in dieser Datei, im Skill oder einer Repo-Datei und ist
-  gepusht; ein Artefakt nur in einem Werkzeugordner
-  (`~/.codex/visualizations/`, `.playwright-mcp/`, Scratchpad) ist nicht
-  geliefert. Sessionstart `git pull --ff-only`, vor jedem Push bei sauberem
+  gepusht; ein Artefakt nur in einem Werkzeugordner ist nicht geliefert.
+  Sessionstart `git pull --ff-only`, vor jedem Push bei sauberem
   Worktree `git pull --rebase`; der Push ist ein eigener Schritt.
 
 ## Lesen vor der Arbeit
@@ -157,9 +149,6 @@ logische Commits gehen ohne Rückfrage raus.
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
-Die frühere Daueranweisung liegt als Snapshot in
-`docs/archiv/CLAUDE-kontext-vor-bereinigung-2026-08-24.md` (nur Spurensuche).
-
 ## Repo-Karte
 
 - `eq-copilot/plugin/`: JUCE-Produktcode, Hostbrücke, Tests, Werkzeuge.
@@ -168,10 +157,11 @@ Die frühere Daueranweisung liegt als Snapshot in
 - `eq-copilot/install/`: manifestgetriebener Installer und Rückweg.
 - `broker/`: Rust-Broker `eqcop-broker.exe`.
 - `tools/`: `beweise.ps1` (kanonischer Beweis-Runner), `plan/` (Planstand,
-  Dokuriegel, Gesundheit, Antwortblatt), `dirigent/` (Starter, Cockpit,
-  Prüfliste, Vorlagen), `fl/` (Laufzeit-Arm, Szenarien), `eq-copilot/`
-  (Fixture- und Prüfskripte), `hooks/` (Primer, Git-Riegel), `pruefung/`
-  (Prüfsessions), `codex-plugins/` (Codex-Werkzeugquelle).
+  Dokuriegel, Gesundheit, Tidy, Antwortblatt), `dirigent/` (Starter, Cockpit,
+  Prüfliste, Vorlagen), `fl/` (Laufzeit-Arm, Szenarienläufer), `eq-copilot/`
+  (Fixture- und Prüfskripte), `hooks/` (Primer, Git-Riegel, Rückfrage-Riegel),
+  `pruefung/` (Prüfsessions, Tiefenaudit-Karte), `codex-plugins/`
+  (Codex-Werkzeugquelle).
 - `design/`: Übersetzung der User-Vorgabe, Skizze (`skizze/`), visuelle Phase
   (`visuell/`), Abnahmen, Designregeln, historischer Web-Prototyp
   (`prototyp/`).
@@ -179,6 +169,8 @@ Die frühere Daueranweisung liegt als Snapshot in
   Roh-PDFs.
 - `docs/beweise/`: rohe, ticketspezifische Belegmanifeste; Rohausgaben unter
   `roh/`, User-Messtermine unter `termin-a/` und `termin-b/`.
+- `docs/gesundheit/`: abgenommene Prüfspur (`KONZEPT.md`, NAK-259),
+  Abdeckungskarte, Laufzeit-Szenarien, Tiefenaudit-Karte.
 
 ## Tragende technische Invarianten
 
@@ -219,7 +211,8 @@ Einzelbefehle und Zielnamen stehen im Skript. Nach grünem Kanon fährt der
 Laufzeit-Arm `tools/fl/laufzeit.ps1 -Ticket <T> -Basis <sha> -Beenden`
 (installiert, startet FL mit `eq-copilot/fixtures/fl/Nakama-Diagnose.flp`,
 fährt die Szenarien aus `docs/gesundheit/szenarien/`, beendet FL danach —
-kein FL bleibt offen, User 22.09.2026; Exit 4 = Szenario verfehlt;
+kein FL bleibt offen, User 22.09.2026; Exit 3 = Voraussetzung fehlt, 4 =
+Szenario verfehlt;
 `tools/fl/LIES-MICH.md`). Editor-Sichtprüfung ohne FL über `EqCopShot.exe`.
 Installation läuft seit 12.09.2026 ohne User-Handgriff über die erhöhten
 Aufgaben `\Nakama\installieren`, `\Nakama\pruefen`,
@@ -235,14 +228,19 @@ letzten Installationsbeweis prüfen.
 ## Design-Arbeitsmodell (geparkt seit 12.09.2026)
 
 Der Designteil ruht bis nach der technischen Fertigstellung (Wahrheitskern).
-Das Arbeitsmodell beim Parken steht in `design/LIES-MICH.md` und
+Stand beim Parken: Funktionsneustart vom 31.08.2026, Blueprint designneutral,
+Fünferblöcke 01–05 integriert, Block 06 begonnen. Das Arbeitsmodell steht in
+`design/LIES-MICH.md` und
 `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`:
 Blueprint als Grundlage, eine offene Frage je Oberfläche, Fünferblöcke mit
 Blockprotokoll in `design/abnahmen/`, Skizze und Blueprint nach der fünften
-Antwort gemeinsam nachziehen, Farben und Material in Figma `fable-dummy` mit
-Belegen unter `design/visuell/belege/`, Spiegelung nach `eq-copilot/` nur nach
-dokumentierter Abnahme. `eq-copilot/design/`, frühere Figma-Stände und die
-drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
+Antwort gemeinsam nachziehen; Farben und Material seit 02.09.2026 in Figma
+`fable-dummy` (Key `DvMbHg0MWCPwibDj8q6hI8`; Skizze Layout-Wahrheit, Figma
+visuelle Wahrheit, Figma-Stand ist Vorschlag bis zur datierten Abnahme;
+`design/visuell/LIES-MICH.md`, Belege unter `design/visuell/belege/`);
+Spiegelung nach `eq-copilot/` nur nach dokumentierter Abnahme.
+`eq-copilot/design/`, frühere Figma-Stände und die drei Rework-Bilder sind
+Verlauf. Wiederaufnahme nur durch neues User-Wort.
 
 ## Maschinen-Landminen
 
@@ -255,8 +253,8 @@ drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
   verdecken Exitcodes.
 - Bytegleiche Fixtures und Patches brauchen passende `.gitattributes`-Regeln.
   `-text` gilt für `eq-copilot/schemas/{v3,state}/**`,
-  `eq-copilot/fixtures/{v3,state,p4-korpus,p5-korpus}/**`, `design/assets/**`
-  und `*.patch`; der übrige Baum ist gemischt (LF und CRLF): vor dem Schreiben
+  `eq-copilot/fixtures/{v3,state,diagnose,p4-korpus,p5-korpus}/**`,
+  `design/assets/**`, `*.patch` und `.claude/skills/**`; der übrige Baum ist gemischt (LF und CRLF): vor dem Schreiben
   `git ls-files --eol <datei>` lesen und dieselben Zeilenenden zurückschreiben.
 - Keine GPU-Batch-Render-Loops auf der Arc A770; Renderprüfung einzeln oder
   per CPU.
@@ -296,14 +294,14 @@ drei Rework-Bilder sind Verlauf. Wiederaufnahme nur durch neues User-Wort.
   als `\|` schreiben, Zeilenbereiche mit ASCII-Bindestrich.
 - `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelle kann
   älter sein als ihr Objektfile, MSBuild baut dann nicht neu und meldet Exit 0
-  (NAK-230). Vor dem Neubau `(Get-Item <datei>).LastWriteTime = Get-Date`
+  (`docs/beweise/NAK-230.md` NB-2). Vor dem Neubau `(Get-Item <datei>).LastWriteTime = Get-Date`
   setzen und den Binary-Zeitstempel prüfen.
 - Ein laufender Dirigenten-Starterprozess lädt sein Skript beim
   Marker-Neustart nicht neu (NAK-257); Skriptänderungen greifen erst nach
   Fensterneustart.
 - Workerstart: `--bg` ist das letzte Wort eines eigenen Befehls. Folgt `;` mit
   einem weiteren Kommando, erkennt `tools/dirigent/cockpit.ps1` den Start
-  nicht („Startbeleg fehlt"; `docs/beweise/NAK-311.md` §23).
+  nicht („Startbeleg fehlt"; `docs/beweise/NAK-311-verlauf.md` §23).
 - Zwei Kanons auf einem Rechner (Worker-Checkout und Arbeitskopie) teilen
   die Probe-Pipenamen: A4 hängt dann bei 0 % CPU bis zum 60-Minuten-Limit
   (NAK-290). Vor einem Kanon in einer Arbeitskopie prüfen, dass im

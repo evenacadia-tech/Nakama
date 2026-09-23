@@ -1,0 +1,6 @@
+NEEDS_WORK: Der vollständig gelesene Ticketdiff enthält einen Lebensdauerdefekt im neuen B7-Test; weitere Defekte wurden nicht festgestellt. Prüfung ausschließlich lesend, ohne Testausführung; HEAD war zu Beginn und Ende identisch: e8c6f079f4331755f4a901c2715ce6df2324420a.
+
+Review comment:
+
+- [P2] Halte den Testzustand über beide Prozessoraufbauten am Leben — C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/tests/TransactionTestMain.cpp:4655-4657
+  Im regulären B7-Lauf liefert `blockStaende()` ein temporäres `std::array`. Dessen überladener `operator[]` liefert eine Referenz und verlängert die Lebensdauer des Arrays nicht: Am Semikolon wird es zerstört, sodass beide folgenden `blockPruefling(blk, mitBand)` einen bereits zerstörten Zustand lesen. Damit enthält der neue M-20-NaN/Inf-Test undefiniertes Verhalten und liefert keinen belastbaren, compilerunabhängigen Nachweis. Halte den Zustand als eigene Kopie oder das vollständige Array in einer lokalen Variablen. Der Befund ist statisch festgestellt; kein Testlauf wurde ausgeführt.

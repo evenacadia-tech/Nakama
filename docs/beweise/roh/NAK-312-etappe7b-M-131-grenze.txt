@@ -1,0 +1,143 @@
+# NAK-312 Etappe 7b, Teil 1: Grenzmessung 312/M-131 (Manifest §54.19)
+
+Matrixzeile: 312/M-131 (Etappe 7, Grundgesetz und Grenze), Etikett Regressionswache.
+Gemessen 2026-09-23 04:35:11: Endstand f6d80cdf0bf6033b91d730f5fb93ea9acad6f7e2 gegen Basis e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184 (Basis-SHA der Etappe 7b, §54.1).
+Satz 2 (U48) ist nicht gebaut; gemessen werden die Saetze 1 und 3.
+
+== 1. Geaenderte Dateien (20 ausser 65 Rohdateien) ==
+  M	docs/beweise/NAK-312.md
+  M	docs/plugin-wissen.md
+  M	eq-copilot/fixtures/state/MANIFEST.json
+  A	eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+  M	eq-copilot/plugin/src/PluginEditor.cpp
+  M	eq-copilot/plugin/src/SourcesModel.cpp
+  M	eq-copilot/plugin/src/SourcesModel.h
+  M	eq-copilot/plugin/src/prozessor/Ipc.cpp
+  M	eq-copilot/plugin/src/prozessor/State.cpp
+  M	eq-copilot/plugin/state/NakamaState.cpp
+  M	eq-copilot/plugin/state/NakamaState.h
+  M	eq-copilot/plugin/tests/MarkierungTestMain.cpp
+  M	eq-copilot/plugin/tests/ShotTestMain.cpp
+  M	eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+  M	eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp
+  M	eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+  M	eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+  M	eq-copilot/schemas/state/nakama-state-v2.md
+  M	tools/beweise.ps1
+  M	tools/eq-copilot/erzeuge_state_fixtures.py
+
+== 2. Pfade ohne Aenderung (git diff --name-only Basis Endstand -- <Pfad>) ==
+  JA    eq-copilot/schemas/v3 unveraendert
+  JA    eq-copilot/identity unveraendert
+  JA    eq-copilot/install unveraendert
+  JA    broker unveraendert
+  JA    design unveraendert
+  JA    eq-copilot/plugin/core unveraendert
+  JA    eq-copilot/plugin/hostbridge unveraendert
+  JA    eq-copilot/plugin/sonde unveraendert
+  JA    eq-copilot/plugin/dsp unveraendert
+  JA    eq-copilot/plugin/probe unveraendert
+  JA    eq-copilot/plugin/hostprobe unveraendert
+  JA    eq-copilot/plugin/vertrag unveraendert
+  JA    eq-copilot/plugin/spike unveraendert
+  JA    eq-copilot/plugin/CMakeLists.txt unveraendert
+  JA    eq-copilot/plugin/src/EqCopilotIds.h unveraendert
+  JA    eq-copilot/plugin/src/PluginProcessor.cpp unveraendert
+  JA    eq-copilot/plugin/src/PluginProcessor.h unveraendert
+  JA    eq-copilot/plugin/src/PluginFactory.cpp unveraendert
+  JA    eq-copilot/plugin/src/PluginEditor.h unveraendert
+  JA    eq-copilot/plugin/src/prozessor/Analyse.cpp unveraendert
+  JA    eq-copilot/plugin/src/prozessor/Hostbruecke.cpp unveraendert
+  JA    eq-copilot/plugin/src/prozessor/Intern.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaParameter.cpp unveraendert
+  JA    eq-copilot/plugin/state/NakamaParameter.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaPreset.cpp unveraendert
+  JA    eq-copilot/plugin/state/NakamaPreset.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaTransaktion.cpp unveraendert
+  JA    eq-copilot/plugin/state/NakamaTransaktion.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaLebenslauf.cpp unveraendert
+  JA    eq-copilot/plugin/state/NakamaLebenslauf.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaKanon.cpp unveraendert
+  JA    eq-copilot/plugin/state/NakamaKanon.h unveraendert
+  JA    eq-copilot/plugin/state/NakamaKernRiegel.h unveraendert
+  JA    eq-copilot/plugin/tests/SondeNullTestMain.cpp unveraendert
+  JA    eq-copilot/plugin/tests/DspGoldenTestMain.cpp unveraendert
+  JA    eq-copilot/plugin/tests/TransactionTestMain.cpp unveraendert
+  JA    docs/offene-punkte.md unveraendert
+  JA    docs/plan/fragen.json unveraendert
+
+== 3. Vertraege und Fixtures ==
+  JA    unter eq-copilot/schemas nur nakama-state-v2.md geaendert  [eq-copilot/schemas/state/nakama-state-v2.md]
+  JA    unter eq-copilot/fixtures nur das neue Writer-Golden und MANIFEST.json  [M	eq-copilot/fixtures/state/MANIFEST.json | A	eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin]
+  JA    MANIFEST.json: jeder Abschnitt ausser schema2_goldens gleich der Basis  [17 Abschnitte]
+  JA    MANIFEST.json: schema2_goldens = die Eintraege der Basis und genau ein neuer am Ende  [Basis 9, Endstand 10, neu {'datei': 'schema2/legacy-retained-v1.bin', 'sha256': '86e082cc8fef4d28cdf8038e67b5db5be8469aa074cba50f1e4f4b392a56a557', 'bytes': 2397}]
+  JA    Writer-Golden aus-schema1-sensor.bin bytegleich (Blob)  [015b6224d908]
+  JA    Writer-Golden aus-schema1-hub.bin bytegleich (Blob)  [9bef73c2edb9]
+  JA    Writer-Golden aus-schema1-pre.bin bytegleich (Blob)  [a5b73777ed8b]
+  JA    Writer-Golden aus-schema1-post.bin bytegleich (Blob)  [e7dc7ccbf28b]
+  JA    Writer-Golden fremdes-major-3.bin bytegleich (Blob)  [bdcff25323d2]
+  JA    Writer-Golden main-intent-v1.bin bytegleich (Blob)  [03a7a2e610e8]
+  JA    Writer-Golden dsp-v2-voll.bin bytegleich (Blob)  [2559e0aa7ba2]
+  JA    Writer-Golden layout-v1.bin bytegleich (Blob)  [a8bf76ee8873]
+  JA    Writer-Golden main-binding-v1.bin bytegleich (Blob)  [51a6013dba05]
+  JA    Root bleibt schema 2 (kRootSchema)
+
+== 4. Satz 2 unberuehrt ==
+  JA    spiegleKlassifikation wortgleich  [30 Zeilen]
+  JA    tools/beweise.ps1: gleiche Zeilenzahl, geaendert nur Behauptungen der Saetze 1 und 3  [A23, A3, B13, B14, B15, B2]
+  JA    Behauptungszeilen A16, B6, B7 unveraendert
+  JA    Grenzzeile M-109 nicht gebaut: kein Fall M-109 in MarkierungTestMain.cpp  [Basis 0, Endstand 0 Zeilen]
+  JA    Grenzzeile M-109 nicht gebaut: A3-Behauptung ohne 'Hostbypass'  [A3-Behauptung Basis 1795 Zeichen, Endstand 2057 Zeichen]
+
+== 5. Legacy-Bezeichner (EqCop*, Eqcp*, EQ-Copilot*, eqcop*) ==
+  JA    docs/beweise/NAK-312.md: kein Legacy-Bezeichner entfernt  [neu Eqcp]
+  JA    docs/plugin-wissen.md: kein Legacy-Bezeichner entfernt  [34 Bezeichner]
+  JA    eq-copilot/fixtures/state/MANIFEST.json: kein Legacy-Bezeichner entfernt  [0 Bezeichner]
+  JA    eq-copilot/plugin/src/PluginEditor.cpp: kein Legacy-Bezeichner entfernt  [5 Bezeichner]
+  JA    eq-copilot/plugin/src/SourcesModel.cpp: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+  JA    eq-copilot/plugin/src/SourcesModel.h: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+  JA    eq-copilot/plugin/src/prozessor/Ipc.cpp: kein Legacy-Bezeichner entfernt  [3 Bezeichner]
+  JA    eq-copilot/plugin/src/prozessor/State.cpp: kein Legacy-Bezeichner entfernt  [2 Bezeichner]
+  JA    eq-copilot/plugin/state/NakamaState.cpp: kein Legacy-Bezeichner entfernt  [2 Bezeichner]
+  JA    eq-copilot/plugin/state/NakamaState.h: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+  JA    eq-copilot/plugin/tests/MarkierungTestMain.cpp: kein Legacy-Bezeichner entfernt  [3 Bezeichner]
+  JA    eq-copilot/plugin/tests/ShotTestMain.cpp: kein Legacy-Bezeichner entfernt  [4 Bezeichner]
+  JA    eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp: kein Legacy-Bezeichner entfernt  [3 Bezeichner]
+  JA    eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+  JA    eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+  JA    eq-copilot/plugin/tests/StateMigrationTestMain.cpp: kein Legacy-Bezeichner entfernt  [7 Bezeichner]
+  JA    eq-copilot/schemas/state/nakama-state-v2.md: kein Legacy-Bezeichner entfernt  [3 Bezeichner]
+  JA    tools/beweise.ps1: kein Legacy-Bezeichner entfernt  [47 Bezeichner]
+  JA    tools/eq-copilot/erzeuge_state_fixtures.py: kein Legacy-Bezeichner entfernt  [1 Bezeichner]
+
+== 6. Keine neue Oberflaeche ==
+  JA    PluginEditor.cpp: keine hinzugefuegte Zeile legt ein Element an  [11 hinzugefuegte Zeilen]
+  JA    PluginEditor.cpp: Aenderungen nur in paintMainFlaeche  [void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)]
+  Sichtsatz B15: die 31 bisherigen Bilder bytegleich (docs/beweise/roh/NAK-312-etappe7b-satz3-B15.txt);
+  Rotbeweis der Zusage: docs/beweise/roh/NAK-312-rot-M-131.txt.
+
+== 7. Audio-Thread ==
+  eq-copilot/plugin/src/PluginEditor.cpp: Abschnitte in void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
+  JA    eq-copilot/plugin/src/PluginEditor.cpp: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/src/SourcesModel.cpp: Abschnitte in SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder ( | SourcesModel::Sicht SourcesModel::sicht() const | SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot ( | void SourcesModel::controlEnde() | void SourcesModel::projektReload ( | void SourcesModel::setzeFixtureFuerTest (Sicht fixture)
+  JA    eq-copilot/plugin/src/SourcesModel.cpp: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/src/SourcesModel.h: Abschnitte in private: | public:
+  JA    eq-copilot/plugin/src/SourcesModel.h: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/src/prozessor/Ipc.cpp: Abschnitte in bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn | bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI | bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand | void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
+  JA    eq-copilot/plugin/src/prozessor/Ipc.cpp: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/src/prozessor/State.cpp: Abschnitte in bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String | void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
+  JA    eq-copilot/plugin/src/prozessor/State.cpp: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/state/NakamaState.cpp: Abschnitte in bool dspTraegtUnbekanntes (const juce::ValueTree& dsp) | bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, | const juce::Identifier kMainProject ("MainProject"); | constexpr int kMainSchema   = 1; | juce::Array<juce::var> undoFlach (const UndoEintrag& e) | juce::ValueTree synchronisiert (const Zustand& z)
+  JA    eq-copilot/plugin/state/NakamaState.cpp: keine hinzugefuegte Zeile im Audio-Pfad
+  eq-copilot/plugin/state/NakamaState.h: Abschnitte in struct Zustand
+  JA    eq-copilot/plugin/state/NakamaState.h: keine hinzugefuegte Zeile im Audio-Pfad
+  Dateiaussagen: State.cpp:43 'Kein Pfad dieser Datei laeuft auf dem Audio-Thread';
+  Ipc.cpp:27 'Steuerung ueber Pipe oder UI wird AUSSERHALB des Audio-Threads uebernommen'.
+
+== 8. Manifest §0 bis §53 unveraendert (append-only) ==
+  JA    Rumpf der Basis (nach dem Kopf) zeilengleich im Endstand  [10864 Zeilen]
+  JA    danach nur Kanon-Abschnitte des Runners und der neue Abschnitt 54  [## Kanon-Lauf - NAK-312 Etappe 7b Teil 1 vorher | ## 54. Etappe 7b, Teil 1 — Annahmegrenze und ruhender Bestan]
+  JA    vor und zwischen den Kopfzeilen nichts geaendert
+  JA    Kopf: dieselben Zeilen, geaendert nur lebende Kopfzeilen  [geaendert: Etappe, Basis-SHA, Kanon vorher]
+
+Ergebnis 2026-09-23 04:35:13: alle Pruefungen JA

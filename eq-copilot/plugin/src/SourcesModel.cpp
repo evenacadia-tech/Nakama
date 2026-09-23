@@ -476,6 +476,16 @@ SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
         klassifiziere (e);
         eintraege.emplace (id, std::move (e));
     }
+    // 🔑 NAK-312 Etappe 7b Nacharbeit 1 (R-312-32, M-133): die Zaehler folgen
+    // dem Nachruecken. Eine wartende Sonde rueckt mit ihrem Stand aus dem
+    // juengsten Snapshot nach, und zu dem gehoeren ihre Befunde: `befunde`
+    // traegt sie schon, ohne Eintrag zaehlten sie nur nicht (M-128). Ohne die
+    // Neuzaehlung stuende ihre Zeile bis zum naechsten Snapshot auf 0, und die
+    // Flaeche meldete "no findings yet" fuer eine Quelle mit offenem Befund.
+    // Hierher kommt jede Publikation der Mitglieder - Bindung (`State.cpp`),
+    // Benennen, lokaler Unbind und ACK-Nachfuehrung (`Ipc.cpp`); gezaehlt wird
+    // unter demselben `mutex` wie die Schleife.
+    zaehleOffeneFindings();
     stelleZielSicher();
     revidiere();
     return Publikation::uebernommen;

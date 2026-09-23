@@ -11,7 +11,9 @@
 // Verdraengung, und eine nicht angenommene misst nicht mit (ihr P2-Frame und
 // ein Befund auf sie wirken nicht). Die Zeitmessung mit 16 und 32
 // Snapshot-Quellen erwartet min(n, 20) Zeilen und n - min(n, 20) nicht
-// angenommene (R-312-25).
+// angenommene (R-312-25). Seit der Nacharbeit 1 der Etappe 7b (R-312-32,
+// 312/M-133): rueckt eine wartende Sonde ueber den lokalen Eintritt nach,
+// zaehlt ihre Zeile den offenen Befund des juengsten Snapshots.
 
 #include <juce_core/juce_core.h>
 
@@ -863,12 +865,12 @@ int main()
     // ═══════════════════════════════════════════════════════════════════
     //
     // Gen nimmt hoechstens 20 Quellen an (Manifest docs/beweise/NAK-312.md
-    // §46.3, 312/M-122 bis 312/M-125 und 312/M-128; Weg C-1, E-312-21). Jeder
-    // Fall laeuft ueber echte Snapshots durch `uebernehmeSessionSnapshot`, mit
-    // aufsteigend nummerierten hex32-IDs; der Fixture-Haken ist ungedeckelt
-    // und hier kein Weg (R-312-31). Die Zahl 20 steht als Wort des Users im
-    // Test, nicht als Konstante des Modells - ein Test, der die Produktzahl
-    // liest, fiele mit ihr nicht.
+    // §46.3, 312/M-122 bis 312/M-125 und 312/M-128, dazu 312/M-133 in §46.4;
+    // Weg C-1, E-312-21). Jeder Fall laeuft ueber echte Snapshots durch
+    // `uebernehmeSessionSnapshot`, mit aufsteigend nummerierten hex32-IDs; der
+    // Fixture-Haken ist ungedeckelt und hier kein Weg (R-312-31). Die Zahl 20
+    // steht als Wort des Users im Test, nicht als Konstante des Modells - ein
+    // Test, der die Produktzahl liest, fiele mit ihr nicht.
     {
         constexpr int kGrenze = 20;
         auto quellen = [] (int n)
@@ -1070,6 +1072,79 @@ int main()
                         + ", Kontrollframe " + (angenommeneGemessen ? "wirkt" : "WIRKUNGSLOS")
                         + ", offene Befunde in Zeilen " + juce::String (offen)
                         + (xIstZeile ? ", X IST eine Zeile" : ", X keine Zeile"));
+        }
+
+        // 312/M-133 · Nachruecken ueber den lokalen Eintritt zaehlt die
+        // Befunde (R-312-32): 20 gespeicherte Quellen G0 bis G19 belegen alle
+        // Plaetze, die Sonde X des Snapshots wartet mit einem offenen Befund
+        // (der Stand von 312/M-128). Der User entfernt G0 lokal - die
+        // Publikation ohne G0 ist derselbe Eintritt, den auch die
+        // ACK-Nachfuehrung nimmt (`meldeSourcesMitgliederNachBefehl`, ohne
+        // Prozessor hier nicht erreichbar). X rueckt ohne neuen Snapshot nach
+        // und traegt seinen Stand aus dem juengsten Snapshot EINSCHLIESSLICH des
+        // Befunds: die Zeile X zaehlt ihn. Nach `controlEnde` ist er `stale`,
+        // und die Zeile zaehlt 0.
+        {
+            Model m;
+            std::vector<nakama::state::MainProjectMitglied> gespeichert;
+            for (int i = 0; i < kGrenze; ++i)
+                gespeichert.push_back ({ juce::String (hex (0x800 + (unsigned) i)), "Stored " + juce::String (i) });
+            const auto pub1 = m.setzePersistenteMitglieder (gespeichert, 0, 1);
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto x = quellen (1).front();
+            const bool ok = uebernehme (
+                m, snapshot ({ x }, hex (1), hex (2), hex (8), hex (10), false, 0,
+                             { befundJson (hex (0x9b1), x.id, "ready_to_send") }),
+                t0);
+            auto zeileVon = [] (const Model::Sicht& s, const std::string& id) -> const Model::Zeile*
+            {
+                for (const auto& z : s.quellen)
+                    if (z.instanceId == id) return &z;
+                return nullptr;
+            };
+            auto offenInZeilen = [] (const Model::Sicht& s)
+            {
+                int offen = 0;
+                for (const auto& z : s.quellen)
+                    offen += z.findingsOffen;
+                return offen;
+            };
+            const auto s0 = m.sicht();
+            const bool xWartet = ok && pub1 == Model::Publikation::uebernommen
+                              && (int) s0.quellen.size() == kGrenze && zeileVon (s0, x.id) == nullptr
+                              && s0.nichtAngenommen == 1 && s0.befunde.size() == 1
+                              && offenInZeilen (s0) == 0;
+            const std::vector<nakama::state::MainProjectMitglied> ohneG0 (gespeichert.begin() + 1,
+                                                                         gespeichert.end());
+            const auto pub2 = m.setzePersistenteMitglieder (ohneG0, 0, 2);
+            const auto s1 = m.sicht();
+            const auto* x1 = zeileVon (s1, x.id);
+            const int xOffen = x1 != nullptr ? x1->findingsOffen : -1;
+            const bool befundUnveraendert = s1.befunde.size() == 1
+                                         && s1.befunde.front().candidateSource == x.id
+                                         && s1.befunde.front().zustand == "ready_to_send";
+            const bool xZaehlt = pub2 == Model::Publikation::uebernommen && x1 != nullptr
+                              && (int) s1.quellen.size() == kGrenze && s1.nichtAngenommen == 0
+                              && befundUnveraendert && xOffen == 1 && offenInZeilen (s1) == 1;
+            m.controlEnde();
+            const auto s2 = m.sicht();
+            const auto* x2 = zeileVon (s2, x.id);
+            const bool stale = s2.befunde.size() == 1 && s2.befunde.front().zustand == "stale";
+            const int xOffenNachEnde = x2 != nullptr ? x2->findingsOffen : -1;
+            const bool nullNachEnde = stale && xOffenNachEnde == 0 && offenInZeilen (s2) == 0;
+            pruefe (xWartet && xZaehlt && nullNachEnde,
+                    "312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem "
+                    "offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, "
+                    "der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); "
+                    "nach controlEnde ist er stale, und die Zeile zaehlt 0",
+                    juce::String ("X wartet ") + (xWartet ? "ja" : "NEIN")
+                        + "; nach dem Nachruecken: " + (x1 != nullptr ? "X Zeile" : "X KEINE Zeile")
+                        + (x1 != nullptr && x1->hauptziel ? " (Hauptziel)" : "")
+                        + ", nicht angenommen " + juce::String ((juce::int64) s1.nichtAngenommen)
+                        + ", Befund " + (befundUnveraendert ? "unveraendert" : "VERAENDERT")
+                        + ", findingsOffen X " + juce::String (xOffen)
+                        + "; nach controlEnde: " + (stale ? "stale" : "NICHT stale")
+                        + ", findingsOffen X " + juce::String (xOffenNachEnde));
         }
     }
 

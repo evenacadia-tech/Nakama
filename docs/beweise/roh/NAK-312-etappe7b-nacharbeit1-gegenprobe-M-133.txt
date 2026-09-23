@@ -1,0 +1,129 @@
+# NAK-312 Etappe 7b Teil 1, Nacharbeit 1 - Gegenprobe am Stand vor dem Bau: 312/M-133 (Manifest §47.1, §56.3)
+
+Matrixzeile: 312/M-133 (T3-07-05, U51, verbinden<->trennen, Nachruecken ueber den lokalen Eintritt, Befundzaehler; R-312-32; Manifest §46.4), Etikett heute rot.
+Zusage: X ist Zeile, nichtAngenommen = 0, Sicht::befunde unveraendert (1 Befund), die Zeile X traegt findingsOffen == 1; nach controlEnde ist er stale, und die Zeile zaehlt 0.
+Bein: B13 EqCopSonde012SourcesModelTest, Fall 312/M-133 nachruecken_zaehlt_befunde. Aufbau: 20 gespeicherte Quellen G0 bis G19 (setzePersistenteMitglieder (..., 0, 1)), beginneSubscription, Snapshot mit der Sonde X und einem Befund ready_to_send fuer X; Ereignis setzePersistenteMitglieder (G ohne G0, 0, 2).
+Erwartetes Rot am Stand vor dem Bau: X rueckt nach, aber die Zeile X zaehlt 0 statt 1 (keine Neuzaehlung nach der Nachrueckschleife).
+
+== Stand (2026-09-23 06:30:40) ==
+HEAD 7ee03882d6b77e2752399b2c11e159cb8ecabd0b
+Produktdateien gleich HEAD (git diff --quiet HEAD): True
+458862997B72C34073A8512945ABE16B5BCAFBC60CA1C6D6A19207C6B9F6D6A4  eq-copilot/plugin/src/SourcesModel.h
+212A1DBF74123BC1D474FE1FAA1F98FC25A05765CB8F5F5A084C4EA41C05CA09  eq-copilot/plugin/src/SourcesModel.cpp
+Testdatei (neu geschrieben, noch nicht committet):
+C6A208890835CBF0C73D5D30FB4A1C2B49CF908E904ADB5EFE0D2F5B8F4DD826  eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+
+== Bau (2026-09-23 06:30:40) ==
+Bau Exit 0 (2026-09-23 06:30:40 bis 2026-09-23 06:31:22), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 06:31:22.229, juengste Quelle Sonde012SourcesModelTest.cpp 06:29:24.520, Binary juenger: True
+
+== Lauf B13 gegen den Stand vor dem Bau (2026-09-23 06:31:22) ==
+Lauf Exit 1 (2026-09-23 06:31:22)
+Zeilen mit ok: 99; Zeilen mit FEHLER: 1
+
+== Zeilen der Ausgabe mit FEHLER ==
+  FEHLER  312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); nach controlEnde ist er stale, und die Zeile zaehlt 0  [X wartet ja; nach dem Nachruecken: X Zeile (Hauptziel), nicht angenommen 0, Befund unveraendert, findingsOffen X 0; nach controlEnde: stale, findingsOffen X 0]
+Rot allein an 312/M-133: True
+
+== Vollstaendige Ausgabe ==
+  ok      flatbuffer_fixtures_are_read_by_product_reader
+  ok      never_connected_unknown_vs_confirmed_member
+  ok      absolute_snapshot_replaces_the_transient_model
+  ok      control_end_invalidates_and_reconnect_requires_subscribe
+  ok      snapshot_reader_enforces_the_strict_descriptor_branch
+  ok      json_minor_selects_historical_or_current_session_contract
+  ok      first_frame_missing_to_fresh
+  ok      age_and_window_are_not_hidden
+  ok      stale_keeps_row_and_downgrades_measurement
+  ok      eviction_does_not_delete_confirmed_membership
+  ok      ambiguous_join_exposes_the_real_leading_main_resolution_action
+  ok      store_degraded_is_strict_true_only_and_absence_clears_the_diagnosis
+  ok      actions_address_only_current_main_target_across_target_change
+  ok      references_expose_no_source_action
+  ok      bridge_pid_change_has_no_false_member_or_address
+  ok      diagnostics_are_distinct_and_actions_are_live
+  ok      belegt_nicht_erreicht_zeigt_broker_unavailable_mit_handgriff
+  ok      findings_count_tracks_only_open_findings_of_its_source
+  ok      findings_count_faellt_mit_seiner_quelle
+  ok      Zwischenstand steht
+  ok      findings_count_ueberlebt_keinen_sitzungswechsel
+  ok      runtime_host_to_fallback_has_no_blank_or_connection_order
+  ok      runtime_fallback_to_host_switch_is_atomic
+  ok      partial_indices_sort_indexed_first_then_fallback
+  ok      no_index_sorts_casefold_codepoint_then_instance
+  ok      main_handover_is_visible
+  ok      measured_yes_still_uses_only_descriptor_values
+  ok      unmeasured_uses_fallback_but_never_hides_real_descriptor
+  ok      missing_collecting_and_gated_map_to_missing_measuring_no_signal
+  ok      valid_loudness_pair_is_co_located_with_confidence
+  ok      half_or_nonfinite_pair_invalidates_only_loudness_without_number
+  ok      loudness_reject_is_deterministic_for_p1_p2_both_orders
+  ok      empty_label_uses_unnamed_plus_instance_prefix
+  ok      no_host_context_uses_persisted_untrusted_label_without_order_claim
+  ok      measurement_point_insert_reaches_main
+  ok      measurement_point_pre_reaches_main
+  ok      measurement_point_post_reaches_main
+  ok      unclassified_is_visible_not_error_or_role
+  ok      offline_is_visible_and_requires_explicit_resume
+  ok      suspended_never_collapses_into_no_signal_or_disconnect
+  ok      control_stale_boundary_is_exclusive
+  ok      p2_does_not_revive_control_and_heartbeat_does_not_refresh_measurement
+  ok      zero_sources_has_no_target_and_nonempty_model_has_exactly_one_main_target
+  ok      visible_latency_16_and_32_sources  [0.59 / 1.15 ms p95]
+  ok      312/M-122 annahme_bis_20 (0 Sonden): alle angenommen, eine Zeile je Sonde, nichtAngenommen 0  [0 Zeilen, nicht angenommen 0]
+  ok      312/M-122 annahme_bis_20 (1 Sonden): alle angenommen, eine Zeile je Sonde, nichtAngenommen 0  [1 Zeilen, nicht angenommen 0]
+  ok      312/M-122 annahme_bis_20 (19 Sonden): alle angenommen, eine Zeile je Sonde, nichtAngenommen 0  [19 Zeilen, nicht angenommen 0]
+  ok      312/M-122 annahme_bis_20 (20 Sonden): alle angenommen, eine Zeile je Sonde, nichtAngenommen 0  [20 Zeilen, nicht angenommen 0]
+  ok      312/M-123 die_21_quelle_wird_nicht_angenommen: 21 Sonden im Snapshot, genau 20 Zeilen - die 20 kleinsten instance_id -, die Sonde mit der groessten hat keine Zeile, nichtAngenommen 1  [20 Zeilen, nicht angenommen 1, die groesste fehlt]
+  ok      312/M-124 zahlenrand_32 (Teilfall von 312/M-123): 32 Sonden, 20 Zeilen - die 20 kleinsten instance_id -, nichtAngenommen 12  [20 Zeilen, nicht angenommen 12]
+  ok      312/M-124 zahlenrand_64 (Teilfall von 312/M-123): 64 Sonden, 20 Zeilen - die 20 kleinsten instance_id -, nichtAngenommen 44  [20 Zeilen, nicht angenommen 44]
+  ok      312/M-124 zahlenrand_65 (Teilfall von 312/M-123): ein Snapshot mit 65 Mitgliedern bleibt ungueltig wie heute (Leserdeckel 64), keine Zeile  [session_snapshot members are not an array of at most 64]
+  ok      312/M-124 zahlenrand_128_kandidaten (Teilfall von 312/M-123): 64 gespeicherte und 64 fluechtige Kandidaten - 20 Zeilen, alle gespeichert, nichtAngenommen 108, die gespeicherten Mitglieder ungekuerzt  [20 Zeilen, nicht angenommen 108, gespeichert 64]
+  ok      312/M-125 nachruecken_ohne_verdraengung: geht Y, rueckt X im selben Snapshot nach (nichtAngenommen 0); kehrt Y zurueck, ist Y die nicht angenommene - keine angenommene Zeile wird verdraengt, auch nicht von der kleineren instance_id  [X wartet ja, rueckt nach ja, Y wartet danach ja]
+  ok      312/M-128 nicht_angenommen_misst_nicht_mit (Teilfall von 312/M-123): der P2-Frame von X aendert nichts, der Frame einer angenommenen Quelle wirkt, und ein Befund mit X als candidate_source zaehlt in keiner Zeile  [X-Frame wirkungslos, Kontrollframe wirkt, offene Befunde in Zeilen 0, X keine Zeile]
+  FEHLER  312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); nach controlEnde ist er stale, und die Zeile zaehlt 0  [X wartet ja; nach dem Nachruecken: X Zeile (Hauptziel), nicht angenommen 0, Befund unveraendert, findingsOffen X 0; nach controlEnde: stale, findingsOffen X 0]
+  ok      R14_R32_experiment_and_pair_verdict_arrive_in_the_model
+  ok      unknown_experiment_field_falls_instead_of_travelling_along
+  ok      R28_evidence_invalidate_has_a_reader_and_an_effect
+  ok      invalidate_reason_version_is_chosen_by_the_wire_envelope
+  ok      invalidate_scope_discriminator_is_not_a_label  [evidence_invalidate sample range is not ordered]
+  ok      NAK214_V24_vorbedingung_zwei_offene_befunde_einer_handelbar
+  ok      NAK214_V24_ruecknahme_ohne_folgesnapshot_laesst_keinen_ready_befund
+  ok      NAK214_V24_und_der_zaehler_faellt_mit_seiner_quelle
+  ok      NAK214_V24_die_messachse_bleibt_ihre_eigene_wirkung
+  ok      NAK214_V25_reconnect_raeumt_die_befunde_bei_gleicher_epoche
+  ok      NAK214_V27_reconnect_ohne_snapshot_laesst_nichts_handelbares
+  ok      N-26: ereignis ausserhalb der Menge ist ungueltig  [begonnnen]
+  ok      N-26: hoerurteil ausserhalb der Menge ist ungueltig  [vielleicht]
+  ok      N-26: blindreihenfolge ausserhalb der Menge ist ungueltig  [zufaellig]
+  ok      N-26: vergleichbarkeit ausserhalb der Menge ist ungueltig  [mittel]
+  ok      N-26: urteil ausserhalb der Menge ist ungueltig  [objektiv besser]
+  ok      N-26: klasse ausserhalb der Menge ist ungueltig  [fast_aligned]
+  ok      N-26: kettenbefund ausserhalb der Menge ist ungueltig  [eher_stationaer]
+  ok      N-26: ausschluss ausserhalb der Menge ist ungueltig  [keine_lust]
+  ok      N-27: ereignis innerhalb der Menge wird uebernommen  [verdraengt]
+  ok      N-27: hoerurteil innerhalb der Menge wird uebernommen  [enthaltung]
+  ok      N-27: blindreihenfolge innerhalb der Menge wird uebernommen  [baseline_zuerst]
+  ok      N-27: vergleichbarkeit innerhalb der Menge wird uebernommen  [unvergleichbar]
+  ok      N-27: urteil innerhalb der Menge wird uebernommen  [vergleich_nicht_gueltig]
+  ok      N-27: klasse innerhalb der Menge wird uebernommen  [audio_aligned]
+  ok      N-27: kettenbefund innerhalb der Menge wird uebernommen  [latenz_wechselt_markiert]
+  ok      N-27: ausschluss innerhalb der Menge wird uebernommen  [sprung_im_fenster]
+  ok      N-28: pair_id null ist gueltig (Schema: string|null)
+  ok      N-28: 64 Codepoints sind gueltig
+  ok      N-28: 65 nicht
+  ok      N-28: der leere String auch nicht - er ist ausdruecklich keine zweite Schreibweise fuer kein Paar
+  ok      N-28: gezaehlt werden CODEPOINTS - ein Vier-Byte-Zeichen zaehlt als eins  [64]
+  ok      N-29: ausschluss als Zahl ist ungueltig - der einzige fail-open-Zweig der Funktion ist zu
+  ok      N-29: als Bool ebenso
+  ok      N-29: FEHLT es, bleibt der Snapshot gueltig - leer heisst: das Paar traegt eine Aussage
+  ok      N-29: ein VORHANDENES `null` ist ungueltig - nur die ABWESENHEIT heisst: das Paar traegt eine Aussage
+  ok      N-29: hoerurteil als `null` ist ebenso ungueltig
+  ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+  ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+  ok      N-29: urteil als `null` ist ebenso ungueltig
+  ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+  ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+  ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+  ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+SONDE-012 SourcesModel: 99/100 gruen

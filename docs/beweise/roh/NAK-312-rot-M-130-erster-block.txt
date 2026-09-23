@@ -1,0 +1,67 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-130-erster-block.txt) (Manifest §47.1, §56.3; Nacharbeit 1 der Etappe 7b, Teil 1)
+
+Matrixzeile: 312/M-130 (T3-01-10 Auftragsteil, U56, starten<->stoppen, releaseResources), Zusageteil "beim ersten erlaubten Block" (R-312-33).
+Zusage: nach dem naechsten prepareToPlay beginnt der Auftrag beim ersten erlaubten Block neu - genau ein neues begin, kein zweites end zum alten Intervall, markierungHoerbar wird wahr.
+Bein: A3 EqCopMarkierungTest, Pruefung 312/M-130 beginnt_im_ersten_erlaubten_block (Teilfall von 312/M-64 (a)); daneben 312/M-130 auftrag_bleibt_ueber_release (Auftrag und Gesamtbild ueber 40 Bloecke).
+Mutation (voruebergehend, nur zum Rotbeweis; R-312-33: "der Rotbeweis verzoegert das Ereignis um einen Block"): in HoerMarkierung.h merkt gibPufferFrei() - allein aus releaseResources() gerufen - eine Verzoegerung vor, und verarbeite() haelt im ersten Block, in dem das Ziel an waere, das Ziel noch auf 0. Der Neubeginn faellt damit genau einen erlaubten Block spaeter; jeder Weg ohne vorheriges releaseResources() bleibt unveraendert.
+Erwartetes Rot: allein 312/M-130 beginnt_im_ersten_erlaubten_block (im ersten Block nichts gefaerbt, kein begin; das begin kommt in den uebrigen 39). 312/M-130 auftrag_bleibt_ueber_release bleibt gruen - die Summe ueber 40 Bloecke sieht die Verzoegerung nicht (das war D-2).
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 06:36:46) ==
+Bau Exit 0 (2026-09-23 06:36:46 bis 2026-09-23 06:36:53), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 06:36:53.572, juengste Quelle MarkierungTestMain.cpp 06:36:09.666, Binary juenger: True
+Lauf Exit 0 (2026-09-23 06:37:01); Zeilen mit ok: 156; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-130 beginnt_im_ersten_erlaubten_block (Teilfall von 312/M-64 (a), U56, R-312-33) - der erste erlaubte Block nach prepareToPlay faerbt und ist hoerbar, die Ernte gleich nach ihm traegt genau ein begin mit neuer Kennung und kein end, und die uebrigen 39 Bloecke bleiben hoerbar ohne weiteres Ereignis  [erster Block: 1 abweichend, hoerbar 1, 1 begin, 0 end, neue Kennung; uebrige 39: 0 begin, 0 end, hoerbar 39 von 39]
+   MARKIERUNGSTEST OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 06:37:01) ==
+B6149D8DF8C249A00B51CE0A21D6AE5481A916EE37BAC637F1FB9810E25E373B  eq-copilot/plugin/src/HoerMarkierung.h
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a1b1dca7\tmp\sicherung-HoerMarkierung.h-063646
+
+== 2. Mutation (2026-09-23 06:37:01) ==
+Datei eq-copilot/plugin/src/HoerMarkierung.h, ab Zeile 851
+-- vorher:
+   |     bool oversizeRiegel = false;
+-- nachher:
+   |     bool oversizeRiegel = false;
+   |     bool rotbeweisVerzoegern = false;   // ROTBEWEIS 312/M-130 (voruebergehend)
+Datei eq-copilot/plugin/src/HoerMarkierung.h, ab Zeile 358
+-- vorher:
+   |         wet.free();
+   |         wetKapazitaet = 0;
+-- nachher:
+   |         wet.free();
+   |         wetKapazitaet = 0;
+   |         rotbeweisVerzoegern = true;   // ROTBEWEIS 312/M-130
+Datei eq-copilot/plugin/src/HoerMarkierung.h, ab Zeile 534
+-- vorher:
+   |         const bool zielAn = ! ausGewuenscht
+-- nachher:
+   |         bool zielAn = ! ausGewuenscht
+Datei eq-copilot/plugin/src/HoerMarkierung.h, ab Zeile 540
+-- vorher:
+   |                          && lokal.fs == fsAktuell;
+-- nachher:
+   |                          && lokal.fs == fsAktuell;
+   |         if (zielAn && rotbeweisVerzoegern) { rotbeweisVerzoegern = false; zielAn = false; }   // ROTBEWEIS 312/M-130
+SHA-256 mutiert: 8AA13DD84967B2B3FECBE12ACAA33A58A5718C5A36447ED87BF142DF25459A60
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 06:37:01) ==
+Bau Exit 0 (2026-09-23 06:37:01 bis 2026-09-23 06:37:10), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 06:37:10.453, juengste Quelle HoerMarkierung.h 06:37:01.741, Binary juenger: True
+Lauf Exit 1 (2026-09-23 06:37:18); Zeilen mit ok: 155; Zeilen mit FEHLER/ROT: 1
+     FEHLER  312/M-130 beginnt_im_ersten_erlaubten_block (Teilfall von 312/M-64 (a), U56, R-312-33) - der erste erlaubte Block nach prepareToPlay faerbt und ist hoerbar, die Ernte gleich nach ihm traegt genau ein begin mit neuer Kennung und kein end, und die uebrigen 39 Bloecke bleiben hoerbar ohne weiteres Ereignis  [erster Block: 0 abweichend, hoerbar 0, 0 begin, 0 end, KEINE neue Kennung; uebrige 39: 1 begin, 0 end, hoerbar 39 von 39]
+   MARKIERUNGSTEST FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-130 beginnt_im_ersten_erlaubten_block'): JA
+Rot allein an dieser Pruefung: JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 06:37:18) ==
+B6149D8DF8C249A00B51CE0A21D6AE5481A916EE37BAC637F1FB9810E25E373B  eq-copilot/plugin/src/HoerMarkierung.h  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 06:37:18.601
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 06:37:18) ==
+Bau Exit 0 (2026-09-23 06:37:18 bis 2026-09-23 06:37:27), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 06:37:27.124, juengste Quelle HoerMarkierung.h 06:37:18.601, Binary juenger: True
+Lauf Exit 0 (2026-09-23 06:37:35); Zeilen mit ok: 156; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-130 beginnt_im_ersten_erlaubten_block (Teilfall von 312/M-64 (a), U56, R-312-33) - der erste erlaubte Block nach prepareToPlay faerbt und ist hoerbar, die Ernte gleich nach ihm traegt genau ein begin mit neuer Kennung und kein end, und die uebrigen 39 Bloecke bleiben hoerbar ohne weiteres Ereignis  [erster Block: 1 abweichend, hoerbar 1, 1 begin, 0 end, neue Kennung; uebrige 39: 0 begin, 0 end, hoerbar 39 von 39]
+   MARKIERUNGSTEST OK
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

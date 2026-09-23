@@ -1,0 +1,52 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-133.txt) (Manifest §47.1, §56.3; Nacharbeit 1 der Etappe 7b, Teil 1)
+
+Matrixzeile: 312/M-133 (T3-07-05, U51, verbinden<->trennen, Nachruecken ueber den lokalen Eintritt, Befundzaehler; R-312-32), Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-nacharbeit1-gegenprobe-M-133.txt).
+Zusage: X ist Zeile, nichtAngenommen = 0, Sicht::befunde unveraendert (1 Befund), die Zeile X traegt findingsOffen == 1; nach controlEnde ist er stale, und die Zeile zaehlt 0.
+Bein: B13 EqCopSonde012SourcesModelTest, Fall 312/M-133 nachruecken_zaehlt_befunde.
+Mutation an der Zusagezeile (§56.3): in SourcesModel::setzePersistenteMitglieder die Neuzaehlung zaehleOffeneFindings() nach der Nachrueckschleife entfernen.
+Erwartetes Rot: die nachgerueckte Zeile X zaehlt 0 statt 1.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 06:33:43) ==
+Bau Exit 0 (2026-09-23 06:33:43 bis 2026-09-23 06:33:47), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 06:33:47.663, juengste Quelle SourcesModel.cpp 06:32:23.938, Binary juenger: True
+Lauf Exit 0 (2026-09-23 06:33:47); Zeilen mit ok: 100; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); nach controlEnde ist er stale, und die Zeile zaehlt 0  [X wartet ja; nach dem Nachruecken: X Zeile (Hauptziel), nicht angenommen 0, Befund unveraendert, findingsOffen X 1; nach controlEnde: stale, findingsOffen X 0]
+   SONDE-012 SourcesModel: 100/100 gruen
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 06:33:47) ==
+93E64D5F4EB3EF76E5A9492B94AD1035F9069C3A70B5909D7FC216113B2336E3  eq-copilot/plugin/src/SourcesModel.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a1b1dca7\tmp\sicherung-SourcesModel.cpp-063343
+
+== 2. Mutation (2026-09-23 06:33:47) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 488
+-- vorher:
+   |     zaehleOffeneFindings();
+   |     stelleZielSicher();
+   |     revidiere();
+   |     return Publikation::uebernommen;
+-- nachher:
+   |     stelleZielSicher();
+   |     revidiere();
+   |     return Publikation::uebernommen;
+SHA-256 mutiert: 6FA797C7FD311C23E2A779BB34DBDB1300EF2022762857CF6AE46E603B9684DB
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 06:33:47) ==
+Bau Exit 0 (2026-09-23 06:33:47 bis 2026-09-23 06:33:52), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 06:33:52.217, juengste Quelle SourcesModel.cpp 06:33:47.956, Binary juenger: True
+Lauf Exit 1 (2026-09-23 06:33:52); Zeilen mit ok: 99; Zeilen mit FEHLER/ROT: 1
+     FEHLER  312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); nach controlEnde ist er stale, und die Zeile zaehlt 0  [X wartet ja; nach dem Nachruecken: X Zeile (Hauptziel), nicht angenommen 0, Befund unveraendert, findingsOffen X 0; nach controlEnde: stale, findingsOffen X 0]
+   SONDE-012 SourcesModel: 99/100 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-133'): JA
+Rot allein an dieser Pruefung: JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 06:33:52) ==
+93E64D5F4EB3EF76E5A9492B94AD1035F9069C3A70B5909D7FC216113B2336E3  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 06:33:52.443
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 06:33:52) ==
+Bau Exit 0 (2026-09-23 06:33:52 bis 2026-09-23 06:33:56), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 06:33:56.677, juengste Quelle SourcesModel.cpp 06:33:52.443, Binary juenger: True
+Lauf Exit 0 (2026-09-23 06:33:56); Zeilen mit ok: 100; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-133 nachruecken_zaehlt_befunde: 20 gespeicherte Quellen, X wartet mit einem offenen Befund; nach dem lokalen Entfernen von G0 ist X Zeile, nichtAngenommen 0, der Befund unveraendert in der Sicht, und die Zeile X zaehlt ihn (findingsOffen 1); nach controlEnde ist er stale, und die Zeile zaehlt 0  [X wartet ja; nach dem Nachruecken: X Zeile (Hauptziel), nicht angenommen 0, Befund unveraendert, findingsOffen X 1; nach controlEnde: stale, findingsOffen X 0]
+   SONDE-012 SourcesModel: 100/100 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

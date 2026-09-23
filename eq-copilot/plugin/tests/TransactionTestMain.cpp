@@ -4652,7 +4652,7 @@ void nak312Blockbindung()
                 if (b == 12) hostParam (p, bp.index).setValueNotifyingHost (-inf);
             }
         };
-        const auto& mitBand = blockStaende()[1].satz;
+        const auto mitBand = blockStaende()[1].satz;   // Kopie: das Array ist ein Temporary, ein Verweis hinein stirbt am Semikolon (R-312-35)
         auto a = blockPruefling (blk, mitBand);
         auto c = blockPruefling (blk, mitBand);
 #if ! defined (NAK312_GEGENPROBE_OHNE_BLOCKRAND)

@@ -72,17 +72,6 @@
    "status": "offen"
   },
   {
-   "id": "U59",
-   "dringlichkeit": "wenn du dazu kommst — Ticket NAK-310 baut ohne Antwort Weg 1",
-   "art": "Produktentscheid (Reichweite einer Messdaten-Schnittstelle)",
-   "titel": "Messwerte an andere Programme: nur in den Messläufen der Automatik oder in jeder FL-Sitzung?",
-   "was": "Nakama kann seine Messwerte über eine Datei an Werkzeuge herausgeben. Die Automatik nutzt das, um nach jedem Bau in FL nachzumessen. Heute ist dieser Weg in jeder FL-Sitzung offen, auch in deinen eigenen: jedes Programm, das unter deinem Windows-Konto läuft, kann dort Messwerte deines laufenden Projekts abholen — Lautheit, Spektrum, Stereobild und die Namen deiner Messpunkte. Am Klang ändert das nichts. (1) Empfohlen: Der Weg ist nur in den FL-Sitzungen offen, die die Automatik für ihre Messläufe selbst startet. In deinen eigenen Sitzungen ist er zu. Soll der Dirigent doch einmal eine deiner Sitzungen ausmessen, startest du FL dafür über eine eigene Verknüpfung, die er dir gibt. (2) Wie heute: offen in jeder Sitzung. Dann kann der Dirigent jederzeit auch eine Sitzung ausmessen, die du selbst geöffnet hast.",
-   "warum": "Audit-Befund T3-12-04 (Bündel B30), an der Quelle bestätigt. Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25i, Ticket NAK-310, Etappe 5). Dass ein interner Schlüssel des Brokers nicht mehr in diesen Antworten steht, gilt in beiden Fällen und ist nicht Teil der Frage.",
-   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-12-04, B30; docs/offene-punkte.md NAK-310; docs/beweise/roh/NAK-310-quellvalidierung-teil-A.md; docs/beweise/NAK-310.md §1, §3",
-   "seit": "23.09.",
-   "status": "offen"
-  },
-  {
    "id": "U60",
    "dringlichkeit": "später — erst, wenn die Installer-Etappe von NAK-310 gebaut ist (der Dirigent stellt sie dann)",
    "art": "Handgriff (einmal je Rechner, als Administrator) mit Mitteilung",
@@ -983,6 +972,24 @@
     "was": "Du hast am 21.09. gewählt, dass FLs eigener Bypass-Knopf am Mixer-Slot weich überblendet und Probeeq währenddessen weiter misst (Karte U48). Damit die Messung im Bypass weiterläuft, rechnet der EQ im Hintergrund weiter; du hörst dabei nur das unbearbeitete Signal. Beim Loslassen des Knopfs blendet Nakama in etwa 5 ms zurück auf den EQ. Dafür gibt es zwei Möglichkeiten. (1) Empfohlen: die Filter laufen einfach weiter, so wie sie im Hintergrund gerechnet haben — kein Einschwingen, kein hörbarer Knick beim Zurückblenden. (2) Die Filter fangen beim Loslassen kalt neu an, genau wie bei Nakamas eigenem EQ-Schalter; bei einem schmalen, tiefen Band ist das als kurzer Einbruch bis etwa 200 ms hörbar. Bei (2) misst Probeeq im Bypass das unbearbeitete Signal, und Gen zeigt das an, als wäre es die Wirkung des EQ. In der Frage vom 21.09. hieß es, die Filter fingen bei beiden Schaltern neu an; das galt für Nakamas Schalter, nicht für FLs Knopf, der bisher gar keine Blende hatte. Deshalb fragen wir nach, statt es still zu bauen.",
     "warum": "Bauplan der Etappe 7 von NAK-312 (Manifest §47.3, Weg K-B gegen K-A; Entscheid E-312-19 in §49.2). Weg 1 ist der kleinere und sicherere Umbau, und nur bei Weg 1 misst Probeeq im Bypass weiter dasselbe wie sonst, nämlich den bestätigten EQ. Ohne Antwort wird dieser Teil (FLs Bypass-Knopf) nicht gebaut; die anderen Teile der Etappe 7 laufen vorher.",
     "wo": "docs/beweise/NAK-312.md §47.3 und §49.2; design/abnahmen/2026-09-21-fl-bypass-weich-messung-laeuft-u48.md",
+    "seit": "23.09.",
+    "status": "offen"
+   }
+  },
+  "U59": {
+   "wahl": "1. Nur Automatik-Sitzungen (Empfohlen)",
+   "text": "Nur Automatik-Sitzungen (Empfohlen)",
+   "datum": "2026-09-23 12:12",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1 (Regel R-310-2): Nakamas Diagnose-Briefkasten ist nur in den FL-Sitzungen offen, die die Automatik (Laufzeit-Arm) für ihre Messläufe selbst startet; in eigenen Sitzungen des Users bleibt er zu; für eine gewünschte Messung einer eigenen Sitzung gibt der Dirigent eine eigene Verknüpfung. Gebaut in NAK-310 (Planschritt S25i) als Etappe 5, jetzt als Produktentscheid, nicht als Vorgabe. Festgehalten in design/abnahmen/2026-09-23-messdaten-weg-nur-automatik-sitzungen-u59.md und im Register NAK-310 (Manifest docs/beweise/NAK-310.md §10.3). Gestellt über AskUserQuestion in der Dirigentensitzung dfab8765 (Zeitfenster, 12:12 Uhr laut Sessiontranskript) mit zwei Wegen: „Nur Automatik-Sitzungen (Empfohlen)“, „Wie heute: jede Sitzung“.",
+   "karte": {
+    "id": "U59",
+    "dringlichkeit": "wenn du dazu kommst — Ticket NAK-310 baut ohne Antwort Weg 1",
+    "art": "Produktentscheid (Reichweite einer Messdaten-Schnittstelle)",
+    "titel": "Messwerte an andere Programme: nur in den Messläufen der Automatik oder in jeder FL-Sitzung?",
+    "was": "Nakama kann seine Messwerte über eine Datei an Werkzeuge herausgeben. Die Automatik nutzt das, um nach jedem Bau in FL nachzumessen. Heute ist dieser Weg in jeder FL-Sitzung offen, auch in deinen eigenen: jedes Programm, das unter deinem Windows-Konto läuft, kann dort Messwerte deines laufenden Projekts abholen — Lautheit, Spektrum, Stereobild und die Namen deiner Messpunkte. Am Klang ändert das nichts. (1) Empfohlen: Der Weg ist nur in den FL-Sitzungen offen, die die Automatik für ihre Messläufe selbst startet. In deinen eigenen Sitzungen ist er zu. Soll der Dirigent doch einmal eine deiner Sitzungen ausmessen, startest du FL dafür über eine eigene Verknüpfung, die er dir gibt. (2) Wie heute: offen in jeder Sitzung. Dann kann der Dirigent jederzeit auch eine Sitzung ausmessen, die du selbst geöffnet hast.",
+    "warum": "Audit-Befund T3-12-04 (Bündel B30), an der Quelle bestätigt. Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25i, Ticket NAK-310, Etappe 5). Dass ein interner Schlüssel des Brokers nicht mehr in diesen Antworten steht, gilt in beiden Fällen und ist nicht Teil der Frage.",
+    "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-12-04, B30; docs/offene-punkte.md NAK-310; docs/beweise/roh/NAK-310-quellvalidierung-teil-A.md; docs/beweise/NAK-310.md §1, §3",
     "seit": "23.09.",
     "status": "offen"
    }

@@ -1,0 +1,12 @@
+Die Spezifikation enthält zwei Sicherheitswidersprüche und lässt ausdrücklich geforderte A4-Behauptungsupdates aus. Geprüft wurden Diff und referenzierte Quellen statisch; Produktprozesse, Compiler und Tests blieben auftragsgemäß ungestartet. HEAD war zu Beginn und Ende `ac69a9bdcd219f71d6e73564d64c0988bb46abe3`; NAK-312 änderte zwischen Validierungs-HEAD und ZIEL nur Sonde-/DSP-Testpfade.
+
+Full review comments:
+
+- [P2] Binde die Broker-Marke an die aktuelle Diagnose-Sitzung — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-310.md:1328-1332
+  Wenn ein markierter Broker den Diagnose-FL überlebt und anschließend ein normales FL verbindet, bleibt sein einmal beim Prozessstart aktivierter Briefkasten markiert; umgekehrt bleibt ein zuvor unmarkierter Broker auch für einen neuen markierten FL unmarkiert. M-85 senkt nur die Runner-Erwartung beziehungsweise eine unerwartete Antwort zur Notiz ab, statt die Lebensdauer zu binden, sodass Weg 1 die Zusage „nur in Sitzungen, die die Automatik selbst gestartet hat“ aus R-310-2 nicht erfüllt. Plane einen Restart/Stop oder eine dynamische Sitzungsbindung samt Gegenfällen; `AGENTS.md:50-52` verlangt, gekoppelte Start-/Stop-Lebenszyklen gemeinsam zu behandeln.
+
+- [P2] Entferne die falsche Etappe-4-Zusage zur Hörmarkierung — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-310.md:822-825
+  Für eine zweite, nicht besitzende v2-Verbindung, die ihre eigene PID korrekt angibt, lassen M-71/M-72 das Hello zu; `register.rs:267-299` setzt `hoermarkierung` noch vor der Besitzerprüfung und `server.rs:840-851` leitet sie an die Interventionssenke weiter. Somit kann weiterhin jeder verbundene v2-Client die brokerweite Evidenzsperre setzen – genau die Restlücke aus `docs/beweise/roh/NAK-310-quellvalidierung-teil-B.md:380-388` – und Etappe 4 begrenzt entgegen diesem Satz nicht, wer sie setzen kann.
+
+- [P2] Plane die geforderten A4-Behauptungsupdates ein — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-310.md:1190-1192
+  Die Quellvalidierung verlangt für T3-12-03 ausdrücklich, die A4-Behauptungszeile um die v2/v3-Entkopplung zu ergänzen (`NAK-310-quellvalidierung-teil-B.md:595`), und für T3-12-02 die Identitätsbindung (`:414-415`). Hier werden jedoch nur A4-Tests und Filter geplant; auch die folgende Etappe enthält keinen Edit an `tools/beweise.ps1`, sodass der kanonische Beweislauf die beiden neuen Sicherheitszusagen nicht behauptet. Nimm beide Behauptungsupdates in die jeweiligen Änderungssätze auf.

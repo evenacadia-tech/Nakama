@@ -1,0 +1,388 @@
+# NAK-312 Etappe 7b Teil 2 - Einzelbein A16 (EqCopProbeeqNullTest) am Endstand des Satzes 2 (Manifest §61)
+
+HEAD d72f9d84d0510601b2a46a656eba4848cf6295f7; Arbeitsbaum (git status --short):
+   M docs/beweise/NAK-312.md
+   M eq-copilot/plugin/dsp/DspKern.cpp
+   M eq-copilot/plugin/dsp/DspKern.h
+   M eq-copilot/plugin/sonde/SondeProcessor.cpp
+   M eq-copilot/plugin/sonde/SondeProcessor.h
+   M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+   M eq-copilot/plugin/tests/SondeNullTestMain.cpp
+   M eq-copilot/plugin/tests/TransactionTestMain.cpp
+   M tools/beweise.ps1
+  ?? briefing-hub/
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-100.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-101.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-103.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-104.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-105.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-107.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-108.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-132.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-94.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-95.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-96.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-97.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-99.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-teil2-M-131-grenze.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-100-bytegleich.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-100-zaehler.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-101-a.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-101-b.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-102.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-103-ruhegrenze.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-103-zustand.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-104-a.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-104-b.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-105.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-106.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-107-analyse.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-107-audio.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-108.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-109.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-132.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-94.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-95.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-96-inhalt.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-96-kadenz.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-97.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-98.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-99-analyse.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-99-audio.txt
+  ?? nimbalyst-local/
+Bau: START 2026-09-23 10:08:51.113 Ziele: EqCopProbeeqNullTest EqCopDspGoldenTest EqCopTransactionTest EqCopMarkierungTest EqCopIdentityTest NakamaProbeeq_VST3; ENDE 2026-09-23 10:09:50.697; EXIT=0
+Binary EqCopProbeeqNullTest.exe 10:09:01.220; juengste Ticketdatei, die das Ziel uebersetzt: DspKern.h 10:08:25.931; Binary juenger: True
+
+== Vollstaendige Ausgabe ==
+START 2026-09-23 10:10:25.975 EqCopProbeeqNullTest  (Binary 2026-09-23 10:09:01.220)
+SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe)
+
+-- 1. Produktklasse und Bundlevertrag
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+
+-- 2. Hostparameter und Oberflaeche
+  ok      das Bundle meldet dem Host die 112 Host-Parameter des Layouts v2  [112]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+
+-- 3. M-01 default_ist_bitidentisch_ueber_1000_bloecke
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+  ok      default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 0 abweichend]
+  ok        eq_enabled steht auf false, und nach dem Lauf ist keine Bank belegt  [belegt 0]
+
+-- 3b. NAK-283 M-34 nulltest_bleibt_bitidentisch_mit_host_reset
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok      nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 0 abweichend, Zaehler 0/0/0]
+  ok        im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 0 abweichend, NaN/Inf roh ja]
+
+-- 4. M-51 latenz_bleibt_null und kein_tail_im_passthrough
+  ok      latenz_bleibt_null: 0 Samples gemeldet, Tail 0,0 s  [0 / 0]
+  ok      kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+
+-- 5. M-50 passthrough_sanitisiert_nichts
+  ok      passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+
+-- 6. M-02 eq_an_bypass_aus_alles_neutral_ist_bitidentisch
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 44100 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 906648 Tapstellen abweichend]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 48000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 906648 Tapstellen abweichend]
+  ok      eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 0 abweichend, aktive Bank 0]
+  ok      311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [0 von 13352 Musterstellen veraendert]
+  ok      311/M-93 tap_post_committed_traegt_im_neutralen_kern_den_eingang bei 96000 Hz: ab Sample 0, samt Engagier-Fade, an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 906648 Tapstellen abweichend]
+
+-- 7. M-05 eq_an_bypass_an_ist_bitidentisch
+  ok      eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 0 abweichend]
+
+-- 8. M-04 nach_dem_fade_wieder_bitidentisch
+  ok      nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 91999 abweichende Samples (das Band war hoerbar); danach 0 abweichend in 183744]
+
+-- 9. M-33 mix_null_ist_bitidentisch
+  ok      mix_null_ist_bitidentisch bei 44100 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 44100 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+  ok      mix_null_ist_bitidentisch bei 48000 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 48000 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+  ok      mix_null_ist_bitidentisch bei 96000 Hz: trotz +9 dB Input-Trim und +12-dB-Bell, Output-Trim 0 dB  [Mix 0: 0 abweichend; Gegenprobe Mix 1: 452820 abweichend (das Band ist hoerbar)]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Wachmarke: Wachmarke, NaN und +-Inf kommen bei Mix 0 bytegleich heraus  [0 von 6 nicht endlichen Werten veraendert, 3 Wachmarken bytegleich]
+  ok      311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [0 von 13336 Musterstellen veraendert]
+  ok      311/M-92 tap_post_committed_traegt_bei_mix_null_den_eingang bei 96000 Hz: ab Sample 512 an jeder Rauschstelle beider Kanaele exakt der Eingang als double  [0 von 905634 Tapstellen abweichend]
+
+-- 10. M-93 speichern_laden_speichern_bytegleich_in_v2
+  ok      speichern_laden_speichern_bytegleich_in_v2: Kind Dsp mit Revision, Zone und Undo-Ring  [5830 Bytes, Revision 3]
+
+-- 11. Speichern und Laden: Identitaet und Klassifikation
+  ok      Zustand laesst sich speichern  [3537 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3537 Bytes]
+  ok      Probeeq-Controlprovider erfindet keine eigene Session-Epoche
+  ok      Probeeq-Stateprovider meldet Revision und Hash des Transaktionskerns und keinen erfundenen Record-State
+  ok      Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad
+  ok      Probeeq-ControlClient traegt seinen produktiven Statusprovider
+  ok      Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      insert_probe_is_never_called_master_sum: der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3554 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3554 Bytes]
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'main'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'passive_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'active_probe'
+  ok      positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) lehnt post_fader_contribution ab fuer 'legacy'
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+-- 12. NAK-283 F04 Buslayout (M-27 bis M-29)
+  ok      mehrkanallayout_wird_abgelehnt (M-27): Quadrophonie (k40Music), 5.1 und vier diskrete Kanaele liefern ein Nein, setBusesLayout scheitert, der Prozessor bleibt bei zwei Kanaelen  [angenommen: Quad nein, 5.1 nein, 4 diskret nein, gesetzt nein, Kanaele 2/2]
+  ok      mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich ja, Band rechnet ja]
+  ok      311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Wachmarke: Wachmarke, NaN und +-Inf kommen auf Kanal 0 bytegleich heraus; der Riegel zaehlt 12, zwei je Wert  [0 von 6 veraendert, Zaehler 12]
+  ok      311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus  [460000 Samples, Rauschen 0 abweichend, Muster 0 von 6676 veraendert]
+  ok      ungleiche_und_deaktivierte_layouts_bleiben_abgelehnt (M-29, Regressionswache): Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus liefern ein Nein  [angenommen: Mono->Stereo nein, Stereo->Mono nein, aus->Stereo nein, Stereo->aus nein, aus->aus nein]
+  ok      311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), Mono: der Kern und dspBericht melden exakt +0,0, und der Ausgang mit Auto-Gain ist bytegleich zum Lauf ohne  [Kern 0.000000000000 dB, Bericht 0.000000000000 dB, Ausgang bytegleich ja (Phase 16 mass -9,177564 dB)]
+  ok      311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), Stereo: Kern und Bericht tragen den Zweikanalwert, bitgleich zu einem Stereokern mit demselben Zustand  [Kern -9.177520647929 dB, Bericht -9.177520647929 dB, Referenz -9.177520647929 dB]
+  ok      311/M-62 kanalzahlwechsel_erneuert_ableitung_und_bericht (R-311-3), zurueck in Mono: Kern und Bericht stehen wieder auf exakt +0,0  [Kern 0.000000000000 dB, Bericht 0.000000000000 dB]
+  ok      311/M-63 kanalwunsch_ueberlebt_den_layoutwechsel (Teilfall von 311/M-62, Regressionswache): channel_mode bleibt `right`, die Statebytes sind gleich, keine Revision, kein Host-Dirty  [channel_mode right ja, Bytes gleich ja (4708 Bytes), Revision 1, Dirty-Meldungen ueber die drei Wechsel 0]
+
+-- 13. NAK-311 311/M-01 daz_ftz_messung_bitmuster
+  311/M-01 MXCSR unter juce::ScopedNoDenormals 0x00009FE0 (FTZ 1, DAZ 1)
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 a stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 a mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand a mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 b stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 b mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand b mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001 K1 0x00000001  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001 K1 0x80000001  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF K1 0x007FFFFF  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF K1 0x807FFFFF  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000 K1 0x00800000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000 K1 0x80800000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000 K1 0x00000000  bytegleich
+  311/M-01 c stereo 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000 K1 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c stereo 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 44100 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 44100 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 48000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 48000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00000001 aus K0 0x00000001  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80000001 aus K0 0x80000001  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x007FFFFF aus K0 0x007FFFFF  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x807FFFFF aus K0 0x807FFFFF  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00800000 aus K0 0x00800000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80800000 aus K0 0x80800000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x00000000 aus K0 0x00000000  bytegleich
+  311/M-01 c mono 96000 Hz ab Sample 512: ein 0x80000000 aus K0 0x80000000  bytegleich
+  ok      311/M-01 lief: Zustand c mono 96000 Hz, Bitmuster ab Sample 512  [0 von 8 Mustern veraendert]
+  311/M-01 Summe veraenderter Muster je Zustand (je 6 Kombinationen zu 8 Mustern): a 0, b 0, c 0
+  ok      daz_ftz_messung_bitmuster (NAK-311 311/M-01): alle 18 Kombinationen liefen - Zustaende a, b, c; Stereo und Mono; 44,1, 48 und 96 kHz; je 8 Muster ausgegeben  [18 von 18]
+
+-- 14. NAK-311 311/M-11 neutral_engagiert_schreibt_keinen_sample (M-11, M-15 bis M-17, M-21)
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 44100 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 48000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 neutral_engagiert_schreibt_keinen_sample bei 96000 Hz: Wachmarke, NaN und +-Inf kommen bytegleich heraus, der Riegel zaehlt 6, der Tap post_committed traegt dort 0,0  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 6, Zaehler 6; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert]
+  ok      311/M-11 Teilfall M-17 wirksames_band_schreibt: ab Sample 512 kommt Rauschen veraendert heraus, an allen sechs nicht endlichen Stellen ein endlicher Wert, nie die Wachmarke; der Riegel zaehlt 6  [nicht endlich 6 von 6 veraendert, 0 Wachmarken bytegleich, 6 endlich heraus, Tap 0,0 an 0, Zaehler 6; Rauschen 453323 abweichend (ab Sample 512: 452812), Muster 13352 von 13352 veraendert]
+
+-- 15. NAK-311 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral (M-132 bis M-134, M-136, M-137, M-139)
+  ok      311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 0 abweichend, Muster 0 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+  ok      311/M-137 analyse_bleibt_unberuehrt (Teilfall von 311/M-132, Regressionswache) bei 32000 Hz, 2-Kanal-Bus: v3Samplerate, v3BlockSize und v3Channels tragen die gemessenen Werte des Hosts, nicht 0  [v3Samplerate 32000.0, v3BlockSize 2048, v3Channels 2, Bloecke ohne Audio in der Analysequeue 0]
+  ok      311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 0 abweichend, Muster 0 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+  ok      311/M-137 analyse_bleibt_unberuehrt (Teilfall von 311/M-132, Regressionswache) bei 32000 Hz, 1-Kanal-Bus: v3Samplerate, v3BlockSize und v3Channels tragen die gemessenen Werte des Hosts, nicht 0  [v3Samplerate 32000.0, v3BlockSize 2048, v3Channels 1, Bloecke ohne Audio in der Analysequeue 0]
+  ok      311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 0 abweichend, Muster 0 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+  ok      311/M-137 analyse_bleibt_unberuehrt (Teilfall von 311/M-132, Regressionswache) bei 22050 Hz, 2-Kanal-Bus: v3Samplerate, v3BlockSize und v3Channels tragen die gemessenen Werte des Hosts, nicht 0  [v3Samplerate 22050.0, v3BlockSize 2048, v3Channels 2, Bloecke ohne Audio in der Analysequeue 0]
+  ok      311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 0 abweichend, Muster 0 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+  ok      311/M-137 analyse_bleibt_unberuehrt (Teilfall von 311/M-132, Regressionswache) bei 22050 Hz, 1-Kanal-Bus: v3Samplerate, v3BlockSize und v3Channels tragen die gemessenen Werte des Hosts, nicht 0  [v3Samplerate 22050.0, v3BlockSize 2048, v3Channels 1, Bloecke ohne Audio in der Analysequeue 0]
+  ok      311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz: Bloecke 1, 255, 256, 257, 2048 und 4096 (ueber maxBlock 2048) kommen mit Wachmarke bytegleich heraus, kein Tap gefuellt, kein Zaehler bewegt, 0 Samples Latenz, Tail 0,0 s  [Blockgroessen 6, bytegleich ja, Latenz 0, Tail 0, Taplaenge 0, Zaehler 0/0/0]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xcb14d6eee50e7d7c gegen Basisstand 0xcb14d6eee50e7d7c (gleich ja), Kern-Samplerate 44100.0, autoGainDb -0.759373668958, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xbd787728731ba929 gegen Basisstand 0xbd787728731ba929 (gleich ja), Kern-Samplerate 48000.0, autoGainDb -0.853206521983, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x5ece3bcf185baff5 gegen Basisstand 0x5ece3bcf185baff5 (gleich ja), Kern-Samplerate 96000.0, autoGainDb -1.275649859551, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x33f35b42b6693e06 gegen Basisstand 0x33f35b42b6693e06 (gleich ja), Kern-Samplerate 192000.0, autoGainDb -1.390377442677, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+  ok      311/M-134 groesser_oder_gleich_entscheidet (Teilfall von 311/M-132): das Praedikat `samplerateUnterstuetzt` nimmt genau 44 100 Hz und den naechsten double darueber an und lehnt 44 100 minus 1 ULP, 44 099, 32 000, 22 050, 8 000, 0, negativ, NaN und +-Inf ab; am echten Prozessor faellt 44 100 minus 1 ULP, 44 100 nicht  [44100 - 1 ULP = 44099.99999999999272404 -> abgelehnt 44099.99999999999272404, 44100 -> abgelehnt 0.000000, Kern-Samplerate 0.0 / 44100.0, Praedikat vollstaendig ja]
+  ok      311/M-136 verriegeltes_fenster_bleibt_unterscheidbar (Teilfall von 311/M-132, Regressionswache): `prepareToPlay` mit 0, NaN, +-Inf, 1e300 und mit maxBlock 0 laesst die Vorbereitung von 48 kHz stehen, meldet KEINE abgelehnte Rate, und der dspBericht traegt weiter den Stand der letzten Vorbereitung  [Kern-Samplerate steht ja, keine Ablehnung ja, Bericht auto_gain_db -0.853206521983 -> -0.853206521983, abgelehnte Rate im Bericht 0.000000]
+  ok      311/M-132 Teilfall zwei_aufrufe_ohne_audio_und_ratenwechsel_im_fenster: zweimal dieselbe nicht unterstuetzte Rate meldet dieselbe Zahl, eine andere meldet die neue, und maxBlock 0 laesst den Stand stehen (R-311-12)  [zweimal 32 kHz -> 32000.0, danach 22,05 kHz -> 22050.0, danach maxBlock 0 -> 22050.0]
+  ok      311/M-132 Teilfall bereiteVor_und_releaseResources_nehmen_die_rate_zurueck: nach `releaseResources` steht die gemerkte Rate wieder auf exakt +0,0 - wie Abtastrate und Kanalzahl, mit denen sie dieselbe Lebensdauer hat  [im Fenster 32000.000000 Hz, nach releaseResources 0.000000 (Vorzeichenbit 0), Kern-Samplerate 0.0, busKanaele 2]
+
+-- 16. NAK-312 Etappe 7b 312/M-94 bis M-100, M-105 bis M-107: der Hostbypass (processBlockBypassed)
+  ok      312/M-94 hostbypass_blendet_weich_und_endet_bitgleich (U48 'weich', [SONDE-015] M-06, E-31): Aufbau HB, 40 Bloecke processBlock, dann 60 Bloecke processBlockBypassed - die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Bypassblocks mit dem trockenen Anteil n/256, der Nachbarsprung liegt an jedem Sample innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zum Eingang - Gleichwert, Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, 0 abweichende Samples ueber die uebrigen 59 Bypassbloecke  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; ab Sample 256 abweichend: Gleichwert 0, Rauschen und Material 0]
+  ok      312/M-95 hostbypass_austritt_blendet_weich (U48, U58 Weg K-B, [SONDE-015] E-31): nach den 60 Bypassbloecken wieder processBlock - die Blende zurueck laeuft ueber die Samples 0 bis 255 mit dem verarbeiteten Anteil n/256 innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zu R: die Filter liefen im Hostbypass durch, es gibt kein Einschwingen - auch nach Rauschen und Material im Hostbypass  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; ab Sample 256 abweichend von R: Gleichwert 0, Rauschen und Material 0]
+  ok      312/M-96 hostbypass_misst_weiter (Kadenz; U48 'Probeeq misst im Hostbypass weiter'): jeder Block, auch jeder der 60 Bypassbloecke, stellt genau einen Analyseblock an die Queue - bloeckeAngenommen() + dropsUeberlauf() + dropsOversize() steigt ueber die Bypassbloecke um genau 60, dropsOhneAudio() um 0; ueberlast verwirft Analyse, nie Audio  [ueber Audio im Hostbypass +60, ohne Audio +0, in den 40 Bloecken danach +40]
+  ok      312/M-96 hostbypass_misst_weiter (Inhalt, Weg K-B, U58, [SONDE-015] M-57): der Tap post_committed ist in jedem Bypassblock bitgleich zu dem von R - die Analyse misst den bestaetigten Zustand, die Stufe liegt hinter den Taps  [0 von 60 Bypassbloecken mit abweichendem Tap]
+  ok      312/M-97 Teilfall am Prozessor hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5): Aufbau HB, Bloecke zu 64 (1,33 ms), Eintritte normal, Bypass, Bypass, normal, Bypass, normal, dann 20 normal - kehrt der Wunsch in der Blende um, laeuft sie vom Mischstand zurueck: an keinem Sample liegt der Nachbarsprung ueber der E-31-Schranke, und hoechstens 256 Samples nach dem letzten Wechsel ist der Ausgang bitgleich zu R  [groesster Nachbarsprung 0.000971943, Schranke 0.000972055, letzte Abweichung von R 126 Samples nach dem letzten Wechsel]
+  ok      312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit eq_enabled aus, im Hard-Bypass und nach releaseResources() ohne neues prepareToPlay ist der Ausgang ueber 10 Bloecke processBlock, 20 processBlockBypassed und 10 processBlock bytegleich zum Eingang - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf -, und die Zaehler fuer nicht endliche Eingaenge und geheilte Filterzustaende steigen nicht  [(a) Default: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (b) Hard-Bypass: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (c) unvorbereitet: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10]
+  ok      312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Analyse; R-312-26): die Analyse laeuft in beiden Eintritten wie in processBlock - je Block genau ein Analyseblock in bloeckeAngenommen() + dropsUeberlauf() + dropsOversize() + dropsOhneAudio(), in (a) und (b) ueber den Tap, in (c) ohne Tap  [(a) Default: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (b) Hard-Bypass: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (c) unvorbereitet: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10]
+  ok      312/M-100 hostbypass_nach_der_blende_bytegleich (bytegleich; CLAUDE.md Grundgesetz, [SONDE-015] M-05): der Hostbypass steht seit mehr als 256 Samples, 40 Bypassbloecke mit dem Bitmustermaterial unter FTZ und DAZ - jedes Sample kommt bytegleich heraus, auch Subnormals, +-0 und die Wachmarke 0x7F800001: nach der Blende gibt es keinen Ruecklauf float -> double -> float in den Puffer  [0 abweichende Samples, 120 von 120 Wachmarken und 640 von 640 Musterstellen bytegleich]
+  ok      312/M-100 hostbypass_nach_der_blende_bytegleich (Zaehler, Weg K-B, U58): der Nicht-Endlich-Riegel des Kerns zaehlt die nicht endlichen Eingaenge im Hostbypass wie ohne ihn, weil der Pfad weiterrechnet - ueber die 40 Bypassbloecke steigt nichtEndlicheEingaenge() um genau so viel wie bei R  [Hostbypass +240, R +240]
+  ok      312/M-105 hostbypass_ueber_reset (bytegleich; starten<->stoppen, NAK-283 R-283-3): nach reset() beginnt ein neuer Strom - der erste Block ueber processBlockBypassed uebernimmt seinen Eintritt ohne Blende und ist ab Sample 0 bytegleich zum Eingang, nach mehr als 256 Samples Hostbypass wie nach einem reset() mitten in der Blende (Bloecke zu 64, 64 von 256 Samples)  [nach reset() im Hostbypass 0 abweichend, nach reset() mitten in der Blende 0 abweichend]
+  ok      312/M-105 hostbypass_ueber_reset (spaeterer Wechsel): der Wechsel auf processBlock nach 40 Bypassbloecken blendet wieder 256 Samples innerhalb der E-31-Schranke und ist danach bitgleich zu R (dasselbe reset() am selben Blockrand); die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen dabei nicht. Vorbedingung des zweiten Falls: vor dem reset() lief die Blende  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; danach abweichend von R 0; Zaehler still; erster Bypassblock vor dem reset() 128 abweichend]
+  ok      312/M-106 hostbypass_ueber_prepare (starten<->stoppen, CLAUDE.md Grundgesetz): der erste Block nach prepareToPlay uebernimmt den Zustand seines Eintritts ohne Blende - ueber processBlockBypassed ab Sample 0 bytegleich zum Eingang, im Hostbypass nach der Blende, mitten in der Blende (Bloecke zu 64) und beim Projektladen mit gebypasstem Slot (frische Instanz, Stand geladen, erster Block ueber den Bypasseintritt): kein Ausblenden des verarbeiteten Pfades am Strombeginn  [im Hostbypass 0, mitten in der Blende 0, Projektladen 0 abweichend; geladener Stand eq_enabled an]
+  ok      312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft jeder Block in beiden Eintritten unberuehrt durch - 10 Bypass, 10 normal, 10 Bypass mit Rauschen, Bitmuster, Wachmarke, NaN und +-Inf bytegleich, kein Zaehler steigt; nach prepareToPlay ist der erste Bypassblock ab Sample 0 bytegleich (M-106)  [ohne Vorbereitung 0 abweichend, Zaehler still; nach prepareToPlay 0 abweichend]
+  ok      312/M-107 hostbypass_ueber_release (Analyse; R-312-26): die Analyse verbucht jeden unvorbereiteten Block in beiden Eintritten wie processBlock ueber den Zweig ohne Tap - je Block genau ein Analyseblock ueber Audio  [10 Bypass +10, 10 normal +10, 10 Bypass +10, ohne Audio +0]
+
+SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+ENDE 2026-09-23 10:10:26.748
+EXIT=0

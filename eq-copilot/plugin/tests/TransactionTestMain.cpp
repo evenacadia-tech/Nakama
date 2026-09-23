@@ -80,6 +80,20 @@
          (312/M-89), Offline an und aus ohne Block dazwischen schaltet den
          ersten Echtzeitblock nicht hart (312/M-90), 312/M-40 zaehlt auch die
          Allokationen, und der Textriegel liest auch die Vorlagen `*.in`.
+         Seit NAK-312 Etappe 7b, Satz 2 (T3-01-09, Karten U48 und U58, Weg E1
+         mit K-B; Abschnitt ZD) der zweite Eintritt `processBlockBypassed`:
+         die Echtzeitwache beginnt auch dort vor der Stempelbildung
+         (312/M-101 (a)), ueber 4000 Bloecke mit Eintrittswechseln,
+         Hostautomation, Programmwechseln und den drei Hosteintritten bleiben
+         Sperren und Allokationen 0 (312/M-101 (b)); getBypassParameter()
+         bleibt nullptr bei 112 Hostparametern (312/M-102); der Hostbypass
+         laesst Statebytes, Hash, Revision, Undo-Ring und Host-Dirty
+         unberuehrt und zaehlt verarbeitete Samples fuer die Ruhegrenze
+         weiter (312/M-103); der Blockrand des Bypasseintritts nimmt
+         Hostpunkte ueber den Ueberlauf der Ereigniszaehler (312/M-132);
+         Echtzeit und Offline sind bitgleich, auch wenn der Wechsel nach
+         offline mitten in die Blende faellt (312/M-104); im Hostbypass haengt
+         keine Bank (312/M-108). Dazu die Kostenmessung der Stufe.
 
     LANDMINE NAK-175: Prozessor, DSP-Kern und Transaktionskern liegen in jeder
     Testfunktion auf dem HEAP (`std::unique_ptr`), nie im Rahmen.
@@ -6084,6 +6098,521 @@ void nak312HostEnde()
             std::to_string (dateien) + " Dateien" + (treffer.empty() ? std::string (", kein Treffer") : ", Treffer: " + treffer));
 }
 
+//==============================================================================
+// NAK-312 Etappe 7b, Satz 2 (T3-01-09; Karten U48 und U58; Weg E1 mit K-B;
+// Manifest §46.1, §47.3): der Hostbypass am echten SondeProcessor - die
+// Echtzeitwache ab dem zweiten Eintritt, der Bypassparameter des Wrappers,
+// Zustand und Ruhegrenze, der Zaehlerrand am Blockrand, Offline gleich
+// Echtzeit, keine haengende Bank. Der Test ruft selbst den Eintritt, den der
+// VST3-Wrapper waehlt, und baut dessen Weiche nicht nach
+// (juce_audio_plugin_client_VST3.cpp:3906-3909, Bauartefakt). R heisst ein
+// zweiter Prozessor mit identischem Stand, der nur processBlock bekommt.
+
+/// Aufbau HB: eq an, Band 0 Bell 1 kHz +12 dB Q 10, Output-Trim +6 dB.
+param::DspSatz hbSatz()
+{
+    auto z = mitEq (true);
+    setzeBand (z, 0, 1000.0, 12.0);
+    z.werte[(size_t) iBand (0, param::kQ)].zahl = 10.0;
+    z.werte[(size_t) kOutTrim].zahl = 6.0;
+    return z;
+}
+
+std::unique_ptr<Prozessor> hbPruefling (int block, bool& commit)
+{
+    auto p = prozessor (48000.0, block);
+    commit = setze (*p, hbSatz()).ausgang == tx::Ausgang::commit;
+    return p;
+}
+
+/// Ein Block ueber den gewaehlten Eintritt, in place.
+void hbBlock (Prozessor& p, bool bypass, juce::AudioBuffer<float>& b)
+{
+    juce::MidiBuffer midi;
+    if (bypass) p.processBlockBypassed (b, midi);
+    else        p.processBlock (b, midi);
+}
+
+/// Fuellt `b` mit dem Gleichwert 0,25 (die Bell laesst ihn unveraendert, der
+/// Trim hebt ihn auf rund 0,4988) oder mit Rauschen aus `w`.
+void hbFuelle (juce::AudioBuffer<float>& b, juce::Random* w)
+{
+    for (int k = 0; k < b.getNumChannels(); ++k)
+        for (int n = 0; n < b.getNumSamples(); ++n)
+            b.setSample (k, n, w != nullptr ? w->nextFloat() * 1.6f - 0.8f : 0.25f);
+}
+
+/// Faehrt `bypass.size()` Bloecke Gleichwert zu `groesse` ueber die Eintritte
+/// `bypass[i]` und liefert den Ausgang (L und R je Block hintereinander, das
+/// Format von `fahreFolge`). `vorBlock` laeuft vor jedem Block.
+std::vector<float> hbDc (Prozessor& p, const std::vector<bool>& bypass, int groesse,
+                         const std::function<void (int)>& vorBlock = {})
+{
+    std::vector<float> aus;
+    juce::AudioBuffer<float> b (2, groesse);
+    for (int i = 0; i < (int) bypass.size(); ++i)
+    {
+        if (vorBlock)
+            vorBlock (i);
+        hbFuelle (b, nullptr);
+        hbBlock (p, bypass[(size_t) i], b);
+        for (int k = 0; k < 2; ++k)
+            aus.insert (aus.end(), b.getReadPointer (k), b.getReadPointer (k) + groesse);
+    }
+    return aus;
+}
+
+/// Die Blende einer Gleichwertfolge im Format von `hbDc`: groesster
+/// Nachbarsprung je Kanal ueber den ganzen Lauf gegen die E-31-Schranke
+/// (Fadeschrittweite |verarbeitet - 0,25| / 256 plus 2^-23), und die Samples
+/// [von, bis) des Laufs, deren Wert nicht bitgleich 0,25 ist.
+struct HbSprung { double groesster = 0.0; double schranke = 0.0; int nichtTrocken = 0; bool endlich = true; };
+
+HbSprung hbSprung (const std::vector<float>& aus, int groesse, float verarbeitet, long long von, long long bis)
+{
+    HbSprung s;
+    s.schranke = std::abs ((double) verarbeitet - 0.25) / (double) dsp::kFadeSamples + 1.0 / 8388608.0;
+    const size_t bloecke = aus.size() / ((size_t) groesse * 2u);
+    for (int k = 0; k < 2; ++k)
+    {
+        double vorher = std::numeric_limits<double>::quiet_NaN();
+        for (size_t b = 0; b < bloecke; ++b)
+            for (int n = 0; n < groesse; ++n)
+            {
+                const float y = aus[b * (size_t) groesse * 2u + (size_t) k * (size_t) groesse + (size_t) n];
+                if (! std::isfinite (y)) s.endlich = false;
+                if (std::isfinite (vorher))
+                    s.groesster = std::max (s.groesster, std::abs ((double) y - vorher));
+                vorher = (double) y;
+                const long long idx = (long long) (b * (size_t) groesse) + n;
+                if (idx >= von && idx < bis && y != 0.25f) ++s.nichtTrocken;
+            }
+    }
+    return s;
+}
+
+void nak312Hostbypass()
+{
+    abschnitt ("ZD - NAK-312 Etappe 7b, Satz 2: der Hostbypass (312/M-101 bis 312/M-104, 312/M-108, 312/M-132; Kosten)");
+
+    // ── 312/M-101 (a): die Wache beginnt auch am Eintritt processBlockBypassed
+    {
+        bool commit = false;
+        auto kopf = std::make_unique<Testplayhead>();   // ueberlebt den Prozessor
+        auto p    = hbPruefling (256, commit);
+        p->setPlayHead (kopf.get());
+        juce::AudioBuffer<float> puffer (2, 256);
+        juce::Random w (10101);
+        dsp::RtWache::zuruecksetzen();
+        std::uint64_t eigene = 0;
+        for (int b = 0; b < 200; ++b)
+        {
+            hbFuelle (puffer, &w);
+            allokationen = 0;
+            zaehleAllokationen = true;
+            hbBlock (*p, true, puffer);
+            zaehleAllokationen = false;
+            eigene += allokationen;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        const auto rtAllok = dsp::RtWache::allokationen();
+        pruefe (commit && sperren == 200 && kopf->aufrufe == 200 && rtAllok == 0 && eigene == 0,
+                "312/M-101 (a) hostbypass_ist_echtzeitfest: wache_beginnt_am_bypasseintritt (R-312-1, [SONDE-015] M-47): "
+                "Aufbau HB mit Testplayhead, 200 Bloecke ueber processBlockBypassed - RtWache::sperren() zaehlt genau "
+                "200, eine je Block an der Playhead-Stelle vor der Stempelbildung, und RtWache::allokationen() bleibt 0",
+                "gemeldete Sperren " + zahl (sperren) + " bei " + std::to_string (kopf->aufrufe) + " Playhead-Aufrufen, "
+                "RtWache::allokationen " + zahl (rtAllok) + ", eigener Zaehler " + zahl (eigene));
+        p->setPlayHead (nullptr);
+    }
+
+    // ── 312/M-101 (b): 4000 Bloecke mit Eintrittswechseln, Hostautomation aus
+    // einem zweiten Thread, Programmwechseln und den drei Hosteintritten
+    // reset, releaseResources und prepareToPlay mitten im Lauf. ─────────────
+    {
+        bool commit = false;
+        auto p = hbPruefling (512, commit);
+        std::atomic<bool> halt { false };
+        std::atomic<std::uint64_t> geschrieben { 0 };
+        std::thread host ([&]
+        {
+            juce::Random r (10102);
+            while (! halt.load())
+            {
+                for (const auto& bp : blockParameter())
+                    hostSchreibt (*p, bp.index, r.nextBool() ? bp.extrem : bp.standard);
+                hostSchreibt (*p, iBand (0, param::kGainDb), r.nextFloat() * 12.0f - 6.0f);
+                geschrieben.fetch_add (1);
+            }
+        });
+        while (geschrieben.load() == 0)
+            std::this_thread::yield();
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::Random w (10103);
+        std::mt19937 zufall (10104);
+        std::uniform_int_distribution<int> groessen (1, 512);
+        const auto geschriebenVor = geschrieben.load();
+        dsp::RtWache::zuruecksetzen();
+        std::uint64_t eigene = 0;
+        bool bypass = false, latenzNull = true;
+        int wechsel = 0, bypassBloecke = 0, programme = 0;
+        for (int blockNr = 0; blockNr < 4000; ++blockNr)
+        {
+            if (blockNr % 37 == 0) { bypass = ! bypass; ++wechsel; }
+            if (blockNr % 250 == 125)
+            {
+                auto z = hbSatz();
+                z.werte[(size_t) iBand (0, param::kGainDb)].zahl = (blockNr / 250) % 2 == 0 ? 6.0 : 12.0;
+                if (setze (*p, z).ausgang == tx::Ausgang::commit) ++programme;
+            }
+            if (blockNr == 1500) p->reset();
+            if (blockNr == 2500) p->releaseResources();
+            if (blockNr == 2520) p->prepareToPlay (48000.0, 512);
+            const int n = groessen (zufall);
+            puffer.setSize (2, n, false, false, true);
+            hbFuelle (puffer, &w);
+            allokationen = 0;
+            zaehleAllokationen = true;
+            hbBlock (*p, bypass, puffer);
+            zaehleAllokationen = false;
+            eigene += allokationen;
+            if (bypass) ++bypassBloecke;
+            if (p->getLatencySamples() != 0) latenzNull = false;
+        }
+        const auto sperren = dsp::RtWache::sperren();
+        const auto rtAllok = dsp::RtWache::allokationen();
+        const auto geschriebenWaehrend = geschrieben.load() - geschriebenVor;
+        halt.store (true);
+        host.join();
+        pruefe (commit && sperren == 0 && rtAllok == 0 && eigene == 0 && latenzNull && p->getTailLengthSeconds() == 0.0
+                    && geschriebenWaehrend > 0 && wechsel > 100 && bypassBloecke > 1000 && programme > 0,
+                "312/M-101 (b) hostbypass_ist_echtzeitfest (R-312-1, [SONDE-015] M-47, M-51, E-312-11): 4000 Bloecke "
+                "wechselnder Groesse (1 bis 512) mit Eintrittswechseln alle 37 Bloecke, Hostautomation aus einem zweiten "
+                "Thread, Programmwechseln, reset(), releaseResources() und prepareToPlay mitten im Lauf - "
+                "RtWache::sperren() und RtWache::allokationen() bleiben in beiden Eintritten 0, die gemeldete Latenz 0 "
+                "Samples und getTailLengthSeconds() 0,0",
+                "RtWache::sperren " + zahl (sperren) + ", RtWache::allokationen " + zahl (rtAllok) + ", eigener Zaehler "
+                + zahl (eigene) + ", Eintrittswechsel " + std::to_string (wechsel) + ", Bypassbloecke "
+                + std::to_string (bypassBloecke) + ", Programme " + std::to_string (programme)
+                + ", Hostschreibrunden waehrend der Bloecke " + zahl (geschriebenWaehrend) + ", Latenz 0 "
+                + (latenzNull ? "ja" : "NEIN"));
+    }
+
+    // ── 312/M-102: der Bypassparameter bleibt beim Wrapper ──────────────────
+    {
+        auto p = prozessor();
+        const auto* bypassParameter = p->getBypassParameter();
+        pruefe (bypassParameter == nullptr && p->getParameters().size() == param::kHostParameter,
+                "312/M-102 bypassparameter_bleibt_beim_wrapper (Identitaet NAK-30, R-312-4, §7.7 erste Grenze): "
+                "getBypassParameter() liefert nullptr - der VST3-Wrapper legt wie bisher seinen eigenen Parameter byps "
+                "mit der VST-ID 0x62797073 an -, und der Prozessor meldet genau 112 Hostparameter (das Parametergolden "
+                "misst 312/M-48)",
+                std::string ("getBypassParameter ") + (bypassParameter == nullptr ? "nullptr" : "GESETZT") + ", "
+                + std::to_string (p->getParameters().size()) + " Hostparameter");
+    }
+
+    // ── 312/M-103: Zustand, Hash, Revision, Dirty und die Ruhegrenze ─────────
+    {
+        struct Lauf { std::uint64_t e0 = 0, e1 = 0, offen = 0, zu = 0; };
+        const auto lauf = [] (Prozessor& x, bool mitBypass)
+        {
+            Lauf l;
+            juce::AudioBuffer<float> b (2, 256);
+            juce::Random w (10301);
+            x.mitAngehaltenemTaktFuerTest ([&]
+            {
+                for (int i = 0; i < 40; ++i) { hbFuelle (b, &w); hbBlock (x, false, b); }
+                x.kontrollTaktFuerTest();
+                l.e0 = x.automationEpoche();
+                // Muster 312/M-24: je Punkt ein Hostwert, ein Block processBlock, ein Takt.
+                for (int i = 0; i < 20; ++i)
+                {
+                    hostSchreibt (x, kOutTrim, 6.0f - 0.1f * (float) i);
+                    hbFuelle (b, &w);
+                    hbBlock (x, false, b);
+                    x.kontrollTaktFuerTest();
+                }
+                l.e1 = x.automationEpoche();
+                for (int i = 0; i < 46; ++i) { hbFuelle (b, &w); hbBlock (x, mitBypass, b); }   // 11 776 Samples
+                x.kontrollTaktFuerTest();
+                l.offen = x.automationEpoche();
+                hbFuelle (b, &w);
+                hbBlock (x, mitBypass, b);                                                       // 12 032 Samples
+                x.kontrollTaktFuerTest();
+                l.zu = x.automationEpoche();
+                for (int i = 0; i < 13; ++i) { hbFuelle (b, &w); hbBlock (x, mitBypass, b); }
+                for (int i = 0; i < 40; ++i) { hbFuelle (b, &w); hbBlock (x, false, b); }
+                x.kontrollTaktFuerTest();
+            });
+            return l;
+        };
+        bool cp = false, cr = false;
+        auto p = hbPruefling (256, cp);
+        auto r = hbPruefling (256, cr);
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        juce::MemoryBlock vorher, nachher;
+        p->getStateInformation (vorher);
+        const auto hashVor = str (p->stateHashText());
+        const auto revVor  = p->stateRevision();
+        const auto undoVor = p->zustandLesen().undoRing.size();
+        const auto lp = lauf (*p, true);
+        const auto lr = lauf (*r, false);
+        p->getStateInformation (nachher);
+        const int dirtyMeldungen = dirty.nichtParameter;
+        p->removeListener (&dirty);
+        pruefe (cp && cr && nachher == vorher && str (p->stateHashText()) == hashVor && p->stateRevision() == revVor
+                    && p->zustandLesen().undoRing.size() == undoVor && dirtyMeldungen == 0,
+                "312/M-103 hostbypass_beruehrt_den_zustand_nicht (Zustand; speichern<->laden, §7.7, CLAUDE.md State): ueber "
+                "40 Bloecke processBlock, 20 Hostpunkte auf Output-Trim, 60 Bloecke processBlockBypassed und 40 Bloecke "
+                "processBlock sind die Statebytes vorher und nachher bytegleich, state_hash, Revision und Undo-Ring gleich, "
+                "0 Host-Dirty-Meldungen",
+                "Statebytes " + std::string (nachher == vorher ? "gleich" : "VERSCHIEDEN") + ", Revision " + zahl (revVor) + " -> "
+                + zahl (p->stateRevision()) + ", Undo " + std::to_string (undoVor) + " -> "
+                + std::to_string (p->zustandLesen().undoRing.size()) + ", Dirty " + std::to_string (dirtyMeldungen));
+        pruefe (cp && cr && lp.e1 == lp.e0 + 1 && lp.offen == lp.e1 && lp.zu == lp.e1 + 1
+                    && lr.e1 == lr.e0 + 1 && lr.offen == lr.e1 && lr.zu == lr.e1 + 1,
+                "312/M-103 hostbypass_beruehrt_den_zustand_nicht (Ruhegrenze; R-312-27, [SONDE-015] M-81): der Hostbypass "
+                "zaehlt verarbeitete Samples weiter - nach 11 776 Samples im Hostbypass steht die Epoche der Geste auf e1 "
+                "(offen), nach 12 032 auf e1 + 1 (geschlossen), am selben Block wie bei R ohne Hostbypass",
+                "Hostbypass " + zahl (lp.e0) + " -> " + zahl (lp.e1) + ", nach 46 Bloecken " + zahl (lp.offen) + ", nach 47 "
+                + zahl (lp.zu) + "; R " + zahl (lr.e0) + " -> " + zahl (lr.e1) + ", " + zahl (lr.offen) + ", " + zahl (lr.zu));
+    }
+
+    // ── 312/M-132: der Blockrand des Bypasseintritts ueber den Zaehlerueberlauf
+    {
+        bool commit = false;
+        auto p = hbPruefling (256, commit);
+        static_assert (dsp::DspKern::kBlockrandParameter[1] == kOutTrim, "Platz 1 der Abdeckungstabelle ist Output-Trim");
+        const int platz = 1;
+        p->setzeHostZaehlerFuerTest (kOutTrim, 0xFFFFFFFEu);
+        std::uint32_t nach10 = 0, nach12 = 0, nach14 = 0;
+        juce::AudioBuffer<float> b (2, 256);
+        juce::Random w (13201);
+        p->mitAngehaltenemTaktFuerTest ([&]
+        {
+            for (int blockNr = 0; blockNr < 30; ++blockNr)
+            {
+                if (blockNr == 10) hostSchreibt (*p, kOutTrim, 3.0f);     // Zaehler 0xFFFFFFFF
+                if (blockNr == 12) hostSchreibt (*p, kOutTrim, -3.0f);    // Zaehler 0: der Ueberlauf
+                if (blockNr == 14) hostSchreibt (*p, kOutTrim, 1.5f);     // Zaehler 1
+                hbFuelle (b, &w);
+                hbBlock (*p, true, b);
+                if (blockNr == 10) nach10 = p->dspKernFuerTest().blockrandStand (platz);
+                if (blockNr == 12) nach12 = p->dspKernFuerTest().blockrandStand (platz);
+                if (blockNr == 14) nach14 = p->dspKernFuerTest().blockrandStand (platz);
+            }
+        });
+        const auto hex = [] (std::uint32_t v) { std::ostringstream o; o << "0x" << std::hex << std::uppercase << v; return o.str(); };
+        pruefe (commit && nach10 == 0xFFFFFFFFu && nach12 == 0u && nach14 == 1u && p->hostEreignisFuerTest (kOutTrim) == 1u,
+                "312/M-132 hostbypass_zaehlerrand (R-312-28, E-312-6; Muster 312/M-82): Ereigniszaehler, Quittierungsstand "
+                "und Blockrandstand von Output-Trim bei 0xFFFFFFFE, 30 Bloecke ueber processBlockBypassed mit Hostpunkten "
+                "an Block 10, 12 und 14 - der Blockrand des Bypasseintritts nimmt jeden Punkt ueber den Ueberlauf genau "
+                "einmal: nach Block 10, 12 und 14 steht der Blockrandstand auf 0xFFFFFFFF, 0 und 1",
+                "Blockrandstand nach Block 10 " + hex (nach10) + ", nach 12 " + hex (nach12) + ", nach 14 " + hex (nach14)
+                + ", Ereigniszaehler " + hex (p->hostEreignisFuerTest (kOutTrim)));
+    }
+
+    // ── 312/M-104: Offline gleich Echtzeit ──────────────────────────────────
+    {
+        // (a) A allein, Hoerwunsch Dry: der Bypasseintritt setzt weder den
+        //     Offline-Riegel noch das harte Schalten.
+        bool ca = false;
+        auto a = hbPruefling (256, ca);
+        a->setzeHoermatrix (dsp::Hoermatrix::dry);
+        juce::AudioBuffer<float> b (2, 256);
+        juce::Random w (10401);
+        for (int i = 0; i < 30; ++i)
+        {
+            hbFuelle (b, &w);
+            hbBlock (*a, i >= 10, b);
+        }
+        const bool riegel = a->dspKernFuerTest().offlineRiegel();
+        const bool dry = a->dspKernFuerTest().wirksameHoermatrix() == dsp::Hoermatrix::dry;
+        pruefe (ca && ! riegel && dry,
+                "312/M-104 hostbypass_offline_gleich_echtzeit (a) (R-312-29, §7.7 zweite Grenze): am Echtzeitprozessor mit "
+                "Hoerwunsch Dry ist nach 20 Bloecken processBlockBypassed offlineRiegel() falsch und wirksameHoermatrix() "
+                "gleich dem Wunsch Dry - der Bypasseintritt setzt weder den Riegel noch das harte Schalten",
+                std::string ("offlineRiegel ") + (riegel ? "WAHR" : "falsch") + ", wirksame Hoermatrix "
+                + (dry ? "dry" : "NICHT dry"));
+
+        // (b) und (c): Bloecke zu 64 - die Blende laeuft ueber vier Bloecke.
+        // Hostbypass an Block 10 an, an Block 30 aus, Gleichwert.
+        const int b64 = 64;
+        std::vector<bool> eintritte (50, false);
+        for (int i = 10; i < 30; ++i) eintritte[(size_t) i] = true;
+        const auto vorlauf = [b64] (Prozessor& x, bool offline)
+        {
+            juce::AudioBuffer<float> v (2, b64);
+            for (int i = 0; i < 200; ++i)
+            {
+                if (offline) x.setNonRealtime (true);
+                hbFuelle (v, nullptr);
+                hbBlock (x, false, v);
+            }
+            float letzter = v.getSample (0, b64 - 1);
+            return letzter;
+        };
+        const auto pruefeOffline = [&] (const char* fall, bool jederBlock)
+        {
+            bool c1 = false, c2 = false;
+            auto echt = hbPruefling (256, c1);
+            auto off  = hbPruefling (256, c2);
+            const float verarbeitet = vorlauf (*echt, false);
+            vorlauf (*off, jederBlock);
+            const auto ya = hbDc (*echt, eintritte, b64);
+            const auto yb = hbDc (*off, eintritte, b64, [&] (int i)
+            {
+                if (jederBlock || i == 11)
+                    off->setNonRealtime (true);    // (b): vor dem zweiten Bypassblock, mitten in der Blende
+            });
+            const int ab = abweichend (ya, yb);
+            // Die Blende nach trocken endet 256 Samples nach dem Eintritt (Block 14), die zurueck
+            // beginnt an Block 30; dazwischen ist der Ausgang der trockene Gleichwert.
+            const auto s = hbSprung (yb, b64, verarbeitet, 14LL * b64, 30LL * b64);
+            const bool ok = c1 && c2 && ab == 0 && s.endlich && s.groesster <= s.schranke && s.nichtTrocken == 0
+                         && off->isNonRealtime();
+            std::ostringstream d;
+            d << std::fixed << std::setprecision (9) << fall << ": A gegen B " << ab << " abweichend, groesster "
+              << "Nachbarsprung in B " << s.groesster << " (Schranke " << s.schranke << "), zwischen Blendenende und "
+              << "Austritt " << s.nichtTrocken << " nicht trocken, B offline " << (off->isNonRealtime() ? "ja" : "NEIN");
+            return std::make_pair (ok, d.str());
+        };
+        const auto [okB, textB] = pruefeOffline ("(b)", false);
+        pruefe (okB,
+                "312/M-104 hostbypass_offline_gleich_echtzeit (b) ([SONDE-015] M-120, R-312-3, R-312-29): Bloecke zu 64, B "
+                "bis zum ersten Bypassblock in Echtzeit, setNonRealtime (true) vor dem zweiten Bypassblock - mitten in der "
+                "Blende; A (Echtzeit) und B sind bitgleich, die Blende ist auch offline 256 Samples lang und weich "
+                "(E-31): der Wechsel nach offline stellt allein die Hoermatrix hart und laesst die Hostbypass-Blende "
+                "weiterlaufen",
+                textB);
+        const auto [okC, textC] = pruefeOffline ("(c)", true);
+        pruefe (okC,
+                "312/M-104 hostbypass_offline_gleich_echtzeit (c) ([SONDE-015] M-120, R-312-3): B mit setNonRealtime (true) "
+                "vor jedem Block - A und B sind bitgleich, die Blende zaehlt Samples, nie Wandzeit",
+                textC);
+    }
+
+    // ── 312/M-108: Baenke und Programme im Hostbypass ───────────────────────
+    {
+        struct Lauf { std::vector<float> imBypass, danach, einBypass; int frei = -1; bool alleCommit = true; };
+        const auto lauf = [] (Prozessor& x, bool bypass)
+        {
+            Lauf l;
+            juce::AudioBuffer<float> b (2, 256);
+            juce::Random w (10801);
+            const auto bloecke = [&] (int n, bool umgangen, std::vector<float>* aus, std::vector<float>* ein)
+            {
+                for (int i = 0; i < n; ++i)
+                {
+                    hbFuelle (b, &w);
+                    if (ein != nullptr)
+                        for (int k = 0; k < 2; ++k)
+                            ein->insert (ein->end(), b.getReadPointer (k), b.getReadPointer (k) + 256);
+                    hbBlock (x, umgangen, b);
+                    if (aus != nullptr)
+                        for (int k = 0; k < 2; ++k)
+                            aus->insert (aus->end(), b.getReadPointer (k), b.getReadPointer (k) + 256);
+                }
+            };
+            x.mitAngehaltenemTaktFuerTest ([&]
+            {
+                bloecke (10, false, nullptr, nullptr);
+                bloecke (4, bypass, nullptr, nullptr);          // Eintritt, die Blende ist danach vorbei
+                auto z = hbSatz();
+                z.werte[(size_t) iBand (0, param::kGainDb)].zahl = 6.0;
+                l.alleCommit = l.alleCommit && setze (x, z).ausgang == tx::Ausgang::commit;       // Band aendern
+                x.kontrollTaktFuerTest();
+                bloecke (20, bypass, &l.imBypass, &l.einBypass);
+                l.alleCommit = l.alleCommit && ohneNutzlast (x, tx::Art::remove, 0).ausgang == tx::Ausgang::commit;   // Band entfernen
+                x.kontrollTaktFuerTest();
+                bloecke (20, bypass, &l.imBypass, &l.einBypass);
+                auto aus = x.bestaetigterZustand();
+                aus.werte[(size_t) param::kIndexEqEnabled].b = false;
+                l.alleCommit = l.alleCommit && setze (x, aus).ausgang == tx::Ausgang::commit;     // EQ aus ...
+                x.kontrollTaktFuerTest();
+                bloecke (20, bypass, &l.imBypass, &l.einBypass);
+                aus.werte[(size_t) param::kIndexEqEnabled].b = true;
+                l.alleCommit = l.alleCommit && setze (x, aus).ausgang == tx::Ausgang::commit;     // ... und wieder an
+                x.kontrollTaktFuerTest();
+                bloecke (20, bypass, &l.imBypass, &l.einBypass);
+                x.kontrollTaktFuerTest();
+                l.frei = x.dspKernFuerTest().pool().freieSlots();
+                bloecke (20, false, &l.danach, nullptr);        // der Austritt
+            });
+            return l;
+        };
+        bool cp = false, cr = false;
+        auto p = hbPruefling (256, cp);
+        auto r = hbPruefling (256, cr);
+        const auto lp = lauf (*p, true);
+        const auto lr = lauf (*r, false);
+        const int imBypassAbw = abweichend (lp.imBypass, lp.einBypass);
+        // Nach dem Austritt: ab Sample 256 des ersten Blocks (ein Block zu 256) bitgleich zu R.
+        const std::vector<float> nachP (lp.danach.begin() + 512, lp.danach.end());
+        const std::vector<float> nachR (lr.danach.begin() + 512, lr.danach.end());
+        const int nachAbw = abweichend (nachP, nachR);
+        pruefe (cp && cr && lp.alleCommit && lr.alleCommit && lp.frei == lr.frei && lp.frei >= 0 && imBypassAbw == 0
+                    && nachAbw == 0,
+                "312/M-108 hostbypass_haelt_keine_bank ([SONDE-015] M-44, E-17; aktivieren<->abklingen): im Hostbypass nach "
+                "der Blende vier Transaktionen - Band aendern, Band entfernen, EQ aus und wieder an -, je ein Kontrolltakt "
+                "und 20 Bloecke processBlockBypassed: der Kern nimmt die Programme am Blockrand wie ohne Hostbypass, nach "
+                "der Folge und einem Takt sind genau so viele Baenke frei wie bei R, der Ausgang bleibt bytegleich zum "
+                "Eingang, und nach dem Austritt klingt der zuletzt bestaetigte Stand (ab Sample 256 bitgleich zu R)",
+                "freie Baenke " + std::to_string (lp.frei) + " (R " + std::to_string (lr.frei) + "), im Hostbypass "
+                + std::to_string (imBypassAbw) + " abweichend vom Eingang, nach dem Austritt " + std::to_string (nachAbw)
+                + " abweichend von R, Commits " + (lp.alleCommit ? "alle" : "NICHT alle"));
+    }
+
+    // ── Kosten der Hostbypass-Stufe (Messung, keine Schranke; Manifest §47.3,
+    // Muster §21.7). Gemessen wird allein die Zeit IM Eintritt; je Block wird
+    // derselbe Eingang ungemessen neu eingelegt (der Trim hebt ihn sonst Block
+    // fuer Block). Je Eintritt das Minimum aus drei Durchgaengen. ────────────
+    {
+        bool commit = false;
+        auto p = hbPruefling (64, commit);
+        const int n = 20000;
+        juce::AudioBuffer<float> vorlage (2, 64), puffer (2, 64);
+        juce::Random w (3290);
+        for (int k = 0; k < 2; ++k)
+            for (int s = 0; s < 64; ++s)
+                vorlage.setSample (k, s, w.nextFloat() * 0.2f - 0.1f);
+        const auto messe = [&] (bool bypass)
+        {
+            double bestes = std::numeric_limits<double>::infinity();
+            for (int durchgang = 0; durchgang < 3; ++durchgang)
+            {
+                double sekunden = 0.0;
+                p->mitAngehaltenemTaktFuerTest ([&]
+                {
+                    for (int i = 0; i < 8; ++i)      // der Eintritt ist gewechselt, die Blende vorbei
+                    {
+                        puffer.makeCopyOf (vorlage, true);
+                        hbBlock (*p, bypass, puffer);
+                    }
+                    for (int i = 0; i < n; ++i)
+                    {
+                        puffer.makeCopyOf (vorlage, true);
+                        const auto start = std::chrono::steady_clock::now();
+                        hbBlock (*p, bypass, puffer);
+                        sekunden += std::chrono::duration<double> (std::chrono::steady_clock::now() - start).count();
+                    }
+                });
+                bestes = std::min (bestes, sekunden * 1.0e9 / (double) n);
+            }
+            return bestes;
+        };
+        const double normal = messe (false);
+        const double umgangen = messe (true);
+        std::ostringstream o;
+        o << std::fixed << std::setprecision (1);
+        o << "  MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) " << sizeof (dsp::DspKern) << " Byte, sizeof(SondeProcessor) "
+          << sizeof (Prozessor) << " Byte; Aufbau HB, " << n << " Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt "
+          << "(Minimum aus drei Durchgaengen): processBlock " << normal << " ns je Block, processBlockBypassed nach der "
+          << "Blende " << umgangen << " ns je Block; Transaktion " << (commit ? "commit" : "FEHLER");
+        std::cout << o.str() << std::endl;
+    }
+}
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -6161,6 +6690,9 @@ int main (int argc, char* argv[])
 
     // NAK-312 Etappe 5, Nacharbeit 1 (R-312-19): kein Weg zum Hostende im Pluginquelltext
     nak312HostEnde();
+
+    // NAK-312 Etappe 7b, Satz 2 (T3-01-09, U48, U58): der Hostbypass am echten SondeProcessor
+    nak312Hostbypass();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

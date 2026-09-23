@@ -16,10 +16,28 @@
                 Output-Trim (Rampe, Unity-Kurzschluss bei 0 dB)
                 -> Tap post_committed
                    -> Hoermatrix (Dry / Processed / Delta / Candidate)
-                      -> Ausgang
+                      -> Hostbypass-Stufe (NAK-312 Etappe 7b, unten)
+                         -> Ausgang
 
     Der Candidate-Pfad ist derselbe Aufbau auf eigenen Baenken; sein Tap
     heisst post_candidate.
+
+    DIE HOSTBYPASS-STUFE (NAK-312 Etappe 7b, T3-01-09; Karten U48 und U58,
+    Weg E1 mit K-B): der Prozessor hat zwei Eintritte - `processBlock` und
+    `processBlockBypassed`, den der VST3-Wrapper bei gesetztem
+    Bypassparameter ruft - und reicht den Wunsch "Hostbypass" als Argument an
+    `verarbeite`. Der Kern rechnet im Hostbypass weiter wie ohne ihn
+    (Programme, Rampen, Baenke, ACKs, Taps, Hoermatrix, Zaehler); allein die
+    Stufe hinter der Hoermatrix entscheidet, was in den Puffer geht. Sie
+    blendet in kFadeSamples SAMPLES linear vom Ausgang des Kerns auf den
+    Eingang und schreibt danach keinen Sample mehr (Muster W-1); zurueck
+    blendet sie ebenso, und kehrt der Wunsch in der Blende um, laeuft sie vom
+    Mischstand zurueck (Muster W-5). Hinter einem ruhenden Committed-Pfad und
+    unvorbereitet steht sie sofort auf ihrem Ziel - beide Seiten waeren der
+    unveraenderte Eingang. Ein neuer Strom (`bereiteVor`, `freigeben`,
+    `beendeAudiohistorie`) laesst sie ohne Verlauf: der erste Eintritt setzt
+    sie ohne Blende. Das harte Schalten beim Wechsel nach offline beendet die
+    Blende der Hoermatrix, nicht die der Stufe.
 
     DREI ZUSAGEN, DIE DIE FORM BESTIMMEN:
 
@@ -27,7 +45,10 @@
        nicht "durch neutrale Biquads gerechnet" - der Puffer wird nicht
        angefasst (M-01, M-05), und zwar unabhaengig davon, was die
        Hoermatrix gerade waehlt (B-3): die Hoermatrix liegt HINTER dem
-       engagierten Pfad, nicht vor dem Ausgang eines ausgeschalteten.
+       engagierten Pfad, nicht vor dem Ausgang eines ausgeschalteten. Ebenso
+       unabhaengig vom Eintritt: hinter einem ruhenden Pfad hat die
+       Hostbypass-Stufe nichts zu blenden (NAK-312 Etappe 7b, M-99), und im
+       Hostbypass schreibt sie nach ihrer Blende nichts.
 
     2. Der Passthrough SANITISIERT NICHTS (M-50). Ein NaN im ausgeschalteten
        Zustand kommt unveraendert heraus.
@@ -155,7 +176,9 @@ public:
         Pfades mit aktiver Bank (auch im Hard-Bypass) stehen danach auf ihrem
         Zielwert, die eines ruhenden Pfades auf den Ruhewerten 1,0 (NAK-311,
         T3-15-05) - ein ruhender Pfad schaltet danach wie ein frischer Kern
-        ein. Danach erzeugt Stille am Eingang exakt Stille am Ausgang.
+        ein. Danach erzeugt Stille am Eingang exakt Stille am Ausgang. Seit
+        NAK-312 Etappe 7b endet auch die Blende der Hostbypass-Stufe, und die
+        Stufe bleibt ohne Verlauf: der naechste Eintritt setzt sie ohne Blende.
         Allokiert nicht und sperrt nicht; nur rufen, waehrend kein
         `verarbeite` laeuft (im Prozessor unter dem Callback-Schloss). */
     void beendeAudiohistorie() noexcept;
@@ -286,9 +309,18 @@ public:
         NAK-312 Etappe 3b: mit `hostwerte` uebernimmt der Kern die
         Hostmailbox der Abdeckungstabelle am Blockrand, VOR der
         Programmuebernahme, in diesem Block. Ohne sie (Vorgabe) arbeitet er
-        wie bisher allein aus Programmen. Keine Sperre, keine Allokation. */
+        wie bisher allein aus Programmen. Keine Sperre, keine Allokation.
+
+        NAK-312 Etappe 7b (T3-01-09, U48, U58): `hostbypass` ist der Wunsch
+        des Eintritts, ueber den der Prozessor diesen Block bekam - wahr fuer
+        `processBlockBypassed`. Er gilt fuer den ganzen Block und wirkt ab
+        dessen Sample 0; der Kern uebernimmt ihn genau einmal je Aufruf, vor
+        dem ersten Sample, wie die Programme. Er aendert allein, was die
+        Hostbypass-Stufe in den Puffer schreibt (Kopf dieser Datei); gerechnet
+        wird wie ohne ihn. Die Vorgabe "nein" haelt jeden Aufrufer ohne das
+        Argument bitgleich. */
     void verarbeite (float* const* kanaele, int numKanaele, int numSamples,
-                     const BlockrandHostwerte* hostwerte = nullptr) noexcept;
+                     const BlockrandHostwerte* hostwerte = nullptr, bool hostbypass = false) noexcept;
 
     /** NUR fuer B6 (B-11): wird zwischen zwei Teilstuecken eines
         uebergrossen Blocks gerufen, damit der Test deterministisch eine
@@ -327,7 +359,10 @@ public:
         von aussen gesetzt wird. Die Anforderung verbraucht der Audiothread im
         naechsten Stueck selbst: die Hoermatrix steht ab dessen erstem Sample
         ohne Fade auf dem wirksamen Stand, und ein laufender Fade - in jede
-        Richtung - endet dabei mit, sonst bliebe ein Mischstand stehen.
+        Richtung - endet dabei mit, sonst bliebe ein Mischstand stehen. Die
+        Blende der Hostbypass-Stufe (NAK-312 Etappe 7b) laeuft weiter: sie
+        folgt dem Eintritt, nicht dem Hoerwunsch, und offline wie in Echtzeit
+        blendet derselbe Eintrittswechsel gleich (M-104).
         `an = false` loest den Riegel und nimmt eine noch nicht verbrauchte
         Anforderung zurueck: der Rueckweg in die Echtzeit blendet weich (M-55).
 
@@ -747,6 +782,28 @@ private:
     Hoermatrix hoerLaufend  { Hoermatrix::processed };
     Hoermatrix hoerVorher   { Hoermatrix::processed };
     int        hoerFadeRest { 0 };
+
+    /*  NAK-312 Etappe 7b (T3-01-09; U48, U58; Weg K-B): die HOSTBYPASS-STUFE
+        (Kopf dieser Datei). Nur der Audiothread liest und schreibt sie - der
+        Wunsch kommt allein ueber `verarbeite`, kein Atomic eines anderen
+        Threads. `bereiteVor`, `freigeben` und `beendeAudiohistorie` setzen sie
+        ohne Verlauf; sie laufen wie bei `hoerFadeRest` nur, waehrend kein
+        `verarbeite` laeuft (im Prozessor unter dem Callback-Schloss). */
+    bool hostbypassZiel     { false };   ///< wohin die Stufe laeuft: wahr = der Eingang (trocken)
+    int  hostbypassFadeRest { 0 };       ///< Samples bis zum Blendenende, wie `hoerFadeRest`
+    bool hostbypassVerlauf  { false };   ///< falsch: der naechste Eintritt setzt die Stufe ohne Blende
+
+    /** Uebernimmt den Wunsch des Eintritts, einmal je aeusserem Aufruf (M-94,
+        M-97, M-105, M-106). */
+    void uebernimmHostbypass (bool wunsch) noexcept;
+
+    /** Ohne Verlauf: ein neuer Strom beginnt (M-105 bis M-107). */
+    void hostbypassOhneVerlauf() noexcept
+    {
+        hostbypassFadeRest = 0;
+        hostbypassVerlauf  = false;
+    }
+
     std::atomic<bool>       candidateAktiv { false };
     std::atomic<bool>       dynamikAktiv   { false };
 

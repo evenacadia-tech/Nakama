@@ -1,0 +1,72 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-102.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-102 (T3-01-09, Identitaet NAK-30, erste Grenze aus §7.7), Etikett Regressionswache.
+Zusage: getBypassParameter() liefert nullptr, der Prozessor meldet genau 112 Hostparameter, das Parametergolden aus 312/M-48 ist bytegleich.
+Bein: B7 EqCopTransactionTest, Faelle 312/M-102 bypassparameter_bleibt_beim_wrapper und 312/M-48.
+Mutation an der Zusagezeile: getBypassParameter() auf einen eigenen juce::AudioParameterBool zeigen lassen und ihn mit addParameter als 113. Parameter anmelden (Weg E2).
+Erwartetes Rot: die neue Pruefung faellt (nicht nullptr, 113 Parameter), und das Golden aus 312/M-48 weicht ab.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:01:29) ==
+Bau Exit 0 (2026-09-23 10:01:29 bis 2026-09-23 10:01:30), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:30); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:01:32) ==
+0F7D9ADC1AAA6D66EC68B595F35FAF20332851B93FE8DE77A05CC6CA6E077567  eq-copilot/plugin/sonde/SondeProcessor.h
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.h-100132829
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100132834
+
+== 2. Mutation (2026-09-23 10:01:32) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.h, ab Zeile 210
+-- vorher:
+   |     void processBlockBypassed (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+-- nachher:
+   |     void processBlockBypassed (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+   |     juce::AudioProcessorParameter* getBypassParameter() const override { return e2Bypass; }   // ROTBEWEIS M-102 (Weg E2)
+   |     juce::AudioParameterBool* e2Bypass = nullptr;
+SHA-256 mutiert: 237063C58BE828907B5C8EF51DB38AF84E94B402E34E472BF6C8D829D554F977  eq-copilot/plugin/sonde/SondeProcessor.h
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 268
+-- vorher:
+   |         parameterListe[i]->addListener (this);
+   |     }
+   | 
+   |     // NAK-312 Etappe 3b: was der Blockrand ohne Schloss liest.
+-- nachher:
+   |         parameterListe[i]->addListener (this);
+   |     }
+   |     addParameter (e2Bypass = new juce::AudioParameterBool (juce::ParameterID { "e2_bypass", 1 }, "Bypass", false));   // ROTBEWEIS M-102 (Weg E2)
+   | 
+   |     // NAK-312 Etappe 3b: was der Blockrand ohne Schloss liest.
+SHA-256 mutiert: EF8907FEA5164779FADA0B61952E56FF5A2A5405AF8AFF29F0CEB3E1C856E484  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:01:32) ==
+Bau Exit 0 (2026-09-23 10:01:32 bis 2026-09-23 10:01:40), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:40.452, juengste mutierte Quelle SondeProcessor.cpp 10:01:32.869, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:01:40); Zeilen mit ok: 257; Zeilen mit FEHLER/ROT: 5
+  FEHLER  prozessor_fuehrt_112_parameter_in_vertragsreihenfolge (M-88; bis NAK-312 Etappe 5 apvts_fuehrt_..., seither ohne APVTS direkt am Prozessor): Kennung, Index, Typ, Grenzen und Default aus parameter::tabelle()  [113 Parameter, Reihenfolge 112, Typ/Grenzen 112]
+  FEHLER  v2_haengt_hinten_an (M-88): eq_enabled, mix und auto_gain auf 109, 110 und 111
+  FEHLER  312/M-48 hostparameter_gleich_dem_golden_des_basis_sha (T3-01-02, R-312-4, Identitaet NAK-30): Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche und Defaults der Hostparameter und ihre Hostsicht (convertTo0to1 an Minimum, Default, Maximum; convertFrom0to1, getText und getValueForText an 0, 0,37 und 1) sind Zeile fuer Zeile und Bit fuer Bit die des Goldens von 12300f1e  [115 Zeilen gegen 114 im Golden, erste Abweichung Zeile 1: Golden 'anzahl	112' gegen 'anzahl	113']
+  FEHLER  312/M-52 listener_paarweise_an_und_ab (Teilfall von 312/M-50, CLAUDE.md verbinden-trennen): am Ende des Destruktorrumpfs erreicht ein Wert an jedem der 112 Hostparameter den Zaehler des Beins, aber keinen Listener des Prozessors mehr (Mailbox unveraendert); vorher erreichte derselbe Weg ihn  [vorher erreicht ja, Zaehler 113, Mailbox 1 -> 1, offen nein]
+  FEHLER  312/M-102 bypassparameter_bleibt_beim_wrapper (Identitaet NAK-30, R-312-4, §7.7 erste Grenze): getBypassParameter() liefert nullptr - der VST3-Wrapper legt wie bisher seinen eigenen Parameter byps mit der VST-ID 0x62797073 an -, und der Prozessor meldet genau 112 Hostparameter (das Parametergolden misst 312/M-48)  [getBypassParameter GESETZT, 113 Hostparameter]
+   262 geprueft, 5 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-102'): JA
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-48'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:01:42) ==
+0F7D9ADC1AAA6D66EC68B595F35FAF20332851B93FE8DE77A05CC6CA6E077567  eq-copilot/plugin/sonde/SondeProcessor.h  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:01:42.633
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:01:42.645
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:01:42) ==
+Bau Exit 0 (2026-09-23 10:01:42 bis 2026-09-23 10:01:50), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:50.353, juengste mutierte Quelle SondeProcessor.cpp 10:01:42.645, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:50); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

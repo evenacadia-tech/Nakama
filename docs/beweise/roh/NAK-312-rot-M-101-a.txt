@@ -1,0 +1,50 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-101-a.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-101 (T3-01-09, R-312-1, Grundgesetz, Messgeraet), Haelfte (a), Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-101.txt).
+Zusage: RtWache::sperren() = 200 ueber 200 Bloecke processBlockBypassed mit Testplayhead: der Bereich der Wache beginnt auch am Eintritt processBlockBypassed, vor der Stempelbildung.
+Bein: B7 EqCopTransactionTest, Fall 312/M-101 (a).
+Mutation an der Zusagezeile: in SondeProcessor::processBlockBypassed die erste Anweisung RtWache::Bereich entfernen.
+Erwartetes Rot: die Playhead-Sperre liegt ausserhalb des Bereichs, der Zaehler bleibt 0 - M-101 (a) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:00:49) ==
+Bau Exit 0 (2026-09-23 10:00:49 bis 2026-09-23 10:00:58), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:00:58); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:01:00) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100100291
+
+== 2. Mutation (2026-09-23 10:01:00) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 522
+-- vorher:
+   |     const nakama::dsp::RtWache::Bereich wache;
+   |     verarbeiteBlock (puffer, true);
+-- nachher:
+   |     // ROTBEWEIS M-101 (a): der Bereich der Wache aus processBlockBypassed entfernt
+   |     verarbeiteBlock (puffer, true);
+SHA-256 mutiert: C7A4F28822B66350CF36791C241883E50184CC7D016CDC35B8C44992A71D4BF0  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:01:00) ==
+Bau Exit 0 (2026-09-23 10:01:00 bis 2026-09-23 10:01:05), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:05.647, juengste mutierte Quelle SondeProcessor.cpp 10:01:00.319, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:01:05); Zeilen mit ok: 261; Zeilen mit FEHLER/ROT: 1
+  FEHLER  312/M-101 (a) hostbypass_ist_echtzeitfest: wache_beginnt_am_bypasseintritt (R-312-1, [SONDE-015] M-47): Aufbau HB mit Testplayhead, 200 Bloecke ueber processBlockBypassed - RtWache::sperren() zaehlt genau 200, eine je Block an der Playhead-Stelle vor der Stempelbildung, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 0 bei 200 Playhead-Aufrufen, RtWache::allokationen 0, eigener Zaehler 0]
+   262 geprueft, 1 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-101 (a)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:01:07) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:01:07.989
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:01:07) ==
+Bau Exit 0 (2026-09-23 10:01:07 bis 2026-09-23 10:01:14), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:13.991, juengste mutierte Quelle SondeProcessor.cpp 10:01:07.989, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:14); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

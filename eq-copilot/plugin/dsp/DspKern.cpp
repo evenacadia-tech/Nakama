@@ -148,6 +148,9 @@ void DspKern::bereiteVor (double samplerate, int maxBlock, int kanaele)
     hoerLaufend  = Hoermatrix::processed;
     hoerVorher   = Hoermatrix::processed;
     hoerFadeRest = 0;
+    // NAK-312 Etappe 7b (M-106): ein neuer Strom - der erste Eintritt setzt die
+    // Hostbypass-Stufe ohne Blende, wie der Fade der Hoermatrix hier endet.
+    hostbypassOhneVerlauf();
     candidateAktiv.store (false, std::memory_order_relaxed);
     dynamikAktiv  .store (false, std::memory_order_relaxed);
     // NAK-311 R-311-14: die drei Auto-Gain-Melder gehoeren zusammen und fallen
@@ -188,6 +191,7 @@ void DspKern::freigeben()
     hoerLaufend  = Hoermatrix::processed;
     hoerVorher   = Hoermatrix::processed;
     hoerFadeRest = 0;
+    hostbypassOhneVerlauf();   // NAK-312 Etappe 7b (M-107): kein Verlauf ohne Vorbereitung
     candidateAktiv.store (false, std::memory_order_relaxed);
     dynamikAktiv  .store (false, std::memory_order_relaxed);
     tapGueltig    = 0;
@@ -244,6 +248,11 @@ void DspKern::beendeAudiohistorie() noexcept
     // gewuenschte Auswahl selbst ist kein Verlauf und bleibt.
     hoerVorher   = hoerLaufend;
     hoerFadeRest = 0;
+
+    // NAK-312 Etappe 7b (M-105): auch die Blende der Hostbypass-Stufe endet,
+    // und die Stufe bleibt ohne Verlauf - der Eintritt des naechsten Blocks
+    // setzt sie ohne Blende, auch nach einem reset() mitten in der Blende.
+    hostbypassOhneVerlauf();
 }
 
 void DspKern::zaehlerZuruecksetzen() noexcept
@@ -1146,7 +1155,7 @@ void DspKern::verarbeitePfad (Pfad p, const double* eingangL, const double* eing
 
 //==============================================================================
 void DspKern::verarbeite (float* const* kanaele, int numKanaele, int numSamples,
-                          const BlockrandHostwerte* hostwerte) noexcept
+                          const BlockrandHostwerte* hostwerte, bool hostbypass) noexcept
 {
     RtWache::Bereich wache;
 
@@ -1164,6 +1173,11 @@ void DspKern::verarbeite (float* const* kanaele, int numKanaele, int numSamples,
     // begrenzt nur den Puffer.
     blockrand (Pfad::committed);
     blockrand (Pfad::candidate);
+
+    // NAK-312 Etappe 7b (M-94, M-98): ebenso der Wunsch des Eintritts - er
+    // gilt fuer den ganzen Block und wirkt ab dessen Sample 0; die Blende
+    // zaehlt danach Samples ueber alle Stuecke hinweg.
+    uebernimmHostbypass (hostbypass);
 
     // E-22, B-20: Filterzustaende heilen, BEVOR ein Sample sie liest.
     for (const auto& z : pfade)
@@ -1196,9 +1210,38 @@ void DspKern::verarbeite (float* const* kanaele, int numKanaele, int numSamples,
     verarbeiteStueck (kanaele, numKanaele, numSamples);
 }
 
+void DspKern::uebernimmHostbypass (bool wunsch) noexcept
+{
+    // Ein neuer Strom hat keinen Verlauf, den eine Blende fortsetzen koennte:
+    // der erste Eintritt setzt die Stufe ohne Blende (M-105, M-106). Am
+    // Strombeginn eines gebypassten Slots entstuende sonst eine hoerbare
+    // Ausblende des verarbeiteten Pfades, die niemand eingeschaltet hat.
+    if (! hostbypassVerlauf)
+    {
+        hostbypassZiel     = wunsch;
+        hostbypassFadeRest = 0;
+        hostbypassVerlauf  = true;
+        return;
+    }
+    if (wunsch == hostbypassZiel)
+        return;
+
+    // Die Stufe kennt zwei Seiten, also fuehrt jede Umkehr zur Quelle der
+    // laufenden Blende zurueck (W-5, Entscheid E-30): sie laeuft vom
+    // AKTUELLEN Mischstand zurueck - das Gewicht beider Seiten bleibt am
+    // Umkehrsample stehen und wandert von dort in Fadeschritten zurueck
+    // (M-97). Ohne laufende Blende beginnt eine neue ueber kFadeSamples.
+    hostbypassFadeRest = hostbypassFadeRest > 0 ? std::max (0, kFadeSamples - hostbypassFadeRest - 1)
+                                                : kFadeSamples;
+    hostbypassZiel = wunsch;
+}
+
 void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSamples) noexcept
 {
-    if ((size_t) numSamples > dryL.size()) { letzteKanaele = numKanaele; return; }   // nur bei freigegebenem Kern
+    // Unvorbereitet: kein Sample gelesen oder geschrieben, und die
+    // Hostbypass-Stufe hat nichts zu blenden - sie steht sofort auf ihrem
+    // Ziel (NAK-312 Etappe 7b, M-107).
+    if ((size_t) numSamples > dryL.size()) { letzteKanaele = numKanaele; hostbypassFadeRest = 0; return; }   // nur bei freigegebenem Kern
     const size_t n     = (size_t) numSamples;
     const size_t bytes = n * sizeof (double);
 
@@ -1351,10 +1394,13 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
     if (committedRuht)
     {
         // Der Uebergang der Hoermatrix hat hier nichts zu blenden - beide
-        // Seiten waeren der unveraenderte Eingang.
+        // Seiten waeren der unveraenderte Eingang. Dasselbe gilt fuer die
+        // Hostbypass-Stufe: sie steht sofort auf ihrem Ziel (NAK-312 Etappe
+        // 7b, M-99) - in keinem Eintritt wird ein Sample geschrieben.
         hoerLaufend  = wirksam;
         hoerVorher   = wirksam;
         hoerFadeRest = 0;
+        hostbypassFadeRest = 0;
         beendeHoerHalt();   // X-1: die Hoermatrix mischt jetzt keinen Candidate mehr
         return;
     }
@@ -1471,6 +1517,21 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
             schreibBis = std::min (schreibBis, std::max ({ cUebergangsEnde, cRampenEnde, (size_t) std::max (0, hoerFadeRest) }));
     }
 
+    // NAK-312 Etappe 7b (T3-01-09; U48, U58; Weg K-B): die HOSTBYPASS-STUFE,
+    // hinter den Taps und hinter der Hoermatrix. Gerechnet wird oben und in
+    // der Schleife wie ohne sie - Hoermatrix-Fade, Verengung und Zaehler
+    // laufen ueber dieselben Samples -; die Stufe entscheidet allein, was in
+    // den Puffer geht. Sie blendet linear zwischen dem Ausgang des Kerns und
+    // dem Eingang, mit dem Gewicht des Ziels 1 - Rest / kFadeSamples wie jeder
+    // Uebergang des Kerns; an Sample 0 einer neuen Blende (Gewicht 0) steht
+    // allein die Quelle, ohne Rechnung. Zum Eingang hin endet das Schreiben
+    // EXAKT am Blendenende, auch mitten im Stueck (W-1): danach wird kein
+    // Sample geschrieben, kein float -> double -> float-Ruecklauf. Wo der Kern
+    // selbst nicht schreibt (Neutralpruefung, W-1), ist sein Ausgang der
+    // Eingang - dort hat auch die Stufe nichts zu blenden.
+    const int    hbRest       = hostbypassFadeRest;
+    const size_t hbSchreibBis = hostbypassZiel ? std::min (schreibBis, (size_t) std::max (0, hbRest)) : schreibBis;
+
     for (size_t i = 0; i < schreibBis; ++i)
     {
         double l = 0.0, r = 0.0;
@@ -1498,14 +1559,43 @@ void DspKern::verarbeiteStueck (float* const* kanaele, int numKanaele, int numSa
         // und der Eingangsriegel oben hat ihn bereits gezaehlt.
         float fl = (float) l;
         if (! std::isfinite (fl) && std::isfinite (l)) { fl = 0.0f; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
-        kanaele[0][i] = fl;
+        float fr = 0.0f;
         if (numKanaele > 1)
         {
-            float fr = (float) r;
+            fr = (float) r;
             if (! std::isfinite (fr) && std::isfinite (r)) { fr = 0.0f; zaehlerEingaenge.fetch_add (1, std::memory_order_relaxed); }
-            kanaele[1][i] = fr;
         }
+
+        // Die Stufe: nach dem Blendenende zum Eingang hin schreibt sie nichts.
+        if (i >= hbSchreibBis)
+            continue;
+        const int rest = hbRest - (int) i;
+        if (rest > 0)
+        {
+            const double t = 1.0 - (double) rest / (double) kFadeSamples;   // Gewicht des Ziels
+            if (hostbypassZiel)
+            {
+                if (t > 0.0)   // zum Eingang hin; an Sample 0 allein der Kern
+                {
+                    fl = (float) ((double) fl * (1.0 - t) + dryL[i] * t);
+                    fr = (float) ((double) fr * (1.0 - t) + dryR[i] * t);
+                }
+            }
+            else
+            {
+                if (t <= 0.0)  // zum Kern hin; an Sample 0 allein der Eingang - der Puffer bleibt unberuehrt
+                    continue;
+                fl = (float) (dryL[i] * (1.0 - t) + (double) fl * t);
+                fr = (float) (dryR[i] * (1.0 - t) + (double) fr * t);
+            }
+        }
+
+        kanaele[0][i] = fl;
+        if (numKanaele > 1)
+            kanaele[1][i] = fr;
     }
+    // Die Blende zaehlt SAMPLES, nie Stuecke oder Bloecke (M-98).
+    hostbypassFadeRest = std::max (0, hbRest - numSamples);
 
     if (passthroughErreicht)
     {

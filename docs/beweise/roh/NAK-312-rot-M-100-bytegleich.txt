@@ -1,0 +1,56 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-100-bytegleich.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-100 (T3-01-09, Grundgesetz, Zahlenrand NaN, +-Inf, Subnormals), Bytegleichhaelfte, Etikett Regressionswache.
+Zusage: jedes Sample kommt nach der Blende bytegleich heraus, auch unter FTZ und DAZ: kein Ruecklauf float -> double -> float in den Puffer.
+Bein: A16 EqCopProbeeqNullTest, Fall 312/M-100 hostbypass_nach_der_blende_bytegleich (bytegleich).
+Mutation an der Zusagezeile: in DspKern::verarbeiteStueck nach dem Blendenende den Eingang aus dryL und dryR zurueckschreiben, wie es die Hoermatrix Dry tut.
+Erwartetes Rot: Subnormals fallen unter FTZ, die Wachmarke wird ruhig - M-100 (bytegleich) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:00:31) ==
+Bau Exit 0 (2026-09-23 10:00:31 bis 2026-09-23 10:00:31), Ziele: EqCopProbeeqNullTest
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:31); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:00:32) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-DspKern.cpp-100032587
+
+== 2. Mutation (2026-09-23 10:00:32) ==
+Datei eq-copilot/plugin/dsp/DspKern.cpp, ab Zeile 1569
+-- vorher:
+   |         // Die Stufe: nach dem Blendenende zum Eingang hin schreibt sie nichts.
+   |         if (i >= hbSchreibBis)
+   |             continue;
+-- nachher:
+   |         // Die Stufe: nach dem Blendenende zum Eingang hin schreibt sie nichts.
+   |         if (i >= hbSchreibBis)
+   |         {
+   |             kanaele[0][i] = (float) dryL[i];   // ROTBEWEIS M-100 (bytegleich): der Eingang aus dryL zurueckgeschrieben, wie die Hoermatrix Dry
+   |             if (numKanaele > 1) kanaele[1][i] = (float) dryR[i];
+   |             continue;
+   |         }
+SHA-256 mutiert: 9704F9F92D4B630BD4042F6D2D1FAA4DB44BBE6FE528B81DD7156FF1897F8D1A  eq-copilot/plugin/dsp/DspKern.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:00:32) ==
+Bau Exit 0 (2026-09-23 10:00:32 bis 2026-09-23 10:00:35), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:35.217, juengste mutierte Quelle DspKern.cpp 10:00:32.621, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 1 (2026-09-23 10:00:35); Zeilen mit ok: 141; Zeilen mit FEHLER/ROT: 4
+  FEHLER  312/M-94 hostbypass_blendet_weich_und_endet_bitgleich (U48 'weich', [SONDE-015] M-06, E-31): Aufbau HB, 40 Bloecke processBlock, dann 60 Bloecke processBlockBypassed - die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Bypassblocks mit dem trockenen Anteil n/256, der Nachbarsprung liegt an jedem Sample innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zum Eingang - Gleichwert, Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, 0 abweichende Samples ueber die uebrigen 59 Bypassbloecke  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; ab Sample 256 abweichend: Gleichwert 0, Rauschen und Material 649]
+  FEHLER  312/M-100 hostbypass_nach_der_blende_bytegleich (bytegleich; CLAUDE.md Grundgesetz, [SONDE-015] M-05): der Hostbypass steht seit mehr als 256 Samples, 40 Bypassbloecke mit dem Bitmustermaterial unter FTZ und DAZ - jedes Sample kommt bytegleich heraus, auch Subnormals, +-0 und die Wachmarke 0x7F800001: nach der Blende gibt es keinen Ruecklauf float -> double -> float in den Puffer  [440 abweichende Samples, 0 von 120 Wachmarken und 320 von 640 Musterstellen bytegleich]
+  FEHLER  312/M-106 hostbypass_ueber_prepare (starten<->stoppen, CLAUDE.md Grundgesetz): der erste Block nach prepareToPlay uebernimmt den Zustand seines Eintritts ohne Blende - ueber processBlockBypassed ab Sample 0 bytegleich zum Eingang, im Hostbypass nach der Blende, mitten in der Blende (Bloecke zu 64) und beim Projektladen mit gebypasstem Slot (frische Instanz, Stand geladen, erster Block ueber den Bypasseintritt): kein Ausblenden des verarbeiteten Pfades am Strombeginn  [im Hostbypass 80, mitten in der Blende 0, Projektladen 80 abweichend; geladener Stand eq_enabled an]
+  FEHLER  312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft jeder Block in beiden Eintritten unberuehrt durch - 10 Bypass, 10 normal, 10 Bypass mit Rauschen, Bitmuster, Wachmarke, NaN und +-Inf bytegleich, kein Zaehler steigt; nach prepareToPlay ist der erste Bypassblock ab Sample 0 bytegleich (M-106)  [ohne Vorbereitung 0 abweichend, Zaehler still; nach prepareToPlay 110 abweichend]
+   SONDE-NULLTEST FEHLGESCHLAGEN - 141 Pruefungen ok, 4 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-100 hostbypass_nach_der_blende_bytegleich (bytegleich'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:00:36) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:00:36.027
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:00:36) ==
+Bau Exit 0 (2026-09-23 10:00:36 bis 2026-09-23 10:00:38), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:38.622, juengste mutierte Quelle DspKern.cpp 10:00:36.027, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:38); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

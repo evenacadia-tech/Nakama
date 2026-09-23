@@ -1,0 +1,64 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-94.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-94 (T3-01-09, U48 "weich", Eintritt), Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-94.txt).
+Zusage: die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Bypassblocks mit t = n/256 innerhalb der E-31-Schranke; ab Sample 256 schreibt der Kern nichts.
+Bein: A16 EqCopProbeeqNullTest, Fall 312/M-94 hostbypass_blendet_weich_und_endet_bitgleich; B6 EqCopDspGoldenTest, Fall 312/M-94k (Kernhaelfte).
+Mutation an der Zusagezeile: in DspKern::uebernimmHostbypass die Laenge einer neuen Blende zum Eingang hin (Wunsch ja) auf 0 setzen.
+Erwartetes Rot: die Stufe steht ab Sample 0 auf dem Eingang, der Ausgang springt um rund 0,25 - M-94 und M-94k rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 09:58:08) ==
+Bau Exit 0 (2026-09-23 09:58:08 bis 2026-09-23 09:58:14), Ziele: EqCopProbeeqNullTest EqCopDspGoldenTest
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 09:58:14); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Lauf B6 EqCopDspGoldenTest Exit 0 (2026-09-23 09:58:15); Zeilen mit ok: 393; Zeilen mit FEHLER/ROT: 0
+   393 geprueft, 0 Fehler
+   DSP-GOLDEN OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 09:58:21) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-DspKern.cpp-095821413
+
+== 2. Mutation (2026-09-23 09:58:21) ==
+Datei eq-copilot/plugin/dsp/DspKern.cpp, ab Zeile 1234
+-- vorher:
+   |     hostbypassFadeRest = hostbypassFadeRest > 0 ? std::max (0, kFadeSamples - hostbypassFadeRest - 1)
+   |                                                 : kFadeSamples;
+-- nachher:
+   |     hostbypassFadeRest = hostbypassFadeRest > 0 ? std::max (0, kFadeSamples - hostbypassFadeRest - 1)
+   |                                                 : (wunsch ? 0 : kFadeSamples);   // ROTBEWEIS M-94: die Blende zum Eingang hin ist 0 Samples lang
+SHA-256 mutiert: 1270ADAF0A3850069E719E56E25E7E99FB2F7D56F2FE02EF464973BF2109ED34  eq-copilot/plugin/dsp/DspKern.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 09:58:21) ==
+Bau Exit 0 (2026-09-23 09:58:21 bis 2026-09-23 09:58:25), Ziele: EqCopProbeeqNullTest EqCopDspGoldenTest
+Binary EqCopProbeeqNullTest.exe 09:58:24.531, juengste mutierte Quelle DspKern.cpp 09:58:21.448, Binary juenger: True
+Binary EqCopDspGoldenTest.exe 09:58:25.341, juengste mutierte Quelle DspKern.cpp 09:58:21.448, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 1 (2026-09-23 09:58:25); Zeilen mit ok: 142; Zeilen mit FEHLER/ROT: 3
+  FEHLER  312/M-94 hostbypass_blendet_weich_und_endet_bitgleich (U48 'weich', [SONDE-015] M-06, E-31): Aufbau HB, 40 Bloecke processBlock, dann 60 Bloecke processBlockBypassed - die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Bypassblocks mit dem trockenen Anteil n/256, der Nachbarsprung liegt an jedem Sample innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zum Eingang - Gleichwert, Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, 0 abweichende Samples ueber die uebrigen 59 Bypassbloecke  [Blende: groesste Abweichung von der linearen Mischung 0.248815566301 (Toleranz 2^-23), groesster Nachbarsprung 0.248815566, Schranke 0.000972055; ab Sample 256 abweichend: Gleichwert 0, Rauschen und Material 0]
+  FEHLER  312/M-97 Teilfall am Prozessor hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5): Aufbau HB, Bloecke zu 64 (1,33 ms), Eintritte normal, Bypass, Bypass, normal, Bypass, normal, dann 20 normal - kehrt der Wunsch in der Blende um, laeuft sie vom Mischstand zurueck: an keinem Sample liegt der Nachbarsprung ueber der E-31-Schranke, und hoechstens 256 Samples nach dem letzten Wechsel ist der Ausgang bitgleich zu R  [groesster Nachbarsprung 0.248815566, Schranke 0.000972055, letzte Abweichung von R 255 Samples nach dem letzten Wechsel]
+  FEHLER  312/M-105 hostbypass_ueber_reset (spaeterer Wechsel): der Wechsel auf processBlock nach 40 Bypassbloecken blendet wieder 256 Samples innerhalb der E-31-Schranke und ist danach bitgleich zu R (dasselbe reset() am selben Blockrand); die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen dabei nicht. Vorbedingung des zweiten Falls: vor dem reset() lief die Blende  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; danach abweichend von R 0; Zaehler still; erster Bypassblock vor dem reset() 0 abweichend]
+   SONDE-NULLTEST FEHLGESCHLAGEN - 142 Pruefungen ok, 3 Fehler
+Lauf B6 EqCopDspGoldenTest Exit 1 (2026-09-23 09:58:26); Zeilen mit ok: 390; Zeilen mit FEHLER/ROT: 3
+  FEHLER  312/M-94k hostbypass_blendet_und_schreibt_danach_nicht (Kernhaelfte von 312/M-94; U48, [SONDE-015] M-06, E-31, W-1): Aufbau HB am Kern, 40 Bloecke mit dem Wunsch nein, dann ja - die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Blocks mit dem trockenen Anteil n/256 innerhalb der E-31-Schranke, und danach schreibt der Kern keinen Sample: 20 Bloecke mit Wachmarke, NaN, +-Inf, Subnormals und -0 kommen bytegleich heraus  [Abweichung von der linearen Mischung 0.248815566301, groesster Sprung 0.248815566 (Schranke 0.000972055), danach 0 abweichende Samples, Wachmarken bytegleich 40 von 40]
+  FEHLER  312/M-97 hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5, M-55): Bloecke zu 64, Wuensche nein, ja, ja, nein, ja, nein und 20 nein - kehrt der Wunsch um, waehrend die Blende laeuft, laeuft sie vom aktuellen Mischstand zurueck: an keinem Sample, auch an keinem der drei Umkehrsamples, liegt der Nachbarsprung ueber der E-31-Schranke, und nach dem letzten Wechsel endet die Blende nach hoechstens 256 Samples; danach ist der Ausgang bitgleich zu einem Kern ohne Hostbypass  [groesster Sprung 0.248815566, an den Umkehrsamples 0.000000000000 (Schranke 0.000972055), letzte Abweichung von R 255 Samples nach dem letzten Wechsel]
+  FEHLER  312/M-98 hostbypass_blende_zaehlt_samples (Blende; U48, [SONDE-015] M-06): bei Blockgroesse 1, 64, 256 und 4096 (maxBlock 256 - der Kern stueckelt) und 4096 bei maxBlock 100 (die Blende kreuzt zwei Stueckgrenzen) dauert sie genau 256 Samples, gezaehlt in Samples, nie in Bloecken: hinein und hinaus liegt die letzte Abweichung vom Ziel an Sample 255, jedes Sample folgt der linearen Mischung n/256, und der Nachbarsprung haelt die E-31-Schranke - bei Blockgroesse 1 ueber 256 Bloecke, bei 4096 ueber die Stueckgrenzen hinweg  [Block 1 (maxBlock 256): letzte Abweichung -1 / 255, Sprung 0.248815566 / 0.000971943 FEHLER; Block 64 (maxBlock 256): letzte Abweichung -1 / 255, Sprung 0.248815566 / 0.000971943 FEHLER; Block 256 (maxBlock 256): letzte Abweichung -1 / 255, Sprung 0.248815566 / 0.000971943 FEHLER; Block 4096 (maxBlock 256): letzte Abweichung -1 / 255, Sprung 0.248815566 / 0.000971943 FEHLER; Block 4096 (maxBlock 100): letzte Abweichung -1 / 255, Sprung 0.248815566 / 0.000971943 FEHLER; ]
+   393 geprueft, 3 Fehler
+   DSP-GOLDEN FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-94 hostbypass'): JA
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-94k'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 09:58:32) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 09:58:32.082
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 09:58:32) ==
+Bau Exit 0 (2026-09-23 09:58:32 bis 2026-09-23 09:58:35), Ziele: EqCopProbeeqNullTest EqCopDspGoldenTest
+Binary EqCopProbeeqNullTest.exe 09:58:34.921, juengste mutierte Quelle DspKern.cpp 09:58:32.082, Binary juenger: True
+Binary EqCopDspGoldenTest.exe 09:58:35.719, juengste mutierte Quelle DspKern.cpp 09:58:32.082, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 09:58:35); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Lauf B6 EqCopDspGoldenTest Exit 0 (2026-09-23 09:58:36); Zeilen mit ok: 393; Zeilen mit FEHLER/ROT: 0
+   393 geprueft, 0 Fehler
+   DSP-GOLDEN OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

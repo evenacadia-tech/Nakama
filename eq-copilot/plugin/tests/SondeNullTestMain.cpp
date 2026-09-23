@@ -49,6 +49,20 @@
     demselben Zustand (311/M-62). Der Kanalwunsch `channel_mode` bleibt dabei
     im bestaetigten Zustand und in den Statebytes, ohne Revision und ohne
     Host-Dirty (311/M-63).
+    Seit NAK-312 Etappe 7b, Satz 2 (T3-01-09, Karten U48 und U58, Weg E1 mit
+    K-B; Abschnitt 16) der zweite Eintritt `processBlockBypassed`, den der
+    VST3-Wrapper bei gesetztem Bypassparameter statt `processBlock` ruft: die
+    Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten
+    Bypassblocks mit dem Anteil n/256, zurueck ebenso, der Nachbarsprung liegt
+    an jedem Sample innerhalb der E-31-Schranke, auch wenn der Wunsch in der
+    Blende umkehrt; danach ist der Ausgang bytegleich zum Eingang (Rauschen,
+    Bitmuster, Wachmarke, NaN, +-Inf), nach dem Austritt bitgleich zu einem
+    Prozessor ohne Hostbypass. Die Analyse bekommt je Block genau einen
+    Analyseblock, der Tap post_committed ist bitgleich zu dem ohne Hostbypass,
+    und der Riegel zaehlt wie ohne ihn (M-94 bis M-97, M-100). Mit eq_enabled
+    aus, im Hard-Bypass und unvorbereitet schreibt kein Eintritt, die Analyse
+    laeuft wie in processBlock (M-99, M-107); nach reset() und prepareToPlay
+    uebernimmt der erste Block seinen Eintritt ohne Blende (M-105, M-106).
     Ein eingeschalteter resonanter Filter klingt naturgemaess aus; das ist
     kein Tail im Sinne des Hostvertrags, und dieses Bein behauptet dazu
     nichts.
@@ -365,6 +379,677 @@ Nulllauf fahreNull (Prozessor& p, int bloecke, juce::Random& wuerfel, std::int64
         if (p.getLatencySamples() != 0) l.latenzNull = false;
     }
     return l;
+}
+
+//==============================================================================
+// NAK-312 Etappe 7b, Satz 2 (T3-01-09; Karten U48 "Weich + Messung laeuft"
+// und U58 "Filter laufen weiter"; Weg E1 mit K-B; Manifest §46.1, §47.3):
+// der Hostbypass der Probeeq.
+//
+// Der Test ruft selbst den Eintritt, den der VST3-Wrapper waehlt -
+// `processBlock` oder `processBlockBypassed` - und baut die Weiche des
+// Wrappers nicht nach (Bauartefakt, juce_audio_plugin_client_VST3.cpp
+// :3906-3909). R heisst ein zweiter Prozessor mit identischem Stand, der nur
+// `processBlock` bekommt. Aufbau HB: 48 kHz, eq_enabled an, Band 0 Bell 1 kHz
+// +12 dB Q 10, Output-Trim +6 dB, committet; jeder Lauf schwingt vor dem
+// ersten Wechsel mindestens 40 Bloecke zu 256 Samples ein.
+namespace hb
+{
+constexpr double kFs    = 48000.0;
+constexpr int    kBlock = 256;
+constexpr int    kBlend = nakama::dsp::kFadeSamples;   // 256 Samples, gezaehlt in Samples
+/// Gleichwert der Sprungpruefungen: die Bell laesst ihn unveraendert, der Trim
+/// hebt ihn auf rund 0,4988 - ohne Blende spraenge der Ausgang um rund 0,25.
+constexpr float  kDc = 0.25f;
+/// E-31 (W-4): die Rundungstoleranz einer Nachbarsample-Differenz am
+/// float-Ausgang, 2^-23.
+constexpr double kRundung = 1.0 / 8388608.0;
+
+enum class Ein { normal, bypass };
+
+std::vector<Ein> folge (std::initializer_list<std::pair<int, Ein>> teile)
+{
+    std::vector<Ein> f;
+    for (const auto& [anzahl, e] : teile)
+        for (int i = 0; i < anzahl; ++i)
+            f.push_back (e);
+    return f;
+}
+
+/// Aufbau HB; `commit` meldet, ob die Transaktion angenommen wurde.
+std::unique_ptr<Prozessor> aufbau (int maxBlock, bool& commit)
+{
+    auto p = vorbereitet (kFs, maxBlock);
+    auto z = p->bestaetigterZustand();
+    z.werte[(size_t) param::kIndexEqEnabled].b = true;
+    setzeHoerbaresBand (z);
+    z.werte[(size_t) iBand (0, param::kQ)].zahl = 10.0;
+    z.werte[(size_t) iGlobal ("v1.global.output_trim_db")].zahl = 6.0;
+    commit = setze (*p, z).ausgang == tx::Ausgang::commit;
+    return p;
+}
+
+/// Ein float aus seinem Bitmuster, zur Laufzeit gelesen (Muster B6
+/// `ausBitmuster`): eine konstantgefaltete Wachmarke waere schon ruhig, bevor
+/// der Prozessor sie sieht.
+float ausBits (std::uint32_t bits) noexcept
+{
+    volatile std::uint32_t fluechtig = bits;
+    const std::uint32_t gelesen = fluechtig;
+    float f = 0.0f;
+    std::memcpy (&f, &gelesen, sizeof (f));
+    return f;
+}
+
+/// Zustandsloses Rauschen in [-0,8; 0,8): derselbe Wert fuer dieselbe Saat,
+/// denselben Kanal und denselben Index - P und R bekommen denselben Eingang.
+float rauschwert (std::uint64_t saat, int k, std::size_t n) noexcept
+{
+    std::uint64_t z = saat * 0x9E3779B97F4A7C15ull + (std::uint64_t) (k + 1) * 0xD1B54A32D192ED03ull
+                    + (std::uint64_t) n;
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    z ^= z >> 31;
+    return (float) ((double) (z >> 11) * (1.0 / 9007199254740992.0) * 1.6 - 0.8);
+}
+
+/// Der Eingang eines Laufs je Kanal und Index der Spur: der Gleichwert fuer die
+/// Sprungpruefungen, sonst Rauschen. `material` legt in jeden Block zu 256 an
+/// die Stellen 8 bis 15 die acht Bitmuster aus NAK-311 §6.1 (Subnormals, +-0,
+/// kleinste Normale), `nichtEndlich` an die sechs Stellen aus 311/M-11
+/// Wachmarke, ruhigen NaN und +-Inf.
+struct Eingang
+{
+    bool          dc = false;
+    std::uint64_t saat = 0;
+    bool          material = false;
+    bool          nichtEndlich = false;
+
+    float operator() (int k, std::size_t n) const noexcept
+    {
+        if (dc)
+            return kDc;
+        const int imBlock = (int) (n % (std::size_t) kBlock);
+        if (material && imBlock >= 8 && imBlock < 8 + (int) std::size (kBitmuster))
+            return ausBits (kBitmuster[imBlock - 8]);
+        if (nichtEndlich)
+            for (const auto& w : kNichtEndlich)
+                if (w.versatz == imBlock && w.kanal == k)
+                    return ausBits (w.bits);
+        return rauschwert (saat, k, n);
+    }
+};
+
+/// Eingang und Ausgang eines Laufs je Kanal, in Laufreihenfolge.
+struct Spur
+{
+    std::vector<float> ein[2], aus[2];
+    std::size_t laenge() const noexcept { return aus[0].size(); }
+};
+
+/// Faehrt die Eintritte `f` in Bloecken zu `groesse` und haengt an `s` an. Ein-
+/// und Ausgang werden bitweise aus dem Puffer kopiert.
+void fahre (Prozessor& p, const std::vector<Ein>& f, int groesse, const Eingang& quelle, Spur& s)
+{
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> b (2, groesse);
+    for (const auto e : f)
+    {
+        const std::size_t n0 = s.laenge();
+        for (int k = 0; k < 2; ++k)
+            for (int i = 0; i < groesse; ++i)
+                b.setSample (k, i, quelle (k, n0 + (std::size_t) i));
+        for (int k = 0; k < 2; ++k)
+            s.ein[k].insert (s.ein[k].end(), b.getReadPointer (k), b.getReadPointer (k) + groesse);
+        if (e == Ein::bypass) p.processBlockBypassed (b, midi);
+        else                  p.processBlock (b, midi);
+        for (int k = 0; k < 2; ++k)
+            s.aus[k].insert (s.aus[k].end(), b.getReadPointer (k), b.getReadPointer (k) + groesse);
+    }
+}
+
+/// Samples im Bereich [von, bis) beider Kanaele, deren Bits in `a` und `b`
+/// verschieden sind.
+std::int64_t abweichend (const std::vector<float> (&a)[2], const std::vector<float> (&b)[2],
+                         std::size_t von, std::size_t bis)
+{
+    std::int64_t n = 0;
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t i = von; i < bis && i < a[k].size() && i < b[k].size(); ++i)
+            if (std::memcmp (&a[k][i], &b[k][i], sizeof (float)) != 0)
+                ++n;
+    return n;
+}
+
+/// Die letzte Stelle im Bereich [von, bis), an der `a` und `b` verschieden
+/// sind, relativ zu `von`; -1, wenn keine.
+std::int64_t letzteAbweichung (const std::vector<float> (&a)[2], const std::vector<float> (&b)[2],
+                               std::size_t von, std::size_t bis)
+{
+    std::int64_t letzte = -1;
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t i = von; i < bis && i < a[k].size() && i < b[k].size(); ++i)
+            if (std::memcmp (&a[k][i], &b[k][i], sizeof (float)) != 0)
+                letzte = std::max (letzte, (std::int64_t) (i - von));
+    return letzte;
+}
+
+/// Die Blende an [start, start + 256): Sample n traegt
+/// quelle * (1 - n/256) + ziel * n/256 - linear wie jeder Uebergang des Kerns,
+/// bis auf die float-Rundung -, und der Nachbarsprung von Sample start - 1 bis
+/// start + 256 liegt innerhalb der E-31-Schranke: Fadeschrittweite
+/// |ziel - quelle| / 256 plus 2^-23. Aussagekraeftig mit dem Gleichwert.
+struct Blende
+{
+    double groessteAbweichung = 0.0, groessterSprung = 0.0, schranke = 0.0;
+    bool   endlich = true;
+
+    bool ok() const noexcept
+    {
+        return endlich && groessteAbweichung <= kRundung && groessterSprung <= schranke;
+    }
+    juce::String text() const
+    {
+        return "Blende: groesste Abweichung von der linearen Mischung " + juce::String (groessteAbweichung, 12)
+             + " (Toleranz 2^-23), groesster Nachbarsprung " + juce::String (groessterSprung, 9) + ", Schranke "
+             + juce::String (schranke, 9) + (endlich ? "" : ", NICHT ENDLICH");
+    }
+};
+
+Blende blende (const Spur& s, const std::vector<float> (&quelle)[2], const std::vector<float> (&ziel)[2],
+               std::size_t start)
+{
+    Blende b;
+    if (start + (std::size_t) kBlend >= s.laenge())
+    {
+        b.endlich = false;
+        return b;
+    }
+    double schritt = 0.0;
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t n = 0; n < (std::size_t) kBlend; ++n)
+            schritt = std::max (schritt, std::abs ((double) ziel[k][start + n] - (double) quelle[k][start + n])
+                                             / (double) kBlend);
+    b.schranke = schritt + kRundung;
+    for (int k = 0; k < 2; ++k)
+    {
+        for (std::size_t n = 0; n < (std::size_t) kBlend; ++n)
+        {
+            const std::size_t i = start + n;
+            const double t = (double) n / (double) kBlend;
+            const double soll = (double) quelle[k][i] * (1.0 - t) + (double) ziel[k][i] * t;
+            const double d = std::abs ((double) s.aus[k][i] - soll);
+            if (! std::isfinite (d)) b.endlich = false;
+            else b.groessteAbweichung = std::max (b.groessteAbweichung, d);
+        }
+        for (std::size_t n = 0; n <= (std::size_t) kBlend; ++n)
+        {
+            const std::size_t i = start + n;
+            if (i == 0)
+                continue;
+            const double d = std::abs ((double) s.aus[k][i] - (double) s.aus[k][i - 1]);
+            if (! std::isfinite (d)) b.endlich = false;
+            else b.groessterSprung = std::max (b.groessterSprung, d);
+        }
+    }
+    return b;
+}
+
+/// Die Blockzaehlung der Analysequeue (StampedAudioQueue.h:574-584): ueber
+/// Audio - angenommen oder wegen Ueberlauf und Uebergroesse verworfen - und
+/// ohne Audio verbucht.
+struct Zaehlung
+{
+    std::uint64_t ueberAudio = 0, ohneAudio = 0;
+    std::uint64_t summe() const noexcept { return ueberAudio + ohneAudio; }
+};
+
+template <typename Queue>
+Zaehlung zaehle (const Queue& q)
+{
+    return { q.bloeckeAngenommen() + q.dropsUeberlauf() + q.dropsOversize(), q.dropsOhneAudio() };
+}
+
+juce::String zahl (std::int64_t n) { return juce::String (n); }
+} // namespace hb
+
+/// Abschnitt 16 als eigene Funktion - ein eigener Stackrahmen neben `main`
+/// (Muster A3, `MarkierungTestMain.cpp`).
+void nak312Hostbypass()
+{
+    using hb::Ein;
+    const int blk = hb::kBlock;
+
+    // ── 312/M-94 und 312/M-95: Eintritt und Austritt ────────────────────────
+    // Gleichwert fuer Form und Sprung der Blende; dieselbe Folge mit Rauschen,
+    // Bitmuster, Wachmarke, NaN und +-Inf fuer die Bitgleichheit danach.
+    {
+        bool cp = false, cr = false, cp2 = false, cr2 = false;
+        auto p  = hb::aufbau (blk, cp);
+        auto r  = hb::aufbau (blk, cr);
+        auto p2 = hb::aufbau (blk, cp2);
+        auto r2 = hb::aufbau (blk, cr2);
+        const auto folgeP = hb::folge ({ { 40, Ein::normal }, { 60, Ein::bypass }, { 60, Ein::normal } });
+        const auto folgeR = hb::folge ({ { 160, Ein::normal } });
+        hb::Eingang dc;
+        dc.dc = true;
+        hb::Eingang rausch;
+        rausch.saat = 9401;
+        rausch.material = true;
+        rausch.nichtEndlich = true;
+        hb::Spur sp, sr, sp2, sr2;
+        hb::fahre (*p, folgeP, blk, dc, sp);
+        hb::fahre (*r, folgeR, blk, dc, sr);
+        hb::fahre (*p2, folgeP, blk, rausch, sp2);
+        hb::fahre (*r2, folgeR, blk, rausch, sr2);
+        const std::size_t eintritt = 40u * (std::size_t) blk, austritt = 100u * (std::size_t) blk,
+                          ende = 160u * (std::size_t) blk;
+
+        const auto rein = hb::blende (sp, sr.aus, sp.ein, eintritt);
+        const auto nachReinDc = hb::abweichend (sp.aus, sp.ein, eintritt + hb::kBlend, austritt);
+        const auto nachReinRausch = hb::abweichend (sp2.aus, sp2.ein, eintritt + hb::kBlend, austritt);
+        pruefe (cp && cr && cp2 && cr2 && rein.ok() && nachReinDc == 0 && nachReinRausch == 0,
+                "312/M-94 hostbypass_blendet_weich_und_endet_bitgleich (U48 'weich', [SONDE-015] M-06, E-31): Aufbau HB, "
+                "40 Bloecke processBlock, dann 60 Bloecke processBlockBypassed - die Blende nach trocken laeuft ueber die "
+                "Samples 0 bis 255 des ersten Bypassblocks mit dem trockenen Anteil n/256, der Nachbarsprung liegt an "
+                "jedem Sample innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zum Eingang - "
+                "Gleichwert, Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, 0 abweichende Samples ueber die uebrigen 59 "
+                "Bypassbloecke",
+                rein.text() + "; ab Sample 256 abweichend: Gleichwert " + hb::zahl (nachReinDc) + ", Rauschen und Material "
+                    + hb::zahl (nachReinRausch));
+
+        const auto raus = hb::blende (sp, sp.ein, sr.aus, austritt);
+        const auto nachRausDc = hb::abweichend (sp.aus, sr.aus, austritt + hb::kBlend, ende);
+        const auto nachRausRausch = hb::abweichend (sp2.aus, sr2.aus, austritt + hb::kBlend, ende);
+        pruefe (cp && cr && cp2 && cr2 && raus.ok() && nachRausDc == 0 && nachRausRausch == 0,
+                "312/M-95 hostbypass_austritt_blendet_weich (U48, U58 Weg K-B, [SONDE-015] E-31): nach den 60 "
+                "Bypassbloecken wieder processBlock - die Blende zurueck laeuft ueber die Samples 0 bis 255 mit dem "
+                "verarbeiteten Anteil n/256 innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zu "
+                "R: die Filter liefen im Hostbypass durch, es gibt kein Einschwingen - auch nach Rauschen und Material im "
+                "Hostbypass",
+                raus.text() + "; ab Sample 256 abweichend von R: Gleichwert " + hb::zahl (nachRausDc)
+                    + ", Rauschen und Material " + hb::zahl (nachRausRausch));
+    }
+
+    // ── 312/M-96: Probeeq misst im Hostbypass weiter ────────────────────────
+    // Der Analyseworker steht, das Bein liest die Queue selbst; P und R
+    // bekommen dasselbe Rauschen im Gleichschritt, nach jedem Bypassblock
+    // werden die Taps post_committed verglichen.
+    {
+        bool cp = false, cr = false;
+        auto p = hb::aufbau (blk, cp);
+        auto r = hb::aufbau (blk, cr);
+        hb::Eingang rausch;
+        rausch.saat = 9601;
+        const auto f = hb::folge ({ { 40, Ein::normal }, { 60, Ein::bypass }, { 40, Ein::normal } });
+        hb::Zaehlung vorBypass, nachBypass, amEnde;
+        int tapBloecke = 0, tapAbweichend = 0;
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> bp (2, blk), br (2, blk);
+        p->mitAngehaltenerAnalyseFuerTest ([&] (auto& q)
+        {
+            for (std::size_t b = 0; b < f.size(); ++b)
+            {
+                if (b == 40)
+                    vorBypass = hb::zaehle (q);
+                for (int k = 0; k < 2; ++k)
+                    for (int i = 0; i < blk; ++i)
+                    {
+                        const float x = rausch (k, b * (std::size_t) blk + (std::size_t) i);
+                        bp.setSample (k, i, x);
+                        br.setSample (k, i, x);
+                    }
+                if (f[b] == Ein::bypass) p->processBlockBypassed (bp, midi);
+                else                     p->processBlock (bp, midi);
+                r->processBlock (br, midi);
+                if (f[b] == Ein::bypass)
+                {
+                    ++tapBloecke;
+                    auto& kp = p->dspKernFuerTest();
+                    auto& kr = r->dspKernFuerTest();
+                    bool gleich = kp.tapLaenge() == blk && kr.tapLaenge() == blk;
+                    for (int k = 0; k < 2 && gleich; ++k)
+                    {
+                        const double* tp = kp.tap (nakama::dsp::Tap::postCommitted, k);
+                        const double* tr = kr.tap (nakama::dsp::Tap::postCommitted, k);
+                        gleich = tp != nullptr && tr != nullptr
+                              && std::memcmp (tp, tr, (std::size_t) blk * sizeof (double)) == 0;
+                    }
+                    if (! gleich)
+                        ++tapAbweichend;
+                }
+                if (b == 99)
+                    nachBypass = hb::zaehle (q);
+            }
+            amEnde = hb::zaehle (q);
+        });
+        const auto imBypass = (std::int64_t) (nachBypass.ueberAudio - vorBypass.ueberAudio);
+        const auto ohneAudio = (std::int64_t) (nachBypass.ohneAudio - vorBypass.ohneAudio);
+        const auto danach = (std::int64_t) (amEnde.summe() - nachBypass.summe());
+        pruefe (cp && cr && imBypass == 60 && ohneAudio == 0 && danach == 40,
+                "312/M-96 hostbypass_misst_weiter (Kadenz; U48 'Probeeq misst im Hostbypass weiter'): jeder Block, auch "
+                "jeder der 60 Bypassbloecke, stellt genau einen Analyseblock an die Queue - bloeckeAngenommen() + "
+                "dropsUeberlauf() + dropsOversize() steigt ueber die Bypassbloecke um genau 60, dropsOhneAudio() um 0; "
+                "ueberlast verwirft Analyse, nie Audio",
+                "ueber Audio im Hostbypass +" + hb::zahl (imBypass) + ", ohne Audio +" + hb::zahl (ohneAudio)
+                    + ", in den 40 Bloecken danach +" + hb::zahl (danach));
+        pruefe (cp && cr && tapBloecke == 60 && tapAbweichend == 0,
+                "312/M-96 hostbypass_misst_weiter (Inhalt, Weg K-B, U58, [SONDE-015] M-57): der Tap post_committed ist "
+                "in jedem Bypassblock bitgleich zu dem von R - die Analyse misst den bestaetigten Zustand, die Stufe "
+                "liegt hinter den Taps",
+                hb::zahl (tapAbweichend) + " von " + hb::zahl (tapBloecke) + " Bypassbloecken mit abweichendem Tap");
+    }
+
+    // ── 312/M-97 Teilfall am Prozessor: an und aus schneller als die Blende ──
+    {
+        const int b64 = 64;
+        bool cp = false, cr = false;
+        auto p = hb::aufbau (blk, cp);
+        auto r = hb::aufbau (blk, cr);
+        hb::Eingang dc;
+        dc.dc = true;
+        hb::Spur sp, sr;
+        hb::fahre (*p, hb::folge ({ { 200, Ein::normal } }), b64, dc, sp);
+        hb::fahre (*r, hb::folge ({ { 200, Ein::normal } }), b64, dc, sr);
+        const std::size_t start = sp.laenge();
+        hb::fahre (*p, hb::folge ({ { 1, Ein::normal }, { 2, Ein::bypass }, { 1, Ein::normal }, { 1, Ein::bypass },
+                                    { 1, Ein::normal }, { 20, Ein::normal } }), b64, dc, sp);
+        hb::fahre (*r, hb::folge ({ { 26, Ein::normal } }), b64, dc, sr);
+        const std::size_t letzterWechsel = start + 5u * (std::size_t) b64;
+        double schritt = 0.0, sprung = 0.0;
+        bool endlich = true;
+        for (int k = 0; k < 2; ++k)
+            for (std::size_t i = start; i < sp.laenge(); ++i)
+            {
+                schritt = std::max (schritt, std::abs ((double) sr.aus[k][i] - (double) sp.ein[k][i]) / (double) hb::kBlend);
+                const double d = std::abs ((double) sp.aus[k][i] - (double) sp.aus[k][i - 1]);
+                if (! std::isfinite (d)) endlich = false;
+                else sprung = std::max (sprung, d);
+            }
+        const auto letzte = hb::letzteAbweichung (sp.aus, sr.aus, letzterWechsel, sp.laenge());
+        pruefe (cp && cr && endlich && sprung <= schritt + hb::kRundung && letzte < (std::int64_t) hb::kBlend,
+                "312/M-97 Teilfall am Prozessor hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5): Aufbau HB, "
+                "Bloecke zu 64 (1,33 ms), Eintritte normal, Bypass, Bypass, normal, Bypass, normal, dann 20 normal - kehrt "
+                "der Wunsch in der Blende um, laeuft sie vom Mischstand zurueck: an keinem Sample liegt der Nachbarsprung "
+                "ueber der E-31-Schranke, und hoechstens 256 Samples nach dem letzten Wechsel ist der Ausgang bitgleich "
+                "zu R",
+                "groesster Nachbarsprung " + juce::String (sprung, 9) + ", Schranke " + juce::String (schritt + hb::kRundung, 9)
+                    + ", letzte Abweichung von R " + hb::zahl (letzte) + " Samples nach dem letzten Wechsel");
+    }
+
+    // ── 312/M-99: EQ aus, Hard-Bypass, unvorbereitet ────────────────────────
+    // In keinem der drei Faelle schreibt der Kern einen Sample, gleich ueber
+    // welchen Eintritt; die Analyse laeuft in beiden Eintritten wie heute in
+    // processBlock - in (a) und (b) ueber den Tap, in (c) ohne Tap.
+    {
+        struct Fall
+        {
+            std::int64_t abweichend = -1;
+            bool zaehlerStill = false, analyseJeBlock = false;
+            juce::String text;
+        };
+        const auto fahreFall = [blk] (Prozessor& p, const char* name)
+        {
+            Fall fall;
+            hb::Eingang material;
+            material.saat = 9901;
+            material.material = true;
+            material.nichtEndlich = true;
+            auto& kern = p.dspKernFuerTest();
+            const auto ne0 = kern.nichtEndlicheEingaenge(), gh0 = kern.geheilteFilterzustaende();
+            hb::Spur s;
+            hb::Zaehlung z0, z1, z2, z3;
+            p.mitAngehaltenerAnalyseFuerTest ([&] (auto& q)
+            {
+                z0 = hb::zaehle (q);
+                hb::fahre (p, hb::folge ({ { 10, Ein::normal } }), blk, material, s);
+                z1 = hb::zaehle (q);
+                hb::fahre (p, hb::folge ({ { 20, Ein::bypass } }), blk, material, s);
+                z2 = hb::zaehle (q);
+                hb::fahre (p, hb::folge ({ { 10, Ein::normal } }), blk, material, s);
+                z3 = hb::zaehle (q);
+            });
+            fall.abweichend = hb::abweichend (s.aus, s.ein, 0, s.laenge());
+            fall.zaehlerStill = kern.nichtEndlicheEingaenge() == ne0 && kern.geheilteFilterzustaende() == gh0;
+            const auto d1 = (std::int64_t) (z1.summe() - z0.summe()), d2 = (std::int64_t) (z2.summe() - z1.summe()),
+                       d3 = (std::int64_t) (z3.summe() - z2.summe());
+            fall.analyseJeBlock = d1 == 10 && d2 == 20 && d3 == 10;
+            fall.text = juce::String (name) + ": " + hb::zahl (fall.abweichend) + " abweichende Samples, Zaehler "
+                      + (fall.zaehlerStill ? "still" : "BEWEGT") + ", Analysebloecke 10 normal +" + hb::zahl (d1)
+                      + ", 20 Bypass +" + hb::zahl (d2) + ", 10 normal +" + hb::zahl (d3);
+            return fall;
+        };
+
+        auto pa = vorbereitet (hb::kFs, blk);                  // (a) Default: eq_enabled aus
+        auto pb = vorbereitet (hb::kFs, blk);                  // (b) eq an, v1.global.bypass an, Band dahinter
+        auto zb = pb->bestaetigterZustand();
+        zb.werte[(size_t) param::kIndexEqEnabled].b = true;
+        zb.werte[(size_t) iGlobal ("v1.global.bypass")].b = true;
+        setzeHoerbaresBand (zb);
+        const bool cb = setze (*pb, zb).ausgang == tx::Ausgang::commit;
+        bool cc = false;                                       // (c) Aufbau HB, dann releaseResources()
+        auto pc = hb::aufbau (blk, cc);
+        {
+            hb::Eingang dc;
+            dc.dc = true;
+            hb::Spur vorher;
+            hb::fahre (*pc, hb::folge ({ { 4, Ein::normal } }), blk, dc, vorher);
+        }
+        pc->releaseResources();
+
+        const auto fa = fahreFall (*pa, "(a) Default");
+        const auto fb = fahreFall (*pb, "(b) Hard-Bypass");
+        const auto fc = fahreFall (*pc, "(c) unvorbereitet");
+        pruefe (cb && cc && fa.abweichend == 0 && fb.abweichend == 0 && fc.abweichend == 0
+                    && fa.zaehlerStill && fb.zaehlerStill && fc.zaehlerStill,
+                "312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit "
+                "eq_enabled aus, im Hard-Bypass und nach releaseResources() ohne neues prepareToPlay ist der Ausgang ueber "
+                "10 Bloecke processBlock, 20 processBlockBypassed und 10 processBlock bytegleich zum Eingang - Rauschen, "
+                "Bitmuster, Wachmarke, NaN und +-Inf -, und die Zaehler fuer nicht endliche Eingaenge und geheilte "
+                "Filterzustaende steigen nicht",
+                fa.text + "; " + fb.text + "; " + fc.text);
+        pruefe (fa.analyseJeBlock && fb.analyseJeBlock && fc.analyseJeBlock,
+                "312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Analyse; R-312-26): die Analyse laeuft in beiden "
+                "Eintritten wie in processBlock - je Block genau ein Analyseblock in bloeckeAngenommen() + "
+                "dropsUeberlauf() + dropsOversize() + dropsOhneAudio(), in (a) und (b) ueber den Tap, in (c) ohne Tap",
+                fa.text + "; " + fb.text + "; " + fc.text);
+    }
+
+    // ── 312/M-100: nach der Blende bytegleich, der Riegel zaehlt weiter ─────
+    {
+        bool cp = false, cr = false;
+        auto p = hb::aufbau (blk, cp);
+        auto r = hb::aufbau (blk, cr);
+        hb::Eingang rausch;
+        rausch.saat = 10001;
+        hb::Spur sp, sr;
+        hb::fahre (*p, hb::folge ({ { 40, Ein::normal }, { 4, Ein::bypass } }), blk, rausch, sp);   // seit 768 Samples im Hostbypass
+        hb::fahre (*r, hb::folge ({ { 44, Ein::normal } }), blk, rausch, sr);
+        const auto np0 = p->dspKernFuerTest().nichtEndlicheEingaenge();
+        const auto nr0 = r->dspKernFuerTest().nichtEndlicheEingaenge();
+        hb::Eingang material;
+        material.saat = 10002;
+        material.material = true;
+        material.nichtEndlich = true;
+        const std::size_t ab = sp.laenge();
+        hb::fahre (*p, hb::folge ({ { 40, Ein::bypass } }), blk, material, sp);
+        hb::fahre (*r, hb::folge ({ { 40, Ein::normal } }), blk, material, sr);
+        const auto abw = hb::abweichend (sp.aus, sp.ein, ab, sp.laenge());
+        int wachmarken = 0, muster = 0;
+        for (int k = 0; k < 2; ++k)
+            for (std::size_t i = ab; i < sp.laenge(); ++i)
+            {
+                const int imBlock = (int) (i % (std::size_t) blk);
+                std::uint32_t bits = 0;
+                std::memcpy (&bits, &sp.aus[k][i], sizeof (bits));
+                if (bits == kWachmarke) ++wachmarken;
+                if (imBlock >= 8 && imBlock < 8 + (int) std::size (kBitmuster) && bits == kBitmuster[imBlock - 8]) ++muster;
+            }
+        const auto dp = (std::int64_t) (p->dspKernFuerTest().nichtEndlicheEingaenge() - np0);
+        const auto dr = (std::int64_t) (r->dspKernFuerTest().nichtEndlicheEingaenge() - nr0);
+        pruefe (cp && cr && abw == 0 && wachmarken == 3 * 40 && muster == 2 * 8 * 40,
+                "312/M-100 hostbypass_nach_der_blende_bytegleich (bytegleich; CLAUDE.md Grundgesetz, [SONDE-015] M-05): "
+                "der Hostbypass steht seit mehr als 256 Samples, 40 Bypassbloecke mit dem Bitmustermaterial unter FTZ und "
+                "DAZ - jedes Sample kommt bytegleich heraus, auch Subnormals, +-0 und die Wachmarke 0x7F800001: nach "
+                "der Blende gibt es keinen Ruecklauf float -> double -> float in den Puffer",
+                hb::zahl (abw) + " abweichende Samples, " + juce::String (wachmarken) + " von 120 Wachmarken und "
+                    + juce::String (muster) + " von 640 Musterstellen bytegleich");
+        pruefe (cp && cr && dr > 0 && dp == dr,
+                "312/M-100 hostbypass_nach_der_blende_bytegleich (Zaehler, Weg K-B, U58): der Nicht-Endlich-Riegel des Kerns "
+                "zaehlt die nicht endlichen Eingaenge im Hostbypass wie ohne ihn, weil der Pfad weiterrechnet - ueber die "
+                "40 Bypassbloecke steigt nichtEndlicheEingaenge() um genau so viel wie bei R",
+                "Hostbypass +" + hb::zahl (dp) + ", R +" + hb::zahl (dr));
+    }
+
+    // ── 312/M-105: reset() im Hostbypass beginnt einen neuen Strom ──────────
+    {
+        bool cp = false, cr = false, cp2 = false;
+        auto p = hb::aufbau (blk, cp);
+        auto r = hb::aufbau (blk, cr);
+        hb::Eingang dc;
+        dc.dc = true;
+        hb::Spur sp, sr;
+        hb::fahre (*p, hb::folge ({ { 40, Ein::normal }, { 4, Ein::bypass } }), blk, dc, sp);
+        hb::fahre (*r, hb::folge ({ { 44, Ein::normal } }), blk, dc, sr);
+        auto& kp = p->dspKernFuerTest();
+        const auto ne0 = kp.nichtEndlicheEingaenge(), gh0 = kp.geheilteFilterzustaende(), vw0 = kp.verworfeneAnalyseframes();
+        p->reset();
+        r->reset();
+        const std::size_t nachReset = sp.laenge();
+        hb::fahre (*p, hb::folge ({ { 40, Ein::bypass } }), blk, dc, sp);
+        hb::fahre (*r, hb::folge ({ { 40, Ein::normal } }), blk, dc, sr);
+        const auto abwNachReset = hb::abweichend (sp.aus, sp.ein, nachReset, sp.laenge());
+        const std::size_t wechsel = sp.laenge();
+        hb::fahre (*p, hb::folge ({ { 40, Ein::normal } }), blk, dc, sp);
+        hb::fahre (*r, hb::folge ({ { 40, Ein::normal } }), blk, dc, sr);
+        const bool zaehlerStill = kp.nichtEndlicheEingaenge() == ne0 && kp.geheilteFilterzustaende() == gh0
+                               && kp.verworfeneAnalyseframes() == vw0;
+        const auto zurueck = hb::blende (sp, sp.ein, sr.aus, wechsel);
+        const auto nachZurueck = hb::abweichend (sp.aus, sr.aus, wechsel + hb::kBlend, sp.laenge());
+
+        // reset() mitten in der Blende: Bloecke zu 64, nach 64 von 256 Samples.
+        auto p2 = hb::aufbau (blk, cp2);
+        hb::Spur s2;
+        hb::fahre (*p2, hb::folge ({ { 200, Ein::normal }, { 1, Ein::bypass } }), 64, dc, s2);
+        const auto imErstenBypassblock = hb::abweichend (s2.aus, s2.ein, s2.laenge() - 64, s2.laenge());
+        p2->reset();
+        const std::size_t ab2 = s2.laenge();
+        hb::fahre (*p2, hb::folge ({ { 10, Ein::bypass } }), 64, dc, s2);
+        const auto abw2 = hb::abweichend (s2.aus, s2.ein, ab2, s2.laenge());
+
+        pruefe (cp && cr && cp2 && abwNachReset == 0 && abw2 == 0,
+                "312/M-105 hostbypass_ueber_reset (bytegleich; starten<->stoppen, NAK-283 R-283-3): nach reset() beginnt "
+                "ein neuer Strom - der erste Block ueber processBlockBypassed uebernimmt seinen Eintritt ohne Blende und "
+                "ist ab Sample 0 bytegleich zum Eingang, nach mehr als 256 Samples Hostbypass wie nach einem reset() "
+                "mitten in der Blende (Bloecke zu 64, 64 von 256 Samples)",
+                "nach reset() im Hostbypass " + hb::zahl (abwNachReset) + " abweichend, nach reset() mitten in der Blende "
+                    + hb::zahl (abw2) + " abweichend");
+        pruefe (cp && cr && cp2 && imErstenBypassblock > 0 && zurueck.ok() && nachZurueck == 0 && zaehlerStill,
+                "312/M-105 hostbypass_ueber_reset (spaeterer Wechsel): der Wechsel auf processBlock nach 40 Bypassbloecken "
+                "blendet wieder 256 Samples innerhalb der E-31-Schranke und ist danach bitgleich zu R (dasselbe reset() "
+                "am selben Blockrand); die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene "
+                "Analyseframes steigen dabei nicht. Vorbedingung des zweiten Falls: vor dem reset() lief die Blende",
+                zurueck.text() + "; danach abweichend von R " + hb::zahl (nachZurueck) + "; Zaehler "
+                    + (zaehlerStill ? "still" : "BEWEGT") + "; erster Bypassblock vor dem reset() "
+                    + hb::zahl (imErstenBypassblock) + " abweichend");
+    }
+
+    // ── 312/M-106: prepareToPlay im Hostbypass beginnt einen neuen Strom ────
+    {
+        hb::Eingang material;
+        material.saat = 10601;
+        material.material = true;
+        hb::Eingang dc;
+        dc.dc = true;
+
+        bool c1 = false;                                       // im Hostbypass, nach der Blende
+        auto p1 = hb::aufbau (blk, c1);
+        hb::Spur s1;
+        hb::fahre (*p1, hb::folge ({ { 40, Ein::normal }, { 4, Ein::bypass } }), blk, material, s1);
+        p1->prepareToPlay (hb::kFs, blk);
+        const std::size_t ab1 = s1.laenge();
+        hb::fahre (*p1, hb::folge ({ { 10, Ein::bypass } }), blk, material, s1);
+        const auto abw1 = hb::abweichend (s1.aus, s1.ein, ab1, s1.laenge());
+
+        bool c2 = false;                                       // mitten in der Blende
+        auto p2 = hb::aufbau (blk, c2);
+        hb::Spur s2;
+        hb::fahre (*p2, hb::folge ({ { 200, Ein::normal }, { 1, Ein::bypass } }), 64, dc, s2);
+        p2->prepareToPlay (hb::kFs, blk);
+        const std::size_t ab2 = s2.laenge();
+        hb::fahre (*p2, hb::folge ({ { 10, Ein::bypass } }), 64, dc, s2);
+        const auto abw2 = hb::abweichend (s2.aus, s2.ein, ab2, s2.laenge());
+
+        bool c3 = false;                                       // Projektladen mit gebypasstem Slot
+        auto quelle = hb::aufbau (blk, c3);
+        juce::MemoryBlock stand;
+        quelle->getStateInformation (stand);
+        auto p3 = std::make_unique<Prozessor>();
+        p3->setStateInformation (stand.getData(), (int) stand.getSize());
+        p3->setRateAndBufferSizeDetails (hb::kFs, blk);
+        p3->prepareToPlay (hb::kFs, blk);
+        const bool geladen = p3->bestaetigterZustand().werte[(size_t) param::kIndexEqEnabled].b;
+        hb::Spur s3;
+        hb::fahre (*p3, hb::folge ({ { 10, Ein::bypass } }), blk, material, s3);
+        const auto abw3 = hb::abweichend (s3.aus, s3.ein, 0, s3.laenge());
+
+        pruefe (c1 && c2 && c3 && geladen && abw1 == 0 && abw2 == 0 && abw3 == 0,
+                "312/M-106 hostbypass_ueber_prepare (starten<->stoppen, CLAUDE.md Grundgesetz): der erste Block nach "
+                "prepareToPlay uebernimmt den Zustand seines Eintritts ohne Blende - ueber processBlockBypassed ab Sample 0 "
+                "bytegleich zum Eingang, im Hostbypass nach der Blende, mitten in der Blende (Bloecke zu 64) und beim "
+                "Projektladen mit gebypasstem Slot (frische Instanz, Stand geladen, erster Block ueber den Bypasseintritt): "
+                "kein Ausblenden des verarbeiteten Pfades am Strombeginn",
+                "im Hostbypass " + hb::zahl (abw1) + ", mitten in der Blende " + hb::zahl (abw2) + ", Projektladen "
+                    + hb::zahl (abw3) + " abweichend; geladener Stand eq_enabled " + (geladen ? "an" : "AUS"));
+    }
+
+    // ── 312/M-107: releaseResources im Hostbypass ───────────────────────────
+    {
+        bool cp = false;
+        auto p = hb::aufbau (blk, cp);
+        hb::Eingang material;
+        material.saat = 10701;
+        material.material = true;
+        material.nichtEndlich = true;
+        hb::Spur s;
+        hb::fahre (*p, hb::folge ({ { 40, Ein::normal }, { 4, Ein::bypass } }), blk, material, s);
+        p->releaseResources();
+        auto& kern = p->dspKernFuerTest();
+        const auto ne0 = kern.nichtEndlicheEingaenge();
+        const std::size_t ab = s.laenge();
+        hb::Zaehlung z0, z1, z2, z3;
+        p->mitAngehaltenerAnalyseFuerTest ([&] (auto& q)
+        {
+            z0 = hb::zaehle (q);
+            hb::fahre (*p, hb::folge ({ { 10, Ein::bypass } }), blk, material, s);
+            z1 = hb::zaehle (q);
+            hb::fahre (*p, hb::folge ({ { 10, Ein::normal } }), blk, material, s);
+            z2 = hb::zaehle (q);
+            hb::fahre (*p, hb::folge ({ { 10, Ein::bypass } }), blk, material, s);
+            z3 = hb::zaehle (q);
+        });
+        const auto abw = hb::abweichend (s.aus, s.ein, ab, s.laenge());
+        const bool zaehlerStill = kern.nichtEndlicheEingaenge() == ne0;
+        p->prepareToPlay (hb::kFs, blk);
+        const std::size_t ab2 = s.laenge();
+        hb::fahre (*p, hb::folge ({ { 10, Ein::bypass } }), blk, material, s);
+        const auto abw2 = hb::abweichend (s.aus, s.ein, ab2, s.laenge());
+        const auto d1 = (std::int64_t) (z1.ueberAudio - z0.ueberAudio), d2 = (std::int64_t) (z2.ueberAudio - z1.ueberAudio),
+                   d3 = (std::int64_t) (z3.ueberAudio - z2.ueberAudio);
+        const auto ohne = (std::int64_t) (z3.ohneAudio - z0.ohneAudio);
+        pruefe (cp && abw == 0 && zaehlerStill && abw2 == 0,
+                "312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft "
+                "jeder Block in beiden Eintritten unberuehrt durch - 10 Bypass, 10 normal, 10 Bypass mit Rauschen, "
+                "Bitmuster, Wachmarke, NaN und +-Inf bytegleich, kein Zaehler steigt; nach prepareToPlay ist der erste "
+                "Bypassblock ab Sample 0 bytegleich (M-106)",
+                "ohne Vorbereitung " + hb::zahl (abw) + " abweichend, Zaehler " + (zaehlerStill ? "still" : "BEWEGT")
+                    + "; nach prepareToPlay " + hb::zahl (abw2) + " abweichend");
+        pruefe (cp && d1 == 10 && d2 == 10 && d3 == 10 && ohne == 0,
+                "312/M-107 hostbypass_ueber_release (Analyse; R-312-26): die Analyse verbucht jeden unvorbereiteten Block in "
+                "beiden Eintritten wie processBlock ueber den Zweig ohne Tap - je Block genau ein Analyseblock ueber Audio",
+                "10 Bypass +" + hb::zahl (d1) + ", 10 normal +" + hb::zahl (d2) + ", 10 Bypass +" + hb::zahl (d3)
+                    + ", ohne Audio +" + hb::zahl (ohne));
+    }
 }
 
 } // namespace
@@ -1837,6 +2522,14 @@ int main()
                         + juce::String (p->dspKernFuerTest().busKanaele()));
         }
     }
+
+    // -- 16. NAK-312 Etappe 7b, Satz 2: der Hostbypass (Weg E1 mit K-B) -------
+    // Manifest NAK-312 §46.1 (312/M-94 bis M-100, M-105 bis M-107), §47.3;
+    // Karten U48 und U58. Der Kern rechnet im Hostbypass weiter; die Stufe
+    // hinter Taps und Hoermatrix blendet den Ausgang in 256 Samples auf den
+    // Eingang und schreibt danach nichts, zurueck ebenso.
+    abschnitt ("16. NAK-312 Etappe 7b 312/M-94 bis M-100, M-105 bis M-107: der Hostbypass (processBlockBypassed)");
+    nak312Hostbypass();
 
     std::cout << std::endl
               << (fehlerZahl == 0 ? "SONDE-NULLTEST OK - " : "SONDE-NULLTEST FEHLGESCHLAGEN - ")

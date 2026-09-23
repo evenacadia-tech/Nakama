@@ -26,7 +26,14 @@
     Steuerphasen sind es 1 bis 8 Samples bis zur ersten und 8 bis 15 bis zur
     vollen Wirkung des ersten Entwurfs, gezaehlt ab dem Sample
     Bezugspunkt - d - erlaubtes Verhalten, gemessen, kein geaendertes
-    Verhalten.
+    Verhalten. Seit NAK-312 Etappe 7b, Satz 2 (T3-01-09, Karten U48 und U58,
+    Weg K-B) Abschnitt S: die Hostbypass-Stufe hinter Taps und Hoermatrix -
+    mit dem Wunsch `hostbypass` blendet sie genau 256 Samples, gezaehlt in
+    Samples bei jeder Blockgroesse, linear innerhalb der E-31-Schranke, und
+    schreibt danach keinen Sample (312/M-94k, 312/M-98); kehrt der Wunsch in
+    der Blende um, laeuft sie vom Mischstand zurueck (312/M-97); mit dem Wunsch
+    nein ist `verarbeite` bitgleich zum Aufruf ohne das Argument - die Vorgabe
+    haelt jedes Golden dieses Beins bytegleich.
 
     WIE DER FILTERGOLDEN MISST - und warum nicht anders (M-13, §5.15):
 
@@ -2579,6 +2586,261 @@ void abschnittR()
     r108();
     r109();
     r110();
+}
+
+//==============================================================================
+// NAK-312 Etappe 7b, Satz 2 (T3-01-09; Karten U48 und U58; Weg E1 mit K-B;
+// Manifest §46.1, §47.3): die Kernhaelften der Hostbypass-Stufe - 312/M-94k
+// (Blende nach trocken, danach schreibt der Kern nichts), 312/M-97 (Umkehr vom
+// Mischstand), 312/M-98 (die Blende zaehlt Samples, nie Bloecke; der Kern
+// sieht nur Bloecke). Der Wunsch kommt ueber das Argument `hostbypass` von
+// `verarbeite`; die Vorgabe "nein" haelt jeden bisherigen Aufrufer bitgleich -
+// alle Goldens dieses Beins rufen ohne das Argument. Gleichwert 0,25 fuer Form
+// und Sprung der Blende: die Bell laesst ihn unveraendert, der Trim hebt ihn
+// auf rund 0,4988.
+
+/// Aufbau HB: eq an, Band 0 Bell 1 kHz +12 dB Q 10, Output-Trim +6 dB.
+param::DspSatz hbSatz()
+{
+    auto s = machSatz (true);
+    belege (s, 0, Filtertyp::bell, 1000.0, 10.0, 12.0);
+    setzeGlobal (s, "v1.global.output_trim_db", 6.0);
+    return s;
+}
+
+struct HbLauf
+{
+    std::vector<float> ein[2], aus[2];
+    std::size_t laenge() const noexcept { return aus[0].size(); }
+};
+
+/// Faehrt je Eintrag von `bypass` einen Block Gleichwert `wert` zu `groesse`
+/// mit diesem Wunsch durch den Kern und haengt Ein- und Ausgang an `l` an.
+/// `material` legt ab Sample 8 jedes Blocks Wachmarke, ruhigen NaN, +-Inf,
+/// Subnormals, -0 und die kleinste Normale; `mitArgument` = false ruft
+/// `verarbeite` ohne das Argument (die Vorgabe).
+void hbFahre (DspKern& k, const std::vector<bool>& bypass, int groesse, float wert, HbLauf& l,
+              bool material = false, bool mitArgument = true)
+{
+    static const std::uint32_t bits[] = { 0x7F800001u, 0x7FC00000u, 0x7F800000u, 0xFF800000u,
+                                          0x00000001u, 0x807FFFFFu, 0x80000000u, 0x00800000u };
+    std::vector<float> a ((size_t) groesse), b ((size_t) groesse);
+    float* kan[2] = { a.data(), b.data() };
+    for (const bool umgangen : bypass)
+    {
+        std::fill (a.begin(), a.end(), wert);
+        std::fill (b.begin(), b.end(), wert);
+        if (material && groesse >= 16)
+            for (int i = 0; i < 8; ++i)
+            {
+                a[(size_t) (8 + i)] = ausBitmuster (bits[i]);
+                b[(size_t) (8 + i)] = ausBitmuster (bits[7 - i]);
+            }
+        l.ein[0].insert (l.ein[0].end(), a.begin(), a.end());
+        l.ein[1].insert (l.ein[1].end(), b.begin(), b.end());
+        if (mitArgument) k.verarbeite (kan, 2, groesse, nullptr, umgangen);
+        else             k.verarbeite (kan, 2, groesse);
+        l.aus[0].insert (l.aus[0].end(), a.begin(), a.end());
+        l.aus[1].insert (l.aus[1].end(), b.begin(), b.end());
+    }
+}
+
+/// Die Blende an [start, start + 256) gegen die lineare Mischung
+/// quelle * (1 - n/256) + ziel * n/256 (float-Rundung), der groesste
+/// Nachbarsprung von start - 1 bis start + 256 und die Schranke von E-31
+/// (Fadeschrittweite |ziel - quelle| / 256 plus 2^-23).
+struct HbBlende { double abweichung = 0.0, sprung = 0.0, schranke = 0.0; bool endlich = true; };
+
+HbBlende hbBlende (const HbLauf& l, const std::vector<float> (&quelle)[2], const std::vector<float> (&ziel)[2],
+                   std::size_t start)
+{
+    HbBlende b;
+    if (start == 0 || start + (std::size_t) kFadeSamples >= l.laenge()) { b.endlich = false; return b; }
+    double schritt = 0.0;
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t n = 0; n < (std::size_t) kFadeSamples; ++n)
+        {
+            const std::size_t i = start + n;
+            schritt = std::max (schritt, std::abs ((double) ziel[k][i] - (double) quelle[k][i]) / (double) kFadeSamples);
+            const double t = (double) n / (double) kFadeSamples;
+            const double d = std::abs ((double) l.aus[k][i] - ((double) quelle[k][i] * (1.0 - t) + (double) ziel[k][i] * t));
+            if (! std::isfinite (d)) b.endlich = false; else b.abweichung = std::max (b.abweichung, d);
+        }
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t i = start; i <= start + (std::size_t) kFadeSamples; ++i)
+        {
+            const double d = std::abs ((double) l.aus[k][i] - (double) l.aus[k][i - 1]);
+            if (! std::isfinite (d)) b.endlich = false; else b.sprung = std::max (b.sprung, d);
+        }
+    b.schranke = schritt + kRundungFloat;
+    return b;
+}
+
+/// Samples in [von, bis) beider Kanaele, deren Bits verschieden sind, und die
+/// letzte solche Stelle relativ zu `von` (-1: keine).
+std::pair<long long, long long> hbAbweichend (const std::vector<float> (&a)[2], const std::vector<float> (&b)[2],
+                                              std::size_t von, std::size_t bis)
+{
+    long long n = 0, letzte = -1;
+    for (int k = 0; k < 2; ++k)
+        for (std::size_t i = von; i < bis && i < a[k].size() && i < b[k].size(); ++i)
+            if (std::memcmp (&a[k][i], &b[k][i], sizeof (float)) != 0)
+            {
+                ++n;
+                letzte = std::max (letzte, (long long) (i - von));
+            }
+    return { n, letzte };
+}
+
+void abschnittS()
+{
+    std::cout << std::endl << "== S - Hostbypass-Stufe (NAK-312 Etappe 7b, Satz 2: 312/M-94k, 312/M-97, 312/M-98) ==" << std::endl;
+    const double fs = 48000.0;
+
+    // ── 312/M-94k: Blende nach trocken, danach schreibt der Kern nichts ─────
+    {
+        auto p = neuerKern (fs, 256);
+        auto r = neuerKern (fs, 256);
+        p->uebernehmeZustand (hbSatz());
+        r->uebernehmeZustand (hbSatz());
+        HbLauf lp, lr;
+        hbFahre (*p, std::vector<bool> (40, false), 256, 0.25f, lp);
+        hbFahre (*r, std::vector<bool> (40, false), 256, 0.25f, lr);
+        const std::size_t eintritt = lp.laenge();
+        hbFahre (*p, std::vector<bool> (1, true), 256, 0.25f, lp);
+        hbFahre (*r, std::vector<bool> (1, false), 256, 0.25f, lr);
+        const std::size_t danach = lp.laenge();
+        hbFahre (*p, std::vector<bool> (20, true), 256, 0.25f, lp, true);
+        hbFahre (*r, std::vector<bool> (20, false), 256, 0.25f, lr);
+        const auto bl = hbBlende (lp, lr.aus, lp.ein, eintritt);
+        const auto nach = hbAbweichend (lp.aus, lp.ein, danach, lp.laenge());
+        long long wachmarken = 0;
+        for (int k = 0; k < 2; ++k)
+            for (std::size_t i = danach; i < lp.laenge(); ++i)
+            {
+                std::uint32_t u = 0;
+                std::memcpy (&u, &lp.aus[k][i], sizeof (u));
+                if (u == 0x7F800001u) ++wachmarken;
+            }
+        pruefe (bl.endlich && bl.abweichung <= kRundungFloat && bl.sprung <= bl.schranke && nach.first == 0 && wachmarken == 40,
+                "312/M-94k hostbypass_blendet_und_schreibt_danach_nicht (Kernhaelfte von 312/M-94; U48, [SONDE-015] M-06, "
+                "E-31, W-1): Aufbau HB am Kern, 40 Bloecke mit dem Wunsch nein, dann ja - die Blende nach trocken laeuft "
+                "ueber die Samples 0 bis 255 des ersten Blocks mit dem trockenen Anteil n/256 innerhalb der E-31-Schranke, "
+                "und danach schreibt der Kern keinen Sample: 20 Bloecke mit Wachmarke, NaN, +-Inf, Subnormals und -0 "
+                "kommen bytegleich heraus",
+                "Abweichung von der linearen Mischung " + zahl (bl.abweichung, 12) + ", groesster Sprung " + zahl (bl.sprung, 9)
+                + " (Schranke " + zahl (bl.schranke, 9) + "), danach " + std::to_string (nach.first)
+                + " abweichende Samples, Wachmarken bytegleich " + std::to_string (wachmarken) + " von 40");
+    }
+
+    // ── 312/M-97: kehrt der Wunsch in der Blende um, laeuft sie vom Mischstand
+    // zurueck (W-5) ────────────────────────────────────────────────────────
+    {
+        auto p = neuerKern (fs, 256);
+        auto r = neuerKern (fs, 256);
+        p->uebernehmeZustand (hbSatz());
+        r->uebernehmeZustand (hbSatz());
+        HbLauf lp, lr;
+        hbFahre (*p, std::vector<bool> (200, false), 64, 0.25f, lp);
+        hbFahre (*r, std::vector<bool> (200, false), 64, 0.25f, lr);
+        const std::size_t start = lp.laenge();
+        std::vector<bool> wechsel { false, true, true, false, true, false };
+        wechsel.resize (wechsel.size() + 20, false);
+        hbFahre (*p, wechsel, 64, 0.25f, lp);
+        hbFahre (*r, std::vector<bool> (wechsel.size(), false), 64, 0.25f, lr);
+        double schritt = 0.0, sprung = 0.0, amUmkehrsample = 0.0;
+        bool endlich = true;
+        for (int k = 0; k < 2; ++k)
+            for (std::size_t i = start; i < lp.laenge(); ++i)
+            {
+                schritt = std::max (schritt, std::abs ((double) lr.aus[k][i] - (double) lp.ein[k][i]) / (double) kFadeSamples);
+                const double d = std::abs ((double) lp.aus[k][i] - (double) lp.aus[k][i - 1]);
+                if (! std::isfinite (d)) { endlich = false; continue; }
+                sprung = std::max (sprung, d);
+                const std::size_t block = (i - start) / 64u;
+                if ((i - start) % 64u == 0 && (block == 3 || block == 4 || block == 5))
+                    amUmkehrsample = std::max (amUmkehrsample, d);
+            }
+        const std::size_t letzterWechsel = start + 5u * 64u;
+        const auto nach = hbAbweichend (lp.aus, lr.aus, letzterWechsel, lp.laenge());
+        pruefe (endlich && sprung <= schritt + kRundungFloat && nach.second < (long long) kFadeSamples && nach.second >= 0,
+                "312/M-97 hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5, M-55): Bloecke zu 64, Wuensche nein, "
+                "ja, ja, nein, ja, nein und 20 nein - kehrt der Wunsch um, waehrend die Blende laeuft, laeuft sie vom "
+                "aktuellen Mischstand zurueck: an keinem Sample, auch an keinem der drei Umkehrsamples, liegt der "
+                "Nachbarsprung ueber der E-31-Schranke, und nach dem letzten Wechsel endet die Blende nach hoechstens 256 "
+                "Samples; danach ist der Ausgang bitgleich zu einem Kern ohne Hostbypass",
+                "groesster Sprung " + zahl (sprung, 9) + ", an den Umkehrsamples " + zahl (amUmkehrsample, 12) + " (Schranke "
+                + zahl (schritt + kRundungFloat, 9) + "), letzte Abweichung von R " + std::to_string (nach.second)
+                + " Samples nach dem letzten Wechsel");
+    }
+
+    // ── 312/M-98: die Blende dauert 256 SAMPLES bei jeder Blockgroesse ───────
+    {
+        struct Fall { int groesse; int maxBlock; };
+        const Fall faelle[] = { { 1, 256 }, { 64, 256 }, { 256, 256 }, { 4096, 256 }, { 4096, 100 } };
+        bool alle = true;
+        std::string text;
+        for (const auto& f : faelle)
+        {
+            auto p = neuerKern (fs, f.maxBlock);
+            auto r = neuerKern (fs, f.maxBlock);
+            p->uebernehmeZustand (hbSatz());
+            r->uebernehmeZustand (hbSatz());
+            HbLauf lp, lr;
+            const int vor = std::max (2, (10240 + f.groesse - 1) / f.groesse);
+            const int umgangen = std::max (1, (1024 + f.groesse - 1) / f.groesse);
+            hbFahre (*p, std::vector<bool> ((size_t) vor, false), f.groesse, 0.25f, lp);
+            hbFahre (*r, std::vector<bool> ((size_t) vor, false), f.groesse, 0.25f, lr);
+            const std::size_t eintritt = lp.laenge();
+            hbFahre (*p, std::vector<bool> ((size_t) umgangen, true), f.groesse, 0.25f, lp);
+            hbFahre (*r, std::vector<bool> ((size_t) umgangen, false), f.groesse, 0.25f, lr);
+            const std::size_t austritt = lp.laenge();
+            hbFahre (*p, std::vector<bool> ((size_t) umgangen, false), f.groesse, 0.25f, lp);
+            hbFahre (*r, std::vector<bool> ((size_t) umgangen, false), f.groesse, 0.25f, lr);
+            const auto rein = hbBlende (lp, lr.aus, lp.ein, eintritt);
+            const auto raus = hbBlende (lp, lp.ein, lr.aus, austritt);
+            // Genau 256 Samples: das letzte Sample, das nicht dem Ziel gleicht, ist Sample 255.
+            const auto nachRein = hbAbweichend (lp.aus, lp.ein, eintritt, austritt);
+            const auto nachRaus = hbAbweichend (lp.aus, lr.aus, austritt, lp.laenge());
+            const bool ok = rein.endlich && raus.endlich && rein.abweichung <= kRundungFloat && raus.abweichung <= kRundungFloat
+                         && rein.sprung <= rein.schranke && raus.sprung <= raus.schranke
+                         && nachRein.second == (long long) kFadeSamples - 1 && nachRaus.second == (long long) kFadeSamples - 1;
+            alle = alle && ok;
+            text += "Block " + std::to_string (f.groesse) + " (maxBlock " + std::to_string (f.maxBlock) + "): letzte Abweichung "
+                  + std::to_string (nachRein.second) + " / " + std::to_string (nachRaus.second) + ", Sprung " + zahl (rein.sprung, 9)
+                  + " / " + zahl (raus.sprung, 9) + (ok ? "" : " FEHLER") + "; ";
+        }
+        pruefe (alle,
+                "312/M-98 hostbypass_blende_zaehlt_samples (Blende; U48, [SONDE-015] M-06): bei Blockgroesse 1, 64, 256 und "
+                "4096 (maxBlock 256 - der Kern stueckelt) und 4096 bei maxBlock 100 (die Blende kreuzt zwei Stueckgrenzen) "
+                "dauert sie genau 256 Samples, gezaehlt in Samples, nie in Bloecken: hinein und hinaus liegt die letzte "
+                "Abweichung vom Ziel an Sample 255, jedes Sample folgt der linearen Mischung n/256, und der Nachbarsprung "
+                "haelt die E-31-Schranke - bei Blockgroesse 1 ueber 256 Bloecke, bei 4096 ueber die Stueckgrenzen hinweg",
+                text);
+
+        // BLOCKRAND: der Kern sieht nur Bloecke - der Wunsch ist ein Argument je
+        // Aufruf, einen Wechsel innerhalb eines Blocks gibt es fuer ihn nicht.
+        // Mit dem Wunsch nein ist jeder Block bitgleich zu einem Aufruf ohne das
+        // Argument (die Vorgabe). Messend, ohne eigene Mutation (E-312-12).
+        bool gleich = true;
+        for (const int g : { 1, 64, 256, 4096 })
+        {
+            auto a = neuerKern (fs, 256);
+            auto b = neuerKern (fs, 256);
+            a->uebernehmeZustand (hbSatz());
+            b->uebernehmeZustand (hbSatz());
+            HbLauf la, lb;
+            const int n = std::max (4, 16384 / g);
+            hbFahre (*a, std::vector<bool> ((size_t) n, false), g, 0.25f, la, true, true);
+            hbFahre (*b, std::vector<bool> ((size_t) n, false), g, 0.25f, lb, true, false);
+            gleich = gleich && la.laenge() == lb.laenge() && hbAbweichend (la.aus, lb.aus, 0, la.laenge()).first == 0;
+        }
+        pruefe (gleich,
+                "312/M-98 hostbypass_blende_zaehlt_samples (Blockrand, messend; E-312-12): der Kern sieht nur Bloecke - "
+                "verarbeite mit dem Wunsch nein ist bei 1, 64, 256 und 4096 Samples je Block bitgleich zu verarbeite ohne "
+                "das Argument; Samplegenauigkeit innerhalb eines Blocks wird nicht zugesagt (FL meldet "
+                "sample_accurate_automation nicht)");
+    }
 }
 
 } // namespace
@@ -9467,6 +9729,9 @@ int main()
 
     //==========================================================================
     abschnittR();
+
+    //==========================================================================
+    abschnittS();
 
     //==========================================================================
     std::cout << std::endl;

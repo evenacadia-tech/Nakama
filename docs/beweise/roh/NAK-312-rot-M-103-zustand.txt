@@ -1,0 +1,70 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-103-zustand.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-103 (T3-01-09, speichern<->laden, State, Hash, Revision, Host-Dirty), Zustandshaelfte, Etikett Regressionswache.
+Zusage: die Statebytes sind vorher und nachher bytegleich, state_hash, Revision und Undo-Ring gleich, 0 Host-Dirty-Meldungen.
+Bein: B7 EqCopTransactionTest, Fall 312/M-103 hostbypass_beruehrt_den_zustand_nicht (Zustand).
+Mutation an der Zusagezeile: den Hostbypass als Transaktion auf v1.global.bypass fuehren (Weg E3): processBlockBypassed committet v1.global.bypass = an.
+Erwartetes Rot: Revision, Hash und Statebytes aendern sich, Host-Dirty - M-103 (Zustand) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:01:52) ==
+Bau Exit 0 (2026-09-23 10:01:52 bis 2026-09-23 10:01:53), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:53); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:01:55) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100155769
+
+== 2. Mutation (2026-09-23 10:01:55) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 522
+-- vorher:
+   |     const nakama::dsp::RtWache::Bereich wache;
+   |     verarbeiteBlock (puffer, true);
+-- nachher:
+   |     const nakama::dsp::RtWache::Bereich wache;
+   |     {
+   |         // ROTBEWEIS M-103 (Zustand, Weg E3): der Hostbypass als Transaktion auf v1.global.bypass
+   |         const int b = nakama::parameter::indexVonId ("v1.global.bypass");
+   |         auto satz = bestaetigterZustand();
+   |         if (! satz.werte[(size_t) b].b)
+   |         {
+   |             satz.werte[(size_t) b].b = true;
+   |             nakama::transaktion::Auftrag a;
+   |             a.tid          = neueTid();
+   |             a.baseRevision = stateRevision();
+   |             a.art          = nakama::transaktion::Art::apply;
+   |             a.satz         = satz;
+   |             fuehreTransaktionAus (a);
+   |         }
+   |     }
+   |     verarbeiteBlock (puffer, true);
+SHA-256 mutiert: 56C7BA2E444D18394DDE546FF45B03401B2EEDF3C1AEA9B0D58FE5D196AEF661  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:01:55) ==
+Bau Exit 0 (2026-09-23 10:01:55 bis 2026-09-23 10:02:01), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:01.426, juengste mutierte Quelle SondeProcessor.cpp 10:01:55.803, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:02:01); Zeilen mit ok: 256; Zeilen mit FEHLER/ROT: 6
+  FEHLER  312/M-101 (a) hostbypass_ist_echtzeitfest: wache_beginnt_am_bypasseintritt (R-312-1, [SONDE-015] M-47): Aufbau HB mit Testplayhead, 200 Bloecke ueber processBlockBypassed - RtWache::sperren() zaehlt genau 200, eine je Block an der Playhead-Stelle vor der Stempelbildung, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 200 bei 200 Playhead-Aufrufen, RtWache::allokationen 1337, eigener Zaehler 1337]
+  FEHLER  312/M-101 (b) hostbypass_ist_echtzeitfest (R-312-1, [SONDE-015] M-47, M-51, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Eintrittswechseln alle 37 Bloecke, Hostautomation aus einem zweiten Thread, Programmwechseln, reset(), releaseResources() und prepareToPlay mitten im Lauf - RtWache::sperren() und RtWache::allokationen() bleiben in beiden Eintritten 0, die gemeldete Latenz 0 Samples und getTailLengthSeconds() 0,0  [RtWache::sperren 0, RtWache::allokationen 13372, eigener Zaehler 13372, Eintrittswechsel 109, Bypassbloecke 2002, Programme 9, Hostschreibrunden waehrend der Bloecke 746093, Latenz 0 ja]
+  FEHLER  312/M-103 hostbypass_beruehrt_den_zustand_nicht (Zustand; speichern<->laden, §7.7, CLAUDE.md State): ueber 40 Bloecke processBlock, 20 Hostpunkte auf Output-Trim, 60 Bloecke processBlockBypassed und 40 Bloecke processBlock sind die Statebytes vorher und nachher bytegleich, state_hash, Revision und Undo-Ring gleich, 0 Host-Dirty-Meldungen  [Statebytes VERSCHIEDEN, Revision 1 -> 2, Undo 1 -> 2, Dirty 1]
+  FEHLER  312/M-104 hostbypass_offline_gleich_echtzeit (b) ([SONDE-015] M-120, R-312-3, R-312-29): Bloecke zu 64, B bis zum ersten Bypassblock in Echtzeit, setNonRealtime (true) vor dem zweiten Bypassblock - mitten in der Blende; A (Echtzeit) und B sind bitgleich, die Blende ist auch offline 256 Samples lang und weich (E-31): der Wechsel nach offline stellt allein die Hoermatrix hart und laesst die Hostbypass-Blende weiterlaufen  [(b): A gegen B 0 abweichend, groesster Nachbarsprung in B 0.001940042 (Schranke 0.000972055), zwischen Blendenende und Austritt 0 nicht trocken, B offline ja]
+  FEHLER  312/M-104 hostbypass_offline_gleich_echtzeit (c) ([SONDE-015] M-120, R-312-3): B mit setNonRealtime (true) vor jedem Block - A und B sind bitgleich, die Blende zaehlt Samples, nie Wandzeit  [(c): A gegen B 0 abweichend, groesster Nachbarsprung in B 0.001940042 (Schranke 0.000972055), zwischen Blendenende und Austritt 0 nicht trocken, B offline ja]
+  FEHLER  312/M-108 hostbypass_haelt_keine_bank ([SONDE-015] M-44, E-17; aktivieren<->abklingen): im Hostbypass nach der Blende vier Transaktionen - Band aendern, Band entfernen, EQ aus und wieder an -, je ein Kontrolltakt und 20 Bloecke processBlockBypassed: der Kern nimmt die Programme am Blockrand wie ohne Hostbypass, nach der Folge und einem Takt sind genau so viele Baenke frei wie bei R, der Ausgang bleibt bytegleich zum Eingang, und nach dem Austritt klingt der zuletzt bestaetigte Stand (ab Sample 256 bitgleich zu R)  [freie Baenke 3 (R 3), im Hostbypass 0 abweichend vom Eingang, nach dem Austritt 9728 abweichend von R, Commits alle]
+   262 geprueft, 6 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-103 hostbypass_beruehrt_den_zustand_nicht (Zustand'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:02:03) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:02:03.678
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:02:03) ==
+Bau Exit 0 (2026-09-23 10:02:03 bis 2026-09-23 10:02:09), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:09.497, juengste mutierte Quelle SondeProcessor.cpp 10:02:03.678, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:02:09); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

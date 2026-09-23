@@ -18,7 +18,11 @@
 //    er beim ersten erlaubten Block neu - seit der Nacharbeit 1 (R-312-33) am
 //    ersten Block allein gemessen, nicht an der Summe. Seit Etappe 7b, Satz 3
 //    (U49, 312/M-118): der Rollenwechsel nimmt den Auftrag zurueck und laesst
-//    den Bestand des Hauptprogramms stehen.
+//    den Bestand des Hauptprogramms stehen. Seit Etappe 7b, Satz 2 (312/M-109,
+//    Grenzzeile): Gens Hostbypass bleibt die JUCE-Basis - kein Quelltext unter
+//    src/ nennt processBlockBypassed oder getBypassParameter, im Hostbypass geht
+//    der Puffer unveraendert durch, ohne Ereignis, danach faerbt der Auftrag
+//    ohne neues begin weiter.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "HoerMarkierung.h"
@@ -2376,6 +2380,73 @@ static void nak312M65 (const Pruefer& pruefe, double fs, int bs)
                 + " Byte, Dirty " + juce::String (dirty.nichtParameter.load()));
 }
 
+/** 312/M-109 (NAK-312 Etappe 7b, Satz 2; T3-01-09, Gens Haelfte): die
+    GRENZZEILE. Die Antwort U48 bindet Probeeq, nicht Gen (Manifest §45.1
+    "Welcher Prozessor gebunden ist"); Gens Hostbypass bleibt die JUCE-Basis,
+    wie heute. Die Zeile setzt kein Soll, sie haelt die Grenze fest: kein
+    Quelltext unter eq-copilot/plugin/src/ nennt `processBlockBypassed` oder
+    `getBypassParameter`, `getBypassParameter()` liefert nullptr, und im
+    Hostbypass geht der Puffer unveraendert durch - `processBlock` laeuft nicht,
+    keine Faerbung, kein Ereignis, das offene Interventionsintervall bleibt
+    offen; danach faerbt der Auftrag weiter, ohne neues begin. */
+static void nak312M109 (const Pruefer& pruefe, double fs, int bs)
+{
+    auto wurzel = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    while (wurzel.exists() && ! wurzel.getChildFile ("eq-copilot").isDirectory())
+    {
+        const auto oben = wurzel.getParentDirectory();
+        if (oben == wurzel) break;
+        wurzel = oben;
+    }
+    const auto src = wurzel.getChildFile ("eq-copilot/plugin/src");
+    int dateien = 0;
+    juce::String treffer;
+    if (src.isDirectory())
+        for (const auto& f : src.findChildFiles (juce::File::findFiles, true, "*.cpp;*.h"))
+        {
+            ++dateien;
+            const auto text = f.loadFileAsString();
+            for (const char* wort : { "processBlockBypassed", "getBypassParameter" })
+                if (text.contains (wort))
+                    treffer << f.getFileName() << ": " << wort << "; ";
+        }
+
+    nak312::Stand s (fs, bs);
+    nak312::Ernte vorher;
+    const bool klingt = nak312::klingtInMain (s, "M-109", vorher);
+    const bool ohneBypassParameter = s.p->getBypassParameter() == nullptr;
+    int umgangenAbweichend = 0;
+    for (int b = 0; b < 20; ++b)
+    {
+        for (int k = 0; k < 2; ++k)
+            for (int i = 0; i < bs; ++i)
+                s.puffer.setSample (k, i, nak312::kGleich);
+        s.kopie.makeCopyOf (s.puffer);
+        s.transport->vorBlock (bs);
+        s.p->processBlockBypassed (s.puffer, s.midi);
+        s.transport->weiter (bs);
+        if (! blockBitgleich (s.puffer, s.kopie))
+            ++umgangenAbweichend;
+    }
+    s.letztes = nak312::kGleich;
+    const auto imBypass = s.ernte();
+    const auto danach = s.bloecke (40);
+    const auto nachher = s.ernte();
+    pruefe (src.isDirectory() && dateien >= 10 && treffer.isEmpty() && ohneBypassParameter && klingt
+                && umgangenAbweichend == 0 && imBypass.begins == 0 && imBypass.ends == 0
+                && danach.abweichend == 40 && danach.hoerbar == 40 && nachher.begins == 0 && nachher.ends == 0,
+            "312/M-109 gen_hostbypass_bleibt_juce_basis (Grenzzeile, nicht Gegenstand der Antwort U48; Manifest NAK-312 "
+            "§45.1) - kein Quelltext unter eq-copilot/plugin/src/ nennt processBlockBypassed oder getBypassParameter, "
+            "getBypassParameter() liefert nullptr, und mit hoerbarem Auftrag in Main geht der Puffer ueber 20 Bloecke "
+            "processBlockBypassed unveraendert durch, ohne Ereignis - das offene Intervall bleibt offen; danach faerbt "
+            "der Auftrag in 40 Bloecken processBlock weiter, ohne neues begin und ohne end",
+            juce::String (dateien) + " Dateien" + (treffer.isEmpty() ? juce::String (", kein Treffer") : ", Treffer: " + treffer)
+                + ", getBypassParameter " + (ohneBypassParameter ? "nullptr" : "GESETZT") + ", Hostbypass "
+                + juce::String (umgangenAbweichend) + " von 20 Bloecken abweichend, " + nak312::ereignisText (imBypass)
+                + "; danach " + juce::String (danach.abweichend) + " von 40 gefaerbt, hoerbar " + juce::String (danach.hoerbar)
+                + ", " + nak312::ereignisText (nachher));
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
@@ -2547,6 +2618,7 @@ int main()
     nak312M62 (pruefer, fs, bs);
     nak312M64 (pruefer, fs, bs);
     nak312M65 (pruefer, fs, bs);
+    nak312M109 (pruefer, fs, bs);
 
     // ── T9: Puls — Ruhephase praktisch identisch, Schwellphase hörbar ──────
     {

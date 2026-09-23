@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-96-inhalt.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-96 (T3-01-09, U48 "Probeeq misst im Hostbypass weiter"), Inhaltshaelfte Weg K-B (E-312-27), Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-96.txt).
+Zusage: der Tap post_committed ist in jedem Bypassblock bitgleich zu dem von R.
+Bein: A16 EqCopProbeeqNullTest, Fall 312/M-96 hostbypass_misst_weiter (Inhalt, Weg K-B).
+Mutation an der Zusagezeile: in DspKern::verarbeiteStueck die Stufe vor die Taps legen: im Hostbypass traegt der Committed-Ausgang und damit der Tap den Eingang.
+Erwartetes Rot: der Tap traegt den Eingang und weicht vom Tap von R ab - M-96 (Inhalt) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 09:59:06) ==
+Bau Exit 0 (2026-09-23 09:59:06 bis 2026-09-23 09:59:06), Ziele: EqCopProbeeqNullTest
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 09:59:06); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 09:59:07) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-DspKern.cpp-095907585
+
+== 2. Mutation (2026-09-23 09:59:07) ==
+Datei eq-copilot/plugin/dsp/DspKern.cpp, ab Zeile 1379
+-- vorher:
+   |     // --- Taps ------------------------------------------------------------
+   |     if (tapPlatz)
+-- nachher:
+   |     if (hostbypassZiel)   // ROTBEWEIS M-96 (Inhalt, K-B): die Stufe vor den Taps - im Hostbypass traegt post_committed den Eingang
+   |     {
+   |         std::memcpy (cAusL.data(), dryL.data(), bytes);
+   |         std::memcpy (cAusR.data(), dryR.data(), bytes);
+   |     }
+   |     // --- Taps ------------------------------------------------------------
+   |     if (tapPlatz)
+SHA-256 mutiert: 4BCA4A64616B650B2D68AE46FEACCCBE1A9529383370A957D62B52E107CAF457  eq-copilot/plugin/dsp/DspKern.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 09:59:07) ==
+Bau Exit 0 (2026-09-23 09:59:07 bis 2026-09-23 09:59:10), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 09:59:10.414, juengste mutierte Quelle DspKern.cpp 09:59:07.620, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 1 (2026-09-23 09:59:10); Zeilen mit ok: 141; Zeilen mit FEHLER/ROT: 4
+  FEHLER  312/M-94 hostbypass_blendet_weich_und_endet_bitgleich (U48 'weich', [SONDE-015] M-06, E-31): Aufbau HB, 40 Bloecke processBlock, dann 60 Bloecke processBlockBypassed - die Blende nach trocken laeuft ueber die Samples 0 bis 255 des ersten Bypassblocks mit dem trockenen Anteil n/256, der Nachbarsprung liegt an jedem Sample innerhalb der E-31-Schranke, und ab Sample 256 ist der Ausgang bitgleich zum Eingang - Gleichwert, Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, 0 abweichende Samples ueber die uebrigen 59 Bypassbloecke  [Blende: groesste Abweichung von der linearen Mischung 0.248815566301 (Toleranz 2^-23), groesster Nachbarsprung 0.248815566, Schranke 0.000972055; ab Sample 256 abweichend: Gleichwert 0, Rauschen und Material 0]
+  FEHLER  312/M-96 hostbypass_misst_weiter (Inhalt, Weg K-B, U58, [SONDE-015] M-57): der Tap post_committed ist in jedem Bypassblock bitgleich zu dem von R - die Analyse misst den bestaetigten Zustand, die Stufe liegt hinter den Taps  [60 von 60 Bypassbloecken mit abweichendem Tap]
+  FEHLER  312/M-97 Teilfall am Prozessor hostbypass_umkehr_ist_stetig (U48, [SONDE-015] E-31, W-5): Aufbau HB, Bloecke zu 64 (1,33 ms), Eintritte normal, Bypass, Bypass, normal, Bypass, normal, dann 20 normal - kehrt der Wunsch in der Blende um, laeuft sie vom Mischstand zurueck: an keinem Sample liegt der Nachbarsprung ueber der E-31-Schranke, und hoechstens 256 Samples nach dem letzten Wechsel ist der Ausgang bitgleich zu R  [groesster Nachbarsprung 0.248815566, Schranke 0.000972055, letzte Abweichung von R 126 Samples nach dem letzten Wechsel]
+  FEHLER  312/M-105 hostbypass_ueber_reset (spaeterer Wechsel): der Wechsel auf processBlock nach 40 Bypassbloecken blendet wieder 256 Samples innerhalb der E-31-Schranke und ist danach bitgleich zu R (dasselbe reset() am selben Blockrand); die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen dabei nicht. Vorbedingung des zweiten Falls: vor dem reset() lief die Blende  [Blende: groesste Abweichung von der linearen Mischung 0.000000014901 (Toleranz 2^-23), groesster Nachbarsprung 0.000971943, Schranke 0.000972055; danach abweichend von R 0; Zaehler still; erster Bypassblock vor dem reset() 0 abweichend]
+   SONDE-NULLTEST FEHLGESCHLAGEN - 141 Pruefungen ok, 4 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-96 hostbypass_misst_weiter (Inhalt'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 09:59:11) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 09:59:11.199
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 09:59:11) ==
+Bau Exit 0 (2026-09-23 09:59:11 bis 2026-09-23 09:59:13), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 09:59:13.798, juengste mutierte Quelle DspKern.cpp 09:59:11.199, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 09:59:13); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

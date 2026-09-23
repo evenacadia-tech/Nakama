@@ -1,0 +1,182 @@
+# NAK-312 Etappe 7b Teil 2 - Einzelbein B1 (EqCopIdentityTest) am Endstand des Satzes 2 (Manifest §61)
+
+HEAD d72f9d84d0510601b2a46a656eba4848cf6295f7; Arbeitsbaum (git status --short):
+   M docs/beweise/NAK-312.md
+   M eq-copilot/plugin/dsp/DspKern.cpp
+   M eq-copilot/plugin/dsp/DspKern.h
+   M eq-copilot/plugin/sonde/SondeProcessor.cpp
+   M eq-copilot/plugin/sonde/SondeProcessor.h
+   M eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+   M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+   M eq-copilot/plugin/tests/SondeNullTestMain.cpp
+   M eq-copilot/plugin/tests/TransactionTestMain.cpp
+   M tools/beweise.ps1
+  ?? briefing-hub/
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-100.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-101.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-103.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-104.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-105.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-107.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-108.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-132.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-94.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-95.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-96.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-97.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-99.txt
+  ?? docs/beweise/roh/NAK-312-etappe7b-teil2-M-131-grenze.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-100-bytegleich.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-100-zaehler.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-101-a.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-101-b.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-102.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-103-ruhegrenze.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-103-zustand.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-104-a.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-104-b.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-105.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-106.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-107-analyse.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-107-audio.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-108.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-109.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-132.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-94.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-95.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-96-inhalt.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-96-kadenz.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-97.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-98.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-99-analyse.txt
+  ?? docs/beweise/roh/NAK-312-rot-M-99-audio.txt
+  ?? nimbalyst-local/
+Bau: START 2026-09-23 10:08:51.113 Ziele: EqCopProbeeqNullTest EqCopDspGoldenTest EqCopTransactionTest EqCopMarkierungTest EqCopIdentityTest NakamaProbeeq_VST3; ENDE 2026-09-23 10:09:50.697; EXIT=0
+Binary EqCopIdentityTest.exe 10:09:23.652; juengste Ticketdatei, die das Ziel uebersetzt: DspKern.h 10:08:25.931; Binary juenger: True
+
+== Vollstaendige Ausgabe ==
+START 2026-09-23 10:10:44.729 EqCopIdentityTest  (Binary 2026-09-23 10:09:23.652)
+  ok      Identitaetsmanifest gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\identity\plugin-identities-v1.json]
+  ok      Manifest ist gueltiges JSON
+  ok      Herstellercode im Manifest  [Evna]
+  ok      Viercode ist vier Zeichen lang: hersteller.code  [4 Zeichen]
+  ok      Manifest kennt mindestens ein Ziel  [3]
+  ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+  ok      jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [0 unlesbar]
+  ok      Manifest kennt das heutige Ziel 'main'
+  ok      jedes AKTIVE Ziel im Manifest hat hier eine Zeile  [2 vs 2]
+  ok      jedes STILLGELEGTE Ziel im Manifest hat hier eine Zeile  [1 vs 1]
+  ok      main: steht als AKTIVES Ziel im Manifest
+  ok      active-probe: steht als AKTIVES Ziel im Manifest
+  ok      passive-probe: die Kennung steht weiter im Manifest
+  ok      passive-probe: und ist dort als stillgelegt markiert
+  ok      passive-probe: plugin_code ist nicht geloescht  [NkPr]
+  ok      passive-probe: bundle ist nicht geloescht  [Nakama Suna.vst3]
+  ok      passive-probe: produktname ist nicht geloescht  [Nakama Suna]
+  ok      passive-probe: component_cid ist nicht geloescht  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      passive-probe: controller_cid ist nicht geloescht  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      passive-probe: die Stilllegung nennt Datum und Entscheid  [2026-08-28 / design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md]
+  ok      plugin/CMakeLists.txt gefunden
+  ok      CMake: Zielblock juce_add_plugin(EqCopilot) gefunden
+  ok      CMake: Defineblock von EqCopilot gefunden
+  ok      CMake-Quelle: das Bauskript liest 'main' aus dem Identitaetsmanifest
+  ok      CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle: PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle: der Viercode steht nicht literal im Zielblock  [Eqcp]
+  ok      CMake-Quelle: der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      CMake-Quelle: der Produktname steht nicht literal im Zielblock
+  ok      CMake-Quelle: JUCE_VST3_CAN_REPLACE_VST2=0 steht im Zielblock
+  ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
+  ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
+  ok      CMake: Zielblock juce_add_plugin(${ziel}) der Sondenfunktion gefunden
+  ok      CMake: Defineblock der Sondenfunktion gefunden
+  ok      CMake-Quelle: die Sondenfunktion liest ihre Identitaet aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): PRODUCT_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): COMPANY_NAME kommt aus dem Manifest
+  ok      CMake-Quelle (Sonde): der Herstellercode steht nicht literal im Zielblock  [Evna]
+  ok      active-probe: der Viercode steht nicht literal im Sonden-Zielblock  [NkAc]
+  ok      active-probe: der Produktname steht nicht literal im Sonden-Zielblock  [Nakama Probeeq]
+  ok      active-probe: NakamaProbeeq entsteht ueber nakama_sonde_ziel()
+  ok      active-probe: der Aufruf uebergibt genau diese Manifest-ID  [nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)]
+  ok      CMake-Quelle (Sonde): JUCE_VST3_CAN_REPLACE_VST2=0 steht im Defineblock
+  ok      NakamaSuna: stillgelegt - kein Aufruf von nakama_sonde_ziel() mehr
+  ok      NakamaSuna: stillgelegt - auch kein eigener juce_add_plugin-Block
+  ok      NakamaSuna: das Bauskript erklaert die Stilllegung an Ort und Stelle
+  ok      main: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
+  ok      main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [23 Sep 2026 7:04:40am vs 21 Sep 2026 4:17:56am]
+  ok      main: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      main: Produktname wie im Manifest  [EQ-Copilot]
+  ok      main: Vendor wie im Manifest  [evenacadia]
+  ok      main: genau zwei Klassen (Component + Controller)  [2]
+  ok      main: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E6145716370]
+  ok      main: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E6145716370]
+  ok      main: Unterkategorien wie im Manifest
+  ok      main: keine fremde Ziel-CID im Bundle
+  ok      active-probe: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\VST3\Nakama Probeeq.vst3\Contents\Resources\moduleinfo.json]
+  ok      active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [23 Sep 2026 10:09:50am vs 21 Sep 2026 4:17:56am]
+  ok      active-probe: moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      active-probe: Produktname wie im Manifest  [Nakama Probeeq]
+  ok      active-probe: Vendor wie im Manifest  [evenacadia]
+  ok      active-probe: genau zwei Klassen (Component + Controller)  [2]
+  ok      active-probe: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      active-probe: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      active-probe: Unterkategorien wie im Manifest
+  ok      active-probe: keine fremde Ziel-CID im Bundle
+  ok      Viercode ist vier Zeichen lang: main.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: main Component (Eqcp)  [ABCDEF019182FAEB45766E6145716370]
+  ok      CID nachgerechnet: main Controller (Eqcp)  [ABCDEF011234ABCD45766E6145716370]
+  ok      Viercode ist vier Zeichen lang: passive-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: passive-probe Component (NkPr)  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      CID nachgerechnet: passive-probe Controller (NkPr)  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      Viercode ist vier Zeichen lang: active-probe.plugin_code  [4 Zeichen]
+  ok      CID nachgerechnet: active-probe Component (NkAc)  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      CID nachgerechnet: active-probe Controller (NkAc)  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      VST2-Ersatzpfad wuerde eine ANDERE CID erzeugen - das Define ist aus  [5653544571637065712D636F70696C6F]
+  ok      die echte CID stammt aus dem jucePluginId-Pfad
+  ok      Golden-Ordner vorhanden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\identity]
+  ok      Rolle 'sensor' geladen  [sensor]
+  ok      Rolle 'sensor': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'sensor': Label uebernommen  [Klavier A]
+  ok      Rolle 'sensor': Paar-ID uebernommen
+  ok      Golden 'sensor' gelesen  [state-schema1-sensor.bin]
+  ok      Schema-1-Saat 'sensor' ist bytegleich zum eingefrorenen Golden  [128 Bytes]
+  ok      Rolle 'sensor' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'sensor' laedt in eine frische Instanz zurueck
+  ok      Rolle 'hub' geladen  [hub]
+  ok      Rolle 'hub': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'hub': Label uebernommen  [Leitstand]
+  ok      Rolle 'hub': Paar-ID uebernommen
+  ok      Golden 'hub' gelesen  [state-schema1-hub.bin]
+  ok      Schema-1-Saat 'hub' ist bytegleich zum eingefrorenen Golden  [125 Bytes]
+  ok      Rolle 'hub' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'hub' laedt in eine frische Instanz zurueck
+  ok      Rolle 'pre' geladen  [pre]
+  ok      Rolle 'pre': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'pre': Label uebernommen  [Chor PRE]
+  ok      Rolle 'pre': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'pre' gelesen  [state-schema1-pre.bin]
+  ok      Schema-1-Saat 'pre' ist bytegleich zum eingefrorenen Golden  [133 Bytes]
+  ok      Rolle 'pre' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'pre' laedt in eine frische Instanz zurueck
+  ok      Rolle 'post' geladen  [post]
+  ok      Rolle 'post': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'post': Label uebernommen  [Chor POST]
+  ok      Rolle 'post': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'post' gelesen  [state-schema1-post.bin]
+  ok      Schema-1-Saat 'post' ist bytegleich zum eingefrorenen Golden  [135 Bytes]
+  ok      Rolle 'post' speichert Schema 2 (Migration, SONDE-006)
+  ok      Golden 'post' laedt in eine frische Instanz zurueck
+  ok      fremder ValueTree-Typ wird abgelehnt, Zustand bleibt
+  ok      Muellbytes aendern den Zustand nicht
+  ok      M-83: Gen fuehrt null Hostparameter  [0]
+  ok      M-83: der Prozessor ist Main - nur dort gibt es einen Schritt
+  ok      M-83: ein Assistentenschritt liegt im MainProject
+  ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+ENDE 2026-09-23 10:10:44.899
+EXIT=0

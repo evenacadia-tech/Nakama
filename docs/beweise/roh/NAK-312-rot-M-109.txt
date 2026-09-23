@@ -1,0 +1,50 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-109.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-109 (T3-01-09, Gens Haelfte, nicht Gegenstand der Antwort U48), Grenzzeile, Etikett Regressionswache.
+Zusage: Gens Hostbypass bleibt die JUCE-Basis: EqCopilotProcessor ueberschreibt weder getBypassParameter noch processBlockBypassed; im Hostbypass geht der Puffer unveraendert durch, ohne Ereignis.
+Bein: A3 EqCopMarkierungTest, Fall 312/M-109 gen_hostbypass_bleibt_juce_basis.
+Mutation an der Zusagezeile: in Gen (eq-copilot/plugin/src/PluginProcessor.h) eine Override processBlockBypassed ergaenzen, die processBlock faehrt - voruebergehend, allein fuer den Rotbeweis.
+Erwartetes Rot: der Textriegel findet die Override, und im Hostbypass faerbt der Auftrag - M-109 rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:04:36) ==
+Bau Exit 0 (2026-09-23 10:04:36 bis 2026-09-23 10:04:37), Ziele: EqCopMarkierungTest
+Lauf A3 EqCopMarkierungTest Exit 0 (2026-09-23 10:04:37); Zeilen mit ok: 157; Zeilen mit FEHLER/ROT: 0
+   MARKIERUNGSTEST OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:04:45) ==
+41BDA81CF1143FD2DAFD880F971A0E089B23E8A8A075D781BA0B530BBC5AF6F7  eq-copilot/plugin/src/PluginProcessor.h
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-PluginProcessor.h-100445441
+
+== 2. Mutation (2026-09-23 10:04:45) ==
+Datei eq-copilot/plugin/src/PluginProcessor.h, ab Zeile 120
+-- vorher:
+   |     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+   | 
+   |     juce::AudioProcessorEditor* createEditor() override;
+-- nachher:
+   |     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+   |     void processBlockBypassed (juce::AudioBuffer<float>& b, juce::MidiBuffer& m) override { processBlock (b, m); }   // ROTBEWEIS M-109
+   | 
+   |     juce::AudioProcessorEditor* createEditor() override;
+SHA-256 mutiert: B352E6A9EC846EF056A7FE81A7FE552BAE026548E1B1B4F939B077BFEFC62815  eq-copilot/plugin/src/PluginProcessor.h
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:04:45) ==
+Bau Exit 0 (2026-09-23 10:04:45 bis 2026-09-23 10:04:54), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 10:04:54.183, juengste mutierte Quelle PluginProcessor.h 10:04:45.474, Binary juenger: True
+Lauf A3 EqCopMarkierungTest Exit 1 (2026-09-23 10:04:54); Zeilen mit ok: 156; Zeilen mit FEHLER/ROT: 1
+  FEHLER  312/M-109 gen_hostbypass_bleibt_juce_basis (Grenzzeile, nicht Gegenstand der Antwort U48; Manifest NAK-312 Â§45.1) - kein Quelltext unter eq-copilot/plugin/src/ nennt processBlockBypassed oder getBypassParameter, getBypassParameter() liefert nullptr, und mit hoerbarem Auftrag in Main geht der Puffer ueber 20 Bloecke processBlockBypassed unveraendert durch, ohne Ereignis - das offene Intervall bleibt offen; danach faerbt der Auftrag in 40 Bloecken processBlock weiter, ohne neues begin und ohne end  [27 Dateien, Treffer: PluginProcessor.h: processBlockBypassed; , getBypassParameter nullptr, Hostbypass 20 von 20 Bloecken abweichend, 0 begin, 0 end; danach 40 von 40 gefaerbt, hoerbar 40, 0 begin, 0 end]
+   MARKIERUNGSTEST FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-109'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:05:02) ==
+41BDA81CF1143FD2DAFD880F971A0E089B23E8A8A075D781BA0B530BBC5AF6F7  eq-copilot/plugin/src/PluginProcessor.h  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:05:02.306
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:05:02) ==
+Bau Exit 0 (2026-09-23 10:05:02 bis 2026-09-23 10:05:11), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 10:05:10.943, juengste mutierte Quelle PluginProcessor.h 10:05:02.306, Binary juenger: True
+Lauf A3 EqCopMarkierungTest Exit 0 (2026-09-23 10:05:11); Zeilen mit ok: 157; Zeilen mit FEHLER/ROT: 0
+   MARKIERUNGSTEST OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

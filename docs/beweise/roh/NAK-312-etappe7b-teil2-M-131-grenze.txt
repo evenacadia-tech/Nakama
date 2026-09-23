@@ -1,0 +1,156 @@
+# NAK-312 Etappe 7b Teil 2 - M-131 (Grundgesetz und Grenze der Etappe 7) fuer Satz 2 (Manifest §46.5, §61)
+
+Gemessen 2026-09-23 10:24:49 am Arbeitsbaum gegen den Basis-SHA d72f9d84d0510601b2a46a656eba4848cf6295f7; HEAD d72f9d84d0510601b2a46a656eba4848cf6295f7.
+
+Geaenderte Pfade gegen die Basis (git diff --name-only):
+  docs/beweise/NAK-312.md
+  eq-copilot/plugin/dsp/DspKern.cpp
+  eq-copilot/plugin/dsp/DspKern.h
+  eq-copilot/plugin/sonde/SondeProcessor.cpp
+  eq-copilot/plugin/sonde/SondeProcessor.h
+  eq-copilot/plugin/tests/DspGoldenTestMain.cpp
+  eq-copilot/plugin/tests/MarkierungTestMain.cpp
+  eq-copilot/plugin/tests/SondeNullTestMain.cpp
+  eq-copilot/plugin/tests/TransactionTestMain.cpp
+  tools/beweise.ps1
+Neue, noch nicht versionierte Pfade (ohne die zwei fremden Ordner):
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-100.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-101.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-103.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-104.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-105.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-107.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-108.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-132.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-94.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-95.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-96.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-97.txt
+  docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-99.txt
+  docs/beweise/roh/NAK-312-etappe7b-hostbypass-kosten.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-A16.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-A3.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-B1.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-B6.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-B7.txt
+  docs/beweise/roh/NAK-312-etappe7b-teil2-M-131-grenze.txt
+  docs/beweise/roh/NAK-312-rot-M-100-bytegleich.txt
+  docs/beweise/roh/NAK-312-rot-M-100-zaehler.txt
+  docs/beweise/roh/NAK-312-rot-M-101-a.txt
+  docs/beweise/roh/NAK-312-rot-M-101-b.txt
+  docs/beweise/roh/NAK-312-rot-M-102.txt
+  docs/beweise/roh/NAK-312-rot-M-103-ruhegrenze.txt
+  docs/beweise/roh/NAK-312-rot-M-103-zustand.txt
+  docs/beweise/roh/NAK-312-rot-M-104-a.txt
+  docs/beweise/roh/NAK-312-rot-M-104-b.txt
+  docs/beweise/roh/NAK-312-rot-M-105.txt
+  docs/beweise/roh/NAK-312-rot-M-106.txt
+  docs/beweise/roh/NAK-312-rot-M-107-analyse.txt
+  docs/beweise/roh/NAK-312-rot-M-107-audio.txt
+  docs/beweise/roh/NAK-312-rot-M-108.txt
+  docs/beweise/roh/NAK-312-rot-M-109.txt
+  docs/beweise/roh/NAK-312-rot-M-132.txt
+  docs/beweise/roh/NAK-312-rot-M-94.txt
+  docs/beweise/roh/NAK-312-rot-M-95.txt
+  docs/beweise/roh/NAK-312-rot-M-96-inhalt.txt
+  docs/beweise/roh/NAK-312-rot-M-96-kadenz.txt
+  docs/beweise/roh/NAK-312-rot-M-97.txt
+  docs/beweise/roh/NAK-312-rot-M-98.txt
+  docs/beweise/roh/NAK-312-rot-M-99-analyse.txt
+  docs/beweise/roh/NAK-312-rot-M-99-audio.txt
+
+JA    Jeder geaenderte oder neue Pfad liegt in der Grenze des Auftrags (vier Produktdateien, vier Testdateien, tools/beweise.ps1, das Manifest, Rohdateien docs/beweise/roh/NAK-312-*)  [ausserhalb: keiner]
+JA    Keine v3-Vertragsaenderung: kein Pfad unter eq-copilot/schemas/v3/ im Diff  [0 Pfade]
+JA    Kein Schema und keine Fixture geaendert (eq-copilot/schemas/, eq-copilot/fixtures/)  [0 Pfade]
+JA    Identitaet, Parameter, State, Gen, Bau und Installer unberuehrt: eq-copilot/identity/, plugin/state/ (NakamaParameter, NakamaPreset, NakamaState, Transaktion), plugin/src/ (Gen: PluginProcessor, PluginEditor, Quellenmodell), SondeFactory.cpp, beide CMakeLists, install/, broker/ ohne Diff  [0 Pfade]
+Hinzugefuegte Codezeilen der vier Produktdateien (ohne Kommentare, ohne Leerzeilen): 74
+  eq-copilot/plugin/sonde/SondeProcessor.h: 2
+  eq-copilot/plugin/sonde/SondeProcessor.cpp: 10
+  eq-copilot/plugin/dsp/DspKern.h: 10
+  eq-copilot/plugin/dsp/DspKern.cpp: 52
+
+JA    Kein neuer Parameter und keine Bypassparameter-Override am Prozessor: keine hinzugefuegte Codezeile in SondeProcessor.h und SondeProcessor.cpp nennt addParameter, getBypassParameter oder eine AudioParameter-Klasse  [0 Zeilen]
+JA    getBypassParameter() bleibt die JUCE-Basis (nullptr): der Codetext von SondeProcessor.h und SondeProcessor.cpp nennt getBypassParameter nirgends (B7 312/M-102 misst den Wert zur Laufzeit)  [0 Treffer]
+JA    Keine neue Oberflaeche: keine hinzugefuegte Zeile in sonde/ und dsp/ legt einen Editor oder ein Bedienelement an (hasEditor bleibt false)  [0 Zeilen]
+JA    Im Audiopfad keine neue Sperre, Allokation, kein Datei-, Pipe- oder Netzzugriff und kein Logging: keine hinzugefuegte Codezeile der vier Produktdateien (Kommentare ausgenommen) nennt mutex, lock_guard, unique_lock, scoped_lock, ScopedLock, CriticalSection, SpinLock, GemeldeteSperre, new, delete, malloc, vector, String, Array, push_back, emplace_back, resize, reserve, cout, cerr, DBG, Logger, printf, Dateistroeme, juce::File, NamedPipe, Socket oder Thread (M-101 misst Sperren und Allokationen zur Laufzeit)  [74 hinzugefuegte Codezeilen, Treffer: keiner]
+
+Die hinzugefuegten Codezeilen (Kommentare durch Leerzeichen ersetzt), je Datei:Zeile:
+  eq-copilot/plugin/sonde/SondeProcessor.h:210  void processBlockBypassed (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+  eq-copilot/plugin/sonde/SondeProcessor.h:580  void verarbeiteBlock (juce::AudioBuffer<float>& puffer, bool hostbypass);
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:511  verarbeiteBlock (puffer, false);
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:512  }
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:514  void SondeProcessor::processBlockBypassed (juce::AudioBuffer<float>& puffer, juce::MidiBuffer&)
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:515  {
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:522  const nakama::dsp::RtWache::Bereich wache;
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:523  verarbeiteBlock (puffer, true);
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:524  }
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:526  void SondeProcessor::verarbeiteBlock (juce::AudioBuffer<float>& puffer, bool hostbypass)
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:527  {
+  eq-copilot/plugin/sonde/SondeProcessor.cpp:631  dspKern->verarbeite (kanalZeiger, kanaele, samples, &hostwerte, hostbypass);
+  eq-copilot/plugin/dsp/DspKern.h:323  const BlockrandHostwerte* hostwerte = nullptr, bool hostbypass = false) noexcept;
+  eq-copilot/plugin/dsp/DspKern.h:792  bool hostbypassZiel     { false };
+  eq-copilot/plugin/dsp/DspKern.h:793  int  hostbypassFadeRest { 0 };
+  eq-copilot/plugin/dsp/DspKern.h:794  bool hostbypassVerlauf  { false };
+  eq-copilot/plugin/dsp/DspKern.h:798  void uebernimmHostbypass (bool wunsch) noexcept;
+  eq-copilot/plugin/dsp/DspKern.h:801  void hostbypassOhneVerlauf() noexcept
+  eq-copilot/plugin/dsp/DspKern.h:802  {
+  eq-copilot/plugin/dsp/DspKern.h:803  hostbypassFadeRest = 0;
+  eq-copilot/plugin/dsp/DspKern.h:804  hostbypassVerlauf  = false;
+  eq-copilot/plugin/dsp/DspKern.h:805  }
+  eq-copilot/plugin/dsp/DspKern.cpp:153  hostbypassOhneVerlauf();
+  eq-copilot/plugin/dsp/DspKern.cpp:194  hostbypassOhneVerlauf();
+  eq-copilot/plugin/dsp/DspKern.cpp:255  hostbypassOhneVerlauf();
+  eq-copilot/plugin/dsp/DspKern.cpp:1158  const BlockrandHostwerte* hostwerte, bool hostbypass) noexcept
+  eq-copilot/plugin/dsp/DspKern.cpp:1180  uebernimmHostbypass (hostbypass);
+  eq-copilot/plugin/dsp/DspKern.cpp:1213  void DspKern::uebernimmHostbypass (bool wunsch) noexcept
+  eq-copilot/plugin/dsp/DspKern.cpp:1214  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1219  if (! hostbypassVerlauf)
+  eq-copilot/plugin/dsp/DspKern.cpp:1220  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1221  hostbypassZiel     = wunsch;
+  eq-copilot/plugin/dsp/DspKern.cpp:1222  hostbypassFadeRest = 0;
+  eq-copilot/plugin/dsp/DspKern.cpp:1223  hostbypassVerlauf  = true;
+  eq-copilot/plugin/dsp/DspKern.cpp:1224  return;
+  eq-copilot/plugin/dsp/DspKern.cpp:1225  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1226  if (wunsch == hostbypassZiel)
+  eq-copilot/plugin/dsp/DspKern.cpp:1227  return;
+  eq-copilot/plugin/dsp/DspKern.cpp:1234  hostbypassFadeRest = hostbypassFadeRest > 0 ? std::max (0, kFadeSamples - hostbypassFadeRest - 1)
+  eq-copilot/plugin/dsp/DspKern.cpp:1235  : kFadeSamples;
+  eq-copilot/plugin/dsp/DspKern.cpp:1236  hostbypassZiel = wunsch;
+  eq-copilot/plugin/dsp/DspKern.cpp:1237  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1244  if ((size_t) numSamples > dryL.size()) { letzteKanaele = numKanaele; hostbypassFadeRest = 0; return; }
+  eq-copilot/plugin/dsp/DspKern.cpp:1403  hostbypassFadeRest = 0;
+  eq-copilot/plugin/dsp/DspKern.cpp:1532  const int    hbRest       = hostbypassFadeRest;
+  eq-copilot/plugin/dsp/DspKern.cpp:1533  const size_t hbSchreibBis = hostbypassZiel ? std::min (schreibBis, (size_t) std::max (0, hbRest)) : schreibBis;
+  eq-copilot/plugin/dsp/DspKern.cpp:1562  float fr = 0.0f;
+  eq-copilot/plugin/dsp/DspKern.cpp:1565  fr = (float) r;
+  eq-copilot/plugin/dsp/DspKern.cpp:1570  if (i >= hbSchreibBis)
+  eq-copilot/plugin/dsp/DspKern.cpp:1571  continue;
+  eq-copilot/plugin/dsp/DspKern.cpp:1572  const int rest = hbRest - (int) i;
+  eq-copilot/plugin/dsp/DspKern.cpp:1573  if (rest > 0)
+  eq-copilot/plugin/dsp/DspKern.cpp:1574  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1575  const double t = 1.0 - (double) rest / (double) kFadeSamples;
+  eq-copilot/plugin/dsp/DspKern.cpp:1576  if (hostbypassZiel)
+  eq-copilot/plugin/dsp/DspKern.cpp:1577  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1578  if (t > 0.0)
+  eq-copilot/plugin/dsp/DspKern.cpp:1579  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1580  fl = (float) ((double) fl * (1.0 - t) + dryL[i] * t);
+  eq-copilot/plugin/dsp/DspKern.cpp:1581  fr = (float) ((double) fr * (1.0 - t) + dryR[i] * t);
+  eq-copilot/plugin/dsp/DspKern.cpp:1582  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1583  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1584  else
+  eq-copilot/plugin/dsp/DspKern.cpp:1585  {
+  eq-copilot/plugin/dsp/DspKern.cpp:1586  if (t <= 0.0)
+  eq-copilot/plugin/dsp/DspKern.cpp:1587  continue;
+  eq-copilot/plugin/dsp/DspKern.cpp:1588  fl = (float) (dryL[i] * (1.0 - t) + (double) fl * t);
+  eq-copilot/plugin/dsp/DspKern.cpp:1589  fr = (float) (dryR[i] * (1.0 - t) + (double) fr * t);
+  eq-copilot/plugin/dsp/DspKern.cpp:1590  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1591  }
+  eq-copilot/plugin/dsp/DspKern.cpp:1593  kanaele[0][i] = fl;
+  eq-copilot/plugin/dsp/DspKern.cpp:1594  if (numKanaele > 1)
+  eq-copilot/plugin/dsp/DspKern.cpp:1595  kanaele[1][i] = fr;
+  eq-copilot/plugin/dsp/DspKern.cpp:1598  hostbypassFadeRest = std::max (0, hbRest - numSamples);
+
+JA    Legacy-Bezeichner unveraendert: in keiner der geaenderten Textdateien verschwindet ein Bezeichner EqCop*, Eqcp* oder EQ-Copilot*  [verloren: keiner]
+JA    Gen unberuehrt: kein Quelltext unter eq-copilot/plugin/src/ nennt processBlockBypassed oder getBypassParameter  [0 Treffer]
+
+10 von 10 Pruefungen JA.

@@ -39,12 +39,17 @@
     Passthrough von bisher: sampleidentisch, 0 Samples Latenz, kein Tail,
     keine Bank (SONDE-015 R2, Bein A16). `setNonRealtime`, das der
     VST3-Wrapper im selben Callback davor ruft, fasst nur Atomics an (NAK-312
-    Etappe 5). `processBlock` haelt keine Sperre,
-    allokiert nicht, protokolliert nicht und fasst keine Datei an: er liest
-    die Hostmailbox der Abdeckungstabelle und das read-only des geladenen
-    Standes (nur Atomics, NAK-312 Etappe 3b und Nacharbeit 1),
-    ruft den DSP-Kern (`dsp::DspKern::verarbeite`) und kopiert den Tap
-    `post_committed` in die vorallokierte Analysequeue. Programmbau,
+    Etappe 5). Beide Eintritte - `processBlock` und seit NAK-312 Etappe 7b
+    `processBlockBypassed`, den der Wrapper bei gesetztem Bypassparameter
+    ruft - halten keine Sperre,
+    allokieren nicht, protokollieren nicht und fassen keine Datei an: sie
+    lesen die Hostmailbox der Abdeckungstabelle und das read-only des
+    geladenen Standes (nur Atomics, NAK-312 Etappe 3b und Nacharbeit 1),
+    rufen den DSP-Kern (`dsp::DspKern::verarbeite`) und kopieren den Tap
+    `post_committed` in die vorallokierte Analysequeue. Im Hostbypass rechnet
+    der Kern weiter, und seine Hostbypass-Stufe blendet in 256 Samples auf
+    den Eingang (U48, U58); mit `eq_enabled` aus schreibt auch dieser
+    Eintritt keinen Sample. Programmbau,
     Transaktionen, Auswertung und I/O bleiben ausserhalb des Audiothreads.
 
     HOSTPARAMETER (SONDE-015 R1): Probeeq meldet die 112 Host-Parameter des
@@ -186,6 +191,24 @@ public:
 
     bool isBusesLayoutSupported (const BusesLayout& layout) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+
+    /** NAK-312 Etappe 7b (T3-01-09; Karten U48 und U58; Weg E1, E-312-18):
+        der ZWEITE Eintritt. Der VST3-Wrapper ruft ihn statt `processBlock`,
+        solange sein eigener Bypassparameter steht - FLs Bypass-Knopf am
+        Mixer-Slot (juce_audio_plugin_client_VST3.cpp:3906-3909, Bauartefakt).
+        `getBypassParameter()` liefert weiter nullptr: der Wrapper legt `byps`
+        mit derselben VST-ID und derselben Persistenz an wie bisher; kein
+        neuer persistenter Parameter, 112 Hostparameter, Identitaet NAK-30
+        unveraendert. Beide Eintritte fahren denselben Blockrumpf
+        (`verarbeiteBlock`); der Wunsch "Hostbypass" kommt allein aus dem
+        Eintritt. Der Kern rechnet weiter (Weg K-B: Programme, Rampen, Baenke,
+        ACKs, Taps), die Analyse misst unveraendert `post_committed`, und die
+        Hostbypass-Stufe des Kerns blendet den Ausgang in 256 Samples auf den
+        Eingang und schreibt danach nichts; zurueck ebenso. Hostmailbox,
+        Stempel, Analysekopie und `verarbeiteteSamples` laufen in beiden
+        Eintritten gleich. Latenz 0, Tail 0,0. */
+    void processBlockBypassed (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+
     void nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund&) noexcept override;
 
     /** JUCE/VST3 ChannelContext. Laut JUCE-Vertrag nur Message-Thread; ein
@@ -213,7 +236,8 @@ public:
 
     /** Offline-Render laeuft mit dem bestaetigten Zustand, nie mit einer
         Vorschau (§44.4, §49.2 Gate 3, M-120). Der VST3-Wrapper ruft diese
-        Funktion im Audio-Callback vor JEDEM `processBlock`; sie nimmt keine
+        Funktion im Audio-Callback vor JEDEM Eintritt (`processBlock` oder,
+        seit NAK-312 Etappe 7b, `processBlockBypassed`); sie nimmt keine
         Sperre, allokiert nicht und fasst nur Atomics an (NAK-312 Etappe 5,
         T3-01-03, T3-01-04, E-312-7).
 
@@ -404,7 +428,7 @@ public:
     /** NAK-283 M-35 bis M-37, M-41: haelt den Analyseworker an, solange `f`
         laeuft, und reicht `f` die Queue als EINZIGEM Consumenten. Der Worker
         liest die Queue nur unter `analyseSchloss`, der Audiopfad nimmt es
-        nie - `f` darf deshalb `processBlock` rufen, aber weder
+        nie - `f` darf deshalb beide Eintritte rufen, aber weder
         `prepareToPlay` noch einen Testzugang, der dasselbe Schloss nimmt. */
     template <typename Funktion>
     void mitAngehaltenerAnalyseFuerTest (Funktion&& f)
@@ -548,6 +572,13 @@ private:
     static V3Verdrahtung produktVerdrahtung();
     explicit SondeProcessor (V3Verdrahtung verdrahtung);
 
+    /** NAK-312 Etappe 7b: der gemeinsame Blockrumpf beider Eintritte -
+        Stempel, Blockrand der Hostmailbox, der Kern mit dem Wunsch
+        `hostbypass`, `verarbeiteteSamples` und die Analysekopie. Die
+        Echtzeitwache oeffnet der Eintritt als erste Anweisung (R-312-1), nicht
+        der Rumpf. */
+    void verarbeiteBlock (juce::AudioBuffer<float>& puffer, bool hostbypass);
+
     void workerLauf();
     void producerStandLeeren() noexcept;
     /// NAK-286 (F-5, F-12, P-9): Start und Antwortquelle des Diagnose-Briefkastens.
@@ -618,8 +649,8 @@ private:
     nakama::state::Zustand zustand;
     nakama::state::Lebenslauf lebenslauf { kProduktklasse };
     /// Nachrichten-, Host- und Workerthread (`dspKontrollTakt`); nie im
-    /// Audio-Callback - weder `processBlock` noch, seit NAK-312 Etappe 5,
-    /// `setNonRealtime`, das der VST3-Wrapper dort vor `processBlock` ruft.
+    /// Audio-Callback - weder in einem der zwei Eintritte noch, seit NAK-312
+    /// Etappe 5, in `setNonRealtime`, das der VST3-Wrapper dort davor ruft.
     juce::CriticalSection zustandSchloss;
 
     /** NAK-312 Etappe 5 (T3-01-03, E-312-7): die Wechselerkennung des

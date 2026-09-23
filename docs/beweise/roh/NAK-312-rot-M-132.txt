@@ -1,0 +1,51 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-132.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-132 (T3-01-09, Zahlenrand Zaehler, Ueberlauf; R-312-28), Haelfte (a), Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-132.txt).
+Zusage: der Blockrand des Bypasseintritts nimmt jeden Hostpunkt ueber den Ueberlauf genau einmal: nach Block 10, 12 und 14 ist der Blockrandstand 0xFFFFFFFF, 0 und 1.
+Bein: B7 EqCopTransactionTest, Fall 312/M-132 hostbypass_zaehlerrand.
+Mutation an der Zusagezeile: am Blockrand Ordnung statt Ungleichheit: n <= blockrandStand (k) statt n == blockrandStand (k) (am Basisstand SondeProcessor.cpp:584).
+Erwartetes Rot: der Punkt ueber den Ueberlauf (Zaehler 0) gilt als alt, der Blockrandstand steht nach Block 12 noch auf 0xFFFFFFFF - M-132 rot, wie 312/M-82.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:02:30) ==
+Bau Exit 0 (2026-09-23 10:02:30 bis 2026-09-23 10:02:31), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:02:31); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:02:33) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100233757
+
+== 2. Mutation (2026-09-23 10:02:33) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 601
+-- vorher:
+   |             if (n == dspKern->blockrandStand (k))
+   |                 continue;
+-- nachher:
+   |             if (n <= dspKern->blockrandStand (k))   // ROTBEWEIS M-132: Ordnung statt Ungleichheit
+   |                 continue;
+SHA-256 mutiert: D2A6CC5CAA78235757DDB5BAD0DC01B0E1E5B6C6B05A6DD548C77385CCEE08DF  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:02:33) ==
+Bau Exit 0 (2026-09-23 10:02:33 bis 2026-09-23 10:02:39), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:39.676, juengste mutierte Quelle SondeProcessor.cpp 10:02:33.787, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:02:39); Zeilen mit ok: 260; Zeilen mit FEHLER/ROT: 2
+  FEHLER  312/M-82 schiedsregel_ist_ueberlaufsicher (E-312-6): Ereigniszaehler und Blockrandstand bei 0xFFFFFFFE, drei Hostereignisse auf Output-Trim ueber den Ueberlauf hinweg - der Blockrand vergleicht auf Ungleichheit: jedes Ereignis setzt genau ein Rampenziel (3), das nach dem Ueberlauf wirkt, A ist bitgleich zu B, am Ende +12 dB  [A/B 0, Blockrandziele 1, Verhaeltnis nach Block 11 1.49763116108, nach Block 13 1.99526229976, am Ende 1.99526232389]
+  FEHLER  312/M-132 hostbypass_zaehlerrand (R-312-28, E-312-6; Muster 312/M-82): Ereigniszaehler, Quittierungsstand und Blockrandstand von Output-Trim bei 0xFFFFFFFE, 30 Bloecke ueber processBlockBypassed mit Hostpunkten an Block 10, 12 und 14 - der Blockrand des Bypasseintritts nimmt jeden Punkt ueber den Ueberlauf genau einmal: nach Block 10, 12 und 14 steht der Blockrandstand auf 0xFFFFFFFF, 0 und 1  [Blockrandstand nach Block 10 0xFFFFFFFF, nach 12 0xFFFFFFFF, nach 14 0xFFFFFFFF, Ereigniszaehler 0x1]
+   262 geprueft, 2 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-132'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:02:42) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:02:42.312
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:02:42) ==
+Bau Exit 0 (2026-09-23 10:02:42 bis 2026-09-23 10:02:47), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:47.675, juengste mutierte Quelle SondeProcessor.cpp 10:02:42.312, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:02:47); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

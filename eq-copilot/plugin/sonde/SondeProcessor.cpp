@@ -508,6 +508,23 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
     // Programmzustand, und der Bereich des Kerns liegt verschachtelt darin.
     // Sperren, die JUCE VOR dem Plugincode nimmt, sieht die Wache nicht.
     const nakama::dsp::RtWache::Bereich wache;
+    verarbeiteBlock (puffer, false);
+}
+
+void SondeProcessor::processBlockBypassed (juce::AudioBuffer<float>& puffer, juce::MidiBuffer&)
+{
+    // NAK-312 Etappe 7b (T3-01-09; U48, U58; Weg E1 mit K-B): der zweite
+    // Eintritt, den der VST3-Wrapper bei gesetztem Bypassparameter statt
+    // `processBlock` ruft. R-312-1 gilt fuer beide Eintritte: die Wache ist
+    // auch hier die erste Anweisung (M-101). Die JUCE-Basis, die der Wrapper
+    // bis hierher erbte, reichte den Puffer unveraendert durch - ohne Kern,
+    // ohne Analyse, ohne Blockrand und ohne Samplezaehler.
+    const nakama::dsp::RtWache::Bereich wache;
+    verarbeiteBlock (puffer, true);
+}
+
+void SondeProcessor::verarbeiteBlock (juce::AudioBuffer<float>& puffer, bool hostbypass)
+{
     juce::ScopedNoDenormals keineDenormals;
     const int kanaele = std::min (puffer.getNumChannels(), 2);
     const int samples = puffer.getNumSamples();
@@ -604,14 +621,21 @@ void SondeProcessor::processBlock (juce::AudioBuffer<float>& puffer, juce::MidiB
         // SONDE-015 4a: der aktive Kern (Manifest §3.0). Bei `eq_enabled` aus
         // und beim Hard-Bypass schreibt er keinen Sample und sanitisiert nichts
         // (M-01, M-05, M-50); ein neues Programm uebernimmt er am Blockrand,
-        // die Hostwerte der Abdeckungstabelle unmittelbar davor.
+        // die Hostwerte der Abdeckungstabelle unmittelbar davor. Seit NAK-312
+        // Etappe 7b traegt der Aufruf den Wunsch des Eintritts: im Hostbypass
+        // rechnet der Kern weiter, und seine Hostbypass-Stufe blendet auf den
+        // Eingang (Weg K-B). Der Samplezaehler steigt in beiden Eintritten -
+        // die Ruhegrenze der Automation zaehlt verarbeitete Samples (M-103).
         float* kanalZeiger[2] = { puffer.getWritePointer (0),
                                   kanaele > 1 ? puffer.getWritePointer (1) : nullptr };
-        dspKern->verarbeite (kanalZeiger, kanaele, samples, &hostwerte);
+        dspKern->verarbeite (kanalZeiger, kanaele, samples, &hostwerte, hostbypass);
         verarbeiteteSamples.fetch_add ((std::uint64_t) samples, std::memory_order_relaxed);
 
         // Die Analyse misst `post_committed` (§44.2: Session-Landkarte und
-        // Recall beziehen sich darauf), nie den Hoermatrix-Ausgang (M-57).
+        // Recall beziehen sich darauf), nie den Hoermatrix-Ausgang (M-57) und
+        // nie den Ausgang der Hostbypass-Stufe: auch im Hostbypass misst sie
+        // den bestaetigten Zustand, je Block ein Analyseblock (NAK-312 Etappe
+        // 7b, U48 "Probeeq misst weiter", M-96).
         AnalyseQueue::TapQuelle abgriff;
         const double* tapL = dspKern->tap (nakama::dsp::Tap::postCommitted, 0);
         const double* tapR = dspKern->tap (nakama::dsp::Tap::postCommitted, 1);

@@ -1,0 +1,37 @@
+# NAK-312 Etappe 7b Teil 2 - Kosten der Hostbypass-Stufe (Manifest §47.3, Muster §21.7)
+
+Messfall "MESSUNG 312/Kosten-Hostbypass" in B7 (EqCopTransactionTest, Abschnitt ZD): Aufbau HB (eq an, Bell 1 kHz +12 dB Q 10,
+Output-Trim +6 dB), Bloecke zu 64 Samples, 20 000 Bloecke je Eintritt, gemessen allein die Zeit im Eintritt (steady_clock),
+je Block derselbe Eingang ungemessen neu eingelegt, je Eintritt das Minimum aus drei Durchgaengen; vor jedem Durchgang 8
+Bloecke desselben Eintritts, damit die Blende vorbei ist. Einzelmessungen, keine Schranke. Am Basisstand ist
+processBlockBypassed die geerbte JUCE-Basis (kein Plugincode), am Endstand der zweite Eintritt mit Weg K-B.
+
+Dazu je Lauf der Messfall "MESSUNG 312/Kosten" der Etappe 3 (Manifest §21.7, unveraendert): processBlock ohne und mit
+Hostereignis, Bloecke zu 64, Minimum aus drei Durchgaengen - der Normalpfad in einem zweiten Aufbau, derselbe
+Testcode am Basisstand und am Endstand.
+
+== Basisstand d72f9d84 (Gegenprobe, Testdateien des Satzes, Produkt gleich HEAD) ==
+Lauf: START 2026-09-23 09:42:55.980 EqCopTransactionTest  (Binary 2026-09-23 09:41:35.659)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25448 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 936.225 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 972.225 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25448 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1562.0 ns je Block, processBlockBypassed nach der Blende 17.2 ns je Block; Transaktion commit
+Lauf: START 2026-09-23 09:43:43.236 EqCopTransactionTest  (Binary 2026-09-23 09:41:35.659)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25448 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 924.645 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 961.48 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25448 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1552.9 ns je Block, processBlockBypassed nach der Blende 17.3 ns je Block; Transaktion commit
+
+== Endstand des Satzes 2 ==
+Lauf: START 2026-09-23 09:50:05.346 EqCopTransactionTest  (Binary 2026-09-23 09:48:21.050)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 932.815 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 968.935 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1501.7 ns je Block, processBlockBypassed nach der Blende 1495.2 ns je Block; Transaktion commit
+Lauf: START 2026-09-23 10:10:33.283 EqCopTransactionTest  (Binary 2026-09-23 10:09:14.711)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 914.24 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 964.385 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1592.1 ns je Block, processBlockBypassed nach der Blende 1718.2 ns je Block; Transaktion commit
+Lauf: START 2026-09-23 10:12:49.974 EqCopTransactionTest  (Binary 2026-09-23 10:09:14.711)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 943.595 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 962.56 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1527.2 ns je Block, processBlockBypassed nach der Blende 1514.8 ns je Block; Transaktion commit
+Lauf: START 2026-09-23 10:12:52.490 EqCopTransactionTest  (Binary 2026-09-23 10:09:14.711)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 904.06 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 968.98 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1539.9 ns je Block, processBlockBypassed nach der Blende 1537.0 ns je Block; Transaktion commit
+Lauf: START 2026-09-23 10:12:54.960 EqCopTransactionTest  (Binary 2026-09-23 10:09:14.711)
+MESSUNG 312/Kosten sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; 20000 Bloecke zu 64 Samples, Zeit in processBlock (Minimum aus drei Durchgaengen): ohne Hostereignis 911.595 ns je Block, mit je einem Ereignis auf den vier abgedeckten Parametern 948.83 ns je Block
+MESSUNG 312/Kosten-Hostbypass sizeof(dsp::DspKern) 25456 Byte, sizeof(SondeProcessor) 81760 Byte; Aufbau HB, 20000 Bloecke zu 64 Samples je Eintritt, Zeit im Eintritt (Minimum aus drei Durchgaengen): processBlock 1868.5 ns je Block, processBlockBypassed nach der Blende 1585.0 ns je Block; Transaktion commit
+

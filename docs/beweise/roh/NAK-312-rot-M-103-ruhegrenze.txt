@@ -1,0 +1,49 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-103-ruhegrenze.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-103 (T3-01-09, Ruhegrenze der Automationsepoche; R-312-27), Ruhegrenzenhaelfte, Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-103.txt).
+Zusage: der Hostbypass zaehlt verarbeitete Samples weiter: nach 11 776 Samples im Hostbypass steht die Epoche auf e1, nach 12 032 auf e1 + 1, am selben Block wie bei R.
+Bein: B7 EqCopTransactionTest, Fall 312/M-103 hostbypass_beruehrt_den_zustand_nicht (Ruhegrenze).
+Mutation an der Zusagezeile: in SondeProcessor::verarbeiteBlock verarbeiteteSamples im Bypasseintritt nicht erhoehen.
+Erwartetes Rot: nach dem 47. Bypassblock steht die Epoche noch auf e1 - M-103 (Ruhegrenze) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:02:11) ==
+Bau Exit 0 (2026-09-23 10:02:11 bis 2026-09-23 10:02:12), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:02:12); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:02:14) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100214977
+
+== 2. Mutation (2026-09-23 10:02:14) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 632
+-- vorher:
+   |         verarbeiteteSamples.fetch_add ((std::uint64_t) samples, std::memory_order_relaxed);
+-- nachher:
+   |         if (! hostbypass)   // ROTBEWEIS M-103 (Ruhegrenze): im Bypasseintritt nicht gezaehlt
+   |             verarbeiteteSamples.fetch_add ((std::uint64_t) samples, std::memory_order_relaxed);
+SHA-256 mutiert: 4ECA0FAB86DD2BC44B026035C6FD58D44CCA7C28552FDBFEFC0400AEF1FBB338  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:02:15) ==
+Bau Exit 0 (2026-09-23 10:02:15 bis 2026-09-23 10:02:20), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:20.413, juengste mutierte Quelle SondeProcessor.cpp 10:02:15.011, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:02:20); Zeilen mit ok: 261; Zeilen mit FEHLER/ROT: 1
+  FEHLER  312/M-103 hostbypass_beruehrt_den_zustand_nicht (Ruhegrenze; R-312-27, [SONDE-015] M-81): der Hostbypass zaehlt verarbeitete Samples weiter - nach 11 776 Samples im Hostbypass steht die Epoche der Geste auf e1 (offen), nach 12 032 auf e1 + 1 (geschlossen), am selben Block wie bei R ohne Hostbypass  [Hostbypass 0 -> 1, nach 46 Bloecken 1, nach 47 1; R 0 -> 1, 1, 2]
+   262 geprueft, 1 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-103 hostbypass_beruehrt_den_zustand_nicht (Ruhegrenze'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:02:22) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:02:22.833
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:02:22) ==
+Bau Exit 0 (2026-09-23 10:02:22 bis 2026-09-23 10:02:28), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:02:28.287, juengste mutierte Quelle SondeProcessor.cpp 10:02:22.833, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:02:28); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

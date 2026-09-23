@@ -1,0 +1,53 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-99-analyse.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-99 (T3-01-09, Gegenfall EQ aus, Hard-Bypass, unvorbereitet; R-312-26), Analysehaelfte, Etikett heute rot (Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-99.txt).
+Zusage: die Analyse laeuft in beiden Eintritten wie heute ueber processBlock: je Block genau ein Analyseblock, in (a) und (b) ueber den Tap, in (c) ohne Tap.
+Bein: A16 EqCopProbeeqNullTest, Fall 312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Analyse).
+Mutation an der Zusagezeile: in SondeProcessor::verarbeiteBlock im Bypasseintritt den Analyseteil des gemeinsamen Rumpfs auslassen (die Entsprechung von SondeProcessor.cpp:613-666 am Basisstand, fuer (c) samt dem Zweig ohne Tap).
+Erwartetes Rot: die Blockzaehlung steigt ueber die 20 Bypassbloecke um 0 - M-99 (Analyse) rot in (a), (b) und (c).
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:00:17) ==
+Bau Exit 0 (2026-09-23 10:00:17 bis 2026-09-23 10:00:17), Ziele: EqCopProbeeqNullTest
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:17); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:00:18) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-SondeProcessor.cpp-100018529
+
+== 2. Mutation (2026-09-23 10:00:18) ==
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp, ab Zeile 642
+-- vorher:
+   |         if (tapL != nullptr && tapR != nullptr && dspKern->tapLaenge() == samples
+   |             && (size_t) samples <= analyseL.size())
+-- nachher:
+   |         if (hostbypass)
+   |         {
+   |             // ROTBEWEIS: im Bypasseintritt der Analyseteil des gemeinsamen Rumpfs ausgelassen
+   |         }
+   |         else if (tapL != nullptr && tapR != nullptr && dspKern->tapLaenge() == samples
+   |             && (size_t) samples <= analyseL.size())
+SHA-256 mutiert: 856F8BC5C75B97281D08FB5827120B190169070AAC1C72E9E2DD4BA9A13D6377  eq-copilot/plugin/sonde/SondeProcessor.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:00:18) ==
+Bau Exit 0 (2026-09-23 10:00:18 bis 2026-09-23 10:00:23), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:23.894, juengste mutierte Quelle SondeProcessor.cpp 10:00:18.558, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 1 (2026-09-23 10:00:23); Zeilen mit ok: 142; Zeilen mit FEHLER/ROT: 3
+  FEHLER  312/M-96 hostbypass_misst_weiter (Kadenz; U48 'Probeeq misst im Hostbypass weiter'): jeder Block, auch jeder der 60 Bypassbloecke, stellt genau einen Analyseblock an die Queue - bloeckeAngenommen() + dropsUeberlauf() + dropsOversize() steigt ueber die Bypassbloecke um genau 60, dropsOhneAudio() um 0; ueberlast verwirft Analyse, nie Audio  [ueber Audio im Hostbypass +0, ohne Audio +0, in den 40 Bloecken danach +40]
+  FEHLER  312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Analyse; R-312-26): die Analyse laeuft in beiden Eintritten wie in processBlock - je Block genau ein Analyseblock in bloeckeAngenommen() + dropsUeberlauf() + dropsOversize() + dropsOhneAudio(), in (a) und (b) ueber den Tap, in (c) ohne Tap  [(a) Default: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +0, 10 normal +10; (b) Hard-Bypass: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +0, 10 normal +10; (c) unvorbereitet: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +0, 10 normal +10]
+  FEHLER  312/M-107 hostbypass_ueber_release (Analyse; R-312-26): die Analyse verbucht jeden unvorbereiteten Block in beiden Eintritten wie processBlock ueber den Zweig ohne Tap - je Block genau ein Analyseblock ueber Audio  [10 Bypass +0, 10 normal +10, 10 Bypass +0, ohne Audio +0]
+   SONDE-NULLTEST FEHLGESCHLAGEN - 142 Pruefungen ok, 3 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Analyse'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:00:24) ==
+0E7385C369633CC975CDC3663A8345E9F26287D47DFE0A4B71139742493A265B  eq-copilot/plugin/sonde/SondeProcessor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:00:24.670
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:00:24) ==
+Bau Exit 0 (2026-09-23 10:00:24 bis 2026-09-23 10:00:30), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:30.164, juengste mutierte Quelle SondeProcessor.cpp 10:00:24.670, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:30); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

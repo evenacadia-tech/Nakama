@@ -1,0 +1,57 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-99-audio.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-99 (T3-01-09, Gegenfall EQ aus, Hard-Bypass, unvorbereitet; R-312-26), Audiohaelfte, Etikett Regressionswache.
+Zusage: in keinem der drei Faelle schreibt der Kern einen Sample, gleich ueber welchen Eintritt: bytegleich, keine Blende, Zaehler still.
+Bein: A16 EqCopProbeeqNullTest, Fall 312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio).
+Mutation an der Zusagezeile: in DspKern::verarbeiteStueck die Stufe auch hinter einem ruhenden Committed-Pfad den Eingang ueber double zurueckschreiben lassen.
+Erwartetes Rot: unter FTZ und DAZ fallen die Subnormals, die Wachmarke wird ruhig - M-99 (Audio) rot in (a) und (b).
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:00:07) ==
+Bau Exit 0 (2026-09-23 10:00:07 bis 2026-09-23 10:00:09), Ziele: EqCopProbeeqNullTest
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:09); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:00:09) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-DspKern.cpp-100009872
+
+== 2. Mutation (2026-09-23 10:00:09) ==
+Datei eq-copilot/plugin/dsp/DspKern.cpp, ab Zeile 1402
+-- vorher:
+   |         hoerFadeRest = 0;
+   |         hostbypassFadeRest = 0;
+   |         beendeHoerHalt();   // X-1: die Hoermatrix mischt jetzt keinen Candidate mehr
+   |         return;
+-- nachher:
+   |         hoerFadeRest = 0;
+   |         hostbypassFadeRest = 0;
+   |         if (hostbypassZiel)   // ROTBEWEIS M-99 (Audio): die Stufe schreibt auch hinter dem ruhenden Pfad den Eingang ueber double zurueck
+   |             for (size_t i = 0; i < n; ++i)
+   |             {
+   |                 kanaele[0][i] = (float) dryL[i];
+   |                 if (numKanaele > 1) kanaele[1][i] = (float) dryR[i];
+   |             }
+   |         beendeHoerHalt();   // X-1: die Hoermatrix mischt jetzt keinen Candidate mehr
+   |         return;
+SHA-256 mutiert: 76505044656CECF9AA931DFD4249EDEF86372D2F3A02F34E986C1145FF2D94F2  eq-copilot/plugin/dsp/DspKern.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:00:09) ==
+Bau Exit 0 (2026-09-23 10:00:09 bis 2026-09-23 10:00:12), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:12.739, juengste mutierte Quelle DspKern.cpp 10:00:09.906, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 1 (2026-09-23 10:00:12); Zeilen mit ok: 144; Zeilen mit FEHLER/ROT: 1
+  FEHLER  312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit eq_enabled aus, im Hard-Bypass und nach releaseResources() ohne neues prepareToPlay ist der Ausgang ueber 10 Bloecke processBlock, 20 processBlockBypassed und 10 processBlock bytegleich zum Eingang - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf -, und die Zaehler fuer nicht endliche Eingaenge und geheilte Filterzustaende steigen nicht  [(a) Default: 220 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (b) Hard-Bypass: 220 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (c) unvorbereitet: 0 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10]
+   SONDE-NULLTEST FEHLGESCHLAGEN - 144 Pruefungen ok, 1 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:00:13) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:00:13.500
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:00:13) ==
+Bau Exit 0 (2026-09-23 10:00:13 bis 2026-09-23 10:00:16), Ziele: EqCopProbeeqNullTest
+Binary EqCopProbeeqNullTest.exe 10:00:16.096, juengste mutierte Quelle DspKern.cpp 10:00:13.500, Binary juenger: True
+Lauf A16 EqCopProbeeqNullTest Exit 0 (2026-09-23 10:00:16); Zeilen mit ok: 145; Zeilen mit FEHLER/ROT: 0
+   SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

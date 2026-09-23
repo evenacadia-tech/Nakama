@@ -1,0 +1,56 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-101-b.txt) (Manifest §47.1; Etappe 7b, Teil 2)
+
+Matrixzeile: 312/M-101 (T3-01-09, R-312-1, Grundgesetz, Messgeraet), Haelfte (b), Etikett Regressionswache.
+Zusage: 0 Sperren und 0 Allokationen ueber 4000 Bloecke mit Eintrittswechseln, Hostautomation, Programmwechseln, reset, releaseResources und prepareToPlay; Latenz 0, Tail 0,0.
+Bein: B7 EqCopTransactionTest, Fall 312/M-101 (b).
+Mutation an der Zusagezeile: in der Stufe (DspKern::uebernimmHostbypass, im Bypasseintritt) einen std::vector anlegen.
+Erwartetes Rot: RtWache::allokationen() steigt - M-101 (b) rot.
+
+== 0. Vorlauf am gebauten Stand ohne Mutation (2026-09-23 10:01:16) ==
+Bau Exit 0 (2026-09-23 10:01:16 bis 2026-09-23 10:01:17), Ziele: EqCopTransactionTest
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:17); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 10:01:19) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\a2190dfe\tmp\sicherung-DspKern.cpp-100119659
+
+== 2. Mutation (2026-09-23 10:01:19) ==
+Datei eq-copilot/plugin/dsp/DspKern.cpp, ab Zeile 1226
+-- vorher:
+   |     if (wunsch == hostbypassZiel)
+   |         return;
+-- nachher:
+   |     if (wunsch)   // ROTBEWEIS M-101 (b): eine Allokation in der Stufe
+   |     {
+   |         std::vector<int> probe (1);
+   |         hostbypassFadeRest += probe[0];
+   |     }
+   |     if (wunsch == hostbypassZiel)
+   |         return;
+SHA-256 mutiert: F3F687856F8D42117025D2C09DAB2DED07D2B23F7C67FF16E6EB8AD67DF31C98  eq-copilot/plugin/dsp/DspKern.cpp
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 10:01:19) ==
+Bau Exit 0 (2026-09-23 10:01:19 bis 2026-09-23 10:01:22), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:22.306, juengste mutierte Quelle DspKern.cpp 10:01:19.693, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 1 (2026-09-23 10:01:22); Zeilen mit ok: 260; Zeilen mit FEHLER/ROT: 2
+  FEHLER  312/M-101 (a) hostbypass_ist_echtzeitfest: wache_beginnt_am_bypasseintritt (R-312-1, [SONDE-015] M-47): Aufbau HB mit Testplayhead, 200 Bloecke ueber processBlockBypassed - RtWache::sperren() zaehlt genau 200, eine je Block an der Playhead-Stelle vor der Stempelbildung, und RtWache::allokationen() bleibt 0  [gemeldete Sperren 200 bei 200 Playhead-Aufrufen, RtWache::allokationen 199, eigener Zaehler 199]
+  FEHLER  312/M-101 (b) hostbypass_ist_echtzeitfest (R-312-1, [SONDE-015] M-47, M-51, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Eintrittswechseln alle 37 Bloecke, Hostautomation aus einem zweiten Thread, Programmwechseln, reset(), releaseResources() und prepareToPlay mitten im Lauf - RtWache::sperren() und RtWache::allokationen() bleiben in beiden Eintritten 0, die gemeldete Latenz 0 Samples und getTailLengthSeconds() 0,0  [RtWache::sperren 0, RtWache::allokationen 1999, eigener Zaehler 1999, Eintrittswechsel 109, Bypassbloecke 2002, Programme 9, Hostschreibrunden waehrend der Bloecke 668968, Latenz 0 ja]
+   262 geprueft, 2 Fehler
+   TRANSAKTION FEHLGESCHLAGEN
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-101 (b)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 10:01:24) ==
+3DFF874B4F71613A4D9FB611E63F2478765ADD3336EAA980282830C8BE01E644  eq-copilot/plugin/dsp/DspKern.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 10:01:24.576
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 10:01:24) ==
+Bau Exit 0 (2026-09-23 10:01:24 bis 2026-09-23 10:01:27), Ziele: EqCopTransactionTest
+Binary EqCopTransactionTest.exe 10:01:27.299, juengste mutierte Quelle DspKern.cpp 10:01:24.576, Binary juenger: True
+Lauf B7 EqCopTransactionTest Exit 0 (2026-09-23 10:01:27); Zeilen mit ok: 262; Zeilen mit FEHLER/ROT: 0
+   262 geprueft, 0 Fehler
+   TRANSAKTION OK
+Nach der Ruecknahme gruen: JA
+
+Rotbeweis: GELUNGEN - rot an der Zusage, bytegleich zurueck, wieder gruen

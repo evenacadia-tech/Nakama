@@ -1,0 +1,25 @@
+=== B5: 256 Samples in ms je Rate ===
+    44.1 kHz:  5.805 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> ja)
+    48.0 kHz:  5.333 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> ja)
+    88.2 kHz:  2.902 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+    96.0 kHz:  2.667 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+   176.4 kHz:  1.451 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+   192.0 kHz:  1.333 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+   384.0 kHz:  0.667 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+   768.0 kHz:  0.333 ms  (Entwurf 41.2 Dry<->Processed: 5-20 ms -> NEIN)
+  Grenzrate fuer >= 5 ms: 51200 Hz
+
+=== K11: statische Kennlinie, Sinus auf Bandmitte eines Bells (out_dB = in_dB + g_dyn) ===
+  Range  -3.0 dB: Steigung unter t 1.000, im 12-dB-Bereich 0.750 (Ratio 1.33:1), ueber t+12 1.000; Knick (Steigungssprung) bei t: -0.250, bei t+12: +0.250
+  Range  -6.0 dB: Steigung unter t 1.000, im 12-dB-Bereich 0.500 (Ratio 2.00:1), ueber t+12 1.000; Knick (Steigungssprung) bei t: -0.500, bei t+12: +0.500
+  Range -12.0 dB: Steigung unter t 1.000, im 12-dB-Bereich 0.000 (Ratio inf:1), ueber t+12 1.000; Knick (Steigungssprung) bei t: -1.000, bei t+12: +1.000
+  Range  +6.0 dB: Steigung unter t 1.000, im 12-dB-Bereich 1.500 (Ratio 0.67:1), ueber t+12 1.000; Knick (Steigungssprung) bei t: +0.500, bei t+12: -0.500
+  Range +12.0 dB: Steigung unter t 1.000, im 12-dB-Bereich 2.000 (Ratio 0.50:1), ueber t+12 1.000; Knick (Steigungssprung) bei t: +1.000, bei t+12: -1.000
+
+=== K12: Width-Pegel und Detektorpegel je Konvention ===
+  width 0.0: Ausgangspegel unkorreliertes Stereo /2:  -3.02 dB, 1/sqrt2:  -3.02 dB
+  width 1.0: Ausgangspegel unkorreliertes Stereo /2:  +0.00 dB, 1/sqrt2:  +0.00 dB
+  width 1.4: Ausgangspegel unkorreliertes Stereo /2:  +1.71 dB, 1/sqrt2:  +1.71 dB
+  width 2.0: Ausgangspegel unkorreliertes Stereo /2:  +3.98 dB, 1/sqrt2:  +3.98 dB
+  Mittensignal L=R: Detektorleistung mid-Band gegen stereo-Band (/2 (Code)): +0.00 dB
+  Mittensignal L=R: Detektorleistung mid-Band gegen stereo-Band (1/sqrt2): +3.01 dB

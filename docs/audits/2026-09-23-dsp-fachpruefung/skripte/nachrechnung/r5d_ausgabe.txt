@@ -1,0 +1,1 @@
+stationaer max 0.997; DF2T-Rampe 8.28 (+18.4 dB) | SVF-Rampe 1.00 (-0.0 dB) | Crossfade kalt 1.00 (-0.0 dB)

@@ -1,0 +1,9 @@
+('highshelf', 80, 24, 10, 40, 6, -10) Ton 68.0 Vorlauf 2.00000 s: Produkt +16.34 | SVF +9.17 | eingeschwungen -0.000
+('highshelf', 80, 24, 10, 40, 6, -10) Ton 68.0 Vorlauf 2.00368 s: Produkt +22.62 | SVF +5.89 | eingeschwungen -0.000
+('highshelf', 80, 24, 10, 40, 6, -10) Ton 68.0 Vorlauf 2.00735 s: Produkt +16.28 | SVF +9.17 | eingeschwungen -0.000
+('lowshelf', 8000, 24, 12, 8000, 24, -8) Ton 7303.5 Vorlauf 2.00000 s: Produkt +11.10 | SVF +1.36 | eingeschwungen -0.017
+('lowshelf', 8000, 24, 12, 8000, 24, -8) Ton 7303.5 Vorlauf 2.00003 s: Produkt +11.14 | SVF +1.33 | eingeschwungen -0.017
+('lowshelf', 8000, 24, 12, 8000, 24, -8) Ton 7303.5 Vorlauf 2.00007 s: Produkt +11.14 | SVF +1.30 | eingeschwungen -0.193
+('bell', 1000, 24, -10, 1000, 24, 10) Ton 1046.6 Vorlauf 2.00000 s: Produkt +2.79 | SVF +0.98 | eingeschwungen -0.002
+('bell', 1000, 24, -10, 1000, 24, 10) Ton 1046.6 Vorlauf 2.00024 s: Produkt +2.79 | SVF +0.98 | eingeschwungen -0.002
+('bell', 1000, 24, -10, 1000, 24, 10) Ton 1046.6 Vorlauf 2.00048 s: Produkt +2.79 | SVF +0.98 | eingeschwungen -0.002

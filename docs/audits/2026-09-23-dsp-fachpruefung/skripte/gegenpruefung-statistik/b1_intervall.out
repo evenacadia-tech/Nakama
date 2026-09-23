@@ -1,0 +1,14 @@
+Anteil der Laeufe, deren 95-%-Intervall die 0 NICHT enthaelt (R=20000 je Zeile)
+  n_r=  2: K 100.0 % | E n_b=n_r 100.0 % | E n_b=2n_r 100.0 %
+  n_r=  4: K 100.0 % | E n_b=n_r 100.0 % | E n_b=2n_r 100.0 %
+  n_r=  5: K  64.8 % | E n_b=n_r  73.3 % | E n_b=2n_r  70.6 %
+  n_r=  6: K  49.8 % | E n_b=n_r  61.5 % | E n_b=2n_r  56.2 %
+  n_r=  8: K  37.1 % | E n_b=n_r  49.4 % | E n_b=2n_r  43.3 %
+  n_r= 12: K  23.0 % | E n_b=n_r  36.8 % | E n_b=2n_r  30.5 %
+  n_r= 16: K  18.3 % | E n_b=n_r  31.0 % | E n_b=2n_r  25.5 %
+  n_r= 20: K  15.2 % | E n_b=n_r  27.8 % | E n_b=2n_r  22.1 %
+  n_r= 24: K  13.5 % | E n_b=n_r  26.4 % | E n_b=2n_r  20.7 %
+  n_r= 32: K  11.4 % | E n_b=n_r  24.1 % | E n_b=2n_r  18.8 %
+  n_r= 40: K   8.9 % | E n_b=n_r  21.6 % | E n_b=2n_r  16.2 %
+  n_r= 64: K   8.2 % | E n_b=n_r  20.2 % | E n_b=2n_r  14.4 %
+  n_r=100: K   6.7 % | E n_b=n_r  18.5 % | E n_b=2n_r  13.1 %

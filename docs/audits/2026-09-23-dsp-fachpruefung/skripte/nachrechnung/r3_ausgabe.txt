@@ -1,0 +1,19 @@
+(a) max |20log10(|H_svf|/|H_rbj|)| ueber das Raster (1 Hz..0,4999 fs):
+   bell       erweitert   2.13e-07 dB   schlechtester Fall fs=192000 f0=20.0 Q=24.000 g=+21
+   bell       vertrag     9.85e-08 dB   schlechtester Fall fs=176400 f0=20.0 Q=24.000 g=+12
+   highshelf  erweitert   3.56e-07 dB   schlechtester Fall fs=176400 f0=20.0 Q=24.000 g=+24
+   highshelf  vertrag     1.50e-07 dB   schlechtester Fall fs=192000 f0=20.0 Q=18.621 g=+12
+   lowshelf   erweitert   4.12e-07 dB   schlechtester Fall fs=176400 f0=20.0 Q=24.000 g=-24
+   lowshelf   vertrag     2.20e-07 dB   schlechtester Fall fs=192000 f0=24.7 Q=24.000 g=-12
+
+(b) mpmath (60 Stellen) in den schlechtesten Faellen:
+   bell       erweitert  exakte Entwuerfe: 1.35e-53 dB | double-Koeffizienten exakt ausgewertet: 1.98e-08 dB
+   bell       vertrag    exakte Entwuerfe: 1.3e-54 dB | double-Koeffizienten exakt ausgewertet: 1.04e-08 dB
+   highshelf  erweitert  exakte Entwuerfe: 6.58e-53 dB | double-Koeffizienten exakt ausgewertet: 2.00e-07 dB
+   highshelf  vertrag    exakte Entwuerfe: 2.36e-53 dB | double-Koeffizienten exakt ausgewertet: 8.01e-08 dB
+   lowshelf   erweitert  exakte Entwuerfe: 7.87e-53 dB | double-Koeffizienten exakt ausgewertet: 3.32e-07 dB
+   lowshelf   vertrag    exakte Entwuerfe: 3.31e-53 dB | double-Koeffizienten exakt ausgewertet: 1.46e-07 dB
+
+(c) Zeitbereich (Rauschen, 2^16 Samples, beide Produkt-Ticks double): max|y_svf - y_rbj| / rms(y)
+   schlechtester Fall: 7.09e-09 (-163.0 dB unter dem Signal) bei ('lowshelf', 176400.0, 20.0, 24.0, 24.0)
+   dort: RBJ-DF2T(double) gegen dd-Referenz -194.1 dB, SVF(double) gegen dd-Referenz -163.1 dB (rel. zum Signal-RMS)

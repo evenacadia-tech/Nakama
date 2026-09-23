@@ -1,0 +1,2 @@
+Q   12: Energie -0.566 dB, Betrag -0.346 dB
+Q   24: Energie -0.294 dB, Betrag -0.176 dB

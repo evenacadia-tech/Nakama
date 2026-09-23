@@ -1,0 +1,70 @@
+Analytisch, zwei Pole in Reihe fuer einen Leistungssprung (Attack-Pol ~0):
+  tau_m=10 ms: e_db auf -1 dB unter Endwert nach 15.81 ms
+  tau_m=10 ms: e_db auf -3 dB unter Endwert nach 6.96 ms
+
+Quadraturton auf der Bandmitte (E-25), Release 100 ms, Hold 0, Range -12 dB
+Zeit ab Toneinsatz bis dauerhaft innerhalb 1 dB des Endwerts, fuer e_db und fuer die Auslenkung g_dyn
+ (Steuerrate addiert 0,17..0,31 ms bei 48 kHz, hier nicht simuliert)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn  16.38 ms (ohne Fenster  0.79)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn  16.38 ms (ohne Fenster  0.79)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn  16.38 ms (ohne Fenster  0.79)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn  10.54 ms (ohne Fenster  0.60)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn   2.79 ms (ohne Fenster  0.21)
+  f0   1000 Q 1.000 Attack   0.1 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.38 ms (ohne Fenster  0.79) | g_dyn   0.54 ms (ohne Fenster  0.04)
+
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn  17.33 ms (ohne Fenster  2.12)
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn  17.33 ms (ohne Fenster  2.12)
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn  17.33 ms (ohne Fenster  2.12)
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn  11.48 ms (ohne Fenster  1.52)
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn   3.69 ms (ohne Fenster  0.65)
+  f0   1000 Q 1.000 Attack   1.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.33 ms (ohne Fenster  2.12) | g_dyn   0.92 ms (ohne Fenster  0.12)
+
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn  30.04 ms (ohne Fenster 16.29)
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn  30.04 ms (ohne Fenster 16.29)
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn  30.04 ms (ohne Fenster 16.29)
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn  21.88 ms (ohne Fenster 10.44)
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn   8.69 ms (ohne Fenster  2.71)
+  f0   1000 Q 1.000 Attack  10.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  30.04 ms (ohne Fenster 16.29) | g_dyn   2.10 ms (ohne Fenster  0.48)
+
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn  16.23 ms (ohne Fenster  0.62)
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn  16.23 ms (ohne Fenster  0.62)
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn  16.23 ms (ohne Fenster  0.62)
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn  10.40 ms (ohne Fenster  0.54)
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn   2.65 ms (ohne Fenster  0.15)
+  f0   1000 Q 0.707 Attack   0.1 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  16.23 ms (ohne Fenster  0.62) | g_dyn   0.46 ms (ohne Fenster  0.04)
+
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn  17.19 ms (ohne Fenster  1.94)
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn  17.19 ms (ohne Fenster  1.94)
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn  17.19 ms (ohne Fenster  1.94)
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn  11.33 ms (ohne Fenster  1.35)
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn   3.54 ms (ohne Fenster  0.56)
+  f0   1000 Q 0.707 Attack   1.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  17.19 ms (ohne Fenster  1.94) | g_dyn   0.83 ms (ohne Fenster  0.08)
+
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn  29.90 ms (ohne Fenster 16.15)
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn  29.90 ms (ohne Fenster 16.15)
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn  29.90 ms (ohne Fenster 16.15)
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn  21.73 ms (ohne Fenster 10.29)
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn   8.54 ms (ohne Fenster  2.56)
+  f0   1000 Q 0.707 Attack  10.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  29.90 ms (ohne Fenster 16.15) | g_dyn   1.98 ms (ohne Fenster  0.40)
+
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn  21.31 ms (ohne Fenster  6.35)
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn  21.31 ms (ohne Fenster  6.35)
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn  21.31 ms (ohne Fenster  6.35)
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn  15.42 ms (ohne Fenster  5.27)
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn   6.58 ms (ohne Fenster  1.17)
+  f0    100 Q 1.000 Attack   0.1 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  21.31 ms (ohne Fenster  6.35) | g_dyn   1.33 ms (ohne Fenster  0.25)
+
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn  22.27 ms (ohne Fenster  7.98)
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn  22.27 ms (ohne Fenster  7.98)
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn  22.27 ms (ohne Fenster  7.98)
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn  16.35 ms (ohne Fenster  6.21)
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn   7.44 ms (ohne Fenster  2.19)
+  f0    100 Q 1.000 Attack   1.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  22.27 ms (ohne Fenster  7.98) | g_dyn   1.92 ms (ohne Fenster  0.52)
+
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel    3 dB ueber Threshold (Endauslenkung  -3.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn  34.71 ms (ohne Fenster 21.23)
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel    6 dB ueber Threshold (Endauslenkung  -6.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn  34.71 ms (ohne Fenster 21.23)
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel   11 dB ueber Threshold (Endauslenkung -11.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn  34.71 ms (ohne Fenster 21.23)
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel   13 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn  26.48 ms (ohne Fenster 15.33)
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel   18 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn  12.71 ms (ohne Fenster  6.50)
+  f0    100 Q 1.000 Attack  10.0 ms, Pegel   30 dB ueber Threshold (Endauslenkung -12.00 dB): e_db  34.71 ms (ohne Fenster 21.23) | g_dyn   4.17 ms (ohne Fenster  1.25)
+

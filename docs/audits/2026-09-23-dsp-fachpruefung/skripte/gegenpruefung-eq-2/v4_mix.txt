@@ -1,0 +1,30 @@
+=== Mix-Frequenzgang bei 48 kHz ===
+  low_cut 100 Hz Q 4:
+    Mix 0.25: tiefste Stelle   -7.02 dB bei    82.1 Hz (Wet dort  +4.85 dB, Phase +147.8 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  +1.49 dB)
+    Mix 0.50: tiefste Stelle  -15.80 dB bei    69.2 Hz (Wet dort  -1.17 dB, Phase +161.6 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -0.57 dB)
+    Mix 0.75: tiefste Stelle  -27.77 dB bei    49.7 Hz (Wet dort  -9.81 dB, Phase +170.6 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -6.15 dB)
+  low_cut 100 Hz Q 0,707:
+    Mix 0.25: tiefste Stelle   -3.07 dB bei    60.8 Hz (Wet dort  -9.20 dB, Phase +126.2 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -1.55 dB)
+    Mix 0.50: tiefste Stelle   -7.59 dB bei    55.0 Hz (Wet dort -10.76 dB, Phase +131.9 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -3.81 dB)
+    Mix 0.75: tiefste Stelle  -15.78 dB bei    43.9 Hz (Wet dort -14.47 dB, Phase +142.4 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -8.14 dB)
+  low_cut 100 Hz Q 1 (Vertragsdefault):
+    Mix 0.25: tiefste Stelle   -3.41 dB bei    66.5 Hz (Wet dort  -5.85 dB, Phase +130.0 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -1.14 dB)
+    Mix 0.50: tiefste Stelle   -8.47 dB bei    59.5 Hz (Wet dort  -7.89 dB, Phase +137.3 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -3.08 dB)
+    Mix 0.75: tiefste Stelle  -17.54 dB bei    46.2 Hz (Wet dort -12.60 dB, Phase +149.5 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -7.42 dB)
+  high_cut 8 kHz Q 0,707:
+    Mix 0.25: tiefste Stelle   -3.07 dB bei 11602.7 Hz (Wet dort  -9.20 dB, Phase -126.2 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -1.55 dB)
+    Mix 0.50: tiefste Stelle   -7.59 dB bei 12367.2 Hz (Wet dort -10.76 dB, Phase -131.9 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -3.81 dB)
+    Mix 0.75: tiefste Stelle  -15.78 dB bei 14069.9 Hz (Wet dort -14.47 dB, Phase -142.4 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -8.14 dB)
+  bell 1 kHz Q 1 -12 dB (minimalphasig, Phase klein):
+    Mix 0.25: tiefste Stelle   -1.80 dB bei  1000.0 Hz (Wet dort -12.00 dB, Phase   +0.0 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -1.80 dB)
+    Mix 0.50: tiefste Stelle   -4.07 dB bei  1000.0 Hz (Wet dort -12.00 dB, Phase   +0.0 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -4.07 dB)
+    Mix 0.75: tiefste Stelle   -7.16 dB bei  1000.0 Hz (Wet dort -12.00 dB, Phase   +0.0 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -7.16 dB)
+  low_shelf 200 Hz Q 0,707 -12 dB:
+    Mix 0.25: tiefste Stelle   -1.84 dB bei   103.8 Hz (Wet dort -10.98 dB, Phase  +34.9 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -1.72 dB)
+    Mix 0.50: tiefste Stelle   -4.14 dB bei    89.8 Hz (Wet dort -11.39 dB, Phase  +29.8 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -3.95 dB)
+    Mix 0.75: tiefste Stelle   -7.22 dB bei    67.7 Hz (Wet dort -11.79 dB, Phase  +21.5 Grad; ohne Phasenbeachtung waere mix*|H|+(1-mix) =  -7.07 dB)
+
+=== Mix 0,5 mit Auto-Gain im Wet-Zweig (Reihenfolge DspKern.cpp:1040-1048) ===
+  ag +0.0 dB: tiefste Stelle  -15.80 dB bei 69.2 Hz; oben (10 kHz) +0.00 dB
+  ag -1.0 dB: tiefste Stelle  -15.18 dB bei 71.0 Hz; oben (10 kHz) -0.49 dB
+  ag +3.0 dB: tiefste Stelle  -17.69 dB bei 63.4 Hz; oben (10 kHz) +1.63 dB

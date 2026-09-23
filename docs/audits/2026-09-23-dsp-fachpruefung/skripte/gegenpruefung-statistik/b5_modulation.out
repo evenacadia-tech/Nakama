@@ -1,0 +1,9 @@
+X = Spannweite der wahren Pegelbewegung (gleichverteilt), wahre P95-P50 = 0.45*X
+  X= 0 dB  Rauschen 1 Bin                     wahr 0.0 dB  M1-Spanne Median  6.0 dB  'Wellen'  37.7 %  'wellig'(>10)   0.0 %
+  X= 0 dB  Ton+Rauschen 1 Bin, Excess 10 dB   wahr 0.0 dB  M1-Spanne Median  3.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  X= 4 dB  Rauschen 1 Bin                     wahr 1.8 dB  M1-Spanne Median  7.0 dB  'Wellen'  68.0 %  'wellig'(>10)   0.0 %
+  X= 4 dB  Ton+Rauschen 1 Bin, Excess 10 dB   wahr 1.8 dB  M1-Spanne Median  3.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  X= 8 dB  Rauschen 1 Bin                     wahr 3.6 dB  M1-Spanne Median  8.0 dB  'Wellen' 100.0 %  'wellig'(>10)   0.0 %
+  X= 8 dB  Ton+Rauschen 1 Bin, Excess 10 dB   wahr 3.6 dB  M1-Spanne Median  5.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  X=12 dB  Rauschen 1 Bin                     wahr 5.4 dB  M1-Spanne Median  9.0 dB  'Wellen' 100.0 %  'wellig'(>10)   0.0 %
+  X=12 dB  Ton+Rauschen 1 Bin, Excess 10 dB   wahr 5.4 dB  M1-Spanne Median  6.0 dB  'Wellen'  43.7 %  'wellig'(>10)   0.0 %

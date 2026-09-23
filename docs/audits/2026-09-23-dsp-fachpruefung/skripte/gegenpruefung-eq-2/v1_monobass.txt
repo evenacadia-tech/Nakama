@@ -1,0 +1,37 @@
+=== (a) analytisch, fs = 48 kHz, Hochpass RBJ Q = 1/sqrt(2) nur auf S ===
+fc = 60 Hz
+   0.25*fc =    15.0 Hz: Rest-Seite  -24.10 dB, Phase   159.3 Grad, R/L hart links    1.01 dB | LR4+Allpass: R/L    -0.07 dB, |Allpass| +0.0000 dB, Allpass-Phase   -41.3 Grad
+   0.50*fc =    30.0 Hz: Rest-Seite  -12.30 dB, Phase   136.7 Grad, R/L hart links    3.01 dB | LR4+Allpass: R/L    -1.02 dB, |Allpass| +0.0000 dB, Allpass-Phase   -86.6 Grad
+   1.00*fc =    60.0 Hz: Rest-Seite   -3.01 dB, Phase    90.0 Grad, R/L hart links   -0.00 dB | LR4+Allpass: R/L    -9.54 dB, |Allpass| +0.0000 dB, Allpass-Phase   180.0 Grad
+   2.00*fc =   120.0 Hz: Rest-Seite   -0.26 dB, Phase    43.3 Grad, R/L hart links   -8.02 dB | LR4+Allpass: R/L   -30.37 dB, |Allpass| -0.0000 dB, Allpass-Phase    86.6 Grad
+   4.00*fc =   240.0 Hz: Rest-Seite   -0.02 dB, Phase    20.7 Grad, R/L hart links  -14.79 dB | LR4+Allpass: R/L   -54.21 dB, |Allpass| -0.0000 dB, Allpass-Phase    41.3 Grad
+  10.00*fc =   600.0 Hz: Rest-Seite   -0.00 dB, Phase     8.1 Grad, R/L hart links  -22.97 dB | LR4+Allpass: R/L   -86.04 dB, |Allpass| -0.0000 dB, Allpass-Phase    16.3 Grad
+fc = 120 Hz
+   0.25*fc =    30.0 Hz: Rest-Seite  -24.10 dB, Phase   159.3 Grad, R/L hart links    1.01 dB | LR4+Allpass: R/L    -0.07 dB, |Allpass| -0.0000 dB, Allpass-Phase   -41.3 Grad
+   0.50*fc =    60.0 Hz: Rest-Seite  -12.30 dB, Phase   136.7 Grad, R/L hart links    3.01 dB | LR4+Allpass: R/L    -1.02 dB, |Allpass| -0.0000 dB, Allpass-Phase   -86.6 Grad
+   1.00*fc =   120.0 Hz: Rest-Seite   -3.01 dB, Phase    90.0 Grad, R/L hart links    0.00 dB | LR4+Allpass: R/L    -9.54 dB, |Allpass| +0.0000 dB, Allpass-Phase  -180.0 Grad
+   2.00*fc =   240.0 Hz: Rest-Seite   -0.26 dB, Phase    43.3 Grad, R/L hart links   -8.02 dB | LR4+Allpass: R/L   -30.37 dB, |Allpass| -0.0000 dB, Allpass-Phase    86.6 Grad
+   4.00*fc =   480.0 Hz: Rest-Seite   -0.02 dB, Phase    20.7 Grad, R/L hart links  -14.79 dB | LR4+Allpass: R/L   -54.21 dB, |Allpass| +0.0000 dB, Allpass-Phase    41.3 Grad
+  10.00*fc =  1200.0 Hz: Rest-Seite   -0.00 dB, Phase     8.1 Grad, R/L hart links  -22.98 dB | LR4+Allpass: R/L   -86.09 dB, |Allpass| -0.0000 dB, Allpass-Phase    16.2 Grad
+fc = 250 Hz
+   0.25*fc =    62.5 Hz: Rest-Seite  -24.10 dB, Phase   159.3 Grad, R/L hart links    1.01 dB | LR4+Allpass: R/L    -0.07 dB, |Allpass| +0.0000 dB, Allpass-Phase   -41.3 Grad
+   0.50*fc =   125.0 Hz: Rest-Seite  -12.31 dB, Phase   136.7 Grad, R/L hart links    3.01 dB | LR4+Allpass: R/L    -1.02 dB, |Allpass| +0.0000 dB, Allpass-Phase   -86.6 Grad
+   1.00*fc =   250.0 Hz: Rest-Seite   -3.01 dB, Phase    90.0 Grad, R/L hart links   -0.00 dB | LR4+Allpass: R/L    -9.54 dB, |Allpass| -0.0000 dB, Allpass-Phase   180.0 Grad
+   2.00*fc =   500.0 Hz: Rest-Seite   -0.26 dB, Phase    43.3 Grad, R/L hart links   -8.02 dB | LR4+Allpass: R/L   -30.38 dB, |Allpass| +0.0000 dB, Allpass-Phase    86.6 Grad
+   4.00*fc =  1000.0 Hz: Rest-Seite   -0.02 dB, Phase    20.6 Grad, R/L hart links  -14.80 dB | LR4+Allpass: R/L   -54.25 dB, |Allpass| -0.0000 dB, Allpass-Phase    41.3 Grad
+  10.00*fc =  2500.0 Hz: Rest-Seite   -0.00 dB, Phase     8.1 Grad, R/L hart links  -23.04 dB | LR4+Allpass: R/L   -86.33 dB, |Allpass| +0.0000 dB, Allpass-Phase    16.1 Grad
+
+=== (b) Zeitbereich, exakt die Samplefolge DspKern.cpp:998-1009 (width = 1), hart links, fc = 120 Hz ===
+     60.0 Hz: L'   -7.53 dB, R'   -4.52 dB, R/L   +3.01 dB, Monosumme (L'+R') gegen (L+R): max |diff| = 1.11e-16
+    240.0 Hz: L'   -0.77 dB, R'   -8.78 dB, R/L   -8.02 dB, Monosumme (L'+R') gegen (L+R): max |diff| = 1.11e-16
+    480.0 Hz: L'   -0.15 dB, R'  -14.94 dB, R/L  -14.79 dB, Monosumme (L'+R') gegen (L+R): max |diff| = 1.11e-16
+   1200.0 Hz: L'   -0.02 dB, R'  -23.01 dB, R/L  -22.98 dB, Monosumme (L'+R') gegen (L+R): max |diff| = 1.11e-16
+
+=== (c) zum Vergleich: dieselbe Stufe mit HOEHERER Ordnung, aber weiter ohne Kompensation auf M ===
+     60.0 Hz: LR4 nur auf S (ohne Allpass auf M): Rest-Seite  -24.61 dB, R/L hart links   -0.06 dB
+    240.0 Hz: LR4 nur auf S (ohne Allpass auf M): Rest-Seite   -0.53 dB, R/L hart links   -0.51 dB
+    480.0 Hz: LR4 nur auf S (ohne Allpass auf M): Rest-Seite   -0.03 dB, R/L hart links   -8.47 dB
+   1200.0 Hz: LR4 nur auf S (ohne Allpass auf M): Rest-Seite   -0.00 dB, R/L hart links  -16.92 dB
+
+=== (d) Sprung links: Richtungsstabilitaet unterhalb fc (Anteil, der nach rechts kippt) ===
+  fc = 120 Hz: groesstes R/L unterhalb fc = +3.33 dB bei 72.7 Hz (0.606*fc)

@@ -1,0 +1,100 @@
+
+=== Bell 20 Hz Q24 +12 dB  (fs = 192 kHz)
+  Koeffizienten: b = 1.0000203721479508 -1.999985903967519 0.99996596018487227 ; a1 = -1.999985903967519 a2 = 0.99998633233282308
+  Pole: komplex, max|p| = 0.9999931661, 1-r = 6.834e-06; Rauschverstaerkung 1/A(z): 109.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 1.1e-07;  float32-Koeffizienten -> max|dB| 4.49 bei 19.6 Hz
+    |H(DC)| double 0.000 dB, float32-Koeff. 0.000 dB; Pole float32 max|p| = 0.99999318 (double 0.99999317)
+    1+a1+a2 = 4.2837e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| -7.94e-08 bei 19.75 Hz, bei 20 Hz 4.10e-10 dB, Rest am Ende 2.7e-30
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| 1.08e+01 bei 19.62 Hz, bei 20 Hz 6.79e-01 dB, Rest am Ende 1.0e-29
+  Sinus 20 Hz DF2T: float64-Fehler  -205.0 dBFS RMS (-194.2 Spitze) | float32 gesamt   -0.9 dBFS RMS (   3.0 Spitze), davon Rechenrauschen  -19.9
+    gemessener Gain bei 20 Hz: Soll 12.0000 dB | float64 -2.69e-07 dB | float32 -4.352 dB
+  Sinus 20 Hz SVF : float64-Fehler  -260.6 dBFS RMS (-250.2 Spitze) | float32 gesamt  -43.2 dBFS RMS ( -40.2 Spitze), davon Rechenrauschen  -51.2
+  Sinus 1 kHz DF2T: float64-Fehler  -221.9 dBFS RMS (-212.8 Spitze) | float32 gesamt  -53.6 dBFS RMS ( -52.9 Spitze), davon Rechenrauschen  -53.6
+    gemessener Gain bei 1000 Hz: Soll 0.0000 dB | float64 -3.30e-13 dB | float32 -0.000 dB
+  Sinus 1 kHz SVF : float64-Fehler  -322.0 dBFS RMS (-309.4 Spitze) | float32 gesamt -150.0 dBFS RMS (-141.8 Spitze), davon Rechenrauschen -150.3
+  Rauschen    DF2T: float64-Fehler  -227.2 dBFS RMS (-215.9 Spitze) | float32 gesamt  -49.0 dBFS RMS ( -40.3 Spitze), davon Rechenrauschen  -49.5
+  Rauschen    SVF : float64-Fehler  -330.9 dBFS RMS (-317.7 Spitze) | float32 gesamt -114.5 dBFS RMS (-105.8 Spitze), davon Rechenrauschen -155.7
+  SVF float32-Koeffizienten -> max|dB| 0.025 (Vergleich RBJ 4.49)
+
+=== Bell 20 Hz Q24 -12 dB  (fs = 192 kHz)
+  Koeffizienten: b = 0.9999796282670651 -1.9999451607888099 0.99996596087832224 ; a1 = -1.9999451607888099 a2 = 0.99994558914538745
+  Pole: komplex, max|p| = 0.9999727942, 1-r = 2.721e-05; Rauschverstaerkung 1/A(z): 103.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 2.8e-08;  float32-Koeffizienten -> max|dB| -4.49 bei 19.6 Hz
+    |H(DC)| double -0.000 dB, float32-Koeff. 0.000 dB; Pole float32 max|p| = 0.99997279 (double 0.99997279)
+    1+a1+a2 = 4.2836e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| -1.28e-07 bei 19.87 Hz, bei 20 Hz 3.79e-09 dB, Rest am Ende 3.2e-104
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| 4.63e+00 bei 20.10 Hz, bei 20 Hz 4.02e+00 dB, Rest am Ende 1.3e-41
+  Sinus 20 Hz DF2T: float64-Fehler  -206.3 dBFS RMS (-201.8 Spitze) | float32 gesamt  -22.4 dBFS RMS ( -18.8 Spitze), davon Rechenrauschen  -48.0
+    gemessener Gain bei 20 Hz: Soll -12.0000 dB | float64 -4.99e-10 dB | float32 +3.444 dB
+  Sinus 20 Hz SVF : float64-Fehler  -272.7 dBFS RMS (-267.8 Spitze) | float32 gesamt  -71.1 dBFS RMS ( -68.0 Spitze), davon Rechenrauschen  -76.6
+  Sinus 1 kHz DF2T: float64-Fehler  -226.6 dBFS RMS (-215.4 Spitze) | float32 gesamt  -57.7 dBFS RMS ( -50.4 Spitze), davon Rechenrauschen  -57.7
+    gemessener Gain bei 1000 Hz: Soll -0.0000 dB | float64 -1.07e-13 dB | float32 -0.000 dB
+  Sinus 1 kHz SVF : float64-Fehler  -335.5 dBFS RMS (-323.2 Spitze) | float32 gesamt -155.5 dBFS RMS (-146.5 Spitze), davon Rechenrauschen -156.5
+  Rauschen    DF2T: float64-Fehler  -232.8 dBFS RMS (-222.4 Spitze) | float32 gesamt  -57.9 dBFS RMS ( -47.3 Spitze), davon Rechenrauschen  -57.9
+  Rauschen    SVF : float64-Fehler  -341.5 dBFS RMS (-324.7 Spitze) | float32 gesamt -137.4 dBFS RMS (-126.5 Spitze), davon Rechenrauschen -167.4
+  SVF float32-Koeffizienten -> max|dB| 0.013 (Vergleich RBJ 4.49)
+
+=== Bell 20 Hz Q0.15 +12 dB  (fs = 192 kHz)
+  Koeffizienten: b = 1.0032560057628837 -1.9978151189334632 0.99455954107093558 ; a1 = -1.9978151189334632 a2 = 0.99781554683381934
+  Pole: reell, max|p| = 0.9997825029, 1-r = 2.175e-04; Rauschverstaerkung 1/A(z): 87.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 4.1e-09;  float32-Koeffizienten -> max|dB| -0.30 bei 2.0 Hz
+    |H(DC)| double -0.000 dB, float32-Koeff. -1.339 dB; Pole float32 max|p| = 0.99978858 (double 0.99978250)
+    1+a1+a2 = 4.2790e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| 2.08e-09 bei 2.06 Hz, bei 20 Hz 5.24e-13 dB, Rest am Ende 2.1e-320
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| -6.18e-01 bei 2.01 Hz, bei 20 Hz -2.42e-04 dB, Rest am Ende 6.1e-42
+  Sinus 20 Hz DF2T: float64-Fehler  -227.3 dBFS RMS (-215.9 Spitze) | float32 gesamt  -43.3 dBFS RMS ( -36.1 Spitze), davon Rechenrauschen  -53.8
+    gemessener Gain bei 20 Hz: Soll 12.0000 dB | float64 +9.33e-13 dB | float32 +0.001 dB
+  Sinus 20 Hz SVF : float64-Fehler  -289.1 dBFS RMS (-275.1 Spitze) | float32 gesamt  -94.6 dBFS RMS ( -91.3 Spitze), davon Rechenrauschen -119.1
+  Sinus 1 kHz DF2T: float64-Fehler  -238.5 dBFS RMS (-228.3 Spitze) | float32 gesamt  -70.5 dBFS RMS ( -64.2 Spitze), davon Rechenrauschen  -70.5
+    gemessener Gain bei 1000 Hz: Soll 0.2778 dB | float64 -1.55e-13 dB | float32 +0.000 dB
+  Sinus 1 kHz SVF : float64-Fehler  -316.2 dBFS RMS (-303.7 Spitze) | float32 gesamt -141.3 dBFS RMS (-135.7 Spitze), davon Rechenrauschen -152.7
+  Rauschen    DF2T: float64-Fehler  -248.4 dBFS RMS (-236.7 Spitze) | float32 gesamt  -72.9 dBFS RMS ( -63.2 Spitze), davon Rechenrauschen  -73.8
+  Rauschen    SVF : float64-Fehler  -330.8 dBFS RMS (-314.4 Spitze) | float32 gesamt -138.2 dBFS RMS (-124.6 Spitze), davon Rechenrauschen -155.9
+  SVF float32-Koeffizienten -> max|dB| 0.000 (Vergleich RBJ 0.30)
+
+=== Bell 20 Hz Q0.15 -12 dB  (fs = 192 kHz)
+  Koeffizienten: b = 0.99675456140388841 -1.9913313326385811 0.99457719774632458 ; a1 = -1.9913313326385811 a2 = 0.99133175915021288
+  Pole: reell, max|p| = 0.9999505160, 1-r = 4.948e-05; Rauschverstaerkung 1/A(z): 81.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 1.6e-09;  float32-Koeffizienten -> max|dB| -0.12 bei 3.0 Hz
+    |H(DC)| double 0.000 dB, float32-Koeff. 0.000 dB; Pole float32 max|p| = 0.99995160 (double 0.99995052)
+    1+a1+a2 = 4.2651e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| -2.87e-09 bei 2.98 Hz, bei 20 Hz -2.07e-12 dB, Rest am Ende 2.1e-185
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| -1.22e-01 bei 2.70 Hz, bei 20 Hz 2.42e-03 dB, Rest am Ende 2.6e-41
+  Sinus 20 Hz DF2T: float64-Fehler  -246.4 dBFS RMS (-236.5 Spitze) | float32 gesamt  -65.3 dBFS RMS ( -58.7 Spitze), davon Rechenrauschen  -72.1
+    gemessener Gain bei 20 Hz: Soll -12.0000 dB | float64 +6.22e-13 dB | float32 +0.000 dB
+  Sinus 20 Hz SVF : float64-Fehler  -309.7 dBFS RMS (-293.9 Spitze) | float32 gesamt -120.5 dBFS RMS (-114.5 Spitze), davon Rechenrauschen -137.1
+  Sinus 1 kHz DF2T: float64-Fehler  -247.5 dBFS RMS (-237.0 Spitze) | float32 gesamt  -68.5 dBFS RMS ( -67.9 Spitze), davon Rechenrauschen  -68.5
+    gemessener Gain bei 1000 Hz: Soll -0.2778 dB | float64 -8.08e-13 dB | float32 -0.000 dB
+  Sinus 1 kHz SVF : float64-Fehler  -322.2 dBFS RMS (-308.2 Spitze) | float32 gesamt -145.3 dBFS RMS (-140.9 Spitze), davon Rechenrauschen -155.7
+  Rauschen    DF2T: float64-Fehler  -254.8 dBFS RMS (-243.1 Spitze) | float32 gesamt  -80.7 dBFS RMS ( -70.5 Spitze), davon Rechenrauschen  -80.7
+  Rauschen    SVF : float64-Fehler  -341.2 dBFS RMS (-324.9 Spitze) | float32 gesamt -157.0 dBFS RMS (-142.5 Spitze), davon Rechenrauschen -166.9
+  SVF float32-Koeffizienten -> max|dB| 0.000 (Vergleich RBJ 0.12)
+
+=== low_cut 20 Hz Q24  (fs = 192 kHz)
+  Koeffizienten: b = 0.99998625771151584 -1.9999725154230317 0.99998625771151584 ; a1 = -1.9999723012418367 a2 = 0.99997272960422701
+  Pole: komplex, max|p| = 0.9999863647, 1-r = 1.364e-05; Rauschverstaerkung 1/A(z): 106.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 5.5e-08;  float32-Koeffizienten -> max|dB| 13.20 bei 18.2 Hz
+    |H(DC)| double -inf (exakt 0) dB, float32-Koeff. -inf (exakt 0) dB; Pole float32 max|p| = 0.99998635 (double 0.99998636)
+    1+a1+a2 = 4.2836e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| -2.95e-07 bei 2.08 Hz, bei 20 Hz -4.98e-10 dB, Rest am Ende 1.0e-53
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| 1.32e+01 bei 18.17 Hz, bei 20 Hz -1.23e+01 dB, Rest am Ende 3.0e-41
+  Sinus 20 Hz DF2T: float64-Fehler  -193.7 dBFS RMS (-181.6 Spitze) | float32 gesamt   18.3 dBFS RMS (  21.4 Spitze), davon Rechenrauschen  -26.0
+    gemessener Gain bei 20 Hz: Soll 27.6042 dB | float64 -2.33e-09 dB | float32 -12.270 dB
+  Sinus 1 kHz DF2T: float64-Fehler  -226.0 dBFS RMS (-215.3 Spitze) | float32 gesamt  -90.9 dBFS RMS ( -84.2 Spitze), davon Rechenrauschen  -95.5
+    gemessener Gain bei 1000 Hz: Soll 0.0035 dB | float64 -1.40e-12 dB | float32 -0.001 dB
+  Rauschen    DF2T: float64-Fehler  -231.0 dBFS RMS (-222.1 Spitze) | float32 gesamt  -39.4 dBFS RMS ( -28.5 Spitze), davon Rechenrauschen  -55.5
+
+=== low_cut 20 Hz Q0.15  (fs = 192 kHz)
+  Koeffizienten: b = 0.99782298101701061 -1.9956459620340212 0.99782298101701061 ; a1 = -1.9956457483161658 a2 = 0.99564617575187708
+  Pole: reell, max|p| = 0.9998995160, 1-r = 1.005e-04; Rauschverstaerkung 1/A(z): 84.3 dB
+  Empfindlichkeit: a1 +1 ulp (double) -> max|dB| 3.1e-09;  float32-Koeffizienten -> max|dB| 0.14 bei 2.0 Hz
+    |H(DC)| double -inf (exakt 0) dB, float32-Koeff. -inf (exakt 0) dB; Pole float32 max|p| = 0.99990197 (double 0.99989952)
+    1+a1+a2 = 4.2744e-07; relative Aufloesung von a1 in double 5.2e-10, in float32 2.8e-01
+  DF2T float64 Impulsantwort+FFT gegen Sollgang: max|dB| 4.52e-07 bei 2.15 Hz, bei 20 Hz 4.43e-09 dB, Rest am Ende 3.2e-320
+  DF2T float32 Impulsantwort+FFT gegen Sollgang: max|dB| -4.96e+01 bei 7.62 Hz, bei 20 Hz -1.36e+00 dB, Rest am Ende 9.5e-42
+  Sinus 20 Hz DF2T: float64-Fehler  -245.1 dBFS RMS (-233.8 Spitze) | float32 gesamt  -67.5 dBFS RMS ( -59.8 Spitze), davon Rechenrauschen  -69.0
+    gemessener Gain bei 20 Hz: Soll -16.4782 dB | float64 +5.52e-10 dB | float32 +0.006 dB
+  Sinus 1 kHz DF2T: float64-Fehler  -245.8 dBFS RMS (-235.8 Spitze) | float32 gesamt  -77.4 dBFS RMS ( -72.4 Spitze), davon Rechenrauschen  -77.4
+    gemessener Gain bei 1000 Hz: Soll -0.0731 dB | float64 -2.32e-13 dB | float32 -0.000 dB
+  Rauschen    DF2T: float64-Fehler  -254.5 dBFS RMS (-244.1 Spitze) | float32 gesamt  -79.3 dBFS RMS ( -67.0 Spitze), davon Rechenrauschen  -79.3

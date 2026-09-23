@@ -1,0 +1,18 @@
+(1) chi^2_2 (1 Bin, Mono), Populationsquantile in dB:
+    P95-P50 = 6.357 dB   P95-P10 = 14.538 dB   P50-P10 = 8.181 dB
+
+(2) M2-Evidenz: P-Werte je Evidenzfenster aus n Einzelfenstern (linear interpoliert), Mittel ueber Fenster
+  1 Bin(s): Population P95-P50 6.39 / P95-P10 14.56 dB | n= 2: P95-P50 2.70, P95-P10 5.10 | n= 7: P95-P50 4.82, P95-P10 11.18 | n=23: P95-P50 5.83, P95-P10 13.26
+  2 Bin(s): Population P95-P50 5.52 / P95-P10 11.07 dB | n= 2: P95-P50 2.01, P95-P10 3.79 | n= 7: P95-P50 4.03, P95-P10 8.38 | n=23: P95-P50 4.95, P95-P10 9.98
+  3 Bin(s): Population P95-P50 4.72 / P95-P10 9.49 dB | n= 2: P95-P50 1.70, P95-P10 3.21 | n= 7: P95-P50 3.46, P95-P10 7.11 | n=23: P95-P50 4.25, P95-P10 8.57
+  6 Bin(s): Population P95-P50 3.55 / P95-P10 6.90 dB | n= 2: P95-P50 1.22, P95-P10 2.31 | n= 7: P95-P50 2.58, P95-P10 5.16 | n=23: P95-P50 3.17, P95-P10 6.24
+
+(3) M1-Diagnose (Resonanzkarte) fuer stationaeres Material, 60 s bei 4096er-Stufe (~1400 Segmente):
+    Anteil 'kommt in Wellen' (lround(P95-P50) > 6) und 'wellig' (Spanne > 10 -> Werkzeugwechsel), ueber zufaellige Absolutpegel
+  Rauschen, 1 Bin, Mono                        Spanne-Median  6.0 dB  'Wellen'  38.8 %  'wellig'(>10)   0.0 %
+  Rauschen, 1 Bin, Stereo unkorreliert         Spanne-Median  4.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  Rauschen, 2 Bins, Mono                       Spanne-Median  5.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  Rauschen, 3 Bins, Mono                       Spanne-Median  5.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  stationaerer Ton + Rauschen, 1 Bin, Excess 6 dB Spanne-Median  4.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  stationaerer Ton + Rauschen, 1 Bin, Excess 10 dB Spanne-Median  3.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %
+  stationaerer Ton + Rauschen, 1 Bin, Excess 20 dB Spanne-Median  1.0 dB  'Wellen'   0.0 %  'wellig'(>10)   0.0 %

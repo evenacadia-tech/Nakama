@@ -1,0 +1,30 @@
+Baender (Index, Mitte Hz, Bins): [(120, 986, 3), (176, 4967, 13), (192, 7885, 19), (200, 9935, 25), (208, 12517, 31), (216, 15771, 39)]
+Laufzeit 0.25 ms (12 Samples), 8 Frames:
+     986 Hz: Code 1.000 | MSC je Bin 1.000 | analyt. 1.000
+    4967 Hz: Code 0.995 | MSC je Bin 1.000 | analyt. 0.995
+    7885 Hz: Code 0.990 | MSC je Bin 1.000 | analyt. 0.990
+    9935 Hz: Code 0.982 | MSC je Bin 1.000 | analyt. 0.983
+   12517 Hz: Code 0.973 | MSC je Bin 1.000 | analyt. 0.973
+   15771 Hz: Code 0.958 | MSC je Bin 1.000 | analyt. 0.958
+Laufzeit 0.50 ms (24 Samples), 8 Frames:
+     986 Hz: Code 0.999 | MSC je Bin 1.000 | analyt. 0.999
+    4967 Hz: Code 0.981 | MSC je Bin 1.000 | analyt. 0.981
+    7885 Hz: Code 0.959 | MSC je Bin 1.000 | analyt. 0.960
+    9935 Hz: Code 0.932 | MSC je Bin 1.000 | analyt. 0.931
+   12517 Hz: Code 0.897 | MSC je Bin 1.000 | analyt. 0.896
+   15771 Hz: Code 0.839 | MSC je Bin 1.000 | analyt. 0.840
+Laufzeit 1.00 ms (48 Samples), 8 Frames:
+     986 Hz: Code 0.995 | MSC je Bin 0.998 | analyt. 0.996
+    4967 Hz: Code 0.925 | MSC je Bin 0.998 | analyt. 0.926
+    7885 Hz: Code 0.847 | MSC je Bin 0.998 | analyt. 0.848
+    9935 Hz: Code 0.752 | MSC je Bin 0.998 | analyt. 0.748
+   12517 Hz: Code 0.638 | MSC je Bin 0.998 | analyt. 0.635
+   15771 Hz: Code 0.477 | MSC je Bin 0.998 | analyt. 0.477
+Laufzeit 2.00 ms (96 Samples), 8 Frames:
+     986 Hz: Code 0.979 | MSC je Bin 0.993 | analyt. 0.986
+    4967 Hz: Code 0.730 | MSC je Bin 0.993 | analyt. 0.731
+    7885 Hz: Code 0.504 | MSC je Bin 0.993 | analyt. 0.497
+    9935 Hz: Code 0.283 | MSC je Bin 0.993 | analyt. 0.275
+   12517 Hz: Code 0.123 | MSC je Bin 0.993 | analyt. 0.110
+   15771 Hz: Code 0.015 | MSC je Bin 0.993 | analyt. 0.009
+1 ms: analytische Bandkohaerenz faellt erstmals unter 0,8 bei Band 196 (8851 Hz, 22 Bins): 0.800

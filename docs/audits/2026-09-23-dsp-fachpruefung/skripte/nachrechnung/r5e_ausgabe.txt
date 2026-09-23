@@ -1,0 +1,5 @@
+Q   24 -> 6   : DF2T-Rampe  +0.0 dB | SVF-Rampe  +9.8 dB | Crossfade kalt  +0.0 dB (ueber stationaer, Ton auf f0)
+Q    6 -> 24  : DF2T-Rampe  -0.0 dB | SVF-Rampe  -0.0 dB | Crossfade kalt  -0.0 dB (ueber stationaer, Ton auf f0)
+Q   24 -> 12  : DF2T-Rampe  +0.0 dB | SVF-Rampe  +4.7 dB | Crossfade kalt  -0.0 dB (ueber stationaer, Ton auf f0)
+Q   12 -> 6   : DF2T-Rampe  +0.0 dB | SVF-Rampe  +4.6 dB | Crossfade kalt  -0.0 dB (ueber stationaer, Ton auf f0)
+Q    2 -> 0.5 : DF2T-Rampe  +0.0 dB | SVF-Rampe  +6.7 dB | Crossfade kalt  +0.0 dB (ueber stationaer, Ton auf f0)

@@ -1,0 +1,13 @@
+  RBJ bell        20 Hz Q    24 +12 dB: Polradius 0.99997266, tau    762.1 ms, T60   5.26 s
+  RBJ bell        20 Hz Q    24 -12 dB: Polradius 0.99989118, tau    191.4 ms, T60   1.32 s
+  RBJ bell        50 Hz Q     8 +12 dB: Polradius 0.99979501, tau    101.6 ms, T60   0.70 s
+  RBJ bell      1000 Hz Q     2  +6 dB: Polradius 0.97715941, tau      0.9 ms, T60   0.01 s
+  RBJ lowcut      20 Hz Q    24  +0 dB: Polradius 0.99994546, tau    382.0 ms, T60   2.64 s
+  RBJ notch       50 Hz Q    24  +0 dB: Polradius 0.99986366, tau    152.8 ms, T60   1.06 s
+  RBJ lowshelf    30 Hz Q 0.707 +12 dB: Polradius 0.99803581, tau     10.6 ms, T60   0.07 s
+  SVF bell        20 Hz Q    24 eff +24 dB: Polradius 0.99998630, tau   1520.7 ms, T60  10.50 s
+  SVF bell        20 Hz Q    24 eff +12 dB: Polradius 0.99997266, tau    762.1 ms, T60   5.26 s
+  Zeitbereich Bell 20 Hz Q24 +12: -20 dB nach 1.55 s ab Tonende
+  Zeitbereich Bell 20 Hz Q24 +12: -40 dB nach 3.30 s ab Tonende
+  Zeitbereich Bell 20 Hz Q24 +12: -60 dB nach 5.05 s ab Tonende
+  Pegel des Nachklangs 4,0 s nach Tonende: -48.4 dB re Tonpegel davor

@@ -1,0 +1,15 @@
+M-36 sowie die Kennungswege M-95/M-115 schließen ihre unmittelbaren Befunde, aber R-310-14 bleibt bei der Schleifenverdrahtung offen und F-3 ist durch drei Messlücken nicht geschlossen. Geprüft wurden ausschließlich der gebundene Diff und lesender Quellkontext; Produkt, Compiler und Tests wurden nicht gestartet. HEAD war zu Beginn und am Ende 709ee97a0c1759dbacf0f66db9fea79cb0520a81.
+
+Full review comments:
+
+- [P2] Miss alle Schleifenwirkungen an der Fassade — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-310.md:1141-1141
+  Wenn `lauf` nach dem Start nur einmal den fatalen Fehler abfragt, bei `true` mit Stopp/1 und sonst sofort mit Stopp/0 endet, erfüllt es die beschriebenen Aussagen von (a6)/(a7), ohne je Leerlaufende oder Pause abzufragen; M-40/M-56 an der Naht und die Aufbau-Wache bleiben ebenfalls grün. Auch die 250-ms-Pause und die Priorität „fatal vor Leerlauf“ sind nicht beobachtbar, obwohl §7.2 und R-310-14 sie als Fassadenwirkungen festlegen. Lass `lauf_ablauf_wie_heute` daher die vollständige Aufrufspur einschließlich eines nichtterminalen Durchlaufs prüfen und gib passende Rotbeweise an.
+
+- [P2] Warte vor Nach-Ende-Anfragen auf einen beobachtbaren Schluss — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-310.md:1216-1216
+  Wenn ein vor dem Prozessende begonnener Takt noch vor der Existenzprüfung steht, kann er die erst danach angelegte Nachprobe beantworten; §18.6 bezeichnet genau das nach R-310-15 ausdrücklich als korrekt. Damit können sowohl M-102 als auch M-97 ein korrektes Produkt als fehlerhaft melden. M-97 muss vor dem Beenden einen taktfreien Zustand synchronisieren und K2 erst nach beobachtetem `SitzungBeendet` anlegen; M-102 benötigt ebenfalls eine beobachtbare Schließgrenze oder eine entsprechend eingeschränkte Erwartung.
+
+- [P2] Miss die tatsächliche 500-ms-Wartegrenze — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-310.md:1218-1218
+  Wenn `Kern::lauf` beispielsweise mit dem Doppelten der übergebenen Schließfrist, gedeckelt bei 1 s, wartet, bleibt (a) grün, weil die Fassade weiterhin 500 ms liefert; (b) endet mit 20 ms Eingabe nach etwa 40 ms weiterhin innerhalb von 2 s, und M-97 lässt bis 1,5 s zu. Trotzdem wären die Aussagen in M-109 und §7.4, der Thread warte höchstens 500 ms zwischen Sitzungsprüfungen, falsch. Der Test muss den tatsächlich an die Warteoperation übergebenen Wert beobachten oder einen deterministischen Fristrand samt Rotbeweis prüfen, der nur das Warten verlängert.
+
+- [P2] Prüfe das Fertigschreiben eines laufenden Takts — C:\Users\phili\Projekte\Nakama\docs\beweise\NAK-310.md:1218-1218
+  Wenn die Implementierung nach einem erfolgreichen Lesen die inzwischen beendete Sitzung erneut prüft und vor `beantworte` abbricht, bleiben die vorgesehenen Tests grün: M-113(c) erzwingt einen Lesefehler, und die normalen Antworttests halten die Sitzung am Leben. M-109, R-310-15 und §7.4 versprechen jedoch ausdrücklich, dass ein vor dem Ende begonnener Takt seine Antwort zu Ende schreibt. Ergänze einen Teilfall mit bereits gültiger Anfrage, gehaltenem Takt, Sitzungsende und anschließend erwarteter Antwort vor dem Threadende.

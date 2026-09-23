@@ -1,0 +1,50 @@
+1116 Faelle mit hoerbar relevanten Toenen; Verfahrensanteil E: max +16.98 dB, Anteil E > 1 dB: 31.0 %, > 3 dB: 9.7 %, > 6 dB: 2.8 %
+Top 20 nach E:
+  highshelf f    80->40    Q    24->6     g  10->-10 | E +16.98 @    68.0 Hz | P +22.66 S  +5.68 X  -1.81 QS-Mix +19.80 QS-Param +21.76 | abs P  +16.3 abs S   -0.6 dB re Eingang
+  highshelf f    80->40    Q     6->24    g  10->-10 | E +14.65 @    73.0 Hz | P +17.62 S  +2.97 X  -0.22 QS-Mix +14.14 QS-Param +15.14 | abs P  +17.3 abs S   +2.6 dB re Eingang
+  highshelf f  8000->8000  Q    24->24    g  12->-8  | E +11.43 @  8433.9 Hz | P +11.43 S  -0.45 X  -0.21 QS-Mix +15.87 QS-Param  +7.87 | abs P  +20.8 abs S   +9.0 dB re Eingang
+  highshelf f  8000->8000  Q    24->24    g  10->-10 | E +10.72 @  8433.9 Hz | P +10.72 S  -0.13 X  -0.22 QS-Mix +15.38 QS-Param  +8.22 | abs P  +19.8 abs S   +8.9 dB re Eingang
+  highshelf f    80->40    Q     6->24    g -10->10  | E +10.25 @    35.6 Hz | P +10.25 S  -0.80 X  +9.01 QS-Mix  -0.03 QS-Param  -0.01 | abs P  +12.9 abs S   +1.9 dB re Eingang
+  highshelf f    40->80    Q     6->24    g  10->-10 | E +10.17 @    35.6 Hz | P +10.90 S  +0.73 X  +4.10 QS-Mix  -0.00 QS-Param  +0.00 | abs P  +13.6 abs S   +3.5 dB re Eingang
+  highshelf f  8000->8000  Q    24->24    g   8->-12 | E  +9.77 @  8433.9 Hz | P  +9.77 S  -0.01 X  -0.20 QS-Mix +14.16 QS-Param  +8.23 | abs P  +18.8 abs S   +9.0 dB re Eingang
+  lowshelf  f  8000->8000  Q    24->24    g  12->-8  | E  +9.67 @  7303.5 Hz | P +11.04 S  +1.37 X  -0.22 QS-Mix +16.17 QS-Param +10.58 | abs P  +22.9 abs S  +13.2 dB re Eingang
+  highshelf f    30->30    Q    24->24    g  12->-8  | E  +9.41 @    30.8 Hz | P  +9.41 S  -0.40 X  -0.60 QS-Mix +14.81 QS-Param  +2.38 | abs P  +16.8 abs S   +7.0 dB re Eingang
+  lowshelf  f  8000->8000  Q    24->24    g  10->-10 | E  +8.75 @  7303.5 Hz | P  +9.90 S  +1.15 X  -0.24 QS-Mix +15.08 QS-Param +10.39 | abs P  +21.9 abs S  +13.2 dB re Eingang
+  highshelf f    40->80    Q    24->6     g  10->-10 | E  +8.74 @    35.6 Hz | P  +9.05 S  +0.31 X  +2.87 QS-Mix  -0.00 QS-Param  +0.00 | abs P  +11.7 abs S   +3.0 dB re Eingang
+  highshelf f    80->40    Q    24->6     g -10->10  | E  +8.50 @    35.6 Hz | P  +8.50 S  -0.64 X  +6.73 QS-Mix  -0.04 QS-Param  -0.01 | abs P  +11.2 abs S   +2.1 dB re Eingang
+  highshelf f    30->30    Q     3->3     g  12->-8  | E  +8.43 @    26.7 Hz | P  +9.83 S  +1.40 X  +0.61 QS-Mix  +0.00 QS-Param  +1.07 | abs P  +11.6 abs S   +3.2 dB re Eingang
+  highshelf f    80->40    Q 2.828->0.707 g  10->-10 | E  +7.96 @    73.0 Hz | P  +7.96 S  -3.11 X  -2.46 QS-Mix  +2.73 QS-Param  +4.00 | abs P   +8.8 abs S   -2.2 dB re Eingang
+  lowshelf  f    80->40    Q     6->24    g  10->-10 | E  +7.72 @    84.3 Hz | P  +8.80 S  +1.08 X  +2.90 QS-Mix  +0.00 QS-Param  +0.00 | abs P  +12.1 abs S   +4.3 dB re Eingang
+  highshelf f    30->30    Q    24->24    g  10->-10 | E  +7.61 @    30.8 Hz | P  +8.83 S  +1.23 X  -0.52 QS-Mix +14.80 QS-Param  +3.12 | abs P  +15.5 abs S   +7.9 dB re Eingang
+  highshelf f  2000->1000  Q    24->6     g  10->-10 | E  +7.50 @  2149.2 Hz | P +10.83 S  +3.33 X  -0.23 QS-Mix +16.49 QS-Param +17.19 | abs P  +20.4 abs S  +12.9 dB re Eingang
+  lowshelf  f  8000->8000  Q    24->24    g   8->-12 | E  +7.43 @  7303.5 Hz | P  +7.68 S  +0.25 X  -0.23 QS-Mix +12.98 QS-Param  +9.51 | abs P  +20.6 abs S  +13.2 dB re Eingang
+  bell      f    80->40    Q 0.707->2.828 g -10->10  | E  +7.34 @    20.0 Hz | P  +8.07 S  +0.73 X  +2.34 QS-Mix  +0.00 QS-Param  +0.00 | abs P   +8.7 abs S   +1.4 dB re Eingang
+  highshelf f  1000->1000  Q    24->24    g  12->-8  | E  +7.27 @  1124.7 Hz | P  +7.27 S  -0.53 X  -0.15 QS-Mix +16.14 QS-Param +10.93 | abs P  +19.7 abs S  +11.9 dB re Eingang
+
+Je Typ und Kriteriumsart: max E
+  bell      f:  +3.71 | Q:  +1.80 | g:  +2.57 | f+Q+g:  +7.34
+  lowshelf  f:  +6.48 | Q:  +2.52 | g:  +9.67 | f+Q+g:  +7.72
+  highshelf f:  +6.48 | Q:  +2.52 | g: +11.43 | f+Q+g: +16.98
+  notch     f:  +6.40 | Q:  +2.00 | f+Q:  +6.41
+  lowcut    f:  +4.07 | Q:  +1.46 | f+Q:  +3.80
+  highcut   f:  +7.07 | Q:  +1.29 | f+Q:  +4.22
+
+Nur Q <= 6 an beiden Enden: 756 Faelle, max E +8.43 dB
+  highshelf f    30->30    Q     3->3     g  12->-8  | E  +8.43 @    26.7 Hz | P  +9.83 S  +1.40 | abs P  +11.6
+  highshelf f    80->40    Q 2.828->0.707 g  10->-10 | E  +7.96 @    73.0 Hz | P  +7.96 S  -3.11 | abs P   +8.8
+  bell      f    80->40    Q 0.707->2.828 g -10->10  | E  +7.34 @    20.0 Hz | P  +8.07 S  +0.73 | abs P   +8.7
+  highshelf f    80->40    Q 0.707->2.828 g -10->10  | E  +6.89 @    26.7 Hz | P  +7.45 S  +0.56 | abs P   +7.3
+  notch     f    80->40    Q 0.707->2.828 g   0->0   | E  +6.41 @    23.1 Hz | P  +6.61 S  +0.20 | abs P   +6.2
+  notch     f    40->20    Q  0.15->0.15  g   0->0   | E  +6.40 @    24.8 Hz | P  +6.40 S  -0.16 | abs P  -10.3
+  highshelf f    30->30    Q     3->3     g  10->-10 | E  +5.97 @    26.7 Hz | P  +9.00 S  +3.03 | abs P   +9.5
+  highshelf f    40->20    Q     3->3     g -12->-12 | E  +5.93 @    44.1 Hz | P +10.61 S  +4.68 | abs P   +0.4
+
+Nur Bell/Shelf, Q <= 3: 576 Faelle, max E +8.43 dB
+  highshelf f    30->30    Q     3->3     g  12->-8  | E  +8.43 @    26.7 Hz | P  +9.83 S  +1.40 | abs P  +11.6
+  highshelf f    80->40    Q 2.828->0.707 g  10->-10 | E  +7.96 @    73.0 Hz | P  +7.96 S  -3.11 | abs P   +8.8
+  bell      f    80->40    Q 0.707->2.828 g -10->10  | E  +7.34 @    20.0 Hz | P  +8.07 S  +0.73 | abs P   +8.7
+  highshelf f    80->40    Q 0.707->2.828 g -10->10  | E  +6.89 @    26.7 Hz | P  +7.45 S  +0.56 | abs P   +7.3
+  highshelf f    30->30    Q     3->3     g  10->-10 | E  +5.97 @    26.7 Hz | P  +9.00 S  +3.03 | abs P   +9.5
+  highshelf f    40->20    Q     3->3     g -12->-12 | E  +5.93 @    44.1 Hz | P +10.61 S  +4.68 | abs P   +0.4
+  lowshelf  f    40->20    Q     3->3     g  12->12  | E  +5.93 @    44.1 Hz | P +10.61 S  +4.68 | abs P  +12.4
+  highshelf f    40->80    Q 0.707->2.828 g -10->10  | E  +5.88 @    23.1 Hz | P  +6.46 S  +0.58 | abs P   +5.6

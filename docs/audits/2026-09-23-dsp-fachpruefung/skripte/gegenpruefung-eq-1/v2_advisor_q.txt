@@ -1,0 +1,6 @@
+Bandzahl je Gruppe (Befundintervall): {4: 29, 3: 35}
+  n =   3 Baender = 0.125 Okt: q_heur  8.000  RBJ-konsistent 11.538  Verhaeltnis 0.693; q_heur entspricht 0.180 Okt (1.44-fach breiter); Grenzen [4.000, 16.000]
+  n =   4 Baender = 0.167 Okt: q_heur  6.000  RBJ-konsistent  8.651  Verhaeltnis 0.694; q_heur entspricht 0.240 Okt (1.44-fach breiter); Grenzen [3.000, 12.000]
+  n = 161 Baender = 6.708 Okt: q_heur  0.149  RBJ-konsistent  0.099  Verhaeltnis 1.510; q_heur entspricht 5.554 Okt (0.83-fach breiter); Grenzen [0.075, 0.298]  < 0,15 (DSP-Vertrag min)
+  n = 221 Baender = 9.208 Okt: q_heur  0.109  RBJ-konsistent  0.041  Verhaeltnis 2.637; q_heur entspricht 6.439 Okt (0.70-fach breiter); Grenzen [0.054, 0.217]  < 0,15 (DSP-Vertrag min)
+q < 0,15 erst ab n > 160 Baendern = 6.666666666666667 Oktaven

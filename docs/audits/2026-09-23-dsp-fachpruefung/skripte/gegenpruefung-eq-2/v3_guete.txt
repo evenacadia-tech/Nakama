@@ -1,0 +1,45 @@
+=== Shelves: Ueberschwinger ueber das Plateau / unter 0 dB (1 kHz, 48 kHz) ===
+  low_shelf    +12 dB Q  0.500: max  +12.00 dB, min   +0.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  high_shelf   +12 dB Q  0.500: max  +12.00 dB, min   +0.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  low_shelf    +12 dB Q  0.707: max  +12.00 dB, min   +0.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  high_shelf   +12 dB Q  0.707: max  +12.00 dB, min   +0.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  low_shelf    +12 dB Q  1.000: max  +12.78 dB, min   -0.78 dB  -> ueber Soll  +0.78 dB, unter Soll  -0.78 dB
+  high_shelf   +12 dB Q  1.000: max  +12.78 dB, min   -0.78 dB  -> ueber Soll  +0.78 dB, unter Soll  -0.78 dB
+  low_shelf    +12 dB Q  2.000: max  +16.58 dB, min   -4.58 dB  -> ueber Soll  +4.58 dB, unter Soll  -4.58 dB
+  high_shelf   +12 dB Q  2.000: max  +16.58 dB, min   -4.58 dB  -> ueber Soll  +4.58 dB, unter Soll  -4.58 dB
+  low_shelf    +12 dB Q  4.000: max  +21.83 dB, min   -9.83 dB  -> ueber Soll  +9.83 dB, unter Soll  -9.83 dB
+  high_shelf   +12 dB Q  4.000: max  +21.83 dB, min   -9.83 dB  -> ueber Soll  +9.83 dB, unter Soll  -9.83 dB
+  low_shelf    +12 dB Q 24.000: max  +37.10 dB, min  -25.10 dB  -> ueber Soll +25.10 dB, unter Soll -25.10 dB
+  high_shelf   +12 dB Q 24.000: max  +37.10 dB, min  -25.10 dB  -> ueber Soll +25.10 dB, unter Soll -25.10 dB
+  low_shelf    -12 dB Q  0.500: max   -0.00 dB, min  -12.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  high_shelf   -12 dB Q  0.500: max   -0.00 dB, min  -12.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  low_shelf    -12 dB Q  0.707: max   -0.00 dB, min  -12.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  high_shelf   -12 dB Q  0.707: max   -0.00 dB, min  -12.00 dB  -> ueber Soll  -0.00 dB, unter Soll  +0.00 dB
+  low_shelf    -12 dB Q  1.000: max   +0.78 dB, min  -12.78 dB  -> ueber Soll  +0.78 dB, unter Soll  -0.78 dB
+  high_shelf   -12 dB Q  1.000: max   +0.78 dB, min  -12.78 dB  -> ueber Soll  +0.78 dB, unter Soll  -0.78 dB
+  low_shelf    -12 dB Q  2.000: max   +4.58 dB, min  -16.58 dB  -> ueber Soll  +4.58 dB, unter Soll  -4.58 dB
+  high_shelf   -12 dB Q  2.000: max   +4.58 dB, min  -16.58 dB  -> ueber Soll  +4.58 dB, unter Soll  -4.58 dB
+  low_shelf    -12 dB Q  4.000: max   +9.83 dB, min  -21.83 dB  -> ueber Soll  +9.83 dB, unter Soll  -9.83 dB
+  high_shelf   -12 dB Q  4.000: max   +9.83 dB, min  -21.83 dB  -> ueber Soll  +9.83 dB, unter Soll  -9.83 dB
+  low_shelf    -12 dB Q 24.000: max  +25.10 dB, min  -37.10 dB  -> ueber Soll +25.10 dB, unter Soll -25.10 dB
+  high_shelf   -12 dB Q 24.000: max  +25.10 dB, min  -37.10 dB  -> ueber Soll +25.10 dB, unter Soll -25.10 dB
+
+  RBJ-Slope S (Cookbook) zum Vergleich: 1/Q = sqrt((A + 1/A)(1/S - 1) + 2); S = 1 (steilste monotone Flanke):
+    Gain +6 dB, S = 1.0: Q = 0.7071
+    Gain +12 dB, S = 1.0: Q = 0.7071
+
+=== Cuts: ein Biquad (12 dB/Okt), Guete = Resonanz (100 Hz bzw. 5 kHz, 48 kHz) ===
+  low_cut     100 Hz Q  0.150: an der Eckfrequenz  -16.48 dB, Spitze   -0.00 dB bei  21600.0 Hz
+  low_cut     100 Hz Q  0.500: an der Eckfrequenz   -6.02 dB, Spitze   -0.00 dB bei  21600.0 Hz
+  low_cut     100 Hz Q  0.707: an der Eckfrequenz   -3.01 dB, Spitze   -0.00 dB bei  21600.0 Hz
+  low_cut     100 Hz Q  1.000: an der Eckfrequenz   -0.00 dB, Spitze   +1.25 dB bei    141.4 Hz
+  low_cut     100 Hz Q  2.000: an der Eckfrequenz   +6.02 dB, Spitze   +6.30 dB bei    106.9 Hz
+  low_cut     100 Hz Q 24.000: an der Eckfrequenz  +27.60 dB, Spitze  +27.61 dB bei    100.1 Hz
+    Steilheit zwischen 12.5 und 6.2 Hz: 12.04 dB je Oktave
+  high_cut   5000 Hz Q  0.150: an der Eckfrequenz  -16.48 dB, Spitze   -0.00 dB bei     10.0 Hz
+  high_cut   5000 Hz Q  0.500: an der Eckfrequenz   -6.02 dB, Spitze   -0.00 dB bei     10.0 Hz
+  high_cut   5000 Hz Q  0.707: an der Eckfrequenz   -3.01 dB, Spitze   -0.00 dB bei     10.0 Hz
+  high_cut   5000 Hz Q  1.000: an der Eckfrequenz   +0.00 dB, Spitze   +1.25 dB bei   3598.8 Hz
+  high_cut   5000 Hz Q  2.000: an der Eckfrequenz   +6.02 dB, Spitze   +6.30 dB bei   4697.5 Hz
+  high_cut   5000 Hz Q 24.000: an der Eckfrequenz  +27.60 dB, Spitze  +27.61 dB bei   4998.9 Hz
+    Steilheit zwischen 10800.0 und 21600.0 Hz: 34.64 dB je Oktave

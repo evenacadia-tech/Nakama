@@ -1,0 +1,66 @@
+1116 Faelle
+Produkt  (Spitze ueber groesserem stationaerem Pegel): max +61.78 dB, Median +1.96, Anteil > 1 dB: 59 %
+SVF-Param                                         : max +38.62 dB, Median +1.64, Anteil > 1 dB: 57 %
+Crossfade (A warm, B kalt)                        : max +84.37 dB, Median +0.46
+Verfahrensanteil Produkt - SVF je Ton (max ueber Toene): max +61.96 dB, Median +0.68
+
+Top 15 Produkt-Spitzen (mit SVF und Quasistatik am selben Ton):
+  lowcut    f 20000->10000 Q    24->24    g   0->0   | P +61.78 @    20.0 Hz | SVF dort  +4.45 | QS-Param dort  -0.00 | QS-Mix dort  +0.00 | X max +84.37
+  lowcut    f 10000->20000 Q    24->24    g   0->0   | P +60.69 @    21.5 Hz | SVF dort  +8.16 | QS-Param dort  -0.06 | QS-Mix dort  -0.08 | X max +80.21
+  lowcut    f 20000->10000 Q     3->3     g   0->0   | P +59.41 @    20.0 Hz | SVF dort  +4.46 | QS-Param dort  -0.00 | QS-Mix dort  +0.00 | X max +65.15
+  lowcut    f 10000->20000 Q     3->3     g   0->0   | P +58.29 @    21.5 Hz | SVF dort  +7.00 | QS-Param dort  -0.06 | QS-Mix dort  -0.09 | X max +61.89
+  lowcut    f 20000->10000 Q 0.707->0.707 g   0->0   | P +53.65 @    20.0 Hz | SVF dort  +4.42 | QS-Param dort  -0.00 | QS-Mix dort  +0.00 | X max +50.86
+  lowcut    f 10000->20000 Q 0.707->0.707 g   0->0   | P +52.36 @    21.5 Hz | SVF dort  +4.46 | QS-Param dort  -0.06 | QS-Mix dort  -0.10 | X max +50.93
+  lowcut    f  8000->8000  Q   0.6->0.15  g   0->0   | P +44.11 @    20.0 Hz | SVF dort  +9.74 | QS-Param dort  -0.00 | QS-Mix dort  -0.00 | X max +40.80
+  lowcut    f  8000->8000  Q  0.15->0.6   g   0->0   | P +44.02 @    20.0 Hz | SVF dort  +7.50 | QS-Param dort  +0.00 | QS-Mix dort  -0.00 | X max +47.37
+  lowcut    f 10000->20000 Q  0.15->0.15  g   0->0   | P +43.23 @    20.0 Hz | SVF dort  -2.52 | QS-Param dort  -0.06 | QS-Mix dort  -0.13 | X max +46.47
+  lowcut    f 20000->10000 Q  0.15->0.15  g   0->0   | P +43.18 @    20.0 Hz | SVF dort  +4.27 | QS-Param dort  -0.00 | QS-Mix dort  +0.00 | X max +46.60
+  lowcut    f  5000->10000 Q 2.828->0.707 g   0->0   | P +43.05 @    20.0 Hz | SVF dort  -5.01 | QS-Param dort  -0.05 | QS-Mix dort  -0.06 | X max +36.80
+  lowcut    f  8000->8000  Q 2.828->0.707 g   0->0   | P +41.78 @    20.0 Hz | SVF dort  +5.14 | QS-Param dort  -0.00 | QS-Mix dort  -0.00 | X max +49.33
+  lowcut    f 10000->5000  Q 0.707->2.828 g   0->0   | P +41.78 @    21.5 Hz | SVF dort  +1.92 | QS-Param dort  -0.00 | QS-Mix dort  +0.00 | X max +57.00
+  lowcut    f  8000->8000  Q 0.707->2.828 g   0->0   | P +41.66 @    20.0 Hz | SVF dort  +4.34 | QS-Param dort  +0.00 | QS-Mix dort  +0.00 | X max +61.10
+  lowcut    f  5000->10000 Q    24->6     g   0->0   | P +40.70 @    20.0 Hz | SVF dort  -2.67 | QS-Param dort  -0.05 | QS-Mix dort  -0.09 | X max +57.81
+
+Top 15 Verfahrensanteile (Produkt - SVF am selben Ton) und absolute Pegel (re Eingang) dort:
+  lowcut    f 10000->20000 Q     3->3     g   0->0   | P-S +61.96 dB @    20.0 Hz | abs P  -55.8 dB, abs S -117.7 dB re Eingang | Pmax +58.29
+  lowcut    f 10000->20000 Q    24->24    g   0->0   | P-S +58.78 dB @    20.0 Hz | abs P  -54.6 dB, abs S -113.4 dB re Eingang | Pmax +60.69
+  lowcut    f 20000->10000 Q    24->24    g   0->0   | P-S +57.33 dB @    20.0 Hz | abs P  -48.9 dB, abs S -106.3 dB re Eingang | Pmax +61.78
+  lowcut    f 10000->20000 Q 0.707->0.707 g   0->0   | P-S +56.62 dB @    20.0 Hz | abs P  -59.2 dB, abs S -115.8 dB re Eingang | Pmax +52.36
+  lowcut    f 20000->10000 Q     3->3     g   0->0   | P-S +54.96 dB @    20.0 Hz | abs P  -51.3 dB, abs S -106.3 dB re Eingang | Pmax +59.41
+  lowcut    f 20000->10000 Q 0.707->0.707 g   0->0   | P-S +50.23 dB @    21.5 Hz | abs P  -59.2 dB, abs S -109.5 dB re Eingang | Pmax +53.65
+  lowcut    f  5000->10000 Q 2.828->0.707 g   0->0   | P-S +48.06 dB @    20.0 Hz | abs P  -53.5 dB, abs S -101.6 dB re Eingang | Pmax +43.05
+  lowcut    f 10000->20000 Q  0.15->0.15  g   0->0   | P-S +45.75 dB @    20.0 Hz | abs P  -67.5 dB, abs S -113.2 dB re Eingang | Pmax +43.23
+  lowcut    f  5000->10000 Q    24->6     g   0->0   | P-S +43.36 dB @    20.0 Hz | abs P  -55.9 dB, abs S  -99.2 dB re Eingang | Pmax +40.70
+  lowcut    f  8000->8000  Q  0.15->0.6   g   0->0   | P-S +42.20 dB @    23.1 Hz | abs P  -60.6 dB, abs S -102.8 dB re Eingang | Pmax +44.02
+  lowcut    f  5000->10000 Q    24->24    g   0->0   | P-S +42.13 dB @    20.0 Hz | abs P  -56.9 dB, abs S  -99.0 dB re Eingang | Pmax +39.66
+  lowcut    f 20000->10000 Q  0.15->0.15  g   0->0   | P-S +41.86 dB @    21.5 Hz | abs P  -67.6 dB, abs S -109.5 dB re Eingang | Pmax +43.18
+  lowcut    f  5000->10000 Q     3->3     g   0->0   | P-S +41.40 dB @    20.0 Hz | abs P  -57.5 dB, abs S  -98.9 dB re Eingang | Pmax +39.04
+  lowcut    f  8000->8000  Q 2.828->0.707 g   0->0   | P-S +40.31 dB @    21.5 Hz | abs P  -64.2 dB, abs S -104.5 dB re Eingang | Pmax +41.78
+  lowcut    f  8000->8000  Q 0.707->2.828 g   0->0   | P-S +40.15 dB @    23.1 Hz | abs P  -62.9 dB, abs S -103.1 dB re Eingang | Pmax +41.66
+
+Nur Stellen mit absoluter Produktspitze >= -20 dB re Eingang: 1019 Faelle; max P-S +16.98 dB
+  highshelf f    80->40    Q    24->6     g  10->-10 | P-S +16.98 dB @    68.0 Hz | abs P  +16.3, abs S   -0.6 dB re Eingang
+  highshelf f    30->30    Q    24->24    g  12->-8  | P-S +16.45 dB @    44.1 Hz | abs P  +33.8, abs S  +17.4 dB re Eingang
+  highshelf f    80->40    Q     6->24    g  10->-10 | P-S +14.65 dB @    73.0 Hz | abs P  +17.3, abs S   +2.6 dB re Eingang
+  highshelf f    30->30    Q 0.707->0.707 g  12->-8  | P-S +13.70 dB @    44.1 Hz | abs P   +7.3, abs S   -6.4 dB re Eingang
+  highshelf f    30->30    Q     3->3     g  12->-8  | P-S +13.55 dB @    38.2 Hz | abs P  +18.8, abs S   +5.2 dB re Eingang
+  highshelf f    30->30    Q     3->3     g  10->-10 | P-S +13.37 dB @    44.1 Hz | abs P  +16.0, abs S   +2.7 dB re Eingang
+  highshelf f    30->30    Q 0.707->0.707 g  10->-10 | P-S +12.70 dB @    44.1 Hz | abs P   +4.9, abs S   -7.8 dB re Eingang
+  highshelf f  8000->8000  Q    24->24    g  12->-8  | P-S +11.88 dB @  8433.9 Hz | abs P  +20.8, abs S   +9.0 dB re Eingang
+  highshelf f    30->30    Q 0.707->0.707 g   8->-12 | P-S +11.34 dB @    44.1 Hz | abs P   +2.1, abs S   -9.2 dB re Eingang
+  highshelf f    80->40    Q    24->6     g -10->10  | P-S +11.30 dB @    28.7 Hz | abs P   +7.0, abs S   -4.3 dB re Eingang
+
+Je Typ: max Produkt, max SVF, max (P-S) mit abs P >= -20 dB
+  bell     : n=282  Pmax +10.20  Smax +10.67  Xmax +7.91  max(P-S) +10.91  max(P-S | abs>=-20) +10.91
+  lowshelf : n=282  Pmax +20.03  Smax +38.62  Xmax +22.62  max(P-S)  +9.67  max(P-S | abs>=-20)  +9.67
+  highshelf: n=282  Pmax +34.46  Smax +36.10  Xmax +28.90  max(P-S) +16.98  max(P-S | abs>=-20) +16.98
+  notch    : n= 90  Pmax  +9.49  Smax +20.46  Xmax +19.94  max(P-S)  +6.75  max(P-S | abs>=-20)  +6.75
+  lowcut   : n= 90  Pmax +61.78  Smax +20.23  Xmax +84.37  max(P-S) +61.96  max(P-S | abs>=-20)  +4.65
+  highcut  : n= 90  Pmax +22.82  Smax +21.72  Xmax +74.03  max(P-S)  +8.49  max(P-S | abs>=-20)  +5.35
+
+Je Kriteriumsart: max (P-S) mit abs P >= -20 dB
+  Q     : n=162  Pmax +44.11  Smax +20.46  max(P-S | abs>=-20)  +5.47
+  f     : n=576  Pmax +61.78  Smax +21.72  max(P-S | abs>=-20)  +6.75
+  f+Q   : n= 72  Pmax +43.05  Smax +17.31  max(P-S | abs>=-20)  +6.41
+  f+Q+g : n=144  Pmax +34.46  Smax +38.62  max(P-S | abs>=-20) +16.98
+  g     : n=162  Pmax +12.91  Smax +21.51  max(P-S | abs>=-20) +16.45

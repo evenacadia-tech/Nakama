@@ -1,0 +1,8 @@
+fc    60 Hz: |AP| max Abweichung 8.5e-11 dB; Gruppenlaufzeit bei fc/10 7.58 ms, fc 7.50 ms, 2fc 2.21 ms, 10fc 0.076 ms (analog DC: 7.50 ms)
+fc   120 Hz: |AP| max Abweichung 8.7e-12 dB; Gruppenlaufzeit bei fc/10 3.79 ms, fc 3.75 ms, 2fc 1.10 ms, 10fc 0.038 ms (analog DC: 3.75 ms)
+fc   250 Hz: |AP| max Abweichung 2.0e-12 dB; Gruppenlaufzeit bei fc/10 1.82 ms, fc 1.80 ms, 2fc 0.53 ms, 10fc 0.018 ms (analog DC: 1.80 ms)
+  HP 1. Ordnung auf S,  0.25*fc: Rest-Seite  -12.30 dB, R/L hart links   -0.97 dB
+  HP 1. Ordnung auf S,  0.50*fc: Rest-Seite   -6.99 dB, R/L hart links   -3.01 dB
+  HP 1. Ordnung auf S,  2.00*fc: Rest-Seite   -0.97 dB, R/L hart links  -12.31 dB
+  HP 1. Ordnung auf S,  4.00*fc: Rest-Seite   -0.26 dB, R/L hart links  -18.13 dB
+  HP 1. Ordnung auf S, 10.00*fc: Rest-Seite   -0.04 dB, R/L hart links  -26.05 dB

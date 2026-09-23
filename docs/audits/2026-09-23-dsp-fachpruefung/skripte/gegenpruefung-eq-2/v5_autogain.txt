@@ -1,0 +1,15 @@
+Gitterschritt: Faktor 1.059254 = 0.9966/12 Oktave (nicht exakt 1/12: log2(1000)/120 = 0.08305 Okt)
+
+=== Bell +12 dB, Mitte innerhalb EINER Gitterzelle verschoben (um 1 kHz) ===
+  Q  24.0: Auto-Gain zwischen -0.151 und -0.551 dB (Spanne 0.400 dB); dichtes Mittel -0.293 dB
+  Q  12.0: Auto-Gain zwischen -0.459 und -0.681 dB (Spanne 0.221 dB); dichtes Mittel -0.564 dB
+  Q   8.0: Auto-Gain zwischen -0.761 und -0.861 dB (Spanne 0.100 dB); dichtes Mittel -0.816 dB
+  Q   4.0: Auto-Gain zwischen -1.465 und -1.471 dB (Spanne 0.006 dB); dichtes Mittel -1.478 dB
+  Q   1.0: Auto-Gain zwischen -3.883 und -3.885 dB (Spanne 0.002 dB); dichtes Mittel -3.905 dB
+
+=== Dasselbe mit Bell -12 dB Q 24 (Absenkung) ===
+  Auto-Gain zwischen +0.076 und +0.073 dB (Spanne 0.003 dB)
+
+=== Bell +12 dB Q 24 an einer Gitterstelle gegen die Zellmitte, alle Oktaven gleich? (Stichprobe 100 Hz, 10 kHz) ===
+  um 100 Hz: auf der Stelle -0.551 dB, in der Zellmitte -0.152 dB
+  um 10000 Hz: auf der Stelle -0.529 dB, in der Zellmitte -0.083 dB

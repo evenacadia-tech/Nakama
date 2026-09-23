@@ -1,0 +1,7 @@
+float64 numba==python bitgleich: True
+float32 dtype: float32  numba==numpy.float32 bitgleich: True
+double vs dd: max|err| = 1.778e-14  (rms y = 1.057)
+bell SVF Zustandsraum vs FFT(Impuls): max|dB| = 8.88e-15
+lowshelf SVF Zustandsraum vs FFT(Impuls): max|dB| = 8.88e-15
+highshelf SVF Zustandsraum vs FFT(Impuls): max|dB| = 1.44e-14
+RBJ biquad_H vs FFT(Impuls): max|dB| = 1.76e-13

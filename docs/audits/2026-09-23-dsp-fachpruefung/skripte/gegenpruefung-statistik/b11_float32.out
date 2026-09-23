@@ -1,0 +1,3 @@
+  Sinus 440 Hz, float32                             91 Ausloesungen / 701 Frames
+  Saegezahn-artig 110 Hz (20 Obertoene), float32    73 Ausloesungen / 701 Frames
+  Sinus 440 Hz, float64 ohne Boden                 100 Ausloesungen / 701 Frames

@@ -1,0 +1,47 @@
+=== (a) Zeit bis e_db innerhalb 1 dB (bzw. 3 dB) des Endwerts, Ton auf Bandmitte ab t = 0 ===
+    (Stereo-Quadraturton wie E-25, damit keine 2f-Welligkeit die Zeitmessung verschmiert)
+     100 Hz Q  24.0 (tau_BP   76.4 ms)  Attack    0.1 ms:  -3 dB nach  104.5 ms,  -1 dB nach  180.2 ms
+     100 Hz Q  24.0 (tau_BP   76.4 ms)  Attack   10.0 ms:  -3 dB nach  114.7 ms,  -1 dB nach  190.7 ms
+     100 Hz Q  24.0 (tau_BP   76.4 ms)  Attack  100.0 ms:  -3 dB nach  197.9 ms,  -1 dB nach  315.2 ms
+     100 Hz Q  12.0 (tau_BP   38.2 ms)  Attack    0.1 ms:  -3 dB nach   57.6 ms,  -1 dB nach   96.1 ms
+     100 Hz Q  12.0 (tau_BP   38.2 ms)  Attack   10.0 ms:  -3 dB nach   68.0 ms,  -1 dB nach  107.2 ms
+     100 Hz Q  12.0 (tau_BP   38.2 ms)  Attack  100.0 ms:  -3 dB nach  141.5 ms,  -1 dB nach  236.3 ms
+     100 Hz Q   4.0 (tau_BP   12.7 ms)  Attack    0.1 ms:  -3 dB nach   25.8 ms,  -1 dB nach   41.3 ms
+     100 Hz Q   4.0 (tau_BP   12.7 ms)  Attack   10.0 ms:  -3 dB nach   35.7 ms,  -1 dB nach   53.6 ms
+     100 Hz Q   4.0 (tau_BP   12.7 ms)  Attack  100.0 ms:  -3 dB nach  100.2 ms,  -1 dB nach  188.9 ms
+     100 Hz Q   1.0 (tau_BP    3.2 ms)  Attack    0.1 ms:  -3 dB nach   12.2 ms,  -1 dB nach   21.3 ms
+     100 Hz Q   1.0 (tau_BP    3.2 ms)  Attack   10.0 ms:  -3 dB nach   21.8 ms,  -1 dB nach   34.7 ms
+     100 Hz Q   1.0 (tau_BP    3.2 ms)  Attack  100.0 ms:  -3 dB nach   84.9 ms,  -1 dB nach  173.5 ms
+    1000 Hz Q  24.0 (tau_BP    7.6 ms)  Attack    0.1 ms:  -3 dB nach   18.9 ms,  -1 dB nach   30.6 ms
+    1000 Hz Q  24.0 (tau_BP    7.6 ms)  Attack   10.0 ms:  -3 dB nach   28.6 ms,  -1 dB nach   43.3 ms
+    1000 Hz Q  24.0 (tau_BP    7.6 ms)  Attack  100.0 ms:  -3 dB nach   91.9 ms,  -1 dB nach  180.5 ms
+    1000 Hz Q   1.0 (tau_BP    0.3 ms)  Attack    0.1 ms:  -3 dB nach    7.5 ms,  -1 dB nach   16.4 ms
+    1000 Hz Q   1.0 (tau_BP    0.3 ms)  Attack   10.0 ms:  -3 dB nach   17.3 ms,  -1 dB nach   30.0 ms
+    1000 Hz Q   1.0 (tau_BP    0.3 ms)  Attack  100.0 ms:  -3 dB nach   80.5 ms,  -1 dB nach  169.1 ms
+
+  Einkanaliger Sinus 100 Hz Q 24 (reale Welligkeit), Attack 0,1 / 10 ms:
+    Attack   0.1 ms: -3 dB nach  103.7 ms, -1 dB nach  183.2 ms
+    Attack  10.0 ms: -3 dB nach  119.1 ms, -1 dB nach  203.0 ms
+
+=== (a2) Breitbandiges Material: Detektorpegel von weissem Rauschen haengt an Q (gleicher Eingang) ===
+  1 kHz Q  0.707: e_db (Mittel ab 1 s) =  -36.51 dB
+  1 kHz Q  1.000: e_db (Mittel ab 1 s) =  -37.85 dB
+  1 kHz Q  4.000: e_db (Mittel ab 1 s) =  -43.35 dB
+  1 kHz Q 24.000: e_db (Mittel ab 1 s) =  -50.55 dB
+
+=== (b) Shelf-Detektor: Empfindlichkeit des Bandpasses auf fc (Q des Shelfs) gegen die Shelf-Wirkung ===
+  low_shelf 200 Hz Q 0.707 -6 dB:
+     0.10*fc =     20.0 Hz: Detektor  -16.99 dB | Shelf-Wirkung   -6.00 dB
+     0.25*fc =     50.0 Hz: Detektor   -9.05 dB | Shelf-Wirkung   -5.97 dB
+     0.50*fc =    100.0 Hz: Detektor   -3.27 dB | Shelf-Wirkung   -5.62 dB
+     1.00*fc =    200.0 Hz: Detektor    0.00 dB | Shelf-Wirkung   -3.00 dB
+     2.00*fc =    400.0 Hz: Detektor   -3.27 dB | Shelf-Wirkung   -0.38 dB
+     4.00*fc =    800.0 Hz: Detektor   -9.05 dB | Shelf-Wirkung   -0.03 dB
+    10.00*fc =   2000.0 Hz: Detektor  -17.04 dB | Shelf-Wirkung   -0.00 dB
+  high_shelf 5000 Hz Q 0.707 -6 dB:
+     0.10*fc =    500.0 Hz: Detektor  -17.30 dB | Shelf-Wirkung   -0.00 dB
+     0.25*fc =   1250.0 Hz: Detektor   -9.34 dB | Shelf-Wirkung   -0.02 dB
+     0.50*fc =   2500.0 Hz: Detektor   -3.49 dB | Shelf-Wirkung   -0.34 dB
+     1.00*fc =   5000.0 Hz: Detektor    0.00 dB | Shelf-Wirkung   -3.00 dB
+     2.00*fc =  10000.0 Hz: Detektor   -4.24 dB | Shelf-Wirkung   -5.76 dB
+     4.00*fc =  20000.0 Hz: Detektor  -17.81 dB | Shelf-Wirkung   -6.00 dB

@@ -1,0 +1,12 @@
+Hauptstufenbaender mit Bins: 149 (ab Band 65)
+Weissrauschen 30 s (701 Flussframes), 8 Saaten: Code 18.2 (min 13, max 24) | +Maxfilter 23.0 | +Spitzenwahl 18.0 | davon direkt folgend (Code) 0.2
+Ton 440 Hz + 6 Obertoene, Vibrato +-  0 Cent, 5,5 Hz, 30 s: Code  22 (Folge  1) | +Maxfilter  23 | +Spitzenwahl  21
+Ton 440 Hz + 6 Obertoene, Vibrato +- 15 Cent, 5,5 Hz, 30 s: Code   4 (Folge  0) | +Maxfilter  22 | +Spitzenwahl   4
+Ton 440 Hz + 6 Obertoene, Vibrato +- 30 Cent, 5,5 Hz, 30 s: Code  73 (Folge  0) | +Maxfilter  88 | +Spitzenwahl  73
+Ton 440 Hz + 6 Obertoene, Vibrato +- 50 Cent, 5,5 Hz, 30 s: Code   6 (Folge  0) | +Maxfilter  66 | +Spitzenwahl   6
+Ton 440 Hz + 6 Obertoene, Vibrato +-100 Cent, 5,5 Hz, 30 s: Code  32 (Folge  0) | +Maxfilter  84 | +Spitzenwahl  32
+Ton 220 Hz + 11 Obertoene, Vibrato +-  0 Cent, 5 Hz, 30 s:   Code  75 | +Maxfilter  34
+Ton 220 Hz + 11 Obertoene, Vibrato +- 50 Cent, 5 Hz, 30 s:   Code   0 | +Maxfilter  29
+Ton 220 Hz + 11 Obertoene, Vibrato +-100 Cent, 5 Hz, 30 s:   Code  13 | +Maxfilter  49
+stehender Akkord     30 s: Code  15 (direkt folgend  0) | +Spitzenwahl  15
+Akkord + 30 Klicks   30 s: Code  40 (direkt folgend  8) | +Spitzenwahl  32

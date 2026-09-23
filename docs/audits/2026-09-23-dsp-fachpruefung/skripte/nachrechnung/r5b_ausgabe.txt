@@ -1,0 +1,21 @@
+Faelle: 1200 (Rampe 256 innerhalb der Kriterien, Faktor 2 auf/ab, 48/192 kHz, Sinus -6 dBFS)
+rel = max|y| ueber groesserem stationaerem Pegel am Ton; abs = max|y| ueber der hoechsten stationaeren Spitze beider Filter (alle Frequenzen)
+Typ       Q-Paar        | DF2T-Rampe rel / abs       | SVF-Rampe rel / abs        | Xfade kalt rel / abs      
+bell      Q 0,707       |   +5.3 /   +2.7 dB           |   +4.8 /   +0.1 dB           |   +5.0 /   +0.0 dB
+bell      Q 6..24       |   +9.6 /   +6.0 dB           |  +13.0 /   +9.9 dB           |   +2.3 /   +0.4 dB
+lowshelf  Q 0,707       |   +5.6 /   +1.0 dB           |   +9.1 /   -0.0 dB           |   +3.8 /   -0.0 dB
+lowshelf  Q 6..24       |  +20.8 /   +5.5 dB           |  +42.2 /   +2.8 dB           |  +24.2 /   -0.0 dB
+highshelf Q 0,707       |   +7.9 /   +1.0 dB           |   +6.6 /   -0.0 dB           |   +3.8 /   -0.0 dB
+highshelf Q 6..24       |  +35.3 /   +5.5 dB           |  +37.7 /   +0.5 dB           |  +29.7 /   -0.0 dB
+  bell      Faelle mit rel > +1 dB: DF2T 293, SVF 289, Xfade 52 von 400 | abs > 0 dB: DF2T 262, SVF 235, Xfade 181
+  lowshelf  Faelle mit rel > +1 dB: DF2T 301, SVF 267, Xfade 165 von 400 | abs > 0 dB: DF2T 51, SVF 5, Xfade 0
+  highshelf Faelle mit rel > +1 dB: DF2T 312, SVF 269, Xfade 172 von 400 | abs > 0 dB: DF2T 40, SVF 6, Xfade 0
+Schlechteste 8 nach abs (ueber der hoechsten stationaeren Spitze):
+  bell      fs=48000      50->25     Hz Q 24->6 +12->+12 dB: DF2T  +2.9 | SVF  +9.9 | Xfade  +0.0
+  bell      fs=192000    200->100    Hz Q 24->6 +12->+12 dB: DF2T  +2.9 | SVF  +9.9 | Xfade  +0.0
+  bell      fs=192000     50->100    Hz Q 24->6 +12->+12 dB: DF2T  +0.0 | SVF  +9.7 | Xfade  +0.0
+  bell      fs=48000      50->100    Hz Q 24->6 +12->+12 dB: DF2T  +0.0 | SVF  +9.6 | Xfade  +0.0
+  bell      fs=192000    200->400    Hz Q 24->6 +12->+12 dB: DF2T  +0.0 | SVF  +9.6 | Xfade  +0.0
+  bell      fs=192000     50->25     Hz Q 24->6 +12->+12 dB: DF2T  +3.5 | SVF  +9.5 | Xfade  +0.0
+  bell      fs=192000     50->25     Hz Q 24->6 -12->-12 dB: DF2T  +4.8 | SVF  +9.3 | Xfade  +0.3
+  bell      fs=48000     200->100    Hz Q 24->6 -12->-12 dB: DF2T  +4.5 | SVF  +9.3 | Xfade  +0.3

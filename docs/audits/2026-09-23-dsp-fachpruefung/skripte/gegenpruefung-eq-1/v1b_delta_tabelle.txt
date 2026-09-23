@@ -1,0 +1,10 @@
+Band  +1 dB: Delta im Band  -6.27 dB ueber Dry,  -7.27 dB ueber Processed
+Band  -1 dB: Delta im Band  -7.27 dB ueber Dry,  -6.27 dB ueber Processed
+Band  +3 dB: Delta im Band  +4.31 dB ueber Dry,  +1.31 dB ueber Processed
+Band  -3 dB: Delta im Band  +1.31 dB ueber Dry,  +4.31 dB ueber Processed
+Band  +6 dB: Delta im Band +11.96 dB ueber Dry,  +5.96 dB ueber Processed
+Band  -6 dB: Delta im Band  +5.96 dB ueber Dry, +11.96 dB ueber Processed
+Band +12 dB: Delta im Band +21.49 dB ueber Dry,  +9.49 dB ueber Processed
+Band -12 dB: Delta im Band  +9.49 dB ueber Dry, +21.49 dB ueber Processed
+Band +24 dB: Delta im Band +35.43 dB ueber Dry, +11.43 dB ueber Processed
+Band -24 dB: Delta im Band +11.43 dB ueber Dry, +35.43 dB ueber Processed

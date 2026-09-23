@@ -1,0 +1,5 @@
+Weissrauschen -20 dBFS         Code  19 | log(1+x)  19 | +delta  19
+Weissrauschen -50 dBFS         Code  19 | log(1+x)  16 | +delta  19
+Dauerton 440 Hz, Boden 1e-4    Code  22 | log(1+x)  18 | +delta   7
+Ton +-30 Cent Vibrato          Code  73 | log(1+x)  66 | +delta  73
+Akkord + 30 Klicks (Soll 30)   Code  40 | log(1+x)  41 | +delta  40

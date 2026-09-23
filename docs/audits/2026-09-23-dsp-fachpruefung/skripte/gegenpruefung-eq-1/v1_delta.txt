@@ -1,0 +1,24 @@
+A) Punktwerte |Delta| = |H-1| * 10^(12/20) relativ zum Dry-Pegel derselben Frequenz
+  Bell +12 dB Q1 @1 kHz, bei f0                : |H|  +12.00 dB, |H-1|   +9.49 dB, Delta  +21.49 dB ueber Dry,   +9.49 dB ueber Processed
+  Bell -12 dB Q1 @1 kHz, bei f0                : |H|  -12.00 dB, |H-1|   -2.51 dB, Delta   +9.49 dB ueber Dry,  +21.49 dB ueber Processed
+  Notch Q1 @1 kHz, bei f0                      : |H| -283.17 dB, |H-1|   -0.00 dB, Delta  +12.00 dB ueber Dry, +295.17 dB ueber Processed
+  Low-Shelf +12 dB Q0.707 @200 Hz, bei 30 Hz   : |H|  +11.99 dB, |H-1|   +9.52 dB, Delta  +21.52 dB ueber Dry,   +9.53 dB ueber Processed
+  Low-Cut Q0.707 @100 Hz, bei 30 Hz            : |H|  -20.95 dB, |H-1|   +0.68 dB, Delta  +12.68 dB ueber Dry,  +33.63 dB ueber Processed
+
+B) Maximum ueber 20 Hz..20 kHz (Delta ueber Dry derselben Frequenz)
+  Low-Shelf +12 dB Q24 @1 kHz     : max |H|  +37.10 dB, max Delta  +49.09 dB bei    708.2 Hz
+  High-Shelf +12 dB Q24 @1 kHz    : max |H|  +37.10 dB, max Delta  +49.09 dB bei   1411.1 Hz
+  Bell +12 dB Q24 @20 Hz          : max |H|  +12.00 dB, max Delta  +21.49 dB bei     20.0 Hz
+
+C) Globale Stufen (breitbandig, frequenzunabhaengig): Delta ueber Dry
+  Output-Trim +24 dB (Vertragsmax.)               : Delta  +35.43 dB ueber Dry
+  Output-Trim +12 dB                              : Delta  +21.49 dB ueber Dry
+  Output-Trim +6 dB                               : Delta  +11.96 dB ueber Dry
+  Output-Trim -24 dB                              : Delta  +11.43 dB ueber Dry
+  eff. Bandgain +24 dB (gain+Range, R7 F2) bei f0 : Delta  +35.43 dB ueber Dry
+
+D) Rosa Rauschen, 10 s, Pegel des Delta-Signals gegen Dry und Processed (RMS und Spitze)
+  Bell +12 dB Q1 @1 kHz             : RMS dry  -20.0  proc  -16.6  delta   -9.5 dBFS | Spitze dry   -6.0  proc   -3.2  delta   +3.8 dBFS
+  Low-Shelf +12 dB Q0.707 @200 Hz   : RMS dry  -20.0  proc  -11.8  delta   -2.5 dBFS | Spitze dry   -6.0  proc   +0.5  delta   +9.1 dBFS
+  Low-Cut Q0.707 @100 Hz            : RMS dry  -20.0  proc  -21.8  delta  -10.8 dBFS | Spitze dry   -6.0  proc   -8.2  delta   +1.1 dBFS
+  Bell +6 dB Q2 @3 kHz              : RMS dry  -20.0  proc  -19.3  delta  -20.3 dBFS | Spitze dry   -6.0  proc   -5.5  delta   -6.5 dBFS

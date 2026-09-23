@@ -1,0 +1,9 @@
+fs 44100 fc    100: Gitter Energie -0.676 dB, Betrag -0.374 dB | dicht Energie -0.566, Betrag -0.345
+fs 44100 fc   1000: Gitter Energie -0.675 dB, Betrag -0.373 dB | dicht Energie -0.564, Betrag -0.344
+fs 44100 fc  10000: Gitter Energie -0.580 dB, Betrag -0.295 dB | dicht Energie -0.400, Betrag -0.241
+fs 48000 fc    100: Gitter Energie -0.676 dB, Betrag -0.374 dB | dicht Energie -0.566, Betrag -0.345
+fs 48000 fc   1000: Gitter Energie -0.675 dB, Betrag -0.374 dB | dicht Energie -0.564, Betrag -0.344
+fs 48000 fc  10000: Gitter Energie -0.592 dB, Betrag -0.305 dB | dicht Energie -0.424, Betrag -0.255
+fs 96000 fc    100: Gitter Energie -0.676 dB, Betrag -0.374 dB | dicht Energie -0.566, Betrag -0.345
+fs 96000 fc   1000: Gitter Energie -0.676 dB, Betrag -0.374 dB | dicht Energie -0.565, Betrag -0.345
+fs 96000 fc  10000: Gitter Energie -0.651 dB, Betrag -0.354 dB | dicht Energie -0.527, Betrag -0.320

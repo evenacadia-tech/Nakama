@@ -288,8 +288,16 @@ SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 # Zeilen) die Grenze. Ihr Pflegeticket ist NAK-292 (Pflegeschritt S31c);
 # Zuordnung nachgezogen am 16.09.2026, davor meldete der Lauf sie faelschlich
 # als „OHNE PFLEGETICKET".
+#
+# NAK-311 (20.09.2026) liess `broker/src/briefkasten.rs` ueber die Grenze wachsen
+# (Pflegeticket NAK-339), NAK-312 Etappe 7b Teil 1 (23.09.2026)
+# `eq-copilot/plugin/src/SourcesModel.cpp` (Pflegeticket NAK-371). Beide
+# Zuordnungen nachgezogen am 23.09.2026; bis dahin meldete der Lauf sie als
+# „OHNE PFLEGETICKET", obwohl die Registerpunkte standen.
 PFLEGETICKETS: dict[str, str] = {
     "eq-copilot/plugin/state/NakamaState.cpp": "NAK-292",
+    "broker/src/briefkasten.rs": "NAK-339",
+    "eq-copilot/plugin/src/SourcesModel.cpp": "NAK-371",
 }
 
 TREFFER_ZEIGEN = 25   # laengere Listen werden gekappt, mit Restzahl

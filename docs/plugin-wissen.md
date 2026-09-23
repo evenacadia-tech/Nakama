@@ -111,10 +111,14 @@ Render bleibt bitidentisch (MarkierungTest T3/T4/T10).
 ⚠️ **`istMainKlassifiziert` ist seit S9 (SONDE-007b, 23.08.) der erste Term**
 — §53.5 Satz 1: bis zur positiven Klassifikation ist der Entry audio-neutral,
 und `legacy` ist „immer passiv". **Eine `legacy`-Instanz färbt damit nicht
-mehr**; wer die Markierung will, wählt im Editor die Rolle `hub`. Der Term ist
-die Atomic-Spiegelung von `Lebenslauf::audioAusnahmeErlaubt()` (§1.4c) und
-wird **nicht** von `testForciereEchtzeit` umgangen: der Schalter umgeht nur,
-was an der Wanduhr hängt. `EqCopLebenslaufTest` misst beide Seiten an Audio.
+mehr**; wer die Markierung will, wählt im Editor die Rolle `hub` — seit
+NAK-312 Etappe 6 trägt dieser Weg nicht mehr: der Wechsel der Klassifikation
+nimmt einen in `legacy` eingereichten Auftrag zurück, und die Main-Fläche hat
+keinen Auslöser; die Markierung hat heute keinen hörbaren Weg (§1.8 (e),
+Register NAK-341). Der Term ist die Atomic-Spiegelung von
+`Lebenslauf::audioAusnahmeErlaubt()` (§1.4c) und wird **nicht** von
+`testForciereEchtzeit` umgangen: der Schalter umgeht nur, was an der Wanduhr
+hängt. `EqCopLebenslaufTest` misst beide Seiten an Audio.
 
 ⚠️ **Der Transport-Term ist seit SONDE-008 (23.08.) `spieltGültig ∧ spielt`** —
 das fail-open `(spielt ∨ ¬hatTransport)` ist gefallen (User 22.08., Hub `U10`:
@@ -331,8 +335,11 @@ gehört nicht zum Bestand: E-312-8 nimmt ihn beim Klassifikationswechsel weiter
 zurück.
 - **Parameterbestand** (`schemas/state/nakama-parameter-v1.json`, C++-Tabelle
   `NakamaParameter.cpp`, deckungsgleich gemessen): 5 global + 8×13 = 109 IDs
-  `v1.global.*` / `v1.band.<slot>.*`; heute trägt **kein** Bundle Hostparameter
-  (§53.8: der `Eqcp`-Eintrag ändert seine Parameterliste nicht).
+  `v1.global.*` / `v1.band.<slot>.*`. Gen trägt **keinen** Hostparameter
+  (§53.8: der `Eqcp`-Eintrag ändert seine Parameterliste nicht); Probeeq trägt
+  seit SONDE-015 Etappe 4a die 112 des Layouts v2 (die 109, dazu
+  `eq_enabled`, `mix`, `auto_gain`), seit NAK-312 Etappe 5 ohne APVTS (§1.8
+  (c)).
 - **`state_hash`:** SHA-256-Hex des RFC-8785-Kanons des DTO
   `{"dsp_schema_version":1,"parameters":{…}}`. `NakamaKanon` hat dafür einen
   **eigenen JSON-Leser** (`std::from_chars`) — JUCEs Zahlenleser flusht
@@ -542,24 +549,30 @@ nicht. Der native FL-Studio-Beleg bleibt Eigentum der
 UI-Implementierungsphase S31b; Quelle:
 `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
-### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 20.09.2026, NAK-311 Etappen 2 bis 5, Änderungssätze A bis D)
+### 1.7 Aktiver DSP-Kern `plugin/dsp/` in Probeeq (Stand 23.09.2026, NAK-311 Etappen 2 bis 5 und NAK-312 Etappen 3b, 5 und 7b)
 
 `DspKern` (Bibliothek `NakamaKern`) rechnet den Pfad aus SONDE-015 §3.0 —
 Input-Trim, M/S-Stufe, acht Bänder, Auto-Gain, Mix, Output-Trim — in `double`,
 mit den Taps `pre_nakama`, `post_committed`, `post_candidate` und der
-Hörmatrix dahinter; `SondeProcessor::processBlock` ruft ihn unter
-`juce::ScopedNoDenormals` (FTZ und DAZ). In drei Fällen schreibt er den Puffer
-nicht: ausgeschaltet oder im Hard-Bypass kein Sample (`committedRuht`); beim
-Crossfade in den Passthrough endet es exakt am Fade-Ende (E-32); und seit
-NAK-311 die **Neutralprüfung** in `verarbeiteStueck`: steht der
-Committed-Pfad engagiert und ohne Übergang, hört die Hörmatrix Processed oder
-Dry, und fährt der Pfad das Programm mit dem Merkmal `DspProgramm::neutral`
-(aus `baueProgramm`: engagiert, kein Hard-Bypass, jedes aktive Band ein
-statischer Einheitsbiquad ohne SVF, M/S-Stufe aus, beide Trims 0 dB) mit allen
-fünf Rampen in Ruhe auf 1,0 — oder ruht Mix auf 0,0 und Output-Trim auf 1,0 —,
-bleibt der Puffer ab dem ersten Sample nach Crossfade-, Rampen- und
-Hörmatrix-Fade-Ende unberührt, auch mitten im Teilstück. Gerechnet wird
-weiter: der Riegel zählt nicht endliche Eingänge, die Taps tragen die Rechnung.
+Hörmatrix dahinter; beide Eintritte der Sonde — `SondeProcessor::processBlock`
+und seit NAK-312 Etappe 7b `processBlockBypassed` — rufen ihn über den
+gemeinsamen Rumpf `verarbeiteBlock` unter `juce::ScopedNoDenormals` (FTZ und
+DAZ; `eq-copilot/plugin/sonde/SondeProcessor.cpp:502-528`). In vier Fällen
+schreibt er den Puffer nicht: ausgeschaltet oder im Hard-Bypass kein Sample
+(`committedRuht`); beim Crossfade in den Passthrough endet es exakt am
+Fade-Ende (E-32); seit NAK-311 die **Neutralprüfung** in `verarbeiteStueck`:
+steht der Committed-Pfad engagiert und ohne Übergang, hört die Hörmatrix
+Processed oder Dry, und fährt der Pfad das Programm mit dem Merkmal
+`DspProgramm::neutral` (aus `baueProgramm`: engagiert, kein Hard-Bypass, jedes
+aktive Band ein statischer Einheitsbiquad ohne SVF, M/S-Stufe aus, beide Trims
+0 dB) mit allen fünf Rampen in Ruhe auf 1,0 — oder ruht Mix auf 0,0 und
+Output-Trim auf 1,0 —, bleibt der Puffer ab dem ersten Sample nach
+Crossfade-, Rampen- und Hörmatrix-Fade-Ende unberührt, auch mitten im
+Teilstück, seit NAK-312 Etappe 3b frühestens am Ende der längsten laufenden
+Parameterrampe (unten, „Hostwerte am Blockrand"); und seit NAK-312 Etappe 7b
+im Hostbypass nach der Blende der Hostbypass-Stufe (unten, „Hostbypass").
+Gerechnet wird weiter: der Riegel zählt nicht endliche Eingänge, die Taps
+tragen die Rechnung.
 
 Warum: vorher schrieb der Kern im engagiert-neutralen Zustand jeden Sample
 über float → double → float zurück; unter DAZ kamen die vier Subnormals des
@@ -913,6 +926,809 @@ Recall-Toleranz rechnet 5·(τ_a + `kPegelFensterMs`)·fs statt 5·τ_a·fs. Die
 Toleranzen — 1 ms je Stufe, 0,1 dB ab t_E — bleiben unverändert. Manifest
 `docs/beweise/NAK-311.md` §39.3, §40.4 und §60; Nachträge in
 `docs/beweise/SONDE-015.md` §13.5 bis §13.7.
+
+**Hostwerte am Blockrand (21.09.2026, NAK-312 Etappe 3b, T3-01-05 Teil a,
+R-312-10 in der Fassung E-312-5).** Vier Hostparameter übernimmt der Kern am
+Blockrand selbst — die Abdeckungstabelle `DspKern::kBlockrandParameter`
+(`eq-copilot/plugin/dsp/DspKern.h:251-262`): `v1.global.input_trim_db`,
+`v1.global.output_trim_db`, `v1.global.width` und `v2.global.mix`, genau die
+kontinuierlichen, für die er ein Rampenziel führt. `verarbeiteBlock` liest je
+Tabellenplatz den Ereigniszähler der Hostmailbox; nur ein **ungleicher** Stand
+zum Blockrandstand des Kerns ist ein neues Ereignis (nie ein
+Ordnungsvergleich, der `uint32`-Zähler läuft über), und nur dann rechnet
+`zelleAmBlockrand` die Zelle
+(`eq-copilot/plugin/sonde/SondeProcessor.cpp:584-619`, `:1716-1732`) — in
+derselben Reihenfolge wie `zelleAusHost` im Takt (`:1688-1714`): erst die
+Ausnahme „gleich dem bestätigten Wert in Hostgenauigkeit", dann die
+Endlichkeitsregel E4-10 (ein NaN- oder ±Inf-Hostwert zählt als unverändert und
+ergibt den bestätigten Wert), dann der Bereich. Den bestätigten Wert liest der
+Audiothread ohne Transaktionskern und ohne Schloss aus einem
+`std::atomic<double>` je Platz (`bestaetigtBlock`,
+`eq-copilot/plugin/sonde/SondeProcessor.h:788-798`), den Konstruktor,
+Ladestart und Commit unter dem Zustandsschloss veröffentlichen
+(`SondeProcessor.cpp:1734-1740`). `DspKern::verarbeite` nimmt die Werte vor
+der Programmübernahme und vor dem frühen Rücksprung von `blockrand` bei
+laufendem Übergang (`eq-copilot/plugin/dsp/DspKern.cpp:1164-1175`): ein
+Hostwert wirkt in dem Block, an dessen Rand er gelesen wurde.
+`uebernimmBlockrandHostwerte` (`:674-712`) rechnet das Rampenziel mit
+derselben Formel wie `baueProgramm` (Trims: 0 dB ergibt 1,0, sonst
+`dbInLinear`; Width und Mix als Wert, `:666-671`) und setzt es nur bei aktivem
+Committed-Pfad; ein ruhender oder in einem früheren Block ausblendender Pfad
+nimmt kein Ziel (NAK-311, T3-15-05), das Ziel bleibt gemerkt. Trifft danach
+ein Programm ein, entscheidet eine Schiedsregel (E-312-6 Punkt 4): der Worker
+schreibt vor jeder Publikation des Committed-Pfades den Zählerstand, aus dem
+ihre Werte stammen (`publikationsStandSetzen`, `SondeProcessor.cpp:1742-1752`;
+im Takt, beim Vorbereiten und beim Ladestart `hostEreignisGesehen`, beim
+Commit der aktuelle Zähler), der Stand reist je Bank mit dem Programm
+(`bankStand`, `DspKern.h:744-754`), und `setzeProgrammziel`
+(`DspKern.cpp:714-725`) nimmt das Programmziel eines abgedeckten Parameters nur
+bei **gleichem** Stand oder ohne gültiges Blockrandziel, sonst das
+Blockrandziel. Der Candidate-Pfad ist
+unverändert, und `hostEreignisOffen` bleibt allein beim Worker: der Blockrand
+liest und tauscht es nicht. Der Listener erhöht den Zähler mit `release`
+(`SondeProcessor.cpp:1620-1632`), der Takt liest ihn mit `acquire`, der
+Blockrand seit der Nacharbeit 1 der Etappe 3 mit `seq_cst` (§1.8, Ladestart).
+
+🔑 **Die Neutralprüfung kennt seit dieser Etappe Rampen ohne Übergang.** Die
+Blockbindung setzt Rampenziele, ohne dass ein Programmübergang läuft; das
+Schreibende liegt deshalb frühestens am Ende der längsten laufenden
+Parameterrampe (`cRampenEnde`, `DspKern.cpp:1308-1317`, `:1517`). Vorher
+verlor der letzte Rampenblock sein Schreiben (im ersten Lauf von 312/M-20 126
+abweichende Samples, Manifest §21.8 A-19); mit Übergang ist es dasselbe
+Sample wie bisher. Die Änderung an der Nulltestkante trägt ihren eigenen
+Rotlauf (R-312-18, `docs/beweise/roh/NAK-312-rot-A-19.txt`).
+
+Warum: bis hierher übernahm allein der Kontrolltakt des Workers Hostwerte — an
+der Wanduhr, alle 5 bis 20 ms. Im Offline-Render, der schneller als Echtzeit
+läuft, fiel damit der größte Teil der Hostwerte aus, und derselbe Event- und
+Blockverlauf klang offline anders als in Echtzeit (T3-01-05, gegen SONDE-015
+M-120). Am Basisstand wichen ein Lauf unter der Taktsperre ohne Kontrolltakt
+(A; der Testzugang `mitAngehaltenemTaktFuerTest` hält das Zustandsschloss und
+damit den Takt des Workers an, `SondeProcessor.h:448`) und einer mit Takt nach
+jedem Block (B) je Parameter in 1022 bis 1742 Samples ab, eine bewegte
+Automation in 30 592 Samples bei richtigem Endwert (Gegenprobe
+`docs/beweise/roh/NAK-312-etappe3b-gegenprobe.txt`). Gemessen in B7 Abschnitt
+Y (312/M-20 bis M-23, M-26 bis M-29, M-79 bis M-82 und der Teilfall
+`nicht_endliche_hostwerte_am_blockrand`) und Abschnitt O (312/M-24, M-25): A
+ist für die vier bitgleich zu B, in einem neutralen Stand und einem mit Band,
+bei Blockgröße 1, 64, 185, 240, 256 und 512 in Echtzeit und bei 64 offline
+(17,7- bis 19,2-fach Echtzeit gemessen, keine Schranke); ohne Ereignis setzt
+der Blockrand kein Ziel (M-28: der Zähler `DspKern::blockrandZiele()`,
+`DspKern.h:291-292`, steigt um 0), nach je einem Ereignis auf allen 112
+Hostparametern genau um 4 (M-79); NaN, +Inf und −Inf auf den vier ergeben den
+bestätigten Wert, der Ausgang bleibt endlich und bitgleich zum Lauf ohne
+Ereignis (Teilfall zu M-20, E4-10); der Wert wirkt im Block seines Randes,
+auch bei 4096 (M-27); die Automationsepoche wechselt genau zweimal je Geste,
+ohne Revision und ohne Host-Dirty (M-24, M-25); über 4000 Blöcke 0 Sperren
+und 0 Allokationen (M-26). Kosten
+(`docs/beweise/roh/NAK-312-etappe3-blockbindung-kosten.txt`): `DspKern` +144
+Byte, `SondeProcessor` +128 Byte, 96 Byte Stapel je Block; je Block ohne
+Ereignis vier Zählerlesungen und vier Vergleiche, rund 27 ns bei Block 64, mit
+vier Ereignissen 50 bis 110 ns (Einzelmessungen, keine Schranke). Der
+NaN-Teilfall steht seit der Nacharbeit der Abschlussprüfung auf definiertem
+Verhalten (R-312-35: eine Kopie statt eines Verweises in ein Temporary,
+Rotbeweis wiederholt,
+`docs/beweise/roh/NAK-312-abschluss-nacharbeit-1-rot-M-20-teil-b.txt`).
+Manifest `docs/beweise/NAK-312.md` §5.4, §6.3, §21.5 bis §21.9, §23.4 und §65.
+
+Grenzen: nur diese vier sind blockgebunden. Die 64 Bandwerte, `mono_bass_hz`,
+die elf booleschen Hostparameter und das abgeleitete Auto-Gain-Ziel folgen
+weiter dem Kontrolltakt, also der Wanduhr; für sie sagt kein Satz Gleichheit
+zwischen Echtzeit und Offline zu — SONDE-015 M-120 bleibt dort gebrochen und
+offen geführt (Teil b von T3-01-05, Register NAK-340, Planschritt S25p). Die
+Grenzzeilen 312/M-80 (ein Bandwert) und M-81 (`eq_enabled`) halten das fest:
+ohne Takt weichen A und B ab (4480 bzw. 1187 Samples), mit Takt nach jedem
+Block sind sie bitgleich, der Endwert stimmt. Samplegenauigkeit innerhalb
+eines Blocks ist nicht zugesagt (FL meldet `sample_accurate_automation` nicht
+unterstützt; Kommentar `SondeProcessor.cpp:251-260`). Die Gleichheit gilt für
+endliche Eingangssamples (R-312-17): für NaN, ±Inf und Subnormale im Eingang
+hängt, welche Blöcke der Kern schreibt, weiter an Übergängen und
+Neutralmerkmalen aus dem Takt (Register NAK-347). Trifft ein Zählerstand nach
+genau 2^32 Ereignissen auf demselben Parameter ohne neuen Ladestart eine alte
+Quittung, ist genau ein Ereignis wirkungslos (benannt, nicht gebaut, Manifest
+§21.11). Wie Ladestart und read-only am Blockrand wirken, steht in §1.8.
+
+**Offline-Übergang ohne Sperre (21.09.2026, NAK-312 Etappe 5, erster
+Änderungssatz, T3-01-03 und T3-01-04, R-312-3, E-312-7).** Der VST3-Wrapper
+ruft `setNonRealtime` im Audio-Callback vor jedem Eintritt und dazu in
+`setupProcessing` auf dem Hostthread
+(`eq-copilot/plugin/sonde/SondeProcessor.h:237-252`, Manifest §30.14). Die
+Funktion fasst nur
+Atomics an (`SondeProcessor.cpp:1584-1618`): eine **Wechselerkennung**
+(`offlineGesehen`, erst gelesen, dann getauscht) kehrt bei gleichem Wert
+sofort zurück — der Normalfall jedes Offlineblocks — und lässt genau einen
+Aufruf den Wechsel ausführen. Der **Wechsel nach offline** setzt den
+Hörwunsch auf Processed, dann über `DspKern::setzeOfflineRiegel (true)` den
+Riegel `offlineRiegelAn` vor der Anforderung `hartSchalten`
+(`DspKern.h:350-388`), zuletzt `vorschauEndeAngefordert`. Der Audiothread
+liest in `verarbeiteStueck` die Anforderung zuerst und verbraucht sie allein
+per Tausch; unter dem Riegel wirkt jeder Hörwunsch als Processed, und bei
+verbrauchter Anforderung steht die Hörmatrix ab dem ersten Sample des Stücks
+ohne Fade auf dem wirksamen Stand — ein laufender Fade in jede Richtung endet
+mit, ein Hörhalt am Ende desselben Stücks (`DspKern.cpp:1254-1279`). Der
+**Rückweg** löst den Riegel und nimmt eine noch nicht verbrauchte Anforderung
+zurück (Anforderung vor Riegel): die Echtzeitrichtung blendet weich
+(SONDE-015 M-55), die Vorschau lebt nicht wieder auf. Die **Buchhaltung**
+folgt im Takt: `dspKontrollTakt` verbraucht `vorschauEndeAngefordert` unter
+dem Zustandsschloss, das er ohnehin hält, und ruft `beendePreview` →
+`beendeCandidate` wie bisher (`SondeProcessor.cpp:1825-1834`); der Audiothread
+gibt keine Bank frei und fasst den Merkzettel nicht an. `zustandSchloss`
+nimmt heute weder einer der zwei Eintritte noch `setNonRealtime`
+(`SondeProcessor.h:651-654`); der Schlossadapter der Etappe 2 ist entfernt.
+
+Warum: vorher nahm `setNonRealtime` bei jedem Aufruf mit `offline == true`
+`zustandSchloss` und beendete dort die Vorschau — eine Sperre im Audio-Callback
+in jedem Offlineblock (T3-01-03, gegen das Grundgesetz) —, und die Hörmatrix
+blendete in 256 Samples, sodass die ersten Samples eines Renders noch die
+Vorschau trugen (T3-01-04, gegen SONDE-015 M-120: „Offline-Render läuft mit
+dem bestätigten Zustand, nie mit einer Vorschau"). Am Basisstand: 200
+gemeldete Sperren über 200 Offlineblöcke, größte Abweichung der ersten 256
+Samples vom bestätigten Lauf 0,323985 (Gegenprobe
+`docs/beweise/roh/NAK-312-etappe5a-gegenprobe.txt`). Gemessen in B7
+Abschnitt ZA und im umgebauten Fall
+`offline_render_nutzt_den_bestaetigten_zustand` (Abschnitt O): 0 gemeldete
+Sperren je Aufruf `setNonRealtime (true)` wie `(false)` über 200 Blöcke
+(312/M-04, M-40), seit Etappe 6a auch 0 Allokationen (M-40, R-312-22); ab
+Sample 0 bitgleich zum bestätigten Lauf (M-42, M-45; M-47 bei Blockgröße 1, 64
+und 256: das erste Sample nach dem Flag ist bestätigt, das letzte davor
+unverändert); der Rückweg blendet weich (M-43: erster Nachbarsprung
+0,00116631389 bei einer Fadeschrittweite von 0,00116632303); Offline hin und
+zurück belebt die Vorschau nicht (M-44); keine Bank bleibt hängen, die
+Freigabe folgt dem ausdrücklichen Takt (M-46, M-83); ein im Render gesetzter
+Hörwunsch Dry, Delta oder Candidate wirkt als Processed (M-89, R-312-20); ein
+Hin- und Rückweg ohne Block dazwischen schaltet im Echtzeitbetrieb nicht hart
+(M-90, R-312-22). Manifest `docs/beweise/NAK-312.md` §5.7, §6.5, §30.3 bis
+§30.5, §34.3, §36.18 und §36.19.
+
+Grenzen: war beim Wechsel eine Vorschau, Dry oder Delta hörbar, springt der
+Ausgang am ersten Sample des Renders ohne Fade auf den bestätigten Zustand —
+so verlangen es R-312-3 und M-42; in Echtzeit blendet die Hörmatrix weiter
+weich. Eine im Render gesetzte Vorschau bleibt Buchhaltung und ist im Render
+unhörbar; ihr Bestand nach dem Render gehört zu den Lease-Regeln von S29–31
+(R-312-20), und ein anstehendes Vorschauende darf eine im selben Taktfenster
+neu gesetzte Vorschau beenden (R-312-21). Heute ruft kein Produktpfad der
+Sonde `setzePreview` (Manifest §34.3). Gleichzeitige, gegensätzliche Aufrufe
+aus zwei Threads schließt nur der VST3-Vertrag aus; ob und wann FL beim Render
+`setupProcessing` ruft, auf welchem Thread und in welcher Reihenfolge, ist
+nicht gemessen (Register NAK-355).
+
+**Hostbypass (23.09.2026, NAK-312 Etappe 7b, Satz 2; Karten U48 und U58, Weg
+E1 mit K-B).** Probeeq hat zwei Eintritte: `processBlock` und
+`processBlockBypassed` (float). Den zweiten ruft der VST3-Wrapper statt
+`processBlock`, solange sein eigener Bypassparameter `byps` auf mindestens 0,5
+steht und `getBypassParameter()` nullptr liefert
+(`juce_audio_plugin_client_VST3.cpp:3906-3909`, Bauartefakt JUCE 8.0.9) — der
+Weg von FLs Bypass-Knopf am Mixer-Slot, soweit FL ihn so zustellt (unten,
+Grenzen). `getBypassParameter()` bleibt nullptr: `byps` behält VST-ID
+(`0x62797073`) und Persistenz des Wrappers, Probeeq meldet weiter 112
+Hostparameter, die Identität bleibt (NAK-30). Beide Eintritte öffnen
+`RtWache::Bereich` als erste Anweisung und fahren denselben Rumpf
+`SondeProcessor::verarbeiteBlock`
+(`eq-copilot/plugin/sonde/SondeProcessor.cpp:502-697`); der Wunsch
+„Hostbypass" kommt allein aus dem Eintritt und geht als Argument an
+`DspKern::verarbeite (…, bool hostbypass = false)` (`:631`) — kein Atomic,
+keine Wanduhr, Echtzeit und Offline gleich. Der Kern übernimmt ihn einmal je
+äußerem Aufruf, nach der Programmübernahme und vor dem ersten Sample
+(`eq-copilot/plugin/dsp/DspKern.cpp:1177-1180`), und rechnet im Hostbypass
+weiter wie ohne ihn (Programme am Blockrand, Rampen, Bänke, ACKs, Taps,
+Hörmatrix, Riegel und Zähler; `verarbeiteteSamples` für die Ruhegrenze der
+Automation steigt in beiden Eintritten, `SondeProcessor.cpp:632`); allein die
+**Hostbypass-Stufe** hinter Taps und Hörmatrix entscheidet, was in den Puffer
+geht (`DspKern.cpp:1520-1598`). Sie blendet in `kFadeSamples` = 256 Samples
+(5,33 ms bei 48 kHz) linear vom Ausgang des Kerns auf den Eingang und schreibt
+danach keinen Sample (Muster W-1: bytegleich auch für Subnormals, −0, NaN und
+±Inf); zurück blendet sie ebenso, danach ist der Ausgang bitgleich zu einer
+Instanz ohne Hostbypass — kein Einschwingen. Kehrt der Wunsch in der Blende
+um, läuft sie vom Mischstand zurück (W-5, `uebernimmHostbypass`,
+`DspKern.cpp:1213-1237`). Der Wunsch gilt je Block ab Sample 0, die Blende
+zählt Samples über Stücke und Blöcke. Ein neuer Strom (`bereiteVor`,
+`freigeben`, `beendeAudiohistorie`, also `prepareToPlay`, `releaseResources`
+und `reset`; `DspKern.cpp:153`, `:194`, `:255`) lässt die Stufe ohne Verlauf:
+der erste Eintritt setzt sie ohne Blende, auch beim Projektladen mit
+gebypasstem Slot. Hinter einem ruhenden Committed-Pfad (`eq_enabled` aus,
+Hard-Bypass) und unvorbereitet steht sie sofort auf ihrem Ziel
+(`DspKern.cpp:1241-1244`, `:1394-1406`); dort schreibt kein Eintritt. Das
+harte Schalten beim Wechsel nach offline beendet den Fade der Hörmatrix, nicht
+die Blende der Stufe (`DspKern.h:350-388`). Die Analyse misst in beiden
+Eintritten `post_committed`, je Block ein Analyseblock, nie den Ausgang der
+Stufe (`SondeProcessor.cpp:634-690`): Gens Landkarte bleibt beim bestätigten
+Zustand, den der `state_report` meldet (SONDE-015 M-57).
+
+Warum: bis hierher erbte Probeeq für `processBlockBypassed` die JUCE-Basis,
+die den Puffer unverändert durchreicht (`juce_AudioProcessor.cpp:591-606`,
+Bauartefakt): der Ausgang sprang an beiden Kanten hart (Nachbarsprung rund
+0,25 gegen die E-31-Schranke 0,000972), Probeeq maß im Hostbypass nicht (über
+60 Bypassblöcke +0 Analyseblöcke, die Spur veraltete in Gen), kein Blockrand
+übernahm Hostwerte oder Programme (nach einer Folge im Hostbypass 2 freie
+Bänke statt 3), der Samplezähler stand, und nach dem Lösen setzte der
+eingefrorene Filterzustand fort (8 897 abweichende Samples gegen eine Instanz
+ohne Hostbypass) — gemessen am Basisstand in den Gegenproben je Zeile, etwa
+`docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-94.txt` und
+`docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-95.txt` (T3-01-09). Der User
+hat am 21.09.2026 „Weich + Messung läuft (Empfohlen)" gewählt
+(`design/abnahmen/2026-09-21-fl-bypass-weich-messung-laeuft-u48.md`) und am
+23.09.2026 „Filter laufen weiter (Empfohlen)"
+(`design/abnahmen/2026-09-23-fl-bypass-loslassen-filter-laufen-weiter-u58.md`);
+nur Weg K-B hält beide Sätze zugleich, weil der Tap im Bypass dieselbe Messung
+des bestätigten Zustands trägt wie ohne ihn (E-312-19). Gemessen in A16
+(312/M-94 bis M-97, M-99, M-100, M-105 bis M-107), B6 (312/M-94k, M-97,
+M-98), B7 (312/M-101 bis M-104, M-108, M-132) und A3 (312/M-109): die Blende
+nach trocken weicht höchstens 1,49 · 10^−8 von der linearen Mischung ab,
+größter Nachbarsprung 0,000971943 bei der Schranke 0,000972055, danach 0
+abweichende Samples (M-94); zurück bitgleich zu einer Instanz ohne
+Hostbypass, auch nach Rauschen und Material im Bypass (M-95); über 60
+Bypassblöcke +60 Analyseblöcke, 0 von 60 Taps abweichend (M-96); an den
+Umkehrsamples Sprung 0,0 (M-97); die Blende dauert bei Blockgröße 1, 64, 256
+und 4096 genau 256 Samples (M-98); unter FTZ und DAZ 120 von 120 Wachmarken
+bytegleich, der Nicht-endlich-Zähler zählt wie ohne Hostbypass (M-100); am
+Bypasseintritt 200 gemeldete Sperren bei 200 Playhead-Aufrufen, und über
+4000 Blöcke mit Eintrittswechseln, Hostautomation aus einem zweiten Thread,
+`reset`, `releaseResources` und `prepareToPlay` 0 Sperren, 0 Allokationen,
+Latenz 0, Tail 0,0 (M-101); `getBypassParameter()` nullptr bei 112
+Hostparametern, B1 120/120 (M-102); Statebytes, Revision und Undo
+unverändert, 0 Host-Dirty, die Ruhegrenze schließt am selben Block wie ohne
+Hostbypass (M-103); offline bitgleich zu Echtzeit, auch wenn der Wechsel nach
+offline in die Blende fällt (M-104). Kosten
+(`docs/beweise/roh/NAK-312-etappe7b-hostbypass-kosten.txt`): `DspKern` +8
+Byte; im Hostbypass rechnet der Kern voll, so viel wie im Normalpfad (Median
+1 537,0 ns je Block zu 64 Samples gegen 17,2 ns der JUCE-Basis, rund 0,12 %
+der Blockzeit); der Zusatz der Stufe im Normalpfad liegt unter der
+Messstreuung. Manifest `docs/beweise/NAK-312.md` §45.1, §46.1, §47.3, §49.2,
+§60 und §61.
+
+Grenzen: FLs Slot-Bypass ist im Host nicht gemessen — ob FL bei gedrücktem
+Knopf den Bypassparameter des Wrappers setzt oder den Slot stilllegt, ohne das
+Plugin zu rufen, misst kein Werkzeug (Register NAK-366); die Beine messen den
+Eintritt direkt. Die double-Fassung von `processBlockBypassed` bleibt die
+JUCE-Basis (`supportsDoublePrecisionProcessing` ist nicht überschrieben,
+Manifest §61.3). Nakamas eigener EQ-Schalter startet die Filter nach dem
+Zurückschalten weiter kalt (SONDE-015 E-8, von U58 unberührt). Gen bekommt
+keinen Hinweis „gebypasst": `state_report.eq_enabled` ist reserviert, eine
+Kennzeichnung wäre eine v3-Vertragsänderung (E-312-19). Gens eigener
+Hostbypass bleibt die JUCE-Basis (Grenzzeile 312/M-109, Register NAK-365,
+§1.8).
+
+### 1.8 Sonde und Messpunkte (NAK-312, Etappen 2 bis 7)
+
+NAK-312 (Planschritt S25k, Tiefenaudit 3 Teil 4, „Hostkante und
+Plugin-Lebenslauf") hat 14 Befunde an Probeeq und Gen geschlossen oder als
+Grenze benannt. Manifest `docs/beweise/NAK-312.md`: Einordnung je Befund §1,
+Regeln R-312-1 bis R-312-35 (§2 und die Einordnungen der Prüfrunden),
+Verhaltensmatrix M-01 bis M-133 (§6, §46), je Zeile ein Rotbeweis unter
+`docs/beweise/roh/`. Am End-Stand `ac6b2069` ist der Kanon GRUEN 70/70
+(Rohausgabe `docs/beweise/roh/NAK-312-ac6b206-dirty.md`); der Laufzeit-Arm
+fährt dort sechs Szenarien, der Nulltest im Host ist bitidentisch, allein der
+Render mit Verarbeitung wartet auf das Referenzprojekt der Karte U43
+(`docs/beweise/roh/NAK-312-laufzeit-ac6b2069.md`). Was der Kern selbst
+dazugewonnen hat — Hostwerte am Blockrand, Offline-Übergang, Hostbypass —,
+steht in §1.7, der ruhende Bestand beim Rollenwechsel in §1.4b und §1.4c.
+
+**(a) RT-Wache ab Callback-Eintritt und die Messgeräte (21.09.2026, Etappe 2;
+R-312-1, R-312-7).** Die Echtzeitwache (`eq-copilot/plugin/dsp/DspRtWache.h`)
+zählt Sperren und Allokationen nur, solange auf dem eigenen Thread ein
+`RtWache::Bereich` offen ist; ein Workerzug zählt nie mit. Bis Etappe 2 öffnete
+allein `DspKern::verarbeite` den Bereich
+(`eq-copilot/plugin/dsp/DspKern.cpp:1160`): Playhead, Stempel, Blockrand und
+Analysekopie lagen außerhalb, eine Sperre dort blieb unsichtbar, und die
+Behauptung „0 Sperren im Callback" sagte mehr, als der Zähler sah (T3-01-02,
+T3-01-03). Seit Etappe 2 ist `RtWache::Bereich` die erste Anweisung von
+`SondeProcessor::processBlock`, seit Etappe 7b auch von `processBlockBypassed`
+(`eq-copilot/plugin/sonde/SondeProcessor.cpp:510`, `:522`); der Bereich des
+Kerns liegt verschachtelt darin. Verhaltensneutral — ein Inkrement und ein
+Dekrement einer thread-lokalen Tiefe, kein Sample, kein Programmzustand
+(312/M-03, M-09: A16 und die B6-Goldens unverändert).
+
+🔑 **Die Wache sieht nur Plugincode.** Sperren, die JUCE vor dem Plugincode
+nimmt — im Wrapper oder im Parameterweg (`listenerLock`, unten (c)) —, liegen
+vor dem Bereich; die Behauptungszeile von B7 (`tools/beweise.ps1:728`) nennt
+diese Grenze (R-312-1). B6 baut keine Sonde, sein Zähler misst ab
+`DspKern::verarbeite`; A16 liest keinen Zähler.
+
+Das Messgerät in B7: `operator new` und `operator new[]` melden zusätzlich an
+`RtWache::meldeAllokation()` (E-312-11), und ein Testplayhead des Beins nimmt
+in `getPosition()` eine gemeldete Sperre — die einzige Stelle zwischen
+Callback-Eintritt und Kern, an der Testcode im echten Pfad läuft. So misst B7
+den Bereich lebendig: 200 gemeldete Sperren über 200 Blöcke (312/M-01, am
+Basisstand 0; für den Bypasseintritt 312/M-101 (a)), und ein Workerzug mit
+1137 eigenen Allokationen lässt beide Zähler bei +0 (312/M-02). Bis Etappe 5
+nahm `setNonRealtime` das Zustandsschloss über `RtWache::GemeldeteSperre`
+statt `juce::ScopedLock` — dieselbe Sperre, nur gemeldet, damit die Wache sie
+sah (312/M-04: je Aufruf offline eine); seit Etappe 5 nimmt es keine (§1.7,
+Offline-Übergang).
+
+Testzugänge der Sonde (R-312-7, Muster Gen, NAK-246 D2): Produkt- und
+Testkonstruktor delegieren an einen privaten Konstruktor mit `V3Verdrahtung`
+(`eq-copilot/plugin/sonde/SondeProcessor.h:562-573`); der Produktkonstruktor
+liefert SID, `pipeNameV3 (SID)` und die Installbindung wie bisher, der
+Produktzweig mit `controlV3.start()` ist unverändert
+(`SondeProcessor.cpp:148-160`, `:309-318`). Der Testkonstruktor
+`SondeProcessor (const std::string&, ServerErwartung)` (`:163-178`) übernimmt
+nur einen Namen aus dem Probe-Namensraum, sonst bekommen beide v3-Clients den
+leeren Pipenamen, mit dem sich nie eine Verbindung öffnet (fail-closed,
+312/M-05); dazu die Starthaken `v3StartFuerTest` und
+`v3TelemetrieStartFuerTest` und die Sicht `v3PipeNameFuerTest`
+(`SondeProcessor.h:336-340`), alle nur unter
+`NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3`. Das neue Bein B31
+(`EqCopSondeLebenslaufTest`,
+`eq-copilot/plugin/tests/SondeLebenslaufTestMain.cpp`) baut Sonden mit
+laufenden v3-Clients gegen den geteilten Testserver
+`eq-copilot/plugin/tests/V3TestServer.h`, auf dem Heap (NAK-175), und prüft
+vor jedem Aufbau, dass kein Name die Produktions-Pipe trifft (312/M-06 bis
+M-08). Etappe 4 erweitert es um die Besitzfälle (d); seither läuft es rund
+71 s (22 gehaltene Abbauten zu je gut 2 s Stoppfrist, Manifest §27.9).
+Gemessen 312/M-01 bis M-09 in B7, B31, A16 und B6; Rohdateien
+`docs/beweise/roh/NAK-312-rot-M-01.txt` bis
+`docs/beweise/roh/NAK-312-rot-M-09.txt`; Manifest §5.1, §5.2, §6.1 und §18.
+
+**(b) Ladestart und Hostmailbox (21.09.2026, Etappe 3a und Nacharbeit 1 der
+Etappe 3; T3-05-01, T3-05-02; R-312-10 zweiter Teil, R-312-11, R-312-16).**
+Vorher wirkte ein Hostwert, der vor einem Ladestart in der Mailbox lag, danach
+weiter: der nächste Kontrolltakt schrieb ihn als Overlay über den geladenen
+Stand, und ein `prepareToPlay` dazwischen publizierte ihn mit (Phase 16:
+bestätigt +3 dB,
+wirksam −8,99999944679 dB,
+`docs/audits/2026-09-15-tiefenaudit/roh/phase-16-c-persistenz.md`; gegen
+SONDE-015 M-84). Ein read-only gehaltener Stand (etwa ein fremdes Major)
+verarbeitete Hostparameter trotz erhaltener Originalbytes (+6,00000017258 dB;
+gegen SONDE-015 M-92).
+
+Heute gibt `setStateInformation` das read-only des Standes an den Kern
+(`ladestart (…, zustand.nurLesen)`,
+`eq-copilot/plugin/sonde/SondeProcessor.cpp:1278-1295`);
+`Transaktionskern::ladestart` setzt `nurLesenStand` bei Erfolg in beide
+Richtungen, und `wirksam()` legt dann kein Overlay über den bestätigten Satz
+(`eq-copilot/plugin/state/NakamaTransaktion.cpp:270-272`, `:344-351`). Im
+selben Zustandsschloss und **vor** `hostParameterAbgleichen` folgt die
+**Quittierung** der Mailbox (`SondeProcessor.cpp:1309-1326`): erst
+`hostEreignisOffen.exchange (false)`, dann je Parameter
+`hostEreignisGesehen[i] = hostEreignis[i]`; der Takt vergleicht auf Gleichheit
+(`:1844-1845`) und findet diese Ereignisse erledigt. Der Blockrand bekommt
+dieselbe Quittung als eigene Kopie `blockrandQuittung` (`uint64`, Vorgabe
+`kKeineQuittung` = ~0, die kein 32-Bit-Stand trifft;
+`eq-copilot/plugin/sonde/SondeProcessor.h:788-798`,
+`SondeProcessor.cpp:1328-1335`): ein quittiertes Ereignis kommt dort ohne Wert
+an und setzt kein Ziel (`:606-609`). Ein Hostgestus **nach** dem erfolgreichen
+Recall wirkt unverändert (312/M-11). Der Abgleich danach (R-312-11,
+`SondeProcessor.cpp:1754-1798`) lässt jeden Parameter stehen, dessen Zähler
+nicht mehr **gleich** dem quittierten Stand ist, und stellt nach seiner
+Schleife einen Regler, den ein endlicher Hostwert während des Schreibens
+erreicht hat, auf diesen Wert: Regler und Klang zeigen denselben (312/M-78).
+Im read-only-Stand wirkt ein verbrauchtes Hostereignis nicht, und der Takt
+stellt die Hostregler nach dem Loslassen des Schlosses auf den neutralen
+bestätigten Satz zurück (`:1850-1854`, `:1873-1878`; 312/M-16) — derselbe Weg
+wie beim abgewiesenen Gestus. `reset()` bewahrt die Mailbox absichtlich: sie
+trägt Hostwerte, keine Audiohistorie (`:467-472`; 312/M-13). Laden meldet kein
+Host-Dirty (SONDE-015 M-85); die Originalbytes eines read-only-Standes kommen
+bytegleich zurück (312/M-15).
+
+🔑 **Nach einem read-only-Ladestart nimmt auch der Blockrand keinen
+Hostwert.** Die Blockbindung der Etappe 3b (§1.7) hatte ein Fenster geöffnet:
+am Blockrand setzte ein Hostwert — am Transaktionskern vorbei — noch
+Rampenziele (L-1 der Erstprüfung; Gegenprobe: 256 Fadesamples je Kanal
+abweichend, Spitze +13,71 dB statt +3,00 dB,
+`docs/beweise/roh/NAK-312-etappe3-nacharbeit1-gegenprobe.txt`). Seit der
+Nacharbeit 1 (E-312-13, R-312-16) speichert der Ladestart `blockrandNurLesen`
+(`SondeProcessor.h:799-805`) bei jedem erfolgreichen Laden in beide Richtungen
+aus `transaktion->nurLesen()`, vor dem Tausch des Flags und vor der
+Zählerlesung der Quittierung (`SondeProcessor.cpp:1297-1307`); der Blockrand
+liest es im Ereignisfall nach dem Zähler und nach der Quittungsprüfung und
+übergibt das Ereignis dann ohne Wert (`:610-616`) — der Blockrandstand zieht
+nach, kein Rampenziel (`DspKern.cpp:680-685`), auch nicht für das Ausblenden
+des vorigen Standes und nicht während eines beim Laden laufenden Übergangs.
+Die Ordnung trägt `seq_cst` an allen vier Zugriffen (Speicherung,
+Zählerlesung der Quittierung, Zählerlesung am Blockrand, Flaglesung; Manifest
+§24.3); auf x64 bleiben die drei Lesungen gewöhnliche Ladebefehle, die
+Speicherung ist ein gesperrter Befehl im Ladestart unter dem Zustandsschloss.
+
+Gemessen in B7: Abschnitt X (312/M-10 bis M-13, M-15 bis M-19, M-78), M-14 im
+Reload-Fall (Abschnitt O), M-29 und M-87 in Abschnitt Y. Am Basisstand rot:
+sieben Zeilen (`docs/beweise/roh/NAK-312-etappe3a-gegenprobe.txt`). Heute: nach
+dem Laden in dieselbe Instanz liegt Ausgang/Eingang über 512 Samples höchstens
+8,0 · 10^−8 neben 10^(3/20), der Hash der Quelle bleibt (M-10, M-14);
+read-only 0 von 1024 Werten abweichend statt 1022, Fixture bytegleich, 0
+Host-Dirty (M-15); die
+Quittierung vergleicht über den Zählerüberlauf auf Gleichheit (M-19); nach
+einem read-only-Ladestart 0 abweichende Samples gegen eine Instanz ohne
+Hostwert und +0 Blockrandziele, auch bei einem beim Laden laufenden Übergang
+mit Blöcken zu 185 und 512 Samples, und nach einem schreibbaren Stand wirkt
+Automation wieder am Blockrand (M-87). Rohdateien
+`docs/beweise/roh/NAK-312-rot-M-10.txt`, `docs/beweise/roh/NAK-312-rot-M-15.txt`,
+`docs/beweise/roh/NAK-312-rot-M-78.txt` und
+`docs/beweise/roh/NAK-312-rot-M-87.txt`; Manifest §5.3, §6.2, §21.2 bis §21.4,
+§23.4 und §24.
+
+Grenzen: der Rücksprung des Reglers im read-only-Stand läuft im Workerthread
+und landet im VST3-Wrapper im Parametercache; ob FL ihn bei laufender
+Automation als Eingriff wertet, ist nicht gemessen (Register NAK-346). Die
+zweite Prüfung aus R-312-11 hat kein eigenes gemessenes Zeitfenster (Manifest
+§21.4 A-16).
+
+**(c) Parameteranbindung ohne APVTS (21.09.2026, Etappe 5, zweiter
+Änderungssatz; T3-01-02, R-312-4).** Im Audio-Callback reicht der
+VST3-Wrapper jeden Hostwert vor `processBlock` über `setValueNotifyingHost` an
+die Hörer des Parameters (`processParameterChanges`,
+`juce_audio_plugin_client_VST3.cpp:3684-3687` und `:843-850`, Bauartefakt).
+Vor Etappe 5 hingen die Hostparameter an einer
+`AudioProcessorValueTreeState`, und auf diesem Weg lagen vor dem Bereich der
+Wache zwei Sperrfamilien — JUCEs `listenerLock` des Parameters und je
+Parameter der `ParameterAdapter` der APVTS mit seinem Hörer-Mutex —, dazu ein
+10-Hz-Timer, der Werte in einen nie gespeicherten Baum spiegelte (Manifest §1,
+§7.5, §30.6). Heute legt `hostParameterAnlegen`
+(`eq-copilot/plugin/sonde/SondeProcessor.cpp:84-126`) die 112 Hostparameter aus
+`parameter::tabelle()` direkt am Prozessor an (`addParameter`), als erste
+Anweisung des Konstruktorrumpfs (`:239-243`): dieselben Klassen
+(`AudioParameterBool`, `AudioParameterFloat` mit `NormalisableRange` samt
+Skew, `AudioParameterChoice`), dieselben `ParameterID { b.id, 1 }`, Namen,
+Bereiche und Defaults in derselben Reihenfolge. Die 112 sind die 109
+v1-Kennungen, danach `eq_enabled`, `mix` und `auto_gain`; `occupied` ist keiner
+(`eq-copilot/plugin/sonde/SondeProcessor.h:55-59`). Der Prozessor hört jedem
+selbst zu (`addListener` `SondeProcessor.cpp:262-269`, `removeListener` als
+zweiter Destruktorschritt `:337-341`); `parameterValueChanged` (`:1620-1632`)
+schreibt nur Atomics — Hostwert, Ereigniszähler, `hostEreignisOffen` — und
+läuft auch im Audiothread (VST3 `processParameterChanges`,
+`SondeProcessor.h:781-786`). Gespeichert wird nie ein Parameterwert, sondern
+der bestätigte Zustand des Transaktionskerns.
+
+🔑 **Umgebaut, weil der Identitätsbeweis bytegleich hielt.** R-312-4 ließ den
+Umbau nur zu, wenn Parameter-IDs, Reihenfolge, Bereiche, Hostsicht,
+Automation und State bytegleich bleiben; sonst wäre die APVTS geblieben. Das
+Golden entstand am Basis-SHA der Etappe vor jeder Produktänderung
+(`docs/beweise/roh/NAK-312-parameter-golden.txt`,
+`docs/beweise/roh/NAK-312-parameter-golden-s1.bin`): die 114 Parameterzeilen
+(Zahl, Gruppen und die 112 Parameter mit Klasse, Bereich, Default und
+Schrittzahl) und die Hostsicht an je drei Stützstellen sind Bit für Bit gleich
+(312/M-48), die Statebytes und die Epochenfolge einer Automationsfahrt ebenso
+(M-49; B2 lädt die eingefrorenen Bytes normal und schreibt sie bytegleich
+zurück); B1 misst das neu gebaute Bundle mit 120 von 120 Prüfungen.
+
+Gemessen in B7 Abschnitt ZB und B2: kein Quelltext unter
+`eq-copilot/plugin/sonde/` nennt die APVTS-Klasse (Textriegel 312/M-50,
+fail-closed; am Basisstand der einzige rote Fall,
+`docs/beweise/roh/NAK-312-etappe5b-gegenprobe.txt`); nach dem Laden trägt
+jeder der 112 Hostparameter den geladenen Wert (M-51); `addListener` und
+`removeListener` bleiben paarweise (M-52); über 4000 Blöcke mit 195 723
+Hostschreibrunden aus einem zweiten Thread zählt die Wache ab `processBlock` 0
+Sperren und 0 Allokationen (M-53); Index −1 und 112 bleiben ohne Wirkung, der
+eigene Abgleich meldet kein Hostereignis (M-54). Rohdateien
+`docs/beweise/roh/NAK-312-rot-M-48.txt` bis
+`docs/beweise/roh/NAK-312-rot-M-54.txt`; Manifest §5.8, §6.6, §30.2 und §30.6
+bis §30.8. Für Host und User ändert sich nichts; entfallen ist allein der
+interne Timer (Manifest §30.14).
+
+Grenzen: die JUCE-eigene Sperre bleibt — `setValueNotifyingHost` ruft
+`sendValueChangedMessageToListeners`, das `listenerLock` nimmt, bevor Nakamas
+Listener läuft (`juce_AudioProcessorParameter.cpp:59-62`, `:111-113`,
+Bauartefakt JUCE 8.0.9). Die Wache sieht sie nicht; ohne den gepinnten
+VST3-Wrapperpatch (Entwurf §44.3) ist sie nicht entfernbar (Register NAK-356,
+nie wegdeklariert). `getBypassParameter()` bleibt unüberschrieben (§1.7,
+Hostbypass). `eq-copilot/plugin/state/NakamaParameter.h` nennt in Kopf und
+Regel R1 noch die APVTS der Sonde (Zeilen 9-10 und 97) — veraltet seit diesem
+Umbau, außerhalb der Ticketpfade (Manifest §30.14).
+
+**(d) Besitz und Lebensdauer (21.09.2026, Etappe 4; T3-04-01, T3-04-03;
+R-312-7, R-312-2).**
+Vor Etappe 4 fingen die drei Provider der v3-Clients der Sonde (Hello, Status,
+Telemetrie-Hello) rohes `this`. `transaktion` ist nach `controlV3` deklariert
+und stirbt vor ihm; ein Clientthread, den `stop()` nach der Stoppfrist von
+2 s abgelöst hatte, konnte den Statusprovider danach noch rufen, und der las
+`transaktion->revision()` aus freigegebenem Speicher (T3-04-01; die Regel R-D2
+aus `docs/beweise/NAK-246.md` galt bis dahin nur für Gen). Heute laufen die
+drei Provider durch dieselbe Besitzschleuse wie Gens IPC-Rückrufe: das
+Mitglied `std::shared_ptr<nakama::ipc::CallbackSchleuse> callbackSchleuse`
+steht vor `controlV3` und `telemetryV3`
+(`eq-copilot/plugin/sonde/SondeProcessor.h:746-765`), jedes Lambda fängt
+`this` und eine Kopie des Zeigers und ruft den Prozessor nur innerhalb eines
+Zugs; ein abgewiesener Zug liefert den neutralen Default-Wert
+(`SondeProcessor.cpp:188-237`). Der Destruktor stoppt den Briefkasten, meldet
+die Listener ab, joint den Worker, stoppt Telemetrie und Control und schließt
+erst dann die Schleuse (`:330-362`, `schliessen()` in `:357`): ein Rückruf,
+der danach beginnt, wird abgewiesen und gezählt, ein laufender — auch einer
+auf einem abgelösten Thread — zu Ende gewartet; erst danach sterben die
+Mitglieder. Im Callbackpfad der Schleuse gibt es nur Atomics
+(`eq-copilot/plugin/core/ipc/controlclient/Schleuse.h`); ein Reconnect legt
+sie nicht neu an, und sie liegt nicht im Audiopfad.
+
+🔑 **Geordnet wird über beobachtbare Zustände der Schleuse, nie über die
+Wanduhr (E-312-10).** Die Beine halten einen Provider an einer Schranke fest,
+bauen den Eigentümer ab und lesen eine gezählte Marke unmittelbar vor dem
+ersten Besitzerzugriff (R-312-12) — nie eine Nullprüfung, nie ein Lauf in
+undefiniertem Verhalten. Am Stand ohne Schleuse erreichte die Marke nach dem
+Ende des Eigentümers 1, in 20 von 20 Zyklen
+(`docs/beweise/roh/NAK-312-etappe4-gegenprobe.txt`).
+
+Gemessen in B31 (312/M-30 bis M-34, M-39, 312/NAK-345) und B7 (312/M-38):
+Marke nach dem Ende 0; bei gehaltenem Provider `gewartetMs` 3, `abgewiesen` 0,
+`stopFristUeberschritten` 1 für den gehaltenen Control-Client, Destruktor 2005
+bis 2007 ms, ohne gehaltenen Provider 5 bis 7 ms (`kStopFristMs` = 2000
+unverändert); 20 Gegenzyklen ohne Anstieg von Handles (160/160) und Threads
+(M-31); ein Reconnect rührt die Schleuse nicht an (M-33); über 4000 Blöcke bei
+verbundenen Clients 0 Sperren und 0 Allokationen (M-38); die
+Produktverdrahtung trägt genau `pipeNameV3 (aktuelleLogonSid())`
+(312/NAK-345). Rohdateien `docs/beweise/roh/NAK-312-rot-M-30.txt` bis
+`docs/beweise/roh/NAK-312-rot-M-39.txt`; Manifest §5.5, §6.4, §27 und §29.3.
+
+Messpunkt-Panel (T3-04-03, R-312-2): der Panel-Destruktor ruft `uebernehmen()`
+auch, wenn FL das Editorfenster mit offenem Popover schließt; die Box stirbt
+erst in der nächsten Runde der Nachrichtenschleife, womöglich nach dem
+Prozessor. Vorher hielt das Panel eine Referenz auf den Prozessor, und der
+Kommentar am Übergabepunkt behauptete einen Schutz, den es nicht gab. Heute
+hält es den Editor als `juce::Component::SafePointer<EqCopilotEditor>`
+(`eq-copilot/plugin/src/PluginEditor.cpp:715-730`), `uebernehmen()` prüft ihn
+als Erstes und erreicht den Prozessor nur über `ed->processor` (`:797-818`);
+JUCE zerstört den Editor vor seinem Prozessor. Nach dem Ende: kein Zugriff,
+keine Mutation, keine Dirty-Meldung (B15 312/M-35, Marke 0 statt 1); der
+normale Handgriff meldet genau ein Host-Dirty (M-36), ohne Änderung keines
+(M-37). Rohdatei `docs/beweise/roh/NAK-312-rot-M-35.txt`; Manifest §5.6 und
+§27.
+
+Grenzen: denselben Fehler trug das Kennungskonflikt-Panel des Editors —
+Nebenfund der Validierung dieser Etappe (Register NAK-349), gebaut in Etappe
+6b, unten (e). Ein im Messpunkt-Popover getippter, weder mit Enter noch mit
+Fokuswechsel bestätigter Name wird verworfen, wenn das Editorfenster vor dem
+Popover schließt; bisher übernahm ihn der Panel-Destruktor. Karte U57 ist
+offen, ohne Antwort gilt der gebaute Stand (E-312-14); ob FL beim Schließen den
+Fokus vorher abgibt, ist nicht gemessen. Die Schleuse zählt in einem
+gehaltenen Abbau rund 185 Eintritte in etwa zwei Sekunden Verbindung — welcher
+Provider so oft ruft, ist nicht untersucht (Manifest §27.9). Dass
+`telemetryV3.stop()` vor dem Schließen liegt, misst B31 nicht; es folgt aus der
+Zeilenfolge (E-312-15, Register NAK-348). Offen an der Sonde bleibt `reset()`:
+es nimmt `getCallbackLock()` und `zustandSchloss` (`SondeProcessor.cpp:473-474`),
+obwohl der VST3-Wrapper es aus `setProcessing (false)` ruft, das der Host im
+Audio-Thread rufen darf; ob FL das tut, ist nicht gemessen (Register NAK-357).
+
+**(e) Hörmarkierung und Gen-Fläche (21. und 22.09.2026, Etappe 6 und ihre
+Nacharbeit 1; T3-07-02, T3-01-10, T3-14-01, T3-07-05 Teil a, NAK-349; R-312-2,
+R-312-5, R-312-6, R-312-8, R-312-9).**
+Vorher wurde ein in der Legacy-Rolle eingereichter Markierungsauftrag nach dem
+Wechsel zu Main ohne neuen Handgriff hörbar — danach ohne sichtbaren
+Aus-Knopf, und die drei Sicherheitsnetze tickten in der Main-Fläche nicht, weil
+der Tick dort vorher zurückkehrte; weg von Main blieb der Auftrag scharf
+(T3-07-02). Heute nimmt `spiegleKlassifikation`
+(`eq-copilot/plugin/src/prozessor/State.cpp:268-297`) bei **jedem** Wechsel der
+Klassifikation — zu Main und weg von Main, über `setzeBindung` oder
+`setStateInformation` — einen eingereichten Auftrag per `reicheAus()` zurück,
+bevor der Store von `istMainKlassifiziert` die neue Klassifikation im
+Audiothread wirksam macht; der Audiothread liest mit `acquire`
+(`eq-copilot/plugin/src/PluginProcessor.cpp:877`): ein Block, der die neue
+Klassifikation sieht, sieht auch die Rücknahme (R-312-8 in der Fassung
+E-312-8). Die Rücknahme ist ein Aus-Auftrag, kein Schnitt: ein hörbarer Marker
+blendet weich aus (NAK-47) und meldet sein `end` am Fadeende. Im Editor ticken
+die drei Netze (Freilauf, Sampleratenwechsel, Totmann nach 10 min) vor der
+Abzweigung in die Main-Fläche
+(`eq-copilot/plugin/src/PluginEditor.cpp:252-284`); `schalteMarkierung` fragt
+vor dem Einreichen denselben Term wie das Audio und meldet in der
+Legacy-Rolle „Markierung nicht möglich — nur ein Main färbt hörbar, diese
+Instanz bleibt neutral." (`:914-926`); `wechsleFlaecheWennNoetig` räumt nur
+Anzeigezustand und fragt dafür die Klassifikation, nicht die Fläche
+(`:960-974`). Gemessen in A3: 312/M-55 (zu Main: 40 Blöcke bitgleich, kein
+Ereignis), M-57 (Rückwechsel ohne scharfen Marker), M-84 (weg von Main: genau
+ein `begin` und ein `end`, Nachbarsprung 0,0000781250 innerhalb der
+E-31-Schranke 0,0000782442, kein neues `begin` nach der Rückkehr), M-56 (die
+drei Netze in der Main-Fläche), M-58 (in Legacy wird nichts eingereicht).
+
+🔑 **Anhalten beendet Klang und Intervall, nicht den Auftrag.** Bis Etappe 6
+liefen `reset()` und `releaseResources()` von Gen als leere JUCE-Basis: ein
+hörbarer Marker klang über das Anhalten hinaus, und sein
+Interventionsintervall blieb beim Broker offen (T3-01-10). Heute rufen beide
+(`eq-copilot/plugin/src/prozessor/Hostbruecke.cpp:165-188`) den gemeinsamen
+Abschluss `markierungAbbrechen()` (`:190-224`): `HoerMarkierung::brichAb()`
+(`eq-copilot/plugin/src/HoerMarkierung.h:323-351`) schaltet hart aus und
+liefert den fälligen Übergang mit der gezählten Hördauer; daraus entsteht ein
+`end` ohne Projektzeit, mit `tail_samples` aus `tailSamplesFuer`, das über den
+RT-Ring in Sequenzordnung reist und vom Worker abgeholt wird — ohne Sperre und
+ohne Speicher, weil der Wrapper `reset()` aus `setProcessing (false)` ruft und
+der Host das im Audio-Thread darf; der Abschlussblock von `prepareToPlay`
+nimmt dagegen `sendeZustandMutex` (Manifest §36.14 A-78). Die Sequenz wird nur
+gezogen, wenn der Ring Platz hat, sonst steht das Überlaufbit (fail-closed).
+`releaseResources` gibt danach die Trockenkopie des Vergleichspegels und den
+Wet-Puffer frei (`Hostbruecke.cpp:185-187`, `HoerMarkierung.h:353-360`).
+`prepareToPlay` hängt sein `end`
+nur an ein offenes Begin desselben Eingriffs (Nummernprüfung `anLebendes`,
+`Hostbruecke.cpp:105-120`, A-81). Der Oversize-Riegel bleibt bis zum nächsten
+`prepareToPlay`. Der Auftrag bleibt eingereicht — der User hat am 21.09.2026
+„Auftrag bleibt bestehen (Empfohlen)" gewählt
+(`design/abnahmen/2026-09-21-markierungsauftrag-bleibt-nach-anhalten-u56.md`):
+läuft der Transport weiter, klingt die Markierung beim nächsten erlaubten
+Block neu, mit neuem `begin`. Gemessen in A3: 312/M-59 (40 Blöcke bitgleich,
+genau ein `end` ohne Projektzeit, `tail_samples` 45 760 = 2 · 20 480 + 4 800),
+M-60 (0 Allokationen, keine neue Wet-Zuteilung), M-61, M-62 (voller Ring:
+Überlaufbit, keine Sequenz; zwei offene Intervalle schließen über den Ring
+lückenlos), M-63, M-64, M-65 (ohne Auftrag kein Ereignis, Statebytes
+bytegleich, 0 Host-Dirty), M-86 (über `reset`, Blöcke und `prepareToPlay` hat
+jedes `begin` genau ein `end`) und 312/M-130 (über `releaseResources`, am
+ersten erlaubten Block gemessen nach R-312-33). Gegenproben
+`docs/beweise/roh/NAK-312-etappe6a-gegenprobe-A.txt` und
+`docs/beweise/roh/NAK-312-etappe6a-gegenprobe-B.txt`; Manifest §5.9, §5.10,
+§6.7, §36, §42.5 (Matrixwortlaut R-312-24), §45.4 und §57.
+
+Labelentwurf (T3-14-01, R-312-9): vorher landete ein im Namensfeld getippter
+Entwurf nach einem Auswahlwechsel beim nächsten Enter auf der neuen Quelle, und
+ein leerer Entwurf löschte deren Namen. Heute gehört der Entwurf der
+Quellidentität, mit der er begann: die Kennung aus `sourcesLabelFuerId` und
+`sourcesLabelFuerNonce` (`eq-copilot/plugin/src/PluginEditor.h:195`) entsteht
+dort, wo der Text geladen wird (`PluginEditor.cpp:1100-1118`);
+`uebernehmeSourcesLabel` (`:1015-1049`) schreibt nur, wenn die Kennung das
+Aktionsziel ist, und prüft Hauptziel, Runtime-Nonce und Mitgliedschaft gegen
+die Sicht des Modells von jetzt; ein Klick auf eine andere gezeichnete Zeile
+bestätigt den offenen Entwurf unter seiner Startquelle, bevor
+`waehleSourcesHauptziel` wechselt (`:1178-1185`); Escape verwirft ohne
+Mutation (`:211-220`); Fokusverlust bestätigt wie Enter (`:209-210`);
+verschwindet die Startquelle oder kommt sie mit neuer Nonce zurück, verfällt
+der Entwurf ohne Mutation. Gemessen in B15 (312/M-66 bis M-71: je wirklich
+geändertem Namen genau ein Host-Dirty; 0, 120 und 121 Codepoints) und B14
+(312/M-72: beide Namen überleben Speichern und Laden); Gegenprobe
+`docs/beweise/roh/NAK-312-etappe6b-gegenprobe-A.txt`.
+
+Ersatzziel und Aktionssteuerung (T3-07-05 Teil a, R-312-6): vorher wählte das
+Modell als Ersatz-Hauptziel die kleinste `instance_id`; bei mehr als 20
+Quellen stand sie oft außerhalb der gezeichneten Liste, mit sichtbarem,
+scharfem Knopf. Heute ist `vorInAnzeige`
+(`eq-copilot/plugin/src/SourcesModel.cpp:347-366`) die eine Ordnung für
+`sicht()` und `stelleZielSicher()` (`:1889-1905`): der Ersatz ist die erste
+Quelle in Anzeigeordnung und steht in der ersten gezeichneten Zeile, ohne dass
+das Modell die Zeilenzahl kennt. `aktualisiereSourcesSteuerung`
+(`PluginEditor.cpp:1051-1126`) sucht das Hauptziel nur unter den gezeichneten
+Zeilen, mit derselben Rechnung wie Zeichnen und Klick (`sourcesZeilen`,
+`:1144-1160`); liegt es dahinter, sind Knopf und Labelfeld unsichtbar, das
+Aktionsziel ist leer, das Modell bleibt unberührt (kein automatischer
+Zielwechsel, SONDE-012 U02), ein offener Entwurf wird vorher bestätigt
+(M-85), und die Statuszeile sagt „Main target is outside the drawn list -
+select a drawn source."; die Beschriftung des Labelfelds steht nur bei
+sichtbarem Feld (`:1535-1545`). Gemessen in B15 (312/M-73 bis M-75, M-85) und
+B14 (312/M-76: 40 Mitglieder bleiben); Gegenprobe
+`docs/beweise/roh/NAK-312-etappe6b-gegenprobe-B.txt`; Manifest §5.11, §5.12,
+§6.7 und §38.
+
+Kennungskonflikt-Panel (Register NAK-349, E-312-17; Nacharbeit 1 der Etappe 6,
+L-5; R-312-2): der Rückruf in `zeigeKonflikt` fing rohes `this`; ein per
+Enter ausgelöster, geposteter Klick, den der Host erst nach dem Editorabbau
+zustellte, lief auf freigegebenem Speicher
+(`docs/beweise/roh/NAK-349-quellvalidierung.md`). Heute fängt er einen
+`SafePointer` und prüft ihn zweimal (`PluginEditor.cpp:639-669`): am Eintritt
+vor jedem Zugriff und nach `proz.neueSensorId()`, weil der Host den Editor in
+seiner Reaktion auf die Host-Dirty-Meldung synchron abbauen darf (Kette
+`neueSensorId` → `meldeHostDirty` → `updateHostDisplay` →
+`audioProcessorChanged` des VST3-Wrappers → `restartComponent`, Manifest
+§42.3); zwischen Hostaufruf und zweiter Prüfung fasst er den Editor nicht an.
+Gemessen in B15: der Rückruf ist nach dem Editorende wirkungslos, mit lebendem
+und mit zerstörtem Prozessor (Marke 0, Kennung unverändert, 0 Host-Dirty;
+312/M-91), der Handgriff bleibt (neue Kennung, genau ein Host-Dirty,
+Statusmeldung; M-92), und ein Editorabbau im Rückruf lässt die Kennung
+wechseln, ohne den toten Editor zu berühren (M-93). Rohdateien
+`docs/beweise/roh/NAK-312-rot-M-91.txt` und
+`docs/beweise/roh/NAK-312-rot-M-93.txt`; Manifest §35, §38.18 bis §38.24,
+§41.6 und §42.
+
+Grenzen: in der Legacy-Rolle meldet SOLO oder PULS ehrlich, dass nichts
+färbt, und die Main-Fläche hat keinen Auslöser — die Hörmarkierung hat heute
+keinen hörbaren Weg, bis die Main-Fläche einen Handgriff trägt (Design
+geparkt, Register NAK-341). Ruft ein Host `reset()` bei weiterlaufendem
+Transport, springt der Ausgang am Schnitt von gefärbt auf trocken und blendet
+danach neu ein (Manifest §36.17). Ob FL `setProcessing (false)` beim Stoppen
+ruft, auf welchem Thread und ob ein `process` gleichzeitig läuft, ist nicht
+gemessen; der VST3-Vertrag schließt `reset()` neben `process` aus (Register
+NAK-361 (1)). Nach „weg von Main" verwirft der Sender das `end` am Fadeende;
+die Instanz bleibt danach dauerhaft nicht neutral, fail-closed nach Entwurf
+§34.2 — vorbestehend und regulär erst mit einem Auslöser in der Main-Fläche
+erreichbar (NAK-361 (2)). Die Statusmeldung der drei Netze wird in der
+Main-Fläche nicht gezeichnet (NAK-361 (4)); ein vom Prozessor abgewiesener
+Entwurf im Umordnungsfall verliert seine Meldung (NAK-361 (3)); 312/M-63
+misst den Neubeginn nach `reset()` nicht am ersten Block (Register NAK-373).
+FLs Slot-Bypass auf einer Gen-Instanz geht an alledem vorbei: Gen überschreibt
+weder `getBypassParameter` noch `processBlockBypassed`, die JUCE-Basis reicht
+den Puffer durch, eine hörbare Markierung wird hart abgeschnitten, ihr
+Intervall bleibt offen, und Gens Analyseabgriff pausiert; es gibt keine
+Zusage, 312/M-109 hält die Grenze (Register NAK-365).
+
+**(f) Annahmegrenze des Quellenmodells (23.09.2026, Etappe 7b Teil 1 und
+Nacharbeit 1; T3-07-05 Kapazität, Karte U51, Weg C-1; R-312-32).**
+
+🔑 **Gen nimmt höchstens `SourcesModel::kAnnahmeGrenze` = 20 Quellen als
+Zeilen an** (`eq-copilot/plugin/src/SourcesModel.h:386-395`). Die Zahl ist das
+Wort des Users vom 21.09.2026 — „Auf 20 begrenzen (Empfohlen)"
+(`design/abnahmen/2026-09-21-quellenannahme-auf-20-begrenzt-u51.md`) — und
+nicht aus der Geometrie gerechnet; dass die Main-Fläche bei 760×430 alle 20
+zeichnet und jede per Klick Hauptziel ist, halten 312/M-122 und M-127
+(Zeilenhöhe `jlimit (18, 34, 366 / n)`, bei 20 genau 18 px,
+`eq-copilot/plugin/src/PluginEditor.cpp:1144-1160`). Die Annahmeregel `nimmAn`
+(`eq-copilot/plugin/src/SourcesModel.cpp:1865-1886`) läuft unter dem `mutex`
+des Modells in allen drei Eintritten — Snapshot (`:1336-1342`), Publikation
+der Mitglieder (`:453-478`) und Reload (`:536-542`): Kandidaten sind die
+gespeicherten Mitglieder und die Sondenmitglieder des jüngsten Snapshots; wer
+einen Eintrag hat und Kandidat bleibt, behält seinen Platz, damit keine Quelle
+ohne Handgriff springt; freie Plätze gehen zuerst an gespeicherte, dann an
+flüchtige Kandidaten, je in aufsteigender `instance_id` (der Ordnung des
+States, nicht der Anzeigeordnung, die an spät eintreffenden Hostnamen hängt).
+Eine Quelle ohne Platz hat keinen Eintrag: keine Zeile, keine Messung
+(`uebernehmeP2` sucht nur unter den Einträgen, `:1652`), kein Befundzähler.
+Sondenmitglieder ohne Platz warten mit ihrem Stand aus dem Snapshot in
+`nichtAngenommene` (`SourcesModel.h:478-485`) und rücken nach, wenn ohne
+neuen Snapshot ein Platz frei wird; `Sicht::nichtAngenommen`
+(`SourcesModel.cpp:1746`) zählt alle bekannten Quellen ohne Platz.
+Gespeicherte Mitglieder und State bleiben ungekürzt (Deckel 64): ein
+Altprojekt mit mehr als 20 Mitgliedern behält alle und zeigt die 20 mit der
+kleinsten `instance_id` (312/M-126). Die Meldung steht im vorhandenen
+Diagnosefeld der Main-Fläche (`paintMainFlaeche`, `PluginEditor.cpp:1401-1424`,
+E-312-22): „Source list full (20) - N more Probeeq not accepted", allein oder
+als Zusatz hinter einer anstehenden Diagnose; kein neues Element (312/M-129).
+Der Testzugang `setzeFixtureFuerTest` (`SourcesModel.cpp:1836-1862`) bleibt
+ungedeckelt und an der Annahmeregel vorbei (312/M-73, M-74 und M-85 speisen
+bis 64 Zeilen ein, das Sicherheitsnetz von R-312-6), leert die wartenden
+Sonden und übernimmt die Zahl der Fixture; `nimmAn` behält solche Einträge,
+es kommt nur keiner dazu.
+
+Befundzähler nach dem Nachrücken (Nacharbeit 1, R-312-32): rückte eine
+wartende Sonde über den lokalen Eintritt nach — ein gespeichertes Mitglied
+wird entfernt, ohne dass ein Snapshot kommt —, zeigte ihre Zeile
+„Findings: 0 - no findings yet", obwohl die Sicht ihren offenen Befund trug
+(Gegenprobe 0 statt 1,
+`docs/beweise/roh/NAK-312-etappe7b-nacharbeit1-gegenprobe-M-133.txt`).
+Seither leitet `setzePersistenteMitglieder` die Zähler nach der
+Nachrückschleife unter demselben `mutex` neu aus `befunde` ab
+(`zaehleOffeneFindings()`, `SourcesModel.cpp:479-488`); hierher kommt jede
+Publikation der Mitglieder — Bindung
+(`eq-copilot/plugin/src/prozessor/State.cpp:390`), Benennen, lokaler Unbind
+und ACK-Nachführung (`eq-copilot/plugin/src/prozessor/Ipc.cpp:1243`, `:1287`,
+`:1553`) —, der Snapshot zählt ohnehin (`SourcesModel.cpp:1451`). Zu jedem
+Zeitpunkt entspricht `Zeile::findingsOffen` der Zahl der nicht als `stale`
+markierten Befunde dieser Quelle (312/M-133).
+
+Warum: vor Etappe 7b nahm das Modell bis zu 64 Quellen an, die feste
+Main-Fläche zeichnet aber höchstens 20 anklickbare Zeilen: ab der 21. war eine
+Quelle angenommen und maß mit, blieb aber unsichtbar (T3-07-05; am Basisstand
+21 Zeilen bei 21 Sonden,
+`docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123.txt`). Gemessen in B13
+(312/M-122 bis M-125, M-128, M-133), B15 (312/M-122 bis M-124, M-127, M-129,
+das Diagnosefeld pixelgenau gegen eine unabhängige Zeichnung), B14 (312/M-126)
+und A23 (die angenommene Menge aus der Sicht): 32 bzw. 64 Sonden ergeben 20
+Zeilen und `nichtAngenommen` 12 bzw. 44 (M-124); eine gegangene Quelle macht
+Platz, eine zurückkehrende verdrängt keine angenommene (M-125); der P2-Frame
+einer nicht angenommenen Quelle ist wirkungslos (M-128); die p95-Grenzen der
+Latenzläufe bleiben, bei 32 verbundenen (20 angenommenen) Quellen 50,9 /
+95,0 / 347,9 ms für 2048 / 4096 / 16384 Samples (Grenzen 300 / 300 / 750 ms).
+Rohdateien `docs/beweise/roh/NAK-312-rot-M-122.txt` bis
+`docs/beweise/roh/NAK-312-rot-M-130.txt` und
+`docs/beweise/roh/NAK-312-rot-M-133.txt`; Manifest §45.3, §46.3, §47.2, §49.2,
+§54.2 bis §54.9, §54.21, §56.3 und §57.
+
+Grenzen: das N der Meldung zählt Kandidaten ohne Platz, auch ein
+gespeichertes Mitglied ohne Zeile, das gerade nicht verbunden ist (Manifest
+§54.8). Die 21. Probeeq selbst zeigt nichts — sie hat keinen Editor
+(`eq-copilot/plugin/sonde/SondeProcessor.h:219-220`). Ob der Broker die
+Evidenz einer nicht angenommenen Quelle in Befunde angenommener Quellen
+einrechnet, ist nicht geregelt; „misst nicht mit" gilt für Gen, nicht für den
+Broker (Register NAK-367, braucht Broker und v3). `SourcesModel.cpp` liegt
+über der Dateigrenze von 2 000 Zeilen, `uebernehmeSessionSnapshot` über der
+Funktionsgrenze; der verhaltensneutrale Pflegeschritt ist Register NAK-371.
+
+**(g) Ruhender Bestand beim Rollenwechsel (23.09.2026, Etappe 7b Teil 1;
+T3-02-06, Karte U49, Weg Z-A).** Beschrieben in §1.4b (Bestandskind
+`RetainedMainProject`, Kind-Matrix, Schreibregel, Leser des Vorstands) und
+§1.4c (der Rollenwechsel erhält den Bestand, die Live-Sicht ist in `legacy`
+stillgelegt, ein nach dem Wechsel quittierter Befehl wirkt auf den ruhenden
+Bestand, der Hörmarkierungsauftrag gehört nicht dazu). Belege: B2 (312/M-110
+bis M-117, M-119, M-121), B14 (M-110 Modellhälfte, M-120), A3 (M-118);
+Manifest §45.2, §46.2, §47.4 und §54.10 bis §54.18.
+
+**Nicht gemessen und offen.** Bandwerte, `mono_bass_hz`, die booleschen
+Hostparameter und das Auto-Gain-Ziel bleiben taktgebunden, SONDE-015 M-120
+ist für sie gebrochen (Register NAK-340, Planschritt S25p; dazu NAK-347, die
+Schreibmaske der Neutralprüfung bei nicht endlichen Eingangssamples). Wie FL
+den Rücksprung eines Reglers im read-only-Stand bei laufender Automation wertet
+(NAK-346), ob FLs Slot-Bypass den Bypassparameter des Wrappers setzt oder den
+Slot stilllegt (NAK-366, kein Werkzeug im Laufzeit-Arm) und welchen Weg FL
+beim Offline-Render nimmt (NAK-355), ist nicht gemessen. Aus der Etappe 6
+bleiben Lücken und Härtungen offen: `reset()` neben `process` in FL, das
+verworfene `end` nach „weg von Main", Meldungen der Main-Fläche, ein
+Allokationszähler, der nur `operator new` sieht (NAK-361), dazu der Zeitpunkt
+in 312/M-63 (NAK-373). An der Sonde nimmt `reset()` weiter zwei Sperren
+(NAK-357); die JUCE-eigene Parametersperre bleibt (NAK-356); Gens Hostbypass
+hat keine Zusage (NAK-365); die Brokerseite nicht angenommener Quellen ist
+ungeregelt (NAK-367); Karte U57 ist offen. Wer im Befund LZ-1 FLs reguläres
+Programmende auslöste, ist nicht gemessen (NAK-352); dass das Plugin keinen
+Weg dorthin hat, halten der Textriegel 312/M-88 in B7 und das
+Laufzeit-Szenario `docs/gesundheit/szenarien/schleife-dauerlauf.json` über
+fünf Songumläufe (R-312-19, Manifest §32 und §33).
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

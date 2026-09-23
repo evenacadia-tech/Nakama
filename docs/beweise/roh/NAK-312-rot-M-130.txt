@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-130.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-130 (T3-01-10 Auftragsteil, U56, starten<->stoppen, releaseResources), Etikett Regressionswache (gebaut, bisher ungeprueft; nur Test).
+Zusage: der Auftrag bleibt ueber releaseResources() eingereicht, und nach dem naechsten prepareToPlay beginnt er beim ersten erlaubten Block neu - genau ein neues begin, kein zweites end.
+Bein: A3 EqCopMarkierungTest, Fall 312/M-130 auftrag_bleibt_ueber_release (Teilfall von 312/M-64 (a)).
+Mutation an der Zusagezeile (§46.3): in releaseResources() (Hostbruecke.cpp) nach markierungAbbrechen einen Aus-Auftrag ueber markierung.reicheAus() geben.
+Erwartetes Rot: kein neues begin nach prepareToPlay.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:32:15) ==
+038EDD2652E649F3C5D0A355913ABABD71EF64C1AFB89FA90DA77FF3B84C52D6  eq-copilot/plugin/src/prozessor/Hostbruecke.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-Hostbruecke.cpp-033215
+
+== 2. Mutation (2026-09-23 03:32:15) ==
+Datei eq-copilot/plugin/src/prozessor/Hostbruecke.cpp, ab Zeile 185
+-- vorher:
+   |     markierungAbbrechen();
+   |     std::vector<float>().swap (versuchTrocken);
+-- nachher:
+   |     markierungAbbrechen();
+   |     markierung.reicheAus();
+   |     std::vector<float>().swap (versuchTrocken);
+SHA-256 mutiert: D631D9057FB50F84E4A6CD46F1F35D968F01F7B9E12B5BAD4D26E803B197831B
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:32:15) ==
+Bau Exit 0 (2026-09-23 03:32:15 bis 2026-09-23 03:32:24), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 03:32:24.050, Quelle Hostbruecke.cpp 03:32:15.019, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:32:32); Zeilen mit ok: 152; Zeilen mit FEHLER/ROT: 1
+     FEHLER  312/M-130 auftrag_bleibt_ueber_release (Teilfall von 312/M-64 (a), U56) - nach releaseResources und 5 Bloecken ohne prepareToPlay steht der Auftrag noch, und nach dem naechsten prepareToPlay beginnt er beim ersten erlaubten Block neu: genau ein neues begin, kein zweites end zum alten Intervall, markierungHoerbar wieder wahr  [Auftrag nach den Bloecken WEG, 0 begin, 0 end, hoerbar 0 von 40]
+     ok      T4: genug Baender fuer den Vergleich
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-130'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:32:32) ==
+038EDD2652E649F3C5D0A355913ABABD71EF64C1AFB89FA90DA77FF3B84C52D6  eq-copilot/plugin/src/prozessor/Hostbruecke.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:32:32
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:32:32) ==
+Bau Exit 0 (2026-09-23 03:32:32 bis 2026-09-23 03:32:36), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 03:32:36.798, Quelle Hostbruecke.cpp 03:32:32.189, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:32:44); Zeilen mit ok: 153; Zeilen mit FEHLER/ROT: 0
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+   MARKIERUNGSTEST OK
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

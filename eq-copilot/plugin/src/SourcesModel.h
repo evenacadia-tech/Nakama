@@ -6,7 +6,13 @@
     Control/Liveness, Messung, Namensherkunft und Capability-Evidenz. Der
     Broker liefert absolute fluechtige Snapshots und P2; MainProject liefert
     ausschliesslich bestaetigte Identitaet plus User-Label. Nicht fuer den
-    Audiothread. */
+    Audiothread.
+
+    NAK-312 Etappe 7b (U51): hoechstens `kAnnahmeGrenze` = 20 Quellen sind
+    angenommen und damit Zeilen. Eine Quelle ohne Platz hat keinen Eintrag -
+    keine Zeile, keine Messung, keinen Befundzaehler - und zaehlt in
+    `Sicht::nichtAngenommen`. Gespeicherte Mitglieder und State bleiben
+    ungekuerzt. */
 
 #include "ControlClient.h"
 #include "NakamaState.h"
@@ -15,6 +21,7 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -198,6 +205,11 @@ public:
         bool mainDarfSchreiben = false;
         std::string fuehrendesMain;
         std::vector<Zeile> quellen;
+        /// NAK-312 Etappe 7b (U51, M-123): die bekannten Quellen OHNE Platz -
+        /// gespeicherte Mitglieder und Sondenmitglieder des juengsten
+        /// Snapshots, die keine Zeile sind. Sie messen in Gen nicht mit, bis
+        /// Platz ist. 0 heisst "jede bekannte Quelle ist eine Zeile".
+        std::size_t nichtAngenommen = 0;
         /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der Rueckweg der
         /// Experimente und Paarurteile. Leer heisst „diese Sitzung fuehrt
         /// keine", nie „alle abgeschlossen".
@@ -349,6 +361,14 @@ public:
     void setzeFixtureFuerTest (Sicht fixture);
 #endif
 
+    /** NAK-312 Etappe 7b (T3-07-05, Weg C-1, E-312-21): so viele Quellen nimmt
+        das Modell hoechstens als Zeilen an. Die Zahl ist das Wort des Users vom
+        21.09.2026 (Karte U51,
+        `design/abnahmen/2026-09-21-quellenannahme-auf-20-begrenzt-u51.md`) und
+        nicht aus der Geometrie gerechnet: eine groessere Flaeche hebt sie nicht
+        still an. Dass die Main-Flaeche bei 760x430 so viele Zeilen zeichnet,
+        halten `312/M-122` und `312/M-127`. */
+    static constexpr std::size_t kAnnahmeGrenze = 20;
     static constexpr std::uint64_t controlStaleNachMs = 2500;
     static constexpr std::uint64_t messungMindestensStaleNachMs = 1000;
     static std::uint64_t messStaleFristMs (double fensterDauerMs) noexcept;
@@ -411,6 +431,14 @@ private:
     };
 
     void revidiere() noexcept { ++revision; }
+    /// NAK-312 Etappe 7b (U51, §47.2): die Annahmeregel. Kandidaten sind die
+    /// gespeicherten Mitglieder und `fluechtige`, die Sondenmitglieder des
+    /// juengsten Snapshots. Wer einen Eintrag hat und Kandidat bleibt, behaelt
+    /// seinen Platz; freie Plaetze bis `kAnnahmeGrenze` gehen zuerst an
+    /// gespeicherte, dann an fluechtige Kandidaten, je in aufsteigender
+    /// `instance_id`. Setzt `nichtAngenommenZahl`, gibt die Angenommenen
+    /// zurueck. ⚠️ Der Aufrufer haelt den `mutex` bereits.
+    std::set<std::string> nimmAn (const std::set<std::string>& fluechtige);
     void stelleZielSicher();
     void aktualisiereName (Eintrag&);
     void aktualisiereAbgeleiteteZustaende (Eintrag&, Zeitpunkt);
@@ -419,6 +447,13 @@ private:
 
     mutable std::mutex mutex;
     std::map<std::string, Eintrag> eintraege;
+    /// NAK-312 Etappe 7b (U51, M-125, M-128): die Sondenmitglieder des
+    /// juengsten Snapshots ohne Platz. KEINE Eintraege - `uebernehmeP2`,
+    /// `zaehleOffeneFindings` und `sicht()` sehen sie nicht -; wird ein Platz
+    /// ohne neuen Snapshot frei (`setzePersistenteMitglieder`), rueckt eine von
+    /// ihnen mit ihrem Stand aus diesem Snapshot nach.
+    std::map<std::string, Eintrag> nichtAngenommene;
+    std::size_t nichtAngenommenZahl = 0;
     std::map<std::string, juce::String> persistenteMitglieder;
     /// NAK-246 Abschluss Nacharbeit 1 Fortsetzung (R-A1 Punkt 4' (a), M-39):
     /// die Reload-Generation, fuer die `persistenteMitglieder` gilt. Nur

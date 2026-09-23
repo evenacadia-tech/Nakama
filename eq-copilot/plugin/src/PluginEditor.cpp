@@ -1398,7 +1398,15 @@ void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
     g.setFont (juce::FontOptions (17.0f));
     g.drawText ("Gen / Surface 1", titel, juce::Justification::centredLeft);
 
-    if (sourcesAnzeige.diagnose != SourcesModel::Diagnose::keine)
+    // NAK-312 Etappe 7b (U51, E-312-22): die volle Liste meldet sich im
+    // VORHANDENEN Diagnosefeld - allein oder als Zusatz hinter der anstehenden
+    // Diagnose. Kein neues Element, keine neue Zeile, dieselbe Geometrie.
+    const auto listeVoll = sourcesAnzeige.nichtAngenommen == 0
+        ? juce::String()
+        : "Source list full (" + juce::String ((int) SourcesModel::kAnnahmeGrenze) + ") - "
+              + juce::String ((juce::uint64) sourcesAnzeige.nichtAngenommen)
+              + " more Probeeq not accepted";
+    if (sourcesAnzeige.diagnose != SourcesModel::Diagnose::keine || listeVoll.isNotEmpty())
     {
         auto diagnose = rechts.removeFromTop (34).reduced (0, 3);
         g.setColour (feld);
@@ -1412,6 +1420,8 @@ void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
                               : " - only the leading Main can resolve it";
         else if (sourcesAnzeige.diagnose == SourcesModel::Diagnose::storeDegraded)
             diagnoseText += " - no client recovery command";
+        if (listeVoll.isNotEmpty())
+            diagnoseText = diagnoseText.isEmpty() ? listeVoll : diagnoseText + ". " + listeVoll;
         g.drawFittedText (diagnoseText, diagnose.reduced (8),
                           juce::Justification::centredLeft, 2, 0.75f);
     }

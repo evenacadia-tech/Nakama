@@ -1,0 +1,57 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-129.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-129 (T3-07-05, E-312-22, ehrliche Meldung, oeffnen<->schliessen), Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-129.txt).
+Zusage: die Meldung steht im vorhandenen Diagnosefeld, allein oder als Zusatz; ohne nicht angenommene Quelle gibt es sie nicht.
+Bein: B15, Faelle 312/M-129 (a) bis (d).
+Mutation nach dem Bau (§46.3): die Meldung an nichtAngenommen > 0 entfernen.
+Erwartetes Rot: (a), (b) und (d) - kein Feld bzw. nur die Diagnose.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:31:53) ==
+3E0426EBD4849D59330E17C0E7E8663F716CE6DA6B4AE3B0C230C69BFE592DE3  eq-copilot/plugin/src/PluginEditor.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-PluginEditor.cpp-033153
+
+== 2. Mutation (2026-09-23 03:31:53) ==
+Datei eq-copilot/plugin/src/PluginEditor.cpp, ab Zeile 1404
+-- vorher:
+   |     const auto listeVoll = sourcesAnzeige.nichtAngenommen == 0
+-- nachher:
+   |     const auto listeVoll = true
+SHA-256 mutiert: 34CA37A64CB7D295653A5F576E96E3963F49E4A3AF6A40F7F3A8E04C0ABCEC42
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:31:53) ==
+Bau Exit 0 (2026-09-23 03:31:53 bis 2026-09-23 03:31:58), Ziele: EqCopShot
+Binary EqCopShot.exe 03:31:58.866, Quelle PluginEditor.cpp 03:31:53.492, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:32:04); Zeilen mit ok: 46; Zeilen mit FEHLER/ROT: 6
+     FEHLER  312/M-123 die_21_quelle_wird_nicht_angenommen am echten Pfad: 20 Zeilen, die Sonde mit der groessten instance_id hat keine, und das Diagnosefeld meldet genau 'Source list full (20) - 1 more Probeeq not accepted'  [20 in der Sicht, gezeichnet 20, groesste fehlt, abweichende Feldpixel 11816]
+     FEHLER  312/M-124 (Meldung) die_meldung_traegt_die_zahl (32 Sonden): nichtAngenommen 12, das Diagnosefeld meldet genau 'Source list full (20) - 12 more Probeeq not accepted'  [nicht angenommen 12, abweichende Feldpixel 11816]
+     FEHLER  312/M-124 (Meldung) die_meldung_traegt_die_zahl (64 Sonden): nichtAngenommen 44, das Diagnosefeld meldet genau 'Source list full (20) - 44 more Probeeq not accepted'  [nicht angenommen 44, abweichende Feldpixel 11816]
+     FEHLER  312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld  [abweichende Spaltenpixel 0, Kind-Elemente 12/12, Feld bei 20 nein, bei 21 NEIN]
+     FEHLER  312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau 'Join confirmation required - choose a source and bind it. Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 1659]
+     FEHLER  312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau 'Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 11816]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (21 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (32 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (32 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (64 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (64 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\nak312-liste-voll-hinter-diagnose.png (760x430)
+     ok      312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das Feld genau die anstehende Diagnose  [abweichende Feldpixel 0]
+   NAK-312 ANNAHME 19 geprueft, 6 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-129'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:32:04) ==
+3E0426EBD4849D59330E17C0E7E8663F716CE6DA6B4AE3B0C230C69BFE592DE3  eq-copilot/plugin/src/PluginEditor.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:32:04
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:32:04) ==
+Bau Exit 0 (2026-09-23 03:32:04 bis 2026-09-23 03:32:09), Ziele: EqCopShot
+Binary EqCopShot.exe 03:32:09.621, Quelle PluginEditor.cpp 03:32:04.212, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:32:15); Zeilen mit ok: 52; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (64 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (64 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld  [abweichende Spaltenpixel 0, Kind-Elemente 12/12, Feld bei 20 nein, bei 21 ja]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\nak312-liste-voll-hinter-diagnose.png (760x430)
+     ok      312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau 'Join confirmation required - choose a source and bind it. Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+     ok      312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das Feld genau die anstehende Diagnose  [abweichende Feldpixel 0]
+     ok      312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau 'Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+   NAK-312 ANNAHME 19 geprueft, 0 Fehler
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

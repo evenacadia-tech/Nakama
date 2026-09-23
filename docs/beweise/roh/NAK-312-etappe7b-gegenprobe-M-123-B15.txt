@@ -1,0 +1,119 @@
+# NAK-312 Etappe 7b, Gegenprobe am Basisstand: 312/M-123-B15 (Manifest §47.1)
+
+Matrixzeile: 312/M-123 (T3-07-05, U51; Manifest §46.3), Etikett heute rot - Flaechenhaelfte am echten Editor auf einem echten Main ueber den echten Pfad (v3LinkFuerTest (true), v3AntwortFuerTest).
+Zusage: 20 Zeilen, die groesste instance_id hat keine, und das vorhandene Diagnosefeld meldet genau 'Source list full (20) - 1 more Probeeq not accepted'.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-123 die_21_quelle_wird_nicht_angenommen am echten Pfad.
+Erwartetes Rot am Basisstand: 21 Zeilen in der Sicht, 20 gezeichnet, die 21. ungezeichnet, kein Diagnosefeld (das Feld weicht von der Referenz ab).
+
+== Stand (2026-09-23 03:10:50) ==
+HEAD e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184
+Produktdateien gleich HEAD (git diff --quiet HEAD): True
+6DE2D174247C36CD576405139CDA293DE61ABD8F054676D3E99B63C36105CDBF  eq-copilot/plugin/src/SourcesModel.h
+E94ADAFF9F294F9F0C3CF8FCAD53308518BDE4092B4435EFA00D0AB4EEDF20C2  eq-copilot/plugin/src/SourcesModel.cpp
+C6C2EF907E55B37D176422DBDC92AB9FF717BE53DB8568D698A69B5A2CF0F3CD  eq-copilot/plugin/src/PluginEditor.cpp
+Testdateien (neu geschrieben, noch nicht committet):
+51AA28FDD4EA24E27DB1A72740E087319AF930539781A29D22C1676A3BA1516B  eq-copilot/plugin/tests/ShotTestMain.cpp
+
+== Bau (2026-09-23 03:10:50) ==
+Bau Exit 0 (2026-09-23 03:10:51), Ziele: EqCopShot
+Binary EqCopShot.exe 03:10:07.018, juengste Quelle 03:09:07.228, Binary juenger: True
+
+== Lauf B15 gegen den Basisstand (2026-09-23 03:10:51) ==
+Lauf Exit 1 (2026-09-23 03:10:56)
+
+== Zeilen der Ausgabe zu 312/M-123-B15 ==
+
+== Vollstaendige Ausgabe ==
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-0-sources.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-1-source.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-16-sources.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-20-sources-ersatzziel.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-21-sources-ersatzziel.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-32-sources-ersatzziel.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-64-sources-ersatzziel.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-fresh.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-partial.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-stale.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-disconnected.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-invalid-frame.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-loudness-invalid-half-pair.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-name-change.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-loudness-empty.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-broker-unavailable.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-join-confirmation.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-incompatible.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-store-degraded.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-confirmed-never-connected.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-unbound-removed.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-offline.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-suspended.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-label-fallback.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-unnamed-instance-prefix.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-loudness-valid.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-findings-count-0-and-many.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-one-main-target-with-references.png (760x430)
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-nonleading-label-disabled.png (760x430)
+   SONDE-012 SHOTS 29/29 gruen
+   == NAK-312 Etappe 4 - das Messpunkt-Panel (312/M-35 bis 312/M-37, R-312-2) ==
+     ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+     ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+     ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+   NAK-312 PANEL 3 geprueft, 0 Fehler
+   == NAK-312 Etappe 6b - der Labelentwurf (312/M-66 bis 312/M-71, R-312-9) ==
+     ok      312/M-66 labelentwurf_gehoert_seiner_startquelle (R-312-9): Hauptziel A, Entwurf im fokussierten Feld, Klick auf B, Tick, Enter - As Name traegt den Entwurf, Bs Name ist unveraendert, genau 1 Host-Dirty (ein geaenderter Name), das Feld zeigt Bs Label  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Beta', Aktionsziel B]
+     ok      312/M-66 (Gegenrichtung): Entwurf auf B, Klick auf A, Tick, Enter - Bs Name traegt den Entwurf, As Name bleibt, ein Host-Dirty mehr, das Feld zeigt As Label  [A 'Alpha draft', B 'Beta draft', Host-Dirty 2, Feld 'Alpha draft', Aktionsziel A]
+     ok      312/M-66 (eigenes Ziel): Klick auf die Zeile des Hauptziels bestaetigt nichts - kein Schreiben, kein Host-Dirty, der Entwurf bleibt im Feld  [A 'Alpha draft', B 'Beta draft', Host-Dirty 2, Feld 'Alpha draft 2', Aktionsziel A]
+     ok      312/M-67 leerer_entwurf_loescht_keinen_fremden_namen (Teilfall von 312/M-66): A ohne Label, B mit Label, dieselbe Folge - Bs Name bleibt, 0 Host-Dirty  [A '', B 'Beta', Host-Dirty 0, Feld 'Beta', Aktionsziel B]
+     ok      312/M-68 (a1) escape_schreibt_nichts (Teilfall von 312/M-66): Escape statt Enter - keine Mutation, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha', Aktionsziel A]
+     ok      312/M-68 (a2) escape_verwirft_den_entwurf (Teilfall von 312/M-66): nach Escape zeigt das Feld wieder As gespeichertes Label, und Klick auf B, Tick und Enter schreiben weder A noch B  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Beta', Aktionsziel B, Feld nach Escape 'Alpha']
+     ok      312/M-68 (b) fokusverlust_bestaetigt_auf_der_startquelle (Teilfall von 312/M-66): Klick auf B, Tick, Fokusverlust statt Enter - BESTAETIGEN wie Enter, angewandt auf A; B unveraendert, genau 1 Host-Dirty  [A 'Alpha draft', B 'Beta', Host-Dirty 1, Feld 'Beta', Aktionsziel B]
+     ok      312/M-69 (a) startquelle_faellt_weg (Teilfall von 312/M-66): A verschwindet vor dem Bestaetigen, das Modell waehlt B, Tick, Enter - weder A noch B geschrieben, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Beta', Aktionsziel B]
+     ok      312/M-69 (b) neue_runtime_nonce_mit_tick (Teilfall von 312/M-66): A kommt mit neuer Runtime-Nonce zurueck, Tick, Enter - der Entwurf verfaellt ohne Mutation, 0 Host-Dirty  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha', Aktionsziel A]
+     ok      312/M-69 (c) neue_runtime_nonce_ohne_tick (Teilfall von 312/M-66): dasselbe, Enter VOR dem naechsten Tick - der Kennungsvergleich faellt gegen das Modell von jetzt, nicht gegen die Anzeige des letzten Ticks  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha draft', Aktionsziel A]
+     ok      312/M-70 unveraenderter_text_mutiert_nicht (Teilfall von 312/M-66): Enter ohne Aenderung - keine Mutation, 0 Host-Dirty, keine Fehlermeldung  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld 'Alpha', Aktionsziel A, Status '']
+     ok      312/M-71 (a) eingabebeschraenkung_120 (Teilfall von 312/M-66): 121 Codepoints ausserhalb der BMP eingefuegt - das Feld haelt 120  [A 'Alpha', B 'Beta', Host-Dirty 0, Feld '🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹🎹', Aktionsziel A, Feldlaenge 120]
+     ok      312/M-71 (b) kappung_120: 121 Codepoints im Feld, Enter - gespeichert werden die ersten 120, genau 1 Host-Dirty  [gespeichert 120 Codepoints, Host-Dirty 1]
+     ok      312/M-71 (c) null_und_120_werden_angenommen: 0 Codepoints, danach 120 - beide gespeichert, je 1 Host-Dirty  [0 angenommen ja, danach 120 Codepoints, Host-Dirty 3]
+     ok      312/M-71 (d) 121_wird_abgewiesen: 121 Codepoints am Prozessor - abgewiesen, der gespeicherte Name bleibt, kein Host-Dirty  [abgewiesen ja, gespeichert 120 Codepoints, Host-Dirty 3]
+   NAK-312 LABEL 15 geprueft, 0 Fehler
+   == NAK-312 Etappe 6b - Ersatzziel und Aktionssteuerung (312/M-73 bis M-75, M-85, R-312-6) ==
+     ok      312/M-73 ersatzziel_folgt_der_anzeigeordnung (16 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 16 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 1, gezeichnet 16 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     ok      312/M-73 ersatzziel_folgt_der_anzeigeordnung (20 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 1, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     ok      312/M-73 ersatzziel_folgt_der_anzeigeordnung (21 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 1, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     ok      312/M-73 ersatzziel_folgt_der_anzeigeordnung (32 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 1, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     ok      312/M-73 ersatzziel_folgt_der_anzeigeordnung (64 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 1, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     ok      312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Beitritt): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden  [vorher ja; nachher: Hauptziel in Anzeigezeile 21, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the drawn list - select a drawn source.', Pixel der Feldbeschriftung 0]
+     ok      312/M-74 aktionssteuerung_bindet_nur_an_gezeichnete_zeilen (Umordnung durch Hostbusnamen): Hauptziel per Handgriff in Zeile 5, danach rueckt es hinter Zeile 20 - Knopf und Labelfeld unsichtbar, Aktionsziel leer, das Hauptziel im Modell unveraendert, kein Schreibversuch (Modellrevision und Host-Dirty gleich), der Status sagt es, und die Beschriftung des Labelfelds ist mit ihm verschwunden  [vorher ja; nachher: Hauptziel in Anzeigezeile 21, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the drawn list - select a drawn source.', Pixel der Feldbeschriftung 0]
+     ok      312/M-85 offener_entwurf_wird_vor_dem_leeren_des_ziels_bestaetigt (E-312-9, R-312-9): 25 bestaetigte Mitglieder, Entwurf fuer das Hauptziel, dieselbe Umordnung, Tick - der Entwurf steht auf der Startquelle, keine fremde Quelle geschrieben, genau 1 Host-Dirty; danach Knopf und Labelfeld unsichtbar  [Label der Startquelle 'Target draft', fremd geschrieben 0; Hauptziel in Anzeigezeile 21, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 1, Status 'Main target is outside the drawn list - select a drawn source.']
+     ok      312/M-75 (0 Quellen) kein_ersatzziel_keine_aktionssteuerung (R-312-6): kein Hauptziel, keine gezeichnete Zeile, Knopf und Labelfeld unsichtbar  [Hauptziel in Anzeigezeile 0, gezeichnet 0 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Bind the source before editing its stored label.']
+     ok      312/M-75 (1 Quelle) jede_quelle_gezeichnet_und_erreichbar: jede Zeile ist gezeichnet, und ein Klick darauf macht sie zum Hauptziel mit sichtbarem Knopf und Labelfeld  [gezeichnet 1, erreichbar 1 von 1]
+     ok      312/M-75 (16 Quellen) jede_quelle_gezeichnet_und_erreichbar: jede Zeile ist gezeichnet, und ein Klick darauf macht sie zum Hauptziel mit sichtbarem Knopf und Labelfeld  [gezeichnet 16, erreichbar 16 von 16]
+   NAK-312 ZIEL 11 geprueft, 0 Fehler
+   == NAK-312 Etappe 6b - das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23) ==
+     ok      312/M-91 (a) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor lebt): Legacy-Gen, Popover offen, triggerClick auf 'Dieser Instanz eine neue Kennung geben', Editor zerstoert, DANN stellt die Nachrichtenschleife den Klick zu - Marke 0, Kennung unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-91 (b) konfliktrueckruf_nach_editorende_ist_wirkungslos (Prozessor danach zerstoert): dasselbe, der Prozessor stirbt vor der Zustellung - Marke 0, Kennung bis zum Prozessorende unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Kennung unveraendert, Status '']
+     ok      312/M-92 normaler_handgriff_bleibt (Teilfall von 312/M-91, R-312-2 letzter Satz): der Klick laeuft bei lebendem Editor - neue Kennung, genau EINE Host-Dirty-Meldung, die Statusmeldung steht, die Box schliesst  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status 'Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.']
+     ok      312/M-93 konfliktrueckruf_ueberlebt_editorabbau_im_rueckruf (R-312-2 Satz 2): der Klick beginnt bei lebendem Editor, der Host baut ihn in seiner Reaktion auf die Host-Dirty-Meldung ab (Listener in audioProcessorChanged, innerhalb von neueSensorId) - die Kennung wechselt trotzdem, genau EINE Host-Dirty-Meldung, danach kein Zugriff auf den Editor (Marke 0)  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Kennung NEU, Status '', Abbau im Rueckruf 1 nach 1 Eintritt(en), Kennung beim Abbau schon NEU]
+   NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+   == NAK-312 Etappe 7b - die Annahmegrenze am echten Pfad (312/M-122, M-123, M-127, M-129, U51) ==
+     ok      312/M-122 annahme_bis_20 am echten Pfad (0 Sonden, 760x430): jede angenommen und gezeichnet, jede per Klick Hauptziel, kein Diagnosefeld  [0 in der Sicht, gezeichnet 0, erreichbar 0, Diagnosefeld keines]
+     ok      312/M-122 annahme_bis_20 am echten Pfad (1 Sonden, 760x430): jede angenommen und gezeichnet, jede per Klick Hauptziel, kein Diagnosefeld  [1 in der Sicht, gezeichnet 1, erreichbar 1, Diagnosefeld keines]
+     ok      312/M-122 annahme_bis_20 am echten Pfad (19 Sonden, 760x430): jede angenommen und gezeichnet, jede per Klick Hauptziel, kein Diagnosefeld  [19 in der Sicht, gezeichnet 19, erreichbar 19, Diagnosefeld keines]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-20-sources-angenommen.png (760x430)
+     ok      312/M-122 annahme_bis_20 am echten Pfad (20 Sonden, 760x430): jede angenommen und gezeichnet, jede per Klick Hauptziel, kein Diagnosefeld  [20 in der Sicht, gezeichnet 20, erreichbar 20, Diagnosefeld keines]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\sonde012-21-sources-liste-voll.png (760x430)
+     FEHLER  312/M-123 die_21_quelle_wird_nicht_angenommen am echten Pfad: 20 Zeilen, die Sonde mit der groessten instance_id hat keine, und das Diagnosefeld meldet genau 'Source list full (20) - 1 more Probeeq not accepted'  [21 in der Sicht, gezeichnet 20, groesste IST eine Zeile, abweichende Feldpixel 11816]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (20 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (20 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (21 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     FEHLER  312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (21 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [21 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (32 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     FEHLER  312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (32 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [32 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (64 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     FEHLER  312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (64 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [64 in der Sicht, gezeichnet 20, erreichbar 20]
+     FEHLER  312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld  [abweichende Spaltenpixel 0, Kind-Elemente 12/12, Feld bei 20 nein, bei 21 NEIN]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\nak312-liste-voll-hinter-diagnose.png (760x430)
+     FEHLER  312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau 'Join confirmation required - choose a source and bind it. Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 1659]
+     ok      312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das Feld genau die anstehende Diagnose  [abweichende Feldpixel 0]
+     FEHLER  312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau 'Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 11816]
+   NAK-312 ANNAHME 17 geprueft, 7 Fehler

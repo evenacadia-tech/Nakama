@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-128.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-128 (T3-07-05, U51 'misst nicht mit'), Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-128.txt).
+Zusage: keine Messung von X erreicht die Sicht - uebernehmeP2 meldet fuer X-Frames keine Aenderung.
+Bein: B13, Fall 312/M-128 nicht_angenommen_misst_nicht_mit.
+Mutation nach dem Bau (§46.3): X als verborgenen Eintrag ohne Zeile fuehren - uebernehmeP2 sucht die wartenden Sonden mit.
+Erwartetes Rot: der X-Frame wirkt (Messalter gesetzt, uebernehmeP2 liefert true).
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:31:42) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-SourcesModel.cpp-033142
+
+== 2. Mutation (2026-09-23 03:31:42) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 1606
+-- vorher:
+   |         auto it = eintraege.find (frame.instanceId);
+   |         if (it == eintraege.end() || ! it->second.fluechtigImSnapshot
+-- nachher:
+   |         auto& karte = eintraege.count (frame.instanceId) != 0 ? eintraege : nichtAngenommene;
+   |         auto it = karte.find (frame.instanceId);
+   |         if (it == karte.end() || ! it->second.fluechtigImSnapshot
+SHA-256 mutiert: 0B694840B51B940353F45FADE04826682B9F9BCD868EF316F55E22437B5444E7
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:31:42) ==
+Bau Exit 0 (2026-09-23 03:31:42 bis 2026-09-23 03:31:48), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:31:48.830, Quelle SourcesModel.cpp 03:31:42.549, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:31:49); Zeilen mit ok: 98; Zeilen mit FEHLER/ROT: 1
+     FEHLER  312/M-128 nicht_angenommen_misst_nicht_mit (Teilfall von 312/M-123): der P2-Frame von X aendert nichts, der Frame einer angenommenen Quelle wirkt, und ein Befund mit X als candidate_source zaehlt in keiner Zeile  [X-Frame WIRKT, Kontrollframe wirkt, offene Befunde in Zeilen 0, X keine Zeile]
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 98/99 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-128 nicht_angenommen_misst_nicht_mit'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:31:49) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:31:49
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:31:49) ==
+Bau Exit 0 (2026-09-23 03:31:49 bis 2026-09-23 03:31:53), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:31:53.307, Quelle SourcesModel.cpp 03:31:49.003, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:31:53); Zeilen mit ok: 99; Zeilen mit FEHLER/ROT: 0
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 99/99 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

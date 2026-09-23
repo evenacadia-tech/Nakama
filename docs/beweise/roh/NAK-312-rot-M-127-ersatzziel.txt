@@ -1,0 +1,60 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-127-ersatzziel.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-127 (T3-07-05, R-312-6, R-312-31), zwei Haelften; hier Ersatzziel und Klick, Etikett Regressionswache.
+Zusage: das Ersatzziel ist die erste angenommene Zeile in Anzeigeordnung und steht in der ersten gezeichneten Zeile.
+Bein: B15 EqCopShot --sonde012-suite, Fall 312/M-127 (a) mit umgekehrter Anzeigeordnung.
+Mutation an der Zusagezeile (§46.3, Muster 312/M-73): eintraege.begin() statt der Anzeigeordnung.
+Erwartetes Rot: das Ersatzziel steht in der letzten statt der ersten Anzeigezeile.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:30:51) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-SourcesModel.cpp-033051
+
+== 2. Mutation (2026-09-23 03:30:51) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 1858
+-- vorher:
+   |     hauptziel = erste == eintraege.end() ? std::string() : erste->first;
+-- nachher:
+   |     hauptziel = eintraege.empty() ? std::string() : eintraege.begin()->first;
+SHA-256 mutiert: E297B76F7B2B7BE3B7B6172A8C3207F40C9F8E750AF51248F6B91A3768A478BB
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:30:51) ==
+Bau Exit 0 (2026-09-23 03:30:51 bis 2026-09-23 03:31:00), Ziele: EqCopShot
+Binary EqCopShot.exe 03:30:59.994, Quelle SourcesModel.cpp 03:30:51.752, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:31:05); Zeilen mit ok: 43; Zeilen mit FEHLER/ROT: 9
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (16 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 16 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 16, gezeichnet 16 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (20 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 20, gezeichnet 20 Zeilen, Aktionsziel = Hauptziel, Knopf sichtbar, Labelfeld sichtbar, Host-Dirty 0, Status '']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (21 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 21, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the drawn list - select a drawn source.']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (32 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 32, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the drawn list - select a drawn source.']
+     FEHLER  312/M-73 ersatzziel_folgt_der_anzeigeordnung (64 Quellen, 760x430, kleinste instance_id in der letzten Anzeigezeile): das Ersatz-Hauptziel ist die erste angezeigte Quelle, gezeichnet 20 Zeilen, Knopf und Labelfeld stehen auf ihr  [Hauptziel in Anzeigezeile 64, gezeichnet 20 Zeilen, Aktionsziel leer, Knopf unsichtbar, Labelfeld unsichtbar, Host-Dirty 0, Status 'Main target is outside the drawn list - select a drawn source.']
+     FEHLER  312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (20 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 NEIN]
+     FEHLER  312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (21 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 NEIN]
+     FEHLER  312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (32 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 NEIN]
+     FEHLER  312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (64 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 NEIN]
+     ok      312/M-124 (Meldung) die_meldung_traegt_die_zahl (64 Sonden): nichtAngenommen 44, das Diagnosefeld meldet genau 'Source list full (20) - 44 more Probeeq not accepted'  [nicht angenommen 44, abweichende Feldpixel 0]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (64 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld  [abweichende Spaltenpixel 0, Kind-Elemente 12/12, Feld bei 20 nein, bei 21 ja]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\nak312-liste-voll-hinter-diagnose.png (760x430)
+     ok      312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau 'Join confirmation required - choose a source and bind it. Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+     ok      312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das Feld genau die anstehende Diagnose  [abweichende Feldpixel 0]
+     ok      312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau 'Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+   NAK-312 ANNAHME 19 geprueft, 4 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-127 \(a\)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:31:05) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:31:05
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:31:05) ==
+Bau Exit 0 (2026-09-23 03:31:05 bis 2026-09-23 03:31:09), Ziele: EqCopShot
+Binary EqCopShot.exe 03:31:09.806, Quelle SourcesModel.cpp 03:31:05.413, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:31:15); Zeilen mit ok: 52; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (64 Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der ersten gezeichneten Zeile und traegt die Aktionssteuerung  [Ersatz in Zeile 1 ja]
+     ok      312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (64 Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede gezeichnete per Klick Hauptziel  [20 in der Sicht, gezeichnet 20, erreichbar 20]
+     ok      312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld  [abweichende Spaltenpixel 0, Kind-Elemente 12/12, Feld bei 20 nein, bei 21 ja]
+   SHOT OK C:\Users\phili\Projekte\Nakama\eq-copilot\build\sonde012-shots\nak312-liste-voll-hinter-diagnose.png (760x430)
+     ok      312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau 'Join confirmation required - choose a source and bind it. Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+     ok      312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das Feld genau die anstehende Diagnose  [abweichende Feldpixel 0]
+     ok      312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau 'Source list full (20) - 1 more Probeeq not accepted'  [abweichende Feldpixel 0]
+   NAK-312 ANNAHME 19 geprueft, 0 Fehler
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

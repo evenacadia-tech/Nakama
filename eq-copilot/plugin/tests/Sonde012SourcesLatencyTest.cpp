@@ -1,5 +1,11 @@
 // SONDE-012 L06 — synthetisches Messfenster -> echter Rust-Coordinator auf
 // Probe-Pipe -> echtes Main-SourcesModel -> revisionsbasierte Anzeige-Wache.
+//
+// Seit NAK-312 Etappe 7b (U51, R-312-25, 312/M-124) nimmt das Modell
+// hoechstens 20 Quellen an - bei 32 verbundenen 20, und 12 warten. Gemessen
+// werden die angenommenen; welche es sind, haengt an der Beitrittsfolge,
+// deshalb kommen Zahl und Menge aus der Sicht, nie als feste IDs. Die
+// Schluessel p95_32_* heissen weiter "32 verbundene Quellen".
 
 #include "ControlClient.h"
 #include "NakamaTelemetrie.h"
@@ -18,7 +24,9 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <sstream>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -27,6 +35,9 @@ using Uhr = std::chrono::steady_clock;
 
 namespace
 {
+/// Das Wort des Users (U51) - bewusst nicht die Konstante des Modells.
+constexpr int kGrenze = 20;
+
 std::string hex32 (unsigned long long n)
 {
     std::ostringstream s;
@@ -213,7 +224,9 @@ struct Messlauf
                     && q->control->snapshot().status == ControlClient::Status::verbunden
                     && q->telemetry->snapshot().status == TelemetryClient::Status::verbunden;
             const auto sicht = model.sicht();
-            const bool descriptors = sicht.quellen.size() == static_cast<std::size_t> (n)
+            const auto angenommen = static_cast<std::size_t> (std::min (n, kGrenze));
+            const bool descriptors = sicht.quellen.size() == angenommen
+                && sicht.nichtAngenommen == static_cast<std::size_t> (n) - angenommen
                 && std::all_of (sicht.quellen.begin(), sicht.quellen.end(),
                                [] (const auto& q) { return q.descriptorVorhanden; });
             if (clients && descriptors) return true;
@@ -230,6 +243,7 @@ struct Messlauf
         const auto sourceSicht = quellen.front()->control->snapshot();
         const auto modellSicht = model.sicht();
         std::cerr << "Diagnose: sources=" << model.sicht().quellen.size()
+                  << " not-accepted=" << modellSicht.nichtAngenommen
                   << " subscribed=" << modellSicht.subscriptionAktiv
                   << " source-control=" << control << "/" << n
                   << " source-telemetry=" << telemetrie << "/" << n
@@ -253,6 +267,14 @@ struct Messlauf
     double messen (std::uint32_t samples)
     {
         constexpr int runden = 4;
+        // NAK-312 Etappe 7b (R-312-25): gemessen werden die angenommenen
+        // Quellen, und welche es sind, sagt die Sicht. Jede Quelle sendet
+        // weiter; ein Frame einer wartenden hat keinen Eintrag in
+        // `ersteSamples` und zaehlt nicht mit, auch im selben Batch.
+        std::set<std::string> angenommen;
+        for (const auto& z : model.sicht().quellen)
+            angenommen.insert (z.instanceId);
+        const auto zahl = angenommen.size();
         const auto startAnzahl = [&] {
             std::lock_guard<std::mutex> l (messMutex);
             return latenzMs.size();
@@ -263,7 +285,11 @@ struct Messlauf
             {
                 std::lock_guard<std::mutex> l (messMutex);
                 for (auto& q : quellen)
-                    ersteSamples[{ q->adresse.instanceId, ++q->sequence }] = t0;
+                {
+                    ++q->sequence;
+                    if (angenommen.count (q->adresse.instanceId) != 0)
+                        ersteSamples[{ q->adresse.instanceId, q->sequence }] = t0;
+                }
             }
             const auto fenster = std::chrono::duration<double> (
                 static_cast<double> (samples) / 48000.0);
@@ -273,7 +299,7 @@ struct Messlauf
                 const auto f = frame (q->sequence, samples);
                 if (! q->telemetry->veroeffentlichen (f, q->adresse)) return 1.0e9;
             }
-            const auto soll = startAnzahl + static_cast<std::size_t> ((r + 1) * n);
+            const auto soll = startAnzahl + static_cast<std::size_t> (r + 1) * zahl;
             const auto frist = Uhr::now() + std::chrono::seconds (5);
             while (Uhr::now() < frist)
             {
@@ -292,7 +318,7 @@ struct Messlauf
             werte.assign (latenzMs.begin() + static_cast<std::ptrdiff_t> (startAnzahl),
                           latenzMs.end());
         }
-        if (werte.size() != static_cast<std::size_t> (runden * n)) return 1.0e9;
+        if (zahl == 0 || werte.size() != static_cast<std::size_t> (runden) * zahl) return 1.0e9;
         std::sort (werte.begin(), werte.end());
         const auto rang = static_cast<std::size_t> (std::ceil (0.95 * werte.size())) - 1;
         return werte[rang];
@@ -337,7 +363,9 @@ int main (int argc, char** argv)
                       << " ms\n";
             if (! ok) ++fehler;
         }
-        const auto erwartet = static_cast<std::uint64_t> (n * 4 * 3);
+        // NAK-312 Etappe 7b (R-312-25): je angenommener Quelle vier Runden in
+        // drei Fenstergroessen; wartende Quellen heben die Revision nicht.
+        const auto erwartet = static_cast<std::uint64_t> (lauf.model.sicht().quellen.size() * 4 * 3);
         if (lauf.anzeigeInvalidierungen.load() < erwartet)
         {
             std::cerr << "FEHLER: Anzeige-Revisionen " << lauf.anzeigeInvalidierungen.load()

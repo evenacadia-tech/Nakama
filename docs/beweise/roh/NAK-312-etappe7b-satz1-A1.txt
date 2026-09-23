@@ -1,0 +1,58 @@
+# NAK-312 Etappe 7b, Einzelbein A1 (Satz 1 Endstand)
+
+== Stand (2026-09-23 03:36:43) ==
+HEAD e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/beweise/NAK-312.md
+    M eq-copilot/plugin/src/PluginEditor.cpp
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/ShotTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+    M tools/beweise.ps1
+   ?? docs/beweise/roh/NAK-312-e1bd9c6-dirty.md
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-124.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-126.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-127.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-128.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-129.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A23.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B28.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-122.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-123.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124-gegenrichtung.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-125.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-126-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-ersatzziel.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-kapazitaet.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-128.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-129.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-130.txt
+Binary EqCopNullTest.exe 2026-09-23 03:36:10.984, juengste Quelle eq-copilot\plugin\tests\Sonde012SourcesModelTest.cpp 2026-09-23 03:33:12.131, Binary juenger: True
+
+== Lauf (2026-09-23 03:36:43): eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe  ==
+Lauf Exit 0 (2026-09-23 03:36:43), Dauer 0.08 s
+
+== Vollstaendige Ausgabe ==
+     ok      Latenz ist 0 Samples
+     ok      Tail ist 0 s
+     ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+     ok      kein falscher NaN-Alarm bei endlichem Signal
+     ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+     ok      NaN/Inf wurde als Mangel registriert
+     ok      Mono-Layout wird angenommen
+     ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+     ok      Save/Load: Sensor-ID bleibt stabil
+     ok      Save/Load: Rolle und Paar-ID bleiben
+   NULLTEST OK

@@ -1,0 +1,57 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-126-bestand.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-126 (T3-07-05, speichern<->laden, gespeicherte Quellen werden nie geloescht), zwei Haelften; hier die Bestandshaelfte, Etikett Regressionswache (die Zeilenhaelfte: Gegenprobe docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-126.txt).
+Zusage: State und Modell behalten 21 bzw. 40 Mitglieder, das Speichern nach dem Laden ist bytegleich, die frische Instanz laedt alle, kein Host-Dirty, Speicherdeckel 64.
+Bein: B14 EqCopSonde012ProjectReloadTest, Fall 312/M-126 (Bestand) gespeicherte_quellen_werden_nie_geloescht.
+Mutation an der Zusagezeile (§46.3): die Grenze auf persistenteMitglieder anwenden - projektReload kuerzt den geladenen Bestand auf kAnnahmeGrenze.
+Erwartetes Rot: das Modell fuehrt 20 statt 21 bzw. 40 Mitglieder.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:30:20) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-SourcesModel.cpp-033020
+
+== 2. Mutation (2026-09-23 03:30:20) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 495
+-- vorher:
+   |             && persistent.size() < static_cast<std::size_t> (
+   |                    nakama::state::maxMainProjectMitglieder))
+-- nachher:
+   |             && persistent.size() < kAnnahmeGrenze)
+SHA-256 mutiert: E46C6A1C84059E11B3777B49E0311F77CF43C1F2713B0D71213ACBB321D5D163
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:30:20) ==
+Bau Exit 0 (2026-09-23 03:30:20 bis 2026-09-23 03:30:30), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 03:30:30.117, Quelle SourcesModel.cpp 03:30:20.598, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:30:38); Zeilen mit ok: 238; Zeilen mit FEHLER/ROT: 5
+     FEHLER  312/M-76 bestand_ueberlebt_die_sichtgrenze (R-312-6 Satz 2, speichern<->laden): 40 bestaetigte Mitglieder vorher und nachher - im State, im Modell und nach dem Laden in eine frische Instanz -, obwohl die Flaeche 20 Zeilen zeichnet und das Ersatzziel in der ersten steht; die unbekannte additive Eigenschaft in MainProject reist unveraendert; kein Host-Dirty  [geladen 40, Modell nach der Folge 20, gezeichnet 20, Ersatz in Zeile 1 mit Aktionssteuerung ja, gespeichert 40, Eigenschaft gleich, frisch geladen 40, Host-Dirty 0]
+     FEHLER  312/M-126 (Zeilen) altprojekt_behaelt_alle_und_zeigt_20 (21 Mitglieder): nach dem Laden und nach dem Snapshot mit zwei weiteren fluechtigen Sonden sind genau die 20 kleinsten instance_id unter den gespeicherten Zeilen, alle als bestaetigte Mitglieder; nichtAngenommen 1 nach dem Laden, 3 nach dem Snapshot  [20 Zeilen nach dem Laden, 20 nach dem Snapshot; nicht angenommen 0 / 3]
+     FEHLER  312/M-126 (Bestand) gespeicherte_quellen_werden_nie_geloescht (21 Mitglieder): State und Modell behalten alle, das Speichern nach dem Laden ist bytegleich, die frische Instanz laedt alle, kein Host-Dirty, Speicherdeckel 64  [State 21, Modell 20, Speichern bytegleich, frisch 21, Host-Dirty 0]
+     FEHLER  312/M-126 (Zeilen) altprojekt_behaelt_alle_und_zeigt_20 (40 Mitglieder): nach dem Laden und nach dem Snapshot mit zwei weiteren fluechtigen Sonden sind genau die 20 kleinsten instance_id unter den gespeicherten Zeilen, alle als bestaetigte Mitglieder; nichtAngenommen 20 nach dem Laden, 22 nach dem Snapshot  [20 Zeilen nach dem Laden, 20 nach dem Snapshot; nicht angenommen 0 / 22]
+     FEHLER  312/M-126 (Bestand) gespeicherte_quellen_werden_nie_geloescht (40 Mitglieder): State und Modell behalten alle, das Speichern nach dem Laden ist bytegleich, die frische Instanz laedt alle, kein Host-Dirty, Speicherdeckel 64  [State 40, Modell 20, Speichern bytegleich, frisch 40, Host-Dirty 0]
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 238/243 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-126 \(Bestand\)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:30:38) ==
+4358241CA176F38869043250462C5128355D77F7306FB4A8E4CA3F6DEEA3C7C7  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:30:38
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:30:38) ==
+Bau Exit 0 (2026-09-23 03:30:38 bis 2026-09-23 03:30:43), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 03:30:43.251, Quelle SourcesModel.cpp 03:30:38.667, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:30:51); Zeilen mit ok: 243; Zeilen mit FEHLER/ROT: 0
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 243/243 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

@@ -4,12 +4,21 @@
 // die gepinnten FlatBuffers-Fixtures laufen durch dieselben handgeschriebenen
 // Leser wie das Produkt; nur reine Sicht-/Sortierfaelle benutzen den
 // ausdruecklichen Fixture-Haken.
+//
+// Seit NAK-312 Etappe 7b (U51; 312/M-122 bis 312/M-125, 312/M-128) die
+// Annahmegrenze ueber echte Snapshots: hoechstens 20 Quellen sind Zeilen, die
+// Sicht zaehlt die nicht angenommenen, eine gegangene Quelle macht Platz ohne
+// Verdraengung, und eine nicht angenommene misst nicht mit (ihr P2-Frame und
+// ein Befund auf sie wirken nicht). Die Zeitmessung mit 16 und 32
+// Snapshot-Quellen erwartet min(n, 20) Zeilen und n - min(n, 20) nicht
+// angenommene (R-312-25).
 
 #include <juce_core/juce_core.h>
 
 #include "NakamaTelemetrie.h"
 #include "SourcesModel.h"
 #include "TelemetryClient.h"
+#include "analysis/FeatureEngine.h"
 
 #include <algorithm>
 #include <chrono>
@@ -17,6 +26,7 @@
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -318,6 +328,33 @@ bool sitzungsfelderWieFrisch (const Model::Sicht& s, const Model::Sicht& frisch,
         ? "keine (" + juce::String ((int) s.quellen.size()) + " Zeile(n))"
         : felder.joinIntoString ("; ");
     return felder.isEmpty();
+}
+
+/// NAK-312 Etappe 7b (312/M-128): ein gueltiges Messfenster fuer den
+/// Serialisierer des Produkts - dieselbe Form wie `frame` in
+/// tests/Sonde012SourcesLatencyTest.cpp (A23).
+nakama::analyse::FeatureFrame p2Frame (std::uint64_t sequence, std::uint32_t samples)
+{
+    nakama::analyse::FeatureFrame f;
+    f.transport.transport_epoch = 1;
+    f.transport.continuity_segment = 1;
+    f.transport.sequence = sequence;
+    f.transport.zeitbasis = nakama::analyse::Zeitbasis::local_monotonic;
+    f.transport.sample_count = samples;
+    f.transport.sample_rate = 48000.0;
+    f.transport.process_context_present_gesetzt = true;
+    f.transport.process_context_present = false;
+    f.live.gitter = nakama::analyse::GitterId::nakama_log64_v1;
+    f.live.encoding = nakama::analyse::BandEncoding::q_db_0p1_i16;
+    for (int i = 0; i < nakama::analyse::Gitter::liveBaender; ++i)
+    {
+        f.live.werte[i] = -180;
+        f.live.bitmap[i / 8] = static_cast<std::uint8_t> (f.live.bitmap[i / 8] | (1u << (i % 8)));
+    }
+    f.metricsVersion = 1;
+    f.lufsIStatusGesetzt = true;
+    f.lufsIStatus = 1;
+    return f;
 }
 
 } // namespace
@@ -806,7 +843,10 @@ int main()
                 uebernehme (m, snapshot (quellen), a);
                 const auto sicht = m.sicht();
                 const auto b = Model::Uhr::now();
-                if ((int) sicht.quellen.size() != n) return 1.0e9;
+                // NAK-312 Etappe 7b (R-312-25, 312/M-124): hoechstens 20 Quellen
+                // - das Wort des Users (U51) - werden angenommen, bei 32 also 20.
+                if ((int) sicht.quellen.size() != std::min (n, 20)
+                    || (int) sicht.nichtAngenommen != n - std::min (n, 20)) return 1.0e9;
                 ms.push_back (std::chrono::duration<double, std::milli> (b - a).count());
             }
             std::sort (ms.begin(), ms.end());
@@ -816,6 +856,221 @@ int main()
         pruefe (p16 <= 300.0 && p32 <= 300.0,
                 "visible_latency_16_and_32_sources",
                 juce::String (p16, 2) + " / " + juce::String (p32, 2) + " ms p95");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NAK-312 Etappe 7b, Satz 1 · die Annahmegrenze (T3-07-05, U51)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Gen nimmt hoechstens 20 Quellen an (Manifest docs/beweise/NAK-312.md
+    // §46.3, 312/M-122 bis 312/M-125 und 312/M-128; Weg C-1, E-312-21). Jeder
+    // Fall laeuft ueber echte Snapshots durch `uebernehmeSessionSnapshot`, mit
+    // aufsteigend nummerierten hex32-IDs; der Fixture-Haken ist ungedeckelt
+    // und hier kein Weg (R-312-31). Die Zahl 20 steht als Wort des Users im
+    // Test, nicht als Konstante des Modells - ein Test, der die Produktzahl
+    // liest, fiele mit ihr nicht.
+    {
+        constexpr int kGrenze = 20;
+        auto quellen = [] (int n)
+        {
+            std::vector<Mitglied> q;
+            for (int i = 0; i < n; ++i)
+            {
+                Mitglied m;
+                m.id = hex (0x300 + (unsigned) i);
+                m.nonce = hex (0x400 + (unsigned) i);
+                m.label = "Source " + juce::String (i);
+                q.push_back (m);
+            }
+            return q;
+        };
+        auto zeilenIds = [] (const Model::Sicht& s)
+        {
+            std::set<std::string> aus;
+            for (const auto& z : s.quellen)
+                aus.insert (z.instanceId);
+            return aus;
+        };
+        auto angenommenSind = [&zeilenIds] (const Model::Sicht& s, const std::vector<Mitglied>& q,
+                                            int von, int bis)
+        {
+            const auto da = zeilenIds (s);
+            for (int i = von; i < bis; ++i)
+                if (da.count (q[(std::size_t) i].id) == 0)
+                    return false;
+            return true;
+        };
+        auto beleg = [] (const Model::Sicht& s)
+        {
+            return juce::String ((int) s.quellen.size()) + " Zeilen, nicht angenommen "
+                 + juce::String ((juce::int64) s.nichtAngenommen);
+        };
+
+        // 312/M-122 · Zahlenrand 0, 1, 19, 20: alle angenommen.
+        for (const int n : { 0, 1, 19, kGrenze })
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto q = quellen (n);
+            const bool ok = uebernehme (m, snapshot (q), t0);
+            m.tick (t0 + std::chrono::milliseconds (1));
+            const auto s = m.sicht();
+            pruefe (ok && (int) s.quellen.size() == n && angenommenSind (s, q, 0, n)
+                        && s.nichtAngenommen == 0,
+                    ("312/M-122 annahme_bis_20 (" + std::to_string (n)
+                     + " Sonden): alle angenommen, eine Zeile je Sonde, nichtAngenommen 0").c_str(),
+                    beleg (s));
+        }
+
+        // 312/M-123 · die 21. Quelle: die mit der groessten instance_id bekommt
+        // keinen Platz - kein Eintrag, keine Zeile.
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto q = quellen (kGrenze + 1);
+            const bool ok = uebernehme (m, snapshot (q), t0);
+            m.tick (t0 + std::chrono::milliseconds (1));
+            const auto s = m.sicht();
+            const bool groessteFehlt = zeilenIds (s).count (q.back().id) == 0;
+            pruefe (ok && (int) s.quellen.size() == kGrenze && angenommenSind (s, q, 0, kGrenze)
+                        && groessteFehlt && s.nichtAngenommen == 1,
+                    "312/M-123 die_21_quelle_wird_nicht_angenommen: 21 Sonden im Snapshot, genau 20 "
+                    "Zeilen - die 20 kleinsten instance_id -, die Sonde mit der groessten hat keine Zeile, "
+                    "nichtAngenommen 1",
+                    beleg (s) + (groessteFehlt ? ", die groesste fehlt" : ", die groesste IST eine Zeile"));
+        }
+
+        // 312/M-124 (Teilfall von 312/M-123) · Zahlenrand 32 und 64; der
+        // Leserdeckel 64 bleibt, 65 Mitglieder sind ungueltig wie heute.
+        for (const int n : { 32, 64 })
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto q = quellen (n);
+            const bool ok = uebernehme (m, snapshot (q), t0);
+            const auto s = m.sicht();
+            pruefe (ok && (int) s.quellen.size() == kGrenze && angenommenSind (s, q, 0, kGrenze)
+                        && (int) s.nichtAngenommen == n - kGrenze,
+                    ("312/M-124 zahlenrand_" + std::to_string (n) + " (Teilfall von 312/M-123): "
+                     + std::to_string (n) + " Sonden, 20 Zeilen - die 20 kleinsten instance_id -, "
+                     + "nichtAngenommen " + std::to_string (n - kGrenze)).c_str(),
+                    beleg (s));
+        }
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            juce::String grund;
+            const auto erg = m.uebernehmeSessionSnapshot (snapshot (quellen (65)), t0, grund);
+            pruefe (erg == Model::SnapshotErgebnis::ungueltig && m.sicht().quellen.empty(),
+                    "312/M-124 zahlenrand_65 (Teilfall von 312/M-123): ein Snapshot mit 65 Mitgliedern "
+                    "bleibt ungueltig wie heute (Leserdeckel 64), keine Zeile",
+                    grund);
+        }
+
+        // 312/M-124 (Teilfall) · kein Zaehler laeuft ueber: 64 gespeicherte
+        // Mitglieder und 64 weitere fluechtige Sonden sind 128 Kandidaten, die
+        // Plaetze gehen zuerst an die gespeicherten. Die 3-Argument-Form mit
+        // Generation 0 und Folge 1 ist die erste Publikation eines frischen
+        // Modells.
+        {
+            Model m;
+            std::vector<nakama::state::MainProjectMitglied> gespeichert;
+            for (int i = 0; i < 64; ++i)
+                gespeichert.push_back ({ juce::String (hex (0x800 + (unsigned) i)), "Stored " + juce::String (i) });
+            const auto pub = m.setzePersistenteMitglieder (gespeichert, 0, 1);
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const bool ok = uebernehme (m, snapshot (quellen (64)), t0);
+            const auto s = m.sicht();
+            bool nurGespeicherte = (int) s.quellen.size() == kGrenze;
+            for (const auto& z : s.quellen)
+                nurGespeicherte = nurGespeicherte && z.mitgliedschaft == Model::Mitgliedschaft::bestaetigt;
+            pruefe (pub == Model::Publikation::uebernommen && ok && nurGespeicherte
+                        && (int) s.nichtAngenommen == 128 - kGrenze
+                        && m.persistenteMitgliederKopie().size() == 64,
+                    "312/M-124 zahlenrand_128_kandidaten (Teilfall von 312/M-123): 64 gespeicherte und 64 "
+                    "fluechtige Kandidaten - 20 Zeilen, alle gespeichert, nichtAngenommen 108, die "
+                    "gespeicherten Mitglieder ungekuerzt",
+                    beleg (s) + ", gespeichert " + juce::String ((int) m.persistenteMitgliederKopie().size()));
+        }
+
+        // 312/M-125 · Nachruecken ohne Verdraengung: geht eine angenommene,
+        // nicht gespeicherte Quelle Y, rueckt X im selben Snapshot nach; kehrt
+        // Y zurueck, wartet Y - auch mit der kleineren instance_id.
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto q = quellen (kGrenze + 1);
+            const auto& x = q.back();
+            const auto& y = q.front();
+            uebernehme (m, snapshot (q), t0);
+            const auto s0 = m.sicht();
+            const bool xWartet = zeilenIds (s0).count (x.id) == 0 && s0.nichtAngenommen == 1;
+            const std::vector<Mitglied> ohneY (q.begin() + 1, q.end());
+            uebernehme (m, snapshot (ohneY), t0 + std::chrono::milliseconds (1));
+            const auto s1 = m.sicht();
+            const bool xRueckt = (int) s1.quellen.size() == kGrenze && zeilenIds (s1).count (x.id) != 0
+                              && s1.nichtAngenommen == 0;
+            uebernehme (m, snapshot (q), t0 + std::chrono::milliseconds (2));
+            const auto s2 = m.sicht();
+            const bool yWartet = (int) s2.quellen.size() == kGrenze && zeilenIds (s2).count (y.id) == 0
+                              && zeilenIds (s2).count (x.id) != 0 && s2.nichtAngenommen == 1;
+            pruefe (xWartet && xRueckt && yWartet,
+                    "312/M-125 nachruecken_ohne_verdraengung: geht Y, rueckt X im selben Snapshot nach "
+                    "(nichtAngenommen 0); kehrt Y zurueck, ist Y die nicht angenommene - keine angenommene "
+                    "Zeile wird verdraengt, auch nicht von der kleineren instance_id",
+                    juce::String ("X wartet ") + (xWartet ? "ja" : "NEIN") + ", rueckt nach "
+                        + (xRueckt ? "ja" : "NEIN") + ", Y wartet danach " + (yWartet ? "ja" : "NEIN"));
+        }
+
+        // 312/M-128 (Teilfall von 312/M-123) · X ist nicht angenommen und misst
+        // nicht mit: sein P2-Frame aendert nichts, und ein Befund mit X als
+        // candidate_source zaehlt in keiner Zeile. Der Frame traegt die
+        // Adresse von X (Bindung, Sitzung, instance_id, Nonce) und entsteht
+        // ueber denselben Serialisierer wie im Produkt; ein Kontrollframe fuer
+        // eine angenommene Quelle beweist, dass der Weg traegt.
+        {
+            Model m;
+            m.beginneSubscription (hex (1), hex (2), hex (10));
+            const auto q = quellen (kGrenze + 1);
+            const auto& x = q.back();
+            const bool ok = uebernehme (m, snapshot (q), t0);
+            auto p2Fuer = [] (const Mitglied& quelle, std::vector<std::uint8_t>& puffer)
+            {
+                const nakama::ipc::Adresse a { "S-1-5-21-1-2-3-1001", hex (1), hex (2),
+                                               quelle.id, quelle.nonce };
+                return nakama::ipc::featureFrameAlsFlatbuffer (p2Frame (1, 2048), a, puffer);
+            };
+            std::vector<std::uint8_t> pufferX, puffer0;
+            const bool gebaut = p2Fuer (x, pufferX) && p2Fuer (q.front(), puffer0);
+            juce::String grund;
+            const bool xGeaendert = gebaut && m.uebernehmeP2 (
+                pufferX.data(), pufferX.size(), nakama::ipc::kFeatureBatchSchemaMinor,
+                t0 + std::chrono::milliseconds (1), grund);
+            const bool angenommeneGemessen = gebaut && m.uebernehmeP2 (
+                puffer0.data(), puffer0.size(), nakama::ipc::kFeatureBatchSchemaMinor,
+                t0 + std::chrono::milliseconds (2), grund);
+            const bool mitBefund = uebernehme (
+                m, snapshot (q, hex (1), hex (2), hex (8), hex (10), false, 0,
+                             { befundJson (hex (0x9a1), x.id, "ready_to_send") }),
+                t0 + std::chrono::milliseconds (3));
+            const auto s = m.sicht();
+            int offen = 0;
+            bool xIstZeile = false;
+            for (const auto& z : s.quellen)
+            {
+                offen += z.findingsOffen;
+                xIstZeile = xIstZeile || z.instanceId == x.id;
+            }
+            pruefe (ok && gebaut && ! xGeaendert && angenommeneGemessen && mitBefund && ! xIstZeile
+                        && offen == 0 && s.befunde.size() == 1 && s.nichtAngenommen == 1,
+                    "312/M-128 nicht_angenommen_misst_nicht_mit (Teilfall von 312/M-123): der P2-Frame "
+                    "von X aendert nichts, der Frame einer angenommenen Quelle wirkt, und ein Befund mit "
+                    "X als candidate_source zaehlt in keiner Zeile",
+                    juce::String ("X-Frame ") + (xGeaendert ? "WIRKT" : "wirkungslos")
+                        + ", Kontrollframe " + (angenommeneGemessen ? "wirkt" : "WIRKUNGSLOS")
+                        + ", offene Befunde in Zeilen " + juce::String (offen)
+                        + (xIstZeile ? ", X IST eine Zeile" : ", X keine Zeile"));
+        }
     }
 
     // ── SONDE-013 Nacharbeit 2 · der Rueckweg kommt WIRKLICH an ────────

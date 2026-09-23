@@ -1,0 +1,69 @@
+# NAK-312 Etappe 7b, Satz 1: clang-tidy-Teilmessung (py -3.13 tools/plan/tidy.py --nur src/SourcesModel und --nur src/PluginEditor)
+HEAD e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184, Arbeitsbaum mit dem Satz-1-Stand (uncommittet)
+
+== tidy --nur src/SourcesModel (03:33:59)
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 11 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 34 s mit 12 Prozess(en)
+
+ACHTUNG: TEILMESSUNG (--nur src/SourcesModel) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  1    0     58      ZIEL  
+
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Langsamste Einheiten: eq-copilot/plugin/src/SourcesModel.cpp 20 s
+
+Fundstellen je Check:
+      1  bugprone-implicit-widening-of-multiplication-result
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/vertrag/NakamaVertrag.h:29:45 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+
+URTEIL: TEILMESSUNG - 1 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+
+== tidy --nur src/PluginEditor
+NAKAMA-TIDY
+Wurzel    : C:\Users\phili\Projekte\Nakama
+Baum      : eq-copilot/build-tidy (Ninja, cl.exe, Configure 11 s)
+clang-tidy: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\Llvm\x64\bin\clang-tidy.exe - LLVM version 19.1.5
+MSVC      : 14.44.35207
+Regelsatz : eq-copilot/plugin/.clang-tidy
+Dauer     : 38 s mit 12 Prozess(en)
+
+ACHTUNG: TEILMESSUNG (--nur src/PluginEditor) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+
+Maass                            Ist  Ziel  Grenze  Status
+-------------------------------  ---  ----  ------  ------
+clang-tidy-Fundstellen (plugin)  15   0     58      ZIEL  
+
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Langsamste Einheiten: eq-copilot/plugin/src/PluginEditor.cpp 25 s
+
+Fundstellen je Check:
+     14  bugprone-misplaced-widening-cast
+      1  cppcoreguidelines-pro-type-member-init
+
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1113:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:393:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:394:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:395:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:397:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:399:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:401:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:265:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:268:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/src/PluginEditor.cpp:1250:5 [cppcoreguidelines-pro-type-member-init] uninitialized record type: 'k'
+
+URTEIL: TEILMESSUNG - 15 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil

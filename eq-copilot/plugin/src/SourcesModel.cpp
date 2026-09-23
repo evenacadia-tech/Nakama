@@ -417,38 +417,49 @@ SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
     if (neu == persistenteMitglieder)
         return Publikation::uebernommen;  // Publikation fand statt, ohne Aenderung.
     persistenteMitglieder = std::move (neu);
+    const auto klassifiziere = [this] (Eintrag& e)
+    {
+        const auto p = persistenteMitglieder.find (e.zeile.instanceId);
+        e.zeile.mitgliedschaft = p != persistenteMitglieder.end()
+                                    ? Mitgliedschaft::bestaetigt : Mitgliedschaft::unclassified;
+        e.zeile.userLabel = p != persistenteMitglieder.end() ? p->second : e.descriptorLabel;
+        aktualisiereName (e);
+    };
     for (auto it = eintraege.begin(); it != eintraege.end();)
     {
-        const auto p = persistenteMitglieder.find (it->first);
-        if (p != persistenteMitglieder.end())
-        {
-            it->second.zeile.mitgliedschaft = Mitgliedschaft::bestaetigt;
-            it->second.zeile.userLabel = p->second;
-            aktualisiereName (it->second);
-            ++it;
-        }
-        else if (! it->second.fluechtigImSnapshot)
+        if (persistenteMitglieder.count (it->first) == 0 && ! it->second.fluechtigImSnapshot)
         {
             if (hauptziel == it->first) hauptziel.clear();
             it = eintraege.erase (it);
+            continue;
         }
-        else
-        {
-            it->second.zeile.mitgliedschaft = Mitgliedschaft::unclassified;
-            it->second.zeile.userLabel = it->second.descriptorLabel;
-            aktualisiereName (it->second);
-            ++it;
-        }
+        klassifiziere (it->second);
+        ++it;
     }
-    for (const auto& [id, label] : persistenteMitglieder)
+    // NAK-312 Etappe 7b (U51, M-126): dieselbe Annahmeregel wie der Snapshot.
+    // Ein frei gewordener Platz geht an ein gespeichertes Mitglied oder an
+    // eine wartende Sonde des juengsten Snapshots, ohne dass einer kommt.
+    std::set<std::string> fluechtige;
+    for (const auto& [id, e] : eintraege)
+        if (e.fluechtigImSnapshot) fluechtige.insert (id);
+    for (const auto& [id, e] : nichtAngenommene)
+        fluechtige.insert (id);
+    for (const auto& id : nimmAn (fluechtige))
     {
         if (eintraege.count (id) != 0) continue;
         Eintrag e;
-        e.zeile.instanceId = id;
-        e.zeile.mitgliedschaft = Mitgliedschaft::bestaetigt;
-        e.zeile.control = Control::getrennt;
-        e.zeile.userLabel = label;
-        aktualisiereName (e);
+        const auto wartend = nichtAngenommene.find (id);
+        if (wartend != nichtAngenommene.end())
+        {
+            e = std::move (wartend->second);
+            nichtAngenommene.erase (wartend);
+        }
+        else
+        {
+            e.zeile.instanceId = id;
+            e.zeile.control = Control::getrennt;
+        }
+        klassifiziere (e);
         eintraege.emplace (id, std::move (e));
     }
     stelleZielSicher();
@@ -500,8 +511,14 @@ void SourcesModel::projektReload (
     reloadGeneration = generation;
     persistenteMitglieder = std::move (persistent);
     eintraege.clear();
+    nichtAngenommene.clear();
+    // NAK-312 Etappe 7b (U51, M-126): ohne angenommene Zeilen folgt die Annahme
+    // allein aus dem geladenen Stand - die 20 kleinsten `instance_id`. Die
+    // gespeicherten Mitglieder bleiben ungekuerzt.
+    const auto angenommen = nimmAn ({});
     for (const auto& [id, label] : persistenteMitglieder)
     {
+        if (angenommen.count (id) == 0) continue;
         Eintrag e;
         e.zeile.instanceId = id;
         e.zeile.mitgliedschaft = Mitgliedschaft::bestaetigt;
@@ -584,6 +601,10 @@ void SourcesModel::controlEnde()
         if (e.hatMessZeit && e.zeile.messung != Messung::invalid)
             e.zeile.messung = Messung::stale;
     }
+    // NAK-312 Etappe 7b: auch eine wartende Sonde, die spaeter nachrueckt,
+    // kommt aus der beendeten Verbindung.
+    for (auto& [_, e] : nichtAngenommene)
+        e.zeile.control = Control::getrennt;
     // 🔑 **NAK-214 R3 (08.09.2026): das Verbindungsende macht JEDEN Befund
     // `stale`.**
     //
@@ -1266,7 +1287,14 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     fuehrendesMain = fuehrung.isString() ? fuehrung.toString().toStdString() : std::string();
     sichtZeit = empfangen;
 
-    std::map<std::string, Eintrag> neu;
+    // 🔑 NAK-312 Etappe 7b (U51, M-123): die Annahme faellt VOR dem Aufbau der
+    // Eintraege. Wer keinen Platz bekommt, wird gelesen, wartet aber ausserhalb
+    // der Eintraege - keine Zeile, keine Messung, kein Befundzaehler.
+    std::set<std::string> fluechtige;
+    for (const auto& gm : gelesen)
+        if (gm.pluginKind != "main") fluechtige.insert (gm.instanceId);
+    const auto angenommen = nimmAn (fluechtige);
+    std::map<std::string, Eintrag> neu, wartend;
     for (const auto& gm : gelesen)
     {
         if (gm.pluginKind == "main")
@@ -1335,11 +1363,12 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         }
         aktualisiereName (e);
         aktualisiereAbgeleiteteZustaende (e, empfangen);
-        neu.emplace (gm.instanceId, std::move (e));
+        (angenommen.count (gm.instanceId) != 0 ? neu : wartend)
+            .emplace (gm.instanceId, std::move (e));
     }
     for (const auto& [id, label] : persistenteMitglieder)
     {
-        if (neu.count (id) != 0) continue;
+        if (neu.count (id) != 0 || angenommen.count (id) == 0) continue;
         Eintrag e;
         const auto alt = eintraege.find (id);
         if (alt != eintraege.end()) e = alt->second;
@@ -1354,6 +1383,7 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         neu.emplace (id, std::move (e));
     }
     eintraege = std::move (neu);
+    nichtAngenommene = std::move (wartend);
     experimente = std::move (geleseneVersuche);
     paare = std::move (gelesenePaare);
     befunde = std::move (geleseneBefunde);
@@ -1667,6 +1697,7 @@ SourcesModel::Sicht SourcesModel::sicht() const
     s.evidenzRuecknahmen = evidenzRuecknahmen;
     s.ruecknahmeGrund = ruecknahmeGrund;
     s.ruecknahmeUmfang = ruecknahmeUmfang;
+    s.nichtAngenommen = nichtAngenommenZahl;
     for (const auto& [_, e] : eintraege)
         s.quellen.push_back (e.zeile);
     std::sort (s.quellen.begin(), s.quellen.end(), [] (const Zeile& a, const Zeile& b)
@@ -1759,7 +1790,12 @@ void SourcesModel::setzeDiagnoseFuerSichtbeweis (Diagnose d, bool handgriff)
 void SourcesModel::setzeFixtureFuerTest (Sicht fixture)
 {
     std::lock_guard<std::mutex> l (mutex);
+    // NAK-312 Etappe 7b (§47.2): UNGEDECKELT und an der Annahmeregel vorbei -
+    // M-73, M-74 und M-85 speisen bis 64 Zeilen ein und bleiben das
+    // Sicherheitsnetz von R-312-6. Die Zahl der Wartenden traegt die Fixture.
     eintraege.clear();
+    nichtAngenommene.clear();
+    nichtAngenommenZahl = fixture.nichtAngenommen;
     hauptziel.clear();
     for (auto& q : fixture.quellen)
     {
@@ -1779,6 +1815,30 @@ void SourcesModel::setzeFixtureFuerTest (Sicht fixture)
     stelleZielSicher();
 }
 #endif
+
+std::set<std::string> SourcesModel::nimmAn (const std::set<std::string>& fluechtige)
+{
+    auto kandidaten = fluechtige;
+    for (const auto& [id, label] : persistenteMitglieder)
+        kandidaten.insert (id);
+    // Wer angenommen war und Kandidat bleibt, behaelt seinen Platz (M-125):
+    // eine Regel, die bei jedem Snapshot neu waehlte, liesse Quellen ohne
+    // Handgriff springen. Mehr als `kAnnahmeGrenze` Eintraege gibt es nur nach
+    // `setzeFixtureFuerTest`; sie bleiben, es kommt nur keiner dazu.
+    std::set<std::string> angenommen;
+    for (const auto& [id, e] : eintraege)
+        if (kandidaten.count (id) != 0) angenommen.insert (id);
+    // Freie Plaetze zuerst an gespeicherte, dann an fluechtige Kandidaten, je
+    // in aufsteigender `instance_id` - der Ordnung des States auf der Leitung
+    // (`nakama-state-v2.md:109-110`). Die Anzeigeordnung haengt an Hostnamen,
+    // die spaet eintreffen, und taugt nicht als Annahmeordnung.
+    for (const auto& [id, label] : persistenteMitglieder)
+        if (angenommen.size() < kAnnahmeGrenze) angenommen.insert (id);
+    for (const auto& id : fluechtige)
+        if (angenommen.size() < kAnnahmeGrenze) angenommen.insert (id);
+    nichtAngenommenZahl = kandidaten.size() - angenommen.size();
+    return angenommen;
+}
 
 void SourcesModel::stelleZielSicher()
 {

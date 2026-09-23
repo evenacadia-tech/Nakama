@@ -1,0 +1,163 @@
+# NAK-312 Etappe 7b, Einzelbein A32 (Satz 1 Endstand, Messung der Risse)
+
+== Stand (2026-09-23 03:37:51) ==
+HEAD e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/beweise/NAK-312.md
+    M eq-copilot/plugin/src/PluginEditor.cpp
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/ShotTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+    M tools/beweise.ps1
+   ?? docs/beweise/roh/NAK-312-e1bd9c6-dirty.md
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-124.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-126.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-127.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-128.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-129.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A23.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A32.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B28.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-122.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-123.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124-gegenrichtung.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-125.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-126-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-ersatzziel.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-kapazitaet.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-128.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-129.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-130.txt
+Reines Skript ohne Pruefbinary - keine Frischezeile.
+
+== Lauf (2026-09-23 03:37:51): tools/plan/gesundheit.py  ==
+Lauf Exit 4 (2026-09-23 03:38:03), Dauer 11.77 s
+
+== Vollstaendige Ausgabe ==
+   NAKAMA-GESUNDHEIT
+   Wurzel : C:\Users\phili\Projekte\Nakama
+   Memory : C:\Users\phili\.claude\projects\C--Users-phili-Projekte-Nakama\memory
+   Quellumfang (Inventar, NAK-249): 15 von 17 Eintraegen mit Quelldateien gemessen, 202 Dateien
+     gemessen     broker/src (direkt): 20 Datei(en)
+     gemessen     broker/src/bin: 4 Datei(en)
+     gemessen     broker/src/coordinator: 39 Datei(en)
+     ausgenommen  broker/src/generiert: 2 Datei(en) - Codegen aus dem .fbs (flatc), Bein A9 haelt ihn bytegleich
+     gemessen     broker/src/store: 5 Datei(en)
+     gemessen     broker/src/transport: 21 Datei(en)
+     gemessen     eq-copilot/plugin/core: 42 Datei(en)
+     gemessen     eq-copilot/plugin/dsp: 9 Datei(en)
+     gemessen     eq-copilot/plugin/hostbridge: 1 Datei(en)
+     gemessen     eq-copilot/plugin/hostprobe: 5 Datei(en)
+     gemessen     eq-copilot/plugin/probe: 1 Datei(en)
+     gemessen     eq-copilot/plugin/sonde: 3 Datei(en)
+     gemessen     eq-copilot/plugin/spike: 5 Datei(en)
+     gemessen     eq-copilot/plugin/src: 27 Datei(en)
+     gemessen     eq-copilot/plugin/state: 13 Datei(en)
+     ausgenommen  eq-copilot/plugin/tests: 44 Datei(en) - Testcode, kein Produktumfang
+     gemessen     eq-copilot/plugin/vertrag: 8 Datei(en), davon 1 ausgenommen
+   
+   Maass                                Ist    Ziel   Grenze  Status       
+   -----------------------------------  -----  -----  ------  -------------
+   Quelldateien ueber 2000 Zeilen       3      0      0       GRENZE       
+   Quelldateien ueber Ziel 1500 Zeilen  10     0      -       ZIEL         
+   Funktionen ueber 200 Zeilen          34     0      28      GRENZE       
+   Clippy-Fundstellen (broker)          -      0      91      NICHT MESSBAR
+   allow(dead_code) ohne Aufrufer       0      0      0       OK           
+   Kommentar-Bezeichner ohne Code       39     0      30      GRENZE       
+   MEMORY.md (Bytes)                    6202   22528  24986   OK           
+   CLAUDE.md (Bytes)                    20246  -      20480   OK           
+   Dirigenten-Skill (Bytes)             24289  -      24576   OK           
+   MEMORY.md: Zeilen ueber 250 Zeichen  0      0      0       OK           
+   Memory-Dateien ohne Index-Link       0      0      0       OK           
+   
+   nicht messbar: Clippy-Fundstellen (broker) - nicht angefordert (Schalter --clippy)
+   
+   GRENZE gerissen: Quelldateien ueber 2000 Zeilen (3 von hoechstens 0)
+     eq-copilot/plugin/state/NakamaState.cpp: 2911 Zeilen [NAK-292]
+     broker/src/briefkasten.rs: 2085 Zeilen [OHNE PFLEGETICKET]
+     eq-copilot/plugin/src/SourcesModel.cpp: 2029 Zeilen [OHNE PFLEGETICKET]
+   
+   GRENZE gerissen: Funktionen ueber 200 Zeilen (34 von hoechstens 28)
+     eq-copilot/plugin/src/SourcesModel.cpp:663 SourcesModel::uebernehmeSessionSnapshot - 753 Zeilen
+     broker/src/transport/server_v3/verbindung.rs:147 verbindung_bedienen - 744 Zeilen
+     eq-copilot/plugin/state/NakamaState.cpp:1445 leseSchema2 - 593 Zeilen
+     eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp:495 ControlClient::Laufzeit::eineVerbindung - 580 Zeilen
+     broker/src/transport/server_v3/listener.rs:265 v3_server_starten_intern - 439 Zeilen
+     eq-copilot/plugin/src/PluginProcessor.cpp:635 EqCopilotProcessor::processBlock - 412 Zeilen
+     broker/src/coordinator/experiment_verdrahtung.rs:860 resultatmessung - 394 Zeilen
+     broker/src/coordinator/intent.rs:317 intent_update_json_mit_minor - 344 Zeilen
+     eq-copilot/plugin/src/prozessor/Ipc.cpp:118 EqCopilotProcessor::interventionenSenden - 341 Zeilen
+     eq-copilot/plugin/src/PluginEditor.cpp:1548 EqCopilotEditor::paint - 333 Zeilen
+     eq-copilot/plugin/dsp/DspKern.cpp:1199 DspKern::verarbeiteStueck - 327 Zeilen
+     broker/src/coordinator/befehl.rs:157 persistenz_p0_intern - 316 Zeilen
+     eq-copilot/plugin/state/NakamaTransaktion.cpp:421 Transaktionskern::fuehreAus - 305 Zeilen
+     eq-copilot/plugin/src/PipeClient.cpp:351 PipeClient::eineVerbindung - 298 Zeilen
+     broker/src/coordinator/befehl.rs:665 p0_json_mit_minor - 292 Zeilen
+     broker/src/coordinator/hypothese_verdrahtung.rs:195 aufnahmen_sammeln - 281 Zeilen
+     eq-copilot/plugin/src/prozessor/Analyse.cpp:133 EqCopilotProcessor::workerLauf - 280 Zeilen
+     eq-copilot/plugin/state/NakamaState.cpp:806 synchronisiert - 279 Zeilen
+     eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:52 FeatureEngine::verarbeiteSamples - 276 Zeilen
+     broker/src/coordinator/hypothese/rechnung.rs:56 hypothesen - 267 Zeilen
+     eq-copilot/plugin/core/ipc/TelemetryClient.cpp:541 TelemetryClient::Laufzeit::eineVerbindung - 266 Zeilen
+     eq-copilot/plugin/hostprobe/HostProbeProcessor.cpp:188 HostProbeProcessor::nakamaBlockEmpfangen - 261 Zeilen
+     broker/src/coordinator/link.rs:80 control_hello_registrieren - 259 Zeilen
+     broker/src/server.rs:663 verbindung_bedienen - 249 Zeilen
+     eq-copilot/plugin/src/PluginEditor.cpp:1302 EqCopilotEditor::paintMainFlaeche - 245 Zeilen
+     ... und 9 weitere
+   
+   GRENZE gerissen: Kommentar-Bezeichner ohne Code (39 von hoechstens 30)
+     broker/src/coordinator/befehl.rs:10 `persistenz_p0`
+     broker/src/coordinator/befehl.rs:869 `persistenz_p0`
+     broker/src/coordinator/evidenz.rs:4 `ed9bbf7`
+     broker/src/coordinator/experiment.rs:1468 `Behalten`
+     broker/src/coordinator/experiment.rs:1619 `eigen3`
+     broker/src/coordinator/experiment_verdrahtung.rs:61 `persistenz_p0`
+     broker/src/coordinator/experiment_verdrahtung.rs:346 `domaene_persistieren`
+     broker/src/coordinator/experiment_verdrahtung.rs:1847 `binde_blindreihenfolge_fuer_test`
+     broker/src/coordinator/hypothese/zusammenhang.rs:81 `eigen4`
+     broker/src/coordinator/hypothese/zusammenhang.rs:344 `eigen3`
+     broker/src/coordinator/hypothese_verdrahtung.rs:625 `rowid`
+     broker/src/coordinator/intervention.rs:630 `_locked`
+     broker/src/coordinator/invalidierung_verdrahtung.rs:319 `bis_sample`
+     broker/src/coordinator/invalidierung_verdrahtung.rs:319 `von_sample`
+     broker/src/coordinator/invalidierung_verdrahtung.rs:585 `persistenz_p0`
+     broker/src/coordinator/link.rs:474 `link_ohne_ereignissequenz`
+     broker/src/store/handle.rs:399 `assistant_steps`
+     broker/src/transport/server_v3/listener.rs:582 `HandleEintrag`
+     broker/src/transport/server_v3/win_handles.rs:368 `HandleEintrag`
+     eq-copilot/plugin/core/analysis/FeatureEngine.h:1442 `STATUS_STACK_OVERFLOW`
+     eq-copilot/plugin/core/analysis/TruePeak.h:33 `interpolationsfehler_folgt_der_formel`
+     eq-copilot/plugin/core/analysis/TruePeak.h:135 `STATUS_STACK_OVERFLOW`
+     eq-copilot/plugin/core/ipc/ControlClient.h:482 `nichtNeutral`
+     eq-copilot/plugin/core/ipc/IpcQueues.h:73 `_end`
+     eq-copilot/plugin/core/ipc/IpcQueues.h:78 `hatEreignisAelterAls`
+     ... und 14 weitere
+   
+   Ziel verfehlt: Quelldateien ueber Ziel 1500 Zeilen (10 von hoechstens -)
+     eq-copilot/plugin/src/PluginProcessor.h: 1972 Zeilen
+     broker/src/coordinator/experiment_verdrahtung.rs: 1892 Zeilen
+     eq-copilot/plugin/src/PluginEditor.cpp: 1882 Zeilen
+     eq-copilot/plugin/sonde/SondeProcessor.cpp: 1857 Zeilen
+     broker/src/server.rs: 1841 Zeilen
+     broker/src/coordinator/experiment.rs: 1727 Zeilen
+     eq-copilot/plugin/src/prozessor/Ipc.cpp: 1663 Zeilen
+     broker/src/transport/server_v3/tests_abonnement.rs: 1567 Zeilen
+     eq-copilot/plugin/dsp/DspKern.cpp: 1529 Zeilen
+     eq-copilot/plugin/core/analysis/FeatureEngine.h: 1516 Zeilen
+   Hinweis: 2 Datei(en) ueber der Grenze OHNE Pflegeticket - neuer Registerpunkt noetig
+   Hinweis: 136 C++-Lambda(s) bewusst nicht als eigene Funktion gezaehlt
+   Hinweis: 9 weitere(r) Verweis(e) auf fehlende Bezeichner sind als Historie markiert und nicht gezaehlt
+   
+   URTEIL: GRENZE GERISSEN - 3 Maass(e): Quelldateien ueber 2000 Zeilen, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner ohne Code

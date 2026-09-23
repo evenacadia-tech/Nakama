@@ -1,6 +1,9 @@
 // SONDE-012 B3b — MainProject Save/Load und Host-Dirty.
 // Das echte Processor-State-Gespann wird benutzt; die Produkt-v3-Threads sind
 // fuer dieses Ziel abgeschaltet, daher wird keine Produktionspipe beruehrt.
+// Seit NAK-312 Etappe 7b (U51, 312/M-126): ein geladener Stand mit mehr als 20
+// bestaetigten Mitgliedern behaelt alle in State und Modell, nach dem Laden und
+// nach einem echten Snapshot sind 20 davon Zeilen.
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -27,6 +30,7 @@
 #include <memory>
 #include <mutex>
 #include <new>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -2724,6 +2728,122 @@ void bestand_ueberlebt_die_sichtgrenze()
                 + ", Eigenschaft " + (eigenschaftBleibt ? "gleich" : "WEICHT AB") + ", frisch geladen "
                 + juce::String ((int) neuGeladen.size()) + ", Host-Dirty " + juce::String (dirty.nonParam.load()));
 }
+
+/// NAK-312 Etappe 7b: eine Sonde des Sitzungssnapshots, wie der Broker sie
+/// liefert - dieselbe Form wie `mitgliedJson` in
+/// tests/Sonde012SourcesModelTest.cpp (Adresse, Klasse, Frische, Descriptor).
+std::string sondeJson (const nakama::ipc::Adresse& a)
+{
+    const auto adresse = nakama::ipc::adresseAlsJson (a);
+    const std::string frische = R"({"stale":false,"letzter_kontakt_ms":0})";
+    const std::string capabilities =
+        R"({"host_context_presence":"supported","project_time_samples":"supported",)"
+        R"("sample_accurate_automation":"supported","presentation_latency":"unsupported",)"
+        R"("aux_compare_pre":"supported","aux_priority_sidechain":"unsupported",)"
+        R"("contribution_aux":"supported","float64_processing":"unsupported",)"
+        R"("binary_telemetry":"supported","remote_control":"unsupported"})";
+    return R"({"adresse":)" + adresse + R"(,"plugin_kind":"active_probe","frische":)" + frische
+         + R"(,"probe_descriptor":{"adresse":)" + adresse
+         + R"(,"plugin_kind":"active_probe","measurement_position":"insert",)"
+           R"("aussageklasse":"beobachtend","betrieb":"active","label":"")"
+         + R"(,"capabilities":)" + capabilities + R"(,"frische":)" + frische + "}}";
+}
+
+/// Ein absoluter Sitzungssnapshot mit genau diesen Sonden; das fuehrende Main
+/// ist das, dessen Adresse `main` ist.
+std::string snapshotMit (const nakama::ipc::Adresse& main, const std::vector<std::string>& ids)
+{
+    std::string liste;
+    for (std::size_t i = 0; i < ids.size(); ++i)
+    {
+        auto a = main;
+        a.instanceId = ids[i];
+        a.runtimeNonce = nummer (0x900 + (int) i);
+        if (! liste.empty())
+            liste += ',';
+        liste += sondeJson (a);
+    }
+    return R"({"type":"session_snapshot","session_epoch":")" + main.sessionEpoch
+         + R"(","broker_epoch":"88888888888888888888888888888888","fuehrendes_main":")"
+         + main.instanceId + R"(","beitritt_bestaetigung_noetig":false,"mitglieder":[)" + liste + "]}";
+}
+
+/// M-126 · gespeicherte Quellen werden nie geloescht (U51, R-312-6 Satz 2): ein
+/// geladener Main-Stand mit `n` bestaetigten Mitgliedern (vom Schreiber erzeugt,
+/// Muster M-76), danach ein echter Snapshot mit denselben Mitgliedern und zwei
+/// weiteren fluechtigen Sonden, Speichern, Laden in eine frische Instanz. Der
+/// State behaelt alle, das Modell fuehrt alle als gespeicherte Mitglieder, 20
+/// davon - die 20 kleinsten instance_id - sind Zeilen.
+void altprojekt_behaelt_alle_und_zeigt_20 (int n)
+{
+    std::cout << "== NAK-312 M-126 altprojekt_behaelt_alle_und_zeigt_20 (" << n << " Mitglieder) ==\n";
+    std::vector<std::string> ids;
+    for (int i = 0; i < n; ++i)
+        ids.push_back (nummer (i));
+    juce::MemoryBlock saat;
+    {
+        auto aufbau = nak246d3::mainAnlegen (false, true);
+        for (const auto& instanz : ids)
+            aufbau->v3AntwortFuerTest (ack (aufbau->merkeSourcesCommandFuerTest (Art::confirmJoin, instanz), true));
+        aufbau->sourcesTick();
+        aufbau->getStateInformation (saat);
+    }
+    auto zeilenSind = [] (const Sm::Sicht& s, const std::vector<std::string>& erwartet)
+    {
+        std::set<std::string> da;
+        for (const auto& q : s.quellen)
+            da.insert (q.instanceId);
+        return da == std::set<std::string> (erwartet.begin(), erwartet.end());
+    };
+    const std::vector<std::string> kleinste (ids.begin(), ids.begin() + 20);
+
+    auto p = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+    p->setzeWorkerDrainFuerTest (false);
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->setStateInformation (saat.getData(), (int) saat.getSize());
+    const auto nachLaden = p->sourcesSicht();
+    auto mitFluechtigen = ids;
+    mitFluechtigen.push_back (nummer (500));
+    mitFluechtigen.push_back (nummer (501));
+    const auto main = nakama::ipc::wireAdresseAusState (p->v3HelloFuerTest().adresse);
+    p->v3LinkFuerTest (true);   // derselbe Callback wie nach dem welcome
+    p->v3AntwortFuerTest (snapshotMit (main, mitFluechtigen));
+    const auto nachSnapshot = p->sourcesSicht();
+    bool alleBestaetigt = ! nachSnapshot.quellen.empty();
+    for (const auto& q : nachSnapshot.quellen)
+        alleBestaetigt = alleBestaetigt && q.mitgliedschaft == Sm::Mitgliedschaft::bestaetigt;
+    juce::MemoryBlock gespeichert;
+    p->getStateInformation (gespeichert);
+    const auto imState = p->holeZustandKopie().mainProjectMitglieder.size();
+    const auto imModell = p->sourcesPersistenteMitgliederFuerTest().size();
+    p->removeListener (&dirty);
+    auto frisch = std::make_unique<eqcop::EqCopilotProcessor>();
+    frisch->setStateInformation (gespeichert.getData(), (int) gespeichert.getSize());
+    const auto frischGeladen = frisch->holeZustandKopie().mainProjectMitglieder.size();
+
+    pruefe (zeilenSind (nachLaden, kleinste) && zeilenSind (nachSnapshot, kleinste) && alleBestaetigt
+                && (int) nachLaden.nichtAngenommen == n - 20
+                && (int) nachSnapshot.nichtAngenommen == n + 2 - 20,
+            ("312/M-126 (Zeilen) altprojekt_behaelt_alle_und_zeigt_20 (" + std::to_string (n)
+             + " Mitglieder): nach dem Laden und nach dem Snapshot mit zwei weiteren fluechtigen Sonden sind "
+               "genau die 20 kleinsten instance_id unter den gespeicherten Zeilen, alle als bestaetigte "
+               "Mitglieder; nichtAngenommen " + std::to_string (n - 20) + " nach dem Laden, "
+             + std::to_string (n + 2 - 20) + " nach dem Snapshot").c_str(),
+            juce::String ((int) nachLaden.quellen.size()) + " Zeilen nach dem Laden, "
+                + juce::String ((int) nachSnapshot.quellen.size()) + " nach dem Snapshot; nicht angenommen "
+                + juce::String ((juce::int64) nachLaden.nichtAngenommen) + " / "
+                + juce::String ((juce::int64) nachSnapshot.nichtAngenommen));
+    pruefe (imState == (std::size_t) n && imModell == (std::size_t) n && gespeichert == saat
+                && frischGeladen == (std::size_t) n && dirty.nonParam == 0
+                && nakama::state::maxMainProjectMitglieder == 64,
+            ("312/M-126 (Bestand) gespeicherte_quellen_werden_nie_geloescht (" + std::to_string (n)
+             + " Mitglieder): State und Modell behalten alle, das Speichern nach dem Laden ist bytegleich, "
+               "die frische Instanz laedt alle, kein Host-Dirty, Speicherdeckel 64").c_str(),
+            "State " + juce::String ((int) imState) + ", Modell " + juce::String ((int) imModell)
+                + ", Speichern " + (gespeichert == saat ? "bytegleich" : "WEICHT AB") + ", frisch "
+                + juce::String ((int) frischGeladen) + ", Host-Dirty " + juce::String (dirty.nonParam.load()));
+}
 } // namespace nak312
 } // namespace
 
@@ -2780,6 +2900,9 @@ int main (int argc, char** argv)
     nak312::labelentwurf_ueberlebt_speichern_und_laden();
     // NAK-312 Etappe 6b (R-312-6): der Bestand bleibt unter der Sichtgrenze (M-76).
     nak312::bestand_ueberlebt_die_sichtgrenze();
+    // NAK-312 Etappe 7b (U51): gespeicherte Quellen werden nie geloescht (M-126).
+    nak312::altprojekt_behaelt_alle_und_zeigt_20 (21);
+    nak312::altprojekt_behaelt_alle_und_zeigt_20 (40);
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

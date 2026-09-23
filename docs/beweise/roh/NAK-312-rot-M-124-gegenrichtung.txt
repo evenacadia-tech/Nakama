@@ -1,0 +1,53 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-124-gegenrichtung.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-124, Gegenrichtung der Mutation (§46.3, R-312-25): die Erwartung der Latenzmessung wieder auf n.
+Zusage: die Umstellung ist noetig - nach dem Bau stehen bei 32 Sonden 20 Zeilen.
+Bein: B13, Fall visible_latency_16_and_32_sources.
+Mutation im Test: die umgestellte Erwartung min(n, 20) und n - min(n, 20) zurueck auf die alte Erwartung n.
+Erwartetes Rot: bei n = 32 stehen 20 Zeilen, die alte Erwartung 32 faellt (p95 1e9) - der Grund der Umstellung.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:29:58) ==
+8AB1121E66DFFEDED8BB778ACBFA318B8A6F0AEC6D6E29A465280EDCC22B535C  eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-Sonde012SourcesModelTest.cpp-032958
+
+== 2. Mutation (2026-09-23 03:29:58) ==
+Datei eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp, ab Zeile 847
+-- vorher:
+   |                 if ((int) sicht.quellen.size() != std::min (n, 20)
+   |                     || (int) sicht.nichtAngenommen != n - std::min (n, 20)) return 1.0e9;
+-- nachher:
+   |                 if ((int) sicht.quellen.size() != n) return 1.0e9;
+SHA-256 mutiert: AA4DD09572F632B4C2530E9A96864AF74B2D58C3E3E0C4FF08DA385805B4F057
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:29:58) ==
+Bau Exit 0 (2026-09-23 03:29:58 bis 2026-09-23 03:30:04), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:30:04.618, Quelle Sonde012SourcesModelTest.cpp 03:29:58.532, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:30:04); Zeilen mit ok: 98; Zeilen mit FEHLER/ROT: 1
+     FEHLER  visible_latency_16_and_32_sources  [0.89 / 1000000000.00 ms p95]
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 98/99 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster 'visible_latency_16_and_32_sources'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:30:04) ==
+8AB1121E66DFFEDED8BB778ACBFA318B8A6F0AEC6D6E29A465280EDCC22B535C  eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:30:04
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:30:04) ==
+Bau Exit 0 (2026-09-23 03:30:04 bis 2026-09-23 03:30:11), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:30:11.146, Quelle Sonde012SourcesModelTest.cpp 03:30:04.912, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:30:11); Zeilen mit ok: 99; Zeilen mit FEHLER/ROT: 0
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 99/99 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

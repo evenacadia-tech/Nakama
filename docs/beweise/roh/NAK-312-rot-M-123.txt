@@ -1,0 +1,58 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-123.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-123 (T3-07-05, U51, die 21. Quelle), Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123.txt).
+Zusage: genau 20 Zeilen, die Quelle mit der groessten instance_id ist nicht angenommen, nichtAngenommen 1.
+Bein: B13, Fall 312/M-123 die_21_quelle_wird_nicht_angenommen.
+Mutation an der Zusagezeile (§46.3): kAnnahmeGrenze auf 21.
+Erwartetes Rot: 21 Zeilen, die groesste ist eine Zeile.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 03:29:31) ==
+5B3E3825D6BF4CB6438F6CE6B2A050502F636C781333FE387D02E6C92C6C0B1B  eq-copilot/plugin/src/SourcesModel.h
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-SourcesModel.h-032931
+
+== 2. Mutation (2026-09-23 03:29:31) ==
+Datei eq-copilot/plugin/src/SourcesModel.h, ab Zeile 371
+-- vorher:
+   |     static constexpr std::size_t kAnnahmeGrenze = 20;
+-- nachher:
+   |     static constexpr std::size_t kAnnahmeGrenze = 21;
+SHA-256 mutiert: 9914ACC8C398191F2CE0B19F5F18875123620ED79710A0D65AC10E8237829972
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 03:29:31) ==
+Bau Exit 0 (2026-09-23 03:29:31 bis 2026-09-23 03:29:38), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:29:38.177, Quelle SourcesModel.h 03:29:31.883, Binary juenger: True
+Lauf Exit 1 (2026-09-23 03:29:38); Zeilen mit ok: 92; Zeilen mit FEHLER/ROT: 7
+     FEHLER  visible_latency_16_and_32_sources  [0.56 / 1000000000.00 ms p95]
+     FEHLER  312/M-123 die_21_quelle_wird_nicht_angenommen: 21 Sonden im Snapshot, genau 20 Zeilen - die 20 kleinsten instance_id -, die Sonde mit der groessten hat keine Zeile, nichtAngenommen 1  [21 Zeilen, nicht angenommen 0, die groesste IST eine Zeile]
+     FEHLER  312/M-124 zahlenrand_32 (Teilfall von 312/M-123): 32 Sonden, 20 Zeilen - die 20 kleinsten instance_id -, nichtAngenommen 12  [21 Zeilen, nicht angenommen 11]
+     FEHLER  312/M-124 zahlenrand_64 (Teilfall von 312/M-123): 64 Sonden, 20 Zeilen - die 20 kleinsten instance_id -, nichtAngenommen 44  [21 Zeilen, nicht angenommen 43]
+     FEHLER  312/M-124 zahlenrand_128_kandidaten (Teilfall von 312/M-123): 64 gespeicherte und 64 fluechtige Kandidaten - 20 Zeilen, alle gespeichert, nichtAngenommen 108, die gespeicherten Mitglieder ungekuerzt  [21 Zeilen, nicht angenommen 107, gespeichert 64]
+     FEHLER  312/M-125 nachruecken_ohne_verdraengung: geht Y, rueckt X im selben Snapshot nach (nichtAngenommen 0); kehrt Y zurueck, ist Y die nicht angenommene - keine angenommene Zeile wird verdraengt, auch nicht von der kleineren instance_id  [X wartet NEIN, rueckt nach ja, Y wartet danach NEIN]
+     FEHLER  312/M-128 nicht_angenommen_misst_nicht_mit (Teilfall von 312/M-123): der P2-Frame von X aendert nichts, der Frame einer angenommenen Quelle wirkt, und ein Befund mit X als candidate_source zaehlt in keiner Zeile  [X-Frame WIRKT, Kontrollframe wirkt, offene Befunde in Zeilen 1, X IST eine Zeile]
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 92/99 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-123 die_21_quelle_wird_nicht_angenommen'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 03:29:38) ==
+5B3E3825D6BF4CB6438F6CE6B2A050502F636C781333FE387D02E6C92C6C0B1B  eq-copilot/plugin/src/SourcesModel.h  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 03:29:38
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 03:29:38) ==
+Bau Exit 0 (2026-09-23 03:29:38 bis 2026-09-23 03:29:45), Ziele: EqCopSonde012SourcesModelTest
+Binary EqCopSonde012SourcesModelTest.exe 03:29:45.332, Quelle SourcesModel.h 03:29:38.323, Binary juenger: True
+Lauf Exit 0 (2026-09-23 03:29:45); Zeilen mit ok: 99; Zeilen mit FEHLER/ROT: 0
+     ok      N-29: blindreihenfolge als `null` ist ebenso ungueltig
+     ok      N-29: vergleichbarkeit als `null` ist ebenso ungueltig
+     ok      N-29: urteil als `null` ist ebenso ungueltig
+     ok      N-29/N-28: und `pair_id: null` bleibt gueltig - der Riegel trifft die geschlossenen Enums, nicht jedes `null`
+     ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung)]
+     ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+     ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+   SONDE-012 SourcesModel: 99/99 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

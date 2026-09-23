@@ -13,7 +13,9 @@
 //    M-84) am echten Prozessor mit Editor; die Editorhaelfte tickt ueber
 //    `timerTickFuerTest`, Ereignisse erntet das Bein synchron vom Sender.
 //    Dazu reset und releaseResources (312/M-59 bis M-65, M-86; M-61 im
-//    Oversize-Fall von SONDE-013 M-36).
+//    Oversize-Fall von SONDE-013 M-36). Seit Etappe 7b (U56, 312/M-130):
+//    releaseResources laesst den Auftrag bestehen, nach prepareToPlay beginnt
+//    er beim ersten erlaubten Block neu.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "HoerMarkierung.h"
@@ -2159,7 +2161,10 @@ static void nak312M64 (const Pruefer& pruefe, double fs, int bs)
     enum class Weg { reset, release, prepare };
     struct Ergebnis { bool klingt = false; nak312::Ende ende; juce::String beginId;
                       juce::int64 erwartet = 0; std::size_t puffer = 0;
-                      nak312::Lauf danach; };
+                      nak312::Lauf danach;
+                      // 312/M-130: nur nach releaseResources gefuellt.
+                      bool auftragNachBloecken = false; nak312::Lauf mitErlaubnis;
+                      nak312::Ernte nachPrepare; bool hoerbarDanach = false; };
     auto fahre = [&] (Weg weg, const char* label)
     {
         Ergebnis r;
@@ -2188,6 +2193,17 @@ static void nak312M64 (const Pruefer& pruefe, double fs, int bs)
         // releaseResources ohne Puffer, der Auftrag steht noch.
         s.transport->kopf.spielt = true;
         r.danach = s.bloecke (5);
+        // 312/M-130 (U56): nach releaseResources steht der Auftrag noch, und
+        // das naechste prepareToPlay laesst ihn beim ersten erlaubten Block
+        // neu beginnen - mit neuem begin, ohne zweites end zum alten Intervall.
+        if (weg == Weg::release)
+        {
+            r.auftragNachBloecken = s.p->markierungZielGesetztFuerTest();
+            s.p->prepareToPlay (fs, bs);
+            r.mitErlaubnis = s.bloecke (40);
+            r.nachPrepare = s.ernte();
+            r.hoerbarDanach = s.p->markierungHoerbar();
+        }
         return r;
     };
     const auto r = fahre (Weg::reset, "M-64r");
@@ -2209,6 +2225,17 @@ static void nak312M64 (const Pruefer& pruefe, double fs, int bs)
             "312/M-64 (a): ein Block ohne neues prepareToPlay laeuft nach releaseResources "
             "unberuehrt durch - ohne Puffer faerbt nichts, der Ausgang ist bitgleich",
             juce::String (a.danach.abweichend) + " abweichend von 5");
+    const auto neuesBegin = nak312::letzteKennung (a.nachPrepare, "audible_intervention_begin");
+    pruefe (a.auftragNachBloecken && a.nachPrepare.begins == 1 && a.nachPrepare.ends == 0
+                && neuesBegin.isNotEmpty() && neuesBegin != a.beginId
+                && a.mitErlaubnis.hoerbar > 0 && a.hoerbarDanach,
+            "312/M-130 auftrag_bleibt_ueber_release (Teilfall von 312/M-64 (a), U56) - nach "
+            "releaseResources und 5 Bloecken ohne prepareToPlay steht der Auftrag noch, und "
+            "nach dem naechsten prepareToPlay beginnt er beim ersten erlaubten Block neu: genau "
+            "ein neues begin, kein zweites end zum alten Intervall, markierungHoerbar wieder wahr",
+            juce::String ("Auftrag nach den Bloecken ") + (a.auftragNachBloecken ? "steht" : "WEG")
+                + ", " + nak312::ereignisText (a.nachPrepare) + ", hoerbar "
+                + juce::String (a.mitErlaubnis.hoerbar) + " von 40");
     pruefe (gleich (b),
             "312/M-64 (b) prepare_schliesst_wie_bisher (Teilfall von 312/M-59) - "
             "prepareToPlay erzeugt dasselbe end wie reset() und wie vor diesem "

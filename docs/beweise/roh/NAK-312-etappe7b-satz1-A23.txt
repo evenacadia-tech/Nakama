@@ -1,0 +1,56 @@
+# NAK-312 Etappe 7b, Einzelbein A23 (Satz 1 Endstand)
+
+== Stand (2026-09-23 03:36:44) ==
+HEAD e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/beweise/NAK-312.md
+    M eq-copilot/plugin/src/PluginEditor.cpp
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/ShotTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesLatencyTest.cpp
+    M eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp
+    M tools/beweise.ps1
+   ?? docs/beweise/roh/NAK-312-e1bd9c6-dirty.md
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-123.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-124.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-126.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-127.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-128.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-129.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A23.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz1-B28.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-122.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-123.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124-gegenrichtung.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-124.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-125.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-126-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-ersatzziel.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-127-kapazitaet.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-128.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-129.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-130.txt
+Binary EqCopSonde012SourcesLatencyTest.exe 2026-09-23 03:35:49.116, juengste Quelle eq-copilot\plugin\tests\Sonde012SourcesModelTest.cpp 2026-09-23 03:33:12.131, Binary juenger: True
+
+== Lauf (2026-09-23 03:36:44): tools/eq-copilot/pruefe_sonde012_sources_latency.py  ==
+Lauf Exit 0 (2026-09-23 03:36:48), Dauer 4.52 s
+
+== Vollstaendige Ausgabe ==
+     ok      beide Programme verweigern Produktions- und Golden-Pipe
+     ok      16 Quellen / 2048 Samples p95 50.5666 ms <= 300 ms
+     ok      16 Quellen / 4096 Samples p95 91.671 ms <= 300 ms
+     ok      16 Quellen / 16384 Samples p95 345.945 ms <= 750 ms
+     ok      32 Quellen / 2048 Samples p95 50.8824 ms <= 300 ms
+     ok      32 Quellen / 4096 Samples p95 95.0087 ms <= 300 ms
+     ok      32 Quellen / 16384 Samples p95 347.908 ms <= 750 ms
+   {"p95_16_2048_ms":50.5666,"p95_16_4096_ms":91.671,"p95_16_16384_ms":345.945,"p95_32_2048_ms":50.8824,"p95_32_4096_ms":95.0087,"p95_32_16384_ms":347.908}
+   GRUEN - sechs p95-Grenzen und Anzeige-Revisionen

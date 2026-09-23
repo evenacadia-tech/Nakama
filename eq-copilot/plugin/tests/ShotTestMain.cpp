@@ -24,7 +24,11 @@
 // und das Kennungskonflikt-Panel (312/M-91 bis 312/M-93, R-312-2, R-312-23):
 // gepostete Klicks nach dem Ende des Editors sind wirkungslos, baut der Host
 // den Editor waehrend des Rueckrufs ab, fasst der Rueckruf ihn danach nicht
-// mehr an, und der normale Handgriff bleibt.
+// mehr an, und der normale Handgriff bleibt. Seit NAK-312 Etappe 7b (U51)
+// danach die Annahmegrenze am echten Pfad - abonnierte Sitzung, echte
+// Snapshots, 312/M-122 bis M-124, M-127, M-129 -, mit den Bildern
+// sonde012-20-sources-angenommen.png, sonde012-21-sources-liste-voll.png und
+// nak312-liste-voll-hinter-diagnose.png im selben Ordner.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -1275,6 +1279,357 @@ bool nak312Konfliktpanel()
 }
 } // namespace
 
+//==============================================================================
+// NAK-312 Etappe 7b, Satz 1 (T3-07-05, U51; Manifest docs/beweise/NAK-312.md
+// §46.3, 312/M-122 bis 312/M-124, 312/M-127, 312/M-129; Weg C-1, E-312-21,
+// E-312-22): die Annahmegrenze am echten Editor auf einem echten Main ueber den
+// ECHTEN Pfad. `v3LinkFuerTest (true)` abonniert die Sitzung wie nach dem
+// welcome, `v3AntwortFuerTest` stellt absolute Sitzungssnapshots zu, wie der
+// Control-Client sie liefert; der Fixture-Haken ist ungedeckelt und hier kein
+// Weg (R-312-31).
+//
+// Das Diagnosefeld wird unabhaengig nachgezeichnet: dieselben Masse und Farben
+// wie `paintMainFlaeche` bei 760x430 (Spalte 310, Rand 14, Titel 32, Feld 34
+// abzueglich 3 oben und unten) und genau der erwartete Text. Stimmt jedes Pixel
+// des Feldes mit dem Editorbild ueberein, steht dort genau dieser Text; ohne
+// Feld traegt seine rechte obere Ecke den Hintergrund.
+
+namespace
+{
+int annahmeFehler = 0, annahmeGeprueft = 0;
+
+void annahmePruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    ++annahmeGeprueft;
+    if (! ok) ++annahmeFehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+}
+
+/// Das Wort des Users (U51) - bewusst NICHT die Konstante des Modells: ein
+/// Test, der die Produktzahl liest, fiele mit ihr nicht.
+constexpr int kGrenze = 20;
+const juce::Rectangle<int> kDiagnosefeld { 324, 49, 422, 28 };
+const juce::Colour kFeldFarbe = juce::Colour::fromRGB (43, 46, 50);
+const juce::Colour kHinweisFarbe = juce::Colour::fromRGB (226, 201, 129);
+
+std::string listeVoll (int n)
+{
+    return "Source list full (20) - " + std::to_string (n) + " more Probeeq not accepted";
+}
+
+/// Eine Sonde des Snapshots, wie der Broker sie liefert: Adresse, Klasse,
+/// Frische und der Descriptor mit Hostbusname und Mixerindex (dieselbe Form
+/// wie `mitgliedJson` in tests/Sonde012SourcesModelTest.cpp).
+std::string sondeJson (const nakama::ipc::Adresse& a, std::uint64_t mixer)
+{
+    const auto adresse = nakama::ipc::adresseAlsJson (a);
+    const std::string frische = R"({"stale":false,"letzter_kontakt_ms":0})";
+    const std::string capabilities =
+        R"({"host_context_presence":"supported","project_time_samples":"supported",)"
+        R"("sample_accurate_automation":"supported","presentation_latency":"unsupported",)"
+        R"("aux_compare_pre":"supported","aux_priority_sidechain":"unsupported",)"
+        R"("contribution_aux":"supported","float64_processing":"unsupported",)"
+        R"("binary_telemetry":"supported","remote_control":"unsupported"})";
+    return R"({"adresse":)" + adresse + R"(,"plugin_kind":"active_probe","frische":)" + frische
+         + R"(,"probe_descriptor":{"adresse":)" + adresse
+         + R"(,"plugin_kind":"active_probe","measurement_position":"insert",)"
+           R"("aussageklasse":"beobachtend","betrieb":"active","label":"")"
+         + R"(,"capabilities":)" + capabilities + R"(,"frische":)" + frische
+         + R"(,"host_bus_name":"Host Bus )" + std::to_string (mixer)
+         + R"(","host_mixer_index":)" + std::to_string (mixer) + "}}";
+}
+
+/// Ein absoluter Sitzungssnapshot mit `n` Sonden: instance_id aufsteigend
+/// nummeriert, der Mixerindex gleichlaufend oder umgekehrt zur Ordnung der
+/// instance_id (Muster `ersatzSicht`); das fuehrende Main ist dieses.
+std::string annahmeSnapshot (const nakama::ipc::Adresse& main, int n, bool umgekehrt,
+                             bool bestaetigung)
+{
+    std::string liste;
+    for (int i = 0; i < n; ++i)
+    {
+        auto a = main;
+        a.instanceId = hex (0x600 + (unsigned) i);
+        a.runtimeNonce = hex (0x700 + (unsigned) i);
+        if (! liste.empty())
+            liste += ',';
+        liste += sondeJson (a, (std::uint64_t) (umgekehrt ? n - i : i + 1));
+    }
+    return R"({"type":"session_snapshot","session_epoch":")" + main.sessionEpoch
+         + R"(","broker_epoch":")" + hex (0x88) + R"(","fuehrendes_main":")" + main.instanceId
+         + R"(","beitritt_bestaetigung_noetig":)" + (bestaetigung ? "true" : "false")
+         + R"(,"mitglieder":[)" + liste + "]}";
+}
+
+/// Ein Main, dessen Sitzung abonniert ist, wahlweise mit offenem Editor.
+struct AnnahmeBuehne
+{
+    std::unique_ptr<eqcop::EqCopilotProcessor> p;
+    std::unique_ptr<eqcop::EqCopilotEditor> ed;
+    nakama::ipc::Adresse main;
+    bool aufgebaut = false;
+
+    explicit AnnahmeBuehne (bool editorZuerst)
+        : p (std::make_unique<eqcop::EqCopilotProcessor>())   // NAK-175: Heap
+    {
+        p->setzeWorkerDrainFuerTest (false);
+        p->setzeEditorOffen (true);
+        aufgebaut = p->setzeBindung ("hub", "Gen", "");
+        main = nakama::ipc::wireAdresseAusState (p->v3HelloFuerTest().adresse);
+        p->v3LinkFuerTest (true);   // derselbe Callback wie nach dem welcome
+        if (editorZuerst)
+            oeffneEditor();
+    }
+
+    ~AnnahmeBuehne()
+    {
+        ed.reset();   // der Editor stirbt vor seinem Prozessor
+        p.reset();
+    }
+
+    void oeffneEditor()
+    {
+        ed = std::make_unique<eqcop::EqCopilotEditor> (*p);
+        ed->timerTickFuerTest();
+    }
+
+    void snapshot (int n, bool umgekehrt, bool bestaetigung = false)
+    {
+        p->v3AntwortFuerTest (annahmeSnapshot (main, n, umgekehrt, bestaetigung));
+        if (ed != nullptr)
+            ed->timerTickFuerTest();
+    }
+
+    juce::Image bild() const
+    {
+        return ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
+    }
+
+    std::string hauptziel() const
+    {
+        for (const auto& q : p->sourcesSicht().quellen)
+            if (q.hauptziel)
+                return q.instanceId;
+        return {};
+    }
+};
+
+/// Das Diagnosefeld, unabhaengig nachgezeichnet (Kopf dieses Abschnitts).
+juce::Image diagnosefeldReferenz (const juce::Image& vorlage, const std::string& text)
+{
+    juce::Image ref (vorlage.getFormat(), vorlage.getWidth(), vorlage.getHeight(), true);
+    juce::Graphics g (ref);
+    g.setColour (kFeldFarbe);
+    g.fillRect (kDiagnosefeld);
+    g.setColour (kHinweisFarbe);
+    g.setFont (juce::FontOptions (12.0f));
+    g.drawFittedText (juce::String (text), kDiagnosefeld.reduced (8),
+                      juce::Justification::centredLeft, 2, 0.75f);
+    return ref;
+}
+
+int abweichendePixel (const juce::Image& a, const juce::Image& b, juce::Rectangle<int> r)
+{
+    int n = 0;
+    for (int y = r.getY(); y < r.getBottom(); ++y)
+        for (int x = r.getX(); x < r.getRight(); ++x)
+            if (a.getPixelAt (x, y) != b.getPixelAt (x, y))
+                ++n;
+    return n;
+}
+
+/// Steht dort ueberhaupt ein Feld? Die rechte obere Ecke liegt fern jedes
+/// Textes: mit Feld traegt sie die Feldfarbe, ohne den Hintergrund.
+bool feldGezeichnet (const juce::Image& bild)
+{
+    return bild.getPixelAt (kDiagnosefeld.getRight() - 2, kDiagnosefeld.getY() + 1) == kFeldFarbe;
+}
+
+void speichereBild (const juce::File& ordner, const juce::Image& bild, const char* name)
+{
+    const auto ziel = ordner.getChildFile (name);
+    ziel.deleteFile();
+    juce::FileOutputStream strom (ziel);
+    juce::PNGImageFormat png;
+    const bool ok = strom.openedOk() && png.writeImageToStream (bild, strom);
+    strom.flush();
+    std::printf ("%s %s (%dx%d)\n", ok ? "SHOT OK" : "SHOT FEHLGESCHLAGEN",
+                 ziel.getFullPathName().toRawUTF8(), bild.getWidth(), bild.getHeight());
+}
+
+bool nak312Annahmegrenze (const juce::File& ordner)
+{
+    std::printf ("== NAK-312 Etappe 7b - die Annahmegrenze am echten Pfad (312/M-122 bis M-124, M-127, M-129, U51) ==\n");
+
+    // 312/M-122 · 0, 1, 19 und 20 Sonden: jede angenommen und gezeichnet, jede
+    // per Klick Hauptziel, kein Diagnosefeld.
+    for (const int n : { 0, 1, 19, kGrenze })
+    {
+        AnnahmeBuehne b (true);
+        b.snapshot (n, false);
+        const auto quellen = b.p->sourcesSicht().quellen;
+        const auto zeilen = b.ed->sourcesZeilenFuerTest();
+        int erreichbar = 0;
+        for (std::size_t i = 0; i < quellen.size() && i < zeilen.size(); ++i)
+        {
+            klicke (*b.ed, i);
+            b.ed->timerTickFuerTest();
+            if (b.hauptziel() == quellen[i].instanceId
+                && b.ed->sourcesAktionsZielFuerTest() == quellen[i].instanceId)
+                ++erreichbar;
+        }
+        const auto bild = b.bild();
+        if (n == kGrenze)
+            speichereBild (ordner, bild, "sonde012-20-sources-angenommen.png");
+        annahmePruefe (b.aufgebaut && (int) quellen.size() == n && (int) zeilen.size() == n
+                           && erreichbar == n && ! feldGezeichnet (bild),
+                       "312/M-122 annahme_bis_20 am echten Pfad (" + std::to_string (n)
+                           + " Sonden, 760x430): jede angenommen und gezeichnet, jede per Klick "
+                           "Hauptziel, kein Diagnosefeld",
+                       std::to_string (quellen.size()) + " in der Sicht, gezeichnet "
+                           + std::to_string (zeilen.size()) + ", erreichbar " + std::to_string (erreichbar)
+                           + ", Diagnosefeld " + (feldGezeichnet (bild) ? "GEZEICHNET" : "keines"));
+    }
+
+    // 312/M-123 · die 21. Quelle: 20 Zeilen, die groesste instance_id hat keine,
+    // und das Diagnosefeld meldet die volle Liste - allein, es steht keine
+    // Diagnose an.
+    {
+        AnnahmeBuehne b (true);
+        b.snapshot (kGrenze + 1, false);
+        const auto s = b.p->sourcesSicht();
+        bool groessteFehlt = true;
+        for (const auto& q : s.quellen)
+            groessteFehlt = groessteFehlt && q.instanceId != hex (0x600 + (unsigned) kGrenze);
+        const auto bild = b.bild();
+        speichereBild (ordner, bild, "sonde012-21-sources-liste-voll.png");
+        const int abw = abweichendePixel (bild, diagnosefeldReferenz (bild, listeVoll (1)), kDiagnosefeld);
+        annahmePruefe (b.aufgebaut && (int) s.quellen.size() == kGrenze && groessteFehlt
+                           && (int) b.ed->sourcesZeilenFuerTest().size() == kGrenze && abw == 0
+                           && s.nichtAngenommen == 1,
+                       "312/M-123 die_21_quelle_wird_nicht_angenommen am echten Pfad: 20 Zeilen, die Sonde "
+                           "mit der groessten instance_id hat keine, und das Diagnosefeld meldet genau '"
+                           + listeVoll (1) + "'",
+                       std::to_string (s.quellen.size()) + " in der Sicht, gezeichnet "
+                           + std::to_string (b.ed->sourcesZeilenFuerTest().size()) + ", groesste "
+                           + (groessteFehlt ? "fehlt" : "IST eine Zeile") + ", abweichende Feldpixel "
+                           + std::to_string (abw));
+    }
+
+    // 312/M-127 · Ersatzziel und Erreichbarkeit: 20, 21, 32 und 64 Sonden ohne
+    // Hauptziel, die Anzeigeordnung umgekehrt zur Ordnung der instance_id.
+    for (const int n : { kGrenze, kGrenze + 1, 32, 64 })
+    {
+        AnnahmeBuehne b (true);
+        b.snapshot (n, true);
+        const auto s = b.p->sourcesSicht();
+        const auto zeilen = b.ed->sourcesZeilenFuerTest();
+        const bool ersatz = ! s.quellen.empty() && s.quellen.front().hauptziel && ! zeilen.empty()
+                         && b.ed->sourcesAktionsZielFuerTest() == s.quellen.front().instanceId;
+        if (n == 32 || n == 64)
+        {
+            // 312/M-124 · die Meldung traegt die Zahl der nicht angenommenen.
+            const auto bild = b.bild();
+            const int abw = abweichendePixel (bild, diagnosefeldReferenz (bild, listeVoll (n - kGrenze)),
+                                              kDiagnosefeld);
+            annahmePruefe (b.aufgebaut && (int) s.nichtAngenommen == n - kGrenze && abw == 0,
+                           "312/M-124 (Meldung) die_meldung_traegt_die_zahl (" + std::to_string (n)
+                               + " Sonden): nichtAngenommen " + std::to_string (n - kGrenze)
+                               + ", das Diagnosefeld meldet genau '" + listeVoll (n - kGrenze) + "'",
+                           "nicht angenommen " + std::to_string (s.nichtAngenommen)
+                               + ", abweichende Feldpixel " + std::to_string (abw));
+        }
+        int erreichbar = 0;
+        for (std::size_t i = 0; i < zeilen.size() && i < s.quellen.size(); ++i)
+        {
+            klicke (*b.ed, i);
+            b.ed->timerTickFuerTest();
+            if (b.hauptziel() == s.quellen[i].instanceId)
+                ++erreichbar;
+        }
+        annahmePruefe (b.aufgebaut && ersatz,
+                       "312/M-127 (a) ersatzziel_ist_die_erste_angezeigte_zeile (" + std::to_string (n)
+                           + " Sonden, umgekehrte Anzeigeordnung): das Ersatz-Hauptziel steht in der "
+                           "ersten gezeichneten Zeile und traegt die Aktionssteuerung",
+                       std::string ("Ersatz in Zeile 1 ") + (ersatz ? "ja" : "NEIN"));
+        annahmePruefe (b.aufgebaut && zeilen.size() == s.quellen.size()
+                           && (int) zeilen.size() == std::min (n, kGrenze)
+                           && erreichbar == (int) zeilen.size(),
+                       "312/M-127 (b) jede_angenommene_quelle_ist_gezeichnet (" + std::to_string (n)
+                           + " Sonden): so viele gezeichnete Zeilen wie Zeilen in der Sicht, und jede "
+                           "gezeichnete per Klick Hauptziel",
+                       std::to_string (s.quellen.size()) + " in der Sicht, gezeichnet "
+                           + std::to_string (zeilen.size()) + ", erreichbar " + std::to_string (erreichbar));
+    }
+
+    // 312/M-129 · die ehrliche Meldung im vorhandenen Diagnosefeld.
+    {
+        // (a) Bei 20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel
+        //     gleich und die Zahl der Kind-Elemente auch; nur bei 21 steht das
+        //     Diagnosefeld. Keine neue Zeile, kein neues Element.
+        AnnahmeBuehne zwanzig (true);
+        zwanzig.snapshot (kGrenze, false);
+        const auto bild20 = zwanzig.bild();
+        const int kinder20 = zwanzig.ed->getNumChildComponents();
+        AnnahmeBuehne einundzwanzig (true);
+        einundzwanzig.snapshot (kGrenze + 1, false);
+        const auto bild21 = einundzwanzig.bild();
+        const int kinder21 = einundzwanzig.ed->getNumChildComponents();
+        const int spalte = abweichendePixel (bild20, bild21, { 0, 0, 310, 430 });
+        annahmePruefe (zwanzig.aufgebaut && einundzwanzig.aufgebaut && spalte == 0
+                           && kinder20 == kinder21 && ! feldGezeichnet (bild20) && feldGezeichnet (bild21),
+                       "312/M-129 (a) liste_voll_im_diagnosefeld - keine neue Zeile, kein neues Element: bei "
+                       "20 und 21 Sonden ist die Spalte Sources Pixel fuer Pixel gleich, die Zahl der "
+                       "Kind-Elemente gleich, und nur bei 21 steht das Diagnosefeld",
+                       "abweichende Spaltenpixel " + std::to_string (spalte) + ", Kind-Elemente "
+                           + std::to_string (kinder20) + "/" + std::to_string (kinder21) + ", Feld bei 20 "
+                           + (feldGezeichnet (bild20) ? "JA" : "nein") + ", bei 21 "
+                           + (feldGezeichnet (bild21) ? "ja" : "NEIN"));
+    }
+    const std::string bestaetigen ("Join confirmation required - choose a source and bind it");
+    {
+        // (b) Hinter einer anstehenden Diagnose steht die Meldung als Zusatz.
+        AnnahmeBuehne b (true);
+        b.snapshot (kGrenze + 1, false, true);
+        const auto bild = b.bild();
+        speichereBild (ordner, bild, "nak312-liste-voll-hinter-diagnose.png");
+        const auto erwartet = bestaetigen + ". " + listeVoll (1);
+        const int abw = abweichendePixel (bild, diagnosefeldReferenz (bild, erwartet), kDiagnosefeld);
+        annahmePruefe (b.aufgebaut && abw == 0,
+                       "312/M-129 (b) hinter_einer_anstehenden_diagnose_als_zusatz: das Feld traegt genau '"
+                           + erwartet + "'",
+                       "abweichende Feldpixel " + std::to_string (abw));
+    }
+    {
+        // (c) Ohne nicht angenommene Quelle gibt es die Meldung nicht.
+        AnnahmeBuehne b (true);
+        b.snapshot (kGrenze, false, true);
+        const auto bild = b.bild();
+        const int abw = abweichendePixel (bild, diagnosefeldReferenz (bild, bestaetigen), kDiagnosefeld);
+        annahmePruefe (b.aufgebaut && abw == 0,
+                       "312/M-129 (c) ohne_nicht_angenommene_quelle_keine_meldung: bei 20 Sonden traegt das "
+                       "Feld genau die anstehende Diagnose",
+                       "abweichende Feldpixel " + std::to_string (abw));
+    }
+    {
+        // (d) Der Editor oeffnet erst nach dem Snapshot: das Modell hat ohne
+        //     Editor gezaehlt, die Meldung steht mit dem ersten Tick.
+        AnnahmeBuehne b (false);
+        b.snapshot (kGrenze + 1, false);
+        b.oeffneEditor();
+        const auto bild = b.bild();
+        const int abw = abweichendePixel (bild, diagnosefeldReferenz (bild, listeVoll (1)), kDiagnosefeld);
+        annahmePruefe (b.aufgebaut && abw == 0,
+                       "312/M-129 (d) editor_nach_dem_snapshot: mit dem ersten Tick steht genau '"
+                           + listeVoll (1) + "'",
+                       "abweichende Feldpixel " + std::to_string (abw));
+    }
+
+    std::printf ("NAK-312 ANNAHME %d geprueft, %d Fehler\n", annahmeGeprueft, annahmeFehler);
+    return annahmeFehler == 0 && annahmeGeprueft == 19;
+}
+} // namespace
+
 int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI init;
@@ -1294,7 +1649,9 @@ int main (int argc, char* argv[])
         const bool ziel = nak312Ersatzziel (ordner);
         // NAK-312 Etappe 6b (NAK-349, R-312-2): das Kennungskonflikt-Panel.
         const bool konflikt = nak312Konfliktpanel();
-        return shots == 0 && panel && label && ziel && konflikt ? 0 : 1;
+        // NAK-312 Etappe 7b (U51): die Annahmegrenze am echten Pfad.
+        const bool annahme = nak312Annahmegrenze (ordner);
+        return shots == 0 && panel && label && ziel && konflikt && annahme ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

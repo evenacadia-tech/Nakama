@@ -1,6 +1,6 @@
 # State-Schema 2 — `NakamaState` (SONDE-006)
 
-- **Stand:** 2026-09-10 · **Ticket:** `SONDE-006` (S7), Kind `Dsp` definiert in `SONDE-015` (S26–28) · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
+- **Stand:** 2026-09-23 · **Ticket:** `SONDE-006` (S7), Kind `Dsp` definiert in `SONDE-015` (S26–28), Kind `RetainedMainProject` in `NAK-312` Etappe 7b · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
 - **Leser/Schreiber:** `eq-copilot/plugin/state/NakamaState.*` (C++, JUCE-core, keine `JucePlugin_*`-Konstante — S8-tauglich)
 - **Beweis:** `EqCopStateMigrationTest` (Kanon B2), Goldens in `eq-copilot/fixtures/state/`, Python-Bein `tools/eq-copilot/erzeuge_state_fixtures.py --pruefen` (Kanon A12)
 - **Was das hier ist:** das Dateiformat, das in FL-Projekten reist. Wie die VST3-Identität (SONDE-001) ist es ab jetzt ein **Vertrag**: eine Änderung an Root-Major, Kind-Major oder Kind-Matrix ist eine Versionierung mit Beleg, kein Edit.
@@ -27,6 +27,8 @@ NakamaState                               schema = 2  (int)
 │     intent_protections_v1  array  optional; flach [quelle_id, eigenschaft, band_von, band_bis, ...], höchstens 256 Vierergruppen (SONDE-014 M-03)
 │     intent_relations_v1    array  optional; flach [quelle_a, quelle_b, art, ...], höchstens 256 Dreiergruppen (SONDE-014 M-06)
 │     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ab 1 (SONDE-014 M-86)
+├── RetainedMainProject                   schema = 1  (int)   nur plugin_kind = legacy, OPTIONAL (NAK-312, §2.0b)
+│     dieselben Eigenschaften wie MainProject, mit denselben Formen, Deckeln und Regeln (ruhender Bestand)
 ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
 │     dsp_schema_version   int      OPTIONAL; fehlt = Layout v1 (109 Kennungen), 2 = Layout v2 (112 Host-Parameter);
 │                                   jede andere Zahl ⇒ read-only (unbekanntes Layout-Major)
@@ -90,18 +92,64 @@ Zustand. `undo` und `redo` erzeugen **keinen** Eintrag — sie bewegen den
 Werte sind 4.960 Einträge — weit unter den 65.536 je Sammlung und den 262.144
 im gesamten Baum, und weit unter 16 MiB.
 
-Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (frisch, migriert), Kinder Common, MainProject, Parameters, Dsp und Eigenschaften in der Reihenfolge oben. Ein **geladener** Stand behält seine eigene Reihenfolge (der Schreiber editiert eine Kopie des gehaltenen Baums in place — unbekannte Eigenschaften eingeschlossen); fehlt einem geladenen Common das `label`, bekommt es beim Speichern eines. Damit ist `speichere(lade(x)) == x` **bytegleich** für jeden Stand, den dieser Schreiber selbst geschrieben hat (Goldens, Roundtrip-Test), und die Schema-1-Migration ist **deterministisch** (Golden-fähig).
+Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (frisch, migriert), Kinder Common, MainProject (in `legacy`: RetainedMainProject), Parameters, Dsp und Eigenschaften in der Reihenfolge oben. Ein **geladener** Stand behält seine eigene Reihenfolge (der Schreiber editiert eine Kopie des gehaltenen Baums in place — unbekannte Eigenschaften eingeschlossen); fehlt einem geladenen Common das `label`, bekommt es beim Speichern eines. Damit ist `speichere(lade(x)) == x` **bytegleich** für jeden Stand, den dieser Schreiber selbst geschrieben hat (Goldens, Roundtrip-Test), und die Schema-1-Migration ist **deterministisch** (Golden-fähig).
+
+### 2.0b Das Kind `RetainedMainProject` (NAK-312, Etappe 7b, 23.09.2026)
+
+**Was es trägt.** Den ruhenden Bestand des Hauptprogramms einer Gen-Instanz im
+Messpunkt-Zustand `legacy`: dieselben sieben Eigenschaften wie `MainProject` —
+`confirmed_members_v1`, `manual_passages_v1`, `source_intents_v1`,
+`intent_protections_v1`, `intent_relations_v1`, `intent_revision_v1`,
+`assistant_step_v1` — mit denselben Formen, Deckeln und Regeln (§2.1, §2.1.1,
+§2.0 für den Assistentenschritt). Grund ist die Antwort des Users auf Karte U49
+vom 21.09.2026, „Alles bleibt erhalten (Empfohlen)"
+(`design/abnahmen/2026-09-21-rollenwechsel-daten-bleiben-erhalten-u49.md`):
+die Bestände überstehen den Wechsel zum Messpunkt und zurück, live und über
+Speichern und Neuladen gleich; gelöscht wird nur durch einen ausdrücklichen
+Handgriff.
+
+**Wann es geschrieben wird.** Nur für `plugin_kind = legacy`, und nur, wenn
+der ruhende Bestand etwas trägt — mindestens einen Eintrag, eine
+`intent_revision_v1` ≥ 1 oder einen gesetzten Assistentenschritt — **oder**
+der gehaltene Knoten eine Eigenschaft außerhalb der sieben oder einen
+Kindknoten trägt. Dieselbe Regel wie bei `Dsp` (§2.0): ein Legacy-Stand ohne
+ruhenden Bestand bleibt bytegleich zu früher und für jeden älteren Build
+lesbar, und ein Kind, an dem etwas Unbekanntes hängt, wird nie weggelassen.
+
+**Klassenwechsel.** Wechselt eine Instanz von `main` zu `legacy`, wandert der
+gehaltene `MainProject`-Knoten mit allen Eigenschaften, bekannten und
+unbekannten, als `RetainedMainProject` an dieselbe Stelle im Baum; beim Wechsel
+zurück wird er wieder `MainProject`. Unbekannte Eigenschaften reisen so mit dem
+Bestand, und ein geladener Stand behält seine Reihenfolge
+(`speichere(lade(x)) == x`, §2 Schluss).
+
+**Wirkung.** Der Bestand ruht: in `legacy` wirkt kein Handgriff an ihm, und das
+Quellenmodell zeigt ihn nicht. Ein Beitritt, den der Broker nach dem Wechsel
+quittiert, wirkt auf den ruhenden Bestand (NAK-312 E-312-23).
+
+**Leser.** Er liest die sieben bei `main` aus `MainProject`, bei `legacy` aus
+`RetainedMainProject`, mit denselben Regeln; eine Verletzung macht den ganzen
+Stand read-only (§5), ebenso ein `schema` ≠ 1.
+
+**Älterer Build.** Ein Build, der das Kind noch nicht liest, hält einen Stand
+mit ihm read-only mit Originalbytes (unbekanntes Kind, §5) — audio-neutral und
+ohne Pipe-Anmeldung, bis ein Build, der es liest, ihn neu speichert. Dieselbe
+Grenze gilt seit SONDE-015 für `Dsp`.
+
+**Golden:** `fixtures/state/schema2/legacy-retained-v1.bin`, vom Writer über
+die Produkt-API erzeugt (`EqCopStateMigrationTest --schreibe-goldens`, Kanon
+B2 und A12).
 
 ### 2.1 Kind-Matrix (§53.8: „Unzulässige Ziel-/Kindkombinationen werden nicht teilweise interpretiert")
 
-| `plugin_kind` | Common | MainProject | Parameters | Dsp | Pairing |
-|---|---|---|---|---|---|
-| `main` | Pflicht | **Pflicht** | verboten | verboten | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
-| `legacy` | Pflicht | verboten | verboten | verboten | verboten |
-| `passive_probe` | Pflicht | verboten | verboten | verboten | verboten |
-| `active_probe` | Pflicht | verboten | **Pflicht** | **optional** (seit SONDE-015 gelesen) | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
+| `plugin_kind` | Common | MainProject | RetainedMainProject | Parameters | Dsp | Pairing |
+|---|---|---|---|---|---|---|
+| `main` | Pflicht | **Pflicht** | verboten | verboten | verboten | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
+| `legacy` | Pflicht | verboten | **optional** (seit NAK-312 Etappe 7b, §2.0b) | verboten | verboten | verboten |
+| `passive_probe` | Pflicht | verboten | verboten | verboten | verboten | verboten |
+| `active_probe` | Pflicht | verboten | verboten | **Pflicht** | **optional** (seit SONDE-015 gelesen) | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
 
-Ein Kind mit unbekanntem Namen ⇒ read-only (ein neues Kind ist eine Root-Versionierung, keine Minor-Erweiterung). Eine **unbekannte Eigenschaft** in einem bekannten Kind desselben Majors ⇒ additiv, wird erhalten.
+Ein Kind mit unbekanntem Namen ⇒ read-only. Ein neues Kind ist eine Änderung der Kind-Matrix und damit eine Versionierung mit Beleg (Kopf): es kommt additiv unter Root 2 hinzu, wenn jeder Stand ohne das Kind bytegleich bleibt und ein älterer Leser jeden Stand mit ihm read-only mit Originalbytes hält — die Praxis von `Dsp` (SONDE-015) und `RetainedMainProject` (NAK-312 Etappe 7b); eine Root-Versionierung ist es, wenn es die Bedeutung bestehender Stände ändert. *(Präzisiert am 23.09.2026, NAK-312 E-312-20. Bis dahin stand hier „ein neues Kind ist eine Root-Versionierung, keine Minor-Erweiterung" — das beschrieb schon die Aufnahme von `Dsp` nicht mehr.)* Eine **unbekannte Eigenschaft** in einem bekannten Kind desselben Majors ⇒ additiv, wird erhalten.
 
 `MainProject.confirmed_members_v1` ist seit SONDE-012 die additive, persistente
 Mitgliedschaftswahrheit. Jedes Paar besteht aus einer eindeutigen hex32-`instance_id`
@@ -235,9 +283,11 @@ Quelle: `EqCopilotState{schema=1, sensor_id, role, label, pair_id}` (Goldens `fi
 
 ## 5 · Unbekanntes Major, read-only (§53.8, §33.5)
 
-Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Parameters.dsp_schema_version` ist vorhanden und weder 1 noch 2 (unbekanntes Layout-Major) · `Dsp.schema` ≠ 1 oder sein Inhalt verletzt eine Regel aus §2.0 · `Pairing` vorhanden, solange dieser Build es nicht liest.
+Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Parameters.dsp_schema_version` ist vorhanden und weder 1 noch 2 (unbekanntes Layout-Major) · `Dsp.schema` ≠ 1 oder sein Inhalt verletzt eine Regel aus §2.0 · `RetainedMainProject` außerhalb von `legacy`, doppelt, mit `schema` ≠ 1 oder mit einem Inhalt, der eine Regel von `MainProject` verletzt (§2.0b; der Grund nennt das Kind) · `Pairing` vorhanden, solange dieser Build es nicht liest.
 
 Seit SONDE-015 ist `Dsp` für `active_probe` **kein** read-only-Grund mehr; für jede andere Klasse bleibt es einer (Kind-Matrix). Ein Build, der `Dsp` noch nicht liest, hält einen Stand mit diesem Kind weiterhin read-only mit Originalbytes — genau dafür schreibt der Writer das Kind nur, wenn es etwas trägt (§2.0).
+
+Seit NAK-312 Etappe 7b gilt dasselbe für `RetainedMainProject`: für `legacy` ist es **kein** read-only-Grund, für jede andere Klasse einer; ein Build, der es noch nicht liest, hält einen Stand mit ihm read-only mit Originalbytes („unknown child"), und der Writer schreibt es nur, wenn es etwas trägt (§2.0b).
 
 Verhalten: **audio-neutral** (Passthrough wie immer) · **read-only** (`setzeBindung`/`neueSensorId` werden verweigert, kein Host-Dirty) · `getStateInformation` liefert die **Originalbytes unverändert** zurück (nie ein Teilstate) · keine Pipe-Anmeldung (es gibt keine vertrauenswürdige Identität zu melden) · Editor zeigt den Zustand (Anzeige-Pflicht „Capability-Degradation", §0.4).
 

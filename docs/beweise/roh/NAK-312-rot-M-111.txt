@@ -1,0 +1,68 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-111.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-111 (T3-02-06, speichern<->laden, Weg Z-A), Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-111.txt).
+Zusage: nach Laden und Rueckkehr sind alle sieben wertgleich; der Stand in Legacy traegt das Bestandskind.
+Bein: B2 EqCopStateMigrationTest.
+Mutation nach dem Bau (§46.2): im Schreiber das Kind fuer legacy wieder weglassen.
+Erwartetes Rot: Kinder nur Common, nach Laden und Rueckkehr leer.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:11:48) ==
+9BC6AB829B0802F29FF9FF66B04D3CF768C9FC09921D69B5A9AB782DB9DC97A5  eq-copilot/plugin/state/NakamaState.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-NakamaState.cpp-041148
+
+== 2. Mutation (2026-09-23 04:11:48) ==
+Datei eq-copilot/plugin/state/NakamaState.cpp, ab Zeile 1114
+-- vorher:
+   |         if (z.common.klasse == Klasse::legacy
+   |             && ! bestandTraegtEtwas (z) && ! bestandTraegtUnbekanntes (bestand))
+   |             kopie.removeChild (bestand, nullptr);
+-- nachher:
+   |         if (z.common.klasse == Klasse::legacy)
+   |             kopie.removeChild (bestand, nullptr);
+SHA-256 mutiert: D26752721F57523891B9E3397A7DA9690374F2D124E47F854A51A2FA988A0DEC
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:11:48) ==
+Bau Exit 0 (2026-09-23 04:11:48 bis 2026-09-23 04:11:55), Ziele: EqCopStateMigrationTest
+Binary EqCopStateMigrationTest.exe 04:11:55.160, Quelle NakamaState.cpp 04:11:48.014, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:11:56); Zeilen mit ok: 311; Zeilen mit FEHLER/ROT: 14
+     FEHLER  legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [252 Bytes vom Writer, 2397 auf der Platte, Kinder Common]
+     FEHLER  legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [geladen, 3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Grund '']
+     FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+     FEHLER  312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern (Form, Weg Z-A): der Stand in Legacy traegt Common und das Bestandskind RetainedMainProject (schema 1) mit denselben Eigenschaften wie MainProject, kein MainProject; speichere (lade (x)) == x bytegleich  [Kinder Common, Eigenschaften WEICHEN AB, Roundtrip bytegleich, geladen]
+     FEHLER  312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern: nach Laden in eine frische Instanz und Rueckkehr zu hub sind alle sieben wertgleich - Live-Rueckweg und gespeicherter Rueckweg ergeben denselben Bestand; das Laden meldet kein Host-Dirty  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Host-Dirty beim Laden 0]
+     FEHLER  312/M-112 unbekannte_felder_reisen_mit (Teilfall von 312/M-111): die unbekannte Eigenschaft wandert mit dem Bestand vom MainProject ins Bestandskind und zurueck, die in Common bleibt in Common - main, legacy, speichern, laden, main, speichern  [Kinder am Ende Common,MainProject]
+     FEHLER  312/M-111: nach main, legacy, speichern, laden, main ist der gespeicherte Stand bytegleich zum Stand vor dem Wechsel  [2396 / 288 Bytes]
+     FEHLER  312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert ABWEICHEND]
+     FEHLER  312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     FEHLER  312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     FEHLER  312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     FEHLER  312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     FEHLER  312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0, leer 0, gefuellt 0]
+     FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+     ok      312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810 / s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810]
+     ok      312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 5745 Byte, bytegleich]
+     ok      == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+     ok      312/M-110 rollenwechsel_erhaelt_den_bestand_live (Legacy): alle sieben unveraendert gehalten, das Quellenmodell zeigt 0 Zeilen, die Handgriffe am Bestand verweigern  [3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Zeilen in Legacy 0, Handgriffe verweigert]
+     ok      312/M-110 rollenwechsel_erhaelt_den_bestand_live (zurueck zu Main): alle sieben wertgleich zum Stand vor dem Wechsel, das Quellenmodell zeigt die Mitglieder wieder  [3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Zeilen 3]
+     ok      312/M-119 welche_bestaende (Teilfall von 312/M-110): sensor, pre, post und hub - der ruhende Bestand bleibt unveraendert und ist nach hub vollstaendig zurueck; Label, Paar-ID und Messposition folgen der Rollenwahl in Common, nach post ohne Paar traegt der Stand keine pair_id, die Projektbindung bleibt  [Paar nach pre 'paar-b', nach post ohne pair_id, 3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding]
+     ok      312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+   STATE-MIGRATION-TEST FEHLGESCHLAGEN - 311 Pruefungen ok, 14 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-111'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:11:56) ==
+9BC6AB829B0802F29FF9FF66B04D3CF768C9FC09921D69B5A9AB782DB9DC97A5  eq-copilot/plugin/state/NakamaState.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:11:56
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:11:56) ==
+Bau Exit 0 (2026-09-23 04:11:56 bis 2026-09-23 04:12:00), Ziele: EqCopStateMigrationTest
+Binary EqCopStateMigrationTest.exe 04:12:00.226, Quelle NakamaState.cpp 04:11:56.690, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:12:01); Zeilen mit ok: 325; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     ok      312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [1 Mitglieder, 1 Passagen, 1 Intents, 1 Schutzangaben, 1 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 1981 Bytes, Kinder Common,RetainedMainProject, Zeilen 1]
+     ok      312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [64 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 138635 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [20 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 115711 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [21 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 116232 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [2 Mitglieder, 2 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 71704 Bytes, Kinder Common,RetainedMainProject, Zeilen 2, leer 2, gefuellt 2]
+     ok      == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+   STATE-MIGRATION-TEST OK - 325 Pruefungen ok, 0 Fehler
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

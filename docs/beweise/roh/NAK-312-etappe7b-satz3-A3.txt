@@ -1,0 +1,213 @@
+# NAK-312 Etappe 7b, Einzelbein A3 (Satz 3 Endstand)
+
+== Stand (2026-09-23 04:17:44) ==
+HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/plugin-wissen.md
+    M eq-copilot/fixtures/state/MANIFEST.json
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/src/prozessor/Ipc.cpp
+    M eq-copilot/plugin/src/prozessor/State.cpp
+    M eq-copilot/plugin/state/NakamaState.cpp
+    M eq-copilot/plugin/state/NakamaState.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+    M eq-copilot/schemas/state/nakama-state-v2.md
+    M tools/beweise.ps1
+    M tools/eq-copilot/erzeuge_state_fixtures.py
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-111.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-112.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-118.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-119.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-120.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-121.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B2.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-vorstandsleser.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-modell.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-prozessor.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-111.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-112.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-113.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-114.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-115.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-116.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-117.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-ruecknahme.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common-2.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-120.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-a.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-c.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-131.txt
+   ?? eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+Binary EqCopMarkierungTest.exe 2026-09-23 04:17:03.415, juengste Quelle eq-copilot\plugin\src\PluginEditor.cpp 2026-09-23 04:16:06.095, Binary juenger: True
+
+== Lauf (2026-09-23 04:17:44): eq-copilot/build/plugin/EqCopMarkierungTest_artefacts/Release/EqCopMarkierungTest.exe  ==
+Lauf Exit 0 (2026-09-23 04:17:52), Dauer 8.01 s
+
+== Vollstaendige Ausgabe ==
+     ok      T7: NaN-Feld verhindert Engage
+     ok      T7: fVon>fBis verhindert Engage
+     ok      T7: fBis wird an der Nyquist-Kappe gefangen (Zone baut)
+     ok      T7: 1/12-Okt-Resonanz-Puls baut (engste Karte)
+     ok      T7: Puls-Stufe 0 ist exakte Identitaet (b == a)
+     ok      T2: als Main klassifiziert (Â§53.5)
+     ok      T2: Zonen-Solo-Auftrag (Mulm 120-300) baut
+     ok      T2: Solo greift (Ausgang weicht ab)
+     ok      T2: markierungHoerbar meldet aktiv
+     ok      T2: Fade-out endet im erwarteten Fenster
+     ok      T2: nach dem Fade wieder bitgleich transparent
+     ok      T2: markierungHoerbar meldet aus
+     ok      T5: Ausgang bleibt endlich
+     ok      T5: kein Klick an Engage-/Disengage-Kanten
+     ok      M-33: Auftrag baut
+     ok      M-33: bei nachgewiesenem recording=false faerbt die Markierung (die Gegenprobe, ohne die der Rest nichts sagt)
+     ok      M-33: recording_true blockiert - eine Faerbung, die in eine Aufnahme laeuft, steht danach in der Datei
+     ok      M-33: recording_unknown blockiert EBENSO - fail-closed, nicht fail-open. Ohne Hostbruecke weiss niemand, ob gerade aufgenommen wird
+     ok      M-34: als Main klassifiziert
+     ok      M-34: die Markierung klingt vor dem Entzug
+     ok      M-34: permission_loss_fades_instead_of_cutting - nach dem Entzug wird der Puffer noch fuer die Rampe angefasst, statt sofort zu springen  [8 Bloecke mit Rampe]
+     ok      M-34: und die groesste Sampledifferenz bleibt unter der Klickschwelle (dieselbe wie in T5)  [0.01051]
+     ok      M-34: danach meldet sie sich als still
+     ok      M-35: after_fade_the_neutral_path_is_bit_identical - ueber fuenf Blockgroessen, mit Zufallsaudio und BITvergleich
+     ok      M-36: als Main klassifiziert
+     ok      M-36: die Markierung klingt vor dem Oversizeblock
+     ok      M-36: der Teil des Oversizeblocks jenseits der Kapazitaet ist woertlich der Eingang - kein halber Wet-Pfad, keine Extrapolation
+     ok      M-36: oversize_block_fades_within_capacity_then_latches - danach blendet sie NICHT wieder ein, auch nicht nach 60 gueltigen Bloecken
+     ok      M-36: und meldet sich als still
+     ok      312/M-61 reset_loest_den_oversize_riegel_nicht - nach reset() blendet ein neuer Auftrag in 60 gueltigen Bloecken nicht ein; erst prepareToPlay loest den Riegel (die Pruefung darunter)
+     ok      M-36: nach prepareToPlay ist sie wieder moeglich - der Riegel ist eine Verriegelung, keine Abschaltung
+     ok      NAK-180 R4: die Markierung klingt vor dem Inf-Block
+     ok      NAK-180 R4: bei endlichem Material zaehlt der Riegel NICHTS - er ist kein Rauschen im Normalbetrieb  [0]
+     ok      NAK-180 R4: der Riegel hat gegriffen und GEZAEHLT  [1]
+     ok      NAK-180 R4: wet_pfad_latcht_kein_nicht_endliches_sample - nach einem +Inf-Block liefern acht Folgebloecke mit endlichem Eingang wieder endliches Audio (Invariante NaN-Ehrlichkeit)
+     ok      NAK-180 R4: und der Marker klingt weiter - der Riegel schaltet ihn nicht heimlich ab
+     ok      NAK-180 R4: der Riegel ist bei endlichem Material bit-neutral
+     ok      NAK-180 R5: der Normalfall ist doppelte Dauer plus ein Zehntel der Rate  [6800]
+     ok      NAK-180 R5: eine NaN-Rate ergibt kein UB, sondern die untere Schranke
+     ok      NAK-180 R5: das Polster ist gedeckelt - eine absurde Rate blaeht den Nachlauf nicht ins Unendliche  [78800]
+     ok      NAK-180 R5: tail_saettigt_statt_ueberzulaufen - eine Dauer am u64-Rand ergibt den Maximalwert, NIE einen kuerzeren Nachlauf als den Eingriff
+     ok      NAK-180 R5: auch die Verdopplung genau an der Kante saettigt
+     ok      NAK-180 R5: eine gueltige Rate wird gemerkt  [48000]
+     ok      NAK-180 R5: die ANALYSE verwirft die nicht-endliche Rate wie bisher  [0]
+     ok      NAK-180 R5: tail_rechnet_mit_gepruefter_samplerate - die gemerkte gueltige Rate BLEIBT stehen; genau sie speist `tailSamplesFuer`, waehrend JUCEs ungeprueftes `getSampleRate()` hier UB waere  [48000]
+     ok      NAK-180 R5: auch eine endliche, aber unzulaessige Rate (> 768 kHz) verstellt die gemerkte nicht  [48000]
+     ok      NAK-180 R5: eine neue GUELTIGE Rate loest die alte ab  [96000]
+     ok      NAK-283 M-40: endlicher_eingang_erzeugt_keinen_nichtendlichen_wetausgang - Puls auf 1 kHz, Ton mit 0,8 x FLT_MAX: jedes Ausgangssample ist endlich, und der Wet-Zaehler steigt um genau die verriegelten Samples  [0 nicht endlich; Zaehler +4228, verriegelte Samples 4228]
+     ok      B01: die Markierung klingt vor dem Oversizeblock
+     ok      B01: der Teil jenseits der Kapazitaet bleibt woertlich der Eingang
+     ok      B01: oversize_fade_endet_in_der_kapazitaet - der Block UNMITTELBAR nach dem Oversizeblock ist bitidentisch, nicht erst nach 20 Rampenbloecken (7.1 E-01)
+     ok      B01: und die Markierung meldet sich sofort als still
+     ok      B02: der Ausfade meldet ein Ende  [3840 Samples]
+     ok      B02: ende_erst_bei_fade_null - beim gemeldeten Ende ist der Wet-Anteil EXAKT 0, nicht 'unter 0,001' (M-38)  [0.000000]
+     ok      B03: der Ausfade meldet ein Ende  [7]
+     ok      B03: nach dem gemeldeten Ende mischt KEIN Folgeblock mehr Wet
+     ok      B03: der Uebergang traegt einen Offset INNERHALB des Blocks  [255]
+     ok      B03: ende_offset_zeigt_auf_das_letzte_gefaerbte_sample - hinter dem Offset ist der Block woertlich der Eingang
+     ok      B03: der Offset deckt die gefaerbte Zone VOLLSTAENDIG ab - das letzte vom Eingang abweichende Sample liegt bei oder vor ihm
+     ok      B04: als Main klassifiziert
+     ok      B04: frisch ist der Interventionszustand BEKANNT - ein Bit, das immer stuende, sagte nichts
+     ok      B04: der Ring nimmt seine Kapazitaet auf  [32]
+     ok      B04: ring_overflow_reist_im_heartbeat - der Ueberlauf des RT-Control-Rings erreicht `v3Status()` (M-39)
+     ok      B04: und steht im Heartbeat-JSON
+     ok      B04: ein sauberer Zustand schreibt das Feld GAR NICHT - ein `false` in jedem Takt waere die Behauptung 'Zustand bekannt'
+     ok      B04: die Byteinstanz heartbeat-wire-v1.json liegt im Repo  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\v3\heartbeat-wire-v1.json]
+     ok      B04: heartbeat_ist_bytegleich_zur_dritten_instanz/steady - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [bytegleich, 773 Zeichen]
+     ok      B04: heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [bytegleich, 808 Zeichen]
+     ok      B04: heartbeat_ist_bytegleich_zur_dritten_instanz/unbekannt - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [bytegleich, 807 Zeichen]
+   == NAK-246 D1: Besitz im Markierungsring (M-01 bis M-03, R-D1) ==
+     ok      M-01: der Leser steht im Haken zwischen Uebernahme und Kopie
+     ok      M-01: der Leser hat Auftrag 1 genommen  [1]
+     ok      M-01: leser_haelt_besitz_ueber_einen_ringumlauf - der Speicher, den der Leser haelt, wird vom Publisher NIE beschrieben: byteweise identisch vor und nach acht Publikationen waehrend des Haltens
+     ok      M-01: nach der Freigabe ist `lokal` in jedem Byte genau EIN publizierter Auftrag - kein Zwischenzustand  [lokal=1]
+     ok      M-01: und es ist der Auftrag, den der Leser genommen hat - nicht Auftrag n+4 oder n+8 aus dem Umlauf  [lokal=1, genommen=1]
+     ok      M-01: der naechste Block uebernimmt den juengsten Auftrag vollstaendig  [lokal=9]
+     ok      M-02: juengster_auftrag_gewinnt - der Leser uebernimmt genau den zuletzt publizierten Auftrag (8 von 8)  [lokal=8]
+     ok      M-02: ueberlauf_wird_gezaehlt - sieben Publikationen hat kein Leser je gesehen, und der Zaehler sagt es  [7]
+     ok      M-02: eine gelesene Publikation zaehlt NICHT als uebersprungen  [7]
+     ok      M-03: der Publisher steht im Haken zwischen Schreiben und Veroeffentlichen
+     ok      M-03: leser_wartet_nie_auf_den_publisher - `verarbeite` kehrt zurueck, WAEHREND der Publisher noch gehalten wird (kein Spin, keine Sperre)  [0.000 ms]
+     ok      M-03: 0 Allokationen im Leser auf dem neuen Pfad (thread_local gezaehlt)  [0]
+     ok      M-03: der Leser sah den ALTEN Auftrag vollstaendig, nie einen halben neuen  [lokal=1]
+     ok      M-03: nach der Freigabe uebernimmt der naechste Block den vollstaendig neuen Auftrag  [lokal=2]
+     ok      M-03: 200 Runden Publizieren und Uebernehmen mit klingendem Auftrag: 0 Allokationen im Leser  [0]
+     ok      M-03: Gegenprobe - derselbe Zaehler sieht eine echte Allokation  [1]
+     ok      312/M-55: Aufbau - Rolle sensor (legacy), Legacy-Flaeche, Senderpause bestaetigt
+     ok      312/M-58 legacy_solo_reicht_nichts_ein (Teilfall von 312/M-55) - der Editor fragt denselben Term wie das Audio und reicht in Legacy keinen Auftrag ein
+     ok      312/M-58: kein Latch im Editor und kein Aus-Knopf ohne Auftrag
+     ok      312/M-58: der Status behauptet kein Einfaerben, er nennt die Lage, die wirklich eintritt  [Markierung nicht möglich — nur ein Main färbt hörbar, diese Instanz bleibt neutral.]
+     ok      312/M-55: in Legacy bleibt der eingereichte Auftrag stumm (40 Bloecke bitgleich, Ring leer)
+     ok      312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker - 40 Bloecke nach dem Wechsel zu Main bitgleich zum Eingang, kein Block hoerbar, im Ring weder begin noch end  [0 abweichend, 0 hoerbar, 0 im Ring]
+     ok      312/M-55: und der Sender findet nichts zu senden  [0 begin, 0 end]
+     ok      312/M-57 rueckwechsel_hinterlaesst_keinen_scharfen_marker (Teilfall von 312/M-55) - nach sensor, hub, sensor 40 Bloecke bitgleich, kein Ereignis im Ring  [0 abweichend, 0 im Ring]
+     ok      312/M-57: kein Bedienelement behauptet einen scharfen Marker - kein Auftrag, kein Latch, Aus-Knopf in der Legacy-Flaeche unsichtbar
+     ok      312/M-57 (Editorhaelfte): Aufbau - in Main ueber den Editor eingeschaltet, er klingt
+     ok      312/M-57 editorhaelfte_kein_aus_knopf_ohne_auftrag - nach dem Wechsel weg von Main traegt der Editor keinen Latch, der Aus-Knopf ist unsichtbar, der Status sagt warum  [Markierung beendet — diese Instanz ist nicht mehr Main.]
+     ok      312/M-56 (a, Freilauf): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+     ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (a, Freilauf) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Offline-Render/Freilauf erkannt. | letzte Abweichung in Block 7]
+     ok      312/M-56 (b, Samplerate): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+     ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (b, Samplerate) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung beendet — Samplerate gewechselt. | letzte Abweichung in Block -1]
+     ok      312/M-56 (c, 10 Minuten): Aufbau - Main-Flaeche, Marker ueber den Editor eingeschaltet, er klingt
+     ok      312/M-56 die_drei_netze_ticken_in_jeder_flaeche (c, 10 Minuten) - in der Main-Flaeche endet die Markierung, der Ausgang wird bitgleich, der Grund steht im Status  [Markierung nach 10 Minuten ohne Bedienung beendet. | letzte Abweichung in Block 7]
+     ok      312/M-84: Aufbau - in Main hoerbar, sein begin ist gesendet  [1 begin, 0 end]
+     ok      312/M-84: der Ausfade laeuft WEICH - der Nachbarsprung am Umschaltsample liegt innerhalb der Schranke aus [SONDE-015] E-31 (Fadeschritt plus 2^-23)  [0.0000781250 <= 0.0000782442]
+     ok      312/M-84: und im ganzen Ausfade kein groesserer Sprung (Wache)  [0.0000781417]
+     ok      312/M-84: danach still und bitgleich  [7]
+     ok      312/M-84 rollenwechsel_weg_von_main_schliesst_das_intervall - nach dem zweiten Wechsel zu Main entsteht ohne neuen Handgriff KEIN neues begin, 40 Bloecke bitgleich  [0 abweichend, 0 begin, 1 end]
+     ok      312/M-84: genau ein begin und genau ein end dazu, mit der gezaehlten Hoerdauer  [24064 Samples gehoert, tail 52928 (erwartet 52928)]
+     ok      312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade - der Wechsel zurueck zu Main mitten im Ausfade blendet nicht wieder ein: der Ausfade laeuft zu Ende, genau ein begin und ein end  [letzte Abweichung in Block 5, 1 begin, 1 end]
+     ok      312/M-118 (Ruecknahme) auftrag_gehoert_nicht_zum_bestand (Teilfall von 312/M-84): mit gefuelltem Bestand nimmt der Wechsel weg von Main den Auftrag zurueck wie dort - genau ein begin und ein end, weicher Ausfade, nach der Rueckkehr kein neues begin, 40 Bloecke bitgleich  [1 begin, 0 end / 0 begin, 1 end, 0 abweichend]
+     ok      312/M-118 (Bestand): der Bestand bleibt ueber den Wechsel zu Legacy und zurueck stehen - das Mitglied, die Passage und der Intent samt Revision unveraendert  [1 Mitglied(er), 1 Passage(n), 1 Intent(s)]
+     ok      312/M-59: Aufbau - in Main hoerbar, sein begin ist gesendet  [1 begin, 0 end]
+     ok      312/M-59 reset_beendet_klang_und_intervall - nach reset() sind 40 Bloecke bitgleich zum Eingang, und es kommt genau EIN end zum offenen begin, mit project_sample_end null und der gezaehlten Hoerdauer  [0 abweichend, 1 end, project_sample_end null, tail 45760 (erwartet 45760)]
+     ok      312/M-60 reset_allokiert_nicht (Teilfall von 312/M-59) - ueber reset() steigt der Allokationszaehler des Beins um 0, der Wet-Puffer wird nicht neu zugeteilt, die Blockpuffer bleiben  [0 Allokationen, Zuteilungen 1 -> 1]
+     ok      312/M-63 auftrag_bleibt_ueber_reset (Teilfall von 312/M-59, U56) - der Auftrag bleibt eingereicht und beginnt beim naechsten erlaubten Block NEU: ein neues begin, kein zweites end zum alten Intervall  [1 begin, 1 end, 1 end, project_sample_end null, tail 45760]
+     ok      312/M-86 jedes_begin_hat_genau_ein_end_ueber_reset - das end aus reset() kommt in 40 Bloecken ohne Erlaubnis kein zweites Mal, der erste Block mit Erlaubnis meldet sein begin im selben Block, in dem er faerbt, und prepareToPlay schliesst genau dieses Intervall: zwei begin, zwei end  [end:A begin:B end:B, Ring nach den Bloecken ohne Erlaubnis 1, nach dem ersten mit Erlaubnis 2]
+     ok      312/M-86 teilfall_reset_release_prepare - reset(), releaseResources() und prepareToPlay nacheinander schliessen das Intervall genau einmal  [1 end, project_sample_end null, tail 45760]
+     ok      312/M-62 (a) zwei_offene_intervalle_ueber_reset - ein wartender Uebergang aus prepareToPlay und ein zweites offenes Intervall: reset() schliesst es hinter dem ersten, die Sequenz bleibt lueckenlos, zwei begin, zwei end  [begin@1 end@2 begin@3 end@4, kein Ueberlauf]
+     ok      312/M-62 (b) voller_ring_bleibt_fail_closed - findet reset() keinen Platz fuer das end, steht das Ueberlaufbit, und es wird KEINE Sequenznummer gezogen, die nicht reist: das naechste begin folgt lueckenlos  [Ueberlauf vorher nein, nachher ja, begin 1 dann 2]
+     ok      312/M-64 (a) release_schliesst_wie_reset (Teilfall von 312/M-59) - releaseResources() erzeugt dasselbe end wie reset() und gibt zusaetzlich die Blockpuffer frei  [reset: 1 end, project_sample_end null, tail 45760, Puffer 1536; release: 1 end, project_sample_end null, tail 45760, Puffer 0]
+     ok      312/M-64 (a): ein Block ohne neues prepareToPlay laeuft nach releaseResources unberuehrt durch - ohne Puffer faerbt nichts, der Ausgang ist bitgleich  [0 abweichend von 5]
+     ok      312/M-130 auftrag_bleibt_ueber_release (Teilfall von 312/M-64 (a), U56) - nach releaseResources und 5 Bloecken ohne prepareToPlay steht der Auftrag noch, und nach dem naechsten prepareToPlay beginnt er beim ersten erlaubten Block neu: genau ein neues begin, kein zweites end zum alten Intervall, markierungHoerbar wieder wahr  [Auftrag nach den Bloecken steht, 1 begin, 0 end, hoerbar 40 von 40]
+     ok      312/M-64 (b) prepare_schliesst_wie_bisher (Teilfall von 312/M-59) - prepareToPlay erzeugt dasselbe end wie reset() und wie vor diesem Aenderungssatz  [1 end, project_sample_end null, tail 45760]
+     ok      312/M-65 ohne_auftrag_kein_ereignis (Teilfall von 312/M-59) - reset() und releaseResources() ohne Auftrag: kein Ereignis, Statebytes bytegleich, kein Host-Dirty  [0 im Ring, 0 begin, 0 end, 251/251 Byte, Dirty 0]
+     ok      T9: als Main klassifiziert (Â§53.5)
+     ok      T9: Puls-Auftrag 689 Hz baut
+     ok      T9: Schwellphase ist deutlich hoerbar
+     ok      T9: Ruhephase <= -120 dBFS Rest (Identitaet)
+     ok      T6: als Main klassifiziert (Â§53.5)
+     ok      T6: der geladene Main-Stand klassifiziert die neue Instanz (Â§53.5)
+     ok      T6: Save/Load laedt IMMER neutral (kein Markierungszustand)
+     ok      T7: als Main klassifiziert (Â§53.5)
+     ok      T7: Mono-Solo laeuft und bleibt endlich
+     ok      T3: als Main klassifiziert (Â§53.5)
+     ok      T3: Freilauf mit gesetztem Latch â JEDES Sample bitgleich (Render sauber)
+     ok      T3: Freilauf meldet den Latch-Fall an den Editor
+     ok      T3: Echtzeit-Beweis dauert mindestens ~2 Fenster (kein Fruehstart)
+     ok      T3: Echtzeit-Taktung schaltet die Markierung frei
+     ok      T3/M-34: isNonRealtime BLENDET AUS statt zu schneiden - und die Rampe ist nach spaetestens zehn Bloecken zu Ende  [0]
+     ok      T3/M-35: und danach ist der Pfad wieder bitgleich neutral
+     ok      T10: Markierung nach Offline-Ende wieder beweisbar
+     ok      T10/M-34: Transport-Stopp BLENDET AUS statt zu schneiden - und die Rampe ist endlich (der Pulsbetrieb traegt ein laengeres Fadefenster als der Solobetrieb)  [0]
+     ok      T10/M-35: und danach ist der Pfad wieder bitgleich neutral
+     ok      T4: beide Instanzen als Main klassifiziert (Â§53.5)
+     ok      T4: Markierung war waehrend der Messung hoerbar
+     ok      T4: keine Analyse-Drops (Vergleich belastbar)
+     ok      T4: beide Messungen messbereit
+     ok      T4: genug Baender fuer den Vergleich
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+   MARKIERUNGSTEST OK

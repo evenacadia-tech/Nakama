@@ -1,0 +1,25 @@
+# NAK-312 Etappe 7b, Vorstandslauf 312/M-114 (Manifest §47.1)
+
+Matrixzeile: 312/M-114 (T3-02-06, alte Consumer, Leser des Vorstands), Etikett Regressionswache; der Vorstandslauf ist ein Beleg der Vertraeglichkeit, keine Mutation.
+Zusage: der Leser des Vorstands zerbricht nicht - er haelt das neue Writer-Golden read-only mit dem Grund "unknown child" samt Kindnamen, getStateInformation liefert die Originalbytes, setzeBindung und neueSensorId verweigert, 0 Host-Dirty.
+Vorgehen: eq-copilot/plugin/state/NakamaState.cpp bytegleich auf den Basis-SHA e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184, B2 bauen, EqCopStateMigrationTest --lade-bericht eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin, Satz-3-Fassung bytegleich zurueck, neu bauen, B2 gruen.
+
+== 1. Stand (2026-09-23 04:08:36) ==
+HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df
+9BC6AB829B0802F29FF9FF66B04D3CF768C9FC09921D69B5A9AB782DB9DC97A5  eq-copilot/plugin/state/NakamaState.cpp (Satz-3-Fassung), Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-NakamaState.cpp-satz3-040837
+Golden: 86E082CC8FEF4D28CDF8038E67B5DB5BE8469AA074CBA50F1E4F4B392A56A557  eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+
+== 2. Leser des Vorstands (2026-09-23 04:08:37) ==
+A947AD28064B082C3DCF69E03DDF60E00539DBA6B43B9BE384D7993D88F4D8E9  eq-copilot/plugin/state/NakamaState.cpp zurueckgespielt, gleich dem Basis-SHA (git diff --quiet e1bd9c6d2de8ddbea9f81ce3a2318ec657a4f184): True
+Bau (Leser des Vorstands) Exit 0 (2026-09-23 04:08:37 bis 2026-09-23 04:08:41)
+Binary EqCopStateMigrationTest.exe 04:08:41.189, Quelle NakamaState.cpp 04:08:37.082, Binary juenger: True
+Lauf --lade-bericht Exit 0 (2026-09-23 04:08:41)
+   LADE-BERICHT legacy-retained-v1.bin, 2397 Bytes, SHA-256 86e082cc8fef4d28cdf8038e67b5db5be8469aa074cba50f1e4f4b392a56a557
+     Leser: nurLesen, nurLesen ja, Grund 'unknown child RetainedMainProject', speichere liefert die Originalbytes bytegleich
+     Prozessor: nurLesen ja, Grund 'unknown child RetainedMainProject', getStateInformation bytegleich, setzeBindung verweigert, neueSensorId verweigert, Host-Dirty 0
+
+== 3. Ruecknahme bytegleich (2026-09-23 04:08:41) ==
+9BC6AB829B0802F29FF9FF66B04D3CF768C9FC09921D69B5A9AB782DB9DC97A5  eq-copilot/plugin/state/NakamaState.cpp gleich der Satz-3-Fassung: True; LastWriteTime auf jetzt (NAK-230)
+Bau (Satz-3-Fassung) Exit 0 (2026-09-23 04:08:41 bis 2026-09-23 04:08:44)
+Binary EqCopStateMigrationTest.exe 04:08:44.871, Quelle NakamaState.cpp 04:08:41.349, Binary juenger: True
+B2 nach der Ruecknahme: Exit 0, STATE-MIGRATION-TEST OK - 325 Pruefungen ok, 0 Fehler (2026-09-23 04:08:46)

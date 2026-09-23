@@ -214,7 +214,13 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         lebenslauf.stateRestauriert (ergebnis, geladen);
         spiegleKlassifikation();
     }
-    sourcesModel.projektReload (geladen.mainProjectMitglieder, generation);
+    // 🔑 NAK-312 Etappe 7b (U49, E-312-26): ein geladener `legacy`-Stand traegt
+    // den ruhenden Bestand; das Quellenmodell bekommt die Mitglieder nur in
+    // `main` - in `legacy` beginnt es leer, wie nach der Stilllegung.
+    sourcesModel.projektReload (
+        geladen.common.klasse == nakama::state::Klasse::main
+            ? geladen.mainProjectMitglieder : std::vector<nakama::state::MainProjectMitglied> {},
+        generation);
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
     v3StateRevision.fetch_add (1);
@@ -318,6 +324,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     std::vector<nakama::state::MainProjectMitglied> mainMitglieder;
     std::uint64_t generation = 0;
     std::uint64_t folge = 0;   // NAK-283 Etappe 2 (F01): Signaturfolge zu :347
+    auto publikationsKlasse = nakama::state::Klasse::legacy;   // NAK-312 E-312-26
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen)
@@ -336,9 +343,16 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         if (neu == zustand.common)
             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
         zustand.common = neu;
-        if (klasse != nakama::state::Klasse::main)
-            zustand.mainProjectMitglieder.clear();
-        mainMitglieder = zustand.mainProjectMitglieder;
+        // 🔑 NAK-312 Etappe 7b (U49, M-110): der Rollenwechsel loescht nichts.
+        // Bis hierher leerte der Wechsel weg von `main` die Mitglieder, und der
+        // Schreiber verwarf die uebrigen sechs Bestaende; jetzt ruhen alle
+        // sieben in `legacy` (Vertrag §2.0b). Das Quellenmodell bekommt die
+        // Mitglieder nur in `main` und dazu die Klasse, beide in DIESEM Block
+        // gelesen wie Generation und Folgenummer: in `legacy` legt es die
+        // Live-Sicht still (E-312-26).
+        publikationsKlasse = zustand.common.klasse;
+        if (publikationsKlasse == nakama::state::Klasse::main)
+            mainMitglieder = zustand.mainProjectMitglieder;
         // R-A1 Punkt 4' (b): die Generation, fuer die diese Kopie gilt - im
         // SELBEN Block wie die Kopie gelesen.
         generation = reloadGeneration.load();
@@ -373,8 +387,8 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     // hier, bleibt die Bindungsaenderung im State angewandt und wird deshalb
     // weiterhin gemeldet - die Unterscheidung faellt in
     // `werteSourcesPublikationAus` (`Ipc.cpp`, M-72).
-    werteSourcesPublikationAus (
-        sourcesModel.setzePersistenteMitglieder (mainMitglieder, generation, folge));
+    werteSourcesPublikationAus (sourcesModel.setzePersistenteMitglieder (
+        mainMitglieder, generation, folge, publikationsKlasse));
     pipe.reconnect();
     controlV3.reconnect();
     return true;

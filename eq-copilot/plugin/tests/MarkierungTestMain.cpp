@@ -15,7 +15,9 @@
 //    Dazu reset und releaseResources (312/M-59 bis M-65, M-86; M-61 im
 //    Oversize-Fall von SONDE-013 M-36). Seit Etappe 7b (U56, 312/M-130):
 //    releaseResources laesst den Auftrag bestehen, nach prepareToPlay beginnt
-//    er beim ersten erlaubten Block neu.
+//    er beim ersten erlaubten Block neu. Seit Etappe 7b, Satz 3 (U49,
+//    312/M-118): der Rollenwechsel nimmt den Auftrag zurueck und laesst den
+//    Bestand des Hauptprogramms stehen.
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "HoerMarkierung.h"
@@ -33,6 +35,7 @@
 #include <mutex>
 #include <new>
 #include <thread>
+#include <tuple>
 
 using namespace eqcop;
 using VstKontext = Steinberg::Vst::ProcessContext;
@@ -1964,6 +1967,72 @@ struct Dirty final : juce::AudioProcessorListener
 };
 } // namespace nak312
 
+
+/** 312/M-118 (Teilfall von 312/M-84, E-312-8, U49): der Hoermarkierungsauftrag
+    gehoert nicht zum Bestand des Hauptprogramms. Derselbe Ablauf wie 312/M-84
+    mit gefuelltem Bestand - ein bestaetigtes Mitglied, eine Passage, ein
+    Intent: der Klassifikationswechsel nimmt den Auftrag zurueck wie dort (genau
+    ein begin und ein end, weicher Ausfade, nach der Rueckkehr kein neues
+    begin, 40 Bloecke bitgleich), und der Bestand bleibt stehen. */
+static void nak312M118 (const Pruefer& pruefe, double fs, int bs)
+{
+    using nakama::state::Klassifikation;
+    nak312::Stand s (fs, bs);
+    s.p->setzeEditorOffen (true);
+    s.p->setzeWorkerDrainFuerTest (false);
+    const bool main = s.p->setzeBindung ("hub", "M-118", {})
+                   && s.klassifikationIst (Klassifikation::main);
+    const std::string quelle (32, 'a');
+    const auto commandId = s.p->merkeSourcesCommandFuerTest (
+        EqCopilotProcessor::SourcesCommandArt::confirmJoin, quelle);
+    s.p->v3AntwortFuerTest (std::string (R"({"type":"command_ack","command_id":")") + commandId
+                            + R"(","ergebnis":"angewandt","state_revision":1,"state_hash":")"
+                            + std::string (64, 'e') + R"("})");
+    s.p->sourcesTick();
+    const bool gefuellt = s.p->merkeManuellePassage (juce::String (std::string (32, 'd')), "Refrain", 0, 48000)
+        && s.p->setzeQuellenrolle (juce::String (quelle), {}, nakama::state::Rolle::fuehrt,
+                                   nakama::state::IntentHerkunft::user, 1.0);
+    auto bestand = [&s]
+    {
+        const auto z = s.p->holeZustandKopie();
+        return std::make_tuple (z.mainProjectMitglieder, z.manuellePassagen, z.sourceIntents,
+                                z.intentBestandRevision);
+    };
+    const auto vorher = bestand();
+    s.p->markierungEinreichen (s.auftrag);
+    const auto an = s.bloecke (40);
+    const auto ersteErnte = s.ernte();
+
+    const float wet = s.letztes;
+    const bool legacy = s.p->setzeBindung ("sensor", "M-118", {})
+                     && s.klassifikationIst (Klassifikation::legacy);
+    const auto inLegacy = bestand();
+    const auto aus = s.bloecke (16);
+    const double schritt = 1.0 / (double) std::lround (0.080 * fs);   // Solo-Fade 80 ms
+    const double schranke = schritt * std::abs ((double) nak312::kGleich - (double) wet)
+                          + std::ldexp (1.0, -23);
+    const bool wieder = s.p->setzeBindung ("hub", "M-118", {})
+                     && s.klassifikationIst (Klassifikation::main);
+    const auto zweiter = s.bloecke (40);
+    const auto zweiteErnte = s.ernte();
+    const auto zurueck = bestand();
+    pruefe (s.gebaut && s.pauseBestaetigt && main && gefuellt && std::get<0> (vorher).size() == 1
+                && an.hoerbar == 40 && ersteErnte.begins == 1 && legacy
+                && aus.sprungAmAnfang > 0.0f && (double) aus.groessterSprung <= schranke
+                && wieder && zweiter.abweichend == 0 && zweiter.hoerbar == 0
+                && ersteErnte.begins + zweiteErnte.begins == 1 && ersteErnte.ends + zweiteErnte.ends == 1,
+            "312/M-118 (Ruecknahme) auftrag_gehoert_nicht_zum_bestand (Teilfall von 312/M-84): mit gefuelltem "
+            "Bestand nimmt der Wechsel weg von Main den Auftrag zurueck wie dort - genau ein begin und ein end, "
+            "weicher Ausfade, nach der Rueckkehr kein neues begin, 40 Bloecke bitgleich",
+            nak312::ereignisText (ersteErnte) + " / " + nak312::ereignisText (zweiteErnte) + ", "
+                + juce::String (zweiter.abweichend) + " abweichend");
+    pruefe (inLegacy == vorher && zurueck == vorher,
+            "312/M-118 (Bestand): der Bestand bleibt ueber den Wechsel zu Legacy und zurueck stehen - das "
+            "Mitglied, die Passage und der Intent samt Revision unveraendert",
+            juce::String ((int) std::get<0> (zurueck).size()) + " Mitglied(er), "
+                + juce::String ((int) std::get<1> (zurueck).size()) + " Passage(n), "
+                + juce::String ((int) std::get<2> (zurueck).size()) + " Intent(s)");
+}
 /** 312/M-59 mit den Teilfaellen 312/M-60 (keine Allokation) und 312/M-63
     (der Auftrag bleibt). M-59 haelt den Transport vor reset() an, M-63 laesst
     ihn weiterlaufen - verschiedene Transportlagen (H1). */
@@ -2437,6 +2506,7 @@ int main()
     nak312M56 (pruefer, fs, bs);
     nak312M84 (pruefer, fs, bs);
     nak312M84ImAusfade (pruefer, fs, bs);
+    nak312M118 (pruefer, fs, bs);
     nak312M59 (pruefer, fs, bs);
     nak312M86 (pruefer, fs, bs);
     nak312M62 (pruefer, fs, bs);

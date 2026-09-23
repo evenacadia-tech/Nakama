@@ -1084,8 +1084,12 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
     # NAK-309 Etappe 4 (T3-02-07, M-59): `main-binding-v1.bin` aus demselben
     # Writer traegt `Common.project_binding_id`; bis dahin trug kein
     # eingefrorenes Fixture eine gesetzte Bindung.
+    # NAK-312 Etappe 7b (U49, Weg Z-A, M-111 bis M-115): `legacy-retained-v1.bin`
+    # aus demselben Writer traegt den ruhenden Bestand im Kind
+    # `RetainedMainProject` samt einer unbekannten Eigenschaft.
     for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post",
-                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1"):
+                  "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1",
+                  "legacy-retained-v1"):
         pfad = FIXTURES / "schema2" / f"{datei}.bin"
         if pfad.exists():
             b = pfad.read_bytes()

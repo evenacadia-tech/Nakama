@@ -1,0 +1,58 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-118-bestand.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-118, Bestandshaelfte, Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-118.txt).
+Zusage: der Bestand bleibt ueber den Wechsel zu Legacy und zurueck stehen.
+Bein: A3.
+Mutation wie 312/M-110: die entfallene Loeschstelle wieder einsetzen.
+Erwartetes Rot: das Mitglied fehlt nach dem Wechsel.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:13:37) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-State.cpp-041337
+
+== 2. Mutation (2026-09-23 04:13:37) ==
+Datei eq-copilot/plugin/src/prozessor/State.cpp, ab Zeile 353
+-- vorher:
+   |         publikationsKlasse = zustand.common.klasse;
+   |         if (publikationsKlasse == nakama::state::Klasse::main)
+   |             mainMitglieder = zustand.mainProjectMitglieder;
+-- nachher:
+   |         publikationsKlasse = zustand.common.klasse;
+   |         if (publikationsKlasse != nakama::state::Klasse::main)
+   |             zustand.mainProjectMitglieder.clear();
+   |         if (publikationsKlasse == nakama::state::Klasse::main)
+   |             mainMitglieder = zustand.mainProjectMitglieder;
+SHA-256 mutiert: 0D9A720D2FAB80B36232FDA31B83E2BEEB96E2D0447421431C965729947C62DB
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:13:37) ==
+Bau Exit 0 (2026-09-23 04:13:37 bis 2026-09-23 04:13:42), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 04:13:42.836, Quelle State.cpp 04:13:37.712, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:13:51); Zeilen mit ok: 154; Zeilen mit FEHLER/ROT: 1
+     FEHLER  312/M-118 (Bestand): der Bestand bleibt ueber den Wechsel zu Legacy und zurueck stehen - das Mitglied, die Passage und der Intent samt Revision unveraendert  [0 Mitglied(er), 1 Passage(n), 1 Intent(s)]
+     ok      T4: genug Baender fuer den Vergleich
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-118 \(Bestand\)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:13:51) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:13:51
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:13:51) ==
+Bau Exit 0 (2026-09-23 04:13:51 bis 2026-09-23 04:13:56), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 04:13:55.976, Quelle State.cpp 04:13:51.153, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:14:04); Zeilen mit ok: 155; Zeilen mit FEHLER/ROT: 0
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+   MARKIERUNGSTEST OK
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

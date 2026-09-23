@@ -1,0 +1,142 @@
+# NAK-312 Etappe 7b, Einzelbein B28 (Satz 3 Endstand)
+
+== Stand (2026-09-23 04:17:59) ==
+HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/plugin-wissen.md
+    M eq-copilot/fixtures/state/MANIFEST.json
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/src/prozessor/Ipc.cpp
+    M eq-copilot/plugin/src/prozessor/State.cpp
+    M eq-copilot/plugin/state/NakamaState.cpp
+    M eq-copilot/plugin/state/NakamaState.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+    M eq-copilot/schemas/state/nakama-state-v2.md
+    M tools/beweise.ps1
+    M tools/eq-copilot/erzeuge_state_fixtures.py
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-111.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-112.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-118.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-119.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-120.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-121.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B2.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-vorstandsleser.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-modell.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-prozessor.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-111.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-112.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-113.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-114.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-115.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-116.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-117.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-ruecknahme.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common-2.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-120.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-a.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-c.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-131.txt
+   ?? eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+Binary EqCopSonde014BefundTest.exe 2026-09-23 04:17:25.335, juengste Quelle eq-copilot\plugin\src\PluginEditor.cpp 2026-09-23 04:16:06.095, Binary juenger: True
+
+== Lauf (2026-09-23 04:17:59): eq-copilot/build/plugin/EqCopSonde014BefundTest_artefacts/Release/EqCopSonde014BefundTest.exe  ==
+Lauf Exit 0 (2026-09-23 04:18:00), Dauer 0.11 s
+
+== Vollstaendige Ausgabe ==
+   SONDE-014 Etappe D - Befundzustaende (M-29 bis M-35)
+     ok      M-29: der Zustand kommt als Feld an  [ready_to_send ]
+     ok      M-29: und steht unveraendert im Modell
+     ok      M-29: der Zustand kommt als Feld an  [more_data ]
+     ok      M-29: und steht unveraendert im Modell
+     ok      M-29: der Zustand kommt als Feld an  [stale ]
+     ok      M-29: und steht unveraendert im Modell
+     ok      M-29: ein VIERTER Zustand faellt am ganzen Snapshot  [session finding carries a value outside its closed set]
+     ok      M-29: und hinterlaesst keinen halben Befund
+     ok      M-30: SEND DRAFT haengt am Zustand  [ready_to_send]
+     ok      M-30: HOLD TO AUDITION ebenso  [ready_to_send]
+     ok      M-30: SEND DRAFT haengt am Zustand  [more_data]
+     ok      M-30: HOLD TO AUDITION ebenso  [more_data]
+     ok      M-30: SEND DRAFT haengt am Zustand  [stale]
+     ok      M-30: HOLD TO AUDITION ebenso  [stale]
+     ok      M-35: `confidence.class = hoch` macht einen `more_data`-Befund NICHT handelbar
+     ok      M-35: die Quellenzeile steht neben dem Befund
+     ok      M-35: und der Zustand kommt aus dem Befund, nicht aus der Zeile
+     ok      M-32: zwei Befunde, einer verweist auf den anderen
+     ok      M-32: beide stehen in der Liste
+     ok      M-32: die Alternative ist eine ID, kein Anhang
+     ok      M-32: und sie traegt einen EIGENEN Zustand
+     ok      M-32: ein Freitext in `alternatives` faellt  [session finding alternative is not a finding id]
+     ok      M-33: die Zone ist ein Bandintervall des eingefrorenen Gitters
+     ok      M-33: und sie nennt ihre Quelle
+     ok      M-33: ein Belegtextfeld faellt am Vertrag  [session finding has an unexpected or missing field]
+     ok      M-33: Band 0 ist ein gueltiger Index
+     ok      M-33: und 221 ein gueltiges `bis`
+     ok      M-33: ein LEERES Intervall faellt
+     ok      M-33: und eines ueber dem Gitterrand ebenso
+     ok      M-34: alle drei Zeilen stehen als eigene Felder
+     ok      M-34: SMALLEST TEST bildet `next_test` ab - der Wert reist mit
+     ok      M-34: eine VIERTE Zeile faellt am Vertrag  [session finding has an unexpected or missing field]
+     ok      M-34: eine leere Zeile faellt (minLength 1)  [session finding display line is not 1..200 codepoints]
+     ok      M-87: der Ausschluss kommt mit seinem Grund an
+     ok      M-87: ein NEUNTER Grund faellt am ganzen Snapshot  [session finding exclusion is invalid]
+     ok      K-46: screening_ueberboten faellt in Fassung 3  [session finding exclusion is invalid]
+     ok      K-46: screening_ueberboten gilt in Fassung 4 und kommt an
+     ok      K-46: master_duplikat faellt in Fassung 3  [session finding exclusion is invalid]
+     ok      K-46: master_duplikat gilt in Fassung 4 und kommt an
+     ok      K-46 Gegenprobe: ein bekannter Grund gilt in Fassung 3 weiter
+     ok      K-50: Fassung 3 nimmt 32 an (Altstand liest weiter)
+     ok      K-50: Fassung 3 weist 33 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+     ok      K-50: Fassung 4 nimmt 33 an
+     ok      K-50: Fassung 4 nimmt 64 an (SESSION_CLIENT_CAP)
+     ok      K-50: Fassung 4 weist 65 ab  [session finding exclusions exceed the limit of the incoming schema_minor]
+     ok      K-47: die aktive P1-Fassung steht im Register (wire_envelope_schema_minor.aktuell)  [C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\v3\reservierte-nachrichten-v1.json = 5]
+     ok      K-47: ein Rahmen der aktiven Fassung passiert den Leser  [Fassung 5]
+     ok      K-47 Gegenprobe nach oben: ein Rahmen der naechsten, unbekannten Fassung faellt am Leser  [Fassung 6]
+     ok      K-47: die C++-Fassungszahl steht auf der aktiven Registerfassung (A5 haelt denselben Text)  [kJsonSchemaMinor = 5, Register = 5]
+     ok      M-82: score 0 ist gueltig
+     ok      M-82: score 1 ebenso
+     ok      M-82: knapp darueber faellt
+     ok      M-82: knapp darunter ebenso
+     ok      M-82: und ein String ist keine Zahl
+     ok      Fassungsleiter: ein Leser der Fassung 2 lehnt `findings` ab  [session_snapshot has an unexpected or missing field]
+     ok      Abwesenheit heisst `diese Sitzung fuehrt keine Befunde`
+     ok      und die Liste bleibt leer, nicht null
+     ok      Vorbedingung: ein Befund liegt vor
+     ok      Sitzungswechsel: die Befunde der alten Sitzung sind fort - ihre Evidenz-IDs zeigten sonst ins Leere
+     ok      M-36: der Maskierungswert kommt am Befund an
+     ok      M-36: er benennt einen Frequenzbereich des bestehenden Gitters
+     ok      M-36: und die beiden Quellen, zwischen denen er gilt
+     ok      M-37: `gueltig` und `herabgesetzt` sind zwei eigene Bits
+     ok      M-36: Abwesenheit heisst `dieser Befund traegt keinen`
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-36: ein vertragswidriger Maskierungswert faellt  [session finding masking value is invalid]
+     ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding masking value is invalid]
+     ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+     ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+     ok      M-38/M-39/M-80: eine Zeichenanweisung faellt am Vertrag  [session finding has an unexpected or missing field]
+     ok      NAK-214 V-23: Vorbedingung - zwei offene Befunde, einer handelbar
+     ok      NAK-214 V-23: controlEnde macht JEDEN Befund stale - die Liste bleibt
+     ok      NAK-214 V-23: und nullt den Zaehler (R8)
+     ok      NAK-214 V-26: der Folge-Snapshot hebt den stale-Zustand auf
+     ok      NAK-214 V-28: ein fremder Snapshot laesst die Befunde stehen  [session member address does not match the subscribed session]
+     ok      NAK-214 V-29: Vorbedingung - die Sicht fuehrt keine Befunde
+     ok      NAK-214 V-29: controlEnde ohne Befunde ist folgenlos
+   SONDE-014 Befund und Maskierung: 81/81 gruen

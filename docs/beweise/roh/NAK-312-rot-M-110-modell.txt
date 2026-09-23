@@ -1,0 +1,55 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-110-modell.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-110 (E-312-26), Modellhaelfte, Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110-B14.txt). Dieselbe Mutation traegt die Zeilenhaelfte von 312/M-120.
+Zusage: nach setzeBindung (sensor) 0 Zeilen und keine Subscription, ein verspaeteter Snapshot traegt nichts ein.
+Bein: B14 EqCopSonde012ProjectReloadTest.
+Mutation nach dem Bau (§46.2): die Stilllegung auslassen.
+Erwartetes Rot: die Snapshot-Eintraege bleiben Zeilen, auch in Legacy.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:11:19) ==
+212A1DBF74123BC1D474FE1FAA1F98FC25A05765CB8F5F5A084C4EA41C05CA09  eq-copilot/plugin/src/SourcesModel.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-SourcesModel.cpp-041119
+
+== 2. Mutation (2026-09-23 04:11:19) ==
+Datei eq-copilot/plugin/src/SourcesModel.cpp, ab Zeile 425
+-- vorher:
+   |     if (stilllegen)
+   |         legeLiveSichtStill();
+-- nachher:
+   |     // (Rotbeweis: die Stilllegung ist ausgelassen)
+SHA-256 mutiert: B911A771EDFBE9F165A6FFB2F520D336B18B9789B61E26280731EA639403E2ED
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:11:19) ==
+Bau Exit 0 (2026-09-23 04:11:19 bis 2026-09-23 04:11:26), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 04:11:25.950, Quelle SourcesModel.cpp 04:11:19.235, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:11:34); Zeilen mit ok: 246; Zeilen mit FEHLER/ROT: 3
+     FEHLER  312/M-110 (Modellhaelfte) legacy_legt_die_live_sicht_still (E-312-26): vor dem Wechsel 5 Zeilen aus einem echten Snapshot, nach sensor 0 Zeilen und keine Subscription, ein verspaeteter Snapshot der alten Sitzung traegt nichts ein  [5 vorher, 5 in Legacy, 5 nach dem verspaeteten Snapshot]
+     FEHLER  312/M-110 (Modellhaelfte): nach der Rueckkehr zu hub stehen genau die drei Mitglieder als Zeilen  [5 Zeilen]
+     FEHLER  312/M-120 ausstehender_beitritt_ueberlebt_den_rollenwechsel (E-312-23): das nach dem Wechsel eintreffende ACK wirkt genau einmal auf den ruhenden Bestand - X ist Mitglied, genau 1 Host-Dirty, in Legacy keine Zeile  [X im Bestand, Host-Dirty 1, Zeilen in Legacy 2]
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 246/249 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-110 \(Modellhaelfte\)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:11:34) ==
+212A1DBF74123BC1D474FE1FAA1F98FC25A05765CB8F5F5A084C4EA41C05CA09  eq-copilot/plugin/src/SourcesModel.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:11:34
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:11:34) ==
+Bau Exit 0 (2026-09-23 04:11:34 bis 2026-09-23 04:11:39), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 04:11:39.224, Quelle SourcesModel.cpp 04:11:34.705, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:11:47); Zeilen mit ok: 249; Zeilen mit FEHLER/ROT: 0
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 249/249 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

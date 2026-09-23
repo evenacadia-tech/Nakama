@@ -1,0 +1,53 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-120.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-120 (E-312-23), Etikett heute rot (Gegenprobe: docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-120.txt); die Zeilenhaelfte traegt docs/beweise/roh/NAK-312-rot-M-110-modell.txt.
+Zusage: das nach dem Wechsel eintreffende ACK wirkt genau einmal auf den ruhenden Bestand.
+Bein: B14.
+Mutation an der Zusagezeile (§46.2): die Klassenbedingung wieder auf main beschraenken.
+Erwartetes Rot: X fehlt, 0 Host-Dirty.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:14:18) ==
+02203AB9DE71296EE5F83B9B639645A14030057D1B412650ECE7CA09B02701D2  eq-copilot/plugin/src/prozessor/Ipc.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-Ipc.cpp-041418
+
+== 2. Mutation (2026-09-23 04:14:18) ==
+Datei eq-copilot/plugin/src/prozessor/Ipc.cpp, ab Zeile 1428
+-- vorher:
+   |         || (klasse != nakama::state::Klasse::main && klasse != nakama::state::Klasse::legacy)
+-- nachher:
+   |         || klasse != nakama::state::Klasse::main   // (Rotbeweis: wieder nur main)
+SHA-256 mutiert: 1D9BD725A6B2EF8705011334944C277E59C37AA10197CD0671EEB80C9463E522
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:14:18) ==
+Bau Exit 0 (2026-09-23 04:14:18 bis 2026-09-23 04:14:24), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 04:14:24.496, Quelle Ipc.cpp 04:14:18.877, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:14:33); Zeilen mit ok: 247; Zeilen mit FEHLER/ROT: 2
+     FEHLER  312/M-120 ausstehender_beitritt_ueberlebt_den_rollenwechsel (E-312-23): das nach dem Wechsel eintreffende ACK wirkt genau einmal auf den ruhenden Bestand - X ist Mitglied, genau 1 Host-Dirty, in Legacy keine Zeile  [X FEHLT, Host-Dirty 0, Zeilen in Legacy 0]
+     FEHLER  312/M-120: ein vom Broker endgueltig abgewiesener Befehl aendert nichts, und nach der Rueckkehr zu hub ist X eine Zeile als bestaetigtes Mitglied  [Y nicht im Bestand, X nach hub KEINE Zeile]
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 247/249 gruen
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-120 ausstehender'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:14:33) ==
+02203AB9DE71296EE5F83B9B639645A14030057D1B412650ECE7CA09B02701D2  eq-copilot/plugin/src/prozessor/Ipc.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:14:33
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:14:33) ==
+Bau Exit 0 (2026-09-23 04:14:33 bis 2026-09-23 04:14:38), Ziele: EqCopSonde012ProjectReloadTest
+Binary EqCopSonde012ProjectReloadTest.exe 04:14:38.782, Quelle Ipc.cpp 04:14:33.131, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:14:47); Zeilen mit ok: 249; Zeilen mit FEHLER/ROT: 0
+     ok      reload_preserves_identity_label_membership_but_not_live_truth  [0]
+     ok      project_reload_reconnect_path_builds_a_fresh_subscribe
+     ok      main_client_subscribes_after_welcome_and_reconnect_resubscribes
+     ok      nonleading_main_disables_label_and_reports_failed_write
+     ok      persistent_only_member_remove_needs_no_runtime_nonce_and_marks_host_dirty_once  [1]
+     ok      intent_change_marks_host_dirty_once_and_noop_or_rejected_stays_silent  [5]
+     ok      intent_survives_project_recall_and_load_marks_no_dirty  [0]
+   SONDE-012 ProjectReload: 249/249 gruen
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

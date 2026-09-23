@@ -428,6 +428,11 @@
       "datei": "schema2/main-binding-v1.bin",
       "sha256": "c77ecec2a3a5fe87a0377128d9cf6b374d3866f7656c4d1d48e59bbde24b2f21",
       "bytes": 256
+    },
+    {
+      "datei": "schema2/legacy-retained-v1.bin",
+      "sha256": "86e082cc8fef4d28cdf8038e67b5db5be8469aa074cba50f1e4f4b392a56a557",
+      "bytes": 2397
     }
   ],
   "referenz": {

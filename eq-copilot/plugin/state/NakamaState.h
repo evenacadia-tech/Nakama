@@ -15,6 +15,12 @@
          einem bekannten Kind desselben Majors wird gehalten und zurueck-
          geschrieben (§33.5 "additive bekannte Felder bleiben erhalten").
 
+    Seit NAK-312 Etappe 7b (U49, Weg Z-A, E-312-20) ruht der Bestand des
+    Hauptprogramms in `legacy` im Kind `RetainedMainProject` (Vertrag §2.0b):
+    dieselben sieben Eigenschaften wie `MainProject`, beim Klassenwechsel
+    wandert der gehaltene Knoten samt unbekannter Eigenschaften mit. Root
+    bleibt Schema 2.
+
     Keine `JucePlugin_*`-Konstante, nur juce_core + juce_data_structures -
     S8 (gemeinsamer Kern) kann das unveraendert uebernehmen. Nicht fuer den
     Audiothread.
@@ -447,6 +453,14 @@ struct Zustand
         Build nicht kennt - sie werden beim Speichern zurueckgeschrieben. */
     juce::ValueTree baum;
     Common common;
+
+    /*  NAK-312 Etappe 7b (U49): die sieben Bestaende des Hauptprogramms -
+        Mitglieder, Passagen, Intents, Schutzangaben, Beziehungen, Revision,
+        Assistent. In `main` wirken sie (Kind `MainProject`), in `legacy`
+        RUHEN sie (Kind `RetainedMainProject`, Vertrag §2.0b): gehalten,
+        gespeichert und geladen, aber kein Handgriff wirkt an ihnen, und das
+        Quellenmodell zeigt sie nicht. Geloescht wird nur durch einen
+        ausdruecklichen Handgriff, nie durch den Rollenwechsel. */
     std::vector<MainProjectMitglied> mainProjectMitglieder;
     std::vector<ManuellePassage>     manuellePassagen;
 

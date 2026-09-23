@@ -1,0 +1,78 @@
+# NAK-312 Etappe 7b, Satz 3: clang-tidy-Teilmessung (04:18:20), HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df, Arbeitsbaum mit dem Satz-3-Stand
+
+== tidy --nur state/NakamaState Exit 0
+ACHTUNG: TEILMESSUNG (--nur state/NakamaState) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+clang-tidy-Fundstellen (plugin)  19   0     58      ZIEL  
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Fundstellen je Check:
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/state/NakamaState.cpp:91:35 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+  eq-copilot/plugin/state/NakamaState.cpp:340:16 [performance-unnecessary-copy-initialization] the const qualified variable 'v' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:685:9 [bugprone-branch-clone] switch has 3 consecutive identical branches
+  eq-copilot/plugin/state/NakamaState.cpp:1207:29 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'size_t' (aka 'unsigned long long') of a multiplication performed in type 'int'
+  eq-copilot/plugin/state/NakamaState.cpp:1414:20 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1532:24 [performance-unnecessary-copy-initialization] the const qualified variable 'w' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1589:16 [performance-unnecessary-copy-initialization] the const qualified variable 'id' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1593:16 [performance-unnecessary-copy-initialization] the const qualified variable 'kindWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1598:16 [performance-unnecessary-copy-initialization] the const qualified variable 'posWort' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1612:16 [performance-unnecessary-copy-initialization] the const qualified variable 'label' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1615:16 [performance-unnecessary-copy-initialization] the const qualified variable 'pair' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1621:16 [performance-unnecessary-copy-initialization] the const qualified variable 'binding' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1669:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1716:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1783:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1864:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1923:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:1973:24 [performance-unnecessary-copy-initialization] the const qualified variable 'wert' is copy-constructed from a const reference; consider making it a const reference
+  eq-copilot/plugin/state/NakamaState.cpp:2773:9 [bugprone-branch-clone] switch has 2 consecutive identical branches
+URTEIL: TEILMESSUNG - 19 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+== tidy --nur prozessor/State Exit 0
+ACHTUNG: TEILMESSUNG (--nur prozessor/State) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+clang-tidy-Fundstellen (plugin)  14   0     58      ZIEL  
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Fundstellen je Check:
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1113:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:393:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:394:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:395:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:397:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:399:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:401:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:265:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:268:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+URTEIL: TEILMESSUNG - 14 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+== tidy --nur prozessor/Ipc Exit 0
+ACHTUNG: TEILMESSUNG (--nur prozessor/Ipc) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+clang-tidy-Fundstellen (plugin)  14   0     58      ZIEL  
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Fundstellen je Check:
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/core/analysis/FeatureEngine.h:1113:25 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:93:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h:94:58 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:393:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:394:44 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:395:56 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:397:36 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:399:32 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:401:39 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:98:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:101:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/Fft.h:102:43 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:265:28 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+  eq-copilot/plugin/core/analysis/TruePeak.h:268:23 [bugprone-misplaced-widening-cast] either cast from 'int' to 'std::size_t' (aka 'unsigned long long') is ineffective, or there is loss of precision before the conversion
+URTEIL: TEILMESSUNG - 14 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil
+== tidy --nur src/SourcesModel Exit 0
+ACHTUNG: TEILMESSUNG (--nur src/SourcesModel) - kein Ratschenurteil, die Zahl ist nicht mit der Grenze vergleichbar
+clang-tidy-Fundstellen (plugin)  1    0     58      ZIEL  
+Uebersetzungseinheiten: 1 (eq-copilot/plugin ohne tests/, vertrag/generiert/), davon fehlerfrei geparst: 1
+Fundstellen je Check:
+Fundstellen (eindeutig ueber Datei, Zeile, Spalte, Check):
+  eq-copilot/plugin/vertrag/NakamaVertrag.h:29:45 [bugprone-implicit-widening-of-multiplication-result] performing an implicit widening conversion to type 'const size_t' (aka 'const unsigned long long') of a multiplication performed in type 'unsigned int'
+URTEIL: TEILMESSUNG - 1 Fundstelle(n) in den gewaehlten Einheiten, kein Ratschenurteil

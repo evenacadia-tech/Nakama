@@ -370,7 +370,8 @@ bool vorInAnzeige (const SourcesModel::Zeile& a, const SourcesModel::Zeile& b,
 SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
     const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
     std::uint64_t generation,
-    std::uint64_t folge)
+    std::uint64_t folge,
+    nakama::state::Klasse klasse)
 {
     std::map<std::string, juce::String> neu;
     for (const auto& m : mitglieder)
@@ -414,8 +415,21 @@ SourcesModel::Publikation SourcesModel::setzePersistenteMitglieder (
     // zum leeren Modell, seine Nummer bliebe unverbraucht, und die angehaltene
     // Kopie `[A]` kaeme danach mit einer GROESSEREN Nummer wieder durch.
     zuletztUebernommeneFolge = folge;
+    // 🔑 NAK-312 Etappe 7b (E-312-26, M-110): in `legacy` ruht der Bestand, und
+    // die Live-Sicht wird HIER stillgelegt - nach Generations- und
+    // Folgevergleich, vor dem Inhaltsvergleich. Die leere Kopie allein leerte
+    // die Sicht nicht: jeder Snapshot-Eintrag blieb als unklassifizierte Zeile
+    // stehen, und in `legacy` ersetzt ihn kein Snapshot, weil nicht neu
+    // abonniert wird.
+    const bool stilllegen = klasse != nakama::state::Klasse::main;
+    if (stilllegen)
+        legeLiveSichtStill();
     if (neu == persistenteMitglieder)
+    {
+        if (stilllegen)
+            revidiere();
         return Publikation::uebernommen;  // Publikation fand statt, ohne Aenderung.
+    }
     persistenteMitglieder = std::move (neu);
     const auto klassifiziere = [this] (Eintrag& e)
     {
@@ -548,6 +562,28 @@ void SourcesModel::projektReload (
     sitzungszustandLeeren();
     stelleZielSicher();
     revidiere();
+}
+
+void SourcesModel::legeLiveSichtStill()
+{
+    // Muster `projektReload`: ohne Erwartung kehrt ein verspaeteter Snapshot
+    // des alten Links als `ignoriert` zurueck, ein P2-Frame findet keinen
+    // Eintrag. Die Sitzung ist fuer diese Instanz vorbei; nach der Rueckkehr
+    // zu `main` beginnt eine neue (`beginneSubscription`).
+    eintraege.clear();
+    nichtAngenommene.clear();
+    nichtAngenommenZahl = 0;
+    hauptziel.clear();
+    subscriptionAktiv = false;
+    erwarteteBindung.clear();
+    erwarteteSession.clear();
+    eigeneMainId.clear();
+    brokerEpoch.clear();
+    fuehrendesMain.clear();
+    diagnose = Diagnose::brokerUnavailable;
+    diagnoseHatHandgriff = true;
+    sichtZeit = {};
+    sitzungszustandLeeren();
 }
 
 void SourcesModel::sitzungszustandLeeren()

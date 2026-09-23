@@ -244,6 +244,22 @@ Vertrag `eq-copilot/schemas/state/nakama-state-v2.md`; Code `plugin/state/`
   `Parameters{schema=1}` nur für `active_probe` (109 Werte); `Dsp`/`Pairing`
   sind reservierte Namen (SONDE-015/016). Kind-Matrix und Bundle-Klassenmenge
   (`Bundle::eqcp()` = {main, legacy}) werden beim Laden erzwungen.
+- **Ruhender Bestand (NAK-312 Etappe 7b, U49, Weg Z-A):** in `legacy` ruhen
+  die sieben Bestände des Hauptprogramms — Mitglieder samt Labels, Passagen,
+  Intents mit Revision, Schutzangaben, Beziehungen, Assistent — im Kind
+  `RetainedMainProject{schema=1}`, mit denselben Eigenschaften, Formen und
+  Deckeln wie `MainProject` (Vertrag §2.0b; Kind-Matrix: nur `legacy`,
+  optional). Geschrieben wird es nur, wenn der Bestand etwas trägt oder der
+  gehaltene Knoten etwas Unbekanntes trägt (Regel von `Dsp`); beim
+  Klassenwechsel wandert der gehaltene Knoten samt unbekannter Eigenschaften an
+  dieselbe Stelle im Baum (`bestandsknotenFuer`, `schreibeBestand` in
+  `NakamaState.cpp`), so bleibt `speichere (lade (x)) == x`. Der Leser liest
+  die sieben in `main` aus `MainProject` und in `legacy` aus dem Bestandskind,
+  mit denselben Regeln; jeder Verstoß ist read-only, der Grund nennt das Kind.
+  Ein Build vor 7b hält einen Stand mit Bestandskind read-only mit
+  Originalbytes („unknown child RetainedMainProject", Vorstandslauf
+  `docs/beweise/roh/NAK-312-etappe7b-vorstandsleser.txt`). Writer-Golden
+  `fixtures/state/schema2/legacy-retained-v1.bin`; Root bleibt Schema 2.
 - **Laden** (`setStateInformation`): `EqCopilotState{schema=1}` wird **rein
   migriert** (`hub→main+insert`, `sensor|pre|post→legacy+…`, `sensor_id`
   bytegleich, nichts erfunden; Goldens `fixtures/state/schema2/`); Schema 2
@@ -298,6 +314,21 @@ immer zuerst, prüft vor einem Spawn Installer-Hash und gegebenenfalls
 Authenticode und startet verborgen. Der Automat ist **nicht** Teil des States:
 eine mitgespeicherte Klassifikation wäre eine zweite Wahrheit neben
 `plugin_kind`.
+
+🔑 **Der Rollenwechsel erhält den Bestand (NAK-312 Etappe 7b, U49).**
+`setzeBindung` leert beim Wechsel weg von `main` nichts mehr; die sieben
+Bestände ruhen in `legacy` (§1.4b) und wirken dort nicht — die Handgriffe am
+Bestand verweigern wie bisher. Das Quellenmodell sieht den Bestand nur in
+`main`: jede Publikation trägt die Klasse, gelesen im selben
+`bindungMutex`-Block wie Kopie, Generation und Folgenummer, und in `legacy`
+ist die Live-Sicht stillgelegt (E-312-26: Einträge, wartende Sonden,
+Hauptziel, Subscription, erwartete Bindung und Sitzung und der
+Sitzungszustand fallen, Muster `projektReload`). Nach der Rückkehr vergibt die
+Annahmegrenze die Plätze neu, zuerst an die gespeicherten Mitglieder —
+dieselben Zeilen wie nach einem Neuladen. Ein nach dem Wechsel quittierter
+Befehl wirkt auf den ruhenden Bestand (E-312-23). Der Hörmarkierungsauftrag
+gehört nicht zum Bestand: E-312-8 nimmt ihn beim Klassifikationswechsel weiter
+zurück.
 - **Parameterbestand** (`schemas/state/nakama-parameter-v1.json`, C++-Tabelle
   `NakamaParameter.cpp`, deckungsgleich gemessen): 5 global + 8×13 = 109 IDs
   `v1.global.*` / `v1.band.<slot>.*`; heute trägt **kein** Bundle Hostparameter

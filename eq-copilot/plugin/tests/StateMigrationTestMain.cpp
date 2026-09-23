@@ -15,8 +15,17 @@
 // am Basis-SHA der Etappe ueber den unveraenderten Sondenprozessor): sie
 // passen zu ihrer Zeile im Golden, laden normal und kommen bytegleich zurueck.
 //
+// Seit NAK-312 Etappe 7b (U49, 312/M-110 bis 312/M-121, Weg Z-A) misst das
+// Bein den ruhenden Bestand des Hauptprogramms: die sieben Bestaende
+// ueberstehen hub, sensor, hub live und ueber Speichern und Laden gleich, im
+// Kind RetainedMainProject (Writer-Golden legacy-retained-v1.bin); unbekannte
+// Eigenschaften wandern mit, jedes unzulaessige Bestandskind ist read-only mit
+// Originalbytes, und je Wechsel meldet der Prozessor genau ein Host-Dirty.
+//
 //   EqCopStateMigrationTest.exe                    misst
 //   EqCopStateMigrationTest.exe --schreibe-goldens schreibt fixtures/state/schema2/*.bin
+//   EqCopStateMigrationTest.exe --lade-bericht <datei>
+//                                                  liest nur diese Datei (Vorstandslauf, 312/M-114)
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_cryptography/juce_cryptography.h>
@@ -38,6 +47,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <tuple>
 
 using namespace eqcop;
 namespace kanon = nakama::kanon;
@@ -379,6 +389,256 @@ juce::MemoryBlock baumMitGesamteintraegen (int gesamt)
     return b;
 }
 
+
+/*  NAK-312 Etappe 7b, Satz 3 (T3-02-06, U49; Manifest docs/beweise/NAK-312.md
+    §46.2, M-110 bis M-121; Weg Z-A, E-312-20): der Bestand des Hauptprogramms
+    ueber die PRODUKT-API am echten Prozessor.
+
+    Ein Saatstand mit festen Kennungen (Main, Bindung) kommt ueber den Leser in
+    den Prozessor - so ist jeder Lauf deterministisch und das Writer-Golden
+    wiederholbar. Danach fuellen die Handgriffe des Produkts die sieben
+    Bestaende an ihren Raendern: drei bestaetigte Quellen ueber quittierte
+    confirm_join, Labels mit 120 Codepoints ausserhalb der BMP und leer, zwei
+    Passagen bis an den int64-Rand und mit leerem Label, drei Intents in zwei
+    Scopes mit Konfidenz 1, 0,5 und 0, zwei Schutzangaben (Attack und das volle
+    Bandintervall [0, 221)), eine gerichtete und eine gleichrangige Beziehung,
+    ein Assistentenschritt. */
+namespace ruhend
+{
+const juce::String kSaatId      ("5eed0000000000000000000000000001");
+const juce::String kSaatBindung ("b1d00000000000000000000000000001");
+const juce::String kQuelleA     ("a0000000000000000000000000000001");
+const juce::String kQuelleB     ("b0000000000000000000000000000002");
+const juce::String kQuelleC     ("c0000000000000000000000000000003");
+const juce::String kPassage1    ("d0000000000000000000000000000001");
+const juce::String kPassage2    ("d0000000000000000000000000000002");
+const juce::String kSchritt     ("e0000000000000000000000000000001");
+
+juce::String zeichen120()
+{
+    juce::String s;
+    for (int i = 0; i < 120; ++i)
+        s += juce::String::charToString (static_cast<juce::juce_wchar> (0x1F3B5));
+    return s;
+}
+
+std::string ackAngewandt (const std::string& commandId)
+{
+    return std::string (R"({"type":"command_ack","command_id":")") + commandId
+         + R"(","ergebnis":"angewandt","state_revision":1,"state_hash":")"
+         + std::string (64, 'e') + R"("})";
+}
+
+/// Die sieben Bestaende des Hauptprogramms (`NakamaState.h`, `Zustand`).
+struct Bestand
+{
+    std::vector<state::MainProjectMitglied> mitglieder;
+    std::vector<state::ManuellePassage>     passagen;
+    std::vector<state::SourceIntent>        intents;
+    std::vector<state::Schutzangabe>        schutz;
+    std::vector<state::IntentBeziehung>     beziehungen;
+    juce::int64                             revision = 0;
+    state::Assistentenzustand               assistent;
+
+    bool operator== (const Bestand& b) const
+    {
+        const auto& x = assistent;
+        const auto& y = b.assistent;
+        return mitglieder == b.mitglieder && passagen == b.passagen && intents == b.intents
+            && schutz == b.schutz && beziehungen == b.beziehungen && revision == b.revision
+            && x.gesetzt == y.gesetzt && x.stepId == y.stepId && x.schritt == y.schritt
+            && x.revision == y.revision && x.offen == y.offen && x.findingId == y.findingId
+            && x.proposalId == y.proposalId && x.experimentId == y.experimentId
+            && x.ergebnis == y.ergebnis;
+    }
+    bool leer() const { return *this == Bestand {}; }
+};
+
+Bestand bestandAus (const state::Zustand& z)
+{
+    return { z.mainProjectMitglieder, z.manuellePassagen, z.sourceIntents, z.schutzangaben,
+             z.intentBeziehungen, z.intentBestandRevision, z.assistent };
+}
+
+juce::String text (const Bestand& b)
+{
+    return juce::String ((int) b.mitglieder.size()) + " Mitglieder, "
+         + juce::String ((int) b.passagen.size()) + " Passagen, "
+         + juce::String ((int) b.intents.size()) + " Intents, "
+         + juce::String ((int) b.schutz.size()) + " Schutzangaben, "
+         + juce::String ((int) b.beziehungen.size()) + " Beziehungen, Revision "
+         + juce::String (b.revision) + ", Assistent "
+         + (b.assistent.gesetzt ? juce::String (state::wort (b.assistent.schritt)) : juce::String ("-"));
+}
+
+/// Der Saatstand: ein Main mit festen Kennungen, geschrieben von `speichere`.
+juce::MemoryBlock saatMain()
+{
+    auto z = state::frisch (kSaatId);
+    z.common.klasse = state::Klasse::main;
+    z.common.position = state::Messposition::insert;
+    z.common.label = "Leitstand";
+    z.common.projectBindingId = kSaatBindung;
+    juce::MemoryBlock b;
+    state::speichere (z, b);
+    return b;
+}
+
+/// Aufbau RW (§46.2): der Saatstand und die sieben Bestaende ueber die
+/// Handgriffe des Produkts. `true`, wenn jeder Handgriff angenommen wurde.
+bool fuelleHauptprogramm (EqCopilotProcessor& p)
+{
+    const auto saat = saatMain();
+    p.setzeWorkerDrainFuerTest (false);   // der Tick ist der einzige Drain
+    p.setStateInformation (saat.getData(), (int) saat.getSize());
+    p.setzeEditorOffen (true);
+    bool ok = ! p.stateNurLesen() && p.holeRolle() == "hub";
+    using Art = EqCopilotProcessor::SourcesCommandArt;
+    for (const auto* id : { &kQuelleA, &kQuelleB, &kQuelleC })
+        p.v3AntwortFuerTest (ackAngewandt (p.merkeSourcesCommandFuerTest (Art::confirmJoin, id->toStdString())));
+    p.sourcesTick();
+    ok = ok && p.holeZustandKopie().mainProjectMitglieder.size() == 3;
+
+    // Die Labels ueber den Benennen-Handgriff: er schreibt nur auf das
+    // Hauptziel einer schreibenden Main-Sicht.
+    SourcesModel::Sicht s;
+    s.subscriptionAktiv = true;
+    s.fuehrendesMain = std::string (32, 'f');
+    s.mainDarfSchreiben = true;
+    for (const auto* id : { &kQuelleA, &kQuelleB, &kQuelleC })
+    {
+        SourcesModel::Zeile q;
+        q.instanceId = id->toStdString();
+        q.mitgliedschaft = SourcesModel::Mitgliedschaft::bestaetigt;
+        q.control = SourcesModel::Control::getrennt;
+        q.hauptziel = id == &kQuelleA;
+        s.quellen.push_back (q);
+    }
+    p.setzeSourcesFixtureFuerTest (std::move (s));
+    ok = ok && p.benenneSourcesHauptziel (kQuelleA.toStdString(), zeichen120());
+    ok = ok && p.waehleSourcesHauptziel (kQuelleB.toStdString())
+            && p.benenneSourcesHauptziel (kQuelleB.toStdString(), {});
+
+    ok = ok && p.merkeManuellePassage (kPassage1, zeichen120(), 0, std::numeric_limits<juce::int64>::max());
+    ok = ok && p.merkeManuellePassage (kPassage2, {}, 1000, 2000);
+    ok = ok && p.setzeQuellenrolle (kQuelleA, {}, state::Rolle::fuehrt, state::IntentHerkunft::user, 1.0);
+    ok = ok && p.setzeQuellenrolle (kQuelleA, kPassage1, state::Rolle::begleitet, state::IntentHerkunft::vorlage, 0.5);
+    ok = ok && p.setzeQuellenrolle (kQuelleB, {}, state::Rolle::verschmolzen, state::IntentHerkunft::abgeleitet, 0.0);
+    ok = ok && p.schuetzeQuelle (kQuelleA, state::Schutzeigenschaft::attack, -1, -1);
+    ok = ok && p.schuetzeQuelle (kQuelleB, state::Schutzeigenschaft::band, 0, state::bandAnzahlEvidenzgitter);
+    ok = ok && p.setzeQuellenbeziehung (kQuelleA, kQuelleB, state::Beziehungsart::fuehrtVor);
+    ok = ok && p.speichereQuellenGleichrangigkeit (kQuelleB, kQuelleA);
+    ok = ok && p.assistentStarten (kSchritt);
+    ok = ok && p.assistentWeiter (state::Assistentenschritt::finding);
+    return ok;
+}
+
+/// Eine unbekannte additive Eigenschaft in `MainProject` (Muster `312/M-76`),
+/// gesetzt ueber Speichern, Baum und Laden - so, wie ein kuenftiger Build sie
+/// hinterliesse. `common` legt dieselbe Art Eigenschaft in `Common`.
+bool setzeZukunftsfeld (EqCopilotProcessor& p, bool common)
+{
+    juce::MemoryBlock b;
+    p.getStateInformation (b);
+    auto baum = juce::ValueTree::readFromData (b.getData(), b.getSize());
+    baum.getChildWithName ("MainProject").setProperty ("nak312_zukunft_v9", "reist mit dem Bestand", nullptr);
+    if (common)
+        baum.getChildWithName ("Common").setProperty ("nak312_common_zukunft_v9", 7, nullptr);
+    const auto neu = alsBlock (baum);
+    p.setStateInformation (neu.getData(), (int) neu.getSize());
+    return ! p.stateNurLesen();
+}
+
+/// Die Namen der Kinder eines gespeicherten Standes, in ihrer Reihenfolge.
+juce::String kinder (const juce::MemoryBlock& b)
+{
+    const auto v = juce::ValueTree::readFromData (b.getData(), b.getSize());
+    juce::StringArray namen;
+    for (int i = 0; i < v.getNumChildren(); ++i)
+        namen.add (v.getChild (i).getType().toString());
+    return namen.joinIntoString (",");
+}
+
+/// Der groesste Bestand, den der Vertrag zulaesst (Deckel `NakamaState.h`):
+/// 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP,
+/// je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand,
+/// Assistent gesetzt - gebaut wie der Kandidat des Headroom-Riegels, damit die
+/// Zeile den Rand des Vertrags misst und nicht einen erfundenen.
+state::Zustand maximalerMain()
+{
+    auto z = state::frisch (kSaatId);
+    z.common.klasse = state::Klasse::main;
+    z.common.position = state::Messposition::insert;
+    z.common.label = "Leitstand";
+    z.common.projectBindingId = kSaatBindung;
+    for (int i = 0; i < state::maxMainProjectMitglieder; ++i)
+        z.mainProjectMitglieder.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32), zeichen120() });
+    for (int i = 0; i < state::maxManuellePassagen; ++i)
+        z.manuellePassagen.push_back ({ juce::String::toHexString (0x100 + i).paddedLeft ('0', 32), zeichen120(),
+                                        std::numeric_limits<juce::int64>::max() - 2 - 2 * i,
+                                        std::numeric_limits<juce::int64>::max() - 1 - 2 * i });
+    for (int i = 0; i < state::maxSourceIntents; ++i)
+        z.sourceIntents.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+                                     juce::String::toHexString (i + 1).paddedLeft ('f', 32),
+                                     state::Rolle::verschmolzen, std::numeric_limits<juce::int64>::max(),
+                                     state::IntentHerkunft::abgeleitet, 1.0 });
+    for (int i = 0; i < state::maxSchutzangaben; ++i)
+        z.schutzangaben.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+                                     state::Schutzeigenschaft::band, 0, state::bandAnzahlEvidenzgitter });
+    for (int i = 0; i < state::maxIntentBeziehungen; ++i)
+        z.intentBeziehungen.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
+                                         juce::String::toHexString (i + 2).paddedLeft ('0', 32),
+                                         state::Beziehungsart::darfVerschmelzen });
+    z.intentBestandRevision = std::numeric_limits<juce::int64>::max();
+    z.assistent = { true, juce::String::toHexString (0xa55e5).paddedLeft ('0', 32),
+                    state::Assistentenschritt::verdict, std::numeric_limits<juce::int64>::max(), true,
+                    juce::String::toHexString (0xf1d6).paddedLeft ('0', 32),
+                    juce::String::toHexString (0x9005a1).paddedLeft ('0', 32),
+                    juce::String::toHexString (0xe89e21).paddedLeft ('0', 32),
+                    state::Assistentenergebnis::keineAenderungEmpfohlen };
+    return z;
+}
+} // namespace ruhend
+
+/*  NAK-312 Etappe 7b, Satz 3 (312/M-114): der Vorstandslauf. Mit
+    `--lade-bericht <datei>` liest das Bein nur diese Datei - ueber den Leser
+    (`state::lade`, Bundle eqcp) und ueber den Prozessor - und meldet Ergebnis,
+    Grund, die Rueckgabe der Originalbytes, die Verweigerung von setzeBindung
+    und neueSensorId und die Zahl der Host-Dirty-Meldungen. Gefahren gegen den
+    bytegleich zurueckgespielten Leser des Basis-SHA (Manifest §47.1). */
+int ladeBericht (const juce::File& datei)
+{
+    juce::MemoryBlock bytes;
+    if (! datei.existsAsFile() || ! datei.loadFileAsData (bytes) || bytes.getSize() == 0)
+    {
+        std::cout << "LADE-BERICHT: Datei fehlt oder ist leer: " << datei.getFullPathName() << std::endl;
+        return 3;
+    }
+    std::cout << "LADE-BERICHT " << datei.getFileName() << ", " << bytes.getSize() << " Bytes, SHA-256 "
+              << juce::SHA256 (bytes.getData(), bytes.getSize()).toHexString() << std::endl;
+    state::Zustand z;
+    const auto erg = state::lade (bytes.getData(), bytes.getSize(), state::Bundle::eqcp(), z);
+    juce::MemoryBlock zurueck;
+    state::speichere (z, zurueck);
+    std::cout << "  Leser: " << ladeErgebnisWort (erg) << ", nurLesen " << (z.nurLesen ? "ja" : "nein")
+              << ", Grund '" << z.grund << "', speichere liefert die Originalbytes "
+              << (gleich (zurueck, bytes) ? "bytegleich" : "NICHT bytegleich") << std::endl;
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+    juce::MemoryBlock heraus;
+    p->getStateInformation (heraus);
+    const bool bindung = p->setzeBindung ("hub", "Kaperung", "");
+    const bool kennung = p->neueSensorId();
+    p->removeListener (&dirty);
+    std::cout << "  Prozessor: nurLesen " << (p->stateNurLesen() ? "ja" : "nein") << ", Grund '"
+              << p->holeStateGrund() << "', getStateInformation "
+              << (gleich (heraus, bytes) ? "bytegleich" : "NICHT bytegleich") << ", setzeBindung "
+              << (bindung ? "ANGENOMMEN" : "verweigert") << ", neueSensorId "
+              << (kennung ? "ANGENOMMEN" : "verweigert") << ", Host-Dirty " << dirty.nonParam << std::endl;
+    return 0;
+}
 } // namespace
 
 // AudioProcessor-Instanzen werden auch vom Host auf dem Heap erzeugt. Das ist
@@ -393,6 +653,11 @@ int main (int argc, char* argv[])
     for (int i = 1; i < argc; ++i)
         if (juce::String (argv[i]) == "--schreibe-goldens")
             schreibeGoldens = true;
+    // NAK-312 Etappe 7b (312/M-114): der Vorstandslauf liest nur eine Datei.
+    for (int i = 1; i + 1 < argc; ++i)
+        if (juce::String (argv[i]) == "--lade-bericht")
+            return ladeBericht (juce::File::getCurrentWorkingDirectory()
+                                    .getChildFile (juce::String (argv[i + 1])));
 
     const auto vertragDatei   = finde ("eq-copilot/schemas/state/nakama-parameter-v2.json");
     const auto vertragV1Datei = finde ("eq-copilot/schemas/state/nakama-parameter-v1.json");
@@ -1188,6 +1453,57 @@ int main (int argc, char* argv[])
                 state::speichere (geladen, nochmal);
             pruefe (gelesen && gleich (platte, nochmal),
                     "M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich");
+        }
+
+        /*  NAK-312 Etappe 7b, Satz 3 (U49, E-312-20; M-111 bis M-115): das
+            Writer-Golden des ruhenden Bestands. Aufgebaut ueber die
+            PRODUKT-API am echten Prozessor (Pruefliste E "Writer-Fixtures
+            statt Handschrift"): ein Main mit allen sieben Bestaenden an ihren
+            Raendern und einer unbekannten additiven Eigenschaft im
+            MainProject, dann der Rollenwechsel zu `sensor`. Die Bytes schreibt
+            `getStateInformation` des Prozessors, also `speichere`; der Lauf
+            ohne `--schreibe-goldens` misst gegen die eingefrorene Datei. Die
+            Read-only-Faelle von M-115 in G9 und der zweite Weg von M-112 in
+            G13 sind deklarierte Mutanten genau dieser Datei. */
+        {
+            auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+            const bool gefuellt = ruhend::fuelleHauptprogramm (*p) && ruhend::setzeZukunftsfeld (*p, false);
+            const bool gewechselt = p->setzeBindung ("sensor", "Messpunkt", "paar-ruhend");
+            juce::MemoryBlock bytes;
+            p->getStateInformation (bytes);
+            const auto datei = goldenOrdner.getChildFile ("legacy-retained-v1.bin");
+            if (schreibeGoldens)
+            {
+                datei.replaceWithData (bytes.getData(), bytes.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock platte;
+            const bool gelesen = datei.existsAsFile() && datei.loadFileAsData (platte);
+            pruefe (gefuellt && gewechselt && gelesen && gleich (platte, bytes),
+                    "legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben "
+                    "Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)",
+                    juce::String ((int) bytes.getSize()) + " Bytes vom Writer, "
+                        + juce::String ((int) platte.getSize()) + " auf der Platte, Kinder "
+                        + ruhend::kinder (bytes));
+
+            // Der Leser dieses Builds am eingefrorenen Byte-Bild: legacy,
+            // schreibbar, der Bestand vollstaendig, und Speichern nach dem
+            // Laden ist bytegleich.
+            state::Zustand geladen;
+            const auto erg = gelesen ? state::lade (platte.getData(), platte.getSize(), state::Bundle::eqcp(), geladen)
+                                     : state::LadeErgebnis::ignoriert;
+            juce::MemoryBlock nochmal;
+            if (erg == state::LadeErgebnis::geladen)
+                state::speichere (geladen, nochmal);
+            const auto b = ruhend::bestandAus (geladen);
+            pruefe (erg == state::LadeErgebnis::geladen && ! geladen.nurLesen
+                        && geladen.common.klasse == state::Klasse::legacy
+                        && b.mitglieder.size() == 3 && b.passagen.size() == 2 && b.intents.size() == 3
+                        && b.schutz.size() == 2 && b.beziehungen.size() == 2 && b.revision == 7
+                        && b.assistent.gesetzt && gleich (platte, nochmal),
+                    "legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, "
+                    "Speichern nach dem Laden bytegleich",
+                    juce::String (ladeErgebnisWort (erg)) + ", " + ruhend::text (b) + ", Grund '" + geladen.grund + "'");
         }
 
         /*  SONDE-015 (M-89, M-90, M-93): zwei Writer-Goldens fuer das Kind
@@ -2277,6 +2593,148 @@ int main (int argc, char* argv[])
                     "additive Binaer- und Array-Properties bleiben bytegleich lesbar");
         }
 
+        /*  NAK-312 Etappe 7b, Satz 3 (312/M-115, Weg Z-A): die Kind-Matrix des
+            Bestandskinds. Jeder Fall ist ein deklarierter Mutant eines
+            Writer-Goldens mit genau EINER benannten Abweichung (Pruefliste E);
+            gelesen wird das Golden von der Platte. Jeder Fall bleibt
+            read-only mit den Originalbytes, aus SEINEM Grund - nicht aus dem
+            allgemeinen "unknown child" des Vorstands. */
+        {
+            const auto schema2 = fixtureOrdner.getChildFile ("schema2");
+            auto ladeBaum = [&schema2] (const char* name)
+            {
+                juce::MemoryBlock b;
+                schema2.getChildFile (name).loadFileAsData (b);
+                return juce::ValueTree::readFromData (b.getData(), b.getSize());
+            };
+            const auto golden = ladeBaum ("legacy-retained-v1.bin");
+            const auto bestandskind = golden.getChildWithName ("RetainedMainProject");
+            struct Mutant { juce::String name; juce::ValueTree baum; state::Bundle bundle; juce::String grund; bool prozessor; };
+            // Ohne Golden (am Basisstand) ist die Liste leer statt ein Nullzeiger:
+            // der Block meldet dann rot, statt abzustuerzen.
+            auto mitglieder = [] (const juce::ValueTree& r)
+            {
+                const auto* a = r.getProperty ("confirmed_members_v1").getArray();
+                return a != nullptr ? *a : juce::Array<juce::var>();
+            };
+            std::vector<Mutant> mutanten;
+            {
+                auto v = ladeBaum ("main-intent-v1.bin");
+                v.appendChild (bestandskind.createCopy(), nullptr);
+                mutanten.push_back ({ "main-intent-v1.bin + Bestandskind (in main neben MainProject)", v,
+                                      state::Bundle::eqcp(), "RetainedMainProject is not allowed for main", true });
+            }
+            {
+                auto v = ladeBaum ("dsp-v2-voll.bin");
+                v.appendChild (bestandskind.createCopy(), nullptr);
+                mutanten.push_back ({ "dsp-v2-voll.bin + Bestandskind (in active_probe)", v,
+                                      state::Bundle::nkac(), "RetainedMainProject is not allowed for active_probe", false });
+            }
+            {
+                auto v = golden.createCopy();
+                v.getChildWithName ("Common").setProperty ("plugin_kind", "passive_probe", nullptr);
+                mutanten.push_back ({ "Golden mit plugin_kind passive_probe", v,
+                                      state::Bundle::nkpr(), "RetainedMainProject is not allowed for passive_probe", false });
+            }
+            {
+                auto v = golden.createCopy();
+                v.appendChild (v.getChildWithName ("RetainedMainProject").createCopy(), nullptr);
+                mutanten.push_back ({ "Golden mit doppeltem Bestandskind", v, state::Bundle::eqcp(), "duplicated child", true });
+            }
+            {
+                auto v = golden.createCopy();
+                v.getChildWithName ("RetainedMainProject").setProperty ("schema", 2, nullptr);
+                mutanten.push_back ({ "Golden mit Bestandskind schema 2", v, state::Bundle::eqcp(),
+                                      "RetainedMainProject schema is unknown", true });
+            }
+            {
+                auto v = golden.createCopy();
+                auto r = v.getChildWithName ("RetainedMainProject");
+                auto liste = mitglieder (r);
+                liste.add ("f0000000000000000000000000000001");
+                r.setProperty ("confirmed_members_v1", juce::var (liste), nullptr);
+                mutanten.push_back ({ "Golden mit ungerader confirmed_members_v1", v, state::Bundle::eqcp(),
+                                      "RetainedMainProject.confirmed_members_v1 must be an even array", true });
+            }
+            {
+                auto v = golden.createCopy();
+                auto r = v.getChildWithName ("RetainedMainProject");
+                auto liste = mitglieder (r);
+                liste.set (2, liste[0]);
+                r.setProperty ("confirmed_members_v1", juce::var (liste), nullptr);
+                mutanten.push_back ({ "Golden mit doppelter instance_id im Bestandskind", v, state::Bundle::eqcp(),
+                                      "RetainedMainProject.confirmed_members_v1 contains a duplicate instance_id", true });
+            }
+            {
+                auto v = golden.createCopy();
+                auto r = v.getChildWithName ("RetainedMainProject");
+                auto liste = mitglieder (r);
+                for (int i = liste.size() / 2; i < state::maxMainProjectMitglieder + 1; ++i)
+                {
+                    liste.add (juce::String::toHexString (0xf000 + i).paddedLeft ('0', 32));
+                    liste.add ("mehr");
+                }
+                r.setProperty ("confirmed_members_v1", juce::var (liste), nullptr);
+                mutanten.push_back ({ "Golden mit 65 Paaren im Bestandskind", v, state::Bundle::eqcp(),
+                                      "RetainedMainProject.confirmed_members_v1 must be an even array with at most 64 pairs", true });
+            }
+            {
+                auto v = golden.createCopy();
+                v.getChildWithName ("RetainedMainProject").removeProperty ("intent_revision_v1", nullptr);
+                mutanten.push_back ({ "Golden mit Intentinhalt ohne intent_revision_v1", v, state::Bundle::eqcp(),
+                                      "RetainedMainProject carries intent data without intent_revision_v1", true });
+            }
+            {
+                // Weg Z-A: legacy mit MainProject bleibt read-only wie heute
+                // (G9 oben, "legacy mit MainProject") - hier am Golden: das
+                // Bestandskind unter dem Namen MainProject an derselben Stelle.
+                auto v = golden.createCopy();
+                const auto r = v.getChildWithName ("RetainedMainProject");
+                juce::ValueTree m ("MainProject");
+                m.copyPropertiesAndChildrenFrom (r, nullptr);
+                const int stelle = v.indexOf (r);
+                v.removeChild (r, nullptr);
+                v.addChild (m, stelle, nullptr);
+                mutanten.push_back ({ "Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)", v,
+                                      state::Bundle::eqcp(), "MainProject is not allowed for legacy", true });
+            }
+
+            int gehalten = 0;
+            for (const auto& m : mutanten)
+            {
+                const auto bytes = alsBlock (m.baum);
+                state::Zustand z;
+                const auto erg = state::lade (bytes.getData(), bytes.getSize(), m.bundle, z);
+                juce::MemoryBlock zurueck;
+                state::speichere (z, zurueck);
+                const bool bibOk = bestandskind.isValid() && erg == state::LadeErgebnis::nurLesen && z.nurLesen
+                                && gleich (zurueck, bytes) && z.grund.contains (m.grund);
+                bool prozOk = true;
+                if (m.prozessor)
+                {
+                    auto p = std::make_unique<EqCopilotProcessor>();
+                    DirtyZaehler dirty;
+                    p->addListener (&dirty);
+                    p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+                    juce::MemoryBlock heraus;
+                    p->getStateInformation (heraus);
+                    prozOk = p->stateNurLesen() && gleich (heraus, bytes)
+                          && ! p->setzeBindung ("hub", "Kaperung", "") && ! p->setzeBindung ("sensor", "Kaperung", "")
+                          && ! p->neueSensorId() && dirty.nonParam == 0;
+                    p->removeListener (&dirty);
+                }
+                if (bibOk && prozOk)
+                    ++gehalten;
+                pruefe (bibOk && prozOk, "312/M-115 read-only: " + m.name,
+                        juce::String (ladeErgebnisWort (erg)) + ", Grund '" + z.grund + "'"
+                            + (m.prozessor ? juce::String (prozOk ? ", Prozessor verweigert, 0 Dirty" : ", Prozessor FALSCH") : juce::String()));
+            }
+            pruefe (gehalten == (int) mutanten.size() && mutanten.size() == 10,
+                    "312/M-115 kind_matrix_des_bestandskinds: " + juce::String ((int) mutanten.size())
+                        + " Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund",
+                    juce::String (gehalten));
+        }
+
         // Ein read-only-Prozessor wird durch einen gueltigen Stand wieder schreibbar.
         {
             auto p = std::make_unique<EqCopilotProcessor>();
@@ -2363,6 +2821,85 @@ int main (int argc, char* argv[])
         pruefe (p->stateNurLesen() && p->holeStateFremdesMajor() == 9, "read-only mit fremdem Major 9", juce::String (p->holeStateFremdesMajor()));
         pruefe (! p->setzeBindung ("hub", "x", "") && ! p->neueSensorId() && dirty.nonParam == 2, "read-only verweigert setzeBindung und neueSensorId ohne Meldung");
         p->removeListener (&dirty);
+
+        // NAK-312 Etappe 7b, Satz 3 (312/M-116): mit gefuelltem Bestand meldet
+        // jeder Rollenwechsel genau einmal Host-Dirty - die Verlagerung des
+        // Bestands keine zusaetzliche -, Laden und Speichern melden nichts.
+        {
+            auto q = std::make_unique<EqCopilotProcessor>();
+            const bool gefuellt = ruhend::fuelleHauptprogramm (*q);
+            DirtyZaehler dq;
+            q->addListener (&dq);
+            const bool wechsel = q->setzeBindung ("sensor", "Messpunkt", {}) && q->setzeBindung ("hub", "Leitstand", {});
+            const int nachWechseln = dq.nonParam;
+            juce::MemoryBlock b3;
+            q->getStateInformation (b3);
+            q->removeListener (&dq);
+            juce::MemoryBlock golden;
+            fixtureOrdner.getChildFile ("schema2/legacy-retained-v1.bin").loadFileAsData (golden);
+            auto r = std::make_unique<EqCopilotProcessor>();
+            DirtyZaehler dr;
+            r->addListener (&dr);
+            r->setStateInformation (golden.getData(), (int) golden.getSize());
+            juce::MemoryBlock b4;
+            r->getStateInformation (b4);
+            r->removeListener (&dr);
+            pruefe (gefuellt && wechsel && nachWechseln == 2 && dq.nonParam == 2 && golden.getSize() > 0
+                        && ! r->stateNurLesen() && dr.nonParam == 0,
+                    "312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau "
+                    "2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und "
+                    "Speichern melden 0",
+                    "Wechsel " + juce::String (nachWechseln) + ", nach dem Speichern " + juce::String (dq.nonParam)
+                        + ", Laden des Goldens " + juce::String (dr.nonParam));
+        }
+
+        // NAK-312 Etappe 7b, Satz 3 (312/M-117, R-312-30): ein read-only
+        // geladener Stand - fremdes Major, und ein Mutant des Writer-Goldens mit
+        // verletzter Kind-Matrix (das Bestandskind in main) - verweigert beide
+        // Wechsel. Kein Bestand wandert, die Originalbytes kommen bytegleich
+        // zurueck, 0 Host-Dirty, und die Bindung im Speicher bleibt nach jeder
+        // Verweigerung, wie sie geladen wurde.
+        {
+            juce::MemoryBlock golden;
+            fixtureOrdner.getChildFile ("schema2/legacy-retained-v1.bin").loadFileAsData (golden);
+            auto matrix = juce::ValueTree::readFromData (golden.getData(), golden.getSize());
+            matrix.getChildWithName ("Common").setProperty ("plugin_kind", "main", nullptr);
+            auto fremd = schema2Baum ("legacy", "insert", false);
+            fremd.setProperty ("schema", 9, nullptr);
+            struct Fall { const char* name; juce::MemoryBlock bytes; bool ausGolden; };
+            const Fall faelle[] = { { "fremdes Major 9", alsBlock (fremd), false },
+                                    { "Golden als main mit Bestandskind (Kind-Matrix)", alsBlock (matrix), true } };
+            for (const auto& f : faelle)
+            {
+                auto q = std::make_unique<EqCopilotProcessor>();
+                DirtyZaehler d;
+                q->addListener (&d);
+                q->setStateInformation (f.bytes.getData(), (int) f.bytes.getSize());
+                auto bindung = [&q]
+                {
+                    const auto z = q->holeZustandKopie();
+                    return std::make_tuple (q->holeRolle(), q->holeLabel(), q->holePaarId(), z.common,
+                                            ruhend::bestandAus (z), q->sourcesPersistenteMitgliederFuerTest());
+                };
+                const auto vorher = bindung();
+                const bool zuSensor = q->setzeBindung ("sensor", "Kaperung", "paar-x");
+                const bool nachSensorGleich = bindung() == vorher;
+                const bool zuHub = q->setzeBindung ("hub", "Kaperung", "");
+                const bool nachHubGleich = bindung() == vorher;
+                juce::MemoryBlock heraus;
+                q->getStateInformation (heraus);
+                q->removeListener (&d);
+                pruefe ((! f.ausGolden || golden.getSize() > 0) && q->stateNurLesen() && ! zuSensor && ! zuHub
+                            && nachSensorGleich
+                            && nachHubGleich && d.nonParam == 0 && gleich (heraus, f.bytes),
+                        juce::String ("312/M-117 read_only_verweigert_den_wechsel (") + f.name
+                            + "): sensor und hub verweigert, Rolle, Label, Paar-ID, Common und die sieben im "
+                              "Speicher unveraendert, Originalbytes bytegleich, 0 Host-Dirty",
+                        "Grund '" + q->holeStateGrund() + "', Bindung nach sensor "
+                            + (nachSensorGleich ? "gleich" : "GEAENDERT") + ", nach hub "
+                            + (nachHubGleich ? "gleich" : "GEAENDERT") + ", Host-Dirty " + juce::String (d.nonParam));
+            }
+        }
         a.schliesse ("Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert");
     }
 
@@ -2551,6 +3088,294 @@ int main (int argc, char* argv[])
                 juce::String ((juce::int64) s1.getSize()) + " Byte, zurueck " + juce::String ((juce::int64) wieder.getSize())
                     + " Byte, " + (wieder == s1 ? "bytegleich" : "VERSCHIEDEN"));
         a.schliesse ("NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // G13 · NAK-312 Etappe 7b, Satz 3: der ruhende Hauptprogramm-Bestand (U49)
+    // ══════════════════════════════════════════════════════════════════════
+    //
+    // Die Bestaende des Hauptprogramms ueberstehen den Wechsel zum Messpunkt
+    // und zurueck, live und ueber Speichern und Neuladen gleich (Abnahme U49,
+    // 21.09.2026). In `legacy` ruhen sie im Kind RetainedMainProject (Weg Z-A,
+    // E-312-20); gelöscht wird nur durch einen ausdruecklichen Handgriff.
+    // Manifest docs/beweise/NAK-312.md §46.2, 312/M-110 bis 312/M-112,
+    // 312/M-119, 312/M-121.
+    {
+        Abschnitt a;
+
+        // 312/M-110 · der Rollenwechsel live.
+        {
+            auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+            const bool gefuellt = ruhend::fuelleHauptprogramm (*p) && ruhend::setzeZukunftsfeld (*p, false);
+            const auto vorher = ruhend::bestandAus (p->holeZustandKopie());
+            const bool zuSensor = p->setzeBindung ("sensor", "Messpunkt", {});
+            const auto inLegacy = ruhend::bestandAus (p->holeZustandKopie());
+            const auto sichtLegacy = p->sourcesSicht();
+            // Die Handgriffe am Bestand wirken in Legacy nicht - wie heute.
+            const bool verweigert = ! p->merkeManuellePassage ("d0000000000000000000000000000009", "x", 1, 2)
+                && ! p->setzeQuellenrolle (ruhend::kQuelleC, {}, state::Rolle::traegt, state::IntentHerkunft::user, 1.0)
+                && ! p->schuetzeQuelle (ruhend::kQuelleC, state::Schutzeigenschaft::breite, -1, -1)
+                && ! p->assistentWeiter (state::Assistentenschritt::evidence)
+                && ! p->bindeSourcesHauptziel (ruhend::kQuelleC.toStdString());
+            const bool zuHub = p->setzeBindung ("hub", "Leitstand", {});
+            const auto zurueck = ruhend::bestandAus (p->holeZustandKopie());
+            const auto sichtMain = p->sourcesSicht();
+            pruefe (gefuellt && zuSensor && inLegacy == vorher && ! vorher.leer() && sichtLegacy.quellen.empty()
+                        && verweigert,
+                    "312/M-110 rollenwechsel_erhaelt_den_bestand_live (Legacy): alle sieben unveraendert gehalten, "
+                    "das Quellenmodell zeigt 0 Zeilen, die Handgriffe am Bestand verweigern",
+                    ruhend::text (inLegacy) + ", Zeilen in Legacy " + juce::String ((int) sichtLegacy.quellen.size())
+                        + (verweigert ? ", Handgriffe verweigert" : ", ein Handgriff WIRKT"));
+            pruefe (zuHub && zurueck == vorher && (int) sichtMain.quellen.size() == (int) vorher.mitglieder.size(),
+                    "312/M-110 rollenwechsel_erhaelt_den_bestand_live (zurueck zu Main): alle sieben wertgleich zum "
+                    "Stand vor dem Wechsel, das Quellenmodell zeigt die Mitglieder wieder",
+                    ruhend::text (zurueck) + ", Zeilen " + juce::String ((int) sichtMain.quellen.size()));
+
+            // 312/M-119 (Teilfall von 312/M-110) · Wechsel zwischen den
+            // Legacy-Positionen; Label, Paar-ID und Messposition folgen der
+            // Rollenwahl in Common, der Bestand ruht unveraendert.
+            const bool a1 = p->setzeBindung ("sensor", "A", "paar-a");
+            const auto nachA = ruhend::bestandAus (p->holeZustandKopie());
+            const bool b1 = p->setzeBindung ("pre", "B", "paar-b");
+            const auto paarNachPre = p->holePaarId();
+            const bool c1 = p->setzeBindung ("post", "C", {});
+            juce::MemoryBlock nachPost;
+            p->getStateInformation (nachPost);
+            const auto commonNachPost = juce::ValueTree::readFromData (nachPost.getData(), nachPost.getSize())
+                                            .getChildWithName ("Common");
+            const auto nachC = ruhend::bestandAus (p->holeZustandKopie());
+            const bool d1 = p->setzeBindung ("hub", "D", {});
+            const auto nachD = ruhend::bestandAus (p->holeZustandKopie());
+            pruefe (a1 && b1 && c1 && d1 && nachA == vorher && nachC == vorher && nachD == vorher
+                        && paarNachPre == "paar-b" && p->holePaarId().isEmpty()
+                        && ! commonNachPost.hasProperty ("pair_id")
+                        && commonNachPost.getProperty ("measurement_position").toString() == "post"
+                        && commonNachPost.getProperty ("label").toString() == "C" && p->holeLabel() == "D"
+                        && commonNachPost.getProperty ("project_binding_id").toString() == ruhend::kSaatBindung,
+                    "312/M-119 welche_bestaende (Teilfall von 312/M-110): sensor, pre, post und hub - der ruhende "
+                    "Bestand bleibt unveraendert und ist nach hub vollstaendig zurueck; Label, Paar-ID und "
+                    "Messposition folgen der Rollenwahl in Common, nach post ohne Paar traegt der Stand keine pair_id, "
+                    "die Projektbindung bleibt",
+                    "Paar nach pre '" + paarNachPre + "', nach post "
+                        + (commonNachPost.hasProperty ("pair_id") ? "MIT pair_id" : "ohne pair_id") + ", "
+                        + ruhend::text (nachD));
+        }
+
+        // 312/M-111 · der Rollenwechsel ueber Speichern und Laden, mit
+        // 312/M-112 (Teilfall): unbekannte Eigenschaften in MainProject und
+        // Common reisen mit.
+        {
+            auto p = std::make_unique<EqCopilotProcessor>();
+            const bool gefuellt = ruhend::fuelleHauptprogramm (*p) && ruhend::setzeZukunftsfeld (*p, true);
+            const auto vorher = ruhend::bestandAus (p->holeZustandKopie());
+            juce::MemoryBlock alsMain;
+            p->getStateInformation (alsMain);
+            const auto mainProjektVorher = juce::ValueTree::readFromData (alsMain.getData(), alsMain.getSize())
+                                               .getChildWithName ("MainProject");
+            const bool zuSensor = p->setzeBindung ("sensor", "Messpunkt", {});
+            juce::MemoryBlock x;
+            p->getStateInformation (x);
+            const auto baumX = juce::ValueTree::readFromData (x.getData(), x.getSize());
+            const auto bestandskind = baumX.getChildWithName ("RetainedMainProject");
+            // Weg Z-A: Common und das Bestandskind, kein MainProject; das Kind
+            // traegt dieselben Eigenschaften wie MainProject, auch die unbekannte.
+            bool gleicheEigenschaften = bestandskind.isValid()
+                && bestandskind.getNumProperties() == mainProjektVorher.getNumProperties();
+            for (int i = 0; gleicheEigenschaften && i < mainProjektVorher.getNumProperties(); ++i)
+            {
+                const auto name = mainProjektVorher.getPropertyName (i);
+                gleicheEigenschaften = bestandskind.getPropertyName (i) == name
+                    && bestandskind.getProperty (name) == mainProjektVorher.getProperty (name);
+            }
+            const bool formZa = ruhend::kinder (x) == "Common,RetainedMainProject"
+                             && (int) bestandskind.getProperty ("schema") == 1 && gleicheEigenschaften;
+            // speichere (lade (x)) == x
+            state::Zustand zx;
+            const auto ergX = state::lade (x.getData(), x.getSize(), state::Bundle::eqcp(), zx);
+            juce::MemoryBlock xx;
+            state::speichere (zx, xx);
+            // Laden in eine frische Instanz (Bundle eqcp), dort zurueck zu hub.
+            auto frisch = std::make_unique<EqCopilotProcessor>();
+            DirtyZaehler dirty;
+            frisch->addListener (&dirty);
+            frisch->setStateInformation (x.getData(), (int) x.getSize());
+            const int dirtyBeimLaden = dirty.nonParam;
+            const bool legacyGeladen = ! frisch->stateNurLesen() && frisch->holeRolle() == "sensor";
+            const bool zuHub = frisch->setzeBindung ("hub", "Leitstand", {});
+            const auto zurueck = ruhend::bestandAus (frisch->holeZustandKopie());
+            const auto sichtMain = frisch->sourcesSicht();
+            juce::MemoryBlock alsMainWieder;
+            frisch->getStateInformation (alsMainWieder);
+            frisch->removeListener (&dirty);
+            const auto baumWieder = juce::ValueTree::readFromData (alsMainWieder.getData(), alsMainWieder.getSize());
+            pruefe (gefuellt && zuSensor && formZa && ergX == state::LadeErgebnis::geladen && gleich (x, xx),
+                    "312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern (Form, Weg Z-A): der Stand in "
+                    "Legacy traegt Common und das Bestandskind RetainedMainProject (schema 1) mit denselben "
+                    "Eigenschaften wie MainProject, kein MainProject; speichere (lade (x)) == x bytegleich",
+                    "Kinder " + ruhend::kinder (x) + ", Eigenschaften "
+                        + juce::String (gleicheEigenschaften ? "gleich" : "WEICHEN AB") + ", Roundtrip "
+                        + (gleich (x, xx) ? "bytegleich" : "WEICHT AB") + ", " + ladeErgebnisWort (ergX));
+            pruefe (legacyGeladen && dirtyBeimLaden == 0 && zuHub && zurueck == vorher
+                        && (int) sichtMain.quellen.size() == (int) vorher.mitglieder.size(),
+                    "312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern: nach Laden in eine frische "
+                    "Instanz und Rueckkehr zu hub sind alle sieben wertgleich - Live-Rueckweg und gespeicherter "
+                    "Rueckweg ergeben denselben Bestand; das Laden meldet kein Host-Dirty",
+                    ruhend::text (zurueck) + ", Host-Dirty beim Laden " + juce::String (dirtyBeimLaden));
+            pruefe (baumWieder.getChildWithName ("MainProject").getProperty ("nak312_zukunft_v9").toString()
+                            == "reist mit dem Bestand"
+                        && bestandskind.getProperty ("nak312_zukunft_v9").toString() == "reist mit dem Bestand"
+                        && (int) baumWieder.getChildWithName ("Common").getProperty ("nak312_common_zukunft_v9") == 7
+                        && (int) baumX.getChildWithName ("Common").getProperty ("nak312_common_zukunft_v9") == 7
+                        && ruhend::kinder (alsMainWieder) == "Common,MainProject",
+                    "312/M-112 unbekannte_felder_reisen_mit (Teilfall von 312/M-111): die unbekannte Eigenschaft "
+                    "wandert mit dem Bestand vom MainProject ins Bestandskind und zurueck, die in Common bleibt "
+                    "in Common - main, legacy, speichern, laden, main, speichern",
+                    "Kinder am Ende " + ruhend::kinder (alsMainWieder));
+            // Und derselbe Stand bytegleich zum Stand vor dem Wechsel: der
+            // Knoten ist zweimal an derselben Stelle umbenannt worden.
+            pruefe (gleich (alsMain, alsMainWieder),
+                    "312/M-111: nach main, legacy, speichern, laden, main ist der gespeicherte Stand bytegleich "
+                    "zum Stand vor dem Wechsel",
+                    juce::String ((int) alsMain.getSize()) + " / " + juce::String ((int) alsMainWieder.getSize()) + " Bytes");
+        }
+
+        // 312/M-112, zweiter Weg · ein geladener legacy-Stand, dessen
+        // Bestandskind eine unbekannte Eigenschaft traegt: das Writer-Golden
+        // legacy-retained-v1.bin selbst (es traegt sie aus seinem Aufbau).
+        {
+            juce::MemoryBlock g;
+            fixtureOrdner.getChildFile ("schema2/legacy-retained-v1.bin").loadFileAsData (g);
+            auto p = std::make_unique<EqCopilotProcessor>();
+            p->setStateInformation (g.getData(), (int) g.getSize());
+            juce::MemoryBlock alsLegacy;
+            p->getStateInformation (alsLegacy);
+            const auto rLegacy = juce::ValueTree::readFromData (alsLegacy.getData(), alsLegacy.getSize())
+                                     .getChildWithName ("RetainedMainProject");
+            auto q = std::make_unique<EqCopilotProcessor>();
+            q->setStateInformation (alsLegacy.getData(), (int) alsLegacy.getSize());
+            const bool zuHub = q->setzeBindung ("hub", "Leitstand", {});
+            juce::MemoryBlock alsMain;
+            q->getStateInformation (alsMain);
+            const auto mp = juce::ValueTree::readFromData (alsMain.getData(), alsMain.getSize())
+                                .getChildWithName ("MainProject");
+            pruefe (g.getSize() > 0 && gleich (g, alsLegacy)
+                        && rLegacy.getProperty ("nak312_zukunft_v9").toString() == "reist mit dem Bestand"
+                        && zuHub && mp.getProperty ("nak312_zukunft_v9").toString() == "reist mit dem Bestand"
+                        && ! mp.getParent().getChildWithName ("RetainedMainProject").isValid(),
+                    "312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt "
+                    "die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject",
+                    juce::String ("legacy gespeichert ") + (gleich (g, alsLegacy) ? "bytegleich" : "ABWEICHEND"));
+        }
+
+        // 312/M-121 · Zahlenraender und Grenze des Zustands, je hub -> sensor
+        // -> speichern -> laden -> hub -> speichern.
+        {
+            auto fahre = [] (const state::Zustand& z, juce::String& beleg,
+                             juce::MemoryBlock& legacyBytes, juce::MemoryBlock& mainBytes, int& zeilen)
+            {
+                juce::MemoryBlock start;
+                state::speichere (z, start);
+                auto p = std::make_unique<EqCopilotProcessor>();
+                p->setStateInformation (start.getData(), (int) start.getSize());
+                const bool schreibbar = ! p->stateNurLesen() && p->holeRolle() == "hub";
+                const auto referenz = ruhend::bestandAus (p->holeZustandKopie());
+                const bool zuSensor = p->setzeBindung ("sensor", "Leitstand", {});
+                p->getStateInformation (legacyBytes);
+                auto q = std::make_unique<EqCopilotProcessor>();
+                q->setStateInformation (legacyBytes.getData(), (int) legacyBytes.getSize());
+                const bool legacySchreibbar = ! q->stateNurLesen();
+                const bool zuHub = q->setzeBindung ("hub", "Leitstand", {});
+                const auto zurueck = ruhend::bestandAus (q->holeZustandKopie());
+                q->getStateInformation (mainBytes);
+                const auto modellZeilen = (int) q->sourcesSicht().quellen.size();
+                zeilen = modellZeilen;
+                beleg = ruhend::text (zurueck) + ", Legacy " + juce::String ((int) legacyBytes.getSize())
+                      + " Bytes, Kinder " + ruhend::kinder (legacyBytes) + ", Zeilen " + juce::String (modellZeilen);
+                return schreibbar && zuSensor && legacySchreibbar && zuHub && zurueck == referenz
+                    && gleich (start, mainBytes);
+            };
+
+            // (a) kein Bestand: kein Bestandskind, die Bytes wie ein Legacy-Stand ohne Hauptprogramm.
+            {
+                auto z = ruhend::maximalerMain();
+                z.mainProjectMitglieder.clear(); z.manuellePassagen.clear(); z.sourceIntents.clear();
+                z.schutzangaben.clear(); z.intentBeziehungen.clear(); z.intentBestandRevision = 0; z.assistent = {};
+                juce::String beleg;
+                juce::MemoryBlock l, m;
+                int zeilen = 0;
+                const bool ok = fahre (z, beleg, l, m, zeilen);
+                pruefe (ok && ruhend::kinder (l) == "Common",
+                        "312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - "
+                        "die Bytes wie heute", beleg);
+            }
+            // (b) je ein Eintrag.
+            {
+                auto z = ruhend::maximalerMain();
+                z.mainProjectMitglieder.resize (1); z.manuellePassagen.resize (1); z.sourceIntents.resize (1);
+                z.schutzangaben.resize (1); z.intentBeziehungen.resize (1);
+                juce::String beleg;
+                juce::MemoryBlock l, m;
+                int zeilen = 0;
+                const bool ok = fahre (z, beleg, l, m, zeilen);
+                pruefe (ok && ruhend::kinder (l) == "Common,RetainedMainProject",
+                        "312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich",
+                        beleg);
+            }
+            // (c) das Schemamaximum.
+            {
+                juce::String beleg;
+                juce::MemoryBlock l, m;
+                int zeilen = 0;
+                const bool ok = fahre (ruhend::maximalerMain(), beleg, l, m, zeilen);
+                constexpr juce::int64 grenze = 16 * 1024 * 1024;
+                pruefe (ok && (juce::int64) l.getSize() < grenze && (juce::int64) m.getSize() < grenze,
+                        "312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints "
+                        "ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, "
+                        "Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, "
+                        "schreibbar geladen",
+                        beleg);
+                std::cout << "  M-121 Kosten: Legacy mit maximalem Bestand " << l.getSize() << " Bytes, Main "
+                          << m.getSize() << " Bytes, Differenz " << ((juce::int64) l.getSize() - (juce::int64) m.getSize())
+                          << " Bytes, Abstand zur 16-MiB-Grenze " << (grenze - (juce::int64) l.getSize()) << " Bytes" << std::endl;
+            }
+            // (d) 20 und 21 Mitglieder: der State traegt alle, das Modell
+            //     zeigt nach der Rueckkehr hoechstens 20 Zeilen (312/M-126).
+            for (const int n : { 20, 21 })
+            {
+                auto z = ruhend::maximalerMain();
+                z.mainProjectMitglieder.resize ((std::size_t) n);
+                juce::String beleg;
+                juce::MemoryBlock l, m;
+                int zeilen = 0;
+                const bool ok = fahre (z, beleg, l, m, zeilen);
+                state::Zustand zl;
+                state::lade (l.getData(), l.getSize(), state::Bundle::eqcp(), zl);
+                pruefe (ok && (int) zl.mainProjectMitglieder.size() == n && zeilen == 20,
+                        "312/M-121 (d) " + juce::String (n) + "_mitglieder: der State traegt alle bytegleich, das "
+                        "Quellenmodell nach der Rueckkehr 20 Zeilen", beleg);
+            }
+            // (e) leere Labels bei Mitglied und Passage bleiben leer.
+            {
+                auto z = ruhend::maximalerMain();
+                z.mainProjectMitglieder.resize (2);
+                z.mainProjectMitglieder[0].label = {};
+                z.manuellePassagen.resize (2);
+                z.manuellePassagen[1].label = {};
+                juce::String beleg;
+                juce::MemoryBlock l, m;
+                int zeilen = 0;
+                const bool ok = fahre (z, beleg, l, m, zeilen);
+                state::Zustand zm;
+                state::lade (m.getData(), m.getSize(), state::Bundle::eqcp(), zm);
+                int leer = 0, voll = 0;
+                for (const auto& x : zm.mainProjectMitglieder) (x.label.isEmpty() ? leer : voll)++;
+                for (const auto& x : zm.manuellePassagen) (x.label.isEmpty() ? leer : voll)++;
+                pruefe (ok && leer == 2 && voll == 2,
+                        "312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht",
+                        beleg + ", leer " + juce::String (leer) + ", gefuellt " + juce::String (voll));
+            }
+        }
+        a.schliesse ("NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden");
     }
 
     std::cout << std::endl

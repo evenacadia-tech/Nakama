@@ -1,3 +1,7 @@
+// Leser, Schreiber und Schema-1-Migrator des State-Schemas 2 (Vertrag
+// eq-copilot/schemas/state/nakama-state-v2.md). Seit NAK-312 Etappe 7b (U49,
+// Weg Z-A) schreibt und liest er den ruhenden Bestand des Hauptprogramms in
+// `legacy` im Kind `RetainedMainProject` (§2.0b); Root bleibt Schema 2.
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaState.h"
 #include "NakamaUtf8.h"
@@ -22,6 +26,10 @@ const juce::Identifier kAltRoot     ("EqCopilotState");
 const juce::Identifier kSchema      ("schema");
 const juce::Identifier kCommon      ("Common");
 const juce::Identifier kMainProject ("MainProject");
+// NAK-312 Etappe 7b (U49, Weg Z-A, E-312-20; Vertrag §2.0b): der ruhende
+// Bestand des Hauptprogramms in `legacy` - dieselben sieben Eigenschaften wie
+// `MainProject`, versioniert ueber seine eigene `schema`.
+const juce::Identifier kRetainedMainProject ("RetainedMainProject");
 const juce::Identifier kParameters  ("Parameters");
 const juce::Identifier kDsp         ("Dsp");
 const juce::Identifier kPairing     ("Pairing");
@@ -64,6 +72,7 @@ const juce::Identifier kRole        ("role");
 constexpr int kRootSchema   = 2;
 constexpr int kCommonSchema = 1;
 constexpr int kMainSchema   = 1;
+constexpr int kRetainedSchema = 1;
 constexpr int kParamSchema  = 1;
 constexpr int kDspSchema    = 1;
 
@@ -761,6 +770,93 @@ bool dspTraegtUnbekanntes (const juce::ValueTree& dsp)
     return dsp.getNumChildren() > 0;
 }
 
+/*  ── NAK-312 Etappe 7b: der ruhende Bestand des Hauptprogramms ──────────────
+
+    U49 (User 21.09.2026, design/abnahmen/2026-09-21-rollenwechsel-daten-bleiben-
+    erhalten-u49.md): die Bestaende des Hauptprogramms ueberstehen den Wechsel
+    zum Messpunkt und zurueck, live und ueber Speichern und Neuladen gleich.
+    In `main` stehen die sieben im Kind `MainProject`, in `legacy` ruhen sie im
+    Kind `RetainedMainProject` (Weg Z-A, E-312-20; Vertrag §2.0b) - dieselben
+    Eigenschaften, Formen und Deckel. */
+
+/** Traegt der Zustand einen Bestand des Hauptprogramms? Revision und
+    Assistentenschritt zaehlen wie jeder Eintrag: beide sind persistente Werte. */
+bool bestandTraegtEtwas (const Zustand& z)
+{
+    return ! z.mainProjectMitglieder.empty() || ! z.manuellePassagen.empty()
+        || ! z.sourceIntents.empty() || ! z.schutzangaben.empty()
+        || ! z.intentBeziehungen.empty() || z.intentBestandRevision > 0 || z.assistent.gesetzt;
+}
+
+/** Traegt der GEHALTENE Bestandsknoten etwas, das dieser Build nicht kennt -
+    eine Eigenschaft ausserhalb der sieben oder einen Kindknoten? Dieselbe Regel
+    wie `dspTraegtUnbekanntes`: ein Kind wegzulassen, an dem Unbekanntes haengt,
+    waere Datenverlust und kein Weglassen (Vertrag §2.0). */
+bool bestandTraegtUnbekanntes (const juce::ValueTree& knoten)
+{
+    static const juce::Identifier* const bekannt[] = {
+        &kSchema, &kMainMitglieder, &kMainPassagen, &kMainIntents, &kMainSchutz,
+        &kMainBeziehungen, &kMainIntentRev, &kMainAssistent
+    };
+    for (int i = 0; i < knoten.getNumProperties(); ++i)
+    {
+        const auto name = knoten.getPropertyName (i);
+        bool gefunden = false;
+        for (const auto* b : bekannt)
+            if (name == *b)
+                gefunden = true;
+        if (! gefunden)
+            return true;
+    }
+    return knoten.getNumChildren() > 0;
+}
+
+/** Der Knoten, in den der Schreiber den Bestand schreibt: `MainProject` in
+    `main`, `RetainedMainProject` in `legacy`; jede andere Klasse traegt keinen,
+    beide Kinder entfallen dort.
+
+    Beim Klassenwechsel wandert der gehaltene Knoten mit ALLEN Eigenschaften,
+    bekannten und unbekannten, und mit etwaigen Kindknoten an die Stelle des
+    anderen Kindes - dieselbe Position im Baum. Ein geladener Stand behaelt so
+    seine Reihenfolge, und `speichere (lade (x)) == x` bleibt bytegleich. */
+juce::ValueTree bestandsknotenFuer (juce::ValueTree& kopie, Klasse klasse)
+{
+    auto wirksam = kopie.getChildWithName (kMainProject);
+    auto ruhend = kopie.getChildWithName (kRetainedMainProject);
+    if (klasse != Klasse::main && klasse != Klasse::legacy)
+    {
+        if (wirksam.isValid())
+            kopie.removeChild (wirksam, nullptr);
+        if (ruhend.isValid())
+            kopie.removeChild (ruhend, nullptr);
+        return {};
+    }
+    const bool alsMain = klasse == Klasse::main;
+    const auto& typ = alsMain ? kMainProject : kRetainedMainProject;
+    auto ziel = alsMain ? wirksam : ruhend;
+    auto anderer = alsMain ? ruhend : wirksam;
+    if (! ziel.isValid() && anderer.isValid())
+    {
+        ziel = juce::ValueTree (typ);
+        ziel.copyPropertiesAndChildrenFrom (anderer, nullptr);
+        const int stelle = kopie.indexOf (anderer);
+        kopie.removeChild (anderer, nullptr);
+        kopie.addChild (ziel, stelle, nullptr);
+    }
+    else if (anderer.isValid())
+    {
+        // Beide Kinder zugleich laesst der Leser fuer keine Klasse zu (§2.1);
+        // ein schreibbarer Zustand traegt nie beide.
+        kopie.removeChild (anderer, nullptr);
+    }
+    if (! ziel.isValid())
+    {
+        ziel = juce::ValueTree (typ);
+        kopie.appendChild (ziel, nullptr);
+    }
+    return ziel;
+}
+
 /** Zonen als flache Vierergruppen [id, low_hz, high_hz, enabled, ...]. */
 juce::Array<juce::var> zonenFlach (const std::vector<parameter::Schutzzone>& zonen)
 {
@@ -800,6 +896,187 @@ juce::Array<juce::var> undoFlach (const UndoEintrag& e)
     return a;
 }
 
+/** Schreibt die sieben Bestaende des Hauptprogramms in `bestand` - das Kind
+    `MainProject` in `main`, `RetainedMainProject` in `legacy` (NAK-312
+    Etappe 7b, Vertrag §2.0b): dieselben Eigenschaften, Formen und Regeln.
+    Bekannte Eigenschaften werden gesetzt oder entfernt, unbekannte bleiben. */
+void schreibeBestand (const Zustand& z, juce::ValueTree& bestand, int schema)
+{
+    bestand.setProperty (kSchema, schema, nullptr);
+    if (z.mainProjectMitglieder.empty())
+    {
+        bestand.removeProperty (kMainMitglieder, nullptr);
+    }
+    else
+    {
+        auto mitglieder = z.mainProjectMitglieder;
+        std::sort (mitglieder.begin(), mitglieder.end(), [] (const auto& a, const auto& b)
+        {
+            return a.instanceId.compare (b.instanceId) < 0;
+        });
+        juce::Array<juce::var> flach;
+        flach.ensureStorageAllocated (static_cast<int> (mitglieder.size() * 2));
+        for (const auto& m : mitglieder)
+        {
+            flach.add (m.instanceId);
+            flach.add (m.label);
+        }
+        bestand.setProperty (kMainMitglieder, juce::var (flach), nullptr);
+    }
+
+    // Die manuellen Passagen (M-69). Leere Liste heisst: Eigenschaft weg,
+    // nicht leeres Array - sonst unterschieden sich ein Projekt ohne
+    // Passagen und eines, dessen letzte geloescht wurde, in den Bytes.
+    if (z.manuellePassagen.empty())
+    {
+        bestand.removeProperty (kMainPassagen, nullptr);
+    }
+    else
+    {
+        auto passagen = z.manuellePassagen;
+        std::sort (passagen.begin(), passagen.end(), [] (const auto& a, const auto& b)
+        {
+            if (a.projektStart != b.projektStart) return a.projektStart < b.projektStart;
+            if (a.projektEnde  != b.projektEnde)  return a.projektEnde  < b.projektEnde;
+            return a.passageId.compare (b.passageId) < 0;
+        });
+        juce::Array<juce::var> flach;
+        flach.ensureStorageAllocated (static_cast<int> (passagen.size() * 4));
+        for (const auto& s : passagen)
+        {
+            flach.add (s.passageId);
+            flach.add (s.label);
+            flach.add (juce::var (s.projektStart));
+            flach.add (juce::var (s.projektEnde));
+        }
+        bestand.setProperty (kMainPassagen, juce::var (flach), nullptr);
+    }
+
+    /*  SONDE-014 Etappe A: der musikalische Intent (§37.1).
+
+        Dieselbe Regel wie bei den Passagen: eine leere Liste heisst
+        Eigenschaft WEG, nicht leeres Array - sonst unterschieden sich
+        ein Projekt ohne Intent und eines, dessen letzter geloescht
+        wurde, in den Bytes. Und dieselbe Regel wie bei den Mitgliedern:
+        die Reihenfolge auf der Leitung ist sortiert und traegt keine
+        Eingabereihenfolge. */
+    if (z.sourceIntents.empty())
+    {
+        bestand.removeProperty (kMainIntents, nullptr);
+    }
+    else
+    {
+        auto intents = z.sourceIntents;
+        std::sort (intents.begin(), intents.end(), [] (const auto& a, const auto& b)
+        {
+            const auto q = a.quelleId.compare (b.quelleId);
+            if (q != 0) return q < 0;
+            return a.passageId.compare (b.passageId) < 0;
+        });
+        juce::Array<juce::var> flach;
+        flach.ensureStorageAllocated (static_cast<int> (intents.size() * 6));
+        for (const auto& s : intents)
+        {
+            flach.add (s.quelleId);
+            flach.add (s.passageId);
+            flach.add (juce::String (wort (s.rolle)));
+            flach.add (juce::var (s.revision));
+            flach.add (juce::String (wort (s.herkunft)));
+            flach.add (juce::var (s.konfidenz));
+        }
+        bestand.setProperty (kMainIntents, juce::var (flach), nullptr);
+    }
+
+    if (z.schutzangaben.empty())
+    {
+        bestand.removeProperty (kMainSchutz, nullptr);
+    }
+    else
+    {
+        auto schutz = z.schutzangaben;
+        std::sort (schutz.begin(), schutz.end(), [] (const auto& a, const auto& b)
+        {
+            const auto q = a.quelleId.compare (b.quelleId);
+            if (q != 0) return q < 0;
+            if (a.eigenschaft != b.eigenschaft)
+                return static_cast<int> (a.eigenschaft) < static_cast<int> (b.eigenschaft);
+            if (a.bandVon != b.bandVon) return a.bandVon < b.bandVon;
+            return a.bandBis < b.bandBis;
+        });
+        juce::Array<juce::var> flach;
+        flach.ensureStorageAllocated (static_cast<int> (schutz.size() * 4));
+        for (const auto& s : schutz)
+        {
+            flach.add (s.quelleId);
+            flach.add (juce::String (wort (s.eigenschaft)));
+            flach.add (juce::var (s.bandVon));
+            flach.add (juce::var (s.bandBis));
+        }
+        bestand.setProperty (kMainSchutz, juce::var (flach), nullptr);
+    }
+
+    if (z.intentBeziehungen.empty())
+    {
+        bestand.removeProperty (kMainBeziehungen, nullptr);
+    }
+    else
+    {
+        auto kanten = z.intentBeziehungen;
+        std::sort (kanten.begin(), kanten.end(), [] (const auto& a, const auto& b)
+        {
+            const auto qa = a.quelleA.compare (b.quelleA);
+            if (qa != 0) return qa < 0;
+            const auto qb = a.quelleB.compare (b.quelleB);
+            if (qb != 0) return qb < 0;
+            return static_cast<int> (a.art) < static_cast<int> (b.art);
+        });
+        juce::Array<juce::var> flach;
+        flach.ensureStorageAllocated (static_cast<int> (kanten.size() * 3));
+        for (const auto& k : kanten)
+        {
+            flach.add (k.quelleA);
+            flach.add (k.quelleB);
+            flach.add (juce::String (wort (k.art)));
+        }
+        bestand.setProperty (kMainBeziehungen, juce::var (flach), nullptr);
+    }
+
+    /*  Die Bestandsrevision. Revision 0 heisst "nie etwas gesetzt" und
+        reist deshalb GAR NICHT - der Rand, an dem ein leerer Bestand
+        und ein nie beschriebener sich sonst in den Bytes glichen und der
+        Empfaenger die Vollstaendigkeitsmarke aus M-86 nicht bilden
+        koennte. */
+    if (z.intentBestandRevision <= 0)
+        bestand.removeProperty (kMainIntentRev, nullptr);
+    else
+        bestand.setProperty (kMainIntentRev, juce::var (z.intentBestandRevision), nullptr);
+
+    /*  SONDE-014 Etappe G: der Assistentenschritt. Acht Werte in einer
+        flachen Liste — dieselbe Form wie die drei Intentlisten daneben.
+
+        Ein NICHT GESETZTER Schritt reist gar nicht: „noch nie einen
+        Assistenten benutzt" und „einen Schritt mit leeren Feldern" waeren
+        in den Bytes sonst dasselbe, und der Broker koennte den Spiegel
+        nicht davon unterscheiden (M-88). */
+    if (! z.assistent.gesetzt)
+    {
+        bestand.removeProperty (kMainAssistent, nullptr);
+    }
+    else
+    {
+        juce::Array<juce::var> flach;
+        flach.add (z.assistent.stepId);
+        flach.add (juce::String (wort (z.assistent.schritt)));
+        flach.add (juce::var (z.assistent.revision));
+        flach.add (juce::var (z.assistent.offen));
+        flach.add (z.assistent.findingId);
+        flach.add (z.assistent.proposalId);
+        flach.add (z.assistent.experimentId);
+        flach.add (juce::String (wort (z.assistent.ergebnis)));
+        bestand.setProperty (kMainAssistent, juce::var (flach), nullptr);
+    }
+}
+
 /** Schreibt die typisierten Felder in eine KOPIE des gehaltenen Baums -
     bestehende (auch unbekannte) Eigenschaften bleiben, die Kind-Matrix wird
     hergestellt. */
@@ -824,191 +1101,22 @@ juce::ValueTree synchronisiert (const Zustand& z)
     if (z.common.projectBindingId.isNotEmpty()) common.setProperty (kBinding, z.common.projectBindingId, nullptr);
     else                                        common.removeProperty (kBinding, nullptr);
 
-    auto mainProject = kopie.getChildWithName (kMainProject);
-    if (z.common.klasse == Klasse::main)
+    // 🔑 NAK-312 Etappe 7b (U49, Weg Z-A, E-312-20; Vertrag §2.0b): die sieben
+    // Bestaende des Hauptprogramms stehen in `main` im Kind `MainProject` und
+    // ruhen in `legacy` im Kind `RetainedMainProject`. Der gehaltene Knoten
+    // wandert beim Klassenwechsel samt unbekannter Eigenschaften an dieselbe
+    // Stelle; in `legacy` entfaellt das Kind, wenn es nichts traegt (Regel von
+    // `Dsp`, §2.0). Bis Etappe 7b entfernte dieser Block `MainProject` fuer
+    // jede Klasse ausser `main` - samt Bestand.
+    auto bestand = bestandsknotenFuer (kopie, z.common.klasse);
+    if (bestand.isValid())
     {
-        if (! mainProject.isValid())
-        {
-            mainProject = juce::ValueTree (kMainProject);
-            kopie.appendChild (mainProject, nullptr);
-        }
-        mainProject.setProperty (kSchema, kMainSchema, nullptr);
-        if (z.mainProjectMitglieder.empty())
-        {
-            mainProject.removeProperty (kMainMitglieder, nullptr);
-        }
+        if (z.common.klasse == Klasse::legacy
+            && ! bestandTraegtEtwas (z) && ! bestandTraegtUnbekanntes (bestand))
+            kopie.removeChild (bestand, nullptr);
         else
-        {
-            auto mitglieder = z.mainProjectMitglieder;
-            std::sort (mitglieder.begin(), mitglieder.end(), [] (const auto& a, const auto& b)
-            {
-                return a.instanceId.compare (b.instanceId) < 0;
-            });
-            juce::Array<juce::var> flach;
-            flach.ensureStorageAllocated (static_cast<int> (mitglieder.size() * 2));
-            for (const auto& m : mitglieder)
-            {
-                flach.add (m.instanceId);
-                flach.add (m.label);
-            }
-            mainProject.setProperty (kMainMitglieder, juce::var (flach), nullptr);
-        }
-
-        // Die manuellen Passagen (M-69). Leere Liste heisst: Eigenschaft weg,
-        // nicht leeres Array - sonst unterschieden sich ein Projekt ohne
-        // Passagen und eines, dessen letzte geloescht wurde, in den Bytes.
-        if (z.manuellePassagen.empty())
-        {
-            mainProject.removeProperty (kMainPassagen, nullptr);
-        }
-        else
-        {
-            auto passagen = z.manuellePassagen;
-            std::sort (passagen.begin(), passagen.end(), [] (const auto& a, const auto& b)
-            {
-                if (a.projektStart != b.projektStart) return a.projektStart < b.projektStart;
-                if (a.projektEnde  != b.projektEnde)  return a.projektEnde  < b.projektEnde;
-                return a.passageId.compare (b.passageId) < 0;
-            });
-            juce::Array<juce::var> flach;
-            flach.ensureStorageAllocated (static_cast<int> (passagen.size() * 4));
-            for (const auto& s : passagen)
-            {
-                flach.add (s.passageId);
-                flach.add (s.label);
-                flach.add (juce::var (s.projektStart));
-                flach.add (juce::var (s.projektEnde));
-            }
-            mainProject.setProperty (kMainPassagen, juce::var (flach), nullptr);
-        }
-
-        /*  SONDE-014 Etappe A: der musikalische Intent (§37.1).
-
-            Dieselbe Regel wie bei den Passagen: eine leere Liste heisst
-            Eigenschaft WEG, nicht leeres Array - sonst unterschieden sich
-            ein Projekt ohne Intent und eines, dessen letzter geloescht
-            wurde, in den Bytes. Und dieselbe Regel wie bei den Mitgliedern:
-            die Reihenfolge auf der Leitung ist sortiert und traegt keine
-            Eingabereihenfolge. */
-        if (z.sourceIntents.empty())
-        {
-            mainProject.removeProperty (kMainIntents, nullptr);
-        }
-        else
-        {
-            auto intents = z.sourceIntents;
-            std::sort (intents.begin(), intents.end(), [] (const auto& a, const auto& b)
-            {
-                const auto q = a.quelleId.compare (b.quelleId);
-                if (q != 0) return q < 0;
-                return a.passageId.compare (b.passageId) < 0;
-            });
-            juce::Array<juce::var> flach;
-            flach.ensureStorageAllocated (static_cast<int> (intents.size() * 6));
-            for (const auto& s : intents)
-            {
-                flach.add (s.quelleId);
-                flach.add (s.passageId);
-                flach.add (juce::String (wort (s.rolle)));
-                flach.add (juce::var (s.revision));
-                flach.add (juce::String (wort (s.herkunft)));
-                flach.add (juce::var (s.konfidenz));
-            }
-            mainProject.setProperty (kMainIntents, juce::var (flach), nullptr);
-        }
-
-        if (z.schutzangaben.empty())
-        {
-            mainProject.removeProperty (kMainSchutz, nullptr);
-        }
-        else
-        {
-            auto schutz = z.schutzangaben;
-            std::sort (schutz.begin(), schutz.end(), [] (const auto& a, const auto& b)
-            {
-                const auto q = a.quelleId.compare (b.quelleId);
-                if (q != 0) return q < 0;
-                if (a.eigenschaft != b.eigenschaft)
-                    return static_cast<int> (a.eigenschaft) < static_cast<int> (b.eigenschaft);
-                if (a.bandVon != b.bandVon) return a.bandVon < b.bandVon;
-                return a.bandBis < b.bandBis;
-            });
-            juce::Array<juce::var> flach;
-            flach.ensureStorageAllocated (static_cast<int> (schutz.size() * 4));
-            for (const auto& s : schutz)
-            {
-                flach.add (s.quelleId);
-                flach.add (juce::String (wort (s.eigenschaft)));
-                flach.add (juce::var (s.bandVon));
-                flach.add (juce::var (s.bandBis));
-            }
-            mainProject.setProperty (kMainSchutz, juce::var (flach), nullptr);
-        }
-
-        if (z.intentBeziehungen.empty())
-        {
-            mainProject.removeProperty (kMainBeziehungen, nullptr);
-        }
-        else
-        {
-            auto kanten = z.intentBeziehungen;
-            std::sort (kanten.begin(), kanten.end(), [] (const auto& a, const auto& b)
-            {
-                const auto qa = a.quelleA.compare (b.quelleA);
-                if (qa != 0) return qa < 0;
-                const auto qb = a.quelleB.compare (b.quelleB);
-                if (qb != 0) return qb < 0;
-                return static_cast<int> (a.art) < static_cast<int> (b.art);
-            });
-            juce::Array<juce::var> flach;
-            flach.ensureStorageAllocated (static_cast<int> (kanten.size() * 3));
-            for (const auto& k : kanten)
-            {
-                flach.add (k.quelleA);
-                flach.add (k.quelleB);
-                flach.add (juce::String (wort (k.art)));
-            }
-            mainProject.setProperty (kMainBeziehungen, juce::var (flach), nullptr);
-        }
-
-        /*  Die Bestandsrevision. Revision 0 heisst "nie etwas gesetzt" und
-            reist deshalb GAR NICHT - der Rand, an dem ein leerer Bestand
-            und ein nie beschriebener sich sonst in den Bytes glichen und der
-            Empfaenger die Vollstaendigkeitsmarke aus M-86 nicht bilden
-            koennte. */
-        if (z.intentBestandRevision <= 0)
-            mainProject.removeProperty (kMainIntentRev, nullptr);
-        else
-            mainProject.setProperty (kMainIntentRev, juce::var (z.intentBestandRevision), nullptr);
-
-        /*  SONDE-014 Etappe G: der Assistentenschritt. Acht Werte in einer
-            flachen Liste — dieselbe Form wie die drei Intentlisten daneben.
-
-            Ein NICHT GESETZTER Schritt reist gar nicht: „noch nie einen
-            Assistenten benutzt" und „einen Schritt mit leeren Feldern" waeren
-            in den Bytes sonst dasselbe, und der Broker koennte den Spiegel
-            nicht davon unterscheiden (M-88). */
-        if (! z.assistent.gesetzt)
-        {
-            mainProject.removeProperty (kMainAssistent, nullptr);
-        }
-        else
-        {
-            juce::Array<juce::var> flach;
-            flach.add (z.assistent.stepId);
-            flach.add (juce::String (wort (z.assistent.schritt)));
-            flach.add (juce::var (z.assistent.revision));
-            flach.add (juce::var (z.assistent.offen));
-            flach.add (z.assistent.findingId);
-            flach.add (z.assistent.proposalId);
-            flach.add (z.assistent.experimentId);
-            flach.add (juce::String (wort (z.assistent.ergebnis)));
-            mainProject.setProperty (kMainAssistent, juce::var (flach), nullptr);
-        }
-    }
-    else if (mainProject.isValid())
-    {
-        kopie.removeChild (mainProject, nullptr);
+            schreibeBestand (z, bestand, z.common.klasse == Klasse::main ? kMainSchema
+                                                                          : kRetainedSchema);
     }
 
     auto parameters = kopie.getChildWithName (kParameters);
@@ -1451,19 +1559,20 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         return false;
     }
 
-    int nCommon = 0, nMain = 0, nParam = 0, nDsp = 0, nPairing = 0;
+    int nCommon = 0, nMain = 0, nRuhend = 0, nParam = 0, nDsp = 0, nPairing = 0;
     for (int i = 0; i < v.getNumChildren(); ++i)
     {
         const auto kind = v.getChild (i);
         if      (kind.hasType (kCommon))      ++nCommon;
         else if (kind.hasType (kMainProject)) ++nMain;
+        else if (kind.hasType (kRetainedMainProject)) ++nRuhend;
         else if (kind.hasType (kParameters))  ++nParam;
         else if (kind.hasType (kDsp))         ++nDsp;
         else if (kind.hasType (kPairing))     ++nPairing;
         else { grund = "unknown child " + kind.getType().toString(); return false; }
     }
     if (nCommon != 1)  { grund = "Common is missing or duplicated"; return false; }
-    if (nMain > 1 || nParam > 1 || nDsp > 1 || nPairing > 1) { grund = "duplicated child"; return false; }
+    if (nMain > 1 || nRuhend > 1 || nParam > 1 || nDsp > 1 || nPairing > 1) { grund = "duplicated child"; return false; }
     // SONDE-015: `Dsp` ist seit diesem Ticket lesbar - fuer `active_probe`.
     // Die Klassenpruefung steht weiter unten bei der Kind-Matrix, weil die
     // Klasse erst aus `Common` kommt.
@@ -1526,16 +1635,35 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     // SONDE-015: `Dsp` ist fuer `active_probe` optional und fuer jede andere
     // Klasse verboten - der Zustand eines EQ-Kerns, den es dort nicht gibt.
     if (! istAktiv && nDsp > 0)  { grund = juce::String ("Dsp is not allowed for ") + wort (c.klasse); return false; }
+    // NAK-312 Etappe 7b (Weg Z-A, E-312-20; Vertrag §2.0b, §2.1): das
+    // Bestandskind ist fuer `legacy` optional und fuer jede andere Klasse
+    // verboten - in `main` stehen die sieben in `MainProject`.
+    const bool istLegacy = c.klasse == Klasse::legacy;
+    if (! istLegacy && nRuhend > 0)
+    {
+        grund = juce::String ("RetainedMainProject is not allowed for ") + wort (c.klasse); return false;
+    }
 
     if (istMain && ! schemaIst (v.getChildWithName (kMainProject), kMainSchema))
     {
         grund = "MainProject schema is unknown to this version (it reads schema 1)"; return false;
     }
+    if (nRuhend == 1 && ! schemaIst (v.getChildWithName (kRetainedMainProject), kRetainedSchema))
+    {
+        grund = "RetainedMainProject schema is unknown to this version (it reads schema 1)"; return false;
+    }
+
+    // NAK-312 Etappe 7b (Vertrag §2.0b): die sieben liest der Leser in `main`
+    // aus `MainProject` und in `legacy` aus `RetainedMainProject`, mit
+    // denselben Regeln; ein Grund nennt das Kind, aus dem er stammt.
+    const bool traegtBestand = istMain || nRuhend == 1;
+    const auto bestandsknoten = v.getChildWithName (istMain ? kMainProject : kRetainedMainProject);
+    const juce::String bestandName (istMain ? "MainProject" : "RetainedMainProject");
 
     std::vector<MainProjectMitglied> mainMitglieder;
-    if (istMain)
+    if (traegtBestand)
     {
-        const auto mainProject = v.getChildWithName (kMainProject);
+        const auto& mainProject = bestandsknoten;   // MainProject oder das Bestandskind
         if (mainProject.hasProperty (kMainMitglieder))
         {
             const auto wert = mainProject.getProperty (kMainMitglieder);
@@ -1543,7 +1671,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             if (flach == nullptr || flach->size() % 2 != 0
                 || flach->size() > maxMainProjectMitglieder * 2)
             {
-                grund = "MainProject.confirmed_members_v1 must be an even array with at most 64 pairs";
+                grund = bestandName + ".confirmed_members_v1 must be an even array with at most 64 pairs";
                 return false;
             }
             std::set<std::string> gesehen;
@@ -1554,13 +1682,13 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 if (! idWert.isString() || ! labelWert.isString()
                     || ! istHex32 (idWert.toString()) || labelWert.toString().length() > 120)
                 {
-                    grund = "MainProject.confirmed_members_v1 contains an invalid instance_id or label";
+                    grund = bestandName + ".confirmed_members_v1 contains an invalid instance_id or label";
                     return false;
                 }
                 const auto idBytes = idWert.toString().toStdString();
                 if (! gesehen.insert (idBytes).second)
                 {
-                    grund = "MainProject.confirmed_members_v1 contains a duplicate instance_id";
+                    grund = bestandName + ".confirmed_members_v1 contains a duplicate instance_id";
                     return false;
                 }
                 mainMitglieder.push_back ({ idWert.toString(), labelWert.toString() });
@@ -1580,9 +1708,9 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         - Keine doppelte passage_id, sonst zeigten zwei Intents auf dasselbe
           Objekt im Store. */
     std::vector<ManuellePassage> mainPassagen;
-    if (istMain)
+    if (traegtBestand)
     {
-        const auto mainProject = v.getChildWithName (kMainProject);
+        const auto& mainProject = bestandsknoten;   // MainProject oder das Bestandskind
         if (mainProject.hasProperty (kMainPassagen))
         {
             const auto wert = mainProject.getProperty (kMainPassagen);
@@ -1590,7 +1718,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             if (flach == nullptr || flach->size() % 4 != 0
                 || flach->size() > maxManuellePassagen * 4)
             {
-                grund = "MainProject.manual_passages_v1 must be an array of quadruples with at most 64 entries";
+                grund = bestandName + ".manual_passages_v1 must be an array of quadruples with at most 64 entries";
                 return false;
             }
             std::set<std::string> gesehen;
@@ -1603,25 +1731,25 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 if (! idWert.isString() || ! labelWert.isString()
                     || ! istHex32 (idWert.toString()) || labelWert.toString().length() > 120)
                 {
-                    grund = "MainProject.manual_passages_v1 contains an invalid passage_id or label";
+                    grund = bestandName + ".manual_passages_v1 contains an invalid passage_id or label";
                     return false;
                 }
                 if (! (vonWert.isInt() || vonWert.isInt64())
                     || ! (bisWert.isInt() || bisWert.isInt64()))
                 {
-                    grund = "MainProject.manual_passages_v1 bounds must be integers";
+                    grund = bestandName + ".manual_passages_v1 bounds must be integers";
                     return false;
                 }
                 const auto von = static_cast<juce::int64> (vonWert);
                 const auto bis = static_cast<juce::int64> (bisWert);
                 if (von < 0 || bis <= von)
                 {
-                    grund = "MainProject.manual_passages_v1 bounds must satisfy 0 <= start < end";
+                    grund = bestandName + ".manual_passages_v1 bounds must satisfy 0 <= start < end";
                     return false;
                 }
                 if (! gesehen.insert (idWert.toString().toStdString()).second)
                 {
-                    grund = "MainProject.manual_passages_v1 contains a duplicate passage_id";
+                    grund = bestandName + ".manual_passages_v1 contains a duplicate passage_id";
                     return false;
                 }
                 mainPassagen.push_back ({ idWert.toString(), labelWert.toString(), von, bis });
@@ -1647,9 +1775,9 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     std::vector<IntentBeziehung> mainKanten;
     juce::int64 mainIntentRevision = 0;
     Assistentenzustand mainAssistent {};
-    if (istMain)
+    if (traegtBestand)
     {
-        const auto mainProject = v.getChildWithName (kMainProject);
+        const auto& mainProject = bestandsknoten;   // MainProject oder das Bestandskind
         if (mainProject.hasProperty (kMainIntents))
         {
             const auto wert = mainProject.getProperty (kMainIntents);
@@ -1657,7 +1785,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             if (flach == nullptr || flach->size() % 6 != 0
                 || flach->size() > maxSourceIntents * 6)
             {
-                grund = "MainProject.source_intents_v1 must be an array of sextuples with at most 256 entries";
+                grund = bestandName + ".source_intents_v1 must be an array of sextuples with at most 256 entries";
                 return false;
             }
             std::set<std::string> gesehen;
@@ -1671,13 +1799,13 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 const auto konf     = flach->getReference (i + 5);
                 if (! quelle.isString() || ! istHex32 (quelle.toString()))
                 {
-                    grund = "MainProject.source_intents_v1 contains an invalid source id";
+                    grund = bestandName + ".source_intents_v1 contains an invalid source id";
                     return false;
                 }
                 if (! passage.isString()
                     || (passage.toString().isNotEmpty() && ! istHex32 (passage.toString())))
                 {
-                    grund = "MainProject.source_intents_v1 contains an invalid passage scope";
+                    grund = bestandName + ".source_intents_v1 contains an invalid passage scope";
                     return false;
                 }
                 SourceIntent eintrag;
@@ -1685,41 +1813,41 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 eintrag.passageId = passage.toString();
                 if (! rolle.isString() || ! rolleAusWort (rolle.toString(), eintrag.rolle))
                 {
-                    grund = "MainProject.source_intents_v1 contains an unknown role: " + rolle.toString();
+                    grund = bestandName + ".source_intents_v1 contains an unknown role: " + rolle.toString();
                     return false;
                 }
                 if (! (revision.isInt() || revision.isInt64()))
                 {
-                    grund = "MainProject.source_intents_v1 revision must be an integer";
+                    grund = bestandName + ".source_intents_v1 revision must be an integer";
                     return false;
                 }
                 eintrag.revision = static_cast<juce::int64> (revision);
                 if (eintrag.revision < 1)
                 {
-                    grund = "MainProject.source_intents_v1 revision must be at least 1";
+                    grund = bestandName + ".source_intents_v1 revision must be at least 1";
                     return false;
                 }
                 if (! herkunft.isString() || ! intentHerkunftAusWort (herkunft.toString(), eintrag.herkunft))
                 {
-                    grund = "MainProject.source_intents_v1 contains an unknown origin: " + herkunft.toString();
+                    grund = bestandName + ".source_intents_v1 contains an unknown origin: " + herkunft.toString();
                     return false;
                 }
                 if (! (konf.isDouble() || konf.isInt() || konf.isInt64()))
                 {
-                    grund = "MainProject.source_intents_v1 confidence must be a number";
+                    grund = bestandName + ".source_intents_v1 confidence must be a number";
                     return false;
                 }
                 eintrag.konfidenz = static_cast<double> (konf);
                 if (! std::isfinite (eintrag.konfidenz)
                     || eintrag.konfidenz < 0.0 || eintrag.konfidenz > 1.0)
                 {
-                    grund = "MainProject.source_intents_v1 confidence must be finite within [0,1]";
+                    grund = bestandName + ".source_intents_v1 confidence must be finite within [0,1]";
                     return false;
                 }
                 const auto schluessel = (eintrag.quelleId + "|" + eintrag.passageId).toStdString();
                 if (! gesehen.insert (schluessel).second)
                 {
-                    grund = "MainProject.source_intents_v1 contains two intents for the same source and scope";
+                    grund = bestandName + ".source_intents_v1 contains two intents for the same source and scope";
                     return false;
                 }
                 mainIntents.push_back (eintrag);
@@ -1738,7 +1866,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             if (flach == nullptr || flach->size() % 4 != 0
                 || flach->size() > maxSchutzangaben * 4)
             {
-                grund = "MainProject.intent_protections_v1 must be an array of quadruples with at most 256 entries";
+                grund = bestandName + ".intent_protections_v1 must be an array of quadruples with at most 256 entries";
                 return false;
             }
             std::set<std::string> gesehen;
@@ -1750,26 +1878,26 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 const auto bis    = flach->getReference (i + 3);
                 if (! quelle.isString() || ! istHex32 (quelle.toString()))
                 {
-                    grund = "MainProject.intent_protections_v1 contains an invalid source id";
+                    grund = bestandName + ".intent_protections_v1 contains an invalid source id";
                     return false;
                 }
                 Schutzangabe eintrag;
                 eintrag.quelleId = quelle.toString();
                 if (! eig.isString() || ! schutzeigenschaftAusWort (eig.toString(), eintrag.eigenschaft))
                 {
-                    grund = "MainProject.intent_protections_v1 contains an unknown trait: " + eig.toString();
+                    grund = bestandName + ".intent_protections_v1 contains an unknown trait: " + eig.toString();
                     return false;
                 }
                 if (! von.isInt() || ! bis.isInt())
                 {
-                    grund = "MainProject.intent_protections_v1 band bounds must be integers";
+                    grund = bestandName + ".intent_protections_v1 band bounds must be integers";
                     return false;
                 }
                 eintrag.bandVon = static_cast<int> (von);
                 eintrag.bandBis = static_cast<int> (bis);
                 if (! schutzbereichGueltig (eintrag.eigenschaft, eintrag.bandVon, eintrag.bandBis))
                 {
-                    grund = "MainProject.intent_protections_v1 band bounds are outside the evidence grid";
+                    grund = bestandName + ".intent_protections_v1 band bounds are outside the evidence grid";
                     return false;
                 }
                 const auto schluessel = (eintrag.quelleId + "|" + juce::String (wort (eintrag.eigenschaft))
@@ -1777,7 +1905,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                                          + "|" + juce::String (eintrag.bandBis)).toStdString();
                 if (! gesehen.insert (schluessel).second)
                 {
-                    grund = "MainProject.intent_protections_v1 contains a duplicate entry";
+                    grund = bestandName + ".intent_protections_v1 contains a duplicate entry";
                     return false;
                 }
                 mainSchutz.push_back (eintrag);
@@ -1797,7 +1925,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             if (flach == nullptr || flach->size() % 3 != 0
                 || flach->size() > maxIntentBeziehungen * 3)
             {
-                grund = "MainProject.intent_relations_v1 must be an array of triples with at most 256 entries";
+                grund = bestandName + ".intent_relations_v1 must be an array of triples with at most 256 entries";
                 return false;
             }
             std::set<std::string> gesehen;
@@ -1809,12 +1937,12 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 if (! a.isString() || ! istHex32 (a.toString())
                     || ! b.isString() || ! istHex32 (b.toString()))
                 {
-                    grund = "MainProject.intent_relations_v1 contains an invalid source id";
+                    grund = bestandName + ".intent_relations_v1 contains an invalid source id";
                     return false;
                 }
                 if (a.toString() == b.toString())
                 {
-                    grund = "MainProject.intent_relations_v1 contains a self relation";
+                    grund = bestandName + ".intent_relations_v1 contains a self relation";
                     return false;
                 }
                 IntentBeziehung kante;
@@ -1822,20 +1950,20 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 kante.quelleB = b.toString();
                 if (! art.isString() || ! beziehungsartAusWort (art.toString(), kante.art))
                 {
-                    grund = "MainProject.intent_relations_v1 contains an unknown relation: " + art.toString();
+                    grund = bestandName + ".intent_relations_v1 contains an unknown relation: " + art.toString();
                     return false;
                 }
                 const auto schluessel = (kante.quelleA + "|" + kante.quelleB).toStdString();
                 if (! gesehen.insert (schluessel).second)
                 {
-                    grund = "MainProject.intent_relations_v1 contains two relations for the same ordered pair";
+                    grund = bestandName + ".intent_relations_v1 contains two relations for the same ordered pair";
                     return false;
                 }
                 mainKanten.push_back (kante);
             }
             if (hatZyklus (mainKanten))
             {
-                grund = "MainProject.intent_relations_v1 contains a cycle in fuehrt_vor";
+                grund = bestandName + ".intent_relations_v1 contains a cycle in fuehrt_vor";
                 return false;
             }
         }
@@ -1845,13 +1973,13 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             const auto wert = mainProject.getProperty (kMainIntentRev);
             if (! (wert.isInt() || wert.isInt64()))
             {
-                grund = "MainProject.intent_revision_v1 must be an integer";
+                grund = bestandName + ".intent_revision_v1 must be an integer";
                 return false;
             }
             mainIntentRevision = static_cast<juce::int64> (wert);
             if (mainIntentRevision < 1)
             {
-                grund = "MainProject.intent_revision_v1 must be at least 1";
+                grund = bestandName + ".intent_revision_v1 must be at least 1";
                 return false;
             }
         }
@@ -1862,7 +1990,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         if (mainIntentRevision == 0
             && (! mainIntents.empty() || ! mainSchutz.empty() || ! mainKanten.empty()))
         {
-            grund = "MainProject carries intent data without intent_revision_v1";
+            grund = bestandName + " carries intent data without intent_revision_v1";
             return false;
         }
 
@@ -1879,7 +2007,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             const auto* liste = mainProject.getProperty (kMainAssistent).getArray();
             if (liste == nullptr || liste->size() != 8)
             {
-                grund = "MainProject.assistant_step_v1 must be a list of eight values";
+                grund = bestandName + ".assistant_step_v1 must be a list of eight values";
                 return false;
             }
             const auto stepId = (*liste)[0];
@@ -1888,29 +2016,29 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             const auto offen = (*liste)[3];
             if (! stepId.isString() || ! istHex32 (stepId.toString()))
             {
-                grund = "MainProject.assistant_step_v1 contains an invalid step id";
+                grund = bestandName + ".assistant_step_v1 contains an invalid step id";
                 return false;
             }
             if (! schrittWort.isString()
                 || ! assistentenschrittAus (schrittWort.toString(), mainAssistent.schritt))
             {
-                grund = "MainProject.assistant_step_v1 contains an unknown step";
+                grund = bestandName + ".assistant_step_v1 contains an unknown step";
                 return false;
             }
             if (mainAssistent.schritt == Assistentenschritt::preview)
             {
-                grund = "MainProject.assistant_step_v1 carries preview, which P5 cannot reach";
+                grund = bestandName + ".assistant_step_v1 carries preview, which P5 cannot reach";
                 return false;
             }
             if (! (revision.isInt() || revision.isInt64())
                 || static_cast<juce::int64> (revision) < 1)
             {
-                grund = "MainProject.assistant_step_v1 revision must be at least 1";
+                grund = bestandName + ".assistant_step_v1 revision must be at least 1";
                 return false;
             }
             if (! offen.isBool())
             {
-                grund = "MainProject.assistant_step_v1 open flag must be boolean";
+                grund = bestandName + ".assistant_step_v1 open flag must be boolean";
                 return false;
             }
             const char* namen[3] = { "finding id", "proposal id", "experiment id" };
@@ -1922,7 +2050,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 const auto wert = (*liste)[4 + i];
                 if (! wert.isString())
                 {
-                    grund = juce::String ("MainProject.assistant_step_v1 ") + namen[i]
+                    grund = bestandName + ".assistant_step_v1 " + namen[i]
                           + " must be a string";
                     return false;
                 }
@@ -1931,7 +2059,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 // ungueltige Kennung und muss unterscheidbar bleiben.
                 if (text.isNotEmpty() && ! istHex32 (text))
                 {
-                    grund = juce::String ("MainProject.assistant_step_v1 ") + namen[i]
+                    grund = bestandName + ".assistant_step_v1 " + namen[i]
                           + " must be 32 lowercase hex digits or empty";
                     return false;
                 }
@@ -1953,7 +2081,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
             }
             if (! ergebnisBekannt)
             {
-                grund = "MainProject.assistant_step_v1 contains an unknown result";
+                grund = bestandName + ".assistant_step_v1 contains an unknown result";
                 return false;
             }
             mainAssistent.gesetzt = true;

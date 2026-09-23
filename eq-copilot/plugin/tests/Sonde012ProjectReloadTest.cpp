@@ -3,7 +3,11 @@
 // fuer dieses Ziel abgeschaltet, daher wird keine Produktionspipe beruehrt.
 // Seit NAK-312 Etappe 7b (U51, 312/M-126): ein geladener Stand mit mehr als 20
 // bestaetigten Mitgliedern behaelt alle in State und Modell, nach dem Laden und
-// nach einem echten Snapshot sind 20 davon Zeilen.
+// nach einem echten Snapshot sind 20 davon Zeilen. Seit Etappe 7b, Satz 3
+// (U49, 312/M-110, M-120): in Legacy ist die Live-Sicht des Quellenmodells
+// stillgelegt - keine Zeile, keine Subscription, ein verspaeteter Snapshot
+// traegt nichts ein -, nach der Rueckkehr stehen die Mitglieder wieder, und
+// ein nach dem Wechsel quittierter Beitritt wirkt auf den ruhenden Bestand.
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -2844,6 +2848,112 @@ void altprojekt_behaelt_alle_und_zeigt_20 (int n)
                 + ", Speichern " + (gespeichert == saat ? "bytegleich" : "WEICHT AB") + ", frisch "
                 + juce::String ((int) frischGeladen) + ", Host-Dirty " + juce::String (dirty.nonParam.load()));
 }
+
+/// M-110 (Modellhaelfte, E-312-26) · in Legacy ist die Live-Sicht des
+/// Quellenmodells stillgelegt. Ein Main mit drei bestaetigten Mitgliedern und
+/// einem echten Snapshot aus diesen drei und zwei fluechtigen Sonden (fuenf
+/// Zeilen); nach dem Wechsel zu sensor 0 Zeilen und keine Subscription, ein
+/// verspaeteter Snapshot der alten Sitzung traegt nichts ein, und nach der
+/// Rueckkehr zu hub stehen genau die drei Mitglieder wieder da.
+void legacy_legt_die_live_sicht_still()
+{
+    std::cout << "== NAK-312 M-110 (Modellhaelfte) legacy_legt_die_live_sicht_still ==\n";
+    auto p = nak246d3::mainAnlegen (false, true);
+    const std::vector<std::string> mitglieder { nummer (1), nummer (2), nummer (3) };
+    for (const auto& instanz : mitglieder)
+        p->v3AntwortFuerTest (ack (p->merkeSourcesCommandFuerTest (Art::confirmJoin, instanz), true));
+    p->sourcesTick();
+    const auto main = nakama::ipc::wireAdresseAusState (p->v3HelloFuerTest().adresse);
+    p->v3LinkFuerTest (true);   // derselbe Callback wie nach dem welcome
+    auto alle = mitglieder;
+    alle.push_back (nummer (4));
+    alle.push_back (nummer (5));
+    const auto snapshot = snapshotMit (main, alle);
+    p->v3AntwortFuerTest (snapshot);
+    const auto vorher = p->sourcesSicht();
+    const bool zuSensor = p->setzeBindung ("sensor", "Messpunkt", {});
+    const auto inLegacy = p->sourcesSicht();
+    p->v3AntwortFuerTest (snapshot);   // verspaetet: ein Snapshot der alten Sitzung
+    const auto nachVerspaetet = p->sourcesSicht();
+    const bool zuHub = p->setzeBindung ("hub", "Gen", {});
+    const auto zurueck = p->sourcesSicht();
+    std::set<std::string> zurueckIds;
+    for (const auto& q : zurueck.quellen)
+        zurueckIds.insert (q.instanceId);
+    pruefe (vorher.quellen.size() == 5 && vorher.subscriptionAktiv && zuSensor && inLegacy.quellen.empty()
+                && ! inLegacy.subscriptionAktiv && nachVerspaetet.quellen.empty()
+                && ! nachVerspaetet.subscriptionAktiv,
+            "312/M-110 (Modellhaelfte) legacy_legt_die_live_sicht_still (E-312-26): vor dem Wechsel 5 Zeilen aus "
+            "einem echten Snapshot, nach sensor 0 Zeilen und keine Subscription, ein verspaeteter Snapshot der "
+            "alten Sitzung traegt nichts ein",
+            juce::String ((int) vorher.quellen.size()) + " vorher, " + juce::String ((int) inLegacy.quellen.size())
+                + " in Legacy, " + juce::String ((int) nachVerspaetet.quellen.size()) + " nach dem verspaeteten Snapshot");
+    pruefe (zuHub && zurueckIds == std::set<std::string> (mitglieder.begin(), mitglieder.end()),
+            "312/M-110 (Modellhaelfte): nach der Rueckkehr zu hub stehen genau die drei Mitglieder als Zeilen",
+            juce::String ((int) zurueck.quellen.size()) + " Zeilen");
+}
+
+/// M-120 · ein ausstehender Beitritt ueberlebt den Rollenwechsel (E-312-23).
+/// X ist vor dem Wechsel ein echter Snapshot-Eintrag; die confirm_join von X
+/// und Y sind gesendet und noch nicht quittiert. Nach sensor kommen die ACKs -
+/// X angewandt, Y endgueltig abgewiesen - und ein Drain wendet an: X ist
+/// Mitglied des ruhenden Bestands, genau eine Host-Dirty-Meldung dafuer, in
+/// Legacy keine Zeile; Y aendert nichts; nach hub ist X eine Zeile.
+void ausstehender_beitritt_ueberlebt_den_rollenwechsel()
+{
+    std::cout << "== NAK-312 M-120 ausstehender_beitritt_ueberlebt_den_rollenwechsel ==\n";
+    auto p = nak246d3::mainAnlegen (false, true);
+    const auto x = nummer (7);
+    const auto y = nummer (8);
+    const auto main = nakama::ipc::wireAdresseAusState (p->v3HelloFuerTest().adresse);
+    p->v3LinkFuerTest (true);
+    p->v3AntwortFuerTest (snapshotMit (main, { x, y }));
+    auto istZeile = [&p] (const std::string& id)
+    {
+        for (const auto& q : p->sourcesSicht().quellen)
+            if (q.instanceId == id)
+                return true;
+        return false;
+    };
+    auto imBestand = [&p] (const std::string& id)
+    {
+        for (const auto& m : p->holeZustandKopie().mainProjectMitglieder)
+            if (m.instanceId.toStdString() == id)
+                return true;
+        return false;
+    };
+    const bool vorherZeile = istZeile (x) && istZeile (y);
+    const auto befehlX = p->merkeSourcesCommandFuerTest (Art::confirmJoin, x);
+    const auto befehlY = p->merkeSourcesCommandFuerTest (Art::confirmJoin, y);
+    const bool zuSensor = p->setzeBindung ("sensor", "Messpunkt", {});
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->v3AntwortFuerTest (ack (befehlX, true));
+    p->v3AntwortFuerTest (ack (befehlY, false));
+    p->sourcesTick();   // der Drain
+    const bool xRuht = imBestand (x);
+    const bool yFehlt = ! imBestand (y);
+    const int dirtyAck = dirty.nonParam;
+    const int zeilenInLegacy = (int) p->sourcesSicht().quellen.size();
+    const bool keineZeileInLegacy = zeilenInLegacy == 0;
+    const bool zuHub = p->setzeBindung ("hub", "Gen", {});
+    bool xZeileNachHub = false;   // als BESTAETIGTES Mitglied, nicht als Snapshot-Rest
+    for (const auto& q : p->sourcesSicht().quellen)
+        xZeileNachHub = xZeileNachHub
+            || (q.instanceId == x && q.mitgliedschaft == Sm::Mitgliedschaft::bestaetigt);
+    p->removeListener (&dirty);
+    pruefe (vorherZeile && zuSensor && xRuht && dirtyAck == 1 && keineZeileInLegacy,
+            "312/M-120 ausstehender_beitritt_ueberlebt_den_rollenwechsel (E-312-23): das nach dem Wechsel "
+            "eintreffende ACK wirkt genau einmal auf den ruhenden Bestand - X ist Mitglied, genau 1 Host-Dirty, "
+            "in Legacy keine Zeile",
+            juce::String ("X ") + (xRuht ? "im Bestand" : "FEHLT") + ", Host-Dirty " + juce::String (dirtyAck)
+                + ", Zeilen in Legacy " + juce::String (zeilenInLegacy));
+    pruefe (yFehlt && zuHub && xZeileNachHub,
+            "312/M-120: ein vom Broker endgueltig abgewiesener Befehl aendert nichts, und nach der Rueckkehr zu "
+            "hub ist X eine Zeile als bestaetigtes Mitglied",
+            juce::String ("Y ") + (yFehlt ? "nicht im Bestand" : "IM BESTAND") + ", X nach hub "
+                + (xZeileNachHub ? "eine Zeile" : "KEINE Zeile"));
+}
 } // namespace nak312
 } // namespace
 
@@ -2903,6 +3013,11 @@ int main (int argc, char** argv)
     // NAK-312 Etappe 7b (U51): gespeicherte Quellen werden nie geloescht (M-126).
     nak312::altprojekt_behaelt_alle_und_zeigt_20 (21);
     nak312::altprojekt_behaelt_alle_und_zeigt_20 (40);
+    // NAK-312 Etappe 7b (U49): in Legacy ruht der Bestand, die Live-Sicht ist
+    // stillgelegt (M-110, E-312-26), ein ausstehender Beitritt wirkt auf den
+    // ruhenden Bestand (M-120, E-312-23).
+    nak312::legacy_legt_die_live_sicht_still();
+    nak312::ausstehender_beitritt_ueberlebt_den_rollenwechsel();
     const auto quelle = id ('a');
 
     eqcop::EqCopilotProcessor vor;

@@ -278,13 +278,37 @@ public:
         Kopie. Abgewiesen wird jede Publikation, deren Nummer NICHT GROESSER ist
         als die zuletzt uebernommene.
 
-        Kein Default-Argument: jeder Aufrufer reicht Generation UND Folgenummer,
-        die er im selben Block wie die Kopie gelesen hat. Der Startwert ist 0
-        wie im Prozessor; die erste vergebene Nummer ist 1. */
+        NAK-312 Etappe 7b (E-312-26, M-110): die Publikation traegt auch die
+        KLASSE der Instanz. In `legacy` ruht der Bestand, die Kopie ist leer,
+        und das Modell legt die Live-Sicht still - unter seinem `mutex`,
+        unmittelbar nach Generations- und Folgevergleich und vor dem
+        Inhaltsvergleich, nach dem Muster `projektReload`: Eintraege, wartende
+        Sonden, Hauptziel, Subscription, erwartete Bindung und Sitzung und der
+        Sitzungszustand fallen, ein verspaeteter Snapshot oder P2-Frame des
+        alten Links traegt nichts mehr ein. Nach der Rueckkehr zu `main` vergibt
+        die Annahmeregel die Plaetze neu, zuerst an die gespeicherten
+        Mitglieder - dieselben Zeilen wie nach einem Neuladen (U49).
+
+        Kein Default-Argument: jeder Aufrufer reicht Generation, Folgenummer
+        und Klasse, die er im selben Block wie die Kopie gelesen hat. Der
+        Startwert ist 0 wie im Prozessor; die erste vergebene Nummer ist 1. */
     Publikation setzePersistenteMitglieder (
         const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
         std::uint64_t generation,
-        std::uint64_t folge);
+        std::uint64_t folge,
+        nakama::state::Klasse klasse);
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    /** Nur im Testbau: die Publikation eines Main, fuer Beine, die das Modell
+        ohne Prozessor fahren. Jeder Produktaufrufer reicht die Klasse. */
+    Publikation setzePersistenteMitglieder (
+        const std::vector<nakama::state::MainProjectMitglied>& mitglieder,
+        std::uint64_t generation,
+        std::uint64_t folge)
+    {
+        return setzePersistenteMitglieder (mitglieder, generation, folge,
+                                           nakama::state::Klasse::main);
+    }
+#endif
     /** NAK-283 Etappe 2 (M-72): wie viele Publikationen das Modell wegen einer
         nicht groesseren Folgenummer abgewiesen hat - der Zeuge des Falls, den
         F01 beschreibt. Getrennt von `publikationenNachReloadAbgewiesen`
@@ -397,15 +421,20 @@ private:
     ///
     /// Sie leert genau die sieben Groessen einer Sitzung: `experimente`,
     /// `paare`, `befunde`, `findingsOffen` je Zeile, `evidenzRuecknahmen`,
-    /// `ruecknahmeGrund` und `ruecknahmeUmfang`. Beide Wege, auf denen eine
-    /// Sitzung endet, rufen sie - `beginneSubscription` (eine neue Sitzung)
-    /// und `projektReload` (ein anderes Projekt). Bis NAK-246 leerte nur der
+    /// `ruecknahmeGrund` und `ruecknahmeUmfang`. Jeder Weg, auf dem eine
+    /// Sitzung endet, ruft sie - `beginneSubscription` (eine neue Sitzung),
+    /// `projektReload` (ein anderes Projekt) und seit NAK-312 Etappe 7b
+    /// `legeLiveSichtStill` (der Wechsel nach `legacy`). Bis NAK-246 leerte nur der
     /// erste diese Menge; ein read-only oder ungebunden geladener State baut
     /// keine Subscription auf, und die alte Sitzung blieb in der Sicht des
     /// neuen Projekts stehen (Auditbefund D6, SONDE-013 M-50).
     ///
     /// ⚠️ Der Aufrufer haelt den `mutex` bereits.
     void sitzungszustandLeeren();
+    /// NAK-312 Etappe 7b (E-312-26): die Stilllegung der Live-Sicht in
+    /// `legacy`, Muster `projektReload` (siehe `setzePersistenteMitglieder`).
+    /// ⚠️ Der Aufrufer haelt den `mutex` bereits.
+    void legeLiveSichtStill();
     /// SONDE-013 Nacharbeit 2 (Befunde R14/R32): der zuletzt empfangene Stand
     /// der Versuche und Paarurteile dieser Sitzung.
     std::vector<Versuch> experimente;

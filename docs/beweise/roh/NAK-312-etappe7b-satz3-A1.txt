@@ -1,0 +1,67 @@
+# NAK-312 Etappe 7b, Einzelbein A1 (Satz 3 Endstand)
+
+== Stand (2026-09-23 04:17:53) ==
+HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/plugin-wissen.md
+    M eq-copilot/fixtures/state/MANIFEST.json
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/src/prozessor/Ipc.cpp
+    M eq-copilot/plugin/src/prozessor/State.cpp
+    M eq-copilot/plugin/state/NakamaState.cpp
+    M eq-copilot/plugin/state/NakamaState.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+    M eq-copilot/schemas/state/nakama-state-v2.md
+    M tools/beweise.ps1
+    M tools/eq-copilot/erzeuge_state_fixtures.py
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-111.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-112.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-118.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-119.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-120.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-121.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B2.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-vorstandsleser.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-modell.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-prozessor.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-111.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-112.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-113.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-114.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-115.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-116.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-117.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-ruecknahme.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common-2.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-120.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-a.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-c.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-131.txt
+   ?? eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+Binary EqCopNullTest.exe 2026-09-23 04:17:13.622, juengste Quelle eq-copilot\plugin\src\PluginEditor.cpp 2026-09-23 04:16:06.095, Binary juenger: True
+
+== Lauf (2026-09-23 04:17:53): eq-copilot/build/plugin/EqCopNullTest_artefacts/Release/EqCopNullTest.exe  ==
+Lauf Exit 0 (2026-09-23 04:17:53), Dauer 0.1 s
+
+== Vollstaendige Ausgabe ==
+     ok      Latenz ist 0 Samples
+     ok      Tail ist 0 s
+     ok      1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+     ok      kein falscher NaN-Alarm bei endlichem Signal
+     ok      NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+     ok      NaN/Inf wurde als Mangel registriert
+     ok      Mono-Layout wird angenommen
+     ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+     ok      Save/Load: Sensor-ID bleibt stabil
+     ok      Save/Load: Rolle und Paar-ID bleiben
+   NULLTEST OK

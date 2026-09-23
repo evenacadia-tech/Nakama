@@ -1211,11 +1211,13 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
     std::vector<nakama::state::MainProjectMitglied> kopie;
     std::uint64_t generation = 0;
     std::uint64_t folge = 0;
+    auto klasse = nakama::state::Klasse::main;   // NAK-312 E-312-26
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
             || ! sourcesModel.istAktuellesHauptziel (erwarteteInstanceId))
             return false;
+        klasse = zustand.common.klasse;
         const auto gefunden = std::find_if (
             zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
             [&] (const auto& m) { return m.instanceId.toStdString() == erwarteteInstanceId; });
@@ -1238,7 +1240,7 @@ bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteIn
     // war F01: die Wache deckte bis NAK-283 nur den Reload ab. Beide Faelle
     // entscheidet jetzt derselbe Riegel im Modell (M-02).
     werteSourcesPublikationAus (
-        sourcesModel.setzePersistenteMitglieder (kopie, generation, folge));
+        sourcesModel.setzePersistenteMitglieder (kopie, generation, folge, klasse));
     return true;
 }
 
@@ -1259,10 +1261,12 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
         std::vector<nakama::state::MainProjectMitglied> kopie;
         std::uint64_t generation = 0;
         std::uint64_t folge = 0;
+        auto klasse = nakama::state::Klasse::main;   // NAK-312 E-312-26
         {
             std::lock_guard<std::mutex> l (bindungMutex);
             if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
                 return false;
+            klasse = zustand.common.klasse;
             const auto gefunden = std::find_if (
                 zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
                 [&] (const auto& m) {
@@ -1280,7 +1284,7 @@ bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteI
         // Unbind ohne Broker bleibt wirksam, auch wenn ein Drain danach seine
         // aeltere Kopie nachreicht.
         werteSourcesPublikationAus (
-            sourcesModel.setzePersistenteMitglieder (kopie, generation, folge));
+            sourcesModel.setzePersistenteMitglieder (kopie, generation, folge, klasse));
         return true;
     }
     return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
@@ -1414,7 +1418,14 @@ EqCopilotProcessor::bestaetigteSourcesCommandsAbholen()
 bool EqCopilotProcessor::wendeSourcesCommandAnUnterBindung (const SourcesCommand& befehl)
 {
     // Aufrufer haelt `bindungMutex`.
-    if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
+    //
+    // 🔑 NAK-312 Etappe 7b (E-312-23, M-120): auch in `legacy`, bei gleicher
+    // Bindung und Sitzung. Ein Beitritt, den der Broker nach dem Rollenwechsel
+    // quittiert, wirkt genau einmal auf den ruhenden Bestand; ihn zu verwerfen
+    // verloere einen Handgriff des Users als Nebenwirkung des Wechsels (U49).
+    const auto klasse = zustand.common.klasse;
+    if (zustand.nurLesen
+        || (klasse != nakama::state::Klasse::main && klasse != nakama::state::Klasse::legacy)
         || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
         || v3SessionEpoch != befehl.sessionEpoch)
         return false; // Befehl eines FREMDEN Laufs (andere Bindung/Instanz) mutiert nie.
@@ -1517,6 +1528,7 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
     // wenigen Befehlen (N-A1-2).
     std::vector<nakama::state::MainProjectMitglied> kopie;
     std::uint64_t folge = 0;
+    auto klasse = nakama::state::Klasse::main;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (reloadGeneration.load() != generationBeimAbholen)
@@ -1524,7 +1536,13 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
             sourcesNachfuehrungNachReloadUnterblieben.fetch_add (1);
             return;
         }
-        kopie = zustand.mainProjectMitglieder;
+        // NAK-312 Etappe 7b (E-312-26): wie `setzeBindung` - die Kopie nur in
+        // `main`, die Klasse aus demselben Block. In `legacy` bleibt die
+        // Live-Sicht stillgelegt, der quittierte Beitritt ist Mitglied ohne
+        // Zeile (M-120).
+        klasse = zustand.common.klasse;
+        if (klasse == nakama::state::Klasse::main)
+            kopie = zustand.mainProjectMitglieder;
         folge = naechsteSourcesFolgeUnterBindung();
     }
     // NAK-246 M-39: der Testhaken zwischen Kopie und Publikation, ohne
@@ -1532,7 +1550,7 @@ void EqCopilotProcessor::meldeSourcesMitgliederNachBefehl (std::uint64_t generat
     if (sourcesPublikationHakenFuerTest)
         sourcesPublikationHakenFuerTest (kopie.size());
     werteSourcesPublikationAus (
-        sourcesModel.setzePersistenteMitglieder (kopie, generationBeimAbholen, folge));
+        sourcesModel.setzePersistenteMitglieder (kopie, generationBeimAbholen, folge, klasse));
 }
 
 void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()

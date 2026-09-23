@@ -1,0 +1,60 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-118-ruecknahme.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-118 (E-312-8), Ruecknahmehaelfte, Etikett Regressionswache.
+Zusage: der Wechsel weg von Main nimmt den Auftrag zurueck; nach der Rueckkehr kein neues begin.
+Bein: A3 EqCopMarkierungTest.
+Mutation an der Zusagezeile (§46.2): die Ruecknahme in spiegleKlassifikation entfernen.
+Erwartetes Rot: kein Ausfade bzw. nach der Rueckkehr ein neues begin.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:13:11) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-State.cpp-041311
+
+== 2. Mutation (2026-09-23 04:13:11) ==
+Datei eq-copilot/plugin/src/prozessor/State.cpp, ab Zeile 295
+-- vorher:
+   |         markierung.reicheAus();
+-- nachher:
+   |         ; // (Rotbeweis: die Ruecknahme ist entfernt)
+SHA-256 mutiert: E71F069F47A34CDE55459371B91586AE7A6C36D8A6F809DD6368EF08FC5DFF7C
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:13:11) ==
+Bau Exit 0 (2026-09-23 04:13:11 bis 2026-09-23 04:13:16), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 04:13:16.907, Quelle State.cpp 04:13:11.948, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:13:24); Zeilen mit ok: 146; Zeilen mit FEHLER/ROT: 9
+     FEHLER  312/M-55 rollenwechsel_zu_main_entwaffnet_den_marker - 40 Bloecke nach dem Wechsel zu Main bitgleich zum Eingang, kein Block hoerbar, im Ring weder begin noch end  [40 abweichend, 40 hoerbar, 1 im Ring]
+     FEHLER  312/M-55: und der Sender findet nichts zu senden  [1 begin, 0 end]
+     FEHLER  312/M-57 rueckwechsel_hinterlaesst_keinen_scharfen_marker (Teilfall von 312/M-55) - nach sensor, hub, sensor 40 Bloecke bitgleich, kein Ereignis im Ring  [8 abweichend, 1 im Ring]
+     FEHLER  312/M-57: kein Bedienelement behauptet einen scharfen Marker - kein Auftrag, kein Latch, Aus-Knopf in der Legacy-Flaeche unsichtbar
+     FEHLER  312/M-57 editorhaelfte_kein_aus_knopf_ohne_auftrag - nach dem Wechsel weg von Main traegt der Editor keinen Latch, der Aus-Knopf ist unsichtbar, der Status sagt warum  [Markierung beendet — diese Instanz ist nicht mehr Main.]
+     FEHLER  312/M-84 rollenwechsel_weg_von_main_schliesst_das_intervall - nach dem zweiten Wechsel zu Main entsteht ohne neuen Handgriff KEIN neues begin, 40 Bloecke bitgleich  [40 abweichend, 1 begin, 1 end]
+     FEHLER  312/M-84: genau ein begin und genau ein end dazu, mit der gezaehlten Hoerdauer  [44544 Samples gehoert, tail 52928 (erwartet 93888)]
+     FEHLER  312/M-84 teilfall_rueckwechsel_im_laufenden_ausfade - der Wechsel zurueck zu Main mitten im Ausfade blendet nicht wieder ein: der Ausfade laeuft zu Ende, genau ein begin und ein end  [letzte Abweichung in Block 39, 1 begin, 0 end]
+     FEHLER  312/M-118 (Ruecknahme) auftrag_gehoert_nicht_zum_bestand (Teilfall von 312/M-84): mit gefuelltem Bestand nimmt der Wechsel weg von Main den Auftrag zurueck wie dort - genau ein begin und ein end, weicher Ausfade, nach der Rueckkehr kein neues begin, 40 Bloecke bitgleich  [1 begin, 0 end / 1 begin, 1 end, 40 abweichend]
+     ok      T4: genug Baender fuer den Vergleich
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-118 \(Ruecknahme\)'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:13:24) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:13:24
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:13:24) ==
+Bau Exit 0 (2026-09-23 04:13:24 bis 2026-09-23 04:13:29), Ziele: EqCopMarkierungTest
+Binary EqCopMarkierungTest.exe 04:13:29.647, Quelle State.cpp 04:13:24.937, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:13:37); Zeilen mit ok: 155; Zeilen mit FEHLER/ROT: 0
+     ok      T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)
+     ok      T11: als Main klassifiziert (Â§53.5)
+     ok      T11: Auftrag gebaut
+     ok      T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)
+     ok      T11: und die Markierung meldet sich nicht hoerbar
+     ok      T11: mit gestopptem Transport ebenfalls kein Sample
+     ok      T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau
+   MARKIERUNGSTEST OK
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

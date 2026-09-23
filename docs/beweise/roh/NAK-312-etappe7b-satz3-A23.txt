@@ -1,0 +1,70 @@
+# NAK-312 Etappe 7b, Einzelbein A23 (Satz 3 Endstand)
+
+== Stand (2026-09-23 04:18:00) ==
+HEAD b60f76eba332b67be10778abe5b54c82f1a2c0df
+Arbeitsbaum (git status --short, ohne fremde Ordner):
+    M docs/plugin-wissen.md
+    M eq-copilot/fixtures/state/MANIFEST.json
+    M eq-copilot/plugin/src/SourcesModel.cpp
+    M eq-copilot/plugin/src/SourcesModel.h
+    M eq-copilot/plugin/src/prozessor/Ipc.cpp
+    M eq-copilot/plugin/src/prozessor/State.cpp
+    M eq-copilot/plugin/state/NakamaState.cpp
+    M eq-copilot/plugin/state/NakamaState.h
+    M eq-copilot/plugin/tests/MarkierungTestMain.cpp
+    M eq-copilot/plugin/tests/Sonde012ProjectReloadTest.cpp
+    M eq-copilot/plugin/tests/StateMigrationTestMain.cpp
+    M eq-copilot/schemas/state/nakama-state-v2.md
+    M tools/beweise.ps1
+    M tools/eq-copilot/erzeuge_state_fixtures.py
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-110.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-111.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-112.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-118.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-119.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-120.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-gegenprobe-M-121.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A12.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-A3.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B1.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B13.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B14.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B15.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B2.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-satz3-B28.txt
+   ?? docs/beweise/roh/NAK-312-etappe7b-vorstandsleser.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-modell.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-110-prozessor.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-111.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-112.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-113.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-114.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-115.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-116.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-117.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-bestand.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-118-ruecknahme.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common-2.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-119-common.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-120.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-a.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-121-c.txt
+   ?? docs/beweise/roh/NAK-312-rot-M-131.txt
+   ?? eq-copilot/fixtures/state/schema2/legacy-retained-v1.bin
+Binary EqCopSonde012SourcesLatencyTest.exe 2026-09-23 04:17:29.529, juengste Quelle eq-copilot\plugin\src\PluginEditor.cpp 2026-09-23 04:16:06.095, Binary juenger: True
+
+== Lauf (2026-09-23 04:18:00): tools/eq-copilot/pruefe_sonde012_sources_latency.py  ==
+Lauf Exit 0 (2026-09-23 04:18:05), Dauer 4.74 s
+
+== Vollstaendige Ausgabe ==
+     ok      beide Programme verweigern Produktions- und Golden-Pipe
+     ok      16 Quellen / 2048 Samples p95 50.901 ms <= 300 ms
+     ok      16 Quellen / 4096 Samples p95 93.3113 ms <= 300 ms
+     ok      16 Quellen / 16384 Samples p95 349.714 ms <= 750 ms
+     ok      32 Quellen / 2048 Samples p95 50.1606 ms <= 300 ms
+     ok      32 Quellen / 4096 Samples p95 94.0261 ms <= 300 ms
+     ok      32 Quellen / 16384 Samples p95 351.227 ms <= 750 ms
+   {"p95_16_2048_ms":50.901,"p95_16_4096_ms":93.3113,"p95_16_16384_ms":349.714,"p95_32_2048_ms":50.1606,"p95_32_4096_ms":94.0261,"p95_32_16384_ms":351.227}
+   GRUEN - sechs p95-Grenzen und Anzeige-Revisionen

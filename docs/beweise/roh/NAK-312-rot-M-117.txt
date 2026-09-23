@@ -1,0 +1,84 @@
+# NAK-312 Rotbeweis (NAK-312-rot-M-117.txt) (Manifest §7.1, §47.1)
+
+Matrixzeile: 312/M-117 (read-only-Stand, R-312-30), Etikett Regressionswache.
+Zusage: beide Wechsel verweigert, die Bindung im Speicher bleibt, wie sie geladen wurde.
+Bein: B2 EqCopStateMigrationTest.
+Mutation an der Zusagezeile (§46.2): die Wache nurLesen hinter zustand.common = neu ziehen.
+Erwartetes Rot: Rolle, Label und Paar-ID im Speicher geaendert.
+
+== 1. SHA-256 vorher und Sicherung (2026-09-23 04:12:58) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp
+Sicherung ausserhalb des Repos: C:\Users\phili\.claude\jobs\4c811fa4\tmp\sicherung-State.cpp-041258
+
+== 2. Mutation (2026-09-23 04:12:58) ==
+Datei eq-copilot/plugin/src/prozessor/State.cpp, ab Zeile 330
+-- vorher:
+   |         if (zustand.nurLesen)
+   |             return false;
+   |         auto neu = zustand.common;
+   |         neu.klasse = klasse;
+   |         neu.position = position;
+   |         neu.label = lbl;
+   |         neu.pairId = p;
+   |         // Die Projektbindung entsteht nur an diesem sichtbaren User-Akt.
+   |         // Frischzustand und Migration bleiben leer; der State selbst wird
+   |         // danach zur autoritativen, persistierten Quelle fuer alle Clients.
+   |         if (klasse == nakama::state::Klasse::main
+   |             && neu.projectBindingId.isEmpty())
+   |             neu.projectBindingId = juce::String (uuidHex32());
+   |         if (neu == zustand.common)
+   |             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+   |         zustand.common = neu;
+-- nachher:
+   |         auto neu = zustand.common;
+   |         neu.klasse = klasse;
+   |         neu.position = position;
+   |         neu.label = lbl;
+   |         neu.pairId = p;
+   |         // Die Projektbindung entsteht nur an diesem sichtbaren User-Akt.
+   |         // Frischzustand und Migration bleiben leer; der State selbst wird
+   |         // danach zur autoritativen, persistierten Quelle fuer alle Clients.
+   |         if (klasse == nakama::state::Klasse::main
+   |             && neu.projectBindingId.isEmpty())
+   |             neu.projectBindingId = juce::String (uuidHex32());
+   |         if (neu == zustand.common)
+   |             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+   |         zustand.common = neu;
+   |         if (zustand.nurLesen)
+   |             return false;   // (Rotbeweis: die Wache steht hinter zustand.common = neu)
+SHA-256 mutiert: 44C666F5FB54F7B66110B99DE27781D2F39FB1AFE572C445F2CB1CBCB5A187F2
+
+== 3. Bau und Lauf unter der Mutation (2026-09-23 04:12:58) ==
+Bau Exit 0 (2026-09-23 04:12:58 bis 2026-09-23 04:13:03), Ziele: EqCopStateMigrationTest
+Binary EqCopStateMigrationTest.exe 04:13:03.502, Quelle State.cpp 04:12:58.797, Binary juenger: True
+Lauf Exit 1 (2026-09-23 04:13:05); Zeilen mit ok: 322; Zeilen mit FEHLER/ROT: 3
+     FEHLER  312/M-117 read_only_verweigert_den_wechsel (fremdes Major 9): sensor und hub verweigert, Rolle, Label, Paar-ID, Common und die sieben im Speicher unveraendert, Originalbytes bytegleich, 0 Host-Dirty  [Grund 'NakamaState schema 9 is unknown to this version (it reads schema 2)', Bindung nach sensor GEAENDERT, nach hub GEAENDERT, Host-Dirty 0]
+     FEHLER  312/M-117 read_only_verweigert_den_wechsel (Golden als main mit Bestandskind (Kind-Matrix)): sensor und hub verweigert, Rolle, Label, Paar-ID, Common und die sieben im Speicher unveraendert, Originalbytes bytegleich, 0 Host-Dirty  [Grund 'main requires exactly one MainProject', Bindung nach sensor GEAENDERT, nach hub GEAENDERT, Host-Dirty 0]
+     FEHLER  == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+     ok      312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     ok      312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [1 Mitglieder, 1 Passagen, 1 Intents, 1 Schutzangaben, 1 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 1981 Bytes, Kinder Common,RetainedMainProject, Zeilen 1]
+     ok      312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [64 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 138635 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [20 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 115711 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [21 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 116232 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [2 Mitglieder, 2 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 71704 Bytes, Kinder Common,RetainedMainProject, Zeilen 2, leer 2, gefuellt 2]
+     ok      == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+   STATE-MIGRATION-TEST FEHLGESCHLAGEN - 322 Pruefungen ok, 3 Fehler
+Die Zusage faellt an der erwarteten Pruefung (Muster '312/M-117'): JA
+
+== 4. Ruecknahme bytegleich (2026-09-23 04:13:05) ==
+8D913E4C82DFA8F7883E66EB3CE2901E97ECC3214FDFECCA35169FD4528B9EB2  eq-copilot/plugin/src/prozessor/State.cpp  gleich dem Wert vorher: True
+LastWriteTime nach der Ruecknahme auf jetzt gesetzt (NAK-230): 04:13:05
+
+== 5. Neubau und Lauf nach der Ruecknahme (2026-09-23 04:13:05) ==
+Bau Exit 0 (2026-09-23 04:13:05 bis 2026-09-23 04:13:10), Ziele: EqCopStateMigrationTest
+Binary EqCopStateMigrationTest.exe 04:13:10.146, Quelle State.cpp 04:13:05.141, Binary juenger: True
+Lauf Exit 0 (2026-09-23 04:13:11); Zeilen mit ok: 325; Zeilen mit FEHLER/ROT: 0
+     ok      312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+     ok      312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [1 Mitglieder, 1 Passagen, 1 Intents, 1 Schutzangaben, 1 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 1981 Bytes, Kinder Common,RetainedMainProject, Zeilen 1]
+     ok      312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [64 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 138635 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [20 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 115711 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [21 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 116232 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+     ok      312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [2 Mitglieder, 2 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 71704 Bytes, Kinder Common,RetainedMainProject, Zeilen 2, leer 2, gefuellt 2]
+     ok      == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+   STATE-MIGRATION-TEST OK - 325 Pruefungen ok, 0 Fehler
+Ergebnis: Rot unter der Mutation (Exit 1), gruen nach der Ruecknahme (Exit 0), SHA-256 gleich: True

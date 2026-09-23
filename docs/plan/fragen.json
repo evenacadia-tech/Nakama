@@ -70,17 +70,6 @@
    "wo": "docs/beweise/NAK-312.md §29; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-urteil.md L-1; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-validierung.md V-1 bis V-4",
    "seit": "21.09.",
    "status": "offen"
-  },
-  {
-   "id": "U58",
-   "dringlichkeit": "bald — Etappe 7 von NAK-312 wartet mit ihrem letzten Teil darauf",
-   "art": "Produktentscheid (Klangverhalten)",
-   "titel": "FLs Bypass-Knopf loslassen: laufen die Filter durch oder fangen sie neu an?",
-   "was": "Du hast am 21.09. gewählt, dass FLs eigener Bypass-Knopf am Mixer-Slot weich überblendet und Probeeq währenddessen weiter misst (Karte U48). Damit die Messung im Bypass weiterläuft, rechnet der EQ im Hintergrund weiter; du hörst dabei nur das unbearbeitete Signal. Beim Loslassen des Knopfs blendet Nakama in etwa 5 ms zurück auf den EQ. Dafür gibt es zwei Möglichkeiten. (1) Empfohlen: die Filter laufen einfach weiter, so wie sie im Hintergrund gerechnet haben — kein Einschwingen, kein hörbarer Knick beim Zurückblenden. (2) Die Filter fangen beim Loslassen kalt neu an, genau wie bei Nakamas eigenem EQ-Schalter; bei einem schmalen, tiefen Band ist das als kurzer Einbruch bis etwa 200 ms hörbar. Bei (2) misst Probeeq im Bypass das unbearbeitete Signal, und Gen zeigt das an, als wäre es die Wirkung des EQ. In der Frage vom 21.09. hieß es, die Filter fingen bei beiden Schaltern neu an; das galt für Nakamas Schalter, nicht für FLs Knopf, der bisher gar keine Blende hatte. Deshalb fragen wir nach, statt es still zu bauen.",
-   "warum": "Bauplan der Etappe 7 von NAK-312 (Manifest §47.3, Weg K-B gegen K-A; Entscheid E-312-19 in §49.2). Weg 1 ist der kleinere und sicherere Umbau, und nur bei Weg 1 misst Probeeq im Bypass weiter dasselbe wie sonst, nämlich den bestätigten EQ. Ohne Antwort wird dieser Teil (FLs Bypass-Knopf) nicht gebaut; die anderen Teile der Etappe 7 laufen vorher.",
-   "wo": "docs/beweise/NAK-312.md §47.3 und §49.2; design/abnahmen/2026-09-21-fl-bypass-weich-messung-laeuft-u48.md",
-   "seit": "23.09.",
-   "status": "offen"
   }
  ],
  "geparkt": [
@@ -955,6 +944,24 @@
     "warum": "Dein Wort vom 19.09.2026: „in 2 tagen evaluieren wir dann neu“. Ohne Antwort bleibt es bei xhigh.",
     "wo": "docs/offene-punkte.md NAK-335; Skill /dirigent §3.2 und §3.6; Zahlen (Stand 21.09.2026, tragen keine Empfehlung): docs/beweise/roh/NAK-335-u55-zahlen.md",
     "seit": "19.09.",
+    "status": "offen"
+   }
+  },
+  "U58": {
+   "wahl": "1. Filter laufen weiter (Empfohlen)",
+   "text": "Filter laufen weiter (Empfohlen)",
+   "datum": "2026-09-23 09:05",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1 (Technik: Weg K-B, E-312-19): nach dem Lösen von FLs Bypass-Knopf laufen die Filter weiter, kein Einschwingen; Probeeq misst im Hostbypass den bestätigten EQ. Gebaut in NAK-312 (Planschritt S25k) als Etappe 7b Teil 2 (M-94 bis M-109, M-132). Festgehalten in design/abnahmen/2026-09-23-fl-bypass-loslassen-filter-laufen-weiter-u58.md und im Register NAK-312 (Manifest docs/beweise/NAK-312.md §60). Gestellt über AskUserQuestion in der Dirigentensitzung d759a806 (Cron im Zeitfenster) mit zwei Wegen: „Filter laufen weiter (Empfohlen)“, „Filter fangen kalt neu an“.",
+   "karte": {
+    "id": "U58",
+    "dringlichkeit": "bald — Etappe 7 von NAK-312 wartet mit ihrem letzten Teil darauf",
+    "art": "Produktentscheid (Klangverhalten)",
+    "titel": "FLs Bypass-Knopf loslassen: laufen die Filter durch oder fangen sie neu an?",
+    "was": "Du hast am 21.09. gewählt, dass FLs eigener Bypass-Knopf am Mixer-Slot weich überblendet und Probeeq währenddessen weiter misst (Karte U48). Damit die Messung im Bypass weiterläuft, rechnet der EQ im Hintergrund weiter; du hörst dabei nur das unbearbeitete Signal. Beim Loslassen des Knopfs blendet Nakama in etwa 5 ms zurück auf den EQ. Dafür gibt es zwei Möglichkeiten. (1) Empfohlen: die Filter laufen einfach weiter, so wie sie im Hintergrund gerechnet haben — kein Einschwingen, kein hörbarer Knick beim Zurückblenden. (2) Die Filter fangen beim Loslassen kalt neu an, genau wie bei Nakamas eigenem EQ-Schalter; bei einem schmalen, tiefen Band ist das als kurzer Einbruch bis etwa 200 ms hörbar. Bei (2) misst Probeeq im Bypass das unbearbeitete Signal, und Gen zeigt das an, als wäre es die Wirkung des EQ. In der Frage vom 21.09. hieß es, die Filter fingen bei beiden Schaltern neu an; das galt für Nakamas Schalter, nicht für FLs Knopf, der bisher gar keine Blende hatte. Deshalb fragen wir nach, statt es still zu bauen.",
+    "warum": "Bauplan der Etappe 7 von NAK-312 (Manifest §47.3, Weg K-B gegen K-A; Entscheid E-312-19 in §49.2). Weg 1 ist der kleinere und sicherere Umbau, und nur bei Weg 1 misst Probeeq im Bypass weiter dasselbe wie sonst, nämlich den bestätigten EQ. Ohne Antwort wird dieser Teil (FLs Bypass-Knopf) nicht gebaut; die anderen Teile der Etappe 7 laufen vorher.",
+    "wo": "docs/beweise/NAK-312.md §47.3 und §49.2; design/abnahmen/2026-09-21-fl-bypass-weich-messung-laeuft-u48.md",
+    "seit": "23.09.",
     "status": "offen"
    }
   }

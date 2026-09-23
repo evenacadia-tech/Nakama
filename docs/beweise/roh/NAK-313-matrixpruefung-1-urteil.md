@@ -1,0 +1,52 @@
+# NAK-313 — Matrixprüfung 1, Rohurteil (Codex gpt-6-astra, Effort xhigh, lesend)
+
+**Thread:** 01a0cfdf-db35-7201-969c-799547a30155 · **HEAD vor und nach dem Lauf:** de2731aa75d6b750305106831e65d9ec736def51 · **Lauf:** 23.09.2026, 22:05:49 bis 22:23:31 (+02:00, aus der Startdatei des Laufs) · **Prüfbereich:** git diff 2b7472d2...ed6387cb -- docs/beweise/NAK-313.md (§5 bis §9, 145 Matrixzeilen) · **Auftrag:** docs/beweise/roh/NAK-313-matrixpruefung-1-auftrag.txt · **Ablage:** der Prüfer konnte in der read-only-Sandbox keine Berichtsdatei anlegen; dies ist seine letzte Nachricht (Temp-Datei des Laufs), unverändert vom Dirigenten abgelegt. Die 14 Befunde werden in der Validierung in Reihenfolge ihres Auftretens als D1 bis D14 bezeichnet.
+
+---
+
+URTEIL: NEEDS_WORK — Diff und 145 Matrixzeilen gelesen; die genannten Widersprüche statisch am ZIEL nachgemessen, keine Laufzeittests ausgeführt. HEAD Beginn: de2731aa75d6b750305106831e65d9ec736def51; HEAD Ende: de2731aa75d6b750305106831e65d9ec736def51; Worktree unverändert, Berichtsdatei wegen Schreibschutz nicht angelegt.
+FERTIG Matrixprüfung 1, NEEDS_WORK, 14 Defekte, 0 Lücken, 0 Härtungen.
+
+Full review comments:
+
+- [P2] Trenne in M-09 die bestehende Wache vom neuen Aufrufzähler — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:970-970
+  DEFEKT: M-09(a) ist für die Zusage „kein Aufruf“ keine heute grüne Regressionswache. Am ZIEL ruft `PluginEditor.cpp:816` auch beim unveränderten frischen Gen `setzeBindung` auf; erst `State.cpp:343–344` verhindert Mutation und Dirty. Die Unverändert-Prüfung, deren Entfernung als Rotmutation vorgesehen ist, existiert noch nicht. Gemäß der Etikettendefinition in §6 müssen die bestehenden Zustands-/Dirty-Wachen vom neu hinzukommenden Aufrufnachweis getrennt werden.
+
+- [P2] Richte M-11 vor der Messung mit einer Paarrolle ein — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:972-972
+  DEFEKT: Ein frischer Gen beginnt als `legacy/insert` (`NakamaState.h:544–545`), also mit der Panelrolle `sensor`. Damit ist das Paarfeld deaktiviert (`PluginEditor.cpp:786–791`), und §8.2 verlangt ausdrücklich, es außerhalb der Rollen pre/post nicht zu lesen. Ohne Rollenwechsel kann der spezifizierte Ablauf deshalb keinen Paarnamen mit 60 Codepunkten speichern. Der Test benötigt eine vorab eingerichtete Paarrolle und anschließend zurückgesetzte Aufruf-/Dirty-Zähler.
+
+- [P2] Wähle für M-18 eine tatsächlich wirksame Rotmutation — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:997-997
+  DEFEKT: Das Entfernen von `pair_id` macht diesen Kandidaten nicht schreibbar. Aus 65 536 Eigenschaften einschließlich `label` werden durch `pair_id` und `project_binding_id` zunächst 65 538 (`NakamaState.cpp:1235–1238`); ohne `pair_id` bleiben 65 537 und damit weiterhin mehr als die zulässigen 65 536 (`:196`). Load und Prozessorzugriff bleiben somit wie zugesagt abgewiesen. Der vorgeschriebene Rotbeweis verletzt keine Zusage dieser Zeile und erfüllt die Rotbeweisregel aus §6 nicht.
+
+- [P2] Ersetze die wirkungslose Rekursionsmutation in M-34 — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1013-1013
+  DEFEKT: Nach §8.3 wird read-only gewählt, wenn die Eigenschaftszahl nach JUCE kleiner als die zuvor gezählte Gesamtzahl ist. Eine Nachzählung ohne Rekursion verkleinert diesen Nachwert zusätzlich; das tiefe Duplikat bleibt daher read-only und wird nicht wie behauptet `geladen`. Allenfalls gültige Bäume werden zusätzlich abgewiesen, was ein Nebeneffekt außerhalb der Zusage von M-34 wäre. Es braucht eine Mutation, die tatsächlich die Duplikaterkennung dieses Falls aushebelt.
+
+- [P2] Miss in M-65 die Kanalwechselreaktion statt nur den Deskriptor — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1079-1079
+  DEFEKT: Die angegebene `as_i64`-Stelle in `liveness.rs:442–460` bestimmt ausschließlich den Vergleich zwischen altem und neuem Mixerkanal. Der Deskriptor übernimmt `host_mixer_index` dagegen unverändert über `wert.clone()` (`:752–755`) und wird anschließend gespeichert (`:471–472`); `3.0` fehlt darin nicht. Der Rückbau des Ganzzahlhelfers an der genannten Stelle verändert somit den geprüften Deskriptor nicht. Für R-313-5 muss dieser Fall die tatsächlich betroffene Kanalwechselreaktion beobachten.
+
+- [P2] Ordne den echten Intentwriter einem Prozessor-Testziel zu — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1103-1103
+  DEFEKT: B10 kann den hier zugesagten Produktwriter nicht aufrufen. `EqCopIpcTest` enthält nur `IpcTestMain.cpp`, `PipeToken.cpp` und `NakamaKern` (`CMakeLists.txt:198–220,977–983`), während `v3IntentUpdateJson` in `src/prozessor/Ipc.cpp:548` implementiert ist. §8.5 plant keine entsprechende Zielerweiterung. Ordne die C++-Hälfte etwa B27 mit dem vorhandenen Zugang `v3IntentUpdateFuerTest` zu und führe dessen tatsächliche Ausgabe dem Rust-Leser zu; handgeschriebenes JSON würde den Writer nicht messen. Das entspricht auch [AGENTS.md:53–54](C:/Users/phili/Projekte/Nakama/AGENTS.md#L53-L54).
+
+- [P2] Unterscheide in M-95 Vertragsurteil und zustandsabhängige Annahme — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1109-1109
+  DEFEKT: A11 kann mit der geplanten reinen Schemaprüfung nicht für jeden Eintrag dasselbe Urteil wie der Client liefern. M-93(c) verlangt bei `seq=9223372036854775807` und aktueller Sequenz 0 oder 1 eine Ablehnung; das v2-Schema erlaubt diesen Wert ausdrücklich (`eq-ipc.schema.json:144`). Erst `PipeClient.cpp:606` prüft die aktuelle Sequenz. §8.5 würde diesen Eintrag in Python deshalb gültig und im Produkt ungültig bewerten. Die Spezifikation muss getrennte Vertrags-/Produkturteile vorsehen oder den benötigten Clientzustand in der Referenzprüfung abbilden.
+
+- [P2] Passe M-109 an den tatsächlichen Parserfehlerweg an — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1137-1137
+  DEFEKT: Die verlangte Meldung entsteht weder am ZIEL noch durch den beschriebenen Decoderumbau. Verbotene Escapes lassen `flachesJsonObjekt` scheitern; der Control-Aufrufer setzt dann `welcome: kein flaches JSON-Objekt` (`Verbindung.cpp:649–653`), ebenso der Telemetrie-Aufrufer (`TelemetryClient.cpp:671–675`). `reject haelt den Vertrag nicht` entsteht erst nach erfolgreichem Parsen. Damit bleibt die geplante Meldungsassertion trotz korrekter Escape-Ablehnung rot. Erwartung und Fehlerweitergabe müssen ausdrücklich aufeinander abgestimmt werden.
+
+- [P2] Verwende in M-127 einen vom Riegel erkannten Rotvektor — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1170-1170
+  DEFEKT: Das konkret vorgeschriebene Einfügen von `x = y` macht A13 nicht rot. Der Ausdruck in `pruefe_host_capabilities.py:201` erkennt rechts vom Gleichheitszeichen ausschließlich `true`, `false` oder numerische Zeichen; `y` wird nicht erkannt, also findet auch keine Rohfeldsuche statt. Damit fehlt der Zeile ihr deterministischer Rotbeweis. Verwende beispielsweise eine tatsächlich erkannte Angabe mit unbekanntem Feld wie `x = 1`; eine allgemeine Erweiterung des Riegels ist dafür nicht nötig.
+
+- [P2] Hinterlege Ablehnungsstufen getrennt nach prüfendem Leser — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1311-1317
+  DEFEKT: Ein einziges `stufe`-Feld kann die vorgeschriebene Gleichheitsprüfung aller Beine nicht erfüllen. Beim ACK mit `state_revision=9007199254740992` verlangt §7.3 für den flachen Produktleser `feldregel`, während A5 denselben v3-Eintrag bereits am Textriegel verwirft. Beide Ablehnungen sind beabsichtigt, aber mindestens eine Stufenassertion wird rot. Anders als für A11 gibt es für A5 keine Ausnahme. Die Korpusdefinition benötigt leserspezifische Stufenerwartungen oder eine ausdrücklich getrennte Referenzprüfung.
+
+- [P2] Baue den strengen A11-Tabellenleser bereits in Etappe 4 — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1323-1325
+  DEFEKT: Hier entstehen bereits die v2-Parser- und Duplikatvektoren aus M-42, die A11 laut §7.2 vollständig prüfen muss. §8.4 enthält jedoch weder A11 noch dessen Tabellenleser; dieser wird erst in Etappe 5 gebaut. Zudem verwendet §8.5 dafür `json.loads` ohne Duplikat-Hook, sodass doppelte Schlüssel weiterhin verschwinden und schemafest werden können. Der strenge A11-Adapter samt Zählprüfung muss mit diesen Vektoren entstehen, sonst überspringt Etappe 4 ein vorgeschriebenes Bein. Dazu passt die gemeinsame Berücksichtigung der Cross-Language-Verbraucher aus [AGENTS.md:53–54](C:/Users/phili/Projekte/Nakama/AGENTS.md#L53-L54).
+
+- [P2] Verschiebe die Bootstrap-Stufenfälle hinter den Torumbau — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:1331-1335
+  DEFEKT: Etappe 5 soll für `rust_bootstrap` bereits `1.5` an der Stufe `schema` und `9007199254740992` am `textriegel` nachweisen. Nach §8.4/§8.5 besitzt dieser Eingang dann aber nur den strengen Parser und die Ganzzahlnormalisierung; Textriegel und Hello-Schema kommen ausdrücklich erst in §8.6 hinzu. Somit kann der vorgeschriebene Abschlusslauf der Etappe 5 diese Stufen nicht liefern. Entweder müssen diese Vektoren nach Etappe 6 oder ihre erforderlichen Prüfungen vorgezogen werden.
+
+- [P2] Plane den UTF-8-Fehlerweg bis in letzterFehler — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:2025-2029
+  DEFEKT: M-111 verlangt eine Prüfung vor `flachesJsonObjekt` und einen ausdrücklich erkennbaren UTF-8-Grund. Der Bauplan legt die Prüfung stattdessen in diese boolesche Funktion. Deren bestehende Aufrufer setzen bei `false` lediglich `welcome: kein flaches JSON-Objekt` (`Verbindung.cpp:649–653`, `TelemetryClient.cpp:671–675`); die Fehlerursache geht verloren. Damit erfüllt der beschriebene Umbau M-111 nicht. Plane die vorgeschaltete Prüfung oder eine unterscheidbare Fehlerweitergabe einschließlich der Aufrufer mit ein.
+
+- [P2] Prüfe die VTable-Belegung statt den gespeicherten Relativoffset — C:/Users/phili/Projekte/Nakama/docs/beweise/NAK-313.md:2040-2043
+  DEFEKT: `offset_nicht_null` ist kein Prüfer auf belegte VTable-Slots. In `broker/src/telemetrie.rs:230–240` liefert der Helfer für einen unbelegten Slot ausdrücklich `true`; bei belegten Slots untersucht er stattdessen vier Bytes des Feldinhalts auf einen relativen Nulloffset. Damit unterscheidet er den verbotenen Zusatzslot aus M-115 nicht zuverlässig vom ausdrücklich erlaubten Nullslot aus M-118. Der Plan muss direkt die VTable-Belegung prüfen, damit R-313-8 und die geschlossene Zieladresse aus [CLAUDE.md:180–181](C:/Users/phili/Projekte/Nakama/CLAUDE.md#L180-L181) eingehalten werden.

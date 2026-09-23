@@ -81,6 +81,50 @@
    "wo": "docs/beweise/NAK-310.md §1, §3, §4; docs/beweise/roh/NAK-310-quellvalidierung-teil-A.md; docs/offene-punkte.md NAK-285, NAK-310, NAK-374",
    "seit": "23.09.",
    "status": "offen"
+  },
+  {
+   "id": "U61",
+   "dringlichkeit": "später — vor der Abnahme der Klangregelung (S26–28); bis dahin bleibt das gebaute Verhalten",
+   "art": "Produktentscheid (Klang)",
+   "titel": "Mono-Bass: sauber in die Mitte mit kleiner Verzögerung, oder verzögerungsfrei mit leichtem Übersprechen?",
+   "was": "Heute legt Mono-Bass nur die Seite unter der Grenzfrequenz weg, die Mitte bleibt unberührt. Folge: ein hart links gepannter Ton eine Oktave unter der Grenze erscheint um 3 dB nach rechts verschoben statt in der Mitte, und links liegende tiefe Mitten sprechen bis etwa zum Vierfachen der Grenze hörbar ins rechte Signal über. Die saubere Variante (steilere Weiche plus Phasenausgleich auf der Mitte) legt den Bass exakt in die Mitte, verzögert dafür aber die Mitte im Bass um einige Millisekunden (bei 120 Hz etwa 3,75 ms). Welche Variante willst du: sauber zentriert mit kleiner Verzögerung, oder verzögerungsfrei mit leichtem Übersprechen wie heute?",
+   "warum": "DSP-Fachprüfung 23.09.2026, Befund DSP-04, an der Quelle bestätigt (Validierung Teil A). Keine Zusage bricht: der Vertrag sagt nur „unterhalb … entfernt“, der Entwurf sperrt heimliche Allpass-Korrekturen — deshalb Produktfrage, keine Technikfrage.",
+   "wo": "docs/audits/2026-09-23-dsp-fachpruefung/BEFUNDE.md DSP-04; docs/audits/2026-09-23-dsp-fachpruefung/EINORDNUNG.md; docs/beweise/roh/NAK-379-dsp-validierung-teil-A.md; docs/offene-punkte.md NAK-384",
+   "seit": "23.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U62",
+   "dringlichkeit": "später — vor der Abnahme der Klangregelung (S26–28); bis dahin bleibt das gebaute Verhalten",
+   "art": "Produktentscheid (Klang, dynamische Bänder)",
+   "titel": "Dynamisches Band: worauf hört es, und wie greift es?",
+   "was": "Drei Dinge am dynamischen Band, die heute so gebaut sind und die nur du entscheiden kannst. (1) Hörbereich: das Band hört genau auf den Bereich, den es bearbeitet. Ein schmales Band reagiert dadurch träge (ein schmales 100-Hz-Band greift erst nach etwa 0,2 s voll, egal wie kurz die Attack steht), und ein dynamischer Bass-Shelf hört auf seine Eckfrequenz statt auf den Tiefbass, den er absenkt. Alternative wie bei Pro-Q: der Hörbereich lässt sich frei vom Band lösen. (2) Kennlinie: Range stellt Tiefe und Härte zugleich ein — bei −12 dB hält das Band seinen Bereich wie ein Limiter fest, bei −3 dB greift es sanft; die Kurve hat harte Ecken. Alternative: Range nur als Tiefe, dazu ein eigener Regler für die Härte (Ratio oder Knie). (3) Zur Information: knapp über der Schwelle reagiert ein Band mit 0,1 ms Attack wie eines mit etwa 15 ms, weil ein festes 10-ms-Pegelfenster davor liegt; schnelles Zähmen von Transienten kommt erst mit dem Modus „Spitze“ (NAK-331). Willst du (1) Hörbereich fest am Band oder frei einstellbar, und (2) Range als Tiefe-und-Härte-in-einem oder getrennt?",
+   "warum": "DSP-Fachprüfung 23.09.2026, Befunde DSP-06, DSP-12 und DSP-05, an der Quelle bestätigt (Validierungen Teil A und B). Keine Zusage bricht (SONDE-015 R7 legt Detektor und Kennlinie als Matrixinhalt fest, U45 überließ das Pegelfenster der Technik); der Marktvergleich (Pro-Q) macht es zur Produktfrage.",
+   "wo": "docs/audits/2026-09-23-dsp-fachpruefung/BEFUNDE.md DSP-05, DSP-06, DSP-12; EINORDNUNG.md; docs/beweise/roh/NAK-379-dsp-validierung-teil-A.md, -teil-B.md; docs/offene-punkte.md NAK-384, NAK-331",
+   "seit": "23.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U63",
+   "dringlichkeit": "später — vor der Abnahme der Klangregelung (S26–28); bis dahin bleibt das gebaute Verhalten",
+   "art": "Produktentscheid (Klang, Filtertypen)",
+   "titel": "Güte bei Cuts und Shelves: Steilheit wählbar wie bei Pro-Q, oder Resonanz wie heute?",
+   "was": "Heute haben alle sechs Filtertypen denselben Güte-Regler (0,15 bis 24, Grundwert 1,0), und bei Shelves und Cuts bedeutet Güte „Resonanz“: ein auf Low-Cut umgestelltes Band hebt mit der Grundgüte knapp über der Eckfrequenz um 1,25 dB an; mit hoher Güte wird aus Cut oder Shelf ein Resonanzfilter (bis +27,6 dB Buckel); steilere Cuts als 12 dB pro Oktave gibt es nur durch Stapeln von Bändern. Alternative wie bei Pro-Q: Low- und High-Cut bekommen eine wählbare Steilheit (12/24/48/96 dB pro Oktave), Shelves eine Steilheit statt einer Resonanz. Was willst du: Steilheit wählbar, oder Güte als Resonanz bei allen Typen wie heute?",
+   "warum": "DSP-Fachprüfung 23.09.2026, Befund DSP-07, an der Quelle bestätigt (Validierung Teil A); berührt das Prüffeld O-04/F10 des Tiefenaudits 3. Keine Zusage bricht; deine Richtung vom 23.08.2026 („vollwertiger eq … wie andere eq auf dem markt“) spricht für wählbare Steilheit, entschieden ist es nicht.",
+   "wo": "docs/audits/2026-09-23-dsp-fachpruefung/BEFUNDE.md DSP-07; EINORDNUNG.md; docs/beweise/roh/NAK-379-dsp-validierung-teil-A.md; docs/offene-punkte.md NAK-384",
+   "seit": "23.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U64",
+   "dringlichkeit": "später — vor der Abnahme der Klangregelung (S26–28); bis dahin bleibt das gebaute Verhalten",
+   "art": "Produktentscheid (Klang, Mix-Regler)",
+   "titel": "Mix-Regler: paralleles Mischen wie Dry/Wet, oder halbe EQ-Kurve?",
+   "was": "Heute mischt der Mix-Regler trockenes und bearbeitetes Signal einfach zusammen (Dry/Wet). Bei Glocken klingt Mix 50 % wie die halbe Kurve. An steilen Cut-Kanten nicht: ein Low-Cut bei 100 Hz mit hoher Güte erzeugt bei Mix 50 % knapp unter der Eckfrequenz ein Loch von −16 dB, das weder das trockene noch das bearbeitete Signal hat, weil sich beide dort gegenseitig auslöschen. Alternative: Mix verringert die Stärke der EQ-Kurve selbst, sodass 50 % immer wie die halbe Kurve klingt (dafür kein echtes paralleles Mischen). Was willst du: paralleles Mischen wie heute (mit Löchern an steilen Cut-Kanten), oder halbe Kurve?",
+   "warum": "DSP-Fachprüfung 23.09.2026, Befund DSP-08, an der Quelle bestätigt (Validierung Teil A). Keine Zusage bricht; die Begründung in SONDE-015 („Mix 0,5 = halbe Kurve“) ist an Cut-Kanten falsch und wird als Doku berichtigt (NAK-385).",
+   "wo": "docs/audits/2026-09-23-dsp-fachpruefung/BEFUNDE.md DSP-08; EINORDNUNG.md; docs/beweise/roh/NAK-379-dsp-validierung-teil-A.md; docs/offene-punkte.md NAK-384, NAK-385",
+   "seit": "23.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

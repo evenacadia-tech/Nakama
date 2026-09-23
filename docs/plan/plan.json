@@ -371,6 +371,14 @@
      "stufe": "T2"
     },
     {
+     "id": "S25q",
+     "leitungsname": "DSP-Fachprüfung abarbeiten, Teil 1: Messkern — Einheiten, Ereignisse, Kohärenz, LRA",
+     "ticket": "NAK-380",
+     "text": "ANGELEGT 23.09.2026 (Register NAK-380; DSP-Fachprüfung NAK-379, Einordnung E-379-1 in docs/audits/2026-09-23-dsp-fachpruefung/EINORDNUNG.md, Validierung Teil C docs/beweise/roh/NAK-379-dsp-validierung-teil-C.md; Vorrang externer Audit, User-Wort 10.09.2026; eingereiht nach S25l, weil DSP-17 heute die Rechnung des Ursachenfinders verfälscht). INHALT: DSP-17 (Leistungsdichten werden in bandpassung, Screening, Confidence und Livegruppen als Bandleistungen verrechnet: jeden Summanden mit der Bandbreite des eingefrorenen Gitters gewichten, Livegruppe Σ Dichte·Bandbreite, Größe im Vertrag benennen mit Versionsschritt metrics_version), DSP-22 (Ereignisdetektor: absolute Mindestschwelle, echte MAD, Spitzenwahl mit Sperrzeit; Entwurf §39.1 erfüllen oder berichtigen), DSP-23 (Kohärenz je Bin über die Frames, Bandmittel, Stereofenster über mehr als ein Evidenzfenster; mit NAK-177), DSP-25 (LRA mit 10 Hz nach EBU Tech 3342 §3.1, Golden B18 nachziehen, kFeatureMetricsVersion anheben), dazu die Lücken DSP-20 (FFT-Längen an die Abtastrate koppeln oder nicht durchsuchte Bereiche ehrlich melden) und DSP-21 (M1-Wellen-Text über Welch-gemittelte Teilblöcke). GRENZE: Schemas sind Verträge — versionieren, Altstände laden, unbekannte Felder erhalten, Cross-Language-Gleichheit C++/Rust, Fixtures bytegleich; Audio-Thread unberührt; keine Anzeigearbeit (Design geparkt); Produktentscheide nur als Karte, wo der Entwurf schweigt. BEWEIS: docs/beweise/NAK-380.md mit Matrix vor Code, Rotbeweisen an den Goldens (B9, B18, A4 hypothese-Tests), Nullkorpus mit gemessener Fehlalarmrate für DSP-22, vollem Kanon GRÜN und Laufzeit-Arm.",
+     "beleg": "docs/beweise/NAK-380.md",
+     "stufe": "T2"
+    },
+    {
      "id": "S25m",
      "leitungsname": "Tiefenaudit 3 abarbeiten, Teil 6: Broker",
      "ticket": "NAK-314",
@@ -400,6 +408,14 @@
      "ticket": "NAK-340",
      "text": "ANGELEGT 21.09.2026 (Register NAK-340; Entscheid E-312-5 des Dirigenten in docs/beweise/NAK-312.md §11.3 nach der Validierung der Matrixprüfung 1, docs/beweise/roh/NAK-312-matrixpruefung-1-validierung.md Teil 2 Punkt 1, Weg A). INHALT: Teil b des Auditbefunds T3-01-05 — die Übernahme der 64 Bandwerte, von mono_bass_hz, der elf booleschen Hostparameter und des Auto-Gain-Ziels hängt am Workertakt (5 bis 20 ms) statt am Audioblock; im Offline-Render fällt dadurch der größte Teil bewegter Bandautomation aus, der Export klingt anders als das Abhören (SONDE-015 M-120, Entwurf §44.3 Rückfallsatz „letzter Blockwert“). Gebaut wird der Blockrandentwurf im Kern für den Rampenfall (gleiche Topologie): der Audio-Callback entwirft die betroffenen Koeffizienten am Blockrand selbst in ein eigenes, vorallokiertes Programm je Pfad, mit der Schiedsregel aus NAK-312 (E-312-6) gegen Workerpublikationen. Etappe 0 klärt an der Quelle: die neue Besitzregel im Kernautomaten, das Verhältnis zu SONDE-015 M-39 (Auto-Gain außerhalb des Audiothreads), Kriteriensprünge, Boolesche und mono_bass_hz als Kerntopologie (bleiben beim Worker oder bekommen eine eigene Regel), die Kosten je Block. Nach S25k (NAK-312 liefert die Blockrandübernahme der vier globalen Gains und die Schiedsregel). GRENZE: Audio-Thread ohne Sperre, Allokation und Warten, auch offline (E-312-2); ausgeschaltet bitidentisch, Passthrough sampleidentisch; bestehende Goldens bleiben bitgenau, wo kein Hostereignis vorliegt; keine neue Stateversion, keine v3-Vertragsänderung, Identität eingefroren; der gepinnte JUCE-VST3-Wrapperpatch gehört nicht dazu. BEWEIS: docs/beweise/NAK-340.md mit Matrix, Rotbeweisen an B6 und B7 (gleiche Ereignisfolge in Echtzeit und offline am echten Prozessor für Bandwerte), RT-Wache ohne Sperre und Allokation, vollem Kanon GRÜN und Laufzeit-Arm.",
      "beleg": "docs/beweise/NAK-340.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S25r",
+     "leitungsname": "DSP-Fachprüfung abarbeiten, Teil 2: Hörmatrix und Vergleich vor ihrer Verdrahtung",
+     "ticket": "NAK-381",
+     "text": "ANGELEGT 23.09.2026 (Register NAK-381; DSP-Fachprüfung NAK-379, Einordnung E-379-2 in docs/audits/2026-09-23-dsp-fachpruefung/EINORDNUNG.md; Validierungen Teil A DSP-03, Teil B DSP-11 und DSP-14, Teil C DSP-18). INHALT: ruhende Defekte des Entwurfsabschnitts §41, zu schließen vor der Verdrahtung der Hörmatrix und des Vorher/Nachher (S29–31) — DSP-03 (Delta-Hören gegen einen pegelangepassten Bezug nach §41.1/§41.2, Ausgleich höchstens ±6 dB, gemeinsame Headroom-Absenkung statt festem +12 dB ohne Schutz), DSP-11 (Hörmatrix-Blende max(256, ⌈0,005·fs⌉) Samples: ab 88,2 kHz mindestens 5 ms nach §41.2, 44,1 und 48 kHz bitgleich), DSP-18 (die Sperre ohneLautheitsabgleich löst nur ein Match-Gain aus der Lautheit von Vorher und Nachher derselben Passage, K-gewichtet nach §41.2, Deckel ±6 dB, sonst sichtbar „nicht pegelangepasst“; der heutige Wert trocken gegen Hörmarkierung wird, falls gebraucht, eine eigene Größe), dazu DSP-14 (Advisor-Güte auf die RBJ-Beziehung aus HoerMarkierung.h, Schemabereich beim nächsten v3-Vertragsschritt nach Muster NAK-369). GRENZE: Nulltest bitidentisch, Passthrough sampleidentisch, Audio echtzeitfest; State versioniert, Save und Load gemeinsam; keine UI-Verdrahtung (Design geparkt); Identität eingefroren. BEWEIS: docs/beweise/NAK-381.md mit Matrix vor Code, Rotbeweisen an den DSP-Goldens (B6), den Vergleichspegel-Tests und A4, vollem Kanon GRÜN und Laufzeit-Arm mit Nulltest im Host.",
+     "beleg": "docs/beweise/NAK-381.md",
      "stufe": "T2"
     }
    ]

@@ -70,6 +70,28 @@
    "wo": "docs/beweise/NAK-312.md §29; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-urteil.md L-1; docs/beweise/roh/NAK-312-etappe-4-erstpruefung-validierung.md V-1 bis V-4",
    "seit": "21.09.",
    "status": "offen"
+  },
+  {
+   "id": "U59",
+   "dringlichkeit": "wenn du dazu kommst — Ticket NAK-310 baut ohne Antwort Weg 1",
+   "art": "Produktentscheid (Reichweite einer Messdaten-Schnittstelle)",
+   "titel": "Messwerte an andere Programme: nur in den Messläufen der Automatik oder in jeder FL-Sitzung?",
+   "was": "Nakama kann seine Messwerte über eine Datei an Werkzeuge herausgeben. Die Automatik nutzt das, um nach jedem Bau in FL nachzumessen. Heute ist dieser Weg in jeder FL-Sitzung offen, auch in deinen eigenen: jedes Programm, das unter deinem Windows-Konto läuft, kann dort Messwerte deines laufenden Projekts abholen — Lautheit, Spektrum, Stereobild und die Namen deiner Messpunkte. Am Klang ändert das nichts. (1) Empfohlen: Der Weg ist nur in den FL-Sitzungen offen, die die Automatik für ihre Messläufe selbst startet. In deinen eigenen Sitzungen ist er zu. Soll der Dirigent doch einmal eine deiner Sitzungen ausmessen, startest du FL dafür über eine eigene Verknüpfung, die er dir gibt. (2) Wie heute: offen in jeder Sitzung. Dann kann der Dirigent jederzeit auch eine Sitzung ausmessen, die du selbst geöffnet hast.",
+   "warum": "Audit-Befund T3-12-04 (Bündel B30), an der Quelle bestätigt. Ohne Antwort baut der Dirigent Weg 1 (Planschritt S25i, Ticket NAK-310, Etappe 5). Dass ein interner Schlüssel des Brokers nicht mehr in diesen Antworten steht, gilt in beiden Fällen und ist nicht Teil der Frage.",
+   "wo": "docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-12-04, B30; docs/offene-punkte.md NAK-310; docs/beweise/roh/NAK-310-quellvalidierung-teil-A.md; docs/beweise/NAK-310.md §1, §3",
+   "seit": "23.09.",
+   "status": "offen"
+  },
+  {
+   "id": "U60",
+   "dringlichkeit": "später — erst, wenn die Installer-Etappe von NAK-310 gebaut ist (der Dirigent stellt sie dann)",
+   "art": "Handgriff (einmal je Rechner, als Administrator) mit Mitteilung",
+   "titel": "Automatische Installation: einmal je Rechner als Administrator neu registrieren",
+   "was": "Die automatische Installation hatte eine Lücke: jedes Programm unter deinem Windows-Konto hätte darüber Administratorrechte bekommen können. Das wird geschlossen. Was bleibt, ist das Schreibrecht, das du am 12.09. freigegeben hast: ein Programm unter deinem Konto könnte Nakamas Dateien austauschen, bekommt dadurch aber keine Administratorrechte mehr. Dafür brauche ich dich einmal je Rechner, den Laptop eingeschlossen, für einen Klick als Administrator: die neue Registrierung der drei Aufgaben (installieren, prüfen, Rückweg). Der Befehl steht dann bereit; bis dahin installiert die Automatik nichts. Erledigt / bleibt liegen.",
+   "warum": "Audit-Befund T3-12-01 (Bündel B02, critical), an der Quelle bestätigt; die Begründung vom 12.09. („So bleibt Program Files geschützt\") war falsch. Ticket NAK-310, Etappe 2; die Aufgaben sind rechnerlokal.",
+   "wo": "docs/beweise/NAK-310.md §1, §3, §4; docs/beweise/roh/NAK-310-quellvalidierung-teil-A.md; docs/offene-punkte.md NAK-285, NAK-310, NAK-374",
+   "seit": "23.09.",
+   "status": "offen"
   }
  ],
  "geparkt": [

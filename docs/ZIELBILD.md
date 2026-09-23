@@ -340,6 +340,10 @@ nicht antwortest, gilt jeweils der genannte Weg.
   sind, oder den alten Wert mit Alter zeigen? Ohne Antwort: ausblenden.
 - **Getippter Name beim Schließen (U57):** ein noch nicht bestätigter Name im
   Messpunkt-Feld verfällt, wenn du das Fenster schließt. Ohne Antwort bleibt es so.
+- **Messwerte an andere Programme (U59):** nur in den Messläufen der Automatik oder in jeder
+  FL-Sitzung? Ohne Antwort: nur in den Messläufen, die die Automatik selbst startet.
+- **Automatische Installation neu registrieren (U60):** ein Klick als Administrator je Rechner,
+  sobald die Lücke in der Installation geschlossen ist; bis dahin installiert die Automatik nichts.
 - **Geparkt, bis die Technik fertig ist (Designteil, 12.09.2026):** das Aussehen beider
   Gen-Oberflächen und der Probeeq-Kachel, die Namen der beiden Gen-Oberflächen (U23) und
   die Bedienfragen vor dem Oberflächenbau: Passage markieren (U28), laufender Versuch (U29),
@@ -361,7 +365,7 @@ Vorlieben.
 <!-- ZIELBILD-ABGLEICH — geschrieben von `py -3.13 tools/plan/zielbild.py abgleichen`, nie von Hand.
 stand: 2026-09-23 09:09
 karten-beantwortet: U10=270797 U12=5adee9 U14=ea3de5 U15=74821d U16=661dec U17.1=9d0438 U17.2=02d885 U17.3=02d885 U17.4=beefc4 U17.5=c7a6e3 U18=6292e7 U19=1af907 U2=23433a U2.0=99b9d1 U2.1=678ed3 U2.10=3d74d7 U2.11=602c50 U2.12=602c50 U2.13=602c50 U2.14=c102c7 U2.15=b19ebb U2.16=2b6c01 U2.17=2a3dc9 U2.2=678ed3 U2.3=a9f0cd U2.4=d319c0 U2.5=9dcd3d U2.6=825118 U2.7=f70e04 U2.8=8383eb U2.9=5ee95d U20=ab54ab U21=3c9eab U22=79104d U24=5a6eb4 U25=48371a U27=9b4f9a U38=a8f063 U39=745483 U40=e91456 U41=7f6f2a U42=e0eb1d U43=8394ae U44=234869 U45=046708 U46=9a5e23 U47=0286f0 U48=604d90 U49=9762b7 U5=f71092 U51=b9be76 U53=c6fb14 U54=ec5b6c U55=ced656 U56=3ef749 U58=acbea1 U6=23433a U6.1=28ce08 U6.10=99b9d1 U6.2=2a8a34 U6.3=2a8a34 U6.4=9350ae U6.5=a5d9ab U6.6=9abfbd U6.7=574cdc U6.8=8abbc0 U6.9=a2145e U7=56c6da U8=79a4a5 U9=23433a U9.1=96cb06 U9.2=18d84a U9.3=ada30f U9.4=306119 U9.5=9c0088
-karten-offen: U11 U13 U26 U50 U52 U57
+karten-offen: U11 U13 U26 U50 U52 U57 U59 U60
 karten-geparkt: U23 U28 U29 U30 U31 U32 U33 U34 U35 U36 U37
 abnahmen: 0928f1 0c52de 107b19 11ce7d 12da63 146c14 162dc0 17b40b 1fd475 281f0c 2c0763 2c17d8 2ca56d 2df88d 2ffda7 3075a8 3183bf 322bd7 3c2ae2 3d6d83 3e3f05 40101e 4375dd 44d299 45aa05 48e998 49e0ee 4cd564 56cdff 5eaca5 6336d1 69197c 6b3715 6bf037 6c9196 6edeeb 6f4b71 726f52 7e353d 8438e4 851e96 876993 8ba768 8d06b5 9af315 9ec278 a2a1ce a32fc2 a717fd ac02f8 b2aceb b45329 ba820b bb73e5 bcaf8d bfa7e5 c01fab c59c1c ce4242 d41a3f d4960d d4de1e dba4c9 df38a4 e842b5 e8919c f2635a f67e43 f86c28 f8d069 f9fdee
 register-produkt: NAK-111=179ff6 NAK-122=ec3396 NAK-179=a6b56f NAK-306=e9be8e NAK-331=afa1a0 NAK-332=03a7d9 NAK-341=eac434 NAK-39=707c3b NAK-44=b95a79 NAK-56=69e61e

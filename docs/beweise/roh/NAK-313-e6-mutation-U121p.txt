@@ -1,0 +1,46 @@
+NAK-313 Etappe 6 - Mutationslauf U121p: M-121 Python: Untergrenze des Textriegels dez < -DEZ_GRENZE
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf U121p - M-121 Python: Untergrenze des Textriegels dez < -DEZ_GRENZE - 24.09.2026 22:39:04 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+SHA-256 vorher 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\U121p-pruefe_v3_vertrag.py (SHA-256 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06)
+Mutation 1 ab Zeile 266 in tools/eq-copilot/pruefe_v3_vertrag.py (Stand vor der Mutation):
+  vorher:
+    |    if dez >= DEZ_GRENZE or dez <= -DEZ_GRENZE:
+  nachher:
+    |    if dez >= DEZ_GRENZE or dez < -DEZ_GRENZE:  # MUTATION M-121
+Mutiert 24.09.2026 22:39:04: tools/eq-copilot/pruefe_v3_vertrag.py, SHA-256 mutiert 5efe3c2a92d71f3e07708c7ca6f843596750ad41b518f92ad16669deb27feb55 (git diff --numstat: 1 1 tools/eq-copilot/pruefe_v3_vertrag.py)
+Kette (R-313-11): 1e-308, 2e-308 und 9.9e-308 gelten -> die Falltabelle in A5 rot.
+Lauf unter der Mutation:
+  A5: Exit 2, Fehlzeilen 3, Rohausgabe U121p-mutiert-A5.txt
+    Summe: $defs ohne Negativfixture: keine
+Ruecknahme 24.09.2026 22:39:08: tools/eq-copilot/pruefe_v3_vertrag.py SHA-256 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06 - gleich dem Stand vor der Mutation
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe U121p-zurueck-A5.txt
+    Summe: $defs ohne Negativfixture: keine
+Erwartete Pruefungen unter der Mutation:
+  A5: Exit 2 und 'Textriegel deckt jede gemessene Kante' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A5: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- tools/eq-copilot/pruefe_v3_vertrag.py: (leer)
+git diff --stat: (leer)
+
+=== A5 unter der Mutation: gefallene Pruefungen (3) ===
+  ROT: Textriegel deckt jede gemessene Kante (106 Faelle) — #94 {"w": 1e-308}; #95 {"w": 2e-308}; #96 {"w": 9.9e-308}
+  ROT: Wire-Zahlklassen: jede verweigerte Klasse faellt am Riegel (6 Klassen) — zwei_e_minus_308: 2e-308 kommt durch; eins_e_minus_308: 1e-308 kommt durch
+  ROT: PE-153 rust_bootstrap M-101: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/textriegel
+=== A5 unter der Mutation: Auszug (4 Zeilen) ===
+  Pruefungen: 837 bestanden, 3 gescheitert
+  ROT: Textriegel deckt jede gemessene Kante (106 Faelle) — #94 {"w": 1e-308}; #95 {"w": 2e-308}; #96 {"w": 9.9e-308}
+  ROT: Wire-Zahlklassen: jede verweigerte Klasse faellt am Riegel (6 Klassen) — zwei_e_minus_308: 2e-308 kommt durch; eins_e_minus_308: 1e-308 kommt durch
+  ROT: PE-153 rust_bootstrap M-101: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/textriegel
+=== A5 nach der Ruecknahme: gefallene Pruefungen 0 ===

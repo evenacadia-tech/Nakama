@@ -1,0 +1,53 @@
+NAK-313 Etappe 6 - Mutationslauf W101b: M-101 (b) Writer: wireZahl lehnt schon dez -307 ab
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W101b - M-101 (b) Writer: wireZahl lehnt schon dez -307 ab - 24.09.2026 22:40:20 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101b-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+Mutation 1 ab Zeile 217 in eq-copilot/plugin/core/ipc/WireZahl.h (Stand vor der Mutation):
+  vorher:
+    |    if (dez >= kDezGrenze || dez <= -kDezGrenze)
+  nachher:
+    |    if (dez >= kDezGrenze || dez <= -307)   // MUTATION M-101 (b) Writer
+Mutiert 24.09.2026 22:40:20: eq-copilot/plugin/core/ipc/WireZahl.h, SHA-256 mutiert b49e60ca5afc4c20820e06e02a2f08f6c7fb820614bd7fc4def0b0e1a04d4b3e (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/WireZahl.h)
+Kette (R-313-11): wireZahl (1e-307) false (dez -307), audioGueltig (1e-307) false -> 313/M-101 samplerate_wie_der_writer (1e-307) rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:40:30.113, Quelle 22:40:20.978, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 5, Rohausgabe W101b-mutiert-B3c.txt
+    Summe: 172 bestanden, 5 gescheitert
+Ruecknahme 24.09.2026 22:40:30: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:40:39.492, Quelle 22:40:30.658, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101b-zurueck-B3c.txt
+    Summe: 177 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: '313/M-101 samplerate_wie_der_writer: 1e-307' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/WireZahl.h: (leer)
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (5) ===
+  [ROT]  313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+  [ROT]  N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [ gegen 1e-307]
+  [ROT]  N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [ gegen 1e-307]
+  [ROT]  N-18: der kleinste angenommene Betrag  [verweigert]
+  [ROT]  N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [verweigert]
+=== B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+  [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+  [ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+  [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+  [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+  [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,50 @@
+NAK-313 Etappe 6 - Mutationslauf S118o: M-118 Rust: die Belegung ueber offset_nicht_null bestimmt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S118o - M-118 Rust: die Belegung ueber offset_nicht_null bestimmt - 24.09.2026 22:39:32 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei broker/src/telemetrie.rs (LF)
+SHA-256 vorher 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\S118o-telemetrie.rs (SHA-256 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6)
+Mutation 1 ab Zeile 582 in broker/src/telemetrie.rs (Stand vor der Mutation):
+  vorher:
+    |        if vtable.get(slot as ::flatbuffers::VOffsetT) != 0 {
+  nachher:
+    |        if offset_nicht_null(&a._tab, slot as ::flatbuffers::VOffsetT) { // MUTATION M-118: offset_nicht_null
+Mutiert 24.09.2026 22:39:32: broker/src/telemetrie.rs, SHA-256 mutiert 80ad33c53c1b27e77d9b99cd424c64eebe7de22488045c4e2a49623d4ef861e4 (git diff --numstat: 1 1 broker/src/telemetrie.rs)
+Kette (R-313-11): offset_nicht_null liefert fuer den Nullslot true -> der Gueltigfall meldet adresse_zusatzfeld -> nak313_m118 und der FB-Korpus in A4 rot.
+Lauf unter der Mutation:
+  A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+  A4-ccl: Exit 101, Fehlzeilen 2, Rohausgabe S118o-mutiert-A4-ccl.txt
+    Summe: test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+Ruecknahme 24.09.2026 22:39:37: broker/src/telemetrie.rs SHA-256 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6 - gleich dem Stand vor der Mutation
+  A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+  A4-ccl: Exit 0, Fehlzeilen 0, Rohausgabe S118o-zurueck-A4-ccl.txt
+    Summe: test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+Erwartete Pruefungen unter der Mutation:
+  A4-ccl: 'nak313_m118_nullslot_bleibt_gueltig' gefallen: JA
+  A4-ccl: 'fb_korpus_klassifiziert_wie_das_manifest' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-ccl: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/telemetrie.rs: (leer)
+git diff --stat: (leer)
+
+=== A4-ccl unter der Mutation: gefallene Pruefungen (2) ===
+  test nak313_m118_nullslot_bleibt_gueltig ... FAILED
+  test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+=== A4-ccl unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  test nak313_m115_adresse_zusatzfeld ... ok
+=== A4-ccl unter der Mutation: Panikmeldungen und Tabellenabweichungen (4 Zeilen) ===
+  thread 'nak313_m118_nullslot_bleibt_gueltig' (193408) panicked at tests\contract_cross_language.rs:274:5:
+  assertion `left == right` failed: eine Adress-VTable mit leerem Slot 5 ist gueltig
+  thread 'fb_korpus_klassifiziert_wie_das_manifest' (93552) panicked at tests\contract_cross_language.rs:234:5:
+  1 von 130 Fixtures weichen ab:
+=== A4-ccl nach der Ruecknahme: gefallene Pruefungen 0 ===

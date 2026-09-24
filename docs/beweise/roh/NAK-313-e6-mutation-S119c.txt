@@ -1,0 +1,126 @@
+NAK-313 Etappe 6 - Mutationslauf S119c: M-119 C++: der Riegel prueft schon ab Slot 12 (Feld-ID 4, runtime_nonce)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S119c - M-119 C++: der Riegel prueft schon ab Slot 12 (Feld-ID 4, runtime_nonce) - 24.09.2026 22:41:26 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (LF)
+SHA-256 vorher 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\S119c-NakamaTelemetrie.cpp (SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae)
+Mutation 1 ab Zeile 194 in eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (Stand vor der Mutation):
+  vorher:
+    |for (std::uint32_t slot = fb::Adresse::VT_RUNTIME_NONCE + 2u;
+  nachher:
+    |for (std::uint32_t slot = fb::Adresse::VT_RUNTIME_NONCE /* MUTATION M-119: ab Slot 12 */;
+Mutiert 24.09.2026 22:41:26: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp, SHA-256 mutiert 61c23ffb09860b83613e3ad5790b665847f15d2b5cde62bb5611695522e05229 (git diff --numstat: 1 1 eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp)
+Kette (R-313-11): runtime_nonce ist required: jeder gueltige Batch meldet adresse_zusatzfeld -> der Gueltigkorpus in B3c rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:29.723, Quelle 22:41:26.238, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 122, Rohausgabe S119c-mutiert-B3c.txt
+    Summe: 172 bestanden, 5 gescheitert
+Ruecknahme 24.09.2026 22:41:30: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:33.722, Quelle 22:41:30.316, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe S119c-zurueck-B3c.txt
+    Summe: 177 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: 'gueltig/live-64-band.bin' gefallen: JA
+  B3c: '313/M-118 adresse_vtable_slot5_leer' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp: (leer)
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (122) ===
+  [ROT]  gueltig/adresse-vtable-slot5-leer.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/alle-validity-bits.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-dynamic-gain-acht-werte.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-dynamic-gain-altsender-ohne-feld.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-dynamic-gain-leer.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-stereo-bitmap-alle-werte-ungueltig.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-stereo-fehlt-altframe.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-stereo-wert-0.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/band-stereo-wert-1.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/broker-buendel-5.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/dynamik-nur-momentary.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/dynamik-vollstaendig.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/evidenz-221-band.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/float32-kreuzstatistik.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/grenze-32-eintraege.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/integration-samples-duenner-rahmen.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/integration-samples-evidenzrahmen.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/integration-samples-id14.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/live-64-band.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/loudness-i-collecting.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/loudness-i-gated.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/loudness-i-pair.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/mit-schleife.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/ohne-optionale-kennzahlen.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/sid-ist-ein-nul.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/transport-local-monotonic.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  gueltig/true-peak-gleich-sample-peak.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  ungueltig/aktivitaet-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-inf.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-laenge-1.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-laenge-3.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-laenge-7.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-laenge-9.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-dynamic-gain-nan.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-bitmap-laenge-falsch.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-falsches-encoding.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-falsches-gitter.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-laenge-falsch.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-nan.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-saturated-true.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-ueber-1.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-unter-0.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/band-stereo-werte-i16-gesetzt.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bandwert-ausser-bereich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bandwert-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bandzahl-passt-nicht-zum-gitter.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bitmap-fuellbits.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bitmap-zu-kurz.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/bitmap-zu-lang.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/breite-negativ.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/breite-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/crest-db-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/crest-kurz-db-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/eintraege-33.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/encoding-passt-nicht-zu-f32.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/encoding-passt-nicht-zu-i16.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/enum-unbekannt-encoding.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/enum-unbekannt-gitter.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/enum-unbekannt-zeitbasis.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/grenzen-verdreht.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/headroom-fenster-null.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/headroom-p50-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/headroom-unsortiert.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/herleitung-unbekannt.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/hex32-grossbuchstabe.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/hex32-nul-dahinter.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/integration-samples-null.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/kein-traeger.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/kennzahl-nan.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/korrelation-nicht-endlich.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/korrelation-ueber-1.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-half-ohne-unsicherheit.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-half-ohne-wert.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-pair-plus-status.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-status-0.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-status-3.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-unsicherheit-minus-inf.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-unsicherheit-nan.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-unsicherheit-plus-inf.bin: Verstossmenge weicht ab
+  [ROT]  ungueltig/loudness-i-wert-minus-inf.bin: Verstossmenge weicht ab
+  ... und 42 weitere (Rohausgabe S119c-mutiert-B3c.txt)
+=== B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  [ok]   313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0  [/eintraege/0/quelle | adresse_zusatzfeld (1)]
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

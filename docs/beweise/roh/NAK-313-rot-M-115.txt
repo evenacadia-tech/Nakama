@@ -1,0 +1,73 @@
+NAK-313 Etappe 6 - Rotbeweis M-115 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-115 - T3-03-07 - R-313-8 - FB-Leser Rust, Cross-Language
+Zustand: dasselbe Fixture
+Ereignis: telemetrie::pruefe
+Zusage: Derselbe Verstoss (/eintraege/0/quelle, adresse_zusatzfeld) wie in C++, dieselbe kanonische Ordnung
+Bein: A4: contract_cross_language.rs nak313_m115_adresse_zusatzfeld, fb_korpus_klassifiziert_wie_das_manifest
+
+--- Haelfte 1: Zusatzslot faellt in Rust - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test nak313_m115_adresse_zusatzfeld ... FAILED
+  test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig ([])
+  -> am Basisstand: rot
+  Mutation S115: M-115, M-116: der Slotriegel im Rust-Leser entfernt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-S115.txt):
+    Rotlauf S115 - M-115, M-116: der Slotriegel im Rust-Leser entfernt - 24.09.2026 22:39:12 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/telemetrie.rs (LF)
+    SHA-256 vorher 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\S115-telemetrie.rs (SHA-256 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6)
+    Mutation 1 ab Zeile 581 in broker/src/telemetrie.rs (Stand vor der Mutation):
+      vorher:
+        |    while slot + 2 <= vtable.num_bytes() {
+      nachher:
+        |    while false && slot + 2 <= vtable.num_bytes() { // MUTATION M-115: Slotriegel entfernt
+    Mutiert 24.09.2026 22:39:12: broker/src/telemetrie.rs, SHA-256 mutiert 7dc76c314892560806a89d230b627100bff2e7fe8c77416847346b9dbdfb532c (git diff --numstat: 1 1 broker/src/telemetrie.rs)
+    Kette (R-313-11): Ohne Riegel ist die Rust-Menge leer, die MANIFEST-Menge nicht -> nak313_m115 und der FB-Korpus in A4 rot; die Senke reicht den Batch weiter, messframe_schreiben erhaelt die Bytes, kein p2_reject -> nak313_m116 rot.
+    Lauf unter der Mutation:
+      A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+      A4-ccl: Exit 101, Fehlzeilen 2, Rohausgabe S115-mutiert-A4-ccl.txt
+        Summe: test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+      A4-slice: cargo uebersetzt eqcop-broker neu: ja
+      A4-slice: Exit 101, Fehlzeilen 1, Rohausgabe S115-mutiert-A4-slice.txt
+        Summe: test result: FAILED. 26 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+    Ruecknahme 24.09.2026 22:39:18: broker/src/telemetrie.rs SHA-256 37b032700b0d1b5f614cc11e7afe20748b3314b45553c99fea04768910c732f6 - gleich dem Stand vor der Mutation
+      A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+      A4-ccl: Exit 0, Fehlzeilen 0, Rohausgabe S115-zurueck-A4-ccl.txt
+        Summe: test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+      A4-slice: cargo uebersetzt eqcop-broker neu: ja
+      A4-slice: Exit 0, Fehlzeilen 0, Rohausgabe S115-zurueck-A4-slice.txt
+        Summe: test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+    Erwartete Pruefungen unter der Mutation:
+      A4-ccl: 'nak313_m115_adresse_zusatzfeld' gefallen: JA
+      A4-ccl: 'fb_korpus_klassifiziert_wie_das_manifest' gefallen: JA
+      A4-slice: 'nak313_m116_zusatzslot_wird_nicht_weitergereicht' gefallen: JA
+      A4-ccl: 'nak313_m118_nullslot_bleibt_gueltig' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-ccl: Exit 0, Fehlzeilen 0
+      A4-slice: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/telemetrie.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4-ccl unter der Mutation: gefallene Pruefungen (2) ===
+      test nak313_m115_adresse_zusatzfeld ... FAILED
+      test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+    === A4-ccl unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+      test nak313_m118_nullslot_bleibt_gueltig ... ok
+    === A4-ccl unter der Mutation: Panikmeldungen und Tabellenabweichungen (4 Zeilen) ===
+      thread 'nak313_m115_adresse_zusatzfeld' (106796) panicked at tests\contract_cross_language.rs:259:5:
+      assertion `left == right` failed: der Zusatzslot ist genau ein Verstoss am Eintrag 0
+      thread 'fb_korpus_klassifiziert_wie_das_manifest' (78916) panicked at tests\contract_cross_language.rs:234:5:
+      1 von 130 Fixtures weichen ab:
+    === A4-slice unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m116_zusatzslot_wird_nicht_weitergereicht ... FAILED
+    === A4-slice unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A4-slice unter der Mutation: Panikmeldungen und Tabellenabweichungen (2 Zeilen) ===
+      thread 'nak313_m116_zusatzslot_wird_nicht_weitergereicht' (3032) panicked at tests\sonde012_sources_slice.rs:583:5:
+      assertion `left == right` failed: die P2-Bytes erreichen Gen nicht
+    === A4-ccl nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4-slice nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-115: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

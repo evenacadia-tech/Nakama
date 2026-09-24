@@ -1,0 +1,69 @@
+NAK-313 Etappe 6 - Rotbeweis M-98 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-98 - T3-03-05 - R-313-7 - Produktleser Rust-Bootstrap, Gegenfall
+Zustand: Control-Hello ohne host
+Ereignis: bootstrap_lesen
+Zusage: V3Control, host = None; Tabelleneintrag rust_bootstrap (PE-148), vertrag und produkt gueltig
+Bein: A4: bootstrap.rs nak313_m98_host_fehlt_gueltig; Tabellenlauf nak313_m45_doppelter_schluessel_im_hello (PE-148); Python A5 (Tabelle)
+
+--- Haelfte 1: ohne host gueltig - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+  -> am Basisstand: gruen
+  Mutation T98: M-98: host_pruefen lehnt ein fehlendes host ab (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T98.txt):
+    Rotlauf T98 - M-98: host_pruefen lehnt ein fehlendes host ab - 24.09.2026 22:37:51 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T98-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 178 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    let Some(h) = h else { return Ok(()) };
+      nachher:
+        |    let Some(h) = h else { return Err("host fehlt".into()) }; // MUTATION M-98
+    Mutiert 24.09.2026 22:37:51: broker/src/transport/bootstrap.rs, SHA-256 mutiert 8675a35a885ef8640b4ff87cc20394fea0fe9260ae57fb244b81fe1251dab818 (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): host_pruefen lehnt ein fehlendes host ab: ein Control-Hello ohne host endet als KeinHello (Stufe feldregel) -> nak313_m98_host_fehlt_gueltig und der Tabelleneintrag PE-148 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 6, Rohausgabe T98-mutiert-A4.txt
+        Summe: test result: FAILED. 13 passed; 6 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Ruecknahme 24.09.2026 22:37:54: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T98-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m98_host_fehlt_gueltig' gefallen: JA
+      A4: 'nak313_m45_doppelter_schluessel_im_hello' gefallen: JA
+      A4: 'PE-148: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (6) ===
+      test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... FAILED
+      test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... FAILED
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (14 Zeilen) ===
+      thread 'transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert' (357312) panicked at src\transport\bootstrap.rs:687:67:
+      called `Result::unwrap()` on an `Err` value: KeinHello("host fehlt")
+      thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (393132) panicked at src\transport\bootstrap.rs:815:27:
+      protocol 3.0 ist die Ganzzahl 3 und wird ein V3Control: Err(KeinHello("host fehlt"))
+      thread 'transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig' (306324) panicked at src\transport\bootstrap.rs:942:23:
+      ohne host bleibt das Hello gueltig: Err(KeinHello("host fehlt"))
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (197284) panicked at src\transport\bootstrap.rs:999:27:
+      (b) 1e-307 ist ein V3Control: Err(KeinHello("host fehlt"))
+      thread 'transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags' (54276) panicked at src\transport\bootstrap.rs:602:9:
+      ohne host bleibt das Hello gueltig
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (386796) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-148: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("host fehlt")))
+      PE-148: Wirkung annahme nicht gehalten (Err(KeinHello("host fehlt")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-98: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

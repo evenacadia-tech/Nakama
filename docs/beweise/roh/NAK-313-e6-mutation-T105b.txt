@@ -1,0 +1,48 @@
+NAK-313 Etappe 6 - Mutationslauf T105b: M-105 Varianten: BootstrapFehler::ZuGross im Produktcode in ZuLang umbenannt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf T105b - M-105 Varianten: BootstrapFehler::ZuGross im Produktcode in ZuLang umbenannt - 24.09.2026 22:38:58 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei broker/src/transport/bootstrap.rs (LF)
+SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T105b-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+Mutation 1 ab Zeile 41 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+  vorher:
+    |    ZuGross(u32),
+  nachher:
+    |    ZuLang(u32), // MUTATION M-105: Variante umbenannt
+Mutation 2 ab Zeile 292 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+  vorher:
+    |        return Err(BootstrapFehler::ZuGross(len));
+  nachher:
+    |        return Err(BootstrapFehler::ZuLang(len));
+Mutiert 24.09.2026 22:38:58: broker/src/transport/bootstrap.rs, SHA-256 mutiert 1ae9e82eeef8a4de4cec5f779863b8f38caa31c4d489062f2eae0a12d3baf1a0 (git diff --numstat: 2 2 broker/src/transport/bootstrap.rs)
+Kette (R-313-11): Die umbenannte Variante uebersetzt im Produktcode, die Modultests in bootstrap.rs nennen ZuGross -> der Testbau scheitert -> A4 rot (verbindung.rs formatiert den Fehler nur).
+Lauf unter der Mutation:
+  A4: cargo uebersetzt eqcop-broker neu: ja, Uebersetzung gescheitert
+  A4: Exit 101, Fehlzeilen 3, Rohausgabe T105b-mutiert-A4.txt
+    Summe: error: could not compile `eqcop-broker` (lib test) due to 1 previous error
+Ruecknahme 24.09.2026 22:39:00: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 0, Fehlzeilen 0, Rohausgabe T105b-zurueck-A4.txt
+    Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Erwartete Pruefungen unter der Mutation:
+  A4: Bau scheitert mit 'ZuGross': JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+git diff --stat: (leer)
+
+=== A4 unter der Mutation: gefallene Pruefungen (3) ===
+  error[E0599]: no variant or associated item named `ZuGross` found for enum `bootstrap::BootstrapFehler` in the current scope
+  --> src\transport\bootstrap.rs:729:34
+  error: could not compile `eqcop-broker` (lib test) due to 1 previous error
+=== A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

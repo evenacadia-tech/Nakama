@@ -1,0 +1,58 @@
+NAK-313 Etappe 6 - Mutationslauf H106c: M-106 (c): Codepunktgrenze der broker_version 63
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H106c - M-106 (c): Codepunktgrenze der broker_version 63 - 24.09.2026 22:44:30 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H106c-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+Mutation 1 ab Zeile 223 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+  vorher:
+    |! utf8CodepointsBis (brokerVersion, 64))
+  nachher:
+    |! utf8CodepointsBis (brokerVersion, 63))   // MUTATION M-106 (c): Grenze 63
+Mutiert 24.09.2026 22:44:30: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert ed0b3a248c285eed9d4b21ac4d10638c69d104417143f5402084a43ba6287c17 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+Kette (R-313-11): 64 ASCII verbindet nicht mehr -> 313/M-106 (c) und PE-170 rot (mit faellt (a), 64 Codepunkte).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:44:34.650, Quelle 22:44:30.317, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 10, Rohausgabe H106c-mutiert-B10.txt
+    Summe: FEHLER — 183 Pruefungen, 9 Fehler
+Ruecknahme 24.09.2026 22:44:41: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:44:45.229, Quelle 22:44:41.627, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe H106c-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-106 broker_version_in_codepunkten (c)' gefallen: JA
+  B10: 'PE-170 (Urteil, Stufe)' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (10) ===
+  FEHLER  313/M-106 broker_version_in_codepunkten control PE-168 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-106 broker_version_in_codepunkten control PE-168 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-106 broker_version_in_codepunkten control PE-170 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-106 broker_version_in_codepunkten control PE-170 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-106 broker_version_in_codepunkten (a) 64 x e-Akut (128 Bytes) verbindet  [nicht verbunden - unerwartete Antwort auf hello]
+  FEHLER  313/M-106 broker_version_in_codepunkten (c) 64 ASCII verbindet  [nicht verbunden - unerwartete Antwort auf hello]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-106 (a) koppelt  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER — 183 Pruefungen, 9 Fehler
+=== B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+  ok      313/M-106 broker_version_in_codepunkten control PE-169 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-106 broker_version_in_codepunkten control PE-169 (Wirkung)  [nicht verbunden]
+  ok      313/M-106 broker_version_in_codepunkten (b) 65 x e-Akut verbindet nicht  [nicht verbunden - unerwartete Antwort auf hello]
+  ok      313/M-113 telemetrie_welcome_wie_control M-106 (b)  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

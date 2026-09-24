@@ -1,0 +1,58 @@
+NAK-313 Etappe 6 - Mutationslauf T101b: M-101 (b) Tor: Untergrenze des Rust-Riegels um eins zu eng (dez <= -307)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf T101b - M-101 (b) Tor: Untergrenze des Rust-Riegels um eins zu eng (dez <= -307) - 24.09.2026 22:38:13 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei broker/src/vertrag.rs (LF)
+SHA-256 vorher a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T101b-vertrag.rs (SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e)
+Mutation 1 ab Zeile 276 in broker/src/vertrag.rs (Stand vor der Mutation):
+  vorher:
+    |    if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
+  nachher:
+    |    if dez >= DEZ_GRENZE || dez <= -307 { // MUTATION M-101 (b)
+Mutiert 24.09.2026 22:38:13: broker/src/vertrag.rs, SHA-256 mutiert 5b16c02a26ad6984e348d008cb444c772ffd0d0b4568523dec077a2cfcd20166 (git diff --numstat: 1 1 broker/src/vertrag.rs)
+Kette (R-313-11): Mit dez <= -307 faellt 1e-307 (dez = (1 - 0 - 1) + (-307) = -307) am gehaltenen Textriegelurteil: KeinHello (textriegel: Zahl ausserhalb +/-1e308: 1e-307) -> nak313_m101 (b) und PE-154 rot.
+Lauf unter der Mutation:
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 101, Fehlzeilen 2, Rohausgabe T101b-mutiert-A4.txt
+    Summe: test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.02s
+Ruecknahme 24.09.2026 22:38:18: broker/src/vertrag.rs SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e - gleich dem Stand vor der Mutation
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 0, Fehlzeilen 0, Rohausgabe T101b-zurueck-A4.txt
+    Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Erwartete Pruefungen unter der Mutation:
+  A4: 'nak313_m101_samplerate_raender' gefallen: JA
+  A4: 'PE-154: Urteil/Stufe' in der Ausgabe: JA
+  A4: '1e-307' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/vertrag.rs: (leer)
+git diff --stat: (leer)
+
+=== A4 unter der Mutation: gefallene Pruefungen (2) ===
+  test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+=== A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (6) ===
+  test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+  test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+  test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+  test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+  test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+  test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+=== A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (6 Zeilen) ===
+  thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (302648) panicked at src\transport\bootstrap.rs:999:27:
+  (b) 1e-307 ist ein V3Control: Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307"))
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (315980) panicked at src\transport\bootstrap.rs:921:9:
+  rust_bootstrap weicht von `produkt` ab:
+  PE-154: Urteil/Stufe ("ungueltig", Some("textriegel")), soll ("gueltig", None) (Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307")))
+  PE-154: Wirkung annahme nicht gehalten (Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307")))
+=== A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

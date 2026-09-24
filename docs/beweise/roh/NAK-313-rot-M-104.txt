@@ -1,0 +1,74 @@
+NAK-313 Etappe 6 - Rotbeweis M-104 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-104 - T3-03-05 - R-313-7 - v2-Hellos unberuehrt
+Zustand: zwei v2-gueltige Hellos mit verletzter v3-Textriegelregel: (a) samplerate 48000.0000000000001, (b) NUL-Escape in sensor.label (PE-166, PE-167)
+Ereignis: bootstrap_lesen
+Zusage: Beide V2 { roh } mit den Rohbytes; vertrag (A11) und produkt gueltig
+Bein: A4: bootstrap.rs nak313_m104_v2_hello_ohne_v3_regeln, bestehend v2_hello_bleibt_v2; Tabellenlauf; Python A11
+
+--- Haelfte 1: v2 ohne v3-Regeln - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  PE-166 und PE-167 gueltig wie vertrag.
+  test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+  test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+  -> am Basisstand: gruen
+  Mutation T104: M-104: das gehaltene Textriegelurteil vor der Protokollwahl angewandt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T104.txt):
+    Rotlauf T104 - M-104: das gehaltene Textriegelurteil vor der Protokollwahl angewandt - 24.09.2026 22:38:44 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T104-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 352 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
+      nachher:
+        |    // MUTATION M-104: das Textriegelurteil steht vor der Protokollwahl
+    Mutation 2 ab Zeile 322 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    // Die Protokollentscheidung faellt VOR jeder Feldpruefung: v2 traegt
+      nachher:
+        |    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
+        |    // Die Protokollentscheidung faellt VOR jeder Feldpruefung: v2 traegt
+    Mutiert 24.09.2026 22:38:44: broker/src/transport/bootstrap.rs, SHA-256 mutiert 27145b433f8c28467d82cc5cd2996e7ee3b87517e05ea04d9280c722adb3bef1 (git diff --numstat: 2 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Schritt 5 vor Schritt 4: die zwei v2-gueltigen Hellos mit verletzter v3-Regel (Regel 2 und Regel 5) enden als KeinHello (textriegel: ...) statt V2 -> nak313_m104 und PE-166, PE-167 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 2, Rohausgabe T104-mutiert-A4.txt
+        Summe: test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.02s
+    Ruecknahme 24.09.2026 22:38:48: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T104-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m104_v2_hello_ohne_v3_regeln' gefallen: JA
+      A4: 'PE-166: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-167: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (2) ===
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (7) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (8 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln' (237180) panicked at src\transport\bootstrap.rs:1071:27:
+      (a) samplerate 48000.0000000000001: ein v2-Hello bleibt V2: Err(KeinHello("textriegel: Zahl mit mehr als 15 signifikanten Dezimalziffern: 48000.0000000000001"))
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (278584) panicked at src\transport\bootstrap.rs:922:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-166: Urteil/Stufe ("ungueltig", Some("textriegel")), soll ("gueltig", None) (Err(KeinHello("textriegel: Zahl mit mehr als 15 signifikanten Dezimalziffern: 48000.0000000000001")))
+      PE-166: Wirkung annahme nicht gehalten (Err(KeinHello("textriegel: Zahl mit mehr als 15 signifikanten Dezimalziffern: 48000.0000000000001")))
+      PE-167: Urteil/Stufe ("ungueltig", Some("textriegel")), soll ("gueltig", None) (Err(KeinHello("textriegel: NUL-Escape in Zeichenkette an Position 139")))
+      PE-167: Wirkung annahme nicht gehalten (Err(KeinHello("textriegel: NUL-Escape in Zeichenkette an Position 139")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-104: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

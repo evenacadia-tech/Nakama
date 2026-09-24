@@ -1,0 +1,196 @@
+NAK-313 Etappe 6 - Rotbeweis M-105 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-105 - T3-03-05 - Uebergabe an NAK-310 Etappe 4 - Signatur und Varianten
+Zustand: Endstand der Etappe 6
+Ereignis: Bau und A4
+Zusage: bootstrap_lesen (&[u8]) -> Result<(Bootstrap, usize), BootstrapFehler> und die Varianten bleiben; die bestehenden Bootstraptests bleiben gruen, host_haelt_die_laengen_des_vertrags erwartet den Schemagrund mit Zeiger
+Bein: A4: die bestehenden Tests in bootstrap.rs, einer umgestellt
+
+--- Haelfte 1: Signatur (Rueckgabetyp) - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (Bau)
+  Mutation T105a: M-105 Signatur: Rueckgabetyp von bootstrap_lesen ohne die Laenge (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T105a.txt):
+    Rotlauf T105a - M-105 Signatur: Rueckgabetyp von bootstrap_lesen ohne die Laenge - 24.09.2026 22:38:53 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T105a-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 283 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehler> {
+      nachher:
+        |pub fn bootstrap_lesen(daten: &[u8]) -> Result<Bootstrap, BootstrapFehler> { // MUTATION M-105: Rueckgabetyp
+        |    bootstrap_lesen_mit_laenge(daten).map(|(b, _)| b)
+        |}
+        |fn bootstrap_lesen_mit_laenge(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehler> {
+    Mutiert 24.09.2026 22:38:53: broker/src/transport/bootstrap.rs, SHA-256 mutiert 130457e174440d3bc542ab7c9027ea897d70cda145f1297bdf4871d960e945e2 (git diff --numstat: 4 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Ein anderer Rueckgabetyp bricht den Aufrufer broker/src/transport/server_v3/verbindung.rs (Tupel aus bootstrap_lesen) -> der Bau scheitert -> A4 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja, Uebersetzung gescheitert
+      A4: Exit 101, Fehlzeilen 37, Rohausgabe T105a-mutiert-A4.txt
+        Summe: error: could not compile `eqcop-broker` (lib test) due to 18 previous errors
+    Ruecknahme 24.09.2026 22:38:54: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T105a-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.03s
+    Erwartete Pruefungen unter der Mutation:
+      A4: Bau scheitert mit 'verbindung.rs': JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (37) ===
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:608:20
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:621:20
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:659:20
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:679:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:690:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:745:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:750:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:755:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:760:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:774:13
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:817:20
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:825:16
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:832:16
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:905:24
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:944:16
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:1001:20
+      error[E0308]: mismatched types
+      --> src\transport\bootstrap.rs:1072:20
+      error[E0308]: mismatched types
+      --> src\transport\server_v3\verbindung.rs:259:9
+      error: could not compile `eqcop-broker` (lib test) due to 18 previous errors
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Varianten - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (Bau)
+  Mutation T105b: M-105 Varianten: BootstrapFehler::ZuGross im Produktcode in ZuLang umbenannt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T105b.txt):
+    Rotlauf T105b - M-105 Varianten: BootstrapFehler::ZuGross im Produktcode in ZuLang umbenannt - 24.09.2026 22:38:58 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T105b-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 41 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    ZuGross(u32),
+      nachher:
+        |    ZuLang(u32), // MUTATION M-105: Variante umbenannt
+    Mutation 2 ab Zeile 292 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |        return Err(BootstrapFehler::ZuGross(len));
+      nachher:
+        |        return Err(BootstrapFehler::ZuLang(len));
+    Mutiert 24.09.2026 22:38:58: broker/src/transport/bootstrap.rs, SHA-256 mutiert 1ae9e82eeef8a4de4cec5f779863b8f38caa31c4d489062f2eae0a12d3baf1a0 (git diff --numstat: 2 2 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Die umbenannte Variante uebersetzt im Produktcode, die Modultests in bootstrap.rs nennen ZuGross -> der Testbau scheitert -> A4 rot (verbindung.rs formatiert den Fehler nur).
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja, Uebersetzung gescheitert
+      A4: Exit 101, Fehlzeilen 3, Rohausgabe T105b-mutiert-A4.txt
+        Summe: error: could not compile `eqcop-broker` (lib test) due to 1 previous error
+    Ruecknahme 24.09.2026 22:39:00: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T105b-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: Bau scheitert mit 'ZuGross': JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (3) ===
+      error[E0599]: no variant or associated item named `ZuGross` found for enum `bootstrap::BootstrapFehler` in the current scope
+      --> src\transport\bootstrap.rs:729:34
+      error: could not compile `eqcop-broker` (lib test) due to 1 previous error
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: umgestellter Test - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+  rot (host_haelt_die_laengen_des_vertrags nennt host.name statt schema: /host/name).
+  -> am Basisstand: rot (Grund aus host_pruefen)
+  Mutation T99: M-99, M-101 (e), M-105 (umgestellter Test): die Hello-Pruefung des Schemas im Control-Zweig uebersprungen (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T99.txt):
+    Rotlauf T99 - M-99, M-101 (e), M-105 (umgestellter Test): die Hello-Pruefung des Schemas im Control-Zweig uebersprungen - 24.09.2026 22:37:58 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T99-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 355 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |            hello_schema_pruefen("hello_control", &wert)?;
+      nachher:
+        |            // MUTATION M-99: hello_schema_pruefen("hello_control", &wert)?;
+    Mutiert 24.09.2026 22:37:58: broker/src/transport/bootstrap.rs, SHA-256 mutiert 0c58d2336c8944ae0822a1bf3793cb2072ac467a0a83f6cc61d6ec4eacc257e8 (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Ohne die Hello-Pruefung des Schemas macht serde null still zu None: host null, host.name null und host.version null werden V3Control -> nak313_m99 rot, PE-149 bis PE-151 rot; 768000.5 passiert den Textriegel und faellt erst an der zweiten Wand mit dem Feldgrund (Stufe feldregel statt schema) -> nak313_m101 (e) und PE-157 rot; die Laengen von host.name und host.version fallen wieder mit dem Grund aus host_pruefen -> host_haelt_die_laengen_des_vertrags rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 4, Rohausgabe T99-mutiert-A4.txt
+        Summe: test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.02s
+    Ruecknahme 24.09.2026 22:38:03: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T99-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m99_host_null_faellt_am_schema' gefallen: JA
+      A4: 'nak313_m101_samplerate_raender' gefallen: JA
+      A4: 'host_haelt_die_laengen_des_vertrags' gefallen: JA
+      A4: 'nak313_m45_doppelter_schluessel_im_hello' gefallen: JA
+      A4: 'PE-149: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-150: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-151: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-157: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (4) ===
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... FAILED
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (16 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema' (186092) panicked at src\transport\bootstrap.rs:962:27:
+      host null faellt am Schema: Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.3.0", plugin_kind: "active_probe", adresse: Adresse { logon_sid: "S-1-5-21-1-2-3-1001", project_binding_id: "00000000000000000000000000000000", session_epoch: "000000000
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (96360) panicked at src\transport\bootstrap.rs:1003:51:
+      (e) 768000.5 faellt am Schema (audio ausserhalb des Vertrags)
+      thread 'transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags' (235064) panicked at src\transport\bootstrap.rs:629:51:
+      der Grund muss die Schemapruefung mit dem Zeiger /host/name nennen (host.name ueber 120 Zeichen)
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (68820) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-149: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-149: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-150: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-150: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-151: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-151: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-157: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-159: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("invalid type: floating point `1.5`, expected u32")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-105: die Zusage faellt an der erwarteten Pruefung in 3 von 3 Haelften mit Rotlauf: JA

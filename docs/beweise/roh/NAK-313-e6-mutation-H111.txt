@@ -1,0 +1,69 @@
+NAK-313 Etappe 6 - Mutationslauf H111: M-111: die UTF-8-Pruefung am Anfang von flachesJsonObjekt entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H111 - M-111: die UTF-8-Pruefung am Anfang von flachesJsonObjekt entfernt - 24.09.2026 22:56:40 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (LF)
+SHA-256 vorher fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H111-IpcVerbindung.cpp (SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517)
+Mutation 1 ab Zeile 683 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+  vorher:
+    |    bool gelesen = nakama::utf8::istGueltig (text.data(), text.size());
+  nachher:
+    |    bool gelesen = true;   // MUTATION M-111: UTF-8-Pruefung am Anfang entfernt
+Mutiert 24.09.2026 22:56:40: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp, SHA-256 mutiert f221b9561e4e32860d07b83ff1849609825986f072d781414498a15a53e059b2 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp)
+Kette (R-313-11): (c) reject mit FF im code wird Broker lehnt ab: ..., (d) das ACK mit FF im code gilt als abgelehnt; (a) und (b) halten ueber utf8CodepointsBis, nur ihre Meldung wechselt -> 313/M-111 (a) bis (d), M-113 M-111 und PE-182 bis PE-184, PE-192 bis PE-194, PE-196 rot.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:56:42.843, Quelle 22:56:40.127, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 19, Rohausgabe H111-mutiert-B10.txt
+    Summe: FEHLER — 183 Pruefungen, 18 Fehler
+Ruecknahme 24.09.2026 22:56:48: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:56:52.027, Quelle 22:56:48.744, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe H111-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-111 utf8_am_anfang_des_flachen_lesens (c)' gefallen: JA
+  B10: '313/M-111 utf8_am_anfang_des_flachen_lesens (d)' gefallen: JA
+  B10: '313/M-111 utf8_am_anfang_des_flachen_lesens (a)' gefallen: JA
+  B10: '313/M-111 utf8_am_anfang_des_flachen_lesens (b)' gefallen: JA
+  B10: '313/M-113 telemetrie_welcome_wie_control M-111 (c)' gefallen: JA
+  B10: 'PE-196 (Urteil, Stufe)' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/IpcVerbindung.cpp: (leer)
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (19) ===
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-182 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - unerwartete Antwort auf hello]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-183 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - reject haelt den Vertrag nicht]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-184 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: inkompatibel]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-184 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-192 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-193 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - reject haelt den Vertrag nicht]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: inkompatibel]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens PE-196 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - inFlight 0, Erfolg 0, endgueltig 1]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens PE-196 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 1]
+  FEHLER  313/M-109 grund_ausgang kein gueltiges UTF-8
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (a) welcome mit C3 28  [nicht verbunden - unerwartete Antwort auf hello]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (b) reject mit FF im reason  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (c) reject mit FF im code  [nicht verbunden - Broker lehnt ab: inkompatibel]
+  FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (d) ack mit FF im code ist keinAck  [inFlight 0, Erfolg 0, endgueltig 1]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (a)  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (b)  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (c)  [nicht verbunden - Broker lehnt ab: inkompatibel]
+  FEHLER — 183 Pruefungen, 18 Fehler
+=== B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (2) ===
+  ok      313/M-111 utf8_am_anfang_des_flachen_lesens control PE-182 (Wirkung)  [nicht verbunden]
+  ok      313/M-111 utf8_am_anfang_des_flachen_lesens control PE-183 (Wirkung)  [nicht verbunden]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

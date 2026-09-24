@@ -1,0 +1,80 @@
+NAK-313 Etappe 6 - Mutationslauf T101d: M-101 (d) Tor: Samplerategrenze der zweiten Wand auf 768
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf T101d - M-101 (d) Tor: Samplerategrenze der zweiten Wand auf 768 - 24.09.2026 22:38:22 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei broker/src/transport/bootstrap.rs (LF)
+SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T101d-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+Mutation 1 ab Zeile 369 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+  vorher:
+    |                && h.audio.samplerate <= 768_000.0
+  nachher:
+    |                && h.audio.samplerate <= 768.0 // MUTATION M-101 (d)
+Mutiert 24.09.2026 22:38:22: broker/src/transport/bootstrap.rs, SHA-256 mutiert 3517d0530a05f73d3371d7d693c5cffac76cfac5093001b72048eb933c186944 (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+Kette (R-313-11): 48000 passiert Textriegel (Ganzzahlzweig) und Schema (bis 768000) und faellt an der zweiten Wand: KeinHello (audio ausserhalb des Vertrags) -> nak313_m101 (d) und PE-156 rot; mit fallen die bestehenden Tests mit gueltigem Control-Hello (48000).
+Lauf unter der Mutation:
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 101, Fehlzeilen 6, Rohausgabe T101d-mutiert-A4.txt
+    Summe: test result: FAILED. 13 passed; 6 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Ruecknahme 24.09.2026 22:38:25: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 0, Fehlzeilen 0, Rohausgabe T101d-zurueck-A4.txt
+    Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Erwartete Pruefungen unter der Mutation:
+  A4: 'nak313_m101_samplerate_raender' gefallen: JA
+  A4: 'PE-156: Urteil/Stufe' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+git diff --stat: (leer)
+
+=== A4 unter der Mutation: gefallene Pruefungen (6) ===
+  test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+  test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... FAILED
+  test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... FAILED
+  test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+  test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+=== A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+  test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+  test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+  test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+  test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+  test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+=== A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (26 Zeilen) ===
+  thread 'transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags' (112404) panicked at src\transport\bootstrap.rs:602:9:
+  ohne host bleibt das Hello gueltig
+  thread 'transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig' (367764) panicked at src\transport\bootstrap.rs:942:23:
+  ohne host bleibt das Hello gueltig: Err(KeinHello("audio ausserhalb des Vertrags"))
+  thread 'transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert' (39828) panicked at src\transport\bootstrap.rs:687:67:
+  called `Result::unwrap()` on an `Err` value: KeinHello("audio ausserhalb des Vertrags")
+  thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (391996) panicked at src\transport\bootstrap.rs:815:27:
+  protocol 3.0 ist die Ganzzahl 3 und wird ein V3Control: Err(KeinHello("audio ausserhalb des Vertrags"))
+  thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (312060) panicked at src\transport\bootstrap.rs:999:27:
+  (d) 48000 ist ein V3Control: Err(KeinHello("audio ausserhalb des Vertrags"))
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (179412) panicked at src\transport\bootstrap.rs:921:9:
+  rust_bootstrap weicht von `produkt` ab:
+  PE-143: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-143: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-144: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-144: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-145: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-145: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-146: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-146: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-147: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-147: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-148: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-148: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-156: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-156: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+=== A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

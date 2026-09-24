@@ -1,0 +1,72 @@
+NAK-313 Etappe 6 - Rotbeweis M-114 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-114 - T3-03-07 - R-313-8 - FB-Leser C++
+Zustand: Batch, dessen Adresse des Eintrags 0 Feld-ID 5 belegt (ungueltig/adresse-zusatzfeld-id5.bin)
+Ereignis: nakama::telemetrie::pruefe
+Zusage: Genau ein Verstoss (/eintraege/0/quelle, adresse_zusatzfeld), Batch ungueltig
+Bein: B3c: 313/M-114 adresse_zusatzfeld; FB-Korpuslauf
+
+--- Haelfte 1: Zusatzslot faellt - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  [ROT]  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+  [ROT]  313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0  [keine Verstoesse]
+  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig ([])
+  -> am Basisstand: rot
+  Mutation S114: M-114, M-117: der Slotriegel im C++-Leser entfernt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-S114.txt):
+    Rotlauf S114 - M-114, M-117: der Slotriegel im C++-Leser entfernt - 24.09.2026 22:41:00 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (LF)
+    SHA-256 vorher 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\S114-NakamaTelemetrie.cpp (SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae)
+    Mutation 1 ab Zeile 194 in eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (Stand vor der Mutation):
+      vorher:
+        |slot + 2u <= vtableLaenge; slot += 2u)
+      nachher:
+        |false && slot + 2u <= vtableLaenge; slot += 2u)   // MUTATION M-114: Slotriegel entfernt
+    Mutiert 24.09.2026 22:41:00: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp, SHA-256 mutiert ab4c29b5f0a90d559e00ff77bfa56bee90f90374c616c020c89891ba80532340 (git diff --numstat: 1 1 eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp)
+    Kette (R-313-11): Ohne Riegel ist die Verstossmenge des Zusatzslots leer: 313/M-114 und der FB-Korpusfall adresse-zusatzfeld-id5 in B3c rot; Gens uebernehmeP2 nimmt den Batch an -> 313/M-117 rot.
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:41:03.677, Quelle 22:41:00.222, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 3, Rohausgabe S114-mutiert-B3c.txt
+        Summe: 175 bestanden, 2 gescheitert
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 22:41:11.026, Quelle 22:41:00.222, Binaer juenger: ja
+      B13: Exit 1, Fehlzeilen 2, Rohausgabe S114-mutiert-B13.txt
+        Summe: SONDE-012 SourcesModel: 205/207 gruen
+    Ruecknahme 24.09.2026 22:41:11: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:41:15.494, Quelle 22:41:11.282, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe S114-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 22:41:17.446, Quelle 22:41:11.282, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S114-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 207/207 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B3c: '313/M-114 adresse_zusatzfeld' gefallen: JA
+      B3c: 'ungueltig/adresse-zusatzfeld-id5.bin' gefallen: JA
+      B13: '313/M-117 uebernehme_p2_zusatzslot (Rueckgabe false, Grund)' gefallen: JA
+      B3c: '313/M-118 adresse_vtable_slot5_leer' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (3) ===
+      [ROT]  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+      [ROT]  Binaerkorpus klassifiziert wie das Manifest (130 Fixtures)  [1 Abweichungen]
+      [ROT]  313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0  [keine Verstoesse]
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+      [ok]   313/M-118 adresse_vtable_slot5_leer: ein Nullslot bleibt gueltig
+    === B13 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-117 uebernehme_p2_zusatzslot (Rueckgabe false, Grund)
+      FEHLER  313/M-117 uebernehme_p2_zusatzslot (Zeile unveraendert: keine Messung)
+    === B13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+      ok      313/M-117 uebernehme_p2_zusatzslot (Einrichtung: live-64-band wird uebernommen)
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-114: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

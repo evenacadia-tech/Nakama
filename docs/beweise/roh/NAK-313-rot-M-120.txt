@@ -1,0 +1,57 @@
+NAK-313 Etappe 6 - Rotbeweis M-120 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-120 - T3-03-07 - Vertragstext FB-README und .fbs (Praezisierung nach R-313-8)
+Zustand: Endstand der Etappe 6
+Ereignis: Lesen der Regelliste und des Kommentars
+Zusage: Die Regelliste nennt adresse_zusatzfeld; der Kommentar ueber table Adresse nennt den Riegel; die generierten Dateien sind aus dem .fbs neu erzeugt
+Bein: Lesen; A9 (Drift 0), A10; B3c; A4
+
+--- Haelfte 1: Text - Etikett: heute rot (gelesen) ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: rot: die Regelliste kannte adresse_zusatzfeld nicht; Beleg ist die gelesene Stelle im Diff (unten)
+  Diff 00e3bea6..03996f46 -- eq-copilot/schemas/v3/flatbuffers/README.md:
+    @@ -139,6 +139,7 @@ abhängt.
+    +| `adresse_zusatzfeld` | Die Adresse eines Eintrags belegt einen Slot jenseits von Feld-ID 4 (VTable-Eintrag ≠ 0). Eine unbekannte Eigenschaft wäre eine unbekannte Zieladresse (Entwurf §33.1: nicht additiv); beide Leser melden sie nach der Verifikation, und der Broker reicht den Batch nicht weiter. Ein längerer VTable-Eintrag mit Offset 0 bleibt zulässig. |
+  Diff 00e3bea6..03996f46 -- eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs:
+    @@ -118,6 +118,9 @@ enum Gueltigkeit : ubyte (bit_flags) {
+    +/// Ein belegter Slot jenseits von Feld-ID 4 ist in beiden Lesern der Verstoss
+    +/// `adresse_zusatzfeld` (NAK-313 R-313-8); ein laengerer VTable-Eintrag mit
+    +/// Offset 0 bleibt zulaessig.
+
+--- Haelfte 2: Generierter Code gleich dem .fbs - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  A9 am Basisstand: Exit 0, Drift 0.
+  -> am Basisstand: gruen (Drift 0)
+  Mutation F120: M-120: der .fbs-Kommentar geaendert, ohne die generierten Dateien neu zu erzeugen (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-F120.txt):
+    Rotlauf F120 - M-120: der .fbs-Kommentar geaendert, ohne die generierten Dateien neu zu erzeugen - 24.09.2026 22:34:25 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs (LF)
+    SHA-256 vorher 11429698ef377a135e27d204531741969b39c03939d0feb053f86ea2b4de4a38; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\F120-nakama_telemetry_v1.fbs (SHA-256 11429698ef377a135e27d204531741969b39c03939d0feb053f86ea2b4de4a38)
+    Mutation 1 ab Zeile 123 in eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs (Stand vor der Mutation):
+      vorher:
+        |/// Offset 0 bleibt zulaessig.
+      nachher:
+        |/// Offset 0 bleibt erlaubt.
+    Mutiert 24.09.2026 22:34:25: eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs, SHA-256 mutiert 0addae5e7e0eb6069add2fa7b57e6c82ca1934325b01095d480707f0acce03a1 (git diff --numstat: 1 1 eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs)
+    Kette (R-313-11): Der Kommentar geht in beide generierten Dateien ueber; ohne Neuerzeugung ist die committete Fassung nicht mehr die, die das Schema erzeugt -> A9 meldet Drift -> rot.
+    Lauf unter der Mutation:
+      A9: Exit 2, Fehlzeilen 2, Rohausgabe F120-mutiert-A9.txt
+        Summe: Drift: 2 Datei(en) - die committete Fassung ist nicht die, die das Schema heute erzeugt.
+    Ruecknahme 24.09.2026 22:34:25: eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs SHA-256 11429698ef377a135e27d204531741969b39c03939d0feb053f86ea2b4de4a38 - gleich dem Stand vor der Mutation
+      A9: Exit 0, Fehlzeilen 0, Rohausgabe F120-zurueck-A9.txt
+        Summe: Drift: 0 Dateien
+    Erwartete Pruefungen unter der Mutation:
+      A9: Exit 2 und 'DRIFT' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A9: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs: (leer)
+    git diff --stat: (leer)
+    
+    === A9 unter der Mutation: gefallene Pruefungen (2) ===
+      ROT: DRIFT in eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h
+      ROT: DRIFT in broker/src/generiert/nakama_telemetry_v1_generated.rs
+    === A9 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-120: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

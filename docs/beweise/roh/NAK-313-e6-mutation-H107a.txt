@@ -1,0 +1,59 @@
+NAK-313 Etappe 6 - Mutationslauf H107a: M-107 (a): reject.reason wieder in Bytes gezaehlt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H107a - M-107 (a): reject.reason wieder in Bytes gezaehlt - 24.09.2026 22:44:52 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H107a-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+Mutation 1 ab Zeile 239 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+  vorher:
+    |&& jsonText (felder, "reason", grund) && utf8CodepointsBis (grund, 500);
+  nachher:
+    |&& jsonText (felder, "reason", grund) && grund.size() <= 500;   // MUTATION M-107 (a): Bytes
+Mutiert 24.09.2026 22:44:52: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert b542a82e8d6101ce45c69d833b75f538ad44d2c384275600c2a6b7ab6e922d30 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+Kette (R-313-11): 500 x e-Akut sind 1000 Bytes > 500 -> reject haelt den Vertrag nicht: 313/M-107 (a), M-113 M-107 (a) und PE-171, PE-189 rot.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:44:56.063, Quelle 22:44:52.346, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 10, Rohausgabe H107a-mutiert-B10.txt
+    Summe: FEHLER — 183 Pruefungen, 9 Fehler
+Ruecknahme 24.09.2026 22:45:03: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:45:07.161, Quelle 22:45:03.030, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe H107a-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-107 reject_reason_in_codepunkten (a)' gefallen: JA
+  B10: '313/M-113 telemetrie_welcome_wie_control M-107 (a)' gefallen: JA
+  B10: 'PE-171 (Urteil, Stufe)' gefallen: JA
+  B10: '313/M-107 reject_reason_in_codepunkten (b)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (10) ===
+  FEHLER  313/M-107 reject_reason_in_codepunkten control PE-171 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+  FEHLER  313/M-107 reject_reason_in_codepunkten control PE-171 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-108 escapes_dekodiert control PE-174 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+  FEHLER  313/M-108 escapes_dekodiert control PE-174 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-107 reject_reason_in_codepunkten (a) 500 x e-Akut: der volle Grund  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER  313/M-108 escapes_dekodiert Randfall 499 x a plus Paar (500 Codepunkte) gilt  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-107 (a)  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER — 183 Pruefungen, 9 Fehler
+=== B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (3) ===
+  ok      313/M-107 reject_reason_in_codepunkten control PE-172 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - reject haelt den Vertrag nicht]
+  ok      313/M-107 reject_reason_in_codepunkten control PE-172 (Wirkung)  [nicht verbunden]
+  ok      313/M-107 reject_reason_in_codepunkten (b) 501 x e-Akut haelt den Vertrag nicht  [nicht verbunden - reject haelt den Vertrag nicht]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

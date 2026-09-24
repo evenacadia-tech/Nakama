@@ -1,0 +1,60 @@
+NAK-313 Etappe 6 - Mutationslauf H108p: M-108 Randfaelle: das Surrogatpaar als zwei Codepunkte (zweimal U+FFFD)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H108p - M-108 Randfaelle: das Surrogatpaar als zwei Codepunkte (zweimal U+FFFD) - 24.09.2026 22:53:26 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (LF)
+SHA-256 vorher fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H108p-IpcVerbindung.cpp (SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517)
+Mutation 1 ab Zeile 548 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+  vorher:
+    |        cp = 0x10000 + ((cp - 0xD800) << 10) + (tief - 0xDC00);
+  nachher:
+    |        alsUtf8 (0xFFFD, ziel);   // MUTATION M-108: das Paar als zwei Codepunkte
+    |        cp = 0xFFFD;
+Mutiert 24.09.2026 22:53:26: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp, SHA-256 mutiert c3c0435fa85c77bb119c73bc7d069efd400e6a9fcc5f6bd424af241ad5e60edb (git diff --numstat: 2 1 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp)
+Kette (R-313-11): Das Paar zaehlt als zwei Codepunkte: 499 x a plus Paar sind 501 -> reject haelt den Vertrag nicht -> Randfall 499 rot; 500 x a plus Paar (502) bleibt abgelehnt; die dekodierten Bytes des Reject weichen ab -> escapes_dekodiert reject rot.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:53:29.332, Quelle 22:53:26.395, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 6, Rohausgabe H108p-mutiert-B10.txt
+    Summe: FEHLER — 183 Pruefungen, 5 Fehler
+Ruecknahme 24.09.2026 22:53:36: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:53:40.276, Quelle 22:53:36.326, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe H108p-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-108 escapes_dekodiert Randfall 499' gefallen: JA
+  B10: '313/M-108 escapes_dekodiert Randfall 500' gruen geblieben: JA
+  B10: '313/M-108 escapes_dekodiert reject' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/IpcVerbindung.cpp: (leer)
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (6) ===
+  FEHLER  313/M-108 escapes_dekodiert control PE-174 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+  FEHLER  313/M-108 escapes_dekodiert control PE-174 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-108 escapes_dekodiert reject: genau die Bytes 0A 5C 22 2F C3 A9 F0 9F 98 80  [nicht verbunden - Broker lehnt ab:
+  FEHLER  313/M-108 escapes_dekodiert Randfall 499 x a plus Paar (500 Codepunkte) gilt  [nicht verbunden - reject haelt den Vertrag nicht]
+  FEHLER  313/M-113 telemetrie_welcome_wie_control M-108 (Reject)  [nicht verbunden - Broker lehnt ab:
+  FEHLER — 183 Pruefungen, 5 Fehler
+=== B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (8) ===
+  ok      313/M-108 escapes_dekodiert control PE-173 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab:
+  ok      313/M-108 escapes_dekodiert control PE-173 (Wirkung)  [nicht verbunden]
+  ok      313/M-108 escapes_dekodiert control PE-175 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - reject haelt den Vertrag nicht]
+  ok      313/M-108 escapes_dekodiert control PE-175 (Wirkung)  [nicht verbunden]
+  ok      313/M-108 escapes_dekodiert PE-195 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 1]
+  ok      313/M-108 escapes_dekodiert PE-195 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 1]
+  ok      313/M-108 escapes_dekodiert Randfall 500 x a plus Paar (501 Codepunkte) nicht  [nicht verbunden - reject haelt den Vertrag nicht]
+  ok      313/M-108 escapes_dekodiert ack: konflikt mit dem Code revision_conflict beendet den Auftrag  [inFlight 0, Erfolg 0, endgueltig 1]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

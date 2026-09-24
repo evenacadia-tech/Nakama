@@ -1,0 +1,49 @@
+NAK-313 Etappe 6 - Mutationslauf S118c: M-118 C++: der Riegel prueft die VTable-Laenge statt des Eintrags
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S118c - M-118 C++: der Riegel prueft die VTable-Laenge statt des Eintrags - 24.09.2026 22:41:17 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (LF)
+SHA-256 vorher 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\S118c-NakamaTelemetrie.cpp (SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae)
+Mutation 1 ab Zeile 196 in eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp (Stand vor der Mutation):
+  vorher:
+    |        if (tabelle->GetOptionalFieldOffset (static_cast<flatbuffers::voffset_t> (slot)) != 0)
+  nachher:
+    |        if (vtableLaenge > 14u)   // MUTATION M-118: Riegel an der VTable-Laenge
+Mutiert 24.09.2026 22:41:17: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp, SHA-256 mutiert 8e6c6c18422b6ddb2a83f2ce34e71c85df62548f48ca0287c61dde26ecf9143d (git diff --numstat: 1 1 eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp)
+Kette (R-313-11): Die 16 Bytes lange VTable mit Slot 14 = 0 gilt als Verstoss -> 313/M-118 und der Gueltigfall adresse-vtable-slot5-leer in B3c rot; der Zusatzslot (M-114) bleibt erkannt.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:21.282, Quelle 22:41:17.868, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 3, Rohausgabe S118c-mutiert-B3c.txt
+    Summe: 175 bestanden, 2 gescheitert
+Ruecknahme 24.09.2026 22:41:21: eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp SHA-256 8aea4ebf37eebedb6c2bec615088c78f0907c47343d2d7c5adbd03081c37c0ae - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:25.484, Quelle 22:41:21.810, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe S118c-zurueck-B3c.txt
+    Summe: 177 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: '313/M-118 adresse_vtable_slot5_leer' gefallen: JA
+  B3c: 'gueltig/adresse-vtable-slot5-leer.bin' gefallen: JA
+  B3c: '313/M-114 adresse_zusatzfeld' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp: (leer)
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (3) ===
+  [ROT]  gueltig/adresse-vtable-slot5-leer.bin: Urteil gueltig erwartet, Leser sagt ungueltig {/eintraege/0/quelle | adresse_zusatzfeld}
+  [ROT]  Binaerkorpus klassifiziert wie das Manifest (130 Fixtures)  [1 Abweichungen]
+  [ROT]  313/M-118 adresse_vtable_slot5_leer: ein Nullslot bleibt gueltig  [/eintraege/0/quelle | adresse_zusatzfeld]
+=== B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  [ok]   313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0  [/eintraege/0/quelle | adresse_zusatzfeld (1)]
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

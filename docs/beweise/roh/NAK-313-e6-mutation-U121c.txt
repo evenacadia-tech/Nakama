@@ -1,0 +1,64 @@
+NAK-313 Etappe 6 - Mutationslauf U121c: M-121 C++: Untergrenze des Textriegels dez < -dezGrenze
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf U121c - M-121 C++: Untergrenze des Textriegels dez < -dezGrenze - 24.09.2026 22:41:34 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\U121c-NakamaVertrag.cpp (SHA-256 f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696)
+Mutation 1 ab Zeile 386 in eq-copilot/plugin/vertrag/NakamaVertrag.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (dez >= dezGrenze || dez <= -dezGrenze)
+  nachher:
+    |    if (dez >= dezGrenze || dez < -dezGrenze)   // MUTATION M-121
+Mutiert 24.09.2026 22:41:34: eq-copilot/plugin/vertrag/NakamaVertrag.cpp, SHA-256 mutiert cc32838a81d91d0fadd10060a05fc8103b70f6460ab712084367d276f43a49f5 (git diff --numstat: 1 1 eq-copilot/plugin/vertrag/NakamaVertrag.cpp)
+Kette (R-313-11): 1e-308, 2e-308 und 9.9e-308 gelten (dez -308) -> der Tabellenlauf des Textriegels in B3c rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:37.805, Quelle 22:41:34.453, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 4, Rohausgabe U121c-mutiert-B3c.txt
+    Summe: 176 bestanden, 1 gescheitert
+Ruecknahme 24.09.2026 22:41:38: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696 - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:41:42.210, Quelle 22:41:38.367, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe U121c-zurueck-B3c.txt
+    Summe: 177 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: 'Textriegel deckt die gemeinsame Falltabelle' gefallen: JA
+  B3c: '1e-308' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/vertrag/NakamaVertrag.cpp: (leer)
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (4) ===
+  [ROT]  Textriegel #94 {"w": 1e-308} -> angenommen
+  [ROT]  Textriegel #95 {"w": 2e-308} -> angenommen
+  [ROT]  Textriegel #96 {"w": 9.9e-308} -> angenommen
+  [ROT]  Textriegel deckt die gemeinsame Falltabelle  [106 Faelle]
+=== B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (16) ===
+  [ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+  [ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+  [ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+  [ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+  [ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+  [ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+  [ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+  [ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

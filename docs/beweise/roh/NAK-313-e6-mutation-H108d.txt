@@ -1,0 +1,56 @@
+NAK-313 Etappe 6 - Mutationslauf H108d: M-108 Diagnose: inkompatiblerFehler erkennt das Teilwort welcome
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H108d - M-108 Diagnose: inkompatiblerFehler erkennt das Teilwort welcome - 24.09.2026 22:41:43 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/src/SourcesModel.cpp (CRLF)
+SHA-256 vorher 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H108d-SourcesModel.cpp (SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639)
+Mutation 1 ab Zeile 345 in eq-copilot/plugin/src/SourcesModel.cpp (Stand vor der Mutation):
+  vorher:
+    |        || text.find ("Broker lehnt ab") != std::string::npos;
+  nachher:
+    |        || text.find ("Broker lehnt ab") != std::string::npos
+    |        || text.find ("welcome") != std::string::npos;   // MUTATION M-108: Teilwort welcome
+Mutiert 24.09.2026 22:41:43: eq-copilot/plugin/src/SourcesModel.cpp, SHA-256 mutiert 750a4f06dadfc746ce1f922bd40d5bd5e5f5de61628f98fcb7c7c7e5c0c7c0be (git diff --numstat: 2 1 eq-copilot/plugin/src/SourcesModel.cpp)
+Kette (R-313-11): Mit dem Teilwort welcome werden die Lesegruende welcome: ... incompatible ohne Handgriff -> 313/M-108 diagnose_der_handshakemeldungen rot; Broker lehnt ab bleibt incompatible.
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 22:41:49.184, Quelle 22:41:43.450, Binaer juenger: ja
+  B13: Exit 1, Fehlzeilen 9, Rohausgabe H108d-mutiert-B13.txt
+    Summe: SONDE-012 SourcesModel: 198/207 gruen
+Ruecknahme 24.09.2026 22:41:49: eq-copilot/plugin/src/SourcesModel.cpp SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 22:41:56.622, Quelle 22:41:49.576, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe H108d-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 207/207 gruen
+Erwartete Pruefungen unter der Mutation:
+  B13: '313/M-108 diagnose_der_handshakemeldungen: welcome: kein gueltiges UTF-8' gefallen: JA
+  B13: '313/M-108 diagnose_der_handshakemeldungen: welcome: kein type' gefallen: JA
+  B13: '313/M-108 diagnose_der_handshakemeldungen: Broker lehnt ab' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/SourcesModel.cpp: (leer)
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (9) ===
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: kein gueltiges UTF-8  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: NUL-Escape  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: einsames Surrogat  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: unbekanntes Escape  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: \u-Escape ohne vier Hexziffern  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: rohes Steuerzeichen  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: doppelter Name  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: Syntax  [5, ohne Handgriff]
+  FEHLER  313/M-108 diagnose_der_handshakemeldungen: welcome: kein type  [5, ohne Handgriff]
+=== B13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  ok      313/M-108 diagnose_der_handshakemeldungen: Broker lehnt ab: bootstrap: KeinHello("schema: /host verletzt type")  [5, ohne Handgriff]
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===

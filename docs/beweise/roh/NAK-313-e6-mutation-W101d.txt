@@ -1,0 +1,49 @@
+NAK-313 Etappe 6 - Mutationslauf W101d: M-101 (d) Writer: audioGueltig mit Samplerategrenze 768
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W101d - M-101 (d) Writer: audioGueltig mit Samplerategrenze 768 - 24.09.2026 22:40:40 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101d-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+Mutation 1 ab Zeile 262 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+  vorher:
+    |samplerate > 0.0 && samplerate <= 768000.0
+  nachher:
+    |samplerate > 0.0 && samplerate <= 768.0 /* MUTATION M-101 (d) Writer */
+Mutiert 24.09.2026 22:40:40: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert f845ff928392248fea523da1a4cb4293b57cfeffd4b7a5875bef35eb547cca71 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+Kette (R-313-11): audioGueltig (48000.0) false -> N-18d (gewoehnliche Samplerate) rot, mit faellt 44100.5.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:40:44.605, Quelle 22:40:40.427, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 2, Rohausgabe W101d-mutiert-B3c.txt
+    Summe: 175 bestanden, 2 gescheitert
+Ruecknahme 24.09.2026 22:40:45: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 22:40:49.087, Quelle 22:40:45.194, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101d-zurueck-B3c.txt
+    Summe: 177 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: 'N-18d: und nimmt die gewoehnliche Samplerate an' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (2) ===
+  [ROT]  N-18d: und nimmt die gewoehnliche Samplerate an
+  [ROT]  N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+=== B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+  [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+  [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+  [ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+  [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,460 @@
+NAK-313 Etappe 6 - Rotbeweis M-101 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-101 - T3-03-05 - R-313-7 - Samplerate, Zahlenraender
+Zustand: Control-Hello mit audio.samplerate (a) 1e-308, (b) 1e-307, (c) 1e-300, (d) 48000, (e) 768000.5
+Ereignis: bootstrap_lesen; C++-Writer audioGueltig mit denselben Werten
+Zusage: (a) KeinHello ("textriegel: Zahl ausserhalb +/-1e308: ..."), Stufe textriegel; (b), (d) V3Control; (e) KeinHello ("schema: ..."), Stufe schema; audioGueltig (a), (e) false, (b), (d) true; (c) nur benannt (E-313-17)
+Bein: A4: bootstrap.rs nak313_m101_samplerate_raender, Tabellenlauf (PE-153 bis PE-157); C++ B3c N-18d und 313/M-101 samplerate_wie_der_writer; Python A5
+
+--- Haelfte 1: Tor (a) 1e-308 am Textriegel - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+  PE-153: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111
+  PE-153: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_
+  -> am Basisstand: rot
+  Mutation T100: M-100, M-101 (a) Tor, M-102: das gehaltene Textriegelurteil nicht angewandt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T100.txt):
+    Rotlauf T100 - M-100, M-101 (a) Tor, M-102: das gehaltene Textriegelurteil nicht angewandt - 24.09.2026 22:38:06 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T100-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 352 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
+      nachher:
+        |    let _ = textriegel; // MUTATION M-100: das gehaltene Textriegelurteil nicht angewandt
+    Mutiert 24.09.2026 22:38:06: broker/src/transport/bootstrap.rs, SHA-256 mutiert dfad076717444d1067c21fd858bde5e8e8fb7aace834ce5303d321ef6abaa21c (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Ohne das gehaltene Urteil nimmt serde_json das NUL-Escape an und plugin_version_pruefen zaehlt 3 Zeichen -> nak313_m100 und PE-152 rot; 1e-308 passiert Schema (number, groesser 0) und zweite Wand -> V3Control -> nak313_m101 (a) und PE-153 rot; NUL-Escape mit host null endet am Schema -> nak313_m102 und PE-158 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 4, Rohausgabe T100-mutiert-A4.txt
+        Summe: test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Ruecknahme 24.09.2026 22:38:09: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T100-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m100_nul_escape_im_hello' gefallen: JA
+      A4: 'nak313_m101_samplerate_raender' gefallen: JA
+      A4: 'nak313_m102_reihenfolge_am_tor' gefallen: JA
+      A4: 'PE-152: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-153: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-158: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (4) ===
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... FAILED
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (14 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (20460) panicked at src\transport\bootstrap.rs:994:23:
+      (a) 1e-308 faellt am Textriegel: Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.3.0", plugin_kind: "active_probe", adresse: Adresse { logon_sid: "S-1-5-21-1-2-3-1001", project_binding_id: "00000000000000000000000000000000", session_epoch: "0000
+      thread 'transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor' (182440) panicked at src\transport\bootstrap.rs:1022:17:
+      der Textriegel geht dem Schema vor (schema: /host verletzt type)
+      thread 'transport::bootstrap::tests::nak313_m100_nul_escape_im_hello' (230844) panicked at src\transport\bootstrap.rs:977:23:
+      ein NUL-Escape im Hello faellt am Textriegel: Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "active_probe", adresse: Adresse { logon_sid: "S-1-5-21-1-2-3-1001", project_binding_id: "00000000000000000000000000000000", session_
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (241144) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-152: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bin
+      PE-152: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "1111111111111111111111111111
+      PE-153: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bi
+      PE-153: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-158: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("textriegel")) (Err(KeinHello("schema: /host verletzt type")))
+      PE-160: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("textriegel")) (Err(KeinHello("schema: /audio/block_size verletzt maximum")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Tor (b) 1e-307 verbindet - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (PE-154 und nak313_m101 (b) am Basisstand gruen; der Test faellt dort an (a))
+  Mutation T101b: M-101 (b) Tor: Untergrenze des Rust-Riegels um eins zu eng (dez <= -307) (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T101b.txt):
+    Rotlauf T101b - M-101 (b) Tor: Untergrenze des Rust-Riegels um eins zu eng (dez <= -307) - 24.09.2026 22:38:13 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/vertrag.rs (LF)
+    SHA-256 vorher a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T101b-vertrag.rs (SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e)
+    Mutation 1 ab Zeile 276 in broker/src/vertrag.rs (Stand vor der Mutation):
+      vorher:
+        |    if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
+      nachher:
+        |    if dez >= DEZ_GRENZE || dez <= -307 { // MUTATION M-101 (b)
+    Mutiert 24.09.2026 22:38:13: broker/src/vertrag.rs, SHA-256 mutiert 5b16c02a26ad6984e348d008cb444c772ffd0d0b4568523dec077a2cfcd20166 (git diff --numstat: 1 1 broker/src/vertrag.rs)
+    Kette (R-313-11): Mit dez <= -307 faellt 1e-307 (dez = (1 - 0 - 1) + (-307) = -307) am gehaltenen Textriegelurteil: KeinHello (textriegel: Zahl ausserhalb +/-1e308: 1e-307) -> nak313_m101 (b) und PE-154 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 2, Rohausgabe T101b-mutiert-A4.txt
+        Summe: test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.02s
+    Ruecknahme 24.09.2026 22:38:18: broker/src/vertrag.rs SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T101b-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m101_samplerate_raender' gefallen: JA
+      A4: 'PE-154: Urteil/Stufe' in der Ausgabe: JA
+      A4: '1e-307' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/vertrag.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (2) ===
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (6) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (6 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (302648) panicked at src\transport\bootstrap.rs:999:27:
+      (b) 1e-307 ist ein V3Control: Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307"))
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (315980) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-154: Urteil/Stufe ("ungueltig", Some("textriegel")), soll ("gueltig", None) (Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307")))
+      PE-154: Wirkung annahme nicht gehalten (Err(KeinHello("textriegel: Zahl ausserhalb +/-1e308: 1e-307")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: Tor (d) 48000 verbindet - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (PE-156)
+  Mutation T101d: M-101 (d) Tor: Samplerategrenze der zweiten Wand auf 768 (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T101d.txt):
+    Rotlauf T101d - M-101 (d) Tor: Samplerategrenze der zweiten Wand auf 768 - 24.09.2026 22:38:22 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T101d-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 369 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |                && h.audio.samplerate <= 768_000.0
+      nachher:
+        |                && h.audio.samplerate <= 768.0 // MUTATION M-101 (d)
+    Mutiert 24.09.2026 22:38:22: broker/src/transport/bootstrap.rs, SHA-256 mutiert 3517d0530a05f73d3371d7d693c5cffac76cfac5093001b72048eb933c186944 (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): 48000 passiert Textriegel (Ganzzahlzweig) und Schema (bis 768000) und faellt an der zweiten Wand: KeinHello (audio ausserhalb des Vertrags) -> nak313_m101 (d) und PE-156 rot; mit fallen die bestehenden Tests mit gueltigem Control-Hello (48000).
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 6, Rohausgabe T101d-mutiert-A4.txt
+        Summe: test result: FAILED. 13 passed; 6 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Ruecknahme 24.09.2026 22:38:25: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T101d-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m101_samplerate_raender' gefallen: JA
+      A4: 'PE-156: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (6) ===
+      test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... FAILED
+      test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... FAILED
+      test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (26 Zeilen) ===
+      thread 'transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags' (112404) panicked at src\transport\bootstrap.rs:602:9:
+      ohne host bleibt das Hello gueltig
+      thread 'transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig' (367764) panicked at src\transport\bootstrap.rs:942:23:
+      ohne host bleibt das Hello gueltig: Err(KeinHello("audio ausserhalb des Vertrags"))
+      thread 'transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert' (39828) panicked at src\transport\bootstrap.rs:687:67:
+      called `Result::unwrap()` on an `Err` value: KeinHello("audio ausserhalb des Vertrags")
+      thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (391996) panicked at src\transport\bootstrap.rs:815:27:
+      protocol 3.0 ist die Ganzzahl 3 und wird ein V3Control: Err(KeinHello("audio ausserhalb des Vertrags"))
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (312060) panicked at src\transport\bootstrap.rs:999:27:
+      (d) 48000 ist ein V3Control: Err(KeinHello("audio ausserhalb des Vertrags"))
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (179412) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-143: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-143: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-144: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-144: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-145: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-145: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-146: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-146: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-147: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-147: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-148: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-148: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-156: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-156: Wirkung annahme nicht gehalten (Err(KeinHello("audio ausserhalb des Vertrags")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 4: Tor (e) 768000.5: Urteil - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  PE-157: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  -> am Basisstand: Urteil gruen (ungueltig, audio ausserhalb des Vertrags)
+
+--- Haelfte 5: Tor (e) 768000.5: Stufe schema - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  PE-157: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  -> am Basisstand: rot (Stufe feldregel statt schema)
+  Mutation T99: M-99, M-101 (e), M-105 (umgestellter Test): die Hello-Pruefung des Schemas im Control-Zweig uebersprungen (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T99.txt):
+    Rotlauf T99 - M-99, M-101 (e), M-105 (umgestellter Test): die Hello-Pruefung des Schemas im Control-Zweig uebersprungen - 24.09.2026 22:37:58 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T99-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 355 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |            hello_schema_pruefen("hello_control", &wert)?;
+      nachher:
+        |            // MUTATION M-99: hello_schema_pruefen("hello_control", &wert)?;
+    Mutiert 24.09.2026 22:37:58: broker/src/transport/bootstrap.rs, SHA-256 mutiert 0c58d2336c8944ae0822a1bf3793cb2072ac467a0a83f6cc61d6ec4eacc257e8 (git diff --numstat: 1 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Ohne die Hello-Pruefung des Schemas macht serde null still zu None: host null, host.name null und host.version null werden V3Control -> nak313_m99 rot, PE-149 bis PE-151 rot; 768000.5 passiert den Textriegel und faellt erst an der zweiten Wand mit dem Feldgrund (Stufe feldregel statt schema) -> nak313_m101 (e) und PE-157 rot; die Laengen von host.name und host.version fallen wieder mit dem Grund aus host_pruefen -> host_haelt_die_laengen_des_vertrags rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 4, Rohausgabe T99-mutiert-A4.txt
+        Summe: test result: FAILED. 15 passed; 4 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.02s
+    Ruecknahme 24.09.2026 22:38:03: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T99-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m99_host_null_faellt_am_schema' gefallen: JA
+      A4: 'nak313_m101_samplerate_raender' gefallen: JA
+      A4: 'host_haelt_die_laengen_des_vertrags' gefallen: JA
+      A4: 'nak313_m45_doppelter_schluessel_im_hello' gefallen: JA
+      A4: 'PE-149: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-150: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-151: Urteil/Stufe' in der Ausgabe: JA
+      A4: 'PE-157: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (4) ===
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... FAILED
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+      test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (16 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema' (186092) panicked at src\transport\bootstrap.rs:962:27:
+      host null faellt am Schema: Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.3.0", plugin_kind: "active_probe", adresse: Adresse { logon_sid: "S-1-5-21-1-2-3-1001", project_binding_id: "00000000000000000000000000000000", session_epoch: "000000000
+      thread 'transport::bootstrap::tests::nak313_m101_samplerate_raender' (96360) panicked at src\transport\bootstrap.rs:1003:51:
+      (e) 768000.5 faellt am Schema (audio ausserhalb des Vertrags)
+      thread 'transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags' (235064) panicked at src\transport\bootstrap.rs:629:51:
+      der Grund muss die Schemapruefung mit dem Zeiger /host/name nennen (host.name ueber 120 Zeichen)
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (68820) panicked at src\transport\bootstrap.rs:921:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-149: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-149: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-150: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-150: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-151: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bindin
+      PE-151: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      PE-157: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("audio ausserhalb des Vertrags")))
+      PE-159: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("invalid type: floating point `1.5`, expected u32")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 6: Writer (a) audioGueltig (1e-308) false - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (N-18d)
+  Mutation W101a: M-101 (a) Writer: wireZahl laesst dez -308 zu (dez < -kDezGrenze) (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-W101a.txt):
+    Rotlauf W101a - M-101 (a) Writer: wireZahl laesst dez -308 zu (dez < -kDezGrenze) - 24.09.2026 22:40:00 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+    SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101a-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+    Mutation 1 ab Zeile 217 in eq-copilot/plugin/core/ipc/WireZahl.h (Stand vor der Mutation):
+      vorher:
+        |    if (dez >= kDezGrenze || dez <= -kDezGrenze)
+      nachher:
+        |    if (dez >= kDezGrenze || dez < -kDezGrenze)   // MUTATION M-101 (a) Writer
+    Mutiert 24.09.2026 22:40:00: eq-copilot/plugin/core/ipc/WireZahl.h, SHA-256 mutiert a4974443ccf2dd37244dbb37a2cd2ce15f1876efd127928d3a419b94419520c0 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/WireZahl.h)
+    Kette (R-313-11): wireZahl (1e-308) liefert true (dez -308), audioGueltig (1e-308) true -> N-18d rot (mit fallen die N-18b-Faelle mit dez -308).
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:10.796, Quelle 22:40:00.671, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 6, Rohausgabe W101a-mutiert-B3c.txt
+        Summe: 171 bestanden, 6 gescheitert
+    Ruecknahme 24.09.2026 22:40:11: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:19.970, Quelle 22:40:11.363, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101a-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B3c: 'N-18d: audioGueltig weist eine riegelwidrige Samplerate ab' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/WireZahl.h: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (6) ===
+      [ROT]  N-18: zwei_e_minus_308 - wireZahl verweigert, wie die Fixture sagt  [2e-308]
+      [ROT]  N-18: eins_e_minus_308 - wireZahl verweigert, wie die Fixture sagt  [1e-308]
+      [ROT]  N-18b: verweigert â 2e-308 — GROESSER als 1e-308 und trotzdem drausen
+      [ROT]  N-18b: verweigert â 9.99e-308 — dez = -308
+      [ROT]  N-18b: verweigert â 1e-308
+      [ROT]  N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+      [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+      [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+      [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+      [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 7: Writer (b) audioGueltig (1e-307) true - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+  -> am Basisstand: gruen
+  Mutation W101b: M-101 (b) Writer: wireZahl lehnt schon dez -307 ab (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-W101b.txt):
+    Rotlauf W101b - M-101 (b) Writer: wireZahl lehnt schon dez -307 ab - 24.09.2026 22:40:20 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+    SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101b-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+    Mutation 1 ab Zeile 217 in eq-copilot/plugin/core/ipc/WireZahl.h (Stand vor der Mutation):
+      vorher:
+        |    if (dez >= kDezGrenze || dez <= -kDezGrenze)
+      nachher:
+        |    if (dez >= kDezGrenze || dez <= -307)   // MUTATION M-101 (b) Writer
+    Mutiert 24.09.2026 22:40:20: eq-copilot/plugin/core/ipc/WireZahl.h, SHA-256 mutiert b49e60ca5afc4c20820e06e02a2f08f6c7fb820614bd7fc4def0b0e1a04d4b3e (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/WireZahl.h)
+    Kette (R-313-11): wireZahl (1e-307) false (dez -307), audioGueltig (1e-307) false -> 313/M-101 samplerate_wie_der_writer (1e-307) rot.
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:30.113, Quelle 22:40:20.978, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 5, Rohausgabe W101b-mutiert-B3c.txt
+        Summe: 172 bestanden, 5 gescheitert
+    Ruecknahme 24.09.2026 22:40:30: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:39.492, Quelle 22:40:30.658, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101b-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B3c: '313/M-101 samplerate_wie_der_writer: 1e-307' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/WireZahl.h: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (5) ===
+      [ROT]  313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+      [ROT]  N-18: eins_e_minus_307 - wireZahl erzeugt GENAU den Text der Fixture  [ gegen 1e-307]
+      [ROT]  N-18: knapp_unter_der_grenze - wireZahl erzeugt GENAU den Text der Fixture  [ gegen 1e-307]
+      [ROT]  N-18: der kleinste angenommene Betrag  [verweigert]
+      [ROT]  N-18/R4f: ihr gedeckelter Wiretext lautet 1e-307  [verweigert]
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+      [ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+      [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+      [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+      [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 8: Writer (d) audioGueltig (48000) true - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: gruen (N-18d)
+  Mutation W101d: M-101 (d) Writer: audioGueltig mit Samplerategrenze 768 (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-W101d.txt):
+    Rotlauf W101d - M-101 (d) Writer: audioGueltig mit Samplerategrenze 768 - 24.09.2026 22:40:40 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101d-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+    Mutation 1 ab Zeile 262 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |samplerate > 0.0 && samplerate <= 768000.0
+      nachher:
+        |samplerate > 0.0 && samplerate <= 768.0 /* MUTATION M-101 (d) Writer */
+    Mutiert 24.09.2026 22:40:40: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert f845ff928392248fea523da1a4cb4293b57cfeffd4b7a5875bef35eb547cca71 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+    Kette (R-313-11): audioGueltig (48000.0) false -> N-18d (gewoehnliche Samplerate) rot, mit faellt 44100.5.
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:44.605, Quelle 22:40:40.427, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 2, Rohausgabe W101d-mutiert-B3c.txt
+        Summe: 175 bestanden, 2 gescheitert
+    Ruecknahme 24.09.2026 22:40:45: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:49.087, Quelle 22:40:45.194, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101d-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B3c: 'N-18d: und nimmt die gewoehnliche Samplerate an' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (2) ===
+      [ROT]  N-18d: und nimmt die gewoehnliche Samplerate an
+      [ROT]  N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+      [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+      [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+      [ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+      [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 9: Writer (e) audioGueltig (768000.5) false - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+  -> am Basisstand: gruen
+  Mutation W101e: M-101 (e) Writer: audioGueltig ohne Obergrenze der Samplerate (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-W101e.txt):
+    Rotlauf W101e - M-101 (e) Writer: audioGueltig ohne Obergrenze der Samplerate - 24.09.2026 22:40:49 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\W101e-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+    Mutation 1 ab Zeile 262 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |samplerate > 0.0 && samplerate <= 768000.0
+      nachher:
+        |samplerate > 0.0 /* MUTATION M-101 (e) Writer: ohne Obergrenze */
+    Mutiert 24.09.2026 22:40:49: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert 930aa482ecac125d7214281f5fd572280e65034cfbe4b5105748ef82a400dbbf (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+    Kette (R-313-11): audioGueltig (768000.5) true (wireZahl traegt ihn, dez 5) -> 313/M-101 samplerate_wie_der_writer (768000.5) rot.
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:53.745, Quelle 22:40:49.848, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 1, Rohausgabe W101e-mutiert-B3c.txt
+        Summe: 176 bestanden, 1 gescheitert
+    Ruecknahme 24.09.2026 22:40:54: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:40:58.766, Quelle 22:40:54.301, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe W101e-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B3c: '313/M-101 samplerate_wie_der_writer: 768000.5' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (1) ===
+      [ROT]  313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (5) ===
+      [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+      [ok]   N-18d: audioGueltig weist eine riegelwidrige Samplerate ab â der Client verbindet gar nicht erst, statt ein null in ein Pflicht-number zu senden
+      [ok]   N-18d: dasselbe fuer den kleinsten subnormalen double
+      [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+      [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-101: die Zusage faellt an der erwarteten Pruefung in 8 von 8 Haelften mit Rotlauf: JA
+(c) 1e-300: ohne Etikett, nur benannt (NAK-387 Beobachtung 1, E-313-17); sein Tabelleneintrag PE-155 (vertrag und produkt gueltig) bleibt und wird von Tabellenlauf und Zaehlpruefung getragen. Die Tor-Haelfte (e) Urteil ist eine Wache ueber die zweite Wand; sie traegt keinen eigenen Rotlauf ueber den Stufenbruch hinaus (unter T99 bleibt das Urteil ungueltig).

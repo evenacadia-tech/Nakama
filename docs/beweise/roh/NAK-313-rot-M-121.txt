@@ -1,0 +1,201 @@
+NAK-313 Etappe 6 - Rotbeweis M-121 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-121 - T3-03-05 - Vertragstext README Regel 3 (Praezisierung)
+Zustand: Endstand der Etappe 6
+Ereignis: Lesen von Regel 3 und der Kommentare; A5, A8, B3c, A4
+Zusage: Regel 3 nennt die Untergrenze; TEXTRIEGEL-FAELLE.json traegt 1e-307, 1e-308, 2e-308, 9.9e-308; die Kommentare nennen beide Grenzen
+Bein: Lesen; A8 (Tabelle bytegleich), A5; B3c; A4
+
+--- Haelfte 1: Text und Kommentare - Etikett: heute rot (gelesen) ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  -> am Basisstand: rot: Regel 3 und die Kommentare nannten nur die Obergrenze; Beleg ist die gelesene Stelle im Diff (unten)
+  Diff 00e3bea6..03996f46 -- eq-copilot/schemas/v3/README.md:
+    @@ -64,7 +64,10 @@ dasselbe sehen koennen, ist der Text.
+    -3. **Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern.**
+    +3. **Zahlen ungleich 0 betragsmaessig ab 1e-307 und unter 1e308, und ein `e`
+    +   braucht Ziffern.** Gemessen am Literal: die fuehrende signifikante Ziffer
+    +   steht bei einem Dezimalexponenten zwischen −308 und 308 (ausschliesslich);
+    +   `1e-307` ist gueltig, `1e-308`, `2e-308` und `9.9e-308` sind es nicht.
+  Diff 00e3bea6..03996f46 -- broker/src/vertrag.rs:
+    @@ -127,7 +127,10 @@ fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
+    -/// Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308.
+    +/// Betragsgrenzen der Zahlen des Vertrags, am Literal gemessen: eine Zahl
+    +/// ungleich 0 liegt betragsmaessig ab 1e-307 und unter 1e308 - der
+    +/// Dezimalexponent ihrer fuehrenden signifikanten Ziffer liegt zwischen -308
+    +/// und 308, beide ausgeschlossen (README Regel 3; 1e-308 faellt).
+  Diff 00e3bea6..03996f46 -- eq-copilot/plugin/vertrag/NakamaVertrag.h:
+    @@ -56,7 +56,10 @@ struct Verletzung
+    -/** Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308. */
+    +/** Betragsgrenzen der Zahlen des Vertrags, am Literal gemessen: eine Zahl
+    +    ungleich 0 liegt betragsmaessig ab 1e-307 und unter 1e308 - der
+    +    Dezimalexponent ihrer fuehrenden signifikanten Ziffer liegt zwischen -308
+    +    und 308, beide ausgeschlossen (README Regel 3; 1e-308 faellt). */
+    @@ -74,8 +77,9 @@ constexpr int dezGrenze = 308;
+    -      3. Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern -
+    -         beides AUS DEM LITERAL gerechnet, nie ueber getDoubleValue();
+    +      3. Zahlen ungleich 0 betragsmaessig ab 1e-307 und unter 1e308, und ein
+    +         `e` braucht Ziffern - beides AUS DEM LITERAL gerechnet, nie ueber
+    +         getDoubleValue();
+    @@ -136,12 +140,12 @@ inline constexpr std::uint64_t v2Ganzzahlgrenze = 9223372036854775807ULL;
+    -    unter 1e308, ein Exponent mit Ziffern und hoechstens drei davon. Gerechnet
+    -    wird nur mit Ziffern (`core/ipc/WireZahl.h`); JUCEs Zahlenleser sieht den
+    -    Text erst danach - er akkumuliert `9223372036854775808` und
+    -    `2e4294967296` ohne Schranke. Alles andere (Literale, Escapes, Grammatik)
+    -    prueft der strenge Lauf dahinter; ein `-` vor einem Buchstaben ist hier
+    -    keine Zahl.
+    +    ab 1e-307 und unter 1e308, ein Exponent mit Ziffern und hoechstens drei
+    +    davon. Gerechnet wird nur mit Ziffern (`core/ipc/WireZahl.h`); JUCEs
+    +    Zahlenleser sieht den Text erst danach - er akkumuliert
+    +    `9223372036854775808` und `2e4294967296` ohne Schranke. Alles andere
+    +    (Literale, Escapes, Grammatik) prueft der strenge Lauf dahinter; ein `-`
+    +    vor einem Buchstaben ist hier keine Zahl.
+  Diff 00e3bea6..03996f46 -- tools/eq-copilot/pruefe_v3_vertrag.py:
+    @@ -120,7 +120,7 @@ def teilschemata(knoten, pfad: str):
+    -DEZ_GRENZE = 308                         # |x| < 1e308
+    +DEZ_GRENZE = 308                         # x != 0: 1e-307 <= |x| < 1e308 (-308 < dez < 308)
+
+--- Haelfte 2: die vier Faelle, C++ - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  [ok]   Textriegel deckt die gemeinsame Falltabelle  [106 Faelle]
+  -> am Basisstand: gruen
+  Mutation U121c: M-121 C++: Untergrenze des Textriegels dez < -dezGrenze (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-U121c.txt):
+    Rotlauf U121c - M-121 C++: Untergrenze des Textriegels dez < -dezGrenze - 24.09.2026 22:41:34 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+    SHA-256 vorher f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\U121c-NakamaVertrag.cpp (SHA-256 f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696)
+    Mutation 1 ab Zeile 386 in eq-copilot/plugin/vertrag/NakamaVertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (dez >= dezGrenze || dez <= -dezGrenze)
+      nachher:
+        |    if (dez >= dezGrenze || dez < -dezGrenze)   // MUTATION M-121
+    Mutiert 24.09.2026 22:41:34: eq-copilot/plugin/vertrag/NakamaVertrag.cpp, SHA-256 mutiert cc32838a81d91d0fadd10060a05fc8103b70f6460ab712084367d276f43a49f5 (git diff --numstat: 1 1 eq-copilot/plugin/vertrag/NakamaVertrag.cpp)
+    Kette (R-313-11): 1e-308, 2e-308 und 9.9e-308 gelten (dez -308) -> der Tabellenlauf des Textriegels in B3c rot.
+    Lauf unter der Mutation:
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:41:37.805, Quelle 22:41:34.453, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 4, Rohausgabe U121c-mutiert-B3c.txt
+        Summe: 176 bestanden, 1 gescheitert
+    Ruecknahme 24.09.2026 22:41:38: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 f4fab77945443245a22ebb0366dfa144020833cdaced70428a0a534b49007696 - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 22:41:42.210, Quelle 22:41:38.367, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe U121c-zurueck-B3c.txt
+        Summe: 177 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B3c: 'Textriegel deckt die gemeinsame Falltabelle' gefallen: JA
+      B3c: '1e-308' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/vertrag/NakamaVertrag.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B3c unter der Mutation: gefallene Pruefungen (4) ===
+      [ROT]  Textriegel #94 {"w": 1e-308} -> angenommen
+      [ROT]  Textriegel #95 {"w": 2e-308} -> angenommen
+      [ROT]  Textriegel #96 {"w": 9.9e-308} -> angenommen
+      [ROT]  Textriegel deckt die gemeinsame Falltabelle  [106 Faelle]
+    === B3c unter der Mutation: gruen gebliebene Pruefungen der Zeile (16) ===
+      [ok]   Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab
+      [ok]   Textriegel lehnt ab: ungueltig/befund-score-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+      [ok]   Textriegel lehnt ab: ungueltig/einsames-surrogat-im-label.json  [hohes Surrogat ohne Paar an Position 1294]
+      [ok]   Textriegel lehnt ab: ungueltig/host-mixer-index-ueber-json-sicher.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+      [ok]   Textriegel lehnt ab: ungueltig/leerer-objektschluessel.json  [leerer Objektschluessel an Position 835]
+      [ok]   Textriegel lehnt ab: ungueltig/maskierungswert-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+      [ok]   Textriegel lehnt ab: ungueltig/nul-escape-im-label.json  [NUL-Escape in Zeichenkette an Position 1289]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-auf-2hoch53.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740992.1]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 9007199254740991.1]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 4503599627370495.9]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-fuehrende-null.json  [fuehrende Null in "091" an Position 356]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-jenseits-u64.json  [Ganzzahl ausserhalb 2^53-1: 18446744073709552016]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json  [Zahl mit mehr als 15 signifikanten Dezimalziffern: 1.00000000000000001]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-nan-token.json  [unbekanntes Literal NaN an Position 1090]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-nicht-endlich.json  [Zahl ausserhalb +/-1e308: 1e400]
+      [ok]   Textriegel lehnt ab: ungueltig/zahl-ueber-2hoch53.json  [Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: die vier Faelle, Rust - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+  -> am Basisstand: gruen
+  Mutation U121r: M-121 Rust: Untergrenze des Textriegels dez < -DEZ_GRENZE (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-U121r.txt):
+    Rotlauf U121r - M-121 Rust: Untergrenze des Textriegels dez < -DEZ_GRENZE - 24.09.2026 22:39:51 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/vertrag.rs (LF)
+    SHA-256 vorher a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\U121r-vertrag.rs (SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e)
+    Mutation 1 ab Zeile 276 in broker/src/vertrag.rs (Stand vor der Mutation):
+      vorher:
+        |    if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
+      nachher:
+        |    if dez >= DEZ_GRENZE || dez < -DEZ_GRENZE { // MUTATION M-121
+    Mutiert 24.09.2026 22:39:51: broker/src/vertrag.rs, SHA-256 mutiert 71819e6bc413529aa4970eb137403e48d4e2ed8ca14c72d58b8d4f9202262273 (git diff --numstat: 1 1 broker/src/vertrag.rs)
+    Kette (R-313-11): 1e-308, 2e-308 und 9.9e-308 gelten -> textriegel_deckt_die_gemeinsame_falltabelle in A4 rot.
+    Lauf unter der Mutation:
+      A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+      A4-ccl: Exit 101, Fehlzeilen 2, Rohausgabe U121r-mutiert-A4-ccl.txt
+        Summe: test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+    Ruecknahme 24.09.2026 22:39:56: broker/src/vertrag.rs SHA-256 a95b102dc4321418ee84876c93a6e0459a2b013c7b43b81607332e48a563af1e - gleich dem Stand vor der Mutation
+      A4-ccl: cargo uebersetzt eqcop-broker neu: ja
+      A4-ccl: Exit 0, Fehlzeilen 0, Rohausgabe U121r-zurueck-A4-ccl.txt
+        Summe: test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+    Erwartete Pruefungen unter der Mutation:
+      A4-ccl: 'textriegel_deckt_die_gemeinsame_falltabelle' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-ccl: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/vertrag.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4-ccl unter der Mutation: gefallene Pruefungen (2) ===
+      test wirezahl_texte_halten_den_textriegel ... FAILED
+      test textriegel_deckt_die_gemeinsame_falltabelle ... FAILED
+    === A4-ccl unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A4-ccl unter der Mutation: Panikmeldungen und Tabellenabweichungen (4 Zeilen) ===
+      thread 'wirezahl_texte_halten_den_textriegel' (185956) panicked at tests\contract_cross_language.rs:817:9:
+      zwei_e_minus_308: `2e-308` wird vom Riegel angenommen — dann duerfte `wireZahl` ihn nicht verweigern
+      thread 'textriegel_deckt_die_gemeinsame_falltabelle' (196808) panicked at tests\contract_cross_language.rs:178:5:
+      3 Faelle weichen ab: #94 {"w": 1e-308} | #95 {"w": 2e-308} | #96 {"w": 9.9e-308}
+    === A4-ccl nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 4: die vier Faelle, Python - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  gescheitert; 170 v3-Eintraege gegen vertrag (Kopf 170); die vier neuen Faelle der
+  -> am Basisstand: gruen
+  Mutation U121p: M-121 Python: Untergrenze des Textriegels dez < -DEZ_GRENZE (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-U121p.txt):
+    Rotlauf U121p - M-121 Python: Untergrenze des Textriegels dez < -DEZ_GRENZE - 24.09.2026 22:39:04 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+    SHA-256 vorher 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\U121p-pruefe_v3_vertrag.py (SHA-256 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06)
+    Mutation 1 ab Zeile 266 in tools/eq-copilot/pruefe_v3_vertrag.py (Stand vor der Mutation):
+      vorher:
+        |    if dez >= DEZ_GRENZE or dez <= -DEZ_GRENZE:
+      nachher:
+        |    if dez >= DEZ_GRENZE or dez < -DEZ_GRENZE:  # MUTATION M-121
+    Mutiert 24.09.2026 22:39:04: tools/eq-copilot/pruefe_v3_vertrag.py, SHA-256 mutiert 5efe3c2a92d71f3e07708c7ca6f843596750ad41b518f92ad16669deb27feb55 (git diff --numstat: 1 1 tools/eq-copilot/pruefe_v3_vertrag.py)
+    Kette (R-313-11): 1e-308, 2e-308 und 9.9e-308 gelten -> die Falltabelle in A5 rot.
+    Lauf unter der Mutation:
+      A5: Exit 2, Fehlzeilen 3, Rohausgabe U121p-mutiert-A5.txt
+        Summe: $defs ohne Negativfixture: keine
+    Ruecknahme 24.09.2026 22:39:08: tools/eq-copilot/pruefe_v3_vertrag.py SHA-256 522f4e8552174aa1fb7b22a1ede9a387115688a8ff51cbb825a92f674174ce06 - gleich dem Stand vor der Mutation
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe U121p-zurueck-A5.txt
+        Summe: $defs ohne Negativfixture: keine
+    Erwartete Pruefungen unter der Mutation:
+      A5: Exit 2 und 'Textriegel deckt jede gemessene Kante' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A5: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- tools/eq-copilot/pruefe_v3_vertrag.py: (leer)
+    git diff --stat: (leer)
+    
+    === A5 unter der Mutation: gefallene Pruefungen (3) ===
+      ROT: Textriegel deckt jede gemessene Kante (106 Faelle) — #94 {"w": 1e-308}; #95 {"w": 2e-308}; #96 {"w": 9.9e-308}
+      ROT: Wire-Zahlklassen: jede verweigerte Klasse faellt am Riegel (6 Klassen) — zwei_e_minus_308: 2e-308 kommt durch; eins_e_minus_308: 1e-308 kommt durch
+      ROT: PE-153 rust_bootstrap M-101: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/textriegel
+    === A5 unter der Mutation: Auszug (4 Zeilen) ===
+      Pruefungen: 837 bestanden, 3 gescheitert
+      ROT: Textriegel deckt jede gemessene Kante (106 Faelle) — #94 {"w": 1e-308}; #95 {"w": 2e-308}; #96 {"w": 9.9e-308}
+      ROT: Wire-Zahlklassen: jede verweigerte Klasse faellt am Riegel (6 Klassen) — zwei_e_minus_308: 2e-308 kommt durch; eins_e_minus_308: 1e-308 kommt durch
+      ROT: PE-153 rust_bootstrap M-101: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/textriegel
+    === A5 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-121: die Zusage faellt an der erwarteten Pruefung in 3 von 3 Haelften mit Rotlauf: JA

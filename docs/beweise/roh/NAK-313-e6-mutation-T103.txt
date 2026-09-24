@@ -1,0 +1,52 @@
+NAK-313 Etappe 6 - Mutationslauf T103: M-103: ein zweiter strenger Lauf in bootstrap_lesen
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf T103 - M-103: ein zweiter strenger Lauf in bootstrap_lesen - 24.09.2026 22:38:37 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei broker/src/transport/bootstrap.rs (LF)
+SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T103-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+Mutation 1 ab Zeile 313 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+  vorher:
+    |    let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+  nachher:
+    |    let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+    |    let _zweiter = crate::vertrag::json_streng(roh.as_bytes()); // MUTATION M-103: zweiter strenger Lauf
+Mutiert 24.09.2026 22:38:37: broker/src/transport/bootstrap.rs, SHA-256 mutiert 94fcb202505244e6cebf64a3f7f44ecd486d20af30a3d8bf653e24145052a0ea (git diff --numstat: 1 0 broker/src/transport/bootstrap.rs)
+Kette (R-313-11): Ein zweiter Aufruf von json_streng ueber dieselben Hello-Bytes zaehlt 2 Laeufe -> nak313_m103_ein_parselauf_je_hello rot.
+Lauf unter der Mutation:
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 101, Fehlzeilen 1, Rohausgabe T103-mutiert-A4.txt
+    Summe: test result: FAILED. 18 passed; 1 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Ruecknahme 24.09.2026 22:38:41: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+  A4: cargo uebersetzt eqcop-broker neu: ja
+  A4: Exit 0, Fehlzeilen 0, Rohausgabe T103-zurueck-A4.txt
+    Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+Erwartete Pruefungen unter der Mutation:
+  A4: 'nak313_m103_ein_parselauf_je_hello' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+git diff --stat: (leer)
+
+=== A4 unter der Mutation: gefallene Pruefungen (1) ===
+  test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... FAILED
+=== A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (6) ===
+  test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... ok
+  test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+  test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+  test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+  test transport::bootstrap::tests::nak313_m101_samplerate_raender ... ok
+  test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+=== A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (2 Zeilen) ===
+  thread 'transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello' (23316) panicked at src\transport\bootstrap.rs:1046:13:
+  assertion `left == right` failed: v2-Hello: genau ein strenger Lauf ueber die Hello-Bytes (Ok((V2 { roh: "{\"type\":\"hello\",\"protocol_version\":2,\"plugin_version\":\"0.3.0\"}" }, 66)))
+=== A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

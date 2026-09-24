@@ -1,0 +1,104 @@
+NAK-313 Etappe 6 - Rotbeweis M-110 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-110 - T3-03-06 - R-313-7 - leere Strings, flacher C++-Leser Control
+Zustand: reject mit "reason":""; welcome mit "broker_version":""
+Ereignis: Verbindungsaufbau Control
+Zusage: Leerer reason gueltig ("Broker lehnt ab: "); leere broker_version ungueltig ("unerwartete Antwort auf hello"), Stufe feldregel (vertrag schema)
+Bein: B10: 313/M-110 leere_texte, Tabellenlauf PE-180, PE-181
+
+--- Haelfte 1: leerer reason - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  ok      313/M-110 leere_texte control PE-180 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab: ]
+  ok      313/M-110 leere_texte reject mit leerem reason: Broker lehnt ab  [nicht verbunden - Broker lehnt ab: ]
+  -> am Basisstand: gruen
+  Mutation H110a: M-110 (a): reject.reason verlangt mindestens einen Codepunkt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H110a.txt):
+    Rotlauf H110a - M-110 (a): reject.reason verlangt mindestens einen Codepunkt - 24.09.2026 22:55:56 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H110a-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+    Mutation 1 ab Zeile 239 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |&& jsonText (felder, "reason", grund) && utf8CodepointsBis (grund, 500);
+      nachher:
+        |&& jsonText (felder, "reason", grund) && ! grund.empty() && utf8CodepointsBis (grund, 500);   // MUTATION M-110 (a)
+    Mutiert 24.09.2026 22:55:56: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert 5619774209d50aa47fad842b336bde1667d178fdfea2f8fc49d548a30e753ebd (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+    Kette (R-313-11): Ein leerer reason haelt den Vertrag nicht mehr -> reject haelt den Vertrag nicht -> 313/M-110 leerer reason und PE-180 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:55:59.718, Quelle 22:55:56.109, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 4, Rohausgabe H110a-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 3 Fehler
+    Ruecknahme 24.09.2026 22:56:06: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:56:10.440, Quelle 22:56:06.704, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H110a-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-110 leere_texte reject mit leerem reason' gefallen: JA
+      B10: 'PE-180 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-110 leere_texte control PE-180 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+      FEHLER  313/M-110 leere_texte control PE-180 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-110 leere_texte reject mit leerem reason: Broker lehnt ab  [nicht verbunden - reject haelt den Vertrag nicht]
+      FEHLER — 183 Pruefungen, 3 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (3) ===
+      ok      313/M-110 leere_texte control PE-181 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+      ok      313/M-110 leere_texte control PE-181 (Wirkung)  [nicht verbunden]
+      ok      313/M-110 leere_texte welcome mit leerer broker_version verbindet nicht  [nicht verbunden - unerwartete Antwort auf hello]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: leere broker_version - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  ok      313/M-110 leere_texte control PE-181 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-110 leere_texte welcome mit leerer broker_version verbindet nicht  [nicht verbunden - unerwartete Antwort auf hello]
+  -> am Basisstand: gruen
+  Mutation H110b: M-110 (b): die Leerpruefung der broker_version weggelassen (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H110b.txt):
+    Rotlauf H110b - M-110 (b): die Leerpruefung der broker_version weggelassen - 24.09.2026 22:56:17 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H110b-Vertrag.cpp (SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f)
+    Mutation 1 ab Zeile 223 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        ||| brokerVersion.empty() || ! utf8CodepointsBis (brokerVersion, 64))
+      nachher:
+        ||| ! utf8CodepointsBis (brokerVersion, 64))   // MUTATION M-110 (b): ohne Leerpruefung
+    Mutiert 24.09.2026 22:56:17: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert 81570b3734f13abb7d01d33bf2d3dad0119a74017fb36668cf614c4237f2091e (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp)
+    Kette (R-313-11): utf8CodepointsBis (leer, 64) ist wahr: die leere broker_version verbindet -> 313/M-110 leere broker_version und PE-181 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:56:21.404, Quelle 22:56:17.816, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 4, Rohausgabe H110b-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 3 Fehler
+    Ruecknahme 24.09.2026 22:56:28: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 b3d9f44f03c68c6cc60711067c86d13c03b73cfdfe5bf79d0e4e26d03e9d752f - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:56:32.871, Quelle 22:56:28.381, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H110b-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-110 leere_texte welcome mit leerer broker_version' gefallen: JA
+      B10: 'PE-181 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-110 leere_texte control PE-181 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-110 leere_texte control PE-181 (Wirkung)  [verbunden]
+      FEHLER  313/M-110 leere_texte welcome mit leerer broker_version verbindet nicht  [verbunden - ]
+      FEHLER — 183 Pruefungen, 3 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (3) ===
+      ok      313/M-110 leere_texte control PE-180 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab: ]
+      ok      313/M-110 leere_texte control PE-180 (Wirkung)  [nicht verbunden]
+      ok      313/M-110 leere_texte reject mit leerem reason: Broker lehnt ab  [nicht verbunden - Broker lehnt ab: ]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-110: die Zusage faellt an der erwarteten Pruefung in 2 von 2 Haelften mit Rotlauf: JA

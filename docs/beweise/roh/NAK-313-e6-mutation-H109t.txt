@@ -1,0 +1,47 @@
+NAK-313 Etappe 6 - Mutationslauf H109t: Zusatz zu M-109: der Control-Aufrufer meldet ein Objekt ohne type wie frueher
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H109t - Zusatz zu M-109: der Control-Aufrufer meldet ein Objekt ohne type wie frueher - 24.09.2026 22:55:33 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+Datei eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp (CRLF)
+SHA-256 vorher f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H109t-Verbindung.cpp (SHA-256 f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de)
+Mutation 1 ab Zeile 661 in eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp (Stand vor der Mutation):
+  vorher:
+    |                zustand.letzterFehler = "welcome: kein type";
+  nachher:
+    |                zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";   // MUTATION Zusatz: kein type wie frueher
+Mutiert 24.09.2026 22:55:33: eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp, SHA-256 mutiert acd9f8c1479f8eede462ae2126f0e07e98c1386b6ca82d785430a98b32673c07 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp)
+Kette (R-313-11): Ein gelesenes Objekt ohne type meldet wieder welcome: kein flaches JSON-Objekt -> 313/M-109 welcome_ohne_type control rot; die Telemetriefassung bleibt gruen.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:55:37.436, Quelle 22:55:33.421, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 2, Rohausgabe H109t-mutiert-B10.txt
+    Summe: FEHLER — 183 Pruefungen, 1 Fehler
+Ruecknahme 24.09.2026 22:55:44: eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp SHA-256 f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 22:55:48.936, Quelle 22:55:44.416, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe H109t-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-109 welcome_ohne_type control' gefallen: JA
+  B10: '313/M-109 welcome_ohne_type telemetrie' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp: (leer)
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (2) ===
+  FEHLER  313/M-109 welcome_ohne_type control: type fehlt  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+  FEHLER — 183 Pruefungen, 1 Fehler
+=== B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  ok      313/M-109 welcome_ohne_type telemetrie: type ist kein Text  [nicht verbunden - welcome: kein type]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

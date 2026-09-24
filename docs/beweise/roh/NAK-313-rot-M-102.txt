@@ -1,0 +1,70 @@
+NAK-313 Etappe 6 - Rotbeweis M-102 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-102 - T3-03-05 - R-313-7 - Reihenfolge am Tor
+Zustand: Control-Hello mit NUL-Escape in plugin_version und zugleich host null
+Ereignis: bootstrap_lesen
+Zusage: KeinHello ("textriegel: ..."), nicht der Schemagrund; Stufe textriegel in vertrag und produkt (PE-158)
+Bein: A4: bootstrap.rs nak313_m102_reihenfolge_am_tor; Tabellenlauf (PE-158); Python A5
+
+--- Haelfte 1: Textriegel vor Schema - Etikett: heute rot ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... FAILED
+  PE-158: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-
+  PE-158: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_b
+  -> am Basisstand: rot
+  Mutation T102: M-102: das Textriegelurteil erst nach der Hello-Pruefung des Schemas (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-T102.txt):
+    Rotlauf T102 - M-102: das Textriegelurteil erst nach der Hello-Pruefung des Schemas - 24.09.2026 22:38:29 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\T102-bootstrap.rs (SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815)
+    Mutation 1 ab Zeile 352 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
+      nachher:
+        |    // MUTATION M-102: das Textriegelurteil steht hinter dem Schema
+    Mutation 2 ab Zeile 355 in broker/src/transport/bootstrap.rs (Stand vor der Mutation):
+      vorher:
+        |            hello_schema_pruefen("hello_control", &wert)?;
+      nachher:
+        |            hello_schema_pruefen("hello_control", &wert)?;
+        |    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
+    Mutiert 24.09.2026 22:38:29: broker/src/transport/bootstrap.rs, SHA-256 mutiert 7d146d2902c969665b7d7fc5061d999771adc5ceb9582ef4e3235b1f911b0f0d (git diff --numstat: 2 1 broker/src/transport/bootstrap.rs)
+    Kette (R-313-11): Schema vor Textriegel: das Hello mit NUL-Escape und host null endet mit dem Schemagrund (/host) statt am Textriegel -> nak313_m102 und PE-158 rot.
+    Lauf unter der Mutation:
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 101, Fehlzeilen 2, Rohausgabe T102-mutiert-A4.txt
+        Summe: test result: FAILED. 17 passed; 2 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Ruecknahme 24.09.2026 22:38:33: broker/src/transport/bootstrap.rs SHA-256 c25a3d516a6a55e15964c90cbafa57ea3a4fe915f5953e2629a40abb306a5815 - gleich dem Stand vor der Mutation
+      A4: cargo uebersetzt eqcop-broker neu: ja
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe T102-zurueck-A4.txt
+        Summe: test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m102_reihenfolge_am_tor' gefallen: JA
+      A4: 'PE-158: Urteil/Stufe' in der Ausgabe: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/transport/bootstrap.rs: (leer)
+    git diff --stat: (leer)
+    
+    === A4 unter der Mutation: gefallene Pruefungen (2) ===
+      test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... FAILED
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    === A4 unter der Mutation: gruen gebliebene Pruefungen der Zeile (6) ===
+      test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+      test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+      test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... ok
+      test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+      test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... ok
+      test transport::bootstrap::tests::nak313_m101_samplerate_raender ... ok
+    === A4 unter der Mutation: Panikmeldungen und Tabellenabweichungen (6 Zeilen) ===
+      thread 'transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor' (238092) panicked at src\transport\bootstrap.rs:1023:17:
+      der Textriegel geht dem Schema vor (schema: /host verletzt type)
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (11300) panicked at src\transport\bootstrap.rs:922:9:
+      rust_bootstrap weicht von `produkt` ab:
+      PE-158: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("textriegel")) (Err(KeinHello("schema: /host verletzt type")))
+      PE-160: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("textriegel")) (Err(KeinHello("schema: /audio/block_size verletzt maximum")))
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-102: die Zusage faellt an der erwarteten Pruefung in 1 von 1 Haelften mit Rotlauf: JA

@@ -1,0 +1,286 @@
+NAK-313 Etappe 6 - Rotbeweis M-112 (Manifest docs/beweise/NAK-313.md §6.5, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 62a90428 bis 03996f46); Mutationslaeufe 24.09.2026, 22:34 bis 22:58 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (03996f46); Gegenprobe am Basisstand 24.09.2026, 21:47 bis 21:52 Uhr gegen den Produktcode von 00e3bea6 (NAK-313-e6-basisstand.txt).
+
+Matrixzeile M-112 - T3-03-06 - R-313-6, R-313-7 - Duplikat auf dekodierten Namen
+Zustand: (a) welcome mit typ-u0065-Alias neben type; (b) welcome mit link_id zweimal roh; (c) command_ack mit ergebnis als Escape-Alias und roh
+Ereignis: Verbindungsaufbau Control; das ACK
+Zusage: Alle drei ungueltig am flachen Leser, Stufe duplikat; (a), (b) "welcome: doppelter Name"; (c) keinAck ohne Meldung
+Bein: B10: 313/M-112 duplikat_dekodiert (a) bis (c), Tabellenlauf PE-185, PE-186, PE-197
+
+--- Haelfte 1: Urteil (a), (c) (Escape-Alias) - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+  ok      313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck  [inFlight 1, Erfolg 0, endgueltig 0]
+  -> am Basisstand: (a), (c) Urteil gruen (am Backslash abgelehnt)
+  Mutation H112r: M-112: Namen roh statt dekodiert verglichen (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H112r.txt):
+    Rotlauf H112r - M-112: Namen roh statt dekodiert verglichen - 24.09.2026 22:56:59 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (LF)
+    SHA-256 vorher fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H112r-IpcVerbindung.cpp (SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517)
+    Mutation 1 ab Zeile 613 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+      vorher:
+        |    for (;;)
+        |    {
+        |        ueberspringeLeerraum (text, i);
+        |        std::string schluessel;
+        |        if (! leseString (text, i, schluessel, grund))
+        |            return false;
+      nachher:
+        |    std::vector<std::string> rohNamen;   // MUTATION M-112: Namen roh statt dekodiert vergleichen
+        |    for (;;)
+        |    {
+        |        ueberspringeLeerraum (text, i);
+        |        std::string schluessel;
+        |        const std::size_t rohAnfang = i;
+        |        if (! leseString (text, i, schluessel, grund))
+        |            return false;
+        |        rohNamen.push_back (text.substr (rohAnfang, i - rohAnfang));
+    Mutation 2 ab Zeile 655 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+      vorher:
+        |        for (const auto& f : felder)
+        |            if (f.name == schluessel)
+        |                return ablehnen (grund, kDoppelterName);
+      nachher:
+        |        for (std::size_t n = 0; n + 1 < rohNamen.size(); ++n)
+        |            if (rohNamen[n] == rohNamen.back())
+        |                return ablehnen (grund, kDoppelterName);
+    Mutiert 24.09.2026 22:56:59: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp, SHA-256 mutiert 9ced483812ce6b89e11f19501803309f347078ae346e47951b369694eb1eb0e0 (git diff --numstat: 5 2 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp)
+    Kette (R-313-11): Der Escape-Alias ist roh ein anderer Name: (c) das ACK wird gelesen, feldSuchen nimmt den ersten Treffer abgelehnt -> das ACK gilt als abgelehnt; (a) faellt nur noch an der exakten Feldmenge als unerwartete Antwort auf hello -> 313/M-112 (a), (c) und PE-185, PE-197 rot; (b) (roh doppelt) bleibt gruen.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:02.571, Quelle 22:56:59.184, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 6, Rohausgabe H112r-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 5 Fehler
+    Ruecknahme 24.09.2026 22:57:08: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:11.914, Quelle 22:57:08.443, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H112r-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-112 duplikat_dekodiert (c)' gefallen: JA
+      B10: '313/M-112 duplikat_dekodiert (a)' gefallen: JA
+      B10: 'PE-197 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-112 duplikat_dekodiert (b)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H111.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/IpcVerbindung.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (6) ===
+      FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck  [inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER — 183 Pruefungen, 5 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+      ok      313/M-112 duplikat_dekodiert control PE-185 (Wirkung)  [nicht verbunden]
+      ok      313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - welcome: doppelter Name]
+      ok      313/M-112 duplikat_dekodiert control PE-186 (Wirkung)  [nicht verbunden]
+      ok      313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - welcome: doppelter Name]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Urteil (b) (roher Doppelname) - Etikett: Regressionswache ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  FEHLER  313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+  -> am Basisstand: Urteil gruen (rohe Duplikatpruefung)
+  Mutation H112x: M-112: die Duplikatpruefung ganz entfernt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H112x.txt):
+    Rotlauf H112x - M-112: die Duplikatpruefung ganz entfernt - 24.09.2026 22:57:19 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (LF)
+    SHA-256 vorher fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H112x-IpcVerbindung.cpp (SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517)
+    Mutation 1 ab Zeile 653 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+      vorher:
+        |            if (f.name == schluessel)
+        |                return ablehnen (grund, kDoppelterName);
+      nachher:
+        |            if (false && f.name == schluessel)   // MUTATION M-112: Duplikatpruefung entfernt
+        |                return ablehnen (grund, kDoppelterName);
+    Mutiert 24.09.2026 22:57:19: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp, SHA-256 mutiert 0b0a7bad7ce8f60ca8505d3ae6f829522992c98145ce87ef2103db344aeb6682 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp)
+    Kette (R-313-11): (b) link_id zweimal wird gelesen und faellt an der exakten Feldmenge als unerwartete Antwort auf hello -> Stufenpruefung und Meldung von 313/M-112 (b) und PE-186 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:22.363, Quelle 22:57:19.314, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 9, Rohausgabe H112x-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 8 Fehler
+    Ruecknahme 24.09.2026 22:57:28: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:31.984, Quelle 22:57:28.229, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H112x-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-112 duplikat_dekodiert (b)' gefallen: JA
+      B10: 'PE-186 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H111.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H112r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/IpcVerbindung.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (9) ===
+      FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - unerwartete Antwort auf hello]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-109 grund_ausgang doppelter Name
+      FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - unerwartete Antwort auf hello]
+      FEHLER  313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck  [inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER — 183 Pruefungen, 8 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (2) ===
+      ok      313/M-112 duplikat_dekodiert control PE-185 (Wirkung)  [nicht verbunden]
+      ok      313/M-112 duplikat_dekodiert control PE-186 (Wirkung)  [nicht verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: Meldung welcome: doppelter Name und Stufe duplikat - Etikett: heute nicht messbar ---
+Am Basisstand (Produktcode von 00e3bea6, Tests der Gegenprobe, NAK-313-e6-basisstand.txt):
+  FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+  FEHLER  313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+  FEHLER  313/M-112 duplikat_dekodiert PE-197 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - inFlight 1, Erfolg 0, endgueltig 0]
+  -> am Basisstand: rot (welcome: kein flaches JSON-Objekt, Stufe parser)
+  Mutation H109m: M-109 Meldung: der Control-Aufrufer reicht den Lesegrund nicht weiter (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H109m.txt):
+    Rotlauf H109m - M-109 Meldung: der Control-Aufrufer reicht den Lesegrund nicht weiter - 24.09.2026 22:55:10 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp (CRLF)
+    SHA-256 vorher f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H109m-Verbindung.cpp (SHA-256 f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de)
+    Mutation 1 ab Zeile 655 in eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp (Stand vor der Mutation):
+      vorher:
+        |                zustand.letzterFehler = "welcome: " + lesegrund;
+      nachher:
+        |                zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";   // MUTATION M-109: Grund nicht weitergereicht
+    Mutiert 24.09.2026 22:55:10: eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp, SHA-256 mutiert 9ccbc1ff0010f2cc7800f446ceef856703530e525f61fae0dd5fa1ebb31331ec (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp)
+    Kette (R-313-11): Der Control-Weg meldet wieder welcome: kein flaches JSON-Objekt -> die Meldungsvergleiche von 313/M-109, M-111 (a) bis (c) und M-112 (a), (b) rot; die Telemetriefaelle in M-113 bleiben gruen.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:55:14.989, Quelle 22:55:10.756, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 12, Rohausgabe H109m-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 11 Fehler
+    Ruecknahme 24.09.2026 22:55:22: eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp SHA-256 f6a261813bdeb2e172cf8f4089039eb6ee67b543c5f72e581a53dede934625de - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:55:26.269, Quelle 22:55:22.013, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H109m-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-109 verbotene_escapes (a) NUL-Escape (Meldung)' gefallen: JA
+      B10: '313/M-111 utf8_am_anfang_des_flachen_lesens (a)' gefallen: JA
+      B10: '313/M-112 duplikat_dekodiert (b)' gefallen: JA
+      B10: '313/M-113 telemetrie_welcome_wie_control M-109 (a)' gruen geblieben: JA
+      B10: '313/M-113 telemetrie_welcome_wie_control M-111 (a)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (12) ===
+      FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-109 verbotene_escapes (a) NUL-Escape (Meldung)  [welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-109 verbotene_escapes (b) einsames ud800 (Meldung)  [welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-109 verbotene_escapes (c) unbekanntes q (Meldung)  [welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-109 verbotene_escapes (d) kurzes u00 (Meldung)  [welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (a) welcome mit C3 28  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (b) reject mit FF im reason  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (c) reject mit FF im code  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+      FEHLER  313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+      FEHLER — 183 Pruefungen, 11 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (47) ===
+      ok      313/M-109 verbotene_escapes control PE-176 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes control PE-176 (Wirkung)  [nicht verbunden]
+      ok      313/M-109 verbotene_escapes control PE-177 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes control PE-177 (Wirkung)  [nicht verbunden]
+      ok      313/M-109 verbotene_escapes control PE-178 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes control PE-178 (Wirkung)  [nicht verbunden]
+      ok      313/M-109 verbotene_escapes control PE-179 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes control PE-179 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Wirkung)  [verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-188 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-188 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab: ééééééééééééééééééééééééééééééééééééééééééééééééééé�]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-190 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab:
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-190 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-191 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: NUL-Escape]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-191 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-192 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein gueltiges UTF-8]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-192 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-193 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein gueltiges UTF-8]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-193 (Wirkung)  [nicht verbunden]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein gueltiges UTF-8]
+      ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Wirkung)  [nicht verbunden]
+      ok      313/M-109 grund_ausgang kein gueltiges UTF-8  [kein gueltiges UTF-8]
+      ok      313/M-109 grund_ausgang NUL-Escape  [NUL-Escape]
+      ok      313/M-109 grund_ausgang einsames Surrogat  [einsames Surrogat]
+      ok      313/M-109 grund_ausgang unbekanntes Escape  [unbekanntes Escape]
+      ok      313/M-109 grund_ausgang \u-Escape ohne vier Hexziffern  [\u-Escape ohne vier Hexziffern]
+      ok      313/M-109 grund_ausgang rohes Steuerzeichen  [rohes Steuerzeichen]
+      ok      313/M-109 grund_ausgang doppelter Name  [doppelter Name]
+      ok      313/M-109 grund_ausgang Syntax  [Syntax]
+      ok      313/M-109 grund_ausgang: ein gelesenes Objekt laesst den Ausgang unberuehrt  [unberuehrt]
+      ok      313/M-109 verbotene_escapes (a) NUL-Escape (Urteil)  [welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes (b) einsames ud800 (Urteil)  [welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes (c) unbekanntes q (Urteil)  [welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 verbotene_escapes (d) kurzes u00 (Urteil)  [welcome: kein flaches JSON-Objekt]
+      ok      313/M-109 welcome_ohne_type control: type fehlt  [nicht verbunden - welcome: kein type]
+      ok      313/M-109 welcome_ohne_type telemetrie: type ist kein Text  [nicht verbunden - welcome: kein type]
+      ok      313/M-113 telemetrie_welcome_wie_control M-106 (a) koppelt  [verbunden - ]
+      ok      313/M-113 telemetrie_welcome_wie_control M-106 (b)  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+      ok      313/M-113 telemetrie_welcome_wie_control M-107 (a)  [nicht verbunden - Broker lehnt ab: ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé�]
+      ok      313/M-113 telemetrie_welcome_wie_control M-108 (Reject)  [nicht verbunden - Broker lehnt ab:
+      ok      313/M-113 telemetrie_welcome_wie_control M-109 (a)  [nicht verbunden - welcome: NUL-Escape]
+      ok      313/M-113 telemetrie_welcome_wie_control M-111 (a)  [nicht verbunden - welcome: kein gueltiges UTF-8]
+      ok      313/M-113 telemetrie_welcome_wie_control M-111 (b)  [nicht verbunden - welcome: kein gueltiges UTF-8]
+      ok      313/M-113 telemetrie_welcome_wie_control M-111 (c)  [nicht verbunden - welcome: kein gueltiges UTF-8]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation H112x: M-112: die Duplikatpruefung ganz entfernt (Protokoll und alle Pruefzeilen: NAK-313-e6-mutation-H112x.txt):
+    Rotlauf H112x - M-112: die Duplikatpruefung ganz entfernt - 24.09.2026 22:57:19 - HEAD 03996f4624420966deda95ce19472bc6add42f2d
+    Datei eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (LF)
+    SHA-256 vorher fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\8c872d8f\tmp\rot\sicherung\H112x-IpcVerbindung.cpp (SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517)
+    Mutation 1 ab Zeile 653 in eq-copilot/plugin/core/ipc/IpcVerbindung.cpp (Stand vor der Mutation):
+      vorher:
+        |            if (f.name == schluessel)
+        |                return ablehnen (grund, kDoppelterName);
+      nachher:
+        |            if (false && f.name == schluessel)   // MUTATION M-112: Duplikatpruefung entfernt
+        |                return ablehnen (grund, kDoppelterName);
+    Mutiert 24.09.2026 22:57:19: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp, SHA-256 mutiert 0b0a7bad7ce8f60ca8505d3ae6f829522992c98145ce87ef2103db344aeb6682 (git diff --numstat: 1 1 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp)
+    Kette (R-313-11): (b) link_id zweimal wird gelesen und faellt an der exakten Feldmenge als unerwartete Antwort auf hello -> Stufenpruefung und Meldung von 313/M-112 (b) und PE-186 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:22.363, Quelle 22:57:19.314, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 9, Rohausgabe H112x-mutiert-B10.txt
+        Summe: FEHLER — 183 Pruefungen, 8 Fehler
+    Ruecknahme 24.09.2026 22:57:28: eq-copilot/plugin/core/ipc/IpcVerbindung.cpp SHA-256 fe537e1ec821e61150a31f1e6be64c9a31b03fca8bd4e85eedf91530636aa517 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 22:57:31.984, Quelle 22:57:28.229, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe H112x-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 183 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-112 duplikat_dekodiert (b)' gefallen: JA
+      B10: 'PE-186 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e6-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F119.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F120.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-F122.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H106c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H107b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H108p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109m.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H109t.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H110b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H111.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-H112r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S114.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S115.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118l.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S118o.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-S119r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T100.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T102.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T103.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T104.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T105b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T98.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-T99.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121c.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121p.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-U121r.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101a.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101b.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101d.txt | ?? docs/beweise/roh/NAK-313-e6-mutation-W101e.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/IpcVerbindung.cpp: (leer)
+    git diff --stat: (leer)
+    
+    === B10 unter der Mutation: gefallene Pruefungen (9) ===
+      FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - unerwartete Antwort auf hello]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-112 duplikat_dekodiert PE-197 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER  313/M-109 grund_ausgang doppelter Name
+      FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - reject haelt den Vertrag nicht]
+      FEHLER  313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - unerwartete Antwort auf hello]
+      FEHLER  313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck  [inFlight 0, Erfolg 0, endgueltig 1]
+      FEHLER — 183 Pruefungen, 8 Fehler
+    === B10 unter der Mutation: gruen gebliebene Pruefungen der Zeile (2) ===
+      ok      313/M-112 duplikat_dekodiert control PE-185 (Wirkung)  [nicht verbunden]
+      ok      313/M-112 duplikat_dekodiert control PE-186 (Wirkung)  [nicht verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis M-112: die Zusage faellt an der erwarteten Pruefung in 3 von 3 Haelften mit Rotlauf: JA
